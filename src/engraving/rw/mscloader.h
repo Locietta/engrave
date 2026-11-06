@@ -42,11 +42,11 @@ class MscLoader {
 public:
     MscLoader() = default;
 
-    muse::Ret loadMscz(MasterScore *score, const MscReader &mscReader, rw::ReadInOutData *out, bool ignoreVersionError);
+    muse::Ret load_mscz(MasterScore *score, const MscReader &msc_reader, rw::ReadInOutData *out, bool ignore_version_error);
 
 private:
     friend class MasterScore;
-    muse::Ret readMasterScore(MasterScore *score, XmlReader &, bool ignoreVersionError, rw::ReadInOutData *out = nullptr,
-                              compat::ReadStyleHook *styleHook = nullptr);
+    muse::Ret read_master_score(MasterScore *score, XmlReader &, bool ignore_version_error, rw::ReadInOutData *out = nullptr,
+                                compat::ReadStyleHook *style_hook = nullptr);
 };
 } // namespace mu::engraving

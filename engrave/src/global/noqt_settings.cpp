@@ -12,18 +12,18 @@ Settings *Settings::instance() {
 Settings::Settings() = default;
 Settings::~Settings() = default;
 
-Settings::Key::Key(std::string moduleName, std::string key) : moduleName(std::move(moduleName)), key(std::move(key)) {}
+Settings::Key::Key(std::string module_name, std::string key) : module_name(std::move(module_name)), key(std::move(key)) {}
 
-bool Settings::Key::isNull() const { return key.empty(); }
+bool Settings::Key::is_null() const { return key.empty(); }
 
 bool Settings::Key::operator==(const Key &k) const { return key == k.key; }
 
 bool Settings::Key::operator<(const Key &k) const { return key < k.key; }
 
-const Settings::Items &Settings::items() const { return isTransactionStarted_ ? localSettings_ : items_; }
+const Settings::Items &Settings::items() const { return is_transaction_started_ ? local_settings_ : items_; }
 
 void Settings::load() {
-    auto loaded = readItems();
+    auto loaded = read_items();
     for (const auto &[k, v] : loaded) {
         items_[k] = v;
     }
@@ -31,96 +31,98 @@ void Settings::load() {
 
 void Settings::reload() { load(); }
 
-void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool notifyOtherInstances) {
-    (void) keepDefaultSettings;
-    (void) notifyOtherInstances;
-    (void) notifyAboutChanges;
-    localSettings_.clear();
-    isTransactionStarted_ = false;
+void Settings::reset(bool keep_default_settings, bool notify_about_changes, bool notify_other_instances) {
+    (void) keep_default_settings;
+    (void) notify_other_instances;
+    (void) notify_about_changes;
+    local_settings_.clear();
+    is_transaction_started_ = false;
     for (auto &[k, item] : items_) {
-        item.value = item.defaultValue;
+        item.value = item.default_value;
     }
 }
 
-const Val &Settings::value(const Key &key) const { return findItem(key).value; }
+const Val &Settings::value(const Key &key) const { return find_item(key).value; }
 
-const Val &Settings::defaultValue(const Key &key) const { return findItem(key).defaultValue; }
+const Val &Settings::default_value(const Key &key) const { return find_item(key).default_value; }
 
-void Settings::setSharedValue(const Key &key, const Val &value) { setLocalValue(key, value); }
+void Settings::set_shared_value(const Key &key, const Val &value) { set_local_value(key, value); }
 
-void Settings::setLocalValue(const Key &key, const Val &value) {
-    if (key.isNull()) {
+void Settings::set_local_value(const Key &key, const Val &value) {
+    if (key.is_null()) {
         return;
     }
-    Item &item = findItem(key);
-    if (item.isNull()) {
-        insertNewItem(key, value);
+    Item &item = find_item(key);
+    if (item.is_null()) {
+        insert_new_item(key, value);
     } else {
         if (item.value == value) {
             return;
         }
         item.value = value;
     }
-    if (!isTransactionStarted_) {
-        writeValue(key, value);
+    if (!is_transaction_started_) {
+        write_value(key, value);
     }
 }
 
-void Settings::setDefaultValue(const Key &key, const Val &value) {
-    Item &item = findItem(key);
-    if (item.isNull()) {
-        (isTransactionStarted_ ? localSettings_ : items_)[key] = Item{key, value, value, "", false, Val(), Val()};
+void Settings::set_default_value(const Key &key, const Val &value) {
+    Item &item = find_item(key);
+    if (item.is_null()) {
+        (is_transaction_started_ ? local_settings_ : items_)[key] = Item{key, value, value, "", false, Val(), Val()};
     } else {
-        item.defaultValue = value;
-        item.value.setType(value.type());
+        item.default_value = value;
+        item.value.set_type(value.type());
     }
 }
 
-void Settings::setDescription(const Key &key, const std::string &value) {
-    Item &item = findItem(key);
-    if (!item.isNull()) {
+void Settings::set_description(const Key &key, const std::string &value) {
+    Item &item = find_item(key);
+    if (!item.is_null()) {
         item.description = value;
     }
 }
 
-void Settings::setCanBeManuallyEdited(const Settings::Key &key, bool canBeManuallyEdited, const Val &minValue, const Val &maxValue) {
-    Item &item = findItem(key);
-    if (item.isNull()) {
-        (isTransactionStarted_ ? localSettings_ : items_)[key] = Item{key, Val(), Val(), "", canBeManuallyEdited, minValue, maxValue};
+void Settings::set_can_be_manually_edited(const Settings::Key &key, bool can_be_manually_edited, const Val &min_value,
+                                          const Val &max_value) {
+    Item &item = find_item(key);
+    if (item.is_null()) {
+        (is_transaction_started_ ? local_settings_ : items_)[key] =
+            Item{key, Val(), Val(), "", can_be_manually_edited, min_value, max_value};
     } else {
-        item.canBeManuallyEdited = canBeManuallyEdited;
-        item.minValue = minValue;
-        item.maxValue = maxValue;
+        item.can_be_manually_edited = can_be_manually_edited;
+        item.min_value = min_value;
+        item.max_value = max_value;
     }
 }
 
-void Settings::beginTransaction(bool notifyToOtherInstances) {
-    (void) notifyToOtherInstances;
-    if (isTransactionStarted_) {
+void Settings::begin_transaction(bool notify_to_other_instances) {
+    (void) notify_to_other_instances;
+    if (is_transaction_started_) {
         throw std::logic_error("Transaction is already started");
     }
-    localSettings_ = items_;
-    isTransactionStarted_ = true;
+    local_settings_ = items_;
+    is_transaction_started_ = true;
 }
 
-void Settings::commitTransaction(bool notifyToOtherInstances) {
-    (void) notifyToOtherInstances;
-    if (!isTransactionStarted_) return;
-    items_ = std::move(localSettings_);
-    isTransactionStarted_ = false;
-    localSettings_.clear();
+void Settings::commit_transaction(bool notify_to_other_instances) {
+    (void) notify_to_other_instances;
+    if (!is_transaction_started_) return;
+    items_ = std::move(local_settings_);
+    is_transaction_started_ = false;
+    local_settings_.clear();
 }
 
-void Settings::rollbackTransaction(bool notifyToOtherInstances) {
-    (void) notifyToOtherInstances;
-    isTransactionStarted_ = false;
-    localSettings_.clear();
+void Settings::rollback_transaction(bool notify_to_other_instances) {
+    (void) notify_to_other_instances;
+    is_transaction_started_ = false;
+    local_settings_.clear();
 }
 
-io::path_t Settings::filePath() const { return io::path_t(); }
+io::PathT Settings::file_path() const { return io::PathT(); }
 
-Settings::Item &Settings::findItem(const Key &key) const {
-    Items &items = isTransactionStarted_ ? localSettings_ : items_;
+Settings::Item &Settings::find_item(const Key &key) const {
+    Items &items = is_transaction_started_ ? local_settings_ : items_;
     auto it = items.find(key);
     if (it == items.end()) {
         static Item null;
@@ -129,18 +131,18 @@ Settings::Item &Settings::findItem(const Key &key) const {
     return it->second;
 }
 
-void Settings::insertNewItem(const Settings::Key &key, const Val &value) {
+void Settings::insert_new_item(const Settings::Key &key, const Val &value) {
     Item item = Item{key, value, value, "", false, Val(), Val()};
-    if (isTransactionStarted_) {
-        localSettings_[key] = item;
+    if (is_transaction_started_) {
+        local_settings_[key] = item;
     } else {
         items_[key] = item;
     }
 }
 
-Settings::Items Settings::readItems() const { return items_; }
+Settings::Items Settings::read_items() const { return items_; }
 
-void Settings::writeValue(const Key &key, const Val &value) {
+void Settings::write_value(const Key &key, const Val &value) {
     (void) key;
     (void) value;
 }

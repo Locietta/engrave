@@ -42,31 +42,31 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiChordName {
-int readFirstHalf(uchar byte) { return (byte >> 4) & 0xf; }
+int read_first_half(uchar byte) { return (byte >> 4) & 0xf; }
 
-int readSecondHalf(uchar byte) { return byte & 0xf; }
+int read_second_half(uchar byte) { return byte & 0xf; }
 
-muse::String readChordRoot(uchar byte) {
+muse::String read_chord_root(uchar byte) {
     static const std::vector<std::string> inversions = {"bbb", "bb", "b", "", "#", "##", "###"};
     static const std::vector<std::string> notes = {"", "C", "D", "E", "F", "G", "A", "B"};
 
-    muse::String chordRoot;
+    muse::String chord_root;
 
-    const size_t noteIndex = readSecondHalf(byte);
-    if (noteIndex < notes.size()) {
-        chordRoot += muse::String::fromUtf8(notes[noteIndex]);
+    const size_t note_index = read_second_half(byte);
+    if (note_index < notes.size()) {
+        chord_root += muse::String::from_utf8(notes[note_index]);
     }
 
-    const size_t inversionIndex = readFirstHalf(byte);
-    if (inversionIndex < inversions.size()) {
-        chordRoot += muse::String::fromUtf8(inversions[inversionIndex]);
+    const size_t inversion_index = read_first_half(byte);
+    if (inversion_index < inversions.size()) {
+        chord_root += muse::String::from_utf8(inversions[inversion_index]);
     }
 
-    return chordRoot;
+    return chord_root;
 }
 
-muse::String readChordType(uchar chordTypeIndex) {
-    static const std::vector<std::string> chordTypes = {
+muse::String read_chord_type(uchar chord_type_index) {
+    static const std::vector<std::string> chord_types = {
         "",  // Maj
         "6", // Maj6
         "Maj7",
@@ -102,14 +102,14 @@ muse::String readChordType(uchar chordTypeIndex) {
         "N.C."  // cc
     };
 
-    if (chordTypeIndex < chordTypes.size()) {
-        return muse::String::fromUtf8(chordTypes[chordTypeIndex]);
+    if (chord_type_index < chord_types.size()) {
+        return muse::String::from_utf8(chord_types[chord_type_index]);
     }
     return muse::String();
 }
 
-muse::String readChordName(const MidiEvent &e) {
-    if (e.type() != ME_META || e.metaType() != META_SPECIFIC) {
+muse::String read_chord_name(const MidiEvent &e) {
+    if (e.type() != ME_META || e.meta_type() != META_SPECIFIC) {
         return muse::String();
     }
     if (e.len() < 4) {
@@ -121,63 +121,63 @@ muse::String readChordName(const MidiEvent &e) {
         return muse::String();
     }
 
-    muse::String chordName;
+    muse::String chord_name;
 
     if (e.len() >= 4) {
-        chordName += readChordRoot(data[3]);
+        chord_name += read_chord_root(data[3]);
     }
     if (e.len() >= 5) {
-        chordName += readChordType(data[4]);
+        chord_name += read_chord_type(data[4]);
     }
 
     if (e.len() >= 6) {
-        const muse::String chordRoot = readChordRoot(data[5]);
-        if (!chordRoot.isEmpty()) {
-            muse::String chordType;
+        const muse::String chord_root = read_chord_root(data[5]);
+        if (!chord_root.is_empty()) {
+            muse::String chord_type;
             if (e.len() >= 7) {
-                chordType = readChordType(data[6]);
+                chord_type = read_chord_type(data[6]);
             }
-            if (chordRoot + chordType == chordName) {
-                chordName += u"/" + chordRoot;
+            if (chord_root + chord_type == chord_name) {
+                chord_name += u"/" + chord_root;
             } else {
-                chordName += u"/" + chordRoot + chordType;
+                chord_name += u"/" + chord_root + chord_type;
             }
         }
     }
 
-    return chordName;
+    return chord_name;
 }
 
-muse::String findChordName(const std::vector<MidiNote> &notes, const std::multimap<ReducedFraction, muse::String> &chordNames) {
+muse::String find_chord_name(const std::vector<MidiNote> &notes, const std::multimap<ReducedFraction, muse::String> &chord_names) {
     for (const MidiNote &note : notes) {
-        const auto range = chordNames.equal_range(note.origOnTime);
+        const auto range = chord_names.equal_range(note.orig_on_time);
         if (range.second == range.first) {
             continue;
         }
         // found chord names (usually only one)
-        muse::String chordName;
+        muse::String chord_name;
         for (auto it = range.first; it != range.second; ++it) {
             if (it != range.first) {
-                chordName += u"\n" + it->second;
+                chord_name += u"\n" + it->second;
             } else {
-                chordName += it->second;
+                chord_name += it->second;
             }
         }
-        return chordName;
+        return chord_name;
     }
     return muse::String();
 }
 
-void findChordNames(const std::multimap<int, MTrack> &tracks) {
-    auto &data = *midiImportOperations.data();
+void find_chord_names(const std::multimap<int, MTrack> &tracks) {
+    auto &data = *midi_import_operations.data();
 
     for (const auto &track : tracks) {
         for (const auto &event : track.second.mtrack->events()) {
             const MidiEvent &e = event.second;
-            const muse::String chordName = readChordName(e);
-            if (!chordName.isEmpty()) {
-                const auto time = ReducedFraction::fromTicks(event.first);
-                data.chordNames.insert({time, chordName});
+            const muse::String chord_name = read_chord_name(e);
+            if (!chord_name.is_empty()) {
+                const auto time = ReducedFraction::from_ticks(event.first);
+                data.chord_names.insert({time, chord_name});
             }
         }
     }
@@ -185,42 +185,42 @@ void findChordNames(const std::multimap<int, MTrack> &tracks) {
 
 // all notes should be already placed to the score
 
-void setChordNames(std::vector<MTrack> &tracks) {
-    const auto &data = *midiImportOperations.data();
-    if (data.chordNames.empty() || !data.trackOpers.showChordNames.value()) {
+void set_chord_names(std::vector<MTrack> &tracks) {
+    const auto &data = *midi_import_operations.data();
+    if (data.chord_names.empty() || !data.track_opers.show_chord_names.value()) {
         return;
     }
 
     // chords here can have on time very different from the original one
     // before quantization, so we look for original on times
     // that are stored in notes
-    std::set<ReducedFraction> usedTimes; // don't use one tick for chord name twice
+    std::set<ReducedFraction> used_times; // don't use one tick for chord name twice
 
     for (MTrack &track : tracks) {
         for (const auto &chord : track.chords) {
-            if (usedTimes.find(chord.first) != usedTimes.end()) {
+            if (used_times.find(chord.first) != used_times.end()) {
                 continue;
             }
 
             const MidiChord &c = chord.second;
-            const muse::String chordName = findChordName(c.notes, data.chordNames);
+            const muse::String chord_name = find_chord_name(c.notes, data.chord_names);
 
-            if (chordName.isEmpty()) {
+            if (chord_name.is_empty()) {
                 continue;
             }
 
             Staff *staff = track.staff;
             Score *score = staff->score();
-            const ReducedFraction &onTime = chord.first;
-            usedTimes.insert(onTime);
+            const ReducedFraction &on_time = chord.first;
+            used_times.insert(on_time);
 
-            Measure *measure = score->tick2measure(onTime.fraction());
-            Segment *seg = measure->getSegment(SegmentType::ChordRest, onTime.fraction());
-            const track_idx_t t = staff->idx() * VOICES;
+            Measure *measure = score->tick2measure(on_time.fraction());
+            Segment *seg = measure->get_segment(SegmentType::CHORD_REST, on_time.fraction());
+            const track_idx_t t = staff->idx() * ::mu::engraving::voices;
 
-            Harmony *h = mu::engraving::Factory::createHarmony(seg);
-            h->setHarmony(chordName);
-            h->setTrack(t);
+            Harmony *h = mu::engraving::Factory::create_harmony(seg);
+            h->set_harmony(chord_name);
+            h->set_track(t);
             seg->add(h);
         }
     }

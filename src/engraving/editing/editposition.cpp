@@ -28,32 +28,32 @@
 
 using namespace mu::engraving;
 
-void EditPosition::freezeItemsPositions(Transaction &tx, const std::vector<EngravingItem *> &items) {
+void EditPosition::freeze_items_positions(Transaction &tx, const std::vector<EngravingItem *> &items) {
     for (EngravingItem *item : items) {
-        freezeItemPosition(tx, item);
+        freeze_item_position(tx, item);
     }
 }
 
-void EditPosition::freezeItemPosition(Transaction &, EngravingItem *item) {
-    if (item->generated() || !autoplaceAppliesToType(item->type()) || !item->autoplace()) {
+void EditPosition::freeze_item_position(Transaction &, EngravingItem *item) {
+    if (item->generated() || !autoplace_applies_to_type(item->type()) || !item->autoplace()) {
         return;
     }
 
-    PointF oldPos = item->pos();
+    PointF old_pos = item->pos();
 
-    PropertyFlags autoplacePf = item->propertyFlags(Pid::AUTOPLACE);
-    if (autoplacePf == PropertyFlags::STYLED) {
-        autoplacePf = PropertyFlags::UNSTYLED;
+    PropertyFlags autoplace_pf = item->property_flags(Pid::AUTOPLACE);
+    if (autoplace_pf == PropertyFlags::STYLED) {
+        autoplace_pf = PropertyFlags::UNSTYLED;
     }
 
-    item->undoChangeProperty(Pid::AUTOPLACE, false, autoplacePf);
+    item->undo_change_property(Pid::AUTOPLACE, false, autoplace_pf);
 
-    item->renderer()->layoutItem(item);
+    item->renderer()->layout_item(item);
 
-    PropertyFlags offsetPf = item->propertyFlags(Pid::OFFSET);
-    if (offsetPf == PropertyFlags::STYLED) {
-        offsetPf = PropertyFlags::UNSTYLED;
+    PropertyFlags offset_pf = item->property_flags(Pid::OFFSET);
+    if (offset_pf == PropertyFlags::STYLED) {
+        offset_pf = PropertyFlags::UNSTYLED;
     }
 
-    item->undoChangeProperty(Pid::OFFSET, oldPos - item->ldata()->pos(), offsetPf);
+    item->undo_change_property(Pid::OFFSET, old_pos - item->ldata()->pos(), offset_pf);
 }

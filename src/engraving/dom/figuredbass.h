@@ -67,7 +67,7 @@ FiguredBass might require formatting (discouraged, but might be necessary for ve
 and it is edited (via the normalized text); so it is derived from Text.
 ---------------------------------------------------------*/
 
-constexpr int FBIDigitNone = -1;
+constexpr int fbi_digit_none = -1;
 
 //---------------------------------------------------------
 //   @@ FiguredBassItem
@@ -111,10 +111,10 @@ public:
     // standard re-implemented virtual functions
     FiguredBassItem *clone() const override { return new FiguredBassItem(*this); }
 
-    bool startsWithParenthesis() const;
+    bool starts_with_parenthesis() const;
 
     // specific API
-    const FiguredBass *figuredBass() const { return (FiguredBass *) (ownershipParent()); }
+    const FiguredBass *figured_bass() const { return (FiguredBass *) (ownership_parent()); }
 
     bool parse(String &text);
 
@@ -123,27 +123,27 @@ public:
 
     Modifier prefix() const { return prefix_; }
 
-    void setPrefix(const Modifier &v) { prefix_ = v; }
+    void set_prefix(const Modifier &v) { prefix_ = v; }
 
-    void undoSetPrefix(Modifier pref);
+    void undo_set_prefix(Modifier pref);
 
     int digit() const { return digit_; }
 
-    void setDigit(int val) { digit_ = val; }
+    void set_digit(int val) { digit_ = val; }
 
-    void undoSetDigit(int digit);
+    void undo_set_digit(int digit);
 
     Modifier suffix() const { return suffix_; }
 
-    void setSuffix(const Modifier &v) { suffix_ = v; }
+    void set_suffix(const Modifier &v) { suffix_ = v; }
 
-    void undoSetSuffix(Modifier suff);
+    void undo_set_suffix(Modifier suff);
 
-    ContLine contLine() const { return contLine_; }
+    ContLine cont_line() const { return cont_line_; }
 
-    void setContLine(const ContLine &v) { contLine_ = v; }
+    void set_cont_line(const ContLine &v) { cont_line_ = v; }
 
-    void undoSetContLine(ContLine val);
+    void undo_set_cont_line(ContLine val);
 
     Parenthesis parenth1() const { return parenth_[0]; }
 
@@ -155,30 +155,30 @@ public:
 
     Parenthesis parenth5() const { return parenth_[4]; }
 
-    void setParenth1(Parenthesis v) { parenth_[0] = v; }
+    void set_parenth1(Parenthesis v) { parenth_[0] = v; }
 
-    void setParenth2(Parenthesis v) { parenth_[1] = v; }
+    void set_parenth2(Parenthesis v) { parenth_[1] = v; }
 
-    void setParenth3(Parenthesis v) { parenth_[2] = v; }
+    void set_parenth3(Parenthesis v) { parenth_[2] = v; }
 
-    void setParenth4(Parenthesis v) { parenth_[3] = v; }
+    void set_parenth4(Parenthesis v) { parenth_[3] = v; }
 
-    void setParenth5(Parenthesis v) { parenth_[4] = v; }
+    void set_parenth5(Parenthesis v) { parenth_[4] = v; }
 
-    void undoSetParenth1(Parenthesis par);
-    void undoSetParenth2(Parenthesis par);
-    void undoSetParenth3(Parenthesis par);
-    void undoSetParenth4(Parenthesis par);
-    void undoSetParenth5(Parenthesis par);
-    String normalizedText() const;
+    void undo_set_parenth1(Parenthesis par);
+    void undo_set_parenth2(Parenthesis par);
+    void undo_set_parenth3(Parenthesis par);
+    void undo_set_parenth4(Parenthesis par);
+    void undo_set_parenth5(Parenthesis par);
+    String normalized_text() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
-        String displayText;     // the constructed display text (read-only)
-        double textWidth = 0.0; // the text width (in raster units)
+        String display_text;     // the constructed display text (read-only)
+        double text_width = 0.0; // the text width (in raster units)
     };
     DECLARE_LAYOUTDATA_METHODS(FiguredBassItem)
 
@@ -190,21 +190,21 @@ private:
     FiguredBassItem(const FiguredBassItem &);
 
     // part parsing
-    int parseDigit(String &str);
-    int parseParenthesis(String &str, int parenthIdx);
-    int parsePrefixSuffix(String &str, bool bPrefix);
+    int parse_digit(String &str);
+    int parse_parenthesis(String &str, int parenth_idx);
+    int parse_prefix_suffix(String &str, bool b_prefix);
 
-    void regenerateDisplayText();
+    void regenerate_display_text();
 
-    static const Char NORM_PARENTH_TO_CHAR[int(Parenthesis::NUMOF)];
+    static const Char norm_parenth_to_char[int(Parenthesis::NUMOF)];
 
-    int ord_ = 0;                        // the line ordinal of this element in the FB stack
-                                         // the parts making a FiguredBassItem up
-    Modifier prefix_ = Modifier::NONE;   // the accidental coming before the body
-    int digit_ = 0;                      // the main digit (if present)
-    Modifier suffix_ = Modifier::NONE;   // the accidental coming after the body
-    ContLine contLine_ = ContLine::NONE; // whether the item has continuation line or not
-    Parenthesis parenth_[5];             // each of the parenthesis: before, between and after parts
+    int ord_ = 0;                         // the line ordinal of this element in the FB stack
+                                          // the parts making a FiguredBassItem up
+    Modifier prefix_ = Modifier::NONE;    // the accidental coming before the body
+    int digit_ = 0;                       // the main digit (if present)
+    Modifier suffix_ = Modifier::NONE;    // the accidental coming after the body
+    ContLine cont_line_ = ContLine::NONE; // whether the item has continuation line or not
+    Parenthesis parenth_[5];              // each of the parenthesis: before, between and after parts
 };
 
 //---------------------------------------------------------
@@ -213,12 +213,12 @@ private:
 
 struct FiguredBassFont {
     String family;
-    String displayName;
-    double defPitch = 0.0;
-    double defLineHeight = 0.0;
-    Char displayAccidental[int(FiguredBassItem::Modifier::NUMOF)];
-    Char displayParenthesis[int(FiguredBassItem::Parenthesis::NUMOF)];
-    Char displayDigit[int(FiguredBassItem::Style::NUMOF)][10][int(FiguredBassItem::Combination::NUMOF)];
+    String display_name;
+    double def_pitch = 0.0;
+    double def_line_height = 0.0;
+    Char display_accidental[int(FiguredBassItem::Modifier::NUMOF)];
+    Char display_parenthesis[int(FiguredBassItem::Parenthesis::NUMOF)];
+    Char display_digit[int(FiguredBassItem::Style::NUMOF)][10][int(FiguredBassItem::Combination::NUMOF)];
 
     bool read(XmlReader &);
 };
@@ -237,71 +237,71 @@ class FiguredBass final : public TextBase {
 
 public:
 
-    static constexpr double FB_CONTLINE_HEIGHT = 0.875;            // the % of font EM to raise the cont. line at
+    static constexpr double fb_contline_height = 0.875;            // the % of font EM to raise the cont. line at
                                                                    // (0 = top of font; 1 = bottom of font)
-    static constexpr Spatium FB_CONTLINE_LEFT_PADDING = 0.1875_sp; // (3/16sp) the blank space at the left of a cont. line (in sp)
-    static constexpr Spatium FB_CONTLINE_OVERLAP = 0.125_sp;       // (1/8sp)  the overlap of an extended cont. line (in sp)
-    static constexpr Spatium FB_CONTLINE_THICKNESS = 0.09375_sp;   // (3/32sp) the thickness of a cont. line (in sp)
+    static constexpr Spatium fb_contline_left_padding = 0.1875_sp; // (3/16sp) the blank space at the left of a cont. line (in sp)
+    static constexpr Spatium fb_contline_overlap = 0.125_sp;       // (1/8sp)  the overlap of an extended cont. line (in sp)
+    static constexpr Spatium fb_contline_thickness = 0.09375_sp;   // (3/32sp) the thickness of a cont. line (in sp)
 
     ~FiguredBass();
 
     // a convenience static function to create/retrieve a new FiguredBass into/from its intended parent
-    static FiguredBass *addFiguredBassToSegment(Segment *seg, track_idx_t track, const Fraction &extTicks, bool *pNew);
+    static FiguredBass *add_figured_bass_to_segment(Segment *seg, track_idx_t track, const Fraction &ext_ticks, bool *p_new);
 
     // static functions for font config files
-    static bool readConfigFile(const String &fileName);
-    static std::vector<String> fontNames();
-    static bool fontData(int nIdx, String *pFamily, String *pDisplayName, double *pSize, double *pLineHeight);
+    static bool read_config_file(const String &file_name);
+    static std::vector<String> font_names();
+    static bool font_data(int n_idx, String *p_family, String *p_display_name, double *p_size, double *p_line_height);
 
     // standard re-implemented virtual functions
     FiguredBass *clone() const override { return new FiguredBass(*this); }
 
-    FiguredBassItem *createItem(int line) { return new FiguredBassItem(this, line); }
+    FiguredBassItem *create_item(int line) { return new FiguredBassItem(this, line); }
 
-    void setSelected(bool f) override;
-    void setVisible(bool f) override;
-    void regenerateText();
+    void set_selected(bool f) override;
+    void set_visible(bool f) override;
+    void regenerate_text();
 
-    bool onNote() const { return onNote_; }
+    bool on_note() const { return on_note_; }
 
-    void setOnNote(bool val) { onNote_ = val; }
+    void set_on_note(bool val) { on_note_ = val; }
 
-    Segment *segment() const { return (Segment *) (ownershipParent()); }
+    Segment *segment() const { return (Segment *) (ownership_parent()); }
 
     const Fraction &ticks() const { return ticks_; }
 
-    void setTicks(const Fraction &v) { ticks_ = v; }
+    void set_ticks(const Fraction &v) { ticks_ = v; }
 
-    double additionalContLineX(double pagePosY) const; // returns the X coord (in page coord) of cont. line at pagePosY, if any
-    FiguredBass *nextFiguredBass() const;              // returns next *adjacent* f.b. item, if any
+    double additional_cont_line_x(double page_pos_y) const; // returns the X coord (in page coord) of cont. line at pagePosY, if any
+    FiguredBass *next_figured_bass() const;                 // returns next *adjacent* f.b. item, if any
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 
-    size_t itemsCount() const { return items_.size(); }
+    size_t items_count() const { return items_.size(); }
 
-    void appendItem(FiguredBassItem *item) { items_.push_back(item); }
+    void append_item(FiguredBassItem *item) { items_.push_back(item); }
 
     const std::vector<FiguredBassItem *> &items() const { return items_; }
 
-    void clearItems();
-    void addItemToLinked(FiguredBassItem *item);
+    void clear_items();
+    void add_item_to_linked(FiguredBassItem *item);
 
     // the array of configured fonts
-    static const std::vector<FiguredBassFont> &FBFonts();
+    static const std::vector<FiguredBassFont> &fb_fonts();
 
-    bool parenthesesMode() const; // read / write MusicXML support
+    bool parentheses_mode() const; // read / write MusicXML support
 
     struct LayoutData : public TextBase::LayoutData {
-        std::vector<double> lineLengths; // lengths of duration indicator lines (in raster units)
-        double printedLineLength = 0.0;  // the length of lines actually printed (i.e. continuation lines)
+        std::vector<double> line_lengths; // lengths of duration indicator lines (in raster units)
+        double printed_line_length = 0.0; // the length of lines actually printed (i.e. continuation lines)
 
-        double lineLength(size_t idx) const {
-            if (idx < lineLengths.size()) {
-                return lineLengths.at(idx);
+        double line_length(size_t idx) const {
+            if (idx < line_lengths.size()) {
+                return line_lengths.at(idx);
             }
             return 0.0;
         }
@@ -314,13 +314,13 @@ private:
     FiguredBass(DummyParentOr<Segment> parent);
     FiguredBass(const FiguredBass &);
 
-    Sid getPropertyStyle(Pid) const override;
+    Sid get_property_style(Pid) const override;
 
     std::vector<FiguredBassItem *> items_; // the individual lines of the F.B.
 
-    bool onNote_ = true; // true if this element is on a staff note | false if it is between notes
-    Fraction ticks_;     // the duration (used for cont. lines and for multiple F.B.
-                         // under the same note)
+    bool on_note_ = true; // true if this element is on a staff note | false if it is between notes
+    Fraction ticks_;      // the duration (used for cont. lines and for multiple F.B.
+                          // under the same note)
 };
 } // namespace mu::engraving
 

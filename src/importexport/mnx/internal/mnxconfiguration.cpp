@@ -31,40 +31,42 @@ using namespace muse;
 
 static const std::string module_name("iex_mnx");
 
-static const Settings::Key MNX_EXPORT_INDENT_KEY(module_name, "export/mnx/indentSpaces");
-static const Settings::Key MNX_EXPORT_BEAMS_KEY(module_name, "export/mnx/exportBeams");
-static const Settings::Key MNX_EXPORT_REST_POSITIONS_KEY(module_name, "export/mnx/exportRestPositions");
-static const Settings::Key MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY(module_name, "import/mnx/requireExactSchemaValidation");
+static const Settings::Key mnx_export_indent_key(module_name, "export/mnx/indentSpaces");
+static const Settings::Key mnx_export_beams_key(module_name, "export/mnx/exportBeams");
+static const Settings::Key mnx_export_rest_positions_key(module_name, "export/mnx/exportRestPositions");
+static const Settings::Key mnx_import_exact_schema_validation_key(module_name, "import/mnx/requireExactSchemaValidation");
 
 void MnxConfiguration::init() {
-    settings()->setDefaultValue(MNX_EXPORT_INDENT_KEY, Val(4));
-    settings()->setDefaultValue(MNX_EXPORT_BEAMS_KEY, Val(true));
-    settings()->setDefaultValue(MNX_EXPORT_REST_POSITIONS_KEY, Val(false));
-    settings()->setDefaultValue(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY, Val(true));
+    settings()->set_default_value(mnx_export_indent_key, Val(4));
+    settings()->set_default_value(mnx_export_beams_key, Val(true));
+    settings()->set_default_value(mnx_export_rest_positions_key, Val(false));
+    settings()->set_default_value(mnx_import_exact_schema_validation_key, Val(true));
 }
 
-int MnxConfiguration::mnxIndentSpaces() const {
-    const int value = settings()->value(MNX_EXPORT_INDENT_KEY).toInt();
+int MnxConfiguration::mnx_indent_spaces() const {
+    const int value = settings()->value(mnx_export_indent_key).to_int();
     return std::clamp(value, -1, 8);
 }
 
-void MnxConfiguration::setMnxIndentSpaces(int value) {
+void MnxConfiguration::set_mnx_indent_spaces(int value) {
     const int clamped = std::clamp(value, -1, 8);
-    settings()->setSharedValue(MNX_EXPORT_INDENT_KEY, Val(clamped));
+    settings()->set_shared_value(mnx_export_indent_key, Val(clamped));
 }
 
-bool MnxConfiguration::mnxExportBeams() const { return settings()->value(MNX_EXPORT_BEAMS_KEY).toBool(); }
+bool MnxConfiguration::mnx_export_beams() const { return settings()->value(mnx_export_beams_key).to_bool(); }
 
-void MnxConfiguration::setMnxExportBeams(bool value) { settings()->setSharedValue(MNX_EXPORT_BEAMS_KEY, Val(value)); }
+void MnxConfiguration::set_mnx_export_beams(bool value) { settings()->set_shared_value(mnx_export_beams_key, Val(value)); }
 
-bool MnxConfiguration::mnxExportRestPositions() const { return settings()->value(MNX_EXPORT_REST_POSITIONS_KEY).toBool(); }
+bool MnxConfiguration::mnx_export_rest_positions() const { return settings()->value(mnx_export_rest_positions_key).to_bool(); }
 
-void MnxConfiguration::setMnxExportRestPositions(bool value) { settings()->setSharedValue(MNX_EXPORT_REST_POSITIONS_KEY, Val(value)); }
-
-bool MnxConfiguration::mnxRequireExactSchemaValidation() const {
-    return settings()->value(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY).toBool();
+void MnxConfiguration::set_mnx_export_rest_positions(bool value) {
+    settings()->set_shared_value(mnx_export_rest_positions_key, Val(value));
 }
 
-void MnxConfiguration::setMnxRequireExactSchemaValidation(bool value) {
-    settings()->setSharedValue(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY, Val(value));
+bool MnxConfiguration::mnx_require_exact_schema_validation() const {
+    return settings()->value(mnx_import_exact_schema_validation_key).to_bool();
+}
+
+void MnxConfiguration::set_mnx_require_exact_schema_validation(bool value) {
+    settings()->set_shared_value(mnx_import_exact_schema_validation_key, Val(value));
 }

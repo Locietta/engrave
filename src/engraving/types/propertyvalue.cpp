@@ -27,39 +27,39 @@
 
 using namespace mu::engraving;
 
-bool PropertyValue::isValid() const { return type_ != P_TYPE::UNDEFINED; }
+bool PropertyValue::is_valid() const { return type_ != PType::UNDEFINED; }
 
-P_TYPE PropertyValue::type() const { return type_; }
+PType PropertyValue::type() const { return type_; }
 
 bool PropertyValue::operator==(const PropertyValue &v) const {
-    if (v.type_ == P_TYPE::UNDEFINED || type_ == P_TYPE::UNDEFINED) {
+    if (v.type_ == PType::UNDEFINED || type_ == PType::UNDEFINED) {
         return v.type_ == type_;
     }
 
     //! HACK Temporary hack for bool comparisons (maybe one type is bool and another type is int)
-    if (v.type_ == P_TYPE::BOOL || type_ == P_TYPE::BOOL) {
+    if (v.type_ == PType::BOOL || type_ == PType::BOOL) {
         return v.value<bool>() == value<bool>();
     }
 
     //! HACK Temporary hack for int comparisons (maybe one type is int and another type is enum)
-    if (v.type_ == P_TYPE::INT || type_ == P_TYPE::INT) {
+    if (v.type_ == PType::INT || type_ == PType::INT) {
         return v.value<int>() == value<int>();
     }
 
     //! HACK Temporary hack for Spatium comparisons (maybe one type is Spatium and another type is real)
-    if (v.type_ == P_TYPE::SPATIUM || type_ == P_TYPE::SPATIUM) {
-        return muse::RealIsEqual(v.value<double>(), value<double>());
+    if (v.type_ == PType::SPATIUM || type_ == PType::SPATIUM) {
+        return muse::real_is_equal(v.value<double>(), value<double>());
     }
 
     //! HACK Temporary hack for Fraction comparisons
-    if (v.type_ == P_TYPE::FRACTION) {
-        assert(type_ == P_TYPE::FRACTION);
+    if (v.type_ == PType::FRACTION) {
+        assert(type_ == PType::FRACTION);
         return v.value<Fraction>().identical(value<Fraction>());
     }
 
-    if (v.type_ == P_TYPE::REAL) {
-        assert(type_ == P_TYPE::REAL);
-        return muse::RealIsEqual(v.value<double>(), value<double>());
+    if (v.type_ == PType::REAL) {
+        assert(type_ == PType::REAL);
+        return muse::real_is_equal(v.value<double>(), value<double>());
     }
 
     assert(data_);

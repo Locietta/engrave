@@ -46,24 +46,24 @@ public:
 
     StaffState *clone() const override { return new StaffState(*this); }
 
-    void setStaffStateType(const String &);
+    void set_staff_state_type(const String &);
 
-    void setStaffStateType(StaffStateType st) { staffStateType_ = st; }
+    void set_staff_state_type(StaffStateType st) { staff_state_type_ = st; }
 
-    StaffStateType staffStateType() const { return staffStateType_; }
+    StaffStateType staff_state_type() const { return staff_state_type_; }
 
-    String staffStateTypeName() const;
+    String staff_state_type_name() const;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     Instrument *instrument() const { return instrument_; }
 
-    void setInstrument(const Instrument *i) { *instrument_ = *i; }
+    void set_instrument(const Instrument *i) { *instrument_ = *i; }
 
-    void setInstrument(const Instrument &&i) { *instrument_ = i; }
+    void set_instrument(const Instrument &&i) { *instrument_ = i; }
 
-    Segment *segment() { return (Segment *) ownershipParent(); }
+    Segment *segment() { return (Segment *) ownership_parent(); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         double lw = 0.0;
@@ -77,7 +77,7 @@ private:
     StaffState(DummyParentOr<EngravingItem> parent);
     StaffState(const StaffState &);
 
-    StaffStateType staffStateType_ = StaffStateType::INVISIBLE;
+    StaffStateType staff_state_type_ = StaffStateType::INVISIBLE;
 
     Instrument *instrument_ = nullptr;
 };

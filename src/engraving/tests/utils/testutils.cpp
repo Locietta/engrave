@@ -30,49 +30,49 @@
 
 using namespace mu::engraving;
 
-Score *TestUtils::createPart(MasterScore *masterScore, size_t partNumber) {
+Score *TestUtils::create_part(MasterScore *master_score, size_t part_number) {
     std::vector<Part *> parts;
-    parts.push_back(masterScore->parts().at(partNumber));
-    Score *nscore = masterScore->createScore();
+    parts.push_back(master_score->parts().at(part_number));
+    Score *nscore = master_score->create_score();
     if (!nscore) {
         ADD_FAILURE() << "nscore is null";
         return nullptr;
     }
 
-    Excerpt *ex = new Excerpt(masterScore);
-    ex->setExcerptScore(nscore);
-    ex->setParts(parts);
-    ex->setName(parts.front()->partName());
-    Excerpt::createExcerpt(ex);
+    Excerpt *ex = new Excerpt(master_score);
+    ex->set_excerpt_score(nscore);
+    ex->set_parts(parts);
+    ex->set_name(parts.front()->part_name());
+    Excerpt::create_excerpt(ex);
 
-    masterScore->excerpts().push_back(ex);
-    masterScore->setExcerptsChanged(true);
+    master_score->excerpts().push_back(ex);
+    master_score->set_excerpts_changed(true);
 
     return nscore;
 }
 
-Score *TestUtils::createEmptyPart(MasterScore *masterScore) {
-    Score *nscore = masterScore->createScore();
+Score *TestUtils::create_empty_part(MasterScore *master_score) {
+    Score *nscore = master_score->create_score();
     if (!nscore) {
         ADD_FAILURE() << "nscore is null";
         return nullptr;
     }
 
-    Excerpt *ex = new Excerpt(masterScore);
-    ex->setExcerptScore(nscore);
+    Excerpt *ex = new Excerpt(master_score);
+    ex->set_excerpt_score(nscore);
 
-    Excerpt::createExcerpt(ex);
+    Excerpt::create_excerpt(ex);
 
-    masterScore->excerpts().push_back(ex);
-    masterScore->setExcerptsChanged(true);
+    master_score->excerpts().push_back(ex);
+    master_score->set_excerpts_changed(true);
 
     return nscore;
 }
 
-void TestUtils::createParts(MasterScore *masterScore, size_t numberOfParts) {
-    EXPECT_TRUE(numberOfParts > 0);
+void TestUtils::create_parts(MasterScore *master_score, size_t number_of_parts) {
+    EXPECT_TRUE(number_of_parts > 0);
 
-    for (size_t part = 0; part < numberOfParts; part++) {
-        createPart(masterScore, part);
+    for (size_t part = 0; part < number_of_parts; part++) {
+        create_part(master_score, part);
     }
 }

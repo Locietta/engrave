@@ -45,10 +45,10 @@ using mu::engraving::Tuplet;
 std::vector<std::vector<ChordRest *>> tracks(Document &document) {
     std::map<mu::engraving::track_idx_t, std::vector<ChordRest *>> by_track;
     for (EngravingObject *object : document_objects(master_of(document))) {
-        if (!object->isChordRest() || object->score() != &master_of(document)) continue;
-        if (!takes_id(*object) || !object->eid().isValid()) continue;
-        ChordRest *rest = mu::engraving::toChordRest(object);
-        if (rest->isGrace()) continue;
+        if (!object->is_chord_rest() || object->score() != &master_of(document)) continue;
+        if (!takes_id(*object) || !object->eid().is_valid()) continue;
+        ChordRest *rest = mu::engraving::to_chord_rest(object);
+        if (rest->is_grace()) continue;
         by_track[rest->track()].push_back(rest);
     }
     std::vector<std::vector<ChordRest *>> tracks;
@@ -67,7 +67,8 @@ std::pair<ChordRest *, ChordRest *> neighbours(Document &document) {
             if (rests[i - 1]->tick() + rests[i - 1]->ticks() == rests[i]->tick()) return {rests[i - 1], rests[i]};
         }
         for (const ChordRest *rest : rests) {
-            found += std::format(" {}@{}+{}", rest->track(), rest->tick().toString().toStdString(), rest->ticks().toString().toStdString());
+            found += std::format(" {}@{}+{}", rest->track(), rest->tick().to_string().to_std_string(),
+                                 rest->ticks().to_string().to_std_string());
         }
     }
     throw std::invalid_argument("the fixture has no two neighbouring chord rests to span:" + found);
@@ -78,12 +79,12 @@ Note *tiable_note(Document &document) {
     std::string found;
     for (const std::vector<ChordRest *> &rests : tracks(document)) {
         for (ChordRest *rest : rests) {
-            if (!rest->isChord()) continue;
-            for (Note *note : mu::engraving::toChord(rest)->notes()) {
-                Note *end = mu::engraving::searchTieNote(note);
-                found += std::format(" {}@{},{} tie={} search={}", rest->track(), rest->tick().toString().toStdString(), note->pitch(),
-                                     note->tieFor() != nullptr, end != nullptr);
-                if (!note->tieFor() && !note->tieBack() && end && !end->tieBack()) return note;
+            if (!rest->is_chord()) continue;
+            for (Note *note : mu::engraving::to_chord(rest)->notes()) {
+                Note *end = mu::engraving::search_tie_note(note);
+                found += std::format(" {}@{},{} tie={} search={}", rest->track(), rest->tick().to_string().to_std_string(), note->pitch(),
+                                     note->tie_for() != nullptr, end != nullptr);
+                if (!note->tie_for() && !note->tie_back() && end && !end->tie_back()) return note;
             }
         }
     }
@@ -92,9 +93,9 @@ Note *tiable_note(Document &document) {
 
 // Whether a chord rest carries a tie, which a new tuplet would cut off.
 bool tied(const ChordRest &rest) {
-    if (!rest.isChord()) return false;
-    const auto &notes = mu::engraving::toChord(&rest)->notes();
-    return std::ranges::any_of(notes, [](const Note *note) { return note->tieFor() || note->tieBack(); });
+    if (!rest.is_chord()) return false;
+    const auto &notes = mu::engraving::to_chord(&rest)->notes();
+    return std::ranges::any_of(notes, [](const Note *note) { return note->tie_for() || note->tie_back(); });
 }
 
 // Whether a tuplet divides a chord rest, by the rule Score::addTuplet applies: the
@@ -102,8 +103,8 @@ bool tied(const ChordRest &rest) {
 bool tuplet_fits(const ChordRest &rest, int actual, int normal) {
     if (tied(rest)) return false;
     const mu::engraving::Fraction base = rest.ticks().reduced() * mu::engraving::Fraction(1, normal);
-    return mu::engraving::TDuration::isValid(base) &&
-           rest.score()->canAddTuplet(&rest, mu::engraving::Fraction(actual, normal), mu::engraving::TDuration(base));
+    return mu::engraving::TDuration::is_valid(base) &&
+           rest.score()->can_add_tuplet(&rest, mu::engraving::Fraction(actual, normal), mu::engraving::TDuration(base));
 }
 
 std::vector<ChordRest *> tuplet_rests(Document &document, std::size_t count, int actual, int normal) {
@@ -132,9 +133,9 @@ struct Span {
 };
 
 std::size_t count_spanners(Score &score, std::string_view type) {
-    const std::vector<Spanner *> spanners = score.spannerList();
+    const std::vector<Spanner *> spanners = score.spanner_list();
     return static_cast<std::size_t>(
-        std::ranges::count_if(spanners, [type](const Spanner *spanner) { return spanner->typeName() == type; }));
+        std::ranges::count_if(spanners, [type](const Spanner *spanner) { return spanner->type_name() == type; }));
 }
 
 OpCase spanner_case(std::string name, std::string fixture, std::string type, bool exact_end,
@@ -151,12 +152,12 @@ OpCase spanner_case(std::string name, std::string fixture, std::string type, boo
                 span->from = ends.first->tick();
                 span->to = ends.second->tick();
                 span->existing.clear();
-                const std::vector<Spanner *> spanners = master_of(document).spannerList();
+                const std::vector<Spanner *> spanners = master_of(document).spanner_list();
                 span->existing.assign(spanners.begin(), spanners.end());
                 return Batch{{AddSpanner{type, span->start, span->end, props}}};
             },
         .expect = [span, type, exact_end, props](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
-            const auto &score_list = master_of(document).scoreList();
+            const auto &score_list = master_of(document).score_list();
             const std::vector<Score *> scores(score_list.begin(), score_list.end());
             // The engine adds the spanner to the staff links too, so every score of the
             // document gets one.
@@ -164,8 +165,8 @@ OpCase spanner_case(std::string name, std::string fixture, std::string type, boo
                 if (count_spanners(*scores[i], type) == 0) return std::format("score {} has no {}", i, type);
             }
             Spanner *found = nullptr;
-            for (Spanner *spanner : scores.front()->spannerList()) {
-                if (spanner->typeName() != type) continue;
+            for (Spanner *spanner : scores.front()->spanner_list()) {
+                if (spanner->type_name() != type) continue;
                 if (std::ranges::find(span->existing, spanner) != span->existing.end()) continue;
                 found = spanner;
                 break;
@@ -178,7 +179,7 @@ OpCase spanner_case(std::string name, std::string fixture, std::string type, boo
             }
             for (const auto &[name, value] : props) {
                 const mu::engraving::Pid pid = api::pid_of(name);
-                if (api::to_value(mu::engraving::propertyType(pid), found->getProperty(pid)) != value) {
+                if (api::to_value(mu::engraving::property_type(pid), found->get_property(pid)) != value) {
                     return std::format("the {} did not take '{}'", type, name);
                 }
             }
@@ -204,7 +205,7 @@ OpCase tie_case(std::string name, std::string fixture) {
         .make =
             [tied](Document &document) {
                 Note *note = tiable_note(document);
-                Note *end = mu::engraving::searchTieNote(note);
+                Note *end = mu::engraving::search_tie_note(note);
                 tied->start = from_engine(note->eid());
                 tied->end = from_engine(end->eid());
                 tied->tick = note->chord()->tick();
@@ -212,19 +213,19 @@ OpCase tie_case(std::string name, std::string fixture) {
                 return Batch{{AddTie{tied->start}}};
             },
         .expect = [tied](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
-            Note *note = mu::engraving::toNote(&element(document, tied->start));
-            Note *end = mu::engraving::toNote(&element(document, tied->end));
-            if (!note->tieFor()) return std::string("the note has no tie");
-            if (note->tieFor()->endNote() != end) return std::string("the tie ends at another note");
-            if (end->tieBack() != note->tieFor()) return std::string("the end note does not point back at the tie");
+            Note *note = mu::engraving::to_note(&element(document, tied->start));
+            Note *end = mu::engraving::to_note(&element(document, tied->end));
+            if (!note->tie_for()) return std::string("the note has no tie");
+            if (note->tie_for()->end_note() != end) return std::string("the tie ends at another note");
+            if (end->tie_back() != note->tie_for()) return std::string("the end note does not point back at the tie");
             // A tie reaches the linked staves of the note it starts at.
-            const auto &score_list = master_of(document).scoreList();
+            const auto &score_list = master_of(document).score_list();
             const std::vector<Score *> scores(score_list.begin(), score_list.end());
             for (std::size_t i = 0; i < scores.size(); ++i) {
-                ChordRest *rest = scores[i]->findCR(tied->tick, tied->track);
-                if (!rest || !rest->isChord()) return std::format("score {} has no chord at the tied note", i);
-                const auto &notes = mu::engraving::toChord(rest)->notes();
-                if (std::ranges::none_of(notes, [](const Note *copy) { return copy->tieFor() != nullptr; })) {
+                ChordRest *rest = scores[i]->find_cr(tied->tick, tied->track);
+                if (!rest || !rest->is_chord()) return std::format("score {} has no chord at the tied note", i);
+                const auto &notes = mu::engraving::to_chord(rest)->notes();
+                if (std::ranges::none_of(notes, [](const Note *copy) { return copy->tie_for() != nullptr; })) {
                     return std::format("score {} did not get the tie", i);
                 }
             }
@@ -263,16 +264,16 @@ OpCase tuplet_case(std::string name, std::string fixture, std::size_t count, int
             },
         .expect = [tupleted](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
             for (const mu::engraving::Fraction &tick : tupleted->ticks) {
-                for (Score *score : master_of(document).scoreList()) {
+                for (Score *score : master_of(document).score_list()) {
                     const Tuplet *found = nullptr;
                     for (EngravingObject *object : document_objects(master_of(document))) {
-                        if (!object->isTuplet() || object->score() != score) continue;
-                        const Tuplet *tuplet = mu::engraving::toTuplet(object);
+                        if (!object->is_tuplet() || object->score() != score) continue;
+                        const Tuplet *tuplet = mu::engraving::to_tuplet(object);
                         if (tuplet->tick() != tick || tuplet->track() != tupleted->track) continue;
                         found = tuplet;
                         break;
                     }
-                    if (!found) return std::format("a score has no tuplet at tick {}", tick.toString().toStdString());
+                    if (!found) return std::format("a score has no tuplet at tick {}", tick.to_string().to_std_string());
                     if (found->ratio() != mu::engraving::Fraction(tupleted->actual, tupleted->normal)) {
                         return "the tuplet has another ratio";
                     }

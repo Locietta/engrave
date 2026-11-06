@@ -35,23 +35,23 @@ public:
     static bool init();
 
     struct Code {
-        char32_t smuflCode = 0;
-        char32_t musicSymBlockCode = 0;
+        char32_t smufl_code = 0;
+        char32_t music_sym_block_code = 0;
 
-        bool isValid() const { return smuflCode != 0 || musicSymBlockCode != 0; }
+        bool is_valid() const { return smufl_code != 0 || music_sym_block_code != 0; }
     };
 
     static const Code code(SymId id);
-    static char32_t smuflCode(SymId id);
+    static char32_t smufl_code(SymId id);
 
-    static const std::map<muse::String, std::vector<SymId>> &smuflRanges();
-    static constexpr const char *SMUFL_ALL_SYMBOLS = "All symbols";
+    static const std::map<muse::String, std::vector<SymId>> &smufl_ranges();
+    static constexpr const char *smufl_all_symbols = "All symbols";
 
 private:
 
-    static bool loadGlyphNamesJson();
-    static std::map<muse::String, std::vector<SymId>> readSmuflRangesJson();
+    static bool load_glyph_names_json();
+    static std::map<muse::String, std::vector<SymId>> read_smufl_ranges_json();
 
-    static std::array<Code, size_t(SymId::lastSym) + 1> s_symIdCodes;
+    static std::array<Code, size_t(SymId::LAST_SYM) + 1> s_sym_id_codes;
 };
 } // namespace mu::engraving

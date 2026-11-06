@@ -28,17 +28,17 @@
 #include "chord.h"
 
 namespace mu::engraving {
-static constexpr size_t NUM_VOICES_SELECTION_FILTER_TYPES = 4;
+static constexpr size_t num_voices_selection_filter_types = 4;
 enum class VoicesSelectionFilterTypes : unsigned int {
     NONE = 0,
     FIRST_VOICE = 1 << 0,
     SECOND_VOICE = 1 << 1,
     THIRD_VOICE = 1 << 2,
     FOURTH_VOICE = 1 << 3,
-    ALL = ~(~0u << NUM_VOICES_SELECTION_FILTER_TYPES)
+    ALL = ~(~0u << ::mu::engraving::num_voices_selection_filter_types)
 };
 
-static constexpr size_t NUM_NOTES_IN_CHORD_SELECTION_FILTER_TYPES = 8;
+static constexpr size_t num_notes_in_chord_selection_filter_types = 8;
 enum class NotesInChordSelectionFilterTypes : unsigned int {
     NONE = 0,
     TOP_NOTE = 1 << 0,
@@ -49,10 +49,10 @@ enum class NotesInChordSelectionFilterTypes : unsigned int {
     THIRD_NOTE = 1 << 5,
     SECOND_NOTE = 1 << 6,
     BOTTOM_NOTE = 1 << 7,
-    ALL = ~(~0u << NUM_NOTES_IN_CHORD_SELECTION_FILTER_TYPES)
+    ALL = ~(~0u << ::mu::engraving::num_notes_in_chord_selection_filter_types)
 };
 
-static constexpr size_t NUM_ELEMENTS_SELECTION_FILTER_TYPES = 20;
+static constexpr size_t num_elements_selection_filter_types = 20;
 enum class ElementsSelectionFilterTypes : unsigned int {
     NONE = 0,
     DYNAMIC = 1 << 0,
@@ -75,7 +75,7 @@ enum class ElementsSelectionFilterTypes : unsigned int {
     BREATH = 1 << 17,
     TREMOLO = 1 << 18,
     GRACE_NOTE = 1 << 19,
-    ALL = ~(~0u << NUM_ELEMENTS_SELECTION_FILTER_TYPES)
+    ALL = ~(~0u << ::mu::engraving::num_elements_selection_filter_types)
 };
 
 using SelectionFilterTypesVariant =
@@ -86,32 +86,32 @@ public:
     SelectionFilter() = default;
 
     inline bool operator==(const SelectionFilter &f) const {
-        return filteredVoicesTypes_ == f.filteredVoicesTypes_ && filteredNotesInChordTypes_ == f.filteredNotesInChordTypes_ &&
-               filteredElementsTypes_ == f.filteredElementsTypes_;
+        return filtered_voices_types_ == f.filtered_voices_types_ && filtered_notes_in_chord_types_ == f.filtered_notes_in_chord_types_ &&
+               filtered_elements_types_ == f.filtered_elements_types_;
     }
 
     inline bool operator!=(const SelectionFilter &f) const { return !this->operator==(f); }
 
-    bool isFiltered(const SelectionFilterTypesVariant &variant) const;
-    void setFiltered(const SelectionFilterTypesVariant &variant, bool filtered);
+    bool is_filtered(const SelectionFilterTypesVariant &variant) const;
+    void set_filtered(const SelectionFilterTypesVariant &variant, bool filtered);
 
-    bool canSelect(const EngravingItem *element) const;
-    bool canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord, bool selectionContainsMultiNoteChords) const;
-    bool canSelectTuplet(const Tuplet *tuplet, const Fraction &selectionRangeStart, const Fraction &selectionRangeEnd,
-                         bool selectionContainsMultiNoteChords) const;
-    bool canSelectVoice(track_idx_t track) const;
+    bool can_select(const EngravingItem *element) const;
+    bool can_select_note_idx(size_t note_idx, size_t total_notes_in_chord, bool selection_contains_multi_note_chords) const;
+    bool can_select_tuplet(const Tuplet *tuplet, const Fraction &selection_range_start, const Fraction &selection_range_end,
+                           bool selection_contains_multi_note_chords) const;
+    bool can_select_voice(track_idx_t track) const;
 
     //! IMPORTANT NOTE: This flag should only ever be used for selections that contain multi-note Chords. It should always be
     //! ignored in selections that exclusively consist of single notes...
-    bool includeSingleNotes() const { return includeSingleNotes_; }
+    bool include_single_notes() const { return include_single_notes_; }
 
-    void setIncludeSingleNotes(bool include) { includeSingleNotes_ = include; }
+    void set_include_single_notes(bool include) { include_single_notes_ = include; }
 
 private:
-    unsigned int filteredVoicesTypes_ = static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL);
-    unsigned int filteredNotesInChordTypes_ = static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL);
-    unsigned int filteredElementsTypes_ = static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL);
+    unsigned int filtered_voices_types_ = static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL);
+    unsigned int filtered_notes_in_chord_types_ = static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL);
+    unsigned int filtered_elements_types_ = static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL);
 
-    bool includeSingleNotes_ = true;
+    bool include_single_notes_ = true;
 };
 } // namespace mu::engraving

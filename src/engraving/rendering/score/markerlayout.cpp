@@ -32,128 +32,128 @@
 
 using namespace mu::engraving::rendering::score;
 
-void MarkerLayout::layoutMarker(Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
-    doLayoutMarker(item, ldata, ctx);
+void MarkerLayout::layout_marker(Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
+    do_layout_marker(item, ldata, ctx);
 
-    double customTextOffset = computeCustomTextOffset(item, ldata, ctx);
-    ldata->moveX(-customTextOffset);
+    double custom_text_offset = compute_custom_text_offset(item, ldata, ctx);
+    ldata->move_x(-custom_text_offset);
 
     Measure *measure = item->measure();
     if (measure && item->autoplace()) {
-        LD_CONDITION(ldata->isSetPos());
-        LD_CONDITION(ldata->isSetBbox());
-        LD_CONDITION(measure->ldata()->isSetPos());
+        LD_CONDITION(ldata->is_set_pos());
+        LD_CONDITION(ldata->is_set_bbox());
+        LD_CONDITION(measure->ldata()->is_set_pos());
     }
 
-    Autoplace::autoplaceMeasureElement(item, ldata);
+    Autoplace::autoplace_measure_element(item, ldata);
 }
 
-void MarkerLayout::doLayoutMarker(Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
+void MarkerLayout::do_layout_marker(Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
     Measure *measure = item->measure();
     IF_ASSERT_FAILED(measure) { LOGD() << "Marker has no measure"; }
-    LD_CONDITION(measure->ldata()->isSetBbox());
+    LD_CONDITION(measure->ldata()->is_set_bbox());
 
     // If "Center on symbol" is on, override user position. Restore later
-    AlignH userPosition = item->getProperty(Pid::POSITION).value<AlignH>();
-    AlignH hPos =
-        item->centerOnSymbol() && !item->symbolString().empty() ? AlignH::HCENTER : item->getProperty(Pid::POSITION).value<AlignH>();
-    item->setPosition(hPos);
+    AlignH user_position = item->get_property(Pid::POSITION).value<AlignH>();
+    AlignH h_pos =
+        item->center_on_symbol() && !item->symbol_string().empty() ? AlignH::HCENTER : item->get_property(Pid::POSITION).value<AlignH>();
+    item->set_position(h_pos);
 
-    TextLayout::layoutBaseTextBase(item, ldata);
+    TextLayout::layout_base_text_base(item, ldata);
 
     // Adjust for barline
-    bool rightMarker = item->isRightMarker();
-    double xAdj = 0.0;
-    double blWidth = 0.0;
-    if (rightMarker) {
-        xAdj = measure ? measure->width() : 0.0;
+    bool right_marker = item->is_right_marker();
+    double x_adj = 0.0;
+    double bl_width = 0.0;
+    if (right_marker) {
+        x_adj = measure ? measure->width() : 0.0;
     }
 
-    bool startRepeat = rightMarker ? measure->nextMeasure() && measure->nextMeasure()->repeatStart() : measure->repeatStart();
-    bool endRepeat = rightMarker ? measure->repeatEnd() : measure->prevMeasure() && measure->prevMeasure()->repeatEnd();
+    bool start_repeat = right_marker ? measure->next_measure() && measure->next_measure()->repeat_start() : measure->repeat_start();
+    bool end_repeat = right_marker ? measure->repeat_end() : measure->prev_measure() && measure->prev_measure()->repeat_end();
 
-    bool avoidBarline = item->staffIdx() != 0 && hPos != AlignH::HCENTER;
+    bool avoid_barline = item->staff_idx() != 0 && h_pos != AlignH::HCENTER;
 
-    if (!avoidBarline) {
-        if (startRepeat) {
-            blWidth = item->absoluteFromSpatium(-ctx.conf().styleS(Sid::endBarWidth));
-        } else if (endRepeat) {
-            blWidth = item->absoluteFromSpatium(ctx.conf().styleS(Sid::endBarWidth));
-        } else if ((measure->isFirstInSystem() || (measure->prev() && !measure->prev()->isMeasure())) && !rightMarker) {
+    if (!avoid_barline) {
+        if (start_repeat) {
+            bl_width = item->absolute_from_spatium(-ctx.conf().style_s(Sid::END_BAR_WIDTH));
+        } else if (end_repeat) {
+            bl_width = item->absolute_from_spatium(ctx.conf().style_s(Sid::END_BAR_WIDTH));
+        } else if ((measure->is_first_in_system() || (measure->prev() && !measure->prev()->is_measure())) && !right_marker) {
             // Start of score
-            const BarLine *bl = measure->startBarLine();
-            blWidth = bl ? -bl->width() : 0.0;
+            const BarLine *bl = measure->start_bar_line();
+            bl_width = bl ? -bl->width() : 0.0;
         } else {
-            Measure *blMeasure = rightMarker ? measure : measure->prevMeasure();
-            const BarLine *bl = blMeasure ? blMeasure->endBarLine() : nullptr;
-            blWidth = bl ? bl->width() : 0.0;
+            Measure *bl_measure = right_marker ? measure : measure->prev_measure();
+            const BarLine *bl = bl_measure ? bl_measure->end_bar_line() : nullptr;
+            bl_width = bl ? bl->width() : 0.0;
         }
 
-        switch (hPos) {
+        switch (h_pos) {
             case AlignH::LEFT:
-            case AlignH::JUSTIFY: xAdj -= startRepeat ? 0.0 : blWidth; break;
-            case AlignH::HCENTER: xAdj -= +blWidth / 2; break;
-            case AlignH::RIGHT: xAdj -= (startRepeat ? blWidth : 0.0); break;
+            case AlignH::JUSTIFY: x_adj -= start_repeat ? 0.0 : bl_width; break;
+            case AlignH::HCENTER: x_adj -= +bl_width / 2; break;
+            case AlignH::RIGHT: x_adj -= (start_repeat ? bl_width : 0.0); break;
         }
     } else {
-        staff_idx_t blIdx = item->staffIdx() - 1;
+        staff_idx_t bl_idx = item->staff_idx() - 1;
 
         const BarLine *bl = nullptr;
-        if (startRepeat) {
-            Measure *blMeasure = rightMarker ? measure->nextMeasure() : measure;
-            bl = blMeasure ? blMeasure->startBarLine(blIdx) : nullptr;
+        if (start_repeat) {
+            Measure *bl_measure = right_marker ? measure->next_measure() : measure;
+            bl = bl_measure ? bl_measure->start_bar_line(bl_idx) : nullptr;
         } else {
-            Measure *blMeasure = rightMarker ? measure : measure->prevMeasure();
-            bl = blMeasure ? blMeasure->endBarLine(blIdx) : nullptr;
+            Measure *bl_measure = right_marker ? measure : measure->prev_measure();
+            bl = bl_measure ? bl_measure->end_bar_line(bl_idx) : nullptr;
         }
 
-        double blPadding = 0.0;
-        if (avoidBarline && bl) {
-            const double fontSizeScaleFactor = item->size() / 10.0;
-            blPadding = 0.5 * item->spatium() * fontSizeScaleFactor;
+        double bl_padding = 0.0;
+        if (avoid_barline && bl) {
+            const double font_size_scale_factor = item->size() / 10.0;
+            bl_padding = 0.5 * item->spatium() * font_size_scale_factor;
         }
 
-        if (hPos == AlignH::LEFT) {
-            blWidth = startRepeat ? bl->width() : 0.0;
-            xAdj += blPadding + blWidth;
-        } else if (hPos == AlignH::RIGHT) {
-            blWidth = startRepeat ? 0.0 : bl->width();
-            xAdj -= blWidth + blPadding;
+        if (h_pos == AlignH::LEFT) {
+            bl_width = start_repeat ? bl->width() : 0.0;
+            x_adj += bl_padding + bl_width;
+        } else if (h_pos == AlignH::RIGHT) {
+            bl_width = start_repeat ? 0.0 : bl->width();
+            x_adj -= bl_width + bl_padding;
         }
     }
 
-    item->setPosition(userPosition);
-    ldata->moveX(xAdj);
+    item->set_position(user_position);
+    ldata->move_x(x_adj);
 }
 
-double MarkerLayout::computeCustomTextOffset(const Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
-    String referenceString = item->symbolString();
+double MarkerLayout::compute_custom_text_offset(const Marker *item, TextBase::LayoutData *ldata, LayoutContext &ctx) {
+    String reference_string = item->symbol_string();
 
-    bool centerOnSymbol = item->centerOnSymbol() && !referenceString.empty();
-    if (!centerOnSymbol) {
+    bool center_on_symbol = item->center_on_symbol() && !reference_string.empty();
+    if (!center_on_symbol) {
         return 0.0;
     }
 
-    if (item->xmlText() == referenceString) {
+    if (item->xml_text() == reference_string) {
         return 0.0;
     }
 
-    Marker referenceMarker(*item);
-    referenceMarker.setXmlText(referenceString);
-    doLayoutMarker(&referenceMarker, referenceMarker.mutldata(), ctx);
+    Marker reference_marker(*item);
+    reference_marker.set_xml_text(reference_string);
+    do_layout_marker(&reference_marker, reference_marker.mutldata(), ctx);
 
-    TextFragment referenceFragment;
-    if (!referenceMarker.ldata()->blocks.empty()) {
-        TextBlock referenceBlock = referenceMarker.ldata()->blocks.front();
-        if (!referenceBlock.fragments().empty()) {
-            referenceFragment = referenceMarker.ldata()->blocks.front().fragments().front();
+    TextFragment reference_fragment;
+    if (!reference_marker.ldata()->blocks.empty()) {
+        TextBlock reference_block = reference_marker.ldata()->blocks.front();
+        if (!reference_block.fragments().empty()) {
+            reference_fragment = reference_marker.ldata()->blocks.front().fragments().front();
         }
     }
 
     for (const TextBlock &block : ldata->blocks) {
         for (const TextFragment &fragment : block.fragments()) {
-            if (fragment.text == referenceFragment.text) {
-                return ldata->pos().x() + fragment.pos.x() - referenceMarker.ldata()->pos().x() - referenceFragment.pos.x();
+            if (fragment.text == reference_fragment.text) {
+                return ldata->pos().x() + fragment.pos.x() - reference_marker.ldata()->pos().x() - reference_fragment.pos.x();
             }
         }
     }

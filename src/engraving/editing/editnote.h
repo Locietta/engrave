@@ -39,31 +39,31 @@ enum class UpDownMode : char { CHROMATIC, OCTAVE, DIATONIC };
 
 class EditNote {
 public:
-    static void toggleOrnament(Score *score, SymId attr);
-    static void toggleAccidental(Score *score, AccidentalType at);
-    static void applyAccidentalToInputNotes(Score *score, AccidentalType accidentalType);
-    static void changeAccidental(Score *score, AccidentalType idx);
-    static void changeAccidental(Score *score, Note *note, AccidentalType accidental);
-    static void undoChangePitch(Score *score, Note *note, int pitch, int tpc1, int tpc2);
-    static void undoChangeFretting(Score *score, Note *note, int pitch, int string, int fret, int tpc1, int tpc2);
-    static void upDown(Score *score, bool up, UpDownMode mode);
+    static void toggle_ornament(Score *score, SymId attr);
+    static void toggle_accidental(Score *score, AccidentalType at);
+    static void apply_accidental_to_input_notes(Score *score, AccidentalType accidental_type);
+    static void change_accidental(Score *score, AccidentalType idx);
+    static void change_accidental(Score *score, Note *note, AccidentalType accidental);
+    static void undo_change_pitch(Score *score, Note *note, int pitch, int tpc1, int tpc2);
+    static void undo_change_fretting(Score *score, Note *note, int pitch, int string, int fret, int tpc1, int tpc2);
+    static void up_down(Score *score, bool up, UpDownMode mode);
 private:
-    static void changeAccidental2(Note *n, int pitch, int tpc);
-    static void upDownChromatic(bool up, int pitch, Note *n, Key key, int tpc1, int tpc2, int &newPitch, int &newTpc1, int &newTpc2);
+    static void change_accidental2(Note *n, int pitch, int tpc);
+    static void up_down_chromatic(bool up, int pitch, Note *n, Key key, int tpc1, int tpc2, int &new_pitch, int &new_tpc1, int &new_tpc2);
 };
 
 class ChangeVelocity : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeVelocity)
 
     Note *note = nullptr;
-    int userVelocity = 0;
+    int user_velocity = 0;
 
     void flip() override;
 
 public:
     ChangeVelocity(Note *, int);
 
-    UNDO_TYPE(CommandType::ChangeVelocity)
+    UNDO_TYPE(CommandType::CHANGE_VELOCITY)
     UNDO_NAME("ChangeVelocity")
     UNDO_CHANGED_OBJECTS({note})
 };
@@ -72,13 +72,13 @@ class ChangeNoteEventList : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeNoteEventList)
 
     Note *note = nullptr;
-    NoteEventList newEvents;
-    PlayEventType newPetype;
+    NoteEventList new_events;
+    PlayEventType new_petype;
 
     void flip() override;
 
 public:
-    ChangeNoteEventList(Note *n, NoteEventList &ne) : note(n), newEvents(ne), newPetype(PlayEventType::User) {}
+    ChangeNoteEventList(Note *n, NoteEventList &ne) : note(n), new_events(ne), new_petype(PlayEventType::USER) {}
     UNDO_NAME("ChangeNoteEventList")
     UNDO_CHANGED_OBJECTS({note});
 };
@@ -87,14 +87,14 @@ class ChangeNoteEvent : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeNoteEvent)
 
     Note *note = nullptr;
-    NoteEvent *oldEvent = nullptr;
-    NoteEvent newEvent;
-    PlayEventType newPetype;
+    NoteEvent *old_event = nullptr;
+    NoteEvent new_event;
+    PlayEventType new_petype;
 
     void flip() override;
 
 public:
-    ChangeNoteEvent(Note *n, NoteEvent *oe, const NoteEvent &ne) : note(n), oldEvent(oe), newEvent(ne), newPetype(PlayEventType::User) {}
+    ChangeNoteEvent(Note *n, NoteEvent *oe, const NoteEvent &ne) : note(n), old_event(oe), new_event(ne), new_petype(PlayEventType::USER) {}
     UNDO_NAME("ChangeNoteEvent")
     UNDO_CHANGED_OBJECTS({note})
 };
@@ -109,7 +109,7 @@ class ChangeChordPlayEventType : public UndoableCommand {
     void flip() override;
 
 public:
-    ChangeChordPlayEventType(Chord *c, PlayEventType pet) : chord(c), petype(pet) { events = c->getNoteEventLists(); }
+    ChangeChordPlayEventType(Chord *c, PlayEventType pet) : chord(c), petype(pet) { events = c->get_note_event_lists(); }
 
     UNDO_NAME("ChangeChordPlayEventType")
     UNDO_CHANGED_OBJECTS({chord});

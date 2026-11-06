@@ -37,15 +37,15 @@ using namespace muse::audio::codec;
 
 int VorbisDecoder::decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels,
                                  unsigned int *sample_rate) {
-    int channels_ = 0;
-    int sample_rate_ = 0;
-    int samples = stb_vorbis_decode_memory(mem, len, &channels_, &sample_rate_, output);
+    int channels_value = 0;
+    int sample_rate_value = 0;
+    int samples = stb_vorbis_decode_memory(mem, len, &channels_value, &sample_rate_value, output);
     if (channels) {
-        *channels = channels_;
+        *channels = channels_value;
     }
 
     if (sample_rate) {
-        *sample_rate = sample_rate_;
+        *sample_rate = sample_rate_value;
     }
 
     return samples;
@@ -53,7 +53,7 @@ int VorbisDecoder::decode_memory(const unsigned char *mem, unsigned int len, sho
 
 int VorbisDecoder::decode_file(const std::string &filepath, std::vector<float> &output, unsigned int *channels, unsigned int *sample_rate) {
     int vorbis_error;
-    stb_vorbis *decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, NULL);
+    stb_vorbis *decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, nullptr);
 
     if (!decoder) {
         return -1;

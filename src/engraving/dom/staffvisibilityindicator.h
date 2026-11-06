@@ -32,6 +32,6 @@ class StaffVisibilityIndicator : public IndicatorIcon {
 public:
     StaffVisibilityIndicator(DummyParentOr<System> parent);
 
-    char16_t iconCode() const override { return 0xF4AE; }
+    char16_t icon_code() const override { return 0xF4AE; }
 };
 } // namespace mu::engraving

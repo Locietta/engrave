@@ -63,8 +63,8 @@ private:
     Fraction length_;
     ChangeMethod method_ = ChangeMethod::NORMAL;
     ChangeDirection direction_ = ChangeDirection::INCREASING;
-    int cachedStartVal_ = -1;
-    int cachedEndVal_ = -1;
+    int cached_start_val_ = -1;
+    int cached_end_val_ = -1;
 };
 
 //---------------------------------------------------------
@@ -80,13 +80,13 @@ public:
     VelocityMap() {}
 
     int val(Fraction tick) const;
-    std::vector<std::pair<Fraction, Fraction>> changesInRange(Fraction stick, Fraction etick) const;
+    std::vector<std::pair<Fraction, Fraction>> changes_in_range(Fraction stick, Fraction etick) const;
 
-    void addDynamic(Fraction tick, int value);
-    void addHairpin(Fraction stick, Fraction etick, int change, ChangeMethod method, ChangeDirection direction);
+    void add_dynamic(Fraction tick, int value);
+    void add_hairpin(Fraction stick, Fraction etick, int change, ChangeMethod method, ChangeDirection direction);
     void setup();
 
-    static int interpolate(Fraction &eventTick, VelocityEvent &event, Fraction &tick);
+    static int interpolate(Fraction &event_tick, VelocityEvent &event, Fraction &tick);
 
 private:
 
@@ -95,21 +95,21 @@ private:
         const char *name;
     };
 
-    static bool compareHairpinEvents(VelocityEvent &a, VelocityEvent &b) { return a.length_ > b.length_; }
+    static bool compare_hairpin_events(VelocityEvent &a, VelocityEvent &b) { return a.length_ > b.length_; }
 
-    void sortHairpins();
-    void resolveHairpinCollisions();
-    void resolveDynamicInsideHairpinCollisions();
-    void adjustCollidingHairpinsLength(std::vector<bool> &startsInHairpin, EndPointsVector &endPoints);
-    bool dynamicExistsOnTick(Fraction tick) const;
-    VelocityEvent dynamicEventForTick(Fraction tick) const;
-    void addMissingDynamicsAfterHairpins();
-    void fillHairpinsCache();
+    void sort_hairpins();
+    void resolve_hairpin_collisions();
+    void resolve_dynamic_inside_hairpin_collisions();
+    void adjust_colliding_hairpins_length(std::vector<bool> &starts_in_hairpin, EndPointsVector &end_points);
+    bool dynamic_exists_on_tick(Fraction tick) const;
+    VelocityEvent dynamic_event_for_tick(Fraction tick) const;
+    void add_missing_dynamics_after_hairpins();
+    void fill_hairpins_cache();
 
-    static constexpr int DEFAULT_VALUE = 80;
-    static constexpr int MIN_VALUE = 1;
-    static constexpr int MAX_VALUE = 127;
-    static constexpr int STEP = 16;
+    static constexpr int default_value = 80;
+    static constexpr int min_value = 1;
+    static constexpr int max_value = 127;
+    static constexpr int step = 16;
 };
 } // namespace mu::engraving
 #endif

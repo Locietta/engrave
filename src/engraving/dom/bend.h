@@ -50,7 +50,7 @@ class Bend final : public EngravingItem {
 public:
     Bend *clone() const override { return new Bend(*this); }
 
-    Note *note() const { return toNote(ownershipParent()); }
+    Note *note() const { return to_note(ownership_parent()); }
 
     static const char *label[13];
 
@@ -58,42 +58,42 @@ public:
 
     const PitchValues &points() const { return points_; }
 
-    void addPoint(const PitchValue &pv) { points_.push_back(pv); }
+    void add_point(const PitchValue &pv) { points_.push_back(pv); }
 
-    void setPoints(const PitchValues &p) { points_ = p; }
+    void set_points(const PitchValues &p) { points_ = p; }
 
-    bool playBend() const { return playBend_; }
+    bool play_bend() const { return play_bend_; }
 
-    void setPlayBend(bool v) { playBend_ = v; }
+    void set_play_bend(bool v) { play_bend_ = v; }
 
-    String fontFace() const { return fontFace_; }
+    String font_face() const { return font_face_; }
 
-    void setFontFace(String f) { fontFace_ = f; }
+    void set_font_face(String f) { font_face_ = f; }
 
-    double fontSize() const { return fontSize_; }
+    double font_size() const { return font_size_; }
 
-    void setFontSize(double s) { fontSize_ = s; }
+    void set_font_size(double s) { font_size_ = s; }
 
-    FontStyle fontStyle() const { return fontStyle_; }
+    FontStyle font_style() const { return font_style_; }
 
-    void setFontStyle(FontStyle s) { fontStyle_ = s; }
+    void set_font_style(FontStyle s) { font_style_ = s; }
 
-    Spatium lineWidth() const { return lineWidth_; }
+    Spatium line_width() const { return line_width_; }
 
-    void setLineWidth(Spatium w) { lineWidth_ = w; }
+    void set_line_width(Spatium w) { line_width_ = w; }
 
     muse::draw::Font font(double) const;
 
     // property methods
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
         // cache
-        PointF notePos;
-        double noteWidth = 0.0;
-        double noteHeight = 0.0;
+        PointF note_pos;
+        double note_width = 0.0;
+        double note_height = 0.0;
     };
     DECLARE_LAYOUTDATA_METHODS(Bend)
 
@@ -102,15 +102,15 @@ private:
 
     Bend(DummyParentOr<Note> parent);
 
-    BendType parseBendTypeFromCurve() const;
-    void updatePointsByBendType(const BendType bendType);
+    BendType parse_bend_type_from_curve() const;
+    void update_points_by_bend_type(const BendType bend_type);
 
-    bool playBend_ = true;
+    bool play_bend_ = true;
     PitchValues points_;
 
-    String fontFace_;
-    double fontSize_ = 0.0;
-    FontStyle fontStyle_ = FontStyle::Undefined;
-    Spatium lineWidth_;
+    String font_face_;
+    double font_size_ = 0.0;
+    FontStyle font_style_ = FontStyle::UNDEFINED;
+    Spatium line_width_;
 };
 } // namespace mu::engraving

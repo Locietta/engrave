@@ -35,57 +35,57 @@ public:
 
     void reset() { buffer_.reset(); }
 
-    void setFormat(int maxBlockSize, int maxImpulseOffset) {
-        buffer_.setSize(maxBlockSize + maxImpulseOffset + 1);
-        blockSize_ = maxBlockSize;
-        maxAllowedOffset_ = maxImpulseOffset;
+    void set_format(int max_block_size, int max_impulse_offset) {
+        buffer_.set_size(max_block_size + max_impulse_offset + 1);
+        block_size_ = max_block_size;
+        max_allowed_offset_ = max_impulse_offset;
     }
 
-    void processBlock(const float *signal_in, float *signal_out, int n) {
-        assert(n <= blockSize_);
+    void process_block(const float *signal_in, float *signal_out, int n) {
+        assert(n <= block_size_);
         assert(impulses_.size() > 0);
 
-        buffer_.writeBlock(0, n, signal_in);
+        buffer_.write_block(0, n, signal_in);
 
-        buffer_.readBlockWithGain(-impulses_[0].offset, n, signal_out, impulses_[0].gainFact);
+        buffer_.read_block_with_gain(-impulses_[0].offset, n, signal_out, impulses_[0].gain_fact);
         for (size_t i = 1; i < impulses_.size(); ++i) {
-            buffer_.readAddBlockWithGain(-impulses_[i].offset, n, signal_out, impulses_[i].gainFact);
+            buffer_.read_add_block_with_gain(-impulses_[i].offset, n, signal_out, impulses_[i].gain_fact);
         }
 
         buffer_.advance(n);
     }
 
-    float processSample(float smp) {
-        buffer_.writeOffset0(smp);
+    float process_sample(float smp) {
+        buffer_.write_offset0(smp);
 
         smp = 0.f;
         for (const auto &i : impulses_) {
-            smp += buffer_.read(-i.offset) * i.gainFact;
+            smp += buffer_.read(-i.offset) * i.gain_fact;
         }
 
         buffer_.advance(1);
         return smp;
     }
 
-    void clearImpulses() { impulses_.clear(); }
+    void clear_impulses() { impulses_.clear(); }
 
-    void appendImpulse(int offset, float value) {
-        assert(offset >= 0 && offset <= maxAllowedOffset_);
+    void append_impulse(int offset, float value) {
+        assert(offset >= 0 && offset <= max_allowed_offset_);
 
         impulses_.push_back({offset, value});
-        buffer_.setSize(offset + 1);
+        buffer_.set_size(offset + 1);
     }
 
 private:
     struct Impulse {
         int offset;
-        float gainFact;
+        float gain_fact;
     };
 
     std::vector<Impulse> impulses_;
 
-    int blockSize_ = 0;
-    int maxAllowedOffset_ = 0;
+    int block_size_ = 0;
+    int max_allowed_offset_ = 0;
     CircularSampleBuffer<float> buffer_;
 };
 } // namespace muse::audio::fx

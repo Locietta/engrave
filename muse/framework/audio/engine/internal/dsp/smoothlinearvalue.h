@@ -30,40 +30,40 @@ namespace muse::audio::dsp {
 template <typename ValueT, int _initialSteps = 1024, typename StepT = double>
 class SmoothLinearValue {
 public:
-    SmoothLinearValue(const ValueT &startValue = ValueT(0)) {
+    SmoothLinearValue(const ValueT &start_value = ValueT(0)) {
         static_assert(std::is_floating_point<StepT>::value, "Internal step type needs to be floating point.");
-        targetValue_ = currentValue_ = startValue;
-        currentSteps_ = (StepT) _initialSteps;
-        targetSteps_ = 0;
-        deltaValue_ = 0;
+        target_value_ = current_value_ = start_value;
+        current_steps_ = (StepT) _initialSteps;
+        target_steps_ = 0;
+        delta_value_ = 0;
     }
 
-    void setSteps(int steps) { currentSteps_ = (StepT) std::max(1, steps); }
+    void set_steps(int steps) { current_steps_ = (StepT) std::max(1, steps); }
 
     /** Advance one tick by just adding the delta. Can lead to error accumulation.
      * @return true if target was reached
      */
     bool tick() {
-        if (targetSteps_ <= 0) {
-            currentValue_ = targetValue_; // get rid of error accumulation
+        if (target_steps_ <= 0) {
+            current_value_ = target_value_; // get rid of error accumulation
             return true;
         }
 
-        targetSteps_--;
-        currentValue_ += deltaValue_;
+        target_steps_--;
+        current_value_ += delta_value_;
         return false;
     }
 
     /** Advance one tick and use multiplication to avoid error accumulation
      * @return true if target was reached
      */
-    bool preciseTick() {
-        if (targetSteps_ <= 0) {
+    bool precise_tick() {
+        if (target_steps_ <= 0) {
             return true;
         }
 
-        targetSteps_--;
-        currentValue_ = targetValue_ - targetSteps_ * deltaValue_; // if n reaches 0, _value will be exactly targetvalue
+        target_steps_--;
+        current_value_ = target_value_ - target_steps_ * delta_value_; // if n reaches 0, _value will be exactly targetvalue
         return false;
     }
 
@@ -71,82 +71,82 @@ public:
      * can lead to error accumulation for large n and small delta
      * warning! will overshoot target if called too many times
      */
-    void tickUnchecked() {
-        targetSteps_--;
-        currentValue_ += deltaValue_;
+    void tick_unchecked() {
+        target_steps_--;
+        current_value_ += delta_value_;
     }
 
     /** Advance one tick without checking whether target was reached
      * uses an extra multiplication to avoid error accumulation
      * warning! will overshoot target if called too many times
      */
-    void preciseTickUnchecked() {
-        targetSteps_--;
-        currentValue_ = targetValue_ - targetSteps_ * deltaValue_;
+    void precise_tick_unchecked() {
+        target_steps_--;
+        current_value_ = target_value_ - target_steps_ * delta_value_;
     }
 
     /** Advance multiple ticks
      *  @param n num ticks to advance
      */
-    void advanceTicks(int n) {
-        targetSteps_ -= (double) n;
-        if (targetSteps_ < 0) {
-            targetSteps_ = 0;
+    void advance_ticks(int n) {
+        target_steps_ -= (double) n;
+        if (target_steps_ < 0) {
+            target_steps_ = 0;
         }
-        currentValue_ = targetValue_ - targetSteps_ * deltaValue_;
+        current_value_ = target_value_ - target_steps_ * delta_value_;
     }
 
     /// Set the value instantly (for initialization)
-    void initWithValue(const ValueT &val) {
-        targetValue_ = currentValue_ = val;
-        targetSteps_ = 0;
+    void init_with_value(const ValueT &val) {
+        target_value_ = current_value_ = val;
+        target_steps_ = 0;
     }
 
     /// Set value and target instantly
-    void initWithValueAndTarget(const ValueT &val, const ValueT &target) {
-        initWithValue(val);
-        setTargetValue(target);
+    void init_with_value_and_target(const ValueT &val, const ValueT &target) {
+        init_with_value(val);
+        set_target_value(target);
     }
 
     /** Sets the target value which is reached after "steps" calls to smoothTick */
-    void setTargetValue(const ValueT &val) {
-        if (targetValue_ != val) {
-            targetValue_ = val;
-            deltaValue_ = ValueT((1.0 / currentSteps_) * (targetValue_ - currentValue_));
-            targetSteps_ = currentSteps_;
+    void set_target_value(const ValueT &val) {
+        if (target_value_ != val) {
+            target_value_ = val;
+            delta_value_ = ValueT((1.0 / current_steps_) * (target_value_ - current_value_));
+            target_steps_ = current_steps_;
         }
     }
 
     /** @returns the value the smoothed value will reach eventually */
-    const ValueT &getTargetValue() const { return targetValue_; }
+    const ValueT &get_target_value() const { return target_value_; }
 
     /** @return the current (smoothed) value */
-    inline const ValueT &getValue() const { return currentValue_; }
+    inline const ValueT &get_value() const { return current_value_; }
 
     /** Go to target immediately.
      * @returns value
      */
-    inline const ValueT &setToTarget() {
-        currentValue_ = targetValue_;
-        targetSteps_ = 0.f;
-        return currentValue_;
+    inline const ValueT &set_to_target() {
+        current_value_ = target_value_;
+        target_steps_ = 0.f;
+        return current_value_;
     }
 
     /// check if the smoothed value isn't moving and has a specific (target)value
-    bool isStaticAtValue(const ValueT &static_value) const { return isAtTargetValue() && (getTargetValue() == static_value); }
+    bool is_static_at_value(const ValueT &static_value) const { return is_at_target_value() && (get_target_value() == static_value); }
 
-    inline bool isAtTargetValue() const { return targetSteps_ <= (StepT) 0; }
+    inline bool is_at_target_value() const { return target_steps_ <= (StepT) 0; }
 
-    int getRemainingSteps() const { return (int) targetSteps_; }
+    int get_remaining_steps() const { return (int) target_steps_; }
 
-    int smoothingSteps() const { return (int) currentSteps_; }
+    int smoothing_steps() const { return (int) current_steps_; }
 
 protected:
-    ValueT currentValue_;
-    ValueT targetValue_;
-    ValueT deltaValue_;
-    StepT targetSteps_;
-    StepT currentSteps_;
+    ValueT current_value_;
+    ValueT target_value_;
+    ValueT delta_value_;
+    StepT target_steps_;
+    StepT current_steps_;
 };
 } // namespace muse::audio::dsp
 

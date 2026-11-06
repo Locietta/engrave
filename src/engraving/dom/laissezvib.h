@@ -35,15 +35,15 @@ public:
 
     LaissezVibSegment *clone() const override { return new LaissezVibSegment(*this); }
 
-    LaissezVib *laissezVib() const { return (LaissezVib *) spanner(); }
+    LaissezVib *laissez_vib() const { return (LaissezVib *) spanner(); }
 
     struct LayoutData : public TieSegment::LayoutData {
-        SymId symbol = SymId::noSym;
-        ld_field<PointF> posRelativeToNote = {"[LaissezVibSegment] posRelativeToNote", PointF()};
+        SymId symbol = SymId::NO_SYM;
+        ld_field<PointF> pos_relative_to_note = {"[LaissezVibSegment] posRelativeToNote", PointF()};
     };
     DECLARE_LAYOUTDATA_METHODS(LaissezVibSegment)
 private:
-    String formatBarsAndBeats() const override;
+    String format_bars_and_beats() const override;
 };
 
 class LaissezVib : public Tie {
@@ -55,33 +55,33 @@ public:
 
     LaissezVib *clone() const override { return new LaissezVib(*this); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    PropertyValue get_property(Pid property_id) const override;
+    PropertyValue property_default(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
 
-    Spatium minLength() const { return minLength_; }
+    Spatium min_length() const { return min_length_; }
 
-    void setMinLength(Spatium val) { minLength_ = val; }
+    void set_min_length(Spatium val) { min_length_ = val; }
 
-    SymId symId() const;
+    SymId sym_id() const;
 
-    SlurTieSegment *newSlurTieSegment() override;
+    SlurTieSegment *new_slur_tie_segment() override;
 
-    void setEndNote(Note *note) override;
-    void setEndElement(EngravingItem *) override;
+    void set_end_note(Note *note) override;
+    void set_end_element(EngravingItem *) override;
 
-    LaissezVibSegment *frontSegment() { return toLaissezVibSegment(Spanner::frontSegment()); }
+    LaissezVibSegment *front_segment() { return to_laissez_vib_segment(Spanner::front_segment()); }
 
-    const LaissezVibSegment *frontSegment() const { return toLaissezVibSegment(Spanner::frontSegment()); }
+    const LaissezVibSegment *front_segment() const { return to_laissez_vib_segment(Spanner::front_segment()); }
 
-    LaissezVibSegment *backSegment() { return toLaissezVibSegment(Spanner::backSegment()); }
+    LaissezVibSegment *back_segment() { return to_laissez_vib_segment(Spanner::back_segment()); }
 
-    const LaissezVibSegment *backSegment() const { return toLaissezVibSegment(Spanner::backSegment()); }
+    const LaissezVibSegment *back_segment() const { return to_laissez_vib_segment(Spanner::back_segment()); }
 
-    LaissezVibSegment *segmentAt(int n) { return toLaissezVibSegment(Spanner::segmentAt(n)); }
+    LaissezVibSegment *segment_at(int n) { return to_laissez_vib_segment(Spanner::segment_at(n)); }
 
-    const LaissezVibSegment *segmentAt(int n) const { return toLaissezVibSegment(Spanner::segmentAt(n)); }
+    const LaissezVibSegment *segment_at(int n) const { return to_laissez_vib_segment(Spanner::segment_at(n)); }
 private:
-    Spatium minLength_ = 2.0_sp;
+    Spatium min_length_ = 2.0_sp;
 };
 } // namespace mu::engraving

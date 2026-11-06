@@ -36,37 +36,37 @@ enum class SymId;
 
 class EditChord {
 public:
-    static void addChordParentheses(Chord *chord, std::vector<Note *> notes, bool addToLinked = true, bool generated = false);
-    static void removeChordParentheses(Chord *chord, std::vector<Note *> notes, bool addToLinked = true, bool generated = false);
-    static void toggleArticulation(Score *score, SymId attr);
-    static bool toggleArticulation(Score *score, EngravingItem *el, Articulation *a);
+    static void add_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
+    static void remove_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
+    static void toggle_articulation(Score *score, SymId attr);
+    static bool toggle_articulation(Score *score, EngravingItem *el, Articulation *a);
 
 private:
 
-    static void undoAddParenthesesToNotes(Chord *chord, std::vector<Note *> notes, bool addToLinked = true, bool generated = false);
-    static void undoRemoveParenthesesFromNote(Chord *chord, Note *note, Parenthesis *leftParen, bool removeFromLinked = true);
-    static void undoClearParenthesisGroup(Chord *chord, std::vector<Note *> notes, Parenthesis *leftParen, Parenthesis *rightParen,
-                                          bool removeFromLinked = true);
+    static void undo_add_parentheses_to_notes(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
+    static void undo_remove_parentheses_from_note(Chord *chord, Note *note, Parenthesis *left_paren, bool remove_from_linked = true);
+    static void undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren,
+                                             bool remove_from_linked = true);
 
-    static void doAddNoteParentheses(Chord *chord, std::vector<Note *> notes, Parenthesis *leftParen, Parenthesis *rightParen);
-    static void doRemoveSingleNoteParenthesis(Chord *chord, Note *note, Parenthesis *leftParen);
-    static void doRemoveAllNoteParentheses(Chord *chord, Parenthesis *leftParen);
+    static void do_add_note_parentheses(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren);
+    static void do_remove_single_note_parenthesis(Chord *chord, Note *note, Parenthesis *left_paren);
+    static void do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_paren);
 };
 
 class ChangeChordStaffMove : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeChordStaffMove)
 
-    ChordRest *chordRest = nullptr;
-    int staffMove = 0;
+    ChordRest *chord_rest = nullptr;
+    int staff_move = 0;
 
     void flip() override;
 
 public:
-    ChangeChordStaffMove(ChordRest *cr, int v) : chordRest(cr), staffMove(v) {}
+    ChangeChordStaffMove(ChordRest *cr, int v) : chord_rest(cr), staff_move(v) {}
 
-    UNDO_TYPE(CommandType::ChangeChordStaffMove)
+    UNDO_TYPE(CommandType::CHANGE_CHORD_STAFF_MOVE)
     UNDO_NAME("ChangeChordStaffMove")
-    UNDO_CHANGED_OBJECTS({chordRest})
+    UNDO_CHANGED_OBJECTS({chord_rest})
 };
 
 class SwapCR : public UndoableCommand {
@@ -80,7 +80,7 @@ class SwapCR : public UndoableCommand {
 public:
     SwapCR(ChordRest *a, ChordRest *b) : cr1(a), cr2(b) {}
 
-    UNDO_TYPE(CommandType::SwapCR)
+    UNDO_TYPE(CommandType::SWAP_CR)
     UNDO_NAME("SwapCR")
     UNDO_CHANGED_OBJECTS({cr1, cr2})
 };
@@ -89,11 +89,11 @@ class ChangeSpanArpeggio : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeSpanArpeggio)
 
     Chord *chord_ = nullptr;
-    Arpeggio *spanArpeggio_ = nullptr;
+    Arpeggio *span_arpeggio_ = nullptr;
 
     void flip() override;
 public:
-    ChangeSpanArpeggio(Chord *chord, Arpeggio *spanArp) : chord_(chord), spanArpeggio_(spanArp) {}
+    ChangeSpanArpeggio(Chord *chord, Arpeggio *span_arp) : chord_(chord), span_arpeggio_(span_arp) {}
 
     UNDO_NAME("ChangeSpanArpeggio")
     UNDO_CHANGED_OBJECTS({chord_})
@@ -105,16 +105,16 @@ class AddNoteParenthesisInfo : public UndoableCommand {
     void redo() override;
     void undo() override;
 
-    void cleanup(bool wasDone) override;
+    void cleanup(bool was_done) override;
 
     Chord *chord_ = nullptr;
-    NoteParenthesisInfo *noteParenInfo_ = nullptr;
+    NoteParenthesisInfo *note_paren_info_ = nullptr;
 
 public:
-    AddNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : chord_(chord), noteParenInfo_(noteParenInfo) {}
+    AddNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *note_paren_info) : chord_(chord), note_paren_info_(note_paren_info) {}
 
     UNDO_NAME("AddNoteParenthesesInfo")
-    UNDO_TYPE(CommandType::AddNoteParenthesesInfo)
+    UNDO_TYPE(CommandType::ADD_NOTE_PARENTHESES_INFO)
 };
 
 class RemoveNoteParenthesisInfo : public UndoableCommand {
@@ -123,16 +123,16 @@ class RemoveNoteParenthesisInfo : public UndoableCommand {
     void redo() override;
     void undo() override;
 
-    void cleanup(bool wasDone) override;
+    void cleanup(bool was_done) override;
 
     Chord *chord_ = nullptr;
-    NoteParenthesisInfo *noteParenInfo_ = nullptr;
+    NoteParenthesisInfo *note_paren_info_ = nullptr;
 
 public:
-    RemoveNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : chord_(chord), noteParenInfo_(noteParenInfo) {}
+    RemoveNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *note_paren_info) : chord_(chord), note_paren_info_(note_paren_info) {}
 
     UNDO_NAME("RemoveNoteParenthesesInfo")
-    UNDO_TYPE(CommandType::RemoveNoteParenthesesInfo)
+    UNDO_TYPE(CommandType::REMOVE_NOTE_PARENTHESES_INFO)
 };
 
 class RemoveSingleNoteParentheses : public UndoableCommand {
@@ -149,7 +149,7 @@ public:
     RemoveSingleNoteParentheses(Chord *chord, Note *note, Parenthesis *paren) : chord_(chord), note_(note), paren_(paren) {}
 
     UNDO_NAME("RemoveSingleNoteParentheses")
-    UNDO_TYPE(CommandType::RemoveSingleNoteParentheses)
+    UNDO_TYPE(CommandType::REMOVE_SINGLE_NOTE_PARENTHESES)
     UNDO_CHANGED_OBJECTS({chord_, paren_})
 };
 } // namespace mu::engraving

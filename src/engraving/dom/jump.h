@@ -47,59 +47,59 @@ public:
 
     Jump(DummyParentOr<Measure> parent);
 
-    void setJumpType(JumpType t);
-    JumpType jumpType() const;
-    String jumpTypeUserName() const;
+    void set_jump_type(JumpType t);
+    JumpType jump_type() const;
+    String jump_type_user_name() const;
 
     Jump *clone() const override { return new Jump(*this); }
 
-    int subtype() const override { return int(jumpType()); }
+    int subtype() const override { return int(jump_type()); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    Measure *measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return to_measure(ownership_parent()); }
 
-    String jumpTo() const { return jumpTo_; }
+    String jump_to() const { return jump_to_; }
 
-    String playUntil() const { return playUntil_; }
+    String play_until() const { return play_until_; }
 
-    String continueAt() const { return continueAt_; }
+    String continue_at() const { return continue_at_; }
 
-    void setJumpTo(const String &s) { jumpTo_ = s; }
+    void set_jump_to(const String &s) { jump_to_ = s; }
 
-    void setPlayUntil(const String &s) { playUntil_ = s; }
+    void set_play_until(const String &s) { play_until_ = s; }
 
-    void setContinueAt(const String &s) { continueAt_ = s; }
+    void set_continue_at(const String &s) { continue_at_ = s; }
 
-    bool playRepeats() const { return playRepeats_; }
+    bool play_repeats() const { return play_repeats_; }
 
-    void setPlayRepeats(bool val) { playRepeats_ = val; }
+    void set_play_repeats(bool val) { play_repeats_ = val; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
 private:
-    String jumpTo_;
-    String playUntil_;
-    String continueAt_;
-    bool playRepeats_ = false;
+    String jump_to_;
+    String play_until_;
+    String continue_at_;
+    bool play_repeats_ = false;
 };
 
 struct JumpTypeTableItem {
     JumpType type;
     AsciiStringView text;
-    AsciiStringView jumpTo;
-    AsciiStringView playUntil;
-    AsciiStringView continueAt;
+    AsciiStringView jump_to;
+    AsciiStringView play_until;
+    AsciiStringView continue_at;
 };
 
-extern const std::vector<JumpTypeTableItem> jumpTypeTable;
+extern const std::vector<JumpTypeTableItem> jump_type_table;
 } // namespace mu::engraving
 
 #endif

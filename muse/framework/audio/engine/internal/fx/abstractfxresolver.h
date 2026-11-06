@@ -30,29 +30,31 @@
 namespace muse::audio::fx {
 class AbstractFxResolver : public IFxResolver::IResolver {
 public:
-    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
-    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
+    std::vector<IFxProcessorPtr> resolve_fx_list(const TrackId track_id, const AudioFxChain &fx_chain,
+                                                 const OutputSpec &output_spec) override;
+    std::vector<IFxProcessorPtr> resolve_master_fx_list(const AudioFxChain &fx_chain, const OutputSpec &output_spec) override;
 
     void refresh() override;
-    void clearAllFx() override;
+    void clear_all_fx() override;
 
 protected:
-    virtual IFxProcessorPtr createMasterFx(const AudioFxParams &fxParams, const OutputSpec &outputSpec) const = 0;
-    virtual IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams &fxParams, const OutputSpec &outputSpec) const = 0;
+    virtual IFxProcessorPtr create_master_fx(const AudioFxParams &fx_params, const OutputSpec &output_spec) const = 0;
+    virtual IFxProcessorPtr create_track_fx(const TrackId track_id, const AudioFxParams &fx_params,
+                                            const OutputSpec &output_spec) const = 0;
 
-    virtual void removeMasterFx(const AudioResourceId &resoureId, AudioFxChainOrder order);
-    virtual void removeTrackFx(const TrackId trackId, const AudioResourceId &resoureId, AudioFxChainOrder order);
+    virtual void remove_master_fx(const AudioResourceId &resoure_id, AudioFxChainOrder order);
+    virtual void remove_track_fx(const TrackId track_id, const AudioResourceId &resoure_id, AudioFxChainOrder order);
 
 private:
     using FxMap = std::map<AudioFxChainOrder, IFxProcessorPtr>;
 
-    void updateMasterFxMap(const AudioFxChain &newFxChain, const OutputSpec &outputSpec);
-    void updateTrackFxMap(FxMap &fxMap, const TrackId trackId, const AudioFxChain &newFxChain, const audio::OutputSpec &outputSpec);
+    void update_master_fx_map(const AudioFxChain &new_fx_chain, const OutputSpec &output_spec);
+    void update_track_fx_map(FxMap &fx_map, const TrackId track_id, const AudioFxChain &new_fx_chain, const audio::OutputSpec &output_spec);
 
-    void fxChainToRemove(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain);
-    void fxChainToCreate(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain);
+    void fx_chain_to_remove(const AudioFxChain &current_fx_chain, const AudioFxChain &new_fx_chain, AudioFxChain &result_chain);
+    void fx_chain_to_create(const AudioFxChain &current_fx_chain, const AudioFxChain &new_fx_chain, AudioFxChain &result_chain);
 
-    std::map<TrackId, FxMap> tracksFxMap_;
-    FxMap masterFxMap_;
+    std::map<TrackId, FxMap> tracks_fx_map_;
+    FxMap master_fx_map_;
 };
 } // namespace muse::audio::fx

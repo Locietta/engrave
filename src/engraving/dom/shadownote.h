@@ -47,52 +47,52 @@ public:
 
     ShadowNote *clone() const override { return new ShadowNote(*this); }
 
-    bool isValid() const;
+    bool is_valid() const;
 
     Fraction tick() const override { return tick_; }
 
-    void setTick(Fraction t) { tick_ = t; }
+    void set_tick(Fraction t) { tick_ = t; }
 
-    int lineIndex() const { return lineIndex_; }
+    int line_index() const { return line_index_; }
 
-    void setLineIndex(int n) { lineIndex_ = n; }
+    void set_line_index(int n) { line_index_ = n; }
 
-    bool isRest() const { return isRest_; }
+    bool is_rest() const { return is_rest_; }
 
     const TDuration &duration() const { return duration_; }
 
-    void setState(SymId noteSymbol, TDuration duration, bool isRest, bool beyondScore, AccidentalType accidentalType = AccidentalType::NONE,
-                  const std::set<SymId> &articulationIds = {});
+    void set_state(SymId note_symbol, TDuration duration, bool is_rest, bool beyond_score,
+                   AccidentalType accidental_type = AccidentalType::NONE, const std::set<SymId> &articulation_ids = {});
 
-    void drawArticulations(muse::draw::Painter *painter) const;
-    void drawCloseArticulation(muse::draw::Painter *painter, const SymId &articulation, RectF &boundRect, bool up,
-                               const SymId &prevArticulation) const;
-    void drawFarArticulation(muse::draw::Painter *painter, const SymId &articulation, RectF &boundRect, bool up,
-                             bool accentStaccatoKern) const;
+    void draw_articulations(muse::draw::Painter *painter) const;
+    void draw_close_articulation(muse::draw::Painter *painter, const SymId &articulation, RectF &bound_rect, bool up,
+                                 const SymId &prev_articulation) const;
+    void draw_far_articulation(muse::draw::Painter *painter, const SymId &articulation, RectF &bound_rect, bool up,
+                               bool accent_staccato_kern) const;
 
-    bool computeUp() const;
+    bool compute_up() const;
 
-    SymId noteheadSymbol() const { return noteheadSymbol_; }
+    SymId notehead_symbol() const { return notehead_symbol_; }
 
-    bool hasStem() const;
-    bool hasFlag() const;
-    SymId flagSym() const;
-    AccidentalType accidentalType() const;
-    const std::set<SymId> &articulationIds() const;
+    bool has_stem() const;
+    bool has_flag() const;
+    SymId flag_sym() const;
+    AccidentalType accidental_type() const;
+    const std::set<SymId> &articulation_ids() const;
 
-    bool ledgerLinesVisible() const;
+    bool ledger_lines_visible() const;
 
-    bool isBeyondScore() const { return beyondScore_; }
+    bool is_beyond_score() const { return beyond_score_; }
 
 private:
 
     Fraction tick_;
-    int lineIndex_ = -1;
-    SymId noteheadSymbol_ = SymId::noSym;
+    int line_index_ = -1;
+    SymId notehead_symbol_ = SymId::NO_SYM;
     TDuration duration_;
-    bool isRest_ = false;
-    AccidentalType accidentalType_ = AccidentalType::NONE;
-    std::set<SymId> articulationIds_;
-    bool beyondScore_ = false;
+    bool is_rest_ = false;
+    AccidentalType accidental_type_ = AccidentalType::NONE;
+    std::set<SymId> articulation_ids_;
+    bool beyond_score_ = false;
 };
 } // namespace mu::engraving

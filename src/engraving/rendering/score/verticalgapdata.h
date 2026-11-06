@@ -42,39 +42,39 @@ class VerticalGapData {
 public:
     const MStyle *style = nullptr;
     System *system = nullptr;
-    SysStaff *sysStaff = nullptr;
+    SysStaff *sys_staff = nullptr;
     const Staff *staff = nullptr;
 
-    VerticalGapData(const MStyle *style, bool first, System *sys, const Staff *st, SysStaff *sst, Spacer *nextSpacer, double y);
+    VerticalGapData(const MStyle *style, bool first, System *sys, const Staff *st, SysStaff *sst, Spacer *next_spacer, double y);
 
-    void addSpaceBetweenSections();
-    void addSpaceAroundVBox(bool above);
-    void addSpaceAroundNormalBracket();
-    void addSpaceAroundCurlyBracket();
-    void insideCurlyBracket();
+    void add_space_between_sections();
+    void add_space_around_v_box(bool above);
+    void add_space_around_normal_bracket();
+    void add_space_around_curly_bracket();
+    void inside_curly_bracket();
 
     double factor() const;
     double spacing() const;
-    double actualAddedSpace() const;
+    double actual_added_space() const;
 
-    double addSpacing(double step);
-    bool isFixedHeight() const;
-    void undoLastAddSpacing();
-    double addFillSpacing(double step, double maxFill);
+    double add_spacing(double step);
+    bool is_fixed_height() const;
+    void undo_last_add_spacing();
+    double add_fill_spacing(double step, double max_fill);
 
-    void setNormalisedSpacing(double newNormalisedSpacing);
+    void set_normalised_spacing(double new_normalised_spacing);
 
 private:
-    void updateFactor(double factor);
+    void update_factor(double factor);
 
-    bool fixedHeight_ = false;
-    bool fixedSpacer_ = false;
+    bool fixed_height_ = false;
+    bool fixed_spacer_ = false;
     double factor_ = 1.0;
-    double normalisedSpacing_ = 0.0;
-    double maxActualSpacing_ = 0.0;
-    double addedNormalisedSpace_ = 0.0;
-    double fillSpacing_ = 0.0;
-    double lastStep_ = 0.0;
+    double normalised_spacing_ = 0.0;
+    double max_actual_spacing_ = 0.0;
+    double added_normalised_space_ = 0.0;
+    double fill_spacing_ = 0.0;
+    double last_step_ = 0.0;
 };
 
 //---------------------------------------------------------
@@ -84,8 +84,8 @@ private:
 
 class VerticalGapDataList : public std::vector<VerticalGapData *> {
 public:
-    void deleteAll();
-    double sumStretchFactor() const;
+    void delete_all();
+    double sum_stretch_factor() const;
     double smallest(double limit = -1.0) const;
 };
 } // namespace mu::engraving::rendering::score

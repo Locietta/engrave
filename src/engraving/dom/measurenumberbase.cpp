@@ -44,5 +44,5 @@ MeasureNumberBase::MeasureNumberBase(const ElementType &type, DummyParentOr<Meas
 //     Copy constructor
 //---------------------------------------------------------
 
-MeasureNumberBase::MeasureNumberBase(const MeasureNumberBase &other) : TextBase(other) { setFlag(ElementFlag::ON_STAFF, true); }
+MeasureNumberBase::MeasureNumberBase(const MeasureNumberBase &other) : TextBase(other) { set_flag(ElementFlag::ON_STAFF, true); }
 } // namespace mu::engraving

@@ -27,7 +27,7 @@
 
 namespace muse::audio::fx { namespace reverb_matrices {
 template <int n>
-inline void Hadamard(const float i[n], float o[n]) {
+inline void hadamard(const float i[n], float o[n]) {
     UNUSED(i);
     UNUSED(o);
 
@@ -36,7 +36,7 @@ inline void Hadamard(const float i[n], float o[n]) {
 }
 
 template <>
-inline void Hadamard<8>(const float i[8], float o[8]) {
+inline void hadamard<8>(const float i[8], float o[8]) {
     // log2(n)*n adds n muls = 24 adds, 8 muls
 
     const float fact = 1.f / std::sqrt(8.f);
@@ -58,7 +58,7 @@ inline void Hadamard<8>(const float i[8], float o[8]) {
 }
 
 template <>
-inline void Hadamard<12>(const float i[12], float o[12]) {
+inline void hadamard<12>(const float i[12], float o[12]) {
     // adds 12 + 24 + 24 = 60 adds, 12 muls
 
     // this might seem a bit crazy and it took me 4 attempts to get all signs and numbers right.. I don't have enough
@@ -89,7 +89,7 @@ inline void Hadamard<12>(const float i[12], float o[12]) {
 }
 
 template <>
-inline void Hadamard<16>(const float i[16], float o[16]) {
+inline void hadamard<16>(const float i[16], float o[16]) {
     // 16 + 16 + 16 + 16 = 64 adds, 16 muls
 
     const float fact = 1.f / std::sqrt(16.f);
@@ -122,7 +122,7 @@ inline void Hadamard<16>(const float i[16], float o[16]) {
 }
 
 template <>
-inline void Hadamard<24>(const float i[24], float o[24]) {
+inline void hadamard<24>(const float i[24], float o[24]) {
     // 24 + 48 + 48 = 120 adds, 24 muls
     const float fact = 1.f / std::sqrt(24.f);
 

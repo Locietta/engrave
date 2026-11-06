@@ -39,7 +39,7 @@ public:
     explicit TextStream(io::IODevice *device);
     virtual ~TextStream();
 
-    void setDevice(io::IODevice *device);
+    void set_device(io::IODevice *device);
 
     void flush();
 

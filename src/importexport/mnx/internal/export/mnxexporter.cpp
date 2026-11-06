@@ -42,10 +42,10 @@ namespace mu::iex::mnxio {
 //   getOrAssignEID
 //---------------------------------------------------------
 
-EID MnxExporter::getOrAssignEID(EngravingObject *item) {
+EID MnxExporter::get_or_assign_eid(EngravingObject *item) {
     EID eid = item->eid();
-    if (!eid.isValid()) {
-        eid = item->assignNewEID();
+    if (!eid.is_valid()) {
+        eid = item->assign_new_eid();
     }
     return eid;
 }
@@ -54,10 +54,10 @@ EID MnxExporter::getOrAssignEID(EngravingObject *item) {
 //   mnxEventFromCR
 //---------------------------------------------------------
 
-std::optional<mnx::sequence::Event> MnxExporter::mnxEventFromCR(const engraving::ChordRest *cr) {
-    auto pointer = muse::value(crToMnxEvent_, cr);
+std::optional<mnx::sequence::Event> MnxExporter::mnx_event_from_cr(const engraving::ChordRest *cr) {
+    auto pointer = muse::value(cr_to_mnx_event_, cr);
     if (!pointer.empty()) {
-        return mnx::sequence::Event(mnxDocument().root(), pointer);
+        return mnx::sequence::Event(mnx_document().root(), pointer);
     }
     return std::nullopt;
 }
@@ -66,9 +66,9 @@ std::optional<mnx::sequence::Event> MnxExporter::mnxEventFromCR(const engraving:
 //   mnxMeasureIndexFromMeasure
 //---------------------------------------------------------
 
-size_t MnxExporter::mnxMeasureIndexFromMeasure(const engraving::Measure *measure) const {
+size_t MnxExporter::mnx_measure_index_from_measure(const engraving::Measure *measure) const {
     IF_ASSERT_FAILED(measure) { throw std::logic_error("Measure is null while resolving MNX measure index."); }
-    const size_t result = muse::value(measToMnxMeas_, measure, muse::nidx);
+    const size_t result = muse::value(meas_to_mnx_meas_, measure, muse::nidx);
     IF_ASSERT_FAILED(result != muse::nidx) { throw std::logic_error("Measure is not mapped to an MNX measure index."); }
     return result;
 }
@@ -77,9 +77,9 @@ size_t MnxExporter::mnxMeasureIndexFromMeasure(const engraving::Measure *measure
 //   mnxPartStaffFromStaffIdx
 //---------------------------------------------------------
 
-std::pair<size_t, int> MnxExporter::mnxPartStaffFromStaffIdx(engraving::staff_idx_t staffIdx) const {
-    const auto it = staffToPartStaff_.find(staffIdx);
-    IF_ASSERT_FAILED(it != staffToPartStaff_.end()) { throw std::logic_error("Staff index is not mapped to an MNX part/staff."); }
+std::pair<size_t, int> MnxExporter::mnx_part_staff_from_staff_idx(engraving::staff_idx_t staff_idx) const {
+    const auto it = staff_to_part_staff_.find(staff_idx);
+    IF_ASSERT_FAILED(it != staff_to_part_staff_.end()) { throw std::logic_error("Staff index is not mapped to an MNX part/staff."); }
     return it->second;
 }
 
@@ -87,11 +87,11 @@ std::pair<size_t, int> MnxExporter::mnxPartStaffFromStaffIdx(engraving::staff_id
 //   mnxFermataFromFermata
 //---------------------------------------------------------
 
-mnx::Fermata MnxExporter::mnxFermataFromFermata(const Fermata *fermata) {
+mnx::Fermata MnxExporter::mnx_fermata_from_fermata(const Fermata *fermata) {
     mnx::Fermata result;
-    result.set_or_clear_duration(toMnxFermataDuration(fermata->fermataType()));
-    result.set_or_clear_symbol(toMnxFermataSymbol(fermata->symId()));
-    result.set_or_clear_orient(toMnxOrientation(fermata->placement()));
+    result.set_or_clear_duration(to_mnx_fermata_duration(fermata->fermata_type()));
+    result.set_or_clear_symbol(to_mnx_fermata_symbol(fermata->sym_id()));
+    result.set_or_clear_orient(to_mnx_orientation(fermata->placement()));
     return result;
 }
 
@@ -101,38 +101,39 @@ mnx::Fermata MnxExporter::mnxFermataFromFermata(const Fermata *fermata) {
 //   a chord, including grace-note targets
 //---------------------------------------------------------
 
-std::optional<MnxChordTargetPosition> MnxExporter::mnxChordTargetPosition(const Chord *chord, const Measure *measure) {
+std::optional<MnxChordTargetPosition> MnxExporter::mnx_chord_target_position(const Chord *chord, const Measure *measure) {
     IF_ASSERT_FAILED(chord && measure) { return std::nullopt; }
 
-    auto positionFromTick = [measure](const Fraction &tick) {
-        return MnxChordTargetPosition{toMnxFractionValue(tick - measure->tick()).reduced(), std::nullopt};
+    auto position_from_tick = [measure](const Fraction &tick) {
+        return MnxChordTargetPosition{to_mnx_fraction_value(tick - measure->tick()).reduced(), std::nullopt};
     };
 
-    if (!chord->isGrace()) {
-        MnxChordTargetPosition position = positionFromTick(chord->tick());
-        if (!chord->graceNotes().empty()) {
-            position.graceIndex = 0;
+    if (!chord->is_grace()) {
+        MnxChordTargetPosition position = position_from_tick(chord->tick());
+        if (!chord->grace_notes().empty()) {
+            position.grace_index = 0;
         }
         return position;
     }
 
-    EngravingObject *parent = chord->ownershipParent();
-    if (!parent || !parent->isChord()) {
+    EngravingObject *parent = chord->ownership_parent();
+    if (!parent || !parent->is_chord()) {
         LOGW() << "Skipping grace-note target with missing main chord.";
         return std::nullopt;
     }
 
-    const Chord *mainChord = toChord(parent);
-    const GraceNotesGroup &graceNotes = chord->isGraceAfter() ? mainChord->graceNotesAfter() : mainChord->graceNotesBefore();
-    const auto graceIt = std::find(graceNotes.begin(), graceNotes.end(), chord);
-    if (graceIt == graceNotes.end()) {
+    const Chord *main_chord = to_chord(parent);
+    const GraceNotesGroup &grace_notes = chord->is_grace_after() ? main_chord->grace_notes_after() : main_chord->grace_notes_before();
+    const auto grace_it = std::find(grace_notes.begin(), grace_notes.end(), chord);
+    if (grace_it == grace_notes.end()) {
         LOGW() << "Skipping grace-note target whose grace index could not be resolved.";
         return std::nullopt;
     }
 
-    const size_t index = static_cast<size_t>(std::distance(graceNotes.begin(), graceIt));
-    MnxChordTargetPosition position = positionFromTick(chord->isGraceAfter() ? mainChord->tick() + mainChord->ticks() : mainChord->tick());
-    position.graceIndex = static_cast<unsigned>(graceNotes.size() - index);
+    const size_t index = static_cast<size_t>(std::distance(grace_notes.begin(), grace_it));
+    MnxChordTargetPosition position =
+        position_from_tick(chord->is_grace_after() ? main_chord->tick() + main_chord->ticks() : main_chord->tick());
+    position.grace_index = static_cast<unsigned>(grace_notes.size() - index);
     return position;
 }
 
@@ -140,48 +141,48 @@ std::optional<MnxChordTargetPosition> MnxExporter::mnxChordTargetPosition(const 
 //   exportMnx
 //---------------------------------------------------------
 
-muse::Ret MnxExporter::exportMnx() {
-    LOGI() << "MNX export started: schema version=" << mnxDocument_.mnx().version();
+muse::Ret MnxExporter::export_mnx() {
+    LOGI() << "MNX export started: schema version=" << mnx_document_.mnx().version();
     // Header
-    auto client = mnxDocument_.mnx().ensure_mnxdom().ensure_client();
-    muse::String version = muse::appinfo::version().toString();
+    auto client = mnx_document_.mnx().ensure_mnxdom().ensure_client();
+    muse::String version = muse::appinfo::version().to_string();
     const muse::String revision = muse::appinfo::revision();
-    if (!revision.isEmpty()) {
+    if (!revision.is_empty()) {
         version += u" rev. " + revision;
     }
     client.set_name("engrave");
-    client.set_version(version.toStdString());
-    if (score_ && score_->masterScore()) {
-        IFileInfoProviderPtr fileInfo = score_->masterScore()->fileInfo();
-        if (fileInfo) {
-            const muse::io::path_t fileName = fileInfo->fileName();
-            const std::string format = muse::io::suffix(fileName);
-            if (!format.empty() || !fileName.empty()) {
-                auto source = mnxDocument_.mnx().ensure_mnxdom().ensure_source();
+    client.set_version(version.to_std_string());
+    if (score_ && score_->master_score()) {
+        IFileInfoProviderPtr file_info = score_->master_score()->file_info();
+        if (file_info) {
+            const muse::io::PathT file_name = file_info->file_name();
+            const std::string format = muse::io::suffix(file_name);
+            if (!format.empty() || !file_name.empty()) {
+                auto source = mnx_document_.mnx().ensure_mnxdom().ensure_source();
                 if (!format.empty()) {
                     source.set_format(format);
                 }
-                if (!fileName.empty()) {
-                    source.set_filename(fileName.toStdString());
+                if (!file_name.empty()) {
+                    source.set_filename(file_name.to_std_string());
                 }
             }
         }
     }
 
-    if (exportBeams_) {
-        mnx::MnxMetaData::Support support = mnxDocument_.mnx().ensure_support();
+    if (export_beams_) {
+        mnx::MnxMetaData::Support support = mnx_document_.mnx().ensure_support();
         support.set_useBeams(true);
     }
 
-    createGlobal();
-    if (!createParts()) {
+    create_global();
+    if (!create_parts()) {
         const String msg =
             muse::TranslatableString("importexport/mnx",
                                      "MNX export skipped because the score contains no exportable parts. (Tablature is not supported yet).")
                 .str;
-        return muse::make_ret(muse::Ret::Code::NotSupported, msg);
+        return muse::make_ret(muse::Ret::Code::NOT_SUPPORTED, msg);
     }
-    createLayout(exportedStaves_, "full-score");
+    create_layout(exported_staves_, "full-score");
     /// @todo Creation of all layouts and scores, including excerpts. (Deferred to a future dev cycle.)
     return muse::make_ok();
 }

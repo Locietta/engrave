@@ -32,7 +32,7 @@ class Arpeggio;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-const int MAX_NUMBER_LEVEL = 16; // maximum number of overlapping MusicXML objects
+const int max_number_level = 16; // maximum number of overlapping MusicXML objects
 
 enum class MusicXmlExporterSoftware : char { DOLET6, DOLET8, DORICO, FINALE, NOTEFLIGHT, SIBELIUS, OTHER };
 
@@ -64,26 +64,26 @@ struct MusicXmlInstrument {
     int unpitched;                     // midi-unpitched read from MusicXML
     muse::String name;                 // instrument-name read from MusicXML
     muse::String sound;                // instrument-sound read from MusicXML
-    muse::String virtLib;              // virtual-library read from MusicXML
-    muse::String virtName;             // virtual-name read from MusicXML
-    int midiChannel;                   // midi-channel read from MusicXML
-    int midiPort;                      // port read from MusicXML
-    int midiProgram;                   // midi-program read from MusicXML
-    int midiVolume;                    // volume read from MusicXML
-    int midiPan;                       // pan value read from MusicXML
+    muse::String virt_lib;             // virtual-library read from MusicXML
+    muse::String virt_name;            // virtual-name read from MusicXML
+    int midi_channel;                  // midi-channel read from MusicXML
+    int midi_port;                     // port read from MusicXML
+    int midi_program;                  // midi-program read from MusicXML
+    int midi_volume;                   // volume read from MusicXML
+    int midi_pan;                      // pan value read from MusicXML
     engraving::NoteHeadGroup notehead; // notehead symbol set
     int line = 0;                      // place notehead onto this line
-    engraving::DirectionV stemDirection;
+    engraving::DirectionV stem_direction;
 
-    muse::String toString() const;
+    muse::String to_string() const;
 
     MusicXmlInstrument() // required by std::map
-        : unpitched(-1), name(), midiChannel(-1), midiPort(-1), midiProgram(-1), midiVolume(100), midiPan(63),
-          notehead(engraving::NoteHeadGroup::HEAD_INVALID), line(0), stemDirection(engraving::DirectionV::AUTO) {}
+        : unpitched(-1), name(), midi_channel(-1), midi_port(-1), midi_program(-1), midi_volume(100), midi_pan(63),
+          notehead(engraving::NoteHeadGroup::HEAD_INVALID), line(0), stem_direction(engraving::DirectionV::AUTO) {}
 
     MusicXmlInstrument(muse::String s)
-        : unpitched(-1), name(s), midiChannel(-1), midiPort(-1), midiProgram(-1), midiVolume(100), midiPan(63),
-          notehead(engraving::NoteHeadGroup::HEAD_NORMAL), line(0), stemDirection(engraving::DirectionV::AUTO) {}
+        : unpitched(-1), name(s), midi_channel(-1), midi_port(-1), midi_program(-1), midi_volume(100), midi_pan(63),
+          notehead(engraving::NoteHeadGroup::HEAD_NORMAL), line(0), stem_direction(engraving::DirectionV::AUTO) {}
 
     /*
     MusicXmlInstrument(int p, String s, NoteHead::Group nh, int l, Direction d)
@@ -106,18 +106,18 @@ public:
     MusicXmlInstrList() {}
 
     const muse::String instrument(const engraving::Fraction f) const;
-    void setInstrument(const muse::String instr, const engraving::Fraction f);
+    void set_instrument(const muse::String instr, const engraving::Fraction f);
 };
 
 class LyricNumberHandler {
 public:
     LyricNumberHandler() {}
 
-    void addNumber(const muse::String &number);
-    muse::String toString() const;
-    int getLyricNo(const muse::String &number) const;
-    void determineLyricNos();
+    void add_number(const muse::String &number);
+    muse::String to_string() const;
+    int get_lyric_no(const muse::String &number) const;
+    void determine_lyric_nos();
 private:
-    std::map<muse::String, int> numberToNo_;
+    std::map<muse::String, int> number_to_no_;
 };
 } // namespace mu::iex::musicxml

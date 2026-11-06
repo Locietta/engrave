@@ -30,45 +30,45 @@
 namespace muse::mpe {
 struct PlaybackSetupData {
     String id;
-    StringList subCategories;
+    StringList sub_categories;
 
-    std::optional<std::string> scoreId;
-    std::optional<std::string> musicXmlSoundId;
+    std::optional<std::string> score_id;
+    std::optional<std::string> music_xml_sound_id;
 
-    SoundCategory category = SoundCategory::Undefined;
+    SoundCategory category = SoundCategory::UNDEFINED;
 
-    bool supportsSingleNoteDynamics = false;
+    bool supports_single_note_dynamics = false;
 
     PlaybackSetupData() = default;
 
-    PlaybackSetupData(SoundId id, SoundCategory category, SoundSubCategories &&soundSubCategories = {}, bool supportsSND = false)
-        : id(soundIdToString(id)), category(category), supportsSingleNoteDynamics(supportsSND) {
-        for (SoundSubCategory subCategory : soundSubCategories) {
-            subCategories.push_back(soundSubCategoryToString(subCategory));
+    PlaybackSetupData(SoundId id, SoundCategory category, SoundSubCategories &&sound_sub_categories = {}, bool supports_snd = false)
+        : id(sound_id_to_string(id)), category(category), supports_single_note_dynamics(supports_snd) {
+        for (SoundSubCategory sub_category : sound_sub_categories) {
+            sub_categories.push_back(sound_sub_category_to_string(sub_category));
         }
     }
 
-    PlaybackSetupData(String id, SoundCategory category, StringList &&subCategories = {})
-        : id(std::move(id)), subCategories(std::move(subCategories)), category(category) {}
+    PlaybackSetupData(String id, SoundCategory category, StringList &&sub_categories = {})
+        : id(std::move(id)), sub_categories(std::move(sub_categories)), category(category) {}
 
-    SoundId soundId() const { return soundIdFromString(id); }
+    SoundId sound_id() const { return sound_id_from_string(id); }
 
-    SoundSubCategories soundSubCategories() const {
+    SoundSubCategories sound_sub_categories() const {
         SoundSubCategories result;
-        for (const String &subCategory : subCategories) {
-            result.insert(soundSubCategoryFromString(subCategory));
+        for (const String &sub_category : sub_categories) {
+            result.insert(sound_sub_category_from_string(sub_category));
         }
 
         return result;
     }
 
-    bool isKnownSound() const {
-        if (soundIdFromString(id) == SoundId::Unknown) {
+    bool is_known_sound() const {
+        if (sound_id_from_string(id) == SoundId::UNKNOWN) {
             return false;
         }
 
-        for (const String &subCategory : subCategories) {
-            if (soundSubCategoryFromString(subCategory) == SoundSubCategory::Unknown) {
+        for (const String &sub_category : sub_categories) {
+            if (sound_sub_category_from_string(sub_category) == SoundSubCategory::UNKNOWN) {
                 return false;
             }
         }
@@ -76,20 +76,22 @@ struct PlaybackSetupData {
         return true;
     }
 
-    bool contains(const SoundSubCategory subcategory) const { return muse::contains(subCategories, soundSubCategoryToString(subcategory)); }
+    bool contains(const SoundSubCategory subcategory) const {
+        return muse::contains(sub_categories, sound_sub_category_to_string(subcategory));
+    }
 
     void add(const SoundSubCategory subcategory) {
-        auto insertPos = std::find_if(subCategories.cbegin(), subCategories.cend(), [subcategory](const String &str) {
-            SoundSubCategory existingSubCategory = soundSubCategoryFromString(str);
-            return subcategory < existingSubCategory;
+        auto insert_pos = std::find_if(sub_categories.cbegin(), sub_categories.cend(), [subcategory](const String &str) {
+            SoundSubCategory existing_sub_category = sound_sub_category_from_string(str);
+            return subcategory < existing_sub_category;
         });
 
-        subCategories.insert(insertPos, soundSubCategoryToString(subcategory));
+        sub_categories.insert(insert_pos, sound_sub_category_to_string(subcategory));
     }
 
     bool operator==(const PlaybackSetupData &other) const {
-        return id == other.id && category == other.category && subCategories == other.subCategories &&
-               supportsSingleNoteDynamics == other.supportsSingleNoteDynamics;
+        return id == other.id && category == other.category && sub_categories == other.sub_categories &&
+               supports_single_note_dynamics == other.supports_single_note_dynamics;
     }
 
     bool operator<(const PlaybackSetupData &other) const {
@@ -99,15 +101,15 @@ struct PlaybackSetupData {
             if (other.category > category) {
                 return true;
             } else if (other.category == category) {
-                return other.subCategories > subCategories;
+                return other.sub_categories > sub_categories;
             }
         }
 
         return false;
     }
 
-    bool isValid() const {
-        if (category == SoundCategory::Undefined) {
+    bool is_valid() const {
+        if (category == SoundCategory::UNDEFINED) {
             return false;
         }
 
@@ -115,50 +117,50 @@ struct PlaybackSetupData {
             return false;
         }
 
-        if (id == ID_STRINGS.at(SoundId::Undefined)) {
+        if (id == ::muse::mpe::id_strings.at(SoundId::UNDEFINED)) {
             return false;
         }
 
         return true;
     }
 
-    String toString() const {
+    String to_string() const {
         String result;
 
-        if (!subCategories.empty()) {
-            result = String(u"%1.%2.%3").arg(soundCategoryToString(category)).arg(id).arg(subCategories.join(u":"));
+        if (!sub_categories.empty()) {
+            result = String(u"%1.%2.%3").arg(sound_category_to_string(category)).arg(id).arg(sub_categories.join(u":"));
         } else {
-            result = String(u"%1.%2").arg(soundCategoryToString(category)).arg(id);
+            result = String(u"%1.%2").arg(sound_category_to_string(category)).arg(id);
         }
 
         return result;
     }
 
-    static PlaybackSetupData fromString(const String &str) {
+    static PlaybackSetupData from_string(const String &str) {
         if (str.empty()) {
             return PlaybackSetupData();
         }
 
-        StringList subStrList = str.split(u".");
+        StringList sub_str_list = str.split(u".");
 
-        if (subStrList.size() < 2) {
+        if (sub_str_list.size() < 2) {
             return PlaybackSetupData();
         }
 
-        StringList subCategories;
-        if (subStrList.size() == 3) {
-            subCategories = subStrList.at(2).split(u":");
+        StringList sub_categories;
+        if (sub_str_list.size() == 3) {
+            sub_categories = sub_str_list.at(2).split(u":");
         }
 
-        PlaybackSetupData result = {subStrList.at(1), soundCategoryFromString(subStrList.at(0)), std::move(subCategories)};
+        PlaybackSetupData result = {sub_str_list.at(1), sound_category_from_string(sub_str_list.at(0)), std::move(sub_categories)};
 
         return result;
     }
 };
 
-static const PlaybackSetupData GENERIC_SETUP_DATA = {SoundId::Last, SoundCategory::Last, {SoundSubCategory::Last}};
+static const PlaybackSetupData generic_setup_data = {SoundId::LAST, SoundCategory::LAST, {SoundSubCategory::LAST}};
 
-static const String GENERIC_SETUP_DATA_STRING = GENERIC_SETUP_DATA.toString();
+static const String generic_setup_data_string = ::muse::mpe::generic_setup_data.to_string();
 } // namespace muse::mpe
 
 #endif // MUSE_MPE_PLAYBACKSETUPDATA_H

@@ -37,13 +37,13 @@ public:
     static void parse(const EngravingItem *item, const RenderingContext &context, muse::mpe::ArticulationMap &result) {
         IF_ASSERT_FAILED(item) { return; }
 
-        T::doParse(item, context, result);
+        T::do_parse(item, context, result);
     }
 
 protected:
-    static void appendArticulationData(muse::mpe::ArticulationMeta &&meta, muse::mpe::ArticulationMap &result) {
+    static void append_articulation_data(muse::mpe::ArticulationMeta &&meta, muse::mpe::ArticulationMap &result) {
         result.emplace(meta.type,
-                       muse::mpe::ArticulationAppliedData(std::forward<muse::mpe::ArticulationMeta>(meta), 0, muse::mpe::HUNDRED_PERCENT));
+                       muse::mpe::ArticulationAppliedData(std::forward<muse::mpe::ArticulationMeta>(meta), 0, muse::mpe::hundred_percent));
     }
 };
 } // namespace mu::engraving

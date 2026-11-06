@@ -33,9 +33,9 @@ class MTrack;
 class ReducedFraction;
 
 namespace MidiTempo {
-ReducedFraction time2Tick(double time, double ticksPerSec);
-double findBasicTempo(const std::multimap<int, MTrack> &tracks, bool isHumanPerformance);
-void setTempo(const std::multimap<int, MTrack> &tracks, engraving::Score *score);
+ReducedFraction time2_tick(double time, double ticks_per_sec);
+double find_basic_tempo(const std::multimap<int, MTrack> &tracks, bool is_human_performance);
+void set_tempo(const std::multimap<int, MTrack> &tracks, engraving::Score *score);
 } // namespace MidiTempo
 } // namespace mu::iex::midi
 

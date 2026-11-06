@@ -34,11 +34,11 @@ class NoteLineSegment final : public TextLineBaseSegment {
 public:
     NoteLineSegment(NoteLine *sp);
 
-    NoteLine *noteLine() const { return toNoteLine(spanner()); }
+    NoteLine *note_line() const { return to_note_line(spanner()); }
 
     NoteLineSegment *clone() const override { return new NoteLineSegment(*this); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 };
 
 class NoteLine final : public TextLineBase {
@@ -55,28 +55,28 @@ public:
 
     Anchor anchor() const override { return Anchor::NOTE; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    PropertyValue propertyDefault(Pid) const override;
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
-    NoteLineEndPlacement lineEndPlacement() { return lineEndPlacement_; }
+    NoteLineEndPlacement line_end_placement() { return line_end_placement_; }
 
-    void setLineEndPlacement(NoteLineEndPlacement v) { lineEndPlacement_ = v; }
+    void set_line_end_placement(NoteLineEndPlacement v) { line_end_placement_ = v; }
 
     void reset() override;
 
-    bool enforceMinLength() { return lineEndPlacement_ != NoteLineEndPlacement::LEFT_EDGE; }
+    bool enforce_min_length() { return line_end_placement_ != NoteLineEndPlacement::LEFT_EDGE; }
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 
 private:
-    NoteLineEndPlacement lineEndPlacement_ = NoteLineEndPlacement::OFFSET_ENDS;
+    NoteLineEndPlacement line_end_placement_ = NoteLineEndPlacement::OFFSET_ENDS;
 };
 } // namespace mu::engraving

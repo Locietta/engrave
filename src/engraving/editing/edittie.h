@@ -38,26 +38,26 @@ class TieJumpPointList;
 
 class EditTie {
 public:
-    static void cmdAddTie(Score *score, bool addToChord = false);
-    static Tie *cmdToggleTie(Score *score);
-    static void cmdToggleLaissezVib(Score *score);
-    static std::vector<Note *> cmdTieNoteList(const Selection &selection, bool noteEntryMode);
+    static void cmd_add_tie(Score *score, bool add_to_chord = false);
+    static Tie *cmd_toggle_tie(Score *score);
+    static void cmd_toggle_laissez_vib(Score *score);
+    static std::vector<Note *> cmd_tie_note_list(const Selection &selection, bool note_entry_mode);
 };
 
 class ChangeTieJumpPointActive : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeTieJumpPointActive)
 
-    TieJumpPointList *jumpPointList_ = nullptr;
+    TieJumpPointList *jump_point_list_ = nullptr;
     muse::String id_;
     bool active_ = false;
 
     void flip() override;
 
 public:
-    ChangeTieJumpPointActive(TieJumpPointList *jumpPointList, muse::String id, bool active)
-        : jumpPointList_(jumpPointList), id_(id), active_(active) {}
+    ChangeTieJumpPointActive(TieJumpPointList *jump_point_list, muse::String id, bool active)
+        : jump_point_list_(jump_point_list), id_(id), active_(active) {}
 
-    UNDO_TYPE(CommandType::ChangeTieEndPointActive)
+    UNDO_TYPE(CommandType::CHANGE_TIE_END_POINT_ACTIVE)
     UNDO_NAME("ChangeTieEndPointActive")
 };
 } // namespace mu::engraving

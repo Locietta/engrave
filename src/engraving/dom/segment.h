@@ -40,42 +40,42 @@ class System;
 
 enum class SegmentType {
     ///.\{
-    Invalid = 0x0,
-    BeginBarLine = 0x1,
-    HeaderClef = 0x2,
-    KeySig = 0x4,
-    Ambitus = 0x8,
-    Breath = 0x10,
-    TimeSig = 0x20,
-    StartRepeatBarLine = 0x40,
-    ClefStartRepeatAnnounce = 0x80,
-    KeySigStartRepeatAnnounce = 0x100,
-    TimeSigStartRepeatAnnounce = 0x200,
-    Clef = 0x400,
-    BarLine = 0x800,
+    INVALID = 0x0,
+    BEGIN_BAR_LINE = 0x1,
+    HEADER_CLEF = 0x2,
+    KEY_SIG = 0x4,
+    AMBITUS = 0x8,
+    BREATH = 0x10,
+    TIME_SIG = 0x20,
+    START_REPEAT_BAR_LINE = 0x40,
+    CLEF_START_REPEAT_ANNOUNCE = 0x80,
+    KEY_SIG_START_REPEAT_ANNOUNCE = 0x100,
+    TIME_SIG_START_REPEAT_ANNOUNCE = 0x200,
+    CLEF = 0x400,
+    BAR_LINE = 0x800,
     //--
-    TimeTick = 0x1000,
-    ChordRest = 0x2000,
+    TIME_TICK = 0x1000,
+    CHORD_REST = 0x2000,
     //--
-    ClefRepeatAnnounce = 0x4000,
-    KeySigRepeatAnnounce = 0x8000,
-    TimeSigRepeatAnnounce = 0x10000,
+    CLEF_REPEAT_ANNOUNCE = 0x4000,
+    KEY_SIG_REPEAT_ANNOUNCE = 0x8000,
+    TIME_SIG_REPEAT_ANNOUNCE = 0x10000,
     //--
-    EndBarLine = 0x20000,
-    KeySigAnnounce = 0x40000,
-    TimeSigAnnounce = 0x80000,
+    END_BAR_LINE = 0x20000,
+    KEY_SIG_ANNOUNCE = 0x40000,
+    TIME_SIG_ANNOUNCE = 0x80000,
     //--
-    All = -1, ///< Includes all barline types
+    ALL = -1, ///< Includes all barline types
     /// Alias for `BeginBarLine | StartRepeatBarLine | BarLine | EndBarLine`
-    BarLineTypes = BeginBarLine | StartRepeatBarLine | BarLine | EndBarLine,
-    CourtesyTimeSigTypes = TimeSigAnnounce | TimeSigRepeatAnnounce | TimeSigStartRepeatAnnounce,
-    CourtesyKeySigTypes = KeySigAnnounce | KeySigRepeatAnnounce | KeySigStartRepeatAnnounce,
-    CourtesyClefTypes = ClefRepeatAnnounce | ClefStartRepeatAnnounce,
-    TimeSigTypes = TimeSig | CourtesyTimeSigTypes,
-    KeySigTypes = KeySig | CourtesyKeySigTypes,
-    ClefTypes = Clef | HeaderClef | CourtesyClefTypes,
+    BAR_LINE_TYPES = BEGIN_BAR_LINE | START_REPEAT_BAR_LINE | BAR_LINE | END_BAR_LINE,
+    COURTESY_TIME_SIG_TYPES = TIME_SIG_ANNOUNCE | TIME_SIG_REPEAT_ANNOUNCE | TIME_SIG_START_REPEAT_ANNOUNCE,
+    COURTESY_KEY_SIG_TYPES = KEY_SIG_ANNOUNCE | KEY_SIG_REPEAT_ANNOUNCE | KEY_SIG_START_REPEAT_ANNOUNCE,
+    COURTESY_CLEF_TYPES = CLEF_REPEAT_ANNOUNCE | CLEF_START_REPEAT_ANNOUNCE,
+    TIME_SIG_TYPES = TIME_SIG | COURTESY_TIME_SIG_TYPES,
+    KEY_SIG_TYPES = KEY_SIG | COURTESY_KEY_SIG_TYPES,
+    CLEF_TYPES = CLEF | HEADER_CLEF | COURTESY_CLEF_TYPES,
     // Only types with non-null duration
-    Duration = TimeTick | ChordRest,
+    DURATION = TIME_TICK | CHORD_REST,
     ///\}
 };
 
@@ -114,60 +114,60 @@ class Segment final : public EngravingItem {
     DECLARE_CLASSOF(ElementType::SEGMENT)
 
 protected:
-    EngravingItem *getElement(staff_idx_t staff) const; //??
+    EngravingItem *get_element(staff_idx_t staff) const; //??
 
 public:
 
     ~Segment();
 
-    void setOwnershipParent(DummyParentOr<Measure> parent);
+    void set_ownership_parent(DummyParentOr<Measure> parent);
 
     Segment *clone() const override { return new Segment(*this); }
 
-    void setScore(Score *) override;
+    void set_score(Score *) override;
 
-    inline bool isActive() const { return !isTimeTickType() && enabled() && visible(); }
+    inline bool is_active() const { return !is_time_tick_type() && enabled() && visible(); }
 
     Segment *next() const { return next_; }
 
     Segment *next(SegmentType) const;
-    Segment *nextActive() const;
-    Segment *nextEnabled() const;
-    Segment *nextInStaff(staff_idx_t staffIdx, SegmentType t = SegmentType::ChordRest) const;
+    Segment *next_active() const;
+    Segment *next_enabled() const;
+    Segment *next_in_staff(staff_idx_t staff_idx, SegmentType t = SegmentType::CHORD_REST) const;
 
-    void setNext(Segment *e) { next_ = e; }
+    void set_next(Segment *e) { next_ = e; }
 
     Segment *prev() const { return prev_; }
 
     Segment *prev(SegmentType) const;
-    Segment *prevWithElementsOnTrack(track_idx_t trackIdx, SegmentType segType = SegmentType::ChordRest) const;
-    Segment *prevActive() const;
-    Segment *prevEnabled() const;
+    Segment *prev_with_elements_on_track(track_idx_t track_idx, SegmentType seg_type = SegmentType::CHORD_REST) const;
+    Segment *prev_active() const;
+    Segment *prev_enabled() const;
 
-    void setPrev(Segment *e) { prev_ = e; }
+    void set_prev(Segment *e) { prev_ = e; }
 
     // don’t stop at measure boundary:
     Segment *next1() const;
     Segment *next1enabled() const;
-    Segment *next1MM() const;
-    Segment *next1MMenabled() const;
+    Segment *next1_mm() const;
+    Segment *next1_m_menabled() const;
     Segment *next1(SegmentType) const;
-    Segment *next1WithElemsOnStaff(staff_idx_t staffIdx, SegmentType segType = SegmentType::ChordRest) const;
-    Segment *next1WithElemsOnTrack(track_idx_t trackIdx, SegmentType segType = SegmentType::ChordRest) const;
-    Segment *next1MM(SegmentType) const;
+    Segment *next1_with_elems_on_staff(staff_idx_t staff_idx, SegmentType seg_type = SegmentType::CHORD_REST) const;
+    Segment *next1_with_elems_on_track(track_idx_t track_idx, SegmentType seg_type = SegmentType::CHORD_REST) const;
+    Segment *next1_mm(SegmentType) const;
 
     Segment *prev1() const;
-    Segment *prev1WithElemsOnStaff(staff_idx_t staffIdx, SegmentType segType = SegmentType::ChordRest) const;
-    Segment *prev1WithElemsOnTrack(track_idx_t trackIdx, SegmentType segType = SegmentType::ChordRest) const;
+    Segment *prev1_with_elems_on_staff(staff_idx_t staff_idx, SegmentType seg_type = SegmentType::CHORD_REST) const;
+    Segment *prev1_with_elems_on_track(track_idx_t track_idx, SegmentType seg_type = SegmentType::CHORD_REST) const;
     Segment *prev1enabled() const;
-    Segment *prev1MM() const;
-    Segment *prev1MMenabled() const;
+    Segment *prev1_mm() const;
+    Segment *prev1_m_menabled() const;
     Segment *prev1(SegmentType) const;
-    Segment *prev1MM(SegmentType) const;
+    Segment *prev1_mm(SegmentType) const;
 
-    Segment *nextCR(track_idx_t track = muse::nidx, bool sameStaff = false) const;
+    Segment *next_cr(track_idx_t track = muse::nidx, bool same_staff = false) const;
 
-    ChordRest *nextChordRest(track_idx_t track, bool backwards = false, bool stopAtMeasureBoundary = false) const;
+    ChordRest *next_chord_rest(track_idx_t track, bool backwards = false, bool stop_at_measure_boundary = false) const;
 
     EngravingItem *element(track_idx_t track) const;
 
@@ -175,54 +175,54 @@ public:
 
     std::vector<EngravingItem *> &elist() { return elist_; }
 
-    void removeElement(track_idx_t track);
-    void setElement(track_idx_t track, EngravingItem *el);
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void remove_element(track_idx_t track);
+    void set_element(track_idx_t track, EngravingItem *el);
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    Measure *measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return to_measure(ownership_parent()); }
 
     System *system() const;
 
     double x() const override { return ldata()->pos().x(); }
 
-    void insertStaff(staff_idx_t staff);
-    void removeStaff(staff_idx_t staff);
+    void insert_staff(staff_idx_t staff);
+    void remove_staff(staff_idx_t staff);
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
-    void swapElements(track_idx_t i1, track_idx_t i2);
+    void swap_elements(track_idx_t i1, track_idx_t i2);
 
-    void sortStaves(std::vector<staff_idx_t> &dst);
-    const char *subTypeName() const;
+    void sort_staves(std::vector<staff_idx_t> &dst);
+    const char *sub_type_name() const;
 
-    static const char *subTypeName(SegmentType);
-    static SegmentType segmentType(ElementType type);
+    static const char *sub_type_name(SegmentType);
+    static SegmentType segment_type(ElementType type);
 
-    SegmentType segmentType() const { return segmentType_; }
+    SegmentType segment_type() const { return segment_type_; }
 
-    void setSegmentType(SegmentType t);
+    void set_segment_type(SegmentType t);
 
     bool empty() const { return flag(ElementFlag::EMPTY); }
 
     bool written() const { return flag(ElementFlag::WRITTEN); }
 
-    void setWritten(bool val) const { setFlag(ElementFlag::WRITTEN, val); }
+    void set_written(bool val) const { set_flag(ElementFlag::WRITTEN, val); }
 
-    bool endOfMeasureChange() const {
+    bool end_of_measure_change() const {
         return flag(ElementFlag::END_OF_MEASURE_CHANGE);
     } // Key/time sigs which should be placed at the end of the measure
 
-    void setEndOfMeasureChange(bool val) const { setFlag(ElementFlag::END_OF_MEASURE_CHANGE, val); }
+    void set_end_of_measure_change(bool val) const { set_flag(ElementFlag::END_OF_MEASURE_CHANGE, val); }
 
-    void fixStaffIdx();
+    void fix_staff_idx();
 
     double stretch() const { return stretch_; }
 
-    void setStretch(double v) { stretch_ = v; }
+    void set_stretch(double v) { stretch_ = v; }
 
     Fraction rtick() const override { return tick_; }
 
-    void setRtick(const Fraction &v) {
+    void set_rtick(const Fraction &v) {
         assert(v >= Fraction(0, 1));
         tick_ = v;
     }
@@ -231,165 +231,166 @@ public:
 
     Fraction ticks() const { return ticks_; }
 
-    void setTicks(const Fraction &v) { ticks_ = v; }
+    void set_ticks(const Fraction &v) { ticks_ = v; }
 
-    double widthInStaff(staff_idx_t staffIdx, SegmentType nextSegType = SegmentType::ChordRest) const;
-    Fraction ticksInStaff(staff_idx_t staffIdx) const;
+    double width_in_staff(staff_idx_t staff_idx, SegmentType next_seg_type = SegmentType::CHORD_REST) const;
+    Fraction ticks_in_staff(staff_idx_t staff_idx) const;
 
-    bool splitsTuplet() const;
+    bool splits_tuplet() const;
 
     const std::vector<EngravingItem *> &annotations() const { return annotations_; }
 
-    void clearAnnotations();
-    void removeAnnotation(EngravingItem *e);
-    bool hasAnnotationOrElement(ElementType type, track_idx_t minTrack, track_idx_t maxTrack) const;
-    bool hasAnnotationOrElement(staff_idx_t staffIdx) const;
-    EngravingItem *findAnnotation(ElementType type, track_idx_t minTrack, track_idx_t maxTrack) const;
-    std::vector<EngravingItem *> findAnnotations(ElementType type, track_idx_t minTrack, track_idx_t maxTrack) const;
-    bool hasElements() const;
-    bool hasElements(track_idx_t minTrack, track_idx_t maxTrack) const;
-    bool hasElements(staff_idx_t staffIdx) const;
-    bool allElementsInvisible() const;
+    void clear_annotations();
+    void remove_annotation(EngravingItem *e);
+    bool has_annotation_or_element(ElementType type, track_idx_t min_track, track_idx_t max_track) const;
+    bool has_annotation_or_element(staff_idx_t staff_idx) const;
+    EngravingItem *find_annotation(ElementType type, track_idx_t min_track, track_idx_t max_track) const;
+    std::vector<EngravingItem *> find_annotations(ElementType type, track_idx_t min_track, track_idx_t max_track) const;
+    bool has_elements() const;
+    bool has_elements(track_idx_t min_track, track_idx_t max_track) const;
+    bool has_elements(staff_idx_t staff_idx) const;
+    bool all_elements_invisible() const;
 
-    Spatium extraLeadingSpace() const { return extraLeadingSpace_; }
+    Spatium extra_leading_space() const { return extra_leading_space_; }
 
-    void setExtraLeadingSpace(Spatium v) { extraLeadingSpace_ = v; }
+    void set_extra_leading_space(Spatium v) { extra_leading_space_ = v; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
     bool operator<(const Segment &) const;
     bool operator>(const Segment &) const;
 
-    EngravingItem *firstInNextSegments(staff_idx_t activeStaff) const; //<
-    EngravingItem *lastInPrevSegments(staff_idx_t activeStaff) const;  //<
-    EngravingItem *firstElementForNavigation(staff_idx_t staff) const; //<  These methods are used for navigation
-    EngravingItem *lastElementForNavigation(staff_idx_t staff) const;  //<  for next-element and prev-element
-    EngravingItem *firstElementOfSegment(staff_idx_t activeStaff) const;
-    EngravingItem *nextElementOfSegment(EngravingItem *e, staff_idx_t activeStaff) const;
-    EngravingItem *prevElementOfSegment(EngravingItem *e, staff_idx_t activeStaff) const;
-    EngravingItem *lastElementOfSegment(staff_idx_t activeStaff) const;
-    EngravingItem *nextAnnotation(EngravingItem *e) const;
-    EngravingItem *prevAnnotation(EngravingItem *e) const;
-    EngravingItem *firstAnnotation(staff_idx_t activeStaff) const;
-    EngravingItem *lastAnnotation(staff_idx_t activeStaff) const;
-    Spanner *firstSpanner(staff_idx_t activeStaff) const;
-    Spanner *lastSpanner(staff_idx_t activeStaff) const;
-    bool notChordRestType() const;
-    using EngravingItem::nextElement;
-    EngravingItem *nextElement(staff_idx_t activeStaff);
-    using EngravingItem::prevElement;
-    EngravingItem *prevElement(staff_idx_t activeStaff);
+    EngravingItem *first_in_next_segments(staff_idx_t active_staff) const; //<
+    EngravingItem *last_in_prev_segments(staff_idx_t active_staff) const;  //<
+    EngravingItem *first_element_for_navigation(staff_idx_t staff) const;  //<  These methods are used for navigation
+    EngravingItem *last_element_for_navigation(staff_idx_t staff) const;   //<  for next-element and prev-element
+    EngravingItem *first_element_of_segment(staff_idx_t active_staff) const;
+    EngravingItem *next_element_of_segment(EngravingItem *e, staff_idx_t active_staff) const;
+    EngravingItem *prev_element_of_segment(EngravingItem *e, staff_idx_t active_staff) const;
+    EngravingItem *last_element_of_segment(staff_idx_t active_staff) const;
+    EngravingItem *next_annotation(EngravingItem *e) const;
+    EngravingItem *prev_annotation(EngravingItem *e) const;
+    EngravingItem *first_annotation(staff_idx_t active_staff) const;
+    EngravingItem *last_annotation(staff_idx_t active_staff) const;
+    Spanner *first_spanner(staff_idx_t active_staff) const;
+    Spanner *last_spanner(staff_idx_t active_staff) const;
+    bool not_chord_rest_type() const;
+    using EngravingItem::next_element;
+    EngravingItem *next_element(staff_idx_t active_staff);
+    using EngravingItem::prev_element;
+    EngravingItem *prev_element(staff_idx_t active_staff);
 
-    EngravingItem *firstElement(staff_idx_t staffIdx) const;
+    EngravingItem *first_element(staff_idx_t staff_idx) const;
 
     std::vector<Shape> shapes() { return shapes_; }
 
     const std::vector<Shape> &shapes() const { return shapes_; }
 
-    const Shape &staffShape(staff_idx_t staffIdx) const { return shapes_[staffIdx]; }
+    const Shape &staff_shape(staff_idx_t staff_idx) const { return shapes_[staff_idx]; }
 
-    Shape &staffShape(staff_idx_t staffIdx) { return shapes_[staffIdx]; }
+    Shape &staff_shape(staff_idx_t staff_idx) { return shapes_[staff_idx]; }
 
-    void createShapes();
-    void createShape(staff_idx_t staffIdx);
-    double minRight() const;
-    double minLeft() const;
+    void create_shapes();
+    void create_shape(staff_idx_t staff_idx);
+    double min_right() const;
+    double min_left() const;
 
-    double widthOffset() const { return widthOffset_; }
+    double width_offset() const { return width_offset_; }
 
-    void clearWidthOffset() { widthOffset_ = 0.0; }
+    void clear_width_offset() { width_offset_ = 0.0; }
 
-    void addWidthOffset(double w) { widthOffset_ += w; }
+    void add_width_offset(double w) { width_offset_ += w; }
 
-    void setWidthOffset(double w) { widthOffset_ = w; }
+    void set_width_offset(double w) { width_offset_ = w; }
 
-    double elementsTopOffsetFromSkyline(staff_idx_t staffIndex) const;
-    double elementsBottomOffsetFromSkyline(staff_idx_t staffIndex) const;
+    double elements_top_offset_from_skyline(staff_idx_t staff_index) const;
+    double elements_bottom_offset_from_skyline(staff_idx_t staff_index) const;
 
     //! spacing is additional width of segment, for example accidental needs this spacing to avoid overlapping
-    void setSpacing(double);
+    void set_spacing(double);
     double spacing() const;
 
     // some helper function
-    ChordRest *cr(track_idx_t track) const { return toChordRest(elist_[track]); }
+    ChordRest *cr(track_idx_t track) const { return to_chord_rest(elist_[track]); }
 
-    bool isType(const SegmentType t) const { return int(segmentType_) & int(t); }
+    bool is_type(const SegmentType t) const { return int(segment_type_) & int(t); }
 
-    bool isJustType(const SegmentType t) const { return segmentType_ == t; }
+    bool is_just_type(const SegmentType t) const { return segment_type_ == t; }
 
-    bool isBeginBarLineType() const { return segmentType_ == SegmentType::BeginBarLine; }
+    bool is_begin_bar_line_type() const { return segment_type_ == SegmentType::BEGIN_BAR_LINE; }
 
-    bool isClefType() const { return segmentType_ == SegmentType::Clef; }
+    bool is_clef_type() const { return segment_type_ == SegmentType::CLEF; }
 
-    bool isHeaderClefType() const { return segmentType_ == SegmentType::HeaderClef; }
+    bool is_header_clef_type() const { return segment_type_ == SegmentType::HEADER_CLEF; }
 
-    bool isKeySigType() const { return segmentType_ == SegmentType::KeySig; }
+    bool is_key_sig_type() const { return segment_type_ == SegmentType::KEY_SIG; }
 
-    bool isAmbitusType() const { return segmentType_ == SegmentType::Ambitus; }
+    bool is_ambitus_type() const { return segment_type_ == SegmentType::AMBITUS; }
 
-    bool isTimeSigType() const { return segmentType_ == SegmentType::TimeSig; }
+    bool is_time_sig_type() const { return segment_type_ == SegmentType::TIME_SIG; }
 
-    bool hasTimeSigAboveStaves() const;
-    bool makeSpaceForTimeSigAboveStaves() const;
-    bool hasTimeSigAcrossStaves() const;
+    bool has_time_sig_above_staves() const;
+    bool make_space_for_time_sig_above_staves() const;
+    bool has_time_sig_across_staves() const;
 
-    bool isStartRepeatBarLineType() const { return segmentType_ == SegmentType::StartRepeatBarLine; }
+    bool is_start_repeat_bar_line_type() const { return segment_type_ == SegmentType::START_REPEAT_BAR_LINE; }
 
-    bool isBarLineType() const { return segmentType_ == SegmentType::BarLine; }
+    bool is_bar_line_type() const { return segment_type_ == SegmentType::BAR_LINE; }
 
-    bool isBreathType() const { return segmentType_ == SegmentType::Breath; }
+    bool is_breath_type() const { return segment_type_ == SegmentType::BREATH; }
 
-    bool isChordRestType() const { return segmentType_ == SegmentType::ChordRest; }
+    bool is_chord_rest_type() const { return segment_type_ == SegmentType::CHORD_REST; }
 
-    bool isClefRepeatAnnounceType() const { return segmentType_ == SegmentType::ClefRepeatAnnounce; }
+    bool is_clef_repeat_announce_type() const { return segment_type_ == SegmentType::CLEF_REPEAT_ANNOUNCE; }
 
-    bool isKeySigRepeatAnnounceType() const { return segmentType_ == SegmentType::KeySigRepeatAnnounce; }
+    bool is_key_sig_repeat_announce_type() const { return segment_type_ == SegmentType::KEY_SIG_REPEAT_ANNOUNCE; }
 
-    bool isTimeSigRepeatAnnounceType() const { return segmentType_ == SegmentType::TimeSigRepeatAnnounce; }
+    bool is_time_sig_repeat_announce_type() const { return segment_type_ == SegmentType::TIME_SIG_REPEAT_ANNOUNCE; }
 
-    bool isEndBarLineType() const { return segmentType_ == SegmentType::EndBarLine; }
+    bool is_end_bar_line_type() const { return segment_type_ == SegmentType::END_BAR_LINE; }
 
-    bool isKeySigAnnounceType() const { return segmentType_ == SegmentType::KeySigAnnounce; }
+    bool is_key_sig_announce_type() const { return segment_type_ == SegmentType::KEY_SIG_ANNOUNCE; }
 
-    bool isTimeSigAnnounceType() const { return segmentType_ == SegmentType::TimeSigAnnounce; }
+    bool is_time_sig_announce_type() const { return segment_type_ == SegmentType::TIME_SIG_ANNOUNCE; }
 
-    bool isCourtesySegment() const {
-        return segmentType_ & (SegmentType::CourtesyTimeSigTypes | SegmentType::CourtesyKeySigTypes | SegmentType::CourtesyClefTypes);
+    bool is_courtesy_segment() const {
+        return segment_type_ &
+               (SegmentType::COURTESY_TIME_SIG_TYPES | SegmentType::COURTESY_KEY_SIG_TYPES | SegmentType::COURTESY_CLEF_TYPES);
     }
 
-    bool isTimeTickType() const { return segmentType_ == SegmentType::TimeTick; }
+    bool is_time_tick_type() const { return segment_type_ == SegmentType::TIME_TICK; }
 
-    bool isRightAligned() const { return isClefType() || isBreathType(); }
+    bool is_right_aligned() const { return is_clef_type() || is_breath_type(); }
 
-    bool isMMRestSegment() const { return isChordRestType() && elist_.front() && elist_.front()->isMMRest(); }
+    bool is_mm_rest_segment() const { return is_chord_rest_type() && elist_.front() && elist_.front()->is_mm_rest(); }
 
-    bool canWriteSpannerStartEnd(track_idx_t track, const Spanner *spanner) const;
+    bool can_write_spanner_start_end(track_idx_t track, const Spanner *spanner) const;
 
-    Fraction shortestChordRest() const;
+    Fraction shortest_chord_rest() const;
 
-    bool hasAccidentals() const;
+    bool has_accidentals() const;
 
-    EngravingItem *preAppendedItem(track_idx_t track) { return preAppendedItems_[track]; }
+    EngravingItem *pre_appended_item(track_idx_t track) { return pre_appended_items_[track]; }
 
-    void preAppend(EngravingItem *item, track_idx_t track) { preAppendedItems_[track] = item; }
+    void pre_append(EngravingItem *item, track_idx_t track) { pre_appended_items_[track] = item; }
 
-    void clearPreAppended(track_idx_t track) { preAppendedItems_[track] = nullptr; }
+    void clear_pre_appended(track_idx_t track) { pre_appended_items_[track] = nullptr; }
 
-    bool goesBefore(const Segment *nextSegment) const;
+    bool goes_before(const Segment *next_segment) const;
 
-    void checkEmpty() const;
+    void check_empty() const;
 
-    double xPosInSystemCoords() const;
-    void setXPosInSystemCoords(double x);
+    double x_pos_in_system_coords() const;
+    void set_x_pos_in_system_coords(double x);
 
-    bool isTupletSubdivisionOnStaff(staff_idx_t staffIdx) const;
-    bool isInsideTupletOnStaff(staff_idx_t staffIdx) const;
+    bool is_tuplet_subdivision_on_staff(staff_idx_t staff_idx) const;
+    bool is_inside_tuplet_on_staff(staff_idx_t staff_idx) const;
 
 private:
 
-    void addArticulationsToShape(const Chord *chord, Shape &shape);
+    void add_articulations_to_shape(const Chord *chord, Shape &shape);
 
     friend class Factory;
     Segment(DummyParentOr<Measure> m);
@@ -397,16 +398,16 @@ private:
     Segment(const Segment &);
 
     void init();
-    void checkElement(EngravingItem *, track_idx_t track);
+    void check_element(EngravingItem *, track_idx_t track);
 
-    void setEmpty(bool val) const { setFlag(ElementFlag::EMPTY, val); }
+    void set_empty(bool val) const { set_flag(ElementFlag::EMPTY, val); }
 
-    SegmentType segmentType_ = SegmentType::Invalid;
+    SegmentType segment_type_ = SegmentType::INVALID;
     Fraction tick_;  // { Fraction(0, 1) };
     Fraction ticks_; // { Fraction(0, 1) };
-    Spatium extraLeadingSpace_;
+    Spatium extra_leading_space_;
     double stretch_ = 1.0;
-    double widthOffset_ = 0.0; // part of the segment width that will not be stretched during system justification
+    double width_offset_ = 0.0; // part of the segment width that will not be stretched during system justification
 
     Segment *next_ = nullptr; // linked list of segments inside a measure
     Segment *prev_ = nullptr;
@@ -414,7 +415,7 @@ private:
     std::vector<EngravingItem *> annotations_;
     std::vector<EngravingItem *> elist_; // EngravingItem storage, size = staves * VOICES.
     std::vector<EngravingItem *>
-        preAppendedItems_;      // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.
+        pre_appended_items_;    // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.
     std::vector<Shape> shapes_; // size = staves
     double spacing_ = 0;
 };

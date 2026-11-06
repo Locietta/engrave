@@ -35,14 +35,14 @@ namespace mu::iex::musicxml {
 class VoiceDesc {
 public:
     VoiceDesc();
-    void incrChordRests(int s);
-    int numberChordRests() const;
+    void incr_chord_rests(int s);
+    int number_chord_rests() const;
 
-    int numberChordRests(int s) const { return (s >= 0 && s < engraving::MAX_STAVES) ? chordRests_[s] : 0; }
+    int number_chord_rests(int s) const { return (s >= 0 && s < engraving::max_staves) ? chord_rests_[s] : 0; }
 
-    int preferredStaff() const; // Determine preferred staff for this voice
+    int preferred_staff() const; // Determine preferred staff for this voice
 
-    void setStaff(int s) {
+    void set_staff(int s) {
         if (s >= 0) {
             staff_ = s;
         }
@@ -50,7 +50,7 @@ public:
 
     int staff() const { return staff_; }
 
-    void setVoice(int v) {
+    void set_voice(int v) {
         if (v >= 0) {
             voice_ = v;
         }
@@ -58,35 +58,35 @@ public:
 
     int voice() const { return voice_; }
 
-    void setVoice(int s, int v) {
-        if (s >= 0 && s < engraving::MAX_STAVES) {
+    void set_voice(int s, int v) {
+        if (s >= 0 && s < engraving::max_staves) {
             voices_[s] = v;
         }
     }
 
-    int voice(int s) const { return (s >= 0 && s < engraving::MAX_STAVES) ? voices_[s] : -1; }
+    int voice(int s) const { return (s >= 0 && s < engraving::max_staves) ? voices_[s] : -1; }
 
-    void setOverlap(bool b) { overlaps_ = b; }
+    void set_overlap(bool b) { overlaps_ = b; }
 
     bool overlaps() const { return overlaps_; }
 
-    void setStaffAlloc(int s, int i) {
-        if (s >= 0 && s < engraving::MAX_STAVES) {
-            staffAlloc_[s] = i;
+    void set_staff_alloc(int s, int i) {
+        if (s >= 0 && s < engraving::max_staves) {
+            staff_alloc_[s] = i;
         }
     }
 
-    int staffAlloc(int s) const { return (s >= 0 && s < engraving::MAX_STAVES) ? staffAlloc_[s] : -1; }
+    int staff_alloc(int s) const { return (s >= 0 && s < engraving::max_staves) ? staff_alloc_[s] : -1; }
 
-    muse::String toString() const;
+    muse::String to_string() const;
 private:
-    int chordRests_[engraving::MAX_STAVES]; // The number of chordrests on each MusicXML staff
-    int staff_;                             // The MuseScore staff allocated
-    int voice_;                             // The MuseScore voice allocated
-    bool overlaps_;                         // This voice contains active notes in multiple staves at the same time
-    int staffAlloc_
-        [engraving::MAX_STAVES];        // For overlapping voices: voice is allocated on these staves (note: -2=unalloc -1=undef 1=alloc)
-    int voices_[engraving::MAX_STAVES]; // For every voice allocated on the staff, the voice number
+    int chord_rests_[engraving::max_staves]; // The number of chordrests on each MusicXML staff
+    int staff_;                              // The MuseScore staff allocated
+    int voice_;                              // The MuseScore voice allocated
+    bool overlaps_;                          // This voice contains active notes in multiple staves at the same time
+    int staff_alloc_
+        [engraving::max_staves];        // For overlapping voices: voice is allocated on these staves (note: -2=unalloc -1=undef 1=alloc)
+    int voices_[engraving::max_staves]; // For every voice allocated on the staff, the voice number
 };
 
 typedef std::map<int, VoiceDesc> VoiceList;

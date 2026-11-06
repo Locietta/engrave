@@ -40,15 +40,15 @@ class XmlReader;
 class Paste {
 public:
 
-    static bool pasteStaffList(Transaction &tx, Score *score, muse::ByteArray &data, Fraction scale = Fraction(1, 1));
-    static bool pasteSymbolList(Transaction &tx, Score *score, muse::ByteArray &data);
+    static bool paste_staff_list(Transaction &tx, Score *score, muse::ByteArray &data, Fraction scale = Fraction(1, 1));
+    static bool paste_symbol_list(Transaction &tx, Score *score, muse::ByteArray &data);
 
-    static bool pasteStaff(Transaction &tx, Score *score, XmlReader &e, Segment *dst, staff_idx_t staffIdx,
-                           Fraction scale = Fraction(1, 1));
-    static void pasteSymbols(Transaction &tx, XmlReader &e, ChordRest *dst);
+    static bool paste_staff(Transaction &tx, Score *score, XmlReader &e, Segment *dst, staff_idx_t staff_idx,
+                            Fraction scale = Fraction(1, 1));
+    static void paste_symbols(Transaction &tx, XmlReader &e, ChordRest *dst);
 
-    static void pasteChordRest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &tick);
+    static void paste_chord_rest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &tick);
 
-    static bool repeatListSelection(Transaction &tx, Score *score);
+    static bool repeat_list_selection(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

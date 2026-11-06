@@ -31,14 +31,14 @@ class ChangeMetaTags : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMetaTags)
 
     Score *score = nullptr;
-    std::map<String, String> metaTags;
+    std::map<String, String> meta_tags;
 
     void flip() override;
 
 public:
-    ChangeMetaTags(Score *s, const std::map<String, String> &m) : score(s), metaTags(m) {}
+    ChangeMetaTags(Score *s, const std::map<String, String> &m) : score(s), meta_tags(m) {}
 
-    UNDO_TYPE(CommandType::ChangeMetaInfo)
+    UNDO_TYPE(CommandType::CHANGE_META_INFO)
     UNDO_NAME("ChangeMetaTags")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -55,7 +55,7 @@ class ChangeMetaText : public UndoableCommand {
 public:
     ChangeMetaText(Score *s, const String &i, const String &t) : score(s), id(i), text(t) {}
 
-    UNDO_TYPE(CommandType::ChangeMetaInfo)
+    UNDO_TYPE(CommandType::CHANGE_META_INFO)
     UNDO_NAME("ChangeMetaText")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -70,7 +70,7 @@ class ChangeScoreOrder : public UndoableCommand {
 public:
     ChangeScoreOrder(Score *sc, ScoreOrder so) : score(sc), order(so) {}
 
-    UNDO_TYPE(CommandType::ChangeScoreOrder)
+    UNDO_TYPE(CommandType::CHANGE_SCORE_ORDER)
     UNDO_NAME("ChangeScoreOrder")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -79,12 +79,12 @@ class ChangePageNumberOffset : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangePageNumberOffset)
 
     Score *score = nullptr;
-    int pageOffset = 0;
+    int page_offset = 0;
 
     void flip() override;
 
 public:
-    ChangePageNumberOffset(Score *s, int po) : score(s), pageOffset(po) {}
+    ChangePageNumberOffset(Score *s, int po) : score(s), page_offset(po) {}
 
     UNDO_NAME("ChangePageNumberOffset")
     UNDO_CHANGED_OBJECTS({score})

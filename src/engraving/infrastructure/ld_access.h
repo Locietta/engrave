@@ -30,7 +30,7 @@
 
 namespace mu::engraving {
 //! NOTE Enum for detect layoutdata bad access errors
-enum class LD_ACCESS : unsigned char {
+enum class LdAccess : unsigned char {
     CHECK = 0,       // should be correct; assert if still not
     BAD,             // known to be bad; don’t assert, we’ll fix it later
     MAYBE_NOTINITED, // in this case it’s okay if we access it before it’s been inited
@@ -53,19 +53,19 @@ enum class LD_ACCESS : unsigned char {
 #define LD_INDEPENDENT
 
 template <typename T>
-class ld_field_debug {
+class LdFieldDebug {
 public:
 
-    ld_field_debug(const char *name, T def = T()) : name_(name), def_(def) {}
+    LdFieldDebug(const char *name, T def = T()) : name_(name), def_(def) {}
 
     inline void reset() { val_.reset(); }
 
     inline bool has_value() const { return val_.has_value(); }
 
-    inline const T &value(LD_ACCESS mode = LD_ACCESS::CHECK) const {
+    inline const T &value(LdAccess mode = LdAccess::CHECK) const {
         if (!val_.has_value()) {
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
-            if (mode == LD_ACCESS::CHECK) {
+            if (mode == LdAccess::CHECK) {
                 LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << name_;
             }
 #else
@@ -89,7 +89,7 @@ public:
 
     inline void set_value(const T &v) { val_ = std::make_optional<T>(v); }
 
-    ld_field_debug &operator=(const T &v) {
+    LdFieldDebug &operator=(const T &v) {
         val_ = v;
         return *this;
     }
@@ -101,16 +101,16 @@ private:
 };
 
 template <typename T>
-class ld_field_prod {
+class LdFieldProd {
 public:
 
-    ld_field_prod(const char *, T def = T()) : val_(def) {}
+    LdFieldProd(const char *, T def = T()) : val_(def) {}
 
     inline void reset() { val_ = T(); }
 
     inline bool has_value() const { return true; }
 
-    inline const T &value(LD_ACCESS = LD_ACCESS::CHECK) const { return val_; }
+    inline const T &value(LdAccess = LdAccess::CHECK) const { return val_; }
 
     inline const T &operator()() const { return value(); }
 
@@ -120,7 +120,7 @@ public:
 
     inline void set_value(const T &v) { val_ = v; }
 
-    ld_field_prod &operator=(const T &v) {
+    LdFieldProd &operator=(const T &v) {
         val_ = v;
         return *this;
     }
@@ -131,10 +131,10 @@ private:
 
 #ifdef NDEBUG
 template <typename T>
-using ld_field = ld_field_prod<T>;
+using ld_field = LdFieldProd<T>;
 #else
 template <typename T>
-using ld_field = ld_field_debug<T>;
+using ld_field = LdFieldDebug<T>;
 #endif
 } // namespace mu::engraving
 

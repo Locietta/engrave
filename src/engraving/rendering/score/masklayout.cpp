@@ -43,65 +43,65 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void MaskLayout::computeMasks(LayoutContext &ctx, Page *page) {
+void MaskLayout::compute_masks(LayoutContext &ctx, Page *page) {
     TRACEFUNC;
 
-    bool maskBarlines = ctx.conf().styleB(Sid::maskBarlinesForText);
-    bool maskSlurs = ctx.conf().styleB(Sid::maskSlurs);
-    bool maskTies = ctx.conf().styleB(Sid::maskTies);
+    bool mask_barlines = ctx.conf().style_b(Sid::MASK_BARLINES_FOR_TEXT);
+    bool mask_slurs = ctx.conf().style_b(Sid::MASK_SLURS);
+    bool mask_ties = ctx.conf().style_b(Sid::MASK_TIES);
 
     for (const System *system : page->systems()) {
-        std::vector<TextBase *> allSystemText = collectAllSystemText(system);
+        std::vector<TextBase *> all_system_text = collect_all_system_text(system);
 
         for (MeasureBase *mb : system->measures()) {
-            if (!mb->isMeasure()) {
+            if (!mb->is_measure()) {
                 continue;
             }
-            Measure *measure = toMeasure(mb);
+            Measure *measure = to_measure(mb);
 
-            if (maskBarlines) {
+            if (mask_barlines) {
                 for (const Segment &seg : measure->segments()) {
-                    if (seg.isType(SegmentType::BarLineTypes)) {
-                        computeBarlineMasks(&seg, system, allSystemText, ctx);
+                    if (seg.is_type(SegmentType::BAR_LINE_TYPES)) {
+                        compute_barline_masks(&seg, system, all_system_text, ctx);
                     }
                 }
             }
 
             staff_idx_t nstaves = ctx.dom().nstaves();
-            for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-                if (staffIdx >= system->staves().size() || !system->staff(staffIdx)->show()) {
+            for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+                if (staff_idx >= system->staves().size() || !system->staff(staff_idx)->show()) {
                     continue;
                 }
-                const Staff *staff = ctx.dom().staff(staffIdx);
-                const StaffType *staffType = staff->staffType(measure->tick());
-                StaffLines *staffLines = measure->staffLines(staffIdx);
-                if (staffType->isTabStaff()) {
-                    maskTABStringLinesForFrets(staffLines, ctx);
+                const Staff *staff = ctx.dom().staff(staff_idx);
+                const StaffType *staff_type = staff->staff_type(measure->tick());
+                StaffLines *staff_lines = measure->staff_lines(staff_idx);
+                if (staff_type->is_tab_staff()) {
+                    mask_tab_string_lines_for_frets(staff_lines, ctx);
                 }
             }
         }
 
-        for (SpannerSegment *spannerSeg : system->spannerSegments()) {
-            if (!spannerSeg->isSlurTieSegment() || spannerSeg->isTappingHalfSlurSegment() ||
-                !system->staff(spannerSeg->staffIdx())->show() || !spannerSeg->visible()) {
+        for (SpannerSegment *spanner_seg : system->spanner_segments()) {
+            if (!spanner_seg->is_slur_tie_segment() || spanner_seg->is_tapping_half_slur_segment() ||
+                !system->staff(spanner_seg->staff_idx())->show() || !spanner_seg->visible()) {
                 continue;
             }
 
-            spannerSeg->mutldata()->setMask(Shape());
+            spanner_seg->mutldata()->set_mask(Shape());
 
-            AutoOnOff slurTieMaskOverride = spannerSeg->getProperty(Pid::MASK_SLURTIE).value<AutoOnOff>();
-            if (slurTieMaskOverride == AutoOnOff::ON ||
-                (slurTieMaskOverride == AutoOnOff::AUTO &&
-                 ((maskSlurs && spannerSeg->isSlurSegment()) || (maskTies && spannerSeg->isTieSegment())))) {
-                computeSlurTieMasks(toSlurTieSegment(spannerSeg));
+            AutoOnOff slur_tie_mask_override = spanner_seg->get_property(Pid::MASK_SLURTIE).value<AutoOnOff>();
+            if (slur_tie_mask_override == AutoOnOff::ON ||
+                (slur_tie_mask_override == AutoOnOff::AUTO &&
+                 ((mask_slurs && spanner_seg->is_slur_segment()) || (mask_ties && spanner_seg->is_tie_segment())))) {
+                compute_slur_tie_masks(to_slur_tie_segment(spanner_seg));
             }
         }
     }
 }
 
-void MaskLayout::computeBarlineMasks(const Segment *barlineSement, const System *system, const std::vector<TextBase *> &allSystemText,
-                                     LayoutContext &ctx) {
-    if (barlineSement->measure()->isLastInSystem() && barlineSement == barlineSement->measure()->lastEnabled()) {
+void MaskLayout::compute_barline_masks(const Segment *barline_sement, const System *system, const std::vector<TextBase *> &all_system_text,
+                                       LayoutContext &ctx) {
+    if (barline_sement->measure()->is_last_in_system() && barline_sement == barline_sement->measure()->last_enabled()) {
         return;
     }
 
@@ -110,344 +110,346 @@ void MaskLayout::computeBarlineMasks(const Segment *barlineSement, const System 
     std::vector<BarLine *> barlines;
     barlines.reserve(nstaves);
 
-    for (staff_idx_t staffIdx = 0; staffIdx < ctx.dom().nstaves(); ++staffIdx) {
-        if (!system->staff(staffIdx)->show()) {
+    for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+        if (!system->staff(staff_idx)->show()) {
             continue;
         }
-        BarLine *barline = toBarLine(barlineSement->element(staff2track(staffIdx)));
-        if (!barline || !barline->spanStaff()) {
+        BarLine *barline = to_bar_line(barline_sement->element(staff2track(staff_idx)));
+        if (!barline || !barline->span_staff()) {
             continue;
         }
-        maskBarlineForText(barline, allSystemText);
+        mask_barline_for_text(barline, all_system_text);
     }
 }
 
-void MaskLayout::maskBarlineForText(BarLine *barline, const std::vector<TextBase *> &allSystemText) {
+void MaskLayout::mask_barline_for_text(BarLine *barline, const std::vector<TextBase *> &all_system_text) {
     TRACEFUNC;
 
-    PointF barlinePos = barline->pagePos();
-    Shape barlineShape = barline->shape().translated(barlinePos);
+    PointF barline_pos = barline->page_pos();
+    Shape barline_shape = barline->shape().translated(barline_pos);
 
     Shape mask;
     const double spatium = barline->spatium();
 
-    for (TextBase *text : allSystemText) {
-        const double fontSizeScaleFactor = text->size() / 10.0;
-        const double collisionPadding = 0.2 * spatium * fontSizeScaleFactor;
-        const bool hasFrame = text->frameType() != FrameType::NO_FRAME;
-        const bool useHighResShape = !text->isDynamic() && !text->hasFrame();
-        const double maskPadding = hasFrame ? 0.0 : std::clamp(0.5 * spatium * fontSizeScaleFactor, 0.1 * spatium, spatium);
+    for (TextBase *text : all_system_text) {
+        const double font_size_scale_factor = text->size() / 10.0;
+        const double collision_padding = 0.2 * spatium * font_size_scale_factor;
+        const bool has_frame = text->frame_type() != FrameType::NO_FRAME;
+        const bool use_high_res_shape = !text->is_dynamic() && !text->has_frame();
+        const double mask_padding = has_frame ? 0.0 : std::clamp(0.5 * spatium * font_size_scale_factor, 0.1 * spatium, spatium);
 
-        PointF textPos = text->pagePos();
-        if (!barlineShape.intersects(text->ldata()->bbox().translated(textPos).padded(collisionPadding))) {
+        PointF text_pos = text->page_pos();
+        if (!barline_shape.intersects(text->ldata()->bbox().translated(text_pos).padded(collision_padding))) {
             continue;
         }
 
-        Shape textShape = (useHighResShape ? text->ldata()->highResShape() : text->ldata()->shape()).translated(textPos);
+        Shape text_shape = (use_high_res_shape ? text->ldata()->high_res_shape() : text->ldata()->shape()).translated(text_pos);
 
-        Shape filteredTextShape = createFilteredItemShape(textShape, barlineShape, collisionPadding);
-        if (filteredTextShape.empty()) {
+        Shape filtered_text_shape = create_filtered_item_shape(text_shape, barline_shape, collision_padding);
+        if (filtered_text_shape.empty()) {
             continue;
         }
 
-        filteredTextShape = filteredTextShape.bbox();
-        filteredTextShape.pad(maskPadding);
+        filtered_text_shape = filtered_text_shape.bbox();
+        filtered_text_shape.pad(mask_padding);
 
-        mask.add(filteredTextShape.translate(-barlinePos));
+        mask.add(filtered_text_shape.translate(-barline_pos));
     }
 
     if (mask.empty()) {
-        barline->mutldata()->setMask(mask);
+        barline->mutldata()->set_mask(mask);
         return;
     }
 
     // Ensure that we don't leave tiny barline fragments. If two masking
     // elements are too close to each other we extend them to join.
-    barlineShape.translate(-barlinePos);
-    const double minFragmentLengh = 0.5 * spatium;
-    cleanupMask(barlineShape, mask, minFragmentLengh);
+    barline_shape.translate(-barline_pos);
+    const double min_fragment_lengh = 0.5 * spatium;
+    cleanup_mask(barline_shape, mask, min_fragment_lengh);
 
-    barline->mutldata()->setMask(mask);
+    barline->mutldata()->set_mask(mask);
 }
 
-void MaskLayout::cleanupMask(const Shape &itemShape, Shape &mask, double minFragmentLength) {
+void MaskLayout::cleanup_mask(const Shape &item_shape, Shape &mask, double min_fragment_length) {
     for (size_t i = 0; i < mask.size(); ++i) {
         ShapeElement &el = mask.elements()[i];
 
-        if (std::abs(el.top() - itemShape.top()) < minFragmentLength) {
-            el.adjust(0.0, -minFragmentLength, 0.0, 0.0);
+        if (std::abs(el.top() - item_shape.top()) < min_fragment_length) {
+            el.adjust(0.0, -min_fragment_length, 0.0, 0.0);
         }
-        if (std::abs(itemShape.bottom() - el.bottom()) < minFragmentLength) {
-            el.adjust(0.0, 0.0, 0.0, minFragmentLength);
+        if (std::abs(item_shape.bottom() - el.bottom()) < min_fragment_length) {
+            el.adjust(0.0, 0.0, 0.0, min_fragment_length);
         }
-        if (std::abs(el.left() - itemShape.left()) < minFragmentLength) {
-            el.adjust(-minFragmentLength, 0.0, 0.0, 0.0);
+        if (std::abs(el.left() - item_shape.left()) < min_fragment_length) {
+            el.adjust(-min_fragment_length, 0.0, 0.0, 0.0);
         }
-        if (std::abs(itemShape.right() - el.right()) < minFragmentLength) {
-            el.adjust(0.0, 0.0, minFragmentLength, 0.0);
+        if (std::abs(item_shape.right() - el.right()) < min_fragment_length) {
+            el.adjust(0.0, 0.0, min_fragment_length, 0.0);
         }
 
         for (size_t j = i + 1; j < mask.size(); ++j) {
-            ShapeElement &otherEl = mask.elements()[j];
-            if (intersects(el.left(), el.right(), otherEl.left(), otherEl.right())) {
-                bool otherIsBelow = otherEl.y() > el.y();
-                double vertClearance = otherIsBelow ? otherEl.top() - el.bottom() : el.top() - otherEl.bottom();
-                if (vertClearance < minFragmentLength) {
-                    (otherIsBelow ? el : otherEl).adjust(0.0, 0.0, 0.0, minFragmentLength);
+            ShapeElement &other_el = mask.elements()[j];
+            if (intersects(el.left(), el.right(), other_el.left(), other_el.right())) {
+                bool other_is_below = other_el.y() > el.y();
+                double vert_clearance = other_is_below ? other_el.top() - el.bottom() : el.top() - other_el.bottom();
+                if (vert_clearance < min_fragment_length) {
+                    (other_is_below ? el : other_el).adjust(0.0, 0.0, 0.0, min_fragment_length);
                 }
             }
-            if (intersects(el.top(), el.bottom(), otherEl.top(), el.bottom())) {
-                bool otherIsRight = otherEl.x() > el.x();
-                double horClearance = otherIsRight ? otherEl.left() - el.right() : el.left() - otherEl.right();
-                if (horClearance < minFragmentLength) {
-                    (otherIsRight ? el : otherEl).adjust(0.0, 0.0, minFragmentLength, 0.0);
+            if (intersects(el.top(), el.bottom(), other_el.top(), el.bottom())) {
+                bool other_is_right = other_el.x() > el.x();
+                double hor_clearance = other_is_right ? other_el.left() - el.right() : el.left() - other_el.right();
+                if (hor_clearance < min_fragment_length) {
+                    (other_is_right ? el : other_el).adjust(0.0, 0.0, min_fragment_length, 0.0);
                 }
             }
         }
     }
 }
 
-std::vector<TextBase *> MaskLayout::collectAllSystemText(const System *system) {
+std::vector<TextBase *> MaskLayout::collect_all_system_text(const System *system) {
     TRACEFUNC;
 
-    std::vector<TextBase *> allText;
+    std::vector<TextBase *> all_text;
 
     for (const MeasureBase *mb : system->measures()) {
-        if (!mb->isMeasure()) {
+        if (!mb->is_measure()) {
             continue;
         }
-        const Measure *measure = toMeasure(mb);
+        const Measure *measure = to_measure(mb);
         for (staff_idx_t i = 0; i < measure->mstaves().size(); ++i) {
-            if (measure->showMeasureNumberOnStaff(i)) {
-                if (MeasureNumber *measureNumber = measure->measureNumber(i)) {
-                    allText.push_back(measureNumber);
+            if (measure->show_measure_number_on_staff(i)) {
+                if (MeasureNumber *measure_number = measure->measure_number(i)) {
+                    all_text.push_back(measure_number);
                 }
             }
         }
         for (EngravingItem *item : measure->el()) {
-            const SysStaff *staff = system ? system->staff(item->staffIdx()) : nullptr;
-            const bool staffVisible = staff && staff->show();
-            if ((item->isMarker() || item->isJump()) && item->visible() && staffVisible) {
-                allText.push_back(toTextBase(item));
+            const SysStaff *staff = system ? system->staff(item->staff_idx()) : nullptr;
+            const bool staff_visible = staff && staff->show();
+            if ((item->is_marker() || item->is_jump()) && item->visible() && staff_visible) {
+                all_text.push_back(to_text_base(item));
             }
         }
         for (const Segment &s : measure->segments()) {
-            if (!s.isType(SegmentType::Duration) || !s.enabled()) {
+            if (!s.is_type(SegmentType::DURATION) || !s.enabled()) {
                 continue;
             }
             for (EngravingItem *annotation : s.annotations()) {
-                const SysStaff *staff = system ? system->staff(annotation->staffIdx()) : nullptr;
-                const bool staffVisible = staff && staff->show();
-                if (annotation->isTextBase() && annotation->visible() && staffVisible) {
-                    allText.push_back(toTextBase(annotation));
+                const SysStaff *staff = system ? system->staff(annotation->staff_idx()) : nullptr;
+                const bool staff_visible = staff && staff->show();
+                if (annotation->is_text_base() && annotation->visible() && staff_visible) {
+                    all_text.push_back(to_text_base(annotation));
                 }
             }
-            if (!s.isChordRestType()) {
+            if (!s.is_chord_rest_type()) {
                 continue;
             }
-            for (EngravingItem *chordRest : s.elist()) {
-                if (!chordRest || !system->staff(chordRest->staffIdx())->show()) {
+            for (EngravingItem *chord_rest : s.elist()) {
+                if (!chord_rest || !system->staff(chord_rest->staff_idx())->show()) {
                     continue;
                 }
-                for (Lyrics *lyr : toChordRest(chordRest)->lyrics()) {
+                for (Lyrics *lyr : to_chord_rest(chord_rest)->lyrics()) {
                     if (lyr->visible()) {
-                        allText.push_back(lyr);
+                        all_text.push_back(lyr);
                     }
                 }
             }
         }
     }
 
-    for (SpannerSegment *spannerSegment : system->spannerSegments()) {
-        if (!spannerSegment->isTextLineBaseSegment() || !system->staff(spannerSegment->staffIdx())->show() ||
-            !spannerSegment->getProperty(Pid::VISIBLE).toBool()) {
+    for (SpannerSegment *spanner_segment : system->spanner_segments()) {
+        if (!spanner_segment->is_text_line_base_segment() || !system->staff(spanner_segment->staff_idx())->show() ||
+            !spanner_segment->get_property(Pid::VISIBLE).to_bool()) {
             continue;
         }
-        TextLineBaseSegment *textLineBaseSegment = static_cast<TextLineBaseSegment *>(spannerSegment);
-        Text *beginText = textLineBaseSegment->text();
-        Text *endText = textLineBaseSegment->endText();
-        if (beginText && !beginText->empty()) {
-            allText.push_back(beginText);
+        TextLineBaseSegment *text_line_base_segment = static_cast<TextLineBaseSegment *>(spanner_segment);
+        Text *begin_text = text_line_base_segment->text();
+        Text *end_text = text_line_base_segment->end_text();
+        if (begin_text && !begin_text->empty()) {
+            all_text.push_back(begin_text);
         }
-        if (endText && !endText->empty()) {
-            allText.push_back(endText);
+        if (end_text && !end_text->empty()) {
+            all_text.push_back(end_text);
         }
     }
 
-    return allText;
+    return all_text;
 }
 
-void MaskLayout::maskTABStringLinesForFrets(StaffLines *staffLines, const LayoutContext &ctx) {
-    staff_idx_t staffIdx = staffLines->staffIdx();
-    bool linesThrough = ctx.dom().staff(staffIdx)->staffType(Fraction())->linesThrough();
+void MaskLayout::mask_tab_string_lines_for_frets(StaffLines *staff_lines, const LayoutContext &ctx) {
+    staff_idx_t staff_idx = staff_lines->staff_idx();
+    bool lines_through = ctx.dom().staff(staff_idx)->staff_type(Fraction())->lines_through();
 
-    PointF staffLinesPos = staffLines->pagePos();
+    PointF staff_lines_pos = staff_lines->page_pos();
 
-    double padding = ctx.conf().styleAbsolute(Sid::tabFretPadding);
+    double padding = ctx.conf().style_absolute(Sid::TAB_FRET_PADDING);
 
-    track_idx_t startTrack = staff2track(staffIdx);
-    track_idx_t endTrack = startTrack + VOICES;
+    track_idx_t start_track = staff2track(staff_idx);
+    track_idx_t end_track = start_track + ::mu::engraving::voices;
 
     Shape mask;
 
-    auto maskFret = [&mask, linesThrough, padding, staffLinesPos](Chord *chord) {
+    auto mask_fret = [&mask, lines_through, padding, staff_lines_pos](Chord *chord) {
         for (Note *note : chord->notes()) {
             if (!note->visible()) {
                 continue;
             }
-            if (!note->shouldHideFret() && (!linesThrough || note->fretConflict())) {
-                Shape noteShape = note->ldata()->bbox();
-                noteShape.translate(note->pagePos());
+            if (!note->should_hide_fret() && (!lines_through || note->fret_conflict())) {
+                Shape note_shape = note->ldata()->bbox();
+                note_shape.translate(note->page_pos());
 
-                noteShape.pad(padding);
-                mask.add(noteShape.translated(-staffLinesPos));
+                note_shape.pad(padding);
+                mask.add(note_shape.translated(-staff_lines_pos));
             }
         }
     };
 
-    auto maskParens = [&mask, linesThrough, padding, staffLinesPos](Chord *chord) {
-        if (linesThrough) {
+    auto mask_parens = [&mask, lines_through, padding, staff_lines_pos](Chord *chord) {
+        if (lines_through) {
             return;
         }
-        for (const NoteParenthesisInfo *i : chord->noteParentheses()) {
-            const Parenthesis *leftParen = i->leftParen();
-            const Parenthesis *rightParen = i->rightParen();
-            bool allHidden = false;
+        for (const NoteParenthesisInfo *i : chord->note_parentheses()) {
+            const Parenthesis *left_paren = i->left_paren();
+            const Parenthesis *right_paren = i->right_paren();
+            bool all_hidden = false;
             for (const Note *note : i->notes()) {
-                if (!note->shouldHideFret()) {
-                    allHidden = false;
+                if (!note->should_hide_fret()) {
+                    all_hidden = false;
                     break;
                 }
             }
 
-            if (allHidden) {
+            if (all_hidden) {
                 continue;
             }
 
             // HACK: Overlapping mask regions which have the same y value and height cause errors
             // Parentheses on single fret marks have the same height as the fret marks
-            static const double PAREN_PADDING_EPSILON = 1.0;
-            if (leftParen && leftParen->visible()) {
-                Shape leftParenShape = leftParen->ldata()->bbox().translated(leftParen->pagePos());
-                leftParenShape.pad(padding);
-                leftParenShape.adjust(0, -PAREN_PADDING_EPSILON, 0, PAREN_PADDING_EPSILON);
-                mask.add(leftParenShape.translated(-staffLinesPos));
+            static const double paren_padding_epsilon = 1.0;
+            if (left_paren && left_paren->visible()) {
+                Shape left_paren_shape = left_paren->ldata()->bbox().translated(left_paren->page_pos());
+                left_paren_shape.pad(padding);
+                left_paren_shape.adjust(0, -paren_padding_epsilon, 0, paren_padding_epsilon);
+                mask.add(left_paren_shape.translated(-staff_lines_pos));
             }
 
-            if (rightParen && rightParen->visible()) {
-                Shape rightParenShape = rightParen->ldata()->bbox().translated(rightParen->pagePos());
-                rightParenShape.pad(padding);
-                rightParenShape.adjust(0, -PAREN_PADDING_EPSILON, 0, PAREN_PADDING_EPSILON);
-                mask.add(rightParenShape.translated(-staffLinesPos));
+            if (right_paren && right_paren->visible()) {
+                Shape right_paren_shape = right_paren->ldata()->bbox().translated(right_paren->page_pos());
+                right_paren_shape.pad(padding);
+                right_paren_shape.adjust(0, -paren_padding_epsilon, 0, paren_padding_epsilon);
+                mask.add(right_paren_shape.translated(-staff_lines_pos));
             }
         }
     };
 
-    const Measure *measure = staffLines->measure();
-    for (Segment *seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
-        for (track_idx_t track = startTrack; track < endTrack; ++track) {
+    const Measure *measure = staff_lines->measure();
+    for (Segment *seg = measure->first(SegmentType::CHORD_REST); seg; seg = seg->next(SegmentType::CHORD_REST)) {
+        for (track_idx_t track = start_track; track < end_track; ++track) {
             EngravingItem *el = seg->element(track);
-            if (!el || !el->isChord()) {
+            if (!el || !el->is_chord()) {
                 continue;
             }
-            maskFret(toChord(el));
-            maskParens(toChord(el));
-            for (Chord *grace : toChord(el)->graceNotes()) {
-                maskFret(grace);
-                maskParens(grace);
+            mask_fret(to_chord(el));
+            mask_parens(to_chord(el));
+            for (Chord *grace : to_chord(el)->grace_notes()) {
+                mask_fret(grace);
+                mask_parens(grace);
             }
         }
     }
 
-    staffLines->mutldata()->setMask(mask);
+    staff_lines->mutldata()->set_mask(mask);
 }
 
-void MaskLayout::computeSlurTieMasks(SlurTieSegment *slurTieSegment) {
+void MaskLayout::compute_slur_tie_masks(SlurTieSegment *slur_tie_segment) {
     TRACEFUNC;
 
-    Spanner *spanner = slurTieSegment->spanner();
-    const Segment *startSeg = spanner->startSegment();
-    const Segment *endSeg = spanner->endSegment();
-    const EngravingItem *startElement = spanner->startElement();
-    const EngravingItem *endElement = spanner->endElement();
-    staff_idx_t startStaffIdx = startElement ? startElement->vStaffIdx() : 0;
-    staff_idx_t endStaffIdx = endElement ? endElement->vStaffIdx() : spanner->score()->nstaves() - 1;
-    if (startStaffIdx > endStaffIdx) {
-        std::swap(startStaffIdx, endStaffIdx);
+    Spanner *spanner = slur_tie_segment->spanner();
+    const Segment *start_seg = spanner->start_segment();
+    const Segment *end_seg = spanner->end_segment();
+    const EngravingItem *start_element = spanner->start_element();
+    const EngravingItem *end_element = spanner->end_element();
+    staff_idx_t start_staff_idx = start_element ? start_element->v_staff_idx() : 0;
+    staff_idx_t end_staff_idx = end_element ? end_element->v_staff_idx() : spanner->score()->nstaves() - 1;
+    if (start_staff_idx > end_staff_idx) {
+        std::swap(start_staff_idx, end_staff_idx);
     }
 
-    std::vector<const EngravingItem *> itemsToMaskOver;
-    for (const Segment *seg = startSeg; seg && seg != endSeg; seg = seg->next1()) {
-        if (!seg->enabled() || !seg->isType(SegmentType::KeySigTypes | SegmentType::TimeSigTypes | SegmentType::ClefTypes) ||
-            seg->system() != slurTieSegment->system()) {
+    std::vector<const EngravingItem *> items_to_mask_over;
+    for (const Segment *seg = start_seg; seg && seg != end_seg; seg = seg->next1()) {
+        if (!seg->enabled() || !seg->is_type(SegmentType::KEY_SIG_TYPES | SegmentType::TIME_SIG_TYPES | SegmentType::CLEF_TYPES) ||
+            seg->system() != slur_tie_segment->system()) {
             continue;
         }
-        for (staff_idx_t staffIdx = startStaffIdx; staffIdx <= endStaffIdx; ++staffIdx) {
-            if (EngravingItem *item =
-                    seg->element(staffIdx * VOICES)) { // Key/Time/Clef-type segments never have elements in any voice other than 0
-                itemsToMaskOver.push_back(item);
+        for (staff_idx_t staff_idx = start_staff_idx; staff_idx <= end_staff_idx; ++staff_idx) {
+            if (EngravingItem *item = seg->element(
+                    staff_idx * ::mu::engraving::voices)) { // Key/Time/Clef-type segments never have elements in any voice other than 0
+                items_to_mask_over.push_back(item);
             }
         }
     }
 
-    PointF slurTiePos = slurTieSegment->pagePos();
-    Shape slurTieShape = slurTieSegment->shape().translated(slurTiePos);
+    PointF slur_tie_pos = slur_tie_segment->page_pos();
+    Shape slur_tie_shape = slur_tie_segment->shape().translated(slur_tie_pos);
 
     Shape mask;
-    const double spatium = slurTieSegment->spatium();
-    const double maskPadding = spatium * StyleDef::styleValues[size_t(Sid::keysigLeftMargin)].defaultValue.toDouble() / 2;
-    const double horizontalCollisionPadding = maskPadding;
-    const double verticalCollisionPadding = spatium * 0.1;
+    const double spatium = slur_tie_segment->spatium();
+    const double mask_padding = spatium * StyleDef::style_values[size_t(Sid::KEYSIG_LEFT_MARGIN)].default_value.to_double() / 2;
+    const double horizontal_collision_padding = mask_padding;
+    const double vertical_collision_padding = spatium * 0.1;
 
-    for (const EngravingItem *item : itemsToMaskOver) {
-        PointF itemPos = item->pagePos();
-        Shape itemShape = item->shape().translated(itemPos);
+    for (const EngravingItem *item : items_to_mask_over) {
+        PointF item_pos = item->page_pos();
+        Shape item_shape = item->shape().translated(item_pos);
 
-        if (!slurTieShape.bbox().intersects(itemShape.bbox().adjusted(-horizontalCollisionPadding, -verticalCollisionPadding,
-                                                                      horizontalCollisionPadding, verticalCollisionPadding))) {
+        if (!slur_tie_shape.bbox().intersects(item_shape.bbox().adjusted(-horizontal_collision_padding, -vertical_collision_padding,
+                                                                         horizontal_collision_padding, vertical_collision_padding))) {
             continue;
         }
 
-        Shape filteredItemShape = createFilteredItemShape(itemShape, slurTieShape, horizontalCollisionPadding, verticalCollisionPadding);
-        if (filteredItemShape.empty()) {
+        Shape filtered_item_shape =
+            create_filtered_item_shape(item_shape, slur_tie_shape, horizontal_collision_padding, vertical_collision_padding);
+        if (filtered_item_shape.empty()) {
             continue;
         }
 
-        mask.add(filteredItemShape.translate(-slurTiePos));
+        mask.add(filtered_item_shape.translate(-slur_tie_pos));
     }
 
     if (mask.empty()) {
-        slurTieSegment->mutldata()->setMask(mask);
+        slur_tie_segment->mutldata()->set_mask(mask);
         return;
     }
 
-    slurTieShape.translate(-slurTiePos);
+    slur_tie_shape.translate(-slur_tie_pos);
 
     // Use the mask's bbox to break the slur/tie only once, regardless of the mask elements in between:
-    RectF maskBbox = mask.bbox();
+    RectF mask_bbox = mask.bbox();
 
     // Avoid the slur/tie line being partially masked (i.e. it should always be either fully "cut",
     // or not masked at all, so we extend the mask vertically to encompass the slur/tie's full height):
-    maskBbox.adjust(0.0, slurTieShape.top() - mask.top(), 0.0, slurTieShape.bottom() - mask.bottom());
-    maskBbox.pad(maskPadding);
+    mask_bbox.adjust(0.0, slur_tie_shape.top() - mask.top(), 0.0, slur_tie_shape.bottom() - mask.bottom());
+    mask_bbox.pad(mask_padding);
 
-    slurTieSegment->mutldata()->setMask(maskBbox);
+    slur_tie_segment->mutldata()->set_mask(mask_bbox);
 }
 
-Shape MaskLayout::createFilteredItemShape(const Shape &overlyingItemShape, const Shape &maskedItemShape, const double collisionPadding) {
-    return MaskLayout::createFilteredItemShape(overlyingItemShape, maskedItemShape, collisionPadding, collisionPadding);
+Shape MaskLayout::create_filtered_item_shape(const Shape &overlying_item_shape, const Shape &masked_item_shape,
+                                             const double collision_padding) {
+    return MaskLayout::create_filtered_item_shape(overlying_item_shape, masked_item_shape, collision_padding, collision_padding);
 }
 
-Shape MaskLayout::createFilteredItemShape(const Shape &overlyingItemShape, const Shape &maskedItemShape,
-                                          const double horizontalCollisionPadding, const double verticalCollisionPadding) {
-    Shape filteredItemShape;
-    filteredItemShape.elements().reserve(overlyingItemShape.elements().size());
-    for (const ShapeElement &el : overlyingItemShape.elements()) {
-        Shape padded =
-            el.adjusted(-horizontalCollisionPadding, -verticalCollisionPadding, horizontalCollisionPadding, verticalCollisionPadding);
-        if (maskedItemShape.intersects(padded)) {
-            filteredItemShape.add(el);
+Shape MaskLayout::create_filtered_item_shape(const Shape &overlying_item_shape, const Shape &masked_item_shape,
+                                             const double horizontal_collision_padding, const double vertical_collision_padding) {
+    Shape filtered_item_shape;
+    filtered_item_shape.elements().reserve(overlying_item_shape.elements().size());
+    for (const ShapeElement &el : overlying_item_shape.elements()) {
+        Shape padded = el.adjusted(-horizontal_collision_padding, -vertical_collision_padding, horizontal_collision_padding,
+                                   vertical_collision_padding);
+        if (masked_item_shape.intersects(padded)) {
+            filtered_item_shape.add(el);
         }
     }
-    return filteredItemShape;
+    return filtered_item_shape;
 }

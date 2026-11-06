@@ -26,29 +26,29 @@ using namespace mu::engraving;
 using namespace muse::mpe;
 using namespace muse;
 
-PlaybackSetupData VoicesSetupDataResolver::doResolve(const Instrument *instrument) {
-    static const std::unordered_map<std::string, mpe::PlaybackSetupData> SETUP_DATA_MAP = {
-        {"boy-soprano", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Soprano, SoundSubCategory::Boy}}},
-        {"soprano", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Soprano}}},
-        {"soprano-c-clef", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Soprano}}},
-        {"mezzo-soprano", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Soprano}}},
-        {"mezzo-soprano-c-clef", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Soprano}}},
-        {"countertenor", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Counter_Tenor}}},
-        {"alto", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Alto}}},
-        {"alto-c-clef", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Alto}}},
-        {"contralto", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Contra_Alto}}},
-        {"tenor", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Tenor}}},
-        {"tenor-c-clef", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Tenor}}},
-        {"baritone", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Baritone}}},
-        {"baritone-c-clef", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Baritone}}},
-        {"bass", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Bass}}},
-        {"voice", {SoundId::Choir, SoundCategory::Voices}},
-        {"women", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Female}}},
-        {"men", {SoundId::Choir, SoundCategory::Voices, {SoundSubCategory::Male}}},
+PlaybackSetupData VoicesSetupDataResolver::do_resolve(const Instrument *instrument) {
+    static const std::unordered_map<std::string, mpe::PlaybackSetupData> setup_data_map = {
+        {"boy-soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO, SoundSubCategory::BOY}}},
+        {"soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
+        {"soprano-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
+        {"mezzo-soprano", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
+        {"mezzo-soprano-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::SOPRANO}}},
+        {"countertenor", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::COUNTER_TENOR}}},
+        {"alto", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::ALTO}}},
+        {"alto-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::ALTO}}},
+        {"contralto", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::CONTRA_ALTO}}},
+        {"tenor", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::TENOR}}},
+        {"tenor-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::TENOR}}},
+        {"baritone", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::BARITONE}}},
+        {"baritone-c-clef", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::BARITONE}}},
+        {"bass", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::BASS}}},
+        {"voice", {SoundId::CHOIR, SoundCategory::VOICES}},
+        {"women", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::FEMALE}}},
+        {"men", {SoundId::CHOIR, SoundCategory::VOICES, {SoundSubCategory::MALE}}},
     };
 
-    auto search = SETUP_DATA_MAP.find(instrument->id().toStdString());
-    if (search == SETUP_DATA_MAP.cend()) {
+    auto search = setup_data_map.find(instrument->id().to_std_string());
+    if (search == setup_data_map.cend()) {
         static PlaybackSetupData empty;
         return empty;
     }

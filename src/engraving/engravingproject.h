@@ -61,23 +61,23 @@ public:
     static std::shared_ptr<EngravingProject> create(const EngravingServices &services);
     static std::shared_ptr<EngravingProject> create(const MStyle &style, const EngravingServices &services);
 
-    IFileInfoProviderPtr fileInfoProvider() const;
-    void setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider);
+    IFileInfoProviderPtr file_info_provider() const;
+    void set_file_info_provider(IFileInfoProviderPtr file_info_provider);
 
-    String appVersion() const;
-    int mscVersion() const;
+    String app_version() const;
+    int msc_version() const;
 
-    bool readOnly() const;
+    bool read_only() const;
 
-    MasterScore *masterScore() const;
-    void setMasterScore(MasterScore *score);
-    muse::Ret setupMasterScore(bool forceMode);
+    MasterScore *master_score() const;
+    void set_master_score(MasterScore *score);
+    muse::Ret setup_master_score(bool force_mode);
 
-    muse::Ret loadMscz(const MscReader &msc, rw::ReadInOutData *data, bool ignoreVersionError);
-    bool writeMscz(MscWriter &writer, const write::WriteContext *ctx = nullptr);
+    muse::Ret load_mscz(const MscReader &msc, rw::ReadInOutData *data, bool ignore_version_error);
+    bool write_mscz(MscWriter &writer, const write::WriteContext *ctx = nullptr);
 
-    bool isCorruptedUponLoading() const;
-    muse::Ret checkCorrupted() const;
+    bool is_corrupted_upon_loading() const;
+    muse::Ret check_corrupted() const;
 
 private:
     friend class MasterScore;
@@ -87,9 +87,9 @@ private:
     void init(const MStyle &style);
 
     const EngravingServices &services_;
-    MasterScore *masterScore_ = nullptr;
+    MasterScore *master_score_ = nullptr;
 
-    bool isCorruptedUponLoading_ = false;
+    bool is_corrupted_upon_loading_ = false;
 };
 
 using EngravingProjectPtr = std::shared_ptr<EngravingProject>;

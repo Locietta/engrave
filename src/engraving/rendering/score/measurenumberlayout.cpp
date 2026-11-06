@@ -34,116 +34,116 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void MeasureNumberLayout::layoutMeasureNumber(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx) {
-    MeasureNumberPlacement placementMode = ctx.conf().styleV(Sid::measureNumberPlacementMode).value<MeasureNumberPlacement>();
-    if (placementMode != MeasureNumberPlacement::ON_ALL_STAVES) {
-        item->setPlacement(PlacementV::ABOVE);
+void MeasureNumberLayout::layout_measure_number(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx) {
+    MeasureNumberPlacement placement_mode = ctx.conf().style_v(Sid::MEASURE_NUMBER_PLACEMENT_MODE).value<MeasureNumberPlacement>();
+    if (placement_mode != MeasureNumberPlacement::ON_ALL_STAVES) {
+        item->set_placement(PlacementV::ABOVE);
     }
 
-    layoutMeasureNumberBase(item, ldata);
+    layout_measure_number_base(item, ldata);
 
-    const RectF &itemBBox = ldata->bbox();
+    const RectF &item_b_box = ldata->bbox();
 
-    bool alignToBarline = ctx.conf().styleB(Sid::measureNumberAlignToBarline);
-    AlignH hPlacement = ctx.conf().styleV(Sid::measureNumberHPlacement).value<AlignH>();
-    const Segment *barlineSeg = refBarlineSegment(item, alignToBarline, hPlacement);
-    const BarLine *refBarline = barlineSeg ? toBarLine(barlineSeg->element(item->track())) : nullptr;
+    bool align_to_barline = ctx.conf().style_b(Sid::MEASURE_NUMBER_ALIGN_TO_BARLINE);
+    AlignH h_placement = ctx.conf().style_v(Sid::MEASURE_NUMBER_H_PLACEMENT).value<AlignH>();
+    const Segment *barline_seg = ref_barline_segment(item, align_to_barline, h_placement);
+    const BarLine *ref_barline = barline_seg ? to_bar_line(barline_seg->element(item->track())) : nullptr;
 
     const Measure *measure = item->measure();
 
-    if (alignToBarline) {
-        if (refBarline) {
-            double xRef = refBarline->pageX() - measure->pageX();
-            xRef += (hPlacement == AlignH::RIGHT ? 1.0 : hPlacement == AlignH::HCENTER ? 0.5 : 0.0) * refBarline->width();
-            ldata->setPosX(xRef);
+    if (align_to_barline) {
+        if (ref_barline) {
+            double x_ref = ref_barline->page_x() - measure->page_x();
+            x_ref += (h_placement == AlignH::RIGHT ? 1.0 : h_placement == AlignH::HCENTER ? 0.5 : 0.0) * ref_barline->width();
+            ldata->set_pos_x(x_ref);
         } else {
-            ldata->setPosX(0.0);
+            ldata->set_pos_x(0.0);
         }
     } else {
-        Segment *firstCRSeg = measure->first(SegmentType::ChordRest);
-        MeasureLayout::MeasureStartEndPos measureStartEndPos =
-            MeasureLayout::getMeasureStartEndPos(measure, firstCRSeg, item->staffIdx(), false, false, ctx);
+        Segment *first_cr_seg = measure->first(SegmentType::CHORD_REST);
+        MeasureLayout::MeasureStartEndPos measure_start_end_pos =
+            MeasureLayout::get_measure_start_end_pos(measure, first_cr_seg, item->staff_idx(), false, false, ctx);
 
-        if (hPlacement == AlignH::LEFT) {
+        if (h_placement == AlignH::LEFT) {
             if (measure->header()) {
-                ldata->setPosX(measure->firstNoteRestSegmentX(true) - measure->systemPos().x());
+                ldata->set_pos_x(measure->first_note_rest_segment_x(true) - measure->system_pos().x());
             } else {
-                double xRef = refBarline ? refBarline->pageX() - measure->pageX() : 0.0;
-                ldata->setPosX(xRef);
+                double x_ref = ref_barline ? ref_barline->page_x() - measure->page_x() : 0.0;
+                ldata->set_pos_x(x_ref);
             }
-        } else if (hPlacement == AlignH::HCENTER) {
-            ldata->setPosX(0.5 * (measureStartEndPos.x1 + measureStartEndPos.x2));
+        } else if (h_placement == AlignH::HCENTER) {
+            ldata->set_pos_x(0.5 * (measure_start_end_pos.x1 + measure_start_end_pos.x2));
         } else {
-            if (refBarline) {
-                double xRef = refBarline->pageX() - measure->pageX() + refBarline->width();
-                ldata->setPosX(xRef);
+            if (ref_barline) {
+                double x_ref = ref_barline->page_x() - measure->page_x() + ref_barline->width();
+                ldata->set_pos_x(x_ref);
             } else {
-                ldata->setPosX(measureStartEndPos.x2);
+                ldata->set_pos_x(measure_start_end_pos.x2);
             }
         }
     }
 
-    if (hPlacement == AlignH::LEFT) {
-        ldata->moveX(-itemBBox.left());
-    } else if (hPlacement == AlignH::HCENTER) {
-        ldata->moveX(-0.5 * (itemBBox.right() + itemBBox.left()));
+    if (h_placement == AlignH::LEFT) {
+        ldata->move_x(-item_b_box.left());
+    } else if (h_placement == AlignH::HCENTER) {
+        ldata->move_x(-0.5 * (item_b_box.right() + item_b_box.left()));
     } else {
-        ldata->moveX(-itemBBox.right());
+        ldata->move_x(-item_b_box.right());
     }
 
     Staff *staff = item->staff();
-    PointF defaultPos = item->defaultPos() * (staff ? staff->staffMag(item->tick()) : 1.0);
+    PointF default_pos = item->default_pos() * (staff ? staff->staff_mag(item->tick()) : 1.0);
 
-    ldata->move(defaultPos);
+    ldata->move(default_pos);
 
-    checkBarlineCollisions(item, barlineSeg, hPlacement, ldata);
+    check_barline_collisions(item, barline_seg, h_placement, ldata);
 }
 
-void MeasureNumberLayout::layoutMMRestRange(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx) {
-    layoutMeasureNumberBase(item, ldata);
+void MeasureNumberLayout::layout_mm_rest_range(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx) {
+    layout_measure_number_base(item, ldata);
 
     const Measure *measure = item->measure();
-    const Segment *crSeg = measure->first(SegmentType::ChordRest);
-    const MeasureLayout::MeasureStartEndPos measureStartEnd =
-        MeasureLayout::getMeasureStartEndPos(measure, crSeg, item->staffIdx(), true, false, ctx);
+    const Segment *cr_seg = measure->first(SegmentType::CHORD_REST);
+    const MeasureLayout::MeasureStartEndPos measure_start_end =
+        MeasureLayout::get_measure_start_end_pos(measure, cr_seg, item->staff_idx(), true, false, ctx);
 
-    const RectF &itemBBox = ldata->bbox();
-    AlignH hPlacement = ctx.conf().styleV(Sid::mmRestRangeHPlacement).value<AlignH>();
-    if (hPlacement == AlignH::HCENTER) {
-        const double x1 = measureStartEnd.x1;
-        const double x2 = measureStartEnd.x2;
-        ldata->setPosX(0.5 * (x1 + x2) - 0.5 * (itemBBox.right() + itemBBox.left()));
-    } else if (hPlacement == AlignH::RIGHT) {
-        ldata->setPosX(item->measure()->ldata()->bbox().width() - itemBBox.right());
+    const RectF &item_b_box = ldata->bbox();
+    AlignH h_placement = ctx.conf().style_v(Sid::MM_REST_RANGE_H_PLACEMENT).value<AlignH>();
+    if (h_placement == AlignH::HCENTER) {
+        const double x1 = measure_start_end.x1;
+        const double x2 = measure_start_end.x2;
+        ldata->set_pos_x(0.5 * (x1 + x2) - 0.5 * (item_b_box.right() + item_b_box.left()));
+    } else if (h_placement == AlignH::RIGHT) {
+        ldata->set_pos_x(item->measure()->ldata()->bbox().width() - item_b_box.right());
     } else {
-        ldata->setPosX(measureStartEnd.x1 - itemBBox.left());
+        ldata->set_pos_x(measure_start_end.x1 - item_b_box.left());
     }
 
     Staff *staff = item->staff();
-    PointF defaultPos = item->defaultPos() * (staff ? staff->staffMag(item->tick()) : 1.0);
+    PointF default_pos = item->default_pos() * (staff ? staff->staff_mag(item->tick()) : 1.0);
 
-    ldata->move(defaultPos);
+    ldata->move(default_pos);
 }
 
-void MeasureNumberLayout::layoutMeasureNumberBase(MeasureNumberBase *item, MeasureNumberBase::LayoutData *ldata) {
-    ldata->setPos(PointF());
+void MeasureNumberLayout::layout_measure_number_base(MeasureNumberBase *item, MeasureNumberBase::LayoutData *ldata) {
+    ldata->set_pos(PointF());
 
-    TextLayout::layoutBaseTextBase1(item, ldata);
+    TextLayout::layout_base_text_base1(item, ldata);
 
-    staff_idx_t effectiveStaffIdx = item->effectiveStaffIdx();
-    Staff *staff = item->score()->staff(effectiveStaffIdx);
+    staff_idx_t effective_staff_idx = item->effective_staff_idx();
+    Staff *staff = item->score()->staff(effective_staff_idx);
 
-    if (item->placeBelow()) {
+    if (item->place_below()) {
         double yoff = ldata->bbox().height();
 
         // If there is only one line, the barline spans outside the staff lines, so the default position is not correct.
         if (staff && staff->lines(item->tick()) == 1) {
             yoff += 2.0 * item->spatium();
         } else {
-            yoff += item->staff() ? item->staff()->staffHeight() : 0.0;
+            yoff += item->staff() ? item->staff()->staff_height() : 0.0;
         }
 
-        ldata->setPosY(yoff);
+        ldata->set_pos_y(yoff);
     } else {
         double yoff = 0.0;
 
@@ -152,73 +152,74 @@ void MeasureNumberLayout::layoutMeasureNumberBase(MeasureNumberBase *item, Measu
             yoff -= 2.0 * item->spatium();
         }
 
-        ldata->setPosY(yoff);
+        ldata->set_pos_y(yoff);
     }
 }
 
-const Segment *MeasureNumberLayout::refBarlineSegment(const MeasureNumber *item, bool alignToBarline, AlignH hPlacement) {
-    Segment *barlineSeg = nullptr;
+const Segment *MeasureNumberLayout::ref_barline_segment(const MeasureNumber *item, bool align_to_barline, AlignH h_placement) {
+    Segment *barline_seg = nullptr;
     Measure *measure = item->measure();
-    if (alignToBarline || hPlacement == AlignH::LEFT) {
+    if (align_to_barline || h_placement == AlignH::LEFT) {
         for (Segment *seg = measure->first(); seg && seg->tick() == measure->tick() && seg->system() == measure->system();
-             seg = seg->prev1MMenabled()) {
-            if (seg->isType(SegmentType::BarLineTypes) && seg->isActive()) {
-                barlineSeg = seg;
+             seg = seg->prev1_m_menabled()) {
+            if (seg->is_type(SegmentType::BAR_LINE_TYPES) && seg->is_active()) {
+                barline_seg = seg;
                 break;
             }
         }
     } else {
-        for (Segment *seg = measure->first(SegmentType::ChordRest);
-             seg && seg->tick() <= measure->endTick() && seg->system() == measure->system(); seg = seg->next1enabled()) {
-            if (seg->isType(SegmentType::BarLineTypes) && seg->isActive()) {
-                barlineSeg = seg;
+        for (Segment *seg = measure->first(SegmentType::CHORD_REST);
+             seg && seg->tick() <= measure->end_tick() && seg->system() == measure->system(); seg = seg->next1enabled()) {
+            if (seg->is_type(SegmentType::BAR_LINE_TYPES) && seg->is_active()) {
+                barline_seg = seg;
                 break;
             }
         }
     }
 
-    return barlineSeg;
+    return barline_seg;
 }
 
-void MeasureNumberLayout::checkBarlineCollisions(const MeasureNumber *item, const Segment *barlineSeg, AlignH hPlacement,
-                                                 MeasureNumber::LayoutData *ldata) {
-    if (hPlacement == AlignH::HCENTER || !item->autoplace()) {
+void MeasureNumberLayout::check_barline_collisions(const MeasureNumber *item, const Segment *barline_seg, AlignH h_placement,
+                                                   MeasureNumber::LayoutData *ldata) {
+    if (h_placement == AlignH::HCENTER || !item->autoplace()) {
         return;
     }
 
-    const RectF &itemBBox = ldata->bbox();
-    staff_idx_t staffIdx = item->staffIdx();
-    staff_idx_t barlineStaff = muse::nidx;
+    const RectF &item_b_box = ldata->bbox();
+    staff_idx_t staff_idx = item->staff_idx();
+    staff_idx_t barline_staff = muse::nidx;
     System *system = item->measure()->system();
-    if (item->getProperty(Pid::PLACEMENT).value<PlacementV>() == PlacementV::ABOVE) {
-        barlineStaff = system->prevVisibleStaff(staffIdx);
+    if (item->get_property(Pid::PLACEMENT).value<PlacementV>() == PlacementV::ABOVE) {
+        barline_staff = system->prev_visible_staff(staff_idx);
     } else {
-        barlineStaff = staffIdx;
+        barline_staff = staff_idx;
     }
-    if (barlineStaff == muse::nidx) {
+    if (barline_staff == muse::nidx) {
         return;
     }
 
-    const double minBarLineDistance = 0.25 * item->spatium();
-    if (!barlineSeg || (barlineSeg->segmentType() != SegmentType::BeginBarLine && !item->score()->staff(barlineStaff)->barLineSpan())) {
+    const double min_bar_line_distance = 0.25 * item->spatium();
+    if (!barline_seg ||
+        (barline_seg->segment_type() != SegmentType::BEGIN_BAR_LINE && !item->score()->staff(barline_staff)->bar_line_span())) {
         return;
     }
 
-    BarLine *barline = toBarLine(barlineSeg->element(staff2track(barlineStaff)));
+    BarLine *barline = to_bar_line(barline_seg->element(staff2track(barline_staff)));
     if (!barline) {
         return;
     }
 
-    double xCur = item->pageX();
-    if (hPlacement == AlignH::LEFT) {
-        double xMin = barline->pageX() + barline->width() - itemBBox.left() + minBarLineDistance;
-        if (xMin > xCur) {
-            ldata->moveX(xMin - xCur);
+    double x_cur = item->page_x();
+    if (h_placement == AlignH::LEFT) {
+        double x_min = barline->page_x() + barline->width() - item_b_box.left() + min_bar_line_distance;
+        if (x_min > x_cur) {
+            ldata->move_x(x_min - x_cur);
         }
     } else {
-        double xMax = barline->pageX() - itemBBox.right() - minBarLineDistance;
-        if (xMax < xCur) {
-            ldata->moveX(xMax - xCur);
+        double x_max = barline->page_x() - item_b_box.right() - min_bar_line_distance;
+        if (x_max < x_cur) {
+            ldata->move_x(x_max - x_cur);
         }
     }
 }

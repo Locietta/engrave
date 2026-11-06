@@ -43,12 +43,12 @@ VibratoSegment::VibratoSegment(Vibrato *sp) : LineSegment(ElementType::VIBRATO_S
 //   symbolLine
 //---------------------------------------------------------
 
-void VibratoSegment::symbolLine(SymId start, SymId fill) {
+void VibratoSegment::symbol_line(SymId start, SymId fill) {
     double x1 = 0;
     double x2 = pos2().x();
     double w = x2 - x1;
-    double mag = magS();
-    IEngravingFontPtr f = score()->engravingFont();
+    double mag = mag_s();
+    IEngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -62,12 +62,12 @@ void VibratoSegment::symbolLine(SymId start, SymId fill) {
     setbbox(r);
 }
 
-void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end) {
+void VibratoSegment::symbol_line(SymId start, SymId fill, SymId end) {
     double x1 = 0;
     double x2 = pos2().x();
     double w = x2 - x1;
-    double mag = magS();
-    IEngravingFontPtr f = score()->engravingFont();
+    double mag = mag_s();
+    IEngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -87,19 +87,19 @@ void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end) {
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject *VibratoSegment::propertyDelegate(Pid pid) const {
+EngravingObject *VibratoSegment::property_delegate(Pid pid) const {
     if (pid == Pid::VIBRATO_TYPE || pid == Pid::PLACEMENT) {
         return spanner();
     }
-    return LineSegment::propertyDelegate(pid);
+    return LineSegment::property_delegate(pid);
 }
 
 //---------------------------------------------------------
 //   vibratoStyle
 //---------------------------------------------------------
 
-static const ElementStyle vibratoStyle{
-    {Sid::vibratoPlacement, Pid::PLACEMENT},
+static const ElementStyle vibrato_style{
+    {Sid::VIBRATO_PLACEMENT, Pid::PLACEMENT},
 };
 
 //---------------------------------------------------------
@@ -107,70 +107,70 @@ static const ElementStyle vibratoStyle{
 //---------------------------------------------------------
 
 Vibrato::Vibrato(DummyParentOr<EngravingItem> parent) : SLine(ElementType::VIBRATO, parent) {
-    initElementStyle(&vibratoStyle);
-    vibratoType_ = VibratoType::GUITAR_VIBRATO;
+    init_element_style(&::mu::engraving::vibrato_style);
+    vibrato_type_ = VibratoType::GUITAR_VIBRATO;
 }
 
 Vibrato::~Vibrato() {}
 
-static const ElementStyle vibratoSegmentStyle{
-    {Sid::vibratoMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle vibrato_segment_style{
+    {Sid::VIBRATO_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment *Vibrato::createLineSegment() {
+LineSegment *Vibrato::create_line_segment() {
     VibratoSegment *seg = new VibratoSegment(this);
-    seg->setTrack(track());
-    seg->setColor(lineColor());
-    seg->initElementStyle(&vibratoSegmentStyle);
+    seg->set_track(track());
+    seg->set_color(line_color());
+    seg->init_element_style(&::mu::engraving::vibrato_segment_style);
     return seg;
 }
 
-PointF Vibrato::linePos(Grip grip, System **system) const { return Trill::trillLinePos(this, grip, system); }
+PointF Vibrato::line_pos(Grip grip, System **system) const { return Trill::trill_line_pos(this, grip, system); }
 
 //---------------------------------------------------------
 //   vibratoTypeName
 //---------------------------------------------------------
 
-String Vibrato::vibratoTypeUserName() const { return TConv::translatedUserName(vibratoType()); }
+String Vibrato::vibrato_type_user_name() const { return TConv::translated_user_name(vibrato_type()); }
 
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Vibrato::subtypeUserName() const { return TConv::userName(vibratoType()); }
+muse::TranslatableString Vibrato::subtype_user_name() const { return TConv::user_name(vibrato_type()); }
 
-Sid Vibrato::defaultPosSid() const { return placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow; }
+Sid Vibrato::default_pos_sid() const { return place_above() ? Sid::VIBRATO_POS_ABOVE : Sid::VIBRATO_POS_BELOW; }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Vibrato::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::VIBRATO_TYPE: return int(vibratoType());
+PropertyValue Vibrato::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::VIBRATO_TYPE: return int(vibrato_type());
         default: break;
     }
-    return SLine::getProperty(propertyId);
+    return SLine::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool Vibrato::setProperty(Pid propertyId, const PropertyValue &val) {
-    switch (propertyId) {
-        case Pid::VIBRATO_TYPE: setVibratoType(VibratoType(val.toInt())); break;
+bool Vibrato::set_property(Pid property_id, const PropertyValue &val) {
+    switch (property_id) {
+        case Pid::VIBRATO_TYPE: set_vibrato_type(VibratoType(val.to_int())); break;
         case Pid::COLOR:
-            setColor(val.value<Color>());
-            setLineColor(val.value<Color>());
+            set_color(val.value<Color>());
+            set_line_color(val.value<Color>());
             break;
-        default: return SLine::setProperty(propertyId, val);
+        default: return SLine::set_property(property_id, val);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -178,11 +178,11 @@ bool Vibrato::setProperty(Pid propertyId, const PropertyValue &val) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Vibrato::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Vibrato::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::VIBRATO_TYPE: return static_cast<int>(VibratoType::GUITAR_VIBRATO);
-        case Pid::PLACEMENT: return style().styleV(Sid::vibratoPlacement);
-        default: return SLine::propertyDefault(propertyId);
+        case Pid::PLACEMENT: return style().style_v(Sid::VIBRATO_PLACEMENT);
+        default: return SLine::property_default(property_id);
     }
 }
 

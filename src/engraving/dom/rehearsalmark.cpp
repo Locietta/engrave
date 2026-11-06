@@ -33,21 +33,21 @@ namespace mu::engraving {
 //   rehearsalMarkStyle
 //---------------------------------------------------------
 
-static const ElementStyle rehearsalMarkStyle{
-    {Sid::rehearsalMarkPlacement, Pid::PLACEMENT},
-    {Sid::rehearsalMarkMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle rehearsal_mark_style{
+    {Sid::REHEARSAL_MARK_PLACEMENT, Pid::PLACEMENT},
+    {Sid::REHEARSAL_MARK_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
-static const ElementStyle mainRehearsalMarkStyle{
-    {Sid::rehearsalMarkFrameType, Pid::FRAME_TYPE},
-    {Sid::rehearsalMarkFontSize, Pid::FONT_SIZE},
-    {Sid::rehearsalMarkAlign, Pid::ALIGN},
+static const ElementStyle main_rehearsal_mark_style{
+    {Sid::REHEARSAL_MARK_FRAME_TYPE, Pid::FRAME_TYPE},
+    {Sid::REHEARSAL_MARK_FONT_SIZE, Pid::FONT_SIZE},
+    {Sid::REHEARSAL_MARK_ALIGN, Pid::ALIGN},
 };
 
-static const ElementStyle additionalRehearsalMarkStyle{
-    {Sid::tempoFrameType, Pid::FRAME_TYPE},
-    {Sid::tempoFontSize, Pid::FONT_SIZE},
-    {Sid::tempoAlign, Pid::ALIGN},
+static const ElementStyle additional_rehearsal_mark_style{
+    {Sid::TEMPO_FRAME_TYPE, Pid::FRAME_TYPE},
+    {Sid::TEMPO_FONT_SIZE, Pid::FONT_SIZE},
+    {Sid::TEMPO_ALIGN, Pid::ALIGN},
 };
 
 //---------------------------------------------------------
@@ -56,45 +56,46 @@ static const ElementStyle additionalRehearsalMarkStyle{
 
 RehearsalMark::RehearsalMark(DummyParentOr<Segment> parent)
     : TextBase(ElementType::REHEARSAL_MARK, parent, TextStyleType::REHEARSAL_MARK, ElementFlag::ON_STAFF) {
-    initElementStyle(&rehearsalMarkStyle);
-    setSystemFlag(true);
+    init_element_style(&::mu::engraving::rehearsal_mark_style);
+    set_system_flag(true);
 }
 
 //---------------------------------------------------------
 //   setType
 //---------------------------------------------------------
 
-void RehearsalMark::setType(RehearsalMark::Type type) {
+void RehearsalMark::set_type(RehearsalMark::Type type) {
     if (type == type_) {
         return;
     }
     type_ = type;
-    applyTypeStyle();
+    apply_type_style();
 }
 
-void RehearsalMark::applyTypeStyle() {
-    const auto &elemStyleMap = (type_ == Type::Main ? mainRehearsalMarkStyle : additionalRehearsalMarkStyle);
-    for (const auto &elem : elemStyleMap) {
-        if (propertyFlags(elem.pid) == PropertyFlags::STYLED) {
-            setProperty(elem.pid, style().styleV(elem.sid));
+void RehearsalMark::apply_type_style() {
+    const auto &elem_style_map =
+        (type_ == Type::MAIN ? ::mu::engraving::main_rehearsal_mark_style : ::mu::engraving::additional_rehearsal_mark_style);
+    for (const auto &elem : elem_style_map) {
+        if (property_flags(elem.pid) == PropertyFlags::STYLED) {
+            set_property(elem.pid, style().style_v(elem.sid));
         }
     }
 }
 
-void RehearsalMark::styleChanged() {
-    TextBase::styleChanged();
-    applyTypeStyle();
+void RehearsalMark::style_changed() {
+    TextBase::style_changed();
+    apply_type_style();
 }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue RehearsalMark::propertyDefault(Pid id) const {
+engraving::PropertyValue RehearsalMark::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::REHEARSAL_MARK;
-        case Pid::PLACEMENT: return style().styleV(Sid::rehearsalMarkPlacement);
-        default: return TextBase::propertyDefault(id);
+        case Pid::PLACEMENT: return style().style_v(Sid::REHEARSAL_MARK_PLACEMENT);
+        default: return TextBase::property_default(id);
     }
 }
 } // namespace mu::engraving

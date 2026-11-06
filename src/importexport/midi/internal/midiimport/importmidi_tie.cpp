@@ -39,13 +39,13 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiTie {
-static bool isTied(const Segment *seg, track_idx_t strack, voice_idx_t voice, mu::engraving::Tie *(Note::*tieFunc)() const) {
-    ChordRest *cr = toChordRest(seg->element(strack + voice));
-    if (cr && cr->isChord()) {
-        Chord *chord = toChord(cr);
+static bool is_tied(const Segment *seg, track_idx_t strack, voice_idx_t voice, mu::engraving::Tie *(Note::*tie_func)() const) {
+    ChordRest *cr = to_chord_rest(seg->element(strack + voice));
+    if (cr && cr->is_chord()) {
+        Chord *chord = to_chord(cr);
         const auto &notes = chord->notes();
         for (const Note *note : notes) {
-            if ((note->*tieFunc)()) {
+            if ((note->*tie_func)()) {
                 return true;
             }
         }
@@ -53,81 +53,81 @@ static bool isTied(const Segment *seg, track_idx_t strack, voice_idx_t voice, mu
     return false;
 }
 
-bool isTiedFor(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return isTied(seg, strack, voice, &Note::tieFor); }
+bool is_tied_for(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return is_tied(seg, strack, voice, &Note::tie_for); }
 
-bool isTiedBack(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return isTied(seg, strack, voice, &Note::tieBack); }
+bool is_tied_back(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return is_tied(seg, strack, voice, &Note::tie_back); }
 
-void TieStateMachine::addSeg(const Segment *seg, track_idx_t strack) {
-    bool isChord = false;
-    for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        ChordRest *cr = toChordRest(seg->element(strack + voice));
-        if (!cr || !cr->isChord()) {
+void TieStateMachine::add_seg(const Segment *seg, track_idx_t strack) {
+    bool is_chord = false;
+    for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+        ChordRest *cr = to_chord_rest(seg->element(strack + voice));
+        if (!cr || !cr->is_chord()) {
             continue;
         }
-        if (!isChord) {
-            isChord = true;
+        if (!is_chord) {
+            is_chord = true;
         }
 
-        bool tiedFor = isTiedFor(seg, strack, voice);
-        bool tiedBack = isTiedBack(seg, strack, voice);
+        bool tied_for = is_tied_for(seg, strack, voice);
+        bool tied_back = is_tied_back(seg, strack, voice);
 
-        if (tiedFor && !tiedBack) {
-            tiedVoices.insert(voice);
-        } else if (!tiedFor && tiedBack) {
-            tiedVoices.erase(voice);
+        if (tied_for && !tied_back) {
+            tied_voices.insert(voice);
+        } else if (!tied_for && tied_back) {
+            tied_voices.erase(voice);
         }
     }
-    if (!isChord) {
+    if (!is_chord) {
         return;
     }
 
-    if (tiedVoices.empty() && (state_ == State::TIED_FOR || state_ == State::TIED_BOTH)) {
+    if (tied_voices.empty() && (state_ == State::TIED_FOR || state_ == State::TIED_BOTH)) {
         state_ = State::TIED_BACK;
-    } else if (tiedVoices.empty() && state_ == State::TIED_BACK) {
+    } else if (tied_voices.empty() && state_ == State::TIED_BACK) {
         state_ = State::UNTIED;
-    } else if (!tiedVoices.empty() && (state_ == State::TIED_BACK || state_ == State::UNTIED)) {
+    } else if (!tied_voices.empty() && (state_ == State::TIED_BACK || state_ == State::UNTIED)) {
         state_ = State::TIED_FOR;
-    } else if (!tiedVoices.empty() && state_ == State::TIED_FOR) {
+    } else if (!tied_voices.empty() && state_ == State::TIED_FOR) {
         state_ = State::TIED_BOTH;
     }
 }
 
 #ifndef NDEBUG
 
-static void printInconsistentTieLocation(int measureIndex, staff_idx_t staffIndex) {
-    LOGD() << "Ties are inconsistent; measure number (from 1):" << measureIndex + 1 << ", staff index (from 0):" << staffIndex;
+static void print_inconsistent_tie_location(int measure_index, staff_idx_t staff_index) {
+    LOGD() << "Ties are inconsistent; measure number (from 1):" << measure_index + 1 << ", staff index (from 0):" << staff_index;
 }
 
-bool areTiesConsistent(const Staff *staff) {
-    const track_idx_t strack = staff->idx() * VOICES;
+bool are_ties_consistent(const Staff *staff) {
+    const track_idx_t strack = staff->idx() * ::mu::engraving::voices;
 
-    for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        bool isTie = false;
-        for (Segment *seg = staff->score()->firstSegment(SegmentType::All); seg; seg = seg->next1()) {
-            if (seg->segmentType() == SegmentType::ChordRest) {
-                ChordRest *cr = toChordRest(seg->element(strack + voice));
+    for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+        bool is_tie = false;
+        for (Segment *seg = staff->score()->first_segment(SegmentType::ALL); seg; seg = seg->next1()) {
+            if (seg->segment_type() == SegmentType::CHORD_REST) {
+                ChordRest *cr = to_chord_rest(seg->element(strack + voice));
 
-                if (cr && cr->isRest() && isTie) {
-                    printInconsistentTieLocation(seg->measure()->measureNumber(), staff->idx());
+                if (cr && cr->is_rest() && is_tie) {
+                    print_inconsistent_tie_location(seg->measure()->measure_number(), staff->idx());
                     return false;
                 }
-                if (isTiedBack(seg, strack, voice)) {
-                    if (!isTie) {
-                        printInconsistentTieLocation(seg->measure()->measureNumber(), staff->idx());
+                if (is_tied_back(seg, strack, voice)) {
+                    if (!is_tie) {
+                        print_inconsistent_tie_location(seg->measure()->measure_number(), staff->idx());
                         return false;
                     }
-                    isTie = false;
+                    is_tie = false;
                 }
-                if (isTiedFor(seg, strack, voice)) {
-                    if (isTie) {
-                        printInconsistentTieLocation(seg->measure()->measureNumber(), staff->idx());
+                if (is_tied_for(seg, strack, voice)) {
+                    if (is_tie) {
+                        print_inconsistent_tie_location(seg->measure()->measure_number(), staff->idx());
                         return false;
                     }
-                    isTie = true;
+                    is_tie = true;
                 }
             }
         }
-        if (isTie) {
+        if (is_tie) {
             return false;
         }
     }

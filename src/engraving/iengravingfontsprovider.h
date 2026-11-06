@@ -35,20 +35,20 @@ class IEngravingFontsProvider {
 public:
     virtual ~IEngravingFontsProvider() = default;
 
-    virtual void addInternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath) = 0;
-    virtual void addExternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath,
-                                 const muse::io::path_t &metadataPath) = 0;
-    virtual void addExternalFont(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
-                                 std::shared_ptr<muse::io::IODevice> metadata) = 0;
-    virtual IEngravingFontPtr fontByName(const std::string &name) const = 0;
+    virtual void add_internal_font(const std::string &name, const std::string &family, const muse::io::PathT &file_path) = 0;
+    virtual void add_external_font(const std::string &name, const std::string &family, const muse::io::PathT &file_path,
+                                   const muse::io::PathT &metadata_path) = 0;
+    virtual void add_external_font(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
+                                   std::shared_ptr<muse::io::IODevice> metadata) = 0;
+    virtual IEngravingFontPtr font_by_name(const std::string &name) const = 0;
     virtual std::vector<IEngravingFontPtr> fonts() const = 0;
 
-    virtual void setFallbackFont(const std::string &name) = 0;
-    virtual IEngravingFontPtr fallbackFont() const = 0;
-    virtual bool isFallbackFont(const IEngravingFont *f) const = 0;
+    virtual void set_fallback_font(const std::string &name) = 0;
+    virtual IEngravingFontPtr fallback_font() const = 0;
+    virtual bool is_fallback_font(const IEngravingFont *f) const = 0;
 
-    virtual void clearExternalFonts() = 0;
+    virtual void clear_external_fonts() = 0;
 
-    virtual void loadAllFonts() = 0;
+    virtual void load_all_fonts() = 0;
 };
 } // namespace mu::engraving

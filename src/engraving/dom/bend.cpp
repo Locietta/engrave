@@ -36,71 +36,73 @@ using namespace mu::engraving;
 
 const char *Bend::label[13] = {"", "1/4", "1/2", "3/4", "full", "1 1/4", "1 1/2", "1 3/4", "2", "2 1/4", "2 1/2", "2 3/4", "3"};
 
-static const ElementStyle bendStyle{
-    {Sid::bendFontFace, Pid::FONT_FACE},
-    {Sid::bendFontSize, Pid::FONT_SIZE},
-    {Sid::bendFontStyle, Pid::FONT_STYLE},
-    {Sid::bendLineWidth, Pid::LINE_WIDTH},
+static const ElementStyle bend_style{
+    {Sid::BEND_FONT_FACE, Pid::FONT_FACE},
+    {Sid::BEND_FONT_SIZE, Pid::FONT_SIZE},
+    {Sid::BEND_FONT_STYLE, Pid::FONT_STYLE},
+    {Sid::BEND_LINE_WIDTH, Pid::LINE_WIDTH},
 };
 
-static const PitchValues BEND_CURVE = {PitchValue(0, 0), PitchValue(15, 100), PitchValue(60, 100)};
+static const PitchValues bend_curve = {PitchValue(0, 0), PitchValue(15, 100), PitchValue(60, 100)};
 
-static const PitchValues BEND_RELEASE_CURVE = {PitchValue(0, 0), PitchValue(10, 100), PitchValue(20, 100), PitchValue(30, 0),
+static const PitchValues bend_release_curve = {PitchValue(0, 0), PitchValue(10, 100), PitchValue(20, 100), PitchValue(30, 0),
                                                PitchValue(60, 0)};
 
-static const PitchValues BEND_RELEASE_BEND_CURVE = {PitchValue(0, 0),  PitchValue(10, 100), PitchValue(20, 100), PitchValue(30, 0),
+static const PitchValues bend_release_bend_curve = {PitchValue(0, 0),  PitchValue(10, 100), PitchValue(20, 100), PitchValue(30, 0),
                                                     PitchValue(40, 0), PitchValue(50, 100), PitchValue(60, 100)};
 
-static const PitchValues PREBEND_CURVE = {PitchValue(0, 100), PitchValue(60, 100)};
+static const PitchValues prebend_curve = {PitchValue(0, 100), PitchValue(60, 100)};
 
-static const PitchValues PREBEND_RELEASE_CURVE = {PitchValue(0, 100), PitchValue(15, 100), PitchValue(30, 0), PitchValue(60, 0)};
+static const PitchValues prebend_release_curve = {PitchValue(0, 100), PitchValue(15, 100), PitchValue(30, 0), PitchValue(60, 0)};
 
 //---------------------------------------------------------
 //   Bend
 //---------------------------------------------------------
 
-Bend::Bend(DummyParentOr<Note> parent) : EngravingItem(ElementType::BEND, parent, ElementFlag::MOVABLE) { initElementStyle(&bendStyle); }
+Bend::Bend(DummyParentOr<Note> parent) : EngravingItem(ElementType::BEND, parent, ElementFlag::MOVABLE) {
+    init_element_style(&::bend_style);
+}
 
 //---------------------------------------------------------
 //   font
 //---------------------------------------------------------
 
 Font Bend::font(double sp) const {
-    Font f(fontFace_, Font::Type::Unknown);
-    f.setBold(fontStyle_ & FontStyle::Bold);
-    f.setItalic(fontStyle_ & FontStyle::Italic);
-    f.setUnderline(fontStyle_ & FontStyle::Underline);
-    f.setStrike(fontStyle_ & FontStyle::Strike);
-    double m = fontSize_;
-    m *= sp / defaultSpatium();
+    Font f(font_face_, Font::Type::UNKNOWN);
+    f.set_bold(font_style_ & FontStyle::BOLD);
+    f.set_italic(font_style_ & FontStyle::ITALIC);
+    f.set_underline(font_style_ & FontStyle::UNDERLINE);
+    f.set_strike(font_style_ & FontStyle::STRIKE);
+    double m = font_size_;
+    m *= sp / default_spatium();
 
-    f.setPointSizeF(m);
+    f.set_point_size_f(m);
     return f;
 }
 
-BendType Bend::parseBendTypeFromCurve() const {
-    if (points_ == BEND_CURVE) {
+BendType Bend::parse_bend_type_from_curve() const {
+    if (points_ == ::bend_curve) {
         return BendType::BEND;
-    } else if (points_ == BEND_RELEASE_CURVE) {
+    } else if (points_ == ::bend_release_curve) {
         return BendType::BEND_RELEASE;
-    } else if (points_ == BEND_RELEASE_BEND_CURVE) {
+    } else if (points_ == ::bend_release_bend_curve) {
         return BendType::BEND_RELEASE_BEND;
-    } else if (points_ == PREBEND_CURVE) {
+    } else if (points_ == ::prebend_curve) {
         return BendType::PREBEND;
-    } else if (points_ == PREBEND_RELEASE_CURVE) {
+    } else if (points_ == ::prebend_release_curve) {
         return BendType::PREBEND_RELEASE;
     } else {
         return BendType::CUSTOM;
     }
 }
 
-void Bend::updatePointsByBendType(const BendType bendType) {
-    switch (bendType) {
-        case BendType::BEND: points_ = BEND_CURVE; break;
-        case BendType::BEND_RELEASE: points_ = BEND_RELEASE_CURVE; break;
-        case BendType::BEND_RELEASE_BEND: points_ = BEND_RELEASE_BEND_CURVE; break;
-        case BendType::PREBEND: points_ = PREBEND_CURVE; break;
-        case BendType::PREBEND_RELEASE: points_ = PREBEND_RELEASE_CURVE; break;
+void Bend::update_points_by_bend_type(const BendType bend_type) {
+    switch (bend_type) {
+        case BendType::BEND: points_ = ::bend_curve; break;
+        case BendType::BEND_RELEASE: points_ = ::bend_release_curve; break;
+        case BendType::BEND_RELEASE_BEND: points_ = ::bend_release_bend_curve; break;
+        case BendType::PREBEND: points_ = ::prebend_curve; break;
+        case BendType::PREBEND_RELEASE: points_ = ::prebend_release_curve; break;
         default: break;
     }
 }
@@ -109,16 +111,16 @@ void Bend::updatePointsByBendType(const BendType bendType) {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Bend::getProperty(Pid id) const {
+PropertyValue Bend::get_property(Pid id) const {
     switch (id) {
-        case Pid::FONT_FACE: return fontFace_;
-        case Pid::FONT_SIZE: return fontSize_;
-        case Pid::FONT_STYLE: return int(fontStyle_);
-        case Pid::PLAY: return playBend();
-        case Pid::LINE_WIDTH: return lineWidth_;
-        case Pid::BEND_TYPE: return static_cast<int>(parseBendTypeFromCurve());
+        case Pid::FONT_FACE: return font_face_;
+        case Pid::FONT_SIZE: return font_size_;
+        case Pid::FONT_STYLE: return int(font_style_);
+        case Pid::PLAY: return play_bend();
+        case Pid::LINE_WIDTH: return line_width_;
+        case Pid::BEND_TYPE: return static_cast<int>(parse_bend_type_from_curve());
         case Pid::BEND_CURVE: return points_;
-        default: return EngravingItem::getProperty(id);
+        default: return EngravingItem::get_property(id);
     }
 }
 
@@ -126,18 +128,18 @@ PropertyValue Bend::getProperty(Pid id) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Bend::setProperty(Pid id, const PropertyValue &v) {
+bool Bend::set_property(Pid id, const PropertyValue &v) {
     switch (id) {
-        case Pid::FONT_FACE: fontFace_ = v.value<String>(); break;
-        case Pid::FONT_SIZE: fontSize_ = v.toReal(); break;
-        case Pid::FONT_STYLE: fontStyle_ = FontStyle(v.toInt()); break;
-        case Pid::PLAY: setPlayBend(v.toBool()); break;
-        case Pid::LINE_WIDTH: lineWidth_ = v.value<Spatium>(); break;
-        case Pid::BEND_TYPE: updatePointsByBendType(static_cast<BendType>(v.toInt())); break;
-        case Pid::BEND_CURVE: setPoints(v.value<PitchValues>()); break;
-        default: return EngravingItem::setProperty(id, v);
+        case Pid::FONT_FACE: font_face_ = v.value<String>(); break;
+        case Pid::FONT_SIZE: font_size_ = v.to_real(); break;
+        case Pid::FONT_STYLE: font_style_ = FontStyle(v.to_int()); break;
+        case Pid::PLAY: set_play_bend(v.to_bool()); break;
+        case Pid::LINE_WIDTH: line_width_ = v.value<Spatium>(); break;
+        case Pid::BEND_TYPE: update_points_by_bend_type(static_cast<BendType>(v.to_int())); break;
+        case Pid::BEND_CURVE: set_points(v.value<PitchValues>()); break;
+        default: return EngravingItem::set_property(id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -145,11 +147,11 @@ bool Bend::setProperty(Pid id, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Bend::propertyDefault(Pid id) const {
+PropertyValue Bend::property_default(Pid id) const {
     switch (id) {
         case Pid::PLAY: return true;
         case Pid::BEND_TYPE: return static_cast<int>(BendType::BEND);
-        case Pid::BEND_CURVE: return BEND_CURVE;
-        default: return EngravingItem::propertyDefault(id);
+        case Pid::BEND_CURVE: return ::bend_curve;
+        default: return EngravingItem::property_default(id);
     }
 }

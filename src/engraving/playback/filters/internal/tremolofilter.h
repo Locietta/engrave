@@ -29,7 +29,7 @@ namespace mu::engraving {
 class TremoloFilter : public FilterBase<TremoloFilter> {
 protected:
     friend class FilterBase<TremoloFilter>;
-    static bool isPlayable(const EngravingItem *item, const RenderingContext &ctx);
+    static bool is_playable(const EngravingItem *item, const RenderingContext &ctx);
 };
 } // namespace mu::engraving
 

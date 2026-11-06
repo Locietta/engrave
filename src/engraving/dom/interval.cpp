@@ -56,47 +56,47 @@ Interval Interval::reduced() {
 //   isZero
 //---------------------------------------------------------
 
-bool Interval::isZero() const { return diatonic == 0 && chromatic == 0; }
+bool Interval::is_zero() const { return diatonic == 0 && chromatic == 0; }
 
-Interval Interval::fromOrnamentInterval(OrnamentInterval ornInt) {
-    Interval resultingInterval = Interval(0, 0);
+Interval Interval::from_ornament_interval(OrnamentInterval orn_int) {
+    Interval resulting_interval = Interval(0, 0);
 
-    resultingInterval.diatonic = static_cast<int>(ornInt.step);
+    resulting_interval.diatonic = static_cast<int>(orn_int.step);
 
-    int cromaticSteps = 0;
-    switch (ornInt.step) {
-        case IntervalStep::UNISON: cromaticSteps = 0; break;
-        case IntervalStep::SECOND: cromaticSteps = 2; break;
-        case IntervalStep::THIRD: cromaticSteps = 4; break;
-        case IntervalStep::FOURTH: cromaticSteps = 5; break;
-        case IntervalStep::FIFTH: cromaticSteps = 7; break;
-        case IntervalStep::SIXTH: cromaticSteps = 9; break;
-        case IntervalStep::SEVENTH: cromaticSteps = 11; break;
-        case IntervalStep::OCTAVE: cromaticSteps = 12; break;
+    int cromatic_steps = 0;
+    switch (orn_int.step) {
+        case IntervalStep::UNISON: cromatic_steps = 0; break;
+        case IntervalStep::SECOND: cromatic_steps = 2; break;
+        case IntervalStep::THIRD: cromatic_steps = 4; break;
+        case IntervalStep::FOURTH: cromatic_steps = 5; break;
+        case IntervalStep::FIFTH: cromatic_steps = 7; break;
+        case IntervalStep::SIXTH: cromatic_steps = 9; break;
+        case IntervalStep::SEVENTH: cromatic_steps = 11; break;
+        case IntervalStep::OCTAVE: cromatic_steps = 12; break;
         default: break;
     }
 
-    if (ornInt.isPerfect()) {
-        switch (ornInt.type) {
-            case IntervalType::DIMINISHED: cromaticSteps -= 1; break;
-            case IntervalType::AUGMENTED: cromaticSteps += 1; break;
+    if (orn_int.is_perfect()) {
+        switch (orn_int.type) {
+            case IntervalType::DIMINISHED: cromatic_steps -= 1; break;
+            case IntervalType::AUGMENTED: cromatic_steps += 1; break;
             default: break;
         }
     } else {
-        switch (ornInt.type) {
-            case IntervalType::DIMINISHED: cromaticSteps -= 2; break;
-            case IntervalType::MINOR: cromaticSteps -= 1; break;
-            case IntervalType::AUGMENTED: cromaticSteps += 1; break;
+        switch (orn_int.type) {
+            case IntervalType::DIMINISHED: cromatic_steps -= 2; break;
+            case IntervalType::MINOR: cromatic_steps -= 1; break;
+            case IntervalType::AUGMENTED: cromatic_steps += 1; break;
             default: break;
         }
     }
 
-    resultingInterval.chromatic = cromaticSteps;
+    resulting_interval.chromatic = cromatic_steps;
 
-    return resultingInterval;
+    return resulting_interval;
 }
 
-const std::array<Interval, 26> Interval::allIntervals{
+const std::array<Interval, 26> Interval::all_intervals{
     // diatonic - chromatic
     Interval(0, 0), //  0 Perfect Unison
     Interval(0, 1), //  1 Augmented Unison
@@ -155,8 +155,8 @@ int Interval::chromatic2diatonic(int semitones) {
     }
     int val = semitones % 12;
     int octave = semitones / 12;
-    int intervalIndex = il[val];
-    int steps = allIntervals[intervalIndex].diatonic;
+    int interval_index = il[val];
+    int steps = ::mu::engraving::Interval::all_intervals[interval_index].diatonic;
     steps = steps + octave * 7;
     return down ? -steps : steps;
 }

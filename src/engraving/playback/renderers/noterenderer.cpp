@@ -40,71 +40,72 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-bool NoteRenderer::shouldRender(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations) {
+bool NoteRenderer::should_render(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations) {
     if (!note->play()) {
         return false;
     }
 
-    const Tie *tie = note->tieBack();
+    const Tie *tie = note->tie_back();
 
-    if (tie && tie->playSpanner()) {
-        const Note *startNote = tie->startNote();
-        const Note *endNote = tie->endNote();
-        if (!startNote || !endNote) {
+    if (tie && tie->play_spanner()) {
+        const Note *start_note = tie->start_note();
+        const Note *end_note = tie->end_note();
+        if (!start_note || !end_note) {
             return false;
         }
 
-        if (tie->isPartialTie()) {
+        if (tie->is_partial_tie()) {
             // Play the partially tied note if there is no outgoing note in the previous repeat
-            if (!findOutgoingNoteInPreviousRepeat(note, ctx).isValid()) {
+            if (!find_outgoing_note_in_previous_repeat(note, ctx).is_valid()) {
                 return true;
             }
         }
 
-        const Chord *startChord = startNote->chord();
-        const Chord *endChord = endNote->chord();
+        const Chord *start_chord = start_note->chord();
+        const Chord *end_chord = end_note->chord();
 
         // Helper function to check if tremolo should play
-        auto shouldTremoloPlay = [](const Chord *chord) -> bool {
-            if (chord->tremoloType() == TremoloType::INVALID_TREMOLO) {
+        auto should_tremolo_play = [](const Chord *chord) -> bool {
+            if (chord->tremolo_type() == TremoloType::INVALID_TREMOLO) {
                 return false;
             }
 
-            const TremoloSingleChord *singleTremolo = chord->tremoloSingleChord();
-            if (singleTremolo) {
-                return singleTremolo->playTremolo();
+            const TremoloSingleChord *single_tremolo = chord->tremolo_single_chord();
+            if (single_tremolo) {
+                return single_tremolo->play_tremolo();
             }
 
-            const TremoloTwoChord *twoTremolo = chord->tremoloTwoChord();
-            if (twoTremolo) {
-                return twoTremolo->playTremolo();
+            const TremoloTwoChord *two_tremolo = chord->tremolo_two_chord();
+            if (two_tremolo) {
+                return two_tremolo->play_tremolo();
             }
 
             return false;
         };
 
         // Only render tied notes if tremolo is actually enabled for playback
-        if (shouldTremoloPlay(startChord) || shouldTremoloPlay(endChord)) {
+        if (should_tremolo_play(start_chord) || should_tremolo_play(end_chord)) {
             return true;
         }
 
-        if (startChord->arpeggio() && endChord->arpeggio()) {
+        if (start_chord->arpeggio() && end_chord->arpeggio()) {
             return false;
         }
 
         //!Note Checking whether the tied note has any multi-note articulation attached
         //!     If so, we can't ignore such note
         for (const auto &pair : articulations) {
-            if (muse::mpe::isMultiNoteArticulation(pair.first) && !muse::mpe::isRangedArticulation(pair.first)) {
+            if (muse::mpe::is_multi_note_articulation(pair.first) && !muse::mpe::is_ranged_articulation(pair.first)) {
                 return true;
             }
         }
 
-        const auto &intervals = startChord->score()->spannerMap().findOverlapping(startChord->tick().ticks(), startChord->endTick().ticks(),
-                                                                                  /*excludeCollisions*/ true);
+        const auto &intervals =
+            start_chord->score()->spanner_map().find_overlapping(start_chord->tick().ticks(), start_chord->end_tick().ticks(),
+                                                                 /*excludeCollisions*/ true);
         for (const auto &interval : intervals) {
             const Spanner *sp = interval.value;
-            if (sp->isTrill() && sp->playSpanner() && sp->endElement() == startChord) {
+            if (sp->is_trill() && sp->play_spanner() && sp->end_element() == start_chord) {
                 return true;
             }
         }
@@ -118,193 +119,193 @@ bool NoteRenderer::shouldRender(const Note *note, const RenderingContext &ctx, c
 void NoteRenderer::render(const Note *note, const RenderingContext &ctx, mpe::PlaybackEventList &result) {
     IF_ASSERT_FAILED(note) { return; }
 
-    NominalNoteCtx noteCtx = buildNominalNoteCtx(note, ctx);
-    if (!shouldRender(note, ctx, noteCtx.articulations)) {
+    NominalNoteCtx note_ctx = build_nominal_note_ctx(note, ctx);
+    if (!should_render(note, ctx, note_ctx.articulations)) {
         return;
     }
 
-    const Tie *tieFor = note->tieFor();
-    if (tieFor && tieFor->playSpanner()) {
-        if (tieFor->isPartialTie()) {
-            renderPartialTie(note, noteCtx);
-        } else if (!tieFor->isLaissezVib()) {
-            renderNormalTie(note, noteCtx);
+    const Tie *tie_for = note->tie_for();
+    if (tie_for && tie_for->play_spanner()) {
+        if (tie_for->is_partial_tie()) {
+            render_partial_tie(note, note_ctx);
+        } else if (!tie_for->is_laissez_vib()) {
+            render_normal_tie(note, note_ctx);
         }
     }
 
-    applySwingIfNeed(note, noteCtx);
+    apply_swing_if_need(note, note_ctx);
 
-    if (noteCtx.articulations.contains(ArticulationType::DiscreteGlissando)) {
-        GlissandosRenderer::renderDiscreteGlissando(note, noteCtx, result);
+    if (note_ctx.articulations.contains(ArticulationType::DISCRETE_GLISSANDO)) {
+        GlissandosRenderer::render_discrete_glissando(note, note_ctx, result);
         return;
     }
 
-    if (noteCtx.articulations.contains(ArticulationType::ContinuousGlissando)) {
-        GlissandosRenderer::renderContinuousGlissando(note, noteCtx, result);
+    if (note_ctx.articulations.contains(ArticulationType::CONTINUOUS_GLISSANDO)) {
+        GlissandosRenderer::render_continuous_glissando(note, note_ctx, result);
         return;
     }
 
-    mpe::NoteEvent ev = buildNoteEvent(noteCtx);
+    mpe::NoteEvent ev = build_note_event(note_ctx);
 
-    if (ev.arrangementCtx().actualTimestamp >= 0) {
+    if (ev.arrangement_ctx().actual_timestamp >= 0) {
         result.emplace_back(std::move(ev));
     } else {
-        ArrangementContext arrCtx = ev.arrangementCtx();
-        arrCtx.actualDuration = arrCtx.actualDuration + arrCtx.actualTimestamp;
-        arrCtx.actualTimestamp = 0;
+        ArrangementContext arr_ctx = ev.arrangement_ctx();
+        arr_ctx.actual_duration = arr_ctx.actual_duration + arr_ctx.actual_timestamp;
+        arr_ctx.actual_timestamp = 0;
 
-        PitchContext pitchCtx = ev.pitchCtx();
-        ExpressionContext expCtx = ev.expressionCtx();
+        PitchContext pitch_ctx = ev.pitch_ctx();
+        ExpressionContext exp_ctx = ev.expression_ctx();
 
-        result.emplace_back(mpe::NoteEvent(std::move(arrCtx), std::move(pitchCtx), std::move(expCtx)));
+        result.emplace_back(mpe::NoteEvent(std::move(arr_ctx), std::move(pitch_ctx), std::move(exp_ctx)));
     }
 }
 
-void NoteRenderer::renderPartialTie(const Note *outgoingNote, NominalNoteCtx &outgoingNoteCtx) {
-    const RenderingContext &outgoingChordCtx = outgoingNoteCtx.chordCtx;
-    const PartiallyTiedNoteInfo incomingNoteInfo = findIncomingNoteInNextRepeat(outgoingNote, outgoingChordCtx);
-    if (!incomingNoteInfo.isValid()) {
+void NoteRenderer::render_partial_tie(const Note *outgoing_note, NominalNoteCtx &outgoing_note_ctx) {
+    const RenderingContext &outgoing_chord_ctx = outgoing_note_ctx.chord_ctx;
+    const PartiallyTiedNoteInfo incoming_note_info = find_incoming_note_in_next_repeat(outgoing_note, outgoing_chord_ctx);
+    if (!incoming_note_info.is_valid()) {
         return;
     }
 
-    const int incomingNotePositionTickOffset = incomingNoteInfo.repeat->utick - incomingNoteInfo.repeat->tick;
-    RenderingContext incomingChordCtx = buildRenderingCtx(incomingNoteInfo.note->chord(), incomingNotePositionTickOffset,
-                                                          outgoingChordCtx.profile, outgoingChordCtx.playbackCtx);
+    const int incoming_note_position_tick_offset = incoming_note_info.repeat->utick - incoming_note_info.repeat->tick;
+    RenderingContext incoming_chord_ctx = build_rendering_ctx(incoming_note_info.note->chord(), incoming_note_position_tick_offset,
+                                                              outgoing_chord_ctx.profile, outgoing_chord_ctx.playback_ctx);
 
-    ChordArticulationsParser::buildChordArticulationMap(incomingNoteInfo.note->chord(), incomingChordCtx,
-                                                        incomingChordCtx.commonArticulations);
+    ChordArticulationsParser::build_chord_articulation_map(incoming_note_info.note->chord(), incoming_chord_ctx,
+                                                           incoming_chord_ctx.common_articulations);
 
-    NominalNoteCtx incomingNoteCtx = buildNominalNoteCtx(incomingNoteInfo.note, incomingChordCtx);
+    NominalNoteCtx incoming_note_ctx = build_nominal_note_ctx(incoming_note_info.note, incoming_chord_ctx);
 
-    if (shouldRender(incomingNoteInfo.note, incomingChordCtx, incomingNoteCtx.articulations)) {
+    if (should_render(incoming_note_info.note, incoming_chord_ctx, incoming_note_ctx.articulations)) {
         return;
     }
 
-    const Tie *tieFor = incomingNoteInfo.note->tieFor();
-    if (tieFor && tieFor->playSpanner() && !tieFor->isLaissezVib()) {
-        renderNormalTie(incomingNoteInfo.note, incomingNoteCtx);
+    const Tie *tie_for = incoming_note_info.note->tie_for();
+    if (tie_for && tie_for->play_spanner() && !tie_for->is_laissez_vib()) {
+        render_normal_tie(incoming_note_info.note, incoming_note_ctx);
     }
 
-    addTiedNote(incomingNoteCtx, outgoingNoteCtx);
-    updateArticulationBoundaries(outgoingNoteCtx.timestamp, outgoingNoteCtx.duration, outgoingNoteCtx.articulations);
+    add_tied_note(incoming_note_ctx, outgoing_note_ctx);
+    update_articulation_boundaries(outgoing_note_ctx.timestamp, outgoing_note_ctx.duration, outgoing_note_ctx.articulations);
 }
 
-void NoteRenderer::renderNormalTie(const Note *firstNote, NominalNoteCtx &firstNoteCtx) {
-    std::unordered_set<const Note *> renderedNotes{firstNote};
+void NoteRenderer::render_normal_tie(const Note *first_note, NominalNoteCtx &first_note_ctx) {
+    std::unordered_set<const Note *> rendered_notes{first_note};
 
-    const RenderingContext &firstChordCtx = firstNoteCtx.chordCtx;
-    const Tie *currTie = firstNote->tieFor();
+    const RenderingContext &first_chord_ctx = first_note_ctx.chord_ctx;
+    const Tie *curr_tie = first_note->tie_for();
 
-    while (currTie && currTie->playSpanner()) {
-        const Note *currNote = currTie->endNote();
-        if (!currNote || !currNote->play()) {
+    while (curr_tie && curr_tie->play_spanner()) {
+        const Note *curr_note = curr_tie->end_note();
+        if (!curr_note || !curr_note->play()) {
             break;
         }
 
-        if (muse::contains(renderedNotes, currNote)) {
+        if (muse::contains(rendered_notes, curr_note)) {
             break; // prevents infinite loop
         }
 
-        if (!notesInSameRepeat(firstChordCtx.score, firstNote, currNote, firstChordCtx.positionTickOffset)) {
-            const TieJumpPointList *jumpPoints = firstNote->tieJumpPoints();
-            if (jumpPoints && !jumpPoints->empty()) {
-                renderPartialTie(firstNote, firstNoteCtx);
+        if (!notes_in_same_repeat(first_chord_ctx.score, first_note, curr_note, first_chord_ctx.position_tick_offset)) {
+            const TieJumpPointList *jump_points = first_note->tie_jump_points();
+            if (jump_points && !jump_points->empty()) {
+                render_partial_tie(first_note, first_note_ctx);
             }
             break;
         }
 
-        const Chord *chord = currNote->chord();
+        const Chord *chord = curr_note->chord();
         if (!chord) {
             break;
         }
 
-        RenderingContext currChordCtx =
-            buildRenderingCtx(chord, firstChordCtx.positionTickOffset, firstChordCtx.profile, firstChordCtx.playbackCtx);
-        ChordArticulationsParser::buildChordArticulationMap(chord, currChordCtx, currChordCtx.commonArticulations);
+        RenderingContext curr_chord_ctx =
+            build_rendering_ctx(chord, first_chord_ctx.position_tick_offset, first_chord_ctx.profile, first_chord_ctx.playback_ctx);
+        ChordArticulationsParser::build_chord_articulation_map(chord, curr_chord_ctx, curr_chord_ctx.common_articulations);
 
-        const NominalNoteCtx currNoteCtx = buildNominalNoteCtx(currNote, currChordCtx);
-        if (shouldRender(currNote, currChordCtx, currNoteCtx.articulations)) {
-            if (currNoteCtx.articulations.contains(ArticulationType::DiscreteGlissando)) {
-                firstNoteCtx.duration += GlissandosRenderer::discreteGlissandoStepDuration(currNote, currNoteCtx.duration);
+        const NominalNoteCtx curr_note_ctx = build_nominal_note_ctx(curr_note, curr_chord_ctx);
+        if (should_render(curr_note, curr_chord_ctx, curr_note_ctx.articulations)) {
+            if (curr_note_ctx.articulations.contains(ArticulationType::DISCRETE_GLISSANDO)) {
+                first_note_ctx.duration += GlissandosRenderer::discrete_glissando_step_duration(curr_note, curr_note_ctx.duration);
             }
 
             break;
         }
 
-        addTiedNote(currNoteCtx, firstNoteCtx);
+        add_tied_note(curr_note_ctx, first_note_ctx);
 
-        currTie = currNote->tieFor();
-        renderedNotes.insert(currNote);
+        curr_tie = curr_note->tie_for();
+        rendered_notes.insert(curr_note);
     }
 
-    if (firstNoteCtx.articulations.size() > 1) {
-        firstNoteCtx.articulations.erase(mpe::ArticulationType::Standard);
+    if (first_note_ctx.articulations.size() > 1) {
+        first_note_ctx.articulations.erase(mpe::ArticulationType::STANDARD);
     }
 
-    updateArticulationBoundaries(firstNoteCtx.timestamp, firstNoteCtx.duration, firstNoteCtx.articulations);
+    update_articulation_boundaries(first_note_ctx.timestamp, first_note_ctx.duration, first_note_ctx.articulations);
 }
 
-void NoteRenderer::addTiedNote(const NominalNoteCtx &tiedNoteCtx, NominalNoteCtx &firstNoteCtx) {
-    if (tiedNoteCtx.articulations.size() == 1) {
-        if (tiedNoteCtx.articulations.begin()->first == mpe::ArticulationType::Standard) {
-            firstNoteCtx.duration += tiedNoteCtx.duration;
+void NoteRenderer::add_tied_note(const NominalNoteCtx &tied_note_ctx, NominalNoteCtx &first_note_ctx) {
+    if (tied_note_ctx.articulations.size() == 1) {
+        if (tied_note_ctx.articulations.begin()->first == mpe::ArticulationType::STANDARD) {
+            first_note_ctx.duration += tied_note_ctx.duration;
             return;
         }
     }
 
-    const float avgDurationFactor = percentageToFactor(tiedNoteCtx.articulations.averageDurationFactor());
-    firstNoteCtx.duration += tiedNoteCtx.duration * avgDurationFactor;
+    const float avg_duration_factor = percentage_to_factor(tied_note_ctx.articulations.average_duration_factor());
+    first_note_ctx.duration += tied_note_ctx.duration * avg_duration_factor;
 
     // Ignore these articulations so we won't re-apply them to the total duration
-    static const ArticulationTypeSet ARTICULATION_TO_IGNORE_TYPES{
-        ArticulationType::Staccato,
-        ArticulationType::Staccatissimo,
+    static const ArticulationTypeSet articulation_to_ignore_types{
+        ArticulationType::STACCATO,
+        ArticulationType::STACCATISSIMO,
     };
 
-    for (const auto &pair : tiedNoteCtx.articulations) {
-        if (!muse::contains(ARTICULATION_TO_IGNORE_TYPES, pair.first)) {
-            firstNoteCtx.articulations.insert(pair);
+    for (const auto &pair : tied_note_ctx.articulations) {
+        if (!muse::contains(articulation_to_ignore_types, pair.first)) {
+            first_note_ctx.articulations.insert(pair);
         }
     }
 }
 
-void NoteRenderer::updateArticulationBoundaries(const timestamp_t noteTimestamp, const duration_t noteDuration,
-                                                ArticulationMap &articulations) {
-    const timestamp_t noteTimestampTo = noteTimestamp + noteDuration;
-    IF_ASSERT_FAILED(noteTimestampTo > 0) { return; }
+void NoteRenderer::update_articulation_boundaries(const timestamp_t note_timestamp, const duration_t note_duration,
+                                                  ArticulationMap &articulations) {
+    const timestamp_t note_timestamp_to = note_timestamp + note_duration;
+    IF_ASSERT_FAILED(note_timestamp_to > 0) { return; }
 
     for (const auto &pair : articulations) {
         const ArticulationAppliedData &articulation = pair.second;
 
-        const duration_percentage_t occupiedFrom = mpe::occupiedPercentage(articulation.meta.timestamp, noteTimestampTo);
-        const duration_percentage_t occupiedTo =
-            mpe::occupiedPercentage(articulation.meta.timestamp + articulation.meta.overallDuration, noteTimestampTo);
+        const duration_percentage_t occupied_from = mpe::occupied_percentage(articulation.meta.timestamp, note_timestamp_to);
+        const duration_percentage_t occupied_to =
+            mpe::occupied_percentage(articulation.meta.timestamp + articulation.meta.overall_duration, note_timestamp_to);
 
-        articulations.updateOccupiedRange(pair.first, occupiedFrom, occupiedTo);
+        articulations.update_occupied_range(pair.first, occupied_from, occupied_to);
     }
 }
 
-void NoteRenderer::applySwingIfNeed(const Note *note, NominalNoteCtx &noteCtx) {
+void NoteRenderer::apply_swing_if_need(const Note *note, NominalNoteCtx &note_ctx) {
     const Chord *chord = note->chord();
     if (!chord || chord->tuplet()) {
         return;
     }
 
     const SwingParameters swing = chord->staff()->swing(chord->tick());
-    if (!swing.isOn()) {
+    if (!swing.is_on()) {
         return;
     }
 
     //! NOTE: Swing must be applied to the "raw" note duration, but not to the additional duration (e.g, from a tied note)
-    const Swing::ChordDurationAdjustment swingDurationAdjustment = Swing::applySwing(chord, swing);
-    const duration_t additionalDuration = noteCtx.duration - noteCtx.chordCtx.nominalDuration;
-    noteCtx.timestamp = noteCtx.timestamp + noteCtx.chordCtx.nominalDuration * swingDurationAdjustment.remainingDurationMultiplier;
-    noteCtx.duration = noteCtx.chordCtx.nominalDuration * swingDurationAdjustment.durationMultiplier + additionalDuration;
+    const Swing::ChordDurationAdjustment swing_duration_adjustment = Swing::apply_swing(chord, swing);
+    const duration_t additional_duration = note_ctx.duration - note_ctx.chord_ctx.nominal_duration;
+    note_ctx.timestamp = note_ctx.timestamp + note_ctx.chord_ctx.nominal_duration * swing_duration_adjustment.remaining_duration_multiplier;
+    note_ctx.duration = note_ctx.chord_ctx.nominal_duration * swing_duration_adjustment.duration_multiplier + additional_duration;
 }
 
-NominalNoteCtx NoteRenderer::buildNominalNoteCtx(const Note *note, const RenderingContext &ctx) {
-    NominalNoteCtx noteCtx(note, ctx);
-    NoteArticulationsParser::buildNoteArticulationMap(note, ctx, noteCtx.articulations);
+NominalNoteCtx NoteRenderer::build_nominal_note_ctx(const Note *note, const RenderingContext &ctx) {
+    NominalNoteCtx note_ctx(note, ctx);
+    NoteArticulationsParser::build_note_articulation_map(note, ctx, note_ctx.articulations);
 
-    return noteCtx;
+    return note_ctx;
 }

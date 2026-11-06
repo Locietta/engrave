@@ -32,203 +32,204 @@
 #include "importmidi_inner.h"
 
 namespace mu::iex::midi { namespace Meter {
-bool isSimple(const ReducedFraction &barFraction) // 2/2, 3/4, 4/4, ...
+bool is_simple(const ReducedFraction &bar_fraction) // 2/2, 3/4, 4/4, ...
 {
-    return barFraction.numerator() < 5;
+    return bar_fraction.numerator() < 5;
 }
 
-bool isCompound(const ReducedFraction &barFraction) // 6/8, 12/4, ...
+bool is_compound(const ReducedFraction &bar_fraction) // 6/8, 12/4, ...
 {
-    return barFraction.numerator() % 3 == 0 && barFraction.numerator() > 3;
+    return bar_fraction.numerator() % 3 == 0 && bar_fraction.numerator() > 3;
 }
 
-bool isComplex(const ReducedFraction &barFraction) // 5/4, 7/8, ...
+bool is_complex(const ReducedFraction &bar_fraction) // 5/4, 7/8, ...
 {
-    return barFraction.numerator() == 5 || barFraction.numerator() == 7;
+    return bar_fraction.numerator() == 5 || bar_fraction.numerator() == 7;
 }
 
-bool isDuple(const ReducedFraction &barFraction) // 2/2, 6/8, ...
+bool is_duple(const ReducedFraction &bar_fraction) // 2/2, 6/8, ...
 {
-    return barFraction.numerator() == 2 || barFraction.numerator() == 6;
+    return bar_fraction.numerator() == 2 || bar_fraction.numerator() == 6;
 }
 
-bool isTriple(const ReducedFraction &barFraction) // 3/4, 9/4, ...
+bool is_triple(const ReducedFraction &bar_fraction) // 3/4, 9/4, ...
 {
-    return barFraction.numerator() == 3 || barFraction.numerator() == 9;
+    return bar_fraction.numerator() == 3 || bar_fraction.numerator() == 9;
 }
 
-bool isQuadruple(const ReducedFraction &barFraction) // 4/4, 12/8, ...
+bool is_quadruple(const ReducedFraction &bar_fraction) // 4/4, 12/8, ...
 {
-    return barFraction.numerator() % 4 == 0;
+    return bar_fraction.numerator() % 4 == 0;
 }
 
-bool isQuintuple(const ReducedFraction &barFraction) // 5/4, 15/8, ...
+bool is_quintuple(const ReducedFraction &bar_fraction) // 5/4, 15/8, ...
 {
-    return barFraction.numerator() % 5 == 0;
+    return bar_fraction.numerator() % 5 == 0;
 }
 
-bool isSeptuple(const ReducedFraction &barFraction) // 7/8, 21/8, ...
+bool is_septuple(const ReducedFraction &bar_fraction) // 7/8, 21/8, ...
 {
-    return barFraction.numerator() % 7 == 0;
+    return bar_fraction.numerator() % 7 == 0;
 }
 
 // list of bar division lengths in ticks (whole bar len, half bar len, ...)
 // and its corresponding levels
 // tuplets are not taken into account here
 
-DivisionInfo metricDivisionsOfBar(const ReducedFraction &barFraction) {
-    DivisionInfo barDivInfo;
-    barDivInfo.len = barFraction;
+DivisionInfo metric_divisions_of_bar(const ReducedFraction &bar_fraction) {
+    DivisionInfo bar_div_info;
+    bar_div_info.len = bar_fraction;
     // first value of each element in list is a length (in ticks) of every part of bar
     // on which bar is subdivided on each level
     // the level value is a second value of each element
-    auto &divLengths = barDivInfo.divLengths;
+    auto &div_lengths = bar_div_info.div_lengths;
     int level = 0;
-    divLengths.push_back({barFraction, level});
+    div_lengths.push_back({bar_fraction, level});
     // pulse-level division
-    if (isDuple(barFraction)) {
-        divLengths.push_back({barFraction / 2, --level});
-    } else if (isTriple(barFraction)) {
-        divLengths.push_back({barFraction / 3, --level});
-    } else if (isQuadruple(barFraction)) {
-        divLengths.push_back({barFraction / 2, --level}); // additional central accent
-        divLengths.push_back({barFraction / 4, --level});
-    } else if (isQuintuple(barFraction)) {
-        divLengths.push_back({barFraction / 5, --level});
-    } else if (isSeptuple(barFraction)) {
-        divLengths.push_back({barFraction / 7, --level});
+    if (is_duple(bar_fraction)) {
+        div_lengths.push_back({bar_fraction / 2, --level});
+    } else if (is_triple(bar_fraction)) {
+        div_lengths.push_back({bar_fraction / 3, --level});
+    } else if (is_quadruple(bar_fraction)) {
+        div_lengths.push_back({bar_fraction / 2, --level}); // additional central accent
+        div_lengths.push_back({bar_fraction / 4, --level});
+    } else if (is_quintuple(bar_fraction)) {
+        div_lengths.push_back({bar_fraction / 5, --level});
+    } else if (is_septuple(bar_fraction)) {
+        div_lengths.push_back({bar_fraction / 7, --level});
     } else { // if other - complex meter
-        divLengths.push_back({barFraction / barFraction.numerator(), --level});
+        div_lengths.push_back({bar_fraction / bar_fraction.numerator(), --level});
     }
 
-    if (isCompound(barFraction)) {
+    if (is_compound(bar_fraction)) {
         --level; // additional min level for pulse divisions
                  // subdivide pulse of compound meter into 3 parts
-        divLengths.push_back({divLengths.back().len / 3, --level});
+        div_lengths.push_back({div_lengths.back().len / 3, --level});
     }
 
-    while (divLengths.back().len >= MChord::minAllowedDuration() * 2) {
-        divLengths.push_back({divLengths.back().len / 2, --level});
+    while (div_lengths.back().len >= MChord::min_allowed_duration() * 2) {
+        div_lengths.push_back({div_lengths.back().len / 2, --level});
     }
 
-    return barDivInfo;
+    return bar_div_info;
 }
 
-DivisionInfo metricDivisionsOfTuplet(const MidiTuplet::TupletData &tuplet, int tupletStartLevel) {
-    DivisionInfo tupletDivInfo;
-    tupletDivInfo.onTime = tuplet.onTime;
-    tupletDivInfo.len = tuplet.len;
-    tupletDivInfo.isTuplet = true;
-    tupletDivInfo.divLengths.push_back({tuplet.len, TUPLET_BOUNDARY_LEVEL});
-    const auto divLen = tuplet.len / tuplet.tupletNumber;
-    tupletDivInfo.divLengths.push_back({divLen, tupletStartLevel--});
-    while (tupletDivInfo.divLengths.back().len >= MChord::minAllowedDuration() * 2) {
-        tupletDivInfo.divLengths.push_back({tupletDivInfo.divLengths.back().len / 2, tupletStartLevel--});
+DivisionInfo metric_divisions_of_tuplet(const MidiTuplet::TupletData &tuplet, int tuplet_start_level) {
+    DivisionInfo tuplet_div_info;
+    tuplet_div_info.on_time = tuplet.on_time;
+    tuplet_div_info.len = tuplet.len;
+    tuplet_div_info.is_tuplet = true;
+    tuplet_div_info.div_lengths.push_back({tuplet.len, ::mu::iex::midi::Meter::tuplet_boundary_level});
+    const auto div_len = tuplet.len / tuplet.tuplet_number;
+    tuplet_div_info.div_lengths.push_back({div_len, tuplet_start_level--});
+    while (tuplet_div_info.div_lengths.back().len >= MChord::min_allowed_duration() * 2) {
+        tuplet_div_info.div_lengths.push_back({tuplet_div_info.div_lengths.back().len / 2, tuplet_start_level--});
     }
-    return tupletDivInfo;
+    return tuplet_div_info;
 }
 
-ReducedFraction beatLength(const ReducedFraction &barFraction) {
-    auto beatLen = barFraction / 4;
-    if (isDuple(barFraction)) {
-        beatLen = barFraction / 2;
-    } else if (isTriple(barFraction)) {
-        beatLen = barFraction / 3;
-    } else if (isQuadruple(barFraction)) {
-        beatLen = barFraction / 4;
-    } else if (isComplex(barFraction)) {
-        beatLen = barFraction / barFraction.numerator();
+ReducedFraction beat_length(const ReducedFraction &bar_fraction) {
+    auto beat_len = bar_fraction / 4;
+    if (is_duple(bar_fraction)) {
+        beat_len = bar_fraction / 2;
+    } else if (is_triple(bar_fraction)) {
+        beat_len = bar_fraction / 3;
+    } else if (is_quadruple(bar_fraction)) {
+        beat_len = bar_fraction / 4;
+    } else if (is_complex(bar_fraction)) {
+        beat_len = bar_fraction / bar_fraction.numerator();
     }
-    return beatLen;
+    return beat_len;
 }
 
-std::vector<ReducedFraction> divisionsOfBarForTuplets(const ReducedFraction &barFraction) {
-    const DivisionInfo info = metricDivisionsOfBar(barFraction);
-    std::vector<ReducedFraction> divLengths;
-    const auto beatLen = beatLength(barFraction);
-    for (const auto &i : info.divLengths) {
+std::vector<ReducedFraction> divisions_of_bar_for_tuplets(const ReducedFraction &bar_fraction) {
+    const DivisionInfo info = metric_divisions_of_bar(bar_fraction);
+    std::vector<ReducedFraction> div_lengths;
+    const auto beat_len = beat_length(bar_fraction);
+    for (const auto &i : info.div_lengths) {
         // in compound or complex meter
         // tuplet starts from beat level, not the whole bar
-        if ((isCompound(barFraction) || isComplex(barFraction)) && i.len > beatLen) {
+        if ((is_compound(bar_fraction) || is_complex(bar_fraction)) && i.len > beat_len) {
             continue;
         }
-        divLengths.push_back(i.len);
+        div_lengths.push_back(i.len);
     }
-    return divLengths;
+    return div_lengths;
 }
 
 // result in vector: first elements - all tuplets info, one at the end - bar division info
 
-std::vector<DivisionInfo> divisionInfo(const ReducedFraction &barFraction, const std::vector<MidiTuplet::TupletData> &tupletsInBar) {
-    std::vector<DivisionInfo> divsInfo;
+std::vector<DivisionInfo> division_info(const ReducedFraction &bar_fraction, const std::vector<MidiTuplet::TupletData> &tuplets_in_bar) {
+    std::vector<DivisionInfo> divs_info;
 
-    const auto barDivisionInfo = metricDivisionsOfBar(barFraction);
-    for (const auto &tuplet : tupletsInBar) {
-        int tupletStartLevel = 0;
-        for (const auto &divLenInfo : barDivisionInfo.divLengths) {
-            if (divLenInfo.len == tuplet.len) {
-                tupletStartLevel = divLenInfo.level;
+    const auto bar_division_info = metric_divisions_of_bar(bar_fraction);
+    for (const auto &tuplet : tuplets_in_bar) {
+        int tuplet_start_level = 0;
+        for (const auto &div_len_info : bar_division_info.div_lengths) {
+            if (div_len_info.len == tuplet.len) {
+                tuplet_start_level = div_len_info.level;
                 break;
             }
         }
-        divsInfo.push_back(metricDivisionsOfTuplet(tuplet, --tupletStartLevel));
+        divs_info.push_back(metric_divisions_of_tuplet(tuplet, --tuplet_start_level));
     }
-    divsInfo.push_back(barDivisionInfo);
+    divs_info.push_back(bar_division_info);
 
-    return divsInfo;
+    return divs_info;
 }
 
 // tick is counted from the beginning of bar
 
-int levelOfTick(const ReducedFraction &tick, const std::vector<DivisionInfo> &divsInfo) {
-    for (const auto &divInfo : divsInfo) {
-        if (tick < divInfo.onTime || tick > divInfo.onTime + divInfo.len) {
+int level_of_tick(const ReducedFraction &tick, const std::vector<DivisionInfo> &divs_info) {
+    for (const auto &div_info : divs_info) {
+        if (tick < div_info.on_time || tick > div_info.on_time + div_info.len) {
             continue;
         }
-        for (const auto &divLenInfo : divInfo.divLengths) {
-            const auto ratio = (tick - divInfo.onTime) / divLenInfo.len;
+        for (const auto &div_len_info : div_info.div_lengths) {
+            const auto ratio = (tick - div_info.on_time) / div_len_info.len;
             if (ratio.numerator() % ratio.denominator() == 0) {
-                return divLenInfo.level;
+                return div_len_info.level;
             }
         }
     }
     return 0;
 }
 
-std::vector<int> metricLevelsOfBar(const ReducedFraction &barFraction, const std::vector<DivisionInfo> &divsInfo,
-                                   const ReducedFraction &minDuration) {
+std::vector<int> metric_levels_of_bar(const ReducedFraction &bar_fraction, const std::vector<DivisionInfo> &divs_info,
+                                      const ReducedFraction &min_duration) {
     std::vector<int> levels;
-    for (ReducedFraction tick(0, 1); tick < barFraction; tick += minDuration) {
-        levels.push_back(levelOfTick(tick, divsInfo));
+    for (ReducedFraction tick(0, 1); tick < bar_fraction; tick += min_duration) {
+        levels.push_back(level_of_tick(tick, divs_info));
     }
     return levels;
 }
 
 // return level with pos == Fraction(-1, 1) if undefined - see MaxLevel class
 
-Meter::MaxLevel maxLevelBetween(const ReducedFraction &startTickInBar, const ReducedFraction &endTickInBar, const DivisionInfo &divInfo) {
+Meter::MaxLevel max_level_between(const ReducedFraction &start_tick_in_bar, const ReducedFraction &end_tick_in_bar,
+                                  const DivisionInfo &div_info) {
     MaxLevel level;
-    const auto startTickInDiv = startTickInBar - divInfo.onTime;
-    const auto endTickInDiv = endTickInBar - divInfo.onTime;
-    if (startTickInDiv >= endTickInDiv || startTickInDiv < ReducedFraction(0, 1) || endTickInDiv > divInfo.len) {
+    const auto start_tick_in_div = start_tick_in_bar - div_info.on_time;
+    const auto end_tick_in_div = end_tick_in_bar - div_info.on_time;
+    if (start_tick_in_div >= end_tick_in_div || start_tick_in_div < ReducedFraction(0, 1) || end_tick_in_div > div_info.len) {
         return level;
     }
 
-    for (const auto &divLengthInfo : divInfo.divLengths) {
-        const auto &divLen = divLengthInfo.len;
-        const auto ratio = endTickInDiv / divLen;
-        auto maxEndRaster = divLen * (ratio.numerator() / ratio.denominator());
-        if (maxEndRaster == endTickInDiv) {
-            maxEndRaster -= divLen;
+    for (const auto &div_length_info : div_info.div_lengths) {
+        const auto &div_len = div_length_info.len;
+        const auto ratio = end_tick_in_div / div_len;
+        auto max_end_raster = div_len * (ratio.numerator() / ratio.denominator());
+        if (max_end_raster == end_tick_in_div) {
+            max_end_raster -= div_len;
         }
-        if (startTickInDiv < maxEndRaster) {
+        if (start_tick_in_div < max_end_raster) {
             // max level is found
-            const auto sratio = startTickInDiv / divLen;
-            const auto maxStartRaster = divLen * (sratio.numerator() / sratio.denominator());
-            const auto count = (maxEndRaster - maxStartRaster) / divLen;
-            level.pos = maxStartRaster + divLen + divInfo.onTime;
-            level.levelCount = count.numerator() / count.denominator();
-            level.level = divLengthInfo.level;
+            const auto sratio = start_tick_in_div / div_len;
+            const auto max_start_raster = div_len * (sratio.numerator() / sratio.denominator());
+            const auto count = (max_end_raster - max_start_raster) / div_len;
+            level.pos = max_start_raster + div_len + div_info.on_time;
+            level.level_count = count.numerator() / count.denominator();
+            level.level = div_length_info.level;
             break;
         }
     }
@@ -242,102 +243,103 @@ Meter::MaxLevel maxLevelBetween(const ReducedFraction &startTickInBar, const Red
 // here we use levelCount = 1 always for simplicity
 // because TUPLET_BOUNDARY_LEVEL is 'max enough'
 
-Meter::MaxLevel findMaxLevelBetween(const ReducedFraction &startTickInBar, const ReducedFraction &endTickInBar,
-                                    const std::vector<DivisionInfo> &divsInfo) {
+Meter::MaxLevel find_max_level_between(const ReducedFraction &start_tick_in_bar, const ReducedFraction &end_tick_in_bar,
+                                       const std::vector<DivisionInfo> &divs_info) {
     MaxLevel level;
 
-    for (const auto &divInfo : divsInfo) {
-        if (divInfo.isTuplet) {
-            if (startTickInBar < divInfo.onTime + divInfo.len && endTickInBar > divInfo.onTime + divInfo.len) {
-                level.level = TUPLET_BOUNDARY_LEVEL;
-                level.levelCount = 1;
-                level.pos = divInfo.onTime + divInfo.len;
+    for (const auto &div_info : divs_info) {
+        if (div_info.is_tuplet) {
+            if (start_tick_in_bar < div_info.on_time + div_info.len && end_tick_in_bar > div_info.on_time + div_info.len) {
+                level.level = ::mu::iex::midi::Meter::tuplet_boundary_level;
+                level.level_count = 1;
+                level.pos = div_info.on_time + div_info.len;
                 break;
             }
-            if (startTickInBar < divInfo.onTime && endTickInBar > divInfo.onTime && endTickInBar <= divInfo.onTime + divInfo.len) {
-                level.level = TUPLET_BOUNDARY_LEVEL;
-                level.levelCount = 1;
-                level.pos = divInfo.onTime;
+            if (start_tick_in_bar < div_info.on_time && end_tick_in_bar > div_info.on_time &&
+                end_tick_in_bar <= div_info.on_time + div_info.len) {
+                level.level = ::mu::iex::midi::Meter::tuplet_boundary_level;
+                level.level_count = 1;
+                level.pos = div_info.on_time;
                 break;
             }
-            if (startTickInBar >= divInfo.onTime && endTickInBar <= divInfo.onTime + divInfo.len) {
-                level = maxLevelBetween(startTickInBar, endTickInBar, divInfo);
+            if (start_tick_in_bar >= div_info.on_time && end_tick_in_bar <= div_info.on_time + div_info.len) {
+                level = max_level_between(start_tick_in_bar, end_tick_in_bar, div_info);
                 break;
             }
         } else {
-            level = maxLevelBetween(startTickInBar, endTickInBar, divInfo);
+            level = max_level_between(start_tick_in_bar, end_tick_in_bar, div_info);
             break;
         }
     }
     return level;
 }
 
-int tupletNumberForDuration(const ReducedFraction &startTick, const ReducedFraction &endTick,
-                            const std::vector<MidiTuplet::TupletData> &tupletsInBar) {
-    for (const auto &tupletData : tupletsInBar) {
-        if (startTick >= tupletData.onTime && endTick <= tupletData.onTime + tupletData.len) {
-            return tupletData.tupletNumber;
+int tuplet_number_for_duration(const ReducedFraction &start_tick, const ReducedFraction &end_tick,
+                               const std::vector<MidiTuplet::TupletData> &tuplets_in_bar) {
+    for (const auto &tuplet_data : tuplets_in_bar) {
+        if (start_tick >= tuplet_data.on_time && end_tick <= tuplet_data.on_time + tuplet_data.len) {
+            return tuplet_data.tuplet_number;
         }
     }
     return -1; // this duration is not inside any tuplet
 }
 
-bool isPowerOfTwo(unsigned int x) { return x && !(x & (x - 1)); }
+bool is_power_of_two(unsigned int x) { return x && !(x & (x - 1)); }
 
-bool isSimpleNoteDuration(const ReducedFraction &duration) {
-    const auto division = ReducedFraction::fromTicks(engraving::Constants::DIVISION);
+bool is_simple_note_duration(const ReducedFraction &duration) {
+    const auto division = ReducedFraction::from_ticks(engraving::Constants::division);
     auto div = (duration > division) ? duration / division : division / duration;
     if (div > ReducedFraction(0, 1)) {
         div.reduce();
-        int minVal = std::min(div.numerator(), div.denominator());
-        int maxVal = std::max(div.numerator(), div.denominator());
-        return minVal == 1 && isPowerOfTwo((unsigned int) maxVal);
+        int min_val = std::min(div.numerator(), div.denominator());
+        int max_val = std::max(div.numerator(), div.denominator());
+        return min_val == 1 && is_power_of_two((unsigned int) max_val);
     }
     return false;
 }
 
-bool isQuarterDuration(const ReducedFraction &ticks) { return ticks.numerator() == 1 && ticks.denominator() == 4; }
+bool is_quarter_duration(const ReducedFraction &ticks) { return ticks.numerator() == 1 && ticks.denominator() == 4; }
 
 // If last 2/3 of beat in compound meter is rest,
 // it should be split into 2 rests
 
-bool is23EndOfBeatInCompoundMeter(const ReducedFraction &startTickInBar, const ReducedFraction &endTickInBar,
-                                  const ReducedFraction &barFraction) {
-    if (endTickInBar <= startTickInBar) {
+bool is23_end_of_beat_in_compound_meter(const ReducedFraction &start_tick_in_bar, const ReducedFraction &end_tick_in_bar,
+                                        const ReducedFraction &bar_fraction) {
+    if (end_tick_in_bar <= start_tick_in_bar) {
         return false;
     }
-    if (!isCompound(barFraction)) {
+    if (!is_compound(bar_fraction)) {
         return false;
     }
 
-    const auto beatLen = beatLength(barFraction);
-    const auto divLen = beatLen / 3;
-    const auto ratio1 = startTickInBar / beatLen;
-    const auto ratio2 = endTickInBar / beatLen;
-    if ((startTickInBar - beatLen * (ratio1.numerator() / ratio1.denominator()) == divLen) &&
+    const auto beat_len = beat_length(bar_fraction);
+    const auto div_len = beat_len / 3;
+    const auto ratio1 = start_tick_in_bar / beat_len;
+    const auto ratio2 = end_tick_in_bar / beat_len;
+    if ((start_tick_in_bar - beat_len * (ratio1.numerator() / ratio1.denominator()) == div_len) &&
         (ratio2.numerator() % ratio2.denominator() == 0)) {
         return true;
     }
     return false;
 }
 
-bool is2of3RestInTripleMeter(const ReducedFraction &startTickInBar, const ReducedFraction &endTickInBar,
-                             const ReducedFraction &barFraction) {
-    if (endTickInBar - startTickInBar <= ReducedFraction(0, 1)) {
+bool is2of3_rest_in_triple_meter(const ReducedFraction &start_tick_in_bar, const ReducedFraction &end_tick_in_bar,
+                                 const ReducedFraction &bar_fraction) {
+    if (end_tick_in_bar - start_tick_in_bar <= ReducedFraction(0, 1)) {
         return false;
     }
-    if (isTriple(barFraction) && (startTickInBar == ReducedFraction(0, 1) || endTickInBar == barFraction) &&
-        endTickInBar - startTickInBar == (barFraction * 2) / 3) {
+    if (is_triple(bar_fraction) && (start_tick_in_bar == ReducedFraction(0, 1) || end_tick_in_bar == bar_fraction) &&
+        end_tick_in_bar - start_tick_in_bar == (bar_fraction * 2) / 3) {
         return true;
     }
     return false;
 }
 
 struct Node {
-    Node(int edgeLevel, int midLevel) : edgeLevel(edgeLevel), midLevel(midLevel) {}
+    Node(int edge_level, int mid_level) : edge_level(edge_level), mid_level(mid_level) {}
 
-    int edgeLevel;
-    int midLevel;
+    int edge_level;
+    int mid_level;
 };
 
 // all durations inside tuplets are smaller/larger than their regular versions
@@ -346,21 +348,21 @@ struct Node {
 // if node duration is completely inside some tuplet
 // then assign to the node tuplet-to-regular-duration conversion coefficient
 
-ReducedFraction findTupletRatio(const ReducedFraction &startPos, const ReducedFraction &endPos,
-                                const std::vector<MidiTuplet::TupletData> &tupletsInBar) {
-    ReducedFraction tupletRatio = {2, 2};
-    int tupletNumber = tupletNumberForDuration(startPos, endPos, tupletsInBar);
-    if (tupletNumber != -1) {
-        tupletRatio = MidiTuplet::tupletLimits(tupletNumber).ratio;
+ReducedFraction find_tuplet_ratio(const ReducedFraction &start_pos, const ReducedFraction &end_pos,
+                                  const std::vector<MidiTuplet::TupletData> &tuplets_in_bar) {
+    ReducedFraction tuplet_ratio = {2, 2};
+    int tuplet_number = tuplet_number_for_duration(start_pos, end_pos, tuplets_in_bar);
+    if (tuplet_number != -1) {
+        tuplet_ratio = MidiTuplet::tuplet_limits(tuplet_number).ratio;
     }
 
-    return tupletRatio;
+    return tuplet_ratio;
 }
 
-std::vector<std::pair<ReducedFraction, engraving::TDuration>> collectDurations(const std::map<ReducedFraction, Node> &nodes,
-                                                                               const std::vector<MidiTuplet::TupletData> &tupletsInBar,
-                                                                               bool useDots, bool printRestRemains) {
-    std::vector<std::pair<ReducedFraction, engraving::TDuration>> resultDurations;
+std::vector<std::pair<ReducedFraction, engraving::TDuration>> collect_durations(const std::map<ReducedFraction, Node> &nodes,
+                                                                                const std::vector<MidiTuplet::TupletData> &tuplets_in_bar,
+                                                                                bool use_dots, bool print_rest_remains) {
+    std::vector<std::pair<ReducedFraction, engraving::TDuration>> result_durations;
 
     for (auto it1 = nodes.begin(); it1 != nodes.end(); ++it1) {
         auto it2 = it1;
@@ -368,28 +370,28 @@ std::vector<std::pair<ReducedFraction, engraving::TDuration>> collectDurations(c
         if (it2 == nodes.end()) {
             break;
         }
-        const auto tupletRatio = findTupletRatio(it1->first, it2->first, tupletsInBar);
-        const auto duration = tupletRatio * (it2->first - it1->first);
-        auto list = mu::engraving::toDurationList(duration.fraction(), useDots, 1, printRestRemains);
+        const auto tuplet_ratio = find_tuplet_ratio(it1->first, it2->first, tuplets_in_bar);
+        const auto duration = tuplet_ratio * (it2->first - it1->first);
+        auto list = mu::engraving::to_duration_list(duration.fraction(), use_dots, 1, print_rest_remains);
         for (const auto &dur : list) {
-            resultDurations.push_back({tupletRatio, dur});
+            result_durations.push_back({tuplet_ratio, dur});
         }
     }
 
-    return resultDurations;
+    return result_durations;
 }
 
-bool badLevelCondition(int startLevelDiff, int endLevelDiff, int tol) { return startLevelDiff > tol || endLevelDiff > tol; }
+bool bad_level_condition(int start_level_diff, int end_level_diff, int tol) { return start_level_diff > tol || end_level_diff > tol; }
 
-int noteCount(const ReducedFraction &duration, bool useDots) {
-    return int(mu::engraving::toDurationList(duration.fraction(), useDots, 1, false).size());
+int note_count(const ReducedFraction &duration, bool use_dots) {
+    return int(mu::engraving::to_duration_list(duration.fraction(), use_dots, 1, false).size());
 }
 
-bool isLessNoteCount(const ReducedFraction &t1, const ReducedFraction &t2, const ReducedFraction &t3, bool useDots) {
-    return noteCount(t3 - t1, useDots) < noteCount(t2 - t1, useDots) + noteCount(t3 - t2, useDots);
+bool is_less_note_count(const ReducedFraction &t1, const ReducedFraction &t2, const ReducedFraction &t3, bool use_dots) {
+    return note_count(t3 - t1, use_dots) < note_count(t2 - t1, use_dots) + note_count(t3 - t2, use_dots);
 }
 
-void excludeNodes(std::map<ReducedFraction, Node> &nodes, int tol, bool useDots) {
+void exclude_nodes(std::map<ReducedFraction, Node> &nodes, int tol, bool use_dots) {
     if (tol == 0) { // no nodes can be excluded
         return;
     }
@@ -410,8 +412,8 @@ void excludeNodes(std::map<ReducedFraction, Node> &nodes, int tol, bool useDots)
     }
 
     while (p3 != nodes.end()) {
-        if (!badLevelCondition(p2->second.midLevel - p1->second.edgeLevel, p2->second.midLevel - p3->second.edgeLevel, tol) &&
-            isLessNoteCount(p1->first, p2->first, p3->first, useDots)) {
+        if (!bad_level_condition(p2->second.mid_level - p1->second.edge_level, p2->second.mid_level - p3->second.edge_level, tol) &&
+            is_less_note_count(p1->first, p2->first, p3->first, use_dots)) {
             p2 = nodes.erase(p2);
             ++p3;
             continue;
@@ -426,14 +428,14 @@ void excludeNodes(std::map<ReducedFraction, Node> &nodes, int tol, bool useDots)
 // because there is no more need in tuplet boundary level after split
 // and such big level may confuse the estimation algorithm
 
-int adjustEdgeLevelIfTuplet(const Meter::MaxLevel &splitPoint, const std::vector<DivisionInfo> &divInfo) {
-    int tupletLevel = splitPoint.level;
-    if (splitPoint.level == TUPLET_BOUNDARY_LEVEL) {
-        std::vector<DivisionInfo> nonTupletDivs({divInfo.back()});
-        tupletLevel = levelOfTick(splitPoint.pos, nonTupletDivs);
+int adjust_edge_level_if_tuplet(const Meter::MaxLevel &split_point, const std::vector<DivisionInfo> &div_info) {
+    int tuplet_level = split_point.level;
+    if (split_point.level == ::mu::iex::midi::Meter::tuplet_boundary_level) {
+        std::vector<DivisionInfo> non_tuplet_divs({div_info.back()});
+        tuplet_level = level_of_tick(split_point.pos, non_tuplet_divs);
     }
 
-    return tupletLevel;
+    return tuplet_level;
 }
 
 // duration start/end should be quantisized, quantum >= 1/128 note
@@ -444,57 +446,58 @@ int adjustEdgeLevelIfTuplet(const Meter::MaxLevel &splitPoint, const std::vector
 //    1 for notes, 0 for rests
 
 std::vector<std::pair<ReducedFraction, engraving::TDuration>>
-toDurationList(const ReducedFraction &startTickInBar, const ReducedFraction &endTickInBar, const ReducedFraction &barFraction,
-               const std::vector<MidiTuplet::TupletData> &tupletsInBar, DurationType durationType, bool useDots, bool printRestRemains) {
-    if (startTickInBar < ReducedFraction(0, 1) || endTickInBar <= startTickInBar || endTickInBar > barFraction) {
+to_duration_list(const ReducedFraction &start_tick_in_bar, const ReducedFraction &end_tick_in_bar, const ReducedFraction &bar_fraction,
+                 const std::vector<MidiTuplet::TupletData> &tuplets_in_bar, DurationType duration_type, bool use_dots,
+                 bool print_rest_remains) {
+    if (start_tick_in_bar < ReducedFraction(0, 1) || end_tick_in_bar <= start_tick_in_bar || end_tick_in_bar > bar_fraction) {
         return std::vector<std::pair<ReducedFraction, engraving::TDuration>>();
     }
 
-    const auto divInfo = divisionInfo(barFraction, tupletsInBar); // metric structure of bar
-    const auto minDuration = MChord::minAllowedDuration() * 2;    // >= minAllowedDuration() after subdivision
+    const auto div_info = division_info(bar_fraction, tuplets_in_bar); // metric structure of bar
+    const auto min_duration = MChord::min_allowed_duration() * 2;      // >= minAllowedDuration() after subdivision
 
     std::map<ReducedFraction, Node> nodes; // <onTime, Node>
     {
-        int level = levelOfTick(startTickInBar, divInfo);
-        nodes.insert({startTickInBar, Node(level, level)});
-        level = levelOfTick(endTickInBar, divInfo);
-        nodes.insert({endTickInBar, Node(level, level)});
+        int level = level_of_tick(start_tick_in_bar, div_info);
+        nodes.insert({start_tick_in_bar, Node(level, level)});
+        level = level_of_tick(end_tick_in_bar, div_info);
+        nodes.insert({end_tick_in_bar, Node(level, level)});
     }
 
-    std::deque<std::pair<ReducedFraction, ReducedFraction>> gapsToProcess;
-    gapsToProcess.push_back({startTickInBar, endTickInBar});
+    std::deque<std::pair<ReducedFraction, ReducedFraction>> gaps_to_process;
+    gaps_to_process.push_back({start_tick_in_bar, end_tick_in_bar});
 
-    while (!gapsToProcess.empty()) {
-        const auto gap = gapsToProcess.front();
-        gapsToProcess.pop_front();
+    while (!gaps_to_process.empty()) {
+        const auto gap = gaps_to_process.front();
+        gaps_to_process.pop_front();
         // don't split gap if its duration is less than minDuration
-        if (gap.second - gap.first < minDuration) {
+        if (gap.second - gap.first < min_duration) {
             continue;
         }
-        const auto splitPoint = findMaxLevelBetween(gap.first, gap.second, divInfo);
+        const auto split_point = find_max_level_between(gap.first, gap.second, div_info);
         // sum levels if there are several positions (beats) with max level value
         // for example, 8th + half duration + 8th in 3/4, and half is over two beats
-        if (splitPoint.pos == ReducedFraction(-1, 1)) { // undefined
+        if (split_point.pos == ReducedFraction(-1, 1)) { // undefined
             continue;
         }
-        const int effectiveLevel = splitPoint.level + splitPoint.levelCount - 1;
-        const Node &startNode = nodes.find(gap.first)->second;
-        const Node &endNode = nodes.find(gap.second)->second;
+        const int effective_level = split_point.level + split_point.level_count - 1;
+        const Node &start_node = nodes.find(gap.first)->second;
+        const Node &end_node = nodes.find(gap.second)->second;
 
-        if (badLevelCondition(effectiveLevel - startNode.edgeLevel, effectiveLevel - endNode.edgeLevel, 0) ||
-            is2of3RestInTripleMeter(gap.first, gap.second, barFraction) ||
-            (durationType == DurationType::REST && is23EndOfBeatInCompoundMeter(gap.first, gap.second, barFraction))) {
-            const int edgeLevel = adjustEdgeLevelIfTuplet(splitPoint, divInfo);
+        if (bad_level_condition(effective_level - start_node.edge_level, effective_level - end_node.edge_level, 0) ||
+            is2of3_rest_in_triple_meter(gap.first, gap.second, bar_fraction) ||
+            (duration_type == DurationType::REST && is23_end_of_beat_in_compound_meter(gap.first, gap.second, bar_fraction))) {
+            const int edge_level = adjust_edge_level_if_tuplet(split_point, div_info);
             // split gap in splitPoint position
-            nodes.insert({splitPoint.pos, Node(edgeLevel, effectiveLevel)});
-            gapsToProcess.push_back({gap.first, splitPoint.pos});
-            gapsToProcess.push_back({splitPoint.pos, gap.second});
+            nodes.insert({split_point.pos, Node(edge_level, effective_level)});
+            gaps_to_process.push_back({gap.first, split_point.pos});
+            gaps_to_process.push_back({split_point.pos, gap.second});
         }
     }
 
-    const int tol = (durationType == DurationType::NOTE) ? 1 : 0;
-    excludeNodes(nodes, tol, useDots);
+    const int tol = (duration_type == DurationType::NOTE) ? 1 : 0;
+    exclude_nodes(nodes, tol, use_dots);
 
-    return collectDurations(nodes, tupletsInBar, useDots, printRestRemains);
+    return collect_durations(nodes, tuplets_in_bar, use_dots, print_rest_remains);
 }
 }} // namespace mu::iex::midi::Meter

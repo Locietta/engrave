@@ -58,7 +58,7 @@ NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore *, const N
 bool cap_native_edit_history(mu::engraving::MasterScore *, size_t maximum = 128) noexcept;
 
 // Test-only fault injection for score_edit_test; armed for one apply call, never set otherwise.
-enum class NativeEditTestFault { none, engine_error_after_first, exception_after_first };
+enum class NativeEditTestFault { NONE, ENGINE_ERROR_AFTER_FIRST, EXCEPTION_AFTER_FIRST };
 void set_native_edit_test_fault(NativeEditTestFault);
 
 // Applies a single bounded undoable command. Every requested note is validated

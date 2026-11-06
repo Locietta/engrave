@@ -33,25 +33,25 @@ class ChordBracket final : public Arpeggio {
 public:
     ChordBracket *clone() const override { return new ChordBracket(*this); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
 
     void reset() override;
 
-    Spatium hookLength() const { return hookLength_; }
+    Spatium hook_length() const { return hook_length_; }
 
-    DirectionV hookPos() const { return hookPos_; }
+    DirectionV hook_pos() const { return hook_pos_; }
 
-    bool rightSide() const { return rightSide_; }
+    bool right_side() const { return right_side_; }
 
 private:
     friend class Factory;
 
     ChordBracket(DummyParentOr<Chord> parent);
 
-    Spatium hookLength_ = Spatium(1);
-    DirectionV hookPos_ = DirectionV::AUTO; // AUTO == both up and down hooks
-    bool rightSide_ = false;
+    Spatium hook_length_ = Spatium(1);
+    DirectionV hook_pos_ = DirectionV::AUTO; // AUTO == both up and down hooks
+    bool right_side_ = false;
 };
 } // namespace mu::engraving

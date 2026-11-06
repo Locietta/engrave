@@ -34,30 +34,30 @@ public:
     virtual ~IAudioFactory() = default;
 
     // Available resources
-    virtual AudioResourceMetaList availableInputResources() const = 0;
-    virtual SoundPresetList availableSoundPresets(const AudioResourceMeta &resourceMeta) const = 0;
-    virtual AudioResourceMetaList availableOutputResources() const = 0;
+    virtual AudioResourceMetaList available_input_resources() const = 0;
+    virtual SoundPresetList available_sound_presets(const AudioResourceMeta &resource_meta) const = 0;
+    virtual AudioResourceMetaList available_output_resources() const = 0;
 
     // Make audio sources
-    virtual RetVal<synth::ISynthesizerPtr> makeSynth(const TrackId trackId, const AudioInputParams &params,
-                                                     const PlaybackSetupData &setupData) const = 0;
+    virtual RetVal<synth::ISynthesizerPtr> make_synth(const TrackId track_id, const AudioInputParams &params,
+                                                      const PlaybackSetupData &setup_data) const = 0;
 
-    virtual RetVal<synth::ISynthesizerPtr> makeDefaultSynth(const TrackId trackId) const = 0;
+    virtual RetVal<synth::ISynthesizerPtr> make_default_synth(const TrackId track_id) const = 0;
 
     //! NOTE For internal purposes,
     // created synth instances are registered in an internal registry (see VST).
     // This method clears this registry.
-    virtual void clearSynthSources() = 0;
+    virtual void clear_synth_sources() = 0;
 
-    virtual RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData &playbackData,
-                                                       const AudioInputParams &params) const = 0;
+    virtual RetVal<AudioSourceNodePtr> make_event_source(const TrackId track_id, const mpe::PlaybackData &playback_data,
+                                                         const AudioInputParams &params) const = 0;
     // Make FX
-    virtual FxChainPtr makeMasterFxChain(const AudioFxChain &fxChain) const = 0;
-    virtual FxChainPtr makeTrackFxChain(const TrackId trackId, const AudioFxChain &fxChain) const = 0;
+    virtual FxChainPtr make_master_fx_chain(const AudioFxChain &fx_chain) const = 0;
+    virtual FxChainPtr make_track_fx_chain(const TrackId track_id, const AudioFxChain &fx_chain) const = 0;
 
     //! NOTE For internal purposes,
     // created effect instances are registered in an internal registry (see VST).
     // This method clears this registry.
-    virtual void clearAllFx() = 0;
+    virtual void clear_all_fx() = 0;
 };
 } // namespace muse::audio::engine

@@ -36,23 +36,23 @@ public:
 
     StaffText *clone() const override { return new StaffText(*this); }
 
-    EngravingItem *linkedClone() override;
+    EngravingItem *linked_clone() override;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
-    void setTrack(track_idx_t idx) override;
+    void set_track(track_idx_t idx) override;
 
-    bool hasSoundFlag() const;
-    SoundFlag *soundFlag() const;
-    void setSoundFlag(SoundFlag *flag);
+    bool has_sound_flag() const;
+    SoundFlag *sound_flag() const;
+    void set_sound_flag(SoundFlag *flag);
 
 private:
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    SoundFlag *soundFlag_ = nullptr;
+    SoundFlag *sound_flag_ = nullptr;
 };
 } // namespace mu::engraving
 #endif // MU_ENGRAVING_STAFFTEXT_H

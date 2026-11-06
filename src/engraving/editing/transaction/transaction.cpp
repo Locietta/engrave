@@ -31,169 +31,169 @@
 
 using namespace mu::engraving;
 
-static ScoreChanges buildScoreChanges(const CmdState &cmdState, const UndoableTransaction::ChangesInfo &changes,
-                                      const std::vector<UndoableCommand *> &commands) {
-    int startTick = cmdState.startTick().ticks();
-    int endTick = cmdState.endTick().ticks();
-    staff_idx_t startStaff = cmdState.startStaff();
-    staff_idx_t endStaff = cmdState.endStaff();
+static ScoreChanges build_score_changes(const CmdState &cmd_state, const UndoableTransaction::ChangesInfo &changes,
+                                        const std::vector<UndoableCommand *> &commands) {
+    int start_tick = cmd_state.start_tick().ticks();
+    int end_tick = cmd_state.end_tick().ticks();
+    staff_idx_t start_staff = cmd_state.start_staff();
+    staff_idx_t end_staff = cmd_state.end_staff();
 
     for (const UndoableCommand *cmd : commands) {
-        std::optional<ChangedRange> range = cmd->changedRange();
+        std::optional<ChangedRange> range = cmd->changed_range();
         if (!range) {
             continue;
         }
 
-        int tickFrom = range->tickFrom.ticks();
-        int tickTo = range->tickTo.ticks();
+        int tick_from = range->tick_from.ticks();
+        int tick_to = range->tick_to.ticks();
 
-        if (startTick == -1 || startTick > tickFrom) {
-            startTick = tickFrom;
+        if (start_tick == -1 || start_tick > tick_from) {
+            start_tick = tick_from;
         }
-        if (endTick == -1 || endTick < tickTo) {
-            endTick = tickTo;
+        if (end_tick == -1 || end_tick < tick_to) {
+            end_tick = tick_to;
         }
 
-        if (range->staffIdxFrom != muse::nidx && (startStaff == muse::nidx || startStaff > range->staffIdxFrom)) {
-            startStaff = range->staffIdxFrom;
+        if (range->staff_idx_from != muse::nidx && (start_staff == muse::nidx || start_staff > range->staff_idx_from)) {
+            start_staff = range->staff_idx_from;
         }
-        if (range->staffIdxTo != muse::nidx && (endStaff == muse::nidx || endStaff < range->staffIdxTo)) {
-            endStaff = range->staffIdxTo;
+        if (range->staff_idx_to != muse::nidx && (end_staff == muse::nidx || end_staff < range->staff_idx_to)) {
+            end_staff = range->staff_idx_to;
         }
     }
 
-    for (const auto &pair : changes.changedObjects) {
-        if (!pair.first->isEngravingItem()) {
+    for (const auto &pair : changes.changed_objects) {
+        if (!pair.first->is_engraving_item()) {
             continue;
         }
 
-        int tick = toEngravingItem(pair.first)->tick().ticks();
+        int tick = to_engraving_item(pair.first)->tick().ticks();
 
-        if (startTick > tick) {
-            startTick = tick;
+        if (start_tick > tick) {
+            start_tick = tick;
         }
 
-        if (endTick < tick) {
-            endTick = tick;
+        if (end_tick < tick) {
+            end_tick = tick;
         }
     }
 
-    return {startTick,
-            endTick,
-            startStaff,
-            endStaff,
-            changes.isTextEditing,
-            std::move(changes.changedObjects),
-            std::move(changes.changedObjectTypes),
-            std::move(changes.changedPropertyIdSet),
-            std::move(changes.changedStyleIdSet)};
+    return {start_tick,
+            end_tick,
+            start_staff,
+            end_staff,
+            changes.is_text_editing,
+            std::move(changes.changed_objects),
+            std::move(changes.changed_object_types),
+            std::move(changes.changed_property_id_set),
+            std::move(changes.changed_style_id_set)};
 }
 
 //---------------------------------------------------------
 // Transaction
 //---------------------------------------------------------
 
-Transaction::Transaction(UndoableTransaction *undoableTransaction) : undoableTransaction_(undoableTransaction) {}
+Transaction::Transaction(UndoableTransaction *undoable_transaction) : undoable_transaction_(undoable_transaction) {}
 
 Transaction &Transaction::dummy() {
-    static Transaction dummyTransaction(nullptr);
-    dummyTransaction.isDummy_ = true;
-    return dummyTransaction;
+    static Transaction dummy_transaction(nullptr);
+    dummy_transaction.is_dummy_ = true;
+    return dummy_transaction;
 }
 
 void Transaction::push(UndoableCommand *cmd) {
-    if (isDummy_) {
+    if (is_dummy_) {
         cmd->redo();
         delete cmd;
         return;
     }
 
-    if (s_pushHook) {
-        s_pushHook(cmd, false);
+    if (s_push_hook) {
+        s_push_hook(cmd, false);
     }
 
     // NOTE: append the command _before_ performing it. Some commands' redo()
     // may themselves push further commands; those must end up _after_ this
     // command in the transaction, so that undo reverses them first.
-    undoableTransaction_->appendCommand(cmd);
+    undoable_transaction_->append_command(cmd);
     cmd->redo();
 
-    if (s_pushHook) {
-        s_pushHook(cmd, true);
+    if (s_push_hook) {
+        s_push_hook(cmd, true);
     }
 }
 
-void Transaction::pushWithoutPerforming(UndoableCommand *cmd) {
-    if (isDummy_) {
+void Transaction::push_without_performing(UndoableCommand *cmd) {
+    if (is_dummy_) {
         delete cmd;
         return;
     }
 
-    if (s_pushHook) {
-        s_pushHook(cmd, false);
+    if (s_push_hook) {
+        s_push_hook(cmd, false);
     }
 
-    undoableTransaction_->appendCommand(cmd);
+    undoable_transaction_->append_command(cmd);
 
-    if (s_pushHook) {
-        s_pushHook(cmd, true);
+    if (s_push_hook) {
+        s_push_hook(cmd, true);
     }
 }
 
-void Transaction::setPushHook(PushHook hook) { s_pushHook = hook; }
+void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
 
 //---------------------------------------------------------
 // TransactionManager
 //---------------------------------------------------------
 
-TransactionManager::TransactionManager(MasterScore *masterScore) : masterScore_(masterScore) {}
+TransactionManager::TransactionManager(MasterScore *master_score) : master_score_(master_score) {}
 
-UndoStack *TransactionManager::undoStack() const { return masterScore_->undoStack(); }
+UndoStack *TransactionManager::undo_stack() const { return master_score_->undo_stack(); }
 
 void TransactionManager::transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func) {
-    IF_ASSERT_FAILED(!currentTransaction_) {
+    IF_ASSERT_FAILED(!current_transaction_) {
         LOGW() << "transaction already active";
-        func(*currentTransaction_);
+        func(*current_transaction_);
         return;
     }
-    beginTransaction(description);
-    func(*currentTransaction_);
-    endTransaction();
+    begin_transaction(description);
+    func(*current_transaction_);
+    end_transaction();
 }
 
-void TransactionManager::beginTransaction(const muse::TranslatableString &description) {
-    UndoStack *stack = undoStack();
+void TransactionManager::begin_transaction(const muse::TranslatableString &description) {
+    UndoStack *stack = undo_stack();
 
-    if (stack->isLocked()) {
+    if (stack->is_locked()) {
         return;
     }
 
-    if (stack->hasActiveTransaction()) {
+    if (stack->has_active_transaction()) {
         LOGD() << "cmd already active";
         return;
     }
 
-    MScore::setError(MsError::MS_NO_ERROR);
+    MScore::set_error(MsError::MS_NO_ERROR);
 
-    masterScore_->cmdState().reset();
-    stack->beginTransaction(masterScore_, description);
-    currentTransaction_ = std::unique_ptr<Transaction>(new Transaction(stack->activeTransaction()));
+    master_score_->cmd_state().reset();
+    stack->begin_transaction(master_score_, description);
+    current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
 }
 
-void TransactionManager::endTransaction(bool rollback, bool layoutAllParts, bool keepRolledBackElements) {
-    UndoStack *stack = undoStack();
+void TransactionManager::end_transaction(bool rollback, bool layout_all_parts, bool keep_rolled_back_elements) {
+    UndoStack *stack = undo_stack();
 
-    if (stack->isLocked()) {
+    if (stack->is_locked()) {
         return;
     }
 
-    if (!stack->hasActiveTransaction()) {
+    if (!stack->has_active_transaction()) {
         LOGW() << "no command active";
-        masterScore_->update();
+        master_score_->update();
         return;
     }
 
-    if (masterScore_->readOnly() || (MScore::_error != MsError::MS_NO_ERROR && !MScore::_errorIsWarning)) {
+    if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)) {
         rollback = true;
     }
 
@@ -201,88 +201,88 @@ void TransactionManager::endTransaction(bool rollback, bool layoutAllParts, bool
         /* When keepRolledBackElements is true, unwind removes the rolled-back elements from
          * the score but does not free them: an external owner is responsible for the deferred
          * deletion, since the elements are still referenced after this returns. */
-        stack->activeTransaction()->unwind(!keepRolledBackElements);
+        stack->active_transaction()->unwind(!keep_rolled_back_elements);
     }
 
     // NOTE: perform update and re-layout within the transaction, so that
     // undoable commands generated by layout are recorded correctly.
-    masterScore_->update(false, layoutAllParts);
+    master_score_->update(false, layout_all_parts);
 
     ScoreChanges changes;
     if (!rollback) {
-        changes =
-            buildScoreChanges(masterScore_->cmdState(), stack->activeTransaction()->changesInfo(), stack->activeTransaction()->commands());
+        changes = build_score_changes(master_score_->cmd_state(), stack->active_transaction()->changes_info(),
+                                      stack->active_transaction()->commands());
     }
 
-    LOGD() << "Undo stack current transaction commands count: " << stack->activeTransaction()->commands().size();
+    LOGD() << "Undo stack current transaction commands count: " << stack->active_transaction()->commands().size();
 
-    const bool isCurrentTransactionEmpty = stack->activeTransaction()->empty(); // nothing to undo?
-    stack->endTransaction(isCurrentTransactionEmpty);
-    currentTransaction_.reset();
+    const bool is_current_transaction_empty = stack->active_transaction()->empty(); // nothing to undo?
+    stack->end_transaction(is_current_transaction_empty);
+    current_transaction_.reset();
 
-    if (masterScore_->dirty()) {
-        masterScore_->invalidateRepeatList(); // TODO: flag individual operations
+    if (master_score_->dirty()) {
+        master_score_->invalidate_repeat_list(); // TODO: flag individual operations
     }
 
-    masterScore_->cmdState().reset();
+    master_score_->cmd_state().reset();
 
-    if (!isCurrentTransactionEmpty && !rollback) {
-        masterScore_->updateAutomation(changes);
-        masterScore_->notifyChanges(changes);
+    if (!is_current_transaction_empty && !rollback) {
+        master_score_->update_automation(changes);
+        master_score_->notify_changes(changes);
     }
 }
 
 void TransactionManager::reopen() {
-    UndoStack *stack = undoStack();
+    UndoStack *stack = undo_stack();
 
-    if (stack->isLocked()) {
+    if (stack->is_locked()) {
         return;
     }
 
-    if (stack->hasActiveTransaction()) {
+    if (stack->has_active_transaction()) {
         LOGD() << "cmd already active";
         return;
     }
 
     stack->reopen();
-    currentTransaction_ = std::unique_ptr<Transaction>(new Transaction(stack->activeTransaction()));
+    current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
 }
 
-Transaction *TransactionManager::currentTransaction() const { return currentTransaction_.get(); }
+Transaction *TransactionManager::current_transaction() const { return current_transaction_.get(); }
 
-Transaction &TransactionManager::currentOrDummyTransaction() {
-    if (currentTransaction_) {
-        return *currentTransaction_;
+Transaction &TransactionManager::current_or_dummy_transaction() {
+    if (current_transaction_) {
+        return *current_transaction_;
     } else {
         return Transaction::dummy();
     }
 }
 
-void TransactionManager::undoRedo(bool undo, EditData *editData) {
-    if (masterScore_->readOnly()) {
+void TransactionManager::undo_redo(bool undo, EditData *edit_data) {
+    if (master_score_->read_only()) {
         return;
     }
 
-    UndoStack *stack = undoStack();
+    UndoStack *stack = undo_stack();
 
-    IF_ASSERT_FAILED(!stack->hasActiveTransaction()) {
+    IF_ASSERT_FAILED(!stack->has_active_transaction()) {
         LOGW() << "cannot undo/redo while transaction is active";
         return;
     }
 
     if (undo) {
-        IF_ASSERT_FAILED(stack->canUndo()) {
+        IF_ASSERT_FAILED(stack->can_undo()) {
             LOGW() << "cannot undo";
             return;
         }
     } else {
-        IF_ASSERT_FAILED(stack->canRedo()) {
+        IF_ASSERT_FAILED(stack->can_redo()) {
             LOGW() << "cannot redo";
             return;
         }
     }
 
-    masterScore_->cmdState().reset();
+    master_score_->cmd_state().reset();
 
     //! NOTE: the order of operations is very important here
     //! 1. for the undo operation, the list of changed elements is available before undo()
@@ -292,19 +292,19 @@ void TransactionManager::undoRedo(bool undo, EditData *editData) {
 
     if (undo) {
         transaction = stack->last();
-        changes = transaction->changesInfo(true);
-        stack->undo(editData);
+        changes = transaction->changes_info(true);
+        stack->undo(edit_data);
     } else {
         stack->redo();
         transaction = stack->last();
-        changes = transaction->changesInfo(false);
+        changes = transaction->changes_info(false);
     }
 
-    masterScore_->update(false);
-    masterScore_->invalidateRepeatList(); // TODO: flag individual operations
-    masterScore_->updateSelection();
+    master_score_->update(false);
+    master_score_->invalidate_repeat_list(); // TODO: flag individual operations
+    master_score_->update_selection();
 
-    ScoreChanges result = buildScoreChanges(masterScore_->cmdState(), changes, transaction->commands());
-    masterScore_->updateAutomation(result);
-    masterScore_->notifyChanges(result);
+    ScoreChanges result = build_score_changes(master_score_->cmd_state(), changes, transaction->commands());
+    master_score_->update_automation(result);
+    master_score_->notify_changes(result);
 }

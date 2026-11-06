@@ -31,66 +31,67 @@
 
 namespace mu::engraving {
 // static
-void EditCapo::applyCapoTranspose(int startTick, int endTick, UpdateCtx &ctx) {
-    staff_idx_t staffIdx = ctx.staff->idx();
-    track_idx_t startTrack = staffIdx * VOICES;
-    track_idx_t endTrack = startTrack + VOICES;
+void EditCapo::apply_capo_transpose(int start_tick, int end_tick, UpdateCtx &ctx) {
+    staff_idx_t staff_idx = ctx.staff->idx();
+    track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+    track_idx_t end_track = start_track + ::mu::engraving::voices;
 
     for (MeasureBase *mb = ctx.staff->score()->measures()->first(); mb; mb = mb->next()) {
-        if (!mb->isMeasure()) {
+        if (!mb->is_measure()) {
             continue;
         }
-        for (Segment &seg : toMeasure(mb)->segments()) {
-            if (!seg.isChordRestType()) {
+        for (Segment &seg : to_measure(mb)->segments()) {
+            if (!seg.is_chord_rest_type()) {
                 continue;
             }
-            for (track_idx_t track = startTrack; track < endTrack; ++track) {
+            for (track_idx_t track = start_track; track < end_track; ++track) {
                 EngravingItem *e = seg.element(track);
-                if (!e || !e->isChord()) {
+                if (!e || !e->is_chord()) {
                     continue;
                 }
-                if (e->tick().ticks() < startTick || (-1 != endTick && e->tick().ticks() >= endTick)) {
+                if (e->tick().ticks() < start_tick || (-1 != end_tick && e->tick().ticks() >= end_tick)) {
                     continue;
                 }
 
-                Chord *chord = toChord(e);
-                chord->sortNotes();
-                ctx.stringData = chord->originPart()->stringData(chord->tick(), staffIdx);
+                Chord *chord = to_chord(e);
+                chord->sort_notes();
+                ctx.string_data = chord->origin_part()->string_data(chord->tick(), staff_idx);
                 // Prefer not change strings for intervals and chords
-                ctx.possibleFretConflict =
+                ctx.possible_fret_conflict =
                     chord->notes().size() > 1 || std::any_of(chord->notes().begin(), chord->notes().end(),
-                                                             [&](const Note *n) { return n->fret() < ctx.params.fretPosition; });
+                                                             [&](const Note *n) { return n->fret() < ctx.params.fret_position; });
 
                 for (auto note : chord->notes()) {
-                    if (ctx.updateIgnoredStrings) {
-                        updateString(note, ctx);
+                    if (ctx.update_ignored_strings) {
+                        update_string(note, ctx);
                     } else {
                         update(note, ctx);
                     }
-                    if (const GuitarBend *bend = note->bendFor(); bend) {
-                        if (GuitarBendType::BEND == bend->bendType()) {
-                            Note *startNote = bend->startNote();
-                            Note *endNote = bend->endNote();
-                            const StringData *stringData = ctx.stringData;
-                            const int startString = startNote->string();
-                            const int startFret = stringData->fret(startNote->pitch(), startString, startNote->staff(), startNote->tick());
-                            if (startFret != startNote->fret()) {
-                                startNote->setFret(startFret);
+                    if (const GuitarBend *bend = note->bend_for(); bend) {
+                        if (GuitarBendType::BEND == bend->bend_type()) {
+                            Note *start_note = bend->start_note();
+                            Note *end_note = bend->end_note();
+                            const StringData *string_data = ctx.string_data;
+                            const int start_string = start_note->string();
+                            const int start_fret =
+                                string_data->fret(start_note->pitch(), start_string, start_note->staff(), start_note->tick());
+                            if (start_fret != start_note->fret()) {
+                                start_note->set_fret(start_fret);
                             }
 
-                            if (endNote->fret() != startFret) {
-                                endNote->setString(startString);
-                                endNote->setFret(startFret);
+                            if (end_note->fret() != start_fret) {
+                                end_note->set_string(start_string);
+                                end_note->set_fret(start_fret);
                             }
-                            GuitarBend::fixNotesFrettingForStandardBend(bend->startNote(), bend->endNote());
+                            GuitarBend::fix_notes_fretting_for_standard_bend(bend->start_note(), bend->end_note());
                         }
                     }
                 }
 
-                for (Chord *g : chord->graceNotes()) {
+                for (Chord *g : chord->grace_notes()) {
                     for (Note *n : g->notes()) {
-                        if (ctx.updateIgnoredStrings) {
-                            updateString(n, ctx);
+                        if (ctx.update_ignored_strings) {
+                            update_string(n, ctx);
                         } else {
                             update(n, ctx);
                         }
@@ -102,119 +103,121 @@ void EditCapo::applyCapoTranspose(int startTick, int endTick, UpdateCtx &ctx) {
 }
 
 // static
-void EditCapo::updateNotationForCapoChange(const CapoParams &oldParams, const CapoParams &newParams, const Staff *staff, int startTick,
-                                           int endTick) {
+void EditCapo::update_notation_for_capo_change(const CapoParams &old_params, const CapoParams &new_params, const Staff *staff,
+                                               int start_tick, int end_tick) {
     UpdateCtx ctx;
     ctx.staff = staff;
-    ctx.params = newParams;
+    ctx.params = new_params;
     // These two have to be set in applyCapoTranspose for every chord!
     // ctx.stringData = nullptr;
     // ctx.possibleFretConflict = false;
 
     Score *score = staff->score();
-    Fraction layoutEndTick = endTick != -1 ? Fraction::fromTicks(endTick) : Fraction::max();
-    score->setLayout(layoutEndTick, staff->idx());
+    Fraction layout_end_tick = end_tick != -1 ? Fraction::from_ticks(end_tick) : Fraction::max();
+    score->set_layout(layout_end_tick, staff->idx());
 
-    const bool modeChanged = oldParams.transposeMode != newParams.transposeMode;
-    const bool fretChanged = oldParams.fretPosition != newParams.fretPosition;
-    const bool stringsChanged = oldParams.ignoredStrings != newParams.ignoredStrings;
-    const bool activeChanged = oldParams.active != newParams.active;
+    const bool mode_changed = old_params.transpose_mode != new_params.transpose_mode;
+    const bool fret_changed = old_params.fret_position != new_params.fret_position;
+    const bool strings_changed = old_params.ignored_strings != new_params.ignored_strings;
+    const bool active_changed = old_params.active != new_params.active;
 
-    if (modeChanged) {
-        handleModeChange(oldParams, newParams, startTick, endTick, ctx);
+    if (mode_changed) {
+        handle_mode_change(old_params, new_params, start_tick, end_tick, ctx);
         return;
     }
-    if (fretChanged) {
-        handleFretChange(oldParams, newParams, startTick, endTick, ctx);
+    if (fret_changed) {
+        handle_fret_change(old_params, new_params, start_tick, end_tick, ctx);
         return;
     }
-    if (stringsChanged) {
-        handleStringChanged(newParams, startTick, endTick, ctx);
+    if (strings_changed) {
+        handle_string_changed(new_params, start_tick, end_tick, ctx);
         return;
     }
-    if (activeChanged) {
-        handleActiveChanged(newParams, startTick, endTick, ctx);
+    if (active_changed) {
+        handle_active_changed(new_params, start_tick, end_tick, ctx);
         return;
     }
 }
 
 // static
 void EditCapo::update(Note *note, const UpdateCtx &ctx) {
-    if (muse::contains(ctx.params.ignoredStrings, (string_idx_t) note->string())) {
-        note->setPitch(ctx.stringData->getPitch(note->string(), note->fret(), ctx.staff));
+    if (muse::contains(ctx.params.ignored_strings, (string_idx_t) note->string())) {
+        note->set_pitch(ctx.string_data->get_pitch(note->string(), note->fret(), ctx.staff));
     } else {
-        const int pitch = note->pitch() + ctx.noteOffset;
-        note->setPitch(pitch);
+        const int pitch = note->pitch() + ctx.note_offset;
+        note->set_pitch(pitch);
     }
-    note->setTpcFromPitch();
+    note->set_tpc_from_pitch();
 }
 
 // static
-void EditCapo::updateString(Note *note, const UpdateCtx &ctx) {
+void EditCapo::update_string(Note *note, const UpdateCtx &ctx) {
     const int pitch = note->pitch();
     const int string = note->string();
     const int fret = note->fret();
-    if (CapoParams::TransposeMode::PLAYBACK_ONLY != ctx.params.transposeMode) {
-        if (muse::contains(ctx.params.ignoredStrings, (string_idx_t) note->string())) {
+    if (CapoParams::TransposeMode::PLAYBACK_ONLY != ctx.params.transpose_mode) {
+        if (muse::contains(ctx.params.ignored_strings, (string_idx_t) note->string())) {
             // Already handled
-            if (pitch == ctx.stringData->getPitch(string, fret, 0)) {
+            if (pitch == ctx.string_data->get_pitch(string, fret, 0)) {
                 return;
             }
-            if (CapoParams::TransposeMode::STANDARD_ONLY == ctx.params.transposeMode) {
-                note->setPitch(ctx.stringData->getPitch(note->string(), note->fret(), ctx.staff));
+            if (CapoParams::TransposeMode::STANDARD_ONLY == ctx.params.transpose_mode) {
+                note->set_pitch(ctx.string_data->get_pitch(note->string(), note->fret(), ctx.staff));
             }
-            note->setTpcFromPitch();
+            note->set_tpc_from_pitch();
             return;
         }
-        if (pitch != ctx.stringData->getPitch(string, fret, -ctx.params.fretPosition)) {
-            if (CapoParams::TransposeMode::STANDARD_ONLY == ctx.params.transposeMode) {
-                note->setPitch(ctx.stringData->getPitch(note->string(), note->fret(), -ctx.params.fretPosition));
+        if (pitch != ctx.string_data->get_pitch(string, fret, -ctx.params.fret_position)) {
+            if (CapoParams::TransposeMode::STANDARD_ONLY == ctx.params.transpose_mode) {
+                note->set_pitch(ctx.string_data->get_pitch(note->string(), note->fret(), -ctx.params.fret_position));
             }
         }
     }
-    note->setTpcFromPitch();
+    note->set_tpc_from_pitch();
 }
 
 // static
-void EditCapo::handleModeChange(const CapoParams &oldParams, const CapoParams &newParams, int startTick, int endTick, UpdateCtx &ctx) {
-    switch (oldParams.transposeMode) {
+void EditCapo::handle_mode_change(const CapoParams &old_params, const CapoParams &new_params, int start_tick, int end_tick,
+                                  UpdateCtx &ctx) {
+    switch (old_params.transpose_mode) {
         case CapoParams::TransposeMode::PLAYBACK_ONLY:
-            if (newParams.transposeMode == CapoParams::TransposeMode::STANDARD_ONLY) {
-                ctx.noteOffset = newParams.fretPosition;
+            if (new_params.transpose_mode == CapoParams::TransposeMode::STANDARD_ONLY) {
+                ctx.note_offset = new_params.fret_position;
             }
             break;
         case CapoParams::TransposeMode::STANDARD_ONLY:
-            if (newParams.transposeMode == CapoParams::TransposeMode::PLAYBACK_ONLY) {
-                ctx.noteOffset = -oldParams.fretPosition;
-            } else if (newParams.transposeMode == CapoParams::TransposeMode::TAB_ONLY) {
-                ctx.noteOffset = -oldParams.fretPosition;
+            if (new_params.transpose_mode == CapoParams::TransposeMode::PLAYBACK_ONLY) {
+                ctx.note_offset = -old_params.fret_position;
+            } else if (new_params.transpose_mode == CapoParams::TransposeMode::TAB_ONLY) {
+                ctx.note_offset = -old_params.fret_position;
             }
             break;
         case CapoParams::TransposeMode::TAB_ONLY:
-            if (newParams.transposeMode == CapoParams::TransposeMode::STANDARD_ONLY) {
-                ctx.noteOffset = newParams.fretPosition;
+            if (new_params.transpose_mode == CapoParams::TransposeMode::STANDARD_ONLY) {
+                ctx.note_offset = new_params.fret_position;
             }
             break;
     }
-    applyCapoTranspose(startTick, endTick, ctx);
+    apply_capo_transpose(start_tick, end_tick, ctx);
 }
 
 // static
-void EditCapo::handleFretChange(const CapoParams &oldParams, const CapoParams &newParams, int startTick, int endTick, UpdateCtx &ctx) {
-    if (CapoParams::TransposeMode::STANDARD_ONLY == newParams.transposeMode) {
-        ctx.noteOffset = newParams.fretPosition - oldParams.fretPosition;
-        applyCapoTranspose(startTick, endTick, ctx);
+void EditCapo::handle_fret_change(const CapoParams &old_params, const CapoParams &new_params, int start_tick, int end_tick,
+                                  UpdateCtx &ctx) {
+    if (CapoParams::TransposeMode::STANDARD_ONLY == new_params.transpose_mode) {
+        ctx.note_offset = new_params.fret_position - old_params.fret_position;
+        apply_capo_transpose(start_tick, end_tick, ctx);
     }
 }
 
 // static
-void EditCapo::handleStringChanged(const CapoParams &newParams, int startTick, int endTick, UpdateCtx &ctx) {
-    ctx.updateIgnoredStrings = true;
+void EditCapo::handle_string_changed(const CapoParams &new_params, int start_tick, int end_tick, UpdateCtx &ctx) {
+    ctx.update_ignored_strings = true;
 
-    switch (newParams.transposeMode) {
+    switch (new_params.transpose_mode) {
         case CapoParams::TransposeMode::STANDARD_ONLY:
-            ctx.noteOffset = newParams.fretPosition;
-            applyCapoTranspose(startTick, endTick, ctx);
+            ctx.note_offset = new_params.fret_position;
+            apply_capo_transpose(start_tick, end_tick, ctx);
             break;
         case CapoParams::TransposeMode::TAB_ONLY:
         case CapoParams::TransposeMode::PLAYBACK_ONLY: break;
@@ -222,22 +225,22 @@ void EditCapo::handleStringChanged(const CapoParams &newParams, int startTick, i
 }
 
 // static
-void EditCapo::handleActiveChanged(const CapoParams &newParams, int startTick, int endTick, UpdateCtx &ctx) {
-    if (!newParams.active) {
+void EditCapo::handle_active_changed(const CapoParams &new_params, int start_tick, int end_tick, UpdateCtx &ctx) {
+    if (!new_params.active) {
         // Treat as whatever mode to playback-only transition
-        switch (newParams.transposeMode) {
-            case CapoParams::TransposeMode::STANDARD_ONLY: ctx.noteOffset = -newParams.fretPosition; break;
+        switch (new_params.transpose_mode) {
+            case CapoParams::TransposeMode::STANDARD_ONLY: ctx.note_offset = -new_params.fret_position; break;
             case CapoParams::TransposeMode::TAB_ONLY:
             case CapoParams::TransposeMode::PLAYBACK_ONLY: break;
         }
     } else {
         // Otherwise, as playback-only mode to previous one
-        switch (newParams.transposeMode) {
-            case CapoParams::TransposeMode::STANDARD_ONLY: ctx.noteOffset = newParams.fretPosition; break;
+        switch (new_params.transpose_mode) {
+            case CapoParams::TransposeMode::STANDARD_ONLY: ctx.note_offset = new_params.fret_position; break;
             case CapoParams::TransposeMode::TAB_ONLY:
             case CapoParams::TransposeMode::PLAYBACK_ONLY: break;
         }
     }
-    applyCapoTranspose(startTick, endTick, ctx);
+    apply_capo_transpose(start_tick, end_tick, ctx);
 }
 } // namespace mu::engraving

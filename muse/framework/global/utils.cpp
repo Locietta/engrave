@@ -26,7 +26,7 @@
 using namespace muse;
 
 [[maybe_unused]]
-static constexpr const char *noteNamesWithOctaves[] = {
+static constexpr const char *note_names_with_octaves[] = {
     // octave -1
     QT_TRANSLATE_NOOP("global/pitchName", "C-1"),
     QT_TRANSLATE_NOOP("global/pitchName", "C♯-1"),
@@ -263,24 +263,24 @@ static constexpr const char *noteNamesWithOctaves[] = {
     QT_TRANSLATE_NOOP("global/pitchName", "G9"),
 };
 
-static constexpr const char *sharpNotes[] = {
+static constexpr const char *sharp_notes[] = {
     QT_TRANSLATE_NOOP("global/noteName", "C"),  QT_TRANSLATE_NOOP("global/noteName", "C♯"), QT_TRANSLATE_NOOP("global/noteName", "D"),
     QT_TRANSLATE_NOOP("global/noteName", "D♯"), QT_TRANSLATE_NOOP("global/noteName", "E"),  QT_TRANSLATE_NOOP("global/noteName", "F"),
     QT_TRANSLATE_NOOP("global/noteName", "F♯"), QT_TRANSLATE_NOOP("global/noteName", "G"),  QT_TRANSLATE_NOOP("global/noteName", "G♯"),
     QT_TRANSLATE_NOOP("global/noteName", "A"),  QT_TRANSLATE_NOOP("global/noteName", "A♯"), QT_TRANSLATE_NOOP("global/noteName", "B")};
 
-static constexpr const char *flatNotes[] = {
+static constexpr const char *flat_notes[] = {
     QT_TRANSLATE_NOOP("global/noteName", "C"),  QT_TRANSLATE_NOOP("global/noteName", "D♭"), QT_TRANSLATE_NOOP("global/noteName", "D"),
     QT_TRANSLATE_NOOP("global/noteName", "E♭"), QT_TRANSLATE_NOOP("global/noteName", "E"),  QT_TRANSLATE_NOOP("global/noteName", "F"),
     QT_TRANSLATE_NOOP("global/noteName", "G♭"), QT_TRANSLATE_NOOP("global/noteName", "G"),  QT_TRANSLATE_NOOP("global/noteName", "A♭"),
     QT_TRANSLATE_NOOP("global/noteName", "A"),  QT_TRANSLATE_NOOP("global/noteName", "B♭"), QT_TRANSLATE_NOOP("global/noteName", "B")};
 
-std::string muse::pitchToString(int pitch, bool addoctave, bool useFlats /* = false */) {
+std::string muse::pitch_to_string(int pitch, bool addoctave, bool use_flats /* = false */) {
     if (pitch < 0 || pitch > 127) {
         return std::string();
     }
 
-    auto source = useFlats ? flatNotes : sharpNotes;
+    auto source = use_flats ? ::flat_notes : ::sharp_notes;
 
     int i = pitch % 12;
     if (addoctave) {

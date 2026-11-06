@@ -34,15 +34,15 @@ class SystemLockIndicator : public IndicatorIcon {
 public:
     SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock);
 
-    void setSelected(bool v) override;
+    void set_selected(bool v) override;
 
-    const RangeLock *systemLock() const { return systemLock_; }
+    const RangeLock *system_lock() const { return system_lock_; }
 
-    char16_t iconCode() const override { return 0xF487; }
+    char16_t icon_code() const override { return 0xF487; }
 
-    String formatBarsAndBeats() const override;
+    String format_bars_and_beats() const override;
 
 private:
-    const RangeLock *systemLock_ = nullptr;
+    const RangeLock *system_lock_ = nullptr;
 };
 } // namespace mu::engraving

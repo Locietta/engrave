@@ -29,9 +29,9 @@ namespace mu::engraving {
 //   systemStyle
 //---------------------------------------------------------
 
-static const ElementStyle systemStyle{
-    {Sid::systemTextPlacement, Pid::PLACEMENT},
-    {Sid::systemTextMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle system_style{
+    {Sid::SYSTEM_TEXT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::SYSTEM_TEXT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
@@ -40,18 +40,18 @@ static const ElementStyle systemStyle{
 
 SystemText::SystemText(DummyParentOr<Segment> parent, TextStyleType tid, ElementType type)
     : StaffTextBase(type, parent, tid, ElementFlag::SYSTEM | ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    initElementStyle(&systemStyle);
-    resetProperty(Pid::MUSIC_SYMBOL_SIZE);
+    init_element_style(&::mu::engraving::system_style);
+    reset_property(Pid::MUSIC_SYMBOL_SIZE);
 }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue SystemText::propertyDefault(Pid id) const {
+engraving::PropertyValue SystemText::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::SYSTEM;
-        default: return TextBase::propertyDefault(id);
+        default: return TextBase::property_default(id);
     }
 }
 } // namespace mu::engraving

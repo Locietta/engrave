@@ -39,65 +39,65 @@ using namespace mu;
 using namespace muse::io;
 using namespace mu::engraving;
 
-String ScoreRW::rootPath_;
+String ScoreRW::root_path_;
 const EngravingServices *ScoreRW::services_ = nullptr;
 
-void ScoreRW::setRootPath(const String &path) { rootPath_ = path; }
+void ScoreRW::set_root_path(const String &path) { root_path_ = path; }
 
-String ScoreRW::rootPath() { return rootPath_; }
+String ScoreRW::root_path() { return root_path_; }
 
-void ScoreRW::setServices(const EngravingServices *services) { services_ = services; }
+void ScoreRW::set_services(const EngravingServices *services) { services_ = services; }
 
 const EngravingServices &ScoreRW::services() { return *services_; }
 
-MasterScore *ScoreRW::readScore(const String &name, bool isAbsolutePath, ImportFunc importFunc) {
-    muse::io::path_t path = isAbsolutePath ? name : (rootPath() + u"/" + name);
-    MasterScore *score = compat::ScoreAccess::createMasterScoreWithBaseStyle(services());
-    score->setFileInfoProvider(std::make_shared<LocalFileInfoProvider>(path));
+MasterScore *ScoreRW::read_score(const String &name, bool is_absolute_path, ImportFunc import_func) {
+    muse::io::PathT path = is_absolute_path ? name : (root_path() + u"/" + name);
+    MasterScore *score = compat::ScoreAccess::create_master_score_with_base_style(services());
+    score->set_file_info_provider(std::make_shared<LocalFileInfoProvider>(path));
     std::string suffix = muse::io::suffix(path);
 
     ScoreLoad sl;
     Err rv;
     if (suffix == "mscz" || suffix == "mscx") {
-        rv = static_cast<Err>(compat::loadMsczOrMscx(score, path.toString(), false).code());
-    } else if (importFunc) {
-        rv = importFunc(score, path);
+        rv = static_cast<Err>(compat::load_mscz_or_mscx(score, path.to_string(), false).code());
+    } else if (import_func) {
+        rv = import_func(score, path);
     } else {
-        rv = Err::FileUnknownType;
+        rv = Err::FILE_UNKNOWN_TYPE;
     }
 
-    if (rv != Err::NoError) {
+    if (rv != Err::NO_ERROR) {
         LOGE() << "can't load score, path: " << path;
         delete score;
         return nullptr;
     }
 
-    for (Score *s : score->scoreList()) {
-        s->doLayout();
+    for (Score *s : score->score_list()) {
+        s->do_layout();
     }
 
     return score;
 }
 
-bool ScoreRW::saveScore(Score *score, const String &name) {
+bool ScoreRW::save_score(Score *score, const String &name) {
     File::remove(name);
 
-    auto output = Buffer::opened(IODevice::WriteOnly);
-    if (!rw::RWRegister::writer()->writeScore(score, &output)) {
+    auto output = Buffer::opened(IODevice::WRITE_ONLY);
+    if (!rw::RWRegister::writer()->write_score(score, &output)) {
         return false;
     }
     output.close();
 
-    return File::writeFile(name, output.data());
+    return File::write_file(name, output.data());
 }
 
-bool ScoreRW::saveScore(Score *score, const String &name, ExportFunc exportFunc) {
+bool ScoreRW::save_score(Score *score, const String &name, ExportFunc export_func) {
     File::remove(name);
 
-    muse::io::path_t path = name;
-    Err rv = exportFunc(score, path);
+    muse::io::PathT path = name;
+    Err rv = export_func(score, path);
 
-    if (rv != Err::NoError) {
+    if (rv != Err::NO_ERROR) {
         LOGE() << "can't load score, path: " << path;
         return false;
     } else {
@@ -105,22 +105,22 @@ bool ScoreRW::saveScore(Score *score, const String &name, ExportFunc exportFunc)
     }
 }
 
-muse::ByteArray ScoreRW::writeElement(const EngravingItem *element) {
-    auto buffer = Buffer::opened(IODevice::WriteOnly);
+muse::ByteArray ScoreRW::write_element(const EngravingItem *element) {
+    auto buffer = Buffer::opened(IODevice::WRITE_ONLY);
     XmlWriter xml(&buffer);
-    xml.startDocument();
-    rw::RWRegister::writer()->writeItem(element, xml);
+    xml.start_document();
+    rw::RWRegister::writer()->write_item(element, xml);
     xml.flush();
     buffer.close();
     return buffer.data();
 }
 
-EngravingItem *ScoreRW::writeReadElement(EngravingItem *element) {
-    XmlReader e(writeElement(element));
-    e.readNextStartElement();
-    element = Factory::createItemByName(e.name(), element->score()->dummy());
-    rw::RWRegister::reader()->readItem(element, e);
+EngravingItem *ScoreRW::write_read_element(EngravingItem *element) {
+    XmlReader e(write_element(element));
+    e.read_next_start_element();
+    element = Factory::create_item_by_name(e.name(), element->score()->dummy());
+    rw::RWRegister::reader()->read_item(element, e);
     return element;
 }
 
-bool ScoreRW::saveMimeData(muse::ByteArray mimeData, const String &saveName) { return File::writeFile(saveName, mimeData); }
+bool ScoreRW::save_mime_data(muse::ByteArray mime_data, const String &save_name) { return File::write_file(save_name, mime_data); }

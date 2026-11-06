@@ -28,18 +28,18 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-void ChordLineMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordLineMetaParser::do_parse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     IF_ASSERT_FAILED(item) { return; }
 
-    if (!item->isChordLine()) {
+    if (!item->is_chord_line()) {
         return;
     }
 
-    const ChordLine *chordLine = toChordLine(item);
+    const ChordLine *chord_line = to_chord_line(item);
 
-    ArticulationType type = chordLineArticulationType(chordLine->chordLineType());
+    ArticulationType type = chord_line_articulation_type(chord_line->chord_line_type());
 
-    if (type == ArticulationType::Undefined) {
+    if (type == ArticulationType::UNDEFINED) {
         return;
     }
 
@@ -48,20 +48,20 @@ void ChordLineMetaParser::doParse(const EngravingItem *item, const RenderingCont
         return;
     }
 
-    appendArticulationData(mpe::ArticulationMeta(type, pattern, ctx.nominalTimestamp, ctx.nominalDuration), result);
+    append_articulation_data(mpe::ArticulationMeta(type, pattern, ctx.nominal_timestamp, ctx.nominal_duration), result);
 }
 
-ArticulationType ChordLineMetaParser::chordLineArticulationType(const ChordLineType chordLineType) {
-    static const std::unordered_map<ChordLineType, ArticulationType> ARTICULATION_TYPES = {{ChordLineType::DOIT, ArticulationType::Doit},
-                                                                                           {ChordLineType::FALL, ArticulationType::Fall},
-                                                                                           {ChordLineType::PLOP, ArticulationType::Plop},
-                                                                                           {ChordLineType::SCOOP, ArticulationType::Scoop}};
+ArticulationType ChordLineMetaParser::chord_line_articulation_type(const ChordLineType chord_line_type) {
+    static const std::unordered_map<ChordLineType, ArticulationType> articulation_types = {{ChordLineType::DOIT, ArticulationType::DOIT},
+                                                                                           {ChordLineType::FALL, ArticulationType::FALL},
+                                                                                           {ChordLineType::PLOP, ArticulationType::PLOP},
+                                                                                           {ChordLineType::SCOOP, ArticulationType::SCOOP}};
 
-    auto search = ARTICULATION_TYPES.find(chordLineType);
+    auto search = articulation_types.find(chord_line_type);
 
-    if (search != ARTICULATION_TYPES.cend()) {
+    if (search != articulation_types.cend()) {
         return search->second;
     }
 
-    return ArticulationType::Undefined;
+    return ArticulationType::UNDEFINED;
 }

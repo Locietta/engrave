@@ -29,8 +29,8 @@
 namespace mu::engraving {
 class ScoreComp {
 public:
-    static bool saveCompareScore(Score *, const String &saveName, const String &compareWithLocalPath);
-    static bool saveCompareMimeData(muse::ByteArray mimeData, const String &saveName, const String &compareWithLocalPath);
-    static bool compareFiles(const String &fullPath1, const String &fullPath2);
+    static bool save_compare_score(Score *, const String &save_name, const String &compare_with_local_path);
+    static bool save_compare_mime_data(muse::ByteArray mime_data, const String &save_name, const String &compare_with_local_path);
+    static bool compare_files(const String &full_path1, const String &full_path2);
 };
 } // namespace mu::engraving

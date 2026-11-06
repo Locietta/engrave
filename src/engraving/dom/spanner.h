@@ -50,28 +50,28 @@ public:
 
     //! The spanner that owns this segment - derived from the ownership parent,
     //! so that it can never go stale.
-    Spanner *spanner() const { return toSpanner(ownershipParent()); }
+    Spanner *spanner() const { return to_spanner(ownership_parent()); }
 
-    void setSpanner(Spanner *val);
+    void set_spanner(Spanner *val);
 
-    void setSpannerSegmentType(SpannerSegmentType s) { spannerSegmentType_ = s; }
+    void set_spanner_segment_type(SpannerSegmentType s) { spanner_segment_type_ = s; }
 
-    SpannerSegmentType spannerSegmentType() const { return spannerSegmentType_; }
+    SpannerSegmentType spanner_segment_type() const { return spanner_segment_type_; }
 
-    bool isSingleType() const { return spannerSegmentType() == SpannerSegmentType::SINGLE; }
+    bool is_single_type() const { return spanner_segment_type() == SpannerSegmentType::SINGLE; }
 
-    bool isBeginType() const { return spannerSegmentType() == SpannerSegmentType::BEGIN; }
+    bool is_begin_type() const { return spanner_segment_type() == SpannerSegmentType::BEGIN; }
 
-    bool isSingleBeginType() const { return isSingleType() || isBeginType(); }
+    bool is_single_begin_type() const { return is_single_type() || is_begin_type(); }
 
-    bool isSingleEndType() const { return isSingleType() || isEndType(); }
+    bool is_single_end_type() const { return is_single_type() || is_end_type(); }
 
-    bool isMiddleType() const { return spannerSegmentType() == SpannerSegmentType::MIDDLE; }
+    bool is_middle_type() const { return spanner_segment_type() == SpannerSegmentType::MIDDLE; }
 
-    bool isEndType() const { return spannerSegmentType() == SpannerSegmentType::END; }
+    bool is_end_type() const { return spanner_segment_type() == SpannerSegmentType::END; }
 
     int subtype() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
     //! The system this segment is currently laid out on; null if not placed.
     System *system() const { return system_; }
@@ -80,31 +80,31 @@ public:
     //! segment list; everyone else must use moveToSystem(), so that a non-null system()
     //! always implies that the segment is in that system's segment list - otherwise the
     //! pointer is left dangling when the system is destroyed.
-    void setSystem(System *s) { system_ = s; }
+    void set_system(System *s) { system_ = s; }
 
     //! Detach from the current system's segment list and attach to the given one.
-    void moveToSystem(System *s);
-    EngravingItem *layoutParent() const override;
-    EngravingItem *accessibleParentItem() const override;
+    void move_to_system(System *s);
+    EngravingItem *layout_parent() const override;
+    EngravingItem *accessible_parent_item() const override;
 
     //! A segment is owned by its spanner; a system merely places it, see
     //! setSystem()/moveToSystem(). This overload hides EngravingItem::setOwnershipParent,
     //! so that no other parent can be set by accident.
-    void setOwnershipParent(Spanner *spanner);
+    void set_ownership_parent(Spanner *spanner);
 
-    const PointF &userOff2() const { return offset2_; }
+    const PointF &user_off2() const { return offset2_; }
 
-    void setUserOff2(const PointF &o) { offset2_ = o; }
+    void set_user_off2(const PointF &o) { offset2_ = o; }
 
-    void setUserXoffset2(double x) { offset2_.setX(x); }
+    void set_user_xoffset2(double x) { offset2_.set_x(x); }
 
-    void setUserYoffset2(double y) { offset2_.setY(y); }
+    void set_user_yoffset2(double y) { offset2_.set_y(y); }
 
-    real_t &rUserXoffset2() { return offset2_.rx(); }
+    real_t &r_user_xoffset2() { return offset2_.rx(); }
 
-    real_t &rUserYoffset2() { return offset2_.ry(); }
+    real_t &r_user_yoffset2() { return offset2_.ry(); }
 
-    void setPos2(const PointF &p) { p2_ = p; }
+    void set_pos2(const PointF &p) { p2_ = p; }
 
     //TODO: rename to spanSegPosWithUserOffset()
     PointF pos2() const { return p2_ + offset2_; }
@@ -118,42 +118,42 @@ public:
 
     real_t &rypos2() { return p2_.ry(); }
 
-    muse::ByteArray mimeData(const PointF &dragOffset) const override;
+    muse::ByteArray mime_data(const PointF &drag_offset) const override;
 
-    void spatiumChanged(double ov, double nv) override;
+    void spatium_changed(double ov, double nv) override;
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid id) const override;
-    virtual EngravingObject *propertyDelegate(Pid) const override;
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
-    using EngravingObject::undoChangeProperty;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid id) const override;
+    virtual EngravingObject *property_delegate(Pid) const override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    using EngravingObject::undo_change_property;
 
-    PointF defaultPos() const override;
+    PointF default_pos() const override;
 
-    Sid getPropertyStyle(Pid id) const override;
-    void resetProperty(Pid id) override;
-    void styleChanged() override;
+    Sid get_property_style(Pid id) const override;
+    void reset_property(Pid id) override;
+    void style_changed() override;
     void reset() override;
 
-    void setSelected(bool f) override;
-    void setVisible(bool f) override;
-    void setColor(const Color &col) override;
-    void setZ(int val) override;
+    void set_selected(bool f) override;
+    void set_visible(bool f) override;
+    void set_color(const Color &col) override;
+    void set_z(int val) override;
 
-    bool collectForDrawing() const override;
+    bool collect_for_drawing() const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    void triggerLayout() const override;
+    void trigger_layout() const override;
 
-    std::list<EngravingObject *> linkListForPropertyPropagation() const override;
-    bool isPropertyLinkedToMaster(Pid id) const override;
+    std::list<EngravingObject *> link_list_for_property_propagation() const override;
+    bool is_property_linked_to_master(Pid id) const override;
 
-    virtual bool isUserModified() const override;
+    virtual bool is_user_modified() const override;
 
-    bool allowTimeAnchor() const override;
+    bool allow_time_anchor() const override;
 
 protected:
 
@@ -164,12 +164,12 @@ protected:
     PointF offset2_;
 
 private:
-    String formatBarsAndBeats() const override;
-    String formatStartBarsAndBeats(const Segment *segment) const;
-    String formatEndBarsAndBeats(const Segment *segment) const;
+    String format_bars_and_beats() const override;
+    String format_start_bars_and_beats(const Segment *segment) const;
+    String format_end_bars_and_beats(const Segment *segment) const;
 
     System *system_ = nullptr; // current layout placement; not owned, not copied
-    SpannerSegmentType spannerSegmentType_ = SpannerSegmentType::SINGLE;
+    SpannerSegmentType spanner_segment_type_ = SpannerSegmentType::SINGLE;
 };
 
 //----------------------------------------------------------------------------------
@@ -192,7 +192,7 @@ public:
 
     virtual double mag() const override;
 
-    virtual void setScore(Score *s) override;
+    virtual void set_score(Score *s) override;
 
     virtual Fraction tick() const override { return tick_; }
 
@@ -200,147 +200,147 @@ public:
 
     Fraction ticks() const { return ticks_; }
 
-    void setTick(const Fraction &);
-    void setTick2(const Fraction &);
-    void setTicks(const Fraction &);
+    void set_tick(const Fraction &);
+    void set_tick2(const Fraction &);
+    void set_ticks(const Fraction &);
 
-    bool isVoiceSpecific() const;
+    bool is_voice_specific() const;
     track_idx_t track2() const;
-    void setTrack2(track_idx_t v);
-    track_idx_t effectiveTrack2() const;
+    void set_track2(track_idx_t v);
+    track_idx_t effective_track2() const;
 
-    bool playSpanner() const { return playSpanner_; }
+    bool play_spanner() const { return play_spanner_; }
 
-    void setPlaySpanner(bool p) { playSpanner_ = p; }
+    void set_play_spanner(bool p) { play_spanner_ = p; }
 
     virtual Anchor anchor() const = 0;
 
-    const std::vector<SpannerSegment *> &spannerSegments() const { return segments_; }
+    const std::vector<SpannerSegment *> &spanner_segments() const { return segments_; }
 
-    void setSpannerSegments(const std::vector<SpannerSegment *> &s) { segments_ = s; }
+    void set_spanner_segments(const std::vector<SpannerSegment *> &s) { segments_ = s; }
 
-    SpannerSegment *frontSegment() { return segments_.front(); }
+    SpannerSegment *front_segment() { return segments_.front(); }
 
-    const SpannerSegment *frontSegment() const { return segments_.front(); }
+    const SpannerSegment *front_segment() const { return segments_.front(); }
 
-    SpannerSegment *backSegment() { return segments_.back(); }
+    SpannerSegment *back_segment() { return segments_.back(); }
 
-    const SpannerSegment *backSegment() const { return segments_.back(); }
+    const SpannerSegment *back_segment() const { return segments_.back(); }
 
-    SpannerSegment *segmentAt(int n) { return segments_[n]; }
+    SpannerSegment *segment_at(int n) { return segments_[n]; }
 
-    const SpannerSegment *segmentAt(int n) const { return segments_[n]; }
+    const SpannerSegment *segment_at(int n) const { return segments_[n]; }
 
     size_t nsegments() const { return segments_.size(); }
 
-    bool segmentsEmpty() const { return segments_.empty(); }
+    bool segments_empty() const { return segments_.empty(); }
 
-    void eraseSpannerSegments();
-    bool eitherEndVisible() const;
+    void erase_spanner_segments();
+    bool either_end_visible() const;
 
-    virtual void triggerLayout() const override;
+    virtual void trigger_layout() const override;
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
     virtual void removed() override;
-    EngravingItemList accessibleChildren() const override;
+    EngravingItemList accessible_children() const override;
 
-    virtual void scanElements(std::function<void(EngravingItem *)>) override {}
+    virtual void scan_elements(std::function<void(EngravingItem *)>) override {}
 
-    bool removeSpannerBack();
-    virtual void removeUnmanaged();
-    virtual void insertTimeUnmanaged(const Fraction &tick, const Fraction &len);
+    bool remove_spanner_back();
+    virtual void remove_unmanaged();
+    virtual void insert_time_unmanaged(const Fraction &tick, const Fraction &len);
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    virtual void computeStartElement();
-    void computeEndElement();
+    virtual void compute_start_element();
+    void compute_end_element();
 
-    static Note *endElementFromSpanner(Spanner *sp, EngravingItem *newStart);
-    static Note *startElementFromSpanner(Spanner *sp, EngravingItem *newEnd);
-    void setNoteSpan(Note *startNote, Note *endNote);
+    static Note *end_element_from_spanner(Spanner *sp, EngravingItem *new_start);
+    static Note *start_element_from_spanner(Spanner *sp, EngravingItem *new_end);
+    void set_note_span(Note *start_note, Note *end_note);
 
-    EngravingItem *startElement() const { return startElement_; }
+    EngravingItem *start_element() const { return start_element_; }
 
-    EngravingItem *endElement() const { return endElement_; }
+    EngravingItem *end_element() const { return end_element_; }
 
-    Measure *startMeasure() const;
-    Measure *endMeasure() const;
+    Measure *start_measure() const;
+    Measure *end_measure() const;
 
-    Measure *findStartMeasure() const;
-    Measure *findEndMeasure() const;
+    Measure *find_start_measure() const;
+    Measure *find_end_measure() const;
 
-    void setStartElement(EngravingItem *e);
-    virtual void setEndElement(EngravingItem *e);
+    void set_start_element(EngravingItem *e);
+    virtual void set_end_element(EngravingItem *e);
 
-    ChordRest *startCR();
-    ChordRest *endCR();
+    ChordRest *start_cr();
+    ChordRest *end_cr();
 
-    Chord *startChord();
-    Chord *endChord();
+    Chord *start_chord();
+    Chord *end_chord();
 
-    ChordRest *findStartCR() const;
-    ChordRest *findEndCR() const;
+    ChordRest *find_start_cr() const;
+    ChordRest *find_end_cr() const;
 
-    Chord *findStartChord() const;
-    Chord *findEndChord() const;
+    Chord *find_start_chord() const;
+    Chord *find_end_chord() const;
 
-    Segment *startSegment() const;
-    Segment *endSegment() const;
+    Segment *start_segment() const;
+    Segment *end_segment() const;
 
-    bool elementAppliesToTrack(const track_idx_t refTrack) const override;
+    bool element_applies_to_track(const track_idx_t ref_track) const override;
 
-    virtual void setSelected(bool f) override;
-    virtual void setVisible(bool f) override;
-    virtual void setAutoplace(bool f) override;
-    virtual void setColor(const Color &col) override;
-    virtual void setZ(int val) override;
-    Spanner *nextSpanner(EngravingItem *e, staff_idx_t activeStaff);
-    Spanner *prevSpanner(EngravingItem *e, staff_idx_t activeStaff);
-    virtual EngravingItem *nextSegmentElement() override;
-    virtual EngravingItem *prevSegmentElement() override;
+    virtual void set_selected(bool f) override;
+    virtual void set_visible(bool f) override;
+    virtual void set_autoplace(bool f) override;
+    virtual void set_color(const Color &col) override;
+    virtual void set_z(int val) override;
+    Spanner *next_spanner(EngravingItem *e, staff_idx_t active_staff);
+    Spanner *prev_spanner(EngravingItem *e, staff_idx_t active_staff);
+    virtual EngravingItem *next_segment_element() override;
+    virtual EngravingItem *prev_segment_element() override;
 
-    using EngravingObject::undoChangeProperty;
+    using EngravingObject::undo_change_property;
 
-    void pushUnusedSegment(SpannerSegment *seg);
-    SpannerSegment *popUnusedSegment();
+    void push_unused_segment(SpannerSegment *seg);
+    SpannerSegment *pop_unused_segment();
     void reuse(SpannerSegment *seg); // called when segment from unusedSegments
                                      // is added back to the spanner.
-    int reuseSegments(int number);
-    void fixupSegments(unsigned int targetNumber, std::function<SpannerSegment *()> createSegment);
+    int reuse_segments(int number);
+    void fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment);
 
-    bool isUserModified() const override;
+    bool is_user_modified() const override;
 
-    virtual bool allowTimeAnchor() const override { return false; }
+    virtual bool allow_time_anchor() const override { return false; }
 
 protected:
 
     Spanner(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
     Spanner(const Spanner &);
 
-    virtual void doComputeStartElement();
-    virtual void doComputeEndElement();
+    virtual void do_compute_start_element();
+    virtual void do_compute_end_element();
 
-    virtual bool isInSpannerMap() const { return true; }
+    virtual bool is_in_spanner_map() const { return true; }
 
 private:
-    bool canBeCrossStaff() const;
+    bool can_be_cross_staff() const;
 
     friend class SpannerSegment;
 
-    EngravingItem *startElement_ = nullptr;
-    EngravingItem *endElement_ = nullptr;
+    EngravingItem *start_element_ = nullptr;
+    EngravingItem *end_element_ = nullptr;
 
-    bool playSpanner_ = true;
+    bool play_spanner_ = true;
 
     Fraction tick_ = Fraction(-1, 1);
     Fraction ticks_ = Fraction(0, 1);
     track_idx_t track2_ = muse::nidx;
 
     std::vector<SpannerSegment *> segments_;
-    std::deque<SpannerSegment *> unusedSegments_; // Currently unused segments which can be reused later.
-                                                  // We cannot just delete them as they can be referenced
-                                                  // in undo stack or other places already.
+    std::deque<SpannerSegment *> unused_segments_; // Currently unused segments which can be reused later.
+                                                   // We cannot just delete them as they can be referenced
+                                                   // in undo stack or other places already.
 };
 } // namespace mu::engraving

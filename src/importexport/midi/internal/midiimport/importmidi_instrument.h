@@ -35,14 +35,14 @@ namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiInstr {
-muse::String instrumentName(GM1Program, bool isDrumTrack);
-muse::String msInstrName(int trackIndex);
-muse::String concatenateWithComma(const muse::String &left, const muse::String &right);
-bool isGrandStaff(const MTrack &t1, const MTrack &t2);
-void setGrandStaffProgram(std::vector<MTrack> &tracks);
-void findInstrumentsForAllTracks(const std::vector<MTrack> &tracks, bool forceReload = false);
-void createInstruments(engraving::Score *score, std::vector<MTrack> &tracks);
+muse::String instrument_name(GM1Program, bool is_drum_track);
+muse::String ms_instr_name(int track_index);
+muse::String concatenate_with_comma(const muse::String &left, const muse::String &right);
+bool is_grand_staff(const MTrack &t1, const MTrack &t2);
+void set_grand_staff_program(std::vector<MTrack> &tracks);
+void find_instruments_for_all_tracks(const std::vector<MTrack> &tracks, bool force_reload = false);
+void create_instruments(engraving::Score *score, std::vector<MTrack> &tracks);
 
-extern void instrumentTemplatesChanged();
+extern void instrument_templates_changed();
 } // namespace MidiInstr
 } // namespace mu::iex::midi

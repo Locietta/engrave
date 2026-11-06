@@ -33,47 +33,47 @@
 
 using namespace mu::engraving;
 
-void EditCrossStaff::moveUp(Transaction &, Score *score, ChordRest *cr) {
+void EditCrossStaff::move_up(Transaction &, Score *score, ChordRest *cr) {
     Staff *staff = cr->staff();
     Part *part = staff->part();
     staff_idx_t rstaff = staff->rstaff();
-    int staffMove = cr->staffMove();
+    int staff_move = cr->staff_move();
 
-    if ((staffMove == -1) || (static_cast<int>(rstaff) + staffMove <= 0)) {
+    if ((staff_move == -1) || (static_cast<int>(rstaff) + staff_move <= 0)) {
         return;
     }
 
     const std::vector<Staff *> &staves = part->staves();
     // we know that staffMove+rstaff-1 index exists due to the previous condition.
-    if (staff->staffType(cr->tick())->group() != StaffGroup::STANDARD ||
-        staves.at(rstaff + staffMove - 1)->staffType(cr->tick())->group() != StaffGroup::STANDARD) {
+    if (staff->staff_type(cr->tick())->group() != StaffGroup::STANDARD ||
+        staves.at(rstaff + staff_move - 1)->staff_type(cr->tick())->group() != StaffGroup::STANDARD) {
         LOGD("User attempted to move a note from/to a staff which does not use standard notation - ignoring.");
     } else {
         // move the chord up a staff
-        score->undo(new ChangeChordStaffMove(cr, staffMove - 1));
+        score->undo(new ChangeChordStaffMove(cr, staff_move - 1));
     }
 }
 
-void EditCrossStaff::moveDown(Transaction &, Score *score, ChordRest *cr) {
+void EditCrossStaff::move_down(Transaction &, Score *score, ChordRest *cr) {
     Staff *staff = cr->staff();
     Part *part = staff->part();
     staff_idx_t rstaff = staff->rstaff();
-    int staffMove = cr->staffMove();
+    int staff_move = cr->staff_move();
     // calculate the number of staves available so that we know whether there is another staff to move down to
     size_t rstaves = part->nstaves();
 
-    if ((staffMove == 1) || (rstaff + staffMove >= rstaves - 1)) {
-        LOGD("moveDown staffMove==%d  rstaff %zu rstaves %zu", staffMove, rstaff, rstaves);
+    if ((staff_move == 1) || (rstaff + staff_move >= rstaves - 1)) {
+        LOGD("moveDown staffMove==%d  rstaff %zu rstaves %zu", staff_move, rstaff, rstaves);
         return;
     }
 
     const std::vector<Staff *> &staves = part->staves();
     // we know that staffMove+rstaff+1 index exists due to the previous condition.
-    if (staff->staffType(cr->tick())->group() != StaffGroup::STANDARD ||
-        staves.at(staffMove + rstaff + 1)->staffType(cr->tick())->group() != StaffGroup::STANDARD) {
+    if (staff->staff_type(cr->tick())->group() != StaffGroup::STANDARD ||
+        staves.at(staff_move + rstaff + 1)->staff_type(cr->tick())->group() != StaffGroup::STANDARD) {
         LOGD("User attempted to move a note from/to a staff which does not use standard notation - ignoring.");
     } else {
         // move the chord down a staff
-        score->undo(new ChangeChordStaffMove(cr, staffMove + 1));
+        score->undo(new ChangeChordStaffMove(cr, staff_move + 1));
     }
 }

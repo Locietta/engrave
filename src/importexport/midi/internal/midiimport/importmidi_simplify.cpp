@@ -39,7 +39,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace Simplify {
-bool hasComplexBeamedDurations(const std::vector<std::pair<ReducedFraction, TDuration>> &list) {
+bool has_complex_beamed_durations(const std::vector<std::pair<ReducedFraction, TDuration>> &list) {
     for (const auto &d : list) {
         if (d.second == DurationType::V_16TH || d.second == DurationType::V_32ND || d.second == DurationType::V_64TH ||
             d.second == DurationType::V_128TH || d.second == DurationType::V_256TH || d.second == DurationType::V_512TH ||
@@ -50,59 +50,60 @@ bool hasComplexBeamedDurations(const std::vector<std::pair<ReducedFraction, TDur
     return false;
 }
 
-void lengthenNote(MidiNote &note, int voice, const ReducedFraction &noteOnTime, const ReducedFraction &durationStart,
-                  const ReducedFraction &endTime, const ReducedFraction &barStart, const ReducedFraction &barFraction,
-                  const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool isDrumTrack) {
-    if (endTime <= note.offTime) {
+void lengthen_note(MidiNote &note, int voice, const ReducedFraction &note_on_time, const ReducedFraction &duration_start,
+                   const ReducedFraction &end_time, const ReducedFraction &bar_start, const ReducedFraction &bar_fraction,
+                   const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
+    if (end_time <= note.off_time) {
         return;
     }
 
-    const auto &opers = midiImportOperations.data()->trackOpers;
-    const int currentTrack = midiImportOperations.currentTrack();
+    const auto &opers = midi_import_operations.data()->track_opers;
+    const int current_track = midi_import_operations.current_track();
 
-    const bool useDots = opers.useDots.value(currentTrack);
-    const auto tupletsForDuration = MidiTuplet::findTupletsInBarForDuration(voice, barStart, note.offTime, endTime - note.offTime, tuplets);
+    const bool use_dots = opers.use_dots.value(current_track);
+    const auto tuplets_for_duration =
+        MidiTuplet::find_tuplets_in_bar_for_duration(voice, bar_start, note.off_time, end_time - note.off_time, tuplets);
 
-    Q_ASSERT_X(note.offTimeQuant != ReducedFraction(-1, 1), "Simplify::lengthenNote", "Note quant value was not set");
+    Q_ASSERT_X(note.off_time_quant != ReducedFraction(-1, 1), "Simplify::lengthenNote", "Note quant value was not set");
 
-    const auto origNoteDurations = Meter::toDurationList(durationStart - barStart, note.offTime - barStart, barFraction, tupletsForDuration,
-                                                         Meter::DurationType::NOTE, useDots, false);
+    const auto orig_note_durations = Meter::to_duration_list(duration_start - bar_start, note.off_time - bar_start, bar_fraction,
+                                                             tuplets_for_duration, Meter::DurationType::NOTE, use_dots, false);
 
-    const auto origRestDurations = Meter::toDurationList(note.offTime - barStart, endTime - barStart, barFraction, tupletsForDuration,
-                                                         Meter::DurationType::REST, useDots, false);
+    const auto orig_rest_durations = Meter::to_duration_list(note.off_time - bar_start, end_time - bar_start, bar_fraction,
+                                                             tuplets_for_duration, Meter::DurationType::REST, use_dots, false);
 
     // double - because can be + 0.5 for dots
-    double minNoteDurationCount = MidiDuration::durationCount(origNoteDurations);
-    double minRestDurationCount = MidiDuration::durationCount(origRestDurations);
+    double min_note_duration_count = MidiDuration::duration_count(orig_note_durations);
+    double min_rest_duration_count = MidiDuration::duration_count(orig_rest_durations);
 
-    ReducedFraction bestOffTime(-1, 1);
+    ReducedFraction best_off_time(-1, 1);
 
-    for (ReducedFraction offTime = note.offTime + note.offTimeQuant; offTime <= endTime; offTime += note.offTimeQuant) {
-        double noteDurationCount = 0;
-        double restDurationCount = 0;
+    for (ReducedFraction off_time = note.off_time + note.off_time_quant; off_time <= end_time; off_time += note.off_time_quant) {
+        double note_duration_count = 0;
+        double rest_duration_count = 0;
 
-        const auto noteDurations = Meter::toDurationList(durationStart - barStart, offTime - barStart, barFraction, tupletsForDuration,
-                                                         Meter::DurationType::NOTE, useDots, false);
+        const auto note_durations = Meter::to_duration_list(duration_start - bar_start, off_time - bar_start, bar_fraction,
+                                                            tuplets_for_duration, Meter::DurationType::NOTE, use_dots, false);
 
-        noteDurationCount += MidiDuration::durationCount(noteDurations);
+        note_duration_count += MidiDuration::duration_count(note_durations);
 
-        if (offTime < endTime) {
-            const auto restDurations = Meter::toDurationList(offTime - barStart, endTime - barStart, barFraction, tupletsForDuration,
-                                                             Meter::DurationType::REST, useDots, false);
+        if (off_time < end_time) {
+            const auto rest_durations = Meter::to_duration_list(off_time - bar_start, end_time - bar_start, bar_fraction,
+                                                                tuplets_for_duration, Meter::DurationType::REST, use_dots, false);
 
-            restDurationCount += MidiDuration::durationCount(restDurations);
+            rest_duration_count += MidiDuration::duration_count(rest_durations);
         }
 
-        if (noteDurationCount + restDurationCount < minNoteDurationCount + minRestDurationCount) {
-            if (opers.isHumanPerformance.value() || isDrumTrack || noteDurationCount <= 1.5) {
-                minNoteDurationCount = noteDurationCount;
-                minRestDurationCount = restDurationCount;
-                bestOffTime = offTime;
+        if (note_duration_count + rest_duration_count < min_note_duration_count + min_rest_duration_count) {
+            if (opers.is_human_performance.value() || is_drum_track || note_duration_count <= 1.5) {
+                min_note_duration_count = note_duration_count;
+                min_rest_duration_count = rest_duration_count;
+                best_off_time = off_time;
             }
         }
     }
 
-    if (bestOffTime == ReducedFraction(-1, 1)) {
+    if (best_off_time == ReducedFraction(-1, 1)) {
         return;
     }
 
@@ -110,16 +111,16 @@ void lengthenNote(MidiNote &note, int voice, const ReducedFraction &noteOnTime, 
     //    don't apply staccato if note is tied
     //    (case noteOnTime != durationStart - another bar, for example)
 
-    bool hasLossOfAccuracy = false;
-    if (!isDrumTrack) {
-        const double addedPart = ((bestOffTime - note.offTime) / (bestOffTime - durationStart)).toDouble();
-        const double STACCATO_TOL = 0.3;
+    bool has_loss_of_accuracy = false;
+    if (!is_drum_track) {
+        const double added_part = ((best_off_time - note.off_time) / (best_off_time - duration_start)).to_double();
+        const double staccato_tol = 0.3;
 
-        if (addedPart >= STACCATO_TOL) {
-            if (noteOnTime == durationStart && minNoteDurationCount <= 1.5) {
+        if (added_part >= staccato_tol) {
+            if (note_on_time == duration_start && min_note_duration_count <= 1.5) {
                 note.staccato = true;
             } else {
-                hasLossOfAccuracy = true;
+                has_loss_of_accuracy = true;
             }
         }
     }
@@ -128,31 +129,31 @@ void lengthenNote(MidiNote &note, int voice, const ReducedFraction &noteOnTime, 
     // discard change because it silently reduces duration accuracy
     // without significant improvement of readability
 
-    if (!isDrumTrack && !opers.isHumanPerformance.value() && hasLossOfAccuracy &&
-        (origNoteDurations.size() + origRestDurations.size()) - (minNoteDurationCount + minRestDurationCount) <= 1 &&
-        !hasComplexBeamedDurations(origNoteDurations) && !hasComplexBeamedDurations(origRestDurations)) {
+    if (!is_drum_track && !opers.is_human_performance.value() && has_loss_of_accuracy &&
+        (orig_note_durations.size() + orig_rest_durations.size()) - (min_note_duration_count + min_rest_duration_count) <= 1 &&
+        !has_complex_beamed_durations(orig_note_durations) && !has_complex_beamed_durations(orig_rest_durations)) {
         return;
     }
 
-    note.offTime = bestOffTime;
+    note.off_time = best_off_time;
 }
 
 // for drum tracks note duration can be arbitrary
 // so start with short duration to check different cases,
 // to find the most simple one
 
-void shortenDrumNote(MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &it,
-                     const std::multimap<ReducedFraction, MidiChord> &chords) {
-    if (it->second.isInTuplet) { // if note on time is in tuplet -
-                                 // set note off time to be inside that tuplet
+void shorten_drum_note(MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &it,
+                       const std::multimap<ReducedFraction, MidiChord> &chords) {
+    if (it->second.is_in_tuplet) { // if note on time is in tuplet -
+                                   // set note off time to be inside that tuplet
         const auto &tuplet = it->second.tuplet->second;
-        const auto len = tuplet.len / tuplet.tupletNumber;
-        const auto newOffTime = std::min(it->first + len, tuplet.onTime + tuplet.len);
-        if (note.offTime > newOffTime) {
-            note.offTime = newOffTime;
-            note.isInTuplet = true;
+        const auto len = tuplet.len / tuplet.tuplet_number;
+        const auto new_off_time = std::min(it->first + len, tuplet.on_time + tuplet.len);
+        if (note.off_time > new_off_time) {
+            note.off_time = new_off_time;
+            note.is_in_tuplet = true;
             note.tuplet = it->second.tuplet;
-            note.offTimeQuant = len;
+            note.off_time_quant = len;
         }
     } else { // if note on time is outside tuplets -
              // set note off time to be outside all tuplets
@@ -161,87 +162,87 @@ void shortenDrumNote(MidiNote &note, const std::multimap<ReducedFraction, MidiCh
             ++next;
         }
         if (next != chords.end()) {
-            const auto len = ReducedFraction::fromTicks(Constants::DIVISION) / 8; // 1/32
-            auto newOffTime = it->first + len;
-            if (next->second.isInTuplet) {
+            const auto len = ReducedFraction::from_ticks(Constants::division) / 8; // 1/32
+            auto new_off_time = it->first + len;
+            if (next->second.is_in_tuplet) {
                 const auto &tuplet = next->second.tuplet->second;
-                if (tuplet.onTime < newOffTime) {
-                    newOffTime = tuplet.onTime;
+                if (tuplet.on_time < new_off_time) {
+                    new_off_time = tuplet.on_time;
                 }
             }
-            if (newOffTime < note.offTime) {
-                note.offTime = newOffTime;
-                note.isInTuplet = false;
-                note.offTimeQuant = len;
+            if (new_off_time < note.off_time) {
+                note.off_time = new_off_time;
+                note.is_in_tuplet = false;
+                note.off_time_quant = len;
             }
         }
     }
 }
 
-void minimizeNumberOfRests(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap,
-                           const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool isDrumTrack) {
+void minimize_number_of_rests(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap,
+                              const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets, bool is_drum_track) {
     for (auto it = chords.begin(); it != chords.end(); ++it) {
         for (MidiNote &note : it->second.notes) {
-            if (isDrumTrack) {
-                shortenDrumNote(note, it, chords);
+            if (is_drum_track) {
+                shorten_drum_note(note, it, chords);
             }
 
-            const auto barStart = MidiBar::findBarStart(note.offTime, sigmap);
-            const auto barFraction = ReducedFraction(sigmap->timesig(barStart.ticks()).timesig());
-            auto durationStart = (it->first > barStart) ? it->first : barStart;
+            const auto bar_start = MidiBar::find_bar_start(note.off_time, sigmap);
+            const auto bar_fraction = ReducedFraction(sigmap->timesig(bar_start.ticks()).timesig());
+            auto duration_start = (it->first > bar_start) ? it->first : bar_start;
 
-            if (it->second.isInTuplet) {
+            if (it->second.is_in_tuplet) {
                 const auto &tuplet = it->second.tuplet->second;
-                if (note.offTime >= tuplet.onTime + tuplet.len) {
-                    durationStart = tuplet.onTime + tuplet.len;
+                if (note.off_time >= tuplet.on_time + tuplet.len) {
+                    duration_start = tuplet.on_time + tuplet.len;
                 }
             }
-            auto endTime = (barStart == note.offTime) ? barStart : barStart + barFraction;
-            if (note.isInTuplet) {
+            auto end_time = (bar_start == note.off_time) ? bar_start : bar_start + bar_fraction;
+            if (note.is_in_tuplet) {
                 const auto &tuplet = note.tuplet->second;
-                if (note.offTime == tuplet.onTime + tuplet.len) {
+                if (note.off_time == tuplet.on_time + tuplet.len) {
                     continue;
                 }
-                if (isDrumTrack) {
-                    endTime = tuplet.onTime + tuplet.len;
+                if (is_drum_track) {
+                    end_time = tuplet.on_time + tuplet.len;
                 } else {
-                    endTime = barStart + Quantize::quantizeToLarge(note.offTime - barStart, tuplet.len / tuplet.tupletNumber);
+                    end_time = bar_start + Quantize::quantize_to_large(note.off_time - bar_start, tuplet.len / tuplet.tuplet_number);
                 }
             }
 
-            const auto beatLen = Meter::beatLength(barFraction);
-            const auto beatTime = barStart + Quantize::quantizeToLarge(note.offTime - barStart, beatLen);
-            if (endTime > beatTime) {
-                endTime = beatTime;
+            const auto beat_len = Meter::beat_length(bar_fraction);
+            const auto beat_time = bar_start + Quantize::quantize_to_large(note.off_time - bar_start, beat_len);
+            if (end_time > beat_time) {
+                end_time = beat_time;
             }
 
             auto next = std::next(it);
-            while (next != chords.end() && (next->second.voice != it->second.voice || next->first < note.offTime)) {
+            while (next != chords.end() && (next->second.voice != it->second.voice || next->first < note.off_time)) {
                 ++next;
             }
             if (next != chords.end()) {
-                if (next->first < endTime) {
-                    endTime = next->first;
+                if (next->first < end_time) {
+                    end_time = next->first;
                 }
-                if (next->second.isInTuplet && !note.isInTuplet) {
+                if (next->second.is_in_tuplet && !note.is_in_tuplet) {
                     const auto &tuplet = next->second.tuplet->second;
-                    if (tuplet.onTime < endTime) {
-                        endTime = tuplet.onTime;
+                    if (tuplet.on_time < end_time) {
+                        end_time = tuplet.on_time;
                     }
                 }
             }
 
-            lengthenNote(note, it->second.voice, it->first, durationStart, endTime, barStart, barFraction, tuplets, isDrumTrack);
+            lengthen_note(note, it->second.voice, it->first, duration_start, end_time, bar_start, bar_fraction, tuplets, is_drum_track);
         }
     }
 }
 
-void simplifyDurations(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplifyDrumTracks) {
-    auto &opers = midiImportOperations;
+void simplify_durations(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap, bool simplify_drum_tracks) {
+    auto &opers = midi_import_operations;
 
     for (auto &track : tracks) {
         MTrack &mtrack = track.second;
-        if (mtrack.mtrack->drumTrack() != simplifyDrumTracks) {
+        if (mtrack.mtrack->drum_track() != simplify_drum_tracks) {
             continue;
         }
         auto &chords = track.second.chords;
@@ -249,19 +250,19 @@ void simplifyDurations(std::multimap<int, MTrack> &tracks, const TimeSigMap *sig
             continue;
         }
 
-        if (opers.data()->trackOpers.simplifyDurations.value(mtrack.indexOfOperation)) {
-            MidiOperations::CurrentTrackSetter setCurrentTrack{opers, mtrack.indexOfOperation};
+        if (opers.data()->track_opers.simplify_durations.value(mtrack.index_of_operation)) {
+            MidiOperations::CurrentTrackSetter set_current_track{opers, mtrack.index_of_operation};
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, mtrack.tuplets), "Simplify::simplifyDurations",
+            Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets), "Simplify::simplifyDurations",
                        "Tuplet chord/note is outside tuplet "
                        "or non-tuplet chord/note is inside tuplet before simplification");
 #endif
 
-            minimizeNumberOfRests(chords, sigmap, mtrack.tuplets, mtrack.mtrack->drumTrack());
+            minimize_number_of_rests(chords, sigmap, mtrack.tuplets, mtrack.mtrack->drum_track());
             // empty tuplets may appear after simplification
-            MidiTuplet::removeEmptyTuplets(mtrack);
+            MidiTuplet::remove_empty_tuplets(mtrack);
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, mtrack.tuplets), "Simplify::simplifyDurations",
+            Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets), "Simplify::simplifyDurations",
                        "Tuplet chord/note is outside tuplet "
                        "or non-tuplet chord/note is inside tuplet after simplification");
 #endif
@@ -269,7 +270,11 @@ void simplifyDurations(std::multimap<int, MTrack> &tracks, const TimeSigMap *sig
     }
 }
 
-void simplifyDurationsForDrums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) { simplifyDurations(tracks, sigmap, true); }
+void simplify_durations_for_drums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+    simplify_durations(tracks, sigmap, true);
+}
 
-void simplifyDurationsNotDrums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) { simplifyDurations(tracks, sigmap, false); }
+void simplify_durations_not_drums(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigmap) {
+    simplify_durations(tracks, sigmap, false);
+}
 }} // namespace mu::iex::midi::Simplify

@@ -37,26 +37,27 @@ public:
     public:
         virtual ~IResolver() = default;
 
-        virtual ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams &params, const OutputSpec &outputSpec) const = 0;
-        virtual bool hasCompatibleResources(const PlaybackSetupData &setup) const = 0;
-        virtual AudioResourceMetaList resolveResources() const = 0;
-        virtual SoundPresetList resolveSoundPresets(const AudioResourceMeta &resourceMeta) const = 0;
+        virtual ISynthesizerPtr resolve_synth(const TrackId track_id, const AudioInputParams &params,
+                                              const OutputSpec &output_spec) const = 0;
+        virtual bool has_compatible_resources(const PlaybackSetupData &setup) const = 0;
+        virtual AudioResourceMetaList resolve_resources() const = 0;
+        virtual SoundPresetList resolve_sound_presets(const AudioResourceMeta &resource_meta) const = 0;
         virtual void refresh() = 0;
-        virtual void clearSources() = 0;
+        virtual void clear_sources() = 0;
     };
 
     using IResolverPtr = std::shared_ptr<IResolver>;
 
-    virtual void init(const AudioInputParams &defaultInputParams, const audio::OutputSpec &defaultOutputSpec) = 0;
+    virtual void init(const AudioInputParams &default_input_params, const audio::OutputSpec &default_output_spec) = 0;
 
-    virtual ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams &params, const OutputSpec &spec,
-                                         const PlaybackSetupData &setupData) const = 0;
-    virtual ISynthesizerPtr resolveDefaultSynth(const TrackId trackId) const = 0;
-    virtual AudioInputParams resolveDefaultInputParams() const = 0;
-    virtual AudioResourceMetaList resolveAvailableResources() const = 0;
-    virtual SoundPresetList resolveAvailableSoundPresets(const AudioResourceMeta &resourceMeta) const = 0;
-    virtual void registerResolver(const AudioSourceType type, IResolverPtr resolver) = 0;
-    virtual void clearSources() = 0;
+    virtual ISynthesizerPtr resolve_synth(const TrackId track_id, const AudioInputParams &params, const OutputSpec &spec,
+                                          const PlaybackSetupData &setup_data) const = 0;
+    virtual ISynthesizerPtr resolve_default_synth(const TrackId track_id) const = 0;
+    virtual AudioInputParams resolve_default_input_params() const = 0;
+    virtual AudioResourceMetaList resolve_available_resources() const = 0;
+    virtual SoundPresetList resolve_available_sound_presets(const AudioResourceMeta &resource_meta) const = 0;
+    virtual void register_resolver(const AudioSourceType type, IResolverPtr resolver) = 0;
+    virtual void clear_sources() = 0;
 };
 
 using ISynthResolverPtr = std::shared_ptr<ISynthResolver>;

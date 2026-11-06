@@ -39,75 +39,75 @@ using namespace muse;
 using namespace mu::engraving::compat;
 using namespace mu::engraving;
 
-static int readStyleDefaultsVersion(MasterScore *score, const ByteArray &scoreData, const String &completeBaseName) {
-    XmlReader e(scoreData);
-    e.setDocName(completeBaseName);
+static int read_style_defaults_version(MasterScore *score, const ByteArray &score_data, const String &complete_base_name) {
+    XmlReader e(score_data);
+    e.set_doc_name(complete_base_name);
 
-    while (!e.atEnd()) {
-        e.readNext();
+    while (!e.at_end()) {
+        e.read_next();
         if (e.name() == "defaultsVersion") {
-            return e.readInt();
+            return e.read_int();
         }
     }
 
-    return ReadStyleHook::styleDefaultByMscVersion(score->mscVersion());
+    return ReadStyleHook::style_default_by_msc_version(score->msc_version());
 }
 
-ReadStyleHook::ReadStyleHook(Score *score, const ByteArray &scoreData, const String &completeBaseName)
-    : score_(score), scoreData_(scoreData), completeBaseName_(completeBaseName) {}
+ReadStyleHook::ReadStyleHook(Score *score, const ByteArray &score_data, const String &complete_base_name)
+    : score_(score), score_data_(score_data), complete_base_name_(complete_base_name) {}
 
-int ReadStyleHook::styleDefaultByMscVersion(const int mscVer) {
-    constexpr int LEGACY_MSC_VERSION_V400 = 400;
-    constexpr int LEGACY_MSC_VERSION_V302 = 302;
-    constexpr int LEGACY_MSC_VERSION_V3 = 301;
-    constexpr int LEGACY_MSC_VERSION_V2 = 206;
-    constexpr int LEGACY_MSC_VERSION_V1 = 114;
+int ReadStyleHook::style_default_by_msc_version(const int msc_ver) {
+    constexpr int legacy_msc_version_v400 = 400;
+    constexpr int legacy_msc_version_v302 = 302;
+    constexpr int legacy_msc_version_v3 = 301;
+    constexpr int legacy_msc_version_v2 = 206;
+    constexpr int legacy_msc_version_v1 = 114;
 
-    if (mscVer > LEGACY_MSC_VERSION_V3 && mscVer < LEGACY_MSC_VERSION_V400) {
-        return LEGACY_MSC_VERSION_V302;
+    if (msc_ver > legacy_msc_version_v3 && msc_ver < legacy_msc_version_v400) {
+        return legacy_msc_version_v302;
     }
-    if (mscVer > LEGACY_MSC_VERSION_V2 && mscVer <= LEGACY_MSC_VERSION_V3) {
-        return LEGACY_MSC_VERSION_V3;
-    }
-
-    if (mscVer > LEGACY_MSC_VERSION_V1 && mscVer <= LEGACY_MSC_VERSION_V2) {
-        return LEGACY_MSC_VERSION_V2;
+    if (msc_ver > legacy_msc_version_v2 && msc_ver <= legacy_msc_version_v3) {
+        return legacy_msc_version_v3;
     }
 
-    if (mscVer <= LEGACY_MSC_VERSION_V1) {
-        return LEGACY_MSC_VERSION_V1;
+    if (msc_ver > legacy_msc_version_v1 && msc_ver <= legacy_msc_version_v2) {
+        return legacy_msc_version_v2;
     }
 
-    return Constants::MSC_VERSION;
+    if (msc_ver <= legacy_msc_version_v1) {
+        return legacy_msc_version_v1;
+    }
+
+    return Constants::msc_version;
 }
 
-void ReadStyleHook::setupDefaultStyle() {
+void ReadStyleHook::setup_default_style() {
     IF_ASSERT_FAILED(score_) { return; }
 
-    int defaultsVersion = -1;
-    if (score_->isMaster()) {
-        defaultsVersion = readStyleDefaultsVersion(score_->masterScore(), scoreData_, completeBaseName_);
+    int defaults_version = -1;
+    if (score_->is_master()) {
+        defaults_version = read_style_defaults_version(score_->master_score(), score_data_, complete_base_name_);
     } else {
-        defaultsVersion = score_->masterScore()->style().defaultStyleVersion();
+        defaults_version = score_->master_score()->style().default_style_version();
     }
 
-    score_->setStyle(DefaultStyle::resolveStyleDefaults(defaultsVersion));
-    score_->style().setDefaultStyleVersion(defaultsVersion);
+    score_->set_style(DefaultStyle::resolve_style_defaults(defaults_version));
+    score_->style().set_default_style_version(defaults_version);
 }
 
-void ReadStyleHook::setupDefaultStyle(Score *score) {
-    IF_ASSERT_FAILED(!score->isMaster()) { return; }
+void ReadStyleHook::setup_default_style(Score *score) {
+    IF_ASSERT_FAILED(!score->is_master()) { return; }
 
-    int defaultsVersion = score->masterScore()->style().defaultStyleVersion();
-    score->setStyle(DefaultStyle::resolveStyleDefaults(defaultsVersion));
-    score->style().setDefaultStyleVersion(defaultsVersion);
+    int defaults_version = score->master_score()->style().default_style_version();
+    score->set_style(DefaultStyle::resolve_style_defaults(defaults_version));
+    score->style().set_default_style_version(defaults_version);
 }
 
-void ReadStyleHook::readStyleTag(XmlReader &e) { readStyleTag(score_, e); }
+void ReadStyleHook::read_style_tag(XmlReader &e) { read_style_tag(score_, e); }
 
-void ReadStyleHook::readStyleTag(Score *score, XmlReader &e) {
+void ReadStyleHook::read_style_tag(Score *score, XmlReader &e) {
     ReadChordListHook clhook(score);
-    score->style().read(e, &clhook, score->mscVersion());
+    score->style().read(e, &clhook, score->msc_version());
 }
 
-bool ReadStyleHook::readStyleProperties(MStyle *style, XmlReader &e) { return style->readProperties(e); }
+bool ReadStyleHook::read_style_properties(MStyle *style, XmlReader &e) { return style->read_properties(e); }

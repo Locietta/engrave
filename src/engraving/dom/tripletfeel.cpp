@@ -28,10 +28,10 @@
 #include "score.h"
 
 namespace mu::engraving {
-static const ElementStyle tripletFeelStyle{{Sid::subTitleFontSize, Pid::FONT_SIZE}, // TODO: add styles
-                                           {Sid::tempoFontStyle, Pid::FONT_STYLE}};
+static const ElementStyle triplet_feel_style{{Sid::SUB_TITLE_FONT_SIZE, Pid::FONT_SIZE}, // TODO: add styles
+                                             {Sid::TEMPO_FONT_STYLE, Pid::FONT_STYLE}};
 
-static const std::map<TripletFeelType, String> tupletSymbols = {
+static const std::map<TripletFeelType, String> tuplet_symbols = {
     {TripletFeelType::TRIPLET_8TH, String(u"%1textBlackNoteShortStem%2"
                                           "%1textCont8thBeamShortStem%2"
                                           "%1textBlackNoteFrac8thShortStem%2"
@@ -99,7 +99,7 @@ static const std::map<TripletFeelType, String> tupletSymbols = {
                                    "%1textCont8thBeamShortStem%2"
                                    "%1textBlackNoteFrac8thShortStem%2")}};
 
-static const std::map<TripletFeelType, TranslatableString> tripletFeelNames = {
+static const std::map<TripletFeelType, TranslatableString> triplet_feel_names = {
     {TripletFeelType::TRIPLET_8TH, TranslatableString("engraving/tripletfeel", "Triplet 8th")},
     {TripletFeelType::TRIPLET_16TH, TranslatableString("engraving/tripletfeel", "Triplet 16th")},
     {TripletFeelType::DOTTED_8TH, TranslatableString("engraving/tripletfeel", "Dotted 8th")},
@@ -108,46 +108,64 @@ static const std::map<TripletFeelType, TranslatableString> tripletFeelNames = {
     {TripletFeelType::SCOTTISH_16TH, TranslatableString("engraving/tripletfeel", "Scottish 16th")},
     {TripletFeelType::NONE, TranslatableString("engraving/tripletfeel", "No triplet feel")}};
 
-TripletFeel::TripletFeel(DummyParentOr<Segment> parent, TripletFeelType tripletFillType)
+TripletFeel::TripletFeel(DummyParentOr<Segment> parent, TripletFeelType triplet_fill_type)
     : SystemText(parent, TextStyleType::SYSTEM, ElementType::TRIPLET_FEEL) {
-    tripletFeelType_ = tripletFillType;
-    setTripletProperty();
-    initElementStyle(&tripletFeelStyle);
+    triplet_feel_type_ = triplet_fill_type;
+    set_triplet_property();
+    init_element_style(&::mu::engraving::triplet_feel_style);
 }
 
-void TripletFeel::setTripletProperty() {
-    setSwing(true);
+void TripletFeel::set_triplet_property() {
+    set_swing(true);
 
-    switch (tripletFeelType_) {
-        case TripletFeelType::TRIPLET_8TH: setSwingParameters(Constants::DIVISION / eightDivision, tripletRatio); break;
+    switch (triplet_feel_type_) {
+        case TripletFeelType::TRIPLET_8TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::eight_division,
+                                 ::mu::engraving::TripletFeel::triplet_ratio);
+            break;
 
-        case TripletFeelType::TRIPLET_16TH: setSwingParameters(Constants::DIVISION / sixteenthDivision, tripletRatio); break;
+        case TripletFeelType::TRIPLET_16TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::sixteenth_division,
+                                 ::mu::engraving::TripletFeel::triplet_ratio);
+            break;
 
-        case TripletFeelType::DOTTED_8TH: setSwingParameters(Constants::DIVISION / eightDivision, dottedRatio); break;
+        case TripletFeelType::DOTTED_8TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::eight_division,
+                                 ::mu::engraving::TripletFeel::dotted_ratio);
+            break;
 
-        case TripletFeelType::DOTTED_16TH: setSwingParameters(Constants::DIVISION / sixteenthDivision, dottedRatio); break;
+        case TripletFeelType::DOTTED_16TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::sixteenth_division,
+                                 ::mu::engraving::TripletFeel::dotted_ratio);
+            break;
 
-        case TripletFeelType::SCOTTISH_8TH: setSwingParameters(Constants::DIVISION / eightDivision, scottishRatio); break;
+        case TripletFeelType::SCOTTISH_8TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::eight_division,
+                                 ::mu::engraving::TripletFeel::scottish_ratio);
+            break;
 
-        case TripletFeelType::SCOTTISH_16TH: setSwingParameters(Constants::DIVISION / sixteenthDivision, scottishRatio); break;
+        case TripletFeelType::SCOTTISH_16TH:
+            set_swing_parameters(Constants::division / ::mu::engraving::TripletFeel::sixteenth_division,
+                                 ::mu::engraving::TripletFeel::scottish_ratio);
+            break;
 
-        case TripletFeelType::NONE: setSwingParameters(0, zeroRatio); break;
+        case TripletFeelType::NONE: set_swing_parameters(0, ::mu::engraving::TripletFeel::zero_ratio); break;
     }
 
-    setXmlText(tupletSymbols.at(tripletFeelType_).arg(String(u"<sym>staffPosLower3</sym><sym>"), String(u"</sym>")));
+    set_xml_text(::mu::engraving::tuplet_symbols.at(triplet_feel_type_).arg(String(u"<sym>staffPosLower3</sym><sym>"), String(u"</sym>")));
 }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue TripletFeel::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::FONT_SIZE: return style().styleV(Sid::subTitleFontSize);
+PropertyValue TripletFeel::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::FONT_SIZE: return style().style_v(Sid::SUB_TITLE_FONT_SIZE);
 
-        case Pid::FONT_STYLE: return style().styleV(Sid::tempoFontStyle);
+        case Pid::FONT_STYLE: return style().style_v(Sid::TEMPO_FONT_STYLE);
 
-        default: return SystemText::propertyDefault(propertyId);
+        default: return SystemText::property_default(property_id);
     }
 }
 
@@ -155,22 +173,22 @@ PropertyValue TripletFeel::propertyDefault(Pid propertyId) const {
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid TripletFeel::getPropertyStyle(Pid id) const {
+Sid TripletFeel::get_property_style(Pid id) const {
     switch (id) {
-        case Pid::FONT_SIZE: return Sid::subTitleFontSize;
+        case Pid::FONT_SIZE: return Sid::SUB_TITLE_FONT_SIZE;
 
-        case Pid::FONT_STYLE: return Sid::tempoFontStyle;
+        case Pid::FONT_STYLE: return Sid::TEMPO_FONT_STYLE;
         default: break;
     }
 
-    return SystemText::getPropertyStyle(id);
+    return SystemText::get_property_style(id);
 }
 
 //---------------------------------------------------------
 //   typeUserName
 //---------------------------------------------------------
 
-TranslatableString TripletFeel::subtypeUserName() const { return tripletFeelNames.at(tripletFeelType_); }
+TranslatableString TripletFeel::subtype_user_name() const { return ::mu::engraving::triplet_feel_names.at(triplet_feel_type_); }
 
 //---------------------------------------------------------
 //   accessibleInfo

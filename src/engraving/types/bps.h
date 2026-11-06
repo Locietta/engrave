@@ -32,7 +32,7 @@ struct BeatsPerMinute // beats per minute
 
     constexpr BeatsPerMinute(double v) : val(v) {}
 
-    inline bool operator==(const BeatsPerMinute &other) const { return muse::RealIsEqual(val, other.val); }
+    inline bool operator==(const BeatsPerMinute &other) const { return muse::real_is_equal(val, other.val); }
 
     inline bool operator!=(const BeatsPerMinute &other) const { return !operator==(other); }
 
@@ -54,7 +54,7 @@ struct BeatsPerSecond // beats per second
 
     constexpr BeatsPerSecond(double v) : val(v) {}
 
-    inline bool operator==(const BeatsPerSecond &other) const { return muse::RealIsEqual(val, other.val); }
+    inline bool operator==(const BeatsPerSecond &other) const { return muse::real_is_equal(val, other.val); }
 
     inline bool operator!=(const BeatsPerSecond &other) const { return !operator==(other); }
 
@@ -68,9 +68,9 @@ struct BeatsPerSecond // beats per second
 
     inline BeatsPerSecond operator/(const double &v) const { return BeatsPerSecond(val / v); }
 
-    BeatsPerMinute toBPM() const { return BeatsPerMinute(val * 60.0); }
+    BeatsPerMinute to_bpm() const { return BeatsPerMinute(val * 60.0); }
 
-    static BeatsPerSecond fromBPM(const BeatsPerMinute &bmp) { return BeatsPerSecond(bmp.val / 60.0); }
+    static BeatsPerSecond from_bpm(const BeatsPerMinute &bmp) { return BeatsPerSecond(bmp.val / 60.0); }
 };
 } // namespace mu::engraving
 

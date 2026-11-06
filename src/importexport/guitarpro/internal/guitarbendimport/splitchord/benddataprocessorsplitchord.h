@@ -32,7 +32,7 @@ namespace mu::iex::guitarpro {
 class BendDataProcessorSplitChord {
 public:
     BendDataProcessorSplitChord(mu::engraving::Score *score);
-    void processBends(const BendDataContextSplitChord &bendDataCtx);
+    void process_bends(const BendDataContextSplitChord &bend_data_ctx);
 
 private:
     mu::engraving::Score *score_ = nullptr;

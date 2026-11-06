@@ -42,20 +42,22 @@ using namespace mu::engraving;
 
 namespace mu::iex::mnxio {
 namespace {
-const std::unordered_map<mnx::Orientation, ArticulationAnchor> articulationAnchorTable = {
+const std::unordered_map<mnx::Orientation, ArticulationAnchor> articulation_anchor_table = {
     {mnx::Orientation::Auto, ArticulationAnchor::AUTO},
     {mnx::Orientation::Below, ArticulationAnchor::BOTTOM},
     {mnx::Orientation::Above, ArticulationAnchor::TOP},
 };
 } // namespace
 
-ArticulationAnchor toMuseScoreArticulationAnchor(mnx::Orientation orient) {
-    return muse::value(articulationAnchorTable, orient, ArticulationAnchor::AUTO);
+ArticulationAnchor to_muse_score_articulation_anchor(mnx::Orientation orient) {
+    return muse::value(::mu::iex::mnxio::articulation_anchor_table, orient, ArticulationAnchor::AUTO);
 }
 
-mnx::Orientation toMnxOrientation(ArticulationAnchor anchor) { return muse::key(articulationAnchorTable, anchor, mnx::Orientation::Auto); }
+mnx::Orientation to_mnx_orientation(ArticulationAnchor anchor) {
+    return muse::key(::mu::iex::mnxio::articulation_anchor_table, anchor, mnx::Orientation::Auto);
+}
 
-mnx::Orientation toMnxOrientation(PlacementV placement) {
+mnx::Orientation to_mnx_orientation(PlacementV placement) {
     switch (placement) {
         case PlacementV::ABOVE: return mnx::Orientation::Above;
         case PlacementV::BELOW: return mnx::Orientation::Below;
@@ -65,7 +67,7 @@ mnx::Orientation toMnxOrientation(PlacementV placement) {
 }
 
 namespace {
-const std::unordered_map<mnx::BarlineType, BarLineType> barLineTypeTable = {
+const std::unordered_map<mnx::BarlineType, BarLineType> bar_line_type_table = {
     {mnx::BarlineType::Regular, BarLineType::NORMAL},
     {mnx::BarlineType::Dashed, BarLineType::DASHED},
     {mnx::BarlineType::Dotted, BarLineType::DOTTED},
@@ -77,11 +79,15 @@ const std::unordered_map<mnx::BarlineType, BarLineType> barLineTypeTable = {
 };
 } // namespace
 
-BarLineType toMuseScoreBarLineType(mnx::BarlineType blt) { return muse::value(barLineTypeTable, blt, BarLineType::NORMAL); }
+BarLineType to_muse_score_bar_line_type(mnx::BarlineType blt) {
+    return muse::value(::mu::iex::mnxio::bar_line_type_table, blt, BarLineType::NORMAL);
+}
 
-mnx::BarlineType toMnxBarLineType(BarLineType blt) { return muse::key(barLineTypeTable, blt, mnx::BarlineType::Regular); }
+mnx::BarlineType to_mnx_bar_line_type(BarLineType blt) {
+    return muse::key(::mu::iex::mnxio::bar_line_type_table, blt, mnx::BarlineType::Regular);
+}
 
-std::optional<mnx::TimeSignatureDisplay> toMnxTimeSignatureDisplay(TimeSigType type) {
+std::optional<mnx::TimeSignatureDisplay> to_mnx_time_signature_display(TimeSigType type) {
     switch (type) {
         case TimeSigType::NORMAL: return std::nullopt;
         case TimeSigType::FOUR_FOUR: return mnx::TimeSignatureDisplay::Common;
@@ -97,7 +103,7 @@ std::optional<mnx::TimeSignatureDisplay> toMnxTimeSignatureDisplay(TimeSigType t
     return std::nullopt;
 }
 
-TimeSigType toMuseScoreTimeSigType(std::optional<mnx::TimeSignatureDisplay> display) {
+TimeSigType to_muse_score_time_sig_type(std::optional<mnx::TimeSignatureDisplay> display) {
     if (!display) {
         return TimeSigType::NORMAL;
     }
@@ -108,7 +114,7 @@ TimeSigType toMuseScoreTimeSigType(std::optional<mnx::TimeSignatureDisplay> disp
     return TimeSigType::NORMAL;
 }
 
-std::optional<mnx::TimeSignatureUnit> toMnxTimeSignatureUnit(int denominator) {
+std::optional<mnx::TimeSignatureUnit> to_mnx_time_signature_unit(int denominator) {
     static const std::unordered_map<int, std::optional<mnx::TimeSignatureUnit>> units = {
         {1, mnx::TimeSignatureUnit::Whole},      {2, mnx::TimeSignatureUnit::Half},         {4, mnx::TimeSignatureUnit::Quarter},
         {8, mnx::TimeSignatureUnit::Eighth},     {16, mnx::TimeSignatureUnit::Value16th},   {32, mnx::TimeSignatureUnit::Value32nd},
@@ -117,7 +123,7 @@ std::optional<mnx::TimeSignatureUnit> toMnxTimeSignatureUnit(int denominator) {
     return muse::value(units, denominator, std::nullopt);
 }
 
-std::optional<mnx::part::Clef::Required> toMnxClef(ClefType clefType) {
+std::optional<mnx::part::Clef::Required> to_mnx_clef(ClefType clef_type) {
     using Required = mnx::part::Clef::Required;
     using ClefSign = mnx::ClefSign;
     using OttavaAmountOrZero = mnx::OttavaAmountOrZero;
@@ -125,7 +131,7 @@ std::optional<mnx::part::Clef::Required> toMnxClef(ClefType clefType) {
     ClefSign sign{};
     OttavaAmountOrZero octave = OttavaAmountOrZero::NoTransposition;
 
-    switch (clefType) {
+    switch (clef_type) {
         case ClefType::G:
         case ClefType::G_1: sign = ClefSign::GClef; break;
         case ClefType::G8_VB:
@@ -194,18 +200,18 @@ std::optional<mnx::part::Clef::Required> toMnxClef(ClefType clefType) {
         case ClefType::MAX: return std::nullopt;
     }
 
-    const int staffPosition = (ClefInfo::line(clefType) - 3) * 2;
-    return Required{sign, staffPosition, octave};
+    const int staff_position = (ClefInfo::line(clef_type) - 3) * 2;
+    return Required{sign, staff_position, octave};
 }
 
-std::optional<mnx::sequence::Pitch::Required> toMnxPitch(const Note *note) {
+std::optional<mnx::sequence::Pitch::Required> to_mnx_pitch(const Note *note) {
     IF_ASSERT_FAILED(note) { return std::nullopt; }
 
     const Staff *staff = note->staff();
     const Fraction tick = note->tick();
-    const ClefType clefType = staff->clef(tick);
+    const ClefType clef_type = staff->clef(tick);
 
-    if (clefType == ClefType::PERC || clefType == ClefType::PERC2 || staff->isTabStaff(tick)) {
+    if (clef_type == ClefType::PERC || clef_type == ClefType::PERC2 || staff->is_tab_staff(tick)) {
         /// @todo handle tab when MNX supports it
         /// @todo percussion notes will convert to kitNotes (probably elsewhere)
         return std::nullopt;
@@ -213,75 +219,77 @@ std::optional<mnx::sequence::Pitch::Required> toMnxPitch(const Note *note) {
 
     // MNX: export CONCERT pitch.
     // In MuseScore, note->tpc1() represents the concert spelling.
-    const int concertTpc = note->tpc1();
-    const int step = tpc2step(concertTpc);
-    const int alter = tpc2alterByKey(concertTpc, Key::C);
+    const int concert_tpc = note->tpc1();
+    const int step = tpc2step(concert_tpc);
+    const int alter = tpc2alter_by_key(concert_tpc, Key::C);
 
     // Use concert MIDI pitch as the base for octave computation.
     // (Applying instrument->transpose() here tends to double-count transposition.)
-    const int basePitch = note->pitch();
-    int octave = (basePitch - alter) / PITCH_DELTA_OCTAVE - 1;
+    const int base_pitch = note->pitch();
+    int octave = (base_pitch - alter) / ::mu::engraving::pitch_delta_octave - 1;
 
     // Correct for ottava lines: ppitch - pitch in semitones.
     // Convert to octave units, clamp to [-3, +3] (8va/15ma/22ma).
-    const int pitchDelta = note->ppitch() - note->pitch();
-    if ((pitchDelta % PITCH_DELTA_OCTAVE) == 0) {
-        int octaveShift = pitchDelta / PITCH_DELTA_OCTAVE;
-        octaveShift = std::clamp(octaveShift, -3, 3);
-        octave += octaveShift;
+    const int pitch_delta = note->ppitch() - note->pitch();
+    if ((pitch_delta % ::mu::engraving::pitch_delta_octave) == 0) {
+        int octave_shift = pitch_delta / ::mu::engraving::pitch_delta_octave;
+        octave_shift = std::clamp(octave_shift, -3, 3);
+        octave += octave_shift;
     } else {
         LOGW() << "Ignored non-octave playback displacement when computing MNX pitch: "
-               << "tick=" << tick.ticks() << ", pitch=" << note->pitch() << ", ppitch=" << note->ppitch() << ", delta=" << pitchDelta
-               << " (not a multiple of " << PITCH_DELTA_OCTAVE << " semitones).";
+               << "tick=" << tick.ticks() << ", pitch=" << note->pitch() << ", ppitch=" << note->ppitch() << ", delta=" << pitch_delta
+               << " (not a multiple of " << ::mu::engraving::pitch_delta_octave << " semitones).";
     }
 
     return mnx::sequence::Pitch::make(static_cast<mnx::NoteStep>(step), octave, alter);
 }
 
-BeamMode toMuseScoreBeamMode(int lowestBeamStart) {
-    static const std::unordered_map<int, BeamMode> beamModeTable = {
+BeamMode to_muse_score_beam_mode(int lowest_beam_start) {
+    static const std::unordered_map<int, BeamMode> beam_mode_table = {
         {0, BeamMode::MID},
         {1, BeamMode::BEGIN},
         {2, BeamMode::BEGIN16},
         {3, BeamMode::BEGIN32},
         // MNX can go arbitrarily higher but MuseScore currently cannot
     };
-    return muse::value(beamModeTable, lowestBeamStart, BeamMode::MID);
+    return muse::value(beam_mode_table, lowest_beam_start, BeamMode::MID);
 }
 
 namespace {
-const std::unordered_map<mnx::LayoutSymbol, BracketType> layoutSymbolTable = {
+const std::unordered_map<mnx::LayoutSymbol, BracketType> layout_symbol_table = {
     {mnx::LayoutSymbol::NoSymbol, BracketType::NO_BRACKET},
     {mnx::LayoutSymbol::Brace, BracketType::BRACE},
     {mnx::LayoutSymbol::Bracket, BracketType::NORMAL},
 };
 } // namespace
 
-BracketType toMuseScoreBracketType(mnx::LayoutSymbol lys) { return muse::value(layoutSymbolTable, lys, BracketType::NO_BRACKET); }
+BracketType to_muse_score_bracket_type(mnx::LayoutSymbol lys) {
+    return muse::value(::mu::iex::mnxio::layout_symbol_table, lys, BracketType::NO_BRACKET);
+}
 
-mnx::LayoutSymbol toMnxLayoutSymbol(BracketType bracketType) {
-    return muse::key(layoutSymbolTable, bracketType, mnx::LayoutSymbol::NoSymbol);
+mnx::LayoutSymbol to_mnx_layout_symbol(BracketType bracket_type) {
+    return muse::key(::mu::iex::mnxio::layout_symbol_table, bracket_type, mnx::LayoutSymbol::NoSymbol);
 }
 
 namespace {
-const std::unordered_map<mnx::BreathMarkSymbol, SymId> breathMarkTable = {
-    {mnx::BreathMarkSymbol::Comma, SymId::breathMarkComma},
-    {mnx::BreathMarkSymbol::Tick, SymId::breathMarkTick},
-    {mnx::BreathMarkSymbol::Upbow, SymId::breathMarkUpbow},
-    {mnx::BreathMarkSymbol::Salzedo, SymId::breathMarkSalzedo},
+const std::unordered_map<mnx::BreathMarkSymbol, SymId> breath_mark_table = {
+    {mnx::BreathMarkSymbol::Comma, SymId::BREATH_MARK_COMMA},
+    {mnx::BreathMarkSymbol::Tick, SymId::BREATH_MARK_TICK},
+    {mnx::BreathMarkSymbol::Upbow, SymId::BREATH_MARK_UPBOW},
+    {mnx::BreathMarkSymbol::Salzedo, SymId::BREATH_MARK_SALZEDO},
 };
 } // namespace
 
-SymId toMuseScoreBreathMarkSym(std::optional<mnx::BreathMarkSymbol> brSym) {
+SymId to_muse_score_breath_mark_sym(std::optional<mnx::BreathMarkSymbol> br_sym) {
     using BreathMark = mnx::BreathMarkSymbol;
-    return muse::value(breathMarkTable, brSym.value_or(BreathMark::Comma), SymId::breathMarkComma);
+    return muse::value(::mu::iex::mnxio::breath_mark_table, br_sym.value_or(BreathMark::Comma), SymId::BREATH_MARK_COMMA);
 }
 
-std::optional<mnx::BreathMarkSymbol> toMnxBreathMarkSym(SymId sym) {
-    return muse::key(breathMarkTable, sym, std::optional<mnx::BreathMarkSymbol>{});
+std::optional<mnx::BreathMarkSymbol> to_mnx_breath_mark_sym(SymId sym) {
+    return muse::key(::mu::iex::mnxio::breath_mark_table, sym, std::optional<mnx::BreathMarkSymbol>{});
 }
 
-MnxDynamicMapping toMnxDynamicType(DynamicType type) {
+MnxDynamicMapping to_mnx_dynamic_type(DynamicType type) {
     using Prefix = mnx::DynamicPrefix;
     using Suffix = mnx::DynamicSuffix;
     using Value = mnx::DynamicValue;
@@ -291,11 +299,11 @@ MnxDynamicMapping toMnxDynamicType(DynamicType type) {
     // Accents spell themselves out as accentPrefix + value + accentSuffix + residualValue,
     // so `value` is the initial attack and `residualValue` is what remains after it.
     auto accent = [&](Prefix prefix, Value value, Suffix suffix, std::optional<Value> residual = std::nullopt) {
-        result.isAccent = true;
-        result.accentPrefix = prefix;
-        result.accentSuffix = suffix;
+        result.is_accent = true;
+        result.accent_prefix = prefix;
+        result.accent_suffix = suffix;
         result.value = value;
-        result.residualValue = residual;
+        result.residual_value = residual;
     };
 
     switch (type) {
@@ -348,19 +356,19 @@ namespace {
 /// to both S ("s") and SF ("sf") -- and the glyph on its own renders the shortest of them,
 /// so the shortest spelling wins. This is also why TConv::dynamicType(SymId) cannot be used
 /// here: it returns whichever type the table lists first.
-const std::unordered_map<SymId, std::string> &dynamicGlyphLetters() {
+const std::unordered_map<SymId, std::string> &dynamic_glyph_letters() {
     static const std::unordered_map<SymId, std::string> letters = []() {
         std::unordered_map<SymId, std::string> result;
         for (int index = 0; index < int(DynamicType::LAST); index++) {
             const DynamicType type = DynamicType(index);
-            const SymId symId = TConv::symId(type);
-            if (symId == SymId::noSym) {
+            const SymId sym_id = TConv::sym_id(type);
+            if (sym_id == SymId::NO_SYM) {
                 continue;
             }
-            const std::string spelling = TConv::toXml(type).ascii();
-            const auto existing = result.find(symId);
+            const std::string spelling = TConv::to_xml(type).ascii();
+            const auto existing = result.find(sym_id);
             if (existing == result.end() || spelling.size() < existing->second.size()) {
-                result[symId] = spelling;
+                result[sym_id] = spelling;
             }
         }
         return result;
@@ -369,73 +377,73 @@ const std::unordered_map<SymId, std::string> &dynamicGlyphLetters() {
 }
 
 /// Consumes the longest dynamic value spelled at @p pos, e.g. "ffff" rather than "f".
-std::optional<mnx::DynamicValue> takeDynamicValue(const std::string &letters, size_t &pos) {
+std::optional<mnx::DynamicValue> take_dynamic_value(const std::string &letters, size_t &pos) {
     std::optional<mnx::DynamicValue> result;
-    size_t bestEnd = pos;
+    size_t best_end = pos;
     for (const auto &[value, spelling] : mnx::EnumStringMapping<mnx::DynamicValue>::enumToString()) {
         const size_t end = pos + spelling.size();
-        if (end > bestEnd && letters.compare(pos, spelling.size(), spelling) == 0) {
-            bestEnd = end;
+        if (end > best_end && letters.compare(pos, spelling.size(), spelling) == 0) {
+            best_end = end;
             result = value;
         }
     }
-    pos = bestEnd;
+    pos = best_end;
     return result;
 }
 } // namespace
 
-std::optional<MnxDynamicMapping> toMnxDynamicFromLetters(const std::string &dynamicLetters) {
+std::optional<MnxDynamicMapping> to_mnx_dynamic_from_letters(const std::string &dynamic_letters) {
     // MNX spells a dynamic as accentPrefix + value + accentSuffix + residualValue. Reading the
     // affixes a character at a time is only unambiguous because no DynamicValue spells itself
     // with s, r, or z -- every one of them is a run of p, m, f, or n -- so a peek here can never
     // consume a letter that belongs to the value that follows.
     MnxDynamicMapping mapping;
     size_t pos = 0;
-    if (pos < dynamicLetters.size() && (dynamicLetters[pos] == 's' || dynamicLetters[pos] == 'r')) {
-        mapping.accentPrefix = dynamicLetters[pos] == 's' ? mnx::DynamicPrefix::s : mnx::DynamicPrefix::r;
+    if (pos < dynamic_letters.size() && (dynamic_letters[pos] == 's' || dynamic_letters[pos] == 'r')) {
+        mapping.accent_prefix = dynamic_letters[pos] == 's' ? mnx::DynamicPrefix::s : mnx::DynamicPrefix::r;
         pos++;
     }
-    mapping.value = takeDynamicValue(dynamicLetters, pos);
+    mapping.value = take_dynamic_value(dynamic_letters, pos);
     if (!mapping.value) {
         return std::nullopt; // no sounding level, so MNX has nothing to anchor the dynamic to
     }
-    if (pos < dynamicLetters.size() && dynamicLetters[pos] == 'z') {
-        mapping.accentSuffix = mnx::DynamicSuffix::z;
+    if (pos < dynamic_letters.size() && dynamic_letters[pos] == 'z') {
+        mapping.accent_suffix = mnx::DynamicSuffix::z;
         pos++;
     }
-    if (pos < dynamicLetters.size()) {
-        mapping.residualValue = takeDynamicValue(dynamicLetters, pos);
-        if (!mapping.residualValue) {
+    if (pos < dynamic_letters.size()) {
+        mapping.residual_value = take_dynamic_value(dynamic_letters, pos);
+        if (!mapping.residual_value) {
             return std::nullopt;
         }
     }
-    if (pos != dynamicLetters.size()) {
+    if (pos != dynamic_letters.size()) {
         return std::nullopt; // trailing letters we cannot account for
     }
 
-    mapping.isAccent = mapping.accentPrefix != mnx::DynamicPrefix::None || mapping.accentSuffix != mnx::DynamicSuffix::None ||
-                       mapping.residualValue.has_value();
+    mapping.is_accent = mapping.accent_prefix != mnx::DynamicPrefix::None || mapping.accent_suffix != mnx::DynamicSuffix::None ||
+                        mapping.residual_value.has_value();
     return mapping;
 }
 
-std::optional<MnxDynamicMapping> toMnxDynamicFromSymIds(const std::vector<engraving::SymId> &symIds) {
-    if (symIds.empty()) {
+std::optional<MnxDynamicMapping> to_mnx_dynamic_from_sym_ids(const std::vector<engraving::SymId> &sym_ids) {
+    if (sym_ids.empty()) {
         return std::nullopt;
     }
 
     std::string letters;
-    for (const SymId symId : symIds) {
-        const auto it = dynamicGlyphLetters().find(symId);
-        if (it == dynamicGlyphLetters().end()) {
+    for (const SymId sym_id : sym_ids) {
+        const auto it = dynamic_glyph_letters().find(sym_id);
+        if (it == dynamic_glyph_letters().end()) {
             return std::nullopt; // not a dynamic spelling
         }
         letters += it->second;
     }
 
-    return toMnxDynamicFromLetters(letters);
+    return to_mnx_dynamic_from_letters(letters);
 }
 
-std::optional<DynamicType> toMuseScoreDynamicType(const MnxDynamicMapping &mapping) {
+std::optional<DynamicType> to_muse_score_dynamic_type(const MnxDynamicMapping &mapping) {
     if (!mapping.value) {
         return std::nullopt;
     }
@@ -443,40 +451,41 @@ std::optional<DynamicType> toMuseScoreDynamicType(const MnxDynamicMapping &mappi
     // Every DynamicType maps to a distinct combination, so the first match is the only one.
     for (int index = 0; index < int(DynamicType::LAST); index++) {
         const DynamicType type = DynamicType(index);
-        const MnxDynamicMapping candidate = toMnxDynamicType(type);
-        if (!candidate.value || candidate.value != mapping.value || candidate.residualValue != mapping.residualValue ||
-            candidate.isAccent != mapping.isAccent) {
+        const MnxDynamicMapping candidate = to_mnx_dynamic_type(type);
+        if (!candidate.value || candidate.value != mapping.value || candidate.residual_value != mapping.residual_value ||
+            candidate.is_accent != mapping.is_accent) {
             continue;
         }
         // The affixes only distinguish accents; they are meaningless otherwise.
-        if (!candidate.isAccent || (candidate.accentPrefix == mapping.accentPrefix && candidate.accentSuffix == mapping.accentSuffix)) {
+        if (!candidate.is_accent ||
+            (candidate.accent_prefix == mapping.accent_prefix && candidate.accent_suffix == mapping.accent_suffix)) {
             return type;
         }
     }
     return std::nullopt;
 }
 
-std::vector<std::string> toMuseScoreDynamicGlyphNames(mnx::DynamicValue value) {
+std::vector<std::string> to_muse_score_dynamic_glyph_names(mnx::DynamicValue value) {
     // Every MNX dynamic value is a run of p/m/f/n, so the SMuFL glyphs follow from the
     // characters of its JSON representation.
-    static const std::unordered_map<char, std::string> glyphNames = {
+    static const std::unordered_map<char, std::string> glyph_names = {
         {'p', "dynamicPiano"},
         {'m', "dynamicMezzo"},
         {'f', "dynamicForte"},
         {'n', "dynamicNiente"},
     };
 
-    const auto &valueNames = mnx::EnumStringMapping<mnx::DynamicValue>::enumToString();
+    const auto &value_names = mnx::EnumStringMapping<mnx::DynamicValue>::enumToString();
     std::vector<std::string> result;
-    for (const char ch : muse::value(valueNames, value, std::string{})) {
-        const std::string glyphName = muse::value(glyphNames, ch, std::string{});
-        IF_ASSERT_FAILED(!glyphName.empty()) { continue; }
-        result.push_back(glyphName);
+    for (const char ch : muse::value(value_names, value, std::string{})) {
+        const std::string glyph_name = muse::value(glyph_names, ch, std::string{});
+        IF_ASSERT_FAILED(!glyph_name.empty()) { continue; }
+        result.push_back(glyph_name);
     }
     return result;
 }
 
-std::string toMuseScoreDynamicGlyphName(mnx::DynamicPrefix prefix) {
+std::string to_muse_score_dynamic_glyph_name(mnx::DynamicPrefix prefix) {
     switch (prefix) {
         case mnx::DynamicPrefix::None: return {};
         case mnx::DynamicPrefix::r: return "dynamicRinforzando";
@@ -485,7 +494,7 @@ std::string toMuseScoreDynamicGlyphName(mnx::DynamicPrefix prefix) {
     return {};
 }
 
-std::string toMuseScoreDynamicGlyphName(mnx::DynamicSuffix suffix) {
+std::string to_muse_score_dynamic_glyph_name(mnx::DynamicSuffix suffix) {
     switch (suffix) {
         case mnx::DynamicSuffix::None: return {};
         case mnx::DynamicSuffix::z: return "dynamicZ";
@@ -494,7 +503,7 @@ std::string toMuseScoreDynamicGlyphName(mnx::DynamicSuffix suffix) {
 }
 
 namespace {
-const std::unordered_map<mnx::NoteValueBase, DurationType> duraTypeTable = {
+const std::unordered_map<mnx::NoteValueBase, DurationType> dura_type_table = {
     {mnx::NoteValueBase::Note4096th, DurationType::V_INVALID},   {mnx::NoteValueBase::Note2048th, DurationType::V_INVALID},
     {mnx::NoteValueBase::Note1024th, DurationType::V_1024TH},    {mnx::NoteValueBase::Note512th, DurationType::V_512TH},
     {mnx::NoteValueBase::Note256th, DurationType::V_256TH},      {mnx::NoteValueBase::Note128th, DurationType::V_128TH},
@@ -507,17 +516,19 @@ const std::unordered_map<mnx::NoteValueBase, DurationType> duraTypeTable = {
 };
 } // namespace
 
-DurationType toMuseScoreDurationType(mnx::NoteValueBase nvb) { return muse::value(duraTypeTable, nvb, DurationType::V_INVALID); }
-
-TDuration toMuseScoreDuration(mnx::NoteValue nv) {
-    if (nv.dots() > MAX_DOTS) {
-        return TDuration(); // invalid
-    }
-    return TDuration(DurationTypeWithDots(toMuseScoreDurationType(nv.base()), nv.dots()));
+DurationType to_muse_score_duration_type(mnx::NoteValueBase nvb) {
+    return muse::value(::mu::iex::mnxio::dura_type_table, nvb, DurationType::V_INVALID);
 }
 
-std::optional<mnx::NoteValue::Required> toMnxNoteValue(const TDuration &duration) {
-    const auto base = muse::key(duraTypeTable, duration.type(), std::optional<mnx::NoteValueBase>{});
+TDuration to_muse_score_duration(mnx::NoteValue nv) {
+    if (nv.dots() > ::mu::engraving::max_dots) {
+        return TDuration(); // invalid
+    }
+    return TDuration(DurationTypeWithDots(to_muse_score_duration_type(nv.base()), nv.dots()));
+}
+
+std::optional<mnx::NoteValue::Required> to_mnx_note_value(const TDuration &duration) {
+    const auto base = muse::key(::mu::iex::mnxio::dura_type_table, duration.type(), std::optional<mnx::NoteValueBase>{});
     if (!base) {
         return std::nullopt;
     }
@@ -526,77 +537,81 @@ std::optional<mnx::NoteValue::Required> toMnxNoteValue(const TDuration &duration
 }
 
 namespace {
-const std::unordered_map<mnx::FermataSymbol, SymId> symIdToFermataSym{
-    {mnx::FermataSymbol::Normal, SymId::fermataAbove},
-    {mnx::FermataSymbol::Angled, SymId::fermataShortAbove},
-    {mnx::FermataSymbol::Square, SymId::fermataLongAbove},
-    {mnx::FermataSymbol::DoubleAngled, SymId::fermataVeryShortAbove},
-    {mnx::FermataSymbol::DoubleSquare, SymId::fermataVeryLongAbove},
-    {mnx::FermataSymbol::DoubleDot, SymId::fermataLongHenzeAbove},
-    {mnx::FermataSymbol::HalfCurve, SymId::fermataShortHenzeAbove},
-    {mnx::FermataSymbol::Curlew, SymId::curlewSign},
+const std::unordered_map<mnx::FermataSymbol, SymId> sym_id_to_fermata_sym{
+    {mnx::FermataSymbol::Normal, SymId::FERMATA_ABOVE},
+    {mnx::FermataSymbol::Angled, SymId::FERMATA_SHORT_ABOVE},
+    {mnx::FermataSymbol::Square, SymId::FERMATA_LONG_ABOVE},
+    {mnx::FermataSymbol::DoubleAngled, SymId::FERMATA_VERY_SHORT_ABOVE},
+    {mnx::FermataSymbol::DoubleSquare, SymId::FERMATA_VERY_LONG_ABOVE},
+    {mnx::FermataSymbol::DoubleDot, SymId::FERMATA_LONG_HENZE_ABOVE},
+    {mnx::FermataSymbol::HalfCurve, SymId::FERMATA_SHORT_HENZE_ABOVE},
+    {mnx::FermataSymbol::Curlew, SymId::CURLEW_SIGN},
 };
 } // namespace
 
-SymId toMuseScoreFermataSymId(const mnx::FermataSymbol fermataSymbol) {
-    return muse::value(symIdToFermataSym, fermataSymbol, SymId::fermataAbove);
+SymId to_muse_score_fermata_sym_id(const mnx::FermataSymbol fermata_symbol) {
+    return muse::value(::mu::iex::mnxio::sym_id_to_fermata_sym, fermata_symbol, SymId::FERMATA_ABOVE);
 }
 
 namespace {
-const std::unordered_map<FermataType, mnx::FermataDuration> fermataDuraTable{
-    {FermataType::Normal, mnx::FermataDuration::Normal},       {FermataType::Long, mnx::FermataDuration::Long},
-    {FermataType::LongHenze, mnx::FermataDuration::Long},      {FermataType::Short, mnx::FermataDuration::Short},
-    {FermataType::ShortHenze, mnx::FermataDuration::Short},    {FermataType::VeryLong, mnx::FermataDuration::VeryLong},
-    {FermataType::VeryShort, mnx::FermataDuration::VeryShort},
+const std::unordered_map<FermataType, mnx::FermataDuration> fermata_dura_table{
+    {FermataType::NORMAL, mnx::FermataDuration::Normal},        {FermataType::LONG, mnx::FermataDuration::Long},
+    {FermataType::LONG_HENZE, mnx::FermataDuration::Long},      {FermataType::SHORT, mnx::FermataDuration::Short},
+    {FermataType::SHORT_HENZE, mnx::FermataDuration::Short},    {FermataType::VERY_LONG, mnx::FermataDuration::VeryLong},
+    {FermataType::VERY_SHORT, mnx::FermataDuration::VeryShort},
 };
 } // namespace
 
-mnx::FermataDuration toMnxFermataDuration(FermataType fermataType) {
-    return muse::value(fermataDuraTable, fermataType, mnx::FermataDuration::Auto);
+mnx::FermataDuration to_mnx_fermata_duration(FermataType fermata_type) {
+    return muse::value(::mu::iex::mnxio::fermata_dura_table, fermata_type, mnx::FermataDuration::Auto);
 }
 
 namespace {
-const std::unordered_map<SymId, mnx::FermataSymbol> fermataSymToSymId{
-    {SymId::fermataAbove, mnx::FermataSymbol::Normal},
-    {SymId::fermataBelow, mnx::FermataSymbol::Normal},
-    {SymId::fermataShortAbove, mnx::FermataSymbol::Angled},
-    {SymId::fermataShortBelow, mnx::FermataSymbol::Angled},
+const std::unordered_map<SymId, mnx::FermataSymbol> fermata_sym_to_sym_id{
+    {SymId::FERMATA_ABOVE, mnx::FermataSymbol::Normal},
+    {SymId::FERMATA_BELOW, mnx::FermataSymbol::Normal},
+    {SymId::FERMATA_SHORT_ABOVE, mnx::FermataSymbol::Angled},
+    {SymId::FERMATA_SHORT_BELOW, mnx::FermataSymbol::Angled},
     {
-        SymId::fermataLongAbove,
+        SymId::FERMATA_LONG_ABOVE,
         mnx::FermataSymbol::Square,
     },
     {
-        SymId::fermataLongBelow,
+        SymId::FERMATA_LONG_BELOW,
         mnx::FermataSymbol::Square,
     },
-    {SymId::fermataVeryShortAbove, mnx::FermataSymbol::DoubleAngled},
-    {SymId::fermataVeryShortBelow, mnx::FermataSymbol::DoubleAngled},
-    {SymId::fermataVeryLongAbove, mnx::FermataSymbol::DoubleSquare},
-    {SymId::fermataVeryLongBelow, mnx::FermataSymbol::DoubleSquare},
-    {SymId::fermataLongHenzeAbove, mnx::FermataSymbol::DoubleDot},
-    {SymId::fermataLongHenzeBelow, mnx::FermataSymbol::DoubleDot},
-    {SymId::fermataShortHenzeAbove, mnx::FermataSymbol::HalfCurve},
-    {SymId::fermataShortHenzeBelow, mnx::FermataSymbol::HalfCurve},
-    {SymId::curlewSign, mnx::FermataSymbol::Curlew},
+    {SymId::FERMATA_VERY_SHORT_ABOVE, mnx::FermataSymbol::DoubleAngled},
+    {SymId::FERMATA_VERY_SHORT_BELOW, mnx::FermataSymbol::DoubleAngled},
+    {SymId::FERMATA_VERY_LONG_ABOVE, mnx::FermataSymbol::DoubleSquare},
+    {SymId::FERMATA_VERY_LONG_BELOW, mnx::FermataSymbol::DoubleSquare},
+    {SymId::FERMATA_LONG_HENZE_ABOVE, mnx::FermataSymbol::DoubleDot},
+    {SymId::FERMATA_LONG_HENZE_BELOW, mnx::FermataSymbol::DoubleDot},
+    {SymId::FERMATA_SHORT_HENZE_ABOVE, mnx::FermataSymbol::HalfCurve},
+    {SymId::FERMATA_SHORT_HENZE_BELOW, mnx::FermataSymbol::HalfCurve},
+    {SymId::CURLEW_SIGN, mnx::FermataSymbol::Curlew},
 };
 } // namespace
 
-mnx::FermataSymbol toMnxFermataSymbol(SymId sym) { return muse::value(fermataSymToSymId, sym, mnx::FermataSymbol::Normal); }
+mnx::FermataSymbol to_mnx_fermata_symbol(SymId sym) {
+    return muse::value(::mu::iex::mnxio::fermata_sym_to_sym_id, sym, mnx::FermataSymbol::Normal);
+}
 
 namespace {
 /// @todo Grow this table as MNX grows it.
-const std::unordered_map<mnx::JumpType, JumpType> jumpTable = {
+const std::unordered_map<mnx::JumpType, JumpType> jump_table = {
     {mnx::JumpType::DsAlFine, JumpType::DS_AL_FINE},
     {mnx::JumpType::Segno, JumpType::DSS},
 };
 } // namespace
 
-JumpType toMuseScoreJumpType(mnx::JumpType jt) { return muse::value(jumpTable, jt, JumpType::USER); }
+JumpType to_muse_score_jump_type(mnx::JumpType jt) { return muse::value(::mu::iex::mnxio::jump_table, jt, JumpType::USER); }
 
-std::optional<mnx::JumpType> toMnxJumpType(JumpType jt) { return muse::key(jumpTable, jt, std::optional<mnx::JumpType>{}); }
+std::optional<mnx::JumpType> to_mnx_jump_type(JumpType jt) {
+    return muse::key(::mu::iex::mnxio::jump_table, jt, std::optional<mnx::JumpType>{});
+}
 
 namespace {
-const std::unordered_map<mnx::LyricLineType, LyricsSyllabic> lineTypeTable = {
+const std::unordered_map<mnx::LyricLineType, LyricsSyllabic> line_type_table = {
     {mnx::LyricLineType::Whole, LyricsSyllabic::SINGLE},
     {mnx::LyricLineType::Start, LyricsSyllabic::BEGIN},
     {mnx::LyricLineType::Middle, LyricsSyllabic::MIDDLE},
@@ -604,30 +619,34 @@ const std::unordered_map<mnx::LyricLineType, LyricsSyllabic> lineTypeTable = {
 };
 } // namespace
 
-LyricsSyllabic toMuseScoreLyricsSyllabic(mnx::LyricLineType llt) { return muse::value(lineTypeTable, llt, LyricsSyllabic::SINGLE); }
+LyricsSyllabic to_muse_score_lyrics_syllabic(mnx::LyricLineType llt) {
+    return muse::value(::mu::iex::mnxio::line_type_table, llt, LyricsSyllabic::SINGLE);
+}
 
-mnx::LyricLineType toMnxLyricLineType(LyricsSyllabic ls) { return muse::key(lineTypeTable, ls, mnx::LyricLineType::Whole); }
+mnx::LyricLineType to_mnx_lyric_line_type(LyricsSyllabic ls) {
+    return muse::key(::mu::iex::mnxio::line_type_table, ls, mnx::LyricLineType::Whole);
+}
 
 namespace {
-const std::unordered_map<mnx::OttavaAmount, OttavaType> ottavaTypeTable = {
+const std::unordered_map<mnx::OttavaAmount, OttavaType> ottava_type_table = {
     {mnx::OttavaAmount::OctaveDown, OttavaType::OTTAVA_8VB},        {mnx::OttavaAmount::OctaveUp, OttavaType::OTTAVA_8VA},
     {mnx::OttavaAmount::TwoOctavesDown, OttavaType::OTTAVA_15MB},   {mnx::OttavaAmount::TwoOctavesUp, OttavaType::OTTAVA_15MA},
     {mnx::OttavaAmount::ThreeOctavesDown, OttavaType::OTTAVA_22MB}, {mnx::OttavaAmount::ThreeOctavesUp, OttavaType::OTTAVA_22MA},
 };
 } // namespace
 
-OttavaType toMuseScoreOttavaType(mnx::OttavaAmount ottavaAmount) {
-    return muse::value(ottavaTypeTable, ottavaAmount, OttavaType::OTTAVA_8VA);
+OttavaType to_muse_score_ottava_type(mnx::OttavaAmount ottava_amount) {
+    return muse::value(::mu::iex::mnxio::ottava_type_table, ottava_amount, OttavaType::OTTAVA_8VA);
 }
 
-std::optional<mnx::OttavaAmount> toMnxOttavaAmount(OttavaType ottavaType) {
-    return muse::key(ottavaTypeTable, ottavaType, std::optional<mnx::OttavaAmount>{});
+std::optional<mnx::OttavaAmount> to_mnx_ottava_amount(OttavaType ottava_type) {
+    return muse::key(::mu::iex::mnxio::ottava_type_table, ottava_type, std::optional<mnx::OttavaAmount>{});
 }
 
-Fraction toMuseScoreRTick(const mnx::RhythmicPosition &position) { return toMuseScoreFraction(position.fraction()); }
+Fraction to_muse_score_r_tick(const mnx::RhythmicPosition &position) { return to_muse_score_fraction(position.fraction()); }
 
 namespace {
-const std::unordered_map<int, TremoloType> tremoloTypeTable = {
+const std::unordered_map<int, TremoloType> tremolo_type_table = {
     {1, TremoloType::C8},
     {2, TremoloType::C16},
     {3, TremoloType::C32},
@@ -635,61 +654,67 @@ const std::unordered_map<int, TremoloType> tremoloTypeTable = {
 };
 } // namespace
 
-TremoloType toMuseScoreTremoloType(int numberOfBeams) { return muse::value(tremoloTypeTable, numberOfBeams, TremoloType::INVALID_TREMOLO); }
+TremoloType to_muse_score_tremolo_type(int number_of_beams) {
+    return muse::value(::mu::iex::mnxio::tremolo_type_table, number_of_beams, TremoloType::INVALID_TREMOLO);
+}
 
-std::optional<int> toMnxTremoloMarks(TremoloType tt) { return muse::key(tremoloTypeTable, tt, std::optional<int>{}); }
+std::optional<int> to_mnx_tremolo_marks(TremoloType tt) {
+    return muse::key(::mu::iex::mnxio::tremolo_type_table, tt, std::optional<int>{});
+}
 
 namespace {
-const std::unordered_map<mnx::LineType, SlurStyleType> slurStyleTable = {
-    {mnx::LineType::Dashed, SlurStyleType::Dashed},
-    {mnx::LineType::Dotted, SlurStyleType::Dotted},
-    {mnx::LineType::Solid, SlurStyleType::Solid},
+const std::unordered_map<mnx::LineType, SlurStyleType> slur_style_table = {
+    {mnx::LineType::Dashed, SlurStyleType::DASHED},
+    {mnx::LineType::Dotted, SlurStyleType::DOTTED},
+    {mnx::LineType::Solid, SlurStyleType::SOLID},
 };
 } // namespace
 
-SlurStyleType toMuseScoreSlurStyleType(mnx::LineType lineType) { return muse::value(slurStyleTable, lineType, SlurStyleType::Solid); }
+SlurStyleType to_muse_score_slur_style_type(mnx::LineType line_type) {
+    return muse::value(::mu::iex::mnxio::slur_style_table, line_type, SlurStyleType::SOLID);
+}
 
-mnx::LineType toMnxSlurLineType(SlurStyleType sst) { return muse::key(slurStyleTable, sst, mnx::LineType::Solid); }
+mnx::LineType to_mnx_slur_line_type(SlurStyleType sst) { return muse::key(::mu::iex::mnxio::slur_style_table, sst, mnx::LineType::Solid); }
 
 namespace {
-const std::unordered_map<mnx::AutoYesNo, TupletBracketType> tupletBracketTypeTable = {
+const std::unordered_map<mnx::AutoYesNo, TupletBracketType> tuplet_bracket_type_table = {
     {mnx::AutoYesNo::Auto, TupletBracketType::AUTO_BRACKET},
     {mnx::AutoYesNo::Yes, TupletBracketType::SHOW_BRACKET},
     {mnx::AutoYesNo::No, TupletBracketType::SHOW_NO_BRACKET},
 };
 } // namespace
 
-TupletBracketType toMuseScoreTupletBracketType(mnx::AutoYesNo bracketOption) {
-    return muse::value(tupletBracketTypeTable, bracketOption, TupletBracketType::AUTO_BRACKET);
+TupletBracketType to_muse_score_tuplet_bracket_type(mnx::AutoYesNo bracket_option) {
+    return muse::value(::mu::iex::mnxio::tuplet_bracket_type_table, bracket_option, TupletBracketType::AUTO_BRACKET);
 }
 
-mnx::AutoYesNo toMnxTupletBracketType(TupletBracketType bracketOption) {
-    return muse::key(tupletBracketTypeTable, bracketOption, mnx::AutoYesNo::Auto);
+mnx::AutoYesNo to_mnx_tuplet_bracket_type(TupletBracketType bracket_option) {
+    return muse::key(::mu::iex::mnxio::tuplet_bracket_type_table, bracket_option, mnx::AutoYesNo::Auto);
 }
 
 namespace {
-const std::unordered_map<mnx::TupletDisplaySetting, TupletNumberType> tupletNumberTypeTable = {
+const std::unordered_map<mnx::TupletDisplaySetting, TupletNumberType> tuplet_number_type_table = {
     {mnx::TupletDisplaySetting::Inner, TupletNumberType::SHOW_NUMBER},
     {mnx::TupletDisplaySetting::NoNumber, TupletNumberType::NO_TEXT},
     {mnx::TupletDisplaySetting::Both, TupletNumberType::SHOW_RELATION},
 };
 } // namespace
 
-TupletNumberType toMuseScoreTupletNumberType(mnx::TupletDisplaySetting numberStyle) {
-    return muse::value(tupletNumberTypeTable, numberStyle, TupletNumberType::SHOW_NUMBER);
+TupletNumberType to_muse_score_tuplet_number_type(mnx::TupletDisplaySetting number_style) {
+    return muse::value(::mu::iex::mnxio::tuplet_number_type_table, number_style, TupletNumberType::SHOW_NUMBER);
 }
 
-mnx::TupletDisplaySetting toMnxTupletNumberType(TupletNumberType numberStyle) {
-    return muse::key(tupletNumberTypeTable, numberStyle, mnx::TupletDisplaySetting::Inner);
+mnx::TupletDisplaySetting to_mnx_tuplet_number_type(TupletNumberType number_style) {
+    return muse::key(::mu::iex::mnxio::tuplet_number_type_table, number_style, mnx::TupletDisplaySetting::Inner);
 }
 
-NoteVal toMuseScoreNoteVal(const mnx::sequence::Pitch::Required &pitch, Key key, int octaveShift) {
+NoteVal to_muse_score_note_val(const mnx::sequence::Pitch::Required &pitch, Key key, int octave_shift) {
     int step = static_cast<int>(pitch.step);
     int alteration = pitch.alter;
     NoteVal nval;
-    nval.pitch = 60 /*middle C*/ + (octaveShift + pitch.octave - 4) * PITCH_DELTA_OCTAVE + step2pitch(step) + alteration;
-    if (alteration < int(AccidentalVal::MIN) || alteration > int(AccidentalVal::MAX) || !pitchIsValid(nval.pitch)) {
-        nval.pitch = clampPitch(nval.pitch);
+    nval.pitch = 60 /*middle C*/ + (octave_shift + pitch.octave - 4) * ::mu::engraving::pitch_delta_octave + step2pitch(step) + alteration;
+    if (alteration < int(AccidentalVal::MIN) || alteration > int(AccidentalVal::MAX) || !pitch_is_valid(nval.pitch)) {
+        nval.pitch = clamp_pitch(nval.pitch);
         nval.tpc1 = pitch2tpc(nval.pitch, key, Prefer::NEAREST);
         LOGW() << "Enharmonically transposing pitch with alteration value out of range.";
     } else {
@@ -699,21 +724,21 @@ NoteVal toMuseScoreNoteVal(const mnx::sequence::Pitch::Required &pitch, Key key,
     return nval;
 }
 
-ClefType toMuseScoreClefType(const mnx::part::Clef &mnxClef) {
+ClefType to_muse_score_clef_type(const mnx::part::Clef &mnx_clef) {
     using ClefSign = mnx::ClefSign;
     using OttavaAmountOrZero = mnx::OttavaAmountOrZero;
 
-    const auto snapToLine = [](int staffPositionHalfSpaces) -> int {
+    const auto snap_to_line = [](int staff_position_half_spaces) -> int {
         // clefTable only supports clefs centered on lines (even half-spaces).
-        if (staffPositionHalfSpaces & 1) {
-            staffPositionHalfSpaces += (staffPositionHalfSpaces > 0 ? -1 : +1); // snap toward 0
+        if (staff_position_half_spaces & 1) {
+            staff_position_half_spaces += (staff_position_half_spaces > 0 ? -1 : +1); // snap toward 0
         }
-        return staffPositionHalfSpaces;
+        return staff_position_half_spaces;
     };
 
-    const int sp = snapToLine(mnxClef.staffPosition());
-    const auto sign = mnxClef.sign();
-    const auto octave = mnxClef.octave();
+    const int sp = snap_to_line(mnx_clef.staffPosition());
+    const auto sign = mnx_clef.sign();
+    const auto octave = mnx_clef.octave();
 
     switch (sign) {
         case ClefSign::GClef:
@@ -770,19 +795,21 @@ ClefType toMuseScoreClefType(const mnx::part::Clef &mnxClef) {
     }
 }
 
-Fraction toMuseScoreFraction(const mnx::FractionValue &fraction) { return Fraction(fraction.numerator(), fraction.denominator()); }
+Fraction to_muse_score_fraction(const mnx::FractionValue &fraction) { return Fraction(fraction.numerator(), fraction.denominator()); }
 
-mnx::FractionValue toMnxFractionValue(const Fraction &fraction) { return mnx::FractionValue(fraction.numerator(), fraction.denominator()); }
+mnx::FractionValue to_mnx_fraction_value(const Fraction &fraction) {
+    return mnx::FractionValue(fraction.numerator(), fraction.denominator());
+}
 
-Key toMuseScoreKey(int fifths) {
+Key to_muse_score_key(int fifths) {
     if (fifths < int(Key::MIN) || fifths > int(Key::MAX)) {
         return Key::INVALID;
     }
     return Key(fifths);
 }
 
-PreferSharpFlat toMuseScorePreferSharpFlat(int keyFifthsFlipAt) {
-    switch (keyFifthsFlipAt) {
+PreferSharpFlat to_muse_score_prefer_sharp_flat(int key_fifths_flip_at) {
+    switch (key_fifths_flip_at) {
         case -5: return PreferSharpFlat::SHARPS;
         case 5: return PreferSharpFlat::FLATS;
         case -6:
@@ -793,48 +820,48 @@ PreferSharpFlat toMuseScorePreferSharpFlat(int keyFifthsFlipAt) {
     }
 }
 
-PlacementV toMuseScorePlacementV(const mnx::Orientation orient, const EngravingItem *item) {
+PlacementV to_muse_score_placement_v(const mnx::Orientation orient, const EngravingItem *item) {
     switch (orient) {
         case mnx::Orientation::Above: return PlacementV::ABOVE;
         case mnx::Orientation::Below: return PlacementV::BELOW;
         case mnx::Orientation::Auto: IF_ASSERT_FAILED(item) { break;
             }
-            return item->propertyDefault(Pid::PLACEMENT).value<PlacementV>();
+            return item->property_default(Pid::PLACEMENT).value<PlacementV>();
     }
     return PlacementV::ABOVE;
 }
 
-int toMnxKeyFifthsFlipValue(PreferSharpFlat prefer, const Interval &keyTransposition) {
+int to_mnx_key_fifths_flip_value(PreferSharpFlat prefer, const Interval &key_transposition) {
     switch (prefer) {
         case PreferSharpFlat::FLATS: return 5;
         case PreferSharpFlat::SHARPS: return -5;
         case PreferSharpFlat::AUTO:
         case PreferSharpFlat::NONE:
         default: {
-            const int absFlipAt = (prefer == PreferSharpFlat::AUTO) ? 7 : 8;
-            const int keyDelta = int(Transpose::transposeKey(Key::C, keyTransposition, prefer)) - int(Key::C);
-            return keyDelta >= 0 ? absFlipAt : -absFlipAt;
+            const int abs_flip_at = (prefer == PreferSharpFlat::AUTO) ? 7 : 8;
+            const int key_delta = int(Transpose::transpose_key(Key::C, key_transposition, prefer)) - int(Key::C);
+            return key_delta >= 0 ? abs_flip_at : -abs_flip_at;
         }
     }
 }
 
-NoteType duraTypeToGraceNoteType(DurationType type, bool useLeft) {
+NoteType dura_type_to_grace_note_type(DurationType type, bool use_left) {
     if (int(type) < int(DurationType::V_EIGHTH)) {
-        return useLeft ? NoteType::GRACE8_AFTER : NoteType::GRACE4;
+        return use_left ? NoteType::GRACE8_AFTER : NoteType::GRACE4;
     }
     if (int(type) >= int(DurationType::V_32ND)) {
-        return useLeft ? NoteType::GRACE32_AFTER : NoteType::GRACE32;
+        return use_left ? NoteType::GRACE32_AFTER : NoteType::GRACE32;
     }
     if (type == DurationType::V_16TH) {
-        return useLeft ? NoteType::GRACE16_AFTER : NoteType::GRACE16;
+        return use_left ? NoteType::GRACE16_AFTER : NoteType::GRACE16;
     }
-    return useLeft ? NoteType::GRACE8_AFTER : NoteType::APPOGGIATURA;
+    return use_left ? NoteType::GRACE8_AFTER : NoteType::APPOGGIATURA;
 }
 
 // Generates a stable MNX voice identifier string from a MuseScore track index.
 // This is a convention used by the MNX import/export layer and is not defined
 // by the MNX specification itself.
-std::string makeMnxVoiceIdFromTrack(int mnxPartStaffNum, track_idx_t curTrackIdx) {
-    return "s" + std::to_string(mnxPartStaffNum) + "v" + std::to_string(curTrackIdx % VOICES + 1);
+std::string make_mnx_voice_id_from_track(int mnx_part_staff_num, track_idx_t cur_track_idx) {
+    return "s" + std::to_string(mnx_part_staff_num) + "v" + std::to_string(cur_track_idx % ::mu::engraving::voices + 1);
 }
 } // namespace mu::iex::mnxio

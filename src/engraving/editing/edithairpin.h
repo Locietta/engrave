@@ -40,12 +40,12 @@ enum class HairpinType : signed char;
 
 class EditHairpin {
 public:
-    static std::vector<Hairpin *> addHairpins(Transaction &tx, Score *score, HairpinType type);
-    static Hairpin *addHairpin(Transaction &tx, Score *score, HairpinType type, ChordRest *cr1, ChordRest *cr2 = nullptr);
-    static Hairpin *addHairpin(Transaction &tx, Score *score, HairpinType type, Fraction sTick, Fraction eTick, track_idx_t track);
-    static void addHairpin(Transaction &tx, Score *score, Hairpin *hairpin, ChordRest *cr1, ChordRest *cr2 = nullptr);
-    static void addHairpinToDynamic(Transaction &tx, Score *score, Hairpin *hairpin, Dynamic *dynamic);
-    static Hairpin *addHairpinToDynamicOnGripDrag(Transaction &tx, Score *score, Dynamic *dynamic, bool isLeftGrip,
-                                                  const muse::PointF &pos);
+    static std::vector<Hairpin *> add_hairpins(Transaction &tx, Score *score, HairpinType type);
+    static Hairpin *add_hairpin(Transaction &tx, Score *score, HairpinType type, ChordRest *cr1, ChordRest *cr2 = nullptr);
+    static Hairpin *add_hairpin(Transaction &tx, Score *score, HairpinType type, Fraction s_tick, Fraction e_tick, track_idx_t track);
+    static void add_hairpin(Transaction &tx, Score *score, Hairpin *hairpin, ChordRest *cr1, ChordRest *cr2 = nullptr);
+    static void add_hairpin_to_dynamic(Transaction &tx, Score *score, Hairpin *hairpin, Dynamic *dynamic);
+    static Hairpin *add_hairpin_to_dynamic_on_grip_drag(Transaction &tx, Score *score, Dynamic *dynamic, bool is_left_grip,
+                                                        const muse::PointF &pos);
 };
 } // namespace mu::engraving

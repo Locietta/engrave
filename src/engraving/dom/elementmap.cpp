@@ -27,7 +27,7 @@
 #include "tupletmap.h"
 
 namespace mu::engraving {
-EngravingItem *ElementMap::findNew(EngravingItem *o) const { return muse::value(*this, o, nullptr); }
+EngravingItem *ElementMap::find_new(EngravingItem *o) const { return muse::value(*this, o, nullptr); }
 
 void ElementMap::add(EngravingItem *o, EngravingItem *n) { insert_or_assign(o, n); }
 
@@ -35,7 +35,7 @@ void ElementMap::add(EngravingItem *o, EngravingItem *n) { insert_or_assign(o, n
 //   findNew
 //---------------------------------------------------------
 
-Tuplet *TupletMap::findNew(Tuplet *o) {
+Tuplet *TupletMap::find_new(Tuplet *o) {
     for (const Tuplet2 &t2 : map_) {
         if (t2.o == o) {
             return t2.n;

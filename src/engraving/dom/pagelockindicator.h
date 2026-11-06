@@ -34,22 +34,22 @@ class PageLockIndicator : public IndicatorIcon {
 public:
     PageLockIndicator(DummyParentOr<System> parent, const RangeLock *lock);
 
-    void setSelected(bool v) override;
+    void set_selected(bool v) override;
 
-    const RangeLock *pageLock() const { return pageLock_; }
+    const RangeLock *page_lock() const { return page_lock_; }
 
     const Page *page() const;
 
-    char16_t iconCode() const override { return 0xF4C3; }
+    char16_t icon_code() const override { return 0xF4C3; }
 
-    String formatBarsAndBeats() const override;
+    String format_bars_and_beats() const override;
 
     struct LayoutData : public IndicatorIcon::LayoutData {
-        ld_field<RectF> innerRangeRect = {"[PageLockIndicator] innerRangeRect", RectF()};
+        ld_field<RectF> inner_range_rect = {"[PageLockIndicator] innerRangeRect", RectF()};
     };
     DECLARE_LAYOUTDATA_METHODS(PageLockIndicator)
 
 private:
-    const RangeLock *pageLock_ = nullptr;
+    const RangeLock *page_lock_ = nullptr;
 };
 } // namespace mu::engraving

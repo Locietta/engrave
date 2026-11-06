@@ -37,41 +37,41 @@ public:
     // FontMetrics is a value type constructed throughout layout without an owner
     // to carry a provider, so EngineContext binds its font provider here for its
     // lifetime; null outside it.
-    static void setProvider(IFontProvider *provider);
+    static void set_provider(IFontProvider *provider);
 
-    double lineSpacing() const;
-    double xHeight() const;
+    double line_spacing() const;
+    double x_height() const;
     double height() const;
-    double capHeight() const;
+    double cap_height() const;
     double ascent() const;
     double descent() const;
 
-    double underlinePos() const;
-    double lineWidth() const;
-    double strikeOutPos() const;
+    double underline_pos() const;
+    double line_width() const;
+    double strike_out_pos() const;
 
     double width(const String &string) const;
     double width(const Char &ch) const;
 
-    double horizontalAdvance(const String &string) const;
-    double horizontalAdvance(char32_t ucs4) const;
+    double horizontal_advance(const String &string) const;
+    double horizontal_advance(char32_t ucs4) const;
 
-    RectF boundingRect(const String &string) const;
-    RectF boundingRect(char32_t ucs4) const;
+    RectF bounding_rect(const String &string) const;
+    RectF bounding_rect(char32_t ucs4) const;
 
-    RectF tightBoundingRect(const String &string) const;
-    RectF tightBoundingRect(const Char &ch) const;
+    RectF tight_bounding_rect(const String &string) const;
+    RectF tight_bounding_rect(const Char &ch) const;
 
-    bool inFont(char32_t ucs4) const;
+    bool in_font(char32_t ucs4) const;
 
     static double width(const Font &f, const String &string);
-    static RectF boundingRect(const Font &f, const String &string);
-    static RectF tightBoundingRect(const Font &f, const String &string);
+    static RectF bounding_rect(const Font &f, const String &string);
+    static RectF tight_bounding_rect(const Font &f, const String &string);
     static double ascent(const Font &f);
-    static double capHeight(const Font &f);
+    static double cap_height(const Font &f);
 
 private:
-    static IFontProvider *fontProvider();
+    static IFontProvider *font_provider();
 
     Font font_;
 };

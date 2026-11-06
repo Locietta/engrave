@@ -27,16 +27,16 @@ class IMnxConfiguration : MODULE_GLOBAL_EXPORT_INTERFACE {
 public:
     virtual ~IMnxConfiguration() = default;
 
-    virtual int mnxIndentSpaces() const = 0;
-    virtual void setMnxIndentSpaces(int value) = 0;
+    virtual int mnx_indent_spaces() const = 0;
+    virtual void set_mnx_indent_spaces(int value) = 0;
 
-    virtual bool mnxExportBeams() const = 0;
-    virtual void setMnxExportBeams(bool value) = 0;
+    virtual bool mnx_export_beams() const = 0;
+    virtual void set_mnx_export_beams(bool value) = 0;
 
-    virtual bool mnxExportRestPositions() const = 0;
-    virtual void setMnxExportRestPositions(bool value) = 0;
+    virtual bool mnx_export_rest_positions() const = 0;
+    virtual void set_mnx_export_rest_positions(bool value) = 0;
 
-    virtual bool mnxRequireExactSchemaValidation() const = 0;
-    virtual void setMnxRequireExactSchemaValidation(bool value) = 0;
+    virtual bool mnx_require_exact_schema_validation() const = 0;
+    virtual void set_mnx_require_exact_schema_validation(bool value) = 0;
 };
 } // namespace mu::iex::mnxio

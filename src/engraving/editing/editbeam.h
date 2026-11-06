@@ -30,8 +30,8 @@ enum class BeamMode : signed char;
 
 class EditBeam {
 public:
-    static void setBeamMode(Transaction &tx, Score *score, BeamMode mode);
-    static void beamSelectedRange(Transaction &tx, Score *score);
-    static void resetBeamMode(Transaction &tx, Score *score);
+    static void set_beam_mode(Transaction &tx, Score *score, BeamMode mode);
+    static void beam_selected_range(Transaction &tx, Score *score);
+    static void reset_beam_mode(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

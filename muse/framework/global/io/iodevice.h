@@ -31,18 +31,18 @@ namespace muse::io {
 class IODevice {
 public:
 
-    enum OpenMode { Unknown, ReadOnly, WriteOnly, ReadWrite, Append };
+    enum OpenMode { UNKNOWN, READ_ONLY, WRITE_ONLY, READ_WRITE, APPEND };
 
     IODevice() = default;
     virtual ~IODevice() = default;
 
-    bool open(OpenMode m = ReadOnly);
+    bool open(OpenMode m = READ_ONLY);
     void close();
 
-    bool isOpen() const;
-    OpenMode openMode() const;
-    bool isReadable() const;
-    bool isWriteable() const;
+    bool is_open() const;
+    OpenMode open_mode() const;
+    bool is_readable() const;
+    bool is_writeable() const;
 
     size_t size() const;
     size_t pos() const;
@@ -51,46 +51,46 @@ public:
 
     size_t read(uint8_t *data, size_t len);
     ByteArray read(size_t count);
-    ByteArray readAll();
+    ByteArray read_all();
 
-    const uint8_t *readData();
+    const uint8_t *read_data();
 
     size_t write(const uint8_t *data, size_t len);
     size_t write(const ByteArray &ba);
 
     const std::string &meta(const std::string &key) const;
-    void setMeta(const std::string &key, const std::string &val);
+    void set_meta(const std::string &key, const std::string &val);
 
-    bool hasError() const;
+    bool has_error() const;
     int error() const;
-    const std::string &errorString() const;
+    const std::string &error_string() const;
 
 protected:
 
-    virtual bool doOpen(OpenMode m) = 0;
+    virtual bool do_open(OpenMode m) = 0;
 
-    virtual void doClose() {}
+    virtual void do_close() {}
 
-    virtual ByteArray doReadAll();
-    virtual size_t dataSize() const = 0;
-    virtual const uint8_t *rawData() const = 0;
-    virtual bool resizeData(size_t size) = 0;
-    virtual size_t writeData(const uint8_t *data, size_t len) = 0;
+    virtual ByteArray do_read_all();
+    virtual size_t data_size() const = 0;
+    virtual const uint8_t *raw_data() const = 0;
+    virtual bool resize_data(size_t size) = 0;
+    virtual size_t write_data(const uint8_t *data, size_t len) = 0;
 
-    bool isOpenModeReadable() const;
-    bool isOpenModeWriteable() const;
+    bool is_open_mode_readable() const;
+    bool is_open_mode_writeable() const;
 
-    void setError(int error, const std::string &errorString);
+    void set_error(int error, const std::string &error_string);
 
 private:
 
-    const uint8_t *cdataOffsetted() const;
+    const uint8_t *cdata_offsetted() const;
 
-    OpenMode mode_ = OpenMode::Unknown;
+    OpenMode mode_ = OpenMode::UNKNOWN;
     size_t pos_ = 0;
     std::map<std::string, std::string> meta_;
 
     int error_ = 0;
-    std::string errorString_;
+    std::string error_string_;
 };
 } // namespace muse::io

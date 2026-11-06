@@ -33,9 +33,9 @@ class Score;
 namespace mu::iex::guitarpro {
 class BendBuilder {
 public:
-    void addElementsToScore(mu::engraving::Score *score, const BendDataContext &bendCtx, const DiveDataContext &diveCtx);
+    void add_elements_to_score(mu::engraving::Score *score, const BendDataContext &bend_ctx, const DiveDataContext &dive_ctx);
 
 private:
-    std::unique_ptr<BendDataProcessorSplitChord> bendDataProcessorSplitChord_;
+    std::unique_ptr<BendDataProcessorSplitChord> bend_data_processor_split_chord_;
 };
 } // namespace mu::iex::guitarpro

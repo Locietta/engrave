@@ -53,11 +53,11 @@ struct OttavaDefault {
     OttavaType type = OttavaType::OTTAVA_8VA;
     int shift = 0;
     const char *name = nullptr;
-    const TranslatableString userName = TranslatableString();
+    const TranslatableString user_name = TranslatableString();
 };
 
 // order is important, should be the same as OttavaType
-static const OttavaDefault ottavaDefault[] = {
+static const OttavaDefault ottava_default[] = {
     {OttavaType::OTTAVA_8VA, 12, "8va", TranslatableString("engraving/ottavatype", "8va alta")},
     {OttavaType::OTTAVA_8VB, -12, "8vb", TranslatableString("engraving/ottavatype", "8va bassa")},
     {OttavaType::OTTAVA_15MA, 24, "15ma", TranslatableString("engraving/ottavatype", "15ma alta")},
@@ -75,7 +75,7 @@ class OttavaSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, OttavaSegment)
     DECLARE_CLASSOF(ElementType::OTTAVA_SEGMENT)
 
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
 public:
     OttavaSegment(Ottava *sp);
@@ -84,12 +84,12 @@ public:
 
     Ottava *ottava() const { return (Ottava *) spanner(); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 
-    bool canBeExcludedFromOtherParts() const override { return true; }
+    bool can_be_excluded_from_other_parts() const override { return true; }
 
 private:
-    void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, System *sys) override;
+    void rebase_offsets_on_anchor_changed(Grip grip, const PointF &old_pos, System *sys) override;
 };
 
 //---------------------------------------------------------
@@ -109,47 +109,47 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    void setOttavaType(OttavaType val);
+    void set_ottava_type(OttavaType val);
 
-    OttavaType ottavaType() const { return ottavaType_; }
+    OttavaType ottava_type() const { return ottava_type_; }
 
-    int subtype() const override { return int(ottavaType()); }
+    int subtype() const override { return int(ottava_type()); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    bool numbersOnly() const { return numbersOnly_; }
+    bool numbers_only() const { return numbers_only_; }
 
-    void setNumbersOnly(bool val);
+    void set_numbers_only(bool val);
 
-    void setPlacement(PlacementV);
+    void set_placement(PlacementV);
 
-    LineSegment *createLineSegment() override;
-    int pitchShift() const;
+    LineSegment *create_line_segment() override;
+    int pitch_shift() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    static const char *ottavaTypeName(OttavaType type);
+    static const char *ottava_type_name(OttavaType type);
 
-    PointF linePos(Grip grip, System **system) const override;
+    PointF line_pos(Grip grip, System **system) const override;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
 protected:
-    Sid defaultPosSid() const override;
-    void doComputeEndElement() override;
+    Sid default_pos_sid() const override;
+    void do_compute_end_element() override;
 
 private:
 
     friend class OttavaSegment;
 
-    void updateStyledProperties();
-    Sid getPropertyStyle(Pid) const override;
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void update_styled_properties();
+    Sid get_property_style(Pid) const override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
-    OttavaType ottavaType_ = OttavaType::OTTAVA_8VA;
-    bool numbersOnly_ = false;
+    OttavaType ottava_type_ = OttavaType::OTTAVA_8VA;
+    bool numbers_only_ = false;
 };
 } // namespace mu::engraving
 

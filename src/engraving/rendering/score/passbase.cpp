@@ -23,4 +23,4 @@
 
 using namespace mu::engraving::rendering::score;
 
-void PassBase::run(Score *score, LayoutContext &ctx) { doRun(score, ctx); }
+void PassBase::run(Score *score, LayoutContext &ctx) { do_run(score, ctx); }

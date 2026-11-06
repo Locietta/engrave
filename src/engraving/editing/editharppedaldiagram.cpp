@@ -37,29 +37,29 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void ChangeHarpPedalState::flip() {
-    std::array<PedalPosition, HARP_STRING_NO> f_state = diagram->getPedalState();
-    if (f_state == pedalState) {
+    std::array<PedalPosition, ::mu::engraving::harp_string_no> f_state = diagram->get_pedal_state();
+    if (f_state == pedal_state_value) {
         return;
     }
 
-    diagram->setPedalState(pedalState);
-    pedalState = f_state;
+    diagram->set_pedal_state(pedal_state_value);
+    pedal_state_value = f_state;
 
-    diagram->triggerLayout();
+    diagram->trigger_layout();
 }
 
-std::vector<EngravingObject *> ChangeHarpPedalState::objectItems() const {
-    Part *part = diagram->originPart();
+std::vector<EngravingObject *> ChangeHarpPedalState::object_items() const {
+    Part *part = diagram->origin_part();
     std::vector<EngravingObject *> objs{diagram};
     if (!part) {
         return objs;
     }
 
-    HarpPedalDiagram *nextDiagram = part->nextHarpDiagram(diagram->tick());
-    if (nextDiagram) {
-        objs.push_back(nextDiagram);
+    HarpPedalDiagram *next_diagram = part->next_harp_diagram(diagram->tick());
+    if (next_diagram) {
+        objs.push_back(next_diagram);
     } else {
-        objs.push_back(Navigation::lastElement(diagram->score()));
+        objs.push_back(Navigation::last_element(diagram->score()));
     }
     return objs;
 }
@@ -70,30 +70,30 @@ std::vector<EngravingObject *> ChangeHarpPedalState::objectItems() const {
 
 void ChangeSingleHarpPedal::flip() {
     HarpStringType f_type = type;
-    PedalPosition f_pos = diagram->getPedalState()[type];
+    PedalPosition f_pos = diagram->get_pedal_state()[type];
     if (f_pos == pos) {
         return;
     }
 
-    diagram->setPedal(type, pos);
+    diagram->set_pedal(type, pos);
     type = f_type;
     pos = f_pos;
 
-    diagram->triggerLayout();
+    diagram->trigger_layout();
 }
 
-std::vector<EngravingObject *> ChangeSingleHarpPedal::objectItems() const {
-    Part *part = diagram->originPart();
+std::vector<EngravingObject *> ChangeSingleHarpPedal::object_items() const {
+    Part *part = diagram->origin_part();
     std::vector<EngravingObject *> objs{diagram};
     if (!part) {
         return objs;
     }
 
-    HarpPedalDiagram *nextDiagram = part->nextHarpDiagram(diagram->tick());
-    if (nextDiagram) {
-        objs.push_back(nextDiagram);
+    HarpPedalDiagram *next_diagram = part->next_harp_diagram(diagram->tick());
+    if (next_diagram) {
+        objs.push_back(next_diagram);
     } else {
-        objs.push_back(Navigation::lastElement(diagram->score()));
+        objs.push_back(Navigation::last_element(diagram->score()));
     }
     return objs;
 }

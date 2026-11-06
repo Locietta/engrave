@@ -12,15 +12,15 @@ public:
     explicit ByteView(std::span<const uint8_t> bytes) : bytes_(bytes) {}
 
 protected:
-    bool doOpen(OpenMode mode) override { return mode == ReadOnly; }
+    bool do_open(OpenMode mode) override { return mode == READ_ONLY; }
 
-    size_t dataSize() const override { return bytes_.size(); }
+    size_t data_size() const override { return bytes_.size(); }
 
-    const uint8_t *rawData() const override { return bytes_.data(); }
+    const uint8_t *raw_data() const override { return bytes_.data(); }
 
-    bool resizeData(size_t) override { return false; }
+    bool resize_data(size_t) override { return false; }
 
-    size_t writeData(const uint8_t *, size_t) override { return 0; }
+    size_t write_data(const uint8_t *, size_t) override { return 0; }
 
 private:
     std::span<const uint8_t> bytes_;

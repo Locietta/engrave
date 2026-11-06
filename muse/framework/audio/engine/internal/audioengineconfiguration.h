@@ -30,16 +30,16 @@ class AudioEngineConfiguration : public IAudioEngineConfiguration {
 public:
     AudioEngineConfiguration() = default;
 
-    void setConfig(const AudioEngineConfig &conf) override;
+    void set_config(const AudioEngineConfig &conf) override;
 
-    bool autoProcessOnlineSoundsInBackground() const override;
+    bool auto_process_online_sounds_in_background() const override;
 
-    bool isLazyProcessingOfOnlineSoundsEnabled() const override;
-    void setIsLazyProcessingOfOnlineSoundsEnabled(bool enabled) override;
+    bool is_lazy_processing_of_online_sounds_enabled() const override;
+    void set_is_lazy_processing_of_online_sounds_enabled(bool enabled) override;
 
-    bool useSoundFontLowPassFilter() const override;
+    bool use_sound_font_low_pass_filter() const override;
 
-    AudioInputParams defaultAudioInputParams() const override;
+    AudioInputParams default_audio_input_params() const override;
 
 private:
 

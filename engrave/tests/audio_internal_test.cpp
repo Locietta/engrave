@@ -36,8 +36,8 @@ namespace {
 
 class FailingFinalizer final : public muse::audio::encode::AbstractAudioEncoder {
 public:
-    FailingFinalizer(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool failEncode, int &ended)
-        : AbstractAudioEncoder(format), device_(device), failEncode_(failEncode), ended_(ended) {}
+    FailingFinalizer(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool fail_encode, int &ended)
+        : AbstractAudioEncoder(format), device_(device), fail_encode_(fail_encode), ended_(ended) {}
 
     bool begin(muse::audio::samples_t) override { return true; }
 
@@ -47,17 +47,17 @@ public:
             wrote_ = true;
             if (device_.write(&marker, 1) != 1) return 0;
         }
-        return failEncode_ ? 0 : static_cast<size_t>(samples);
+        return fail_encode_ ? 0 : static_cast<size_t>(samples);
     }
 
     muse::Ret end() override {
         ++ended_;
-        return muse::audio::make_ret(muse::audio::Err::ErrorEncode, "injected finalization failure");
+        return muse::audio::make_ret(muse::audio::Err::ERROR_ENCODE, "injected finalization failure");
     }
 
 private:
     muse::io::IODevice &device_;
-    bool failEncode_;
+    bool fail_encode_;
     int &ended_;
     bool wrote_ = false;
 };
@@ -141,7 +141,7 @@ TEST(AudioInternal, CancellationAtSynthesisWriteAndFinalFlushRemovesFileAndRecov
         } else {
             const auto result = music::export_score_audio(audio, master, request);
             EXPECT_FALSE(result.ok);
-            EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::Cancelled);
+            EXPECT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED);
         }
         music::set_engine_audio_midi_event_hook(audio, {});
         EXPECT_FALSE(std::filesystem::exists(output));
@@ -215,20 +215,20 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
         }
     } cleanup{output};
 
-    for (const bool failEncode : {false, true}) {
+    for (const bool fail_encode : {false, true}) {
         int ended = 0;
         music::AudioRenderRequest request;
-        const auto outputUtf8 = output.generic_u8string();
-        request.output_path.assign(outputUtf8.begin(), outputUtf8.end());
-        request.encoder_factory = [failEncode, &ended](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
-            return std::make_unique<FailingFinalizer>(format, device, failEncode, ended);
+        const auto output_utf8 = output.generic_u8string();
+        request.output_path.assign(output_utf8.begin(), output_utf8.end());
+        request.encoder_factory = [fail_encode, &ended](const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device) {
+            return std::make_unique<FailingFinalizer>(format, device, fail_encode, ended);
         };
         const auto failed = music::export_score_audio(audio, master, request);
         EXPECT_FALSE(failed.ok);
-        EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::EngineFailure);
+        EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ENGINE_FAILURE);
         EXPECT_EQ(ended, 1);
         EXPECT_GT(std::filesystem::file_size(output), 0u);
-        if (failEncode) {
+        if (fail_encode) {
             EXPECT_EQ(failed.error.find("injected finalization failure"), std::string::npos)
                 << "a later finalization failure replaced the encode failure";
         } else {
@@ -272,15 +272,15 @@ TEST(AudioInternal, BudgetFailureRemovesTheIntermediateAndAllowsRecovery) {
     } cleanup{output};
 
     music::AudioRenderRequest request;
-    const auto outputUtf8 = output.generic_u8string();
-    request.output_path.assign(outputUtf8.begin(), outputUtf8.end());
+    const auto output_utf8 = output.generic_u8string();
+    request.output_path.assign(output_utf8.begin(), output_utf8.end());
     request.max_bytes = 64;
-    for (const auto format : {music::EngineAudioFormat::Wav, music::EngineAudioFormat::Flac, music::EngineAudioFormat::Ogg,
-                              music::EngineAudioFormat::Mp3, music::EngineAudioFormat::Aac}) {
+    for (const auto format : {music::EngineAudioFormat::WAV, music::EngineAudioFormat::FLAC, music::EngineAudioFormat::OGG,
+                              music::EngineAudioFormat::MP3, music::EngineAudioFormat::AAC}) {
         request.format = format;
         const auto failed = music::export_score_audio(audio, master, request);
         EXPECT_FALSE(failed.ok);
-        EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ResourceLimit);
+        EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::RESOURCE_LIMIT);
         EXPECT_FALSE(std::filesystem::exists(output));
     }
     EXPECT_EQ(render(), original);
@@ -303,18 +303,18 @@ TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
     const auto first = render();
     ASSERT_FALSE(first.empty());
     auto &audio = engrave::DocumentAccess::context(document).audio();
-    const auto originalUri = music::engine_soundfont_uri(audio);
-    ASSERT_FALSE(originalUri.empty());
+    const auto original_uri = music::engine_soundfont_uri(audio);
+    ASSERT_FALSE(original_uri.empty());
 
     ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[1]}));
-    EXPECT_EQ(music::engine_soundfont_uri(audio), originalUri);
+    EXPECT_EQ(music::engine_soundfont_uri(audio), original_uri);
     const auto selection = g_engine->capabilities().soundfonts;
     ASSERT_EQ(selection.size(), 1u);
     EXPECT_NE(selection[0], g_soundfonts[1]);
     const auto second = render();
     ASSERT_FALSE(second.empty());
     EXPECT_NE(second, first);
-    EXPECT_NE(music::engine_soundfont_uri(audio), originalUri);
+    EXPECT_NE(music::engine_soundfont_uri(audio), original_uri);
     ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
 }
 
@@ -367,14 +367,14 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
         std::vector<double> times;
         for (int trial = 0; trial < 50; ++trial) {
             bool armed = false, cancelled = false;
-            int writePolls = 0;
+            int write_polls = 0;
             std::atomic<bool> external{false};
             Clock::time_point requested;
             music::AudioRenderRequest request;
             const auto utf8 = path.generic_u8string();
             request.output_path.assign(utf8.begin(), utf8.end());
             request.cancelled = [&] {
-                if (armed && ++writePolls == 3) {
+                if (armed && ++write_polls == 3) {
                     requested = Clock::now();
                     cancelled = true;
                 }
@@ -382,7 +382,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
             };
             if (phase == 0)
                 music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
-                    if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::Synthesis) {
+                    if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::SYNTHESIS) {
                         requested = Clock::now();
                         cancelled = true;
                     }
@@ -400,7 +400,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
             const auto returned = Clock::now();
             if (transport.joinable()) transport.join();
             music::set_engine_audio_midi_event_hook(audio, {});
-            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::Cancelled);
+            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED);
             ASSERT_FALSE(std::filesystem::exists(path));
             times.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
         }
@@ -415,7 +415,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
 // Same 12 x 256 x 16 input shape as the M2 review, generated without a desktop.
 TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Clock = std::chrono::steady_clock;
-    const auto ownerThread = std::this_thread::get_id();
+    const auto owner_thread = std::this_thread::get_id();
     const std::string prefix = "engrave-dense-cancel-" + std::to_string(
 #ifdef _WIN32
                                                              _getpid()
@@ -470,15 +470,15 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         std::vector<double> times;
         for (int trial = 0; trial < 50; ++trial) {
             bool cancelled = false;
-            bool modelStarted = false;
-            int modelPolls = 0;
-            std::latch modelStart{1};
+            bool model_started = false;
+            int model_polls = 0;
+            std::latch model_start{1};
             std::atomic<bool> external{false};
             Clock::time_point requested;
             std::thread transport;
             if (phase == 1)
                 transport = std::thread([&] {
-                    modelStart.wait();
+                    model_start.wait();
                     std::this_thread::sleep_for(std::chrono::milliseconds(1 + trial % 5));
                     requested = Clock::now();
                     external.store(true);
@@ -493,34 +493,34 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             const auto utf8 = path.generic_u8string();
             request.output_path.assign(utf8.begin(), utf8.end());
             request.cancelled = [&] {
-                EXPECT_EQ(std::this_thread::get_id(), ownerThread);
-                if (phase == 3 && muse::audio::OfflineCancellation::phase == Phase::Encoding) cancel();
-                if (phase == 0 && muse::audio::OfflineCancellation::phase == Phase::Sequencer) cancel();
-                if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 2000 + trial * 3000 &&
-                    !modelStarted) {
-                    modelStarted = true;
-                    modelStart.count_down();
+                EXPECT_EQ(std::this_thread::get_id(), owner_thread);
+                if (phase == 3 && muse::audio::OfflineCancellation::phase == Phase::ENCODING) cancel();
+                if (phase == 0 && muse::audio::OfflineCancellation::phase == Phase::SEQUENCER) cancel();
+                if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL &&
+                    ++model_polls == 2000 + trial * 3000 && !model_started) {
+                    model_started = true;
+                    model_start.count_down();
                 }
                 if (external.load() && !cancelled) {
-                    EXPECT_EQ(muse::audio::OfflineCancellation::phase, Phase::PlaybackModel);
+                    EXPECT_EQ(muse::audio::OfflineCancellation::phase, Phase::PLAYBACK_MODEL);
                     cancelled = true;
                 }
                 return cancelled;
             };
             if (phase == 2)
                 music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) {
-                    if (muse::audio::OfflineCancellation::phase == Phase::Synthesis) cancel();
+                    if (muse::audio::OfflineCancellation::phase == Phase::SYNTHESIS) cancel();
                 });
             const auto result = music::export_score_audio(audio, master, request);
             const auto returned = Clock::now();
             if (transport.joinable()) {
-                if (!modelStarted) modelStart.count_down();
+                if (!model_started) model_start.count_down();
                 transport.join();
-                ASSERT_TRUE(modelStarted);
+                ASSERT_TRUE(model_started);
             }
             music::set_engine_audio_midi_event_hook(audio, {});
             ASSERT_TRUE(cancelled);
-            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::Cancelled);
+            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::CANCELLED);
             ASSERT_FALSE(std::filesystem::exists(path));
             times.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
             std::fprintf(stderr, "dense_cancel_sample phase=%s trial=%d ms=%.6f\n", names[phase], trial, times.back());
@@ -534,8 +534,8 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     }
     // Exercise error translation and publication through the public API too.
     engrave::AudioOptions options;
-    int modelPolls = 0, sinks = 0;
-    options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 3000; };
+    int model_polls = 0, sinks = 0;
+    options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 3000; };
     const auto result = document.render_audio(options, [&](auto) { ++sinks; });
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
@@ -551,9 +551,9 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                                                          ) +
                                                  "-" + std::to_string(state.audio_render_index) + ".wav");
     EXPECT_FALSE(std::filesystem::exists(intermediate));
-    modelPolls = 0;
+    model_polls = 0;
     options.cancelled = [&]() -> bool {
-        if (muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 3000)
+        if (muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL && ++model_polls == 3000)
             throw std::runtime_error("model cancellation callback");
         return false;
     };

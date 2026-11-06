@@ -39,56 +39,56 @@ class LayoutBreak final : public EngravingItem {
 
 public:
 
-    void setOwnershipParent(DummyParentOr<MeasureBase> parent);
+    void set_ownership_parent(DummyParentOr<MeasureBase> parent);
 
     LayoutBreak *clone() const override { return new LayoutBreak(*this); }
 
-    int subtype() const override { return static_cast<int>(layoutBreakType_); }
+    int subtype() const override { return static_cast<int>(layout_break_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    void setLayoutBreakType(LayoutBreakType);
+    void set_layout_break_type(LayoutBreakType);
 
-    LayoutBreakType layoutBreakType() const { return layoutBreakType_; }
+    LayoutBreakType layout_break_type() const { return layout_break_type_; }
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    MeasureBase *measure() const { return (MeasureBase *) ownershipParent(); }
+    MeasureBase *measure() const { return (MeasureBase *) ownership_parent(); }
 
     double pause() const { return pause_; }
 
-    void setPause(double v) { pause_ = v; }
+    void set_pause(double v) { pause_ = v; }
 
-    bool startWithLongNames() const { return startWithLongNames_; }
+    bool start_with_long_names() const { return start_with_long_names_; }
 
-    void setStartWithLongNames(bool v) { startWithLongNames_ = v; }
+    void set_start_with_long_names(bool v) { start_with_long_names_ = v; }
 
-    bool startWithMeasureOne() const { return startWithMeasureOne_; }
+    bool start_with_measure_one() const { return start_with_measure_one_; }
 
-    void setStartWithMeasureOne(bool v) { startWithMeasureOne_ = v; }
+    void set_start_with_measure_one(bool v) { start_with_measure_one_ = v; }
 
-    bool firstSystemIndentation() const { return firstSystemIndentation_; }
+    bool first_system_indentation() const { return first_system_indentation_; }
 
-    void setFirstSystemIndentation(bool v) { firstSystemIndentation_ = v; }
+    void set_first_system_indentation(bool v) { first_system_indentation_ = v; }
 
-    bool showCourtesy() const { return showCourtesy_; }
+    bool show_courtesy() const { return show_courtesy_; }
 
-    void setShowCourtesy(bool v) { showCourtesy_ = v; }
+    void set_show_courtesy(bool v) { show_courtesy_ = v; }
 
-    bool isPageBreak() const { return layoutBreakType_ == LayoutBreakType::PAGE; }
+    bool is_page_break() const { return layout_break_type_ == LayoutBreakType::PAGE; }
 
-    bool isLineBreak() const { return layoutBreakType_ == LayoutBreakType::LINE; }
+    bool is_line_break() const { return layout_break_type_ == LayoutBreakType::LINE; }
 
-    bool isSectionBreak() const { return layoutBreakType_ == LayoutBreakType::SECTION; }
+    bool is_section_break() const { return layout_break_type_ == LayoutBreakType::SECTION; }
 
-    bool isNoBreak() const { return layoutBreakType_ == LayoutBreakType::NOBREAK; }
+    bool is_no_break() const { return layout_break_type_ == LayoutBreakType::NOBREAK; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    char16_t iconCode() const;
+    char16_t icon_code() const;
 
     muse::draw::Font font() const;
 
@@ -99,10 +99,10 @@ private:
     LayoutBreak(const LayoutBreak &);
 
     double pause_ = 0.0;
-    bool startWithLongNames_ = false;
-    bool startWithMeasureOne_ = false;
-    bool firstSystemIndentation_ = false;
-    bool showCourtesy_ = false;
-    LayoutBreakType layoutBreakType_ = LayoutBreakType::NOBREAK;
+    bool start_with_long_names_ = false;
+    bool start_with_measure_one_ = false;
+    bool first_system_indentation_ = false;
+    bool show_courtesy_ = false;
+    LayoutBreakType layout_break_type_ = LayoutBreakType::NOBREAK;
 };
 } // namespace mu::engraving

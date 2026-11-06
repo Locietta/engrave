@@ -6,7 +6,7 @@
 #include "engrave_version.h"
 
 namespace muse::appinfo {
-const char *versionString() { return MUSE_APP_VERSION; }
+const char *version_string() { return MUSE_APP_VERSION; }
 
 Version version() {
     static const Version v(MUSE_APP_VERSION);
@@ -15,7 +15,7 @@ Version version() {
 
 String revision() {
 #ifdef MUSE_APP_REVISION
-    return String::fromAscii(MUSE_APP_REVISION);
+    return String::from_ascii(MUSE_APP_REVISION);
 #else
     return String();
 #endif

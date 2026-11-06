@@ -35,40 +35,40 @@ class SharedPart final : public Part {
 public:
     SharedPart(Score *score);
 
-    void addOriginPart(Part *p);
-    void removeOriginPart(Part *p);
+    void add_origin_part(Part *p);
+    void remove_origin_part(Part *p);
 
-    const std::vector<Part *> &originParts() const { return originParts_; }
+    const std::vector<Part *> &origin_parts() const { return origin_parts_; }
 
-    const Part *originPart(track_idx_t sharedTrack, const Fraction &tick) const override;
-    using Part::originPart;
-    Part *originPartForStaff(staff_idx_t sharedStaffIdx, const Fraction &tick) const;
+    const Part *origin_part(track_idx_t shared_track, const Fraction &tick) const override;
+    using Part::origin_part;
+    Part *origin_part_for_staff(staff_idx_t shared_staff_idx, const Fraction &tick) const;
 
-    String partName() const override;
+    String part_name() const override;
 
-    PropertyValue getProperty(Pid pid) const override;
-    PropertyValue propertyDefault(Pid pid) const override;
-    bool setProperty(Pid pid, const PropertyValue &v) override;
+    PropertyValue get_property(Pid pid) const override;
+    PropertyValue property_default(Pid pid) const override;
+    bool set_property(Pid pid, const PropertyValue &v) override;
 
     bool enabled() const;
     bool show() const override;
 
-    const SharedTrackMap &trackMapAtTick(const Fraction &tick) const;
-    void setTrackMapAtTick(const SharedTrackMap &map, const Fraction &tick);
-    void removeMapsBetweenTicks(const Fraction &startTick, const Fraction &endTick);
+    const SharedTrackMap &track_map_at_tick(const Fraction &tick) const;
+    void set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick);
+    void remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick);
 
-    bool isSameInstrumentsAtTick(const Fraction &tick);
+    bool is_same_instruments_at_tick(const Fraction &tick);
 
-    bool isSameInstruments() const { return isSameInstruments_; }
+    bool is_same_instruments() const { return is_same_instruments_; }
 
 private:
-    Part *mappedOriginPart(track_idx_t sharedTrack, const Fraction &tick) const;
+    Part *mapped_origin_part(track_idx_t shared_track, const Fraction &tick) const;
 
-    void computeIsSameInstruments();
-    bool isSameInstruments_ = true;
+    void compute_is_same_instruments();
+    bool is_same_instruments_ = true;
 
     bool enabled_ = true;
-    std::vector<Part *> originParts_;
-    std::map<Fraction, SharedTrackMap> trackMapsByTick_{{Fraction(0, 1), SharedTrackMap()}};
+    std::vector<Part *> origin_parts_;
+    std::map<Fraction, SharedTrackMap> track_maps_by_tick_{{Fraction(0, 1), SharedTrackMap()}};
 };
 } // namespace mu::engraving

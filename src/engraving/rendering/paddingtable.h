@@ -30,12 +30,12 @@ class EngravingItem;
 class MStyle;
 
 template <typename T>
-struct PaddingVector : std::array<T, TOT_ELEMENT_TYPES> {
-    T &operator[](size_t i) { return std::array<T, TOT_ELEMENT_TYPES>::operator[](i); }
+struct PaddingVector : std::array<T, ::mu::engraving::tot_element_types> {
+    T &operator[](size_t i) { return std::array<T, ::mu::engraving::tot_element_types>::operator[](i); }
 
-    T &operator[](ElementType et) { return std::array<T, TOT_ELEMENT_TYPES>::operator[](static_cast<size_t>(et)); }
+    T &operator[](ElementType et) { return std::array<T, ::mu::engraving::tot_element_types>::operator[](static_cast<size_t>(et)); }
 
-    const T &at(ElementType et) const { return std::array<T, TOT_ELEMENT_TYPES>::at(static_cast<size_t>(et)); }
+    const T &at(ElementType et) const { return std::array<T, ::mu::engraving::tot_element_types>::at(static_cast<size_t>(et)); }
 };
 
 struct PaddingTable : public PaddingVector<PaddingVector<double>> {
@@ -43,7 +43,7 @@ public:
     void update(const MStyle &style);
 
 private:
-    void init(double minPadUnit);
+    void init(double min_pad_unit);
 };
 
 struct ParenPaddingTable {
@@ -54,9 +54,9 @@ public:
     double padding(ElementType type1, ElementType type2) const;
 
 protected:
-    void init(double minPadUnit);
-    PaddingVector<double> parenBefore_;
-    PaddingVector<double> parenAfter_;
+    void init(double min_pad_unit);
+    PaddingVector<double> paren_before_;
+    PaddingVector<double> paren_after_;
 };
 
 struct NoteParenPaddingTable : public ParenPaddingTable {
@@ -77,33 +77,35 @@ struct ClefParenPaddingTable : public ParenPaddingTable {
 
 struct ParenPaddingTables {
     void update(const MStyle &style) {
-        noteParenPaddingTable.update(style);
-        keySigParenPaddingTable.update(style);
-        timeSigParenPaddingTable.update(style);
-        clefParenPaddingTable.update(style);
+        note_paren_padding_table.update(style);
+        key_sig_paren_padding_table.update(style);
+        time_sig_paren_padding_table.update(style);
+        clef_paren_padding_table.update(style);
     }
 
-    const ParenPaddingTable &getTableFor(const EngravingItem *item) const;
+    const ParenPaddingTable &get_table_for(const EngravingItem *item) const;
 
 private:
-    NoteParenPaddingTable noteParenPaddingTable;
-    KeySigParenPaddingTable keySigParenPaddingTable;
-    TimeSigParenPaddingTable timeSigParenPaddingTable;
-    ClefParenPaddingTable clefParenPaddingTable;
+    NoteParenPaddingTable note_paren_padding_table;
+    KeySigParenPaddingTable key_sig_paren_padding_table;
+    TimeSigParenPaddingTable time_sig_paren_padding_table;
+    ClefParenPaddingTable clef_paren_padding_table;
 };
 
 struct PaddingTables {
-    const PaddingTable &horizontalPaddingTable() const { return horizontalPaddingTable_; }
+    const PaddingTable &horizontal_padding_table() const { return horizontal_padding_table_; }
 
-    const ParenPaddingTable &parenthesisPaddingTableFor(const EngravingItem *item) const { return parenPaddingTables_.getTableFor(item); }
+    const ParenPaddingTable &parenthesis_padding_table_for(const EngravingItem *item) const {
+        return paren_padding_tables_.get_table_for(item);
+    }
 
     void update(const MStyle &style) {
-        horizontalPaddingTable_.update(style);
-        parenPaddingTables_.update(style);
+        horizontal_padding_table_.update(style);
+        paren_padding_tables_.update(style);
     }
 
 private:
-    PaddingTable horizontalPaddingTable_;
-    ParenPaddingTables parenPaddingTables_;
+    PaddingTable horizontal_padding_table_;
+    ParenPaddingTables paren_padding_tables_;
 };
 } // namespace mu::engraving

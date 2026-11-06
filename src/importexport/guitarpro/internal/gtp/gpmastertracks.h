@@ -10,13 +10,13 @@ namespace mu::iex::guitarpro {
 class GPMasterTracks {
 public:
     struct Automation {
-        enum class Type { tempo, volume, pan };
+        enum class Type { TEMPO, VOLUME, PAN };
         int bar{0};
-        Type type{Type::tempo};
+        Type type{Type::TEMPO};
         float position{0};
         bool linear{false};
         double value{0};
-        int tempoUnit{0};
+        int tempo_unit{0};
         muse::String text;
 
         friend bool operator<(const Automation &l, const Automation &r) { return l.bar < r.bar; }
@@ -24,22 +24,22 @@ public:
 
     GPMasterTracks() = default;
     ~GPMasterTracks() = default;
-    GPMasterTracks(const GPMasterTracks &masterTrack) = default;
-    GPMasterTracks(GPMasterTracks &&masterTrack) = default;
-    GPMasterTracks &operator=(const GPMasterTracks &mT) = default;
-    GPMasterTracks &operator=(GPMasterTracks &&mT) = default;
+    GPMasterTracks(const GPMasterTracks &master_track) = default;
+    GPMasterTracks(GPMasterTracks &&master_track) = default;
+    GPMasterTracks &operator=(const GPMasterTracks &m_t) = default;
+    GPMasterTracks &operator=(GPMasterTracks &&m_t) = default;
 
-    void setTempoMap(std::vector<Automation> &&tM) { _tempoMap.swap(tM); }
+    void set_tempo_map(std::vector<Automation> &&t_m) { tempo_map_value.swap(t_m); }
 
-    const std::vector<Automation> &tempoMap() const { return _tempoMap; }
+    const std::vector<Automation> &tempo_map() const { return tempo_map_value; }
 
-    void setTracksCount(size_t tc) { _tracksCount = tc; }
+    void set_tracks_count(size_t tc) { tracks_count_value = tc; }
 
-    size_t tracksCount() { return _tracksCount; }
+    size_t tracks_count() { return tracks_count_value; }
 
 private:
-    std::vector<Automation> _tempoMap;
-    size_t _tracksCount;
+    std::vector<Automation> tempo_map_value;
+    size_t tracks_count_value;
 };
 } // namespace mu::iex::guitarpro
 

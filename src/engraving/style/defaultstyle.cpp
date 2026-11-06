@@ -29,68 +29,68 @@ using namespace mu;
 using namespace muse::io;
 using namespace mu::engraving;
 
-static const int LEGACY_MSC_VERSION_V450 = 450;
-static const int LEGACY_MSC_VERSION_V302 = 302;
-static const int LEGACY_MSC_VERSION_V3 = 301;
-static const int LEGACY_MSC_VERSION_V2 = 206;
-static const int LEGACY_MSC_VERSION_V1 = 114;
+static const int legacy_msc_version_v450 = 450;
+static const int legacy_msc_version_v302 = 302;
+static const int legacy_msc_version_v3 = 301;
+static const int legacy_msc_version_v2 = 206;
+static const int legacy_msc_version_v1 = 114;
 
-static const String LEGACY_MSS_V1_PATH(u":/engraving/styles/legacy-style-defaults-v1.mss");
-static const String LEGACY_MSS_V2_PATH(u":/engraving/styles/legacy-style-defaults-v2.mss");
-static const String LEGACY_MSS_V3_PATH(u":/engraving/styles/legacy-style-defaults-v3.mss");
-static const String LEGACY_MSS_V302_PATH(u":/engraving/styles/legacy-style-defaults-v302.mss");
-static const String LEGACY_MSS_V450_PATH(u":/engraving/styles/legacy-style-defaults-v450.mss");
+static const String legacy_mss_v1_path(u":/engraving/styles/legacy-style-defaults-v1.mss");
+static const String legacy_mss_v2_path(u":/engraving/styles/legacy-style-defaults-v2.mss");
+static const String legacy_mss_v3_path(u":/engraving/styles/legacy-style-defaults-v3.mss");
+static const String legacy_mss_v302_path(u":/engraving/styles/legacy-style-defaults-v302.mss");
+static const String legacy_mss_v450_path(u":/engraving/styles/legacy-style-defaults-v450.mss");
 
 DefaultStyle *DefaultStyle::instance() {
     static DefaultStyle s;
     return &s;
 }
 
-static void applyPageSizeToStyle(MStyle *style, const SizeF &pageSize) {
-    double oldWidth = style->styleD(Sid::pageWidth);
-    double newPrintableWidth = style->styleD(Sid::pagePrintableWidth) + (pageSize.width() - oldWidth);
+static void apply_page_size_to_style(MStyle *style, const SizeF &page_size) {
+    double old_width = style->style_d(Sid::PAGE_WIDTH);
+    double new_printable_width = style->style_d(Sid::PAGE_PRINTABLE_WIDTH) + (page_size.width() - old_width);
 
-    style->set(Sid::pageWidth, pageSize.width());
-    style->set(Sid::pageHeight, pageSize.height());
-    style->set(Sid::pagePrintableWidth, newPrintableWidth);
+    style->set(Sid::PAGE_WIDTH, page_size.width());
+    style->set(Sid::PAGE_HEIGHT, page_size.height());
+    style->set(Sid::PAGE_PRINTABLE_WIDTH, new_printable_width);
 }
 
-void DefaultStyle::init(const path_t &defaultStyleFilePath, const path_t &partStyleFilePath, const SizeF &defaultPageSize) {
-    baseStyle_.precomputeValues();
+void DefaultStyle::init(const PathT &default_style_file_path, const PathT &part_style_file_path, const SizeF &default_page_size) {
+    base_style_.precompute_values();
 
     {
-        applyPageSizeToStyle(&defaultStyle_, defaultPageSize);
+        apply_page_size_to_style(&default_style_, default_page_size);
 
-        if (!defaultStyleFilePath.empty()) {
-            bool ok = doLoadStyle(&defaultStyle_, defaultStyleFilePath);
+        if (!default_style_file_path.empty()) {
+            bool ok = do_load_style(&default_style_, default_style_file_path);
             if (!ok) {
-                LOGW() << "Failed to load default style file from " << defaultStyleFilePath;
+                LOGW() << "Failed to load default style file from " << default_style_file_path;
             }
         }
 
-        defaultStyle_.precomputeValues();
+        default_style_.precompute_values();
     }
 
-    if (!partStyleFilePath.empty()) {
-        defaultStyleForParts_ = new MStyle();
+    if (!part_style_file_path.empty()) {
+        default_style_for_parts_ = new MStyle();
 
-        applyPageSizeToStyle(defaultStyleForParts_, defaultPageSize);
+        apply_page_size_to_style(default_style_for_parts_, default_page_size);
 
-        bool ok = doLoadStyle(defaultStyleForParts_, partStyleFilePath);
+        bool ok = do_load_style(default_style_for_parts_, part_style_file_path);
         if (!ok) {
-            LOGW() << "Failed to load default part style file from " << partStyleFilePath;
-            delete defaultStyleForParts_;
-            defaultStyleForParts_ = nullptr;
+            LOGW() << "Failed to load default part style file from " << part_style_file_path;
+            delete default_style_for_parts_;
+            default_style_for_parts_ = nullptr;
         } else {
-            defaultStyleForParts_->precomputeValues();
+            default_style_for_parts_->precompute_values();
         }
     }
 }
 
-bool DefaultStyle::doLoadStyle(MStyle *style, const path_t &filePath) {
-    File file(filePath);
-    if (!file.open(IODevice::ReadOnly)) {
-        LOGE() << "failed load style: " << filePath;
+bool DefaultStyle::do_load_style(MStyle *style, const PathT &file_path) {
+    File file(file_path);
+    if (!file.open(IODevice::READ_ONLY)) {
+        LOGE() << "failed load style: " << file_path;
         return false;
     }
 
@@ -99,47 +99,47 @@ bool DefaultStyle::doLoadStyle(MStyle *style, const path_t &filePath) {
 
 // Static
 
-const MStyle &DefaultStyle::baseStyle() { return instance()->baseStyle_; }
+const MStyle &DefaultStyle::base_style() { return instance()->base_style_; }
 
-const MStyle &DefaultStyle::defaultStyle() { return instance()->defaultStyle_; }
+const MStyle &DefaultStyle::default_style() { return instance()->default_style_; }
 
-const MStyle *DefaultStyle::defaultStyleForParts() { return instance()->defaultStyleForParts_; }
+const MStyle *DefaultStyle::default_style_for_parts() { return instance()->default_style_for_parts_; }
 
-const MStyle &DefaultStyle::resolveStyleDefaults(const int defaultsVersion) {
-    static auto loadedStyle = [](MStyle &style, const String &path, bool &loaded_flag) -> const MStyle & {
+const MStyle &DefaultStyle::resolve_style_defaults(const int defaults_version) {
+    static auto loaded_style = [](MStyle &style, const String &path, bool &loaded_flag) -> const MStyle & {
         if (loaded_flag) {
             return style;
         }
-        loaded_flag = doLoadStyle(&style, path);
+        loaded_flag = do_load_style(&style, path);
         return style;
     };
 
-    switch (defaultsVersion) {
-        case LEGACY_MSC_VERSION_V450: {
+    switch (defaults_version) {
+        case ::legacy_msc_version_v450: {
             static MStyle style_v450;
             static bool loaded_v450 = false;
-            return loadedStyle(style_v450, LEGACY_MSS_V450_PATH, loaded_v450);
+            return loaded_style(style_v450, ::legacy_mss_v450_path, loaded_v450);
         } break;
-        case LEGACY_MSC_VERSION_V302: {
+        case ::legacy_msc_version_v302: {
             static MStyle style_v302;
             static bool loaded_v302 = false;
-            return loadedStyle(style_v302, LEGACY_MSS_V302_PATH, loaded_v302);
+            return loaded_style(style_v302, ::legacy_mss_v302_path, loaded_v302);
         } break;
-        case LEGACY_MSC_VERSION_V3: {
+        case ::legacy_msc_version_v3: {
             static MStyle style_v3;
             static bool loaded_v3 = false;
-            return loadedStyle(style_v3, LEGACY_MSS_V3_PATH, loaded_v3);
+            return loaded_style(style_v3, ::legacy_mss_v3_path, loaded_v3);
         } break;
-        case LEGACY_MSC_VERSION_V2: {
+        case ::legacy_msc_version_v2: {
             static MStyle style_v2;
             static bool loaded_v2 = false;
-            return loadedStyle(style_v2, LEGACY_MSS_V2_PATH, loaded_v2);
+            return loaded_style(style_v2, ::legacy_mss_v2_path, loaded_v2);
         } break;
-        case LEGACY_MSC_VERSION_V1: {
+        case ::legacy_msc_version_v1: {
             static MStyle style_v1;
             static bool loaded_v1 = false;
-            return loadedStyle(style_v1, LEGACY_MSS_V1_PATH, loaded_v1);
+            return loaded_style(style_v1, ::legacy_mss_v1_path, loaded_v1);
         } break;
-        default: return baseStyle();
+        default: return base_style();
     }
 }

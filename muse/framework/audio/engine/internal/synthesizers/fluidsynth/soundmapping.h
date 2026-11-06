@@ -31,8 +31,8 @@
 
 namespace muse::audio::synth {
 struct SoundMappingKey {
-    mpe::SoundId id = mpe::SoundId::Undefined;
-    mpe::SoundSubCategories subCategories;
+    mpe::SoundId id = mpe::SoundId::UNDEFINED;
+    mpe::SoundSubCategories sub_categories;
 
     bool operator<(const SoundMappingKey &other) const {
         if (id < other.id) {
@@ -43,739 +43,739 @@ struct SoundMappingKey {
             return false;
         }
 
-        return subCategories < other.subCategories;
+        return sub_categories < other.sub_categories;
     }
 };
 
 using ArticulationMapping = std::map<mpe::ArticulationType, midi::Program>;
 
-static const auto &mappingByCategory(const mpe::SoundCategory category) {
-    static const std::map<SoundMappingKey, midi::Programs> KEYBOARDS_MAPPINGS = {
-        {{mpe::SoundId::Celesta, {}}, {midi::Program(0, 8)}},
-        {{mpe::SoundId::Clavichord, {mpe::SoundSubCategory::Baroque}}, {midi::Program(0, 7)}},
-        {{mpe::SoundId::Clavichord, {mpe::SoundSubCategory::Electric}}, {midi::Program(0, 7)}},
-        {{mpe::SoundId::OndesMartenot, {mpe::SoundSubCategory::Electric}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Harpsichord, {}}, {midi::Program(0, 6)}},
-        {{mpe::SoundId::Virginal, {mpe::SoundSubCategory::Baroque}}, {midi::Program(0, 6)}},
-        {{mpe::SoundId::Piano, {mpe::SoundSubCategory::Electric}}, {midi::Program(0, 4)}},
-        {{mpe::SoundId::Piano, {mpe::SoundSubCategory::Grand}}, {midi::Program(0, 0)}},
-        {{mpe::SoundId::Piano, {mpe::SoundSubCategory::HonkyTonk}}, {midi::Program(0, 3)}},
-        {{mpe::SoundId::Piano, {}}, {midi::Program(0, 0)}},
-        {{mpe::SoundId::Piano, {mpe::SoundSubCategory::Toy}}, {midi::Program(0, 8)}},
-        {{mpe::SoundId::Piano, {mpe::SoundSubCategory::Upright}}, {midi::Program(0, 0)}},
+static const auto &mapping_by_category(const mpe::SoundCategory category) {
+    static const std::map<SoundMappingKey, midi::Programs> keyboards_mappings = {
+        {{mpe::SoundId::CELESTA, {}}, {midi::Program(0, 8)}},
+        {{mpe::SoundId::CLAVICHORD, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 7)}},
+        {{mpe::SoundId::CLAVICHORD, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 7)}},
+        {{mpe::SoundId::ONDES_MARTENOT, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::HARPSICHORD, {}}, {midi::Program(0, 6)}},
+        {{mpe::SoundId::VIRGINAL, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 6)}},
+        {{mpe::SoundId::PIANO, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 4)}},
+        {{mpe::SoundId::PIANO, {mpe::SoundSubCategory::GRAND}}, {midi::Program(0, 0)}},
+        {{mpe::SoundId::PIANO, {mpe::SoundSubCategory::HONKY_TONK}}, {midi::Program(0, 3)}},
+        {{mpe::SoundId::PIANO, {}}, {midi::Program(0, 0)}},
+        {{mpe::SoundId::PIANO, {mpe::SoundSubCategory::TOY}}, {midi::Program(0, 8)}},
+        {{mpe::SoundId::PIANO, {mpe::SoundSubCategory::UPRIGHT}}, {midi::Program(0, 0)}},
 
-        {{mpe::SoundId::Organ, {mpe::SoundSubCategory::Hammond}}, {midi::Program(0, 16)}},
-        {{mpe::SoundId::Organ, {}}, {midi::Program(0, 19)}},
-        {{mpe::SoundId::Organ, {mpe::SoundSubCategory::Percussive}}, {midi::Program(0, 17)}},
-        {{mpe::SoundId::Organ, {mpe::SoundSubCategory::Piped}}, {midi::Program(0, 19)}},
-        {{mpe::SoundId::Organ, {mpe::SoundSubCategory::Rotary}}, {midi::Program(0, 18)}},
-        {{mpe::SoundId::Organ, {mpe::SoundSubCategory::Reed}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::ORGAN, {mpe::SoundSubCategory::HAMMOND}}, {midi::Program(0, 16)}},
+        {{mpe::SoundId::ORGAN, {}}, {midi::Program(0, 19)}},
+        {{mpe::SoundId::ORGAN, {mpe::SoundSubCategory::PERCUSSIVE}}, {midi::Program(0, 17)}},
+        {{mpe::SoundId::ORGAN, {mpe::SoundSubCategory::PIPED}}, {midi::Program(0, 19)}},
+        {{mpe::SoundId::ORGAN, {mpe::SoundSubCategory::ROTARY}}, {midi::Program(0, 18)}},
+        {{mpe::SoundId::ORGAN, {mpe::SoundSubCategory::REED}}, {midi::Program(0, 20)}},
 
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::String}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::STRING}},
          {midi::Program(0, 50), midi::Program(0, 51)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Brass}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::BRASS}},
          {midi::Program(0, 62), midi::Program(0, 63)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric}}, {midi::Program(0, 80)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Atmosphere}}, {midi::Program(0, 99)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Brightness}}, {midi::Program(0, 100)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Crystal}}, {midi::Program(0, 98)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Echoes}}, {midi::Program(0, 102)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Goblins}}, {midi::Program(0, 101)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Rain}}, {midi::Program(0, 96)}},
-        {{mpe::SoundId::Synthesizer,
-          {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_Atmosphere, mpe::SoundSubCategory::FX_Brightness,
-           mpe::SoundSubCategory::FX_Crystal, mpe::SoundSubCategory::FX_Echoes, mpe::SoundSubCategory::FX_Goblins,
-           mpe::SoundSubCategory::FX_Rain}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 80)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_ATMOSPHERE}}, {midi::Program(0, 99)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_BRIGHTNESS}}, {midi::Program(0, 100)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_CRYSTAL}}, {midi::Program(0, 98)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_ECHOES}}, {midi::Program(0, 102)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_GOBLINS}}, {midi::Program(0, 101)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_RAIN}}, {midi::Program(0, 96)}},
+        {{mpe::SoundId::SYNTHESIZER,
+          {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_ATMOSPHERE, mpe::SoundSubCategory::FX_BRIGHTNESS,
+           mpe::SoundSubCategory::FX_CRYSTAL, mpe::SoundSubCategory::FX_ECHOES, mpe::SoundSubCategory::FX_GOBLINS,
+           mpe::SoundSubCategory::FX_RAIN}},
          {midi::Program(0, 80), midi::Program(0, 99), midi::Program(0, 100), midi::Program(0, 98), midi::Program(0, 102),
           midi::Program(0, 101), midi::Program(0, 96)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Sine_Wave}}, {midi::Program(8, 80)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Square_Wave}}, {midi::Program(0, 80)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Sawtooth_Wave}}, {midi::Program(0, 81)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::NewAge}}, {midi::Program(0, 88)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Pad}}, {midi::Program(0, 88)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Warm}}, {midi::Program(0, 89)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Polysynth}}, {midi::Program(0, 90)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Choir}}, {midi::Program(0, 91)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Metallic}}, {midi::Program(0, 93)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Halo}}, {midi::Program(0, 94)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Sweep}}, {midi::Program(0, 95)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_SoundTrack}}, {midi::Program(0, 97)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::FX_SciFi}}, {midi::Program(0, 103)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::SINE_WAVE}}, {midi::Program(8, 80)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::SQUARE_WAVE}}, {midi::Program(0, 80)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::SAWTOOTH_WAVE}}, {midi::Program(0, 81)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::NEW_AGE}}, {midi::Program(0, 88)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::PAD}}, {midi::Program(0, 88)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::WARM}}, {midi::Program(0, 89)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::POLYSYNTH}}, {midi::Program(0, 90)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::CHOIR}}, {midi::Program(0, 91)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::METALLIC}}, {midi::Program(0, 93)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::HALO}}, {midi::Program(0, 94)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::SWEEP}}, {midi::Program(0, 95)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_SOUND_TRACK}}, {midi::Program(0, 97)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_SCI_FI}}, {midi::Program(0, 103)}},
     };
 
-    static const std::map<SoundMappingKey, midi::Programs> STRINGS_MAPPINGS = {
-        {{mpe::SoundId::Harp, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 46)}},
+    static const std::map<SoundMappingKey, midi::Programs> strings_mappings = {
+        {{mpe::SoundId::HARP, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 46)}},
 
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Contra, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::CONTRA, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::Guitar, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 27)}},
+        {{mpe::SoundId::GUITAR, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 27)}},
 
-        {{mpe::SoundId::Guitar, {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR, {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 25)}},
 
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::TwelveString,
-           mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::TWELVE_STRING,
+           mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(8, 25)}},
 
-        {{mpe::SoundId::Guitar,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Pedal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::PEDAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 25)}},
 
-        {{mpe::SoundId::Guitar, {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::GUITAR, {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::Guitar, {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::GUITAR, {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::BassGuitar, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::BASS_GUITAR, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 33)}},
-        {{mpe::SoundId::BassGuitar, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 33)}},
-        {{mpe::SoundId::BassGuitar, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Fretless, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::BASS_GUITAR, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 33)}},
+        {{mpe::SoundId::BASS_GUITAR, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FRETLESS, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 35)}},
-        {{mpe::SoundId::BassGuitar, {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 32)}},
+        {{mpe::SoundId::BASS_GUITAR, {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 32)}},
 
-        {{mpe::SoundId::Banjo, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 105)}},
-        {{mpe::SoundId::Banjo, {mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 105)}},
-        {{mpe::SoundId::Banjo, {mpe::SoundSubCategory::Irish, mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::BANJO, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 105)}},
+        {{mpe::SoundId::BANJO, {mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 105)}},
+        {{mpe::SoundId::BANJO, {mpe::SoundSubCategory::IRISH, mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 105)}},
 
-        {{mpe::SoundId::Ukulele, {mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 24)}},
-        {{mpe::SoundId::Ukulele, {mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 24)}},
-        {{mpe::SoundId::Ukulele, {mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 24)}},
+        {{mpe::SoundId::UKULELE, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 24)}},
+        {{mpe::SoundId::UKULELE, {mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 24)}},
+        {{mpe::SoundId::UKULELE, {mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 24)}},
 
-        {{mpe::SoundId::Mandolin, {mpe::SoundSubCategory::Plucked}}, {midi::Program(16, 25)}},
-        {{mpe::SoundId::Mandolin,
+        {{mpe::SoundId::MANDOLIN, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(16, 25)}},
+        {{mpe::SoundId::MANDOLIN,
           {
-              mpe::SoundSubCategory::Alto,
-              mpe::SoundSubCategory::Plucked,
+              mpe::SoundSubCategory::ALTO,
+              mpe::SoundSubCategory::PLUCKED,
           }},
          {midi::Program(16, 25)}},
-        {{mpe::SoundId::Mandolin, {mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}}, {midi::Program(16, 25)}},
-        {{mpe::SoundId::Mandolin, {mpe::SoundSubCategory::Octave, mpe::SoundSubCategory::Plucked}}, {midi::Program(16, 25)}},
+        {{mpe::SoundId::MANDOLIN, {mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(16, 25)}},
+        {{mpe::SoundId::MANDOLIN, {mpe::SoundSubCategory::OCTAVE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(16, 25)}},
 
-        {{mpe::SoundId::MtnDulcimer, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 25)}},
-        {{mpe::SoundId::MtnDulcimer, {mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::Plucked}}, {midi::Program(16, 25)}},
-        {{mpe::SoundId::MtnDulcimer, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Plucked}}, {midi::Program(16, 25)}},
+        {{mpe::SoundId::MTN_DULCIMER, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 25)}},
+        {{mpe::SoundId::MTN_DULCIMER, {mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(16, 25)}},
+        {{mpe::SoundId::MTN_DULCIMER, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(16, 25)}},
 
-        {{mpe::SoundId::Cavaquinho, {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::CAVAQUINHO, {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 25)}},
 
-        {{mpe::SoundId::Lute, {mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
-        {{mpe::SoundId::Lute, {mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
-        {{mpe::SoundId::Lute, {mpe::SoundSubCategory::Baroque, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
-        {{mpe::SoundId::Lute, {mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
-        {{mpe::SoundId::Lute, {mpe::SoundSubCategory::Greek, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::LUTE, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::LUTE, {mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::LUTE, {mpe::SoundSubCategory::BAROQUE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::LUTE, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::LUTE, {mpe::SoundSubCategory::GREEK, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
 
-        {{mpe::SoundId::Theorbo, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::THEORBO, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::Balalaika, {mpe::SoundSubCategory::Prima, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Balalaika, {mpe::SoundSubCategory::Piccolo, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Balalaika, {mpe::SoundSubCategory::Prima, mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::BALALAIKA, {mpe::SoundSubCategory::PRIMA, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::BALALAIKA, {mpe::SoundSubCategory::PICCOLO, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::BALALAIKA, {mpe::SoundSubCategory::PRIMA, mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(8, 107)}},
-        {{mpe::SoundId::Balalaika,
+        {{mpe::SoundId::BALALAIKA,
           {
-              mpe::SoundSubCategory::Prima,
-              mpe::SoundSubCategory::Bass,
-              mpe::SoundSubCategory::Plucked,
+              mpe::SoundSubCategory::PRIMA,
+              mpe::SoundSubCategory::BASS,
+              mpe::SoundSubCategory::PLUCKED,
           }},
          {midi::Program(8, 107)}},
-        {{mpe::SoundId::Balalaika,
+        {{mpe::SoundId::BALALAIKA,
           {
-              mpe::SoundSubCategory::Prima,
-              mpe::SoundSubCategory::Contra_Bass,
-              mpe::SoundSubCategory::Plucked,
+              mpe::SoundSubCategory::PRIMA,
+              mpe::SoundSubCategory::CONTRA_BASS,
+              mpe::SoundSubCategory::PLUCKED,
           }},
          {midi::Program(8, 107)}},
-        {{mpe::SoundId::Balalaika,
+        {{mpe::SoundId::BALALAIKA,
           {
-              mpe::SoundSubCategory::Secunda,
-              mpe::SoundSubCategory::Plucked,
+              mpe::SoundSubCategory::SECUNDA,
+              mpe::SoundSubCategory::PLUCKED,
           }},
          {midi::Program(8, 107)}},
 
-        {{mpe::SoundId::Guzheng, {mpe::SoundSubCategory::Chinese, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Guqin, {mpe::SoundSubCategory::Chinese, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Pipa, {mpe::SoundSubCategory::Chinese, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 106)}},
-        {{mpe::SoundId::Yangqin, {mpe::SoundSubCategory::Chinese}}, {midi::Program(0, 15)}},
-        {{mpe::SoundId::Koto, {mpe::SoundSubCategory::Japanese, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Gayageum, {mpe::SoundSubCategory::Korean, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 107)}},
-        {{mpe::SoundId::Oud, {mpe::SoundSubCategory::African, mpe::SoundSubCategory::Plucked}}, {midi::Program(8, 25)}},
-        {{mpe::SoundId::Shamisen, {mpe::SoundSubCategory::Japanese, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 106)}},
-        {{mpe::SoundId::Sitar, {mpe::SoundSubCategory::Indian, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 104)}},
-        {{mpe::SoundId::Prim,
+        {{mpe::SoundId::GUZHENG, {mpe::SoundSubCategory::CHINESE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::GUQIN, {mpe::SoundSubCategory::CHINESE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::PIPA, {mpe::SoundSubCategory::CHINESE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 106)}},
+        {{mpe::SoundId::YANGQIN, {mpe::SoundSubCategory::CHINESE}}, {midi::Program(0, 15)}},
+        {{mpe::SoundId::KOTO, {mpe::SoundSubCategory::JAPANESE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::GAYAGEUM, {mpe::SoundSubCategory::KOREAN, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 107)}},
+        {{mpe::SoundId::OUD, {mpe::SoundSubCategory::AFRICAN, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(8, 25)}},
+        {{mpe::SoundId::SHAMISEN, {mpe::SoundSubCategory::JAPANESE, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 106)}},
+        {{mpe::SoundId::SITAR, {mpe::SoundSubCategory::INDIAN, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 104)}},
+        {{mpe::SoundId::PRIM,
           {
-              mpe::SoundSubCategory::Plucked,
+              mpe::SoundSubCategory::PLUCKED,
           }},
          {midi::Program(0, 24)}},
-        {{mpe::SoundId::Brac, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
-        {{mpe::SoundId::Bugarija, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
-        {{mpe::SoundId::Berda, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 32)}},
-        {{mpe::SoundId::Celo, {mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
-        {{mpe::SoundId::Bandurria, {mpe::SoundSubCategory::Spanish, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
-        {{mpe::SoundId::Laud, {mpe::SoundSubCategory::Spanish, mpe::SoundSubCategory::Plucked}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::BRAC, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::BUGARIJA, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::BERDA, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 32)}},
+        {{mpe::SoundId::CELO, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::BANDURRIA, {mpe::SoundSubCategory::SPANISH, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
+        {{mpe::SoundId::LAUD, {mpe::SoundSubCategory::SPANISH, mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::StringsGroup, {}}, {midi::Program(0, 48)}},
-        {{mpe::SoundId::Contrabass, {mpe::SoundSubCategory::Orchestral}}, {midi::Program(0, 43)}},
-        {{mpe::SoundId::Contrabass, {mpe::SoundSubCategory::Orchestral, mpe::SoundSubCategory::Section}}, {midi::Program(50, 48)}},
-        {{mpe::SoundId::Violin, {mpe::SoundSubCategory::Orchestral}}, {midi::Program(0, 40)}},
-        {{mpe::SoundId::Violin, {mpe::SoundSubCategory::Orchestral, mpe::SoundSubCategory::Section}}, {midi::Program(20, 48)}},
-        {{mpe::SoundId::Viola, {mpe::SoundSubCategory::Orchestral}}, {midi::Program(0, 41)}},
-        {{mpe::SoundId::Viola, {mpe::SoundSubCategory::Orchestral, mpe::SoundSubCategory::Section}}, {midi::Program(30, 48)}},
-        {{mpe::SoundId::Violoncello, {mpe::SoundSubCategory::Orchestral}}, {midi::Program(0, 42)}},
-        {{mpe::SoundId::Violoncello, {mpe::SoundSubCategory::Orchestral, mpe::SoundSubCategory::Section}}, {midi::Program(40, 48)}},
+        {{mpe::SoundId::STRINGS_GROUP, {}}, {midi::Program(0, 48)}},
+        {{mpe::SoundId::CONTRABASS, {mpe::SoundSubCategory::ORCHESTRAL}}, {midi::Program(0, 43)}},
+        {{mpe::SoundId::CONTRABASS, {mpe::SoundSubCategory::ORCHESTRAL, mpe::SoundSubCategory::SECTION}}, {midi::Program(50, 48)}},
+        {{mpe::SoundId::VIOLIN, {mpe::SoundSubCategory::ORCHESTRAL}}, {midi::Program(0, 40)}},
+        {{mpe::SoundId::VIOLIN, {mpe::SoundSubCategory::ORCHESTRAL, mpe::SoundSubCategory::SECTION}}, {midi::Program(20, 48)}},
+        {{mpe::SoundId::VIOLA, {mpe::SoundSubCategory::ORCHESTRAL}}, {midi::Program(0, 41)}},
+        {{mpe::SoundId::VIOLA, {mpe::SoundSubCategory::ORCHESTRAL, mpe::SoundSubCategory::SECTION}}, {midi::Program(30, 48)}},
+        {{mpe::SoundId::VIOLONCELLO, {mpe::SoundSubCategory::ORCHESTRAL}}, {midi::Program(0, 42)}},
+        {{mpe::SoundId::VIOLONCELLO, {mpe::SoundSubCategory::ORCHESTRAL, mpe::SoundSubCategory::SECTION}}, {midi::Program(40, 48)}},
 
-        {{mpe::SoundId::Viol, {}}, {midi::Program(0, 40)}},
-        {{mpe::SoundId::Viol, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 41)}},
-        {{mpe::SoundId::PardessusViol, {}}, {midi::Program(0, 40)}},
-        {{mpe::SoundId::Viol, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 41)}},
-        {{mpe::SoundId::Viol, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 42)}},
-        {{mpe::SoundId::ViolaDaGamba, {}}, {midi::Program(0, 42)}},
-        {{mpe::SoundId::Violone, {}}, {midi::Program(0, 43)}},
+        {{mpe::SoundId::VIOL, {}}, {midi::Program(0, 40)}},
+        {{mpe::SoundId::VIOL, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 41)}},
+        {{mpe::SoundId::PARDESSUS_VIOL, {}}, {midi::Program(0, 40)}},
+        {{mpe::SoundId::VIOL, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 41)}},
+        {{mpe::SoundId::VIOL, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 42)}},
+        {{mpe::SoundId::VIOLA_DA_GAMBA, {}}, {midi::Program(0, 42)}},
+        {{mpe::SoundId::VIOLONE, {}}, {midi::Program(0, 43)}},
 
-        {{mpe::SoundId::Octobass, {}}, {midi::Program(0, 43)}},
-        {{mpe::SoundId::TimpleCanario,
-          {mpe::SoundSubCategory::Acoustic, mpe::SoundSubCategory::Nylon, mpe::SoundSubCategory::Spanish, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::OCTOBASS, {}}, {midi::Program(0, 43)}},
+        {{mpe::SoundId::TIMPLE_CANARIO,
+          {mpe::SoundSubCategory::ACOUSTIC, mpe::SoundSubCategory::NYLON, mpe::SoundSubCategory::SPANISH, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 24)}},
 
-        {{mpe::SoundId::Erhu, {mpe::SoundSubCategory::Chinese}}, {midi::Program(0, 110)}},
-        {{mpe::SoundId::Nyckelharpa, {mpe::SoundSubCategory::Swedish}}, {midi::Program(0, 41)}},
-        {{mpe::SoundId::Ajaeng, {mpe::SoundSubCategory::Korean}}, {midi::Program(0, 110)}},
+        {{mpe::SoundId::ERHU, {mpe::SoundSubCategory::CHINESE}}, {midi::Program(0, 110)}},
+        {{mpe::SoundId::NYCKELHARPA, {mpe::SoundSubCategory::SWEDISH}}, {midi::Program(0, 41)}},
+        {{mpe::SoundId::AJAENG, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(0, 110)}},
 
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Plucked}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::PLUCKED}},
          {midi::Program(0, 38)}},
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Bowed}}, {midi::Program(0, 92)}},
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::BOWED}}, {midi::Program(0, 92)}},
     };
 
-    static const std::map<SoundMappingKey, midi::Programs> WINDS_MAPPINGS = {
-        {{mpe::SoundId::WindsGroup, {}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Piccolo, {}}, {midi::Program(0, 72)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 72)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Contra_Alto}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Sub_Contra_Alto}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Double_Contra_Bass}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Hyper_Bass}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {mpe::SoundSubCategory::Irish}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Flute, {}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Traverso, {mpe::SoundSubCategory::Baroque}}, {midi::Program(0, 73)}},
-        {{mpe::SoundId::Danso, {}}, {midi::Program(0, 76)}},
-        {{mpe::SoundId::Daegeum, {mpe::SoundSubCategory::Korean}}, {midi::Program(0, 73)}},
+    static const std::map<SoundMappingKey, midi::Programs> winds_mappings = {
+        {{mpe::SoundId::WINDS_GROUP, {}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::PICCOLO, {}}, {midi::Program(0, 72)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 72)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::CONTRA_ALTO}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::SUB_CONTRA_ALTO}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::DOUBLE_CONTRA_BASS}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::HYPER_BASS}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::IRISH}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::FLUTE, {}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::TRAVERSO, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 73)}},
+        {{mpe::SoundId::DANSO, {}}, {midi::Program(0, 76)}},
+        {{mpe::SoundId::DAEGEUM, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(0, 73)}},
 
-        {{mpe::SoundId::Dizi, {mpe::SoundSubCategory::Chinese}}, {midi::Program(0, 72)}},
+        {{mpe::SoundId::DIZI, {mpe::SoundSubCategory::CHINESE}}, {midi::Program(0, 72)}},
 
-        {{mpe::SoundId::Shakuhachi, {mpe::SoundSubCategory::Japanese}}, {midi::Program(0, 77)}},
-        {{mpe::SoundId::Hichiriki, {mpe::SoundSubCategory::Japanese}}, {midi::Program(0, 68)}},
-        {{mpe::SoundId::Fife, {}}, {midi::Program(0, 72)}},
+        {{mpe::SoundId::SHAKUHACHI, {mpe::SoundSubCategory::JAPANESE}}, {midi::Program(0, 77)}},
+        {{mpe::SoundId::HICHIRIKI, {mpe::SoundSubCategory::JAPANESE}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::FIFE, {}}, {midi::Program(0, 72)}},
 
-        {{mpe::SoundId::Whistle, {mpe::SoundSubCategory::Tin}}, {midi::Program(0, 78)}},
-        {{mpe::SoundId::Whistle, {mpe::SoundSubCategory::Slide}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::WHISTLE, {mpe::SoundSubCategory::TIN}}, {midi::Program(0, 78)}},
+        {{mpe::SoundId::WHISTLE, {mpe::SoundSubCategory::SLIDE}}, {midi::Program(0, 79)}},
 
-        {{mpe::SoundId::Flageolet, {}}, {midi::Program(0, 78)}},
+        {{mpe::SoundId::FLAGEOLET, {}}, {midi::Program(0, 78)}},
 
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Garklein}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Great_Bass}}, {midi::Program(0, 74)}},
-        {{mpe::SoundId::Recorder, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::GARKLEIN}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::GREAT_BASS}}, {midi::Program(0, 74)}},
+        {{mpe::SoundId::RECORDER, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 74)}},
 
-        {{mpe::SoundId::Ocarina, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Ocarina, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Ocarina, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::OCARINA, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::OCARINA, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::OCARINA, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 79)}},
 
-        {{mpe::SoundId::Gemshorn, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Gemshorn, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Gemshorn, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 79)}},
-        {{mpe::SoundId::Gemshorn, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::GEMSHORN, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::GEMSHORN, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::GEMSHORN, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::GEMSHORN, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 79)}},
 
-        {{mpe::SoundId::Theremin, {mpe::SoundSubCategory::Electric}}, {midi::Program(0, 79)}},
+        {{mpe::SoundId::THEREMIN, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 79)}},
 
-        {{mpe::SoundId::PanFlute, {}}, {midi::Program(0, 75)}},
+        {{mpe::SoundId::PAN_FLUTE, {}}, {midi::Program(0, 75)}},
 
-        {{mpe::SoundId::Quena, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::QUENA, {}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Dulzaina, {mpe::SoundSubCategory::Castilian}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::DULZAINA, {mpe::SoundSubCategory::CASTILIAN}}, {midi::Program(0, 68)}},
 
-        {{mpe::SoundId::Heckelphone, {}}, {midi::Program(0, 68)}},
-        {{mpe::SoundId::Oboe, {mpe::SoundSubCategory::Baroque}}, {midi::Program(0, 69)}},
-        {{mpe::SoundId::Oboe, {}}, {midi::Program(0, 68)}},
-        {{mpe::SoundId::Oboe, {mpe::SoundSubCategory::English}}, {midi::Program(0, 69)}},
-        {{mpe::SoundId::Oboe, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 68)}},
-        {{mpe::SoundId::Lupophone, {}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::HECKELPHONE, {}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::OBOE, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 69)}},
+        {{mpe::SoundId::OBOE, {}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::OBOE, {mpe::SoundSubCategory::ENGLISH}}, {midi::Program(0, 69)}},
+        {{mpe::SoundId::OBOE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::LUPOPHONE, {}}, {midi::Program(0, 68)}},
 
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Shawm, {mpe::SoundSubCategory::Great_Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SHAWM, {mpe::SoundSubCategory::GREAT_BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Cromorne, {mpe::SoundSubCategory::French, mpe::SoundSubCategory::Baroque, mpe::SoundSubCategory::Reed}},
+        {{mpe::SoundId::CROMORNE, {mpe::SoundSubCategory::FRENCH, mpe::SoundSubCategory::BAROQUE, mpe::SoundSubCategory::REED}},
          {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Crumhorn, {}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Crumhorn, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Crumhorn, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Crumhorn, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Crumhorn, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Crumhorn, {mpe::SoundSubCategory::Great_Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CRUMHORN, {mpe::SoundSubCategory::GREAT_BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Cornamuse, {}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Cornamuse, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Cornamuse, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Cornamuse, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Cornamuse, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CORNAMUSE, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CORNAMUSE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CORNAMUSE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CORNAMUSE, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CORNAMUSE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Kelhorn, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Kelhorn, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Kelhorn, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Kelhorn, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Kelhorn, {mpe::SoundSubCategory::Great_Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::KELHORN, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::KELHORN, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::KELHORN, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::KELHORN, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::KELHORN, {mpe::SoundSubCategory::GREAT_BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Rauschpfeife, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Rauschpfeife, {}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Rauschpfeife, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::RAUSCHPFEIFE, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::RAUSCHPFEIFE, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::RAUSCHPFEIFE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Duduk, {mpe::SoundSubCategory::Armenian}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Duduk, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Armenian}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::DUDUK, {mpe::SoundSubCategory::ARMENIAN}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::DUDUK, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::ARMENIAN}}, {midi::Program(0, 71)}},
 
-        {{mpe::SoundId::Shenai, {mpe::SoundSubCategory::Indian}}, {midi::Program(0, 111)}},
+        {{mpe::SoundId::SHENAI, {mpe::SoundSubCategory::INDIAN}}, {midi::Program(0, 111)}},
 
-        {{mpe::SoundId::Clarinet, {}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Sopranino, mpe::SoundSubCategory::In_E_flat}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::In_B_flat}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::In_B_flat}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Contra_Alto}}, {midi::Program(0, 71)}},
-        {{mpe::SoundId::Clarinet, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::SOPRANINO, mpe::SoundSubCategory::IN_E_FLAT}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::IN_B_FLAT}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::IN_B_FLAT}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::CONTRA_ALTO}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::CLARINET, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 71)}},
 
-        {{mpe::SoundId::Chalumeau, {}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Chalumeau, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Chalumeau, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Chalumeau, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Chalumeau, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Chalumeau, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::CHALUMEAU, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Xaphoon, {}}, {midi::Program(0, 71)}},
+        {{mpe::SoundId::XAPHOON, {}}, {midi::Program(0, 71)}},
 
-        {{mpe::SoundId::Tarogato, {mpe::SoundSubCategory::Hungarian, mpe::SoundSubCategory::Romanian}}, {midi::Program(0, 69)}},
+        {{mpe::SoundId::TAROGATO, {mpe::SoundSubCategory::HUNGARIAN, mpe::SoundSubCategory::ROMANIAN}}, {midi::Program(0, 69)}},
 
-        {{mpe::SoundId::Octavin, {}}, {midi::Program(0, 69)}},
+        {{mpe::SoundId::OCTAVIN, {}}, {midi::Program(0, 69)}},
 
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Sopranissimo}}, {midi::Program(0, 64)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 64)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 64)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Mezzo_Soprano}}, {midi::Program(0, 65)}},
-        {{mpe::SoundId::HeckelphoneClarinet, {}}, {midi::Program(0, 68)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 65)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Melody}}, {midi::Program(0, 66)}},
-        {{mpe::SoundId::Saxophone, {}}, {midi::Program(0, 66)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 66)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Saxophone, {mpe::SoundSubCategory::Sub_Contra_Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::SOPRANISSIMO}}, {midi::Program(0, 64)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 64)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 64)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::MEZZO_SOPRANO}}, {midi::Program(0, 65)}},
+        {{mpe::SoundId::HECKELPHONE_CLARINET, {}}, {midi::Program(0, 68)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 65)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::MELODY}}, {midi::Program(0, 66)}},
+        {{mpe::SoundId::SAXOPHONE, {}}, {midi::Program(0, 66)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 66)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SAXOPHONE, {mpe::SoundSubCategory::SUB_CONTRA_BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Bassoon, {}}, {midi::Program(0, 70)}},
-        {{mpe::SoundId::Contrabassoon, {}}, {midi::Program(0, 70)}},
-        {{mpe::SoundId::Contrabassoon, {mpe::SoundSubCategory::Reed}}, {midi::Program(0, 70)}},
-        {{mpe::SoundId::Dulcian, {}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Rackett, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::BASSOON, {}}, {midi::Program(0, 70)}},
+        {{mpe::SoundId::CONTRABASSOON, {}}, {midi::Program(0, 70)}},
+        {{mpe::SoundId::CONTRABASSOON, {mpe::SoundSubCategory::REED}}, {midi::Program(0, 70)}},
+        {{mpe::SoundId::DULCIAN, {}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::RACKETT, {}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Sopranino}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 67)}},
-        {{mpe::SoundId::Sarrusophone, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::SOPRANINO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 67)}},
+        {{mpe::SoundId::SARRUSOPHONE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 67)}},
 
-        {{mpe::SoundId::Bagpipe, {}}, {midi::Program(0, 109)}},
-        {{mpe::SoundId::Accordion, {}}, {midi::Program(0, 21)}},
-        {{mpe::SoundId::Bandoneon, {}}, {midi::Program(0, 23)}},
-        {{mpe::SoundId::Concertina, {}}, {midi::Program(0, 21)}},
+        {{mpe::SoundId::BAGPIPE, {}}, {midi::Program(0, 109)}},
+        {{mpe::SoundId::ACCORDION, {}}, {midi::Program(0, 21)}},
+        {{mpe::SoundId::BANDONEON, {}}, {midi::Program(0, 23)}},
+        {{mpe::SoundId::CONCERTINA, {}}, {midi::Program(0, 21)}},
 
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Diatonic}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Chromatic}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Chromatic, mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Chromatic}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Huang}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Hohner}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Huang}}, {midi::Program(0, 22)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::DIATONIC}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::CHROMATIC}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::CHROMATIC, mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::CHROMATIC}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::HUANG}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::HOHNER}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::HUANG}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 22)}},
 
-        {{mpe::SoundId::Melodica, {}}, {midi::Program(0, 22)}},
+        {{mpe::SoundId::MELODICA, {}}, {midi::Program(0, 22)}},
 
-        {{mpe::SoundId::Sho, {mpe::SoundSubCategory::Japanese}}, {midi::Program(0, 20)}},
-        {{mpe::SoundId::Sheng, {}}, {midi::Program(0, 20)}},
-        {{mpe::SoundId::Sheng, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 20)}},
-        {{mpe::SoundId::Sheng, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 20)}},
-        {{mpe::SoundId::Sheng, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 20)}},
-        {{mpe::SoundId::Sheng, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHO, {mpe::SoundSubCategory::JAPANESE}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHENG, {}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHENG, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHENG, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHENG, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 20)}},
+        {{mpe::SoundId::SHENG, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 20)}},
 
-        {{mpe::SoundId::BrassGroup, {}}, {midi::Program(0, 61)}},
+        {{mpe::SoundId::BRASS_GROUP, {}}, {midi::Program(0, 61)}},
 
-        {{mpe::SoundId::Horn, {}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_A}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_A_flat}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_G}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_E}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_E_flat}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_D}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::In_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::French, mpe::SoundSubCategory::In_F}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::In_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::In_B_flat}},
+        {{mpe::SoundId::HORN, {}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_A}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_A_FLAT}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_G}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_E}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_E_FLAT}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_D}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::IN_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::FRENCH, mpe::SoundSubCategory::IN_F}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::IN_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::IN_B_FLAT}},
          {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::In_B_flat}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::IN_B_FLAT}},
          {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::In_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Vienna}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::IN_C}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::VIENNA}}, {midi::Program(0, 60), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Wagner}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::WAGNER}}, {midi::Program(0, 56)}},
 
-        {{mpe::SoundId::Cornet, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Cornet, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::CORNET, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::CORNET, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 56), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Saxhorn, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::Treble}},
+        {{mpe::SoundId::SAXHORN, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::TREBLE}},
          {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::CentralEuropean, mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::Treble}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::CENTRAL_EUROPEAN, mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::TREBLE}},
          {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Horn, {mpe::SoundSubCategory::Baritone, mpe::SoundSubCategory::CentralEuropean}},
+        {{mpe::SoundId::HORN, {mpe::SoundSubCategory::BARITONE, mpe::SoundSubCategory::CENTRAL_EUROPEAN}},
          {midi::Program(0, 60), midi::Program(0, 59)}},
-        {{mpe::SoundId::Posthorn, {}}, {midi::Program(0, 60), midi::Program(0, 59)}},
+        {{mpe::SoundId::POSTHORN, {}}, {midi::Program(0, 60), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Trumpet, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Piccolo}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Pocket}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Slide}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trumpet, {mpe::SoundSubCategory::Baroque}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::PICCOLO}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::POCKET}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::SLIDE}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TRUMPET, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 56), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::EuphoniumBugle, {}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::MellophoneBugle, {}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::EUPHONIUM_BUGLE, {}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::MELLOPHONE_BUGLE, {}}, {midi::Program(0, 57)}},
 
-        {{mpe::SoundId::Bugle, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Bugle, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Bugle, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Bugle, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::BUGLE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::BUGLE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::BUGLE, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::BUGLE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 58)}},
 
-        {{mpe::SoundId::Fiscorn, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::FISCORN, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 56), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Flugelhorn, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Kuhlohorn, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::FLUGELHORN, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::KUHLOHORN, {}}, {midi::Program(0, 56), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Ophicleide, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Ophicleide, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Ophicleide, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::OPHICLEIDE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::OPHICLEIDE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::OPHICLEIDE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 58)}},
 
-        {{mpe::SoundId::Cornettino, {}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::CORNETTINO, {}}, {midi::Program(0, 56)}},
 
-        {{mpe::SoundId::Cornett, {}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Cornett, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Cornett, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::Cornett, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::CORNETT, {}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::CORNETT, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::CORNETT, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::CORNETT, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 56)}},
 
-        {{mpe::SoundId::Serpent, {}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::SERPENT, {}}, {midi::Program(0, 56)}},
 
-        {{mpe::SoundId::Trombone, {}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 57), midi::Program(0, 59)}},
-        {{mpe::SoundId::Trombone, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 57), midi::Program(0, 59)}},
+        {{mpe::SoundId::TROMBONE, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 56), midi::Program(0, 59)}},
 
-        {{mpe::SoundId::Cimbasso, {}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::CIMBASSO, {}}, {midi::Program(0, 57)}},
 
-        {{mpe::SoundId::Sackbut, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 57)}},
-        {{mpe::SoundId::Sackbut, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 57)}},
-        {{mpe::SoundId::Sackbut, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::SACKBUT, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::SACKBUT, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::SACKBUT, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 57)}},
 
-        {{mpe::SoundId::Euphonium, {}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Euphonium, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::EUPHONIUM, {}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::EUPHONIUM, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 58)}},
 
-        {{mpe::SoundId::Tuba, {}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Treble, mpe::SoundSubCategory::Bass}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Tuba, {mpe::SoundSubCategory::Sub_Contra_Bass}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::TREBLE, mpe::SoundSubCategory::BASS}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::TUBA, {mpe::SoundSubCategory::SUB_CONTRA_BASS}}, {midi::Program(0, 58)}},
 
-        {{mpe::SoundId::Sousaphone, {}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Sousaphone, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 58)}},
-        {{mpe::SoundId::Helicon, {}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::SOUSAPHONE, {}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::SOUSAPHONE, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 58)}},
+        {{mpe::SoundId::HELICON, {}}, {midi::Program(0, 58)}},
 
-        {{mpe::SoundId::Conch, {}}, {midi::Program(0, 60)}},
+        {{mpe::SoundId::CONCH, {}}, {midi::Program(0, 60)}},
 
-        {{mpe::SoundId::Horagai, {mpe::SoundSubCategory::Japanese}}, {midi::Program(0, 60)}},
+        {{mpe::SoundId::HORAGAI, {mpe::SoundSubCategory::JAPANESE}}, {midi::Program(0, 60)}},
 
-        {{mpe::SoundId::Alphorn, {mpe::SoundSubCategory::Alpine}}, {midi::Program(0, 60)}},
-        {{mpe::SoundId::RagDung, {mpe::SoundSubCategory::Tibetan}}, {midi::Program(0, 56), midi::Program(0, 59)}},
-        {{mpe::SoundId::Didgeridoo, {mpe::SoundSubCategory::Australian}}, {midi::Program(0, 57)}},
-        {{mpe::SoundId::Shofar, {}}, {midi::Program(0, 60)}},
-        {{mpe::SoundId::Vuvuzela, {}}, {midi::Program(0, 56)}},
-        {{mpe::SoundId::KlaxonHorns, {}}, {midi::Program(0, 84)}},
-        {{mpe::SoundId::Kazoo, {}}, {midi::Program(0, 85)}}};
+        {{mpe::SoundId::ALPHORN, {mpe::SoundSubCategory::ALPINE}}, {midi::Program(0, 60)}},
+        {{mpe::SoundId::RAG_DUNG, {mpe::SoundSubCategory::TIBETAN}}, {midi::Program(0, 56), midi::Program(0, 59)}},
+        {{mpe::SoundId::DIDGERIDOO, {mpe::SoundSubCategory::AUSTRALIAN}}, {midi::Program(0, 57)}},
+        {{mpe::SoundId::SHOFAR, {}}, {midi::Program(0, 60)}},
+        {{mpe::SoundId::VUVUZELA, {}}, {midi::Program(0, 56)}},
+        {{mpe::SoundId::KLAXON_HORNS, {}}, {midi::Program(0, 84)}},
+        {{mpe::SoundId::KAZOO, {}}, {midi::Program(0, 85)}}};
 
-    static const std::map<SoundMappingKey, midi::Programs> PERCUSSION_MAPPINGS = {
-        {{mpe::SoundId::Timpani, {}}, {midi::Program(0, 47)}},
-        {{mpe::SoundId::RotoToms, {}}, {midi::Program(0, 117)}},
-        {{mpe::SoundId::Tubaphone, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 12)}},
+    static const std::map<SoundMappingKey, midi::Programs> percussion_mappings = {
+        {{mpe::SoundId::TIMPANI, {}}, {midi::Program(0, 47)}},
+        {{mpe::SoundId::ROTO_TOMS, {}}, {midi::Program(0, 117)}},
+        {{mpe::SoundId::TUBAPHONE, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 12)}},
 
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Soprano}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::SOPRANO}},
          {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Alto}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::ALTO}},
          {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Tenor}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::TENOR}},
          {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel}}, {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::FourPiece}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL}}, {midi::Program(0, 114)}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::FOUR_PIECE}},
          {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums,
-          {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Tenor, mpe::SoundSubCategory::Bass}},
+        {{mpe::SoundId::STEEL_DRUMS,
+          {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::TENOR, mpe::SoundSubCategory::BASS}},
          {midi::Program(0, 114)}},
-        {{mpe::SoundId::SteelDrums, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Steel, mpe::SoundSubCategory::Bass}},
+        {{mpe::SoundId::STEEL_DRUMS, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::STEEL, mpe::SoundSubCategory::BASS}},
          {midi::Program(0, 114)}},
 
-        {{mpe::SoundId::Vibraphone, {}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Dulcimer, {}}, {midi::Program(0, 15)}},
-        {{mpe::SoundId::Cimbalom, {}}, {midi::Program(0, 15)}},
+        {{mpe::SoundId::VIBRAPHONE, {}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::DULCIMER, {}}, {midi::Program(0, 15)}},
+        {{mpe::SoundId::CIMBALOM, {}}, {midi::Program(0, 15)}},
 
-        {{mpe::SoundId::Xylomarimba, {}}, {midi::Program(0, 12)}},
-        {{mpe::SoundId::Marimba, {}}, {midi::Program(0, 12)}},
-        {{mpe::SoundId::Marimba, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 12)}},
-        {{mpe::SoundId::Marimba, {mpe::SoundSubCategory::Contra_Bass}}, {midi::Program(0, 12)}},
+        {{mpe::SoundId::XYLOMARIMBA, {}}, {midi::Program(0, 12)}},
+        {{mpe::SoundId::MARIMBA, {}}, {midi::Program(0, 12)}},
+        {{mpe::SoundId::MARIMBA, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 12)}},
+        {{mpe::SoundId::MARIMBA, {mpe::SoundSubCategory::CONTRA_BASS}}, {midi::Program(0, 12)}},
 
-        {{mpe::SoundId::Crotales, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 10)}},
+        {{mpe::SoundId::CROTALES, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 10)}},
 
-        {{mpe::SoundId::Carillon, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 14)}},
-        {{mpe::SoundId::Gong, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 14)}},
-        {{mpe::SoundId::Gong, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Wind}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Gong, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Opera}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::CARILLON, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::GONG, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::GONG, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::WIND}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::GONG, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::OPERA}}, {midi::Program(0, 14)}},
 
-        {{mpe::SoundId::Glockenspiel, {}}, {midi::Program(0, 9)}},
-        {{mpe::SoundId::Glockenspiel, {mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 9)}},
-        {{mpe::SoundId::Glockenspiel, {mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 9)}},
+        {{mpe::SoundId::GLOCKENSPIEL, {}}, {midi::Program(0, 9)}},
+        {{mpe::SoundId::GLOCKENSPIEL, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 9)}},
+        {{mpe::SoundId::GLOCKENSPIEL, {mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 9)}},
 
-        {{mpe::SoundId::Metallophone, {mpe::SoundSubCategory::Orff}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Metallophone, {mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Metallophone, {mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Metallophone, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::METALLOPHONE, {mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::METALLOPHONE, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::METALLOPHONE, {mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::METALLOPHONE, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 11)}},
 
-        {{mpe::SoundId::Xylophone, {}}, {midi::Program(0, 13)}},
-        {{mpe::SoundId::Xylophone, {mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 13)}},
-        {{mpe::SoundId::Xylophone, {mpe::SoundSubCategory::Alto, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 13)}},
-        {{mpe::SoundId::Xylophone, {mpe::SoundSubCategory::Bass, mpe::SoundSubCategory::Orff}}, {midi::Program(0, 12)}},
+        {{mpe::SoundId::XYLOPHONE, {}}, {midi::Program(0, 13)}},
+        {{mpe::SoundId::XYLOPHONE, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 13)}},
+        {{mpe::SoundId::XYLOPHONE, {mpe::SoundSubCategory::ALTO, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 13)}},
+        {{mpe::SoundId::XYLOPHONE, {mpe::SoundSubCategory::BASS, mpe::SoundSubCategory::ORFF}}, {midi::Program(0, 12)}},
 
-        {{mpe::SoundId::Flexatone, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::FLEXATONE, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 14)}},
 
-        {{mpe::SoundId::MusicalSaw, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 92)}},
+        {{mpe::SoundId::MUSICAL_SAW, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 92)}},
 
-        {{mpe::SoundId::MusicalGlasses, {mpe::SoundSubCategory::Glass}}, {midi::Program(0, 93)}},
-        {{mpe::SoundId::Harmonica, {mpe::SoundSubCategory::Glass}}, {midi::Program(0, 92)}},
+        {{mpe::SoundId::MUSICAL_GLASSES, {mpe::SoundSubCategory::GLASS}}, {midi::Program(0, 93)}},
+        {{mpe::SoundId::HARMONICA, {mpe::SoundSubCategory::GLASS}}, {midi::Program(0, 92)}},
 
-        {{mpe::SoundId::Kalimba, {}}, {midi::Program(0, 108)}},
-        {{mpe::SoundId::Kalimba, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 108)}},
-        {{mpe::SoundId::Kalimba, {mpe::SoundSubCategory::Treble}}, {midi::Program(0, 108)}},
-        {{mpe::SoundId::Kalimba, {mpe::SoundSubCategory::Metal}}, {midi::Program(0, 108)}},
+        {{mpe::SoundId::KALIMBA, {}}, {midi::Program(0, 108)}},
+        {{mpe::SoundId::KALIMBA, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 108)}},
+        {{mpe::SoundId::KALIMBA, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 108)}},
+        {{mpe::SoundId::KALIMBA, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 108)}},
 
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Brake}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Bongos, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::TomToms, {mpe::SoundSubCategory::Chinese}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::TomToms, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::KoTsuzumi, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::OTsuzumi, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Kakko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::ShimeDaiko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::MiyaDaiko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::TsuriDaiko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::OkedoDaiko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Kane, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Shoko, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Janggu, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Buk, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::SamulBuk, {mpe::SoundSubCategory::Korean}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::SamulJanggu, {mpe::SoundSubCategory::Korean}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::SanjoJanggu, {mpe::SoundSubCategory::Korean}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::SoriBuk, {mpe::SoundSubCategory::Korean}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Sogo, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Kkwaenggwari, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Jing, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::BRAKE}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BONGOS, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::TOM_TOMS, {mpe::SoundSubCategory::CHINESE}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::TOM_TOMS, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::KO_TSUZUMI, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::O_TSUZUMI, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::KAKKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SHIME_DAIKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::MIYA_DAIKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::TSURI_DAIKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::OKEDO_DAIKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::KANE, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SHOKO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::JANGGU, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::BUK, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SAMUL_BUK, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SAMUL_JANGGU, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SANJO_JANGGU, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SORI_BUK, {mpe::SoundSubCategory::KOREAN}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::SOGO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::KKWAENGGWARI, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::JING, {}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Conga, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Xiaogu, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Bangu, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Dagu, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Daluo, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Xiaoluo, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Ban, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Dabo, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Naobo, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Bangzi, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Djembe, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Doumbek, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Cuica, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Cajon, {}}, {midi::Program(128, 40)}},
+        {{mpe::SoundId::CONGA, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::XIAOGU, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::BANGU, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DAGU, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DALUO, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::XIAOLUO, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BAN, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DABO, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::NAOBO, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BANGZI, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DJEMBE, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DOUMBEK, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::CUICA, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CAJON, {}}, {midi::Program(128, 40)}},
 
-        {{mpe::SoundId::Drumset, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Drumset, {mpe::SoundSubCategory::FourPiece}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Drumset, {mpe::SoundSubCategory::FivePiece}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Drumset, {mpe::SoundSubCategory::Orchestral}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DRUMSET, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUMSET, {mpe::SoundSubCategory::FOUR_PIECE}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUMSET, {mpe::SoundSubCategory::FIVE_PIECE}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUMSET, {mpe::SoundSubCategory::ORCHESTRAL}}, {midi::Program(128, 48)}},
 
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Bass}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Snare}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Military}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Frame}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Snare, mpe::SoundSubCategory::Piccolo}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Slit}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::BASS}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::SNARE}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::MILITARY}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::FRAME}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::SNARE, mpe::SoundSubCategory::PICCOLO}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::SLIT}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Tablas, {mpe::SoundSubCategory::Indian}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Timbales, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::TABLAS, {mpe::SoundSubCategory::INDIAN}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::TIMBALES, {}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Anvil, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::BellTree, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Gong, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Bowl}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Chain, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::ANVIL, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::BELL_TREE, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::GONG, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::BOWL}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::CHAIN, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Hand}}, {midi::Program(0, 112)}},
-        {{mpe::SoundId::Chimes, {mpe::SoundSubCategory::Hand}}, {midi::Program(0, 112)}},
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Plate, mpe::SoundSubCategory::Metal}}, {midi::Program(0, 11)}},
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Cow}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Agogo}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Bell, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Sleigh}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::HAND}}, {midi::Program(0, 112)}},
+        {{mpe::SoundId::CHIMES, {mpe::SoundSubCategory::HAND}}, {midi::Program(0, 112)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::PLATE, mpe::SoundSubCategory::METAL}}, {midi::Program(0, 11)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::COW}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::AGOGO}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BELL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::SLEIGH}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Crash}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Finger}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::China}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Splash}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Ride}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::CRASH}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::FINGER}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::CHINA}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::SPLASH}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::RIDE}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::HiHat, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Pipe, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Iron}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::MarkTree, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Castanet, {mpe::SoundSubCategory::Wooden}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Castanet, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::HI_HAT, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::PIPE, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::IRON}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::MARK_TREE, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CASTANET, {mpe::SoundSubCategory::WOODEN}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CASTANET, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 48)}},
 
-        {{mpe::SoundId::Chimes, {}}, {midi::Program(0, 14)}},
-        {{mpe::SoundId::Chimes, {mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Wind}}, {midi::Program(0, 14)}},
-        {{mpe::SoundId::Chimes, {mpe::SoundSubCategory::Wooden, mpe::SoundSubCategory::Wind}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Chimes, {mpe::SoundSubCategory::Glass, mpe::SoundSubCategory::Wind}}, {midi::Program(0, 14)}},
-        {{mpe::SoundId::Chimes, {mpe::SoundSubCategory::Shell, mpe::SoundSubCategory::Wind}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::CHIMES, {}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::CHIMES, {mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::WIND}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::CHIMES, {mpe::SoundSubCategory::WOODEN, mpe::SoundSubCategory::WIND}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CHIMES, {mpe::SoundSubCategory::GLASS, mpe::SoundSubCategory::WIND}}, {midi::Program(0, 14)}},
+        {{mpe::SoundId::CHIMES, {mpe::SoundSubCategory::SHELL, mpe::SoundSubCategory::WIND}}, {midi::Program(0, 14)}},
 
-        {{mpe::SoundId::TamTam, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Thundersheet, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Triangle, {mpe::SoundSubCategory::Metal}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::TAM_TAM, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::THUNDERSHEET, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::TRIANGLE, {mpe::SoundSubCategory::METAL}}, {midi::Program(128, 48)}},
 
-        {{mpe::SoundId::Claves, {mpe::SoundSubCategory::Wooden}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Guiro, {mpe::SoundSubCategory::Wooden}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CLAVES, {mpe::SoundSubCategory::WOODEN}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::GUIRO, {mpe::SoundSubCategory::WOODEN}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Block, {mpe::SoundSubCategory::Wooden, mpe::SoundSubCategory::Temple}}, {midi::Program(1, 115)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Wooden, mpe::SoundSubCategory::Log}}, {midi::Program(1, 115)}},
-        {{mpe::SoundId::Block, {mpe::SoundSubCategory::Wooden}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Block, {mpe::SoundSubCategory::Sandpaper}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BLOCK, {mpe::SoundSubCategory::WOODEN, mpe::SoundSubCategory::TEMPLE}}, {midi::Program(1, 115)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::WOODEN, mpe::SoundSubCategory::LOG}}, {midi::Program(1, 115)}},
+        {{mpe::SoundId::BLOCK, {mpe::SoundSubCategory::WOODEN}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::BLOCK, {mpe::SoundSubCategory::SANDPAPER}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Cabasa, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Maraca, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Quijada, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Ratchet, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Shaker, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Shekere, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CABASA, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::MARACA, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::QUIJADA, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::RATCHET, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::SHAKER, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::SHEKERE, {}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Stones, {}}, {midi::Program(0, 13)}},
-        {{mpe::SoundId::Tambourine, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Tubo, {}}, {midi::Program(128, 48)}},
-        {{mpe::SoundId::Vibraslap, {}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Whip, {}}, {midi::Program(128, 56)}},
-        {{mpe::SoundId::Cannon, {}}, {midi::Program(0, 127)}},
-        {{mpe::SoundId::BirdCall, {}}, {midi::Program(0, 123)}},
-        {{mpe::SoundId::Drum,
+        {{mpe::SoundId::STONES, {}}, {midi::Program(0, 13)}},
+        {{mpe::SoundId::TAMBOURINE, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::TUBO, {}}, {midi::Program(128, 48)}},
+        {{mpe::SoundId::VIBRASLAP, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::WHIP, {}}, {midi::Program(128, 56)}},
+        {{mpe::SoundId::CANNON, {}}, {midi::Program(0, 127)}},
+        {{mpe::SoundId::BIRD_CALL, {}}, {midi::Program(0, 123)}},
+        {{mpe::SoundId::DRUM,
           {
-              mpe::SoundSubCategory::Ocean,
+              mpe::SoundSubCategory::OCEAN,
           }},
          {midi::Program(0, 122)}},
 
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Marching, mpe::SoundSubCategory::Snare}}, {midi::Program(128, 56)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Marching, mpe::SoundSubCategory::Snare, mpe::SoundSubCategory::Tenor}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::MARCHING, mpe::SoundSubCategory::SNARE}}, {midi::Program(128, 56)}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::MARCHING, mpe::SoundSubCategory::SNARE, mpe::SoundSubCategory::TENOR}},
          {midi::Program(128, 96)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Show_Style, mpe::SoundSubCategory::Snare, mpe::SoundSubCategory::Tenor}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::SHOW_STYLE, mpe::SoundSubCategory::SNARE, mpe::SoundSubCategory::TENOR}},
          {midi::Program(128, 0)}},
-        {{mpe::SoundId::Drum, {mpe::SoundSubCategory::Marching, mpe::SoundSubCategory::Snare, mpe::SoundSubCategory::Bass}},
+        {{mpe::SoundId::DRUM, {mpe::SoundSubCategory::MARCHING, mpe::SoundSubCategory::SNARE, mpe::SoundSubCategory::BASS}},
          {midi::Program(128, 59)}},
 
-        {{mpe::SoundId::Cymbal, {mpe::SoundSubCategory::Marching, mpe::SoundSubCategory::Metal, mpe::SoundSubCategory::Crash}},
+        {{mpe::SoundId::CYMBAL, {mpe::SoundSubCategory::MARCHING, mpe::SoundSubCategory::METAL, mpe::SoundSubCategory::CRASH}},
          {midi::Program(128, 58)}},
 
-        {{mpe::SoundId::Snap, {mpe::SoundSubCategory::Finger}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Clap, {mpe::SoundSubCategory::Hand}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Slap, {mpe::SoundSubCategory::Hand}}, {midi::Program(128, 0)}},
-        {{mpe::SoundId::Stamp, {mpe::SoundSubCategory::Foot}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::SNAP, {mpe::SoundSubCategory::FINGER}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::CLAP, {mpe::SoundSubCategory::HAND}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::SLAP, {mpe::SoundSubCategory::HAND}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::STAMP, {mpe::SoundSubCategory::FOOT}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Taiko, {}}, {midi::Program(128, 0)}},
+        {{mpe::SoundId::TAIKO, {}}, {midi::Program(128, 0)}},
 
-        {{mpe::SoundId::Synthesizer, {mpe::SoundSubCategory::Electric, mpe::SoundSubCategory::Percussive}}, {midi::Program(128, 0)}}};
+        {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::PERCUSSIVE}}, {midi::Program(128, 0)}}};
 
-    static const std::map<SoundMappingKey, midi::Programs> VOICE_MAPPINGS = {
-        {{mpe::SoundId::Choir, {}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Soprano, mpe::SoundSubCategory::Boy}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Soprano}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Mezzo_Soprano}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Counter_Tenor}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Alto}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Contra_Alto}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Tenor}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Baritone}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Bass}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Female}}, {midi::Program(0, 52)}},
-        {{mpe::SoundId::Choir, {mpe::SoundSubCategory::Male}}, {midi::Program(0, 52)}}};
+    static const std::map<SoundMappingKey, midi::Programs> voice_mappings = {
+        {{mpe::SoundId::CHOIR, {}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::BOY}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::MEZZO_SOPRANO}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::COUNTER_TENOR}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::ALTO}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::CONTRA_ALTO}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::TENOR}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::BARITONE}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::BASS}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::FEMALE}}, {midi::Program(0, 52)}},
+        {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::MALE}}, {midi::Program(0, 52)}}};
 
     switch (category) {
-        case mpe::SoundCategory::Keyboards: return KEYBOARDS_MAPPINGS;
-        case mpe::SoundCategory::Strings: return STRINGS_MAPPINGS;
-        case mpe::SoundCategory::Winds: return WINDS_MAPPINGS;
-        case mpe::SoundCategory::Percussions: return PERCUSSION_MAPPINGS;
-        case mpe::SoundCategory::Voices: return VOICE_MAPPINGS;
+        case mpe::SoundCategory::KEYBOARDS: return keyboards_mappings;
+        case mpe::SoundCategory::STRINGS: return strings_mappings;
+        case mpe::SoundCategory::WINDS: return winds_mappings;
+        case mpe::SoundCategory::PERCUSSIONS: return percussion_mappings;
+        case mpe::SoundCategory::VOICES: return voice_mappings;
         default: static std::map<SoundMappingKey, midi::Programs> empty; return empty;
     }
 }
 
-inline const midi::Programs &findPrograms(const mpe::PlaybackSetupData &setupData) {
-    const std::map<SoundMappingKey, midi::Programs> &mapping = mappingByCategory(setupData.category);
+inline const midi::Programs &find_programs(const mpe::PlaybackSetupData &setup_data) {
+    const std::map<SoundMappingKey, midi::Programs> &mapping = mapping_by_category(setup_data.category);
 
-    mpe::SoundSubCategories subCategorySet = setupData.soundSubCategories();
-    muse::remove(subCategorySet, mpe::SoundSubCategory::Primary);
-    muse::remove(subCategorySet, mpe::SoundSubCategory::Secondary);
+    mpe::SoundSubCategories sub_category_set = setup_data.sound_sub_categories();
+    muse::remove(sub_category_set, mpe::SoundSubCategory::PRIMARY);
+    muse::remove(sub_category_set, mpe::SoundSubCategory::SECONDARY);
 
-    mpe::SoundId soundId = setupData.soundId();
-    auto search = mapping.find({soundId, subCategorySet});
+    mpe::SoundId sound_id = setup_data.sound_id();
+    auto search = mapping.find({sound_id, sub_category_set});
 
     if (search != mapping.cend()) {
         return search->second;
@@ -785,163 +785,163 @@ inline const midi::Programs &findPrograms(const mpe::PlaybackSetupData &setupDat
     return fallback;
 }
 
-inline const ArticulationMapping &articulationSounds(const mpe::PlaybackSetupData &setupData) {
-    static const ArticulationMapping ELECTRIC_GUITAR = {
-        {mpe::ArticulationType::JazzTone, midi::Program(0, 26)},   {mpe::ArticulationType::PalmMute, midi::Program(0, 28)},
-        {mpe::ArticulationType::Mute, midi::Program(0, 28)},       {mpe::ArticulationType::Harmonic, midi::Program(0, 31)},
-        {mpe::ArticulationType::Distortion, midi::Program(0, 30)}, {mpe::ArticulationType::Overdrive, midi::Program(0, 29)}};
+inline const ArticulationMapping &articulation_sounds(const mpe::PlaybackSetupData &setup_data) {
+    static const ArticulationMapping electric_guitar = {
+        {mpe::ArticulationType::JAZZ_TONE, midi::Program(0, 26)},  {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 28)},
+        {mpe::ArticulationType::MUTE, midi::Program(0, 28)},       {mpe::ArticulationType::HARMONIC, midi::Program(0, 31)},
+        {mpe::ArticulationType::DISTORTION, midi::Program(0, 30)}, {mpe::ArticulationType::OVERDRIVE, midi::Program(0, 29)}};
 
-    static const ArticulationMapping ACOUSTIC_GUITAR = {{mpe::ArticulationType::JazzTone, midi::Program(0, 26)},
-                                                        {mpe::ArticulationType::PalmMute, midi::Program(0, 28)},
-                                                        {mpe::ArticulationType::Mute, midi::Program(0, 28)},
-                                                        {mpe::ArticulationType::Harmonic, midi::Program(8, 31)}};
+    static const ArticulationMapping acoustic_guitar = {{mpe::ArticulationType::JAZZ_TONE, midi::Program(0, 26)},
+                                                        {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 28)},
+                                                        {mpe::ArticulationType::MUTE, midi::Program(0, 28)},
+                                                        {mpe::ArticulationType::HARMONIC, midi::Program(8, 31)}};
 
-    static const ArticulationMapping ELECTRIC_BASS_GUITAR = {{mpe::ArticulationType::Slap, midi::Program(0, 36)},
-                                                             {mpe::ArticulationType::Pop, midi::Program(0, 37)},
-                                                             {mpe::ArticulationType::PalmMute, midi::Program(0, 28)},
-                                                             {mpe::ArticulationType::Mute, midi::Program(0, 28)}};
+    static const ArticulationMapping electric_bass_guitar = {{mpe::ArticulationType::SLAP, midi::Program(0, 36)},
+                                                             {mpe::ArticulationType::POP, midi::Program(0, 37)},
+                                                             {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 28)},
+                                                             {mpe::ArticulationType::MUTE, midi::Program(0, 28)}};
 
-    static const ArticulationMapping ACOUSTIC_BASS_GUITAR = {{mpe::ArticulationType::Slap, midi::Program(0, 36)},
-                                                             {mpe::ArticulationType::Pop, midi::Program(0, 37)},
-                                                             {mpe::ArticulationType::Pizzicato, midi::Program(0, 32)},
-                                                             {mpe::ArticulationType::PalmMute, midi::Program(0, 32)},
-                                                             {mpe::ArticulationType::Mute, midi::Program(0, 32)}};
+    static const ArticulationMapping acoustic_bass_guitar = {{mpe::ArticulationType::SLAP, midi::Program(0, 36)},
+                                                             {mpe::ArticulationType::POP, midi::Program(0, 37)},
+                                                             {mpe::ArticulationType::PIZZICATO, midi::Program(0, 32)},
+                                                             {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 32)},
+                                                             {mpe::ArticulationType::MUTE, midi::Program(0, 32)}};
 
-    static const ArticulationMapping BASIC_STRING_SECTION = {{mpe::ArticulationType::SnapPizzicato, midi::Program(0, 45)},
-                                                             {mpe::ArticulationType::Pizzicato, midi::Program(0, 45)},
-                                                             {mpe::ArticulationType::PalmMute, midi::Program(0, 45)},
-                                                             {mpe::ArticulationType::Mute, midi::Program(0, 49)}};
+    static const ArticulationMapping basic_string_section = {{mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(0, 45)},
+                                                             {mpe::ArticulationType::PIZZICATO, midi::Program(0, 45)},
+                                                             {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 45)},
+                                                             {mpe::ArticulationType::MUTE, midi::Program(0, 49)}};
 
-    static const ArticulationMapping BASIC_VIOL_SECTION = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(0, 45)}, {mpe::ArticulationType::Pizzicato, midi::Program(0, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(0, 45)},      {mpe::ArticulationType::Mute, midi::Program(0, 49)},
-        {mpe::ArticulationType::Tremolo8th, midi::Program(0, 44)},    {mpe::ArticulationType::Tremolo16th, midi::Program(0, 44)},
-        {mpe::ArticulationType::Tremolo32nd, midi::Program(0, 44)},   {mpe::ArticulationType::Tremolo64th, midi::Program(0, 44)},
+    static const ArticulationMapping basic_viol_section = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(0, 45)}, {mpe::ArticulationType::PIZZICATO, midi::Program(0, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(0, 45)},      {mpe::ArticulationType::MUTE, midi::Program(0, 49)},
+        {mpe::ArticulationType::TREMOLO8TH, midi::Program(0, 44)},     {mpe::ArticulationType::TREMOLO16TH, midi::Program(0, 44)},
+        {mpe::ArticulationType::TREMOLO32ND, midi::Program(0, 44)},    {mpe::ArticulationType::TREMOLO64TH, midi::Program(0, 44)},
     };
 
-    static const ArticulationMapping VIOLIN_SECTION = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(20, 45)}, {mpe::ArticulationType::Pizzicato, midi::Program(20, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(20, 45)},      {mpe::ArticulationType::Mute, midi::Program(20, 49)},
-        {mpe::ArticulationType::Tremolo8th, midi::Program(20, 44)},    {mpe::ArticulationType::Tremolo16th, midi::Program(20, 44)},
-        {mpe::ArticulationType::Tremolo32nd, midi::Program(20, 44)},   {mpe::ArticulationType::Tremolo64th, midi::Program(20, 44)},
+    static const ArticulationMapping violin_section = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(20, 45)}, {mpe::ArticulationType::PIZZICATO, midi::Program(20, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(20, 45)},      {mpe::ArticulationType::MUTE, midi::Program(20, 49)},
+        {mpe::ArticulationType::TREMOLO8TH, midi::Program(20, 44)},     {mpe::ArticulationType::TREMOLO16TH, midi::Program(20, 44)},
+        {mpe::ArticulationType::TREMOLO32ND, midi::Program(20, 44)},    {mpe::ArticulationType::TREMOLO64TH, midi::Program(20, 44)},
     };
 
-    static const ArticulationMapping VIOLIN = {{mpe::ArticulationType::SnapPizzicato, midi::Program(20, 45)},
-                                               {mpe::ArticulationType::Pizzicato, midi::Program(20, 45)},
-                                               {mpe::ArticulationType::PalmMute, midi::Program(20, 45)},
-                                               {mpe::ArticulationType::Mute, midi::Program(20, 40)}};
+    static const ArticulationMapping violin = {{mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(20, 45)},
+                                               {mpe::ArticulationType::PIZZICATO, midi::Program(20, 45)},
+                                               {mpe::ArticulationType::PALM_MUTE, midi::Program(20, 45)},
+                                               {mpe::ArticulationType::MUTE, midi::Program(20, 40)}};
 
-    static const ArticulationMapping VIOLA_SECTION = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(30, 45)}, {mpe::ArticulationType::Pizzicato, midi::Program(30, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(30, 45)},      {mpe::ArticulationType::Mute, midi::Program(30, 49)},
-        {mpe::ArticulationType::Tremolo8th, midi::Program(30, 44)},    {mpe::ArticulationType::Tremolo16th, midi::Program(30, 44)},
-        {mpe::ArticulationType::Tremolo32nd, midi::Program(30, 44)},   {mpe::ArticulationType::Tremolo64th, midi::Program(30, 44)},
+    static const ArticulationMapping viola_section = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(30, 45)}, {mpe::ArticulationType::PIZZICATO, midi::Program(30, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(30, 45)},      {mpe::ArticulationType::MUTE, midi::Program(30, 49)},
+        {mpe::ArticulationType::TREMOLO8TH, midi::Program(30, 44)},     {mpe::ArticulationType::TREMOLO16TH, midi::Program(30, 44)},
+        {mpe::ArticulationType::TREMOLO32ND, midi::Program(30, 44)},    {mpe::ArticulationType::TREMOLO64TH, midi::Program(30, 44)},
     };
 
-    static const ArticulationMapping VIOLA = {{mpe::ArticulationType::SnapPizzicato, midi::Program(30, 45)},
-                                              {mpe::ArticulationType::Pizzicato, midi::Program(30, 45)},
-                                              {mpe::ArticulationType::PalmMute, midi::Program(30, 45)},
-                                              {mpe::ArticulationType::Mute, midi::Program(30, 41)}};
+    static const ArticulationMapping viola = {{mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(30, 45)},
+                                              {mpe::ArticulationType::PIZZICATO, midi::Program(30, 45)},
+                                              {mpe::ArticulationType::PALM_MUTE, midi::Program(30, 45)},
+                                              {mpe::ArticulationType::MUTE, midi::Program(30, 41)}};
 
-    static const ArticulationMapping VIOLONCELLO_SECTION = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(40, 45)}, {mpe::ArticulationType::Pizzicato, midi::Program(40, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(40, 45)},      {mpe::ArticulationType::Mute, midi::Program(40, 49)},
-        {mpe::ArticulationType::Tremolo8th, midi::Program(40, 44)},    {mpe::ArticulationType::Tremolo16th, midi::Program(40, 44)},
-        {mpe::ArticulationType::Tremolo32nd, midi::Program(40, 44)},   {mpe::ArticulationType::Tremolo64th, midi::Program(40, 44)},
+    static const ArticulationMapping violoncello_section = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(40, 45)}, {mpe::ArticulationType::PIZZICATO, midi::Program(40, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(40, 45)},      {mpe::ArticulationType::MUTE, midi::Program(40, 49)},
+        {mpe::ArticulationType::TREMOLO8TH, midi::Program(40, 44)},     {mpe::ArticulationType::TREMOLO16TH, midi::Program(40, 44)},
+        {mpe::ArticulationType::TREMOLO32ND, midi::Program(40, 44)},    {mpe::ArticulationType::TREMOLO64TH, midi::Program(40, 44)},
     };
 
-    static const ArticulationMapping VIOLONCELLO = {{mpe::ArticulationType::SnapPizzicato, midi::Program(40, 45)},
-                                                    {mpe::ArticulationType::Pizzicato, midi::Program(40, 45)},
-                                                    {mpe::ArticulationType::PalmMute, midi::Program(40, 45)},
-                                                    {mpe::ArticulationType::Mute, midi::Program(40, 49)}};
+    static const ArticulationMapping violoncello = {{mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(40, 45)},
+                                                    {mpe::ArticulationType::PIZZICATO, midi::Program(40, 45)},
+                                                    {mpe::ArticulationType::PALM_MUTE, midi::Program(40, 45)},
+                                                    {mpe::ArticulationType::MUTE, midi::Program(40, 49)}};
 
-    static const ArticulationMapping CONTRABASS_SECTION = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(50, 45)}, {mpe::ArticulationType::Pizzicato, midi::Program(50, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(50, 45)},      {mpe::ArticulationType::Mute, midi::Program(50, 49)},
-        {mpe::ArticulationType::Tremolo8th, midi::Program(50, 44)},    {mpe::ArticulationType::Tremolo16th, midi::Program(50, 44)},
-        {mpe::ArticulationType::Tremolo32nd, midi::Program(50, 44)},   {mpe::ArticulationType::Tremolo64th, midi::Program(50, 44)},
+    static const ArticulationMapping contrabass_section = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(50, 45)}, {mpe::ArticulationType::PIZZICATO, midi::Program(50, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(50, 45)},      {mpe::ArticulationType::MUTE, midi::Program(50, 49)},
+        {mpe::ArticulationType::TREMOLO8TH, midi::Program(50, 44)},     {mpe::ArticulationType::TREMOLO16TH, midi::Program(50, 44)},
+        {mpe::ArticulationType::TREMOLO32ND, midi::Program(50, 44)},    {mpe::ArticulationType::TREMOLO64TH, midi::Program(50, 44)},
     };
 
-    static const ArticulationMapping CONTRABASS = {
-        {mpe::ArticulationType::SnapPizzicato, midi::Program(50, 45)},
-        {mpe::ArticulationType::Pizzicato, midi::Program(50, 45)},
-        {mpe::ArticulationType::PalmMute, midi::Program(50, 45)},
-        {mpe::ArticulationType::Mute, midi::Program(50, 43)},
+    static const ArticulationMapping contrabass = {
+        {mpe::ArticulationType::SNAP_PIZZICATO, midi::Program(50, 45)},
+        {mpe::ArticulationType::PIZZICATO, midi::Program(50, 45)},
+        {mpe::ArticulationType::PALM_MUTE, midi::Program(50, 45)},
+        {mpe::ArticulationType::MUTE, midi::Program(50, 43)},
     };
 
-    static const ArticulationMapping BRASS = {{mpe::ArticulationType::Mute, midi::Program(0, 59)}};
+    static const ArticulationMapping brass = {{mpe::ArticulationType::MUTE, midi::Program(0, 59)}};
 
-    mpe::SoundId soundId = setupData.soundId();
+    mpe::SoundId sound_id = setup_data.sound_id();
 
-    if (soundId == mpe::SoundId::Guitar) {
-        if (setupData.contains(mpe::SoundSubCategory::Acoustic)) {
-            return ACOUSTIC_GUITAR;
+    if (sound_id == mpe::SoundId::GUITAR) {
+        if (setup_data.contains(mpe::SoundSubCategory::ACOUSTIC)) {
+            return acoustic_guitar;
         }
 
-        if (setupData.contains(mpe::SoundSubCategory::Electric)) {
-            return ELECTRIC_GUITAR;
-        }
-    }
-
-    if (soundId == mpe::SoundId::BassGuitar) {
-        if (setupData.contains(mpe::SoundSubCategory::Acoustic)) {
-            return ACOUSTIC_BASS_GUITAR;
-        }
-
-        if (setupData.contains(mpe::SoundSubCategory::Electric)) {
-            return ELECTRIC_BASS_GUITAR;
+        if (setup_data.contains(mpe::SoundSubCategory::ELECTRIC)) {
+            return electric_guitar;
         }
     }
 
-    if (soundId == mpe::SoundId::Violin && setupData.contains(mpe::SoundSubCategory::Section)) {
-        return VIOLIN_SECTION;
-    }
-
-    if (soundId == mpe::SoundId::Violin) {
-        return VIOLIN;
-    }
-
-    if (soundId == mpe::SoundId::Viola && setupData.contains(mpe::SoundSubCategory::Section)) {
-        return VIOLA_SECTION;
-    }
-
-    if (soundId == mpe::SoundId::Viola) {
-        return VIOLA;
-    }
-
-    if (soundId == mpe::SoundId::Violoncello && setupData.contains(mpe::SoundSubCategory::Section)) {
-        return VIOLONCELLO_SECTION;
-    }
-
-    if (soundId == mpe::SoundId::Violoncello) {
-        return VIOLONCELLO;
-    }
-
-    if (soundId == mpe::SoundId::Contrabass && setupData.contains(mpe::SoundSubCategory::Section)) {
-        return CONTRABASS_SECTION;
-    }
-
-    if (soundId == mpe::SoundId::Contrabass) {
-        return CONTRABASS;
-    }
-
-    if (setupData.category == mpe::SoundCategory::Strings) {
-        static const std::unordered_set<mpe::SoundId> VIOL_SECTION{mpe::SoundId::Viol, mpe::SoundId::PardessusViol,
-                                                                   mpe::SoundId::ViolaDaGamba, mpe::SoundId::Violone};
-
-        if (muse::contains(VIOL_SECTION, soundId)) {
-            return BASIC_VIOL_SECTION;
+    if (sound_id == mpe::SoundId::BASS_GUITAR) {
+        if (setup_data.contains(mpe::SoundSubCategory::ACOUSTIC)) {
+            return acoustic_bass_guitar;
         }
 
-        return BASIC_STRING_SECTION;
+        if (setup_data.contains(mpe::SoundSubCategory::ELECTRIC)) {
+            return electric_bass_guitar;
+        }
     }
 
-    if (setupData.category == mpe::SoundCategory::Winds) {
-        static const std::unordered_set<mpe::SoundId> BRASS_SECTION{mpe::SoundId::Bugle,   mpe::SoundId::Euphonium, mpe::SoundId::Horn,
-                                                                    mpe::SoundId::Trumpet, mpe::SoundId::Trombone,  mpe::SoundId::Tuba};
+    if (sound_id == mpe::SoundId::VIOLIN && setup_data.contains(mpe::SoundSubCategory::SECTION)) {
+        return violin_section;
+    }
 
-        if (muse::contains(BRASS_SECTION, soundId)) {
-            return BRASS;
+    if (sound_id == mpe::SoundId::VIOLIN) {
+        return violin;
+    }
+
+    if (sound_id == mpe::SoundId::VIOLA && setup_data.contains(mpe::SoundSubCategory::SECTION)) {
+        return viola_section;
+    }
+
+    if (sound_id == mpe::SoundId::VIOLA) {
+        return viola;
+    }
+
+    if (sound_id == mpe::SoundId::VIOLONCELLO && setup_data.contains(mpe::SoundSubCategory::SECTION)) {
+        return violoncello_section;
+    }
+
+    if (sound_id == mpe::SoundId::VIOLONCELLO) {
+        return violoncello;
+    }
+
+    if (sound_id == mpe::SoundId::CONTRABASS && setup_data.contains(mpe::SoundSubCategory::SECTION)) {
+        return contrabass_section;
+    }
+
+    if (sound_id == mpe::SoundId::CONTRABASS) {
+        return contrabass;
+    }
+
+    if (setup_data.category == mpe::SoundCategory::STRINGS) {
+        static const std::unordered_set<mpe::SoundId> viol_section{mpe::SoundId::VIOL, mpe::SoundId::PARDESSUS_VIOL,
+                                                                   mpe::SoundId::VIOLA_DA_GAMBA, mpe::SoundId::VIOLONE};
+
+        if (muse::contains(viol_section, sound_id)) {
+            return basic_viol_section;
+        }
+
+        return basic_string_section;
+    }
+
+    if (setup_data.category == mpe::SoundCategory::WINDS) {
+        static const std::unordered_set<mpe::SoundId> brass_section{mpe::SoundId::BUGLE,   mpe::SoundId::EUPHONIUM, mpe::SoundId::HORN,
+                                                                    mpe::SoundId::TRUMPET, mpe::SoundId::TROMBONE,  mpe::SoundId::TUBA};
+
+        if (muse::contains(brass_section, sound_id)) {
+            return brass;
         }
     }
 
@@ -949,97 +949,97 @@ inline const ArticulationMapping &articulationSounds(const mpe::PlaybackSetupDat
     return empty;
 }
 
-static const mpe::ArticulationTypeSet SUSTAIN_PEDAL_CC_SUPPORTED_TYPES{mpe::ArticulationType::Pedal};
+static const mpe::ArticulationTypeSet sustain_pedal_cc_supported_types{mpe::ArticulationType::PEDAL};
 
-static const mpe::ArticulationTypeSet SOSTENUTO_PEDAL_CC_SUPPORTED_TYPES{
-    mpe::ArticulationType::LaissezVibrer,
+static const mpe::ArticulationTypeSet sostenuto_pedal_cc_supported_types{
+    mpe::ArticulationType::LAISSEZ_VIBRER,
 };
 
-static const mpe::ArticulationTypeSet BEND_SUPPORTED_TYPES = {
-    mpe::ArticulationType::BrassBend,    mpe::ArticulationType::Multibend,
-    mpe::ArticulationType::SlideOutUp,   mpe::ArticulationType::ContinuousGlissando,
-    mpe::ArticulationType::Fall,         mpe::ArticulationType::QuickFall,
-    mpe::ArticulationType::Doit,         mpe::ArticulationType::Plop,
-    mpe::ArticulationType::Scoop,        mpe::ArticulationType::SlideOutDown,
-    mpe::ArticulationType::SlideInAbove, mpe::ArticulationType::SlideInBelow};
+static const mpe::ArticulationTypeSet bend_supported_types = {
+    mpe::ArticulationType::BRASS_BEND,     mpe::ArticulationType::MULTIBEND,
+    mpe::ArticulationType::SLIDE_OUT_UP,   mpe::ArticulationType::CONTINUOUS_GLISSANDO,
+    mpe::ArticulationType::FALL,           mpe::ArticulationType::QUICK_FALL,
+    mpe::ArticulationType::DOIT,           mpe::ArticulationType::PLOP,
+    mpe::ArticulationType::SCOOP,          mpe::ArticulationType::SLIDE_OUT_DOWN,
+    mpe::ArticulationType::SLIDE_IN_ABOVE, mpe::ArticulationType::SLIDE_IN_BELOW};
 
 struct ChannelMap {
     using ChannelMapping = std::pair<midi::channel_t, midi::Program>;
     using VoiceMappings = std::map<mpe::ArticulationType, ChannelMapping>;
 
-    void init(const mpe::PlaybackSetupData &setupData, const std::optional<midi::Program> &programOverride,
-              const midi::channel_t maxChannels) {
-        maxChannels_ = maxChannels;
-        programOverride_ = programOverride;
-        usesStaffLayers_ = setupData.supportsSingleNoteDynamics;
+    void init(const mpe::PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override,
+              const midi::channel_t max_channels) {
+        max_channels_ = max_channels;
+        program_override_ = program_override;
+        uses_staff_layers_ = setup_data.supports_single_note_dynamics;
 
-        if (programOverride_.has_value()) {
-            resolveChannel(0, mpe::ArticulationType::Standard, programOverride_.value());
+        if (program_override_.has_value()) {
+            resolve_channel(0, mpe::ArticulationType::STANDARD, program_override_.value());
         }
 
-        standardPrograms_ = findPrograms(setupData);
-        articulationMapping_ = articulationSounds(setupData);
+        standard_programs_ = find_programs(setup_data);
+        articulation_mapping_ = articulation_sounds(setup_data);
 
-        if (standardPrograms_.empty()) {
+        if (standard_programs_.empty()) {
             return;
         }
 
         //!Note ensuring that the default channel being pre-initialized
-        const midi::Program &standardProgram = standardPrograms_.at(0);
-        resolveChannel(0, mpe::ArticulationType::Standard, standardProgram);
+        const midi::Program &standard_program = standard_programs_.at(0);
+        resolve_channel(0, mpe::ArticulationType::STANDARD, standard_program);
     }
 
-    midi::channel_t resolveChannelForEvent(const mpe::NoteEvent &event) {
+    midi::channel_t resolve_channel_for_event(const mpe::NoteEvent &event) {
         //! NOTE: without single-note dynamics, voices don't need their own channel per staff
-        const mpe::staff_layer_idx_t staffIdx = usesStaffLayers_ ? event.arrangementCtx().staffLayerIndex : 0;
-        const mpe::layer_idx_t layerIdx = mpe::makeLayerIdx(staffIdx, event.arrangementCtx().voiceLayerIndex);
+        const mpe::staff_layer_idx_t staff_idx = uses_staff_layers_ ? event.arrangement_ctx().staff_layer_index : 0;
+        const mpe::layer_idx_t layer_idx = mpe::make_layer_idx(staff_idx, event.arrangement_ctx().voice_layer_index);
 
-        if (programOverride_.has_value()) {
-            return resolveChannel(layerIdx, mpe::ArticulationType::Standard, programOverride_.value());
+        if (program_override_.has_value()) {
+            return resolve_channel(layer_idx, mpe::ArticulationType::STANDARD, program_override_.value());
         }
 
-        if (standardPrograms_.empty()) {
+        if (standard_programs_.empty()) {
             return 0;
         }
 
-        const midi::Program &standardProgram = standardPrograms_.at(0);
+        const midi::Program &standard_program = standard_programs_.at(0);
 
         //! NOTE: always resolve the layer's own channel first: it must exist so that articulation
         //! channels below have somewhere to fall back to once the channel budget runs out
-        const midi::channel_t standardChannel = resolveChannel(layerIdx, mpe::ArticulationType::Standard, standardProgram);
+        const midi::channel_t standard_channel = resolve_channel(layer_idx, mpe::ArticulationType::STANDARD, standard_program);
 
-        if (event.expressionCtx().articulations.contains(mpe::ArticulationType::Standard) || event.expressionCtx().articulations.empty() ||
-            articulationMapping_.empty()) {
-            return standardChannel;
+        if (event.expression_ctx().articulations.contains(mpe::ArticulationType::STANDARD) ||
+            event.expression_ctx().articulations.empty() || articulation_mapping_.empty()) {
+            return standard_channel;
         }
 
-        for (const auto &pair : event.expressionCtx().articulations) {
-            auto search = articulationMapping_.find(pair.first);
-            if (search == articulationMapping_.cend()) {
+        for (const auto &pair : event.expression_ctx().articulations) {
+            auto search = articulation_mapping_.find(pair.first);
+            if (search == articulation_mapping_.cend()) {
                 continue;
             }
 
-            return resolveChannel(layerIdx, search->first, search->second, standardChannel, standardProgram);
+            return resolve_channel(layer_idx, search->first, search->second, standard_channel, standard_program);
         }
 
-        return standardChannel;
+        return standard_channel;
     }
 
-    midi::channel_t channelCount() const { return channelCount_; }
+    midi::channel_t channel_count() const { return channel_count_; }
 
     const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return data_; }
 
     // Called when a new channel is mapped, before its first event; the
     // synthesizer that owns the mapping programs the channel.
-    std::function<void(midi::channel_t, const midi::Program &)> onChannelAdded;
+    std::function<void(midi::channel_t, const midi::Program &)> on_channel_added;
 
 private:
     //! Resolves the channel for a (layer, articulation) pair. Same-program articulations share a channel;
     //! once maxChannels_ is exhausted, new ones fold onto the layer's own channel (fallbackChannel/fallbackProgram)
-    midi::channel_t resolveChannel(const mpe::layer_idx_t layerIdx, const mpe::ArticulationType type, const midi::Program &program,
-                                   const std::optional<midi::channel_t> &fallbackChannel = std::nullopt,
-                                   const std::optional<midi::Program> &fallbackProgram = std::nullopt) {
-        VoiceMappings &mapping = data_[layerIdx];
+    midi::channel_t resolve_channel(const mpe::layer_idx_t layer_idx, const mpe::ArticulationType type, const midi::Program &program,
+                                    const std::optional<midi::channel_t> &fallback_channel = std::nullopt,
+                                    const std::optional<midi::Program> &fallback_program = std::nullopt) {
+        VoiceMappings &mapping = data_[layer_idx];
 
         auto it = mapping.find(type);
         if (it != mapping.cend()) {
@@ -1053,23 +1053,23 @@ private:
             }
         }
 
-        if (channelCount_ < maxChannels_) {
-            const midi::channel_t channelIdx = channelCount_++;
-            mapping.insert({type, {channelIdx, program}});
-            if (onChannelAdded) {
-                onChannelAdded(channelIdx, program);
+        if (channel_count_ < max_channels_) {
+            const midi::channel_t channel_idx = channel_count_++;
+            mapping.insert({type, {channel_idx, program}});
+            if (on_channel_added) {
+                on_channel_added(channel_idx, program);
             }
-            return channelIdx;
+            return channel_idx;
         }
 
         //! NOTE: channel budget exhausted; prefer reusing a channel that already has this program
         //! over folding onto fallbackChannel, which may carry an unrelated layer's program
-        for (const auto &[otherLayerIdx, otherMapping] : data_) {
-            if (otherLayerIdx == layerIdx) {
+        for (const auto &[other_layer_idx, other_mapping] : data_) {
+            if (other_layer_idx == layer_idx) {
                 continue;
             }
 
-            for (const auto &entry : otherMapping) {
+            for (const auto &entry : other_mapping) {
                 if (entry.second.second == program) {
                     mapping.insert({type, entry.second});
                     return entry.second.first;
@@ -1077,25 +1077,25 @@ private:
             }
         }
 
-        const midi::channel_t channelIdx = fallbackChannel.value_or(0);
-        const midi::Program actualProgram = fallbackProgram.value_or(program);
-        mapping.insert({type, {channelIdx, actualProgram}});
+        const midi::channel_t channel_idx = fallback_channel.value_or(0);
+        const midi::Program actual_program = fallback_program.value_or(program);
+        mapping.insert({type, {channel_idx, actual_program}});
 
-        LOGW() << "Channel budget of " << maxChannels_ << " exhausted: layer " << layerIdx << ", articulation " << static_cast<int>(type)
-               << " reused channel " << channelIdx << " (wanted program " << program.bank << "/" << program.program << ", got "
-               << actualProgram.bank << "/" << actualProgram.program << ")";
+        LOGW() << "Channel budget of " << max_channels_ << " exhausted: layer " << layer_idx << ", articulation " << static_cast<int>(type)
+               << " reused channel " << channel_idx << " (wanted program " << program.bank << "/" << program.program << ", got "
+               << actual_program.bank << "/" << actual_program.program << ")";
 
-        return channelIdx;
+        return channel_idx;
     }
 
     std::map<mpe::layer_idx_t, VoiceMappings> data_;
-    midi::channel_t channelCount_ = 0;
-    midi::channel_t maxChannels_ = 16;
+    midi::channel_t channel_count_ = 0;
+    midi::channel_t max_channels_ = 16;
 
-    bool usesStaffLayers_ = false;
-    std::optional<midi::Program> programOverride_;
-    midi::Programs standardPrograms_;
-    ArticulationMapping articulationMapping_;
+    bool uses_staff_layers_ = false;
+    std::optional<midi::Program> program_override_;
+    midi::Programs standard_programs_;
+    ArticulationMapping articulation_mapping_;
 };
 } // namespace muse::audio::synth
 

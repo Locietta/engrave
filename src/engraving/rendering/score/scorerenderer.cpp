@@ -46,69 +46,71 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void ScoreRenderer::layoutScore(Score *score, const Fraction &st, const Fraction &et) const { ScoreLayout::layoutRange(score, st, et); }
+void ScoreRenderer::layout_score(Score *score, const Fraction &st, const Fraction &et) const { ScoreLayout::layout_range(score, st, et); }
 
-void ScoreRenderer::layoutHeadersFooters(Score *score) const {
+void ScoreRenderer::layout_headers_footers(Score *score) const {
     LayoutContext ctx(score);
-    if (!ctx.conf().isMode(LayoutMode::PAGE) && !ctx.conf().isMode(LayoutMode::FLOAT)) {
+    if (!ctx.conf().is_mode(LayoutMode::PAGE) && !ctx.conf().is_mode(LayoutMode::FLOAT)) {
         return;
     }
 
-    ScorePageViewLayout::layoutHeadersFooters(ctx);
+    ScorePageViewLayout::layout_headers_footers(ctx);
 }
 
-SizeF ScoreRenderer::pageSizeInch(const Score *score) const { return Paint::pageSizeInch(score); }
+SizeF ScoreRenderer::page_size_inch(const Score *score) const { return Paint::page_size_inch(score); }
 
-SizeF ScoreRenderer::pageSizeInch(const Score *score, const ScorePaintOptions &opt) const { return Paint::pageSizeInch(score, opt); }
+SizeF ScoreRenderer::page_size_inch(const Score *score, const ScorePaintOptions &opt) const { return Paint::page_size_inch(score, opt); }
 
-void ScoreRenderer::paintScore(Painter *painter, Score *score, const ScorePaintOptions &opt) const {
-    Paint::paintScore(painter, score, opt);
+void ScoreRenderer::paint_score(Painter *painter, Score *score, const ScorePaintOptions &opt) const {
+    Paint::paint_score(painter, score, opt);
 }
 
-void ScoreRenderer::paintItem(Painter &painter, const EngravingItem *item, const PaintOptions &opt) const {
-    Paint::paintItem(painter, item, opt);
+void ScoreRenderer::paint_item(Painter &painter, const EngravingItem *item, const PaintOptions &opt) const {
+    Paint::paint_item(painter, item, opt);
 }
 
-void ScoreRenderer::doLayoutItem(EngravingItem *item) {
+void ScoreRenderer::do_layout_item(EngravingItem *item) {
     LayoutContext ctx(item->score());
-    TLayout::layoutItem(item, ctx);
+    TLayout::layout_item(item, ctx);
 }
 
-void ScoreRenderer::doDrawItem(const EngravingItem *item, Painter *p, const PaintOptions &opt) { TDraw::drawItem(item, p, opt); }
+void ScoreRenderer::do_draw_item(const EngravingItem *item, Painter *p, const PaintOptions &opt) { TDraw::draw_item(item, p, opt); }
 
-void ScoreRenderer::layoutText1(TextBase *item, bool base) {
+void ScoreRenderer::layout_text1(TextBase *item, bool base) {
     LayoutContext ctx(item->score());
     if (base) {
-        TextLayout::layoutBaseTextBase1(item, ctx);
+        TextLayout::layout_base_text_base1(item, ctx);
     } else if (Harmony::classof(item)) {
-        TLayout::layoutHarmony(toHarmony(item), toHarmony(item)->mutldata(), ctx);
+        TLayout::layout_harmony(to_harmony(item), to_harmony(item)->mutldata(), ctx);
     } else {
-        TextLayout::layoutBaseTextBase1(item, ctx);
+        TextLayout::layout_base_text_base1(item, ctx);
     }
 }
 
-void ScoreRenderer::computeBezier(TieSegment *tieSeg, PointF shoulderOffset) { SlurTieLayout::computeBezier(tieSeg, shoulderOffset); }
+void ScoreRenderer::compute_bezier(TieSegment *tie_seg, PointF shoulder_offset) { SlurTieLayout::compute_bezier(tie_seg, shoulder_offset); }
 
-void ScoreRenderer::computeBezier(SlurSegment *slurSeg, PointF shoulderOffset) { SlurTieLayout::computeBezier(slurSeg, shoulderOffset); }
-
-void ScoreRenderer::layoutTextLineBaseSegment(TextLineBaseSegment *item) {
-    LayoutContext ctx(item->score());
-    TLayout::layoutTextLineBaseSegment(item, ctx);
+void ScoreRenderer::compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset) {
+    SlurTieLayout::compute_bezier(slur_seg, shoulder_offset);
 }
 
-void ScoreRenderer::layoutBeam1(Beam *item) {
+void ScoreRenderer::layout_text_line_base_segment(TextLineBaseSegment *item) {
     LayoutContext ctx(item->score());
-    TLayout::layoutBeam1(item, ctx);
+    TLayout::layout_text_line_base_segment(item, ctx);
 }
 
-void ScoreRenderer::layoutStem(Chord *item) {
+void ScoreRenderer::layout_beam1(Beam *item) {
     LayoutContext ctx(item->score());
-    ChordLayout::layoutStem(item, ctx);
+    TLayout::layout_beam1(item, ctx);
 }
 
-bool ScoreRenderer::scoreHasTimestampHeadersFooters(const Score *score) const {
-    if (score->layoutMode() != LayoutMode::PAGE && score->layoutMode() != LayoutMode::FLOAT) {
+void ScoreRenderer::layout_stem(Chord *item) {
+    LayoutContext ctx(item->score());
+    ChordLayout::layout_stem(item, ctx);
+}
+
+bool ScoreRenderer::score_has_timestamp_headers_footers(const Score *score) const {
+    if (score->layout_mode() != LayoutMode::PAGE && score->layout_mode() != LayoutMode::FLOAT) {
         return false;
     }
-    return HeaderFooterLayout::scoreHasTimestampHeadersFooters(score);
+    return HeaderFooterLayout::score_has_timestamp_headers_footers(score);
 }

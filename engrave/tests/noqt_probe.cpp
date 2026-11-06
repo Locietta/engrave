@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
         const std::string midi = music::export_native_score(context, project, "midi", 0, {});
         std::ofstream(std::filesystem::u8path(argv[3]), std::ios::binary) << xml;
         std::ofstream(std::filesystem::u8path(std::string(argv[3]) + ".mid"), std::ios::binary) << midi;
-        auto *score = project->masterScore();
+        auto *score = project->master_score();
         std::cout << "Qt-free import/layout/export: parts=" << score->parts().size() << " pages=" << score->npages()
                   << " bytes=" << xml.size() << '\n';
     } catch (const std::exception &e) {

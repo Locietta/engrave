@@ -46,10 +46,10 @@ using xml_attr_impl = pugi::xml_attribute;
 
 namespace {
 template <class T>
-inline xml_handle pack_handle(const T &t) noexcept {
+inline XmlHandle pack_handle(const T &t) noexcept {
     static_assert(std::is_trivially_copyable_v<T>, "Backend handle must be trivially copyable");
-    static_assert(sizeof(T) <= sizeof(xml_handle), "Increase xml_handle slots/size");
-    xml_handle h{}; // zero both slots
+    static_assert(sizeof(T) <= sizeof(XmlHandle), "Increase xml_handle slots/size");
+    XmlHandle h{}; // zero both slots
     const auto *src = reinterpret_cast<const unsigned char *>(&t);
     auto *dst = reinterpret_cast<unsigned char *>(&h);
     std::copy_n(src, sizeof(T), dst);
@@ -57,9 +57,9 @@ inline xml_handle pack_handle(const T &t) noexcept {
 }
 
 template <class T>
-inline T unpack_handle(xml_handle h) noexcept {
+inline T unpack_handle(XmlHandle h) noexcept {
     static_assert(std::is_trivially_copyable_v<T>, "Backend handle must be trivially copyable");
-    static_assert(sizeof(T) <= sizeof(xml_handle), "Increase xml_handle slots/size");
+    static_assert(sizeof(T) <= sizeof(XmlHandle), "Increase xml_handle slots/size");
     T t{}; // zero-init destination
     const auto *src = reinterpret_cast<const unsigned char *>(&h);
     auto *dst = reinterpret_cast<unsigned char *>(&t);
@@ -74,9 +74,9 @@ inline T unpack_handle(xml_handle h) noexcept {
 
 XmlDomNode::XmlDomNode(const std::shared_ptr<XmlDomImplData> &xml, xml_node_handle node) : xml_(xml), node_(node) {}
 
-bool XmlDomNode::isNull() const { return !static_cast<bool>(node_); }
+bool XmlDomNode::is_null() const { return !static_cast<bool>(node_); }
 
-String XmlDomNode::nodeName() const {
+String XmlDomNode::node_name() const {
     if (!node_) {
         return String();
     }
@@ -88,18 +88,18 @@ String XmlDomNode::nodeName() const {
         case pugi::node_declaration:
         case pugi::node_doctype:
         case pugi::node_document: // usually empty
-            return String::fromUtf8(n.name());
+            return String::from_utf8(n.name());
         case pugi::node_pcdata:
-        case pugi::node_cdata: return String::fromUtf8(n.value());
-        case pugi::node_comment: return String::fromUtf8(n.value());
+        case pugi::node_cdata: return String::from_utf8(n.value());
+        case pugi::node_comment: return String::from_utf8(n.value());
         case pugi::node_null:
         default: return String();
     }
 }
 
-bool XmlDomNode::hasChildNodes() const { return node_ ? static_cast<bool>(unpack_handle<xml_node_impl>(node_).first_child()) : false; }
+bool XmlDomNode::has_child_nodes() const { return node_ ? static_cast<bool>(unpack_handle<xml_node_impl>(node_).first_child()) : false; }
 
-XmlDomNode XmlDomNode::firstChild() const {
+XmlDomNode XmlDomNode::first_child() const {
     if (!node_) {
         return XmlDomNode(xml_, xml_node_handle());
     }
@@ -107,7 +107,7 @@ XmlDomNode XmlDomNode::firstChild() const {
     return XmlDomNode(xml_, pack_handle(n));
 }
 
-XmlDomElement XmlDomNode::firstChildElement(const char *name) const {
+XmlDomElement XmlDomNode::first_child_element(const char *name) const {
     if (!node_) {
         return XmlDomElement(xml_, xml_node_handle());
     }
@@ -119,7 +119,7 @@ XmlDomElement XmlDomNode::firstChildElement(const char *name) const {
     return XmlDomElement(xml_, xml_node_handle());
 }
 
-XmlDomNode XmlDomNode::nextSibling() const {
+XmlDomNode XmlDomNode::next_sibling() const {
     if (!node_) {
         return XmlDomNode(xml_, xml_node_handle());
     }
@@ -127,7 +127,7 @@ XmlDomNode XmlDomNode::nextSibling() const {
     return XmlDomNode(xml_, pack_handle(n));
 }
 
-XmlDomNode XmlDomNode::previousSibling() const {
+XmlDomNode XmlDomNode::previous_sibling() const {
     if (!node_) {
         return XmlDomNode(xml_, xml_node_handle());
     }
@@ -143,7 +143,7 @@ XmlDomNode XmlDomNode::parent() const {
     return XmlDomNode(xml_, pack_handle(n));
 }
 
-XmlDomElement XmlDomNode::nextSiblingElement(const char *name) const {
+XmlDomElement XmlDomNode::next_sibling_element(const char *name) const {
     if (!node_) {
         return XmlDomElement(xml_, xml_node_handle());
     }
@@ -160,7 +160,7 @@ XmlDomElement XmlDomNode::nextSiblingElement(const char *name) const {
     return XmlDomElement(xml_, xml_node_handle());
 }
 
-XmlDomElement XmlDomNode::previousSiblingElement(const char *name) const {
+XmlDomElement XmlDomNode::previous_sibling_element(const char *name) const {
     if (!node_) {
         return XmlDomElement(xml_, xml_node_handle());
     }
@@ -177,7 +177,7 @@ XmlDomElement XmlDomNode::previousSiblingElement(const char *name) const {
     return XmlDomElement(xml_, xml_node_handle());
 }
 
-XmlDomElement XmlDomNode::toElement() const {
+XmlDomElement XmlDomNode::to_element() const {
     if (!node_) {
         return XmlDomElement(xml_, xml_node_handle());
     }
@@ -195,14 +195,14 @@ XmlDomElement XmlDomNode::toElement() const {
 XmlDomAttribute::XmlDomAttribute(const std::shared_ptr<XmlDomImplData> &data, xml_attr_handle attribute)
     : xml_(data), attribute_(attribute) {}
 
-bool XmlDomAttribute::isNull() const { return !static_cast<bool>(attribute_); }
+bool XmlDomAttribute::is_null() const { return !static_cast<bool>(attribute_); }
 
-String XmlDomAttribute::attributeName() const {
+String XmlDomAttribute::attribute_name() const {
     if (!attribute_) {
         return String();
     }
     xml_attr_impl a = unpack_handle<xml_attr_impl>(attribute_);
-    return String::fromUtf8(a.name());
+    return String::from_utf8(a.name());
 }
 
 String XmlDomAttribute::value() const {
@@ -210,10 +210,10 @@ String XmlDomAttribute::value() const {
         return String();
     }
     xml_attr_impl a = unpack_handle<xml_attr_impl>(attribute_);
-    return String::fromUtf8(a.value());
+    return String::from_utf8(a.value());
 }
 
-XmlDomAttribute XmlDomAttribute::nextAttribute() const {
+XmlDomAttribute XmlDomAttribute::next_attribute() const {
     if (!attribute_) {
         return XmlDomAttribute(xml_, xml_attr_handle());
     }
@@ -236,13 +236,13 @@ String XmlDomElement::text() const {
     for (xml_node_impl c = e.first_child(); c; c = c.next_sibling()) {
         const pugi::xml_node_type t = c.type();
         if (t == pugi::node_pcdata || t == pugi::node_cdata) {
-            result += String::fromUtf8(c.value());
+            result += String::from_utf8(c.value());
         }
     }
     return result;
 }
 
-XmlDomAttribute XmlDomElement::firstAttribute() const {
+XmlDomAttribute XmlDomElement::first_attribute() const {
     if (!node_) {
         return XmlDomAttribute(xml_, xml_attr_handle());
     }
@@ -270,28 +270,28 @@ XmlDomAttribute XmlDomElement::attribute(const char *name) const {
 
 XmlDomDocument::XmlDomDocument() { xml_ = std::make_shared<XmlDomImplData>(); }
 
-void XmlDomDocument::setContent(const ByteArray &data) {
+void XmlDomDocument::set_content(const ByteArray &data) {
     TRACEFUNC;
 
     xml_->doc.reset();
-    xml_->result = xml_->doc.load_buffer(data.constData(), data.size());
+    xml_->result = xml_->doc.load_buffer(data.const_data(), data.size());
     xml_->triedload = true;
 
     if (xml_->result.status != pugi::status_ok) {
-        LOGE() << errorString();
+        LOGE() << error_string();
     }
 }
 
-XmlDomElement XmlDomDocument::rootElement() const {
+XmlDomElement XmlDomDocument::root_element() const {
     xml_node_impl e = xml_->doc.document_element();
     return XmlDomElement(xml_, pack_handle(e));
 }
 
-bool XmlDomDocument::hasError() const { return xml_->triedload && xml_->result.status != pugi::status_ok; }
+bool XmlDomDocument::has_error() const { return xml_->triedload && xml_->result.status != pugi::status_ok; }
 
-String XmlDomDocument::errorString() const {
+String XmlDomDocument::error_string() const {
     if (xml_->triedload) {
-        return String::fromUtf8(xml_->result.description());
+        return String::from_utf8(xml_->result.description());
     }
     return String();
 }

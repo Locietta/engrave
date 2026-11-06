@@ -34,7 +34,7 @@ using namespace muse;
 using namespace muse::io;
 
 namespace mu::engraving {
-ImageStore imageStore; // the global image store
+ImageStore image_store; // the global image store
 
 //---------------------------------------------------------
 //   ImageStoreItem
@@ -61,9 +61,9 @@ void ImageStoreItem::reference(Image *image) { references_.push_back(image); }
 //    check if item is used in score
 //---------------------------------------------------------
 
-bool ImageStoreItem::isUsed(Score *score) const {
+bool ImageStoreItem::is_used(Score *score) const {
     for (Image *image : references_) {
-        if (image->score() == score && image->ownershipParent()) {
+        if (image->score() == score && image->ownership_parent()) {
             return true;
         }
     }
@@ -74,7 +74,7 @@ bool ImageStoreItem::isUsed(Score *score) const {
 //   hashName
 //---------------------------------------------------------
 
-std::string ImageStoreItem::hashName() const {
+std::string ImageStoreItem::hash_name() const {
     const char hex[17] = "0123456789abcdef";
     char p[33];
     for (int i = 0; i < 16; ++i) {
@@ -89,7 +89,7 @@ std::string ImageStoreItem::hashName() const {
 //   toInt
 //---------------------------------------------------------
 
-inline static int toInt(char c) {
+inline static int to_int(char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
     }
@@ -100,20 +100,20 @@ inline static int toInt(char c) {
 //   ~ImageStore
 //---------------------------------------------------------
 
-ImageStore::~ImageStore() { muse::DeleteAll(items_); }
+ImageStore::~ImageStore() { muse::delete_all(items_); }
 
 //---------------------------------------------------------
 //   getImage
 //---------------------------------------------------------
 
-ImageStoreItem *ImageStore::getImage(std::string name) const {
-    name = muse::io::completeBasename(name).toStdString();
+ImageStoreItem *ImageStore::get_image(std::string name) const {
+    name = muse::io::complete_basename(name).to_std_string();
     if (name.size() != 32) {
         return nullptr;
     }
     ByteArray hash(16);
     for (int i = 0; i < 16; ++i) {
-        hash[i] = toInt(name.at(i * 2)) * 16 + toInt(name.at(i * 2 + 1));
+        hash[i] = to_int(name.at(i * 2)) * 16 + to_int(name.at(i * 2 + 1));
     }
     for (ImageStoreItem *item : items_) {
         if (item->hash() == hash) {
@@ -131,7 +131,7 @@ ImageStoreItem *ImageStore::getImage(std::string name) const {
 // The store's 16 byte content key: two FNV-1a passes with distinct offset bases.
 // Upstream used an MD4 service that this engine does not provide; the key only
 // deduplicates images and names their files in the archive.
-static ByteArray contentKey(const ByteArray &ba) {
+static ByteArray content_key(const ByteArray &ba) {
     uint64_t a = 14695981039346656037ull;
     uint64_t b = 0x84222325cbf29ce4ull;
     for (size_t i = 0; i < ba.size(); ++i) {
@@ -147,7 +147,7 @@ static ByteArray contentKey(const ByteArray &ba) {
 }
 
 ImageStoreItem *ImageStore::add(const std::string &name, const ByteArray &ba) {
-    ByteArray hash = contentKey(ba);
+    ByteArray hash = content_key(ba);
     for (ImageStoreItem *item : items_) {
         if (item->hash() == hash) {
             return item;
@@ -163,10 +163,10 @@ ImageStoreItem *ImageStore::add(const std::string &name, const ByteArray &ba) {
 //   clearUnused
 //---------------------------------------------------------
 
-void ImageStore::clearUnused() {
+void ImageStore::clear_unused() {
     items_.erase(std::remove_if(items_.begin(), items_.end(),
                                 [](ImageStoreItem *i) {
-                                    const bool remove = !i->isUsed();
+                                    const bool remove = !i->is_used();
                                     if (remove) {
                                         delete i;
                                     }

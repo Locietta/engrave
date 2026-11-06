@@ -51,161 +51,161 @@ public:
     Tuplet(const Tuplet &);
     ~Tuplet();
 
-    void setOwnershipParent(DummyParentOr<Measure> parent);
+    void set_ownership_parent(DummyParentOr<Measure> parent);
 
     Tuplet *clone() const override { return new Tuplet(*this); }
 
-    void setTrack(track_idx_t val) override;
+    void set_track(track_idx_t val) override;
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
     Text *number() const { return number_; }
 
-    void setNumber(Text *t) { number_ = t; }
+    void set_number(Text *t) { number_ = t; }
 
-    void resetNumberProperty();
-    static void resetNumberProperty(Text *number);
+    void reset_number_property();
+    static void reset_number_property(Text *number);
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
-    Measure *measure() const override { return toMeasure(ownershipParent()); }
+    Measure *measure() const override { return to_measure(ownership_parent()); }
 
-    TupletNumberType numberType() const { return numberType_; }
+    TupletNumberType number_type() const { return number_type_; }
 
-    TupletBracketType bracketType() const { return bracketType_; }
+    TupletBracketType bracket_type() const { return bracket_type_; }
 
-    void setNumberType(TupletNumberType val) { numberType_ = val; }
+    void set_number_type(TupletNumberType val) { number_type_ = val; }
 
-    void setBracketType(TupletBracketType val) { bracketType_ = val; }
+    void set_bracket_type(TupletBracketType val) { bracket_type_ = val; }
 
-    bool hasBracket() const { return hasBracket_; }
+    bool has_bracket() const { return has_bracket_; }
 
-    void setHasBracket(bool b) { hasBracket_ = b; }
+    void set_has_bracket(bool b) { has_bracket_ = b; }
 
-    Spatium bracketWidth() const { return bracketWidth_; }
+    Spatium bracket_width() const { return bracket_width_; }
 
-    void setBracketWidth(Spatium s) { bracketWidth_ = s; }
+    void set_bracket_width(Spatium s) { bracket_width_ = s; }
 
     const Fraction &ratio() const { return ratio_; }
 
-    void setRatio(const Fraction &r) { ratio_ = r; }
+    void set_ratio(const Fraction &r) { ratio_ = r; }
 
-    void setUserPoint1(PointF p) { userP1_ = p; }
+    void set_user_point1(PointF p) { user_p1_ = p; }
 
-    void setUserPoint2(PointF p) { userP2_ = p; }
+    void set_user_point2(PointF p) { user_p2_ = p; }
 
-    const std::vector<DurationElement *> &elements() const { return currentElements_; }
+    const std::vector<DurationElement *> &elements() const { return current_elements_; }
 
-    void clear() { currentElements_.clear(); }
+    void clear() { current_elements_.clear(); }
 
     bool contains(const DurationElement *el) const {
-        return std::find(currentElements_.begin(), currentElements_.end(), el) != currentElements_.end();
+        return std::find(current_elements_.begin(), current_elements_.end(), el) != current_elements_.end();
     }
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
     void reset() override;
 
-    TDuration baseLen() const { return baseLen_; }
+    TDuration base_len() const { return base_len_; }
 
-    void setBaseLen(const TDuration &d) { baseLen_ = d; }
+    void set_base_len(const TDuration &d) { base_len_ = d; }
 
     void dump() const override;
 
-    void setDirection(DirectionV d) { direction_ = d; }
+    void set_direction(DirectionV d) { direction_ = d; }
 
     DirectionV direction() const { return direction_; }
 
-    bool isUp() const { return isUp_; }
+    bool is_up() const { return is_up_; }
 
-    void setIsUp(bool val) { isUp_ = val; }
+    void set_is_up(bool val) { is_up_ = val; }
 
-    bool isSmall() const { return isSmall_; }
+    bool is_small() const { return is_small_; }
 
-    void setIsSmall(bool val) { isSmall_ = val; }
+    void set_is_small(bool val) { is_small_ = val; }
 
     Fraction tick() const override { return tick_; }
 
     Fraction rtick() const override;
 
-    void setTick(const Fraction &v) { tick_ = v; }
+    void set_tick(const Fraction &v) { tick_ = v; }
 
-    Fraction elementsDuration();
-    void sortElements();
+    Fraction elements_duration();
+    void sort_elements();
     bool cross() const;
-    staff_idx_t vStaffIdx() const override;
+    staff_idx_t v_staff_idx() const override;
 
     const PointF &p1() const { return p1_; }
 
     PointF &p1() { return p1_; }
 
-    void setP1(const PointF &p) { p1_ = p; }
+    void set_p1(const PointF &p) { p1_ = p; }
 
     const PointF &p2() const { return p2_; }
 
     PointF &p2() { return p2_; }
 
-    void setP2(const PointF &p) { p2_ = p; }
+    void set_p2(const PointF &p) { p2_ = p; }
 
-    const PointF &userP1() const { return userP1_; }
+    const PointF &user_p1() const { return user_p1_; }
 
-    const PointF &userP2() const { return userP2_; }
+    const PointF &user_p2() const { return user_p2_; }
 
-    void setVisible(bool f) override;
-    void setColor(const Color &col) override;
+    void set_visible(bool f) override;
+    void set_color(const Color &col) override;
 
-    EngravingObject *propertyDelegate(Pid id) const override;
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    EngravingObject *property_delegate(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid id) const override;
 
-    void sanitizeTuplet();
-    void addMissingElements();
+    void sanitize_tuplet();
+    void add_missing_elements();
 
-    bool calcHasBracket(const DurationElement *cr1, const DurationElement *cr2) const;
+    bool calc_has_bracket(const DurationElement *cr1, const DurationElement *cr2) const;
 
-    static int computeTupletDenominator(int numerator, Fraction totalDuration);
+    static int compute_tuplet_denominator(int numerator, Fraction total_duration);
 
-    PointF bracketL[4];
-    PointF bracketR[3];
+    PointF bracket_l[4];
+    PointF bracket_r[3];
 
-    EngravingItem *nextElement() override;
-    EngravingItem *prevElement() override;
+    EngravingItem *next_element() override;
+    EngravingItem *prev_element() override;
 
 private:
 
     friend class DurationElement;
 
-    void addDurationElement(DurationElement *de);
-    void removeDurationElement(DurationElement *de);
+    void add_duration_element(DurationElement *de);
+    void remove_duration_element(DurationElement *de);
 
-    Fraction addMissingElement(const Fraction &startTick, const Fraction &endTick);
+    Fraction add_missing_element(const Fraction &start_tick, const Fraction &end_tick);
 
     // All DurationElements where `tuplet()` returns this tuplet
-    std::set<DurationElement *> allElements_;
+    std::set<DurationElement *> all_elements_;
 
     // Those DurationElements that are currently really part of this tuplet
-    std::vector<DurationElement *> currentElements_;
+    std::vector<DurationElement *> current_elements_;
 
-    bool beingDestructed_ = false;
+    bool being_destructed_ = false;
 
     DirectionV direction_ = DirectionV::AUTO;
-    TupletNumberType numberType_ = TupletNumberType::SHOW_NUMBER;
-    TupletBracketType bracketType_ = TupletBracketType::AUTO_BRACKET;
-    Spatium bracketWidth_;
+    TupletNumberType number_type_ = TupletNumberType::SHOW_NUMBER;
+    TupletBracketType bracket_type_ = TupletBracketType::AUTO_BRACKET;
+    Spatium bracket_width_;
 
-    bool hasBracket_ = false;
+    bool has_bracket_ = false;
     Fraction ratio_;
-    TDuration baseLen_; // 1/8 for a triplet of 1/8
+    TDuration base_len_; // 1/8 for a triplet of 1/8
 
-    bool isUp_ = true;
-    bool isSmall_ = true;
+    bool is_up_ = true;
+    bool is_small_ = true;
 
     Fraction tick_;
 
     PointF p1_, p2_;
-    PointF userP1_, userP2_; // user offset
+    PointF user_p1_, user_p2_; // user offset
 
     Text *number_ = nullptr;
 };

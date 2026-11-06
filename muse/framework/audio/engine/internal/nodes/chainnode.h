@@ -40,9 +40,9 @@ public:
 
 protected:
 
-    void doSelfProcess(float *, samples_t) override {}
+    void do_self_process(float *, samples_t) override {}
 
-    void doAdd(IAudioNodePtr node);
+    void do_add(IAudioNodePtr node);
     virtual void rebuild();
 
     std::vector<IAudioNodePtr> nodes_;
@@ -52,7 +52,7 @@ template <typename T>
 void ChainNode<T>::rebuild() {
     IAudioNodePtr next = this->shared_from_this();
     for (auto &node : nodes_) {
-        node->disconnectAll();
+        node->disconnect_all();
         node->connect(next);
         next = node;
     }
@@ -62,16 +62,16 @@ template <typename T>
 void ChainNode<T>::add(IAudioNodePtr node) {
     IF_ASSERT_FAILED(node) { return; }
 
-    doAdd(node);
+    do_add(node);
     rebuild();
 }
 
 template <typename T>
-void ChainNode<T>::doAdd(IAudioNodePtr node) {
+void ChainNode<T>::do_add(IAudioNodePtr node) {
     IF_ASSERT_FAILED(node) { return; }
 
-    node->setOutputSpec(AudioNode<T>::outputSpec());
-    node->setMode(AudioNode<T>::mode());
+    node->set_output_spec(AudioNode<T>::output_spec());
+    node->set_mode(AudioNode<T>::mode());
     nodes_.push_back(node);
 }
 
@@ -81,7 +81,7 @@ void ChainNode<T>::remove(IAudioNodePtr node) {
 
     bool removed = muse::remove(nodes_, node);
     if (removed) {
-        node->disconnectAll();
+        node->disconnect_all();
         rebuild();
     }
 }
@@ -89,7 +89,7 @@ void ChainNode<T>::remove(IAudioNodePtr node) {
 template <typename T>
 void ChainNode<T>::clear() {
     for (auto &node : nodes_) {
-        node->disconnectAll();
+        node->disconnect_all();
     }
     nodes_.clear();
 }

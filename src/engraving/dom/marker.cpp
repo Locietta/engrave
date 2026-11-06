@@ -39,16 +39,16 @@ namespace mu::engraving {
 //   markerStyle
 //---------------------------------------------------------
 
-static const ElementStyle markerStyle{
-    {Sid::repeatLeftPlacement, Pid::PLACEMENT},
-    {Sid::repeatMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle marker_style{
+    {Sid::REPEAT_LEFT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::REPEAT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   MarkerTypeTable
 //---------------------------------------------------------
 
-const std::vector<MarkerTypeTableItem> markerTypeTable{
+const std::vector<MarkerTypeTableItem> marker_type_table{
     {MarkerType::SEGNO, "<sym>segno</sym>", "segno", false},
     {MarkerType::VARSEGNO, "<sym>segnoSerpent1</sym>", "varsegno", false},
     {MarkerType::CODA, "<sym>coda</sym>", "codab", false},
@@ -65,33 +65,33 @@ const std::vector<MarkerTypeTableItem> markerTypeTable{
 //   Marker
 //---------------------------------------------------------
 
-Marker::Marker(DummyParentOr<EngravingItem> parent) : Marker(parent, TextStyleType::REPEAT_LEFT) { resetProperty(Pid::MUSIC_SYMBOL_SIZE); }
+Marker::Marker(DummyParentOr<EngravingItem> parent) : Marker(parent, TextStyleType::REPEAT_LEFT) { reset_property(Pid::MUSIC_SYMBOL_SIZE); }
 
 Marker::Marker(DummyParentOr<EngravingItem> parent, TextStyleType tid)
     : TextBase(ElementType::MARKER, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM) {
-    initElementStyle(&markerStyle);
-    resetProperty(Pid::MUSIC_SYMBOL_SIZE);
-    markerType_ = MarkerType::FINE;
+    init_element_style(&::mu::engraving::marker_style);
+    reset_property(Pid::MUSIC_SYMBOL_SIZE);
+    marker_type_ = MarkerType::FINE;
 }
 
 //---------------------------------------------------------
 //   setMarkerType
 //---------------------------------------------------------
 
-void Marker::setMarkerType(MarkerType t) {
-    bool changeLabel = getProperty(Pid::LABEL) == propertyDefault(Pid::LABEL);
-    markerType_ = t;
-    for (const MarkerTypeTableItem &p : markerTypeTable) {
+void Marker::set_marker_type(MarkerType t) {
+    bool change_label = get_property(Pid::LABEL) == property_default(Pid::LABEL);
+    marker_type_ = t;
+    for (const MarkerTypeTableItem &p : ::mu::engraving::marker_type_table) {
         if (p.type == t) {
             if (empty()) {
-                setXmlText(String::fromAscii(p.text.ascii()));
+                set_xml_text(String::from_ascii(p.text.ascii()));
             }
-            if (changeLabel) {
-                setLabel(String::fromAscii(p.label.ascii()));
+            if (change_label) {
+                set_label(String::from_ascii(p.label.ascii()));
             }
-            TextStyleType ts = p.rightAligned ? TextStyleType::REPEAT_RIGHT : TextStyleType::REPEAT_LEFT;
-            if (textStyleType() != ts) {
-                initTextStyleType(ts);
+            TextStyleType ts = p.right_aligned ? TextStyleType::REPEAT_RIGHT : TextStyleType::REPEAT_LEFT;
+            if (text_style_type() != ts) {
+                init_text_style_type(ts);
             }
 
             break;
@@ -103,38 +103,38 @@ void Marker::setMarkerType(MarkerType t) {
 //   markerTypeUserName
 //---------------------------------------------------------
 
-String Marker::markerTypeUserName() const { return TConv::translatedUserName(markerType_); }
+String Marker::marker_type_user_name() const { return TConv::translated_user_name(marker_type_); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Marker::getProperty(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Marker::get_property(Pid property_id) const {
+    switch (property_id) {
         case Pid::LABEL: return label();
-        case Pid::MARKER_TYPE: return markerType();
-        case Pid::MARKER_CENTER_ON_SYMBOL: return centerOnSymbol();
+        case Pid::MARKER_TYPE: return marker_type();
+        case Pid::MARKER_CENTER_ON_SYMBOL: return center_on_symbol();
         default: break;
     }
-    return TextBase::getProperty(propertyId);
+    return TextBase::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool Marker::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::LABEL: setLabel(v.value<String>()); break;
-        case Pid::MARKER_TYPE: setMarkerType(v.value<MarkerType>()); break;
-        case Pid::MARKER_CENTER_ON_SYMBOL: setCenterOnSymbol(v.toBool()); break;
+bool Marker::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::LABEL: set_label(v.value<String>()); break;
+        case Pid::MARKER_TYPE: set_marker_type(v.value<MarkerType>()); break;
+        case Pid::MARKER_CENTER_ON_SYMBOL: set_center_on_symbol(v.to_bool()); break;
         default:
-            if (!TextBase::setProperty(propertyId, v)) {
+            if (!TextBase::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -142,12 +142,12 @@ bool Marker::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Marker::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Marker::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::LABEL:
-            for (const MarkerTypeTableItem &p : markerTypeTable) {
-                if (markerType_ == p.type) {
-                    return String::fromAscii(p.label.ascii());
+            for (const MarkerTypeTableItem &p : ::mu::engraving::marker_type_table) {
+                if (marker_type_ == p.type) {
+                    return String::from_ascii(p.label.ascii());
                 }
             }
             return String();
@@ -157,50 +157,50 @@ PropertyValue Marker::propertyDefault(Pid propertyId) const {
         case Pid::MUSIC_SYMBOL_SIZE: return 18.0;
         default: break;
     }
-    return TextBase::propertyDefault(propertyId);
+    return TextBase::property_default(property_id);
 }
 
 //---------------------------------------------------------
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Marker::nextSegmentElement() {
+EngravingItem *Marker::next_segment_element() {
     Segment *seg;
-    if (markerType() == MarkerType::FINE) {
+    if (marker_type() == MarkerType::FINE) {
         seg = measure()->last();
-        return seg->firstElementForNavigation(staffIdx());
+        return seg->first_element_for_navigation(staff_idx());
     }
-    Measure *prevMeasure = measure()->prevMeasureMM();
-    if (prevMeasure) {
-        seg = prevMeasure->last();
-        return seg->firstElementForNavigation(staffIdx());
+    Measure *prev_measure = measure()->prev_measure_mm();
+    if (prev_measure) {
+        seg = prev_measure->last();
+        return seg->first_element_for_navigation(staff_idx());
     }
-    return EngravingItem::nextSegmentElement();
+    return EngravingItem::next_segment_element();
 }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Marker::prevSegmentElement() {
+EngravingItem *Marker::prev_segment_element() {
     //it's the same barline
-    return nextSegmentElement();
+    return next_segment_element();
 }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-String Marker::symbolString() const {
+String Marker::symbol_string() const {
     // Returns the coda/segno symbol if present
-    const static std::array REPEAT_SYMBOL_NAMES{
+    const static std::array repeat_symbol_names{
         String(u"<sym>coda</sym>"),          String(u"<sym>codaSquare</sym>"),    String(u"<sym>codaJapanes</sym>"),
         String(u"<sym>segno</sym>"),         String(u"<sym>segnoSerpent1</sym>"), String(u"<sym>segnoSerpent2</sym>"),
         String(u"<sym>segnoJapanese</sym>"),
     };
 
-    for (const String &sym : REPEAT_SYMBOL_NAMES) {
-        if (xmlText().contains(sym)) {
+    for (const String &sym : repeat_symbol_names) {
+        if (xml_text().contains(sym)) {
             return sym;
         }
     }
@@ -212,5 +212,5 @@ String Marker::symbolString() const {
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Marker::subtypeUserName() const { return TConv::userName(markerType_); }
+muse::TranslatableString Marker::subtype_user_name() const { return TConv::user_name(marker_type_); }
 } // namespace mu::engraving

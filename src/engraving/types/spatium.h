@@ -39,19 +39,19 @@ public:
 
     constexpr double val() const { return val_; }
 
-    constexpr double toAbsolute(double spval) const { return val_ * spval; }
+    constexpr double to_absolute(double spval) const { return val_ * spval; }
 
-    static constexpr Spatium fromAbsolute(double absolute, double spval) { return Spatium(absolute / spval); }
+    static constexpr Spatium from_absolute(double absolute, double spval) { return Spatium(absolute / spval); }
 
     constexpr bool operator>(const Spatium &a) const { return val_ > a.val_; }
 
     constexpr bool operator<(const Spatium &a) const { return val_ < a.val_; }
 
-    bool operator==(const Spatium &a) const { return muse::RealIsEqual(val_, a.val_); }
+    bool operator==(const Spatium &a) const { return muse::real_is_equal(val_, a.val_); }
 
     bool operator!=(const Spatium &a) const { return val_ != a.val_; }
 
-    bool isZero() const { return muse::RealIsNull(val_); }
+    bool is_zero() const { return muse::real_is_null(val_); }
 
     constexpr Spatium &operator+=(const Spatium &a) {
         val_ += a.val_;

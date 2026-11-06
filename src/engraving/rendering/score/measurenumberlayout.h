@@ -29,14 +29,14 @@
 namespace mu::engraving::rendering::score {
 class MeasureNumberLayout {
 public:
-    static void layoutMeasureNumber(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx);
-    static void layoutMMRestRange(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_measure_number(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_mm_rest_range(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx);
 
 private:
-    static void layoutMeasureNumberBase(MeasureNumberBase *item, MeasureNumberBase::LayoutData *ldata);
+    static void layout_measure_number_base(MeasureNumberBase *item, MeasureNumberBase::LayoutData *ldata);
 
-    static const Segment *refBarlineSegment(const MeasureNumber *item, bool alignToBarline, AlignH hPlacement);
-    static void checkBarlineCollisions(const MeasureNumber *item, const Segment *barlineSeg, AlignH hPlacement,
-                                       MeasureNumber::LayoutData *ldata);
+    static const Segment *ref_barline_segment(const MeasureNumber *item, bool align_to_barline, AlignH h_placement);
+    static void check_barline_collisions(const MeasureNumber *item, const Segment *barline_seg, AlignH h_placement,
+                                         MeasureNumber::LayoutData *ldata);
 };
 } // namespace mu::engraving::rendering::score

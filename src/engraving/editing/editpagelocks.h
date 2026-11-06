@@ -37,25 +37,26 @@ enum class LayoutBreakType : unsigned char;
 
 class EditPageLocks {
 public:
-    static void undoAddPageLock(Transaction &tx, const RangeLock *lock);
-    static void undoRemovePageLock(Transaction &tx, const RangeLock *lock);
-    static void undoRemoveAllLocks(Transaction &tx, Score *score);
+    static void undo_add_page_lock(Transaction &tx, const RangeLock *lock);
+    static void undo_remove_page_lock(Transaction &tx, const RangeLock *lock);
+    static void undo_remove_all_locks(Transaction &tx, Score *score);
 
-    static void togglePageLock(Transaction &tx, Score *score, const std::vector<Page *> &pages);
-    static void toggleScoreLock(Transaction &tx, Score *score);
+    static void toggle_page_lock(Transaction &tx, Score *score, const std::vector<Page *> &pages);
+    static void toggle_score_lock(Transaction &tx, Score *score);
 
-    static void addRemovePageLocks(Transaction &tx, Score *score, int interval, bool lock);
+    static void add_remove_page_locks(Transaction &tx, Score *score, int interval, bool lock);
 
-    static void makeIntoPage(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-    static void moveMeasuresToPrevPage(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
-    static void moveMeasuresToNextPage(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
+    static void make_into_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
+    static void move_measures_to_prev_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
+    static void move_measures_to_next_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
 
-    static void applyLockToSelection(Transaction &tx, Score *score);
+    static void apply_lock_to_selection(Transaction &tx, Score *score);
 
-    static void removeLayoutBreaksOnAddPageLock(Transaction &tx, const RangeLock *lock);
-    static void removePageLocksOnAddLayoutBreak(Transaction &tx, Score *score, LayoutBreakType breakType, const MeasureBase *measure);
-    static void removePageLocksOnRemoveMeasures(Transaction &tx, Score *score, const MeasureBase *m1, const MeasureBase *m2);
-    static void removePageLocksContainingMMRests(Transaction &tx, Score *score);
-    static void updatePageLocksOnCreateMMRests(Transaction &tx, Score *score, Measure *first, Measure *last);
+    static void remove_layout_breaks_on_add_page_lock(Transaction &tx, const RangeLock *lock);
+    static void remove_page_locks_on_add_layout_break(Transaction &tx, Score *score, LayoutBreakType break_type,
+                                                      const MeasureBase *measure);
+    static void remove_page_locks_on_remove_measures(Transaction &tx, Score *score, const MeasureBase *m1, const MeasureBase *m2);
+    static void remove_page_locks_containing_mm_rests(Transaction &tx, Score *score);
+    static void update_page_locks_on_create_mm_rests(Transaction &tx, Score *score, Measure *first, Measure *last);
 };
 } // namespace mu::engraving

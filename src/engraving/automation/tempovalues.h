@@ -29,13 +29,13 @@
 namespace mu::engraving {
 //! NOTE: AutomationPoint values are normalized [0, 1] - Tempo has no such native unit,
 //! so it's normalized as a fraction of the score's own max valid tempo
-constexpr muse::real_t normalizeTempo(const BeatsPerSecond &bps) { return muse::real_t::make(bps.val / Constants::MAX_TEMPO.val); }
+constexpr muse::real_t normalize_tempo(const BeatsPerSecond &bps) { return muse::real_t::make(bps.val / Constants::max_tempo.val); }
 
-constexpr BeatsPerSecond denormalizeTempo(const muse::real_t normalized) {
-    return BeatsPerSecond(normalized.raw() * Constants::MAX_TEMPO.val);
+constexpr BeatsPerSecond denormalize_tempo(const muse::real_t normalized) {
+    return BeatsPerSecond(normalized.raw() * Constants::max_tempo.val);
 }
 
-inline constexpr muse::real_t DEFAULT_NORMALIZED_TEMPO = normalizeTempo(Constants::DEFAULT_TEMPO);
-inline constexpr muse::real_t MIN_NORMALIZED_TEMPO = normalizeTempo(Constants::MIN_TEMPO);
-inline constexpr muse::real_t MAX_NORMALIZED_TEMPO = normalizeTempo(Constants::MAX_TEMPO);
+inline constexpr muse::real_t default_normalized_tempo = normalize_tempo(Constants::default_tempo);
+inline constexpr muse::real_t min_normalized_tempo = normalize_tempo(Constants::min_tempo);
+inline constexpr muse::real_t max_normalized_tempo = normalize_tempo(Constants::max_tempo);
 } // namespace mu::engraving

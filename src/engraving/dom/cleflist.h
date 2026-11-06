@@ -36,9 +36,9 @@ public:
     ClefList() {}
 
     ClefTypeList clef(int tick) const;
-    void setClef(int tick, ClefTypeList);
-    int nextClefTick(int tick) const;
-    int currentClefTick(int tick) const;
+    void set_clef(int tick, ClefTypeList);
+    int next_clef_tick(int tick) const;
+    int current_clef_tick(int tick) const;
 };
 } // namespace mu::engraving
 #endif

@@ -87,9 +87,9 @@ using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
 namespace {
-constexpr int GPX_MAX_DEPTH = 4;
-constexpr int GPX_MAX_FILE_BYTES = 64 * 1024 * 1024;
-constexpr int GPX_MAX_DECOMPRESSED_BYTES = 128 * 1024 * 1024;
+constexpr int gpx_max_depth = 4;
+constexpr int gpx_max_file_bytes = 64 * 1024 * 1024;
+constexpr int gpx_max_decompressed_bytes = 128 * 1024 * 1024;
 
 // The compressed bits ended in the middle of a token. The token stream of the GPX
 // fixtures can stop a few bytes short of the length it declares (the tail of the
@@ -100,7 +100,7 @@ struct GpxEndOfData : std::runtime_error {
 };
 } // namespace
 
-const std::map<std::string, std::string> GuitarPro6::instrumentMapping = {
+const std::map<std::string, std::string> GuitarPro6::instrument_mapping = {
     {"2Mrcs", "maracas"},
     {"a-bass4", "acoustic-bass"},
     {"a-bass5", "acoustic-bass"},
@@ -251,25 +251,25 @@ const std::map<std::string, std::string> GuitarPro6::instrumentMapping = {
     {"whstl", "tin-whistle"},
     {"xlphn", "xylophone"}};
 
-std::unique_ptr<IGPDomBuilder> GuitarPro6::createGPDomBuilder() const { return std::make_unique<GP6DomBuilder>(); }
+std::unique_ptr<IGPDomBuilder> GuitarPro6::create_gp_dom_builder() const { return std::make_unique<GP6DomBuilder>(); }
 
 //---------------------------------------------------------
 //   readBit
 //---------------------------------------------------------
 
-int GuitarPro6::readBit(ByteArray *buffer) {
+int GuitarPro6::read_bit(ByteArray *buffer) {
     // calculate the byte index by dividing the position in bits by the bits per byte
-    size_t byteIndex = static_cast<size_t>(position) / BITS_IN_BYTE;
-    if (byteIndex >= buffer->size()) {
+    size_t byte_index = static_cast<size_t>(position) / bits_in_byte;
+    if (byte_index >= buffer->size()) {
         throw GpxEndOfData();
     }
 
     // calculate our offset so we know how much to bit shift
-    int byteOffset = ((BITS_IN_BYTE - 1) - (position % BITS_IN_BYTE));
+    int byte_offset = ((bits_in_byte - 1) - (position % bits_in_byte));
 
     // calculate the bit which we want to read
-    char byte = (*buffer)[byteIndex];
-    int bit = (((byte & 0xff) >> byteOffset) & 0x01);
+    char byte = (*buffer)[byte_index];
+    int bit = (((byte & 0xff) >> byte_offset) & 0x01);
 
     // increment our current position so we know this bit has been read
     position++;
@@ -280,13 +280,13 @@ int GuitarPro6::readBit(ByteArray *buffer) {
 //   readBits
 //---------------------------------------------------------
 
-int GuitarPro6::readBits(ByteArray *buffer, int bitsToRead) {
-    if (bitsToRead < 0 || bitsToRead > 32) {
+int GuitarPro6::read_bits(ByteArray *buffer, int bits_to_read) {
+    if (bits_to_read < 0 || bits_to_read > 32) {
         throw std::runtime_error("Invalid bit count in Guitar Pro data");
     }
     uint32_t bits = 0;
-    for (int i = (bitsToRead - 1); i >= 0; i--) {
-        bits |= (static_cast<uint32_t>(readBit(buffer)) << i);
+    for (int i = (bits_to_read - 1); i >= 0; i--) {
+        bits |= (static_cast<uint32_t>(read_bit(buffer)) << i);
     }
     return static_cast<int>(bits);
 }
@@ -295,13 +295,13 @@ int GuitarPro6::readBits(ByteArray *buffer, int bitsToRead) {
 //   readBitsReversed
 //---------------------------------------------------------
 
-int GuitarPro6::readBitsReversed(ByteArray *buffer, int bitsToRead) {
-    if (bitsToRead < 0 || bitsToRead > 32) {
+int GuitarPro6::read_bits_reversed(ByteArray *buffer, int bits_to_read) {
+    if (bits_to_read < 0 || bits_to_read > 32) {
         throw std::runtime_error("Invalid bit count in Guitar Pro data");
     }
     uint32_t bits = 0;
-    for (int i = 0; i < bitsToRead; i++) {
-        bits |= static_cast<uint32_t>(readBit(buffer)) << i;
+    for (int i = 0; i < bits_to_read; i++) {
+        bits |= static_cast<uint32_t>(read_bit(buffer)) << i;
     }
     return static_cast<int>(bits);
 }
@@ -310,7 +310,7 @@ int GuitarPro6::readBitsReversed(ByteArray *buffer, int bitsToRead) {
 //   getBytes
 //---------------------------------------------------------
 
-ByteArray GuitarPro6::getBytes(ByteArray *buffer, int offset, int length) {
+ByteArray GuitarPro6::get_bytes(ByteArray *buffer, int offset, int length) {
     if (offset < 0 || length < 0) {
         throw std::runtime_error("Invalid Guitar Pro file range");
     }
@@ -322,19 +322,19 @@ ByteArray GuitarPro6::getBytes(ByteArray *buffer, int offset, int length) {
         throw std::runtime_error("Guitar Pro file block is outside the archive");
     }
 
-    ByteArray newBytes;
+    ByteArray new_bytes;
     // compute new bytes from our buffer and return byte array
     for (int i = 0; i < length && start + static_cast<size_t>(i) < buffer->size(); i++) {
-        newBytes.push_back((*buffer)[start + static_cast<size_t>(i)]);
+        new_bytes.push_back((*buffer)[start + static_cast<size_t>(i)]);
     }
-    return newBytes;
+    return new_bytes;
 }
 
 //---------------------------------------------------------
 //   readInteger
 //---------------------------------------------------------
 
-int GuitarPro6::readInteger(ByteArray *buffer, int offset) {
+int GuitarPro6::read_integer(ByteArray *buffer, int offset) {
     if (offset < 0 || static_cast<size_t>(offset) > buffer->size() || buffer->size() - static_cast<size_t>(offset) < 4) {
         throw std::runtime_error("Unexpected end of compressed Guitar Pro data");
     }
@@ -345,7 +345,7 @@ int GuitarPro6::readInteger(ByteArray *buffer, int offset) {
     bytes[2] = (*buffer)[static_cast<size_t>(offset) + 2];
     bytes[3] = (*buffer)[static_cast<size_t>(offset) + 3];
     // increment positioning so we keep track of where we are
-    position += sizeof(int) * BITS_IN_BYTE;
+    position += sizeof(int) * bits_in_byte;
     // bit shift in order to compute our integer value and return
     const uint32_t value = (static_cast<uint32_t>(bytes[3]) & 0xff) << 24 | (static_cast<uint32_t>(bytes[2]) & 0xff) << 16 |
                            (static_cast<uint32_t>(bytes[1]) & 0xff) << 8 | (static_cast<uint32_t>(bytes[0]) & 0xff);
@@ -356,7 +356,7 @@ int GuitarPro6::readInteger(ByteArray *buffer, int offset) {
 //   readString
 //---------------------------------------------------------
 
-ByteArray GuitarPro6::readString(ByteArray *buffer, int offset, int length) {
+ByteArray GuitarPro6::read_string(ByteArray *buffer, int offset, int length) {
     if (offset < 0 || length < 0 || static_cast<size_t>(offset) > buffer->size()) {
         throw std::runtime_error("Unexpected end of compressed Guitar Pro data");
     }
@@ -367,11 +367,11 @@ ByteArray GuitarPro6::readString(ByteArray *buffer, int offset, int length) {
     const size_t limit = std::min(static_cast<size_t>(length), available);
     // compute the string by iterating through the buffer
     for (size_t i = 0; i < limit; i++) {
-        int charValue = ((*buffer)[start + i] & 0xff);
-        if (charValue == 0) {
+        int char_value = ((*buffer)[start + i] & 0xff);
+        if (char_value == 0) {
             break;
         }
-        filename.push_back((char) charValue);
+        filename.push_back((char) char_value);
     }
     return filename;
 }
@@ -380,62 +380,62 @@ ByteArray GuitarPro6::readString(ByteArray *buffer, int offset, int length) {
 //   unhandledNode
 //---------------------------------------------------------
 
-void GuitarPro6::unhandledNode(String nodeName) { LOGD() << "WARNING: Discovered unhandled node name" << nodeName; }
+void GuitarPro6::unhandled_node(String node_name) { LOGD() << "WARNING: Discovered unhandled node name" << node_name; }
 
 //---------------------------------------------------------
 //   getNode
 //---------------------------------------------------------
 
-XmlDomNode GuitarPro6::getNode(const String &id, XmlDomNode currentDomNode) {
-    while (!(currentDomNode).isNull()) {
-        String currentId = currentDomNode.toElement().attribute("id").value();
-        if (currentId == id) {
-            return currentDomNode;
+XmlDomNode GuitarPro6::get_node(const String &id, XmlDomNode current_dom_node) {
+    while (!(current_dom_node).is_null()) {
+        String current_id = current_dom_node.to_element().attribute("id").value();
+        if (current_id == id) {
+            return current_dom_node;
         }
-        currentDomNode = currentDomNode.nextSibling();
+        current_dom_node = current_dom_node.next_sibling();
     }
     LOGD() << "WARNING: A null node was returned when search for the identifier" << id << ". Your Guitar Pro file may be corrupted.";
-    return currentDomNode;
+    return current_dom_node;
 }
 
 //---------------------------------------------------------
 //   readGpif
 //---------------------------------------------------------
 
-void GuitarPro6::readGpif(ByteArray *data) {
+void GuitarPro6::read_gpif(ByteArray *data) {
     if (!data || data->empty()) {
         throw std::runtime_error("Guitar Pro file has no score.gpif data");
     }
 
-    XmlDomDocument domDoc;
-    domDoc.setContent(*data);
-    if (domDoc.hasError()) {
+    XmlDomDocument dom_doc;
+    dom_doc.set_content(*data);
+    if (dom_doc.has_error()) {
         throw std::runtime_error("Malformed Guitar Pro score.gpif");
     }
-    XmlDomElement domElem = domDoc.rootElement();
-    if (domElem.isNull()) {
+    XmlDomElement dom_elem = dom_doc.root_element();
+    if (dom_elem.is_null()) {
         throw std::runtime_error("Malformed Guitar Pro score.gpif");
     }
 
-    auto builder = createGPDomBuilder();
+    auto builder = create_gp_dom_builder();
     if (!builder) {
         throw std::runtime_error("Unsupported Guitar Pro score.gpif");
     }
-    builder->buildGPDomModel(&domElem);
+    builder->build_gp_dom_model(&dom_elem);
 
-    GPConverter scoreBuilder(score, builder->getGPDomModel());
-    scoreBuilder.convertGP();
-    gpifRead_ = true;
+    GPConverter score_builder(score, builder->get_gp_dom_model());
+    score_builder.convert_gp();
+    gpif_read_ = true;
 }
 
 //---------------------------------------------------------
 //   parseFile
 //---------------------------------------------------------
 
-void GuitarPro6::parseFile(const char *filename, ByteArray *data) {
+void GuitarPro6::parse_file(const char *filename, ByteArray *data) {
     // test to check if we are dealing with the score
     if (!strcmp(filename, "score.gpif")) {
-        readGpif(data);
+        read_gpif(data);
     }
 }
 
@@ -443,64 +443,64 @@ void GuitarPro6::parseFile(const char *filename, ByteArray *data) {
 //   readGPX
 //---------------------------------------------------------
 
-void GuitarPro6::readGPX(ByteArray *buffer) { readGPX(buffer, 0); }
+void GuitarPro6::read_gpx(ByteArray *buffer) { read_gpx(buffer, 0); }
 
-void GuitarPro6::readGPX(ByteArray *buffer, int depth) {
+void GuitarPro6::read_gpx(ByteArray *buffer, int depth) {
     if (!buffer || buffer->size() < sizeof(int)) {
         throw std::runtime_error("Unexpected end of Guitar Pro data");
     }
-    if (depth >= GPX_MAX_DEPTH) {
+    if (depth >= ::mu::iex::guitarpro::gpx_max_depth) {
         throw std::runtime_error("Guitar Pro data is nested too deeply");
     }
 
     // Each decompressed buffer is a complete GPX stream of its own.
     position = 0;
     // start by reading the file header. It will tell us if the byte array is compressed.
-    int fileHeader = readInteger(buffer, 0);
+    int file_header = read_integer(buffer, 0);
 
-    if (fileHeader == GPX_HEADER_COMPRESSED) {
+    if (file_header == gpx_header_compressed) {
         // this is  a compressed file.
         if (buffer->size() < 2 * sizeof(int)) {
             throw std::runtime_error("Unexpected end of compressed Guitar Pro data");
         }
-        int length = readInteger(buffer, position / BITS_IN_BYTE);
-        if (length <= 0 || length > GPX_MAX_DECOMPRESSED_BYTES) {
+        int length = read_integer(buffer, position / bits_in_byte);
+        if (length <= 0 || length > ::mu::iex::guitarpro::gpx_max_decompressed_bytes) {
             throw std::runtime_error("Invalid compressed Guitar Pro data length");
         }
 
-        ByteArray bcfsBuffer;
-        bcfsBuffer.reserve(std::min<size_t>(static_cast<size_t>(length), 1024 * 1024));
-        while (bcfsBuffer.size() < static_cast<size_t>(length)) {
+        ByteArray bcfs_buffer;
+        bcfs_buffer.reserve(std::min<size_t>(static_cast<size_t>(length), 1024 * 1024));
+        while (bcfs_buffer.size() < static_cast<size_t>(length)) {
             try {
                 // read the bit indicating compression information
-                int flag = readBits(buffer, 1);
+                int flag = read_bits(buffer, 1);
 
                 if (flag) {
-                    int bits = readBits(buffer, 4);
-                    int offs = readBitsReversed(buffer, bits);
-                    int size = readBitsReversed(buffer, bits);
+                    int bits = read_bits(buffer, 4);
+                    int offs = read_bits_reversed(buffer, bits);
+                    int size = read_bits_reversed(buffer, bits);
 
-                    if (offs < 0 || offs > static_cast<int>(bcfsBuffer.size()) || (size > 0 && offs == 0)) {
+                    if (offs < 0 || offs > static_cast<int>(bcfs_buffer.size()) || (size > 0 && offs == 0)) {
                         throw std::runtime_error("Invalid back-reference in compressed Guitar Pro data");
                     }
-                    if (bcfsBuffer.size() + static_cast<size_t>(size) > GPX_MAX_DECOMPRESSED_BYTES) {
+                    if (bcfs_buffer.size() + static_cast<size_t>(size) > ::mu::iex::guitarpro::gpx_max_decompressed_bytes) {
                         throw std::runtime_error("Decompressed Guitar Pro data is too large");
                     }
                     // A back-reference may overlap what it writes (size > offs): the
                     // encoder's runs repeat the pattern, so the decoder does too. Taking
                     // only min(size, offs) bytes leaves the stream one short of the
                     // length it declares, which the length guard then rejects.
-                    const size_t pos = bcfsBuffer.size() - static_cast<size_t>(offs);
+                    const size_t pos = bcfs_buffer.size() - static_cast<size_t>(offs);
                     for (int i = 0; i < size; i++) {
-                        bcfsBuffer.push_back(bcfsBuffer[pos + static_cast<size_t>(i) % static_cast<size_t>(offs)]);
+                        bcfs_buffer.push_back(bcfs_buffer[pos + static_cast<size_t>(i) % static_cast<size_t>(offs)]);
                     }
                 } else {
-                    int size = readBitsReversed(buffer, 2);
-                    if (size < 0 || bcfsBuffer.size() + static_cast<size_t>(size) > GPX_MAX_DECOMPRESSED_BYTES) {
+                    int size = read_bits_reversed(buffer, 2);
+                    if (size < 0 || bcfs_buffer.size() + static_cast<size_t>(size) > ::mu::iex::guitarpro::gpx_max_decompressed_bytes) {
                         throw std::runtime_error("Decompressed Guitar Pro data is too large");
                     }
                     for (int i = 0; i < size; i++) {
-                        bcfsBuffer.push_back(static_cast<uint8_t>(readBits(buffer, 8)));
+                        bcfs_buffer.push_back(static_cast<uint8_t>(read_bits(buffer, 8)));
                     }
                 }
             } catch (const GpxEndOfData &) {
@@ -511,48 +511,48 @@ void GuitarPro6::readGPX(ByteArray *buffer, int depth) {
             }
         }
         // recurse on the decompressed file stored as a byte array
-        readGPX(&bcfsBuffer, depth + 1);
-    } else if (fileHeader == GPX_HEADER_UNCOMPRESSED) {
+        read_gpx(&bcfs_buffer, depth + 1);
+    } else if (file_header == gpx_header_uncompressed) {
         // this is an uncompressed file - strip the header off
         *buffer = buffer->right(buffer->size() - sizeof(int));
-        const size_t sectorSize = 0x1000;
+        const size_t sector_size = 0x1000;
         int offset = 0;
-        while ((offset = (offset + static_cast<int>(sectorSize))) + 3 < static_cast<int>(buffer->size())) {
-            int newInt = readInteger(buffer, offset);
-            if (newInt == 2) {
-                const int indexFileName = (offset + 4);
-                const int indexFileSize = (offset + 0x8C);
-                const int indexOfBlock = (offset + 0x94);
+        while ((offset = (offset + static_cast<int>(sector_size))) + 3 < static_cast<int>(buffer->size())) {
+            int new_int = read_integer(buffer, offset);
+            if (new_int == 2) {
+                const int index_file_name = (offset + 4);
+                const int index_file_size = (offset + 0x8C);
+                const int index_of_block = (offset + 0x94);
 
                 // create a byte array and put information about files found in it
-                ByteArray fileBytes;
-                int blockCount = 0;
+                ByteArray file_bytes;
+                int block_count = 0;
                 while (true) {
-                    const int block = readInteger(buffer, indexOfBlock + (4 * blockCount));
-                    ++blockCount;
+                    const int block = read_integer(buffer, index_of_block + (4 * block_count));
+                    ++block_count;
                     if (block == 0) {
                         break;
                     }
-                    if (block < 0 || static_cast<size_t>(block) > buffer->size() / sectorSize) {
+                    if (block < 0 || static_cast<size_t>(block) > buffer->size() / sector_size) {
                         throw std::runtime_error("Invalid Guitar Pro file block");
                     }
-                    fileBytes.push_back(getBytes(buffer, block * static_cast<int>(sectorSize), static_cast<int>(sectorSize)));
-                    if (fileBytes.size() > static_cast<size_t>(GPX_MAX_FILE_BYTES)) {
+                    file_bytes.push_back(get_bytes(buffer, block * static_cast<int>(sector_size), static_cast<int>(sector_size)));
+                    if (file_bytes.size() > static_cast<size_t>(::mu::iex::guitarpro::gpx_max_file_bytes)) {
                         throw std::runtime_error("Guitar Pro file is too large");
                     }
                 }
                 // get file information and read the file
-                int fileSize = readInteger(buffer, indexFileSize);
-                if (fileSize < 0 || fileSize > GPX_MAX_FILE_BYTES) {
+                int file_size = read_integer(buffer, index_file_size);
+                if (file_size < 0 || file_size > ::mu::iex::guitarpro::gpx_max_file_bytes) {
                     throw std::runtime_error("Invalid Guitar Pro file size");
                 }
-                if (fileBytes.size() >= static_cast<size_t>(fileSize)) {
-                    ByteArray filenameBytes = readString(buffer, indexFileName, 127);
+                if (file_bytes.size() >= static_cast<size_t>(file_size)) {
+                    ByteArray filename_bytes = read_string(buffer, index_file_name, 127);
                     // readString() does not append a terminator; parseFile() uses strcmp().
-                    filenameBytes.push_back(static_cast<uint8_t>(0));
-                    const char *filename = filenameBytes.constChar();
-                    ByteArray data = getBytes(&fileBytes, 0, fileSize);
-                    parseFile(filename, &data);
+                    filename_bytes.push_back(static_cast<uint8_t>(0));
+                    const char *filename = filename_bytes.const_char();
+                    ByteArray data = get_bytes(&file_bytes, 0, file_size);
+                    parse_file(filename, &data);
                 }
             }
         }
@@ -565,17 +565,17 @@ void GuitarPro6::readGPX(ByteArray *buffer, int depth) {
 
 bool GuitarPro6::read(IODevice *io) {
     f = io;
-    previousTempo = -1;
+    previous_tempo = -1;
     position = 0;
-    gpifRead_ = false;
+    gpif_read_ = false;
     // decompress and read files contained within GPX file
-    ByteArray ba = io->readAll();
+    ByteArray ba = io->read_all();
     if (ba.empty()) {
         return false;
     }
 
-    readGPX(&ba);
+    read_gpx(&ba);
 
-    return gpifRead_;
+    return gpif_read_;
 }
 } // namespace mu::iex::guitarpro

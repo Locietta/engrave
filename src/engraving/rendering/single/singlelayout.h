@@ -136,17 +136,17 @@ class SingleLayout {
 public:
     SingleLayout() = default;
 
-    static void layoutItem(engraving::EngravingItem *item);
+    static void layout_item(engraving::EngravingItem *item);
 
     struct Context {
         Context(engraving::Score *s) : score_(s) {}
 
         const engraving::MStyle &style() const;
-        std::shared_ptr<engraving::IEngravingFont> engravingFont() const;
-        engraving::DummyParent *dummyParent() const;
+        std::shared_ptr<engraving::IEngravingFont> engraving_font() const;
+        engraving::DummyParent *dummy_parent() const;
 
         //! NOTE Temporarily, do not use
-        engraving::Score *dontUseScore() const { return score_; }
+        engraving::Score *dont_use_score() const { return score_; }
 
     private:
         engraving::Score *score_ = nullptr;
@@ -257,14 +257,14 @@ private:
     static void layout(WhammyBarSegment *item, const Context &ctx);
 
     static void layout(Text *item, const Context &ctx);
-    static void layoutTextBase(const TextBase *item, const Context &ctx, TextBase::LayoutData *ldata);
-    static void layout1TextBase(const TextBase *item, const Context &ctx, TextBase::LayoutData *ldata);
+    static void layout_text_base(const TextBase *item, const Context &ctx, TextBase::LayoutData *ldata);
+    static void layout1_text_base(const TextBase *item, const Context &ctx, TextBase::LayoutData *ldata);
 
-    static void layoutLine(SLine *item, const Context &ctx);
-    static void layoutLineSegment(LineSegment *item, const Context &ctx);
-    static void layoutTextLineBaseSegment(TextLineBaseSegment *item, const Context &ctx);
+    static void layout_line(SLine *item, const Context &ctx);
+    static void layout_line_segment(LineSegment *item, const Context &ctx);
+    static void layout_text_line_base_segment(TextLineBaseSegment *item, const Context &ctx);
 
-    static void layoutGroupBracket(Bracket *item, const Context &ctx);
+    static void layout_group_bracket(Bracket *item, const Context &ctx);
 };
 } // namespace mu::engraving::rendering::single
 

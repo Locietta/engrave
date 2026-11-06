@@ -29,13 +29,13 @@ class ISoundFontRepository {
 public:
     virtual ~ISoundFontRepository() = default;
 
-    virtual void loadSoundFonts(const std::vector<SoundFontUri> &uris) = 0;
-    virtual void addSoundFont(const SoundFontUri &uri) = 0;
-    virtual void addSoundFontData(const SoundFontUri &uri, const ByteArray &data) = 0;
+    virtual void load_sound_fonts(const std::vector<SoundFontUri> &uris) = 0;
+    virtual void add_sound_font(const SoundFontUri &uri) = 0;
+    virtual void add_sound_font_data(const SoundFontUri &uri, const ByteArray &data) = 0;
 
-    virtual bool isSoundFontLoaded(const std::string &name) const = 0;
-    virtual bool isLoadingSoundFonts() const = 0;
+    virtual bool is_sound_font_loaded(const std::string &name) const = 0;
+    virtual bool is_loading_sound_fonts() const = 0;
 
-    virtual const SoundFontsMap &soundFonts() const = 0;
+    virtual const SoundFontsMap &sound_fonts() const = 0;
 };
 } // namespace muse::audio::synth

@@ -26,9 +26,9 @@
 
 namespace muse::midi {
 enum class Err {
-    Undefined = int(Ret::Code::Undefined),
-    NoError = int(Ret::Code::Ok),
-    UnknownError = int(Ret::Code::MidiFirst),
+    Undefined = int(Ret::Code::UNDEFINED),
+    NO_ERROR = int(Ret::Code::OK),
+    UnknownError = int(Ret::Code::MIDI_FIRST),
 
     // midiport
     MidiInvalidDeviceID = 620,

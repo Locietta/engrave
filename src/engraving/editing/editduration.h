@@ -28,11 +28,11 @@ class Transaction;
 
 class EditDuration {
 public:
-    static void doubleDuration(Transaction &tx, Score *score);
-    static void halfDuration(Transaction &tx, Score *score);
-    static void incDurationDotted(Transaction &tx, Score *score);
-    static void decDurationDotted(Transaction &tx, Score *score);
-    static void incDecDuration(Transaction &tx, Score *score, int nSteps, bool stepDotted = false);
-    static void extendToNextNote(Transaction &tx, Score *score);
+    static void double_duration(Transaction &tx, Score *score);
+    static void half_duration(Transaction &tx, Score *score);
+    static void inc_duration_dotted(Transaction &tx, Score *score);
+    static void dec_duration_dotted(Transaction &tx, Score *score);
+    static void inc_dec_duration(Transaction &tx, Score *score, int n_steps, bool step_dotted = false);
+    static void extend_to_next_note(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

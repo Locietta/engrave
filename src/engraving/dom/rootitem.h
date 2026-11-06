@@ -35,25 +35,25 @@ class RootItem : public EngravingItem {
 public:
     //! Which tree this one heads: the score's own, or the one formed by the objects
     //! parked on the dummy, which are not part of the score.
-    enum class Kind { Score, Dummy };
+    enum class Kind { SCORE, DUMMY };
 
     RootItem(Score *score, Kind kind);
 
     void init();
 
     //! The top of a tree has no parent within it.
-    EngravingItem *accessibleParentItem() const override { return nullptr; }
+    EngravingItem *accessible_parent_item() const override { return nullptr; }
 
-    EngravingItemList accessibleChildren() const override;
+    EngravingItemList accessible_children() const override;
 
     EngravingItem *clone() const override { return nullptr; }
 
-    PropertyValue getProperty(Pid) const override { return PropertyValue(); }
+    PropertyValue get_property(Pid) const override { return PropertyValue(); }
 
-    bool setProperty(Pid, const PropertyValue &) override { return false; }
+    bool set_property(Pid, const PropertyValue &) override { return false; }
 
 private:
 
-    Kind kind_ = Kind::Score;
+    Kind kind_ = Kind::SCORE;
 };
 } // namespace mu::engraving

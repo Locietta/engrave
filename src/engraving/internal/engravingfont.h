@@ -51,23 +51,23 @@ class Shape;
 
 class EngravingFont : public IEngravingFont {
 public:
-    EngravingFont(muse::draw::IFontProvider &fontProvider, const IEngravingFontsProvider &engravingFonts, const std::string &name,
-                  const std::string &family, const muse::io::path_t &filePath, const muse::io::path_t &metadataPath);
-    EngravingFont(muse::draw::IFontProvider &fontProvider, const IEngravingFontsProvider &engravingFonts, const std::string &name,
+    EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
+                  const std::string &family, const muse::io::PathT &file_path, const muse::io::PathT &metadata_path);
+    EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
                   const std::string &family, std::shared_ptr<muse::io::IODevice> font, std::shared_ptr<muse::io::IODevice> metadata);
     EngravingFont(const EngravingFont &other);
 
     const std::string &name() const override;
     const std::string &family() const override;
 
-    std::unordered_map<Sid, PropertyValue> engravingDefaults() const override;
-    double textEnclosureThickness();
+    std::unordered_map<Sid, PropertyValue> engraving_defaults() const override;
+    double text_enclosure_thickness();
 
-    char32_t symCode(SymId id) const override;
-    SymId fromCode(char32_t code) const override;
-    String toString(SymId id) const override;
+    char32_t sym_code(SymId id) const override;
+    SymId from_code(char32_t code) const override;
+    String to_string(SymId id) const override;
 
-    bool isValid(SymId id) const override;
+    bool is_valid(SymId id) const override;
 
     RectF bbox(SymId id, double mag) const override;
     RectF bbox(SymId id, const SizeF &) const override;
@@ -75,15 +75,15 @@ public:
     RectF bbox(const SymIdList &s, const SizeF &mag) const override;
     Shape shape(const SymIdList &s, double mag) const override;
     Shape shape(const SymIdList &s, const SizeF &mag) const override;
-    Shape shapeWithCutouts(SymId id, double mag) override;
-    Shape shapeWithCutouts(SymId id, const SizeF &mag) override;
+    Shape shape_with_cutouts(SymId id, double mag) override;
+    Shape shape_with_cutouts(SymId id, const SizeF &mag) override;
 
     double width(SymId id, double mag) const override;
     double width(const SymIdList &, double mag) const override;
     double height(SymId id, double mag) const override;
     double advance(SymId id, double mag) const override;
 
-    PointF smuflAnchor(SymId symId, SmuflAnchorId anchorId, double mag) const override;
+    PointF smufl_anchor(SymId sym_id, SmuflAnchorId anchor_id, double mag) const override;
 
     // Draw
     void draw(SymId id, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const override;
@@ -92,7 +92,7 @@ public:
     void draw(const SymIdList &ids, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const override;
     void draw(const SymIdList &ids, muse::draw::Painter *p, const SizeF &mag, const PointF &pos, const double angle = 0) const override;
 
-    void ensureLoad();
+    void ensure_load();
 
 private:
 
@@ -101,46 +101,46 @@ private:
     struct Sym {
         char32_t code;
         RectF bbox;
-        Shape shapeWithCutouts;
+        Shape shape_with_cutouts;
         double advance = 0.0;
 
-        std::map<SmuflAnchorId, PointF> smuflAnchors;
-        SymIdList subSymbolIds;
+        std::map<SmuflAnchorId, PointF> smufl_anchors;
+        SymIdList sub_symbol_ids;
 
-        bool isValid() const { return code != 0 && bbox.isValid(); }
+        bool is_valid() const { return code != 0 && bbox.is_valid(); }
 
-        bool isCompound() const { return !subSymbolIds.empty(); }
+        bool is_compound() const { return !sub_symbol_ids.empty(); }
     };
 
-    void loadGlyphsWithAnchors(const muse::JsonObject &glyphsWithAnchors);
-    void loadComposedGlyphs();
-    void loadStylisticAlternates(const muse::JsonObject &glyphsWithAlternatesObject);
-    void loadEngravingDefaults(const muse::JsonObject &engravingDefaultsObject);
-    void computeMetrics(Sym &sym, const Smufl::Code &code);
+    void load_glyphs_with_anchors(const muse::JsonObject &glyphs_with_anchors);
+    void load_composed_glyphs();
+    void load_stylistic_alternates(const muse::JsonObject &glyphs_with_alternates_object);
+    void load_engraving_defaults(const muse::JsonObject &engraving_defaults_object);
+    void compute_metrics(Sym &sym, const Smufl::Code &code);
 
-    void constructShapeWithCutouts(Shape &shape, SymId id);
+    void construct_shape_with_cutouts(Shape &shape, SymId id);
 
     Sym &sym(SymId id);
     const Sym &sym(SymId id) const;
 
-    bool useFallbackFont(SymId id) const;
+    bool use_fallback_font(SymId id) const;
 
-    muse::draw::IFontProvider *fontProvider() const { return fontProvider_; }
+    muse::draw::IFontProvider *font_provider() const { return font_provider_; }
 
-    const IEngravingFontsProvider *engravingFonts() const { return engravingFonts_; }
+    const IEngravingFontsProvider *engraving_fonts() const { return engraving_fonts_; }
 
-    muse::draw::IFontProvider *fontProvider_ = nullptr;
-    const IEngravingFontsProvider *engravingFonts_ = nullptr;
+    muse::draw::IFontProvider *font_provider_ = nullptr;
+    const IEngravingFontsProvider *engraving_fonts_ = nullptr;
     bool loaded_ = false;
     std::vector<Sym> symbols_;
     mutable muse::draw::Font font_;
 
     std::string name_;
     std::string family_;
-    std::shared_ptr<muse::io::IODevice> fontDevice_;
-    std::shared_ptr<muse::io::IODevice> metadataDevice_;
+    std::shared_ptr<muse::io::IODevice> font_device_;
+    std::shared_ptr<muse::io::IODevice> metadata_device_;
 
-    std::unordered_map<Sid, PropertyValue> engravingDefaults_;
-    double textEnclosureThickness_ = 0;
+    std::unordered_map<Sid, PropertyValue> engraving_defaults_;
+    double text_enclosure_thickness_ = 0;
 };
 } // namespace mu::engraving

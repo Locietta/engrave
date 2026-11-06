@@ -29,10 +29,10 @@ namespace engrave {
 
 // What an element's id is worth after the score is saved and reopened.
 enum struct IdClass {
-    persisted, // written into the score and restored on open; the walk hands it out
-    layout,    // created by layout; it has no id in the file and none is handed out
-    address,   // no id at all; reached through an Address
-    session,   // the file may carry an id, but layout or a read rebuilds the object,
+    PERSISTED, // written into the score and restored on open; the walk hands it out
+    LAYOUT,    // created by layout; it has no id in the file and none is handed out
+    ADDRESS,   // no id at all; reached through an Address
+    SESSION,   // the file may carry an id, but layout or a read rebuilds the object,
                // so the walk never hands one out
 };
 

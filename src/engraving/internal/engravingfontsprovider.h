@@ -33,38 +33,38 @@ class EngravingFont;
 
 class EngravingFontsProvider : public IEngravingFontsProvider {
 public:
-    explicit EngravingFontsProvider(muse::draw::IFontProvider &fontProvider) : fontProvider_(fontProvider) {}
+    explicit EngravingFontsProvider(muse::draw::IFontProvider &font_provider) : font_provider_(font_provider) {}
 
     void deinit();
 
-    void addInternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath) override;
-    void addExternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath,
-                         const muse::io::path_t &metadataPath) override;
-    void addExternalFont(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
-                         std::shared_ptr<muse::io::IODevice> metadata) override;
-    IEngravingFontPtr fontByName(const std::string &name) const override;
+    void add_internal_font(const std::string &name, const std::string &family, const muse::io::PathT &file_path) override;
+    void add_external_font(const std::string &name, const std::string &family, const muse::io::PathT &file_path,
+                           const muse::io::PathT &metadata_path) override;
+    void add_external_font(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
+                           std::shared_ptr<muse::io::IODevice> metadata) override;
+    IEngravingFontPtr font_by_name(const std::string &name) const override;
     std::vector<IEngravingFontPtr> fonts() const override;
 
-    void setFallbackFont(const std::string &name) override;
-    IEngravingFontPtr fallbackFont() const override;
-    bool isFallbackFont(const IEngravingFont *f) const override;
+    void set_fallback_font(const std::string &name) override;
+    IEngravingFontPtr fallback_font() const override;
+    bool is_fallback_font(const IEngravingFont *f) const override;
 
-    void clearExternalFonts() override;
+    void clear_external_fonts() override;
 
-    void loadAllFonts() override;
+    void load_all_fonts() override;
 
 private:
-    std::shared_ptr<EngravingFont> doFontByName(const std::string &name) const;
-    std::shared_ptr<EngravingFont> doFallbackFont() const;
+    std::shared_ptr<EngravingFont> do_font_by_name(const std::string &name) const;
+    std::shared_ptr<EngravingFont> do_fallback_font() const;
 
     struct Fallback {
         std::string name;
         std::shared_ptr<EngravingFont> font;
     };
 
-    muse::draw::IFontProvider &fontProvider_;
+    muse::draw::IFontProvider &font_provider_;
     mutable Fallback fallback_;
-    std::vector<std::shared_ptr<EngravingFont>> symbolFonts_;
-    std::unordered_map<std::string, std::shared_ptr<EngravingFont>> externalSymbolFonts_;
+    std::vector<std::shared_ptr<EngravingFont>> symbol_fonts_;
+    std::unordered_map<std::string, std::shared_ptr<EngravingFont>> external_symbol_fonts_;
 };
 } // namespace mu::engraving

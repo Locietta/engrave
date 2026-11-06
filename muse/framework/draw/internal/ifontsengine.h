@@ -33,28 +33,28 @@ class IFontsEngine {
 public:
     virtual ~IFontsEngine() = default;
 
-    virtual void setRenderCacheDirPath(const io::path_t &path, const std::string &revision = std::string()) = 0;
-    virtual void clearLoadedFaces() = 0;
+    virtual void set_render_cache_dir_path(const io::PathT &path, const std::string &revision = std::string()) = 0;
+    virtual void clear_loaded_faces() = 0;
 
-    virtual double lineSpacing(const Font &f) const = 0;
-    virtual double xHeight(const Font &f) const = 0;
+    virtual double line_spacing(const Font &f) const = 0;
+    virtual double x_height(const Font &f) const = 0;
     virtual double height(const Font &f) const = 0;
-    virtual double capHeight(const Font &ff) const = 0;
+    virtual double cap_height(const Font &ff) const = 0;
     virtual double ascent(const Font &f) const = 0;
     virtual double descent(const Font &f) const = 0;
 
-    virtual double underlinePos(const Font &f) const = 0;
-    virtual double lineWidth(const Font &f) const = 0;
-    virtual double strikeOutPos(const Font &f) const = 0;
+    virtual double underline_pos(const Font &f) const = 0;
+    virtual double line_width(const Font &f) const = 0;
+    virtual double strike_out_pos(const Font &f) const = 0;
 
-    virtual bool inFont(const Font &f, char32_t ucs4) const = 0;
+    virtual bool in_font(const Font &f, char32_t ucs4) const = 0;
 
-    virtual double horizontalAdvance(const Font &f, const char32_t &ch) const = 0;
-    virtual double horizontalAdvance(const Font &f, const std::u32string &text) const = 0;
+    virtual double horizontal_advance(const Font &f, const char32_t &ch) const = 0;
+    virtual double horizontal_advance(const Font &f, const std::u32string &text) const = 0;
 
-    virtual RectF boundingRect(const Font &f, const char32_t &ch) const = 0;
-    virtual RectF boundingRect(const Font &f, const std::u32string &text) const = 0;
-    virtual RectF tightBoundingRect(const Font &f, const std::u32string &text) const = 0;
+    virtual RectF bounding_rect(const Font &f, const char32_t &ch) const = 0;
+    virtual RectF bounding_rect(const Font &f, const std::u32string &text) const = 0;
+    virtual RectF tight_bounding_rect(const Font &f, const std::u32string &text) const = 0;
 
     // Draw
     virtual std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const = 0;

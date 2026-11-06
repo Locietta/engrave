@@ -37,102 +37,102 @@ public:
 
     struct Params {
         muse::io::IODevice *device = nullptr;
-        muse::io::path_t filePath;
-        muse::String mainFileName;
-        MscIoMode mode = MscIoMode::Zip;
+        muse::io::PathT file_path;
+        muse::String main_file_name;
+        MscIoMode mode = MscIoMode::ZIP;
     };
 
     MscReader() = default;
     MscReader(const Params &params);
     ~MscReader();
 
-    void setParams(const Params &params);
+    void set_params(const Params &params);
     const Params &params() const;
 
     muse::Ret open();
     void close();
-    bool isOpened() const;
-    bool isContainer() const;
+    bool is_opened() const;
+    bool is_container() const;
 
-    muse::ByteArray readStyleFile() const;
-    muse::ByteArray readScoreFile() const;
+    muse::ByteArray read_style_file() const;
+    muse::ByteArray read_score_file() const;
 
-    std::vector<muse::String> excerptFileNames() const;
-    muse::ByteArray readExcerptStyleFile(const muse::String &excerptFileName) const;
-    muse::ByteArray readExcerptFile(const muse::String &excerptFileName) const;
+    std::vector<muse::String> excerpt_file_names() const;
+    muse::ByteArray read_excerpt_style_file(const muse::String &excerpt_file_name) const;
+    muse::ByteArray read_excerpt_file(const muse::String &excerpt_file_name) const;
 
-    muse::ByteArray readChordListFile() const;
-    muse::ByteArray readThumbnailFile() const;
+    muse::ByteArray read_chord_list_file() const;
+    muse::ByteArray read_thumbnail_file() const;
 
-    std::vector<muse::String> imageFileNames() const;
-    muse::ByteArray readImageFile(const muse::String &fileName) const;
+    std::vector<muse::String> image_file_names() const;
+    muse::ByteArray read_image_file(const muse::String &file_name) const;
 
-    muse::ByteArray readAudioSettingsJsonFile(const muse::io::path_t &pathPrefix = "") const;
-    muse::ByteArray readViewSettingsJsonFile(const muse::io::path_t &pathPrefix = "") const;
-    muse::ByteArray readAutomationJsonFile() const;
+    muse::ByteArray read_audio_settings_json_file(const muse::io::PathT &path_prefix = "") const;
+    muse::ByteArray read_view_settings_json_file(const muse::io::PathT &path_prefix = "") const;
+    muse::ByteArray read_automation_json_file() const;
 
 private:
 
     struct IReader {
         virtual ~IReader() = default;
 
-        virtual muse::Ret open(muse::io::IODevice *device, const muse::io::path_t &filePath) = 0;
+        virtual muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) = 0;
         virtual void close() = 0;
-        virtual bool isOpened() const = 0;
+        virtual bool is_opened() const = 0;
         //! NOTE In the case of reading from a directory,
         //! it may happen that we are not reading a container (a directory with a certain structure),
         //! but only one file among others (`.mscx` from MU 3.x)
-        virtual bool isContainer() const = 0;
-        virtual muse::StringList fileList() const = 0;
-        virtual bool fileExists(const muse::String &fileName) const = 0;
-        virtual muse::ByteArray fileData(const muse::String &fileName) const = 0;
+        virtual bool is_container() const = 0;
+        virtual muse::StringList file_list() const = 0;
+        virtual bool file_exists(const muse::String &file_name) const = 0;
+        virtual muse::ByteArray file_data(const muse::String &file_name) const = 0;
     };
 
     struct ZipFileReader : public IReader {
         ~ZipFileReader() override;
-        muse::Ret open(muse::io::IODevice *device, const muse::io::path_t &filePath) override;
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
         void close() override;
-        bool isOpened() const override;
-        bool isContainer() const override;
-        muse::StringList fileList() const override;
-        bool fileExists(const muse::String &fileName) const override;
-        muse::ByteArray fileData(const muse::String &fileName) const override;
+        bool is_opened() const override;
+        bool is_container() const override;
+        muse::StringList file_list() const override;
+        bool file_exists(const muse::String &file_name) const override;
+        muse::ByteArray file_data(const muse::String &file_name) const override;
     private:
         muse::io::IODevice *device_ = nullptr;
-        bool selfDeviceOwner_ = false;
+        bool self_device_owner_ = false;
         muse::ZipReader *zip_ = nullptr;
     };
 
     struct DirReader : public IReader {
-        muse::Ret open(muse::io::IODevice *device, const muse::io::path_t &filePath) override;
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
         void close() override;
-        bool isOpened() const override;
-        bool isContainer() const override;
-        muse::StringList fileList() const override;
-        bool fileExists(const muse::String &fileName) const override;
-        muse::ByteArray fileData(const muse::String &fileName) const override;
+        bool is_opened() const override;
+        bool is_container() const override;
+        muse::StringList file_list() const override;
+        bool file_exists(const muse::String &file_name) const override;
+        muse::ByteArray file_data(const muse::String &file_name) const override;
     private:
-        muse::io::path_t rootPath_;
+        muse::io::PathT root_path_;
     };
 
     struct XmlFileReader : public IReader {
-        muse::Ret open(muse::io::IODevice *device, const muse::io::path_t &filePath) override;
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
         void close() override;
-        bool isOpened() const override;
-        bool isContainer() const override;
-        muse::StringList fileList() const override;
-        bool fileExists(const muse::String &fileName) const override;
-        muse::ByteArray fileData(const muse::String &fileName) const override;
+        bool is_opened() const override;
+        bool is_container() const override;
+        muse::StringList file_list() const override;
+        bool file_exists(const muse::String &file_name) const override;
+        muse::ByteArray file_data(const muse::String &file_name) const override;
     private:
         muse::io::IODevice *device_ = nullptr;
-        bool selfDeviceOwner_ = false;
+        bool self_device_owner_ = false;
     };
 
     IReader *reader() const;
-    bool fileExists(const muse::String &fileName) const;
-    muse::ByteArray fileData(const muse::String &fileName) const;
+    bool file_exists(const muse::String &file_name) const;
+    muse::ByteArray file_data(const muse::String &file_name) const;
 
-    muse::String mainFileName() const;
+    muse::String main_file_name() const;
 
     Params params_;
     mutable IReader *reader_ = nullptr;

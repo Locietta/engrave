@@ -32,7 +32,7 @@ namespace mu::engraving::rendering::score {
 class ScoreLayout {
 public:
 
-    static void layoutRange(Score *score, const Fraction &st, const Fraction &et);
+    static void layout_range(Score *score, const Fraction &st, const Fraction &et);
 };
 } // namespace mu::engraving::rendering::score
 

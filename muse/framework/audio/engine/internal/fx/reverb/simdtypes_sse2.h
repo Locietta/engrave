@@ -44,20 +44,20 @@ namespace muse::audio::fx::simd {
 // On msvc the sse2 types are structs with no operators.
 // to get to the same level and to be able to write algorithms "naturally",
 // everything needs to be wrapped in a struct.
-struct float_x4 {
+struct FloatX4 {
     __m128 s;
 
-    __finl float_x4() {}
+    __finl FloatX4() {}
 
     /// enables math like: float_x4 a = 0.5f * float_x4{1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float val) { s = _mm_set1_ps(val); }
+    __finl FloatX4(float val) { s = _mm_set1_ps(val); }
 
-    __finl float_x4(const __m128 &val) : s(val) {}
+    __finl FloatX4(const __m128 &val) : s(val) {}
 
     /// enables assignments like: float_x4 a = {1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float v0, float v1, float v2, float v3) { s = _mm_setr_ps(v0, v1, v2, v3); }
+    __finl FloatX4(float v0, float v1, float v2, float v3) { s = _mm_setr_ps(v0, v1, v2, v3); }
 
-#if defined(__clang__) || defined(__GNUC__)
+#if (defined(__clang__) && !defined(_MSC_VER)) || defined(__GNUC__)
 private:
     // this helper class allows writing to the single registers for clang
     // __mm128 is a built-in type -> we can't return a float& reference.
@@ -92,11 +92,11 @@ public:
 #endif
 };
 
-__finl float_x4 __vecc operator+(float_x4 a, float_x4 b) { return _mm_add_ps(a.s, b.s); }
+__finl FloatX4 __vecc operator+(FloatX4 a, FloatX4 b) { return _mm_add_ps(a.s, b.s); }
 
-__finl float_x4 __vecc operator-(float_x4 a, float_x4 b) { return _mm_sub_ps(a.s, b.s); }
+__finl FloatX4 __vecc operator-(FloatX4 a, FloatX4 b) { return _mm_sub_ps(a.s, b.s); }
 
-__finl float_x4 __vecc operator*(float_x4 a, float_x4 b) { return _mm_mul_ps(a.s, b.s); }
+__finl FloatX4 __vecc operator*(FloatX4 a, FloatX4 b) { return _mm_mul_ps(a.s, b.s); }
 } // namespace muse::audio::fx::simd
 
 #endif // MUSE_AUDIO_SIMDTYPES_SSE2_H

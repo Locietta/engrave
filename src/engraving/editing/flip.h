@@ -29,7 +29,7 @@ class Transaction;
 class Flip {
 public:
     static void flip(Transaction &tx, Score *score);
-    static void flipHorizontally(Transaction &tx, Score *score);
-    static void mirrorNoteHead(Transaction &tx, Score *score);
+    static void flip_horizontally(Transaction &tx, Score *score);
+    static void mirror_note_head(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

@@ -38,29 +38,29 @@ void ltrim(std::string &s);
 void rtrim(std::string &s);
 void trim(std::string &s);
 
-std::string toLower(const std::string &source);
-std::string toUpper(const std::string &source);
-bool startsWith(const std::string &str, const std::string &start);
-bool startsWith(const std::string &str, const std::string_view &start);
-bool startsWith(const std::string &str, const char *start);
-bool endsWith(const std::string &str, const std::string &end);
-bool endsWith(const std::string &str, const std::string_view &end);
-bool endsWith(const std::string &str, const char *end);
-std::string leftJustified(const std::string &val, size_t width);
+std::string to_lower(const std::string &source);
+std::string to_upper(const std::string &source);
+bool starts_with(const std::string &str, const std::string &start);
+bool starts_with(const std::string &str, const std::string_view &start);
+bool starts_with(const std::string &str, const char *start);
+bool ends_with(const std::string &str, const std::string &end);
+bool ends_with(const std::string &str, const std::string_view &end);
+bool ends_with(const std::string &str, const char *end);
+std::string left_justified(const std::string &val, size_t width);
 
 // Locale-independent version of std::to_string
 template <typename T>
-std::string toString(const T &t) {
+std::string to_string(const T &t) {
     std::ostringstream oss;
     oss.imbue(std::locale::classic());
     oss << t;
     return oss.str();
 }
 
-bool lessThanCaseInsensitive(const std::string &lhs, const std::string &rhs);
-bool lessThanCaseInsensitive(const String &lhs, const String &rhs);
+bool less_than_case_insensitive(const std::string &lhs, const std::string &rhs);
+bool less_than_case_insensitive(const String &lhs, const String &rhs);
 
-size_t levenshteinDistance(const std::string &s1, const std::string &s2);
+size_t levenshtein_distance(const std::string &s1, const std::string &s2);
 } // namespace muse::strings
 
 #endif // MUSE_GLOBAL_STRINGUTILS_H

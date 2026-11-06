@@ -30,9 +30,9 @@ class MidiNote;
 class Note;
 enum class Key : signed char;
 
-static constexpr int INVALID_PITCH = -1;
-static constexpr int MIN_PITCH = 0;
-static constexpr int MAX_PITCH = 127;
+static constexpr int invalid_pitch = -1;
+static constexpr int min_pitch = 0;
+static constexpr int max_pitch = 127;
 
 // a list of tpc's, with legal ranges, not really an enum, so no way to convert into a class
 enum Tpc : signed char {
@@ -90,16 +90,16 @@ enum Tpc : signed char {
     TPC_MAX = TPC_B_SSS
 };
 
-static constexpr int TPC_DELTA_SEMITONE = 7;    // the delta in tpc value to go 1 semitone up or down
-static constexpr int TPC_DELTA_ENHARMONIC = 12; // the delta in tpc value to reach the next (or prev) enharmonic spelling
+static constexpr int tpc_delta_semitone = 7;    // the delta in tpc value to go 1 semitone up or down
+static constexpr int tpc_delta_enharmonic = 12; // the delta in tpc value to reach the next (or prev) enharmonic spelling
 //static constexpr int TPC_FIRST_STEP       = 3;  // the step of the first valid tpc (= F = step 3)
-static constexpr int PITCH_DELTA_OCTAVE = 12; // the delta in pitch value to go 1 octave up or down
-static constexpr int STEP_DELTA_OCTAVE = 7;   // the number of steps in an octave
+static constexpr int pitch_delta_octave = 12; // the delta in pitch value to go 1 octave up or down
+static constexpr int step_delta_octave = 7;   // the number of steps in an octave
 //static constexpr int STEP_DELTA_TPC       = 4;  // the number of steps in a tpc step (= a fifth = 4 steps)
-static constexpr int TPCS_PER_STEP = (Tpc::TPC_MAX - Tpc::TPC_MIN + 1) / STEP_DELTA_OCTAVE;
-static constexpr int MIN_STEP = MIN_PITCH * STEP_DELTA_OCTAVE / PITCH_DELTA_OCTAVE;
-static constexpr int MAX_STEP = MAX_PITCH * STEP_DELTA_OCTAVE / PITCH_DELTA_OCTAVE;
-static constexpr int KEY_TO_TPC_OFFSET = (int) Tpc::TPC_C - (int) Key::C;
+static constexpr int tpcs_per_step = (Tpc::TPC_MAX - Tpc::TPC_MIN + 1) / ::mu::engraving::step_delta_octave;
+static constexpr int min_step = ::mu::engraving::min_pitch * ::mu::engraving::step_delta_octave / ::mu::engraving::pitch_delta_octave;
+static constexpr int max_step = ::mu::engraving::max_pitch * ::mu::engraving::step_delta_octave / ::mu::engraving::pitch_delta_octave;
+static constexpr int key_to_tpc_offset = (int) Tpc::TPC_C - (int) Key::C;
 
 //---------------------------------------------------------
 //   pitch2tpc
@@ -114,48 +114,50 @@ enum class NoteCaseType : signed char { AUTO = -1, CAPITAL = 0, LOWER, UPPER };
 
 extern int pitch2tpc(int pitch, Key, Prefer prefer);
 
-extern String tpc2name(int tpc, NoteSpellingType spelling, NoteCaseType noteCase, bool explicitAccidental = false, bool full = false);
-extern void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, String &s, String &acc, bool explicitAccidental = false,
-                     bool full = false);
-extern void tpc2name(int tpc, NoteSpellingType noteSpelling, NoteCaseType noteCase, String &s, AccidentalVal &acc);
-extern String tpcUserName(int tpc, int pitch, bool explicitAccidental = false, bool full = false);
-extern int step2tpc(const String &stepName, AccidentalVal alter);
+extern String tpc2name(int tpc, NoteSpellingType spelling, NoteCaseType note_case, bool explicit_accidental = false, bool full = false);
+extern void tpc2name(int tpc, NoteSpellingType note_spelling, NoteCaseType note_case, String &s, String &acc,
+                     bool explicit_accidental = false, bool full = false);
+extern void tpc2name(int tpc, NoteSpellingType note_spelling, NoteCaseType note_case, String &s, AccidentalVal &acc);
+extern String tpc_user_name(int tpc, int pitch, bool explicit_accidental = false, bool full = false);
+extern int step2tpc(const String &step_name, AccidentalVal alter);
 extern int step2tpc(int step);
 extern int step2tpc(int step, AccidentalVal alter);
-extern int step2tpcByKey(int step, Key);
+extern int step2tpc_by_key(int step, Key);
 extern int tpc2pitch(int tpc);
 extern int tpc2step(int tpc);
-extern int tpc2stepByKey(int tpc, Key, int &alter);
-extern int tpc2alterByKey(int tpc, Key);
-extern int pitch2absStepByKey(int pitch, int tpc, Key, int &alter);
-extern int absStep2pitchByKey(int step, Key);
+extern int tpc2step_by_key(int tpc, Key, int &alter);
+extern int tpc2alter_by_key(int tpc, Key);
+extern int pitch2abs_step_by_key(int pitch, int tpc, Key, int &alter);
+extern int abs_step2pitch_by_key(int step, Key);
 extern int tpc2degree(int tpc, Key key);
-extern int tpcInterval(int startTpc, int interval, int alter);
-extern int step2pitchInterval(int step, int alter);
-extern String tpc2Function(int tpc, Key key);
-extern void tpc2Function(int tpc, Key key, String &accName, String &stepName);
-extern int function2Tpc(const String &s, Key key);
-extern int function2Tpc(const String &s, Key key, size_t &idx);
-extern int convertNote(const String &s, NoteSpellingType noteSpelling, NoteCaseType &noteCase, size_t &idx);
-extern int clampEnharmonic(int tpc, bool useDoubleSharpsFlats = true);
-extern int clampPitch(int pitch);
-extern int clampPitchOctaved(int pitch);
-extern Key clampKey(Key key, PreferSharpFlat prefer = PreferSharpFlat::NONE);
-extern int key2Tpc(Key key);
-extern Key tpc2Key(int tpc);
+extern int tpc_interval(int start_tpc, int interval, int alter);
+extern int step2pitch_interval(int step, int alter);
+extern String tpc2_function(int tpc, Key key);
+extern void tpc2_function(int tpc, Key key, String &acc_name, String &step_name);
+extern int function2_tpc(const String &s, Key key);
+extern int function2_tpc(const String &s, Key key, size_t &idx);
+extern int convert_note(const String &s, NoteSpellingType note_spelling, NoteCaseType &note_case, size_t &idx);
+extern int clamp_enharmonic(int tpc, bool use_double_sharps_flats = true);
+extern int clamp_pitch(int pitch);
+extern int clamp_pitch_octaved(int pitch);
+extern Key clamp_key(Key key, PreferSharpFlat prefer = PreferSharpFlat::NONE);
+extern int key2_tpc(Key key);
+extern Key tpc2_key(int tpc);
 
 //---------------------------------------------------------
 //   tpc2alter
 //---------------------------------------------------------
 
 inline static AccidentalVal tpc2alter(int tpc) {
-    return AccidentalVal(((tpc - Tpc::TPC_MIN) / TPC_DELTA_SEMITONE) + int(AccidentalVal::MIN));
+    return AccidentalVal(((tpc - Tpc::TPC_MIN) / ::mu::engraving::tpc_delta_semitone) + int(AccidentalVal::MIN));
 }
 
-inline static int playingOctave(int pitch, int tpc) { return ((pitch - static_cast<int>(tpc2alter(tpc))) / PITCH_DELTA_OCTAVE) - 1; }
+inline static int playing_octave(int pitch, int tpc) {
+    return ((pitch - static_cast<int>(tpc2alter(tpc))) / ::mu::engraving::pitch_delta_octave) - 1;
+}
 
-extern Char tpc2stepName(int tpc);
-extern bool tpcIsValid(int val);
+extern Char tpc2step_name(int tpc);
+extern bool tpc_is_valid(int val);
 
-inline bool pitchIsValid(int pitch) { return pitch >= MIN_PITCH && pitch <= MAX_PITCH; }
+inline bool pitch_is_valid(int pitch) { return pitch >= ::mu::engraving::min_pitch && pitch <= ::mu::engraving::max_pitch; }
 } // namespace mu::engraving

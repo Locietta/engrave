@@ -36,28 +36,28 @@ protected:
     Pid id;
     PropertyValue property;
     PropertyFlags flags;
-    bool resetChordLinePath = false;
-    std::optional<ChordLine::AppearanceState> chordLineAppearance;
+    bool reset_chord_line_path = false;
+    std::optional<ChordLine::AppearanceState> chord_line_appearance;
 
     void flip() override;
 
 public:
-    ChangeProperty(EngravingObject *e, Pid i, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE, bool resetPath = false)
-        : element(e), id(i), property(v), flags(ps), resetChordLinePath(resetPath) {}
+    ChangeProperty(EngravingObject *e, Pid i, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE, bool reset_path = false)
+        : element(e), id(i), property(v), flags(ps), reset_chord_line_path(reset_path) {}
 
-    Pid getId() const { return id; }
+    Pid get_id() const { return id; }
 
-    EngravingObject *getElement() const { return element; }
+    EngravingObject *get_element() const { return element; }
 
     PropertyValue data() const { return property; }
 
-    UNDO_TYPE(CommandType::ChangeProperty)
+    UNDO_TYPE(CommandType::CHANGE_PROPERTY)
     UNDO_NAME("ChangeProperty")
 
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override {
-        return f == UndoableCommandFilter::ChangePropertyLinked && muse::contains(target->linkList(), element);
+    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override {
+        return f == UndoableCommandFilter::CHANGE_PROPERTY_LINKED && muse::contains(target->link_list(), element);
     }
 };
 

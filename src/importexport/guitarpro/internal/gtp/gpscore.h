@@ -7,42 +7,42 @@ namespace mu::iex::guitarpro {
 class GPScore {
 public:
 
-    void setTitle(const muse::String &title) { _title = title; }
+    void set_title(const muse::String &title) { title_value = title; }
 
-    muse::String title() const { return _title; }
+    muse::String title() const { return title_value; }
 
-    void setSubTitle(const muse::String &subTitle) { _subTitle = subTitle; }
+    void set_sub_title(const muse::String &input_sub_title) { sub_title_value = input_sub_title; }
 
-    muse::String subTitle() const { return _subTitle; }
+    muse::String sub_title() const { return sub_title_value; }
 
-    void setArtist(const muse::String &artist) { _artist = artist; }
+    void set_artist(const muse::String &artist) { artist_value = artist; }
 
-    muse::String artist() const { return _artist; }
+    muse::String artist() const { return artist_value; }
 
-    void setAlbum(const muse::String &album) { _album = album; }
+    void set_album(const muse::String &album) { album_value = album; }
 
-    muse::String album() const { return _album; }
+    muse::String album() const { return album_value; }
 
-    void setPoet(const muse::String &poet) { _poet = poet; }
+    void set_poet(const muse::String &poet) { poet_value = poet; }
 
-    muse::String poet() const { return _poet; }
+    muse::String poet() const { return poet_value; }
 
-    void setComposer(const muse::String &composer) { _composer = composer; }
+    void set_composer(const muse::String &composer) { composer_value = composer; }
 
-    muse::String composer() const { return _composer; }
+    muse::String composer() const { return composer_value; }
 
-    void setMultiVoice(bool multiVoice) { _multiVoice = multiVoice; }
+    void set_multi_voice(bool input_multi_voice) { multi_voice_value = input_multi_voice; }
 
-    bool multiVoice() const { return _multiVoice; }
+    bool multi_voice() const { return multi_voice_value; }
 
 private:
-    muse::String _title;
-    muse::String _subTitle;
-    muse::String _artist;
-    muse::String _album;
-    muse::String _poet;
-    muse::String _composer;
-    bool _multiVoice = false;
+    muse::String title_value;
+    muse::String sub_title_value;
+    muse::String artist_value;
+    muse::String album_value;
+    muse::String poet_value;
+    muse::String composer_value;
+    bool multi_voice_value = false;
 };
 } // namespace mu::iex::guitarpro
 

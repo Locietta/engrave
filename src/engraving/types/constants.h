@@ -27,8 +27,8 @@
 
 namespace mu::engraving {
 struct Constants {
-    static constexpr int MSC_VERSION = 500;
-    static constexpr const char *MSC_VERSION_STR = "5.00";
+    static constexpr int msc_version = 500;
+    static constexpr const char *msc_version_str = "5.00";
 
     // History:
     //    1.3   added staff->_barLineSpan
@@ -101,12 +101,12 @@ struct Constants {
     //    4.60 (Version 4.6)
     //       - New link system which uses EIDs
 
-    constexpr static int DIVISION = 480;
+    constexpr static int division = 480;
 
-    constexpr static BeatsPerSecond DEFAULT_TEMPO = 2.0; // default tempo is equal 120 bpm
-    constexpr static BeatsPerSecond MIN_TEMPO = 5.0 / 60.0;
-    constexpr static BeatsPerSecond MAX_TEMPO = 999.0 / 60.0;
-    constexpr static int TEMPO_PRECISION = 6;
+    constexpr static BeatsPerSecond default_tempo = 2.0; // default tempo is equal 120 bpm
+    constexpr static BeatsPerSecond min_tempo = 5.0 / 60.0;
+    constexpr static BeatsPerSecond max_tempo = 999.0 / 60.0;
+    constexpr static int tempo_precision = 6;
 };
 } // namespace mu::engraving
 

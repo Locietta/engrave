@@ -39,12 +39,12 @@ using namespace mu::engraving;
 //   EditSpanner
 //---------------------------------------------------------
 
-void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, const PointF &pos, bool systemStavesOnly) {
-    staff_idx_t staffIdx = spanner->staffIdx();
+void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, const PointF &pos, bool system_staves_only) {
+    staff_idx_t staff_idx = spanner->staff_idx();
     Segment *segment;
-    Measure *measure = score->pos2measure(pos, &staffIdx, /*pitch*/ 0, &segment, /*offset*/ 0);
-    if (systemStavesOnly) {
-        staffIdx = 0;
+    Measure *measure = score->pos2measure(pos, &staff_idx, /*pitch*/ 0, &segment, /*offset*/ 0);
+    if (system_staves_only) {
+        staff_idx = 0;
     }
     // ignore if we do not have a measure
     if (!measure) {
@@ -54,55 +54,55 @@ void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, cons
     }
 
     // all spanners live in voice 0 (except slurs/ties)
-    track_idx_t track = staffIdx == muse::nidx ? muse::nidx : staffIdx * VOICES;
+    track_idx_t track = staff_idx == muse::nidx ? muse::nidx : staff_idx * ::mu::engraving::voices;
 
-    spanner->setTrack(track);
-    spanner->setTrack2(track);
+    spanner->set_track(track);
+    spanner->set_track2(track);
 
     if (spanner->anchor() == Spanner::Anchor::SEGMENT) {
-        spanner->setTick(segment->tick());
-        Fraction tick2 = std::min(segment->measure()->endTick(), score->lastMeasure()->endTick());
-        spanner->setTick2(tick2);
+        spanner->set_tick(segment->tick());
+        Fraction tick2 = std::min(segment->measure()->end_tick(), score->last_measure()->end_tick());
+        spanner->set_tick2(tick2);
     } else { // Anchor::MEASURE, Anchor::CHORD, Anchor::NOTE
-        spanner->setTick(measure->tick());
-        spanner->setTick2(measure->endTick());
+        spanner->set_tick(measure->tick());
+        spanner->set_tick2(measure->end_tick());
     }
-    spanner->eraseSpannerSegments();
+    spanner->erase_spanner_segments();
 
-    bool ctrlModifier = isSystemTextLine(spanner) && !systemStavesOnly;
-    score->undoAddElement(spanner, true /*addToLinkedStaves*/, ctrlModifier);
+    bool ctrl_modifier = is_system_text_line(spanner) && !system_staves_only;
+    score->undo_add_element(spanner, true /*addToLinkedStaves*/, ctrl_modifier);
 }
 
-void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, staff_idx_t staffIdx, Segment *startSegment,
-                             Segment *endSegment, bool ctrlModifier) {
-    track_idx_t track = staffIdx * VOICES;
-    spanner->setTrack(track);
-    spanner->setTrack2(track);
-    for (auto ss : spanner->spannerSegments()) {
-        ss->setTrack(track);
+void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, staff_idx_t staff_idx, Segment *start_segment,
+                              Segment *end_segment, bool ctrl_modifier) {
+    track_idx_t track = staff_idx * ::mu::engraving::voices;
+    spanner->set_track(track);
+    spanner->set_track2(track);
+    for (auto ss : spanner->spanner_segments()) {
+        ss->set_track(track);
     }
 
-    bool isMeasureAnchor = spanner->anchor() == Spanner::Anchor::MEASURE;
-    Fraction tick1 = isMeasureAnchor ? startSegment->measure()->tick() : startSegment->tick();
-    spanner->setTick(tick1);
+    bool is_measure_anchor = spanner->anchor() == Spanner::Anchor::MEASURE;
+    Fraction tick1 = is_measure_anchor ? start_segment->measure()->tick() : start_segment->tick();
+    spanner->set_tick(tick1);
 
     Fraction tick2;
-    if (!endSegment) {
-        tick2 = score->lastSegment()->tick();
-    } else if (endSegment == startSegment) {
-        tick2 = startSegment->measure()->last()->tick();
+    if (!end_segment) {
+        tick2 = score->last_segment()->tick();
+    } else if (end_segment == start_segment) {
+        tick2 = start_segment->measure()->last()->tick();
     } else {
-        tick2 = endSegment->tick();
+        tick2 = end_segment->tick();
     }
-    if (isMeasureAnchor) {
-        Measure *endMeasure = score->tick2measureMM(tick2);
-        if (endMeasure->tick() != tick2) {
-            tick2 = endMeasure->endTick();
+    if (is_measure_anchor) {
+        Measure *end_measure = score->tick2measure_mm(tick2);
+        if (end_measure->tick() != tick2) {
+            tick2 = end_measure->end_tick();
         }
     }
 
-    spanner->setTick2(tick2);
-    score->undoAddElement(spanner, true, ctrlModifier);
+    spanner->set_tick2(tick2);
+    score->undo_add_element(spanner, true, ctrl_modifier);
 }
 
 //---------------------------------------------------------
@@ -110,48 +110,48 @@ void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, staf
 //---------------------------------------------------------
 
 void ChangeSpannerElements::flip() {
-    EngravingItem *oldStartElement = spanner->startElement();
-    EngravingItem *oldEndElement = spanner->endElement();
-    bool isPartialSpanner = spanner->isPartialTie() || spanner->isLaissezVib();
+    EngravingItem *old_start_element = spanner->start_element();
+    EngravingItem *old_end_element = spanner->end_element();
+    bool is_partial_spanner = spanner->is_partial_tie() || spanner->is_laissez_vib();
     if (spanner->anchor() == Spanner::Anchor::NOTE) {
         // be sure new spanner elements are of the right type
-        if (!isPartialSpanner && (!startElement || !startElement->isNote() || !endElement || !endElement->isNote())) {
+        if (!is_partial_spanner && (!start_element || !start_element->is_note() || !end_element || !end_element->is_note())) {
             return;
         }
-        Note *oldStartNote = toNote(oldStartElement);
-        Note *oldEndNote = toNote(oldEndElement);
-        Note *newStartNote = toNote(startElement);
-        Note *newEndNote = toNote(endElement);
+        Note *old_start_note = to_note(old_start_element);
+        Note *old_end_note = to_note(old_end_element);
+        Note *new_start_note = to_note(start_element);
+        Note *new_end_note = to_note(end_element);
         // update spanner's start and end notes
-        if ((newStartNote && newEndNote) || (isPartialSpanner && (newStartNote || newEndNote))) {
-            spanner->setNoteSpan(newStartNote, newEndNote);
-            if (spanner->isTie()) {
-                Tie *tie = toTie(spanner);
-                if (oldStartNote && newStartNote) {
-                    oldStartNote->setTieFor(nullptr);
-                    newStartNote->setTieFor(tie);
+        if ((new_start_note && new_end_note) || (is_partial_spanner && (new_start_note || new_end_note))) {
+            spanner->set_note_span(new_start_note, new_end_note);
+            if (spanner->is_tie()) {
+                Tie *tie = to_tie(spanner);
+                if (old_start_note && new_start_note) {
+                    old_start_note->set_tie_for(nullptr);
+                    new_start_note->set_tie_for(tie);
                 }
-                if (oldEndNote && newEndNote) {
-                    oldEndNote->setTieBack(nullptr);
-                    newEndNote->setTieBack(tie);
+                if (old_end_note && new_end_note) {
+                    old_end_note->set_tie_back(nullptr);
+                    new_end_note->set_tie_back(tie);
                 }
             } else {
-                oldStartNote->removeSpannerFor(spanner);
-                oldEndNote->removeSpannerBack(spanner);
-                newStartNote->addSpannerFor(spanner);
-                newEndNote->addSpannerBack(spanner);
-                if (spanner->isGlissando()) {
-                    oldEndNote->chord()->updateEndsNoteAnchoredLine();
+                old_start_note->remove_spanner_for(spanner);
+                old_end_note->remove_spanner_back(spanner);
+                new_start_note->add_spanner_for(spanner);
+                new_end_note->add_spanner_back(spanner);
+                if (spanner->is_glissando()) {
+                    old_end_note->chord()->update_ends_note_anchored_line();
                 }
             }
         }
     } else {
-        spanner->setStartElement(startElement);
-        spanner->setEndElement(endElement);
+        spanner->set_start_element(start_element);
+        spanner->set_end_element(end_element);
     }
-    startElement = oldStartElement;
-    endElement = oldEndElement;
-    spanner->triggerLayout();
+    start_element = old_start_element;
+    end_element = old_end_element;
+    spanner->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -159,10 +159,10 @@ void ChangeSpannerElements::flip() {
 //---------------------------------------------------------
 
 void ChangeStartEndSpanner::flip() {
-    EngravingItem *s = spanner->startElement();
-    EngravingItem *e = spanner->endElement();
-    spanner->setStartElement(start);
-    spanner->setEndElement(end);
+    EngravingItem *s = spanner->start_element();
+    EngravingItem *e = spanner->end_element();
+    spanner->set_start_element(start);
+    spanner->set_end_element(end);
     start = s;
     end = e;
 }

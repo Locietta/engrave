@@ -41,7 +41,7 @@ public:
 
     PedalSegment *clone() const override { return new PedalSegment(*this); }
 
-    Pedal *pedal() const { return toPedal(spanner()); }
+    Pedal *pedal() const { return to_pedal(spanner()); }
 
     friend class Pedal;
 };
@@ -54,15 +54,15 @@ class Pedal final : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, Pedal)
     DECLARE_CLASSOF(ElementType::PEDAL)
 
-    Sid getPropertyStyle(Pid) const override;
+    Sid get_property_style(Pid) const override;
 
 protected:
-    Sid defaultPosSid() const override;
-    PointF linePos(Grip, System **) const override;
+    Sid default_pos_sid() const override;
+    PointF line_pos(Grip, System **) const override;
 
 public:
-    static const String PEDAL_SYMBOL;
-    static const String STAR_SYMBOL;
+    static const String pedal_symbol;
+    static const String star_symbol;
 
     Pedal(DummyParentOr<EngravingItem> parent);
 
@@ -70,12 +70,12 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment *createLineSegment() override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    LineSegment *create_line_segment() override;
+    PropertyValue property_default(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
 
-    Pedal *findNextInStaff() const;
-    bool connect45HookToNext() const;
+    Pedal *find_next_in_staff() const;
+    bool connect45_hook_to_next() const;
 
     friend class PedalLine;
 };

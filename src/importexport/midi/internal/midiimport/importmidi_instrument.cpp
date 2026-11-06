@@ -48,201 +48,201 @@ using namespace std::literals;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-extern std::vector<const InstrumentGroup *> instrumentGroups;
+extern std::vector<const InstrumentGroup *> instrument_groups;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiInstr {
 namespace {
 struct GM1ProgramData {
     GM1Program program = {};
-    std::string_view preferredInstrumentId = {};
+    std::string_view preferred_instrument_id = {};
 };
 
 // General MIDI Level 1
-constexpr std::array GM1_SOUND_DATA{
-    GM1ProgramData{GM1Program::AcousticGrandPiano, "grand-piano"sv},
-    GM1ProgramData{GM1Program::BrightAcousticPiano, "piano"sv},
-    GM1ProgramData{GM1Program::ElectricGrandPiano, "electric-piano"sv},
-    GM1ProgramData{GM1Program::HonkyTonkPiano, "honky-tonk-piano"sv},
-    GM1ProgramData{GM1Program::ElectricPiano1, "electric-piano"sv},
-    GM1ProgramData{GM1Program::ElectricPiano2, "electric-piano"sv},
-    GM1ProgramData{GM1Program::Harpsichord, "harpsichord"sv},
-    GM1ProgramData{GM1Program::Clavi, "clavichord"sv},
-    GM1ProgramData{GM1Program::Celesta, "celesta"sv},
-    GM1ProgramData{GM1Program::Glockenspiel, "glockenspiel"sv},
-    GM1ProgramData{GM1Program::MusicBox, "crotales"sv},
-    GM1ProgramData{GM1Program::Vibraphone, "vibraphone"sv},
-    GM1ProgramData{GM1Program::Marimba, "marimba"sv},
-    GM1ProgramData{GM1Program::Xylophone, "xylophone"sv},
-    GM1ProgramData{GM1Program::TubularBells, "tubular-bells"sv},
-    GM1ProgramData{GM1Program::Dulcimer, "dulcimer"sv},
-    GM1ProgramData{GM1Program::DrawbarOrgan, "hammond-organ"sv},
-    GM1ProgramData{GM1Program::PercussiveOrgan, "percussive-organ"sv},
-    GM1ProgramData{GM1Program::RockOrgan, "rotary-organ"sv},
-    GM1ProgramData{GM1Program::ChurchOrgan, "pipe-organ"sv},
-    GM1ProgramData{GM1Program::ReedOrgan, "reed-organ"sv},
-    GM1ProgramData{GM1Program::Accordion, "accordion"sv},
-    GM1ProgramData{GM1Program::Harmonica, "harmonica"sv},
-    GM1ProgramData{GM1Program::TangoAccordion, "bandoneon"sv},
-    GM1ProgramData{GM1Program::AcousticGuitarNylon, "guitar-nylon"sv},
-    GM1ProgramData{GM1Program::AcousticGuitarSteel, "guitar-steel"sv},
-    GM1ProgramData{GM1Program::ElectricGuitarJazz, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::ElectricGuitarClean, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::ElectricGuitarMuted, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::OverdrivenGuitar, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::DistortionGuitar, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::GuitarHarmonics, "electric-guitar"sv},
-    GM1ProgramData{GM1Program::AcousticBass, "acoustic-bass"sv},
-    GM1ProgramData{GM1Program::ElectricBassFinger, "electric-bass"sv},
-    GM1ProgramData{GM1Program::ElectricBassPick, "bass-guitar"sv},
-    GM1ProgramData{GM1Program::FretlessBass, "fretless-electric-bass"sv},
-    GM1ProgramData{GM1Program::SlapBass1, "electric-bass"sv},
-    GM1ProgramData{GM1Program::SlapBass2, "electric-bass"sv},
-    GM1ProgramData{GM1Program::SynthBass1, "bass-synthesizer"sv},
-    GM1ProgramData{GM1Program::SynthBass2, "bass-synthesizer"sv},
-    GM1ProgramData{GM1Program::Violin, "violin"sv},
-    GM1ProgramData{GM1Program::Viola, "viola"sv},
-    GM1ProgramData{GM1Program::Cello, "violoncello"sv},
-    GM1ProgramData{GM1Program::Contrabass, "contrabass"sv},
-    GM1ProgramData{GM1Program::TremoloStrings, "strings"sv},
-    GM1ProgramData{GM1Program::PizzicatoStrings, "strings"sv},
-    GM1ProgramData{GM1Program::OrchestralHarp, "harp"sv},
-    GM1ProgramData{GM1Program::Timpani, "timpani"sv},
-    GM1ProgramData{GM1Program::StringEnsemble1, "strings"sv},
-    GM1ProgramData{GM1Program::StringEnsemble2, "strings"sv},
-    GM1ProgramData{GM1Program::SynthStrings1, "string-synthesizer"sv},
-    GM1ProgramData{GM1Program::SynthStrings2, "string-synthesizer"sv},
-    GM1ProgramData{GM1Program::ChoirAahs, "voice"sv},
-    GM1ProgramData{GM1Program::VoiceOohs, "voice"sv},
-    GM1ProgramData{GM1Program::SynthVoice, "voice"sv},
-    GM1ProgramData{GM1Program::OrchestraHit, "brass-synthesizer"sv},
-    GM1ProgramData{GM1Program::Trumpet, "trumpet"sv},
-    GM1ProgramData{GM1Program::Trombone, "trombone"sv},
-    GM1ProgramData{GM1Program::Tuba, "tuba"sv},
-    GM1ProgramData{GM1Program::MutedTrumpet, "trumpet"sv},
-    GM1ProgramData{GM1Program::FrenchHorn, "horn"sv},
-    GM1ProgramData{GM1Program::BrassSection, "brass"sv},
-    GM1ProgramData{GM1Program::SynthBrass1, "brass-synthesizer"sv},
-    GM1ProgramData{GM1Program::SynthBrass2, "brass-synthesizer"sv},
-    GM1ProgramData{GM1Program::SopranoSax, "soprano-saxophone"sv},
-    GM1ProgramData{GM1Program::AltoSax, "alto-saxophone"sv},
-    GM1ProgramData{GM1Program::TenorSax, "tenor-saxophone"sv},
-    GM1ProgramData{GM1Program::BaritoneSax, "baritone-saxophone"sv},
-    GM1ProgramData{GM1Program::Oboe, "oboe"sv},
-    GM1ProgramData{GM1Program::EnglishHorn, "english-horn"sv},
-    GM1ProgramData{GM1Program::Bassoon, "bassoon"sv},
-    GM1ProgramData{GM1Program::Clarinet, "clarinet"sv},
-    GM1ProgramData{GM1Program::Piccolo, "piccolo"sv},
-    GM1ProgramData{GM1Program::Flute, "flute"sv},
-    GM1ProgramData{GM1Program::Recorder, "recorder"sv},
-    GM1ProgramData{GM1Program::PanFlute, "pan-flute"sv},
-    GM1ProgramData{GM1Program::BlownBottle, "pan-flute"sv},
-    GM1ProgramData{GM1Program::Shakuhachi, "shakuhachi"sv},
-    GM1ProgramData{GM1Program::Whistle, "c-tin-whistle"sv},
-    GM1ProgramData{GM1Program::Ocarina, "ocarina"sv},
-    GM1ProgramData{GM1Program::Lead1Square, "square-synth"sv},
-    GM1ProgramData{GM1Program::Lead2Sawtooth, "saw-synth"sv},
-    GM1ProgramData{GM1Program::Lead3Calliope, ""sv},
-    GM1ProgramData{GM1Program::Lead4Chiff, ""sv},
-    GM1ProgramData{GM1Program::Lead5Charang, "tuned-klaxon-horns"sv},
-    GM1ProgramData{GM1Program::Lead6Voice, "kazoo"sv},
-    GM1ProgramData{GM1Program::Lead7Fifths, ""sv},
-    GM1ProgramData{GM1Program::Lead8BassAndLead, ""sv},
-    GM1ProgramData{GM1Program::Pad1NewAge, "new-age-synth"sv},
-    GM1ProgramData{GM1Program::Pad2Warm, "warm-synth"sv},
-    GM1ProgramData{GM1Program::Pad3Polysynth, "poly-synth"sv},
-    GM1ProgramData{GM1Program::Pad4Choir, "choir-synth"sv},
-    GM1ProgramData{GM1Program::Pad5Bowed, "bowed-synth"sv},
-    GM1ProgramData{GM1Program::Pad6Metallic, "metallic-synth"sv},
-    GM1ProgramData{GM1Program::Pad7Halo, "halo-synth"sv},
-    GM1ProgramData{GM1Program::Pad8Sweep, "sweep-synth"sv},
-    GM1ProgramData{GM1Program::FX1Rain, "rain-synth"sv},
-    GM1ProgramData{GM1Program::FX2Soundtrack, "soundtrack-synth"sv},
-    GM1ProgramData{GM1Program::FX3Crystal, "crystal-synth"sv},
-    GM1ProgramData{GM1Program::FX4Atmosphere, "atmosphere-synth"sv},
-    GM1ProgramData{GM1Program::FX5Brightness, "brightness-synth"sv},
-    GM1ProgramData{GM1Program::FX6Goblins, "goblins-synth"sv},
-    GM1ProgramData{GM1Program::FX7Echoes, "echoes-synth"sv},
-    GM1ProgramData{GM1Program::FX8SciFi, "sci-fi-synth"sv},
-    GM1ProgramData{GM1Program::Sitar, "sitar"sv},
-    GM1ProgramData{GM1Program::Banjo, "banjo"sv},
-    GM1ProgramData{GM1Program::Shamisen, "shamisen"sv},
-    GM1ProgramData{GM1Program::Koto, "koto"sv},
-    GM1ProgramData{GM1Program::Kalimba, "kalimba"sv},
-    GM1ProgramData{GM1Program::BagPipe, "bagpipe"sv},
-    GM1ProgramData{GM1Program::Fiddle, "violin"sv},
-    GM1ProgramData{GM1Program::Shanai, "shenai"sv},
-    GM1ProgramData{GM1Program::TinkleBell, "hand-bells"sv},
-    GM1ProgramData{GM1Program::Agogo, "hand-bells"sv},
-    GM1ProgramData{GM1Program::SteelDrums, "steel-drums"sv},
-    GM1ProgramData{GM1Program::Woodblock, "temple-blocks"sv},
-    GM1ProgramData{GM1Program::TaikoDrum, ""sv},
-    GM1ProgramData{GM1Program::MelodicTom, "roto-toms"sv},
-    GM1ProgramData{GM1Program::SynthDrum, ""sv},
-    GM1ProgramData{GM1Program::ReverseCymbal, ""sv},
-    GM1ProgramData{GM1Program::GuitarFretNoise, ""sv},
-    GM1ProgramData{GM1Program::BreathNoise, ""sv},
-    GM1ProgramData{GM1Program::Seashore, ""sv},
-    GM1ProgramData{GM1Program::BirdTweet, ""sv},
-    GM1ProgramData{GM1Program::TelephoneRing, ""sv},
-    GM1ProgramData{GM1Program::Helicopter, ""sv},
-    GM1ProgramData{GM1Program::Applause, ""sv},
-    GM1ProgramData{GM1Program::Gunshot, "cannon"sv},
+constexpr std::array g_m1_sound_data{
+    GM1ProgramData{GM1Program::ACOUSTIC_GRAND_PIANO, "grand-piano"sv},
+    GM1ProgramData{GM1Program::BRIGHT_ACOUSTIC_PIANO, "piano"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_GRAND_PIANO, "electric-piano"sv},
+    GM1ProgramData{GM1Program::HONKY_TONK_PIANO, "honky-tonk-piano"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_PIANO1, "electric-piano"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_PIANO2, "electric-piano"sv},
+    GM1ProgramData{GM1Program::HARPSICHORD, "harpsichord"sv},
+    GM1ProgramData{GM1Program::CLAVI, "clavichord"sv},
+    GM1ProgramData{GM1Program::CELESTA, "celesta"sv},
+    GM1ProgramData{GM1Program::GLOCKENSPIEL, "glockenspiel"sv},
+    GM1ProgramData{GM1Program::MUSIC_BOX, "crotales"sv},
+    GM1ProgramData{GM1Program::VIBRAPHONE, "vibraphone"sv},
+    GM1ProgramData{GM1Program::MARIMBA, "marimba"sv},
+    GM1ProgramData{GM1Program::XYLOPHONE, "xylophone"sv},
+    GM1ProgramData{GM1Program::TUBULAR_BELLS, "tubular-bells"sv},
+    GM1ProgramData{GM1Program::DULCIMER, "dulcimer"sv},
+    GM1ProgramData{GM1Program::DRAWBAR_ORGAN, "hammond-organ"sv},
+    GM1ProgramData{GM1Program::PERCUSSIVE_ORGAN, "percussive-organ"sv},
+    GM1ProgramData{GM1Program::ROCK_ORGAN, "rotary-organ"sv},
+    GM1ProgramData{GM1Program::CHURCH_ORGAN, "pipe-organ"sv},
+    GM1ProgramData{GM1Program::REED_ORGAN, "reed-organ"sv},
+    GM1ProgramData{GM1Program::ACCORDION, "accordion"sv},
+    GM1ProgramData{GM1Program::HARMONICA, "harmonica"sv},
+    GM1ProgramData{GM1Program::TANGO_ACCORDION, "bandoneon"sv},
+    GM1ProgramData{GM1Program::ACOUSTIC_GUITAR_NYLON, "guitar-nylon"sv},
+    GM1ProgramData{GM1Program::ACOUSTIC_GUITAR_STEEL, "guitar-steel"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_GUITAR_JAZZ, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_GUITAR_CLEAN, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_GUITAR_MUTED, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::OVERDRIVEN_GUITAR, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::DISTORTION_GUITAR, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::GUITAR_HARMONICS, "electric-guitar"sv},
+    GM1ProgramData{GM1Program::ACOUSTIC_BASS, "acoustic-bass"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_BASS_FINGER, "electric-bass"sv},
+    GM1ProgramData{GM1Program::ELECTRIC_BASS_PICK, "bass-guitar"sv},
+    GM1ProgramData{GM1Program::FRETLESS_BASS, "fretless-electric-bass"sv},
+    GM1ProgramData{GM1Program::SLAP_BASS1, "electric-bass"sv},
+    GM1ProgramData{GM1Program::SLAP_BASS2, "electric-bass"sv},
+    GM1ProgramData{GM1Program::SYNTH_BASS1, "bass-synthesizer"sv},
+    GM1ProgramData{GM1Program::SYNTH_BASS2, "bass-synthesizer"sv},
+    GM1ProgramData{GM1Program::VIOLIN, "violin"sv},
+    GM1ProgramData{GM1Program::VIOLA, "viola"sv},
+    GM1ProgramData{GM1Program::CELLO, "violoncello"sv},
+    GM1ProgramData{GM1Program::CONTRABASS, "contrabass"sv},
+    GM1ProgramData{GM1Program::TREMOLO_STRINGS, "strings"sv},
+    GM1ProgramData{GM1Program::PIZZICATO_STRINGS, "strings"sv},
+    GM1ProgramData{GM1Program::ORCHESTRAL_HARP, "harp"sv},
+    GM1ProgramData{GM1Program::TIMPANI, "timpani"sv},
+    GM1ProgramData{GM1Program::STRING_ENSEMBLE1, "strings"sv},
+    GM1ProgramData{GM1Program::STRING_ENSEMBLE2, "strings"sv},
+    GM1ProgramData{GM1Program::SYNTH_STRINGS1, "string-synthesizer"sv},
+    GM1ProgramData{GM1Program::SYNTH_STRINGS2, "string-synthesizer"sv},
+    GM1ProgramData{GM1Program::CHOIR_AAHS, "voice"sv},
+    GM1ProgramData{GM1Program::VOICE_OOHS, "voice"sv},
+    GM1ProgramData{GM1Program::SYNTH_VOICE, "voice"sv},
+    GM1ProgramData{GM1Program::ORCHESTRA_HIT, "brass-synthesizer"sv},
+    GM1ProgramData{GM1Program::TRUMPET, "trumpet"sv},
+    GM1ProgramData{GM1Program::TROMBONE, "trombone"sv},
+    GM1ProgramData{GM1Program::TUBA, "tuba"sv},
+    GM1ProgramData{GM1Program::MUTED_TRUMPET, "trumpet"sv},
+    GM1ProgramData{GM1Program::FRENCH_HORN, "horn"sv},
+    GM1ProgramData{GM1Program::BRASS_SECTION, "brass"sv},
+    GM1ProgramData{GM1Program::SYNTH_BRASS1, "brass-synthesizer"sv},
+    GM1ProgramData{GM1Program::SYNTH_BRASS2, "brass-synthesizer"sv},
+    GM1ProgramData{GM1Program::SOPRANO_SAX, "soprano-saxophone"sv},
+    GM1ProgramData{GM1Program::ALTO_SAX, "alto-saxophone"sv},
+    GM1ProgramData{GM1Program::TENOR_SAX, "tenor-saxophone"sv},
+    GM1ProgramData{GM1Program::BARITONE_SAX, "baritone-saxophone"sv},
+    GM1ProgramData{GM1Program::OBOE, "oboe"sv},
+    GM1ProgramData{GM1Program::ENGLISH_HORN, "english-horn"sv},
+    GM1ProgramData{GM1Program::BASSOON, "bassoon"sv},
+    GM1ProgramData{GM1Program::CLARINET, "clarinet"sv},
+    GM1ProgramData{GM1Program::PICCOLO, "piccolo"sv},
+    GM1ProgramData{GM1Program::FLUTE, "flute"sv},
+    GM1ProgramData{GM1Program::RECORDER, "recorder"sv},
+    GM1ProgramData{GM1Program::PAN_FLUTE, "pan-flute"sv},
+    GM1ProgramData{GM1Program::BLOWN_BOTTLE, "pan-flute"sv},
+    GM1ProgramData{GM1Program::SHAKUHACHI, "shakuhachi"sv},
+    GM1ProgramData{GM1Program::WHISTLE, "c-tin-whistle"sv},
+    GM1ProgramData{GM1Program::OCARINA, "ocarina"sv},
+    GM1ProgramData{GM1Program::LEAD1_SQUARE, "square-synth"sv},
+    GM1ProgramData{GM1Program::LEAD2_SAWTOOTH, "saw-synth"sv},
+    GM1ProgramData{GM1Program::LEAD3_CALLIOPE, ""sv},
+    GM1ProgramData{GM1Program::LEAD4_CHIFF, ""sv},
+    GM1ProgramData{GM1Program::LEAD5_CHARANG, "tuned-klaxon-horns"sv},
+    GM1ProgramData{GM1Program::LEAD6_VOICE, "kazoo"sv},
+    GM1ProgramData{GM1Program::LEAD7_FIFTHS, ""sv},
+    GM1ProgramData{GM1Program::LEAD8_BASS_AND_LEAD, ""sv},
+    GM1ProgramData{GM1Program::PAD1_NEW_AGE, "new-age-synth"sv},
+    GM1ProgramData{GM1Program::PAD2_WARM, "warm-synth"sv},
+    GM1ProgramData{GM1Program::PAD3_POLYSYNTH, "poly-synth"sv},
+    GM1ProgramData{GM1Program::PAD4_CHOIR, "choir-synth"sv},
+    GM1ProgramData{GM1Program::PAD5_BOWED, "bowed-synth"sv},
+    GM1ProgramData{GM1Program::PAD6_METALLIC, "metallic-synth"sv},
+    GM1ProgramData{GM1Program::PAD7_HALO, "halo-synth"sv},
+    GM1ProgramData{GM1Program::PAD8_SWEEP, "sweep-synth"sv},
+    GM1ProgramData{GM1Program::F_X1_RAIN, "rain-synth"sv},
+    GM1ProgramData{GM1Program::F_X2_SOUNDTRACK, "soundtrack-synth"sv},
+    GM1ProgramData{GM1Program::F_X3_CRYSTAL, "crystal-synth"sv},
+    GM1ProgramData{GM1Program::F_X4_ATMOSPHERE, "atmosphere-synth"sv},
+    GM1ProgramData{GM1Program::F_X5_BRIGHTNESS, "brightness-synth"sv},
+    GM1ProgramData{GM1Program::F_X6_GOBLINS, "goblins-synth"sv},
+    GM1ProgramData{GM1Program::F_X7_ECHOES, "echoes-synth"sv},
+    GM1ProgramData{GM1Program::F_X8_SCI_FI, "sci-fi-synth"sv},
+    GM1ProgramData{GM1Program::SITAR, "sitar"sv},
+    GM1ProgramData{GM1Program::BANJO, "banjo"sv},
+    GM1ProgramData{GM1Program::SHAMISEN, "shamisen"sv},
+    GM1ProgramData{GM1Program::KOTO, "koto"sv},
+    GM1ProgramData{GM1Program::KALIMBA, "kalimba"sv},
+    GM1ProgramData{GM1Program::BAG_PIPE, "bagpipe"sv},
+    GM1ProgramData{GM1Program::FIDDLE, "violin"sv},
+    GM1ProgramData{GM1Program::SHANAI, "shenai"sv},
+    GM1ProgramData{GM1Program::TINKLE_BELL, "hand-bells"sv},
+    GM1ProgramData{GM1Program::AGOGO, "hand-bells"sv},
+    GM1ProgramData{GM1Program::STEEL_DRUMS, "steel-drums"sv},
+    GM1ProgramData{GM1Program::WOODBLOCK, "temple-blocks"sv},
+    GM1ProgramData{GM1Program::TAIKO_DRUM, ""sv},
+    GM1ProgramData{GM1Program::MELODIC_TOM, "roto-toms"sv},
+    GM1ProgramData{GM1Program::SYNTH_DRUM, ""sv},
+    GM1ProgramData{GM1Program::REVERSE_CYMBAL, ""sv},
+    GM1ProgramData{GM1Program::GUITAR_FRET_NOISE, ""sv},
+    GM1ProgramData{GM1Program::BREATH_NOISE, ""sv},
+    GM1ProgramData{GM1Program::SEASHORE, ""sv},
+    GM1ProgramData{GM1Program::BIRD_TWEET, ""sv},
+    GM1ProgramData{GM1Program::TELEPHONE_RING, ""sv},
+    GM1ProgramData{GM1Program::HELICOPTER, ""sv},
+    GM1ProgramData{GM1Program::APPLAUSE, ""sv},
+    GM1ProgramData{GM1Program::GUNSHOT, "cannon"sv},
 };
-static_assert(GM1_SOUND_DATA.size() == 128);
+static_assert(::mu::iex::midi::MidiInstr::g_m1_sound_data.size() == 128);
 
-const InstrumentTemplate *getPreferredInstrument(const GM1Program sound) {
-    const std::string_view id = GM1_SOUND_DATA[static_cast<std::uint8_t>(sound)].preferredInstrumentId;
-    InstrumentIndex idx = searchTemplateIndexForId(String::fromUtf8(id));
-    if (idx.groupIndex == -1) {
+const InstrumentTemplate *get_preferred_instrument(const GM1Program sound) {
+    const std::string_view id = ::mu::iex::midi::MidiInstr::g_m1_sound_data[static_cast<std::uint8_t>(sound)].preferred_instrument_id;
+    InstrumentIndex idx = search_template_index_for_id(String::from_utf8(id));
+    if (idx.group_index == -1) {
         return nullptr;
     }
 
-    return idx.instrTemplate;
+    return idx.instr_template;
 }
 } // namespace
 
-muse::String instrumentName(GM1Program program, bool isDrumTrack) {
-    if (isDrumTrack) {
-        return muse::String::fromUtf8("Percussion");
+muse::String instrument_name(GM1Program program, bool is_drum_track) {
+    if (is_drum_track) {
+        return muse::String::from_utf8("Percussion");
     }
 
-    return muse::String::fromUtf8(getMidiName(program));
+    return muse::String::from_utf8(get_midi_name(program));
 }
 
-bool isGrandStaff(const MTrack &t1, const MTrack &t2) {
-    return t1.mtrack->outChannel() == t2.mtrack->outChannel() && MChord::isGrandStaffProgram(t1.program) && !t1.mtrack->drumTrack() &&
-           !t2.mtrack->drumTrack();
+bool is_grand_staff(const MTrack &t1, const MTrack &t2) {
+    return t1.mtrack->out_channel() == t2.mtrack->out_channel() && MChord::is_grand_staff_program(t1.program) && !t1.mtrack->drum_track() &&
+           !t2.mtrack->drum_track();
 }
 
-bool isSameChannel(const MTrack &t1, const MTrack &t2) { return t1.mtrack->outChannel() == t2.mtrack->outChannel(); }
+bool is_same_channel(const MTrack &t1, const MTrack &t2) { return t1.mtrack->out_channel() == t2.mtrack->out_channel(); }
 
-bool is3StaffOrgan(GM1Program program) { return program >= GM1Program::DrawbarOrgan && program <= GM1Program::ReedOrgan; }
+bool is3_staff_organ(GM1Program program) { return program >= GM1Program::DRAWBAR_ORGAN && program <= GM1Program::REED_ORGAN; }
 
-bool areNext2GrandStaff(int currentTrack, const std::vector<MTrack> &tracks) {
-    if (currentTrack + 1 >= tracks.size()) {
+bool are_next2_grand_staff(int current_track, const std::vector<MTrack> &tracks) {
+    if (current_track + 1 >= tracks.size()) {
         return false;
     }
-    return isGrandStaff(tracks[currentTrack], tracks[currentTrack + 1]);
+    return is_grand_staff(tracks[current_track], tracks[current_track + 1]);
 }
 
-bool areNext3OrganStaff(int currentTrack, const std::vector<MTrack> &tracks) {
-    if (currentTrack + 2 >= tracks.size()) {
+bool are_next3_organ_staff(int current_track, const std::vector<MTrack> &tracks) {
+    if (current_track + 2 >= tracks.size()) {
         return false;
     }
-    if (!is3StaffOrgan(tracks[currentTrack].program)) {
+    if (!is3_staff_organ(tracks[current_track].program)) {
         return false;
     }
 
-    return isGrandStaff(tracks[currentTrack], tracks[currentTrack + 1]) &&
-           isSameChannel(tracks[currentTrack + 1], tracks[currentTrack + 2]);
+    return is_grand_staff(tracks[current_track], tracks[current_track + 1]) &&
+           is_same_channel(tracks[current_track + 1], tracks[current_track + 2]);
 }
 
-muse::String concatenateWithComma(const muse::String &left, const muse::String &right) {
-    if (left.isEmpty()) {
+muse::String concatenate_with_comma(const muse::String &left, const muse::String &right) {
+    if (left.is_empty()) {
         return right;
     }
-    if (right.isEmpty()) {
+    if (right.is_empty()) {
         return left;
     }
     return left + u", " + right;
@@ -251,20 +251,20 @@ muse::String concatenateWithComma(const muse::String &left, const muse::String &
 // set program equal to all staves, as it should be
 // often only first stave in Grand Staff have correct program, other - default (piano)
 // also handle track names
-void setGrandStaffProgram(std::vector<MTrack> &tracks) {
+void set_grand_staff_program(std::vector<MTrack> &tracks) {
     for (int i = 0; i < tracks.size(); ++i) {
         MTrack &mt = tracks[i];
 
-        if (areNext3OrganStaff(i, tracks)) {
+        if (are_next3_organ_staff(i, tracks)) {
             tracks[i + 1].program = mt.program;
             tracks[i + 2].program = mt.program;
 
-            mt.name = concatenateWithComma(mt.name, muse::String::fromUtf8("Manual"));
+            mt.name = concatenate_with_comma(mt.name, muse::String::from_utf8("Manual"));
             tracks[i + 1].name = muse::String();
-            tracks[i + 2].name = concatenateWithComma(tracks[i + 2].name, muse::String::fromUtf8("Pedal"));
+            tracks[i + 2].name = concatenate_with_comma(tracks[i + 2].name, muse::String::from_utf8("Pedal"));
 
             i += 2;
-        } else if (areNext2GrandStaff(i, tracks)) {
+        } else if (are_next2_grand_staff(i, tracks)) {
             tracks[i + 1].program = mt.program;
             if (mt.name != tracks[i + 1].name) {
                 mt.name = muse::String();            // only one name place near bracket is available
@@ -275,7 +275,7 @@ void setGrandStaffProgram(std::vector<MTrack> &tracks) {
     }
 }
 
-std::set<int> findAllPitches(const MTrack &track) {
+std::set<int> find_all_pitches(const MTrack &track) {
     std::set<int> pitches;
     for (const auto &chord : track.chords) {
         for (const auto &note : chord.second.notes) {
@@ -285,20 +285,20 @@ std::set<int> findAllPitches(const MTrack &track) {
     return pitches;
 }
 
-std::set<int> findNotEmptyDrumPitches(const Drumset *drumset) {
-    std::set<int> drumPitches = {};
-    for (int i = 0; i != DRUM_INSTRUMENTS; ++i) {
+std::set<int> find_not_empty_drum_pitches(const Drumset *drumset) {
+    std::set<int> drum_pitches = {};
+    for (int i = 0; i != ::mu::engraving::drum_instruments; ++i) {
         if (!drumset->name(i).empty()) {
-            drumPitches.insert(i);
+            drum_pitches.insert(i);
         }
     }
 
-    return drumPitches;
+    return drum_pitches;
 }
 
-static bool hasNotDefinedDrumPitch(const std::set<int> &trackPitches, const std::set<int> &drumPitches) {
-    for (const int pitch : trackPitches) {
-        if (drumPitches.find(pitch) == drumPitches.end()) {
+static bool has_not_defined_drum_pitch(const std::set<int> &track_pitches, const std::set<int> &drum_pitches) {
+    for (const int pitch : track_pitches) {
+        if (drum_pitches.find(pitch) == drum_pitches.end()) {
             return true;
         }
     }
@@ -306,13 +306,13 @@ static bool hasNotDefinedDrumPitch(const std::set<int> &trackPitches, const std:
     return false;
 }
 
-static const InstrumentTemplate *findInstrument(const String &groupId, const String &instrId) {
+static const InstrumentTemplate *find_instrument(const String &group_id, const String &instr_id) {
     const InstrumentTemplate *instr = nullptr;
 
-    for (const InstrumentGroup *group : instrumentGroups) {
-        if (group->id == groupId) {
-            for (const InstrumentTemplate *templ : group->instrumentTemplates) {
-                if (templ->id == instrId) {
+    for (const InstrumentGroup *group : instrument_groups) {
+        if (group->id == group_id) {
+            for (const InstrumentTemplate *templ : group->instrument_templates) {
+                if (templ->id == instr_id) {
                     instr = templ;
                     break;
                 }
@@ -324,44 +324,44 @@ static const InstrumentTemplate *findInstrument(const String &groupId, const Str
 }
 
 // returns number of pitches which are present in p1, but missing in p2
-static int countMissingPitches(const std::set<int> &p1, const std::set<int> &p2) {
-    std::vector<int> missingPitches = {};
-    missingPitches.reserve(p1.size());
+static int count_missing_pitches(const std::set<int> &p1, const std::set<int> &p2) {
+    std::vector<int> missing_pitches = {};
+    missing_pitches.reserve(p1.size());
 
-    std::set_difference(p1.begin(), p1.end(), p2.begin(), p2.end(), std::back_inserter(missingPitches));
+    std::set_difference(p1.begin(), p1.end(), p2.begin(), p2.end(), std::back_inserter(missing_pitches));
 
-    return static_cast<int>(missingPitches.size());
+    return static_cast<int>(missing_pitches.size());
 }
 
 // find instrument with maximum MIDI program
 // that is less than the track MIDI program, i.e. suitable instrument
-static const InstrumentTemplate *findClosestInstrument(const GM1Program program, const std::set<int> &pitches, const bool isDrumTrack) {
-    int maxLessProgram = -1;
-    int minMissingPitches = std::numeric_limits<int>::max();
-    const InstrumentTemplate *closestTemplate = nullptr;
+static const InstrumentTemplate *find_closest_instrument(const GM1Program program, const std::set<int> &pitches, const bool is_drum_track) {
+    int max_less_program = -1;
+    int min_missing_pitches = std::numeric_limits<int>::max();
+    const InstrumentTemplate *closest_template = nullptr;
 
-    for (const InstrumentGroup *group : instrumentGroups) {
-        for (const InstrumentTemplate *templ : group->instrumentTemplates) {
-            if (templ->staffGroup == StaffGroup::TAB) {
+    for (const InstrumentGroup *group : instrument_groups) {
+        for (const InstrumentTemplate *templ : group->instrument_templates) {
+            if (templ->staff_group == StaffGroup::TAB) {
                 continue;
             }
-            if (isDrumTrack != templ->useDrumset) {
+            if (is_drum_track != templ->use_drumset) {
                 continue;
             }
 
-            if (isDrumTrack) {
-                int missingPitches = std::numeric_limits<int>::max();
+            if (is_drum_track) {
+                int missing_pitches = std::numeric_limits<int>::max();
                 if (templ->drumset) {
-                    const std::set<int> drumPitches = findNotEmptyDrumPitches(templ->drumset);
-                    missingPitches = countMissingPitches(pitches, drumPitches);
+                    const std::set<int> drum_pitches = find_not_empty_drum_pitches(templ->drumset);
+                    missing_pitches = count_missing_pitches(pitches, drum_pitches);
                 }
 
                 for (const auto &channel : templ->channel) {
-                    if (channel.program() < toMidiData(program) && missingPitches < minMissingPitches) {
-                        maxLessProgram = channel.program();
-                        minMissingPitches = missingPitches;
+                    if (channel.program() < to_midi_data(program) && missing_pitches < min_missing_pitches) {
+                        max_less_program = channel.program();
+                        min_missing_pitches = missing_pitches;
 
-                        closestTemplate = templ;
+                        closest_template = templ;
                         break;
                     }
                 }
@@ -370,58 +370,58 @@ static const InstrumentTemplate *findClosestInstrument(const GM1Program program,
             }
 
             for (const auto &channel : templ->channel) {
-                if (channel.program() < toMidiData(program) && channel.program() > maxLessProgram) {
-                    maxLessProgram = channel.program();
-                    closestTemplate = templ;
+                if (channel.program() < to_midi_data(program) && channel.program() > max_less_program) {
+                    max_less_program = channel.program();
+                    closest_template = templ;
                     break;
                 }
             }
         }
     }
-    return closestTemplate;
+    return closest_template;
 }
 
-static std::vector<const InstrumentTemplate *> findInstrumentsForProgram(const MTrack &track) {
-    std::vector<const InstrumentTemplate *> suitableTemplates;
+static std::vector<const InstrumentTemplate *> find_instruments_for_program(const MTrack &track) {
+    std::vector<const InstrumentTemplate *> suitable_templates;
     const GM1Program program = track.program;
-    const bool isDrumTrack = track.mtrack->drumTrack();
+    const bool is_drum_track = track.mtrack->drum_track();
 
-    const InstrumentTemplate *prefInstr = getPreferredInstrument(program);
-    if (prefInstr && !isDrumTrack) {
-        suitableTemplates.push_back(prefInstr);
+    const InstrumentTemplate *pref_instr = get_preferred_instrument(program);
+    if (pref_instr && !is_drum_track) {
+        suitable_templates.push_back(pref_instr);
     }
 
-    std::set<int> trackPitches;
-    if (isDrumTrack) {
-        trackPitches = findAllPitches(track);
+    std::set<int> track_pitches;
+    if (is_drum_track) {
+        track_pitches = find_all_pitches(track);
     }
 
-    for (const InstrumentGroup *group : instrumentGroups) {
-        for (const InstrumentTemplate *templ : group->instrumentTemplates) {
-            if (prefInstr && templ->id == prefInstr->id) {
+    for (const InstrumentGroup *group : instrument_groups) {
+        for (const InstrumentTemplate *templ : group->instrument_templates) {
+            if (pref_instr && templ->id == pref_instr->id) {
                 continue;
             }
-            if (templ->staffGroup == StaffGroup::TAB) {
+            if (templ->staff_group == StaffGroup::TAB) {
                 continue;
             }
-            if (isDrumTrack != templ->useDrumset) {
+            if (is_drum_track != templ->use_drumset) {
                 continue;
             }
 
-            if (isDrumTrack) {
-                std::set<int> drumPitches;
+            if (is_drum_track) {
+                std::set<int> drum_pitches;
                 if (templ->drumset) {
-                    drumPitches = findNotEmptyDrumPitches(templ->drumset);
+                    drum_pitches = find_not_empty_drum_pitches(templ->drumset);
                 }
 
                 for (const auto &channel : templ->channel) {
-                    if (channel.program() == toMidiData(program)) {
+                    if (channel.program() == to_midi_data(program)) {
                         if (templ->drumset) {
-                            if (hasNotDefinedDrumPitch(trackPitches, drumPitches)) {
+                            if (has_not_defined_drum_pitch(track_pitches, drum_pitches)) {
                                 break;
                             }
                         }
-                        suitableTemplates.push_back(templ);
+                        suitable_templates.push_back(templ);
                         break;
                     }
                 }
@@ -430,71 +430,71 @@ static std::vector<const InstrumentTemplate *> findInstrumentsForProgram(const M
             }
 
             for (const auto &channel : templ->channel) {
-                if (channel.program() == toMidiData(program)) {
-                    suitableTemplates.push_back(templ);
+                if (channel.program() == to_midi_data(program)) {
+                    suitable_templates.push_back(templ);
                     break;
                 }
             }
         }
     }
 
-    if (suitableTemplates.empty()) {
+    if (suitable_templates.empty()) {
         // Ms instruments with the desired MIDI program were not found
         // so we will find the most matching instrument
 
-        if (program >= GM1Program::Lead1Square && program <= GM1Program::FX8SciFi) {
+        if (program >= GM1Program::LEAD1_SQUARE && program <= GM1Program::F_X8_SCI_FI) {
             const InstrumentTemplate *instr = nullptr;
-            if (track.mtrack->drumTrack()) {
-                instr = findInstrument(u"electronic-instruments", u"percussion-synthesizer");
+            if (track.mtrack->drum_track()) {
+                instr = find_instrument(u"electronic-instruments", u"percussion-synthesizer");
             } else {
-                instr = findInstrument(u"electronic-instruments", u"effect-synth");
+                instr = find_instrument(u"electronic-instruments", u"effect-synth");
             }
             if (instr) {
-                suitableTemplates.push_back(instr); // generic synth
+                suitable_templates.push_back(instr); // generic synth
             }
-        } else if (program >= GM1Program::TinkleBell) {
-            auto instr = findInstrument(u"unpitched-percussion", u"snare-drum");
+        } else if (program >= GM1Program::TINKLE_BELL) {
+            auto instr = find_instrument(u"unpitched-percussion", u"snare-drum");
             if (instr) {
-                suitableTemplates.push_back(instr); // 1-line percussion staff
+                suitable_templates.push_back(instr); // 1-line percussion staff
             }
         } else { // find instrument with maximum MIDI program
                  // that is less than the track MIDI program, i.e. suitable instrument
-            auto instr = findClosestInstrument(program, trackPitches, isDrumTrack);
+            auto instr = find_closest_instrument(program, track_pitches, is_drum_track);
             if (instr) {
-                suitableTemplates.push_back(instr);
+                suitable_templates.push_back(instr);
             }
         }
     }
 
-    return suitableTemplates;
+    return suitable_templates;
 }
 
-static std::pair<int, int> findMinMaxPitch(const MTrack &track) {
-    int minPitch = std::numeric_limits<int>::max();
-    int maxPitch = -1;
+static std::pair<int, int> find_min_max_pitch(const MTrack &track) {
+    int min_pitch = std::numeric_limits<int>::max();
+    int max_pitch = -1;
 
     for (const auto &chord : track.chords) {
         for (const auto &note : chord.second.notes) {
-            minPitch = std::min(minPitch, note.pitch);
-            maxPitch = std::max(maxPitch, note.pitch);
+            min_pitch = std::min(min_pitch, note.pitch);
+            max_pitch = std::max(max_pitch, note.pitch);
         }
     }
-    return std::pair(minPitch, maxPitch);
+    return std::pair(min_pitch, max_pitch);
 }
 
-static int findMaxPitchDiff(const std::pair<int, int> &minMaxPitch, const InstrumentTemplate *templ) {
+static int find_max_pitch_diff(const std::pair<int, int> &min_max_pitch, const InstrumentTemplate *templ) {
     int diff = 0;
-    if (minMaxPitch.first < templ->minPitchP) {
-        diff = templ->minPitchP - minMaxPitch.first;
+    if (min_max_pitch.first < templ->min_pitch_p) {
+        diff = templ->min_pitch_p - min_max_pitch.first;
     }
-    if (minMaxPitch.second > templ->maxPitchP) {
-        diff = std::max(diff, minMaxPitch.second - templ->maxPitchP);
+    if (min_max_pitch.second > templ->max_pitch_p) {
+        diff = std::max(diff, min_max_pitch.second - templ->max_pitch_p);
     }
 
     return diff;
 }
 
-static bool hasCommonGenre(const std::vector<const InstrumentGenre *> &genres) {
+static bool has_common_genre(const std::vector<const InstrumentGenre *> &genres) {
     for (const InstrumentGenre *genre : genres) {
         if (genre->id == "common") {
             return true;
@@ -503,44 +503,45 @@ static bool hasCommonGenre(const std::vector<const InstrumentGenre *> &genres) {
     return false;
 }
 
-void sortInstrumentTemplates(std::vector<const InstrumentTemplate *> &templates, const std::pair<int, int> &minMaxPitch) {
-    std::stable_sort(templates.begin(), templates.end(), [minMaxPitch](const InstrumentTemplate *templ1, const InstrumentTemplate *templ2) {
-        const int diff1 = findMaxPitchDiff(minMaxPitch, templ1);
-        const int diff2 = findMaxPitchDiff(minMaxPitch, templ2);
+void sort_instrument_templates(std::vector<const InstrumentTemplate *> &templates, const std::pair<int, int> &min_max_pitch) {
+    std::stable_sort(templates.begin(), templates.end(),
+                     [min_max_pitch](const InstrumentTemplate *templ1, const InstrumentTemplate *templ2) {
+                         const int diff1 = find_max_pitch_diff(min_max_pitch, templ1);
+                         const int diff2 = find_max_pitch_diff(min_max_pitch, templ2);
 
-        if (diff1 != diff2) {
-            return diff1 < diff2;
-        }
-        // if drumset is not null - it's a particular drum instrument
-        // if drum set is null - it's a common drumset
-        // so prefer particular drum instruments
-        if (templ1->drumset && !templ2->drumset) {
-            return true;
-        }
-        if (!templ1->drumset && templ2->drumset) {
-            return false;
-        }
-        // prefer instruments with the "common" genre
-        const bool hasCommon1 = hasCommonGenre(templ1->genres);
-        const bool hasCommon2 = hasCommonGenre(templ2->genres);
-        if (hasCommon1 && !hasCommon2) {
-            return true;
-        }
-        if (!hasCommon1 && hasCommon2) {
-            return false;
-        }
-        return templ1->genres.size() > templ2->genres.size();
-    });
+                         if (diff1 != diff2) {
+                             return diff1 < diff2;
+                         }
+                         // if drumset is not null - it's a particular drum instrument
+                         // if drum set is null - it's a common drumset
+                         // so prefer particular drum instruments
+                         if (templ1->drumset && !templ2->drumset) {
+                             return true;
+                         }
+                         if (!templ1->drumset && templ2->drumset) {
+                             return false;
+                         }
+                         // prefer instruments with the "common" genre
+                         const bool has_common1 = has_common_genre(templ1->genres);
+                         const bool has_common2 = has_common_genre(templ2->genres);
+                         if (has_common1 && !has_common2) {
+                             return true;
+                         }
+                         if (!has_common1 && has_common2) {
+                             return false;
+                         }
+                         return templ1->genres.size() > templ2->genres.size();
+                     });
 }
 
-std::vector<const InstrumentTemplate *> findSuitableInstruments(const MTrack &track) {
-    std::vector<const InstrumentTemplate *> templates = findInstrumentsForProgram(track);
+std::vector<const InstrumentTemplate *> find_suitable_instruments(const MTrack &track) {
+    std::vector<const InstrumentTemplate *> templates = find_instruments_for_program(track);
     if (templates.empty()) {
         return templates;
     }
 
-    const std::pair<int, int> minMaxPitch = findMinMaxPitch(track);
-    sortInstrumentTemplates(templates, minMaxPitch);
+    const std::pair<int, int> min_max_pitch = find_min_max_pitch(track);
+    sort_instrument_templates(templates, min_max_pitch);
 
     // add empty instrument to show no-instrument option
     if (!templates.empty()) {
@@ -550,92 +551,92 @@ std::vector<const InstrumentTemplate *> findSuitableInstruments(const MTrack &tr
     return templates;
 }
 
-void findInstrumentsForAllTracks(const std::vector<MTrack> &tracks, bool forceReload) {
-    auto &opers = midiImportOperations;
-    auto &instrListOption = opers.data()->trackOpers.msInstrList;
+void find_instruments_for_all_tracks(const std::vector<MTrack> &tracks, bool force_reload) {
+    auto &opers = midi_import_operations;
+    auto &instr_list_option = opers.data()->track_opers.ms_instr_list;
 
-    if (forceReload) {
-        instrListOption.clear();
+    if (force_reload) {
+        instr_list_option.clear();
     }
 
-    if (opers.data()->processingsOfOpenedFile == 0 || forceReload) {
+    if (opers.data()->processings_of_opened_file == 0 || force_reload) {
         // create instrument list on MIDI file opening
         for (const auto &track : tracks) {
-            instrListOption.setValue(track.indexOfOperation, findSuitableInstruments(track));
-            if (!instrListOption.value(track.indexOfOperation).empty()) {
-                const int defaultInstrIndex = 0;
-                opers.data()->trackOpers.msInstrIndex.setDefaultValue(defaultInstrIndex);
+            instr_list_option.set_value(track.index_of_operation, find_suitable_instruments(track));
+            if (!instr_list_option.value(track.index_of_operation).empty()) {
+                const int default_instr_index = 0;
+                opers.data()->track_opers.ms_instr_index.set_default_value(default_instr_index);
             }
         }
     }
 }
 
-void instrumentTemplatesChanged() {
-    const std::vector<std::string> files = midiImportOperations.allMidiFiles();
+void instrument_templates_changed() {
+    const std::vector<std::string> files = midi_import_operations.all_midi_files();
     for (const std::string &file : files) {
-        MidiOperations::CurrentMidiFileSetter s(midiImportOperations, file);
-        MidiOperations::FileData *data = midiImportOperations.data();
+        MidiOperations::CurrentMidiFileSetter s(midi_import_operations, file);
+        MidiOperations::FileData *data = midi_import_operations.data();
         if (data) {
-            findInstrumentsForAllTracks(data->tracks, /* forceReload */ true);
+            find_instruments_for_all_tracks(data->tracks, /* forceReload */ true);
         }
     }
 }
 
-void createInstruments(Score *score, std::vector<MTrack> &tracks) {
-    const auto &opers = midiImportOperations;
-    const auto &instrListOption = opers.data()->trackOpers.msInstrList;
+void create_instruments(Score *score, std::vector<MTrack> &tracks) {
+    const auto &opers = midi_import_operations;
+    const auto &instr_list_option = opers.data()->track_opers.ms_instr_list;
 
     const int ntracks = tracks.size();
     for (int idx = 0; idx < ntracks; ++idx) {
         MTrack &track = tracks[idx];
         Part *part = new Part(score);
 
-        const auto &instrList = instrListOption.value(track.indexOfOperation);
+        const auto &instr_list = instr_list_option.value(track.index_of_operation);
         const InstrumentTemplate *instr = nullptr;
-        if (!instrList.empty()) {
-            const int instrIndex = opers.data()->trackOpers.msInstrIndex.value(track.indexOfOperation);
-            instr = instrList[instrIndex];
+        if (!instr_list.empty()) {
+            const int instr_index = opers.data()->track_opers.ms_instr_index.value(track.index_of_operation);
+            instr = instr_list[instr_index];
             if (instr) {
-                part->initFromInstrTemplate(instr);
+                part->init_from_instr_template(instr);
             }
         }
 
-        if (areNext3OrganStaff(idx, tracks)) {
-            part->setStaves(3);
-        } else if (areNext2GrandStaff(idx, tracks)) {
-            part->setStaves(2);
+        if (are_next3_organ_staff(idx, tracks)) {
+            part->set_staves(3);
+        } else if (are_next2_grand_staff(idx, tracks)) {
+            part->set_staves(2);
         } else {
-            part->setStaves(1);
+            part->set_staves(1);
         }
 
         Staff *staff = part->staff(0);
         if (part->nstaves() == 1) {
-            if (track.mtrack->drumTrack()) {
-                staff->setStaffType(Fraction(0, 1), *StaffType::preset(StaffTypes::PERC_DEFAULT));
+            if (track.mtrack->drum_track()) {
+                staff->set_staff_type(Fraction(0, 1), *StaffType::preset(StaffTypes::PERC_DEFAULT));
                 if (!instr) {
-                    part->instrument()->setDrumset(smDrumset);
+                    part->instrument()->set_drumset(sm_drumset);
                 }
             }
         } else {
             if (!instr) {
-                staff->setBarLineSpan(true);
-                EditStaffBrackets::setBracketType(score, staff->idx(), 0, BracketType::BRACE);
+                staff->set_bar_line_span(true);
+                EditStaffBrackets::set_bracket_type(score, staff->idx(), 0, BracketType::BRACE);
             } else {
-                staff->setBarLineSpan(instr->barlineSpan[0]);
-                EditStaffBrackets::setBracketType(score, staff->idx(), 0, instr->bracket[0]);
+                staff->set_bar_line_span(instr->barline_span[0]);
+                EditStaffBrackets::set_bracket_type(score, staff->idx(), 0, instr->bracket[0]);
             }
-            EditStaffBrackets::setBracketSpan(score, staff->idx(), 0, 2);
+            EditStaffBrackets::set_bracket_span(score, staff->idx(), 0, 2);
         }
 
         if (instr) {
             for (size_t i = 0; i != part->nstaves(); ++i) {
-                if (instr->staffTypePreset) {
+                if (instr->staff_type_preset) {
                     part->staff(i)->init(instr, nullptr, static_cast<int>(i));
-                    part->staff(i)->setStaffType(Fraction(0, 1), *(instr->staffTypePreset));
+                    part->staff(i)->set_staff_type(Fraction(0, 1), *(instr->staff_type_preset));
                 }
                 //                        part->staff(i)->setLines(0, instr->staffLines[i]);
                 //                        part->staff(i)->setSmall(0, instr->smallStaff[i]);
-                part->staff(i)->setDefaultClefType(instr->clefTypes[i]);
+                part->staff(i)->set_default_clef_type(instr->clef_types[i]);
             }
         }
 
@@ -651,29 +652,29 @@ void createInstruments(Score *score, std::vector<MTrack> &tracks) {
         if (track.volumes.size() == 1) {
             for (auto &i : track.volumes) {
                 if (i.first == ReducedFraction(0, 1)) {
-                    part->instrument()->channel(0)->setVolume(i.second);
+                    part->instrument()->channel(0)->set_volume(i.second);
                 }
             }
         }
 
-        score->appendPart(part);
+        score->append_part(part);
     }
 }
 
-muse::String msInstrName(int trackIndex) {
-    const auto &opers = midiImportOperations.data()->trackOpers;
+muse::String ms_instr_name(int track_index) {
+    const auto &opers = midi_import_operations.data()->track_opers;
 
-    const int instrIndex = opers.msInstrIndex.value(trackIndex);
-    const auto &trackInstrList = opers.msInstrList.value(trackIndex);
-    const InstrumentTemplate *instr = (trackInstrList.empty()) ? nullptr : trackInstrList[instrIndex];
+    const int instr_index = opers.ms_instr_index.value(track_index);
+    const auto &track_instr_list = opers.ms_instr_list.value(track_index);
+    const InstrumentTemplate *instr = (track_instr_list.empty()) ? nullptr : track_instr_list[instr_index];
     if (!instr) {
         return muse::String();
     }
 
-    if (!instr->instrumentName.longName().empty()) {
-        return instr->instrumentName.longName();
+    if (!instr->instrument_name.long_name().empty()) {
+        return instr->instrument_name.long_name();
     }
 
-    return instr->trackName;
+    return instr->track_name;
 }
 }} // namespace mu::iex::midi::MidiInstr

@@ -24,15 +24,15 @@
 
 namespace mu::engraving {
 enum class SmuflAnchorId : unsigned char {
-    stemDownNW,
-    stemUpSE,
-    stemDownSW,
-    stemUpNW,
-    cutOutNE,
-    cutOutNW,
-    cutOutSE,
-    cutOutSW,
-    opticalCenter,
+    STEM_DOWN_NW,
+    STEM_UP_SE,
+    STEM_DOWN_SW,
+    STEM_UP_NW,
+    CUT_OUT_NE,
+    CUT_OUT_NW,
+    CUT_OUT_SE,
+    CUT_OUT_SW,
+    OPTICAL_CENTER,
 };
 
 #include "symid_p.h"

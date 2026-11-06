@@ -33,10 +33,10 @@
 #include "log.h"
 #endif
 
-static thread_local std::string s_threadName;
+static thread_local std::string s_thread_name;
 
-void muse::runtime::setThreadName(const std::string &name) {
-    s_threadName = name;
+void muse::runtime::set_thread_name(const std::string &name) {
+    s_thread_name = name;
 #if defined(__linux__) || defined(__FreeBSD__)
     // Set thread name through pthreads to aid debuggers that display such names.
     // Thread names are limited to 16 bytes on Linux, including the
@@ -51,10 +51,10 @@ void muse::runtime::setThreadName(const std::string &name) {
 #endif
 }
 
-const std::string &muse::runtime::threadName() {
-    if (s_threadName.empty()) {
-        static thread_local std::string id = toString(std::this_thread::get_id());
+const std::string &muse::runtime::thread_name() {
+    if (s_thread_name.empty()) {
+        static thread_local std::string id = to_string(std::this_thread::get_id());
         return id;
     }
-    return s_threadName;
+    return s_thread_name;
 }

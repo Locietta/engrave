@@ -39,18 +39,18 @@ using namespace muse::io;
 
 struct Edit {
     enum class Type {
-        Equal,
-        Delete,
-        Insert,
+        EQUAL,
+        DELETE,
+        INSERT,
     };
 
-    Type type = Type::Equal;
+    Type type = Type::EQUAL;
     size_t idx1 = 0;
     size_t idx2 = 0;
 };
 
-static std::vector<std::string_view> splitLines(const ByteArray &data) {
-    const char *buf = data.constChar();
+static std::vector<std::string_view> split_lines(const ByteArray &data) {
+    const char *buf = data.const_char();
     const size_t size = data.size();
 
     std::vector<std::string_view> lines;
@@ -74,7 +74,7 @@ static std::vector<std::string_view> splitLines(const ByteArray &data) {
     return lines;
 }
 
-static std::vector<Edit> computeDiff(const std::vector<std::string_view> &lines1, const std::vector<std::string_view> &lines2) {
+static std::vector<Edit> compute_diff(const std::vector<std::string_view> &lines1, const std::vector<std::string_view> &lines2) {
     const size_t m = lines1.size();
     const size_t n = lines2.size();
 
@@ -95,14 +95,14 @@ static std::vector<Edit> computeDiff(const std::vector<std::string_view> &lines1
 
     while (i > 0 || j > 0) {
         if (i > 0 && j > 0 && lines1[i - 1] == lines2[j - 1]) {
-            edits.push_back({Edit::Type::Equal, i - 1, j - 1});
+            edits.push_back({Edit::Type::EQUAL, i - 1, j - 1});
             --i;
             --j;
         } else if (j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-            edits.push_back({Edit::Type::Insert, 0, j - 1});
+            edits.push_back({Edit::Type::INSERT, 0, j - 1});
             --j;
         } else {
-            edits.push_back({Edit::Type::Delete, i - 1, 0});
+            edits.push_back({Edit::Type::DELETE, i - 1, 0});
             --i;
         }
     }
@@ -111,133 +111,134 @@ static std::vector<Edit> computeDiff(const std::vector<std::string_view> &lines1
     return edits;
 }
 
-bool ScoreComp::saveCompareScore(Score *score, const String &saveName, const String &compareWithLocalPath) {
-    if (!ScoreRW::saveScore(score, saveName)) {
+bool ScoreComp::save_compare_score(Score *score, const String &save_name, const String &compare_with_local_path) {
+    if (!ScoreRW::save_score(score, save_name)) {
         return false;
     }
-    return ScoreComp::compareFiles(ScoreRW::rootPath() + u"/" + compareWithLocalPath, saveName);
+    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, save_name);
 }
 
-bool ScoreComp::saveCompareMimeData(muse::ByteArray mimeData, const muse::String &saveName, const muse::String &compareWithLocalPath) {
-    if (!ScoreRW::saveMimeData(mimeData, saveName)) {
+bool ScoreComp::save_compare_mime_data(muse::ByteArray mime_data, const muse::String &save_name,
+                                       const muse::String &compare_with_local_path) {
+    if (!ScoreRW::save_mime_data(mime_data, save_name)) {
         return false;
     }
-    return ScoreComp::compareFiles(ScoreRW::rootPath() + u"/" + compareWithLocalPath, saveName);
+    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, save_name);
 }
 
-bool ScoreComp::compareFiles(const String &fullPath1, const String &fullPath2) {
+bool ScoreComp::compare_files(const String &full_path1, const String &full_path2) {
     TRACEFUNC;
 
-    RetVal<ByteArray> rv1 = muse::io::fileSystem()->readFile(fullPath1);
+    RetVal<ByteArray> rv1 = muse::io::file_system()->read_file(full_path1);
     if (!rv1.ret) {
-        LOGE() << "Failed to read: " << fullPath1 << ", err: " << rv1.ret.toString();
+        LOGE() << "Failed to read: " << full_path1 << ", err: " << rv1.ret.to_string();
         return false;
     }
 
-    RetVal<ByteArray> rv2 = muse::io::fileSystem()->readFile(fullPath2);
+    RetVal<ByteArray> rv2 = muse::io::file_system()->read_file(full_path2);
     if (!rv2.ret) {
-        LOGE() << "Failed to read: " << fullPath2 << ", err: " << rv2.ret.toString();
+        LOGE() << "Failed to read: " << full_path2 << ", err: " << rv2.ret.to_string();
         return false;
     }
 
-    const std::vector<std::string_view> lines1 = splitLines(rv1.val);
-    const std::vector<std::string_view> lines2 = splitLines(rv2.val);
+    const std::vector<std::string_view> lines1 = split_lines(rv1.val);
+    const std::vector<std::string_view> lines2 = split_lines(rv2.val);
     if (lines1 == lines2) {
         return true;
     }
 
-    ByteArray outputBuf;
-    Buffer buf(&outputBuf);
-    buf.open(IODevice::WriteOnly);
+    ByteArray output_buf;
+    Buffer buf(&output_buf);
+    buf.open(IODevice::WRITE_ONLY);
     TextStream ts(&buf);
 
-    ts << "--- " << fullPath1 << "\n";
-    ts << "+++ " << fullPath2 << "\n";
+    ts << "--- " << full_path1 << "\n";
+    ts << "+++ " << full_path2 << "\n";
 
-    const std::vector<Edit> edits = computeDiff(lines1, lines2);
-    constexpr size_t CTX = 3;
+    const std::vector<Edit> edits = compute_diff(lines1, lines2);
+    constexpr size_t ctx = 3;
     const size_t n = edits.size();
 
     size_t i = 0;
     while (i < n) {
-        if (edits[i].type == Edit::Type::Equal) {
+        if (edits[i].type == Edit::Type::EQUAL) {
             ++i;
             continue;
         }
 
-        const size_t hunkStart = i >= CTX ? i - CTX : 0;
+        const size_t hunk_start = i >= ctx ? i - ctx : 0;
 
         size_t pos = i;
         while (pos < n) {
-            while (pos < n && edits[pos].type != Edit::Type::Equal) {
+            while (pos < n && edits[pos].type != Edit::Type::EQUAL) {
                 ++pos;
             }
-            size_t eqEnd = pos;
-            while (eqEnd < n && edits[eqEnd].type == Edit::Type::Equal) {
-                ++eqEnd;
+            size_t eq_end = pos;
+            while (eq_end < n && edits[eq_end].type == Edit::Type::EQUAL) {
+                ++eq_end;
             }
-            if (eqEnd < n && (eqEnd - pos) < 2 * CTX) {
-                pos = eqEnd;
+            if (eq_end < n && (eq_end - pos) < 2 * ctx) {
+                pos = eq_end;
             } else {
                 break;
             }
         }
 
-        const size_t hunkEnd = std::min(n, pos + CTX);
+        const size_t hunk_end = std::min(n, pos + ctx);
 
         size_t start1 = 0;
         size_t start2 = 0;
         size_t count1 = 0;
         size_t count2 = 0;
-        bool start1Set = false;
-        bool start2Set = false;
-        for (size_t k = hunkStart; k < hunkEnd; ++k) {
+        bool start1_set = false;
+        bool start2_set = false;
+        for (size_t k = hunk_start; k < hunk_end; ++k) {
             const Edit &e = edits[k];
-            if (e.type != Edit::Type::Insert) {
-                if (!start1Set) {
+            if (e.type != Edit::Type::INSERT) {
+                if (!start1_set) {
                     start1 = e.idx1;
-                    start1Set = true;
+                    start1_set = true;
                 }
                 ++count1;
             }
-            if (e.type != Edit::Type::Delete) {
-                if (!start2Set) {
+            if (e.type != Edit::Type::DELETE) {
+                if (!start2_set) {
                     start2 = e.idx2;
-                    start2Set = true;
+                    start2_set = true;
                 }
                 ++count2;
             }
         }
 
-        const size_t headerStart1 = start1Set ? start1 + 1 : 0;
-        const size_t headerStart2 = start2Set ? start2 + 1 : 0;
+        const size_t header_start1 = start1_set ? start1 + 1 : 0;
+        const size_t header_start2 = start2_set ? start2 + 1 : 0;
 
-        ts << "@@ -" << static_cast<uint64_t>(headerStart1);
+        ts << "@@ -" << static_cast<uint64_t>(header_start1);
         if (count1 != 1) {
             ts << "," << static_cast<uint64_t>(count1);
         }
-        ts << " +" << static_cast<uint64_t>(headerStart2);
+        ts << " +" << static_cast<uint64_t>(header_start2);
         if (count2 != 1) {
             ts << "," << static_cast<uint64_t>(count2);
         }
         ts << " @@\n";
 
-        for (size_t k = hunkStart; k < hunkEnd; ++k) {
+        for (size_t k = hunk_start; k < hunk_end; ++k) {
             const Edit &e = edits[k];
-            if (e.type == Edit::Type::Equal) {
+            if (e.type == Edit::Type::EQUAL) {
                 ts << " " << lines1[e.idx1] << "\n";
-            } else if (e.type == Edit::Type::Delete) {
+            } else if (e.type == Edit::Type::DELETE) {
                 ts << "-" << lines1[e.idx1] << "\n";
             } else {
                 ts << "+" << lines2[e.idx2] << "\n";
             }
         }
 
-        i = hunkEnd;
+        i = hunk_end;
     }
 
     ts.flush();
-    std::fwrite(outputBuf.constChar(), 1, outputBuf.size(), stdout);
+    std::fwrite(output_buf.const_char(), 1, output_buf.size(), stdout);
 
     return false;
 }

@@ -35,18 +35,18 @@ class Sticking final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Sticking)
     DECLARE_CLASSOF(ElementType::STICKING)
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
 public:
     Sticking(DummyParentOr<Segment> parent);
 
     Sticking *clone() const override { return new Sticking(*this); }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 };
 } // namespace mu::engraving
 #endif

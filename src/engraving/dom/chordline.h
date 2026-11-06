@@ -49,70 +49,70 @@ public:
 
     ChordLine *clone() const override { return new ChordLine(*this); }
 
-    Chord *chord() const { return (Chord *) (ownershipParent()); }
+    Chord *chord() const { return (Chord *) (ownership_parent()); }
 
-    void setChordLineType(ChordLineType);
+    void set_chord_line_type(ChordLineType);
 
-    ChordLineType chordLineType() const { return chordLineType_; }
+    ChordLineType chord_line_type() const { return chord_line_type_; }
 
-    bool isStraight() const { return straight_; }
+    bool is_straight() const { return straight_; }
 
-    void setStraight(bool straight) { straight_ = straight; }
+    void set_straight(bool straight) { straight_ = straight; }
 
-    bool isWavy() const { return wavy_; }
+    bool is_wavy() const { return wavy_; }
 
-    void setWavy(bool wavy) { wavy_ = wavy; }
+    void set_wavy(bool wavy) { wavy_ = wavy; }
 
-    void setLengthX(double length) { lengthX_ = length; }
+    void set_length_x(double length) { length_x_ = length; }
 
-    double lengthX() const { return lengthX_; }
+    double length_x() const { return length_x_; }
 
-    void setLengthY(double length) { lengthY_ = length; }
+    void set_length_y(double length) { length_y_ = length; }
 
-    double lengthY() const { return lengthY_; }
+    double length_y() const { return length_y_; }
 
-    void setModified(bool m) { modified_ = m; }
+    void set_modified(bool m) { modified_ = m; }
 
     bool modified() const { return modified_; }
 
-    const TranslatableString &chordLineTypeName() const;
+    const TranslatableString &chord_line_type_name() const;
 
     int subtype() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
-    void resetProperty(Pid) override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    void reset_property(Pid) override;
 
-    bool isToTheLeft() const { return chordLineType_ == ChordLineType::PLOP || chordLineType_ == ChordLineType::SCOOP; }
+    bool is_to_the_left() const { return chord_line_type_ == ChordLineType::PLOP || chord_line_type_ == ChordLineType::SCOOP; }
 
-    bool isBelow() const { return chordLineType_ == ChordLineType::SCOOP || chordLineType_ == ChordLineType::FALL; }
+    bool is_below() const { return chord_line_type_ == ChordLineType::SCOOP || chord_line_type_ == ChordLineType::FALL; }
 
-    bool playChordLine() const { return playChordLine_; }
+    bool play_chord_line() const { return play_chord_line_; }
 
-    void setPlayChordLine(bool val) { playChordLine_ = val; }
+    void set_play_chord_line(bool val) { play_chord_line_ = val; }
 
-    void setNote(Note *note);
+    void set_note(Note *note);
 
     Note *note() const { return note_; }
 
-    SymId waveSym() const;
+    SymId wave_sym() const;
 
     // Physical drawing-unit sources, independent of the derived layout cache.
-    bool hasSourceOffsets() const { return hasSourceOffsets_; }
+    bool has_source_offsets() const { return has_source_offsets_; }
 
-    bool hasDefaultPath() const { return !modified_ && (!hasSourceOffsets_ || sourceOffsets_ == std::array<PointF, 4>{}); }
+    bool has_default_path() const { return !modified_ && (!has_source_offsets_ || source_offsets_ == std::array<PointF, 4>{}); }
 
-    const std::array<PointF, 4> &sourceOffsets() const { return sourceOffsets_; }
+    const std::array<PointF, 4> &source_offsets() const { return source_offsets_; }
 
-    void readSourceOffsets(const std::array<PointF, 4> &xml, double unit);
-    std::array<PointF, 4> xmlSourceOffsets() const;
-    PainterPath sourceOffsetPath(double spatium, double mag) const;
-    void spatiumChanged(double oldValue, double newValue) override;
-    void localSpatiumChanged(double oldValue, double newValue) override;
+    void read_source_offsets(const std::array<PointF, 4> &xml, double unit);
+    std::array<PointF, 4> xml_source_offsets() const;
+    PainterPath source_offset_path(double spatium, double mag) const;
+    void spatium_changed(double old_value, double new_value) override;
+    void local_spatium_changed(double old_value, double new_value) override;
 
-    static constexpr std::array<Pid, 8> appearanceProperties{
+    static constexpr std::array<Pid, 8> appearance_properties{
         Pid::COLOR,           Pid::VISIBLE, Pid::Z, Pid::SIZE_SPATIUM_DEPENDENT, Pid::CHORD_LINE_TYPE, Pid::CHORD_LINE_STRAIGHT,
         Pid::CHORD_LINE_WAVY, Pid::PATH};
 
@@ -122,13 +122,13 @@ public:
         bool linked;
         bool offsets;
         bool modified;
-        double lengthX;
-        double lengthY;
+        double length_x;
+        double length_y;
         std::array<PointF, 4> controls;
     };
 
-    AppearanceState appearanceState() const;
-    void restoreAppearance(const AppearanceState &);
+    AppearanceState appearance_state() const;
+    void restore_appearance(const AppearanceState &);
 
     struct LayoutData : public EngravingItem::LayoutData {
         muse::draw::PainterPath path;
@@ -142,19 +142,19 @@ private:
     ChordLine(DummyParentOr<Chord> parent);
     ChordLine(const ChordLine &);
 
-    std::array<PointF, 4> offsetPoints(const std::array<PointF, 4> &, double spatium, double mag) const;
-    void scaleOffsets(double oldValue, double newValue);
-    bool hasSourceOffsets_ = false;
-    std::array<PointF, 4> sourceOffsets_{};
+    std::array<PointF, 4> offset_points(const std::array<PointF, 4> &, double spatium, double mag) const;
+    void scale_offsets(double old_value, double new_value);
+    bool has_source_offsets_ = false;
+    std::array<PointF, 4> source_offsets_{};
 
     bool straight_ = false;
     bool wavy_ = false;
 
-    ChordLineType chordLineType_ = ChordLineType::NOTYPE;
+    ChordLineType chord_line_type_ = ChordLineType::NOTYPE;
     bool modified_ = false;
-    double lengthX_ = 0.0;
-    double lengthY_ = 0.0;
-    bool playChordLine_ = true;
+    double length_x_ = 0.0;
+    double length_y_ = 0.0;
+    bool play_chord_line_ = true;
     Note *note_ = nullptr;
 };
 } // namespace mu::engraving

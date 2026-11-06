@@ -39,28 +39,28 @@ class MidiNote {
 public:
     int pitch = 0;
     int velo = 0;
-    ReducedFraction offTime;
+    ReducedFraction off_time;
     engraving::Tie *tie = nullptr;
     bool staccato = false;
-    bool isInTuplet = false;
+    bool is_in_tuplet = false;
     // for offTime quantization
     std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator tuplet;
     // for notation simplification - final quant value
-    ReducedFraction offTimeQuant = ReducedFraction(-1, 1); // invalid by default
+    ReducedFraction off_time_quant = ReducedFraction(-1, 1); // invalid by default
     // to assign lyrics
-    ReducedFraction origOnTime;
+    ReducedFraction orig_on_time;
 };
 
 class MidiChord {
 public:
     int voice = 0;
     std::vector<MidiNote> notes;
-    bool isInTuplet = false;
-    int barIndex = -1;
+    bool is_in_tuplet = false;
+    int bar_index = -1;
     // for onTime quantization
     std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator tuplet;
 
-    bool isStaccato() const {
+    bool is_staccato() const {
         for (const auto &note : notes) {
             if (note.staccato) {
                 return true;
@@ -73,24 +73,24 @@ public:
 class MTrack;
 
 namespace MChord {
-bool isGrandStaffProgram(GM1Program);
+bool is_grand_staff_program(GM1Program);
 
-std::multimap<ReducedFraction, MidiChord>::iterator findFirstChordInRange(std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                          const ReducedFraction &startRangeTick,
-                                                                          const ReducedFraction &endRangeTick);
+std::multimap<ReducedFraction, MidiChord>::iterator find_first_chord_in_range(std::multimap<ReducedFraction, MidiChord> &chords,
+                                                                              const ReducedFraction &start_range_tick,
+                                                                              const ReducedFraction &end_range_tick);
 
-std::multimap<ReducedFraction, MidiChord>::const_iterator findFirstChordInRange(const std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                                const ReducedFraction &startRangeTick,
-                                                                                const ReducedFraction &endRangeTick);
+std::multimap<ReducedFraction, MidiChord>::const_iterator find_first_chord_in_range(const std::multimap<ReducedFraction, MidiChord> &chords,
+                                                                                    const ReducedFraction &start_range_tick,
+                                                                                    const ReducedFraction &end_range_tick);
 
 template <typename Iter>
-Iter findFirstChordInRange(const ReducedFraction &startRangeTick, const ReducedFraction &endRangeTick, const Iter &startChordIt,
-                           const Iter &endChordIt) {
-    auto it = startChordIt;
-    for (; it != endChordIt; ++it) {
-        if (it->first >= startRangeTick) {
-            if (it->first >= endRangeTick) {
-                it = endChordIt;
+Iter find_first_chord_in_range(const ReducedFraction &start_range_tick, const ReducedFraction &end_range_tick, const Iter &start_chord_it,
+                               const Iter &end_chord_it) {
+    auto it = start_chord_it;
+    for (; it != end_chord_it; ++it) {
+        if (it->first >= start_range_tick) {
+            if (it->first >= end_range_tick) {
+                it = end_chord_it;
             }
             break;
         }
@@ -99,53 +99,53 @@ Iter findFirstChordInRange(const ReducedFraction &startRangeTick, const ReducedF
 }
 
 template <typename Iter>
-Iter findEndChordInRange(const ReducedFraction &endRangeTick, const Iter &startChordIt, const Iter &endChordIt) {
-    auto it = startChordIt;
-    for (; it != endChordIt; ++it) {
-        if (it->first >= endRangeTick) {
+Iter find_end_chord_in_range(const ReducedFraction &end_range_tick, const Iter &start_chord_it, const Iter &end_chord_it) {
+    auto it = start_chord_it;
+    for (; it != end_chord_it; ++it) {
+        if (it->first >= end_range_tick) {
             break;
         }
     }
     return it;
 }
 
-ReducedFraction minNoteOffTime(const std::vector<MidiNote> &notes);
-ReducedFraction maxNoteOffTime(const std::vector<MidiNote> &notes);
-ReducedFraction minNoteLen(const std::pair<const ReducedFraction, MidiChord> &chord);
-ReducedFraction maxNoteLen(const std::pair<const ReducedFraction, MidiChord> &chord);
+ReducedFraction min_note_off_time(const std::vector<MidiNote> &notes);
+ReducedFraction max_note_off_time(const std::vector<MidiNote> &notes);
+ReducedFraction min_note_len(const std::pair<const ReducedFraction, MidiChord> &chord);
+ReducedFraction max_note_len(const std::pair<const ReducedFraction, MidiChord> &chord);
 
-const ReducedFraction &minAllowedDuration();
-ReducedFraction findMinDuration(const ReducedFraction &onTime, const std::vector<MidiChord> &midiChords, const ReducedFraction &length);
-void sortNotesByPitch(std::multimap<ReducedFraction, MidiChord> &chords);
-void sortNotesByLength(std::multimap<ReducedFraction, MidiChord> &chords);
+const ReducedFraction &min_allowed_duration();
+ReducedFraction find_min_duration(const ReducedFraction &on_time, const std::vector<MidiChord> &midi_chords, const ReducedFraction &length);
+void sort_notes_by_pitch(std::multimap<ReducedFraction, MidiChord> &chords);
+void sort_notes_by_length(std::multimap<ReducedFraction, MidiChord> &chords);
 
-void collectChords(std::multimap<int, MTrack> &tracks, const ReducedFraction &humanTolCoeff, const ReducedFraction &nonHumanTolCoeff);
+void collect_chords(std::multimap<int, MTrack> &tracks, const ReducedFraction &human_tol_coeff, const ReducedFraction &non_human_tol_coeff);
 
-void collectChords(MTrack &track, const ReducedFraction &humanTolCoeff, const ReducedFraction &nonHumanTolCoeff);
+void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const ReducedFraction &non_human_tol_coeff);
 
-void removeOverlappingNotes(std::multimap<int, MTrack> &tracks);
-void mergeChordsWithEqualOnTimeAndVoice(std::multimap<int, MTrack> &tracks);
-void splitUnequalChords(std::multimap<int, MTrack> &tracks);
-int chordAveragePitch(const std::vector<MidiNote> &notes, int beg, int end);
-int chordAveragePitch(const std::vector<MidiNote> &notes);
+void remove_overlapping_notes(std::multimap<int, MTrack> &tracks);
+void merge_chords_with_equal_on_time_and_voice(std::multimap<int, MTrack> &tracks);
+void split_unequal_chords(std::multimap<int, MTrack> &tracks);
+int chord_average_pitch(const std::vector<MidiNote> &notes, int beg, int end);
+int chord_average_pitch(const std::vector<MidiNote> &notes);
 
-ReducedFraction findMaxChordLength(const std::multimap<ReducedFraction, MidiChord> &chords);
+ReducedFraction find_max_chord_length(const std::multimap<ReducedFraction, MidiChord> &chords);
 
 std::vector<std::multimap<ReducedFraction, MidiChord>::const_iterator>
-findChordsForTimeRange(int voice, const ReducedFraction &onTime, const ReducedFraction &offTime,
-                       const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &maxChordLength);
+find_chords_for_time_range(int voice, const ReducedFraction &on_time, const ReducedFraction &off_time,
+                           const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &max_chord_length);
 
-void setBarIndexes(std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basicQuant, const ReducedFraction &lastTick,
-                   const engraving::TimeSigMap *sigmap);
+void set_bar_indexes(std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
+                     const ReducedFraction &last_tick, const engraving::TimeSigMap *sigmap);
 
 #ifndef NDEBUG
 
-bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord> &chords);
-bool areBarIndexesSuccessive(const std::multimap<ReducedFraction, MidiChord> &chords);
-bool areNotesLongEnough(const std::multimap<ReducedFraction, MidiChord> &chords);
-bool isLastTickValid(const ReducedFraction &lastTick, const std::multimap<ReducedFraction, MidiChord> &chords);
-bool isLastTickValid(const ReducedFraction &lastTick, const std::multimap<int, MTrack> &tracks);
-bool areBarIndexesSet(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool are_bar_indexes_successive(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool are_notes_long_enough(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<ReducedFraction, MidiChord> &chords);
+bool is_last_tick_valid(const ReducedFraction &last_tick, const std::multimap<int, MTrack> &tracks);
+bool are_bar_indexes_set(const std::multimap<ReducedFraction, MidiChord> &chords);
 
 #endif
 } // namespace MChord

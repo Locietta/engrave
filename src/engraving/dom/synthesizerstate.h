@@ -44,7 +44,7 @@ struct IdValue {
 
     IdValue() {}
 
-    IdValue(int _id, const muse::String &_data) : id(_id), data(_data) {}
+    IdValue(int input_id, const muse::String &input_data) : id(input_id), data(input_data) {}
 };
 
 //---------------------------------------------------------
@@ -57,11 +57,11 @@ class SynthesizerGroup : public std::list<IdValue> {
 public:
     const muse::String &name() const { return name_; }
 
-    void setName(const muse::String &s) { name_ = s; }
+    void set_name(const muse::String &s) { name_ = s; }
 
     SynthesizerGroup() : std::list<IdValue>() {}
 
-    SynthesizerGroup(const char *n, std::list<IdValue> l) : std::list<IdValue>(l), name_(muse::String::fromUtf8(n)) {}
+    SynthesizerGroup(const char *n, std::list<IdValue> l) : std::list<IdValue>(l), name_(muse::String::from_utf8(n)) {}
 
 private:
     muse::String name_;
@@ -82,17 +82,17 @@ public:
     void write(XmlWriter &, bool force = false) const;
     void read(XmlReader &);
     SynthesizerGroup group(const muse::String &name) const;
-    bool isDefaultSynthSoundfont();
-    int ccToUse() const;
+    bool is_default_synth_soundfont();
+    int cc_to_use() const;
     int method() const;
 
-    bool isDefault() const { return isDefault_; }
+    bool is_default() const { return is_default_; }
 
-    void setIsDefault(bool val) { isDefault_ = val; }
+    void set_is_default(bool val) { is_default_ = val; }
 
 private:
 
-    bool isDefault_ = true;
+    bool is_default_ = true;
 };
 } // namespace mu::engraving
 #endif

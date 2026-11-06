@@ -33,29 +33,29 @@
 namespace muse::draw {
 class PainterPath {
 public:
-    enum class ElementType { MoveToElement, LineToElement, CurveToElement, CurveToDataElement };
+    enum class ElementType { MOVE_TO_ELEMENT, LINE_TO_ELEMENT, CURVE_TO_ELEMENT, CURVE_TO_DATA_ELEMENT };
 
-    enum class FillRule { OddEvenFill, WindingFill };
+    enum class FillRule { ODD_EVEN_FILL, WINDING_FILL };
 
     class Element {
     public:
         double x = 0.0;
         double y = 0.0;
-        ElementType type = ElementType::MoveToElement;
+        ElementType type = ElementType::MOVE_TO_ELEMENT;
 
         Element() {}
 
         Element(double x, double y, ElementType type) : x(x), y(y), type(type) {}
 
-        bool isMoveTo() const { return type == ElementType::MoveToElement; }
+        bool is_move_to() const { return type == ElementType::MOVE_TO_ELEMENT; }
 
-        bool isLineTo() const { return type == ElementType::LineToElement; }
+        bool is_line_to() const { return type == ElementType::LINE_TO_ELEMENT; }
 
-        bool isCurveTo() const { return type == ElementType::CurveToElement; }
+        bool is_curve_to() const { return type == ElementType::CURVE_TO_ELEMENT; }
 
         operator PointF() const { return PointF(x, y); }
 
-        bool operator==(const Element &e) const { return RealIsEqual(x, e.x) && RealIsEqual(y, e.y) && type == e.type; }
+        bool operator==(const Element &e) const { return real_is_equal(x, e.x) && real_is_equal(y, e.y) && type == e.type; }
 
         inline bool operator!=(const Element &e) const { return !operator==(e); }
     };
@@ -66,88 +66,88 @@ public:
 
     bool operator!=(const PainterPath &other) const { return !operator==(other); }
 
-    void moveTo(const PointF &p);
+    void move_to(const PointF &p);
 
-    inline void moveTo(double x, double y) { moveTo(PointF(x, y)); }
+    inline void move_to(double x, double y) { move_to(PointF(x, y)); }
 
-    void lineTo(const PointF &p);
+    void line_to(const PointF &p);
 
-    inline void lineTo(double x, double y) { lineTo(PointF(x, y)); }
+    inline void line_to(double x, double y) { line_to(PointF(x, y)); }
 
-    void cubicTo(const PointF &ctrlPt1, const PointF &ctrlPt2, const PointF &endPt);
+    void cubic_to(const PointF &ctrl_pt1, const PointF &ctrl_pt2, const PointF &end_pt);
 
-    inline void cubicTo(double ctrlPt1x, double ctrlPt1y, double ctrlPt2x, double ctrlPt2y, double endPtx, double endPty) {
-        cubicTo(PointF(ctrlPt1x, ctrlPt1y), PointF(ctrlPt2x, ctrlPt2y), PointF(endPtx, endPty));
+    inline void cubic_to(double ctrl_pt1x, double ctrl_pt1y, double ctrl_pt2x, double ctrl_pt2y, double end_ptx, double end_pty) {
+        cubic_to(PointF(ctrl_pt1x, ctrl_pt1y), PointF(ctrl_pt2x, ctrl_pt2y), PointF(end_ptx, end_pty));
     }
 
     void translate(const PointF &offset);
     void translate(double dx, double dy);
 
-    RectF boundingRect() const;
+    RectF bounding_rect() const;
 
-    bool isEmpty() const;
-    size_t elementCount() const;
-    PainterPath::Element elementAt(size_t i) const;
-    void addRect(const RectF &r);
+    bool is_empty() const;
+    size_t element_count() const;
+    PainterPath::Element element_at(size_t i) const;
+    void add_rect(const RectF &r);
 
-    inline void addRect(double x, double y, double w, double h) { addRect(RectF(x, y, w, h)); }
+    inline void add_rect(double x, double y, double w, double h) { add_rect(RectF(x, y, w, h)); }
 
-    void addEllipse(const RectF &boundingRect);
+    void add_ellipse(const RectF &bounding_rect);
 
-    void addRoundedRect(const RectF &rect, double xRadius, double yRadius);
+    void add_rounded_rect(const RectF &rect, double x_radius, double y_radius);
 
-    void arcMoveTo(const RectF &rect, double angle);
+    void arc_move_to(const RectF &rect, double angle);
 
-    inline void arcMoveTo(double x, double y, double w, double h, double angle) { arcMoveTo(RectF(x, y, w, h), angle); }
+    inline void arc_move_to(double x, double y, double w, double h, double angle) { arc_move_to(RectF(x, y, w, h), angle); }
 
-    void arcTo(const RectF &rect, double startAngle, double sweepLength);
+    void arc_to(const RectF &rect, double start_angle, double sweep_length);
 
-    inline void arcTo(double x, double y, double w, double h, double startAngle, double arcLength) {
-        arcTo(RectF(x, y, w, h), startAngle, arcLength);
+    inline void arc_to(double x, double y, double w, double h, double start_angle, double arc_length) {
+        arc_to(RectF(x, y, w, h), start_angle, arc_length);
     }
 
-    void closeSubpath();
+    void close_subpath();
 
-    PainterPath::FillRule fillRule() const;
-    void setFillRule(PainterPath::FillRule fillRule);
+    PainterPath::FillRule fill_rule() const;
+    void set_fill_rule(PainterPath::FillRule fill_rule);
 
 
 private:
 
-    void ensureData();
+    void ensure_data();
 
-    void computeBoundingRect() const;
+    void compute_bounding_rect() const;
 
-    inline void maybeMoveTo() {
-        if (requireMoveTo_) {
+    inline void maybe_move_to() {
+        if (require_move_to_) {
             Element e = elements_.back();
-            e.type = ElementType::MoveToElement;
+            e.type = ElementType::MOVE_TO_ELEMENT;
             elements_.push_back(e);
-            requireMoveTo_ = false;
+            require_move_to_ = false;
         }
     }
 
-    inline bool isClosed() const {
-        const PainterPath::Element &first = elements_.at(cStart_);
+    inline bool is_closed() const {
+        const PainterPath::Element &first = elements_.at(c_start_);
         const PainterPath::Element &last = elements_.back();
         return first.x == last.x && first.y == last.y;
     }
 
-    static inline bool isValidCoord(double c) { return std::isfinite(c) && std::fabs(c) < 1e128; }
+    static inline bool is_valid_coord(double c) { return std::isfinite(c) && std::fabs(c) < 1e128; }
 
-    static bool hasValidCoords(const PointF &p);
-    static bool hasValidCoords(const RectF &r);
+    static bool has_valid_coords(const PointF &p);
+    static bool has_valid_coords(const RectF &r);
 
-    static RectF painterpathBezierExtrema(const Bezier &b);
+    static RectF painterpath_bezier_extrema(const Bezier &b);
 
-    void setDirty();
+    void set_dirty();
 
-    int cStart_ = 0;
+    int c_start_ = 0;
     mutable RectF bounds_;
-    bool requireMoveTo_ = false;
-    mutable bool dirtyBounds_ = false;
+    bool require_move_to_ = false;
+    mutable bool dirty_bounds_ = false;
     bool convex_ = false;
-    FillRule fillRule_ = FillRule::OddEvenFill;
+    FillRule fill_rule_ = FillRule::ODD_EVEN_FILL;
 
     std::vector<Element> elements_;
 
@@ -155,11 +155,11 @@ private:
 };
 
 inline void dump(const PainterPath &p, std::stringstream &ss) {
-    ss << "bbox: " << muse::dump(p.boundingRect()) << "\n"
-       << "fillRule: " << int(p.fillRule()) << "\n"
-       << "elements: " << p.elementCount() << "\n";
-    for (size_t i = 0; i < p.elementCount(); ++i) {
-        PainterPath::Element e = p.elementAt(i);
+    ss << "bbox: " << muse::dump(p.bounding_rect()) << "\n"
+       << "fillRule: " << int(p.fill_rule()) << "\n"
+       << "elements: " << p.element_count() << "\n";
+    for (size_t i = 0; i < p.element_count(); ++i) {
+        PainterPath::Element e = p.element_at(i);
         ss << " type: " << int(e.type) << ", x: " << e.x << ", y: " << e.y << "\n";
     }
 }

@@ -42,11 +42,11 @@ void split_simple(const std::string &str, std::vector<std::string> &out, const s
 
     std::size_t current, previous = 0;
     current = str.find(delim);
-    std::size_t delimLen = delim.length();
+    std::size_t delim_len = delim.length();
 
     while (current != std::string::npos) {
         out.push_back(str.substr(previous, current - previous));
-        previous = current + delimLen;
+        previous = current + delim_len;
         current = str.find(delim, previous);
     }
     out.push_back(str.substr(previous, current - previous));
@@ -54,30 +54,30 @@ void split_simple(const std::string &str, std::vector<std::string> &out, const s
 
 //! Split that handles an escape character, which causes the following escape or separator to be emitted verbatim.
 void split_handle_escape(const std::string &str, std::vector<std::string> &out, const std::string &delim, const std::string &esc) {
-    const size_t delimLen = delim.size();
-    const size_t escLen = esc.size();
+    const size_t delim_len = delim.size();
+    const size_t esc_len = esc.size();
     std::string current;
 
     for (size_t i = 0; i < str.size();) {
-        if (escLen > 0 && str.compare(i, escLen, esc) == 0) {
+        if (esc_len > 0 && str.compare(i, esc_len, esc) == 0) {
             // Escaped sequence: drop the escape, then emit the following escape
             // or separator token literally (mirrors what join() produced). Any
             // other (or dangling) escape consumes a single following character.
-            i += escLen;
-            if (str.compare(i, escLen, esc) == 0) {
+            i += esc_len;
+            if (str.compare(i, esc_len, esc) == 0) {
                 current += esc;
-                i += escLen;
-            } else if (str.compare(i, delimLen, delim) == 0) {
+                i += esc_len;
+            } else if (str.compare(i, delim_len, delim) == 0) {
                 current += delim;
-                i += delimLen;
+                i += delim_len;
             } else if (i < str.size()) {
                 current += str[i];
                 ++i;
             }
-        } else if (delimLen > 0 && str.compare(i, delimLen, delim) == 0) {
+        } else if (delim_len > 0 && str.compare(i, delim_len, delim) == 0) {
             out.push_back(current);
             current.clear();
-            i += delimLen;
+            i += delim_len;
         } else {
             current += str[i];
             ++i;
@@ -157,19 +157,19 @@ void muse::strings::trim(std::string &s) {
     rtrim(s);
 }
 
-std::string muse::strings::toLower(const std::string &source) {
+std::string muse::strings::to_lower(const std::string &source) {
     std::string str = source;
     std::for_each(str.begin(), str.end(), [](char &c) { c = static_cast<char>(std::tolower(static_cast<unsigned char>(c))); });
     return str;
 }
 
-std::string muse::strings::toUpper(const std::string &source) {
+std::string muse::strings::to_upper(const std::string &source) {
     std::string str = source;
     std::for_each(str.begin(), str.end(), [](char &c) { c = static_cast<char>(std::toupper(static_cast<unsigned char>(c))); });
     return str;
 }
 
-bool muse::strings::startsWith(const std::string &str, const std::string &start) {
+bool muse::strings::starts_with(const std::string &str, const std::string &start) {
     if (str.size() < start.size()) {
         return false;
     }
@@ -183,7 +183,7 @@ bool muse::strings::startsWith(const std::string &str, const std::string &start)
     return true;
 }
 
-bool muse::strings::startsWith(const std::string &str, const std::string_view &start) {
+bool muse::strings::starts_with(const std::string &str, const std::string_view &start) {
     if (str.size() < start.size()) {
         return false;
     }
@@ -197,9 +197,9 @@ bool muse::strings::startsWith(const std::string &str, const std::string_view &s
     return true;
 }
 
-bool muse::strings::startsWith(const std::string &str, const char *start) { return startsWith(str, std::string_view(start)); }
+bool muse::strings::starts_with(const std::string &str, const char *start) { return starts_with(str, std::string_view(start)); }
 
-bool muse::strings::endsWith(const std::string &str, const std::string &ending) {
+bool muse::strings::ends_with(const std::string &str, const std::string &ending) {
     if (ending.size() > str.size()) {
         return false;
     }
@@ -207,7 +207,7 @@ bool muse::strings::endsWith(const std::string &str, const std::string &ending) 
     return ss == ending;
 }
 
-bool muse::strings::endsWith(const std::string &str, const std::string_view &ending) {
+bool muse::strings::ends_with(const std::string &str, const std::string_view &ending) {
     if (ending.size() > str.size()) {
         return false;
     }
@@ -215,9 +215,9 @@ bool muse::strings::endsWith(const std::string &str, const std::string_view &end
     return ss == ending;
 }
 
-bool muse::strings::endsWith(const std::string &str, const char *end) { return endsWith(str, std::string_view(end)); }
+bool muse::strings::ends_with(const std::string &str, const char *end) { return ends_with(str, std::string_view(end)); }
 
-std::string muse::strings::leftJustified(const std::string &val, size_t width) {
+std::string muse::strings::left_justified(const std::string &val, size_t width) {
     std::string str;
     str.resize(width, ' ');
     size_t length = width < val.size() ? width : val.size();
@@ -227,8 +227,8 @@ std::string muse::strings::leftJustified(const std::string &val, size_t width) {
     return str;
 }
 
-bool muse::strings::lessThanCaseInsensitive(const std::string &lhs, const std::string &rhs) {
-    int cmp = toLower(lhs).compare(toLower(rhs));
+bool muse::strings::less_than_case_insensitive(const std::string &lhs, const std::string &rhs) {
+    int cmp = to_lower(lhs).compare(to_lower(rhs));
     if (cmp == 0) {
         return lhs < rhs;
     }
@@ -236,16 +236,16 @@ bool muse::strings::lessThanCaseInsensitive(const std::string &lhs, const std::s
     return cmp < 0;
 }
 
-bool muse::strings::lessThanCaseInsensitive(const String &lhs, const String &rhs) {
-    String lhsLower = lhs.toLower(), rhsLower = rhs.toLower();
-    if (lhsLower == rhsLower) {
+bool muse::strings::less_than_case_insensitive(const String &lhs, const String &rhs) {
+    String lhs_lower = lhs.to_lower(), rhs_lower = rhs.to_lower();
+    if (lhs_lower == rhs_lower) {
         return lhs < rhs;
     }
 
-    return lhsLower < rhsLower;
+    return lhs_lower < rhs_lower;
 }
 
-size_t muse::strings::levenshteinDistance(const std::string &s1, const std::string &s2) {
+size_t muse::strings::levenshtein_distance(const std::string &s1, const std::string &s2) {
     size_t N1 = s1.length();
     size_t N2 = s2.length();
     size_t i, j;

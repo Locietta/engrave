@@ -25,9 +25,9 @@
 #include "number.h"
 
 namespace muse {
-using secs_t = number_t<double>;
-using msecs_t = number_t<int64_t>;
-using usecs_t = number_t<int64_t>;
+using secs_t = NumberT<double>;
+using msecs_t = NumberT<int64_t>;
+using usecs_t = NumberT<int64_t>;
 
 inline secs_t msecs_to_secs(msecs_t msecs) { return secs_t(msecs.raw() / 1000.0); }
 

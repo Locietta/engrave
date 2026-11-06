@@ -41,10 +41,10 @@ public:
     KeyList() {}
 
     KeySigEvent key(int tick) const;
-    KeySigEvent prevKey(int tick) const;
-    void setKey(int tick, KeySigEvent);
-    int nextKeyTick(int tick) const;
-    int currentKeyTick(int tick) const;
+    KeySigEvent prev_key(int tick) const;
+    void set_key(int tick, KeySigEvent);
+    int next_key_tick(int tick) const;
+    int current_key_tick(int tick) const;
 };
 } // namespace mu::engraving
 

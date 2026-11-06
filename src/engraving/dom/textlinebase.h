@@ -45,42 +45,42 @@ public:
     TextLineBaseSegment(const TextLineBaseSegment &);
     ~TextLineBaseSegment();
 
-    TextLineBase *textLineBase() const { return (TextLineBase *) spanner(); }
+    TextLineBase *text_line_base() const { return (TextLineBase *) spanner(); }
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
-    void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
+    void spatium_changed(double /*oldValue*/, double /*newValue*/) override;
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 
-    bool setProperty(Pid id, const PropertyValue &v) override;
+    bool set_property(Pid id, const PropertyValue &v) override;
 
-    bool twoLines() const { return twoLines_; }
+    bool two_lines() const { return two_lines_; }
 
-    void setTwoLines(bool val) { twoLines_ = val; }
+    void set_two_lines(bool val) { two_lines_ = val; }
 
     Text *text() const { return text_; }
 
-    Text *endText() const { return endText_; }
+    Text *end_text() const { return end_text_; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         std::array<PointF, 6> points;
-        PolygonF joinedHairpin = PolygonF();
-        PolygonF beginArrow = PolygonF();
-        PolygonF endArrow = PolygonF();
+        PolygonF joined_hairpin = PolygonF();
+        PolygonF begin_arrow = PolygonF();
+        PolygonF end_arrow = PolygonF();
         int npoints = 0;
-        double lineLength = 0;
+        double line_length = 0;
     };
     DECLARE_LAYOUTDATA_METHODS(TextLineBaseSegment)
 
-    static RectF boundingBoxOfLine(const PointF &p1, const PointF &p2, double lw2, bool isDottedLine);
+    static RectF bounding_box_of_line(const PointF &p1, const PointF &p2, double lw2, bool is_dotted_line);
 
 protected:
 
     Text *text_ = nullptr;
-    Text *endText_ = nullptr;
+    Text *end_text_ = nullptr;
 
-    bool twoLines_ = false;
+    bool two_lines_ = false;
 };
 
 //---------------------------------------------------------
@@ -90,67 +90,67 @@ protected:
 class TextLineBase : public SLine {
     OBJECT_ALLOCATOR(engraving, TextLineBase)
 
-    M_PROPERTY(bool, lineVisible, setLineVisible)
-    M_PROPERTY2(HookType, beginHookType, setBeginHookType, HookType::NONE)
-    M_PROPERTY2(HookType, endHookType, setEndHookType, HookType::NONE)
-    M_PROPERTY(Spatium, beginHookHeight, setBeginHookHeight)
-    M_PROPERTY(Spatium, endHookHeight, setEndHookHeight)
-    M_PROPERTY(Spatium, beginLineArrowHeight, setBeginLineArrowHeight)
-    M_PROPERTY(Spatium, beginLineArrowWidth, setBeginLineArrowWidth)
-    M_PROPERTY(Spatium, beginFilledArrowHeight, setBeginFilledArrowHeight)
-    M_PROPERTY(Spatium, beginFilledArrowWidth, setBeginFilledArrowWidth)
-    M_PROPERTY(Spatium, endLineArrowHeight, setEndLineArrowHeight)
-    M_PROPERTY(Spatium, endLineArrowWidth, setEndLineArrowWidth)
-    M_PROPERTY(Spatium, endFilledArrowHeight, setEndFilledArrowHeight)
-    M_PROPERTY(Spatium, endFilledArrowWidth, setEndFilledArrowWidth)
-    M_PROPERTY(Spatium, gapBetweenTextAndLine, setGapBetweenTextAndLine)
+    M_PROPERTY(bool, line_visible, set_line_visible)
+    M_PROPERTY2(HookType, begin_hook_type, set_begin_hook_type, HookType::NONE)
+    M_PROPERTY2(HookType, end_hook_type, set_end_hook_type, HookType::NONE)
+    M_PROPERTY(Spatium, begin_hook_height, set_begin_hook_height)
+    M_PROPERTY(Spatium, end_hook_height, set_end_hook_height)
+    M_PROPERTY(Spatium, begin_line_arrow_height, set_begin_line_arrow_height)
+    M_PROPERTY(Spatium, begin_line_arrow_width, set_begin_line_arrow_width)
+    M_PROPERTY(Spatium, begin_filled_arrow_height, set_begin_filled_arrow_height)
+    M_PROPERTY(Spatium, begin_filled_arrow_width, set_begin_filled_arrow_width)
+    M_PROPERTY(Spatium, end_line_arrow_height, set_end_line_arrow_height)
+    M_PROPERTY(Spatium, end_line_arrow_width, set_end_line_arrow_width)
+    M_PROPERTY(Spatium, end_filled_arrow_height, set_end_filled_arrow_height)
+    M_PROPERTY(Spatium, end_filled_arrow_width, set_end_filled_arrow_width)
+    M_PROPERTY(Spatium, gap_between_text_and_line, set_gap_between_text_and_line)
 
-    M_PROPERTY2(TextPlace, beginTextPlace, setBeginTextPlace, TextPlace::AUTO)
-    M_PROPERTY(String, beginText, setBeginText)
-    M_PROPERTY(Align, beginTextAlign, setBeginTextAlign)
-    M_PROPERTY(AlignH, beginTextPosition, setBeginTextPosition)
-    M_PROPERTY(String, beginFontFamily, setBeginFontFamily)
-    M_PROPERTY(double, beginFontSize, setBeginFontSize)
-    M_PROPERTY(FontStyle, beginFontStyle, setBeginFontStyle)
-    M_PROPERTY2(double, beginTextMusicalSymbolsScale, setBeginTextMusicalSymbolsScale, 1.0)
-    M_PROPERTY2(double, beginTextMusicSymbolsSize, setBeginTextMusicSymbolsSize, 12.0)
-    M_PROPERTY(PointF, beginTextOffset, setBeginTextOffset)
+    M_PROPERTY2(TextPlace, begin_text_place, set_begin_text_place, TextPlace::AUTO)
+    M_PROPERTY(String, begin_text, set_begin_text)
+    M_PROPERTY(Align, begin_text_align, set_begin_text_align)
+    M_PROPERTY(AlignH, begin_text_position, set_begin_text_position)
+    M_PROPERTY(String, begin_font_family, set_begin_font_family)
+    M_PROPERTY(double, begin_font_size, set_begin_font_size)
+    M_PROPERTY(FontStyle, begin_font_style, set_begin_font_style)
+    M_PROPERTY2(double, begin_text_musical_symbols_scale, set_begin_text_musical_symbols_scale, 1.0)
+    M_PROPERTY2(double, begin_text_music_symbols_size, set_begin_text_music_symbols_size, 12.0)
+    M_PROPERTY(PointF, begin_text_offset, set_begin_text_offset)
 
-    M_PROPERTY2(TextPlace, continueTextPlace, setContinueTextPlace, TextPlace::AUTO)
-    M_PROPERTY2(double, continueTextMusicalSymbolsScale, setContinueTextMusicalSymbolsScale, 1.0)
-    M_PROPERTY2(double, continueTextMusicSymbolsSize, setContinueTextMusicSymbolsSize, 12.0)
-    M_PROPERTY(String, continueText, setContinueText)
-    M_PROPERTY(Align, continueTextAlign, setContinueTextAlign)
-    M_PROPERTY(AlignH, continueTextPosition, setContinueTextPosition)
-    M_PROPERTY(String, continueFontFamily, setContinueFontFamily)
-    M_PROPERTY(double, continueFontSize, setContinueFontSize)
-    M_PROPERTY(FontStyle, continueFontStyle, setContinueFontStyle)
-    M_PROPERTY(PointF, continueTextOffset, setContinueTextOffset)
+    M_PROPERTY2(TextPlace, continue_text_place, set_continue_text_place, TextPlace::AUTO)
+    M_PROPERTY2(double, continue_text_musical_symbols_scale, set_continue_text_musical_symbols_scale, 1.0)
+    M_PROPERTY2(double, continue_text_music_symbols_size, set_continue_text_music_symbols_size, 12.0)
+    M_PROPERTY(String, continue_text, set_continue_text)
+    M_PROPERTY(Align, continue_text_align, set_continue_text_align)
+    M_PROPERTY(AlignH, continue_text_position, set_continue_text_position)
+    M_PROPERTY(String, continue_font_family, set_continue_font_family)
+    M_PROPERTY(double, continue_font_size, set_continue_font_size)
+    M_PROPERTY(FontStyle, continue_font_style, set_continue_font_style)
+    M_PROPERTY(PointF, continue_text_offset, set_continue_text_offset)
 
-    M_PROPERTY2(TextPlace, endTextPlace, setEndTextPlace, TextPlace::AUTO)
-    M_PROPERTY2(double, endTextMusicalSymbolsScale, setEndTextMusicalSymbolsScale, 1.0)
-    M_PROPERTY2(double, endTextMusicSymbolsSize, setEndTextMusicSymbolsSize, 12.0)
-    M_PROPERTY(String, endText, setEndText)
-    M_PROPERTY(Align, endTextAlign, setEndTextAlign)
-    M_PROPERTY(AlignH, endTextPosition, setEndTextPosition)
-    M_PROPERTY(String, endFontFamily, setEndFontFamily)
-    M_PROPERTY(double, endFontSize, setEndFontSize)
-    M_PROPERTY(FontStyle, endFontStyle, setEndFontStyle)
-    M_PROPERTY(PointF, endTextOffset, setEndTextOffset)
-    M_PROPERTY(bool, textSizeSpatiumDependent, setTextSizeSpatiumDependent)
+    M_PROPERTY2(TextPlace, end_text_place, set_end_text_place, TextPlace::AUTO)
+    M_PROPERTY2(double, end_text_musical_symbols_scale, set_end_text_musical_symbols_scale, 1.0)
+    M_PROPERTY2(double, end_text_music_symbols_size, set_end_text_music_symbols_size, 12.0)
+    M_PROPERTY(String, end_text, set_end_text)
+    M_PROPERTY(Align, end_text_align, set_end_text_align)
+    M_PROPERTY(AlignH, end_text_position, set_end_text_position)
+    M_PROPERTY(String, end_font_family, set_end_font_family)
+    M_PROPERTY(double, end_font_size, set_end_font_size)
+    M_PROPERTY(FontStyle, end_font_style, set_end_font_style)
+    M_PROPERTY(PointF, end_text_offset, set_end_text_offset)
+    M_PROPERTY(bool, text_size_spatium_dependent, set_text_size_spatium_dependent)
 
 public:
     TextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
 
-    void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
+    void spatium_changed(double /*oldValue*/, double /*newValue*/) override;
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
-    PropertyFlags propertyFlags(Pid) const override;
-    void setPropertyFlags(Pid, PropertyFlags) override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    PropertyFlags property_flags(Pid) const override;
+    void set_property_flags(Pid, PropertyFlags) override;
 
-    static const std::array<Pid, 45> &textLineBasePropertyIds();
+    static const std::array<Pid, 45> &text_line_base_property_ids();
 
     void reset() override;
 
@@ -158,7 +158,7 @@ protected:
     friend class TextLineBaseSegment;
 };
 
-inline bool isSystemTextLine(const EngravingItem *element) { return element && element->isTextLineBase() && element->systemFlag(); }
+inline bool is_system_text_line(const EngravingItem *element) { return element && element->is_text_line_base() && element->system_flag(); }
 } // namespace mu::engraving
 
 #endif

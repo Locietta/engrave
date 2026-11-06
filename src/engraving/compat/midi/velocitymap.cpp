@@ -41,34 +41,34 @@ namespace mu::engraving {
 ///   You can see these graphically at: https://www.desmos.com/calculator/kk89ficmjk
 //---------------------------------------------------------
 
-int VelocityMap::interpolate(Fraction &eventTick, VelocityEvent &event, Fraction &tick) {
+int VelocityMap::interpolate(Fraction &event_tick, VelocityEvent &event, Fraction &tick) {
     assert(event.type_ == VelocityEventType::HAIRPIN);
 
     // Prevent zero-division error
-    if (event.cachedStartVal_ == event.cachedEndVal_ || event.length_.isZero()) {
-        return event.cachedStartVal_;
+    if (event.cached_start_val_ == event.cached_end_val_ || event.length_.is_zero()) {
+        return event.cached_start_val_;
     }
 
     // Ticks to change expression over
-    int exprTicks = event.length_.ticks();
-    int exprDiff = event.cachedEndVal_ - event.cachedStartVal_;
+    int expr_ticks = event.length_.ticks();
+    int expr_diff = event.cached_end_val_ - event.cached_start_val_;
 
-    std::function<int(int)> valueFunction;
+    std::function<int(int)> value_function;
     switch (event.method_) {
         case ChangeMethod::EXPONENTIAL:
             // Due to the nth-root, exponential functions do not flip with negative values, and cause errors,
             // so treat it as a piecewise function.
-            if (exprDiff > 0) {
-                valueFunction = [&](int ct) {
-                    return int(pow(pow((exprDiff + 1), 1.0 / double(exprTicks)), // the exprTicks root of d+1
-                                   double(ct)                                    // to the power of the current tick (exponential)
+            if (expr_diff > 0) {
+                value_function = [&](int ct) {
+                    return int(pow(pow((expr_diff + 1), 1.0 / double(expr_ticks)), // the exprTicks root of d+1
+                                   double(ct)                                      // to the power of the current tick (exponential)
                                    ) -
                                1);
                 };
             } else {
-                valueFunction = [&](int ct) {
-                    return -int(pow(pow((-exprDiff + 1), 1.0 / double(exprTicks)), // the exprTicks root of 1-d
-                                    double(ct)                                     // again to the power of ct
+                value_function = [&](int ct) {
+                    return -int(pow(pow((-expr_diff + 1), 1.0 / double(expr_ticks)), // the exprTicks root of 1-d
+                                    double(ct)                                       // again to the power of ct
                                     ) +
                                 1);
                 };
@@ -76,23 +76,23 @@ int VelocityMap::interpolate(Fraction &eventTick, VelocityEvent &event, Fraction
             break;
         // Uses sin x transformed, which _does_ flip with negative numbers
         case ChangeMethod::EASE_IN_OUT:
-            valueFunction = [&](int ct) {
-                return int((double(exprDiff) / 2.0) * (sin(double(ct) * (double(M_PI / double(exprTicks))) - double(M_PI / 2.0)) + 1));
+            value_function = [&](int ct) {
+                return int((double(expr_diff) / 2.0) * (sin(double(ct) * (double(M_PI / double(expr_ticks))) - double(M_PI / 2.0)) + 1));
             };
             break;
         case ChangeMethod::EASE_IN:
-            valueFunction = [&](int ct) {
-                return int(double(exprDiff) * (sin(double(ct - double(exprTicks)) * (double(M_PI / double(2 * exprTicks)))) + 1));
+            value_function = [&](int ct) {
+                return int(double(expr_diff) * (sin(double(ct - double(expr_ticks)) * (double(M_PI / double(2 * expr_ticks)))) + 1));
             };
             break;
         case ChangeMethod::EASE_OUT:
-            valueFunction = [&](int ct) { return int(double(exprDiff) * sin(double(ct) * (double(M_PI / double(2 * exprTicks))))); };
+            value_function = [&](int ct) { return int(double(expr_diff) * sin(double(ct) * (double(M_PI / double(2 * expr_ticks))))); };
             break;
         case ChangeMethod::NORMAL:
-        default: valueFunction = [&](int ct) { return int(double(exprDiff) * (double(ct) / double(exprTicks))); }; break;
+        default: value_function = [&](int ct) { return int(double(expr_diff) * (double(ct) / double(expr_ticks))); }; break;
     }
 
-    return event.cachedStartVal_ + valueFunction(tick.ticks() - eventTick.ticks());
+    return event.cached_start_val_ + value_function(tick.ticks() - event_tick.ticks());
 }
 
 //---------------------------------------------------------
@@ -101,34 +101,34 @@ int VelocityMap::interpolate(Fraction &eventTick, VelocityEvent &event, Fraction
 //---------------------------------------------------------
 
 int VelocityMap::val(Fraction tick) const {
-    auto eventIter = upper_bound(tick);
-    if (eventIter == begin()) {
-        return DEFAULT_VALUE;
+    auto event_iter = upper_bound(tick);
+    if (event_iter == begin()) {
+        return ::mu::engraving::VelocityMap::default_value;
     }
 
-    eventIter--;
-    bool foundHairpin = false;
-    VelocityEvent hairpinFound = eventIter->second; // only used to init
-    Fraction hairpinFoundStartTick = eventIter->first;
-    auto values = equal_range(hairpinFoundStartTick);
+    event_iter--;
+    bool found_hairpin = false;
+    VelocityEvent hairpin_found = event_iter->second; // only used to init
+    Fraction hairpin_found_start_tick = event_iter->first;
+    auto values = equal_range(hairpin_found_start_tick);
     for (auto it = values.first; it != values.second; ++it) {
         auto &event = it->second;
         if (event.type_ == VelocityEventType::HAIRPIN) {
-            foundHairpin = true;
-            hairpinFound = event;
+            found_hairpin = true;
+            hairpin_found = event;
         }
     }
 
-    if (!foundHairpin) {
+    if (!found_hairpin) {
         // Last event must be a dynamic, since there are max two events at one tick
-        return eventIter->second.value_;
+        return event_iter->second.value_;
     }
 
-    if (tick >= (hairpinFoundStartTick + hairpinFound.length_)) {
-        return hairpinFound.cachedEndVal_;
+    if (tick >= (hairpin_found_start_tick + hairpin_found.length_)) {
+        return hairpin_found.cached_end_val_;
     } else {
         // Do some maths!
-        return interpolate(hairpinFoundStartTick, hairpinFound, tick); // NOTE:JT check should hairpinFound be eventIter.value()
+        return interpolate(hairpin_found_start_tick, hairpin_found, tick); // NOTE:JT check should hairpinFound be eventIter.value()
     }
 }
 
@@ -136,7 +136,7 @@ int VelocityMap::val(Fraction tick) const {
 //   addDynamic
 //---------------------------------------------------------
 
-void VelocityMap::addDynamic(Fraction tick, int value) { insert({tick, VelocityEvent(value)}); }
+void VelocityMap::add_dynamic(Fraction tick, int value) { insert({tick, VelocityEvent(value)}); }
 
 //---------------------------------------------------------
 //   addHairpin
@@ -144,7 +144,7 @@ void VelocityMap::addDynamic(Fraction tick, int value) { insert({tick, VelocityE
 ///   velocity event.
 //---------------------------------------------------------
 
-void VelocityMap::addHairpin(Fraction stick, Fraction etick, int change, ChangeMethod method, ChangeDirection direction) {
+void VelocityMap::add_hairpin(Fraction stick, Fraction etick, int change, ChangeMethod method, ChangeDirection direction) {
     change = std::abs(change);
     change *= (direction == ChangeDirection::INCREASING) ? 1 : -1;
     insert({stick, VelocityEvent(stick, etick, change, method, direction)});
@@ -155,25 +155,25 @@ void VelocityMap::addHairpin(Fraction stick, Fraction etick, int change, ChangeM
 ///   put the hairpins in size order if they start at the same point
 //---------------------------------------------------------
 
-void VelocityMap::sortHairpins() {
-    for (auto &tick : muse::uniqueKeys(*this)) {
+void VelocityMap::sort_hairpins() {
+    for (auto &tick : muse::unique_keys(*this)) {
         // hairpinEvents will contain all the hairpins at this tick
-        std::vector<VelocityEvent> hairpinEvents;
+        std::vector<VelocityEvent> hairpin_events;
         auto values = this->equal_range(tick);
         for (auto it = values.first; it != values.second; ++it) {
             auto &event = it->second;
             if (event.type_ == VelocityEventType::DYNAMIC) {
                 continue;
             }
-            hairpinEvents.push_back(event);
+            hairpin_events.push_back(event);
         }
 
-        if (int(hairpinEvents.size()) > 1) {
+        if (int(hairpin_events.size()) > 1) {
             // Sort hairpinEvents so that the longest hairpins come first -
             // this is important for when we remove hairpins/dynamics enclosed within other
             // hairpins during stage 1.
-            std::sort(hairpinEvents.begin(), hairpinEvents.end(), VelocityMap::compareHairpinEvents);
-            for (auto &event : hairpinEvents) {
+            std::sort(hairpin_events.begin(), hairpin_events.end(), VelocityMap::compare_hairpin_events);
+            for (auto &event : hairpin_events) {
                 insert({tick, event});
             }
         }
@@ -185,13 +185,13 @@ void VelocityMap::sortHairpins() {
 ///   remove any hairpins that are completely enclosed within other hairpins
 //---------------------------------------------------------
 
-void VelocityMap::resolveHairpinCollisions() {
-    Fraction currentHairpinEnd = Fraction(-1, 1); // end point of hairpin we're in
-    bool inHairpin = false;                       // whether we're in a hairpin or not
+void VelocityMap::resolve_hairpin_collisions() {
+    Fraction current_hairpin_end = Fraction(-1, 1); // end point of hairpin we're in
+    bool in_hairpin = false;                        // whether we're in a hairpin or not
 
     // Keep a record of the endpoints
-    EndPointsVector endPoints;
-    std::vector<bool> startsInHairpin;
+    EndPointsVector end_points;
+    std::vector<bool> starts_in_hairpin;
 
     auto i = begin();
     while (i != end()) {
@@ -200,34 +200,34 @@ void VelocityMap::resolveHairpinCollisions() {
         Fraction etick = tick + event.length_;
 
         // Reset if we've left the hairpin we were in
-        if (currentHairpinEnd < tick) {
-            inHairpin = false;
+        if (current_hairpin_end < tick) {
+            in_hairpin = false;
         }
 
         if (event.type_ == VelocityEventType::HAIRPIN) {
-            if (inHairpin) {
-                if (etick <= currentHairpinEnd) {
+            if (in_hairpin) {
+                if (etick <= current_hairpin_end) {
                     // delete, this event is enveloped
                     i = erase(i);
                     // don't add to the end points
                     continue;
                 } else {
-                    currentHairpinEnd = etick;
-                    startsInHairpin.push_back(true);
+                    current_hairpin_end = etick;
+                    starts_in_hairpin.push_back(true);
                 }
             } else {
-                currentHairpinEnd = etick;
-                inHairpin = true;
-                startsInHairpin.push_back(false);
+                current_hairpin_end = etick;
+                in_hairpin = true;
+                starts_in_hairpin.push_back(false);
             }
 
-            endPoints.push_back(std::make_pair(tick, etick));
+            end_points.push_back(std::make_pair(tick, etick));
         }
 
         i++;
     }
 
-    adjustCollidingHairpinsLength(startsInHairpin, endPoints);
+    adjust_colliding_hairpins_length(starts_in_hairpin, end_points);
 }
 
 //---------------------------------------------------------
@@ -235,9 +235,9 @@ void VelocityMap::resolveHairpinCollisions() {
 ///   readjust lengths of any colliding hairpins
 //---------------------------------------------------------
 
-void VelocityMap::adjustCollidingHairpinsLength(std::vector<bool> &startsInHairpin, EndPointsVector &endPoints) {
+void VelocityMap::adjust_colliding_hairpins_length(std::vector<bool> &starts_in_hairpin, EndPointsVector &end_points) {
     // moveTo stores the events that need to be moved to a Fraction position
-    std::map<Fraction, VelocityEvent> moveTo;
+    std::map<Fraction, VelocityEvent> move_to;
     auto i = begin();
     int j = -1;
     while (i != end()) {
@@ -249,20 +249,20 @@ void VelocityMap::adjustCollidingHairpinsLength(std::vector<bool> &startsInHairp
         }
 
         j++;
-        if (!startsInHairpin[j]) {
+        if (!starts_in_hairpin[j]) {
             i++;
             continue;
         }
 
         // Take a copy of the event and remove it
-        Fraction newTick = endPoints[j - 1].second;
-        event.length_ -= (newTick - tick);
-        moveTo[newTick] = event;
+        Fraction new_tick = end_points[j - 1].second;
+        event.length_ -= (new_tick - tick);
+        move_to[new_tick] = event;
         i = erase(i);
     }
 
     // Re-insert the events that we need to move in their new positions
-    for (auto k = moveTo.begin(); k != moveTo.end(); k++) {
+    for (auto k = move_to.begin(); k != move_to.end(); k++) {
         insert({k->first, k->second});
     }
 }
@@ -272,26 +272,27 @@ void VelocityMap::adjustCollidingHairpinsLength(std::vector<bool> &startsInHairp
 ///   if dynamic is inside the hairpin, shorten hairpin length up to this dynamic
 //---------------------------------------------------------
 
-void VelocityMap::resolveDynamicInsideHairpinCollisions() {
-    auto lastEventIt = end();
+void VelocityMap::resolve_dynamic_inside_hairpin_collisions() {
+    auto last_event_it = end();
     auto i = begin();
     while (i != end()) {
         VelocityEvent &event = i->second;
-        if (event.type_ == VelocityEventType::DYNAMIC && lastEventIt != end() && lastEventIt->second.type_ == VelocityEventType::HAIRPIN) {
-            Fraction dynamicTick = i->first;
-            Fraction lastHairpinStart = lastEventIt->first;
-            Fraction lastHairpinEnd = lastHairpinStart + lastEventIt->second.length_;
-            if (lastHairpinEnd > dynamicTick) {
-                lastEventIt->second.length_ = dynamicTick - lastHairpinStart;
+        if (event.type_ == VelocityEventType::DYNAMIC && last_event_it != end() &&
+            last_event_it->second.type_ == VelocityEventType::HAIRPIN) {
+            Fraction dynamic_tick = i->first;
+            Fraction last_hairpin_start = last_event_it->first;
+            Fraction last_hairpin_end = last_hairpin_start + last_event_it->second.length_;
+            if (last_hairpin_end > dynamic_tick) {
+                last_event_it->second.length_ = dynamic_tick - last_hairpin_start;
             }
         }
 
-        lastEventIt = i;
+        last_event_it = i;
         i++;
     }
 }
 
-bool VelocityMap::dynamicExistsOnTick(Fraction tick) const {
+bool VelocityMap::dynamic_exists_on_tick(Fraction tick) const {
     auto values = equal_range(tick);
     for (auto it = values.first; it != values.second; ++it) {
         auto &event = it->second;
@@ -303,22 +304,22 @@ bool VelocityMap::dynamicExistsOnTick(Fraction tick) const {
     return false;
 }
 
-VelocityEvent VelocityMap::dynamicEventForTick(Fraction tick) const {
-    auto equalValues = equal_range(tick);
-    for (auto it = equalValues.first; it != equalValues.second; ++it) {
+VelocityEvent VelocityMap::dynamic_event_for_tick(Fraction tick) const {
+    auto equal_values = equal_range(tick);
+    for (auto it = equal_values.first; it != equal_values.second; ++it) {
         auto &event = it->second;
         if (event.type_ == VelocityEventType::DYNAMIC) {
             return event;
         }
     }
 
-    if (equalValues.first == begin()) {
+    if (equal_values.first == begin()) {
         return VelocityEvent();
     }
 
-    auto previousIt = std::prev(equalValues.first);
-    auto smallerValues = equal_range(previousIt->first);
-    for (auto it = smallerValues.first; it != smallerValues.second; ++it) {
+    auto previous_it = std::prev(equal_values.first);
+    auto smaller_values = equal_range(previous_it->first);
+    for (auto it = smaller_values.first; it != smaller_values.second; ++it) {
         auto &event = it->second;
         if (event.type_ == VelocityEventType::DYNAMIC) {
             return event;
@@ -328,33 +329,33 @@ VelocityEvent VelocityMap::dynamicEventForTick(Fraction tick) const {
     return VelocityEvent();
 }
 
-void VelocityMap::addMissingDynamicsAfterHairpins() {
-    auto nextDynamicVal = [](int previousDynamicValue, ChangeDirection hairpinDirection) {
-        int newVal = (hairpinDirection == ChangeDirection::INCREASING ? previousDynamicValue + VelocityMap::STEP :
-                                                                        previousDynamicValue - VelocityMap::STEP);
-        return std::clamp(newVal, VelocityMap::MIN_VALUE, VelocityMap::MAX_VALUE);
+void VelocityMap::add_missing_dynamics_after_hairpins() {
+    auto next_dynamic_val = [](int previous_dynamic_value, ChangeDirection hairpin_direction) {
+        int new_val = (hairpin_direction == ChangeDirection::INCREASING ? previous_dynamic_value + VelocityMap::step :
+                                                                          previous_dynamic_value - VelocityMap::step);
+        return std::clamp(new_val, VelocityMap::min_value, VelocityMap::max_value);
     };
 
     for (auto it = begin(); it != end(); it++) {
         auto &event = it->second;
         if (event.type_ == VelocityEventType::HAIRPIN && event.value_ == 0) {
-            Fraction startHairpinTick = it->first;
-            Fraction endHairpinTick = it->first + it->second.length_;
-            VelocityEvent dynamicOnCurrentTick = dynamicEventForTick(startHairpinTick);
+            Fraction start_hairpin_tick = it->first;
+            Fraction end_hairpin_tick = it->first + it->second.length_;
+            VelocityEvent dynamic_on_current_tick = dynamic_event_for_tick(start_hairpin_tick);
 
-            if (!dynamicExistsOnTick(endHairpinTick)) {
-                if (dynamicOnCurrentTick.type_ != VelocityEventType::INVALID) {
-                    int newVal = nextDynamicVal(dynamicOnCurrentTick.value_, event.direction_);
-                    insert({endHairpinTick, VelocityEvent(newVal)});
+            if (!dynamic_exists_on_tick(end_hairpin_tick)) {
+                if (dynamic_on_current_tick.type_ != VelocityEventType::INVALID) {
+                    int new_val = next_dynamic_val(dynamic_on_current_tick.value_, event.direction_);
+                    insert({end_hairpin_tick, VelocityEvent(new_val)});
                 }
             } else {
-                VelocityEvent dynamicOnEndTick = dynamicEventForTick(endHairpinTick);
-                int velocityJump = dynamicOnEndTick.value_ - dynamicOnCurrentTick.value_;
+                VelocityEvent dynamic_on_end_tick = dynamic_event_for_tick(end_hairpin_tick);
+                int velocity_jump = dynamic_on_end_tick.value_ - dynamic_on_current_tick.value_;
 
-                if ((event.direction_ == ChangeDirection::INCREASING && velocityJump < 0) ||
-                    (event.direction_ == ChangeDirection::DECREASING && velocityJump > 0)) {
-                    int newVal = nextDynamicVal(dynamicOnCurrentTick.value_, event.direction_);
-                    event.value_ = newVal - dynamicOnCurrentTick.value_;
+                if ((event.direction_ == ChangeDirection::INCREASING && velocity_jump < 0) ||
+                    (event.direction_ == ChangeDirection::DECREASING && velocity_jump > 0)) {
+                    int new_val = next_dynamic_val(dynamic_on_current_tick.value_, event.direction_);
+                    event.value_ = new_val - dynamic_on_current_tick.value_;
                 }
             }
         }
@@ -366,7 +367,7 @@ void VelocityMap::addMissingDynamicsAfterHairpins() {
 ///   cache start and end values for each hairpin
 //---------------------------------------------------------
 
-void VelocityMap::fillHairpinsCache() {
+void VelocityMap::fill_hairpins_cache() {
     for (auto i = begin(); i != end(); i++) {
         Fraction tick = i->first;
         auto &event = i->second;
@@ -376,13 +377,13 @@ void VelocityMap::fillHairpinsCache() {
 
         // Phase 1: cache a start value for the hairpin
         // Try and get a dynamic at the tick of this hairpin
-        bool foundDynamic = false;
+        bool found_dynamic = false;
         auto values = this->equal_range(tick);
         for (auto it = values.first; it != values.second; ++it) {
-            auto &currentChangeEvent = it->second;
-            if (currentChangeEvent.type_ == VelocityEventType::DYNAMIC) {
-                event.cachedStartVal_ = currentChangeEvent.value_;
-                foundDynamic = true;
+            auto &current_change_event = it->second;
+            if (current_change_event.type_ == VelocityEventType::DYNAMIC) {
+                event.cached_start_val_ = current_change_event.value_;
+                found_dynamic = true;
                 break;
             }
         }
@@ -390,56 +391,56 @@ void VelocityMap::fillHairpinsCache() {
         // If there isn't a dynamic, use from the last event:
         //  - the cached end value if it's a hairpin
         //  - the value if it's a dynamic
-        if (!foundDynamic) {
+        if (!found_dynamic) {
             if (i != begin()) {
-                auto prevChangeEventIter = i;
-                prevChangeEventIter--;
+                auto prev_change_event_iter = i;
+                prev_change_event_iter--;
 
                 // Look for a hairpin first
-                bool foundHairpin = false;
-                auto prevValues = this->equal_range(prevChangeEventIter->first);
-                for (auto it = prevValues.first; it != prevValues.second; ++it) {
-                    auto &prevChangeEvent = it->second;
-                    if (prevChangeEvent.type_ == VelocityEventType::HAIRPIN) {
-                        event.cachedStartVal_ = prevChangeEvent.cachedEndVal_;
-                        foundHairpin = true;
+                bool found_hairpin = false;
+                auto prev_values = this->equal_range(prev_change_event_iter->first);
+                for (auto it = prev_values.first; it != prev_values.second; ++it) {
+                    auto &prev_change_event = it->second;
+                    if (prev_change_event.type_ == VelocityEventType::HAIRPIN) {
+                        event.cached_start_val_ = prev_change_event.cached_end_val_;
+                        found_hairpin = true;
                         break;
                     }
                 }
 
-                if (!foundHairpin) {
+                if (!found_hairpin) {
                     // prevChangeEventIter must point to a dynamic in this case
-                    event.cachedStartVal_ = prevChangeEventIter->second.value_;
+                    event.cached_start_val_ = prev_change_event_iter->second.value_;
                 }
             } else {
-                event.cachedStartVal_ = DEFAULT_VALUE;
+                event.cached_start_val_ = ::mu::engraving::VelocityMap::default_value;
             }
         }
 
         // Phase 2: cache an end value for the hairpin
         // If there's no set velocity change:
         if (event.value_ == 0) {
-            auto nextChangeEventIter = i;
-            nextChangeEventIter++;
+            auto next_change_event_iter = i;
+            next_change_event_iter++;
             // There's a chance that the next event is a dynamic at the same tick as the
             // start of the current hairpin. If so, get the next event, which is assured
             // to be a different (larger) tick
-            if (nextChangeEventIter != end() && nextChangeEventIter->first == tick) {
-                nextChangeEventIter++;
+            if (next_change_event_iter != end() && next_change_event_iter->first == tick) {
+                next_change_event_iter++;
             }
 
             // If this is the last event, there is no change
-            if (nextChangeEventIter == end()) {
-                event.cachedEndVal_ = event.cachedStartVal_;
+            if (next_change_event_iter == end()) {
+                event.cached_end_val_ = event.cached_start_val_;
             } else {
                 // Search for a dynamic event at the next event point
-                bool foundDynamic2 = false;
-                auto nextValues = this->equal_range(nextChangeEventIter->first);
-                for (auto it = nextValues.first; it != nextValues.second; ++it) {
-                    auto &nextChangeEvent = it->second;
-                    if (nextChangeEvent.type_ == VelocityEventType::DYNAMIC) {
-                        event.cachedEndVal_ = nextChangeEvent.value_;
-                        foundDynamic2 = true;
+                bool found_dynamic2 = false;
+                auto next_values = this->equal_range(next_change_event_iter->first);
+                for (auto it = next_values.first; it != next_values.second; ++it) {
+                    auto &next_change_event = it->second;
+                    if (next_change_event.type_ == VelocityEventType::DYNAMIC) {
+                        event.cached_end_val_ = next_change_event.value_;
+                        found_dynamic2 = true;
                         break;
                     }
                 }
@@ -448,18 +449,18 @@ void VelocityMap::fillHairpinsCache() {
                 // A good guess would to be to interpolate, but that might get complex, so just ignore
                 // this hairpin and set the ending to be the same as the start.
                 // TODO: implementing some form of smart interpolation would be nice.
-                if (!foundDynamic2) {
-                    event.cachedEndVal_ = event.cachedStartVal_;
+                if (!found_dynamic2) {
+                    event.cached_end_val_ = event.cached_start_val_;
                 }
             }
         } else {
-            event.cachedEndVal_ = event.cachedStartVal_ + event.value_;
+            event.cached_end_val_ = event.cached_start_val_ + event.value_;
         }
 
         // And finally... if something's wrong, make it not wrong
-        if ((event.cachedStartVal_ > event.cachedEndVal_ && event.direction_ == ChangeDirection::INCREASING) ||
-            (event.cachedStartVal_ < event.cachedEndVal_ && event.direction_ == ChangeDirection::DECREASING)) {
-            event.cachedEndVal_ = event.cachedStartVal_;
+        if ((event.cached_start_val_ > event.cached_end_val_ && event.direction_ == ChangeDirection::INCREASING) ||
+            (event.cached_start_val_ < event.cached_end_val_ && event.direction_ == ChangeDirection::DECREASING)) {
+            event.cached_end_val_ = event.cached_start_val_;
         }
     }
 }
@@ -469,11 +470,11 @@ void VelocityMap::fillHairpinsCache() {
 //---------------------------------------------------------
 
 void VelocityMap::setup() {
-    sortHairpins();
-    resolveHairpinCollisions();
-    resolveDynamicInsideHairpinCollisions();
-    addMissingDynamicsAfterHairpins();
-    fillHairpinsCache();
+    sort_hairpins();
+    resolve_hairpin_collisions();
+    resolve_dynamic_inside_hairpin_collisions();
+    add_missing_dynamics_after_hairpins();
+    fill_hairpins_cache();
 }
 
 //---------------------------------------------------------
@@ -481,11 +482,11 @@ void VelocityMap::setup() {
 ///   returns a list of changes in a range, and their start and end points
 //---------------------------------------------------------
 
-std::vector<std::pair<Fraction, Fraction>> VelocityMap::changesInRange(Fraction stick, Fraction etick) const {
-    std::vector<std::pair<Fraction, Fraction>> tempChanges;
+std::vector<std::pair<Fraction, Fraction>> VelocityMap::changes_in_range(Fraction stick, Fraction etick) const {
+    std::vector<std::pair<Fraction, Fraction>> temp_changes;
 
     // Force a new event on every noteon, in case the velocity has changed
-    tempChanges.push_back(std::make_pair(stick, stick));
+    temp_changes.push_back(std::make_pair(stick, stick));
     for (auto iter = lower_bound(stick); iter != end(); iter++) {
         Fraction tick = iter->first;
         if (tick > etick) {
@@ -494,11 +495,11 @@ std::vector<std::pair<Fraction, Fraction>> VelocityMap::changesInRange(Fraction 
 
         auto &event = iter->second;
         if (event.type_ == VelocityEventType::DYNAMIC) {
-            tempChanges.push_back(std::make_pair(tick, tick));
+            temp_changes.push_back(std::make_pair(tick, tick));
         } else if (event.type_ == VelocityEventType::HAIRPIN) {
-            Fraction eventEtick = tick + event.length_;
-            Fraction useEtick = eventEtick > etick ? etick : eventEtick;
-            tempChanges.push_back(std::make_pair(tick, useEtick));
+            Fraction event_etick = tick + event.length_;
+            Fraction use_etick = event_etick > etick ? etick : event_etick;
+            temp_changes.push_back(std::make_pair(tick, use_etick));
         }
     }
 
@@ -508,13 +509,13 @@ std::vector<std::pair<Fraction, Fraction>> VelocityMap::changesInRange(Fraction 
         iter--;
         auto &event = iter->second;
         if (event.type_ == VelocityEventType::HAIRPIN) {
-            Fraction eventEtick = iter->first + event.length_;
-            if (eventEtick > stick) {
-                tempChanges.push_back(std::make_pair(stick, eventEtick));
+            Fraction event_etick = iter->first + event.length_;
+            if (event_etick > stick) {
+                temp_changes.push_back(std::make_pair(stick, event_etick));
             }
         }
     }
-    return tempChanges;
+    return temp_changes;
 }
 
 //---------------------------------------------------------

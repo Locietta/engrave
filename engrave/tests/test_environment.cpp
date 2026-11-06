@@ -56,7 +56,7 @@ std::string normalize_path(const std::filesystem::path &p) {
 }
 
 #if defined(TEST_HAS_ENGRAVING)
-static const mu::engraving::IEngravingConfiguration::DebuggingOptions s_debugOpt{};
+static const mu::engraving::IEngravingConfiguration::DebuggingOptions s_debug_opt{};
 #endif
 
 } // namespace
@@ -213,8 +213,8 @@ void setup_test_environment(int *argc, char **argv) {
 }
 
 void setup_test_environment(const TestEnvironmentConfig &config) {
-    muse::runtime::mainThreadId();
-    muse::runtime::setThreadName("main");
+    muse::runtime::main_thread_id();
+    muse::runtime::set_thread_name("main");
 
 #if defined(TEST_HAS_ENGRAVING)
     if (config.assets_dir.empty()) {
@@ -231,24 +231,24 @@ void setup_test_environment(const TestEnvironmentConfig &config) {
     s_context = std::make_unique<music::EngineContext>(config.assets_dir);
 
     // 2. Set MScore test flags
-    mu::engraving::MScore::testMode = true;
-    mu::engraving::MScore::noGui = true;
+    mu::engraving::MScore::test_mode = true;
+    mu::engraving::MScore::no_gui = true;
 
     // 3. Configure ScoreRW root path for resolving relative test score paths (e.g. playback/...)
-    mu::engraving::ScoreRW::setRootPath(muse::String::fromStdString(config.engraving_data_dir));
+    mu::engraving::ScoreRW::set_root_path(muse::String::from_std_string(config.engraving_data_dir));
 
     // 4. Register mock engraving configuration matching upstream engraving/tests/environment.cpp
     using ECMock = ::testing::NiceMock<mu::engraving::EngravingConfigurationMock>;
     auto configurator = std::shared_ptr<ECMock>(new ECMock(), [](ECMock *) {});
     // Lives for the whole process like upstream's test environment; never deleted on purpose.
     ::testing::Mock::AllowLeak(configurator.get());
-    ON_CALL(*configurator, displayedDefaultColor(::testing::_)).WillByDefault(::testing::Return(muse::draw::Color::BLACK));
-    ON_CALL(*configurator, defaultColor()).WillByDefault(::testing::Return(muse::draw::Color::BLACK));
-    ON_CALL(*configurator, debuggingOptions()).WillByDefault(::testing::ReturnRef(s_debugOpt));
-    ON_CALL(*configurator, allowReadingImagesFromOutsideMscz()).WillByDefault(::testing::Return(true));
+    ON_CALL(*configurator, displayed_default_color(::testing::_)).WillByDefault(::testing::Return(muse::draw::Color::black));
+    ON_CALL(*configurator, default_color()).WillByDefault(::testing::Return(muse::draw::Color::black));
+    ON_CALL(*configurator, debugging_options()).WillByDefault(::testing::ReturnRef(::music::test::s_debug_opt));
+    ON_CALL(*configurator, allow_reading_images_from_outside_mscz()).WillByDefault(::testing::Return(true));
 
     s_context->engraving().configuration = configurator;
-    mu::engraving::ScoreRW::setServices(&s_context->engraving());
+    mu::engraving::ScoreRW::set_services(&s_context->engraving());
 #else
     (void) config;
 #endif
@@ -256,7 +256,7 @@ void setup_test_environment(const TestEnvironmentConfig &config) {
 
 void teardown_test_environment() {
 #if defined(TEST_HAS_ENGRAVING)
-    mu::engraving::ScoreRW::setServices(nullptr);
+    mu::engraving::ScoreRW::set_services(nullptr);
     s_context.reset();
 #endif
 }

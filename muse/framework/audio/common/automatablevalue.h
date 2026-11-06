@@ -42,9 +42,9 @@ public:
 
     AutomatableValue(const AutomationEnvelope &envelope) : value_(envelope) {}
 
-    bool hasAutomation() const noexcept { return std::holds_alternative<AutomationEnvelope>(value_); }
+    bool has_automation() const noexcept { return std::holds_alternative<AutomationEnvelope>(value_); }
 
-    T evaluateAt(muse::secs_t pos, T min, T max) const noexcept {
+    T evaluate_at(muse::secs_t pos, T min, T max) const noexcept {
         if (const T *v = std::get_if<T>(&value_)) {
             return std::clamp(*v, min, max);
         }
@@ -54,7 +54,7 @@ public:
             return T{};
         }
 
-        const real_t normalized = mpe::evaluateCurveAt(envelope, pos);
+        const real_t normalized = mpe::evaluate_curve_at(envelope, pos);
         const T mapped = min + static_cast<T>(normalized.raw()) * (max - min);
         return std::clamp(mapped, min, max);
     }

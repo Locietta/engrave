@@ -84,130 +84,130 @@ void MeasureLayout::layout2(Measure *item, LayoutContext &ctx) {
     assert(item->system());
     assert(ctx.dom().nstaves() == item->mstaves().size());
 
-    for (size_t staffIdx = 0; staffIdx < ctx.dom().nstaves(); ++staffIdx) {
-        if (Spacer *sp = item->vspacerDown(staffIdx)) {
-            TLayout::layoutSpacer(sp, ctx);
-            double y = item->system()->staff(staffIdx)->y() + sp->staffOffsetY();
-            sp->setPos(item->spatium() * .5, y + sp->staff()->staffHeight(item->tick()));
+    for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+        if (Spacer *sp = item->vspacer_down(staff_idx)) {
+            TLayout::layout_spacer(sp, ctx);
+            double y = item->system()->staff(staff_idx)->y() + sp->staff_offset_y();
+            sp->set_pos(item->spatium() * .5, y + sp->staff()->staff_height(item->tick()));
         }
-        if (Spacer *sp = item->vspacerUp(staffIdx)) {
-            TLayout::layoutSpacer(sp, ctx);
-            double y = item->system()->staff(staffIdx)->y() + sp->staffOffsetY();
-            sp->setPos(item->spatium() * .5, y - sp->absoluteGap());
+        if (Spacer *sp = item->vspacer_up(staff_idx)) {
+            TLayout::layout_spacer(sp, ctx);
+            double y = item->system()->staff(staff_idx)->y() + sp->staff_offset_y();
+            sp->set_pos(item->spatium() * .5, y - sp->absolute_gap());
         }
     }
 
     // layout LAYOUT_BREAK elements
-    TLayout::layoutBaseMeasureBase(item, item->mutldata(), ctx);
+    TLayout::layout_base_measure_base(item, item->mutldata(), ctx);
 
     //---------------------------------------------------
     //    layout cross-staff ties
     //---------------------------------------------------
 
-    auto layoutCrossStaffTies = [](Chord *chord, Measure *item, const Fraction &stick, LayoutContext &ctx) -> void {
+    auto layout_cross_staff_ties = [](Chord *chord, Measure *item, const Fraction &stick, LayoutContext &ctx) -> void {
         for (Note *note : chord->notes()) {
-            Tie *tieFor = note->tieFor();
-            Tie *tieBack = note->tieBack();
-            LaissezVib *lv = note->laissezVib();
-            if (lv && lv->isCrossStaff()) {
-                SlurTieLayout::layoutLaissezVibChord(chord, ctx);
+            Tie *tie_for = note->tie_for();
+            Tie *tie_back = note->tie_back();
+            LaissezVib *lv = note->laissez_vib();
+            if (lv && lv->is_cross_staff()) {
+                SlurTieLayout::layout_laissez_vib_chord(chord, ctx);
             }
-            if (tieFor && !lv && tieFor->isCrossStaff()) {
-                SlurTieLayout::layoutTieFor(tieFor, item->system());
+            if (tie_for && !lv && tie_for->is_cross_staff()) {
+                SlurTieLayout::layout_tie_for(tie_for, item->system());
             }
-            if (tieBack && tieBack->tick() < stick && tieBack->isCrossStaff()) {
-                SlurTieLayout::layoutTieBack(tieBack, item->system(), ctx);
+            if (tie_back && tie_back->tick() < stick && tie_back->is_cross_staff()) {
+                SlurTieLayout::layout_tie_back(tie_back, item->system(), ctx);
             }
         }
     };
 
     const Fraction stick = item->system()->measures().front()->tick();
     const size_t tracks = ctx.dom().ntracks();
-    static const SegmentType st{SegmentType::ChordRest};
+    static const SegmentType st{SegmentType::CHORD_REST};
     for (track_idx_t track = 0; track < tracks; ++track) {
         if (!ctx.dom().staff(track2staff(track))->show()) {
-            track += VOICES - 1;
+            track += ::mu::engraving::voices - 1;
             continue;
         }
         for (Segment *seg = item->first(st); seg; seg = seg->next(st)) {
             EngravingItem *element = seg->element(track);
-            if (!element || !element->isChord()) {
+            if (!element || !element->is_chord()) {
                 continue;
             }
-            Chord *chord = toChord(element);
-            layoutCrossStaffTies(chord, item, stick, ctx);
+            Chord *chord = to_chord(element);
+            layout_cross_staff_ties(chord, item, stick, ctx);
 
-            for (Chord *graceChord : chord->graceNotes()) {
-                layoutCrossStaffTies(graceChord, item, stick, ctx);
+            for (Chord *grace_chord : chord->grace_notes()) {
+                layout_cross_staff_ties(grace_chord, item, stick, ctx);
             }
         }
     }
 }
 
-void MeasureLayout::moveToNextMeasure(LayoutContext &ctx) {
+void MeasureLayout::move_to_next_measure(LayoutContext &ctx) {
     LAYOUT_CALL();
-    LayoutState &state = ctx.mutState();
+    LayoutState &state = ctx.mut_state();
 
-    state.setPrevMeasure(state.curMeasure());
-    state.setCurMeasure(state.nextMeasure());
-    if (!state.curMeasure()) {
-        state.setNextMeasure(ctx.conf().isShowVBox() ? ctx.mutDom().first() : ctx.mutDom().firstMeasure());
+    state.set_prev_measure(state.cur_measure());
+    state.set_cur_measure(state.next_measure());
+    if (!state.cur_measure()) {
+        state.set_next_measure(ctx.conf().is_show_v_box() ? ctx.mut_dom().first() : ctx.mut_dom().first_measure());
     } else {
-        MeasureBase *m = ctx.conf().isShowVBox() ? state.curMeasure()->next() : state.curMeasure()->nextMeasure();
-        state.setNextMeasure(m);
+        MeasureBase *m = ctx.conf().is_show_v_box() ? state.cur_measure()->next() : state.cur_measure()->next_measure();
+        state.set_next_measure(m);
     }
 }
 
-void MeasureLayout::checkStaffMoveValidity(Measure *measure, const LayoutContext &ctx) {
+void MeasureLayout::check_staff_move_validity(Measure *measure, const LayoutContext &ctx) {
     for (const Segment &segment : measure->segments()) {
-        if (!segment.isJustType(SegmentType::ChordRest)) {
+        if (!segment.is_just_type(SegmentType::CHORD_REST)) {
             continue;
         }
 
-        for (track_idx_t t = 0; t < ctx.dom().nstaves() * VOICES; ++t) {
-            ChordRest *cr = toChordRest(segment.element(t));
+        for (track_idx_t t = 0; t < ctx.dom().nstaves() * ::mu::engraving::voices; ++t) {
+            ChordRest *cr = to_chord_rest(segment.element(t));
             if (cr) {
                 // Check if requested cross-staff is possible
-                if (cr->staffMove() || cr->storedStaffMove()) {
-                    cr->checkStaffMoveValidity();
+                if (cr->staff_move() || cr->stored_staff_move()) {
+                    cr->check_staff_move_validity();
                 }
             }
         }
     }
 }
 
-void MeasureLayout::layoutMeasure(MeasureBase *currentMB, LayoutContext &ctx) {
-    if (!currentMB || !currentMB->isMeasure()) {
+void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) {
+    if (!current_mb || !current_mb->is_measure()) {
         return;
     }
 
-    Measure *measure = toMeasure(currentMB);
+    Measure *measure = to_measure(current_mb);
 
-    if (!measure->ldata()->needLayout()) {
+    if (!measure->ldata()->need_layout()) {
         return;
     }
 
-    if (ctx.conf().isLinearMode() && (measure->tick() < ctx.state().startTick() || measure->tick() > ctx.state().endTick())) {
+    if (ctx.conf().is_linear_mode() && (measure->tick() < ctx.state().start_tick() || measure->tick() > ctx.state().end_tick())) {
         return;
     }
 
-    if (ctx.dom().allStavesInvisible()) {
+    if (ctx.dom().all_staves_invisible()) {
         return;
     }
 
-    measure->mutldata()->setNeedLayout(false);
+    measure->mutldata()->set_need_layout(false);
 
     // Check if requested cross-staff is possible
     // This must happen before cmdUpdateNotes
-    checkStaffMoveValidity(measure, ctx);
+    check_staff_move_validity(measure, ctx);
 
     // ---- Modify DOM ----
-    ModifyDom::setCrossMeasure(measure, ctx);
-    ModifyDom::connectTremolo(measure);
-    ModifyDom::cmdUpdateNotes(measure, ctx.dom());
-    ModifyDom::createStems(measure, ctx);
-    ModifyDom::setTrackForChordGraceNotes(measure, ctx.dom());
-    ModifyDom::sortMeasureSegments(measure, ctx);
+    ModifyDom::set_cross_measure(measure, ctx);
+    ModifyDom::connect_tremolo(measure);
+    ModifyDom::cmd_update_notes(measure, ctx.dom());
+    ModifyDom::create_stems(measure, ctx);
+    ModifyDom::set_track_for_chord_grace_notes(measure, ctx.dom());
+    ModifyDom::sort_measure_segments(measure, ctx);
     // --------------------
     //
     // calculate accidentals and note lines,
@@ -217,36 +217,36 @@ void MeasureLayout::layoutMeasure(MeasureBase *currentMB, LayoutContext &ctx) {
     const DomAccessor &dom = ctx.dom();
     const LayoutConfiguration &conf = ctx.conf();
 
-    for (size_t staffIdx = 0; staffIdx < dom.nstaves(); ++staffIdx) {
-        const Staff *staff = dom.staff(staffIdx);
+    for (size_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
+        const Staff *staff = dom.staff(staff_idx);
 
-        track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack = startTrack + VOICES;
+        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+        track_idx_t end_track = start_track + ::mu::engraving::voices;
 
         for (const Segment &segment : measure->segments()) {
-            if (!staff->show() && !segment.isType(SegmentType::TimeSigTypes)) {
+            if (!staff->show() && !segment.is_type(SegmentType::TIME_SIG_TYPES)) {
                 continue;
             }
 
-            SegmentLayout::layoutMeasureIndependentElements(segment, startTrack, ctx);
+            SegmentLayout::layout_measure_independent_elements(segment, start_track, ctx);
 
-            if (!segment.isJustType(SegmentType::ChordRest)) {
+            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
                 continue;
             }
 
             //! NOTE Maybe it makes sense to group these methods by chord
 
-            SegmentLayout::setChordMag(staff, segment, startTrack, endTrack, conf);
+            SegmentLayout::set_chord_mag(staff, segment, start_track, end_track, conf);
 
-            SegmentLayout::layoutChordDrumset(staff, segment, startTrack, endTrack, conf);
+            SegmentLayout::layout_chord_drumset(staff, segment, start_track, end_track, conf);
 
-            SegmentLayout::computeChordsUp(segment, startTrack, endTrack, ctx);
+            SegmentLayout::compute_chords_up(segment, start_track, end_track, ctx);
 
-            SegmentLayout::layoutChordsStem(segment, startTrack, endTrack, ctx);
+            SegmentLayout::layout_chords_stem(segment, start_track, end_track, ctx);
         }
     }
 
-    BeamLayout::createBeams(ctx, measure);
+    BeamLayout::create_beams(ctx, measure);
 
     /* HACK: The real beam layout is computed at much later stage (you can't do the beams until you know
      * horizontal spacing). However, horizontal spacing needs to know stems extensions to avoid collision
@@ -254,35 +254,35 @@ void MeasureLayout::layoutMeasure(MeasureBase *currentMB, LayoutContext &ctx) {
      * horizontal spacing. It is pointless for the beams themselves, but it *does* correctly extend the
      * stems, thus allowing to compute horizontal spacing correctly. (M.S.) */
     for (Segment &s : measure->segments()) {
-        if (!s.isChordRestType()) {
+        if (!s.is_chord_rest_type()) {
             continue;
         }
         for (EngravingItem *item : s.elist()) {
-            if (!item || !item->isChordRest()) {
+            if (!item || !item->is_chord_rest()) {
                 continue;
             }
-            if (const Staff *staff = ctx.dom().staff(item->vStaffIdx()); staff && staff->show()) {
-                BeamLayout::layoutNonCrossBeams(toChordRest(item), ctx);
+            if (const Staff *staff = ctx.dom().staff(item->v_staff_idx()); staff && staff->show()) {
+                BeamLayout::layout_non_cross_beams(to_chord_rest(item), ctx);
             }
         }
     }
 
-    for (staff_idx_t staffIdx = 0; staffIdx < ctx.dom().nstaves(); ++staffIdx) {
-        const Staff *staff = ctx.dom().staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+        const Staff *staff = ctx.dom().staff(staff_idx);
         if (!staff->show()) {
             continue;
         }
 
         for (Segment &segment : measure->segments()) {
-            if (segment.isChordRestType()) {
-                ChordLayout::layoutChords1(ctx, &segment, staffIdx);
-                RestLayout::resolveVerticalRestConflicts(ctx, &segment, staffIdx);
-                for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-                    ChordRest *cr = segment.cr(staffIdx * VOICES + voice);
+            if (segment.is_chord_rest_type()) {
+                ChordLayout::layout_chords1(ctx, &segment, staff_idx);
+                RestLayout::resolve_vertical_rest_conflicts(ctx, &segment, staff_idx);
+                for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+                    ChordRest *cr = segment.cr(staff_idx * ::mu::engraving::voices + voice);
                     if (cr) {
                         for (Lyrics *l : cr->lyrics()) {
                             if (l) {
-                                TLayout::layoutLyrics(l, ctx);
+                                TLayout::layout_lyrics(l, ctx);
                             }
                         }
                     }
@@ -292,64 +292,64 @@ void MeasureLayout::layoutMeasure(MeasureBase *currentMB, LayoutContext &ctx) {
     }
 
     for (Segment &segment : measure->segments()) {
-        if (segment.isBreathType()) {
+        if (segment.is_breath_type()) {
             for (EngravingItem *e : segment.elist()) {
-                if (e && e->isBreath()) {
-                    TLayout::layoutItem(e, ctx);
+                if (e && e->is_breath()) {
+                    TLayout::layout_item(e, ctx);
                 }
             }
-        } else if (segment.isChordRestType()) {
-            ChordBracketLayout::layoutSegment(&segment, ctx);
+        } else if (segment.is_chord_rest_type()) {
+            ChordBracketLayout::layout_segment(&segment, ctx);
             for (EngravingItem *e : segment.annotations()) {
-                if (e->isSymbol() || e->isHarmony() || e->isFretDiagram()) {
-                    TLayout::layoutItem(e, ctx);
+                if (e->is_symbol() || e->is_harmony() || e->is_fret_diagram()) {
+                    TLayout::layout_item(e, ctx);
                 }
             }
         }
     }
 
-    Segment *seg = measure->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
-    if (measure->repeatStart()) {
+    Segment *seg = measure->find_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
+    if (measure->repeat_start()) {
         if (!seg) {
-            seg = measure->getSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+            seg = measure->get_segment_r(SegmentType::START_REPEAT_BAR_LINE, Fraction(0, 1));
         }
-        barLinesSetSpan(seg, ctx); // this also creates necessary barlines
-        for (size_t staffIdx = 0; staffIdx < ctx.dom().nstaves(); ++staffIdx) {
-            BarLine *b = toBarLine(seg->element(staffIdx * VOICES));
+        bar_lines_set_span(seg, ctx); // this also creates necessary barlines
+        for (size_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+            BarLine *b = to_bar_line(seg->element(staff_idx * ::mu::engraving::voices));
             if (b) {
-                b->setBarLineType(BarLineType::START_REPEAT);
-                TLayout::layoutBarLine(b, b->mutldata(), ctx);
+                b->set_bar_line_type(BarLineType::START_REPEAT);
+                TLayout::layout_bar_line(b, b->mutldata(), ctx);
             }
         }
     } else if (seg) {
-        ctx.mutDom().undoRemoveElement(seg);
+        ctx.mut_dom().undo_remove_element(seg);
     }
 
     for (Segment &s : measure->segments()) {
-        if (s.isEndBarLineType()) {
+        if (s.is_end_bar_line_type()) {
             continue;
         }
-        s.createShapes();
+        s.create_shapes();
     }
 
-    measure->computeTicks(); // Must be called *after* Segment::createShapes() because it relies on the
+    measure->compute_ticks(); // Must be called *after* Segment::createShapes() because it relies on the
     // Segment::visible() property, which is determined by Segment::createShapes().
 }
 
-void MeasureLayout::updateGraceNotes(Measure *measure, LayoutContext &ctx) {
+void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
     // Clean everything
     for (Segment &s : measure->segments()) {
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
-            EngravingItem *e = s.preAppendedItem(track);
-            if (e && e->isGraceNotesGroup()) {
-                s.clearPreAppended(track);
-                std::set<staff_idx_t> stavesToReShape;
-                for (Chord *grace : *toGraceNotesGroup(e)) {
-                    stavesToReShape.insert(grace->staffIdx());
-                    stavesToReShape.insert(grace->vStaffIdx());
+            EngravingItem *e = s.pre_appended_item(track);
+            if (e && e->is_grace_notes_group()) {
+                s.clear_pre_appended(track);
+                std::set<staff_idx_t> staves_to_re_shape;
+                for (Chord *grace : *to_grace_notes_group(e)) {
+                    staves_to_re_shape.insert(grace->staff_idx());
+                    staves_to_re_shape.insert(grace->v_staff_idx());
                 }
-                for (staff_idx_t staffToReshape : stavesToReShape) {
-                    s.createShape(staffToReshape);
+                for (staff_idx_t staff_to_reshape : staves_to_re_shape) {
+                    s.create_shape(staff_to_reshape);
                 }
             }
         }
@@ -357,12 +357,12 @@ void MeasureLayout::updateGraceNotes(Measure *measure, LayoutContext &ctx) {
 
     // Append grace notes to appropriate segment
     for (Segment &s : measure->segments()) {
-        if (!s.isChordRestType()) {
+        if (!s.is_chord_rest_type()) {
             continue;
         }
         for (auto el : s.elist()) {
-            if (el && el->isChord() && !toChord(el)->graceNotes().empty()) {
-                ChordLayout::appendGraceNotes(toChord(el));
+            if (el && el->is_chord() && !to_chord(el)->grace_notes().empty()) {
+                ChordLayout::append_grace_notes(to_chord(el));
             }
         }
     }
@@ -370,81 +370,81 @@ void MeasureLayout::updateGraceNotes(Measure *measure, LayoutContext &ctx) {
     // Layout grace note groups
     for (Segment &s : measure->segments()) {
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
-            EngravingItem *e = s.preAppendedItem(track);
-            if (e && e->isGraceNotesGroup()) {
-                GraceNotesGroup *gng = toGraceNotesGroup(e);
-                TLayout::layoutGraceNotesGroup(gng, ctx);
-                gng->addToShape();
+            EngravingItem *e = s.pre_appended_item(track);
+            if (e && e->is_grace_notes_group()) {
+                GraceNotesGroup *gng = to_grace_notes_group(e);
+                TLayout::layout_grace_notes_group(gng, ctx);
+                gng->add_to_shape();
             }
         }
     }
 }
 
-void MeasureLayout::getNextMeasure(LayoutContext &ctx) {
+void MeasureLayout::get_next_measure(LayoutContext &ctx) {
     TRACEFUNC;
     LAYOUT_CALL();
 
-    moveToNextMeasure(ctx);
+    move_to_next_measure(ctx);
 
-    updateTicksMeasNumbersAndMMRests(ctx.mutState().curMeasure(), ctx);
+    update_ticks_meas_numbers_and_mm_rests(ctx.mut_state().cur_measure(), ctx);
 
-    MeasureBase *mb = ctx.mutState().curMeasure();
-    if (mb && mb->isMeasure()) {
-        toMeasure(mb)->mutldata()->setNeedLayout(true);
+    MeasureBase *mb = ctx.mut_state().cur_measure();
+    if (mb && mb->is_measure()) {
+        to_measure(mb)->mutldata()->set_need_layout(true);
     }
 }
 
-void MeasureLayout::updateTicksMeasNumbersAndMMRests(MeasureBase *currentMB, LayoutContext &ctx) {
-    IF_ASSERT_FAILED(currentMB == ctx.state().curMeasure()) { return; }
+void MeasureLayout::update_ticks_meas_numbers_and_mm_rests(MeasureBase *current_mb, LayoutContext &ctx) {
+    IF_ASSERT_FAILED(current_mb == ctx.state().cur_measure()) { return; }
 
-    if (!currentMB) {
+    if (!current_mb) {
         return;
     }
 
-    if (!currentMB->isMeasure()) {
-        assert(currentMB->tick() == ctx.state().tick());
+    if (!current_mb->is_measure()) {
+        assert(current_mb->tick() == ctx.state().tick());
 
-        const LayoutBreak *layoutBreak = currentMB->sectionBreakElement();
-        if (layoutBreak && layoutBreak->startWithMeasureOne()) {
-            ctx.mutState().setMeasureNumber(0);
+        const LayoutBreak *layout_break = current_mb->section_break_element();
+        if (layout_break && layout_break->start_with_measure_one()) {
+            ctx.mut_state().set_measure_number(0);
         }
 
         return;
     }
 
-    Measure *measure = toMeasure(currentMB);
+    Measure *measure = to_measure(current_mb);
 
-    int measureNumber = adjustMeasureNumber(measure, ctx.state().measureNumber());
+    int measure_number = adjust_measure_number(measure, ctx.state().measure_number());
 
-    ctx.mutState().setMeasureNumber(measureNumber);
+    ctx.mut_state().set_measure_number(measure_number);
 
-    MMRestLayout::createMultiMeasureRestsIfNeed(measure, ctx);
+    MMRestLayout::create_multi_measure_rests_if_need(measure, ctx);
 
-    currentMB = ctx.mutState().curMeasure();
-    measure = toMeasure(currentMB);
+    current_mb = ctx.mut_state().cur_measure();
+    measure = to_measure(current_mb);
 
-    measure->moveTicks(ctx.state().tick() - measure->tick());
+    measure->move_ticks(ctx.state().tick() - measure->tick());
 
-    ctx.mutState().setTick(ctx.state().tick() + measure->ticks());
+    ctx.mut_state().set_tick(ctx.state().tick() + measure->ticks());
 }
 
 //---------------------------------------------------------
 //   adjustMeasureNumber
 //---------------------------------------------------------
 
-int MeasureLayout::adjustMeasureNumber(Measure *m, int measureNumber) {
-    measureNumber += m->measureNumberOffset();
-    m->setMeasureNumber(measureNumber);
-    if (!m->excludeFromNumbering()) {
-        ++measureNumber;
+int MeasureLayout::adjust_measure_number(Measure *m, int measure_number) {
+    measure_number += m->measure_number_offset();
+    m->set_measure_number(measure_number);
+    if (!m->exclude_from_numbering()) {
+        ++measure_number;
     }
 
-    const LayoutBreak *layoutBreak = m->sectionBreakElement();
-    if (layoutBreak && layoutBreak->startWithMeasureOne()) {
-        measureNumber = 0;
+    const LayoutBreak *layout_break = m->section_break_element();
+    if (layout_break && layout_break->start_with_measure_one()) {
+        measure_number = 0;
     }
 
-    return measureNumber;
+    return measure_number;
 }
 
 /****************************************************************
@@ -453,183 +453,184 @@ int MeasureLayout::adjustMeasureNumber(Measure *m, int measureNumber) {
  * Caution: assumes that the system is known! (which is why we
  * cannot compute this stuff in LayoutMeasure::getNextMeasure().)
  * **************************************************************/
-void MeasureLayout::computePreSpacingItems(Measure *m, LayoutContext &ctx) {
+void MeasureLayout::compute_pre_spacing_items(Measure *m, LayoutContext &ctx) {
     // Compute chord properties
-    bool isFirstChordInMeasure = true;
-    ChordLayout::clearLineAttachPoints(m);
+    bool is_first_chord_in_measure = true;
+    ChordLayout::clear_line_attach_points(m);
     for (Segment &seg : m->segments()) {
-        if (!seg.isChordRestType()) {
+        if (!seg.is_chord_rest_type()) {
             continue;
         }
         for (EngravingItem *e : seg.elist()) {
-            if (!e || !e->isChord()) {
+            if (!e || !e->is_chord()) {
                 continue;
             }
-            Chord *chord = toChord(e);
+            Chord *chord = to_chord(e);
             Staff *staff = chord->staff();
             if (staff && !staff->show()) {
                 continue;
             }
 
-            ChordLayout::updateLineAttachPoints(chord, isFirstChordInMeasure, ctx);
-            for (Chord *gn : chord->graceNotes()) {
-                ChordLayout::updateLineAttachPoints(gn, false, ctx);
+            ChordLayout::update_line_attach_points(chord, is_first_chord_in_measure, ctx);
+            for (Chord *gn : chord->grace_notes()) {
+                ChordLayout::update_line_attach_points(gn, false, ctx);
             }
             if (chord->arpeggio()) {
-                ArpeggioLayout::clearAccidentals(chord->arpeggio(), ctx);
+                ArpeggioLayout::clear_accidentals(chord->arpeggio(), ctx);
             }
 
-            ChordLayout::layoutArticulations(chord, ctx);
-            ChordLayout::checkStartEndSlurs(chord, ctx);
-            ChordLayout::layoutArticulations2(chord, ctx);
-            chord->computeKerningExceptions();
+            ChordLayout::layout_articulations(chord, ctx);
+            ChordLayout::check_start_end_slurs(chord, ctx);
+            ChordLayout::layout_articulations2(chord, ctx);
+            chord->compute_kerning_exceptions();
         }
 
         for (EngravingItem *annotation : seg.annotations()) {
-            if (annotation->isFermata()) {
-                TLayout::layoutItem(annotation, ctx);
+            if (annotation->is_fermata()) {
+                TLayout::layout_item(annotation, ctx);
             }
         }
 
-        ChordBracketLayout::layoutSegment(&seg, ctx);
-        seg.createShapes();
-        isFirstChordInMeasure = false;
+        ChordBracketLayout::layout_segment(&seg, ctx);
+        seg.create_shapes();
+        is_first_chord_in_measure = false;
     }
 }
 
-void MeasureLayout::layoutStaffLines(Measure *m, LayoutContext &ctx) {
-    int staffIdx = 0;
+void MeasureLayout::layout_staff_lines(Measure *m, LayoutContext &ctx) {
+    int staff_idx = 0;
     for (const MStaff *ms : m->mstaves()) {
-        if (m->isCutawayClef(staffIdx) && (ctx.dom().staff(staffIdx)->cutaway() || !m->visible(staffIdx))) {
+        if (m->is_cutaway_clef(staff_idx) && (ctx.dom().staff(staff_idx)->cutaway() || !m->visible(staff_idx))) {
             // draw short staff lines for a courtesy clef on a hidden measure
-            Segment *clefSeg = m->findSegmentR(SegmentType::Clef, m->ticks());
-            double staffMag = ctx.dom().staff(staffIdx)->staffMag(m->tick());
-            double partialWidth =
-                clefSeg ? m->width() - clefSeg->x() + clefSeg->minLeft() + ctx.conf().styleAbsolute(Sid::clefLeftMargin) * staffMag : 0.0;
-            layoutPartialWidth(ms->lines(), ctx, m->width(), partialWidth / (m->spatium() * staffMag), true);
+            Segment *clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+            double staff_mag = ctx.dom().staff(staff_idx)->staff_mag(m->tick());
+            double partial_width = clef_seg ? m->width() - clef_seg->x() + clef_seg->min_left() +
+                                                  ctx.conf().style_absolute(Sid::CLEF_LEFT_MARGIN) * staff_mag :
+                                              0.0;
+            layout_partial_width(ms->lines(), ctx, m->width(), partial_width / (m->spatium() * staff_mag), true);
         } else {
             // normal staff lines
-            TLayout::layoutStaffLines(ms->lines(), ctx);
+            TLayout::layout_staff_lines(ms->lines(), ctx);
         }
-        staffIdx += 1;
+        staff_idx += 1;
     }
 }
 
-void MeasureLayout::layoutPlayCountText(Measure *m, LayoutContext &ctx) {
-    if (!m->repeatEnd()) {
+void MeasureLayout::layout_play_count_text(Measure *m, LayoutContext &ctx) {
+    if (!m->repeat_end()) {
         return;
     }
 
     Score *score = m->score();
-    const std::vector<MStaff *> &measureStaves = m->mstaves();
+    const std::vector<MStaff *> &measure_staves = m->mstaves();
 
-    for (staff_idx_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-        if (staffIdx >= measureStaves.size()) {
+    for (staff_idx_t staff_idx = 0; staff_idx < score->nstaves(); ++staff_idx) {
+        if (staff_idx >= measure_staves.size()) {
             break;
         }
-        track_idx_t track = staff2track(staffIdx);
+        track_idx_t track = staff2track(staff_idx);
 
-        Segment *endBarSeg = m->last(SegmentType::BarLineTypes);
-        PlayCountText *playCount =
-            endBarSeg ? toPlayCountText(endBarSeg->findAnnotation(ElementType::PLAY_COUNT_TEXT, track, track)) : nullptr;
-        if (!playCount) {
+        Segment *end_bar_seg = m->last(SegmentType::BAR_LINE_TYPES);
+        PlayCountText *play_count =
+            end_bar_seg ? to_play_count_text(end_bar_seg->find_annotation(ElementType::PLAY_COUNT_TEXT, track, track)) : nullptr;
+        if (!play_count) {
             continue;
         }
 
         String text;
-        const int repeatCount = m->repeatCount();
-        String defaultText =
-            TConv::translatedUserName(ctx.conf().styleV(Sid::repeatPlayCountPreset).value<RepeatPlayCountPreset>()).arg(repeatCount);
+        const int repeat_count = m->repeat_count();
+        String default_text =
+            TConv::translated_user_name(ctx.conf().style_v(Sid::REPEAT_PLAY_COUNT_PRESET).value<RepeatPlayCountPreset>()).arg(repeat_count);
 
-        switch (playCount->playCountTextSetting()) {
-            case AutoCustomHide::AUTO: text = defaultText; break;
+        switch (play_count->play_count_text_setting()) {
+            case AutoCustomHide::AUTO: text = default_text; break;
             case AutoCustomHide::CUSTOM:
-                text = playCount->playCountCustomText();
+                text = play_count->play_count_custom_text();
                 if (text.empty()) {
-                    text = defaultText;
+                    text = default_text;
                 }
                 break;
-            case AutoCustomHide::HIDE: playCount->mutldata()->setIsSkipDraw(true); break;
+            case AutoCustomHide::HIDE: play_count->mutldata()->set_is_skip_draw(true); break;
         }
 
-        if (!playCount->cursor()->editing()) {
-            playCount->setXmlText(text);
+        if (!play_count->cursor()->editing()) {
+            play_count->set_xml_text(text);
         }
     }
 }
 
-void MeasureLayout::layoutMeasureNumber(Measure *m, LayoutContext &ctx) {
-    MeasureNumberPlacement placementMode = ctx.conf().styleV(Sid::measureNumberPlacementMode).value<MeasureNumberPlacement>();
+void MeasureLayout::layout_measure_number(Measure *m, LayoutContext &ctx) {
+    MeasureNumberPlacement placement_mode = ctx.conf().style_v(Sid::MEASURE_NUMBER_PLACEMENT_MODE).value<MeasureNumberPlacement>();
 
-    String stringNum = String::number(m->measureNumber() + 1);
+    String string_num = String::number(m->measure_number() + 1);
 
     Score *score = m->score();
 
-    const std::vector<MStaff *> &measureStaves = m->mstaves();
+    const std::vector<MStaff *> &measure_staves = m->mstaves();
 
-    for (staff_idx_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-        if (staffIdx >= measureStaves.size()) {
+    for (staff_idx_t staff_idx = 0; staff_idx < score->nstaves(); ++staff_idx) {
+        if (staff_idx >= measure_staves.size()) {
             break;
         }
 
-        if (m->showMeasureNumberOnStaff(staffIdx)) {
-            MeasureNumber *measureNumber = measureStaves[staffIdx]->measureNumber();
-            if (!measureNumber) {
-                measureNumber = new MeasureNumber(m);
-                measureNumber->setTrack(staff2track(staffIdx));
-                measureNumber->setGenerated(true);
-                m->add(measureNumber);
+        if (m->show_measure_number_on_staff(staff_idx)) {
+            MeasureNumber *measure_number = measure_staves[staff_idx]->measure_number();
+            if (!measure_number) {
+                measure_number = new MeasureNumber(m);
+                measure_number->set_track(staff2track(staff_idx));
+                measure_number->set_generated(true);
+                m->add(measure_number);
             }
 
-            measureNumber->setXmlText(stringNum);
-            measureNumber->setSystemFlag(placementMode != MeasureNumberPlacement::ON_ALL_STAVES);
-            TLayout::layoutMeasureNumber(measureNumber, measureNumber->mutldata(), ctx);
+            measure_number->set_xml_text(string_num);
+            measure_number->set_system_flag(placement_mode != MeasureNumberPlacement::ON_ALL_STAVES);
+            TLayout::layout_measure_number(measure_number, measure_number->mutldata(), ctx);
         }
     }
 }
 
-MeasureLayout::MeasureStartEndPos MeasureLayout::getMeasureStartEndPos(const Measure *measure, const Segment *firstCrSeg,
-                                                                       const staff_idx_t staffIdx, const bool needsHeaderException,
-                                                                       const bool modernMMRest, const LayoutContext &ctx) {
-    if (!measure || !firstCrSeg) {
+MeasureLayout::MeasureStartEndPos MeasureLayout::get_measure_start_end_pos(const Measure *measure, const Segment *first_cr_seg,
+                                                                           const staff_idx_t staff_idx, const bool needs_header_exception,
+                                                                           const bool modern_mm_rest, const LayoutContext &ctx) {
+    if (!measure || !first_cr_seg) {
         return MeasureStartEndPos(0.0, 0.0);
     }
 
     Segment *s1;
-    for (s1 = firstCrSeg->prevActive(); s1 && s1->allElementsInvisible(); s1 = s1->prevActive()) {}
+    for (s1 = first_cr_seg->prev_active(); s1 && s1->all_elements_invisible(); s1 = s1->prev_active()) {}
     Segment *s2;
 
-    for (s2 = firstCrSeg->nextActive(); s2; s2 = s2->nextActive()) {
-        if (modernMMRest && !s2->isChordRestType() && !s2->isBreathType() && s2->element(staffIdx * VOICES)) {
+    for (s2 = first_cr_seg->next_active(); s2; s2 = s2->next_active()) {
+        if (modern_mm_rest && !s2->is_chord_rest_type() && !s2->is_breath_type() && s2->element(staff_idx * ::mu::engraving::voices)) {
             break;
         }
 
-        if (!modernMMRest &&
-            (s2->isClefRepeatAnnounceType() || (s2->isTimeSigRepeatAnnounceType() && !s2->hasTimeSigAboveStaves()) ||
-             s2->isKeySigRepeatAnnounceType() || s2->isEndBarLineType()) &&
-            s2->element(staffIdx * VOICES)) {
+        if (!modern_mm_rest &&
+            (s2->is_clef_repeat_announce_type() || (s2->is_time_sig_repeat_announce_type() && !s2->has_time_sig_above_staves()) ||
+             s2->is_key_sig_repeat_announce_type() || s2->is_end_bar_line_type()) &&
+            s2->element(staff_idx * ::mu::engraving::voices)) {
             break;
         }
     }
 
     double x1 = 0.0;
     while (s1) {
-        if (!s1->hasTimeSigAboveStaves() && !s1->allElementsInvisible()) {
-            x1 = std::max(x1, s1->x() + s1->minRight());
-            if (s1->isCourtesySegment()) {
+        if (!s1->has_time_sig_above_staves() && !s1->all_elements_invisible()) {
+            x1 = std::max(x1, s1->x() + s1->min_right());
+            if (s1->is_courtesy_segment()) {
                 break;
             }
         }
-        s1 = s1->prevActive();
+        s1 = s1->prev_active();
     }
 
-    double x2 = s2 ? s2->x() - s2->minLeft() : measure->width();
+    double x2 = s2 ? s2->x() - s2->min_left() : measure->width();
 
-    bool headerException =
-        measure->header() && firstCrSeg->prev() && !firstCrSeg->prev()->isStartRepeatBarLineType() && needsHeaderException;
-    if (headerException) { //needs this exception on header bar
+    bool header_exception =
+        measure->header() && first_cr_seg->prev() && !first_cr_seg->prev()->is_start_repeat_bar_line_type() && needs_header_exception;
+    if (header_exception) { //needs this exception on header bar
         // Set x1 to the imaginary barline located the minimum barline->note distance to the left of the rest's segment
-        x1 = firstCrSeg->x() - ctx.conf().styleAbsolute(Sid::barNoteDistance);
+        x1 = first_cr_seg->x() - ctx.conf().style_absolute(Sid::BAR_NOTE_DISTANCE);
     }
 
     return MeasureStartEndPos(x1, x2);
@@ -643,7 +644,7 @@ MeasureLayout::MeasureStartEndPos MeasureLayout::getMeasureStartEndPos(const Mea
 //  performed elsewhere and only the layout tasks are kept.
 //-----------------------------------------------------------------------------
 
-void MeasureLayout::layoutMeasureElements(Measure *m, LayoutContext &ctx) {
+void MeasureLayout::layout_measure_elements(Measure *m, LayoutContext &ctx) {
     //---------------------------------------------------
     //    layout individual elements
     //---------------------------------------------------
@@ -654,121 +655,122 @@ void MeasureLayout::layoutMeasureElements(Measure *m, LayoutContext &ctx) {
         }
 
         // After the rest of the spacing is calculated we position grace-notes-after.
-        ChordLayout::repositionGraceNotesAfter(&s, ctx.dom().ntracks());
+        ChordLayout::reposition_grace_notes_after(&s, ctx.dom().ntracks());
 
         for (EngravingItem *e : s.elist()) {
             if (!e) {
                 continue;
             }
-            staff_idx_t staffIdx = e->staffIdx();
-            bool modernMMRest = e->isMMRest() && !toMMRest(e)->isOldStyle();
-            if ((e->isRest() && toRest(e)->isFullMeasureRest()) || e->isMMRest() || e->isMeasureRepeat()) {
+            staff_idx_t staff_idx = e->staff_idx();
+            bool modern_mm_rest = e->is_mm_rest() && !to_mm_rest(e)->is_old_style();
+            if ((e->is_rest() && to_rest(e)->is_full_measure_rest()) || e->is_mm_rest() || e->is_measure_repeat()) {
                 //
                 // element has to be centered in free space
                 //    x1 - left measure position of free space
                 //    x2 - right measure position of free space
 
-                const MeasureStartEndPos measureStartEnd = getMeasureStartEndPos(m, &s, staffIdx, e->isMMRest(), modernMMRest, ctx);
+                const MeasureStartEndPos measure_start_end =
+                    get_measure_start_end_pos(m, &s, staff_idx, e->is_mm_rest(), modern_mm_rest, ctx);
 
-                const double x1 = measureStartEnd.x1;
-                const double x2 = measureStartEnd.x2;
+                const double x1 = measure_start_end.x1;
+                const double x2 = measure_start_end.x2;
 
-                if (e->isMMRest()) {
-                    MMRest *mmrest = toMMRest(e);
+                if (e->is_mm_rest()) {
+                    MMRest *mmrest = to_mm_rest(e);
                     // center multimeasure rest
-                    double d = ctx.conf().styleAbsolute(Sid::multiMeasureRestMargin);
+                    double d = ctx.conf().style_absolute(Sid::MULTI_MEASURE_REST_MARGIN);
                     double w = x2 - x1 - 2 * d;
-                    MMRest::LayoutData *mmrestLD = mmrest->mutldata();
-                    mmrestLD->restWidth = w;
-                    TLayout::layoutMMRest(mmrest, mmrest->mutldata(), ctx);
-                    mmrestLD->setPosX(x1 - s.x() + d);
-                } else if (e->isMeasureRepeat() && !(toMeasureRepeat(e)->numMeasures() % 2)) {
+                    MMRest::LayoutData *mmrest_ld = mmrest->mutldata();
+                    mmrest_ld->rest_width = w;
+                    TLayout::layout_mm_rest(mmrest, mmrest->mutldata(), ctx);
+                    mmrest_ld->set_pos_x(x1 - s.x() + d);
+                } else if (e->is_measure_repeat() && !(to_measure_repeat(e)->num_measures() % 2)) {
                     // two- or four-measure repeat, center on following barline
-                    double measureWidth = x2 - s.x() + .5 * (m->styleP(Sid::barWidth));
-                    e->mutldata()->setPosX(measureWidth - .5 * e->width());
-                    if (toMeasureRepeat(e)->numMeasures() == 4 && ctx.conf().styleB(Sid::fourMeasureRepeatShowExtenders)) {
-                        TLayout::layoutMeasureRepeatExtender(toMeasureRepeat(e), toMeasureRepeat(e)->mutldata(), ctx);
+                    double measure_width = x2 - s.x() + .5 * (m->style_p(Sid::BAR_WIDTH));
+                    e->mutldata()->set_pos_x(measure_width - .5 * e->width());
+                    if (to_measure_repeat(e)->num_measures() == 4 && ctx.conf().style_b(Sid::FOUR_MEASURE_REPEAT_SHOW_EXTENDERS)) {
+                        TLayout::layout_measure_repeat_extender(to_measure_repeat(e), to_measure_repeat(e)->mutldata(), ctx);
                     }
                 } else {
                     // full measure rest or one-measure repeat, center within this measure
-                    TLayout::layoutItem(e, ctx);
+                    TLayout::layout_item(e, ctx);
                     Shape sh = e->ldata()->shape();
-                    auto shEL = sh.find_first(ElementType::REST);
+                    auto sh_el = sh.find_first(ElementType::REST);
                     //! HACK Previously, bbox of rest was used here
                     //! Now we are using a shape, and in the shape we need to find the part related to rest
                     //! But in some cases, the information about what the ShapeElement belongs to will disappear at the moment (item is null),
                     //! in this case, let's just take the first element, it currently corresponds to the rest
-                    if (!shEL) {
-                        shEL = sh.get_first();
+                    if (!sh_el) {
+                        sh_el = sh.get_first();
                     }
-                    if (shEL) {
-                        e->mutldata()->setPosX((x2 - x1 - shEL->width()) * .5 + x1 - s.x() - shEL->x());
+                    if (sh_el) {
+                        e->mutldata()->set_pos_x((x2 - x1 - sh_el->width()) * .5 + x1 - s.x() - sh_el->x());
                     }
                 }
-                s.createShape(staffIdx); // DEBUG
-            } else if (e->isRest()) {
-                e->mutldata()->setPosX(0);
-            } else if (e->isChord()) {
-                Chord *c = toChord(e);
-                if (c->tremoloSingleChord()) {
-                    TremoloLayout::layout(c->tremoloSingleChord(), ctx);
+                s.create_shape(staff_idx); // DEBUG
+            } else if (e->is_rest()) {
+                e->mutldata()->set_pos_x(0);
+            } else if (e->is_chord()) {
+                Chord *c = to_chord(e);
+                if (c->tremolo_single_chord()) {
+                    TremoloLayout::layout(c->tremolo_single_chord(), ctx);
                 }
 
-                if (c->tremoloTwoChord()) {
-                    TremoloTwoChord *tr = c->tremoloTwoChord();
+                if (c->tremolo_two_chord()) {
+                    TremoloTwoChord *tr = c->tremolo_two_chord();
                     Chord *c1 = tr->chord1();
                     Chord *c2 = tr->chord2();
-                    if (c1 && !c1->staffMove() && c2 && !c2->staffMove()) {
+                    if (c1 && !c1->staff_move() && c2 && !c2->staff_move()) {
                         TremoloLayout::layout(tr, ctx);
                     }
                 }
 
-                for (Chord *g : c->graceNotes()) {
-                    if (g->tremoloSingleChord()) {
-                        TremoloLayout::layout(g->tremoloSingleChord(), ctx);
+                for (Chord *g : c->grace_notes()) {
+                    if (g->tremolo_single_chord()) {
+                        TremoloLayout::layout(g->tremolo_single_chord(), ctx);
                     }
 
-                    if (g->tremoloTwoChord()) {
-                        TremoloTwoChord *tr = g->tremoloTwoChord();
+                    if (g->tremolo_two_chord()) {
+                        TremoloTwoChord *tr = g->tremolo_two_chord();
                         Chord *gc1 = tr->chord1();
                         Chord *gc2 = tr->chord2();
-                        if (gc1 && !gc1->staffMove() && gc2 && !gc2->staffMove()) {
+                        if (gc1 && !gc1->staff_move() && gc2 && !gc2->staff_move()) {
                             TremoloLayout::layout(tr, ctx);
                         }
                     }
                 }
-            } else if (e->isBarLine()) {
-                e->mutldata()->setPosY(0.0);
+            } else if (e->is_bar_line()) {
+                e->mutldata()->set_pos_y(0.0);
                 // for end barlines, x position was set in createEndBarLines
-                if (s.segmentType() != SegmentType::EndBarLine) {
-                    e->mutldata()->setPosX(0.0);
+                if (s.segment_type() != SegmentType::END_BAR_LINE) {
+                    e->mutldata()->set_pos_x(0.0);
                 }
             }
         }
     }
 }
 
-void MeasureLayout::barLinesSetSpan(Segment *seg, LayoutContext &ctx) {
+void MeasureLayout::bar_lines_set_span(Segment *seg, LayoutContext &ctx) {
     int track = 0;
     for (Staff *staff : ctx.dom().staves()) {
-        BarLine *bl = toBarLine(seg->element(track)); // get existing bar line for this staff, if any
+        BarLine *bl = to_bar_line(seg->element(track)); // get existing bar line for this staff, if any
         if (bl) {
             if (bl->generated()) {
-                bl->setSpanStaff(staff->barLineSpan());
-                bl->setSpanFrom(staff->barLineFrom());
-                bl->setSpanTo(staff->barLineTo());
+                bl->set_span_staff(staff->bar_line_span());
+                bl->set_span_from(staff->bar_line_from());
+                bl->set_span_to(staff->bar_line_to());
             }
         } else {
-            bl = Factory::createBarLine(seg);
-            bl->setTrack(track);
-            bl->setGenerated(true);
-            bl->setSpanStaff(staff->barLineSpan());
-            bl->setSpanFrom(staff->barLineFrom());
-            bl->setSpanTo(staff->barLineTo());
-            TLayout::layoutBarLine(bl, bl->mutldata(), ctx);
-            ctx.mutDom().addElement(bl);
+            bl = Factory::create_bar_line(seg);
+            bl->set_track(track);
+            bl->set_generated(true);
+            bl->set_span_staff(staff->bar_line_span());
+            bl->set_span_from(staff->bar_line_from());
+            bl->set_span_to(staff->bar_line_to());
+            TLayout::layout_bar_line(bl, bl->mutldata(), ctx);
+            ctx.mut_dom().add_element(bl);
         }
-        track += VOICES;
+        track += ::mu::engraving::voices;
     }
 }
 
@@ -778,578 +780,585 @@ void MeasureLayout::barLinesSetSpan(Segment *seg, LayoutContext &ctx) {
 //    return the width change for measure
 //---------------------------------------------------------
 
-void MeasureLayout::createEndBarLines(Measure *m, bool isLastMeasureInSystem, LayoutContext &ctx) {
+void MeasureLayout::create_end_bar_lines(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx) {
     const size_t nstaves = ctx.dom().nstaves();
-    Segment *barlineSeg = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
-    const Measure *nextMeasure = m->nextMeasure();
-    double barlineWidth = 0.0;
-    bool sectionBreakHideCourtesy = false;
-    if (LayoutBreak *sectionBreakElement = m->sectionBreakElement()) {
-        sectionBreakHideCourtesy = !sectionBreakElement->showCourtesy();
+    Segment *barline_seg = m->find_segment_r(SegmentType::END_BAR_LINE, m->ticks());
+    const Measure *next_measure = m->next_measure();
+    double barline_width = 0.0;
+    bool section_break_hide_courtesy = false;
+    if (LayoutBreak *section_break_element = m->section_break_element()) {
+        section_break_hide_courtesy = !section_break_element->show_courtesy();
     }
 
-    m->setHasCourtesyKeySig(false);
+    m->set_has_courtesy_key_sig(false);
     //  Set flag "hasCourtesyKeySig" if this measure needs a courtesy key sig.
     //  This flag is later used to set a double end bar line and to actually
     //  create the courtesy key sig.
 
-    bool hasKeySig = false;
-    bool hasTimeSig = false;
-    bool hasCourtesyTimeSig = false;
-    if (nextMeasure && !sectionBreakHideCourtesy) {
+    bool has_key_sig = false;
+    bool has_time_sig = false;
+    bool has_courtesy_time_sig = false;
+    if (next_measure && !section_break_hide_courtesy) {
         //  Don't change barlines at the end of a section break,
         //  and don't create courtesy key/time signatures.
-        const bool showCourtesyKeySig = (isLastMeasureInSystem && ctx.conf().styleB(Sid::genCourtesyKeysig)) ||
-                                        (m->repeatJump() && ctx.conf().styleB(Sid::showCourtesiesOtherJumps));
+        const bool show_courtesy_key_sig = (is_last_measure_in_system && ctx.conf().style_b(Sid::GEN_COURTESY_KEYSIG)) ||
+                                           (m->repeat_jump() && ctx.conf().style_b(Sid::SHOW_COURTESIES_OTHER_JUMPS));
 
-        Fraction tick = m->endTick();
-        for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-            const Staff *staff = ctx.dom().staff(staffIdx);
-            const KeySigEvent key1 = staff->keySigEvent(tick - Fraction::eps());
-            const KeySigEvent key2 = staff->keySigEvent(tick);
+        Fraction tick = m->end_tick();
+        for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+            const Staff *staff = ctx.dom().staff(staff_idx);
+            const KeySigEvent key1 = staff->key_sig_event(tick - Fraction::eps());
+            const KeySigEvent key2 = staff->key_sig_event(tick);
             if (key1 == key2) {
                 continue;
             }
             // locate a key sig. in next measure and, if found,
             // check if it has court. sig turned off
-            Segment *keySigSeg = nextMeasure->findSegment(SegmentType::KeySig, tick);
-            if (keySigSeg) {
-                hasKeySig = true;
-                KeySig *keySig = toKeySig(keySigSeg->element(staffIdx * VOICES));
-                if (keySig && !keySig->showCourtesy()) {
+            Segment *key_sig_seg = next_measure->find_segment(SegmentType::KEY_SIG, tick);
+            if (key_sig_seg) {
+                has_key_sig = true;
+                KeySig *key_sig = to_key_sig(key_sig_seg->element(staff_idx * ::mu::engraving::voices));
+                if (key_sig && !key_sig->show_courtesy()) {
                     continue;
                 }
             }
-            if (showCourtesyKeySig) {
-                m->setHasCourtesyKeySig(true);
+            if (show_courtesy_key_sig) {
+                m->set_has_courtesy_key_sig(true);
             }
             break;
         }
 
-        bool showCourtesyTimeSig = (isLastMeasureInSystem && ctx.conf().styleB(Sid::genCourtesyTimesig)) ||
-                                   (m->repeatJump() && ctx.conf().styleB(Sid::showCourtesiesOtherJumps));
+        bool show_courtesy_time_sig = (is_last_measure_in_system && ctx.conf().style_b(Sid::GEN_COURTESY_TIMESIG)) ||
+                                      (m->repeat_jump() && ctx.conf().style_b(Sid::SHOW_COURTESIES_OTHER_JUMPS));
 
-        Segment *timeSigSeg = nextMeasure->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-        if (timeSigSeg) {
-            for (track_idx_t track = 0; track < nstaves * VOICES; track += VOICES) {
-                TimeSig *timeSig = toTimeSig(timeSigSeg->element(track));
-                if (!timeSig) {
+        Segment *time_sig_seg = next_measure->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1));
+        if (time_sig_seg) {
+            for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
+                TimeSig *time_sig = to_time_sig(time_sig_seg->element(track));
+                if (!time_sig) {
                     continue;
                 }
-                hasTimeSig = true;
-                if (timeSig->showCourtesySig() && showCourtesyTimeSig) {
-                    hasCourtesyTimeSig = true;
+                has_time_sig = true;
+                if (time_sig->show_courtesy_sig() && show_courtesy_time_sig) {
+                    has_courtesy_time_sig = true;
                 }
                 break;
             }
         }
     }
 
-    bool nextMeasRepeat =
-        nextMeasure && nextMeasure->repeatStart() && !m->repeatEnd() && !isLastMeasureInSystem && m->next() == nextMeasure;
+    bool next_meas_repeat =
+        next_measure && next_measure->repeat_start() && !m->repeat_end() && !is_last_measure_in_system && m->next() == next_measure;
 
-    bool barlineBeforeRepeatSigs = ctx.conf().styleB(Sid::barlineBeforeSigChange) && (hasTimeSig || hasKeySig);
+    bool barline_before_repeat_sigs = ctx.conf().style_b(Sid::BARLINE_BEFORE_SIG_CHANGE) && (has_time_sig || has_key_sig);
 
-    if (nextMeasRepeat && !barlineBeforeRepeatSigs) {
+    if (next_meas_repeat && !barline_before_repeat_sigs) {
         // we may skip barline at end of a measure immediately before a start repeat:
         // next measure is repeat start, this measure is not a repeat end,
         // this is not last measure of system, no intervening frame
-        if (!barlineSeg) {
+        if (!barline_seg) {
             return;
         }
-        barlineSeg->setEnabled(false);
+        barline_seg->set_enabled(false);
     } else {
-        BarLineType blType = nextMeasure ? BarLineType::NORMAL : BarLineType::END;
-        if (!barlineSeg) {
-            barlineSeg = m->getSegmentR(SegmentType::EndBarLine, m->ticks());
+        BarLineType bl_type = next_measure ? BarLineType::NORMAL : BarLineType::END;
+        if (!barline_seg) {
+            barline_seg = m->get_segment_r(SegmentType::END_BAR_LINE, m->ticks());
         }
-        barlineSeg->setEnabled(true);
+        barline_seg->set_enabled(true);
 
-        const bool isRepeatSigBarline = ctx.conf().styleB(Sid::barlineBeforeSigChange) && nextMeasRepeat;
+        const bool is_repeat_sig_barline = ctx.conf().style_b(Sid::BARLINE_BEFORE_SIG_CHANGE) && next_meas_repeat;
 
-        const int keySigBarlineMode = ctx.conf().styleI(Sid::keySigCourtesyBarlineMode);
-        const bool beforeKSCourtesy = keySigBarlineMode == int(CourtesyBarlineMode::DOUBLE_BEFORE_COURTESY) && m->hasCourtesyKeySig();
-        const bool alwaysDoubleKS = keySigBarlineMode == int(CourtesyBarlineMode::ALWAYS_DOUBLE) && hasKeySig;
-        const bool beforeRepeatKS = isRepeatSigBarline && hasKeySig && ctx.conf().styleB(Sid::doubleBarlineBeforeKeySig);
-        if (beforeKSCourtesy || alwaysDoubleKS || beforeRepeatKS) {
-            blType = BarLineType::DOUBLE;
+        const int key_sig_barline_mode = ctx.conf().style_i(Sid::KEY_SIG_COURTESY_BARLINE_MODE);
+        const bool before_ks_courtesy =
+            key_sig_barline_mode == int(CourtesyBarlineMode::DOUBLE_BEFORE_COURTESY) && m->has_courtesy_key_sig();
+        const bool always_double_ks = key_sig_barline_mode == int(CourtesyBarlineMode::ALWAYS_DOUBLE) && has_key_sig;
+        const bool before_repeat_ks = is_repeat_sig_barline && has_key_sig && ctx.conf().style_b(Sid::DOUBLE_BARLINE_BEFORE_KEY_SIG);
+        if (before_ks_courtesy || always_double_ks || before_repeat_ks) {
+            bl_type = BarLineType::DOUBLE;
         }
 
-        const int timeSigBarlineMode = ctx.conf().styleI(Sid::timeSigCourtesyBarlineMode);
-        const bool beforeTSCourtesy = timeSigBarlineMode == int(CourtesyBarlineMode::DOUBLE_BEFORE_COURTESY) && hasCourtesyTimeSig;
-        const bool alwaysDoubleTS = timeSigBarlineMode == int(CourtesyBarlineMode::ALWAYS_DOUBLE) && hasTimeSig;
-        const bool beforeRepeatTS = isRepeatSigBarline && hasTimeSig && ctx.conf().styleB(Sid::doubleBarlineBeforeTimeSig);
+        const int time_sig_barline_mode = ctx.conf().style_i(Sid::TIME_SIG_COURTESY_BARLINE_MODE);
+        const bool before_ts_courtesy = time_sig_barline_mode == int(CourtesyBarlineMode::DOUBLE_BEFORE_COURTESY) && has_courtesy_time_sig;
+        const bool always_double_ts = time_sig_barline_mode == int(CourtesyBarlineMode::ALWAYS_DOUBLE) && has_time_sig;
+        const bool before_repeat_ts = is_repeat_sig_barline && has_time_sig && ctx.conf().style_b(Sid::DOUBLE_BARLINE_BEFORE_TIME_SIG);
 
-        if (beforeTSCourtesy || alwaysDoubleTS || beforeRepeatTS) {
-            blType = BarLineType::DOUBLE;
+        if (before_ts_courtesy || always_double_ts || before_repeat_ts) {
+            bl_type = BarLineType::DOUBLE;
         }
 
         bool force = false;
-        if (m->repeatEnd()) {
-            blType = BarLineType::END_REPEAT;
+        if (m->repeat_end()) {
+            bl_type = BarLineType::END_REPEAT;
             force = true;
         }
 
-        for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-            track_idx_t track = staffIdx * VOICES;
-            BarLine *barLine = toBarLine(barlineSeg->element(track));
-            const Staff *staff = ctx.dom().staff(staffIdx);
-            if (!barLine) {
-                barLine = Factory::createBarLine(barlineSeg);
-                barLine->setTrack(track);
-                barLine->setGenerated(true);
-                barLine->setSpanStaff(staff->barLineSpan());
-                barLine->setSpanFrom(staff->barLineFrom());
-                barLine->setSpanTo(staff->barLineTo());
-                barLine->setBarLineType(blType);
-                ctx.mutDom().addElement(barLine);
+        for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+            track_idx_t track = staff_idx * ::mu::engraving::voices;
+            BarLine *bar_line = to_bar_line(barline_seg->element(track));
+            const Staff *staff = ctx.dom().staff(staff_idx);
+            if (!bar_line) {
+                bar_line = Factory::create_bar_line(barline_seg);
+                bar_line->set_track(track);
+                bar_line->set_generated(true);
+                bar_line->set_span_staff(staff->bar_line_span());
+                bar_line->set_span_from(staff->bar_line_from());
+                bar_line->set_span_to(staff->bar_line_to());
+                bar_line->set_bar_line_type(bl_type);
+                ctx.mut_dom().add_element(bar_line);
             } else {
                 // do not change bar line type if bar line is user modified
                 // and its not a repeat start/end barline (forced)
 
-                if (barLine->generated()) {
-                    barLine->setSpanStaff(staff->barLineSpan());
-                    barLine->setSpanFrom(staff->barLineFrom());
-                    barLine->setSpanTo(staff->barLineTo());
-                    barLine->setBarLineType(blType);
-                } else if (barLine->barLineType() != blType && force) {
-                    barLine->setBarLineType(blType);
-                    barLine->setGenerated(true);
+                if (bar_line->generated()) {
+                    bar_line->set_span_staff(staff->bar_line_span());
+                    bar_line->set_span_from(staff->bar_line_from());
+                    bar_line->set_span_to(staff->bar_line_to());
+                    bar_line->set_bar_line_type(bl_type);
+                } else if (bar_line->bar_line_type() != bl_type && force) {
+                    bar_line->set_bar_line_type(bl_type);
+                    bar_line->set_generated(true);
                 }
             }
 
-            TLayout::layoutBarLine(barLine, barLine->mutldata(), ctx);
-            barlineWidth = std::max(barlineWidth, barLine->width());
+            TLayout::layout_bar_line(bar_line, bar_line->mutldata(), ctx);
+            barline_width = std::max(barline_width, bar_line->width());
         }
         // right align within segment
-        for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-            track_idx_t track = staffIdx * VOICES;
-            BarLine *barLine = toBarLine(barlineSeg->element(track));
-            if (!barLine) {
+        for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+            track_idx_t track = staff_idx * ::mu::engraving::voices;
+            BarLine *bar_line = to_bar_line(barline_seg->element(track));
+            if (!bar_line) {
                 continue;
             }
-            barLine->mutldata()->moveX(barlineWidth - barLine->width());
+            bar_line->mutldata()->move_x(barline_width - bar_line->width());
         }
-        barlineSeg->createShapes();
+        barline_seg->create_shapes();
     }
 
-    setClefSegVisibility(m, isLastMeasureInSystem, ctx);
+    set_clef_seg_visibility(m, is_last_measure_in_system, ctx);
 }
 
-void MeasureLayout::setClefSegVisibility(Measure *m, bool isLastMeasureInSystem, LayoutContext &ctx) {
+void MeasureLayout::set_clef_seg_visibility(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx) {
     const size_t nstaves = ctx.dom().nstaves();
-    bool sectionBreakHideCourtesy = false;
-    if (LayoutBreak *sectionBreakElement = m->sectionBreakElement()) {
-        sectionBreakHideCourtesy = !sectionBreakElement->showCourtesy();
+    bool section_break_hide_courtesy = false;
+    if (LayoutBreak *section_break_element = m->section_break_element()) {
+        section_break_hide_courtesy = !section_break_element->show_courtesy();
     }
-    const Measure *nextMeasure = m->nextMeasure();
+    const Measure *next_measure = m->next_measure();
 
-    Segment *clefSeg = m->findSegmentR(SegmentType::Clef, m->ticks());
-    if (!clefSeg && nextMeasure) {
-        clefSeg = nextMeasure->findSegmentR(SegmentType::Clef, Fraction(0, 1));
+    Segment *clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+    if (!clef_seg && next_measure) {
+        clef_seg = next_measure->find_segment_r(SegmentType::CLEF, Fraction(0, 1));
     }
 
-    if (!clefSeg) {
+    if (!clef_seg) {
         return;
     }
 
-    bool visibleClef = false;
-    bool clefFound = false;
-    for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-        if (!ctx.dom().staff(staffIdx)->show()) {
+    bool visible_clef = false;
+    bool clef_found = false;
+    for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+        if (!ctx.dom().staff(staff_idx)->show()) {
             continue;
         }
 
-        const track_idx_t track = staffIdx * VOICES;
-        Clef *clef = toClef(clefSeg->element(track));
+        const track_idx_t track = staff_idx * ::mu::engraving::voices;
+        Clef *clef = to_clef(clef_seg->element(track));
         if (!clef) {
             continue;
         }
 
-        clefFound = true;
+        clef_found = true;
 
-        const bool showCourtesy = ctx.conf().styleB(Sid::genCourtesyClef) && clef->showCourtesy(); // normally show a courtesy clef
+        const bool show_courtesy = ctx.conf().style_b(Sid::GEN_COURTESY_CLEF) && clef->show_courtesy(); // normally show a courtesy clef
         // check if the measure is the last measure of the system or the last measure before a frame
-        const bool lastMeasure = isLastMeasureInSystem || (nextMeasure ? !(m->next() == nextMeasure) : true);
-        if (!nextMeasure || sectionBreakHideCourtesy || (lastMeasure && !showCourtesy)) {
+        const bool last_measure = is_last_measure_in_system || (next_measure ? !(m->next() == next_measure) : true);
+        if (!next_measure || section_break_hide_courtesy || (last_measure && !show_courtesy)) {
             // hide the courtesy clef in the final measure of a section, or if the measure is the final measure of a system
             // and the score style or the clef style is set to "not show courtesy clef",
             // or if the clef is at the end of the very last measure of the score
             clef->clear();
-            clefSeg->createShape(staffIdx);
+            clef_seg->create_shape(staff_idx);
         } else {
-            TLayout::layoutClef(clef, clef->mutldata(), ctx.conf());
-            clefSeg->createShape(staffIdx);
-            visibleClef = true;
+            TLayout::layout_clef(clef, clef->mutldata(), ctx.conf());
+            clef_seg->create_shape(staff_idx);
+            visible_clef = true;
         }
     }
 
-    if (visibleClef) { // there is at least one visible clef in the clef segment
-        clefSeg->setVisible(true);
-    } else if (!visibleClef && clefFound) { // all (courtesy) clefs in the clef segment are not visible
-        clefSeg->setVisible(false);
+    if (visible_clef) { // there is at least one visible clef in the clef segment
+        clef_seg->set_visible(true);
+    } else if (!visible_clef && clef_found) { // all (courtesy) clefs in the clef segment are not visible
+        clef_seg->set_visible(false);
     } else { // should never happen
-        LOGD("Clef Segment without Clef elements at tick %d/%d", clefSeg->tick().numerator(), clefSeg->tick().denominator());
-        clefSeg->setVisible(false);
+        LOGD("Clef Segment without Clef elements at tick %d/%d", clef_seg->tick().numerator(), clef_seg->tick().denominator());
+        clef_seg->set_visible(false);
         return;
     }
 }
 
-void MeasureLayout::setCourtesyTimeSig(Measure *m, const Fraction &refSigTick, const Fraction &courtesySigTick,
-                                       const SegmentType courtesySegType, LayoutContext &ctx) {
+void MeasureLayout::set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick,
+                                          const SegmentType courtesy_seg_type, LayoutContext &ctx) {
     // Find original element
     const size_t nstaves = ctx.dom().nstaves();
-    const Fraction courtesySigRTick = courtesySigTick - m->tick();
-    const Measure *prevMeasure = m->prevMeasureMM();
+    const Fraction courtesy_sig_r_tick = courtesy_sig_tick - m->tick();
+    const Measure *prev_measure = m->prev_measure_mm();
 
-    const bool isTrailer = courtesySegType == SegmentType::TimeSigAnnounce;
-    const bool isContinuationCourtesy = courtesySegType == SegmentType::TimeSigStartRepeatAnnounce;
+    const bool is_trailer = courtesy_seg_type == SegmentType::TIME_SIG_ANNOUNCE;
+    const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE;
 
-    const Segment *prevCourtesySegment =
-        prevMeasure ? prevMeasure->findSegmentR(SegmentType::TimeSigRepeatAnnounce, prevMeasure->ticks()) : nullptr;
+    const Segment *prev_courtesy_segment =
+        prev_measure ? prev_measure->find_segment_r(SegmentType::TIME_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
 
     // Cont. courtesies - check for sig at the start of the measure OR end of previous measure if changesBeforeBarline... is on
-    const bool checkPrevMeasure = isContinuationCourtesy && prevMeasure &&
-                                  ((prevMeasure->repeatEnd() && ctx.conf().styleB(Sid::changesBeforeBarlineRepeats)) ||
-                                   (prevMeasure->repeatJump() && ctx.conf().styleB(Sid::changesBeforeBarlineOtherJumps)));
-    const Segment *tsSegAtCourtesyTick = m->findSegmentR(SegmentType::TimeSig, courtesySigRTick);
-    tsSegAtCourtesyTick = !tsSegAtCourtesyTick && checkPrevMeasure ?
-                              prevMeasure->findSegmentR(SegmentType::TimeSig, courtesySigTick - prevMeasure->tick()) :
-                              tsSegAtCourtesyTick;
-    const bool shouldShowContCourtesy = prevMeasure && prevMeasure->hasCourtesyTimeSig();
+    const bool check_prev_measure = is_continuation_courtesy && prev_measure &&
+                                    ((prev_measure->repeat_end() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_REPEATS)) ||
+                                     (prev_measure->repeat_jump() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_OTHER_JUMPS)));
+    const Segment *ts_seg_at_courtesy_tick = m->find_segment_r(SegmentType::TIME_SIG, courtesy_sig_r_tick);
+    ts_seg_at_courtesy_tick = !ts_seg_at_courtesy_tick && check_prev_measure ?
+                                  prev_measure->find_segment_r(SegmentType::TIME_SIG, courtesy_sig_tick - prev_measure->tick()) :
+                                  ts_seg_at_courtesy_tick;
+    const bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_time_sig();
 
-    Segment *courtesySigSeg = m->findSegmentR(courtesySegType, courtesySigRTick);
-    for (track_idx_t track = 0; track < nstaves * VOICES; track += VOICES) {
+    Segment *courtesy_sig_seg = m->find_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
+    for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.dom().staff(track2staff(track));
-        const TimeSig *actualTimeSig = staff->timeSig(refSigTick);
-        const TimeSig *curTimeSig = staff->timeSig(courtesySigTick - Fraction::eps());
-        if (!actualTimeSig || !curTimeSig) {
+        const TimeSig *actual_time_sig = staff->time_sig(ref_sig_tick);
+        const TimeSig *cur_time_sig = staff->time_sig(courtesy_sig_tick - Fraction::eps());
+        if (!actual_time_sig || !cur_time_sig) {
             continue;
         }
 
         // Show repeat courtesy if the sigs are different
         // Show continuation courtesy if there's a repeat courtesy before it
         // Show trailer courtesy only when there's a time sig element in the next bar
-        const bool sigsDifferent = actualTimeSig->sig() != curTimeSig->sig();
-        const bool needsCourtesy = isContinuationCourtesy ?
-                                       shouldShowContCourtesy && prevCourtesySegment && prevCourtesySegment->element(track) :
-                                   isTrailer ? actualTimeSig->tick() == m->endTick() :
-                                               sigsDifferent;
+        const bool sigs_different = actual_time_sig->sig() != cur_time_sig->sig();
+        const bool needs_courtesy = is_continuation_courtesy ?
+                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
+                                    is_trailer ? actual_time_sig->tick() == m->end_tick() :
+                                                 sigs_different;
         // If there is a real key sig at this tick (in this bar or the previous), don't create a courtesy
-        const bool hasSigAtTick = tsSegAtCourtesyTick && tsSegAtCourtesyTick->enabled() && tsSegAtCourtesyTick->element(track);
+        const bool has_sig_at_tick =
+            ts_seg_at_courtesy_tick && ts_seg_at_courtesy_tick->enabled() && ts_seg_at_courtesy_tick->element(track);
         // Only show courtesy if its real signature has courtesies enabled
-        const bool actualShowCourtesy = actualTimeSig && actualTimeSig->showCourtesySig();
-        const bool show = actualShowCourtesy && needsCourtesy && !hasSigAtTick && ctx.conf().styleB(Sid::genCourtesyTimesig);
+        const bool actual_show_courtesy = actual_time_sig && actual_time_sig->show_courtesy_sig();
+        const bool show = actual_show_courtesy && needs_courtesy && !has_sig_at_tick && ctx.conf().style_b(Sid::GEN_COURTESY_TIMESIG);
 
-        if (!courtesySigSeg) {
+        if (!courtesy_sig_seg) {
             if (!show) {
                 continue;
             }
 
             // Create a segment if one doesn't already exist
-            courtesySigSeg = Factory::createSegment(m, courtesySegType, courtesySigRTick);
-            m->add(courtesySigSeg);
-            m->setTrailer(m->trailer() || isTrailer);
+            courtesy_sig_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_sig_r_tick);
+            m->add(courtesy_sig_seg);
+            m->set_trailer(m->trailer() || is_trailer);
         }
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyTimeSig(true);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_time_sig(true);
         }
-        courtesySigSeg->setTrailer(isTrailer);
-        courtesySigSeg->setEnabled(true);
+        courtesy_sig_seg->set_trailer(is_trailer);
+        courtesy_sig_seg->set_enabled(true);
 
         // Find courtesy element or create if it doesn't exist
-        TimeSig *courtesyTimeSig = nullptr;
-        EngravingItem *timeSigElem = courtesySigSeg->element(track);
-        if (timeSigElem && timeSigElem->isTimeSig()) {
-            courtesyTimeSig = toTimeSig(timeSigElem);
+        TimeSig *courtesy_time_sig = nullptr;
+        EngravingItem *time_sig_elem = courtesy_sig_seg->element(track);
+        if (time_sig_elem && time_sig_elem->is_time_sig()) {
+            courtesy_time_sig = to_time_sig(time_sig_elem);
         }
 
         // this time sig shouldn't be shown, remove from segment
         if (!show) {
-            if (courtesyTimeSig) {
-                courtesySigSeg->remove(courtesyTimeSig);
+            if (courtesy_time_sig) {
+                courtesy_sig_seg->remove(courtesy_time_sig);
             }
             continue;
         }
 
-        if (!courtesyTimeSig) {
-            courtesyTimeSig = Factory::createTimeSig(courtesySigSeg);
-            courtesyTimeSig->setTrack(track);
-            courtesyTimeSig->setGenerated(true);
-            courtesyTimeSig->setIsCourtesy(true);
-            courtesySigSeg->add(courtesyTimeSig);
+        if (!courtesy_time_sig) {
+            courtesy_time_sig = Factory::create_time_sig(courtesy_sig_seg);
+            courtesy_time_sig->set_track(track);
+            courtesy_time_sig->set_generated(true);
+            courtesy_time_sig->set_is_courtesy(true);
+            courtesy_sig_seg->add(courtesy_time_sig);
         }
 
         // Layout & create shapes
-        courtesyTimeSig->setFrom(actualTimeSig);
-        if (courtesyTimeSig->isStyled(Pid::SCALE)) {
+        courtesy_time_sig->set_from(actual_time_sig);
+        if (courtesy_time_sig->is_styled(Pid::SCALE)) {
             // If this courtesyTimeSig was previously disabled its scale style may have not been updated
-            courtesyTimeSig->setScale(courtesyTimeSig->propertyDefault(Pid::SCALE).value<ScaleF>());
+            courtesy_time_sig->set_scale(courtesy_time_sig->property_default(Pid::SCALE).value<ScaleF>());
         }
 
-        TLayout::layoutTimeSig(courtesyTimeSig, courtesyTimeSig->mutldata(), ctx);
+        TLayout::layout_time_sig(courtesy_time_sig, courtesy_time_sig->mutldata(), ctx);
     }
 
-    if (courtesySigSeg && ((!isContinuationCourtesy && !m->hasCourtesyTimeSig()) || !ctx.conf().styleB(Sid::genCourtesyTimesig))) {
+    if (courtesy_sig_seg &&
+        ((!is_continuation_courtesy && !m->has_courtesy_time_sig()) || !ctx.conf().style_b(Sid::GEN_COURTESY_TIMESIG))) {
         // Whole segment shouldn't be shown, remove any existing courtesy signatures
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyTimeSig(false);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_time_sig(false);
         }
-        if (courtesySigSeg) {
-            courtesySigSeg->setEnabled(false);
+        if (courtesy_sig_seg) {
+            courtesy_sig_seg->set_enabled(false);
         }
     }
 
-    if (courtesySigSeg && courtesySigSeg->enabled()) {
-        if (courtesySigSeg->hasElements()) {
-            courtesySigSeg->createShapes();
+    if (courtesy_sig_seg && courtesy_sig_seg->enabled()) {
+        if (courtesy_sig_seg->has_elements()) {
+            courtesy_sig_seg->create_shapes();
         } else {
-            courtesySigSeg->setEnabled(false);
-            if (!isContinuationCourtesy) {
-                m->setHasCourtesyTimeSig(false);
+            courtesy_sig_seg->set_enabled(false);
+            if (!is_continuation_courtesy) {
+                m->set_has_courtesy_time_sig(false);
             }
         }
     }
 }
 
-void MeasureLayout::setCourtesyKeySig(Measure *m, const Fraction &refSigTick, const Fraction &courtesySigTick,
-                                      const SegmentType courtesySegType, LayoutContext &ctx) {
+void MeasureLayout::set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick,
+                                         const SegmentType courtesy_seg_type, LayoutContext &ctx) {
     // Find original element
     const size_t nstaves = ctx.dom().nstaves();
-    const Fraction courtesySigRTick = courtesySigTick - m->tick();
-    const Measure *prevMeasure = m->prevMeasureMM();
+    const Fraction courtesy_sig_r_tick = courtesy_sig_tick - m->tick();
+    const Measure *prev_measure = m->prev_measure_mm();
 
-    const bool isTrailer = courtesySegType == SegmentType::KeySigAnnounce;
-    const bool isContinuationCourtesy = courtesySegType == SegmentType::KeySigStartRepeatAnnounce;
+    const bool is_trailer = courtesy_seg_type == SegmentType::KEY_SIG_ANNOUNCE;
+    const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE;
 
-    const Segment *prevCourtesySegment =
-        prevMeasure ? prevMeasure->findSegmentR(SegmentType::KeySigRepeatAnnounce, prevMeasure->ticks()) : nullptr;
+    const Segment *prev_courtesy_segment =
+        prev_measure ? prev_measure->find_segment_r(SegmentType::KEY_SIG_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
 
     // Cont. courtesies - check for sig at the start of the measure OR end of previous measure if changesBeforeBarline... is on
-    const bool checkPrevMeasure = isContinuationCourtesy && prevMeasure &&
-                                  ((prevMeasure->repeatEnd() && ctx.conf().styleB(Sid::changesBeforeBarlineRepeats)) ||
-                                   (prevMeasure->repeatJump() && ctx.conf().styleB(Sid::changesBeforeBarlineOtherJumps)));
-    const Segment *ksSegAtCourtesyTick = m->findSegmentR(SegmentType::KeySig, courtesySigRTick);
-    ksSegAtCourtesyTick = !ksSegAtCourtesyTick && checkPrevMeasure ?
-                              prevMeasure->findSegmentR(SegmentType::KeySig, courtesySigTick - prevMeasure->tick()) :
-                              ksSegAtCourtesyTick;
+    const bool check_prev_measure = is_continuation_courtesy && prev_measure &&
+                                    ((prev_measure->repeat_end() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_REPEATS)) ||
+                                     (prev_measure->repeat_jump() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_OTHER_JUMPS)));
+    const Segment *ks_seg_at_courtesy_tick = m->find_segment_r(SegmentType::KEY_SIG, courtesy_sig_r_tick);
+    ks_seg_at_courtesy_tick = !ks_seg_at_courtesy_tick && check_prev_measure ?
+                                  prev_measure->find_segment_r(SegmentType::KEY_SIG, courtesy_sig_tick - prev_measure->tick()) :
+                                  ks_seg_at_courtesy_tick;
 
-    const bool shouldShowContCourtesy = prevMeasure && prevMeasure->hasCourtesyKeySig();
+    const bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_key_sig();
 
-    Segment *courtesySigSeg = m->findSegmentR(courtesySegType, courtesySigRTick);
-    for (track_idx_t track = 0; track < nstaves * VOICES; track += VOICES) {
+    Segment *courtesy_sig_seg = m->find_segment_r(courtesy_seg_type, courtesy_sig_r_tick);
+    for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         // Find reference signature
         const Staff *staff = ctx.dom().staff(track2staff(track));
-        const Fraction refSigElementTick = staff->currentKeyTick(refSigTick);
-        const Measure *refMeasure = ctx.dom().tick2measureMM(refSigElementTick);
-        const Segment *actualKeySigSeg =
-            refMeasure ? refMeasure->findSegmentR(SegmentType::KeySig, refSigElementTick - refMeasure->tick()) : nullptr;
-        const EngravingItem *el = actualKeySigSeg ? actualKeySigSeg->element(track) : nullptr;
-        const KeySig *actualKeySig = el ? toKeySig(el) : nullptr;
+        const Fraction ref_sig_element_tick = staff->current_key_tick(ref_sig_tick);
+        const Measure *ref_measure = ctx.dom().tick2measure_mm(ref_sig_element_tick);
+        const Segment *actual_key_sig_seg =
+            ref_measure ? ref_measure->find_segment_r(SegmentType::KEY_SIG, ref_sig_element_tick - ref_measure->tick()) : nullptr;
+        const EngravingItem *el = actual_key_sig_seg ? actual_key_sig_seg->element(track) : nullptr;
+        const KeySig *actual_key_sig = el ? to_key_sig(el) : nullptr;
 
-        const KeySigEvent refKey = staff->keySigEvent(refSigTick);
+        const KeySigEvent ref_key = staff->key_sig_event(ref_sig_tick);
         // Get info from correct tick for repeats
         // For trailers and pre-repeat courtesies, signatures should be different
-        const bool sigsDifferent = staff->key(m->endTick() - Fraction::eps()) != refKey.key();
-        const bool needsCourtesy =
-            isContinuationCourtesy ? shouldShowContCourtesy && prevCourtesySegment && prevCourtesySegment->element(track) : sigsDifferent;
+        const bool sigs_different = staff->key(m->end_tick() - Fraction::eps()) != ref_key.key();
+        const bool needs_courtesy = is_continuation_courtesy ?
+                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
+                                        sigs_different;
         // Only show key sig changes on pitched staves
-        const bool staffIsPitchedAtNextMeas =
-            ctx.dom().lastMeasureMM() == m || (m->nextMeasureMM() && staff->isPitchedStaff(m->nextMeasureMM()->tick()));
+        const bool staff_is_pitched_at_next_meas =
+            ctx.dom().last_measure_mm() == m || (m->next_measure_mm() && staff->is_pitched_staff(m->next_measure_mm()->tick()));
         // If there is a real key sig at this tick (in this bar or the previous), don't create a courtesy
-        const bool hasSigAtTick = ksSegAtCourtesyTick && ksSegAtCourtesyTick->enabled() && ksSegAtCourtesyTick->element(track);
+        const bool has_sig_at_tick =
+            ks_seg_at_courtesy_tick && ks_seg_at_courtesy_tick->enabled() && ks_seg_at_courtesy_tick->element(track);
         // Only show courtesy if its real signature has courtesies enabled
-        const bool actualShowCourtesy = actualKeySig ? actualKeySig->showCourtesy() : true;
-        const bool show =
-            actualShowCourtesy && staffIsPitchedAtNextMeas && needsCourtesy && !hasSigAtTick && ctx.conf().styleB(Sid::genCourtesyKeysig);
+        const bool actual_show_courtesy = actual_key_sig ? actual_key_sig->show_courtesy() : true;
+        const bool show = actual_show_courtesy && staff_is_pitched_at_next_meas && needs_courtesy && !has_sig_at_tick &&
+                          ctx.conf().style_b(Sid::GEN_COURTESY_KEYSIG);
 
-        if (!courtesySigSeg) {
+        if (!courtesy_sig_seg) {
             if (!show) {
                 continue;
             }
 
             // Create a segment if one doesn't already exist
-            courtesySigSeg = Factory::createSegment(m, courtesySegType, courtesySigRTick);
-            m->add(courtesySigSeg);
-            m->setTrailer(m->trailer() || isTrailer);
+            courtesy_sig_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_sig_r_tick);
+            m->add(courtesy_sig_seg);
+            m->set_trailer(m->trailer() || is_trailer);
         }
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyKeySig(true);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_key_sig(true);
         }
-        courtesySigSeg->setTrailer(isTrailer);
-        courtesySigSeg->setEnabled(true);
+        courtesy_sig_seg->set_trailer(is_trailer);
+        courtesy_sig_seg->set_enabled(true);
 
         // Find courtesy element or create if it doesn't exist
-        KeySig *courtesyKeySig = nullptr;
-        EngravingItem *keySigElem = courtesySigSeg->element(track);
-        if (keySigElem && keySigElem->isKeySig()) {
-            courtesyKeySig = toKeySig(keySigElem);
+        KeySig *courtesy_key_sig = nullptr;
+        EngravingItem *key_sig_elem = courtesy_sig_seg->element(track);
+        if (key_sig_elem && key_sig_elem->is_key_sig()) {
+            courtesy_key_sig = to_key_sig(key_sig_elem);
         }
 
         // this key sig shouldn't be shown, remove from segment
         if (!show) {
-            if (courtesyKeySig) {
-                courtesySigSeg->remove(courtesyKeySig);
+            if (courtesy_key_sig) {
+                courtesy_sig_seg->remove(courtesy_key_sig);
             }
             continue;
         }
 
-        if (!courtesyKeySig) {
-            courtesyKeySig = Factory::createKeySig(courtesySigSeg);
-            courtesyKeySig->setTrack(track);
-            courtesyKeySig->setGenerated(true);
-            courtesyKeySig->setIsCourtesy(true);
-            courtesySigSeg->add(courtesyKeySig);
+        if (!courtesy_key_sig) {
+            courtesy_key_sig = Factory::create_key_sig(courtesy_sig_seg);
+            courtesy_key_sig->set_track(track);
+            courtesy_key_sig->set_generated(true);
+            courtesy_key_sig->set_is_courtesy(true);
+            courtesy_sig_seg->add(courtesy_key_sig);
         }
-        courtesyKeySig->setKeySigEvent(refKey);
+        courtesy_key_sig->set_key_sig_event(ref_key);
 
         // Layout & create shapes
-        TLayout::layoutKeySig(courtesyKeySig, courtesyKeySig->mutldata(), ctx.conf());
+        TLayout::layout_key_sig(courtesy_key_sig, courtesy_key_sig->mutldata(), ctx.conf());
     }
 
-    if (courtesySigSeg && ((!isContinuationCourtesy && !m->hasCourtesyKeySig()) || !ctx.conf().styleB(Sid::genCourtesyKeysig))) {
+    if (courtesy_sig_seg && ((!is_continuation_courtesy && !m->has_courtesy_key_sig()) || !ctx.conf().style_b(Sid::GEN_COURTESY_KEYSIG))) {
         // Whole segment shouldn't be shown, remove any existing courtesy signatures
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyKeySig(false);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_key_sig(false);
         }
-        if (courtesySigSeg) {
-            courtesySigSeg->setEnabled(false);
+        if (courtesy_sig_seg) {
+            courtesy_sig_seg->set_enabled(false);
         }
     }
 
-    if (courtesySigSeg && courtesySigSeg->enabled()) {
-        if (courtesySigSeg->hasElements()) {
-            courtesySigSeg->createShapes();
+    if (courtesy_sig_seg && courtesy_sig_seg->enabled()) {
+        if (courtesy_sig_seg->has_elements()) {
+            courtesy_sig_seg->create_shapes();
         } else {
-            courtesySigSeg->setEnabled(false);
-            if (!isContinuationCourtesy) {
-                m->setHasCourtesyKeySig(false);
+            courtesy_sig_seg->set_enabled(false);
+            if (!is_continuation_courtesy) {
+                m->set_has_courtesy_key_sig(false);
             }
         }
     }
 }
 
-void MeasureLayout::setCourtesyClef(Measure *m, const Fraction &refClefTick, const Fraction &courtesyClefTick,
-                                    const SegmentType courtesySegType, LayoutContext &ctx) {
+void MeasureLayout::set_courtesy_clef(Measure *m, const Fraction &ref_clef_tick, const Fraction &courtesy_clef_tick,
+                                      const SegmentType courtesy_seg_type, LayoutContext &ctx) {
     // Find original element
     const size_t nstaves = ctx.dom().nstaves();
-    const Fraction courtesyClefRTick = courtesyClefTick - m->tick();
-    const Measure *prevMeasure = m->prevMeasureMM();
+    const Fraction courtesy_clef_r_tick = courtesy_clef_tick - m->tick();
+    const Measure *prev_measure = m->prev_measure_mm();
 
-    const bool isContinuationCourtesy = courtesySegType == SegmentType::ClefStartRepeatAnnounce;
+    const bool is_continuation_courtesy = courtesy_seg_type == SegmentType::CLEF_START_REPEAT_ANNOUNCE;
 
-    const Segment *prevCourtesySegment =
-        prevMeasure ? prevMeasure->findSegmentR(SegmentType::ClefRepeatAnnounce, prevMeasure->ticks()) : nullptr;
-    const Segment *clefSegAtCourtesyTick = m->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, courtesyClefRTick);
-    clefSegAtCourtesyTick = !clefSegAtCourtesyTick && prevMeasure ?
-                                prevMeasure->findSegmentR(SegmentType::KeySig, courtesyClefTick - prevMeasure->tick()) :
-                                clefSegAtCourtesyTick;
+    const Segment *prev_courtesy_segment =
+        prev_measure ? prev_measure->find_segment_r(SegmentType::CLEF_REPEAT_ANNOUNCE, prev_measure->ticks()) : nullptr;
+    const Segment *clef_seg_at_courtesy_tick = m->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, courtesy_clef_r_tick);
+    clef_seg_at_courtesy_tick = !clef_seg_at_courtesy_tick && prev_measure ?
+                                    prev_measure->find_segment_r(SegmentType::KEY_SIG, courtesy_clef_tick - prev_measure->tick()) :
+                                    clef_seg_at_courtesy_tick;
 
-    bool shouldShowContCourtesy = prevMeasure && prevMeasure->hasCourtesyClef();
+    bool should_show_cont_courtesy = prev_measure && prev_measure->has_courtesy_clef();
 
-    Segment *courtesyClefSeg = m->findSegmentR(courtesySegType, courtesyClefRTick);
-    for (track_idx_t track = 0; track < nstaves * VOICES; track += VOICES) {
+    Segment *courtesy_clef_seg = m->find_segment_r(courtesy_seg_type, courtesy_clef_r_tick);
+    for (track_idx_t track = 0; track < nstaves * ::mu::engraving::voices; track += ::mu::engraving::voices) {
         const Staff *staff = ctx.dom().staff(track2staff(track));
-        const Fraction refClefElementTick = staff->currentClefTick(refClefTick);
-        const Measure *refMeasure = ctx.dom().tick2measureMM(refClefElementTick);
-        const Segment *actualClefSeg =
-            refMeasure ? refMeasure->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, refClefElementTick - refMeasure->tick()) :
-                         nullptr;
-        if (!actualClefSeg && refMeasure && refMeasure->prevMeasureMM()) {
+        const Fraction ref_clef_element_tick = staff->current_clef_tick(ref_clef_tick);
+        const Measure *ref_measure = ctx.dom().tick2measure_mm(ref_clef_element_tick);
+        const Segment *actual_clef_seg = ref_measure ? ref_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                                                   ref_clef_element_tick - ref_measure->tick()) :
+                                                       nullptr;
+        if (!actual_clef_seg && ref_measure && ref_measure->prev_measure_mm()) {
             // Check previous measure
-            Measure *refPrevMeasure = refMeasure->prevMeasureMM();
-            actualClefSeg =
-                refPrevMeasure->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, refClefElementTick - refPrevMeasure->tick());
+            Measure *ref_prev_measure = ref_measure->prev_measure_mm();
+            actual_clef_seg = ref_prev_measure->find_segment_r(SegmentType::CLEF | SegmentType::HEADER_CLEF,
+                                                               ref_clef_element_tick - ref_prev_measure->tick());
         }
-        const EngravingItem *el = actualClefSeg ? actualClefSeg->element(track) : nullptr;
-        const Clef *actualClef = el ? toClef(el) : nullptr;
+        const EngravingItem *el = actual_clef_seg ? actual_clef_seg->element(track) : nullptr;
+        const Clef *actual_clef = el ? to_clef(el) : nullptr;
 
-        const ClefType refClef = staff->clef(refClefTick);
+        const ClefType ref_clef = staff->clef(ref_clef_tick);
         // For trailers and pre-repeat courtesies, clefs should be different
-        const bool clefsDifferent = staff->clef(m->endTick() - Fraction::eps()) != refClef;
-        const bool needsCourtesy =
-            isContinuationCourtesy ? shouldShowContCourtesy && prevCourtesySegment && prevCourtesySegment->element(track) : clefsDifferent;
+        const bool clefs_different = staff->clef(m->end_tick() - Fraction::eps()) != ref_clef;
+        const bool needs_courtesy = is_continuation_courtesy ?
+                                        should_show_cont_courtesy && prev_courtesy_segment && prev_courtesy_segment->element(track) :
+                                        clefs_different;
         // If there is a real clef at this tick (in this bar or the previous), don't create a courtesy
-        const bool hasClefAtTick = clefSegAtCourtesyTick && clefSegAtCourtesyTick->enabled() && clefSegAtCourtesyTick->element(track);
+        const bool has_clef_at_tick =
+            clef_seg_at_courtesy_tick && clef_seg_at_courtesy_tick->enabled() && clef_seg_at_courtesy_tick->element(track);
         // Only show courtesy if its real clef has courtesies enabled
-        const bool actualShowCourtesy = actualClef && actualClef->showCourtesy();
-        const bool show = actualShowCourtesy && needsCourtesy && !hasClefAtTick && ctx.conf().styleB(Sid::genCourtesyClef);
+        const bool actual_show_courtesy = actual_clef && actual_clef->show_courtesy();
+        const bool show = actual_show_courtesy && needs_courtesy && !has_clef_at_tick && ctx.conf().style_b(Sid::GEN_COURTESY_CLEF);
 
-        if (!courtesyClefSeg) {
+        if (!courtesy_clef_seg) {
             if (!show) {
                 continue;
             }
 
             // Create a segment if one doesn't already exist
-            courtesyClefSeg = Factory::createSegment(m, courtesySegType, courtesyClefRTick);
-            m->add(courtesyClefSeg);
-            courtesyClefSeg->setTrailer(false);
+            courtesy_clef_seg = Factory::create_segment(m, courtesy_seg_type, courtesy_clef_r_tick);
+            m->add(courtesy_clef_seg);
+            courtesy_clef_seg->set_trailer(false);
         }
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyClef(true);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_clef(true);
         }
-        courtesyClefSeg->setEnabled(true);
+        courtesy_clef_seg->set_enabled(true);
 
         // Find courtesy element or create if it doesn't exist
-        Clef *courtesyClef = nullptr;
-        EngravingItem *clefElem = courtesyClefSeg->element(track);
-        if (clefElem && clefElem->isClef()) {
-            courtesyClef = toClef(clefElem);
+        Clef *courtesy_clef = nullptr;
+        EngravingItem *clef_elem = courtesy_clef_seg->element(track);
+        if (clef_elem && clef_elem->is_clef()) {
+            courtesy_clef = to_clef(clef_elem);
         }
 
         // this clef shouldn't be shown, remove from segment
         if (!show) {
-            if (courtesyClef) {
-                courtesyClefSeg->remove(courtesyClef);
+            if (courtesy_clef) {
+                courtesy_clef_seg->remove(courtesy_clef);
             }
             continue;
         }
 
-        if (!courtesyClef) {
-            courtesyClef = Factory::createClef(courtesyClefSeg);
-            courtesyClef->setTrack(track);
-            courtesyClef->setGenerated(true);
-            courtesyClef->setSmall(true);
-            courtesyClef->setClefType(actualClef->clefType());
-            courtesyClef->setIsCourtesy(true);
-            courtesyClefSeg->add(courtesyClef);
+        if (!courtesy_clef) {
+            courtesy_clef = Factory::create_clef(courtesy_clef_seg);
+            courtesy_clef->set_track(track);
+            courtesy_clef->set_generated(true);
+            courtesy_clef->set_small(true);
+            courtesy_clef->set_clef_type(actual_clef->clef_type());
+            courtesy_clef->set_is_courtesy(true);
+            courtesy_clef_seg->add(courtesy_clef);
         }
 
         // Layout & create shapes
-        TLayout::layoutClef(courtesyClef, courtesyClef->mutldata(), ctx.conf());
+        TLayout::layout_clef(courtesy_clef, courtesy_clef->mutldata(), ctx.conf());
     }
 
-    if (courtesyClefSeg && (!ctx.conf().styleB(Sid::genCourtesyClef) || (!isContinuationCourtesy && !m->hasCourtesyClef()))) {
+    if (courtesy_clef_seg && (!ctx.conf().style_b(Sid::GEN_COURTESY_CLEF) || (!is_continuation_courtesy && !m->has_courtesy_clef()))) {
         // Whole segment shouldn't be shown, remove any existing courtesy signatures
-        if (!isContinuationCourtesy) {
-            m->setHasCourtesyClef(false);
+        if (!is_continuation_courtesy) {
+            m->set_has_courtesy_clef(false);
         }
-        if (courtesyClefSeg) {
-            courtesyClefSeg->setEnabled(false);
+        if (courtesy_clef_seg) {
+            courtesy_clef_seg->set_enabled(false);
         }
     }
 
-    if (courtesyClefSeg && courtesyClefSeg->enabled()) {
-        if (courtesyClefSeg->hasElements()) {
-            courtesyClefSeg->createShapes();
+    if (courtesy_clef_seg && courtesy_clef_seg->enabled()) {
+        if (courtesy_clef_seg->has_elements()) {
+            courtesy_clef_seg->create_shapes();
         } else {
-            courtesyClefSeg->setEnabled(false);
-            if (isContinuationCourtesy) {
-                m->setHasCourtesyClef(false);
+            courtesy_clef_seg->set_enabled(false);
+            if (is_continuation_courtesy) {
+                m->set_has_courtesy_clef(false);
             }
         }
     }
 }
 
-static void calcParenTopBottom(Parenthesis *item, double &top, double &bottom, LayoutContext &ctx) {
-    EngravingItem *parent = item->layoutParent();
+static void calc_paren_top_bottom(Parenthesis *item, double &top, double &bottom, LayoutContext &ctx) {
+    EngravingItem *parent = item->layout_parent();
     const double spatium = item->spatium();
     if (!parent) {
         return;
     }
 
-    if (!parent->ldata()->isValid()) {
-        TLayout::layoutItem(parent, ctx);
+    if (!parent->ldata()->is_valid()) {
+        TLayout::layout_item(parent, ctx);
     }
 
     RectF bbox = parent->ldata()->bbox();
@@ -1358,14 +1367,14 @@ static void calcParenTopBottom(Parenthesis *item, double &top, double &bottom, L
     bottom = std::max(bottom, bbox.bottom() + parent->pos().y() - spatium / 4);
 }
 
-void MeasureLayout::addRepeatCourtesyParentheses(Measure *m, const bool continuation, LayoutContext &ctx) {
-    const SegmentType tsSegType = continuation ? SegmentType::TimeSigStartRepeatAnnounce : SegmentType::TimeSigRepeatAnnounce;
-    const SegmentType ksSegType = continuation ? SegmentType::KeySigStartRepeatAnnounce : SegmentType::KeySigRepeatAnnounce;
-    const SegmentType clefSegType = continuation ? SegmentType::ClefStartRepeatAnnounce : SegmentType::ClefRepeatAnnounce;
+void MeasureLayout::add_repeat_courtesy_parentheses(Measure *m, const bool continuation, LayoutContext &ctx) {
+    const SegmentType ts_seg_type = continuation ? SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE : SegmentType::TIME_SIG_REPEAT_ANNOUNCE;
+    const SegmentType ks_seg_type = continuation ? SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE : SegmentType::KEY_SIG_REPEAT_ANNOUNCE;
+    const SegmentType clef_seg_type = continuation ? SegmentType::CLEF_START_REPEAT_ANNOUNCE : SegmentType::CLEF_REPEAT_ANNOUNCE;
 
-    const Fraction sigTick = continuation ? Fraction(0, 1) : m->ticks();
+    const Fraction sig_tick = continuation ? Fraction(0, 1) : m->ticks();
 
-    auto elShouldHaveParenthesis = [&](const Segment *seg, const track_idx_t track) -> bool {
+    auto el_should_have_parenthesis = [&](const Segment *seg, const track_idx_t track) -> bool {
         if (!seg || !seg->enabled() || track > ctx.dom().ntracks()) {
             return false;
         }
@@ -1374,11 +1383,11 @@ void MeasureLayout::addRepeatCourtesyParentheses(Measure *m, const bool continua
         if (!staff) {
             return false;
         }
-        const StaffType *st = staff->staffType(seg->tick());
-        const bool noTimesig = st && seg->isType(SegmentType::TimeSigTypes) && !st->genTimesig();
-        const bool noKeysig = st && seg->isType(SegmentType::KeySigTypes) && !st->genKeysig();
-        const bool noClef = st && seg->isType(SegmentType::ClefTypes) && !st->genClef();
-        if (noTimesig || noKeysig || noClef) {
+        const StaffType *st = staff->staff_type(seg->tick());
+        const bool no_timesig = st && seg->is_type(SegmentType::TIME_SIG_TYPES) && !st->gen_timesig();
+        const bool no_keysig = st && seg->is_type(SegmentType::KEY_SIG_TYPES) && !st->gen_keysig();
+        const bool no_clef = st && seg->is_type(SegmentType::CLEF_TYPES) && !st->gen_clef();
+        if (no_timesig || no_keysig || no_clef) {
             return false;
         }
 
@@ -1386,180 +1395,180 @@ void MeasureLayout::addRepeatCourtesyParentheses(Measure *m, const bool continua
         return el && el->visible();
     };
 
-    auto timeSigShouldHaveOwnParentheses = [&](const Segment *seg, const track_idx_t track) -> bool {
-        if (!elShouldHaveParenthesis(seg, track)) {
+    auto time_sig_should_have_own_parentheses = [&](const Segment *seg, const track_idx_t track) -> bool {
+        if (!el_should_have_parenthesis(seg, track)) {
             return false;
         }
 
         const EngravingItem *el = seg ? seg->element(track) : nullptr;
-        if (!el || !el->isTimeSig()) {
+        if (!el || !el->is_time_sig()) {
             return false;
         }
 
-        return ctx.conf().styleV(Sid::timeSigPlacement).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL;
+        return ctx.conf().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL;
     };
 
-    auto createParenthesesForSegments = [&](Segment *leftSeg, Segment *rightSeg, track_idx_t track) -> void {
+    auto create_parentheses_for_segments = [&](Segment *left_seg, Segment *right_seg, track_idx_t track) -> void {
         double top = DBL_MAX;
         double bottom = -DBL_MAX;
-        EngravingItem *leftItem = leftSeg ? leftSeg->element(track) : nullptr;
-        EngravingItem *rightItem = rightSeg ? rightSeg->element(track) : nullptr;
-        Parenthesis *leftParen = nullptr;
-        if (leftItem) {
-            leftItem->setParenthesesMode(leftItem->rightParen() ? ParenthesesMode::BOTH : ParenthesesMode::LEFT, true, true);
-            leftParen = leftItem->leftParen();
+        EngravingItem *left_item = left_seg ? left_seg->element(track) : nullptr;
+        EngravingItem *right_item = right_seg ? right_seg->element(track) : nullptr;
+        Parenthesis *left_paren = nullptr;
+        if (left_item) {
+            left_item->set_parentheses_mode(left_item->right_paren() ? ParenthesesMode::BOTH : ParenthesesMode::LEFT, true, true);
+            left_paren = left_item->left_paren();
         }
-        Parenthesis *rightParen = nullptr;
-        if (rightItem) {
-            rightItem->setParenthesesMode(rightItem->leftParen() ? ParenthesesMode::BOTH : ParenthesesMode::RIGHT, true, true);
-            rightParen = rightItem->rightParen();
+        Parenthesis *right_paren = nullptr;
+        if (right_item) {
+            right_item->set_parentheses_mode(right_item->left_paren() ? ParenthesesMode::BOTH : ParenthesesMode::RIGHT, true, true);
+            right_paren = right_item->right_paren();
         }
-        bool needsBigTimeSigAdjust = leftSeg && rightSeg && leftSeg == rightSeg && leftSeg->isType(SegmentType::TimeSigTypes) &&
-                                     ctx.conf().styleV(Sid::timeSigPlacement).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL;
-        if ((ctx.conf().styleB(Sid::smallParens) || needsBigTimeSigAdjust) && leftParen && rightParen) {
-            const double spatium = leftParen->spatium();
-            calcParenTopBottom(leftParen, top, bottom, ctx);
-            calcParenTopBottom(rightParen, top, bottom, ctx);
+        bool needs_big_time_sig_adjust = left_seg && right_seg && left_seg == right_seg && left_seg->is_type(SegmentType::TIME_SIG_TYPES) &&
+                                         ctx.conf().style_v(Sid::TIME_SIG_PLACEMENT).value<TimeSigPlacement>() != TimeSigPlacement::NORMAL;
+        if ((ctx.conf().style_b(Sid::SMALL_PARENS) || needs_big_time_sig_adjust) && left_paren && right_paren) {
+            const double spatium = left_paren->spatium();
+            calc_paren_top_bottom(left_paren, top, bottom, ctx);
+            calc_paren_top_bottom(right_paren, top, bottom, ctx);
 
             double height = bottom - top;
 
-            if (!ctx.conf().styleB(Sid::smallParens)) {
+            if (!ctx.conf().style_b(Sid::SMALL_PARENS)) {
                 top -= 1.25 * spatium;
                 height += 2.5 * spatium;
             }
 
-            rightParen->mutldata()->startY.set_value(top);
-            rightParen->mutldata()->height.set_value(height);
-            rightParen->mutldata()->midPointThickness.set_value(height / 60 * rightParen->ldata()->mag()); // 0.1sp for a height of 6sp
-            leftParen->mutldata()->startY.set_value(top);
-            leftParen->mutldata()->height.set_value(height);
-            leftParen->mutldata()->midPointThickness.set_value(height / 60 * leftParen->ldata()->mag()); // 0.1sp for a height of 6sp
+            right_paren->mutldata()->start_y.set_value(top);
+            right_paren->mutldata()->height.set_value(height);
+            right_paren->mutldata()->mid_point_thickness.set_value(height / 60 * right_paren->ldata()->mag()); // 0.1sp for a height of 6sp
+            left_paren->mutldata()->start_y.set_value(top);
+            left_paren->mutldata()->height.set_value(height);
+            left_paren->mutldata()->mid_point_thickness.set_value(height / 60 * left_paren->ldata()->mag()); // 0.1sp for a height of 6sp
 
-            double mag = std::max(leftParen->ldata()->mag(), rightParen->ldata()->mag());
-            leftParen->mutldata()->setMag(mag);
-            rightParen->mutldata()->setMag(mag);
-        } else if (leftParen || rightParen) {
-            const Staff *staff = leftParen ? leftParen->staff() : rightParen->staff();
-            const double spatium = leftParen ? leftParen->spatium() : rightParen->spatium();
-            const Fraction tick = leftParen ? leftParen->tick() : rightParen->tick();
-            if (leftParen) {
-                leftParen->mutldata()->startY.set_value(-spatium);
-                leftParen->mutldata()->height.set_value(staff->staffHeight(tick) + 2 * spatium * leftParen->mag());
-                leftParen->mutldata()->midPointThickness.set_value(leftParen->ldata()->height / 60 *
-                                                                   leftParen->ldata()->mag()); // 0.1sp for a height of 6sp
+            double mag = std::max(left_paren->ldata()->mag(), right_paren->ldata()->mag());
+            left_paren->mutldata()->set_mag(mag);
+            right_paren->mutldata()->set_mag(mag);
+        } else if (left_paren || right_paren) {
+            const Staff *staff = left_paren ? left_paren->staff() : right_paren->staff();
+            const double spatium = left_paren ? left_paren->spatium() : right_paren->spatium();
+            const Fraction tick = left_paren ? left_paren->tick() : right_paren->tick();
+            if (left_paren) {
+                left_paren->mutldata()->start_y.set_value(-spatium);
+                left_paren->mutldata()->height.set_value(staff->staff_height(tick) + 2 * spatium * left_paren->mag());
+                left_paren->mutldata()->mid_point_thickness.set_value(left_paren->ldata()->height / 60 *
+                                                                      left_paren->ldata()->mag()); // 0.1sp for a height of 6sp
             }
-            if (rightParen) {
-                rightParen->mutldata()->startY.set_value(-spatium);
-                rightParen->mutldata()->height.set_value(staff->staffHeight(tick) + 2 * spatium * rightParen->mag());
-                rightParen->mutldata()->midPointThickness.set_value(rightParen->ldata()->height / 60 *
-                                                                    rightParen->ldata()->mag()); // 0.1sp for a height of 6sp
+            if (right_paren) {
+                right_paren->mutldata()->start_y.set_value(-spatium);
+                right_paren->mutldata()->height.set_value(staff->staff_height(tick) + 2 * spatium * right_paren->mag());
+                right_paren->mutldata()->mid_point_thickness.set_value(right_paren->ldata()->height / 60 *
+                                                                       right_paren->ldata()->mag()); // 0.1sp for a height of 6sp
             }
         }
 
-        if (leftParen) {
-            ParenthesisLayout::layoutParentheses(leftItem, ctx);
+        if (left_paren) {
+            ParenthesisLayout::layout_parentheses(left_item, ctx);
         }
 
-        if (rightParen && rightItem != leftItem) {
-            ParenthesisLayout::layoutParentheses(rightItem, ctx);
+        if (right_paren && right_item != left_item) {
+            ParenthesisLayout::layout_parentheses(right_item, ctx);
         }
     };
 
-    for (track_idx_t track = 0; track <= ctx.dom().nstaves() * VOICES; track += VOICES) {
-        Segment *clefSeg = m->findSegmentR(clefSegType, sigTick);
-        Segment *ksSeg = m->findSegmentR(ksSegType, sigTick);
-        Segment *tsSeg = m->findSegmentR(tsSegType, sigTick);
-        bool separateTsParens = timeSigShouldHaveOwnParentheses(tsSeg, track);
+    for (track_idx_t track = 0; track <= ctx.dom().nstaves() * ::mu::engraving::voices; track += ::mu::engraving::voices) {
+        Segment *clef_seg = m->find_segment_r(clef_seg_type, sig_tick);
+        Segment *ks_seg = m->find_segment_r(ks_seg_type, sig_tick);
+        Segment *ts_seg = m->find_segment_r(ts_seg_type, sig_tick);
+        bool separate_ts_parens = time_sig_should_have_own_parentheses(ts_seg, track);
 
-        Segment *leftMostSeg = clefSeg;
+        Segment *left_most_seg = clef_seg;
 
-        if (!elShouldHaveParenthesis(leftMostSeg, track)) {
-            leftMostSeg = ksSeg;
+        if (!el_should_have_parenthesis(left_most_seg, track)) {
+            left_most_seg = ks_seg;
         }
 
-        if (!separateTsParens && !elShouldHaveParenthesis(leftMostSeg, track)) {
-            leftMostSeg = tsSeg;
+        if (!separate_ts_parens && !el_should_have_parenthesis(left_most_seg, track)) {
+            left_most_seg = ts_seg;
         }
 
-        if (!elShouldHaveParenthesis(leftMostSeg, track)) {
-            leftMostSeg = nullptr;
-        }
-
-        // Remove stale parentheses
-        for (Segment *seg : {clefSeg, ksSeg, tsSeg}) {
-            if (seg == leftMostSeg || !seg || (seg == tsSeg && separateTsParens) || !seg->element(track)) {
-                continue;
-            }
-            EngravingItem *item = seg->element(track);
-            removeRepeatCourtesyParenthesis(item, DirectionH::LEFT);
-        }
-
-        Segment *rightMostSeg = separateTsParens ? nullptr : tsSeg;
-
-        if (!elShouldHaveParenthesis(rightMostSeg, track)) {
-            rightMostSeg = ksSeg;
-        }
-
-        if (!elShouldHaveParenthesis(rightMostSeg, track)) {
-            rightMostSeg = clefSeg;
-        }
-
-        if (!elShouldHaveParenthesis(rightMostSeg, track)) {
-            rightMostSeg = nullptr;
+        if (!el_should_have_parenthesis(left_most_seg, track)) {
+            left_most_seg = nullptr;
         }
 
         // Remove stale parentheses
-        for (Segment *seg : {clefSeg, ksSeg, tsSeg}) {
-            if (seg == rightMostSeg || !seg || (seg == tsSeg && separateTsParens) || !seg->element(track)) {
+        for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
+            if (seg == left_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->element(track)) {
                 continue;
             }
             EngravingItem *item = seg->element(track);
-            removeRepeatCourtesyParenthesis(item, DirectionH::RIGHT);
+            remove_repeat_courtesy_parenthesis(item, DirectionH::LEFT);
         }
 
-        createParenthesesForSegments(leftMostSeg, rightMostSeg, track);
+        Segment *right_most_seg = separate_ts_parens ? nullptr : ts_seg;
 
-        if (separateTsParens) {
-            createParenthesesForSegments(tsSeg, tsSeg, track);
+        if (!el_should_have_parenthesis(right_most_seg, track)) {
+            right_most_seg = ks_seg;
+        }
+
+        if (!el_should_have_parenthesis(right_most_seg, track)) {
+            right_most_seg = clef_seg;
+        }
+
+        if (!el_should_have_parenthesis(right_most_seg, track)) {
+            right_most_seg = nullptr;
+        }
+
+        // Remove stale parentheses
+        for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
+            if (seg == right_most_seg || !seg || (seg == ts_seg && separate_ts_parens) || !seg->element(track)) {
+                continue;
+            }
+            EngravingItem *item = seg->element(track);
+            remove_repeat_courtesy_parenthesis(item, DirectionH::RIGHT);
+        }
+
+        create_parentheses_for_segments(left_most_seg, right_most_seg, track);
+
+        if (separate_ts_parens) {
+            create_parentheses_for_segments(ts_seg, ts_seg, track);
         }
     }
 }
 
-void MeasureLayout::removeRepeatCourtesyParenthesesMeasure(Measure *m, const bool continuation, LayoutContext &ctx) {
-    const SegmentType tsSegType = continuation ? SegmentType::TimeSigStartRepeatAnnounce : SegmentType::TimeSigRepeatAnnounce;
-    const SegmentType ksSegType = continuation ? SegmentType::KeySigStartRepeatAnnounce : SegmentType::KeySigRepeatAnnounce;
-    const SegmentType clefSegType = continuation ? SegmentType::ClefStartRepeatAnnounce : SegmentType::ClefRepeatAnnounce;
+void MeasureLayout::remove_repeat_courtesy_parentheses_measure(Measure *m, const bool continuation, LayoutContext &ctx) {
+    const SegmentType ts_seg_type = continuation ? SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE : SegmentType::TIME_SIG_REPEAT_ANNOUNCE;
+    const SegmentType ks_seg_type = continuation ? SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE : SegmentType::KEY_SIG_REPEAT_ANNOUNCE;
+    const SegmentType clef_seg_type = continuation ? SegmentType::CLEF_START_REPEAT_ANNOUNCE : SegmentType::CLEF_REPEAT_ANNOUNCE;
 
-    const Fraction sigTick = continuation ? Fraction(0, 1) : m->ticks();
+    const Fraction sig_tick = continuation ? Fraction(0, 1) : m->ticks();
 
-    Segment *clefSeg = m->findSegmentR(clefSegType, sigTick);
-    Segment *ksSeg = m->findSegmentR(ksSegType, sigTick);
-    Segment *tsSeg = m->findSegmentR(tsSegType, sigTick);
+    Segment *clef_seg = m->find_segment_r(clef_seg_type, sig_tick);
+    Segment *ks_seg = m->find_segment_r(ks_seg_type, sig_tick);
+    Segment *ts_seg = m->find_segment_r(ts_seg_type, sig_tick);
 
-    for (Segment *seg : {clefSeg, ksSeg, tsSeg}) {
+    for (Segment *seg : {clef_seg, ks_seg, ts_seg}) {
         if (!seg) {
             continue;
         }
-        for (track_idx_t track = 0; track <= ctx.dom().nstaves() * VOICES; track += VOICES) {
+        for (track_idx_t track = 0; track <= ctx.dom().nstaves() * ::mu::engraving::voices; track += ::mu::engraving::voices) {
             EngravingItem *item = seg->element(track);
             if (!item) {
                 continue;
             }
-            removeRepeatCourtesyParenthesis(item);
+            remove_repeat_courtesy_parenthesis(item);
         }
     }
 }
 
-void MeasureLayout::removeRepeatCourtesyParenthesis(EngravingItem *item, const DirectionH direction) {
+void MeasureLayout::remove_repeat_courtesy_parenthesis(EngravingItem *item, const DirectionH direction) {
     if (!item) {
         return;
     }
     if (direction == DirectionH::AUTO) {
-        if (Parenthesis *leftParen = item->leftParen()) {
-            item->remove(leftParen);
+        if (Parenthesis *left_paren = item->left_paren()) {
+            item->remove(left_paren);
         }
-        if (Parenthesis *rightParen = item->rightParen()) {
-            item->remove(rightParen);
+        if (Parenthesis *right_paren = item->right_paren()) {
+            item->remove(right_paren);
         }
         return;
     }
@@ -1572,216 +1581,218 @@ void MeasureLayout::removeRepeatCourtesyParenthesis(EngravingItem *item, const D
     item->remove(paren);
 }
 
-void MeasureLayout::setRepeatCourtesiesAndParens(Measure *m, LayoutContext &ctx) {
-    const bool showCourtesyRepeats = m->repeatEnd() && ctx.conf().styleB(Sid::showCourtesiesRepeats);
-    const bool showCourtesyOtherJumps = m->repeatJump() && ctx.conf().styleB(Sid::showCourtesiesOtherJumps);
+void MeasureLayout::set_repeat_courtesies_and_parens(Measure *m, LayoutContext &ctx) {
+    const bool show_courtesy_repeats = m->repeat_end() && ctx.conf().style_b(Sid::SHOW_COURTESIES_REPEATS);
+    const bool show_courtesy_other_jumps = m->repeat_jump() && ctx.conf().style_b(Sid::SHOW_COURTESIES_OTHER_JUMPS);
 
-    if (showCourtesyRepeats) {
-        MeasureLayout::addRepeatCourtesies(m, ctx);
-        if (ctx.conf().styleB(Sid::useParensRepeatCourtesies)) {
-            MeasureLayout::addRepeatCourtesyParentheses(m, false, ctx);
+    if (show_courtesy_repeats) {
+        MeasureLayout::add_repeat_courtesies(m, ctx);
+        if (ctx.conf().style_b(Sid::USE_PARENS_REPEAT_COURTESIES)) {
+            MeasureLayout::add_repeat_courtesy_parentheses(m, false, ctx);
         } else {
-            MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, false, ctx);
+            MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, false, ctx);
         }
     }
 
-    if (showCourtesyOtherJumps) {
-        MeasureLayout::addRepeatCourtesies(m, ctx);
-        if (ctx.conf().styleB(Sid::useParensOtherJumpCourtesies)) {
-            MeasureLayout::addRepeatCourtesyParentheses(m, false, ctx);
+    if (show_courtesy_other_jumps) {
+        MeasureLayout::add_repeat_courtesies(m, ctx);
+        if (ctx.conf().style_b(Sid::USE_PARENS_OTHER_JUMP_COURTESIES)) {
+            MeasureLayout::add_repeat_courtesy_parentheses(m, false, ctx);
         } else {
-            MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, false, ctx);
+            MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, false, ctx);
         }
     }
 
-    if (!showCourtesyRepeats && !showCourtesyOtherJumps) {
-        MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, false, ctx);
-        removeRepeatCourtesies(m);
+    if (!show_courtesy_repeats && !show_courtesy_other_jumps) {
+        MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, false, ctx);
+        remove_repeat_courtesies(m);
     }
 
-    const bool courtesiesAfterCancellingRepeats = m->prevMeasureMM() && m->prevMeasureMM()->repeatEnd() &&
-                                                  ctx.conf().styleB(Sid::showCourtesiesAfterCancellingRepeats) &&
-                                                  ctx.conf().styleB(Sid::showCourtesiesRepeats);
-    const bool courtesiesAfterCancellingOtherJumps = m->prevMeasureMM() && m->prevMeasureMM()->repeatJump() &&
-                                                     ctx.conf().styleB(Sid::showCourtesiesAfterCancellingOtherJumps) &&
-                                                     ctx.conf().styleB(Sid::showCourtesiesOtherJumps);
-    if (courtesiesAfterCancellingRepeats) {
-        MeasureLayout::addRepeatContinuationCourtesies(m, ctx);
-        if (ctx.conf().styleB(Sid::useParensRepeatCourtesiesAfterCancelling)) {
-            MeasureLayout::addRepeatCourtesyParentheses(m, true, ctx);
+    const bool courtesies_after_cancelling_repeats = m->prev_measure_mm() && m->prev_measure_mm()->repeat_end() &&
+                                                     ctx.conf().style_b(Sid::SHOW_COURTESIES_AFTER_CANCELLING_REPEATS) &&
+                                                     ctx.conf().style_b(Sid::SHOW_COURTESIES_REPEATS);
+    const bool courtesies_after_cancelling_other_jumps = m->prev_measure_mm() && m->prev_measure_mm()->repeat_jump() &&
+                                                         ctx.conf().style_b(Sid::SHOW_COURTESIES_AFTER_CANCELLING_OTHER_JUMPS) &&
+                                                         ctx.conf().style_b(Sid::SHOW_COURTESIES_OTHER_JUMPS);
+    if (courtesies_after_cancelling_repeats) {
+        MeasureLayout::add_repeat_continuation_courtesies(m, ctx);
+        if (ctx.conf().style_b(Sid::USE_PARENS_REPEAT_COURTESIES_AFTER_CANCELLING)) {
+            MeasureLayout::add_repeat_courtesy_parentheses(m, true, ctx);
         } else {
-            MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, true, ctx);
+            MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, true, ctx);
         }
     }
 
-    if (courtesiesAfterCancellingOtherJumps) {
-        MeasureLayout::addRepeatContinuationCourtesies(m, ctx);
-        if (ctx.conf().styleB(Sid::useParensOtherJumpCourtesiesAfterCancelling)) {
-            MeasureLayout::addRepeatCourtesyParentheses(m, true, ctx);
+    if (courtesies_after_cancelling_other_jumps) {
+        MeasureLayout::add_repeat_continuation_courtesies(m, ctx);
+        if (ctx.conf().style_b(Sid::USE_PARENS_OTHER_JUMP_COURTESIES_AFTER_CANCELLING)) {
+            MeasureLayout::add_repeat_courtesy_parentheses(m, true, ctx);
         } else {
-            MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, true, ctx);
+            MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, true, ctx);
         }
     }
 
-    if (!courtesiesAfterCancellingRepeats && !courtesiesAfterCancellingOtherJumps) {
-        MeasureLayout::removeRepeatCourtesyParenthesesMeasure(m, true, ctx);
-        removeRepeatContinuationCourtesies(m);
+    if (!courtesies_after_cancelling_repeats && !courtesies_after_cancelling_other_jumps) {
+        MeasureLayout::remove_repeat_courtesy_parentheses_measure(m, true, ctx);
+        remove_repeat_continuation_courtesies(m);
     }
 }
 
-void MeasureLayout::addRepeatCourtesies(Measure *m, LayoutContext &ctx) {
-    const std::vector<Measure *> measures = findFollowingRepeatMeasures(m);
+void MeasureLayout::add_repeat_courtesies(Measure *m, LayoutContext &ctx) {
+    const std::vector<Measure *> measures = find_following_repeat_measures(m);
     if (measures.empty()) {
-        removeRepeatCourtesies(m);
+        remove_repeat_courtesies(m);
         return;
     }
 
-    bool hasCourtesies = false;
-    for (Measure *repeatStartMeasure : measures) {
+    bool has_courtesies = false;
+    for (Measure *repeat_start_measure : measures) {
         // Follow section break courtesy property
-        const Measure *prevMeasure = repeatStartMeasure->prevMeasureMM();
-        const LayoutBreak *sectionBreak = prevMeasure ? prevMeasure->sectionBreakElement() : nullptr;
-        const bool sectionBreakHideCourtesies = sectionBreak && !sectionBreak->showCourtesy();
+        const Measure *prev_measure = repeat_start_measure->prev_measure_mm();
+        const LayoutBreak *section_break = prev_measure ? prev_measure->section_break_element() : nullptr;
+        const bool section_break_hide_courtesies = section_break && !section_break->show_courtesy();
 
-        if (repeatStartMeasure == m->nextMeasureMM() || sectionBreakHideCourtesies) {
+        if (repeat_start_measure == m->next_measure_mm() || section_break_hide_courtesies) {
             continue;
         }
-        setCourtesyClef(m, repeatStartMeasure->tick(), m->endTick(), SegmentType::ClefRepeatAnnounce, ctx);
-        setCourtesyKeySig(m, repeatStartMeasure->tick(), m->endTick(), SegmentType::KeySigRepeatAnnounce, ctx);
-        setCourtesyTimeSig(m, repeatStartMeasure->tick(), m->endTick(), SegmentType::TimeSigRepeatAnnounce, ctx);
+        set_courtesy_clef(m, repeat_start_measure->tick(), m->end_tick(), SegmentType::CLEF_REPEAT_ANNOUNCE, ctx);
+        set_courtesy_key_sig(m, repeat_start_measure->tick(), m->end_tick(), SegmentType::KEY_SIG_REPEAT_ANNOUNCE, ctx);
+        set_courtesy_time_sig(m, repeat_start_measure->tick(), m->end_tick(), SegmentType::TIME_SIG_REPEAT_ANNOUNCE, ctx);
 
-        hasCourtesies = true;
+        has_courtesies = true;
     }
 
-    if (!hasCourtesies) {
-        removeRepeatCourtesies(m);
+    if (!has_courtesies) {
+        remove_repeat_courtesies(m);
     }
 }
 
-void MeasureLayout::removeRepeatCourtesies(Measure *m) {
+void MeasureLayout::remove_repeat_courtesies(Measure *m) {
     for (Segment *seg = m->last(); seg != m->first(); seg = seg->prev()) {
-        if (seg->isChordRestType()) {
+        if (seg->is_chord_rest_type()) {
             break;
         }
-        if (!seg->isType(SegmentType::ClefRepeatAnnounce | SegmentType::TimeSigRepeatAnnounce | SegmentType::KeySigRepeatAnnounce)) {
+        if (!seg->is_type(SegmentType::CLEF_REPEAT_ANNOUNCE | SegmentType::TIME_SIG_REPEAT_ANNOUNCE |
+                          SegmentType::KEY_SIG_REPEAT_ANNOUNCE)) {
             continue;
         }
         seg->mutldata()->reset();
 
         if (seg->enabled()) {
-            seg->setEnabled(false);
+            seg->set_enabled(false);
         }
     }
-    m->setHasCourtesyClef(false);
-    m->setHasCourtesyKeySig(false);
-    m->setHasCourtesyTimeSig(false);
+    m->set_has_courtesy_clef(false);
+    m->set_has_courtesy_key_sig(false);
+    m->set_has_courtesy_time_sig(false);
 }
 
-void MeasureLayout::addRepeatContinuationCourtesies(Measure *m, LayoutContext &ctx) {
-    setCourtesyTimeSig(m, m->tick(), m->tick(), SegmentType::TimeSigStartRepeatAnnounce, ctx);
-    setCourtesyKeySig(m, m->tick(), m->tick(), SegmentType::KeySigStartRepeatAnnounce, ctx);
-    setCourtesyClef(m, m->tick(), m->tick(), SegmentType::ClefStartRepeatAnnounce, ctx);
+void MeasureLayout::add_repeat_continuation_courtesies(Measure *m, LayoutContext &ctx) {
+    set_courtesy_time_sig(m, m->tick(), m->tick(), SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE, ctx);
+    set_courtesy_key_sig(m, m->tick(), m->tick(), SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE, ctx);
+    set_courtesy_clef(m, m->tick(), m->tick(), SegmentType::CLEF_START_REPEAT_ANNOUNCE, ctx);
 }
 
-void MeasureLayout::removeRepeatContinuationCourtesies(Measure *m) {
+void MeasureLayout::remove_repeat_continuation_courtesies(Measure *m) {
     for (Segment *seg = m->first(); seg != m->last(); seg = seg->next()) {
-        if (seg->isChordRestType()) {
+        if (seg->is_chord_rest_type()) {
             break;
         }
-        if (!seg->isType(SegmentType::ClefStartRepeatAnnounce | SegmentType::TimeSigStartRepeatAnnounce |
-                         SegmentType::KeySigStartRepeatAnnounce)) {
+        if (!seg->is_type(SegmentType::CLEF_START_REPEAT_ANNOUNCE | SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE |
+                          SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE)) {
             continue;
         }
 
         seg->mutldata()->reset();
 
         if (seg->enabled()) {
-            seg->setEnabled(false);
+            seg->set_enabled(false);
         }
     }
 }
 
-Segment *MeasureLayout::addHeaderClef(Measure *m, bool isFirstClef, const Staff *staff, LayoutContext &ctx) {
-    const staff_idx_t staffIdx = staff->idx();
-    const track_idx_t track = staffIdx * VOICES;
-    Segment *cSegment = m->findFirstR(SegmentType::HeaderClef, Fraction(0, 1));
-    const StaffType *staffType = staff->staffType(m->tick());
+Segment *MeasureLayout::add_header_clef(Measure *m, bool is_first_clef, const Staff *staff, LayoutContext &ctx) {
+    const staff_idx_t staff_idx = staff->idx();
+    const track_idx_t track = staff_idx * ::mu::engraving::voices;
+    Segment *c_segment = m->find_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
+    const StaffType *staff_type = staff->staff_type(m->tick());
 
-    const bool hideClef = staffType->isTabStaff() ? ctx.conf().styleB(Sid::hideTabClefAfterFirst) : !ctx.conf().styleB(Sid::genClef);
+    const bool hide_clef =
+        staff_type->is_tab_staff() ? ctx.conf().style_b(Sid::HIDE_TAB_CLEF_AFTER_FIRST) : !ctx.conf().style_b(Sid::GEN_CLEF);
 
     // find the clef type at the previous tick
-    ClefTypeList cl = staff->clefType(m->tick() - Fraction::eps());
-    bool showCourtesy = true;
+    ClefTypeList cl = staff->clef_type(m->tick() - Fraction::eps());
+    bool show_courtesy = true;
     Segment *s = nullptr;
-    if (m->prevMeasure()) {
+    if (m->prev_measure()) {
         // look for a clef change at the end of the previous measure
-        s = m->prevMeasure()->findSegment(SegmentType::Clef, m->tick());
-    } else if (m->isMMRest()) {
+        s = m->prev_measure()->find_segment(SegmentType::CLEF, m->tick());
+    } else if (m->is_mm_rest()) {
         // look for a header clef at the beginning of the first underlying measure
-        s = m->mmRestFirst()->findFirstR(SegmentType::HeaderClef, Fraction(0, 1));
+        s = m->mm_rest_first()->find_first_r(SegmentType::HEADER_CLEF, Fraction(0, 1));
     }
     if (s) {
-        Clef *c = toClef(s->element(track));
+        Clef *c = to_clef(s->element(track));
         if (c) {
-            cl = c->clefTypeList();
-            showCourtesy = c->showCourtesy();
+            cl = c->clef_type_list();
+            show_courtesy = c->show_courtesy();
         }
     }
     Clef *clef = nullptr;
-    if (cSegment) {
-        clef = toClef(cSegment->element(track));
+    if (c_segment) {
+        clef = to_clef(c_segment->element(track));
     }
-    if (staff->staffTypeForElement(m)->genClef() && (isFirstClef || !hideClef)) {
-        if (!cSegment) {
-            cSegment = Factory::createSegment(m, SegmentType::HeaderClef, Fraction(0, 1));
-            m->add(cSegment);
+    if (staff->staff_type_for_element(m)->gen_clef() && (is_first_clef || !hide_clef)) {
+        if (!c_segment) {
+            c_segment = Factory::create_segment(m, SegmentType::HEADER_CLEF, Fraction(0, 1));
+            m->add(c_segment);
         }
-        cSegment->setHeader(true);
+        c_segment->set_header(true);
         if (!clef) {
             //
             // create missing clef
             //
-            clef = Factory::createClef(cSegment);
-            clef->setTrack(track);
-            clef->setGenerated(true);
-            clef->setShowCourtesy(showCourtesy);
-            cSegment->add(clef);
+            clef = Factory::create_clef(c_segment);
+            clef->set_track(track);
+            clef->set_generated(true);
+            clef->set_show_courtesy(show_courtesy);
+            c_segment->add(clef);
         }
         if (clef->generated()) {
-            clef->setClefType(cl);
+            clef->set_clef_type(cl);
         }
-        clef->setSmall(false);
+        clef->set_small(false);
         clef->mutldata()->reset();
-        TLayout::layoutClef(clef, clef->mutldata(), ctx.conf());
-        cSegment->setEnabled(true);
+        TLayout::layout_clef(clef, clef->mutldata(), ctx.conf());
+        c_segment->set_enabled(true);
     } else if (clef) {
-        clef->ownershipParentItem()->remove(clef);
+        clef->ownership_parent_item()->remove(clef);
         if (clef->generated()) {
             delete clef;
         }
     }
 
-    return cSegment;
+    return c_segment;
 }
 
-Segment *MeasureLayout::addHeaderKeySig(Measure *m, bool isFirstKeysig, const Staff *staff, LayoutContext &ctx) {
-    const staff_idx_t staffIdx = staff->idx();
-    const track_idx_t track = staffIdx * VOICES;
-    Segment *kSegment = m->findFirstR(SegmentType::KeySig, Fraction(0, 1));
+Segment *MeasureLayout::add_header_key_sig(Measure *m, bool is_first_keysig, const Staff *staff, LayoutContext &ctx) {
+    const staff_idx_t staff_idx = staff->idx();
+    const track_idx_t track = staff_idx * ::mu::engraving::voices;
+    Segment *k_segment = m->find_first_r(SegmentType::KEY_SIG, Fraction(0, 1));
     // If we need a Key::C KeySig (which would be invisible) and there is
     // a courtesy key sig, don’t create it and switch generated flags.
     // This avoids creating an invisible KeySig which can distort layout.
 
-    KeySigEvent keyIdx = staff->keySigEvent(m->tick());
-    KeySig *ksAnnounce = 0;
-    if ((isFirstKeysig || ctx.conf().styleB(Sid::genKeysig)) && (keyIdx.key() == Key::C)) {
-        Measure *pm = m->prevMeasureMM();
-        if (pm && pm->hasCourtesyKeySig()) {
-            Segment *ks = pm->first(SegmentType::KeySigAnnounce);
+    KeySigEvent key_idx = staff->key_sig_event(m->tick());
+    KeySig *ks_announce = 0;
+    if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && (key_idx.key() == Key::C)) {
+        Measure *pm = m->prev_measure_mm();
+        if (pm && pm->has_courtesy_key_sig()) {
+            Segment *ks = pm->first(SegmentType::KEY_SIG_ANNOUNCE);
             if (ks) {
-                ksAnnounce = toKeySig(ks->element(track));
-                if (ksAnnounce) {
-                    isFirstKeysig = false;
+                ks_announce = to_key_sig(ks->element(track));
+                if (ks_announce) {
+                    is_first_keysig = false;
                     //                                    if (keysig) {
                     //                                          ksAnnounce->setGenerated(false);
                     //TODO                                      keysig->setGenerated(true);
@@ -1791,50 +1802,50 @@ Segment *MeasureLayout::addHeaderKeySig(Measure *m, bool isFirstKeysig, const St
         }
     }
 
-    bool isPitchedStaff = staff->isPitchedStaff(m->tick());
+    bool is_pitched_staff = staff->is_pitched_staff(m->tick());
 
     KeySig *keysig = nullptr;
-    if (kSegment) {
-        keysig = toKeySig(kSegment->element(track));
+    if (k_segment) {
+        keysig = to_key_sig(k_segment->element(track));
     }
     // keep key sigs in TABs: TABs themselves should hide them
-    if ((isFirstKeysig || ctx.conf().styleB(Sid::genKeysig)) && isPitchedStaff) {
-        if (!kSegment) {
-            kSegment = Factory::createSegment(m, SegmentType::KeySig, Fraction(0, 1));
-            m->add(kSegment);
+    if ((is_first_keysig || ctx.conf().style_b(Sid::GEN_KEYSIG)) && is_pitched_staff) {
+        if (!k_segment) {
+            k_segment = Factory::create_segment(m, SegmentType::KEY_SIG, Fraction(0, 1));
+            m->add(k_segment);
         }
-        kSegment->setHeader(true);
+        k_segment->set_header(true);
         if (!keysig) {
             //
             // create missing key signature
             //
-            keysig = Factory::createKeySig(kSegment);
-            keysig->setTrack(track);
-            keysig->setGenerated(true);
-            kSegment->add(keysig);
+            keysig = Factory::create_key_sig(k_segment);
+            keysig->set_track(track);
+            keysig->set_generated(true);
+            k_segment->add(keysig);
         }
-        keysig->setKeySigEvent(keyIdx);
+        keysig->set_key_sig_event(key_idx);
         keysig->mutldata()->reset();
-        TLayout::layoutKeySig(keysig, keysig->mutldata(), ctx.conf());
-        kSegment->setEnabled(true);
-    } else if (keysig && isPitchedStaff) {
+        TLayout::layout_key_sig(keysig, keysig->mutldata(), ctx.conf());
+        k_segment->set_enabled(true);
+    } else if (keysig && is_pitched_staff) {
         // do not remove user modified keysigs
         bool remove = true;
-        EngravingItem *e = kSegment->element(staffIdx * VOICES);
+        EngravingItem *e = k_segment->element(staff_idx * ::mu::engraving::voices);
         Key key = staff->key(m->tick());
-        if ((e && !e->generated()) || (key != keyIdx.key())) {
+        if ((e && !e->generated()) || (key != key_idx.key())) {
             remove = false;
         }
 
         if (remove) {
-            keysig->ownershipParentItem()->remove(keysig);
+            keysig->ownership_parent_item()->remove(keysig);
             if (keysig->generated()) {
                 delete keysig;
             }
         }
     }
 
-    return kSegment;
+    return k_segment;
 }
 
 //-------------------------------------------------------------------
@@ -1845,209 +1856,210 @@ Segment *MeasureLayout::addHeaderKeySig(Measure *m, bool isFirstKeysig, const St
 //    and a KeySig
 //-------------------------------------------------------------------
 
-void MeasureLayout::addSystemHeader(Measure *m, bool isFirstSystem, LayoutContext &ctx) {
-    int staffIdx = 0;
-    Segment *kSegment = nullptr;
-    Segment *cSegment = nullptr;
+void MeasureLayout::add_system_header(Measure *m, bool is_first_system, LayoutContext &ctx) {
+    int staff_idx = 0;
+    Segment *k_segment = nullptr;
+    Segment *c_segment = nullptr;
 
     for (const Staff *staff : ctx.dom().staves()) {
-        const int track = staffIdx * VOICES;
+        const int track = staff_idx * ::mu::engraving::voices;
 
         // Check if this is the first VISIBLE appearance
-        bool isFirstClef = true;
-        bool isFirstKeySig = true;
-        if (!isFirstSystem) {
-            const Fraction clefTick = staff->currentClefTick(m->tick());
-            const Fraction keySigTick = staff->currentKeyTick(m->tick());
+        bool is_first_clef = true;
+        bool is_first_key_sig = true;
+        if (!is_first_system) {
+            const Fraction clef_tick = staff->current_clef_tick(m->tick());
+            const Fraction key_sig_tick = staff->current_key_tick(m->tick());
             // Get first measure whether MMR or not
-            Measure *searchMeasure = ctx.mutDom().tick2measure(std::min(clefTick, keySigTick));
-            searchMeasure =
-                searchMeasure->hasMMRest() && ctx.conf().styleB(Sid::createMultiMeasureRests) ? searchMeasure->mmRest() : searchMeasure;
-            while (searchMeasure->tick() < m->tick() && (isFirstClef || isFirstKeySig)) {
-                const System *sys = searchMeasure->system();
-                if (isFirstClef && searchMeasure->tick() >= clefTick) {
+            Measure *search_measure = ctx.mut_dom().tick2measure(std::min(clef_tick, key_sig_tick));
+            search_measure = search_measure->has_mm_rest() && ctx.conf().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) ?
+                                 search_measure->mm_rest() :
+                                 search_measure;
+            while (search_measure->tick() < m->tick() && (is_first_clef || is_first_key_sig)) {
+                const System *sys = search_measure->system();
+                if (is_first_clef && search_measure->tick() >= clef_tick) {
                     // Need to check previous measure for clef change if one not found in this measure
-                    Segment *clefSeg = searchMeasure->findFirstR(SegmentType::Clef | SegmentType::HeaderClef, Fraction(0, 1));
-                    Measure *prevMeas = searchMeasure->prevMeasure();
-                    if (prevMeas && !clefSeg) {
-                        clefSeg = prevMeas->findSegment(SegmentType::Clef, m->tick());
+                    Segment *clef_seg = search_measure->find_first_r(SegmentType::CLEF | SegmentType::HEADER_CLEF, Fraction(0, 1));
+                    Measure *prev_meas = search_measure->prev_measure();
+                    if (prev_meas && !clef_seg) {
+                        clef_seg = prev_meas->find_segment(SegmentType::CLEF, m->tick());
                     }
-                    if (clefSeg && clefSeg->enabled()) {
-                        const Clef *c = toClef(clefSeg->element(track));
-                        if (c && sys && sys->staff(staffIdx)->show()) {
-                            isFirstClef = false;
+                    if (clef_seg && clef_seg->enabled()) {
+                        const Clef *c = to_clef(clef_seg->element(track));
+                        if (c && sys && sys->staff(staff_idx)->show()) {
+                            is_first_clef = false;
                         }
                     }
                 }
-                if (isFirstKeySig && searchMeasure->tick() >= keySigTick) {
-                    const Segment *ksSeg = searchMeasure->findSegment(SegmentType::KeySig, searchMeasure->tick());
-                    if (ksSeg && ksSeg->enabled()) {
-                        const KeySig *ks = toKeySig(ksSeg->element(track));
-                        if (ks && sys && sys->staff(staffIdx)->show()) {
-                            isFirstKeySig = false;
+                if (is_first_key_sig && search_measure->tick() >= key_sig_tick) {
+                    const Segment *ks_seg = search_measure->find_segment(SegmentType::KEY_SIG, search_measure->tick());
+                    if (ks_seg && ks_seg->enabled()) {
+                        const KeySig *ks = to_key_sig(ks_seg->element(track));
+                        if (ks && sys && sys->staff(staff_idx)->show()) {
+                            is_first_key_sig = false;
                         }
                     }
                 }
-                searchMeasure = searchMeasure->nextMeasureMM();
+                search_measure = search_measure->next_measure_mm();
             }
         }
 
-        cSegment = addHeaderClef(m, isFirstSystem || isFirstClef, staff, ctx);
+        c_segment = add_header_clef(m, is_first_system || is_first_clef, staff, ctx);
 
-        kSegment = addHeaderKeySig(m, isFirstSystem || isFirstKeySig, staff, ctx);
+        k_segment = add_header_key_sig(m, is_first_system || is_first_key_sig, staff, ctx);
 
-        ++staffIdx;
+        ++staff_idx;
     }
-    if (cSegment) {
-        cSegment->createShapes();
+    if (c_segment) {
+        c_segment->create_shapes();
     }
-    if (kSegment) {
-        kSegment->createShapes();
+    if (k_segment) {
+        k_segment->create_shapes();
     }
 
-    MeasureLayout::createSystemBeginBarLine(m, ctx);
+    MeasureLayout::create_system_begin_bar_line(m, ctx);
 
-    m->checkHeader();
+    m->check_header();
 }
 
-void MeasureLayout::removeSystemHeader(Measure *m) {
+void MeasureLayout::remove_system_header(Measure *m) {
     if (!m->header()) {
         return;
     }
     for (Segment *seg = m->first(); seg; seg = seg->next()) {
-        if (seg->isKeySigType()) {
-            bool keySigChangeHappensHere = false;
+        if (seg->is_key_sig_type()) {
+            bool key_sig_change_happens_here = false;
             for (Staff *staff : m->score()->staves()) {
-                if (staff->keyList()->count(m->tick().ticks()) > 0) {
-                    keySigChangeHappensHere = true;
+                if (staff->key_list()->count(m->tick().ticks()) > 0) {
+                    key_sig_change_happens_here = true;
                     break;
                 }
             }
-            if (seg->header() && !keySigChangeHappensHere) {
-                seg->setEnabled(false);
+            if (seg->header() && !key_sig_change_happens_here) {
+                seg->set_enabled(false);
             }
         }
         if (!seg->header()) {
             break;
         }
-        if (!seg->isKeySigType()) {
-            seg->setEnabled(false);
+        if (!seg->is_key_sig_type()) {
+            seg->set_enabled(false);
         }
     }
-    m->setHeader(false);
+    m->set_header(false);
 }
 
-void MeasureLayout::addSystemTrailer(Measure *m, Measure *nm, LayoutContext &ctx) {
+void MeasureLayout::add_system_trailer(Measure *m, Measure *nm, LayoutContext &ctx) {
     const size_t nstaves = ctx.dom().nstaves();
-    bool systemBreakHideCourtesy = false;
-    if (LayoutBreak *sectionBreakElement = m->sectionBreakElement()) {
-        systemBreakHideCourtesy = !sectionBreakElement->showCourtesy();
+    bool system_break_hide_courtesy = false;
+    if (LayoutBreak *section_break_element = m->section_break_element()) {
+        system_break_hide_courtesy = !section_break_element->show_courtesy();
     }
 
     // locate a time sig. in the next measure and, if found,
     // check if it has court. sig. turned off
-    if (nm && ctx.conf().styleB(Sid::genCourtesyTimesig) && !systemBreakHideCourtesy && !ctx.conf().isFloatMode()) {
-        setCourtesyTimeSig(m, nm->tick(), m->endTick(), SegmentType::TimeSigAnnounce, ctx);
+    if (nm && ctx.conf().style_b(Sid::GEN_COURTESY_TIMESIG) && !system_break_hide_courtesy && !ctx.conf().is_float_mode()) {
+        set_courtesy_time_sig(m, nm->tick(), m->end_tick(), SegmentType::TIME_SIG_ANNOUNCE, ctx);
     }
 
     // courtesy key signatures, clefs
-    if (nm && ctx.conf().styleB(Sid::genCourtesyKeysig) && !systemBreakHideCourtesy) {
-        setCourtesyKeySig(m, nm->tick(), m->endTick(), SegmentType::KeySigAnnounce, ctx);
+    if (nm && ctx.conf().style_b(Sid::GEN_COURTESY_KEYSIG) && !system_break_hide_courtesy) {
+        set_courtesy_key_sig(m, nm->tick(), m->end_tick(), SegmentType::KEY_SIG_ANNOUNCE, ctx);
     }
 
-    Segment *courtesyClefSeg = m->findSegmentR(SegmentType::Clef, m->ticks());
-    if (courtesyClefSeg) {
-        for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-            const track_idx_t track = staffIdx * VOICES;
+    Segment *courtesy_clef_seg = m->find_segment_r(SegmentType::CLEF, m->ticks());
+    if (courtesy_clef_seg) {
+        for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+            const track_idx_t track = staff_idx * ::mu::engraving::voices;
 
-            Clef *courtesyClef = toClef(courtesyClefSeg->element(track));
-            if (courtesyClef) {
-                courtesyClef->setSmall(true);
-                courtesyClef->setIsTrailer(true);
+            Clef *courtesy_clef = to_clef(courtesy_clef_seg->element(track));
+            if (courtesy_clef) {
+                courtesy_clef->set_small(true);
+                courtesy_clef->set_is_trailer(true);
             }
         }
     }
-    if (courtesyClefSeg) {
-        courtesyClefSeg->createShapes();
+    if (courtesy_clef_seg) {
+        courtesy_clef_seg->create_shapes();
     }
 
-    m->checkTrailer();
+    m->check_trailer();
 }
 
-void MeasureLayout::removeSystemTrailer(Measure *m, LayoutContext &ctx) {
+void MeasureLayout::remove_system_trailer(Measure *m, LayoutContext &ctx) {
     for (Segment *seg = m->last(); seg != m->first(); seg = seg->prev()) {
-        if (seg->isChordRestType()) {
+        if (seg->is_chord_rest_type()) {
             break;
         }
 
-        if (seg->isClefType()) {
+        if (seg->is_clef_type()) {
             for (EngravingItem *el : seg->elist()) {
                 if (!el) {
                     continue;
                 }
-                Clef *clef = toClef(el);
-                clef->setIsTrailer(false);
-                TLayout::layoutClef(clef, clef->mutldata(), ctx.conf());
+                Clef *clef = to_clef(el);
+                clef->set_is_trailer(false);
+                TLayout::layout_clef(clef, clef->mutldata(), ctx.conf());
             }
-            seg->createShapes();
+            seg->create_shapes();
         }
 
-        if (seg->isTimeTickType() || !seg->trailer()) {
+        if (seg->is_time_tick_type() || !seg->trailer()) {
             continue;
         }
 
         if (seg->enabled()) {
-            seg->setEnabled(false);
-            seg->setTrailer(false);
+            seg->set_enabled(false);
+            seg->set_trailer(false);
         }
     }
-    m->setTrailer(false);
+    m->set_trailer(false);
 }
 
-void MeasureLayout::createSystemBeginBarLine(Measure *m, LayoutContext &ctx) {
+void MeasureLayout::create_system_begin_bar_line(Measure *m, LayoutContext &ctx) {
     if (!m->system()) {
         return;
     }
-    Segment *s = m->findSegment(SegmentType::BeginBarLine, m->tick());
+    Segment *s = m->find_segment(SegmentType::BEGIN_BAR_LINE, m->tick());
     size_t n = 0;
     if (m->system()) {
-        for (SysStaff *sysStaff : m->system()->staves()) {
-            if (sysStaff->show()) {
+        for (SysStaff *sys_staff : m->system()->staves()) {
+            if (sys_staff->show()) {
                 ++n;
             }
         }
     }
-    if ((n > 1 && ctx.conf().styleB(Sid::startBarlineMultiple)) ||
-        (n == 1 && (ctx.conf().styleB(Sid::startBarlineSingle) || m->system()->brackets().size()))) {
+    if ((n > 1 && ctx.conf().style_b(Sid::START_BARLINE_MULTIPLE)) ||
+        (n == 1 && (ctx.conf().style_b(Sid::START_BARLINE_SINGLE) || m->system()->brackets().size()))) {
         if (!s) {
-            s = Factory::createSegment(m, SegmentType::BeginBarLine, Fraction(0, 1));
+            s = Factory::create_segment(m, SegmentType::BEGIN_BAR_LINE, Fraction(0, 1));
             m->add(s);
         }
-        for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += VOICES) {
-            BarLine *bl = toBarLine(s->element(track));
+        for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
+            BarLine *bl = to_bar_line(s->element(track));
             if (!bl) {
-                bl = Factory::createBarLine(s);
-                bl->setTrack(track);
-                bl->setGenerated(true);
-                bl->setBarLineType(BarLineType::NORMAL);
-                bl->setSpanStaff(true);
+                bl = Factory::create_bar_line(s);
+                bl->set_track(track);
+                bl->set_generated(true);
+                bl->set_bar_line_type(BarLineType::NORMAL);
+                bl->set_span_staff(true);
                 s->add(bl);
             }
 
-            TLayout::layoutBarLine(bl, bl->mutldata(), ctx);
+            TLayout::layout_bar_line(bl, bl->mutldata(), ctx);
         }
-        s->createShapes();
-        s->setEnabled(true);
-        s->setHeader(true);
-        m->setHeader(true);
+        s->create_shapes();
+        s->set_enabled(true);
+        s->set_header(true);
+        m->set_header(true);
     } else if (s) {
-        s->setEnabled(false);
+        s->set_enabled(false);
     }
 }
 
-void MeasureLayout::stretchMeasureInPracticeMode(Measure *m, double targetWidth, LayoutContext &ctx) {
+void MeasureLayout::stretch_measure_in_practice_mode(Measure *m, double target_width, LayoutContext &ctx) {
     Measure::LayoutData *ldata = m->mutldata();
-    ldata->setWidth(targetWidth);
+    ldata->set_width(target_width);
 
     //---------------------------------------------------
     //    compute stretch
@@ -2059,37 +2071,37 @@ void MeasureLayout::stretchMeasureInPracticeMode(Measure *m, double targetWidth,
     while (seg && !seg->enabled()) {
         seg = seg->next();
     }
-    double minimumWidth = seg ? seg->x() : 0.0;
+    double minimum_width = seg ? seg->x() : 0.0;
     for (Segment &s : m->segments()) {
-        s.setStretch(1);
+        s.set_stretch(1);
 
         //        if (!s.enabled() || !s.visible())
         //            ;continue;
         Fraction t = s.ticks();
-        if (t.isNotZero()) {
+        if (t.is_not_zero()) {
             springs.insert(std::pair<double, Segment *>(0, &s));
         }
-        minimumWidth += s.width() + s.spacing();
+        minimum_width += s.width() + s.spacing();
     }
 
     //---------------------------------------------------
     //    compute 1/Force for a given Extend
     //---------------------------------------------------
 
-    if (targetWidth > minimumWidth) {
-        double chordRestSegmentsWidth{0};
+    if (target_width > minimum_width) {
+        double chord_rest_segments_width{0};
         for (auto i = springs.begin(); i != springs.end(); i++) {
-            chordRestSegmentsWidth += i->second->width() + i->second->spacing();
+            chord_rest_segments_width += i->second->width() + i->second->spacing();
         }
 
-        double stretch = 1 + (targetWidth - minimumWidth) / chordRestSegmentsWidth;
+        double stretch = 1 + (target_width - minimum_width) / chord_rest_segments_width;
 
         //---------------------------------------------------
         //    distribute stretch to segments
         //---------------------------------------------------
 
         for (auto &i : springs) {
-            i.second->setStretch(stretch);
+            i.second->set_stretch(stretch);
         }
 
         //---------------------------------------------------
@@ -2109,12 +2121,12 @@ void MeasureLayout::stretchMeasureInPracticeMode(Measure *m, double targetWidth,
             //            }
 
             double spacing = s->spacing();
-            double widthWithoutSpacing = s->width() - spacing;
-            double segmentStretch = s->stretch();
-            x += spacing * (muse::RealIsNull(segmentStretch) ? 1 : segmentStretch);
-            s->mutldata()->setPosX(x);
-            x += widthWithoutSpacing * (muse::RealIsNull(segmentStretch) ? 1 : segmentStretch);
-            s = s->nextEnabled();
+            double width_without_spacing = s->width() - spacing;
+            double segment_stretch = s->stretch();
+            x += spacing * (muse::real_is_null(segment_stretch) ? 1 : segment_stretch);
+            s->mutldata()->set_pos_x(x);
+            x += width_without_spacing * (muse::real_is_null(segment_stretch) ? 1 : segment_stretch);
+            s = s->next_enabled();
         }
     }
 
@@ -2127,14 +2139,14 @@ void MeasureLayout::stretchMeasureInPracticeMode(Measure *m, double targetWidth,
             continue;
         }
         // After the rest of the spacing is calculated we position grace-notes-after.
-        ChordLayout::repositionGraceNotesAfter(&s, ctx.dom().ntracks());
+        ChordLayout::reposition_grace_notes_after(&s, ctx.dom().ntracks());
         for (EngravingItem *e : s.elist()) {
             if (!e) {
                 continue;
             }
             ElementType t = e->type();
-            staff_idx_t staffIdx = e->staffIdx();
-            if (t == ElementType::MEASURE_REPEAT || (t == ElementType::REST && (m->isMMRest() || toRest(e)->isFullMeasureRest()))) {
+            staff_idx_t staff_idx = e->staff_idx();
+            if (t == ElementType::MEASURE_REPEAT || (t == ElementType::REST && (m->is_mm_rest() || to_rest(e)->is_full_measure_rest()))) {
                 //
                 // element has to be centered in free space
                 //    x1 - left measure position of free space
@@ -2144,96 +2156,96 @@ void MeasureLayout::stretchMeasureInPracticeMode(Measure *m, double targetWidth,
                 for (s1 = s.prev(); s1 && !s1->enabled(); s1 = s1->prev()) {}
                 Segment *s2;
                 for (s2 = s.next(); s2; s2 = s2->next()) {
-                    if (s2->enabled() && !s2->isChordRestType() && s2->element(staffIdx * VOICES)) {
+                    if (s2->enabled() && !s2->is_chord_rest_type() && s2->element(staff_idx * ::mu::engraving::voices)) {
                         break;
                     }
                 }
-                double x1 = s1 ? s1->x() + s1->minRight() : 0;
-                double x2 = s2 ? s2->x() - s2->minLeft() : targetWidth;
+                double x1 = s1 ? s1->x() + s1->min_right() : 0;
+                double x2 = s2 ? s2->x() - s2->min_left() : target_width;
 
-                if (m->isMMRest()) {
-                    MMRest *mmrest = toMMRest(e);
+                if (m->is_mm_rest()) {
+                    MMRest *mmrest = to_mm_rest(e);
                     //
                     // center multi measure rest
                     //
-                    double d = ctx.conf().styleAbsolute(Sid::multiMeasureRestMargin);
+                    double d = ctx.conf().style_absolute(Sid::MULTI_MEASURE_REST_MARGIN);
                     double w = x2 - x1 - 2 * d;
 
-                    mmrest->mutldata()->restWidth = w;
-                    TLayout::layoutMMRest(mmrest, mmrest->mutldata(), ctx);
-                    e->setPos(x1 - s.x() + d, e->staff()->staffHeight() * .5); // center vertically in measure
-                    s.createShape(staffIdx);
+                    mmrest->mutldata()->rest_width = w;
+                    TLayout::layout_mm_rest(mmrest, mmrest->mutldata(), ctx);
+                    e->set_pos(x1 - s.x() + d, e->staff()->staff_height() * .5); // center vertically in measure
+                    s.create_shape(staff_idx);
                 } else { // if (rest->isFullMeasureRest()) {
                     //
                     // center full measure rest
                     //
-                    e->mutldata()->setPosX((x2 - x1 - e->width()) * .5 + x1 - s.x() - e->ldata()->bbox().x());
-                    s.createShape(staffIdx); // DEBUG
+                    e->mutldata()->set_pos_x((x2 - x1 - e->width()) * .5 + x1 - s.x() - e->ldata()->bbox().x());
+                    s.create_shape(staff_idx); // DEBUG
                 }
             } else if (t == ElementType::REST) {
-                e->mutldata()->setPosX(0);
+                e->mutldata()->set_pos_x(0);
             } else if (t == ElementType::CHORD) {
-                Chord *c = toChord(e);
-                if (c->tremoloSingleChord()) {
-                    TremoloLayout::layout(c->tremoloSingleChord(), ctx);
-                } else if (c->tremoloTwoChord()) {
-                    TremoloTwoChord *tr = c->tremoloTwoChord();
+                Chord *c = to_chord(e);
+                if (c->tremolo_single_chord()) {
+                    TremoloLayout::layout(c->tremolo_single_chord(), ctx);
+                } else if (c->tremolo_two_chord()) {
+                    TremoloTwoChord *tr = c->tremolo_two_chord();
                     Chord *c1 = tr->chord1();
                     Chord *c2 = tr->chord2();
-                    if (c1 && !c1->staffMove() && c2 && !c2->staffMove()) {
+                    if (c1 && !c1->staff_move() && c2 && !c2->staff_move()) {
                         TremoloLayout::layout(tr, ctx);
                     }
                 }
             } else if (t == ElementType::BAR_LINE) {
-                e->mutldata()->setPosY(0.0);
+                e->mutldata()->set_pos_y(0.0);
                 // for end barlines, x position was set in createEndBarLines
-                if (s.segmentType() != SegmentType::EndBarLine) {
-                    e->mutldata()->setPosX(0.0);
+                if (s.segment_type() != SegmentType::END_BAR_LINE) {
+                    e->mutldata()->set_pos_x(0.0);
                 }
             }
         }
     }
 }
 
-void MeasureLayout::layoutTimeTickAnchors(Measure *m, LayoutContext &ctx) {
+void MeasureLayout::layout_time_tick_anchors(Measure *m, LayoutContext &ctx) {
     bool darker = true;
     for (Segment &segment : m->segments()) {
-        if (!segment.isTimeTickType()) {
+        if (!segment.is_time_tick_type()) {
             continue;
         }
 
-        Segment *refCRSeg = m->findSegmentR(SegmentType::ChordRest, segment.rtick());
-        if (!(refCRSeg && refCRSeg->isActive())) {
-            refCRSeg = segment.prevActive();
-            while (refCRSeg && !refCRSeg->isChordRestType()) {
-                refCRSeg = refCRSeg->prevActive();
+        Segment *ref_cr_seg = m->find_segment_r(SegmentType::CHORD_REST, segment.rtick());
+        if (!(ref_cr_seg && ref_cr_seg->is_active())) {
+            ref_cr_seg = segment.prev_active();
+            while (ref_cr_seg && !ref_cr_seg->is_chord_rest_type()) {
+                ref_cr_seg = ref_cr_seg->prev_active();
             }
         }
 
-        if (!refCRSeg || refCRSeg->ticks().isZero()) {
+        if (!ref_cr_seg || ref_cr_seg->ticks().is_zero()) {
             continue;
         }
 
-        Fraction refSegDuration = refCRSeg->ticks();
-        Fraction thisDuration = segment.ticks();
-        Fraction relativeTick = segment.rtick() - refCRSeg->rtick();
+        Fraction ref_seg_duration = ref_cr_seg->ticks();
+        Fraction this_duration = segment.ticks();
+        Fraction relative_tick = segment.rtick() - ref_cr_seg->rtick();
 
-        Segment *nextSeg = m->findSegmentR(SegmentType::ChordRest, refCRSeg->rtick() + refCRSeg->ticks());
-        if (!(nextSeg && nextSeg->isActive())) {
-            nextSeg = m->findSegmentR(SegmentType::BarLineTypes, refCRSeg->rtick() + refCRSeg->ticks());
+        Segment *next_seg = m->find_segment_r(SegmentType::CHORD_REST, ref_cr_seg->rtick() + ref_cr_seg->ticks());
+        if (!(next_seg && next_seg->is_active())) {
+            next_seg = m->find_segment_r(SegmentType::BAR_LINE_TYPES, ref_cr_seg->rtick() + ref_cr_seg->ticks());
         }
-        double width = nextSeg ? nextSeg->x() - refCRSeg->x() : refCRSeg->width();
+        double width = next_seg ? next_seg->x() - ref_cr_seg->x() : ref_cr_seg->width();
 
-        double relativeX = width * (relativeTick.toDouble() / refCRSeg->ticks().toDouble());
-        double relativeWidth = width * (thisDuration.toDouble() / refSegDuration.toDouble());
+        double relative_x = width * (relative_tick.to_double() / ref_cr_seg->ticks().to_double());
+        double relative_width = width * (this_duration.to_double() / ref_seg_duration.to_double());
 
-        segment.mutldata()->setPosX(refCRSeg->x() + relativeX);
-        segment.setWidth(relativeWidth);
+        segment.mutldata()->set_pos_x(ref_cr_seg->x() + relative_x);
+        segment.set_width(relative_width);
 
         for (EngravingItem *item : segment.elist()) {
             if (item) {
-                TLayout::layoutItem(item, ctx);
-                toTimeTickAnchor(item)->mutldata()->setDarker(darker);
+                TLayout::layout_item(item, ctx);
+                to_time_tick_anchor(item)->mutldata()->set_darker(darker);
             }
         }
         darker = !darker;
@@ -2246,55 +2258,55 @@ void MeasureLayout::layoutTimeTickAnchors(Measure *m, LayoutContext &ctx) {
 ///   to the left or right of the measure
 //---------------------------------------------------------
 
-void MeasureLayout::layoutPartialWidth(StaffLines *lines, LayoutContext &ctx, double w, double wPartial, bool alignRight) {
+void MeasureLayout::layout_partial_width(StaffLines *lines, LayoutContext &ctx, double w, double w_partial, bool align_right) {
     StaffLines::LayoutData *ldata = lines->mutldata();
     const Staff *s = lines->staff();
-    double _spatium = lines->spatium();
-    wPartial *= _spatium;
-    double dist = _spatium;
-    lines->setPos(PointF(0.0, 0.0));
-    int _lines;
+    double spatium_value = lines->spatium();
+    w_partial *= spatium_value;
+    double dist = spatium_value;
+    lines->set_pos(PointF(0.0, 0.0));
+    int lines_value;
     if (s) {
-        lines->mutldata()->setMag(s->staffMag(lines->measure()->tick()));
-        lines->setColor(s->color(lines->measure()->tick()));
-        const StaffType *st = s->staffType(lines->measure()->tick());
-        dist *= st->lineDistance().val();
-        _lines = st->lines();
-        lines->mutldata()->setPosY(lines->staffOffsetY());
+        lines->mutldata()->set_mag(s->staff_mag(lines->measure()->tick()));
+        lines->set_color(s->color(lines->measure()->tick()));
+        const StaffType *st = s->staff_type(lines->measure()->tick());
+        dist *= st->line_distance().val();
+        lines_value = st->lines();
+        lines->mutldata()->set_pos_y(lines->staff_offset_y());
     } else {
-        _lines = 5;
-        lines->setColor(lines->configuration()->defaultColor());
+        lines_value = 5;
+        lines->set_color(lines->configuration()->default_color());
     }
-    lines->setLw(ctx.conf().styleS(Sid::staffLineWidth).val() * _spatium);
+    lines->set_lw(ctx.conf().style_s(Sid::STAFF_LINE_WIDTH).val() * spatium_value);
     double x1 = lines->pos().x();
     double x2 = x1 + w;
     double y = lines->pos().y();
-    ldata->setBbox(x1, -lines->lw() * .5 + y, w, (_lines - 1) * dist + lines->lw());
+    ldata->set_bbox(x1, -lines->lw() * .5 + y, w, (lines_value - 1) * dist + lines->lw());
 
-    if (_lines == 1) {
-        double extraSize = _spatium;
-        ldata->setBbox(ldata->bbox().adjusted(0, -extraSize, 0, extraSize));
+    if (lines_value == 1) {
+        double extra_size = spatium_value;
+        ldata->set_bbox(ldata->bbox().adjusted(0, -extra_size, 0, extra_size));
     }
 
     std::vector<LineF> ll;
-    for (int i = 0; i < _lines; ++i) {
-        if (alignRight) {
-            ll.push_back(LineF(x2 - wPartial, y, x2, y));
+    for (int i = 0; i < lines_value; ++i) {
+        if (align_right) {
+            ll.push_back(LineF(x2 - w_partial, y, x2, y));
         } else {
-            ll.push_back(LineF(x1, y, x1 + wPartial, y));
+            ll.push_back(LineF(x1, y, x1 + w_partial, y));
         }
         y += dist;
     }
-    lines->setLines(ll);
+    lines->set_lines(ll);
 }
 
-void MeasureLayout::updateKeySignatures(const Measure *measure, LayoutContext &ctx) {
-    Measure *prevMeasure = measure->prevMeasure();
-    if (!prevMeasure || !prevMeasure->repeatEnd()) {
+void MeasureLayout::update_key_signatures(const Measure *measure, LayoutContext &ctx) {
+    Measure *prev_measure = measure->prev_measure();
+    if (!prev_measure || !prev_measure->repeat_end()) {
         return;
     }
     for (const Segment &seg : measure->segments()) {
-        if (!seg.isType(SegmentType::KeySigTypes)) {
+        if (!seg.is_type(SegmentType::KEY_SIG_TYPES)) {
             continue;
         }
 
@@ -2303,9 +2315,9 @@ void MeasureLayout::updateKeySignatures(const Measure *measure, LayoutContext &c
                 continue;
             }
 
-            KeySig *ks = toKeySig(el);
+            KeySig *ks = to_key_sig(el);
 
-            TLayout::layoutKeySig(ks, ks->mutldata(), ctx.conf());
+            TLayout::layout_key_sig(ks, ks->mutldata(), ctx.conf());
         }
     }
 }

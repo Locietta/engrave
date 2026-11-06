@@ -31,10 +31,10 @@ namespace mu::engraving {
 template <class T>
 class FilterBase {
 public:
-    static bool isItemPlayable(const EngravingItem *item, const RenderingContext &ctx) {
+    static bool is_item_playable(const EngravingItem *item, const RenderingContext &ctx) {
         IF_ASSERT_FAILED(item) { return false; }
 
-        return T::isPlayable(item, ctx);
+        return T::is_playable(item, ctx);
     }
 };
 } // namespace mu::engraving

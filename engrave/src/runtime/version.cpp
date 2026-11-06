@@ -3,5 +3,5 @@
 #include "global/appinfo.h"
 
 namespace music {
-const char *engine_version() { return muse::appinfo::versionString(); }
+const char *engine_version() { return muse::appinfo::version_string(); }
 } // namespace music

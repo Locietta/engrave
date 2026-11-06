@@ -28,12 +28,12 @@
 namespace mu::engraving {
 class SpannersMetaParser : public MetaParserBase<SpannersMetaParser> {
 public:
-    static bool isAbleToParse(const EngravingItem *spannerItem);
+    static bool is_able_to_parse(const EngravingItem *spanner_item);
 
 private:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem *item, const RenderingContext &spannerCtx, muse::mpe::ArticulationMap &result);
+    static void do_parse(const EngravingItem *item, const RenderingContext &spanner_ctx, muse::mpe::ArticulationMap &result);
 };
 } // namespace mu::engraving
 

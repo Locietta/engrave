@@ -7,7 +7,7 @@ TEST(ByteView, BorrowsBytesAndPreservesSeekBounds) {
     const std::array<uint8_t, 5> data{0, 0xff, 3, 4, 5};
     muse::io::ByteView view(data);
     ASSERT_TRUE(view.open());
-    EXPECT_EQ(view.readData(), data.data());
+    EXPECT_EQ(view.read_data(), data.data());
     EXPECT_EQ(view.size(), data.size());
     ASSERT_TRUE(view.seek(1));
     uint8_t read[8]{};
@@ -16,10 +16,10 @@ TEST(ByteView, BorrowsBytesAndPreservesSeekBounds) {
     EXPECT_FALSE(view.seek(6));
     EXPECT_EQ(view.pos(), 5u);
     EXPECT_TRUE(view.seek(0));
-    EXPECT_EQ(view.readAll().size(), data.size());
+    EXPECT_EQ(view.read_all().size(), data.size());
     view.close();
-    EXPECT_FALSE(view.open(muse::io::IODevice::WriteOnly));
-    EXPECT_FALSE(view.open(muse::io::IODevice::ReadWrite));
+    EXPECT_FALSE(view.open(muse::io::IODevice::WRITE_ONLY));
+    EXPECT_FALSE(view.open(muse::io::IODevice::READ_WRITE));
     ASSERT_TRUE(view.open());
     EXPECT_EQ(view.pos(), 0u);
 }
@@ -29,7 +29,7 @@ TEST(ByteView, EmptyInput) {
     ASSERT_TRUE(view.open());
     EXPECT_TRUE(view.seek(0));
     EXPECT_FALSE(view.seek(1));
-    EXPECT_TRUE(view.readAll().empty());
+    EXPECT_TRUE(view.read_all().empty());
 }
 
 int main(int argc, char **argv) {
@@ -55,13 +55,13 @@ TEST(StreamingFile, UnicodePathAndHeaderSeek) {
     } cleanup{path};
 
     muse::io::StreamingFileDevice out(path);
-    ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+    ASSERT_TRUE(out.open(muse::io::IODevice::WRITE_ONLY));
     const uint8_t data[]{1, 2, 3, 4};
     ASSERT_EQ(out.write(data, 4), 4u);
     ASSERT_TRUE(out.seek(0));
     ASSERT_EQ(out.write(data + 3, 1), 1u);
     out.close();
-    ASSERT_FALSE(out.hasError()) << out.errorString();
+    ASSERT_FALSE(out.has_error()) << out.error_string();
     std::ifstream input(path, std::ios::binary);
     const std::string result{std::istreambuf_iterator<char>(input), {}};
     EXPECT_EQ(result, std::string("\x04\x02\x03\x04", 4));
@@ -83,20 +83,20 @@ TEST(StreamingFile, LimitsApplyBeforeWritesAndCountRewrites) {
     const uint8_t data[]{1, 2, 3, 4};
     {
         muse::io::StreamingFileDevice out(path, 4);
-        ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+        ASSERT_TRUE(out.open(muse::io::IODevice::WRITE_ONLY));
         ASSERT_EQ(out.write(data, 4), 4u);
         EXPECT_EQ(out.write(data, 1), 0u);
-        EXPECT_TRUE(out.limitExceeded());
+        EXPECT_TRUE(out.limit_exceeded());
         out.close();
         EXPECT_EQ(std::filesystem::file_size(path), 4u);
     }
     {
         muse::io::StreamingFileDevice out(path, 4, 5);
-        ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+        ASSERT_TRUE(out.open(muse::io::IODevice::WRITE_ONLY));
         ASSERT_EQ(out.write(data, 4), 4u);
         ASSERT_TRUE(out.seek(0));
         EXPECT_EQ(out.write(data, 2), 0u);
-        EXPECT_TRUE(out.limitExceeded());
+        EXPECT_TRUE(out.limit_exceeded());
         out.close();
         EXPECT_EQ(std::filesystem::file_size(path), 4u);
     }
@@ -109,6 +109,6 @@ TEST(StreamingFile, FinalizationFailurePropagates) {
     const uint8_t value = 1;
     out.write(&value, 1);
     out.close();
-    EXPECT_TRUE(out.hasError());
+    EXPECT_TRUE(out.has_error());
 }
 #endif

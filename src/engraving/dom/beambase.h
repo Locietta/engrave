@@ -42,7 +42,7 @@ struct BeamFragment {
     double py2[2];
 };
 
-enum class ChordBeamAnchorType : unsigned char { Start, End, Middle };
+enum class ChordBeamAnchorType : unsigned char { START, END, MIDDLE };
 
 class BeamSegment {
     OBJECT_ALLOCATOR(engraving, BeamSegment)
@@ -50,13 +50,13 @@ public:
     LineF line;
     int level = 0;
     bool above = false; // above level 0 or below? (meaningless for level 0)
-    Fraction startTick;
-    Fraction endTick;
-    bool isBeamlet = false;
-    bool isBefore = false;
+    Fraction start_tick;
+    Fraction end_tick;
+    bool is_beamlet = false;
+    bool is_before = false;
 
     Shape shape() const;
-    EngravingItem *parentElement = nullptr;
+    EngravingItem *parent_element = nullptr;
 
     BeamSegment(EngravingItem *b);
 };
@@ -65,55 +65,55 @@ class BeamBase : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BeamBase)
     DECLARE_CLASSOF(ElementType::INVALID) // dummy
 
-    M_PROPERTY2(int, crossStaffMove, setCrossStaffMove, 0)
+    M_PROPERTY2(int, cross_staff_move, set_cross_staff_move, 0)
 
 public:
 
-    virtual int maxCRMove() const = 0;
-    virtual int minCRMove() const = 0;
+    virtual int max_cr_move() const = 0;
+    virtual int min_cr_move() const = 0;
 
-    virtual PropertyValue getProperty(Pid propertyId) const override;
-    virtual bool setProperty(Pid propertyId, const PropertyValue &) override;
-    virtual PropertyValue propertyDefault(Pid propertyId) const override;
+    virtual PropertyValue get_property(Pid property_id) const override;
+    virtual bool set_property(Pid property_id, const PropertyValue &) override;
+    virtual PropertyValue property_default(Pid property_id) const override;
 
-    int crossStaffIdx() const;
-    int defaultCrossStaffIdx() const;
-    bool acceptCrossStaffMove(int move) const;
+    int cross_staff_idx() const;
+    int default_cross_staff_idx() const;
+    bool accept_cross_staff_move(int move) const;
 
     bool up() const { return up_; }
 
-    void setUp(bool v) { up_ = v; }
+    void set_up(bool v) { up_ = v; }
 
-    bool userModified() const;
-    void setUserModified(bool val);
+    bool user_modified() const;
+    void set_user_modified(bool val);
 
     DirectionV direction() const { return direction_; }
 
-    void doSetDirection(DirectionV val) { direction_ = val; }
+    void do_set_direction(DirectionV val) { direction_ = val; }
 
-    virtual void setDirection(DirectionV v) = 0;
+    virtual void set_direction(DirectionV v) = 0;
 
-    inline int directionIdx() const { return (direction_ == DirectionV::AUTO || direction_ == DirectionV::DOWN) ? 0 : 1; }
+    inline int direction_idx() const { return (direction_ == DirectionV::AUTO || direction_ == DirectionV::DOWN) ? 0 : 1; }
 
-    const std::vector<BeamSegment *> &beamSegments() const { return beamSegments_; }
+    const std::vector<BeamSegment *> &beam_segments() const { return beam_segments_; }
 
-    std::vector<BeamSegment *> &beamSegments() { return beamSegments_; }
+    std::vector<BeamSegment *> &beam_segments() { return beam_segments_; }
 
-    virtual void clearBeamSegments();
+    virtual void clear_beam_segments();
 
-    const PointF &startAnchor() const { return startAnchor_; }
+    const PointF &start_anchor() const { return start_anchor_; }
 
-    PointF &startAnchor() { return startAnchor_; }
+    PointF &start_anchor() { return start_anchor_; }
 
-    void setStartAnchor(const PointF &p) { startAnchor_ = p; }
+    void set_start_anchor(const PointF &p) { start_anchor_ = p; }
 
-    const PointF &endAnchor() const { return endAnchor_; }
+    const PointF &end_anchor() const { return end_anchor_; }
 
-    PointF &endAnchor() { return endAnchor_; }
+    PointF &end_anchor() { return end_anchor_; }
 
-    void setEndAnchor(const PointF &p) { endAnchor_ = p; }
+    void set_end_anchor(const PointF &p) { end_anchor_ = p; }
 
-    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE) override;
+    void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE) override;
 
     struct NotePosition {
         int line;
@@ -141,46 +141,46 @@ public:
     enum class CrossStaffBeamPosition : signed char { INVALID, BETWEEN, ABOVE, BELOW };
 
     struct LayoutData : public EngravingItem::LayoutData {
-        BeamType beamType = BeamType::INVALID;
+        BeamType beam_type = BeamType::INVALID;
         const Beam *beam = nullptr;
         const TremoloTwoChord *trem = nullptr;
         bool up = false;
         Fraction tick = Fraction(0, 1);
         double spatium = 0.;
-        PointF startAnchor;
-        PointF endAnchor;
+        PointF start_anchor;
+        PointF end_anchor;
         double slope = 0.;
-        bool isGrace = false;
-        int beamSpacing = 0;
-        double beamDist = 0.0;
-        double beamWidth = 0.0;
+        bool is_grace = false;
+        int beam_spacing = 0;
+        double beam_dist = 0.0;
+        double beam_width = 0.0;
         std::vector<ChordRest *> elements;
-        std::vector<NotePosition> notePositions;
+        std::vector<NotePosition> note_positions;
         const StaffType *tab = nullptr;
-        bool isBesideTabStaff = false;
-        CrossStaffBeamPosition crossStaffBeamPos = CrossStaffBeamPosition::INVALID;
-        const Chord *limitingChordAbove = nullptr; // <-
-        const Chord *limitingChordBelow = nullptr; // <- For cross-staff spacing and centering
+        bool is_beside_tab_staff = false;
+        CrossStaffBeamPosition cross_staff_beam_pos = CrossStaffBeamPosition::INVALID;
+        const Chord *limiting_chord_above = nullptr; // <-
+        const Chord *limiting_chord_below = nullptr; // <- For cross-staff spacing and centering
 
-        void setAnchors(PointF startA, PointF endA) {
-            startAnchor = startA;
-            endAnchor = endA;
+        void set_anchors(PointF start_a, PointF end_a) {
+            start_anchor = start_a;
+            end_anchor = end_a;
         }
 
-        bool isValid() const override { return !(beamType == BeamType::INVALID); }
+        bool is_valid() const override { return !(beam_type == BeamType::INVALID); }
     };
     DECLARE_LAYOUTDATA_METHODS(BeamBase)
 
 protected:
     BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags = ElementFlag::ON_STAFF);
     BeamBase(const BeamBase &);
-    std::vector<BeamSegment *> beamSegments_;
-    PointF startAnchor_;
-    PointF endAnchor_;
+    std::vector<BeamSegment *> beam_segments_;
+    PointF start_anchor_;
+    PointF end_anchor_;
 
 private:
     bool up_ = true;
-    bool userModified_[2]{false}; // 0: auto/down  1: up
+    bool user_modified_[2]{false}; // 0: auto/down  1: up
     DirectionV direction_ = DirectionV::AUTO;
 };
 } // namespace mu::engraving

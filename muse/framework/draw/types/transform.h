@@ -34,7 +34,7 @@ class PainterPath;
 class Transform {
 public:
 
-    enum class TransformationType { None = 0x00, Translate = 0x01, Scale = 0x02, Rotate = 0x04, Shear = 0x08, Project = 0x10 };
+    enum class TransformationType { NONE = 0x00, TRANSLATE = 0x01, SCALE = 0x02, ROTATE = 0x04, SHEAR = 0x08, PROJECT = 0x10 };
 
     Transform() = default;
 
@@ -46,7 +46,8 @@ public:
     Transform &operator/=(double div);
 
     bool operator==(const Transform &other) const {
-        return affine_ == other.affine_ && RealIsEqual(m13_, other.m13_) && RealIsEqual(m23_, other.m23_) && RealIsEqual(m33_, other.m33_);
+        return affine_ == other.affine_ && real_is_equal(m13_, other.m13_) && real_is_equal(m23_, other.m23_) &&
+               real_is_equal(m33_, other.m33_);
     }
 
     bool operator!=(const Transform &other) const { return !this->operator==(other); }
@@ -78,14 +79,14 @@ public:
     RectF map(const RectF &rect) const;
     PainterPath map(const PainterPath &path) const;
 
-    const Matrix &toAffine() const { return affine_; }
+    const Matrix &to_affine() const { return affine_; }
 
-    void setMatrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33);
+    void set_matrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33);
 
     void reset();
 
     Transform &rotate(double a);
-    Transform &rotateRadians(double a);
+    Transform &rotate_radians(double a);
     Transform &translate(double dx, double dy);
     Transform &scale(double sx, double sy);
     Transform &shear(double sh, double sv);
@@ -106,25 +107,25 @@ private:
     Transform::TransformationType type() const;
 
     inline Transform::TransformationType inline_type() const {
-        if (dirty_ == TransformationType::None) {
+        if (dirty_ == TransformationType::NONE) {
             return type_;
         }
         return type();
     }
 
-    void mapElement(double &nx, double &ny, TransformationType t) const;
+    void map_element(double &nx, double &ny, TransformationType t) const;
 
     Matrix affine_{1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
     double m13_ = 0.0;
     double m23_ = 0.0;
     double m33_ = 1.0;
 
-    mutable TransformationType type_ = TransformationType::None;
-    mutable TransformationType dirty_ = TransformationType::None;
+    mutable TransformationType type_ = TransformationType::NONE;
+    mutable TransformationType dirty_ = TransformationType::NONE;
 };
 
 inline Transform &Transform::operator*=(double num) {
-    if (RealIsEqual(num, 1.)) {
+    if (real_is_equal(num, 1.)) {
         return *this;
     }
     affine_.m11_ *= num;
@@ -136,14 +137,14 @@ inline Transform &Transform::operator*=(double num) {
     affine_.dx_ *= num;
     affine_.dy_ *= num;
     m33_ *= num;
-    if (dirty_ < TransformationType::Scale) {
-        dirty_ = TransformationType::Scale;
+    if (dirty_ < TransformationType::SCALE) {
+        dirty_ = TransformationType::SCALE;
     }
     return *this;
 }
 
 inline Transform &Transform::operator/=(double div) {
-    if (RealIsNull(div)) {
+    if (real_is_null(div)) {
         return *this;
     }
     div = 1.0 / div;

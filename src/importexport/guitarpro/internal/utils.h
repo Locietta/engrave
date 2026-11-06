@@ -32,10 +32,10 @@ class Score;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro::utils {
-int harmonicOvertone(mu::engraving::Note *note, float harmonicValue, int harmonicType);
-std::vector<int> standardTuningFor(int midiProgram, int stringsCount);
-bool isStandardTuning(int midiProgram, const std::vector<int> &tuning);
-mu::engraving::Chord *getLocatedChord(mu::engraving::Score *score, mu::engraving::Fraction tickFr, mu::engraving::track_idx_t track);
-void createGhostNoteParenGroups(mu::engraving::Chord *ch);
-void addPlayCountTexts(mu::engraving::Score *score);
+int harmonic_overtone(mu::engraving::Note *note, float harmonic_value, int harmonic_type);
+std::vector<int> standard_tuning_for(int midi_program, int strings_count);
+bool is_standard_tuning(int midi_program, const std::vector<int> &tuning);
+mu::engraving::Chord *get_located_chord(mu::engraving::Score *score, mu::engraving::Fraction tick_fr, mu::engraving::track_idx_t track);
+void create_ghost_note_paren_groups(mu::engraving::Chord *ch);
+void add_play_count_texts(mu::engraving::Score *score);
 } // namespace mu::iex::guitarpro::utils

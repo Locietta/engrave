@@ -28,15 +28,15 @@
 
 using namespace mu::engraving;
 
-EID EIDRegister::newEIDForItem(const EngravingObject *item) {
-    EID eid = MScore::testMode ? EID::newUniqueTestMode(maxValTestMode_) : EID::newUnique();
-    registerItemEID(eid, const_cast<EngravingObject *>(item));
+EID EIDRegister::new_eid_for_item(const EngravingObject *item) {
+    EID eid = MScore::test_mode ? EID::new_unique_test_mode(max_val_test_mode_) : EID::new_unique();
+    register_item_eid(eid, const_cast<EngravingObject *>(item));
     return eid;
 }
 
-bool EIDRegister::registerItemEID(const EID &eid, const EngravingObject *item) {
+bool EIDRegister::register_item_eid(const EID &eid, const EngravingObject *item) {
     std::lock_guard lock(mutex_);
-    if (!eid.isValid() || !item) {
+    if (!eid.is_valid() || !item) {
         return false;
     }
 
@@ -45,9 +45,9 @@ bool EIDRegister::registerItemEID(const EID &eid, const EngravingObject *item) {
     // A file written by a buggy or hand-edited tool can name one id twice. Keep the
     // first element and leave both maps as they are; the reader gives the second
     // element a fresh EID (read500/tread.cpp, readItemEID).
-    const auto byEID = eidToItem_.find(eid);
-    if (byEID != eidToItem_.end()) {
-        if (byEID->second == object) {
+    const auto by_eid = eid_to_item_.find(eid);
+    if (by_eid != eid_to_item_.end()) {
+        if (by_eid->second == object) {
             return true;
         }
         ++repairs_.duplicate;
@@ -55,68 +55,68 @@ bool EIDRegister::registerItemEID(const EID &eid, const EngravingObject *item) {
     }
 
     // An element keeps exactly one id: re-registering replaces the previous one.
-    const auto byItem = itemToEid_.find(object);
-    if (byItem != itemToEid_.end()) {
-        eidToItem_.erase(byItem->second);
-        byItem->second = eid;
+    const auto by_item = item_to_eid_.find(object);
+    if (by_item != item_to_eid_.end()) {
+        eid_to_item_.erase(by_item->second);
+        by_item->second = eid;
     } else {
-        itemToEid_.emplace(object, eid);
+        item_to_eid_.emplace(object, eid);
     }
-    eidToItem_.emplace(eid, object);
+    eid_to_item_.emplace(eid, object);
 
-    if (MScore::testMode) {
-        EID::updateMaxValTestMode(eid, maxValTestMode_);
+    if (MScore::test_mode) {
+        EID::update_max_val_test_mode(eid, max_val_test_mode_);
     }
 
     return true;
 }
 
-void EIDRegister::removeItem(const EngravingObject *item) {
+void EIDRegister::remove_item(const EngravingObject *item) {
     std::lock_guard lock(mutex_);
     // NOTE: needed only when elements are removed during read (e.g. broken spanners)
 
-    auto itemIter = itemToEid_.find(const_cast<EngravingObject *>(item));
-    IF_ASSERT_FAILED(itemIter != itemToEid_.end()) { return; }
+    auto item_iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
+    IF_ASSERT_FAILED(item_iter != item_to_eid_.end()) { return; }
 
-    EID eid = (*itemIter).second;
-    DO_ASSERT(eid.isValid());
+    EID eid = (*item_iter).second;
+    DO_ASSERT(eid.is_valid());
 
-    itemToEid_.erase(itemIter);
+    item_to_eid_.erase(item_iter);
 
-    auto eidIter = eidToItem_.find(eid);
-    IF_ASSERT_FAILED(eidIter != eidToItem_.end()) { return; }
+    auto eid_iter = eid_to_item_.find(eid);
+    IF_ASSERT_FAILED(eid_iter != eid_to_item_.end()) { return; }
 
-    eidToItem_.erase(eidIter);
+    eid_to_item_.erase(eid_iter);
 }
 
-void EIDRegister::onItemDestroyed(const EngravingObject *item) {
+void EIDRegister::on_item_destroyed(const EngravingObject *item) {
     std::lock_guard lock(mutex_);
     // NOTE: most items never get an EID assigned, so a missing entry is the normal case.
     // Items that do have one must be unregistered here: a later allocation can reuse
     // the freed address, and a stale entry would corrupt the register.
 
-    auto itemIter = itemToEid_.find(const_cast<EngravingObject *>(item));
-    if (itemIter == itemToEid_.end()) {
+    auto item_iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
+    if (item_iter == item_to_eid_.end()) {
         return;
     }
 
-    eidToItem_.erase(itemIter->second);
-    itemToEid_.erase(itemIter);
+    eid_to_item_.erase(item_iter->second);
+    item_to_eid_.erase(item_iter);
 }
 
-EngravingObject *EIDRegister::itemFromEID(const EID &eid) const {
+EngravingObject *EIDRegister::item_from_eid(const EID &eid) const {
     std::shared_lock lock(mutex_);
-    auto iter = eidToItem_.find(eid);
-    if (iter == eidToItem_.end()) {
+    auto iter = eid_to_item_.find(eid);
+    if (iter == eid_to_item_.end()) {
         return nullptr;
     }
     return iter->second;
 }
 
-EID EIDRegister::EIDFromItem(const EngravingObject *item) const {
+EID EIDRegister::eid_from_item(const EngravingObject *item) const {
     std::shared_lock lock(mutex_);
-    auto iter = itemToEid_.find(const_cast<EngravingObject *>(item));
-    return iter == itemToEid_.end() ? EID::invalid() : iter->second;
+    auto iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
+    return iter == item_to_eid_.end() ? EID::invalid() : iter->second;
 }
 
 EIDRepairCount EIDRegister::repairs() const {
@@ -127,8 +127,8 @@ EIDRepairCount EIDRegister::repairs() const {
 std::vector<std::pair<EID, const EngravingObject *>> EIDRegister::entries() const {
     std::shared_lock lock(mutex_);
     std::vector<std::pair<EID, const EngravingObject *>> result;
-    result.reserve(eidToItem_.size());
-    for (const auto &entry : eidToItem_) {
+    result.reserve(eid_to_item_.size());
+    for (const auto &entry : eid_to_item_) {
         result.emplace_back(entry.first, entry.second);
     }
     return result;
@@ -136,5 +136,5 @@ std::vector<std::pair<EID, const EngravingObject *>> EIDRegister::entries() cons
 
 size_t EIDRegister::size() const {
     std::shared_lock lock(mutex_);
-    return eidToItem_.size();
+    return eid_to_item_.size();
 }

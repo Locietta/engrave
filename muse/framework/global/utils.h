@@ -25,7 +25,7 @@
 #include <string>
 
 namespace muse {
-std::string pitchToString(int pitch, bool addoctave = true, bool useFlats = false);
+std::string pitch_to_string(int pitch, bool addoctave = true, bool use_flats = false);
 } // namespace muse
 
 #endif // MUSE_GLOBAL_GLOBAL_H

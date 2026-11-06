@@ -29,23 +29,23 @@
 
 using namespace mu::engraving;
 
-std::vector<EngravingObject *> mu::engraving::compoundObjects(EngravingObject *object) {
+std::vector<EngravingObject *> mu::engraving::compound_objects(EngravingObject *object) {
     std::vector<EngravingObject *> objects;
 
-    if (object->isChord()) {
-        const Chord *chord = toChord(object);
+    if (object->is_chord()) {
+        const Chord *chord = to_chord(object);
         for (const Note *note : chord->notes()) {
-            for (Note *compoundNote : note->compoundNotes()) {
-                objects.push_back(compoundNote);
+            for (Note *compound_note : note->compound_notes()) {
+                objects.push_back(compound_note);
             }
         }
-    } else if (object->isNote()) {
-        const Note *note = toNote(object);
-        for (Note *compoundNote : note->compoundNotes()) {
-            objects.push_back(compoundNote);
+    } else if (object->is_note()) {
+        const Note *note = to_note(object);
+        for (Note *compound_note : note->compound_notes()) {
+            objects.push_back(compound_note);
         }
-    } else if (object->isFretDiagram()) {
-        const FretDiagram *fret = toFretDiagram(object);
+    } else if (object->is_fret_diagram()) {
+        const FretDiagram *fret = to_fret_diagram(object);
         if (Harmony *harmony = fret->harmony()) {
             objects.push_back(harmony);
         }

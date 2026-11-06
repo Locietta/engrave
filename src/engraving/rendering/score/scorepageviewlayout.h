@@ -28,19 +28,19 @@ namespace mu::engraving::rendering::score {
 class ScorePageViewLayout {
 public:
 
-    static void layoutPageView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
-    static void layoutHeadersFooters(LayoutContext &ctx);
+    static void layout_page_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void layout_headers_footers(LayoutContext &ctx);
 
 private:
 
-    static void initLayoutContext(const Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
-    static void prepareScore(Score *score, const LayoutContext &ctx);
+    static void init_layout_context(const Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void prepare_score(Score *score, const LayoutContext &ctx);
 
-    static void doLayout(LayoutContext &ctx);
+    static void do_layout(LayoutContext &ctx);
 
-    static void doLayoutHeadersFooters(LayoutContext &ctx);
+    static void do_layout_headers_footers(LayoutContext &ctx);
 
-    static void layoutFinished(Score *score, LayoutContext &ctx);
+    static void layout_finished(Score *score, LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score
 

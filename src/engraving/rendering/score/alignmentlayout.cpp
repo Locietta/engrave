@@ -37,169 +37,169 @@
 #include "dom/text.h"
 
 namespace mu::engraving::rendering::score {
-void AlignmentLayout::alignItemsGroup(const std::vector<EngravingItem *> &elements, const System *system) {
+void AlignmentLayout::align_items_group(const std::vector<EngravingItem *> &elements, const System *system) {
     if (elements.empty()) {
         return;
     }
 
-    double outermostY = yOpticalCenter(elements.front());
+    double outermost_y = y_optical_center(elements.front());
     for (const EngravingItem *element : elements) {
-        double curY = yOpticalCenter(element);
-        outermostY = isAbove(element) ? std::min(outermostY, curY) : std::max(outermostY, curY);
+        double cur_y = y_optical_center(element);
+        outermost_y = is_above(element) ? std::min(outermost_y, cur_y) : std::max(outermost_y, cur_y);
     }
 
     for (EngravingItem *element : elements) {
-        moveItemToY(element, outermostY, system);
+        move_item_to_y(element, outermost_y, system);
     }
 }
 
-void AlignmentLayout::alignHopoLetters(const HammerOnPullOff *hopo, const System *system) {
-    IF_ASSERT_FAILED(!hopo->segmentsEmpty()) { return; }
+void AlignmentLayout::align_hopo_letters(const HammerOnPullOff *hopo, const System *system) {
+    IF_ASSERT_FAILED(!hopo->segments_empty()) { return; }
 
-    std::vector<EngravingItem *> itemsToAlign;
-    for (SpannerSegment *seg : hopo->spannerSegments()) {
+    std::vector<EngravingItem *> items_to_align;
+    for (SpannerSegment *seg : hopo->spanner_segments()) {
         if (seg->system() == system) {
-            HammerOnPullOffSegment *hopoSegment = toHammerOnPullOffSegment(seg);
-            for (HammerOnPullOffText *hopoText : hopoSegment->hopoText()) {
-                itemsToAlign.push_back(hopoText);
+            HammerOnPullOffSegment *hopo_segment = to_hammer_on_pull_off_segment(seg);
+            for (HammerOnPullOffText *hopo_text : hopo_segment->hopo_text()) {
+                items_to_align.push_back(hopo_text);
             }
             break;
         }
     }
 
-    if (itemsToAlign.empty()) {
+    if (items_to_align.empty()) {
         return;
     }
 
-    bool above = isAbove(itemsToAlign.front());
-    for (EngravingItem *item : itemsToAlign) {
-        if (isAbove(item) != above) {
+    bool above = is_above(items_to_align.front());
+    for (EngravingItem *item : items_to_align) {
+        if (is_above(item) != above) {
             return; // Don't try to align items split above/below
         }
     }
 
-    ChordRest *scr = toChordRest(hopo->startElement());
-    if (scr && scr->isChord()) {
-        for (Articulation *art : toChord(scr)->articulations()) {
-            if (art->isTapping() && toTapping(art)->text() && isAbove(art) == above) {
-                itemsToAlign.push_back(art);
+    ChordRest *scr = to_chord_rest(hopo->start_element());
+    if (scr && scr->is_chord()) {
+        for (Articulation *art : to_chord(scr)->articulations()) {
+            if (art->is_tapping() && to_tapping(art)->text() && is_above(art) == above) {
+                items_to_align.push_back(art);
             }
         }
     }
 
-    alignItemsGroup(itemsToAlign, system);
+    align_items_group(items_to_align, system);
 }
 
-void AlignmentLayout::alignItemsWithTheirSnappingChain(const std::vector<EngravingItem *> &elements, const System *system) {
-    std::set<EngravingItem *> alignedItems;
+void AlignmentLayout::align_items_with_their_snapping_chain(const std::vector<EngravingItem *> &elements, const System *system) {
+    std::set<EngravingItem *> aligned_items;
 
-    double outermostY = 0.0;
-    bool firstItem = true;
-    auto computeOutermostY = [&outermostY, &firstItem](EngravingItem *item) {
-        double curY = yOpticalCenter(item);
-        if (firstItem) {
-            outermostY = curY;
-            firstItem = false;
+    double outermost_y = 0.0;
+    bool first_item = true;
+    auto compute_outermost_y = [&outermost_y, &first_item](EngravingItem *item) {
+        double cur_y = y_optical_center(item);
+        if (first_item) {
+            outermost_y = cur_y;
+            first_item = false;
         } else {
-            outermostY = item->placeAbove() ? std::min(outermostY, curY) : std::max(outermostY, curY);
+            outermost_y = item->place_above() ? std::min(outermost_y, cur_y) : std::max(outermost_y, cur_y);
         }
     };
 
-    auto moveElementsToOutermostY = [&outermostY, &alignedItems, system](EngravingItem *item) {
-        alignedItems.insert(item);
-        moveItemToY(item, outermostY, system);
+    auto move_elements_to_outermost_y = [&outermost_y, &aligned_items, system](EngravingItem *item) {
+        aligned_items.insert(item);
+        move_item_to_y(item, outermost_y, system);
     };
 
     for (EngravingItem *item : elements) {
-        if (muse::contains(alignedItems, item)) {
+        if (muse::contains(aligned_items, item)) {
             continue;
         }
-        firstItem = true;
-        item->ldata()->scanConnectedItemsInSnappingChain(system, computeOutermostY);
-        item->ldata()->scanConnectedItemsInSnappingChain(system, moveElementsToOutermostY);
+        first_item = true;
+        item->ldata()->scan_connected_items_in_snapping_chain(system, compute_outermost_y);
+        item->ldata()->scan_connected_items_in_snapping_chain(system, move_elements_to_outermost_y);
     }
 }
 
-void AlignmentLayout::alignItemsForSystem(const std::vector<EngravingItem *> &elements, const System *system) {
+void AlignmentLayout::align_items_for_system(const std::vector<EngravingItem *> &elements, const System *system) {
     struct StaffItemGroups {
-        std::vector<EngravingItem *> itemsAbove;
-        std::vector<EngravingItem *> itemsBelow;
+        std::vector<EngravingItem *> items_above;
+        std::vector<EngravingItem *> items_below;
     };
 
-    std::map<staff_idx_t, StaffItemGroups> staffItems;
+    std::map<staff_idx_t, StaffItemGroups> staff_items;
 
     for (EngravingItem *item : elements) {
-        if (item->addToSkyline() && !item->excludeVerticalAlign()) {
-            item->placeAbove() ? staffItems[item->staffIdx()].itemsAbove.push_back(item) :
-                                 staffItems[item->staffIdx()].itemsBelow.push_back(item);
+        if (item->add_to_skyline() && !item->exclude_vertical_align()) {
+            item->place_above() ? staff_items[item->staff_idx()].items_above.push_back(item) :
+                                  staff_items[item->staff_idx()].items_below.push_back(item);
         }
     }
 
-    for (const auto &staffItem : staffItems) {
-        AlignmentLayout::alignItemsGroup(staffItem.second.itemsAbove, system);
-        AlignmentLayout::alignItemsGroup(staffItem.second.itemsBelow, system);
+    for (const auto &staff_item : staff_items) {
+        AlignmentLayout::align_items_group(staff_item.second.items_above, system);
+        AlignmentLayout::align_items_group(staff_item.second.items_below, system);
     }
 }
 
-void AlignmentLayout::moveItemToY(EngravingItem *item, double y, const System *system) {
-    double curY = yOpticalCenter(item);
-    double yDiff = y - curY;
-    item->mutldata()->moveY(yDiff);
-    SystemLayout::updateSkylineForElement(item, system, yDiff);
+void AlignmentLayout::move_item_to_y(EngravingItem *item, double y, const System *system) {
+    double cur_y = y_optical_center(item);
+    double y_diff = y - cur_y;
+    item->mutldata()->move_y(y_diff);
+    SystemLayout::update_skyline_for_element(item, system, y_diff);
 }
 
-double AlignmentLayout::yOpticalCenter(const EngravingItem *item) {
-    double curY = item->ldata()->pos().y();
+double AlignmentLayout::y_optical_center(const EngravingItem *item) {
+    double cur_y = item->ldata()->pos().y();
     switch (item->type()) {
         case ElementType::DYNAMIC:
         case ElementType::EXPRESSION: {
             // Please keep `Dynamic::gripsPositions` in sync with this calculation
-            curY += item->staffOffsetY();
-            AlignV vertAlign = toTextBase(item)->align().vertical;
-            double bboxHeight = item->ldata()->bbox().height();
-            switch (vertAlign) {
-                case AlignV::TOP: curY += 0.5 * bboxHeight; break;
+            cur_y += item->staff_offset_y();
+            AlignV vert_align = to_text_base(item)->align().vertical;
+            double bbox_height = item->ldata()->bbox().height();
+            switch (vert_align) {
+                case AlignV::TOP: cur_y += 0.5 * bbox_height; break;
                 case AlignV::VCENTER: break;
-                case AlignV::BOTTOM: curY -= 0.5 * bboxHeight; break;
+                case AlignV::BOTTOM: cur_y -= 0.5 * bbox_height; break;
                 case AlignV::BASELINE:
-                    if (item->isDynamic()) {
-                        curY -= 0.46 * item->spatium() * toDynamic(item)->symbolScale(); // approximated half x-height of dynamic
+                    if (item->is_dynamic()) {
+                        cur_y -= 0.46 * item->spatium() * to_dynamic(item)->symbol_scale(); // approximated half x-height of dynamic
                     } else {
-                        curY -= 0.5 * toExpression(item)->fontMetrics().xHeight();
+                        cur_y -= 0.5 * to_expression(item)->font_metrics().x_height();
                     }
                     break;
             }
             break;
         }
         case ElementType::HAIRPIN_SEGMENT: {
-            const HairpinSegment *hairpinSeg = toHairpinSegment(item);
-            if (hairpinSeg->hairpin()->isLineType()) {
-                Text *text = hairpinSeg->text();
+            const HairpinSegment *hairpin_seg = to_hairpin_segment(item);
+            if (hairpin_seg->hairpin()->is_line_type()) {
+                Text *text = hairpin_seg->text();
                 if (!text) {
-                    text = hairpinSeg->endText();
+                    text = hairpin_seg->end_text();
                 }
                 if (text) {
-                    curY -= 0.5 * text->fontMetrics().xHeight();
+                    cur_y -= 0.5 * text->font_metrics().x_height();
                 } else {
-                    curY -= 0.5 * item->spatium();
+                    cur_y -= 0.5 * item->spatium();
                 }
             }
             break;
         }
-        case ElementType::FRET_DIAGRAM: curY += toFretDiagram(item)->ldata()->gridHeight; break;
+        case ElementType::FRET_DIAGRAM: cur_y += to_fret_diagram(item)->ldata()->grid_height; break;
         case ElementType::HARMONY: {
-            EngravingItem *parent = toHarmony(item)->layoutParent();
-            if (parent && parent->isFretDiagram()) {
-                curY += parent->pos().y();
+            EngravingItem *parent = to_harmony(item)->layout_parent();
+            if (parent && parent->is_fret_diagram()) {
+                cur_y += parent->pos().y();
             }
             break;
         }
         default: break;
     }
-    return curY;
+    return cur_y;
 }
 
-bool AlignmentLayout::isAbove(const EngravingItem *item) {
-    return item->isArticulationFamily() ? toArticulation(item)->ldata()->up() : item->placeAbove();
+bool AlignmentLayout::is_above(const EngravingItem *item) {
+    return item->is_articulation_family() ? to_articulation(item)->ldata()->up() : item->place_above();
 }
 } // namespace mu::engraving::rendering::score

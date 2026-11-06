@@ -40,38 +40,38 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 TextLineBaseSegment::TextLineBaseSegment(const ElementType &type, TextLineBase *sp, ElementFlags f) : LineSegment(type, sp, f) {
-    text_ = Factory::createText(this, TextStyleType::DEFAULT, false);
-    endText_ = Factory::createText(this, TextStyleType::DEFAULT, false);
-    text_->setFlag(ElementFlag::MOVABLE, false);
-    endText_->setFlag(ElementFlag::MOVABLE, false);
+    text_ = Factory::create_text(this, TextStyleType::DEFAULT, false);
+    end_text_ = Factory::create_text(this, TextStyleType::DEFAULT, false);
+    text_->set_flag(ElementFlag::MOVABLE, false);
+    end_text_->set_flag(ElementFlag::MOVABLE, false);
 }
 
 TextLineBaseSegment::TextLineBaseSegment(const TextLineBaseSegment &seg) : LineSegment(seg) {
     text_ = seg.text_->clone();
-    endText_ = seg.endText_->clone();
-    text_->setOwnershipParent(this);
-    endText_->setOwnershipParent(this);
+    end_text_ = seg.end_text_->clone();
+    text_->set_ownership_parent(this);
+    end_text_->set_ownership_parent(this);
     // set the right _text
-    renderer()->layoutTextLineBaseSegment(this);
+    renderer()->layout_text_line_base_segment(this);
 }
 
 TextLineBaseSegment::~TextLineBaseSegment() {
     delete text_;
-    delete endText_;
+    delete end_text_;
 }
 
 //---------------------------------------------------------
 //   setSelected
 //---------------------------------------------------------
 
-void TextLineBaseSegment::setSelected(bool f) {
-    SpannerSegment::setSelected(f);
-    text_->setSelected(f);
-    endText_->setSelected(f);
+void TextLineBaseSegment::set_selected(bool f) {
+    SpannerSegment::set_selected(f);
+    text_->set_selected(f);
+    end_text_->set_selected(f);
 }
 
-RectF TextLineBaseSegment::boundingBoxOfLine(const PointF &p1, const PointF &p2, double lw2, bool isDottedLine) {
-    if (isDottedLine) {
+RectF TextLineBaseSegment::bounding_box_of_line(const PointF &p1, const PointF &p2, double lw2, bool is_dotted_line) {
+    if (is_dotted_line) {
         return RectF(p1, p2).normalized().adjusted(-lw2, -lw2, lw2, lw2);
     }
 
@@ -80,99 +80,99 @@ RectF TextLineBaseSegment::boundingBoxOfLine(const PointF &p1, const PointF &p2,
     return RectF(p1 - b, p1 + b).normalized().united(RectF(p2 - b, p2 + b).normalized());
 }
 
-bool TextLineBaseSegment::setProperty(Pid id, const PropertyValue &v) {
+bool TextLineBaseSegment::set_property(Pid id, const PropertyValue &v) {
     if (id == Pid::COLOR) {
         Color color = v.value<Color>();
 
         if (text_) {
-            text_->setColor(color);
+            text_->set_color(color);
         }
 
-        if (endText_) {
-            endText_->setColor(color);
+        if (end_text_) {
+            end_text_->set_color(color);
         }
     }
 
-    return LineSegment::setProperty(id, v);
+    return LineSegment::set_property(id, v);
 }
 
 //---------------------------------------------------------
 //   spatiumChanged
 //---------------------------------------------------------
 
-void TextLineBaseSegment::spatiumChanged(double ov, double nv) {
-    LineSegment::spatiumChanged(ov, nv);
+void TextLineBaseSegment::spatium_changed(double ov, double nv) {
+    LineSegment::spatium_changed(ov, nv);
 
-    textLineBase()->spatiumChanged(ov, nv);
-    text_->spatiumChanged(ov, nv);
-    endText_->spatiumChanged(ov, nv);
+    text_line_base()->spatium_changed(ov, nv);
+    text_->spatium_changed(ov, nv);
+    end_text_->spatium_changed(ov, nv);
 }
 
-static constexpr std::array<Pid, 45> TextLineBasePropertyId = {{Pid::LINE_VISIBLE,
-                                                                Pid::BEGIN_HOOK_TYPE,
-                                                                Pid::BEGIN_HOOK_HEIGHT,
-                                                                Pid::BEGIN_LINE_ARROW_HEIGHT,
-                                                                Pid::BEGIN_LINE_ARROW_WIDTH,
-                                                                Pid::BEGIN_FILLED_ARROW_HEIGHT,
-                                                                Pid::BEGIN_FILLED_ARROW_WIDTH,
-                                                                Pid::END_HOOK_TYPE,
-                                                                Pid::END_HOOK_HEIGHT,
-                                                                Pid::END_LINE_ARROW_HEIGHT,
-                                                                Pid::END_LINE_ARROW_WIDTH,
-                                                                Pid::END_FILLED_ARROW_HEIGHT,
-                                                                Pid::END_FILLED_ARROW_WIDTH,
-                                                                Pid::GAP_BETWEEN_TEXT_AND_LINE,
-                                                                Pid::BEGIN_TEXT,
-                                                                Pid::BEGIN_TEXT_ALIGN,
-                                                                Pid::BEGIN_TEXT_POSITION,
-                                                                Pid::BEGIN_TEXT_PLACE,
-                                                                Pid::BEGIN_FONT_FACE,
-                                                                Pid::BEGIN_FONT_SIZE,
-                                                                Pid::BEGIN_FONT_STYLE,
-                                                                Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE,
-                                                                Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE,
-                                                                Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE,
-                                                                Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE,
-                                                                Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE,
-                                                                Pid::END_TEXT_MUSIC_SYMBOLS_SIZE,
-                                                                Pid::BEGIN_TEXT_OFFSET,
-                                                                Pid::CONTINUE_TEXT,
-                                                                Pid::CONTINUE_TEXT_ALIGN,
-                                                                Pid::CONTINUE_TEXT_POSITION,
-                                                                Pid::CONTINUE_TEXT_PLACE,
-                                                                Pid::CONTINUE_FONT_FACE,
-                                                                Pid::CONTINUE_FONT_SIZE,
-                                                                Pid::CONTINUE_FONT_STYLE,
-                                                                Pid::CONTINUE_TEXT_OFFSET,
-                                                                Pid::END_TEXT,
-                                                                Pid::END_TEXT_ALIGN,
-                                                                Pid::END_TEXT_POSITION,
-                                                                Pid::END_TEXT_PLACE,
-                                                                Pid::END_FONT_FACE,
-                                                                Pid::END_FONT_SIZE,
-                                                                Pid::END_FONT_STYLE,
-                                                                Pid::END_TEXT_OFFSET,
-                                                                Pid::TEXT_SIZE_SPATIUM_DEPENDENT}};
+static constexpr std::array<Pid, 45> text_line_base_property_id = {{Pid::LINE_VISIBLE,
+                                                                    Pid::BEGIN_HOOK_TYPE,
+                                                                    Pid::BEGIN_HOOK_HEIGHT,
+                                                                    Pid::BEGIN_LINE_ARROW_HEIGHT,
+                                                                    Pid::BEGIN_LINE_ARROW_WIDTH,
+                                                                    Pid::BEGIN_FILLED_ARROW_HEIGHT,
+                                                                    Pid::BEGIN_FILLED_ARROW_WIDTH,
+                                                                    Pid::END_HOOK_TYPE,
+                                                                    Pid::END_HOOK_HEIGHT,
+                                                                    Pid::END_LINE_ARROW_HEIGHT,
+                                                                    Pid::END_LINE_ARROW_WIDTH,
+                                                                    Pid::END_FILLED_ARROW_HEIGHT,
+                                                                    Pid::END_FILLED_ARROW_WIDTH,
+                                                                    Pid::GAP_BETWEEN_TEXT_AND_LINE,
+                                                                    Pid::BEGIN_TEXT,
+                                                                    Pid::BEGIN_TEXT_ALIGN,
+                                                                    Pid::BEGIN_TEXT_POSITION,
+                                                                    Pid::BEGIN_TEXT_PLACE,
+                                                                    Pid::BEGIN_FONT_FACE,
+                                                                    Pid::BEGIN_FONT_SIZE,
+                                                                    Pid::BEGIN_FONT_STYLE,
+                                                                    Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE,
+                                                                    Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE,
+                                                                    Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE,
+                                                                    Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE,
+                                                                    Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE,
+                                                                    Pid::END_TEXT_MUSIC_SYMBOLS_SIZE,
+                                                                    Pid::BEGIN_TEXT_OFFSET,
+                                                                    Pid::CONTINUE_TEXT,
+                                                                    Pid::CONTINUE_TEXT_ALIGN,
+                                                                    Pid::CONTINUE_TEXT_POSITION,
+                                                                    Pid::CONTINUE_TEXT_PLACE,
+                                                                    Pid::CONTINUE_FONT_FACE,
+                                                                    Pid::CONTINUE_FONT_SIZE,
+                                                                    Pid::CONTINUE_FONT_STYLE,
+                                                                    Pid::CONTINUE_TEXT_OFFSET,
+                                                                    Pid::END_TEXT,
+                                                                    Pid::END_TEXT_ALIGN,
+                                                                    Pid::END_TEXT_POSITION,
+                                                                    Pid::END_TEXT_PLACE,
+                                                                    Pid::END_FONT_FACE,
+                                                                    Pid::END_FONT_SIZE,
+                                                                    Pid::END_FONT_STYLE,
+                                                                    Pid::END_TEXT_OFFSET,
+                                                                    Pid::TEXT_SIZE_SPATIUM_DEPENDENT}};
 
-const std::array<Pid, 45> &TextLineBase::textLineBasePropertyIds() { return TextLineBasePropertyId; }
+const std::array<Pid, 45> &TextLineBase::text_line_base_property_ids() { return ::mu::engraving::text_line_base_property_id; }
 
 void TextLineBase::reset() {
-    String beginText = _beginText;
-    String contText = _continueText;
-    String endText = _endText;
-    bool beginStyled = isStyled(Pid::BEGIN_TEXT);
-    bool contStyled = isStyled(Pid::CONTINUE_TEXT);
-    bool endStyled = isStyled(Pid::END_TEXT);
+    String begin_text = begin_text_value;
+    String cont_text = continue_text_value;
+    String end_text = end_text_value;
+    bool begin_styled = is_styled(Pid::BEGIN_TEXT);
+    bool cont_styled = is_styled(Pid::CONTINUE_TEXT);
+    bool end_styled = is_styled(Pid::END_TEXT);
 
     SLine::reset();
-    if (!beginStyled) {
-        undoChangeProperty(Pid::BEGIN_TEXT, beginText, PropertyFlags::UNSTYLED);
+    if (!begin_styled) {
+        undo_change_property(Pid::BEGIN_TEXT, begin_text, PropertyFlags::UNSTYLED);
     }
-    if (!contStyled) {
-        undoChangeProperty(Pid::CONTINUE_TEXT, contText, PropertyFlags::UNSTYLED);
+    if (!cont_styled) {
+        undo_change_property(Pid::CONTINUE_TEXT, cont_text, PropertyFlags::UNSTYLED);
     }
-    if (!endStyled) {
-        undoChangeProperty(Pid::END_TEXT, endText, PropertyFlags::UNSTYLED);
+    if (!end_styled) {
+        undo_change_property(Pid::END_TEXT, end_text, PropertyFlags::UNSTYLED);
     }
 }
 
@@ -180,17 +180,17 @@ void TextLineBase::reset() {
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject *TextLineBaseSegment::propertyDelegate(Pid pid) const {
+EngravingObject *TextLineBaseSegment::property_delegate(Pid pid) const {
     if (pid == Pid::TEXT_STYLE) {
         return spanner();
     }
 
-    for (Pid id : TextLineBasePropertyId) {
+    for (Pid id : ::mu::engraving::text_line_base_property_id) {
         if (pid == id) {
             return spanner();
         }
     }
-    return LineSegment::propertyDelegate(pid);
+    return LineSegment::property_delegate(pid);
 }
 
 //---------------------------------------------------------
@@ -198,76 +198,76 @@ EngravingObject *TextLineBaseSegment::propertyDelegate(Pid pid) const {
 //---------------------------------------------------------
 
 TextLineBase::TextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags f) : SLine(type, parent, f) {
-    setBeginHookHeight(1.9_sp);
-    setEndHookHeight(1.9_sp);
-    setGapBetweenTextAndLine(0.5_sp);
+    set_begin_hook_height(1.9_sp);
+    set_end_hook_height(1.9_sp);
+    set_gap_between_text_and_line(0.5_sp);
 }
 
 //---------------------------------------------------------
 //   spatiumChanged
 //---------------------------------------------------------
 
-void TextLineBase::spatiumChanged(double /*ov*/, double /*nv*/) {}
+void TextLineBase::spatium_changed(double /*ov*/, double /*nv*/) {}
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue TextLineBase::getProperty(Pid id) const {
+PropertyValue TextLineBase::get_property(Pid id) const {
     switch (id) {
-        case Pid::BEGIN_TEXT: return beginText();
+        case Pid::BEGIN_TEXT: return begin_text();
         case Pid::ALIGN: // Redirect to begin text...
-        case Pid::BEGIN_TEXT_ALIGN: return PropertyValue::fromValue(beginTextAlign());
-        case Pid::CONTINUE_TEXT_ALIGN: return PropertyValue::fromValue(continueTextAlign());
-        case Pid::END_TEXT_ALIGN: return PropertyValue::fromValue(endTextAlign());
+        case Pid::BEGIN_TEXT_ALIGN: return PropertyValue::from_value(begin_text_align());
+        case Pid::CONTINUE_TEXT_ALIGN: return PropertyValue::from_value(continue_text_align());
+        case Pid::END_TEXT_ALIGN: return PropertyValue::from_value(end_text_align());
         case Pid::POSITION: // Redirect to begin text...
-        case Pid::BEGIN_TEXT_POSITION: return PropertyValue::fromValue(beginTextPosition());
-        case Pid::CONTINUE_TEXT_POSITION: return PropertyValue::fromValue(continueTextPosition());
-        case Pid::END_TEXT_POSITION: return PropertyValue::fromValue(endTextPosition());
-        case Pid::BEGIN_TEXT_PLACE: return _beginTextPlace;
-        case Pid::BEGIN_HOOK_TYPE: return _beginHookType;
-        case Pid::BEGIN_HOOK_HEIGHT: return _beginHookHeight;
-        case Pid::BEGIN_LINE_ARROW_HEIGHT: return _beginLineArrowHeight;
-        case Pid::BEGIN_LINE_ARROW_WIDTH: return _beginLineArrowWidth;
-        case Pid::BEGIN_FILLED_ARROW_HEIGHT: return _beginFilledArrowHeight;
-        case Pid::BEGIN_FILLED_ARROW_WIDTH: return _beginFilledArrowWidth;
+        case Pid::BEGIN_TEXT_POSITION: return PropertyValue::from_value(begin_text_position());
+        case Pid::CONTINUE_TEXT_POSITION: return PropertyValue::from_value(continue_text_position());
+        case Pid::END_TEXT_POSITION: return PropertyValue::from_value(end_text_position());
+        case Pid::BEGIN_TEXT_PLACE: return begin_text_place_value;
+        case Pid::BEGIN_HOOK_TYPE: return begin_hook_type_value;
+        case Pid::BEGIN_HOOK_HEIGHT: return begin_hook_height_value;
+        case Pid::BEGIN_LINE_ARROW_HEIGHT: return begin_line_arrow_height_value;
+        case Pid::BEGIN_LINE_ARROW_WIDTH: return begin_line_arrow_width_value;
+        case Pid::BEGIN_FILLED_ARROW_HEIGHT: return begin_filled_arrow_height_value;
+        case Pid::BEGIN_FILLED_ARROW_WIDTH: return begin_filled_arrow_width_value;
         case Pid::FONT_FACE: // Redirect to begin text...
-        case Pid::BEGIN_FONT_FACE: return _beginFontFamily;
+        case Pid::BEGIN_FONT_FACE: return begin_font_family_value;
         case Pid::FONT_SIZE: // Redirect to begin text...
-        case Pid::BEGIN_FONT_SIZE: return _beginFontSize;
+        case Pid::BEGIN_FONT_SIZE: return begin_font_size_value;
         case Pid::FONT_STYLE: // Redirect to begin text...
-        case Pid::BEGIN_FONT_STYLE: return int(_beginFontStyle);
+        case Pid::BEGIN_FONT_STYLE: return int(begin_font_style_value);
         case Pid::MUSIC_SYMBOL_SIZE: // Redirect to begin text...
-        case Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE: return _beginTextMusicSymbolsSize;
+        case Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE: return begin_text_music_symbols_size_value;
         case Pid::MUSICAL_SYMBOLS_SCALE: // Redirect to begin text...
-        case Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE: return _beginTextMusicalSymbolsScale;
-        case Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE: return _continueTextMusicalSymbolsScale;
-        case Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE: return _continueTextMusicSymbolsSize;
-        case Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE: return _endTextMusicalSymbolsScale;
-        case Pid::END_TEXT_MUSIC_SYMBOLS_SIZE: return _endTextMusicSymbolsSize;
-        case Pid::BEGIN_TEXT_OFFSET: return _beginTextOffset;
-        case Pid::CONTINUE_TEXT: return continueText();
-        case Pid::CONTINUE_TEXT_PLACE: return _continueTextPlace;
-        case Pid::CONTINUE_FONT_FACE: return _continueFontFamily;
-        case Pid::CONTINUE_FONT_SIZE: return _continueFontSize;
-        case Pid::CONTINUE_FONT_STYLE: return int(_continueFontStyle);
-        case Pid::CONTINUE_TEXT_OFFSET: return _continueTextOffset;
-        case Pid::END_TEXT: return endText();
-        case Pid::END_TEXT_PLACE: return _endTextPlace;
-        case Pid::END_HOOK_TYPE: return _endHookType;
-        case Pid::END_HOOK_HEIGHT: return _endHookHeight;
-        case Pid::END_LINE_ARROW_HEIGHT: return _endLineArrowHeight;
-        case Pid::END_LINE_ARROW_WIDTH: return _endLineArrowWidth;
-        case Pid::END_FILLED_ARROW_HEIGHT: return _endFilledArrowHeight;
-        case Pid::END_FILLED_ARROW_WIDTH: return _endFilledArrowWidth;
-        case Pid::GAP_BETWEEN_TEXT_AND_LINE: return _gapBetweenTextAndLine;
-        case Pid::END_FONT_FACE: return _endFontFamily;
-        case Pid::END_FONT_SIZE: return _endFontSize;
-        case Pid::END_FONT_STYLE: return int(_endFontStyle);
-        case Pid::END_TEXT_OFFSET: return _endTextOffset;
-        case Pid::LINE_VISIBLE: return lineVisible();
-        case Pid::TEXT_SIZE_SPATIUM_DEPENDENT: return textSizeSpatiumDependent();
-        default: return SLine::getProperty(id);
+        case Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE: return begin_text_musical_symbols_scale_value;
+        case Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE: return continue_text_musical_symbols_scale_value;
+        case Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE: return continue_text_music_symbols_size_value;
+        case Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE: return end_text_musical_symbols_scale_value;
+        case Pid::END_TEXT_MUSIC_SYMBOLS_SIZE: return end_text_music_symbols_size_value;
+        case Pid::BEGIN_TEXT_OFFSET: return begin_text_offset_value;
+        case Pid::CONTINUE_TEXT: return continue_text();
+        case Pid::CONTINUE_TEXT_PLACE: return continue_text_place_value;
+        case Pid::CONTINUE_FONT_FACE: return continue_font_family_value;
+        case Pid::CONTINUE_FONT_SIZE: return continue_font_size_value;
+        case Pid::CONTINUE_FONT_STYLE: return int(continue_font_style_value);
+        case Pid::CONTINUE_TEXT_OFFSET: return continue_text_offset_value;
+        case Pid::END_TEXT: return end_text();
+        case Pid::END_TEXT_PLACE: return end_text_place_value;
+        case Pid::END_HOOK_TYPE: return end_hook_type_value;
+        case Pid::END_HOOK_HEIGHT: return end_hook_height_value;
+        case Pid::END_LINE_ARROW_HEIGHT: return end_line_arrow_height_value;
+        case Pid::END_LINE_ARROW_WIDTH: return end_line_arrow_width_value;
+        case Pid::END_FILLED_ARROW_HEIGHT: return end_filled_arrow_height_value;
+        case Pid::END_FILLED_ARROW_WIDTH: return end_filled_arrow_width_value;
+        case Pid::GAP_BETWEEN_TEXT_AND_LINE: return gap_between_text_and_line_value;
+        case Pid::END_FONT_FACE: return end_font_family_value;
+        case Pid::END_FONT_SIZE: return end_font_size_value;
+        case Pid::END_FONT_STYLE: return int(end_font_style_value);
+        case Pid::END_TEXT_OFFSET: return end_text_offset_value;
+        case Pid::LINE_VISIBLE: return line_visible();
+        case Pid::TEXT_SIZE_SPATIUM_DEPENDENT: return text_size_spatium_dependent();
+        default: return SLine::get_property(id);
     }
 }
 
@@ -275,61 +275,61 @@ PropertyValue TextLineBase::getProperty(Pid id) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool TextLineBase::setProperty(Pid id, const PropertyValue &v) {
+bool TextLineBase::set_property(Pid id, const PropertyValue &v) {
     switch (id) {
-        case Pid::BEGIN_TEXT_PLACE: _beginTextPlace = v.value<TextPlace>(); break;
-        case Pid::BEGIN_TEXT_ALIGN: _beginTextAlign = v.value<Align>(); break;
-        case Pid::BEGIN_TEXT_POSITION: _beginTextPosition = v.value<AlignH>(); break;
-        case Pid::BEGIN_FONT_FACE: setBeginFontFamily(v.value<String>()); break;
+        case Pid::BEGIN_TEXT_PLACE: begin_text_place_value = v.value<TextPlace>(); break;
+        case Pid::BEGIN_TEXT_ALIGN: begin_text_align_value = v.value<Align>(); break;
+        case Pid::BEGIN_TEXT_POSITION: begin_text_position_value = v.value<AlignH>(); break;
+        case Pid::BEGIN_FONT_FACE: set_begin_font_family(v.value<String>()); break;
         case Pid::BEGIN_FONT_SIZE:
-            if (v.toReal() <= 0) {
-                ASSERT_X(String(u"font size is %1").arg(v.toReal()));
+            if (v.to_real() <= 0) {
+                ASSERT_X(String(u"font size is %1").arg(v.to_real()));
             }
-            setBeginFontSize(v.toReal());
+            set_begin_font_size(v.to_real());
             break;
-        case Pid::BEGIN_FONT_STYLE: setBeginFontStyle(FontStyle(v.toInt())); break;
-        case Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE: setBeginTextMusicalSymbolsScale(v.toReal()); break;
-        case Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE: setBeginTextMusicSymbolsSize(v.toReal()); break;
-        case Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE: setContinueTextMusicalSymbolsScale(v.toReal()); break;
-        case Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE: setContinueTextMusicSymbolsSize(v.toReal()); break;
-        case Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE: setEndTextMusicalSymbolsScale(v.toReal()); break;
-        case Pid::END_TEXT_MUSIC_SYMBOLS_SIZE: setEndTextMusicSymbolsSize(v.toReal()); break;
+        case Pid::BEGIN_FONT_STYLE: set_begin_font_style(FontStyle(v.to_int())); break;
+        case Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE: set_begin_text_musical_symbols_scale(v.to_real()); break;
+        case Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE: set_begin_text_music_symbols_size(v.to_real()); break;
+        case Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE: set_continue_text_musical_symbols_scale(v.to_real()); break;
+        case Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE: set_continue_text_music_symbols_size(v.to_real()); break;
+        case Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE: set_end_text_musical_symbols_scale(v.to_real()); break;
+        case Pid::END_TEXT_MUSIC_SYMBOLS_SIZE: set_end_text_music_symbols_size(v.to_real()); break;
 
-        case Pid::CONTINUE_TEXT_ALIGN: _continueTextAlign = v.value<Align>(); break;
-        case Pid::END_TEXT_ALIGN: _endTextAlign = v.value<Align>(); break;
-        case Pid::CONTINUE_TEXT_POSITION: _continueTextPosition = v.value<AlignH>(); break;
-        case Pid::END_TEXT_POSITION: _endTextPosition = v.value<AlignH>(); break;
-        case Pid::CONTINUE_TEXT_PLACE: _continueTextPlace = v.value<TextPlace>(); break;
-        case Pid::END_TEXT_PLACE: _endTextPlace = v.value<TextPlace>(); break;
-        case Pid::CONTINUE_FONT_FACE: setContinueFontFamily(v.value<String>()); break;
-        case Pid::CONTINUE_FONT_SIZE: setContinueFontSize(v.toReal()); break;
-        case Pid::CONTINUE_FONT_STYLE: setContinueFontStyle(FontStyle(v.toInt())); break;
-        case Pid::END_FONT_FACE: setEndFontFamily(v.value<String>()); break;
-        case Pid::END_FONT_SIZE: setEndFontSize(v.toReal()); break;
-        case Pid::END_FONT_STYLE: setEndFontStyle(FontStyle(v.toInt())); break;
+        case Pid::CONTINUE_TEXT_ALIGN: continue_text_align_value = v.value<Align>(); break;
+        case Pid::END_TEXT_ALIGN: end_text_align_value = v.value<Align>(); break;
+        case Pid::CONTINUE_TEXT_POSITION: continue_text_position_value = v.value<AlignH>(); break;
+        case Pid::END_TEXT_POSITION: end_text_position_value = v.value<AlignH>(); break;
+        case Pid::CONTINUE_TEXT_PLACE: continue_text_place_value = v.value<TextPlace>(); break;
+        case Pid::END_TEXT_PLACE: end_text_place_value = v.value<TextPlace>(); break;
+        case Pid::CONTINUE_FONT_FACE: set_continue_font_family(v.value<String>()); break;
+        case Pid::CONTINUE_FONT_SIZE: set_continue_font_size(v.to_real()); break;
+        case Pid::CONTINUE_FONT_STYLE: set_continue_font_style(FontStyle(v.to_int())); break;
+        case Pid::END_FONT_FACE: set_end_font_family(v.value<String>()); break;
+        case Pid::END_FONT_SIZE: set_end_font_size(v.to_real()); break;
+        case Pid::END_FONT_STYLE: set_end_font_style(FontStyle(v.to_int())); break;
 
-        case Pid::BEGIN_HOOK_HEIGHT: _beginHookHeight = v.value<Spatium>(); break;
-        case Pid::END_HOOK_HEIGHT: _endHookHeight = v.value<Spatium>(); break;
-        case Pid::BEGIN_HOOK_TYPE: _beginHookType = v.value<HookType>(); break;
-        case Pid::END_HOOK_TYPE: _endHookType = v.value<HookType>(); break;
+        case Pid::BEGIN_HOOK_HEIGHT: begin_hook_height_value = v.value<Spatium>(); break;
+        case Pid::END_HOOK_HEIGHT: end_hook_height_value = v.value<Spatium>(); break;
+        case Pid::BEGIN_HOOK_TYPE: begin_hook_type_value = v.value<HookType>(); break;
+        case Pid::END_HOOK_TYPE: end_hook_type_value = v.value<HookType>(); break;
 
-        case Pid::BEGIN_FILLED_ARROW_HEIGHT: _beginFilledArrowHeight = v.value<Spatium>(); break;
-        case Pid::BEGIN_FILLED_ARROW_WIDTH: _beginFilledArrowWidth = v.value<Spatium>(); break;
-        case Pid::END_FILLED_ARROW_HEIGHT: _endFilledArrowHeight = v.value<Spatium>(); break;
-        case Pid::END_FILLED_ARROW_WIDTH: _endFilledArrowWidth = v.value<Spatium>(); break;
-        case Pid::BEGIN_LINE_ARROW_HEIGHT: _beginLineArrowHeight = v.value<Spatium>(); break;
-        case Pid::BEGIN_LINE_ARROW_WIDTH: _beginLineArrowWidth = v.value<Spatium>(); break;
-        case Pid::END_LINE_ARROW_HEIGHT: _endLineArrowHeight = v.value<Spatium>(); break;
-        case Pid::END_LINE_ARROW_WIDTH: _endLineArrowWidth = v.value<Spatium>(); break;
-        case Pid::BEGIN_TEXT: setBeginText(v.value<String>()); break;
-        case Pid::BEGIN_TEXT_OFFSET: setBeginTextOffset(v.value<PointF>()); break;
-        case Pid::GAP_BETWEEN_TEXT_AND_LINE: _gapBetweenTextAndLine = v.value<Spatium>(); break;
-        case Pid::CONTINUE_TEXT_OFFSET: setContinueTextOffset(v.value<PointF>()); break;
-        case Pid::END_TEXT_OFFSET: setEndTextOffset(v.value<PointF>()); break;
-        case Pid::CONTINUE_TEXT: setContinueText(v.value<String>()); break;
-        case Pid::END_TEXT: setEndText(v.value<String>()); break;
-        case Pid::LINE_VISIBLE: setLineVisible(v.toBool()); break;
-        case Pid::TEXT_SIZE_SPATIUM_DEPENDENT: setTextSizeSpatiumDependent(v.toBool()); break;
+        case Pid::BEGIN_FILLED_ARROW_HEIGHT: begin_filled_arrow_height_value = v.value<Spatium>(); break;
+        case Pid::BEGIN_FILLED_ARROW_WIDTH: begin_filled_arrow_width_value = v.value<Spatium>(); break;
+        case Pid::END_FILLED_ARROW_HEIGHT: end_filled_arrow_height_value = v.value<Spatium>(); break;
+        case Pid::END_FILLED_ARROW_WIDTH: end_filled_arrow_width_value = v.value<Spatium>(); break;
+        case Pid::BEGIN_LINE_ARROW_HEIGHT: begin_line_arrow_height_value = v.value<Spatium>(); break;
+        case Pid::BEGIN_LINE_ARROW_WIDTH: begin_line_arrow_width_value = v.value<Spatium>(); break;
+        case Pid::END_LINE_ARROW_HEIGHT: end_line_arrow_height_value = v.value<Spatium>(); break;
+        case Pid::END_LINE_ARROW_WIDTH: end_line_arrow_width_value = v.value<Spatium>(); break;
+        case Pid::BEGIN_TEXT: set_begin_text(v.value<String>()); break;
+        case Pid::BEGIN_TEXT_OFFSET: set_begin_text_offset(v.value<PointF>()); break;
+        case Pid::GAP_BETWEEN_TEXT_AND_LINE: gap_between_text_and_line_value = v.value<Spatium>(); break;
+        case Pid::CONTINUE_TEXT_OFFSET: set_continue_text_offset(v.value<PointF>()); break;
+        case Pid::END_TEXT_OFFSET: set_end_text_offset(v.value<PointF>()); break;
+        case Pid::CONTINUE_TEXT: set_continue_text(v.value<String>()); break;
+        case Pid::END_TEXT: set_end_text(v.value<String>()); break;
+        case Pid::LINE_VISIBLE: set_line_visible(v.to_bool()); break;
+        case Pid::TEXT_SIZE_SPATIUM_DEPENDENT: set_text_size_spatium_dependent(v.to_bool()); break;
 
         /// In >=4.6 text line begin, continue, and end text should all have the same style. This preserves backwards
         /// compatibility and will allow us to style these text items separately in the future if desired
@@ -337,140 +337,140 @@ bool TextLineBase::setProperty(Pid id, const PropertyValue &v) {
         // These are TextBase properties - updating these should update begin, continue, and end text...
         case Pid::ALIGN: {
             const Align align(v.value<Align>());
-            _beginTextAlign = align;
-            _continueTextAlign = align;
-            _endTextAlign = align;
+            begin_text_align_value = align;
+            continue_text_align_value = align;
+            end_text_align_value = align;
             break;
         }
         case Pid::POSITION: {
-            const AlignH alignH(v.value<AlignH>());
-            _beginTextPosition = alignH;
-            _continueTextPosition = alignH;
-            _endTextPosition = alignH;
+            const AlignH align_h(v.value<AlignH>());
+            begin_text_position_value = align_h;
+            continue_text_position_value = align_h;
+            end_text_position_value = align_h;
             break;
         }
         case Pid::FONT_FACE: {
             const String face(v.value<String>());
-            setBeginFontFamily(face);
-            setContinueFontFamily(face);
-            setEndFontFamily(face);
+            set_begin_font_family(face);
+            set_continue_font_family(face);
+            set_end_font_family(face);
             break;
         }
         case Pid::FONT_SIZE: {
-            const double size(v.toReal());
+            const double size(v.to_real());
             if (size <= 0) {
                 ASSERT_X(String(u"font size is %1").arg(size));
             }
-            setBeginFontSize(size);
-            setContinueFontSize(size);
-            setEndFontSize(size);
+            set_begin_font_size(size);
+            set_continue_font_size(size);
+            set_end_font_size(size);
             break;
         }
         case Pid::FONT_STYLE: {
-            const FontStyle style = FontStyle(v.toInt());
-            setBeginFontStyle(style);
-            setContinueFontStyle(style);
-            setEndFontStyle(style);
+            const FontStyle style = FontStyle(v.to_int());
+            set_begin_font_style(style);
+            set_continue_font_style(style);
+            set_end_font_style(style);
             break;
         }
         case Pid::MUSIC_SYMBOL_SIZE: {
-            const double size = v.toReal();
-            setBeginTextMusicSymbolsSize(size);
-            setContinueTextMusicSymbolsSize(size);
-            setEndTextMusicSymbolsSize(size);
+            const double size = v.to_real();
+            set_begin_text_music_symbols_size(size);
+            set_continue_text_music_symbols_size(size);
+            set_end_text_music_symbols_size(size);
             break;
         }
         case Pid::MUSICAL_SYMBOLS_SCALE: {
-            const double scale = v.toReal();
-            setBeginTextMusicalSymbolsScale(scale);
-            setContinueTextMusicalSymbolsScale(scale);
-            setEndTextMusicalSymbolsScale(scale);
+            const double scale = v.to_real();
+            set_begin_text_musical_symbols_scale(scale);
+            set_continue_text_musical_symbols_scale(scale);
+            set_end_text_musical_symbols_scale(scale);
             break;
         }
 
-        default: return SLine::setProperty(id, v);
+        default: return SLine::set_property(id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
-PropertyValue TextLineBase::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue TextLineBase::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::GAP_BETWEEN_TEXT_AND_LINE: return 0.5_sp;
 
         // Redirect to begin text for these...
-        case Pid::ALIGN: return propertyDefault(Pid::BEGIN_TEXT_ALIGN);
-        case Pid::POSITION: return propertyDefault(Pid::BEGIN_TEXT_POSITION);
-        case Pid::FONT_FACE: return propertyDefault(Pid::BEGIN_FONT_FACE);
-        case Pid::FONT_SIZE: return propertyDefault(Pid::BEGIN_FONT_SIZE);
-        case Pid::FONT_STYLE: return propertyDefault(Pid::BEGIN_FONT_STYLE);
-        case Pid::MUSICAL_SYMBOLS_SCALE: return propertyDefault(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE);
-        case Pid::MUSIC_SYMBOL_SIZE: return propertyDefault(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE);
+        case Pid::ALIGN: return property_default(Pid::BEGIN_TEXT_ALIGN);
+        case Pid::POSITION: return property_default(Pid::BEGIN_TEXT_POSITION);
+        case Pid::FONT_FACE: return property_default(Pid::BEGIN_FONT_FACE);
+        case Pid::FONT_SIZE: return property_default(Pid::BEGIN_FONT_SIZE);
+        case Pid::FONT_STYLE: return property_default(Pid::BEGIN_FONT_STYLE);
+        case Pid::MUSICAL_SYMBOLS_SCALE: return property_default(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE);
+        case Pid::MUSIC_SYMBOL_SIZE: return property_default(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE);
 
-        default: return SLine::propertyDefault(propertyId);
+        default: return SLine::property_default(property_id);
     }
 }
 
-PropertyFlags TextLineBase::propertyFlags(Pid id) const {
+PropertyFlags TextLineBase::property_flags(Pid id) const {
     switch (id) {
-        case Pid::ALIGN: return propertyFlags(Pid::BEGIN_TEXT_ALIGN);
-        case Pid::POSITION: return propertyFlags(Pid::BEGIN_TEXT_POSITION);
-        case Pid::FONT_FACE: return propertyFlags(Pid::BEGIN_FONT_FACE);
-        case Pid::FONT_SIZE: return propertyFlags(Pid::BEGIN_FONT_SIZE);
-        case Pid::FONT_STYLE: return propertyFlags(Pid::BEGIN_FONT_STYLE);
-        case Pid::MUSICAL_SYMBOLS_SCALE: return propertyFlags(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE);
-        case Pid::MUSIC_SYMBOL_SIZE: return propertyFlags(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE);
+        case Pid::ALIGN: return property_flags(Pid::BEGIN_TEXT_ALIGN);
+        case Pid::POSITION: return property_flags(Pid::BEGIN_TEXT_POSITION);
+        case Pid::FONT_FACE: return property_flags(Pid::BEGIN_FONT_FACE);
+        case Pid::FONT_SIZE: return property_flags(Pid::BEGIN_FONT_SIZE);
+        case Pid::FONT_STYLE: return property_flags(Pid::BEGIN_FONT_STYLE);
+        case Pid::MUSICAL_SYMBOLS_SCALE: return property_flags(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE);
+        case Pid::MUSIC_SYMBOL_SIZE: return property_flags(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE);
 
-        default: return SLine::propertyFlags(id);
+        default: return SLine::property_flags(id);
     }
 }
 
-void TextLineBase::setPropertyFlags(Pid id, PropertyFlags f) {
+void TextLineBase::set_property_flags(Pid id, PropertyFlags f) {
     switch (id) {
         case Pid::ALIGN: {
-            setPropertyFlags(Pid::BEGIN_TEXT_ALIGN, f);
-            setPropertyFlags(Pid::CONTINUE_TEXT_ALIGN, f);
-            setPropertyFlags(Pid::END_TEXT_ALIGN, f);
+            set_property_flags(Pid::BEGIN_TEXT_ALIGN, f);
+            set_property_flags(Pid::CONTINUE_TEXT_ALIGN, f);
+            set_property_flags(Pid::END_TEXT_ALIGN, f);
             break;
         }
         case Pid::POSITION: {
-            setPropertyFlags(Pid::BEGIN_TEXT_POSITION, f);
-            setPropertyFlags(Pid::CONTINUE_TEXT_POSITION, f);
-            setPropertyFlags(Pid::END_TEXT_POSITION, f);
+            set_property_flags(Pid::BEGIN_TEXT_POSITION, f);
+            set_property_flags(Pid::CONTINUE_TEXT_POSITION, f);
+            set_property_flags(Pid::END_TEXT_POSITION, f);
             break;
         }
         case Pid::FONT_FACE: {
-            setPropertyFlags(Pid::BEGIN_FONT_FACE, f);
-            setPropertyFlags(Pid::CONTINUE_FONT_FACE, f);
-            setPropertyFlags(Pid::END_FONT_FACE, f);
+            set_property_flags(Pid::BEGIN_FONT_FACE, f);
+            set_property_flags(Pid::CONTINUE_FONT_FACE, f);
+            set_property_flags(Pid::END_FONT_FACE, f);
             break;
         }
         case Pid::FONT_SIZE: {
-            setPropertyFlags(Pid::BEGIN_FONT_SIZE, f);
-            setPropertyFlags(Pid::CONTINUE_FONT_SIZE, f);
-            setPropertyFlags(Pid::END_FONT_SIZE, f);
+            set_property_flags(Pid::BEGIN_FONT_SIZE, f);
+            set_property_flags(Pid::CONTINUE_FONT_SIZE, f);
+            set_property_flags(Pid::END_FONT_SIZE, f);
             break;
         }
         case Pid::FONT_STYLE: {
-            setPropertyFlags(Pid::BEGIN_FONT_STYLE, f);
-            setPropertyFlags(Pid::CONTINUE_FONT_STYLE, f);
-            setPropertyFlags(Pid::END_FONT_STYLE, f);
+            set_property_flags(Pid::BEGIN_FONT_STYLE, f);
+            set_property_flags(Pid::CONTINUE_FONT_STYLE, f);
+            set_property_flags(Pid::END_FONT_STYLE, f);
             break;
         }
         case Pid::MUSICAL_SYMBOLS_SCALE: {
-            setPropertyFlags(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE, f);
-            setPropertyFlags(Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE, f);
-            setPropertyFlags(Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE, f);
+            set_property_flags(Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE, f);
+            set_property_flags(Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE, f);
+            set_property_flags(Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE, f);
             break;
         }
         case Pid::MUSIC_SYMBOL_SIZE: {
-            setPropertyFlags(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE, f);
-            setPropertyFlags(Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE, f);
-            setPropertyFlags(Pid::END_TEXT_MUSIC_SYMBOLS_SIZE, f);
+            set_property_flags(Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE, f);
+            set_property_flags(Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE, f);
+            set_property_flags(Pid::END_TEXT_MUSIC_SYMBOLS_SIZE, f);
             break;
         }
 
-        default: SLine::setPropertyFlags(id, f);
+        default: SLine::set_property_flags(id, f);
     }
 }
 } // namespace mu::engraving

@@ -27,15 +27,15 @@
 #include "log.h"
 
 namespace mu::iex::midi {
-MidiOperations::Data midiImportOperations;
+MidiOperations::Data midi_import_operations;
 
 namespace MidiOperations {
-static int readBoolFromXml(muse::XmlStreamReader &xml) {
+static int read_bool_from_xml(muse::XmlStreamReader &xml) {
     int value = -1;
     const muse::AsciiStringView name = xml.name();
-    xml.readNext();
+    xml.read_next();
 
-    if (xml.tokenType() == muse::XmlStreamReader::Characters) {
+    if (xml.token_type() == muse::XmlStreamReader::CHARACTERS) {
         if (xml.text() == u"true") {
             value = 1;
         } else if (xml.text() == u"false") {
@@ -49,26 +49,26 @@ static int readBoolFromXml(muse::XmlStreamReader &xml) {
 
 // Terms: <name attribute="value">text</name>
 
-static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
-    if (fileName.empty()) {
+static void set_operations_from_file(const std::string &file_name, Opers &opers) {
+    if (file_name.empty()) {
         return;
     }
 
-    muse::io::File file{muse::io::path_t(fileName)};
-    if (!file.open(muse::io::IODevice::ReadOnly)) {
+    muse::io::File file{muse::io::PathT(file_name)};
+    if (!file.open(muse::io::IODevice::READ_ONLY)) {
         LOGD("Load MIDI import operations from file: cannot open input file");
         return;
     }
 
     muse::XmlStreamReader xml(&file);
 
-    while (!xml.atEnd() && !xml.isError()) {
-        const auto token = xml.readNext();
+    while (!xml.at_end() && !xml.is_error()) {
+        const auto token = xml.read_next();
 
-        if (token == muse::XmlStreamReader::StartDocument) {
+        if (token == muse::XmlStreamReader::START_DOCUMENT) {
             continue;
         }
-        if (token != muse::XmlStreamReader::StartElement) { // like <elem>
+        if (token != muse::XmlStreamReader::START_ELEMENT) { // like <elem>
             continue;
         }
         if (xml.name() == "MidiOptions") {
@@ -76,21 +76,21 @@ static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
         }
 
         if (xml.name() == "QuantValue") {
-            xml.readNext();
-            if (xml.tokenType() == muse::XmlStreamReader::Characters) {
+            xml.read_next();
+            if (xml.token_type() == muse::XmlStreamReader::CHARACTERS) {
                 bool ok = false;
-                const int index = xml.text().trimmed().toInt(&ok);
+                const int index = xml.text().trimmed().to_int(&ok);
                 if (ok) {
                     switch (index) {
-                        case 0: opers.quantValue.setDefaultValue(QuantValue::Q_4, false); break;
-                        case 1: opers.quantValue.setDefaultValue(QuantValue::Q_8, false); break;
-                        case 2: opers.quantValue.setDefaultValue(QuantValue::Q_16, false); break;
-                        case 3: opers.quantValue.setDefaultValue(QuantValue::Q_32, false); break;
-                        case 4: opers.quantValue.setDefaultValue(QuantValue::Q_64, false); break;
-                        case 5: opers.quantValue.setDefaultValue(QuantValue::Q_128, false); break;
-                        case 6: opers.quantValue.setDefaultValue(QuantValue::Q_256, false); break;
-                        case 7: opers.quantValue.setDefaultValue(QuantValue::Q_512, false); break;
-                        case 8: opers.quantValue.setDefaultValue(QuantValue::Q_1024, false); break;
+                        case 0: opers.quant_value.set_default_value(QuantValue::Q_4, false); break;
+                        case 1: opers.quant_value.set_default_value(QuantValue::Q_8, false); break;
+                        case 2: opers.quant_value.set_default_value(QuantValue::Q_16, false); break;
+                        case 3: opers.quant_value.set_default_value(QuantValue::Q_32, false); break;
+                        case 4: opers.quant_value.set_default_value(QuantValue::Q_64, false); break;
+                        case 5: opers.quant_value.set_default_value(QuantValue::Q_128, false); break;
+                        case 6: opers.quant_value.set_default_value(QuantValue::Q_256, false); break;
+                        case 7: opers.quant_value.set_default_value(QuantValue::Q_512, false); break;
+                        case 8: opers.quant_value.set_default_value(QuantValue::Q_1024, false); break;
                         default:
                             LOGD("Load MIDI import operations from file: "
                                  "unknown max quantization value");
@@ -99,16 +99,16 @@ static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
                 }
             }
         } else if (xml.name() == "VoiceCount") {
-            xml.readNext();
-            if (xml.tokenType() == muse::XmlStreamReader::Characters) {
+            xml.read_next();
+            if (xml.token_type() == muse::XmlStreamReader::CHARACTERS) {
                 bool ok = false;
-                const int index = xml.text().trimmed().toInt(&ok);
+                const int index = xml.text().trimmed().to_int(&ok);
                 if (ok) {
                     switch (index) {
-                        case 0: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_1, false); break;
-                        case 1: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_2, false); break;
-                        case 2: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_3, false); break;
-                        case 3: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_4, false); break;
+                        case 0: opers.max_voice_count.set_default_value(VoiceCount::V_1, false); break;
+                        case 1: opers.max_voice_count.set_default_value(VoiceCount::V_2, false); break;
+                        case 2: opers.max_voice_count.set_default_value(VoiceCount::V_3, false); break;
+                        case 3: opers.max_voice_count.set_default_value(VoiceCount::V_4, false); break;
                         default:
                             LOGD("Load MIDI import operations from file: "
                                  "unknown max voice count");
@@ -117,85 +117,85 @@ static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
                 }
             }
         } else if (xml.name() == "Duplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search2plets.setDefaultValue(value, false);
+                opers.search2plets.set_default_value(value, false);
             }
         } else if (xml.name() == "Triplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search3plets.setDefaultValue(value, false);
+                opers.search3plets.set_default_value(value, false);
             }
         } else if (xml.name() == "Quadruplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search4plets.setDefaultValue(value, false);
+                opers.search4plets.set_default_value(value, false);
             }
         } else if (xml.name() == "Quintuplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search5plets.setDefaultValue(value, false);
+                opers.search5plets.set_default_value(value, false);
             }
         } else if (xml.name() == "Septuplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search7plets.setDefaultValue(value, false);
+                opers.search7plets.set_default_value(value, false);
             }
         } else if (xml.name() == "Nonuplets") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.search9plets.setDefaultValue(value, false);
+                opers.search9plets.set_default_value(value, false);
             }
         } else if (xml.name() == "HumanPerformance") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.isHumanPerformance.setDefaultValue(value, false);
+                opers.is_human_performance.set_default_value(value, false);
             }
         } else if (xml.name() == "MeasureCount2xLess") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.measureCount2xLess.setDefaultValue(value, false);
+                opers.measure_count2x_less.set_default_value(value, false);
             }
         } else if (xml.name() == "SplitStaff") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.doStaffSplit.setDefaultValue(value, false);
+                opers.do_staff_split.set_default_value(value, false);
             }
         } else if (xml.name() == "ClefChanges") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.changeClef.setDefaultValue(value, false);
+                opers.change_clef.set_default_value(value, false);
             }
         } else if (xml.name() == "SimplifyDurations") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.simplifyDurations.setDefaultValue(value, false);
+                opers.simplify_durations.set_default_value(value, false);
             }
         } else if (xml.name() == "ShowStaccato") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.showStaccato.setDefaultValue(value, false);
+                opers.show_staccato.set_default_value(value, false);
             }
         } else if (xml.name() == "DottedNotes") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.useDots.setDefaultValue(value, false);
+                opers.use_dots.set_default_value(value, false);
             }
         } else if (xml.name() == "RecognizePickupBar") {
-            const int value = readBoolFromXml(xml);
+            const int value = read_bool_from_xml(xml);
             if (value >= 0) {
-                opers.searchPickupMeasure.setDefaultValue(value, false);
+                opers.search_pickup_measure.set_default_value(value, false);
             }
         } else if (xml.name() == "Swing") {
-            xml.readNext();
-            if (xml.tokenType() == muse::XmlStreamReader::Characters) {
+            xml.read_next();
+            if (xml.token_type() == muse::XmlStreamReader::CHARACTERS) {
                 bool ok = false;
-                const int index = xml.text().trimmed().toInt(&ok);
+                const int index = xml.text().trimmed().to_int(&ok);
                 if (ok) {
                     switch (index) {
-                        case 0: opers.swing.setDefaultValue(Swing::NONE, false); break;
-                        case 1: opers.swing.setDefaultValue(Swing::SHUFFLE, false); break;
-                        case 2: opers.swing.setDefaultValue(Swing::SWING, false); break;
+                        case 0: opers.swing.set_default_value(Swing::NONE, false); break;
+                        case 1: opers.swing.set_default_value(Swing::SHUFFLE, false); break;
+                        case 2: opers.swing.set_default_value(Swing::SWING, false); break;
                         default:
                             LOGD("Load MIDI import operations from file: "
                                  "unknown swing");
@@ -205,7 +205,7 @@ static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
             }
         }
     }
-    if (xml.isError()) {
+    if (xml.is_error()) {
         LOGD("Load MIDI import operations from file: cannot parse input file");
     }
 }
@@ -213,61 +213,61 @@ static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
 //-------------------------------------------------------------------------------------------
 
 FileData *Data::data() {
-    const auto it = _data.find(_currentMidiFile);
-    if (it != _data.end()) {
+    const auto it = data_value.find(current_midi_file);
+    if (it != data_value.end()) {
         return &it->second;
     }
     return nullptr;
 }
 
 const FileData *Data::data() const {
-    const auto it = _data.find(_currentMidiFile);
-    if (it != _data.end()) {
+    const auto it = data_value.find(current_midi_file);
+    if (it != data_value.end()) {
         return &it->second;
     }
     return nullptr;
 }
 
-void Data::addNewMidiFile(const std::string &fileName) {
-    if (_data.find(fileName) != _data.end()) {
+void Data::add_new_midi_file(const std::string &file_name) {
+    if (data_value.find(file_name) != data_value.end()) {
         return;
     }
-    FileData fileData;
-    setOperationsFromFile(_midiOperationsFile, fileData.trackOpers);
-    _data.insert({fileName, fileData});
+    FileData file_data;
+    set_operations_from_file(midi_operations_file, file_data.track_opers);
+    data_value.insert({file_name, file_data});
 }
 
-const MidiFile *Data::midiFile(const std::string &fileName) {
-    const auto it = _data.find(fileName);
-    if (it != _data.end()) {
-        return &it->second.midiFile;
+const MidiFile *Data::midi_file(const std::string &file_name) {
+    const auto it = data_value.find(file_name);
+    if (it != data_value.end()) {
+        return &it->second.midi_file;
     }
     return nullptr;
 }
 
-std::vector<std::string> Data::allMidiFiles() const {
+std::vector<std::string> Data::all_midi_files() const {
     std::vector<std::string> list;
-    for (const auto &d : _data) {
+    for (const auto &d : data_value) {
         list.push_back(d.first);
     }
     return list;
 }
 
-void Data::setMidiFileData(const std::string &fileName, const MidiFile &midiFile) { _data[fileName].midiFile = midiFile; }
+void Data::set_midi_file_data(const std::string &file_name, const MidiFile &midi_file) { data_value[file_name].midi_file = midi_file; }
 
-void Data::excludeMidiFile(const std::string &fileName) { _data.erase(fileName); }
+void Data::exclude_midi_file(const std::string &file_name) { data_value.erase(file_name); }
 
-bool Data::hasMidiFile(const std::string &fileName) { return _data.find(fileName) != _data.end(); }
+bool Data::has_midi_file(const std::string &file_name) { return data_value.find(file_name) != data_value.end(); }
 
-int Data::currentTrack() const {
-    Q_ASSERT_X(_currentTrack >= 0, "Data::currentTrack", "Invalid current track index");
+int Data::current_track() const {
+    Q_ASSERT_X(current_track_value >= 0, "Data::currentTrack", "Invalid current track index");
 
-    return _currentTrack;
+    return current_track_value;
 }
 
-void Data::setOperationsFile(const std::string &fileName) {
-    if (muse::io::File::exists(muse::io::path_t(fileName))) {
-        _midiOperationsFile = fileName;
+void Data::set_operations_file(const std::string &file_name) {
+    if (muse::io::File::exists(muse::io::PathT(file_name))) {
+        midi_operations_file = file_name;
     }
 }
 } // namespace MidiOperations

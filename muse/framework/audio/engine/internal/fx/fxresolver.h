@@ -31,11 +31,12 @@
 namespace muse::audio::fx {
 class FxResolver : public IFxResolver {
 public:
-    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
-    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
-    AudioResourceMetaList resolveAvailableResources() const override;
-    void registerResolver(const AudioFxType type, IResolverPtr resolver) override;
-    void clearAllFx() override;
+    std::vector<IFxProcessorPtr> resolve_master_fx_list(const AudioFxChain &fx_chain, const OutputSpec &output_spec) override;
+    std::vector<IFxProcessorPtr> resolve_fx_list(const TrackId track_id, const AudioFxChain &fx_chain,
+                                                 const OutputSpec &output_spec) override;
+    AudioResourceMetaList resolve_available_resources() const override;
+    void register_resolver(const AudioFxType type, IResolverPtr resolver) override;
+    void clear_all_fx() override;
 
 private:
     std::map<AudioFxType, IResolverPtr> resolvers_;

@@ -47,35 +47,35 @@ namespace mu::iex::musicxml {
 // TODO: split in reading parameters versus creation
 
 static Accidental *accidental(muse::XmlStreamReader &e, Score *score) {
-    const bool cautionary = e.asciiAttribute("cautionary") == "yes";
-    const bool editorial = e.asciiAttribute("editorial") == "yes";
-    const bool parentheses = e.asciiAttribute("parentheses") == "yes";
-    const bool noParentheses = e.asciiAttribute("parentheses") == "no";
-    const bool brackets = e.asciiAttribute("bracket") == "yes";
-    const bool noBrackets = e.asciiAttribute("bracket") == "no";
-    const bool smallAccid = e.asciiAttribute("size") == "cue" || e.asciiAttribute("size") == "grace-cue";
-    const Color accColor = Color(e.asciiAttribute("color").ascii());
+    const bool cautionary = e.ascii_attribute("cautionary") == "yes";
+    const bool editorial = e.ascii_attribute("editorial") == "yes";
+    const bool parentheses = e.ascii_attribute("parentheses") == "yes";
+    const bool no_parentheses = e.ascii_attribute("parentheses") == "no";
+    const bool brackets = e.ascii_attribute("bracket") == "yes";
+    const bool no_brackets = e.ascii_attribute("bracket") == "no";
+    const bool small_accid = e.ascii_attribute("size") == "cue" || e.ascii_attribute("size") == "grace-cue";
+    const Color acc_color = Color(e.ascii_attribute("color").ascii());
     const String smufl = e.attribute("smufl");
 
-    const String s = e.readText();
-    const AccidentalType type = musicXmlString2accidentalType(s, smufl);
+    const String s = e.read_text();
+    const AccidentalType type = music_xml_string2accidental_type(s, smufl);
 
     if (type != AccidentalType::NONE) {
-        Accidental *a = Factory::createAccidental(score->dummy());
-        a->setAccidentalType(type);
+        Accidental *a = Factory::create_accidental(score->dummy());
+        a->set_accidental_type(type);
         if (cautionary || editorial) { // no way to tell one from the other
-            a->setRole(AccidentalRole::USER);
+            a->set_role(AccidentalRole::USER);
         } // except via the use of parentheses vs. brackets
-        if (noParentheses || noBrackets) {      // explicitly none wanted
+        if (no_parentheses || no_brackets) {    // explicitly none wanted
         } else if (parentheses || cautionary) { // set to "yes" or "cautionary" and not set at all
-            a->setBracket(AccidentalBracket(AccidentalBracket::PARENTHESIS));
+            a->set_bracket(AccidentalBracket(AccidentalBracket::PARENTHESIS));
         } else if (brackets || editorial) { // set to "yes" or "editorial" and not set at all
-            a->setBracket(AccidentalBracket(AccidentalBracket::BRACKET));
+            a->set_bracket(AccidentalBracket(AccidentalBracket::BRACKET));
         }
-        if (accColor.isValid()) {
-            a->setColor(accColor);
+        if (acc_color.is_valid()) {
+            a->set_color(acc_color);
         }
-        a->setSmall(smallAccid);
+        a->set_small(small_accid);
         return a;
     }
 
@@ -90,28 +90,28 @@ static Accidental *accidental(muse::XmlStreamReader &e, Score *score) {
  Handle <display-step> and <display-octave> for <rest> and <unpitched>
  */
 
-void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader &e) {
-    while (e.readNextStartElement()) {
+void MusicXmlNotePitch::display_step_octave(muse::XmlStreamReader &e) {
+    while (e.read_next_start_element()) {
         if (e.name() == "display-step") {
-            const String step = e.readText();
-            int pos = static_cast<int>(String(u"CDEFGAB").indexOf(step));
+            const String step = e.read_text();
+            int pos = static_cast<int>(String(u"CDEFGAB").index_of(step));
             if (step.size() == 1 && pos >= 0 && pos < 7) {
-                displayStep_ = pos;
+                display_step_ = pos;
             } else {
                 //logError(String("invalid step '%1'").arg(strStep));
                 LOGD("invalid step '%s'", muPrintable(step)); // TODO
             }
         } else if (e.name() == "display-octave") {
-            const String oct = e.readText();
+            const String oct = e.read_text();
             bool ok;
-            displayOctave_ = oct.toInt(&ok);
-            if (!ok || displayOctave_ < 0 || displayOctave_ > 9) {
+            display_octave_ = oct.to_int(&ok);
+            if (!ok || display_octave_ < 0 || display_octave_ > 9) {
                 //logError(String("invalid octave '%1'").arg(strOct));
                 LOGD("invalid octave '%s'", muPrintable(oct)); // TODO
-                displayOctave_ = -1;
+                display_octave_ = -1;
             }
         } else {
-            e.skipCurrentElement(); // TODO log
+            e.skip_current_element(); // TODO log
         }
     }
 }
@@ -131,41 +131,41 @@ void MusicXmlNotePitch::pitch(muse::XmlStreamReader &e) {
     tuning_ = 0.0;
     octave_ = -1;
 
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         if (e.name() == "alter") {
-            const String alter = e.readText();
+            const String alter = e.read_text();
             bool ok;
-            alter_ = MusicXmlSupport::stringToInt(alter, &ok);
+            alter_ = MusicXmlSupport::string_to_int(alter, &ok);
             if (!ok || alter_ < -3 || alter_ > 3) {
-                logger_->logError(String(u"invalid alter '%1'").arg(alter), &e);
+                logger_->log_error(String(u"invalid alter '%1'").arg(alter), &e);
                 bool ok2;
-                const double altervalue = alter.toDouble(&ok2);
-                if (ok2 && (std::abs(altervalue) < 2.0) && (accType_ == AccidentalType::NONE)) {
+                const double altervalue = alter.to_double(&ok2);
+                if (ok2 && (std::abs(altervalue) < 2.0) && (acc_type_ == AccidentalType::NONE)) {
                     // try to see if a microtonal accidental is needed
-                    accType_ = microtonalGuess(altervalue);
+                    acc_type_ = microtonal_guess(altervalue);
 
                     // If it's not a microtonal accidental we will use tuning
-                    if (accType_ == AccidentalType::NONE) {
+                    if (acc_type_ == AccidentalType::NONE) {
                         tuning_ = 100 * altervalue;
                     }
                 }
                 alter_ = 0;
             }
         } else if (e.name() == "octave") {
-            const String oct = e.readText();
+            const String oct = e.read_text();
             bool ok;
-            octave_ = oct.toInt(&ok);
+            octave_ = oct.to_int(&ok);
             if (!ok || octave_ < 0 || octave_ > 9) {
-                logger_->logError(String(u"invalid octave '%1'").arg(oct), &e);
+                logger_->log_error(String(u"invalid octave '%1'").arg(oct), &e);
                 octave_ = -1;
             }
         } else if (e.name() == "step") {
-            const String step = e.readText();
-            const size_t pos = String(u"CDEFGAB").indexOf(step);
+            const String step = e.read_text();
+            const size_t pos = String(u"CDEFGAB").index_of(step);
             if (step.size() == 1 && pos < 7) {
                 step_ = int(pos);
             } else {
-                logger_->logError(String(u"invalid step '%1'").arg(step), &e);
+                logger_->log_error(String(u"invalid step '%1'").arg(step), &e);
             }
         } else {
             // TODO skipLogCurrElem();
@@ -183,7 +183,7 @@ void MusicXmlNotePitch::pitch(muse::XmlStreamReader &e) {
  Return true if handled.
  */
 
-bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader &e, Score *score) {
+bool MusicXmlNotePitch::read_properties(muse::XmlStreamReader &e, Score *score) {
     const AsciiStringView tag(e.name());
 
     if (tag == "accidental") {
@@ -191,7 +191,7 @@ bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader &e, Score *score) {
         return true;
     } else if (tag == "unpitched") {
         unpitched_ = true;
-        displayStepOctave(e);
+        display_step_octave(e);
         return true;
     } else if (tag == "pitch") {
         pitch(e);

@@ -25,7 +25,7 @@
 using namespace muse;
 using namespace muse::draw;
 
-bool Font::g_disableFontMerging = false;
+bool Font::g_disable_font_merging = false;
 
 Font::Font(const FontFamily &family, Type type) : family_(family), type_(type) {}
 
@@ -35,11 +35,11 @@ bool Font::operator==(const Font &other) const {
     //! so we do not take it when comparing it yet
     // && type_ == other.type_
 
-    return family_ == other.family_ && RealIsEqual(pointSizeF_, other.pointSizeF_) && weight_ == other.weight_ && style_ == other.style_ &&
-           noFontMerging_ == other.noFontMerging_ && hinting_ == other.hinting_;
+    return family_ == other.family_ && real_is_equal(point_size_f_, other.point_size_f_) && weight_ == other.weight_ &&
+           style_ == other.style_ && no_font_merging_ == other.no_font_merging_ && hinting_ == other.hinting_;
 }
 
-void Font::setFamily(const FontFamily &family, Type type) {
+void Font::set_family(const FontFamily &family, Type type) {
     family_ = family;
     type_ = type;
 }
@@ -48,49 +48,49 @@ Font::FontFamily Font::family() const { return family_; }
 
 Font::Type Font::type() const { return type_; }
 
-double Font::pointSizeF() const { return pointSizeF_; }
+double Font::point_size_f() const { return point_size_f_; }
 
-void Font::setPointSizeF(double s) {
-    pointSizeF_ = s;
-    pixelSize_ = -1;
+void Font::set_point_size_f(double s) {
+    point_size_f_ = s;
+    pixel_size_ = -1;
 }
 
-int Font::pixelSize() const { return pixelSize_; }
+int Font::pixel_size() const { return pixel_size_; }
 
-void Font::setPixelSize(int s) {
-    pixelSize_ = s;
-    pointSizeF_ = -1.0;
+void Font::set_pixel_size(int s) {
+    pixel_size_ = s;
+    point_size_f_ = -1.0;
 }
 
 Font::Weight Font::weight() const { return weight_; }
 
-void Font::setWeight(Weight w) { weight_ = w; }
+void Font::set_weight(Weight w) { weight_ = w; }
 
-bool Font::bold() const { return style_.testFlag(Style::Bold); }
+bool Font::bold() const { return style_.test_flag(Style::BOLD); }
 
-void Font::setBold(bool arg) { style_.setFlag(Style::Bold, arg); }
+void Font::set_bold(bool arg) { style_.set_flag(Style::BOLD, arg); }
 
-bool Font::italic() const { return style_.testFlag(Style::Italic); }
+bool Font::italic() const { return style_.test_flag(Style::ITALIC); }
 
-void Font::setItalic(bool arg) { style_.setFlag(Style::Italic, arg); }
+void Font::set_italic(bool arg) { style_.set_flag(Style::ITALIC, arg); }
 
-bool Font::underline() const { return style_.testFlag(Style::Underline); }
+bool Font::underline() const { return style_.test_flag(Style::UNDERLINE); }
 
-void Font::setUnderline(bool arg) { style_.setFlag(Style::Underline, arg); }
+void Font::set_underline(bool arg) { style_.set_flag(Style::UNDERLINE, arg); }
 
-bool Font::strike() const { return style_.testFlag(Style::Strike); }
+bool Font::strike() const { return style_.test_flag(Style::STRIKE); }
 
-void Font::setStrike(bool arg) { style_.setFlag(Style::Strike, arg); }
+void Font::set_strike(bool arg) { style_.set_flag(Style::STRIKE, arg); }
 
-void Font::setNoFontMerging(bool arg) { noFontMerging_ = arg; }
+void Font::set_no_font_merging(bool arg) { no_font_merging_ = arg; }
 
-bool Font::noFontMerging() const {
-    if (g_disableFontMerging) {
+bool Font::no_font_merging() const {
+    if (g_disable_font_merging) {
         return true;
     }
-    return noFontMerging_;
+    return no_font_merging_;
 }
 
 Font::Hinting Font::hinting() const { return hinting_; }
 
-void Font::setHinting(Hinting hinting) { hinting_ = hinting; }
+void Font::set_hinting(Hinting hinting) { hinting_ = hinting; }

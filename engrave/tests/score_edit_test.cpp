@@ -89,7 +89,7 @@ void expect_same_ids(const ScoreRegionView &before, const ScoreRegionView &after
 // more than the public 4096-note region cap but fewer than the 16384-note
 // whole-projection bound: 128 measures x 33-note chords = 4224 notes.
 std::string dense_projection_score() {
-    static const char *kSteps[] = {"C", "D", "E", "F", "G", "A", "B"};
+    static const char *k_steps[] = {"C", "D", "E", "F", "G", "A", "B"};
     std::string xml = R"(<score-partwise version="4.0">
   <part-list>
     <score-part id="P1"><part-name>Dense</part-name></score-part>
@@ -107,7 +107,7 @@ std::string dense_projection_score() {
             xml += "      <note>";
             if (note != 0) xml += "<chord/>";
             xml += "<pitch><step>";
-            xml += kSteps[note % 7];
+            xml += k_steps[note % 7];
             xml += "</step><octave>";
             xml += std::to_string(2 + note / 7);
             xml += "</octave></pitch><duration>4</duration><type>whole</type></note>\n";
@@ -120,7 +120,7 @@ std::string dense_projection_score() {
 
 // The slur lives entirely in MusicXML voice 2 (MuseScore voice 1), while the
 // outer measures carry voice 1 (MuseScore voice 0) notes.
-const char *kVoiceSpannerScore = R"xml(<score-partwise version="4.0">
+const char *k_voice_spanner_score = R"xml(<score-partwise version="4.0">
   <part-list>
     <score-part id="P1"><part-name>Voices</part-name></score-part>
   </part-list>
@@ -152,7 +152,7 @@ const char *kVoiceSpannerScore = R"xml(<score-partwise version="4.0">
 // Measure 1 carries voice 1 (MuseScore voice 0) notes plus a slur fully
 // contained in it in MusicXML voice 2 (MuseScore voice 1). A second voice-2
 // slur crosses into measure 2, so a measure-1 voice-1 window cuts it.
-const char *kVoiceFilterScore = R"xml(<score-partwise version="4.0">
+const char *k_voice_filter_score = R"xml(<score-partwise version="4.0">
   <part-list>
     <score-part id="P1"><part-name>Voice filter</part-name></score-part>
   </part-list>
@@ -188,7 +188,7 @@ const char *kVoiceFilterScore = R"xml(<score-partwise version="4.0">
 // A slur starts on a voice-1 (MuseScore voice 0) note in measure 1 and stops
 // on a voice-2 (MuseScore voice 1) note in measure 2. One anchor belongs to the
 // queried voice, so a voice-0 window that cuts it must report a crossing.
-const char *kCrossVoiceSpanScore = R"xml(<score-partwise version="4.0">
+const char *k_cross_voice_span_score = R"xml(<score-partwise version="4.0">
   <part-list>
     <score-part id="P1"><part-name>Cross voice</part-name></score-part>
   </part-list>
@@ -210,7 +210,7 @@ const char *kCrossVoiceSpanScore = R"xml(<score-partwise version="4.0">
   </part>
 </score-partwise>)xml";
 
-const char *kTwoPartScore = R"xml(<score-partwise version="4.0">
+const char *k_two_part_score = R"xml(<score-partwise version="4.0">
   <part-list>
     <score-part id="P1"><part-name>Piano</part-name></score-part>
     <score-part id="P2"><part-name>Clarinet</part-name></score-part>
@@ -269,12 +269,12 @@ int main(int argc, char **argv) {
     try {
         if (argc != 2) throw std::invalid_argument("Usage: score_edit_test ASSETS");
         music::EngineContext context(argv[1]);
-        const auto project = music::load_native_score(context, kTwoPartScore, "musicxml");
-        auto *score = project->masterScore();
+        const auto project = music::load_native_score(context, k_two_part_score, "musicxml");
+        auto *score = project->master_score();
         expect(score->parts().size() == 2, "Fixture did not import two parts");
 
         size_t total_measures = 0;
-        for (mu::engraving::Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (mu::engraving::Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
             ++total_measures;
         }
         expect(total_measures == 4, "Fixture did not import four measures");
@@ -408,12 +408,12 @@ int main(int argc, char **argv) {
             expect(original != clarinet_original.end() && original->second == pitch, "A non-target clarinet note changed");
         }
 
-        expect(score->undoStack()->canUndo(), "Pitch edit did not create an undo step");
-        score->undoRedo(true, nullptr);
+        expect(score->undo_stack()->can_undo(), "Pitch edit did not create an undo step");
+        score->undo_redo(true, nullptr);
         expect(find_note(music::query_score_region(score, make_region(0, 0, total_measures)), 0, 60) &&
                    find_note(music::query_score_region(score, make_region(1, 0, total_measures)), 1, 72),
                "Undo did not restore the original pitches");
-        score->undoRedo(false, nullptr);
+        score->undo_redo(false, nullptr);
         expect(find_note(music::query_score_region(score, make_region(0, 0, total_measures)), 0, 61) &&
                    find_note(music::query_score_region(score, make_region(1, 0, total_measures)), 1, 73),
                "Redo did not restore the edited pitches");
@@ -474,7 +474,7 @@ int main(int argc, char **argv) {
         }
         expect(rejected, "Empty pitch edit was accepted");
 
-        score->undoStack()->setLocked(true);
+        score->undo_stack()->set_locked(true);
         rejected = false;
         try {
             music::NativePitchEdit locked;
@@ -483,10 +483,10 @@ int main(int argc, char **argv) {
         } catch (const std::runtime_error &) {
             rejected = true;
         }
-        score->undoStack()->setLocked(false);
+        score->undo_stack()->set_locked(false);
         expect(rejected, "Locked undo stack was accepted");
 
-        score->setReadOnly(true);
+        score->set_read_only(true);
         rejected = false;
         try {
             music::NativePitchEdit read_only;
@@ -495,7 +495,7 @@ int main(int argc, char **argv) {
         } catch (const std::runtime_error &) {
             rejected = true;
         }
-        score->setReadOnly(false);
+        score->set_read_only(false);
         expect(rejected, "Read-only score was accepted");
 
         rejected = false;
@@ -519,7 +519,7 @@ int main(int argc, char **argv) {
         const std::string exported = music::export_native_score(context, project, "musicxml", 0, "");
         expect(exported.find("<score-partwise") != std::string::npos, "MusicXML export was empty");
         const auto reimported = music::load_native_score(context, exported, "musicxml");
-        auto *reimported_score = reimported->masterScore();
+        auto *reimported_score = reimported->master_score();
         const ScoreRegionView piano_export = music::query_score_region(reimported_score, make_region(0, 0, total_measures));
         const ScoreRegionView clarinet_export = music::query_score_region(reimported_score, make_region(1, 0, total_measures));
         expect(find_note(piano_export, 0, 61) != nullptr, "Exported MusicXML lost the edited piano pitch");
@@ -527,17 +527,17 @@ int main(int argc, char **argv) {
         const NoteView *reimported_tie = find_note(clarinet_export, 2, 74);
         expect(reimported_tie && reimported_tie->tied, "Exported MusicXML lost the tie semantics");
 
-        const size_t no_op_index = score->undoStack()->currentIndex();
+        const size_t no_op_index = score->undo_stack()->current_index();
         const auto no_op = music::apply_score_pitch_edit(score, {{{piano_target_id, 61}}});
-        expect(no_op.changed_notes == 0 && score->undoStack()->currentIndex() == no_op_index, "No-op pitch request changed undo history");
+        expect(no_op.changed_notes == 0 && score->undo_stack()->current_index() == no_op_index, "No-op pitch request changed undo history");
 
         // Failure while a redo branch exists must preserve both score and history.
-        score->undoRedo(true, nullptr);
+        score->undo_redo(true, nullptr);
         const auto before_failure = music::export_native_score(context, project, "mscx", 0, "");
-        const auto failure_index = score->undoStack()->currentIndex();
-        const auto failure_size = score->undoStack()->size();
-        expect(score->undoStack()->canRedo(), "Failure fixture has no redo branch");
-        music::set_native_edit_test_fault(music::NativeEditTestFault::engine_error_after_first);
+        const auto failure_index = score->undo_stack()->current_index();
+        const auto failure_size = score->undo_stack()->size();
+        expect(score->undo_stack()->can_redo(), "Failure fixture has no redo branch");
+        music::set_native_edit_test_fault(music::NativeEditTestFault::ENGINE_ERROR_AFTER_FIRST);
         bool engine_failure = false;
         try {
             music::apply_score_pitch_edit(score, {{{spare_id, 65}, {piano_target_id, 62}}});
@@ -545,18 +545,18 @@ int main(int argc, char **argv) {
             engine_failure = !e.poisoned();
         }
         expect(engine_failure, "Injected engine failure was not cleanly rolled back");
-        expect(!score->undoStack()->hasActiveTransaction() && score->undoStack()->currentIndex() == failure_index &&
-                   score->undoStack()->size() == failure_size && score->undoStack()->canRedo(),
+        expect(!score->undo_stack()->has_active_transaction() && score->undo_stack()->current_index() == failure_index &&
+                   score->undo_stack()->size() == failure_size && score->undo_stack()->can_redo(),
                "Engine rollback damaged the previous redo branch");
         expect(music::export_native_score(context, project, "mscx", 0, "") == before_failure,
                "Injected engine failure changed serialized score");
-        mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
-        score->undoRedo(false, nullptr);
+        mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
+        score->undo_redo(false, nullptr);
 
-        const auto poison_project = music::load_native_score(context, kTwoPartScore, "musicxml");
-        auto *poison_score = poison_project->masterScore();
+        const auto poison_project = music::load_native_score(context, k_two_part_score, "musicxml");
+        auto *poison_score = poison_project->master_score();
         const auto poison_view = music::query_score_region(poison_score, make_region(0, 0, 1));
-        music::set_native_edit_test_fault(music::NativeEditTestFault::exception_after_first);
+        music::set_native_edit_test_fault(music::NativeEditTestFault::EXCEPTION_AFTER_FIRST);
         bool poisoned = false;
         try {
             music::apply_score_pitch_edit(poison_score, {{{poison_view.notes[0].id, 63}}});
@@ -567,24 +567,24 @@ int main(int argc, char **argv) {
         // Do not issue another operation on this document: core must retire it.
 
         const auto before_cap = music::export_native_score(context, project, "mscx", 0, "");
-        const bool was_clean = score->undoStack()->isClean();
+        const bool was_clean = score->undo_stack()->is_clean();
         expect(music::cap_native_edit_history(score, 0), "Undo history cap failed");
-        expect(score->undoStack()->size() == 0 && score->undoStack()->currentIndex() == 0 && !score->undoStack()->canUndo() &&
-                   !score->undoStack()->canRedo(),
+        expect(score->undo_stack()->size() == 0 && score->undo_stack()->current_index() == 0 && !score->undo_stack()->can_undo() &&
+                   !score->undo_stack()->can_redo(),
                "Undo history was not retired");
-        expect(score->undoStack()->isClean() == was_clean, "History retirement changed dirty state");
+        expect(score->undo_stack()->is_clean() == was_clean, "History retirement changed dirty state");
         expect(music::export_native_score(context, project, "mscx", 0, "") == before_cap,
                "Undo history retirement modified score contents");
 
         // An unopened headless excerpt must follow linked master edits and be
         // fully updated by endCmd. Exercise its exported written transposition,
         // rather than only checking the master note's in-memory pitch.
-        const auto excerpt_project = music::load_native_score(context, kTwoPartScore, "musicxml");
-        auto *excerpt_master = excerpt_project->masterScore();
+        const auto excerpt_project = music::load_native_score(context, k_two_part_score, "musicxml");
+        auto *excerpt_master = excerpt_project->master_score();
         expect(music::generate_score_excerpts(excerpt_master), "Excerpt fixture generation failed");
         expect(music::list_score_excerpts(excerpt_master).size() == 2, "Excerpt fixture did not produce two parts");
         auto *clarinet_excerpt = music::select_score(excerpt_master, 1);
-        expect(!clarinet_excerpt->isOpen(), "Excerpt fixture unexpectedly has an open view");
+        expect(!clarinet_excerpt->is_open(), "Excerpt fixture unexpectedly has an open view");
         const auto excerpt_region = music::query_score_region(excerpt_master, make_region(1, 1, 1));
         expect(excerpt_region.notes.size() == 1 && excerpt_region.notes[0].pitch == 72, "Excerpt fixture target pitch is wrong");
         const auto excerpt_change = music::apply_score_pitch_edit(excerpt_master, {{{excerpt_region.notes[0].id, 73}}});
@@ -593,8 +593,8 @@ int main(int argc, char **argv) {
         excerpt_options.excerpt_id = 1;
         const auto excerpt_xml = music::export_native_score(context, excerpt_project, "musicxml", excerpt_options, "");
         const auto excerpt_reopened = music::load_native_score(context, excerpt_xml, "musicxml");
-        expect(excerpt_reopened->masterScore()->parts().size() == 1, "Excerpt export contained other parts");
-        const auto excerpt_export_region = music::query_score_region(excerpt_reopened->masterScore(), make_region(0, 1, 1));
+        expect(excerpt_reopened->master_score()->parts().size() == 1, "Excerpt export contained other parts");
+        const auto excerpt_export_region = music::query_score_region(excerpt_reopened->master_score(), make_region(0, 1, 1));
         expect(excerpt_export_region.notes.size() == 1 && excerpt_export_region.notes[0].pitch == 73,
                "Unopened excerpt export lost the linked pitch edit or written transposition");
 
@@ -602,7 +602,7 @@ int main(int argc, char **argv) {
         // per-region cap: 4224 notes in one 128-measure block are inside the
         // documented 16384-note projection bound.
         const auto dense_project = music::load_native_score(context, dense_projection_score(), "musicxml");
-        auto *dense_score = dense_project->masterScore();
+        auto *dense_score = dense_project->master_score();
         const auto dense_projection = music::snapshot_score_projection(dense_score);
         expect(dense_projection.complete, "Dense score projection was unavailable");
         expect(dense_projection.notes.size() == 128 * 33, "Dense projection did not capture every note");
@@ -626,8 +626,8 @@ int main(int argc, char **argv) {
 
         // A spanner anchored only to another voice is outside the requested
         // voice window and must not set has_cross_region_spanners.
-        const auto voice_project = music::load_native_score(context, kVoiceSpannerScore, "musicxml");
-        auto *voice_score = voice_project->masterScore();
+        const auto voice_project = music::load_native_score(context, k_voice_spanner_score, "musicxml");
+        auto *voice_score = voice_project->master_score();
         const ScoreRegionView other_voice = music::query_score_region(voice_score, make_region(0, 0, 4, 0));
         expect(!other_voice.has_cross_region_spanners, "Another-voice spanner was reported as cross-region");
         const ScoreRegionView matching_voice = music::query_score_region(voice_score, make_region(0, 2, 1, 1));
@@ -642,8 +642,8 @@ int main(int argc, char **argv) {
         // A contained slur in another voice is outside a voice-0 window, while
         // a voice-1 window that cuts the voice-1 slur across the barline must
         // report it. Both live and projected region queries share this filter.
-        const auto filter_project = music::load_native_score(context, kVoiceFilterScore, "musicxml");
-        auto *filter_score = filter_project->masterScore();
+        const auto filter_project = music::load_native_score(context, k_voice_filter_score, "musicxml");
+        auto *filter_score = filter_project->master_score();
         expect(!music::query_score_region(filter_score, make_region(0, 0, 1, 0)).has_cross_region_spanners,
                "Voice-0 region reported a voice-1 spanner as cross-region");
         const auto filter_projection = music::snapshot_score_projection(filter_score);
@@ -664,8 +664,8 @@ int main(int argc, char **argv) {
 
         // A slur with one anchor in the queried voice and the other in another
         // voice is a voice-window crossing, not an ignorable other-voice span.
-        const auto cross_project = music::load_native_score(context, kCrossVoiceSpanScore, "musicxml");
-        auto *cross_score = cross_project->masterScore();
+        const auto cross_project = music::load_native_score(context, k_cross_voice_span_score, "musicxml");
+        auto *cross_score = cross_project->master_score();
         expect(music::query_score_region(cross_score, make_region(0, 0, 1, 0)).has_cross_region_spanners,
                "Voice-0 region lost a cross-voice slur");
         const auto cross_projection = music::snapshot_score_projection(cross_score);

@@ -36,11 +36,11 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-const std::vector<BreathType> Breath::BREATH_LIST{
-    {SymId::breathMarkComma, false, 0.0},    {SymId::breathMarkTick, false, 0.0}, {SymId::breathMarkSalzedo, false, 0.0},
-    {SymId::breathMarkUpbow, false, 0.0},    {SymId::caesuraCurved, true, 2.0},   {SymId::caesura, true, 2.0},
-    {SymId::caesuraShort, true, 2.0},        {SymId::caesuraThick, true, 2.0},    {SymId::chantCaesura, true, 2.0},
-    {SymId::caesuraSingleStroke, true, 2.0},
+const std::vector<BreathType> Breath::breath_list{
+    {SymId::BREATH_MARK_COMMA, false, 0.0},    {SymId::BREATH_MARK_TICK, false, 0.0}, {SymId::BREATH_MARK_SALZEDO, false, 0.0},
+    {SymId::BREATH_MARK_UPBOW, false, 0.0},    {SymId::CAESURA_CURVED, true, 2.0},    {SymId::CAESURA, true, 2.0},
+    {SymId::CAESURA_SHORT, true, 2.0},         {SymId::CAESURA_THICK, true, 2.0},     {SymId::CHANT_CAESURA, true, 2.0},
+    {SymId::CAESURA_SINGLE_STROKE, true, 2.0},
 };
 
 //---------------------------------------------------------
@@ -48,7 +48,7 @@ const std::vector<BreathType> Breath::BREATH_LIST{
 //---------------------------------------------------------
 
 Breath::Breath(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BREATH, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    symId_ = SymId::breathMarkComma;
+    sym_id_ = SymId::BREATH_MARK_COMMA;
     pause_ = 0.0;
 }
 
@@ -56,10 +56,10 @@ Breath::Breath(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BREAT
 //   isCaesura
 //---------------------------------------------------------
 
-bool Breath::isCaesura() const {
-    for (const BreathType &bt : BREATH_LIST) {
-        if (bt.id == symId_) {
-            return bt.isCaesura;
+bool Breath::is_caesura() const {
+    for (const BreathType &bt : ::mu::engraving::Breath::breath_list) {
+        if (bt.id == sym_id_) {
+            return bt.is_caesura;
         }
     }
     return false;
@@ -69,17 +69,17 @@ bool Breath::isCaesura() const {
 //   mag
 //---------------------------------------------------------
 
-double Breath::mag() const { return staff() ? staff()->staffMag(tick()) : 1.0; }
+double Breath::mag() const { return staff() ? staff()->staff_mag(tick()) : 1.0; }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Breath::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::SYMBOL: return PropertyValue::fromValue(symId_);
+PropertyValue Breath::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::SYMBOL: return PropertyValue::from_value(sym_id_);
         case Pid::PAUSE: return pause_;
-        default: return EngravingItem::getProperty(propertyId);
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
@@ -87,18 +87,18 @@ PropertyValue Breath::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Breath::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::SYMBOL: setSymId(v.value<SymId>()); break;
-        case Pid::PAUSE: setPause(v.toDouble()); break;
+bool Breath::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::SYMBOL: set_sym_id(v.value<SymId>()); break;
+        case Pid::PAUSE: set_pause(v.to_double()); break;
         default:
-            if (!EngravingItem::setProperty(propertyId, v)) {
+            if (!EngravingItem::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
-    setGenerated(false);
+    trigger_layout();
+    set_generated(false);
     return true;
 }
 
@@ -106,11 +106,11 @@ bool Breath::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Breath::propertyDefault(Pid id) const {
+PropertyValue Breath::property_default(Pid id) const {
     switch (id) {
         case Pid::PAUSE: return 0.0;
         case Pid::PLACEMENT: return track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE;
-        default: return EngravingItem::propertyDefault(id);
+        default: return EngravingItem::property_default(id);
     }
 }
 
@@ -118,13 +118,13 @@ PropertyValue Breath::propertyDefault(Pid id) const {
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Breath::nextSegmentElement() { return segment()->firstInNextSegments(staffIdx()); }
+EngravingItem *Breath::next_segment_element() { return segment()->first_in_next_segments(staff_idx()); }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Breath::prevSegmentElement() { return segment()->lastInPrevSegments(staffIdx()); }
+EngravingItem *Breath::prev_segment_element() { return segment()->last_in_prev_segments(staff_idx()); }
 
 //---------------------------------------------------------
 //   accessibleInfo
@@ -134,5 +134,5 @@ EngravingItem *Breath::prevSegmentElement() { return segment()->lastInPrevSegmen
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Breath::subtypeUserName() const { return SymNames::userNameForSymId(symId()); }
+muse::TranslatableString Breath::subtype_user_name() const { return SymNames::user_name_for_sym_id(sym_id()); }
 } // namespace mu::engraving

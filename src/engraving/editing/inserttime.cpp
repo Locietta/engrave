@@ -34,19 +34,19 @@ using namespace mu::engraving;
 //   InsertTime
 //---------------------------------------------------------
 
-void InsertTime::redo() { score->insertTime(tick, len, score->repeatSegmentInfoList(/*expandRepeats*/ true)); }
+void InsertTime::redo() { score->insert_time(tick, len, score->repeat_segment_info_list(/*expandRepeats*/ true)); }
 
-void InsertTime::undo() { score->insertTime(tick, -len, score->repeatSegmentInfoList(/*expandRepeats*/ true)); }
+void InsertTime::undo() { score->insert_time(tick, -len, score->repeat_segment_info_list(/*expandRepeats*/ true)); }
 
 //---------------------------------------------------------
 //   InsertTimeUnmanagedSpanner
 //---------------------------------------------------------
 
 void InsertTimeUnmanagedSpanner::flip() {
-    for (Score *s : score->scoreList()) {
-        std::set<Spanner *> spannersCopy = s->unmanagedSpanners();
-        for (Spanner *sp : spannersCopy) {
-            sp->insertTimeUnmanaged(tick, len);
+    for (Score *s : score->score_list()) {
+        std::set<Spanner *> spanners_copy = s->unmanaged_spanners();
+        for (Spanner *sp : spanners_copy) {
+            sp->insert_time_unmanaged(tick, len);
         }
     }
     len = -len;

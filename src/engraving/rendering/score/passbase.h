@@ -37,7 +37,7 @@ public:
 
 private:
 
-    virtual void doRun(Score *score, LayoutContext &ctx) = 0;
+    virtual void do_run(Score *score, LayoutContext &ctx) = 0;
 };
 } // namespace mu::engraving::rendering::score
 

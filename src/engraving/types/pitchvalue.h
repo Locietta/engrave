@@ -36,8 +36,8 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct PitchValue {
-    static constexpr int MAX_TIME = 60;
-    static constexpr int PITCH_FOR_SEMITONE = 100;
+    static constexpr int max_time = 60;
+    static constexpr int pitch_for_semitone = 100;
     int time = 0;
     int pitch = 0;
     bool vibrato = false;

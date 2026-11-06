@@ -30,13 +30,13 @@ class Note;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-int gpPitchToQuarterTones(int gpPitch);
+int gp_pitch_to_quarter_tones(int gp_pitch);
 
 class DiveInfoConverter {
 public:
-    static ImportedDiveInfo fillDiveInfo(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues,
-                                         bool isContinuedWhammy = false);
+    static ImportedDiveInfo fill_dive_info(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values,
+                                           bool is_continued_whammy = false);
 
-    static ImportedDiveInfo fromPitchValues(const mu::engraving::PitchValues &pitchValues, bool isContinuedWhammy = false);
+    static ImportedDiveInfo from_pitch_values(const mu::engraving::PitchValues &pitch_values, bool is_continued_whammy = false);
 };
 } // namespace mu::iex::guitarpro

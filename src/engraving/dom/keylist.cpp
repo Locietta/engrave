@@ -33,7 +33,7 @@ namespace mu::engraving {
 
 KeySigEvent KeyList::key(int tick) const {
     KeySigEvent ke;
-    ke.setConcertKey(Key::C);
+    ke.set_concert_key(Key::C);
 
     if (empty()) {
         return ke;
@@ -49,7 +49,7 @@ KeySigEvent KeyList::key(int tick) const {
 //   setKey
 //---------------------------------------------------------
 
-void KeyList::setKey(int tick, KeySigEvent k) {
+void KeyList::set_key(int tick, KeySigEvent k) {
     auto i = find(tick);
     if (i == end()) {
         insert(std::pair<int, KeySigEvent>(tick, k));
@@ -65,7 +65,7 @@ void KeyList::setKey(int tick, KeySigEvent k) {
 //    return -1, if no such a key sig
 //---------------------------------------------------------
 
-int KeyList::nextKeyTick(int tick) const {
+int KeyList::next_key_tick(int tick) const {
     if (empty()) {
         return -1;
     }
@@ -79,9 +79,9 @@ int KeyList::nextKeyTick(int tick) const {
 //    returns the key before the current key for tick
 //---------------------------------------------------------
 
-KeySigEvent KeyList::prevKey(int tick) const {
+KeySigEvent KeyList::prev_key(int tick) const {
     KeySigEvent kc;
-    kc.setConcertKey(Key::C);
+    kc.set_concert_key(Key::C);
 
     if (empty()) {
         return kc;
@@ -104,7 +104,7 @@ KeySigEvent KeyList::prevKey(int tick) const {
 //    in effect at tick
 //---------------------------------------------------------
 
-int KeyList::currentKeyTick(int tick) const {
+int KeyList::current_key_tick(int tick) const {
     if (empty()) {
         return 0;
     }

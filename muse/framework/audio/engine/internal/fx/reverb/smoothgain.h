@@ -29,14 +29,14 @@
 namespace muse::audio::fx {
 /// helper logic to apply gain ramps to blocks of audio
 inline void apply_smooth_gain(dsp::SmoothLinearValue<float> &smooth_value, float **s_in, float **s_out, int num_channels, int num_s) {
-    if (smooth_value.isAtTargetValue()) {
+    if (smooth_value.is_at_target_value()) {
         for (int ch = 0; ch < num_channels; ++ch) {
-            vo::constantMultiply(s_in[ch], smooth_value.getTargetValue(), s_out[ch], num_s);
+            vo::constant_multiply(s_in[ch], smooth_value.get_target_value(), s_out[ch], num_s);
         }
     } else {
         for (int i = 0; i < num_s; ++i) {
             for (int ch = 0; ch < num_channels; ++ch) {
-                s_out[ch][i] = s_in[ch][i] * smooth_value.getValue();
+                s_out[ch][i] = s_in[ch][i] * smooth_value.get_value();
             }
             smooth_value.tick();
         }

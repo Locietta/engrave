@@ -40,7 +40,7 @@ public:
 
     virtual MeasureNumber *clone() const override { return new MeasureNumber(*this); }
 
-    bool isSystemObjectBelowBottomStaff() const override;
+    bool is_system_object_below_bottom_staff() const override;
 };
 } // namespace mu::engraving
 

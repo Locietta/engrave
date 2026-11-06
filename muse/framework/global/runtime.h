@@ -26,7 +26,7 @@
 #include <thread>
 
 namespace muse::runtime {
-inline constexpr bool isDebug() {
+inline constexpr bool is_debug() {
 #ifndef NDEBUG
     return true;
 #else
@@ -34,17 +34,17 @@ inline constexpr bool isDebug() {
 #endif
 }
 
-inline std::thread::id mainThreadId() {
-    static std::thread::id mainId = std::this_thread::get_id();
-    return mainId;
+inline std::thread::id main_thread_id() {
+    static std::thread::id main_id = std::this_thread::get_id();
+    return main_id;
 }
 
-inline std::string toString(const std::thread::id &id) {
+inline std::string to_string(const std::thread::id &id) {
     std::ostringstream ss;
     ss << id;
     return ss.str();
 }
 
-void setThreadName(const std::string &name);
-const std::string &threadName();
+void set_thread_name(const std::string &name);
+const std::string &thread_name();
 } // namespace muse::runtime

@@ -34,8 +34,8 @@ class SharedPart;
 class InstrumentTemplate;
 
 struct TrackRange {
-    track_idx_t startTrack = muse::nidx;
-    track_idx_t endTrack = muse::nidx;
+    track_idx_t start_track = muse::nidx;
+    track_idx_t end_track = muse::nidx;
 };
 
 //---------------------------------------------------------
@@ -63,164 +63,164 @@ class Part : public EngravingObject {
     DECLARE_CLASSOF(ElementType::PART)
 
 public:
-    static const Fraction MAIN_INSTRUMENT_TICK;
+    static const Fraction main_instrument_tick;
 
     Part(Score *score = nullptr, ElementType type = ElementType::PART);
     ~Part() override;
-    void initFromInstrTemplate(const InstrumentTemplate *);
+    void init_from_instr_template(const InstrumentTemplate *);
 
     const muse::ID &id() const;
-    void setId(const muse::ID &id);
+    void set_id(const muse::ID &id);
 
     Part *clone() const;
 
     size_t nstaves() const;
-    size_t visibleStavesCount() const;
+    size_t visible_staves_count() const;
     const std::vector<Staff *> &staves() const;
-    std::set<staff_idx_t> staveIdxList() const;
-    void appendStaff(Staff *staff);
-    void clearStaves();
+    std::set<staff_idx_t> stave_idx_list() const;
+    void append_staff(Staff *staff);
+    void clear_staves();
 
     Staff *staff(staff_idx_t idx) const;
-    String familyId() const;
+    String family_id() const;
 
-    TrackRange trackRange() const;
+    TrackRange track_range() const;
 
-    InstrumentTrackIdList instrumentTrackIdList() const;
-    InstrumentTrackIdSet instrumentTrackIdSet() const;
+    InstrumentTrackIdList instrument_track_id_list() const;
+    InstrumentTrackIdSet instrument_track_id_set() const;
 
-    String longName(const Fraction &tick = {-1, 1}) const;
-    String shortName(const Fraction &tick = {-1, 1}) const;
-    String instrumentName(const Fraction &tick = {-1, 1}) const;
-    String instrumentId(const Fraction &tick = {-1, 1}) const;
+    String long_name(const Fraction &tick = {-1, 1}) const;
+    String short_name(const Fraction &tick = {-1, 1}) const;
+    String instrument_name(const Fraction &tick = {-1, 1}) const;
+    String instrument_id(const Fraction &tick = {-1, 1}) const;
 
-    void setLongName(const String &s, const Fraction &tick = {-1, 1});
-    void setShortName(const String &s, const Fraction &tick = {-1, 1});
-    void setLongNameAll(const String &s);  // For all instruments in _instruments
-    void setShortNameAll(const String &s); // For all instruments in _instruments
+    void set_long_name(const String &s, const Fraction &tick = {-1, 1});
+    void set_short_name(const String &s, const Fraction &tick = {-1, 1});
+    void set_long_name_all(const String &s);  // For all instruments in _instruments
+    void set_short_name_all(const String &s); // For all instruments in _instruments
 
     int number(const Fraction &tick = {-1, 1}) const;
-    void setNumber(int v, const Fraction &tick = {-1, 1});
+    void set_number(int v, const Fraction &tick = {-1, 1});
 
     String transposition(const Fraction &tick = {-1, 1}) const;
-    void setTransposition(const String &s, const Fraction &tick = {-1, 1});
+    void set_transposition(const String &s, const Fraction &tick = {-1, 1});
 
-    void setPlainLongName(const String &s);
-    void setPlainShortName(const String &s);
-    void setPlainLongNameAll(const String &s);
-    void setPlainShortNameAll(const String &s);
+    void set_plain_long_name(const String &s);
+    void set_plain_short_name(const String &s);
+    void set_plain_long_name_all(const String &s);
+    void set_plain_short_name_all(const String &s);
 
-    void setStaves(int);
+    void set_staves(int);
 
-    int midiProgram() const;
-    void setMidiProgram(int, int bank = 0);
+    int midi_program() const;
+    void set_midi_program(int, int bank = 0);
 
-    int midiChannel() const;
-    int midiPort() const;
-    void setMidiChannel(int ch, int port = -1, const Fraction &tick = {-1, 1}); // tick != -1 for InstrumentChange
+    int midi_channel() const;
+    int midi_port() const;
+    void set_midi_channel(int ch, int port = -1, const Fraction &tick = {-1, 1}); // tick != -1 for InstrumentChange
 
-    void insertStaff(Staff *, staff_idx_t idx);
-    void removeStaff(Staff *);
+    void insert_staff(Staff *, staff_idx_t idx);
+    void remove_staff(Staff *);
     virtual bool show() const;
 
-    void setShow(bool val) { show_ = val; }
+    void set_show(bool val) { show_ = val; }
 
     bool soloist() const { return soloist_; }
 
-    void setSoloist(bool val) { soloist_ = val; }
+    void set_soloist(bool val) { soloist_ = val; }
 
     Instrument *instrument(Fraction = {-1, 1});
     const Instrument *instrument(Fraction = {-1, 1}) const;
-    const Instrument *instrumentById(const String &id) const;
-    void setInstrument(Instrument *, Fraction = {-1, 1}); // transfer ownership
-    void setInstrument(Instrument *, int tick);
-    void setInstrument(const Instrument &&, Fraction = {-1, 1});
-    void setInstrument(const Instrument &, Fraction = {-1, 1});
-    void setInstruments(const InstrumentList &instruments);
-    void removeInstrument(Instrument *, const Fraction &);
-    void removeNonPrimaryInstruments();
+    const Instrument *instrument_by_id(const String &id) const;
+    void set_instrument(Instrument *, Fraction = {-1, 1}); // transfer ownership
+    void set_instrument(Instrument *, int tick);
+    void set_instrument(const Instrument &&, Fraction = {-1, 1});
+    void set_instrument(const Instrument &, Fraction = {-1, 1});
+    void set_instruments(const InstrumentList &instruments);
+    void remove_instrument(Instrument *, const Fraction &);
+    void remove_non_primary_instruments();
     const InstrumentList &instruments() const;
 
-    const std::map<int, StringTunings *> &stringTunings() const { return stringTunings_; }
+    const std::map<int, StringTunings *> &string_tunings() const { return string_tunings_; }
 
-    const StringData *stringData(const Fraction &tick, staff_idx_t staffIdx) const;
-    void addStringTunings(StringTunings *stringTunings);
-    void removeStringTunings(StringTunings *stringTunings);
-    StringTunings *nextStringTuning(const Fraction &tick) const;
+    const StringData *string_data(const Fraction &tick, staff_idx_t staff_idx) const;
+    void add_string_tunings(StringTunings *string_tunings);
+    void remove_string_tunings(StringTunings *string_tunings);
+    StringTunings *next_string_tuning(const Fraction &tick) const;
 
-    void insertTime(const Fraction &tick, const Fraction &len);
+    void insert_time(const Fraction &tick, const Fraction &len);
 
-    const std::map<int, HarpPedalDiagram *> &harpDiagrams() const { return harpDiagrams_; }
+    const std::map<int, HarpPedalDiagram *> &harp_diagrams() const { return harp_diagrams_; }
 
-    void addHarpDiagram(HarpPedalDiagram *);
-    void removeHarpDiagram(HarpPedalDiagram *);
-    void clearHarpDiagrams();
-    HarpPedalDiagram *currentHarpDiagram(const Fraction &) const;
-    HarpPedalDiagram *nextHarpDiagram(const Fraction &) const;
-    HarpPedalDiagram *prevHarpDiagram(const Fraction &) const;
-    Fraction currentHarpDiagramTick(const Fraction &) const;
+    void add_harp_diagram(HarpPedalDiagram *);
+    void remove_harp_diagram(HarpPedalDiagram *);
+    void clear_harp_diagrams();
+    HarpPedalDiagram *current_harp_diagram(const Fraction &) const;
+    HarpPedalDiagram *next_harp_diagram(const Fraction &) const;
+    HarpPedalDiagram *prev_harp_diagram(const Fraction &) const;
+    Fraction current_harp_diagram_tick(const Fraction &) const;
 
-    virtual String partName() const;
+    virtual String part_name() const;
 
-    bool isVisible() const;
+    bool is_visible() const;
 
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
 
-    int lyricCount() const;
-    int harmonyCount() const;
-    bool hasPitchedStaff() const;
-    bool hasTabStaff() const;
-    bool hasDrumStaff() const;
+    int lyric_count() const;
+    int harmony_count() const;
+    bool has_pitched_staff() const;
+    bool has_tab_staff() const;
+    bool has_drum_staff() const;
 
-    void updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval = false);
-    const InstrChannel *harmonyChannel() const;
-    bool hasChordSymbol() const;
+    void update_harmony_channels(bool is_do_on_instrument_changed, bool check_removal = false);
+    const InstrChannel *harmony_channel() const;
+    bool has_chord_symbol() const;
 
-    const Part *masterPart() const;
-    Part *masterPart();
+    const Part *master_part() const;
+    Part *master_part();
 
-    AutoOnOff hideWhenEmpty() const { return hideWhenEmpty_; }
+    AutoOnOff hide_when_empty() const { return hide_when_empty_; }
 
-    void setHideWhenEmpty(AutoOnOff v) { hideWhenEmpty_ = v; }
+    void set_hide_when_empty(AutoOnOff v) { hide_when_empty_ = v; }
 
-    bool hideStavesWhenIndividuallyEmpty() const { return hideStavesWhenIndividuallyEmpty_; }
+    bool hide_staves_when_individually_empty() const { return hide_staves_when_individually_empty_; }
 
-    void setHideStavesWhenIndividuallyEmpty(bool v) { hideStavesWhenIndividuallyEmpty_ = v; }
+    void set_hide_staves_when_individually_empty(bool v) { hide_staves_when_individually_empty_ = v; }
 
-    PreferSharpFlat preferSharpFlat() const { return preferSharpFlat_; }
+    PreferSharpFlat prefer_sharp_flat() const { return prefer_sharp_flat_; }
 
-    void setPreferSharpFlat(PreferSharpFlat v) { preferSharpFlat_ = v; }
+    void set_prefer_sharp_flat(PreferSharpFlat v) { prefer_sharp_flat_ = v; }
 
-    virtual const Part *originPart(track_idx_t track, const Fraction &tick) const;
-    Part *originPart(track_idx_t track, const Fraction &tick);
+    virtual const Part *origin_part(track_idx_t track, const Fraction &tick) const;
+    Part *origin_part(track_idx_t track, const Fraction &tick);
 
-    SharedPart *sharedPart() const { return sharedPart_; }
+    SharedPart *shared_part() const { return shared_part_; }
 
-    void setSharedPart(SharedPart *p) { sharedPart_ = p; }
+    void set_shared_part(SharedPart *p) { shared_part_ = p; }
 
 private:
     friend class SharedPart;
 
-    static String plainPartName(const Instrument *instrument);
+    static String plain_part_name(const Instrument *instrument);
 
     InstrumentList instruments_;
     std::vector<Staff *> staves_;
-    muse::ID id_ = INVALID_ID; ///< used for MusicXML import
-    bool show_ = false;        ///< show part in partitur if true
-    bool soloist_ = false;     ///< used in score ordering
+    muse::ID id_ = ::mu::engraving::invalid_id; ///< used for MusicXML import
+    bool show_ = false;                         ///< show part in partitur if true
+    bool soloist_ = false;                      ///< used in score ordering
 
     /// Hide staves in this part when empty
-    AutoOnOff hideWhenEmpty_ = AutoOnOff::AUTO;
+    AutoOnOff hide_when_empty_ = AutoOnOff::AUTO;
 
     /// Hide staves when they are individually empty, rather than only if all this part's staves are empty
-    bool hideStavesWhenIndividuallyEmpty_ = false;
+    bool hide_staves_when_individually_empty_ = false;
 
-    PreferSharpFlat preferSharpFlat_ = PreferSharpFlat::AUTO;
+    PreferSharpFlat prefer_sharp_flat_ = PreferSharpFlat::AUTO;
 
-    std::map<int, HarpPedalDiagram *> harpDiagrams_;
-    std::map<int, StringTunings *> stringTunings_;
+    std::map<int, HarpPedalDiagram *> harp_diagrams_;
+    std::map<int, StringTunings *> string_tunings_;
 
-    SharedPart *sharedPart_ = nullptr;
+    SharedPart *shared_part_ = nullptr;
 };
 } // namespace mu::engraving

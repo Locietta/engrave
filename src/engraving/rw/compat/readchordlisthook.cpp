@@ -32,7 +32,7 @@ using namespace mu::engraving;
 
 ReadChordListHook::ReadChordListHook(Score *score) : score_(score) {
     if (score_) {
-        oldChordDescriptionFile_ = score_->style().styleSt(Sid::chordDescriptionFile);
+        old_chord_description_file_ = score_->style().style_st(Sid::CHORD_DESCRIPTION_FILE);
     }
 }
 
@@ -41,11 +41,11 @@ void ReadChordListHook::read(XmlReader &e) {
         return;
     }
 
-    score_->chordList()->clear();
-    score_->chordList()->read(e, score_->mscVersion());
-    score_->chordList()->setCustomChordList(true);
+    score_->chord_list()->clear();
+    score_->chord_list()->read(e, score_->msc_version());
+    score_->chord_list()->set_custom_chord_list(true);
 
-    chordListTag_ = true;
+    chord_list_tag_ = true;
 }
 
 void ReadChordListHook::validate() {
@@ -53,7 +53,7 @@ void ReadChordListHook::validate() {
         return;
     }
 
-    if (chordListTag_) {
+    if (chord_list_tag_) {
         // if we encountered a ChordList tag, everything is fine already
         return;
     }
@@ -63,25 +63,25 @@ void ReadChordListHook::validate() {
     // then load the chord description file
 
     MStyle &style = score_->style();
-    ChordList *chordList = score_->chordList();
+    ChordList *chord_list = score_->chord_list();
 
-    String newChordDescriptionFile = style.styleSt(Sid::chordDescriptionFile);
-    if (newChordDescriptionFile != oldChordDescriptionFile_) {
-        if (!newChordDescriptionFile.startsWith(u"chords_") &&
-            style.styleV(Sid::chordStyle).value<ChordStylePreset>() == ChordStylePreset::STANDARD) {
+    String new_chord_description_file = style.style_st(Sid::CHORD_DESCRIPTION_FILE);
+    if (new_chord_description_file != old_chord_description_file_) {
+        if (!new_chord_description_file.starts_with(u"chords_") &&
+            style.style_v(Sid::CHORD_STYLE).value<ChordStylePreset>() == ChordStylePreset::STANDARD) {
             // should not normally happen,
             // but treat as "old" (114) score just in case
-            style.set(Sid::chordStyle, ChordStylePreset::CUSTOM);
-            style.set(Sid::chordsXmlFile, true);
-            LOGD("StyleData::load: custom chord description file %s with chordStyle == std", muPrintable(newChordDescriptionFile));
+            style.set(Sid::CHORD_STYLE, ChordStylePreset::CUSTOM);
+            style.set(Sid::CHORDS_XML_FILE, true);
+            LOGD("StyleData::load: custom chord description file %s with chordStyle == std", muPrintable(new_chord_description_file));
         }
 
-        bool custom = style.styleV(Sid::chordStyle).value<ChordStylePreset>() == ChordStylePreset::CUSTOM;
-        chordList->setCustomChordList(custom);
+        bool custom = style.style_v(Sid::CHORD_STYLE).value<ChordStylePreset>() == ChordStylePreset::CUSTOM;
+        chord_list->set_custom_chord_list(custom);
 
-        chordList->unload();
+        chord_list->unload();
     }
 
     // make sure we have a chordlist
-    chordList->checkChordList(style);
+    chord_list->check_chord_list(style);
 }

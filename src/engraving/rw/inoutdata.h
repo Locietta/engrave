@@ -37,21 +37,21 @@ class LinkedObjects;
 
 namespace mu::engraving::rw {
 struct ReadLinks {
-    std::map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects *, Location>>> staffLinkedElements; // one list per staff
-    LinksIndexer linksIndexer;
+    std::map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects *, Location>>> staff_linked_elements; // one list per staff
+    LinksIndexer links_indexer;
 };
 
 struct ReadInOutData {
     // for master - out
     // for except - in
     ReadLinks links;
-    std::optional<double> overriddenSpatium = std::nullopt;
-    PropertyIdSet propertiesToSkip;
-    bool forcePageMode = false;
+    std::optional<double> overridden_spatium = std::nullopt;
+    PropertyIdSet properties_to_skip;
+    bool force_page_mode = false;
 
     // out
-    SettingsCompat settingsCompat;
-    std::optional<double> originalSpatium = std::nullopt;
+    SettingsCompat settings_compat;
+    std::optional<double> original_spatium = std::nullopt;
 };
 
 struct WriteInOutData {

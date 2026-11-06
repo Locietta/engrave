@@ -54,36 +54,36 @@ using namespace mu::engraving;
 namespace mu::engraving {
 extern Measure *tick2measure(int tick);
 
-static const std::unordered_map<CommandType, CommandType> COMMAND_TYPE_INVERSION{
-    {CommandType::AddElement, CommandType::RemoveElement},
-    {CommandType::RemoveElement, CommandType::AddElement},
+static const std::unordered_map<CommandType, CommandType> command_type_inversion{
+    {CommandType::ADD_ELEMENT, CommandType::REMOVE_ELEMENT},
+    {CommandType::REMOVE_ELEMENT, CommandType::ADD_ELEMENT},
 
-    {CommandType::AddBracket, CommandType::RemoveBracket},
-    {CommandType::RemoveBracket, CommandType::AddBracket},
+    {CommandType::ADD_BRACKET, CommandType::REMOVE_BRACKET},
+    {CommandType::REMOVE_BRACKET, CommandType::ADD_BRACKET},
 
-    {CommandType::AddExcerpt, CommandType::RemoveExcerpt},
-    {CommandType::RemoveExcerpt, CommandType::AddExcerpt},
+    {CommandType::ADD_EXCERPT, CommandType::REMOVE_EXCERPT},
+    {CommandType::REMOVE_EXCERPT, CommandType::ADD_EXCERPT},
 
-    {CommandType::AddSystemObjectStaff, CommandType::RemoveSystemObjectStaff},
-    {CommandType::RemoveSystemObjectStaff, CommandType::AddSystemObjectStaff},
+    {CommandType::ADD_SYSTEM_OBJECT_STAFF, CommandType::REMOVE_SYSTEM_OBJECT_STAFF},
+    {CommandType::REMOVE_SYSTEM_OBJECT_STAFF, CommandType::ADD_SYSTEM_OBJECT_STAFF},
 
-    {CommandType::InsertMeasures, CommandType::RemoveMeasures},
-    {CommandType::RemoveMeasures, CommandType::InsertMeasures},
+    {CommandType::INSERT_MEASURES, CommandType::REMOVE_MEASURES},
+    {CommandType::REMOVE_MEASURES, CommandType::INSERT_MEASURES},
 
-    {CommandType::InsertStaff, CommandType::RemoveStaff},
-    {CommandType::RemoveStaff, CommandType::InsertStaff},
+    {CommandType::INSERT_STAFF, CommandType::REMOVE_STAFF},
+    {CommandType::REMOVE_STAFF, CommandType::INSERT_STAFF},
 
-    {CommandType::InsertPart, CommandType::RemovePart},
-    {CommandType::RemovePart, CommandType::InsertPart},
+    {CommandType::INSERT_PART, CommandType::REMOVE_PART},
+    {CommandType::REMOVE_PART, CommandType::INSERT_PART},
 
-    {CommandType::Link, CommandType::Unlink},
-    {CommandType::Unlink, CommandType::Link},
+    {CommandType::LINK, CommandType::UNLINK},
+    {CommandType::UNLINK, CommandType::LINK},
 
-    {CommandType::AddNoteParenthesesInfo, CommandType::RemoveNoteParenthesesInfo},
-    {CommandType::RemoveNoteParenthesesInfo, CommandType::AddNoteParenthesesInfo},
+    {CommandType::ADD_NOTE_PARENTHESES_INFO, CommandType::REMOVE_NOTE_PARENTHESES_INFO},
+    {CommandType::REMOVE_NOTE_PARENTHESES_INFO, CommandType::ADD_NOTE_PARENTHESES_INFO},
 
-    {CommandType::ConnectSharedPart, CommandType::DisconnectSharedPart},
-    {CommandType::DisconnectSharedPart, CommandType::ConnectSharedPart},
+    {CommandType::CONNECT_SHARED_PART, CommandType::DISCONNECT_SHARED_PART},
+    {CommandType::DISCONNECT_SHARED_PART, CommandType::CONNECT_SHARED_PART},
 };
 
 //---------------------------------------------------------
@@ -91,135 +91,135 @@ static const std::unordered_map<CommandType, CommandType> COMMAND_TYPE_INVERSION
 //---------------------------------------------------------
 
 UndoStack::UndoStack() {
-    activeTransaction_ = nullptr;
-    currentIndex_ = 0;
-    cleanState_ = 0;
-    states_.push_back(cleanState_);
-    nextState_ = 1;
+    active_transaction_ = nullptr;
+    current_index_ = 0;
+    clean_state_ = 0;
+    states_.push_back(clean_state_);
+    next_state_ = 1;
 }
 
 UndoStack::~UndoStack() {
     size_t idx = 0;
     for (auto c : transactions_) {
-        c->cleanup(idx++ < currentIndex_);
+        c->cleanup(idx++ < current_index_);
     }
-    muse::DeleteAll(transactions_);
+    muse::delete_all(transactions_);
 }
 
-bool UndoStack::isLocked() const { return isLocked_; }
+bool UndoStack::is_locked() const { return is_locked_; }
 
-void UndoStack::setLocked(bool locked) { isLocked_ = locked; }
+void UndoStack::set_locked(bool locked) { is_locked_ = locked; }
 
-void UndoStack::beginTransaction(Score *score, const TranslatableString &actionName) {
-    if (isLocked_) {
+void UndoStack::begin_transaction(Score *score, const TranslatableString &action_name) {
+    if (is_locked_) {
         return;
     }
 
-    IF_ASSERT_FAILED(!activeTransaction_) {
+    IF_ASSERT_FAILED(!active_transaction_) {
         LOGE() << "Transaction already in progress";
         return;
     }
 
-    activeTransaction_ = new UndoableTransaction(score, actionName);
+    active_transaction_ = new UndoableTransaction(score, action_name);
 }
 
 //---------------------------------------------------------
 //   clearHistory
 //---------------------------------------------------------
 
-bool UndoStack::clearHistory() {
-    if (isLocked_ || activeTransaction_) {
+bool UndoStack::clear_history() {
+    if (is_locked_ || active_transaction_) {
         return false;
     }
-    const bool wasClean = isClean();
-    const int currentState = states_[currentIndex_];
+    const bool was_clean = is_clean();
+    const int current_state = states_[current_index_];
     remove(0);
     // Note: states_ is always one longer than transactions_ (initial state at index 0).
     // After remove(0), transactions_ is empty and states_ has size 1 (currentIndex_ == 0).
     // Preserve the current document state at index 0 and keep isClean() semantics intact:
     // if the document was clean before clearing history, it remains clean (cleanState_ = currentState);
     // if it was dirty, it remains dirty (currentState != cleanState_).
-    states_[0] = currentState;
-    if (wasClean) {
-        cleanState_ = currentState;
+    states_[0] = current_state;
+    if (was_clean) {
+        clean_state_ = current_state;
     }
     return true;
 }
 
 void UndoStack::remove(size_t idx) {
-    assert(idx <= currentIndex_);
-    assert(currentIndex_ != muse::nidx);
+    assert(idx <= current_index_);
+    assert(current_index_ != muse::nidx);
     // remove redo stack
-    while (transactions_.size() > currentIndex_) {
-        UndoableTransaction *transaction = muse::takeLast(transactions_);
+    while (transactions_.size() > current_index_) {
+        UndoableTransaction *transaction = muse::take_last(transactions_);
         states_.pop_back();
         transaction->cleanup(false); // delete elements for which UndoableCommand() holds ownership
         delete transaction;
         //            --curIdx;
     }
     while (transactions_.size() > idx) {
-        UndoableTransaction *transaction = muse::takeLast(transactions_);
+        UndoableTransaction *transaction = muse::take_last(transactions_);
         states_.pop_back();
         transaction->cleanup(true);
         delete transaction;
     }
-    currentIndex_ = idx;
+    current_index_ = idx;
 }
 
-void UndoStack::mergeTransactions(size_t startIdx) {
-    assert(startIdx <= currentIndex_);
+void UndoStack::merge_transactions(size_t start_idx) {
+    assert(start_idx <= current_index_);
 
-    if (startIdx >= transactions_.size()) {
+    if (start_idx >= transactions_.size()) {
         return;
     }
 
-    UndoableTransaction *startTransaction = transactions_[startIdx];
+    UndoableTransaction *start_transaction = transactions_[start_idx];
 
-    for (size_t idx = startIdx + 1; idx < currentIndex_; ++idx) {
-        startTransaction->append(std::move(*transactions_[idx]));
+    for (size_t idx = start_idx + 1; idx < current_index_; ++idx) {
+        start_transaction->append(std::move(*transactions_[idx]));
     }
-    remove(startIdx + 1); // TODO: remove from startIdx to curIdx only
+    remove(start_idx + 1); // TODO: remove from startIdx to curIdx only
 }
 
-void UndoStack::endTransaction(bool rollback) {
-    if (isLocked_) {
+void UndoStack::end_transaction(bool rollback) {
+    if (is_locked_) {
         return;
     }
 
-    IF_ASSERT_FAILED(activeTransaction_) {
+    IF_ASSERT_FAILED(active_transaction_) {
         LOGE() << "No transaction in progress";
         return;
     }
 
     if (rollback) {
-        delete activeTransaction_;
+        delete active_transaction_;
     } else {
         // remove redo stack
-        while (transactions_.size() > currentIndex_) {
-            UndoableTransaction *transaction = muse::takeLast(transactions_);
+        while (transactions_.size() > current_index_) {
+            UndoableTransaction *transaction = muse::take_last(transactions_);
             states_.pop_back();
             transaction->cleanup(false); // delete elements for which UndoableCommand() holds ownership
             delete transaction;
         }
-        transactions_.push_back(activeTransaction_);
-        states_.push_back(nextState_++);
-        ++currentIndex_;
+        transactions_.push_back(active_transaction_);
+        states_.push_back(next_state_++);
+        ++current_index_;
     }
-    activeTransaction_ = nullptr;
+    active_transaction_ = nullptr;
 }
 
 void UndoStack::reopen() {
-    if (isLocked_) {
+    if (is_locked_) {
         return;
     }
 
-    LOG_UNDO() << "curIdx: " << currentIndex_ << ", size: " << transactions_.size();
-    assert(activeTransaction_ == nullptr);
-    assert(currentIndex_ > 0);
-    --currentIndex_;
-    activeTransaction_ = muse::takeAt(transactions_, currentIndex_);
-    states_.erase(states_.begin() + currentIndex_ + 1);
-    for (auto i : activeTransaction_->commands()) {
+    LOG_UNDO() << "curIdx: " << current_index_ << ", size: " << transactions_.size();
+    assert(active_transaction_ == nullptr);
+    assert(current_index_ > 0);
+    --current_index_;
+    active_transaction_ = muse::take_at(transactions_, current_index_);
+    states_.erase(states_.begin() + current_index_ + 1);
+    for (auto i : active_transaction_->commands()) {
         LOG_UNDO() << "   " << i->name();
     }
 }
@@ -227,24 +227,24 @@ void UndoStack::reopen() {
 void UndoStack::undo(EditData *ed) {
     LOG_UNDO() << "called";
     // Are we currently editing text?
-    if (ed && ed->element && ed->element->isTextBase()) {
-        TextEditData *ted = dynamic_cast<TextEditData *>(ed->getData(ed->element).get());
-        if (ted && ted->startUndoIdx == currentIndex_) {
+    if (ed && ed->element && ed->element->is_text_base()) {
+        TextEditData *ted = dynamic_cast<TextEditData *>(ed->get_data(ed->element).get());
+        if (ted && ted->start_undo_idx == current_index_) {
             // No edits to undo, so do nothing
             return;
         }
     }
-    if (currentIndex_) {
-        --currentIndex_;
-        assert(currentIndex_ < transactions_.size());
-        transactions_[currentIndex_]->undo();
+    if (current_index_) {
+        --current_index_;
+        assert(current_index_ < transactions_.size());
+        transactions_[current_index_]->undo();
     }
 }
 
 void UndoStack::redo() {
     LOG_UNDO() << "called";
-    if (canRedo()) {
-        transactions_[currentIndex_++]->redo();
+    if (can_redo()) {
+        transactions_[current_index_++]->redo();
     }
 }
 
@@ -252,9 +252,9 @@ void UndoStack::redo() {
 //   UndoableTransaction
 //---------------------------------------------------------
 
-UndoableTransaction::UndoableTransaction(Score *s, const TranslatableString &actionName)
-    : undoInputState_(s->inputState()), actionName_(actionName), score_(s) {
-    fillSelectionInfo(undoSelectionInfo_, s->selection());
+UndoableTransaction::UndoableTransaction(Score *s, const TranslatableString &action_name)
+    : undo_input_state_(s->input_state()), action_name_(action_name), score_(s) {
+    fill_selection_info(undo_selection_info_, s->selection());
 }
 
 UndoableTransaction::~UndoableTransaction() {
@@ -263,52 +263,52 @@ UndoableTransaction::~UndoableTransaction() {
     }
 }
 
-void UndoableTransaction::cleanup(bool wasDone) {
+void UndoableTransaction::cleanup(bool was_done) {
     for (UndoableCommand *command : commands_) {
-        command->cleanup(wasDone);
+        command->cleanup(was_done);
     }
 }
 
-void UndoableTransaction::unwind(bool cleanUp) {
+void UndoableTransaction::unwind(bool clean_up) {
     // Undo everything first, without freeing: commands pushed later (e.g. AddElement for a part's linked
     // clone) may still be referenced by earlier commands' undo() (e.g. Link::undo()):
-    std::vector<UndoableCommand *> undoneCommands;
-    undoneCommands.reserve(commands_.size());
+    std::vector<UndoableCommand *> undone_commands;
+    undone_commands.reserve(commands_.size());
     while (!commands_.empty()) {
-        UndoableCommand *command = muse::takeLast(commands_);
+        UndoableCommand *command = muse::take_last(commands_);
         LOG_UNDO() << "unwind: " << command->name();
         command->undo();
-        undoneCommands.push_back(command);
+        undone_commands.push_back(command);
     }
     // Now we can free everything:
-    for (UndoableCommand *command : undoneCommands) {
-        if (cleanUp) {
+    for (UndoableCommand *command : undone_commands) {
+        if (clean_up) {
             command->cleanup(false);
         }
         delete command;
     }
 }
 
-void UndoableTransaction::appendCommands(UndoableTransaction &other) {
+void UndoableTransaction::append_commands(UndoableTransaction &other) {
     commands_.insert(commands_.end(), other.commands_.cbegin(), other.commands_.cend());
     other.commands_.clear();
 }
 
-bool UndoableTransaction::hasCommandsMatchingFilter(UndoableCommandFilter f, const EngravingItem *target) const {
+bool UndoableTransaction::has_commands_matching_filter(UndoableCommandFilter f, const EngravingItem *target) const {
     for (UndoableCommand *command : commands_) {
-        if (command->matchesFilter(f, target)) {
+        if (command->matches_filter(f, target)) {
             return true;
         }
     }
     return false;
 }
 
-bool UndoableTransaction::hasCommandsNotMatchingFilters(const std::vector<UndoableCommandFilter> &filters,
-                                                        const EngravingItem *target) const {
+bool UndoableTransaction::has_commands_not_matching_filters(const std::vector<UndoableCommandFilter> &filters,
+                                                            const EngravingItem *target) const {
     for (UndoableCommand *command : commands_) {
         bool filtered = false;
         for (UndoableCommandFilter f : filters) {
-            if (command->matchesFilter(f, target)) {
+            if (command->matches_filter(f, target)) {
                 filtered = true;
                 break;
             }
@@ -320,35 +320,36 @@ bool UndoableTransaction::hasCommandsNotMatchingFilters(const std::vector<Undoab
     return false;
 }
 
-void UndoableTransaction::removeCommandsMatchingFilter(UndoableCommandFilter f, EngravingItem *target) {
-    std::vector<UndoableCommand *> acceptedList;
+void UndoableTransaction::remove_commands_matching_filter(UndoableCommandFilter f, EngravingItem *target) {
+    std::vector<UndoableCommand *> accepted_list;
     for (UndoableCommand *command : commands_) {
-        if (command->matchesFilter(f, target)) {
+        if (command->matches_filter(f, target)) {
             delete command;
         } else {
-            acceptedList.push_back(command);
+            accepted_list.push_back(command);
         }
     }
-    commands_ = std::move(acceptedList);
+    commands_ = std::move(accepted_list);
 }
 
-bool UndoableTransaction::canRecordSelectedElement(const EngravingItem *e) {
+bool UndoableTransaction::can_record_selected_element(const EngravingItem *e) {
     if (e->generated()) {
         return false;
     }
 
-    return e->isNote() || (e->isChordRest() && !e->isChord()) ||
-           (e->isTextBase() && !e->isInstrumentName() && !e->isHammerOnPullOffText()) || e->isFretDiagram() || e->isSoundFlag();
+    return e->is_note() || (e->is_chord_rest() && !e->is_chord()) ||
+           (e->is_text_base() && !e->is_instrument_name() && !e->is_hammer_on_pull_off_text()) || e->is_fret_diagram() ||
+           e->is_sound_flag();
 }
 
-void UndoableTransaction::fillSelectionInfo(SelectionInfo &info, const Selection &sel) {
-    info.staffStart = info.staffEnd = muse::nidx;
-    info.startBox = info.endBox = nullptr;
+void UndoableTransaction::fill_selection_info(SelectionInfo &info, const Selection &sel) {
+    info.staff_start = info.staff_end = muse::nidx;
+    info.start_box = info.end_box = nullptr;
     info.elements.clear();
 
-    if (sel.isList()) {
+    if (sel.is_list()) {
         for (EngravingItem *e : sel.elements()) {
-            if (canRecordSelectedElement(e)) {
+            if (can_record_selected_element(e)) {
                 info.elements.push_back(e);
             } else {
                 // don't remember selection we are unable to restore
@@ -356,127 +357,127 @@ void UndoableTransaction::fillSelectionInfo(SelectionInfo &info, const Selection
                 return;
             }
         }
-    } else if (sel.isRange()) {
-        info.staffStart = sel.staffStart();
-        info.staffEnd = sel.staffEnd();
-        info.tickStart = sel.tickStart();
-        info.tickEnd = sel.tickEnd();
-        info.startBox = sel.startBox();
-        info.endBox = sel.endBox();
+    } else if (sel.is_range()) {
+        info.staff_start = sel.staff_start();
+        info.staff_end = sel.staff_end();
+        info.tick_start = sel.tick_start();
+        info.tick_end = sel.tick_end();
+        info.start_box = sel.start_box();
+        info.end_box = sel.end_box();
     }
 }
 
-void UndoableTransaction::applySelectionInfo(const SelectionInfo &info, Selection &sel) {
+void UndoableTransaction::apply_selection_info(const SelectionInfo &info, Selection &sel) {
     if (!info.elements.empty()) {
         for (EngravingItem *e : info.elements) {
             sel.add(e);
         }
-    } else if (info.staffStart != muse::nidx) {
-        sel.setRangeTicks(info.tickStart, info.tickEnd, info.staffStart, info.staffEnd, info.startBox, info.endBox);
+    } else if (info.staff_start != muse::nidx) {
+        sel.set_range_ticks(info.tick_start, info.tick_end, info.staff_start, info.staff_end, info.start_box, info.end_box);
     }
 }
 
 void UndoableTransaction::undo() {
-    redoInputState_ = score_->inputState();
-    fillSelectionInfo(redoSelectionInfo_, score_->selection());
-    score_->deselectAll();
+    redo_input_state_ = score_->input_state();
+    fill_selection_info(redo_selection_info_, score_->selection());
+    score_->deselect_all();
 
     for (auto it = commands_.rbegin(); it != commands_.rend(); ++it) {
         LOG_UNDO() << "<" << (*it)->name() << ">";
         (*it)->undo();
     }
 
-    score_->setInputState(undoInputState_);
-    if (undoSelectionInfo_.isValid()) {
-        score_->deselectAll();
-        applySelectionInfo(undoSelectionInfo_, score_->selection());
+    score_->set_input_state(undo_input_state_);
+    if (undo_selection_info_.is_valid()) {
+        score_->deselect_all();
+        apply_selection_info(undo_selection_info_, score_->selection());
     }
 }
 
 void UndoableTransaction::redo() {
-    undoInputState_ = score_->inputState();
-    fillSelectionInfo(undoSelectionInfo_, score_->selection());
-    score_->deselectAll();
+    undo_input_state_ = score_->input_state();
+    fill_selection_info(undo_selection_info_, score_->selection());
+    score_->deselect_all();
 
     for (UndoableCommand *command : commands_) {
         LOG_UNDO() << "<" << command->name() << ">";
         command->redo();
     }
 
-    score_->setInputState(redoInputState_);
-    if (redoSelectionInfo_.isValid()) {
-        score_->deselectAll();
-        applySelectionInfo(redoSelectionInfo_, score_->selection());
+    score_->set_input_state(redo_input_state_);
+    if (redo_selection_info_.is_valid()) {
+        score_->deselect_all();
+        apply_selection_info(redo_selection_info_, score_->selection());
     }
 }
 
 void UndoableTransaction::append(UndoableTransaction &&other) {
-    appendCommands(other);
+    append_commands(other);
     if (score_ == other.score_) {
-        redoInputState_ = std::move(other.redoInputState_);
-        redoSelectionInfo_ = std::move(other.redoSelectionInfo_);
+        redo_input_state_ = std::move(other.redo_input_state_);
+        redo_selection_info_ = std::move(other.redo_selection_info_);
     }
 }
 
-const InputState &UndoableTransaction::undoInputState() const { return undoInputState_; }
+const InputState &UndoableTransaction::undo_input_state() const { return undo_input_state_; }
 
-const InputState &UndoableTransaction::redoInputState() const { return redoInputState_; }
+const InputState &UndoableTransaction::redo_input_state() const { return redo_input_state_; }
 
-void UndoableTransaction::excludeElementFromSelectionInfo(EngravingItem *element) {
-    if (undoSelectionInfo_.isValid()) {
-        muse::remove(undoSelectionInfo_.elements, element);
+void UndoableTransaction::exclude_element_from_selection_info(EngravingItem *element) {
+    if (undo_selection_info_.is_valid()) {
+        muse::remove(undo_selection_info_.elements, element);
     }
 
-    if (redoSelectionInfo_.isValid()) {
-        muse::remove(redoSelectionInfo_.elements, element);
+    if (redo_selection_info_.is_valid()) {
+        muse::remove(redo_selection_info_.elements, element);
     }
 }
 
-const UndoableTransaction::SelectionInfo &UndoableTransaction::undoSelectionInfo() const { return undoSelectionInfo_; }
+const UndoableTransaction::SelectionInfo &UndoableTransaction::undo_selection_info() const { return undo_selection_info_; }
 
-const UndoableTransaction::SelectionInfo &UndoableTransaction::redoSelectionInfo() const { return redoSelectionInfo_; }
+const UndoableTransaction::SelectionInfo &UndoableTransaction::redo_selection_info() const { return redo_selection_info_; }
 
-UndoableTransaction::ChangesInfo UndoableTransaction::changesInfo(bool undo) const {
+UndoableTransaction::ChangesInfo UndoableTransaction::changes_info(bool undo) const {
     ChangesInfo result;
 
     for (const UndoableCommand *command : commands()) {
         CommandType type = command->type();
 
-        if (type == CommandType::ChangeProperty) {
-            auto changeProperty = static_cast<const ChangeProperty *>(command);
-            result.changedPropertyIdSet.insert(changeProperty->getId());
-        } else if (type == CommandType::ChangeStyleValues) {
-            auto changeStyle = static_cast<const ChangeStyleValues *>(command);
-            for (const auto &pair : changeStyle->values()) {
-                result.changedStyleIdSet.insert(pair.first);
+        if (type == CommandType::CHANGE_PROPERTY) {
+            auto change_property = static_cast<const ChangeProperty *>(command);
+            result.changed_property_id_set.insert(change_property->get_id());
+        } else if (type == CommandType::CHANGE_STYLE_VALUES) {
+            auto change_style = static_cast<const ChangeStyleValues *>(command);
+            for (const auto &pair : change_style->values()) {
+                result.changed_style_id_set.insert(pair.first);
             }
-        } else if (type == CommandType::ChangeStyle) {
-            auto changeStyle = static_cast<const ChangeStyle *>(command);
-            const StyleIdSet styleIds = changeStyle->changedIds();
-            result.changedStyleIdSet.insert(styleIds.cbegin(), styleIds.cend());
-        } else if (type == CommandType::TextEdit) {
-            result.isTextEditing |= static_cast<const TextEditUndoableCommand *>(command)->cursor().editing();
+        } else if (type == CommandType::CHANGE_STYLE) {
+            auto change_style = static_cast<const ChangeStyle *>(command);
+            const StyleIdSet style_ids = change_style->changed_ids();
+            result.changed_style_id_set.insert(style_ids.cbegin(), style_ids.cend());
+        } else if (type == CommandType::TEXT_EDIT) {
+            result.is_text_editing |= static_cast<const TextEditUndoableCommand *>(command)->cursor().editing();
         }
 
         if (undo) {
-            auto it = COMMAND_TYPE_INVERSION.find(type);
-            if (it != COMMAND_TYPE_INVERSION.end()) {
+            auto it = ::mu::engraving::command_type_inversion.find(type);
+            if (it != ::mu::engraving::command_type_inversion.end()) {
                 type = it->second;
             }
         }
 
-        for (EngravingObject *object : command->objectItems()) {
+        for (EngravingObject *object : command->object_items()) {
             if (!object) {
                 continue;
             }
 
-            result.changedObjectTypes.insert(object->type());
-            result.changedObjects[object].insert(type);
+            result.changed_object_types.insert(object->type());
+            result.changed_objects[object].insert(type);
         }
     }
 
     return result;
 }
 
-const TranslatableString &UndoableTransaction::actionName() const { return actionName_; }
+const TranslatableString &UndoableTransaction::action_name() const { return action_name_; }
 } // namespace mu::engraving

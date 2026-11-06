@@ -29,64 +29,64 @@ using namespace muse;
 using namespace muse::io;
 
 bool IODevice::open(IODevice::OpenMode mode) {
-    if (isOpen()) {
+    if (is_open()) {
         return true;
     }
 
-    bool ok = doOpen(mode);
+    bool ok = do_open(mode);
     if (ok) {
         mode_ = mode;
-        pos_ = mode == Append ? dataSize() : 0;
+        pos_ = mode == APPEND ? data_size() : 0;
     }
 
     return ok;
 }
 
 void IODevice::close() {
-    doClose();
-    mode_ = Unknown;
+    do_close();
+    mode_ = UNKNOWN;
 }
 
-bool IODevice::isOpen() const { return mode_ != OpenMode::Unknown; }
+bool IODevice::is_open() const { return mode_ != OpenMode::UNKNOWN; }
 
-IODevice::OpenMode IODevice::openMode() const { return mode_; }
+IODevice::OpenMode IODevice::open_mode() const { return mode_; }
 
-bool IODevice::isOpenModeReadable() const { return mode_ == OpenMode::ReadOnly || mode_ == OpenMode::ReadWrite; }
+bool IODevice::is_open_mode_readable() const { return mode_ == OpenMode::READ_ONLY || mode_ == OpenMode::READ_WRITE; }
 
-bool IODevice::isReadable() const { return isOpenModeReadable() && pos_ < size(); }
+bool IODevice::is_readable() const { return is_open_mode_readable() && pos_ < size(); }
 
-bool IODevice::isOpenModeWriteable() const {
-    return mode_ == OpenMode::WriteOnly || mode_ == OpenMode::ReadWrite || mode_ == OpenMode::Append;
+bool IODevice::is_open_mode_writeable() const {
+    return mode_ == OpenMode::WRITE_ONLY || mode_ == OpenMode::READ_WRITE || mode_ == OpenMode::APPEND;
 }
 
-void IODevice::setError(int error, const std::string &errorString) {
+void IODevice::set_error(int error, const std::string &error_string) {
     error_ = error;
-    errorString_ = errorString;
+    error_string_ = error_string;
 }
 
-bool IODevice::isWriteable() const { return isOpenModeWriteable(); }
+bool IODevice::is_writeable() const { return is_open_mode_writeable(); }
 
 size_t IODevice::size() const {
-    IF_ASSERT_FAILED(isOpen()) { return 0; }
+    IF_ASSERT_FAILED(is_open()) { return 0; }
 
-    return dataSize();
+    return data_size();
 }
 
 size_t IODevice::pos() const { return pos_; }
 
 bool IODevice::seek(size_t pos) {
-    IF_ASSERT_FAILED(isOpen()) { return false; }
+    IF_ASSERT_FAILED(is_open()) { return false; }
 
     if (pos <= size()) {
         pos_ = pos;
         return true;
     }
 
-    if (!isOpenModeWriteable()) {
+    if (!is_open_mode_writeable()) {
         return false;
     }
 
-    bool ok = resizeData(pos);
+    bool ok = resize_data(pos);
     if (ok) {
         pos_ = pos;
     }
@@ -95,7 +95,7 @@ bool IODevice::seek(size_t pos) {
 }
 
 size_t IODevice::read(uint8_t *data, size_t len) {
-    IF_ASSERT_FAILED(isOpenModeReadable()) { return 0; }
+    IF_ASSERT_FAILED(is_open_mode_readable()) { return 0; }
 
     IF_ASSERT_FAILED(pos_ <= size()) { return 0; }
 
@@ -109,14 +109,14 @@ size_t IODevice::read(uint8_t *data, size_t len) {
         len = left;
     }
 
-    std::memcpy(data, cdataOffsetted(), len);
+    std::memcpy(data, cdata_offsetted(), len);
 
     pos_ += len;
     return len;
 }
 
 ByteArray IODevice::read(size_t len) {
-    IF_ASSERT_FAILED(isOpenModeReadable()) { return ByteArray(); }
+    IF_ASSERT_FAILED(is_open_mode_readable()) { return ByteArray(); }
 
     IF_ASSERT_FAILED(pos_ <= size()) { return ByteArray(); }
 
@@ -129,47 +129,47 @@ ByteArray IODevice::read(size_t len) {
         len = left;
     }
 
-    ByteArray result(cdataOffsetted(), len);
+    ByteArray result(cdata_offsetted(), len);
 
     pos_ += len;
 
     return result;
 }
 
-const uint8_t *IODevice::cdataOffsetted() const {
-    const uint8_t *d = rawData();
+const uint8_t *IODevice::cdata_offsetted() const {
+    const uint8_t *d = raw_data();
     IF_ASSERT_FAILED(d) { return nullptr; }
     return d + pos_;
 }
 
-ByteArray IODevice::readAll() { return doReadAll(); }
+ByteArray IODevice::read_all() { return do_read_all(); }
 
-ByteArray IODevice::doReadAll() { return read(size()); }
+ByteArray IODevice::do_read_all() { return read(size()); }
 
-const uint8_t *IODevice::readData() {
-    IF_ASSERT_FAILED(isOpen()) { return nullptr; }
-    return rawData();
+const uint8_t *IODevice::read_data() {
+    IF_ASSERT_FAILED(is_open()) { return nullptr; }
+    return raw_data();
 }
 
 size_t IODevice::write(const uint8_t *data, size_t len) {
-    IF_ASSERT_FAILED(isOpenModeWriteable()) { return 0; }
+    IF_ASSERT_FAILED(is_open_mode_writeable()) { return 0; }
 
     size_t left = size() - pos_;
     if (left < len) {
-        bool ok = resizeData(pos_ + len);
+        bool ok = resize_data(pos_ + len);
         if (!ok) {
             LOGE() << "failed resize data";
             return 0;
         }
     }
 
-    len = writeData(data, len);
+    len = write_data(data, len);
     pos_ += len;
 
     return len;
 }
 
-size_t IODevice::write(const ByteArray &ba) { return write(ba.constData(), ba.size()); }
+size_t IODevice::write(const ByteArray &ba) { return write(ba.const_data(), ba.size()); }
 
 const std::string &IODevice::meta(const std::string &key) const {
     auto it = meta_.find(key);
@@ -177,14 +177,14 @@ const std::string &IODevice::meta(const std::string &key) const {
         return it->second;
     }
 
-    static const std::string dummyVal;
-    return dummyVal;
+    static const std::string dummy_val;
+    return dummy_val;
 }
 
-void IODevice::setMeta(const std::string &key, const std::string &val) { meta_[key] = val; }
+void IODevice::set_meta(const std::string &key, const std::string &val) { meta_[key] = val; }
 
-bool IODevice::hasError() const { return error_ != 0; }
+bool IODevice::has_error() const { return error_ != 0; }
 
 int IODevice::error() const { return error_; }
 
-const std::string &IODevice::errorString() const { return errorString_; }
+const std::string &IODevice::error_string() const { return error_string_; }

@@ -88,10 +88,10 @@ public:
      * @param elemExists indicates if element exists in imported file on current beat
      * @param subType is used when elements of same MU type with different subtypes can overlap each other (ex, vibrato)
      */
-    void buildContiniousElement(mu::engraving::ChordRest *cr, mu::engraving::ElementType muType, ImportType importType, bool elemExists,
-                                sub_type_t subType = 0);
-    void notifyUncompletedMeasure();
-    void addElementsToScore();
+    void build_continious_element(mu::engraving::ChordRest *cr, mu::engraving::ElementType mu_type, ImportType import_type,
+                                  bool elem_exists, sub_type_t sub_type = 0);
+    void notify_uncompleted_measure();
+    void add_elements_to_score();
 
 private:
 
@@ -107,21 +107,21 @@ private:
         ELEMENT_ON_REST,       // element was imported for Rest
     };
 
-    void setupAddedElement(track_idx_t trackIdx, ImportType importType);
-    ContiniousElementState calculateState(bool isRest, bool elemExists, bool splitByRests, bool importTypeChanged) const;
+    void setup_added_element(track_idx_t track_idx, ImportType import_type);
+    ContiniousElementState calculate_state(bool is_rest, bool elem_exists, bool split_by_rests, bool import_type_changed) const;
 
     struct ContiniousElement {
         std::vector<mu::engraving::Spanner *> elements;
-        bool endedOnRest = false;
+        bool ended_on_rest = false;
     };
 
-    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> elementsByType_;
+    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> elements_by_type_;
 
     std::unordered_map<mu::engraving::ElementType, std::unordered_map<track_idx_t, std::unordered_map<sub_type_t, ImportType>>>
-        lastImportTypes_;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> spannersWithoutEndElement_;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> elementsToAddToScore_;
-    std::vector<mu::engraving::Spanner *> orderedAddedElements_;
+        last_import_types_;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> spanners_without_end_element_;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> elements_to_add_to_score_;
+    std::vector<mu::engraving::Spanner *> ordered_added_elements_;
 
     mu::engraving::Score *score_ = nullptr;
 };

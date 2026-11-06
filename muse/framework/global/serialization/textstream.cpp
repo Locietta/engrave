@@ -33,16 +33,16 @@
 
 using namespace muse;
 
-static constexpr int TEXTSTREAM_BUFFERSIZE = 16384;
+static constexpr int textstream_buffersize = 16384;
 
-TextStream::TextStream(io::IODevice *device) : device_(device) { buf_.reserve(TEXTSTREAM_BUFFERSIZE); }
+TextStream::TextStream(io::IODevice *device) : device_(device) { buf_.reserve(::textstream_buffersize); }
 
 TextStream::~TextStream() { flush(); }
 
-void TextStream::setDevice(io::IODevice *device) { device_ = device; }
+void TextStream::set_device(io::IODevice *device) { device_ = device; }
 
 void TextStream::flush() {
-    if (device_ && device_->isOpen()) {
+    if (device_ && device_->is_open()) {
         device_->write(buf_.data(), buf_.size());
         buf_.clear();
     }
@@ -128,21 +128,21 @@ TextStream &TextStream::operator<<(const std::string_view str) {
 }
 
 TextStream &TextStream::operator<<(const ByteArray &b) {
-    write(reinterpret_cast<const char *>(b.constData()), b.size());
+    write(reinterpret_cast<const char *>(b.const_data()), b.size());
     return *this;
 }
 
 TextStream &TextStream::operator<<(const String &s) {
-    ByteArray b = s.toUtf8();
-    write(reinterpret_cast<const char *>(b.constData()), b.size());
+    ByteArray b = s.to_utf8();
+    write(reinterpret_cast<const char *>(b.const_data()), b.size());
     return *this;
 }
 
 void TextStream::write(const char *ch, size_t len) {
-    if (io::activeWriteBudget && !io::activeWriteBudget->charge(len)) throw io::WriteBudgetStop{};
+    if (io::active_write_budget && !io::active_write_budget->charge(len)) throw io::WriteBudgetStop{};
     buf_.insert(buf_.end(), reinterpret_cast<const uint8_t *>(ch), reinterpret_cast<const uint8_t *>(ch + len));
-    if (device_ && buf_.size() > TEXTSTREAM_BUFFERSIZE) {
+    if (device_ && buf_.size() > ::textstream_buffersize) {
         flush();
-        if (io::activeWriteBudget && !io::activeWriteBudget->poll()) throw io::WriteBudgetStop{};
+        if (io::active_write_budget && !io::active_write_budget->poll()) throw io::WriteBudgetStop{};
     }
 }

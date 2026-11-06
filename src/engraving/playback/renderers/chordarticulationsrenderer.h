@@ -28,16 +28,16 @@
 namespace mu::engraving {
 class ChordArticulationsRenderer : public RenderBase<ChordArticulationsRenderer> {
 public:
-    static const muse::mpe::ArticulationTypeSet &supportedTypes();
+    static const muse::mpe::ArticulationTypeSet &supported_types();
 
-    static void doRender(const EngravingItem *item, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
-                         muse::mpe::PlaybackEventList &result);
+    static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
+                          muse::mpe::PlaybackEventList &result);
 
 private:
-    static void renderChord(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
-    static void renderChordWithGraceChords(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
-                                           muse::mpe::PlaybackEventList &result);
-    static bool renderChordArticulations(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void render_chord(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void render_chord_with_grace_chords(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
+                                               muse::mpe::PlaybackEventList &result);
+    static bool render_chord_articulations(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
 };
 } // namespace mu::engraving
 

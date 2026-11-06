@@ -32,7 +32,7 @@ public:
     FretUndoData() = default;
     FretUndoData(FretDiagram *fd);
 
-    void updateDiagram();
+    void update_diagram();
 
 private:
     FretDiagram *diagram_ = nullptr;
@@ -42,28 +42,28 @@ private:
 
     int strings_ = 0;
     int frets_ = 0;
-    int fretOffset_ = 0;
-    int maxFrets_ = 0;
-    bool showNut_ = true;
-    bool showFingering_ = false;
+    int fret_offset_ = 0;
+    int max_frets_ = 0;
+    bool show_nut_ = true;
+    bool show_fingering_ = false;
     Orientation orientation_ = Orientation::VERTICAL;
-    double userMag_ = 1.0;
+    double user_mag_ = 1.0;
 };
 
 class FretDataChange : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, FretDataChange)
 
     FretDiagram *diagram_ = nullptr;
-    FretUndoData undoData_;
-    String harmonyName_;
+    FretUndoData undo_data_;
+    String harmony_name_;
 
     void redo() override;
     void undo() override;
 
 public:
-    FretDataChange(FretDiagram *d, const String &harmonyName) : diagram_(d), harmonyName_(harmonyName) {}
+    FretDataChange(FretDiagram *d, const String &harmony_name) : diagram_(d), harmony_name_(harmony_name) {}
 
-    UNDO_TYPE(CommandType::FretDataChange)
+    UNDO_TYPE(CommandType::FRET_DATA_CHANGE)
 
     UNDO_NAME("FretDataChange")
 
@@ -78,16 +78,16 @@ class FretDot : public UndoableCommand {
     int fret = 0;
     bool add = 0;
     FretDotType dtype;
-    FretUndoData undoData;
+    FretUndoData undo_data;
 
     void redo() override;
     void undo() override;
 
 public:
-    FretDot(FretDiagram *d, int _string, int _fret, bool _add = false, FretDotType _dtype = FretDotType::NORMAL)
-        : diagram(d), string(_string), fret(_fret), add(_add), dtype(_dtype) {}
+    FretDot(FretDiagram *d, int input_string, int input_fret, bool input_add = false, FretDotType input_dtype = FretDotType::NORMAL)
+        : diagram(d), string(input_string), fret(input_fret), add(input_add), dtype(input_dtype) {}
 
-    UNDO_TYPE(CommandType::FretDot)
+    UNDO_TYPE(CommandType::FRET_DOT)
     UNDO_NAME("FretDot")
     UNDO_CHANGED_OBJECTS({diagram})
 };
@@ -98,15 +98,15 @@ class FretMarker : public UndoableCommand {
     FretDiagram *diagram = nullptr;
     int string = 0;
     FretMarkerType mtype;
-    FretUndoData undoData;
+    FretUndoData undo_data;
 
     void redo() override;
     void undo() override;
 
 public:
-    FretMarker(FretDiagram *d, int _string, FretMarkerType _mtype) : diagram(d), string(_string), mtype(_mtype) {}
+    FretMarker(FretDiagram *d, int input_string, FretMarkerType input_mtype) : diagram(d), string(input_string), mtype(input_mtype) {}
 
-    UNDO_TYPE(CommandType::FretMarker)
+    UNDO_TYPE(CommandType::FRET_MARKER)
     UNDO_NAME("FretMarker")
     UNDO_CHANGED_OBJECTS({diagram})
 };
@@ -118,15 +118,16 @@ class FretBarre : public UndoableCommand {
     int string = 0;
     int fret = 0;
     bool add = 0;
-    FretUndoData undoData;
+    FretUndoData undo_data;
 
     void redo() override;
     void undo() override;
 
 public:
-    FretBarre(FretDiagram *d, int _string, int _fret, bool _add = false) : diagram(d), string(_string), fret(_fret), add(_add) {}
+    FretBarre(FretDiagram *d, int input_string, int input_fret, bool input_add = false)
+        : diagram(d), string(input_string), fret(input_fret), add(input_add) {}
 
-    UNDO_TYPE(CommandType::FretBarre)
+    UNDO_TYPE(CommandType::FRET_BARRE)
     UNDO_NAME("FretBarre")
     UNDO_CHANGED_OBJECTS({diagram})
 };
@@ -135,7 +136,7 @@ class FretClear : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, FretClear)
 
     FretDiagram *diagram = nullptr;
-    FretUndoData undoData;
+    FretUndoData undo_data;
 
     void redo() override;
     void undo() override;
@@ -143,7 +144,7 @@ class FretClear : public UndoableCommand {
 public:
     FretClear(FretDiagram *d) : diagram(d) {}
 
-    UNDO_TYPE(CommandType::FretClear)
+    UNDO_TYPE(CommandType::FRET_CLEAR)
     UNDO_NAME("FretClear")
     UNDO_CHANGED_OBJECTS({diagram})
 };
@@ -151,7 +152,7 @@ public:
 class AddFretDiagramToFretBox : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddFretDiagramToFretBox)
 
-    FretDiagram *fretDiagram_ = nullptr;
+    FretDiagram *fret_diagram_ = nullptr;
     size_t idx_ = muse::nidx;
 
     void redo() override;
@@ -160,15 +161,15 @@ class AddFretDiagramToFretBox : public UndoableCommand {
 public:
     AddFretDiagramToFretBox(FretDiagram *f, size_t idx);
 
-    UNDO_TYPE(CommandType::AddFretDiagramToFretBox)
+    UNDO_TYPE(CommandType::ADD_FRET_DIAGRAM_TO_FRET_BOX)
     UNDO_NAME("AddFretDiagramToFretBox")
-    UNDO_CHANGED_OBJECTS({fretDiagram_})
+    UNDO_CHANGED_OBJECTS({fret_diagram_})
 };
 
 class RemoveFretDiagramFromFretBox : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveFretDiagramFromFretBox)
 
-    FretDiagram *fretDiagram_ = nullptr;
+    FretDiagram *fret_diagram_ = nullptr;
     size_t idx_ = muse::nidx;
 
     void redo() override;
@@ -177,8 +178,8 @@ class RemoveFretDiagramFromFretBox : public UndoableCommand {
 public:
     RemoveFretDiagramFromFretBox(FretDiagram *f);
 
-    UNDO_TYPE(CommandType::RemoveFretDiagramFromFretBox)
+    UNDO_TYPE(CommandType::REMOVE_FRET_DIAGRAM_FROM_FRET_BOX)
     UNDO_NAME("RemoveFretDiagramFromFretBox")
-    UNDO_CHANGED_OBJECTS({fretDiagram_})
+    UNDO_CHANGED_OBJECTS({fret_diagram_})
 };
 } // namespace mu::engraving

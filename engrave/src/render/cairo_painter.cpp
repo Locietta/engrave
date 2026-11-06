@@ -42,32 +42,32 @@ namespace {
 
 // ---------------------------------------------------------------- utilities
 
-bool isFinite(double v) { return std::isfinite(v); }
+bool is_finite(double v) { return std::isfinite(v); }
 
-bool finiteRect(const RectF &r) { return isFinite(r.x()) && isFinite(r.y()) && isFinite(r.width()) && isFinite(r.height()); }
+bool finite_rect(const RectF &r) { return is_finite(r.x()) && is_finite(r.y()) && is_finite(r.width()) && is_finite(r.height()); }
 
-bool finitePoint(const PointF &p) { return isFinite(p.x()) && isFinite(p.y()); }
+bool finite_point(const PointF &p) { return is_finite(p.x()) && is_finite(p.y()); }
 
-bool finiteTransform(const Transform &t) {
-    return isFinite(t.m11()) && isFinite(t.m12()) && isFinite(t.m13()) && isFinite(t.m21()) && isFinite(t.m22()) && isFinite(t.m23()) &&
-           isFinite(t.m31()) && isFinite(t.m32()) && isFinite(t.m33());
+bool finite_transform(const Transform &t) {
+    return is_finite(t.m11()) && is_finite(t.m12()) && is_finite(t.m13()) && is_finite(t.m21()) && is_finite(t.m22()) &&
+           is_finite(t.m23()) && is_finite(t.m31()) && is_finite(t.m32()) && is_finite(t.m33());
 }
 
-bool nearlyEqual(double a, double b) {
+bool nearly_equal(double a, double b) {
     const double diff = std::abs(a - b);
     const double scale = std::max(1.0, std::max(std::abs(a), std::abs(b)));
     return diff <= 1e-9 * scale;
 }
 
-bool transformNearlyEqual(const Transform &a, const Transform &b) {
-    return nearlyEqual(a.m11(), b.m11()) && nearlyEqual(a.m12(), b.m12()) && nearlyEqual(a.m13(), b.m13()) &&
-           nearlyEqual(a.m21(), b.m21()) && nearlyEqual(a.m22(), b.m22()) && nearlyEqual(a.m23(), b.m23()) &&
-           nearlyEqual(a.m31(), b.m31()) && nearlyEqual(a.m32(), b.m32()) && nearlyEqual(a.m33(), b.m33());
+bool transform_nearly_equal(const Transform &a, const Transform &b) {
+    return nearly_equal(a.m11(), b.m11()) && nearly_equal(a.m12(), b.m12()) && nearly_equal(a.m13(), b.m13()) &&
+           nearly_equal(a.m21(), b.m21()) && nearly_equal(a.m22(), b.m22()) && nearly_equal(a.m23(), b.m23()) &&
+           nearly_equal(a.m31(), b.m31()) && nearly_equal(a.m32(), b.m32()) && nearly_equal(a.m33(), b.m33());
 }
 
-bool isSpaceChar(char16_t c) { return muse::Char::isSpace(c); }
+bool is_space_char(char16_t c) { return muse::Char::is_space(c); }
 
-void uniqueCoordinates(std::vector<double> &values) {
+void unique_coordinates(std::vector<double> &values) {
     std::sort(values.begin(), values.end());
     values.erase(std::unique(values.begin(), values.end(),
                              [](double a, double b) { return std::abs(a - b) <= 1e-9 * std::max({1.0, std::abs(a), std::abs(b)}); }),
@@ -78,38 +78,38 @@ void uniqueCoordinates(std::vector<double> &values) {
 //! result is a set of disjoint rectangles representing background minus the
 //! union of masks.  This keeps PDF/SVG clipping vector-accurate instead of
 //! snapping to integer device pixels, and handles overlapping masks.
-std::vector<cairo_rectangle_t> subtractRects(const cairo_rectangle_t &background, const std::vector<cairo_rectangle_t> &masks) {
+std::vector<cairo_rectangle_t> subtract_rects(const cairo_rectangle_t &background, const std::vector<cairo_rectangle_t> &masks) {
     std::vector<cairo_rectangle_t> result;
     if (!(background.width > 0.0) || !(background.height > 0.0)) {
         return result;
     }
 
-    const double backgroundTop = background.y;
-    const double backgroundBottom = background.y + background.height;
+    const double background_top = background.y;
+    const double background_bottom = background.y + background.height;
 
     std::vector<double> ys;
-    ys.push_back(backgroundTop);
-    ys.push_back(backgroundBottom);
+    ys.push_back(background_top);
+    ys.push_back(background_bottom);
     for (const cairo_rectangle_t &mask : masks) {
         if (!(mask.width > 0.0) || !(mask.height > 0.0)) {
             continue;
         }
-        const double top = std::max(backgroundTop, mask.y);
-        const double bottom = std::min(backgroundBottom, mask.y + mask.height);
+        const double top = std::max(background_top, mask.y);
+        const double bottom = std::min(background_bottom, mask.y + mask.height);
         if (bottom > top) {
             ys.push_back(top);
             ys.push_back(bottom);
         }
     }
-    uniqueCoordinates(ys);
+    unique_coordinates(ys);
     if (ys.size() < 2) {
         return result;
     }
 
-    const double backgroundLeft = background.x;
-    const double backgroundRight = background.x + background.width;
+    const double background_left = background.x;
+    const double background_right = background.x + background.width;
 
-    std::map<std::pair<double, double>, size_t> previousSpans;
+    std::map<std::pair<double, double>, size_t> previous_spans;
     for (size_t yi = 0; yi + 1 < ys.size(); ++yi) {
         const double y0 = ys[yi];
         const double y1 = ys[yi + 1];
@@ -138,18 +138,18 @@ std::vector<cairo_rectangle_t> subtractRects(const cairo_rectangle_t &background
             }
         }
 
-        std::map<std::pair<double, double>, size_t> currentSpans;
-        auto emitRun = [&](double x0, double x1) {
+        std::map<std::pair<double, double>, size_t> current_spans;
+        auto emit_run = [&](double x0, double x1) {
             if (!(x1 > x0)) {
                 return;
             }
             const std::pair<double, double> span(x0, x1);
-            auto previous = previousSpans.find(span);
-            if (previous != previousSpans.end()) {
+            auto previous = previous_spans.find(span);
+            if (previous != previous_spans.end()) {
                 cairo_rectangle_t &rect = result[previous->second];
                 if (std::abs(rect.y + rect.height - y0) <= 1e-9 * std::max(1.0, std::abs(y0))) {
                     rect.height = y1 - rect.y;
-                    currentSpans[span] = previous->second;
+                    current_spans[span] = previous->second;
                     return;
                 }
             }
@@ -159,33 +159,33 @@ std::vector<cairo_rectangle_t> subtractRects(const cairo_rectangle_t &background
             rect.width = x1 - x0;
             rect.height = y1 - y0;
             result.push_back(rect);
-            currentSpans[span] = result.size() - 1;
+            current_spans[span] = result.size() - 1;
         };
 
-        double cursor = backgroundLeft;
+        double cursor = background_left;
         for (const std::pair<double, double> &interval : merged) {
             if (interval.second <= cursor) {
                 continue;
             }
             if (interval.first > cursor) {
-                emitRun(cursor, std::min(interval.first, backgroundRight));
+                emit_run(cursor, std::min(interval.first, background_right));
             }
             cursor = std::max(cursor, interval.second);
-            if (cursor >= backgroundRight) {
+            if (cursor >= background_right) {
                 break;
             }
         }
-        if (cursor < backgroundRight) {
-            emitRun(cursor, backgroundRight);
+        if (cursor < background_right) {
+            emit_run(cursor, background_right);
         }
 
-        previousSpans.swap(currentSpans);
+        previous_spans.swap(current_spans);
     }
 
     return result;
 }
 
-std::u16string normalizeText(const std::u16string &in, bool expandTabs) {
+std::u16string normalize_text(const std::u16string &in, bool expand_tabs) {
     std::u16string out;
     out.reserve(in.size());
     for (size_t i = 0; i < in.size(); ++i) {
@@ -195,7 +195,7 @@ std::u16string normalizeText(const std::u16string &in, bool expandTabs) {
                 ++i;
             }
             out.push_back(u'\n');
-        } else if (c == u'\t' && expandTabs) {
+        } else if (c == u'\t' && expand_tabs) {
             out.append(8, u' ');
         } else {
             out.push_back(c);
@@ -204,7 +204,7 @@ std::u16string normalizeText(const std::u16string &in, bool expandTabs) {
     return out;
 }
 
-std::vector<std::u16string> splitParagraphs(const std::u16string &text) {
+std::vector<std::u16string> split_paragraphs(const std::u16string &text) {
     std::vector<std::u16string> out;
     size_t start = 0;
     for (size_t i = 0; i < text.size(); ++i) {
@@ -217,7 +217,7 @@ std::vector<std::u16string> splitParagraphs(const std::u16string &text) {
     return out;
 }
 
-std::u16string joinWithSpaces(const std::vector<std::u16string> &paragraphs) {
+std::u16string join_with_spaces(const std::vector<std::u16string> &paragraphs) {
     std::u16string out;
     for (size_t i = 0; i < paragraphs.size(); ++i) {
         if (i > 0) {
@@ -243,7 +243,7 @@ struct PngReadClosure {
     size_t pos = 0;
 };
 
-cairo_status_t readPngStream(void *closure, unsigned char *data, unsigned int length) {
+cairo_status_t read_png_stream(void *closure, unsigned char *data, unsigned int length) {
     PngReadClosure *c = static_cast<PngReadClosure *>(closure);
     if (!c || !data) {
         return CAIRO_STATUS_READ_ERROR;
@@ -274,25 +274,25 @@ struct FtFaceEntry {
     std::vector<uint8_t> data;
     FT_Face ft = nullptr;
     hb_face_t *hb = nullptr;
-    unsigned int ftUpem = 1000;
-    unsigned int hbUpem = 1000;
+    unsigned int ft_upem = 1000;
+    unsigned int hb_upem = 1000;
     int ascender = 0;
     int descender = 0;
     int height = 0;
-    int underlinePosition = 0;
-    int underlineThickness = 0;
+    int underline_position_value = 0;
+    int underline_thickness_value = 0;
     // Lazily created; mutable so text drawing can use a const face entry.
-    mutable std::array<cairo_font_face_t *, 4> cairoFaces{nullptr, nullptr, nullptr, nullptr};
-    mutable std::array<FT_Face, 4> variantFaces{nullptr, nullptr, nullptr, nullptr};
+    mutable std::array<cairo_font_face_t *, 4> cairo_faces{nullptr, nullptr, nullptr, nullptr};
+    mutable std::array<FT_Face, 4> variant_faces{nullptr, nullptr, nullptr, nullptr};
 
     ~FtFaceEntry() {
-        for (cairo_font_face_t *&f : cairoFaces) {
+        for (cairo_font_face_t *&f : cairo_faces) {
             if (f) {
                 cairo_font_face_destroy(f);
                 f = nullptr;
             }
         }
-        for (FT_Face variant : variantFaces) {
+        for (FT_Face variant : variant_faces) {
             if (variant) FT_Done_Face(variant);
         }
         if (hb) {
@@ -305,32 +305,32 @@ struct FtFaceEntry {
         }
     }
 
-    cairo_font_face_t *cairoFace(bool synthBold, bool synthItalic) const {
-        const size_t index = (synthBold ? 1u : 0u) | (synthItalic ? 2u : 0u);
-        cairo_font_face_t *&slot = cairoFaces[index];
+    cairo_font_face_t *cairo_face(bool synth_bold, bool synth_italic) const {
+        const size_t index = (synth_bold ? 1u : 0u) | (synth_italic ? 2u : 0u);
+        cairo_font_face_t *&slot = cairo_faces[index];
         if (slot) {
             return slot;
         }
 
         // Cairo can reuse a face for the same FT_Face; synthesis flags must not
         // mutate the face used by a previously rendered plain style.
-        if (!variantFaces[index] && FT_New_Memory_Face(ft->glyph->library, data.data(), static_cast<FT_Long>(data.size()), ft->face_index,
-                                                       &variantFaces[index]) != 0) {
+        if (!variant_faces[index] && FT_New_Memory_Face(ft->glyph->library, data.data(), static_cast<FT_Long>(data.size()), ft->face_index,
+                                                        &variant_faces[index]) != 0) {
             throw std::runtime_error("CairoPainter: cannot create independent font style face");
         }
-        cairo_font_face_t *face = cairo_ft_font_face_create_for_ft_face(variantFaces[index], 0);
+        cairo_font_face_t *face = cairo_ft_font_face_create_for_ft_face(variant_faces[index], 0);
         cairo_status_t status = cairo_font_face_status(face);
         if (status != CAIRO_STATUS_SUCCESS) {
             cairo_font_face_destroy(face);
             throw std::runtime_error(std::string("CairoPainter: cannot create Cairo FT font face: ") + cairo_status_to_string(status));
         }
 
-        if (synthBold || synthItalic) {
+        if (synth_bold || synth_italic) {
             unsigned int flags = 0;
-            if (synthBold) {
+            if (synth_bold) {
                 flags |= CAIRO_FT_SYNTHESIZE_BOLD;
             }
-            if (synthItalic) {
+            if (synth_italic) {
                 flags |= CAIRO_FT_SYNTHESIZE_OBLIQUE;
             }
             cairo_ft_font_face_set_synthesize(face, flags);
@@ -349,87 +349,87 @@ struct FtFaceEntry {
 
 struct FontCache {
     std::shared_ptr<FtFaceEntry> get(const Font &font, const IFontsDatabase &db) {
-        const FontDataKey requested = dataKeyForFont(font);
+        const FontDataKey requested = data_key_for_font(font);
         if (!requested.valid()) {
             throw std::runtime_error("CairoPainter: text drawing requires a non-empty font family");
         }
 
-        const CacheKey requestKey = std::make_pair(requested, font.type());
+        const CacheKey request_key = std::make_pair(requested, font.type());
 
         std::lock_guard<std::mutex> lock(mutex_);
-        auto requestIt = byRequest_.find(requestKey);
-        if (requestIt != byRequest_.end()) {
-            return requestIt->second;
+        auto request_it = by_request_.find(request_key);
+        if (request_it != by_request_.end()) {
+            return request_it->second;
         }
 
-        const FontData fontData = db.fontData(requested, font.type());
-        if (!fontData.valid()) {
+        const FontData font_data = db.font_data(requested, font.type());
+        if (!font_data.valid()) {
             throw std::runtime_error("CairoPainter: IFontsDatabase returned no font data for family '" +
-                                     requested.family().id().toStdString() + "'");
+                                     requested.family().id().to_std_string() + "'");
         }
 
-        const CacheKey actualKey = std::make_pair(fontData.key, font.type());
-        auto actualIt = byActual_.find(actualKey);
-        if (actualIt != byActual_.end()) {
-            byRequest_[requestKey] = actualIt->second;
-            return actualIt->second;
+        const CacheKey actual_key = std::make_pair(font_data.key, font.type());
+        auto actual_it = by_actual_.find(actual_key);
+        if (actual_it != by_actual_.end()) {
+            by_request_[request_key] = actual_it->second;
+            return actual_it->second;
         }
 
-        if (!ftLibrary_) {
-            if (FT_Init_FreeType(&ftLibrary_) != 0) {
+        if (!ft_library_) {
+            if (FT_Init_FreeType(&ft_library_) != 0) {
                 throw std::runtime_error("CairoPainter: FT_Init_FreeType failed");
             }
         }
 
-        if (fontData.data.size() > static_cast<size_t>(std::numeric_limits<FT_Long>::max())) {
+        if (font_data.data.size() > static_cast<size_t>(std::numeric_limits<FT_Long>::max())) {
             throw std::runtime_error("CairoPainter: font file is too large for FreeType");
         }
 
         auto entry = std::make_shared<FtFaceEntry>();
-        entry->key = fontData.key;
-        entry->data.assign(fontData.data.constData(), fontData.data.constData() + fontData.data.size());
+        entry->key = font_data.key;
+        entry->data.assign(font_data.data.const_data(), font_data.data.const_data() + font_data.data.size());
         if (entry->data.empty()) {
             throw std::runtime_error("CairoPainter: empty font file");
         }
 
-        FT_Error ftError =
-            newMatchingMemoryFace(ftLibrary_, entry->data.data(), static_cast<FT_Long>(entry->data.size()), fontData.key, &entry->ft);
-        if (ftError != 0 || !entry->ft) {
-            throw std::runtime_error("CairoPainter: FT_New_Memory_Face failed for family '" + fontData.key.family().id().toStdString() +
+        FT_Error ft_error =
+            new_matching_memory_face(ft_library_, entry->data.data(), static_cast<FT_Long>(entry->data.size()), font_data.key, &entry->ft);
+        if (ft_error != 0 || !entry->ft) {
+            throw std::runtime_error("CairoPainter: FT_New_Memory_Face failed for family '" + font_data.key.family().id().to_std_string() +
                                      "'");
         }
 
-        entry->ftUpem = entry->ft->units_per_EM ? static_cast<unsigned int>(entry->ft->units_per_EM) : 1000u;
+        entry->ft_upem = entry->ft->units_per_EM ? static_cast<unsigned int>(entry->ft->units_per_EM) : 1000u;
         entry->ascender = static_cast<int>(entry->ft->ascender);
         entry->descender = static_cast<int>(entry->ft->descender);
         entry->height = static_cast<int>(entry->ft->height);
-        entry->underlinePosition = static_cast<int>(entry->ft->underline_position);
-        entry->underlineThickness = static_cast<int>(entry->ft->underline_thickness);
+        entry->underline_position_value = static_cast<int>(entry->ft->underline_position);
+        entry->underline_thickness_value = static_cast<int>(entry->ft->underline_thickness);
 
         entry->hb = hb_ft_face_create_referenced(entry->ft);
         if (!entry->hb) {
             throw std::runtime_error("CairoPainter: hb_ft_face_create_referenced failed");
         }
-        entry->hbUpem = hb_face_get_upem(entry->hb);
-        if (!entry->hbUpem) {
-            entry->hbUpem = entry->ftUpem;
+        entry->hb_upem = hb_face_get_upem(entry->hb);
+        if (!entry->hb_upem) {
+            entry->hb_upem = entry->ft_upem;
         }
 
-        byActual_[actualKey] = entry;
-        byRequest_[requestKey] = entry;
+        by_actual_[actual_key] = entry;
+        by_request_[request_key] = entry;
         return entry;
     }
 
 private:
     using CacheKey = std::pair<FontDataKey, Font::Type>;
 
-    FT_Library ftLibrary_ = nullptr;
+    FT_Library ft_library_ = nullptr;
     std::mutex mutex_;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> byActual_;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> byRequest_;
+    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> by_actual_;
+    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> by_request_;
 };
 
-FontCache &fontCache() {
+FontCache &font_cache() {
     // Deliberately process-lifetime: Cairo/FreeType font faces must outlive all
     // painters, and avoiding static destruction removes a shutdown-order hazard.
     static FontCache *cache = new FontCache();
@@ -443,21 +443,21 @@ struct ShapedLine {
     double width = 0.0;
 };
 
-double ascentFor(const FtFaceEntry &entry, double pixelSize) {
-    return std::max(0.0, double(entry.ascender) * pixelSize / double(entry.ftUpem));
+double ascent_for(const FtFaceEntry &entry, double pixel_size) {
+    return std::max(0.0, double(entry.ascender) * pixel_size / double(entry.ft_upem));
 }
 
-double descentFor(const FtFaceEntry &entry, double pixelSize) {
-    return std::max(0.0, -double(entry.descender) * pixelSize / double(entry.ftUpem));
+double descent_for(const FtFaceEntry &entry, double pixel_size) {
+    return std::max(0.0, -double(entry.descender) * pixel_size / double(entry.ft_upem));
 }
 
-double lineHeightFor(const FtFaceEntry &entry, double pixelSize) {
-    const double asc = ascentFor(entry, pixelSize);
-    const double desc = descentFor(entry, pixelSize);
-    double height = double(entry.height) * pixelSize / double(entry.ftUpem);
+double line_height_for(const FtFaceEntry &entry, double pixel_size) {
+    const double asc = ascent_for(entry, pixel_size);
+    const double desc = descent_for(entry, pixel_size);
+    double height = double(entry.height) * pixel_size / double(entry.ft_upem);
     height = std::max(height, asc + desc);
     if (!(height > 0.0)) {
-        height = pixelSize;
+        height = pixel_size;
     }
     return height;
 }
@@ -470,23 +470,23 @@ struct CairoPainter::Impl {
     struct State {
         Font font;
         Pen pen;
-        Brush brush = Brush(BrushStyle::NoBrush);
-        Transform worldTransform;
-        Transform viewTransform;
+        Brush brush = Brush(BrushStyle::NO_BRUSH);
+        Transform world_transform;
+        Transform view_transform;
         Transform transform;
         RectF window;
         RectF viewport;
-        bool hasView = false;
+        bool has_view = false;
         //! Once setTransform() has been used, its matrix is authoritative.
         //! muse::draw::Painter composes window/viewport itself and passes the
         //! complete matrix here; before that, window/viewport are composed for
         //! callers that use this provider directly.
-        bool transformExplicit = false;
+        bool transform_explicit = false;
         bool antialiasing = false;
-        CompositionMode composition = CompositionMode::SourceOver;
-        bool clippingEnabled = true;
-        bool hasUserClip = false;
-        std::vector<cairo_rectangle_t> userClipRects;
+        CompositionMode composition = CompositionMode::SOURCE_OVER;
+        bool clipping_enabled = true;
+        bool has_user_clip = false;
+        std::vector<cairo_rectangle_t> user_clip_rects;
     };
 
     struct CachedSurface {
@@ -501,90 +501,90 @@ struct CairoPainter::Impl {
     bool active = true;
     State state;
     std::vector<State> stack;
-    std::vector<cairo_rectangle_t> baseClip;
+    std::vector<cairo_rectangle_t> base_clip;
     // PDF/SVG surfaces may report CLIP_NOT_REPRESENTABLE even for an unclipped
     // context.  In that case we conservatively assume the surface bounds.
-    bool baseClipKnown = true;
+    bool base_clip_known = true;
     std::map<unsigned int, CachedSurface> surfaces;
 
-    Impl(cairo_t *context, const IFontsDatabase &fontsDatabase, double deviceDpi);
+    Impl(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi);
     ~Impl();
 
-    bool isActive() const;
-    void beginTarget(const std::string &name);
-    void beforeEndTargetHook(Painter *painter);
-    bool endTarget(bool endDraw);
-    void beginObject(const std::string &name);
-    void endObject();
+    bool is_active() const;
+    void begin_target(const std::string &name);
+    void before_end_target_hook(Painter *painter);
+    bool end_target(bool end_draw);
+    void begin_object(const std::string &name);
+    void end_object();
 
-    void setAntialiasing(bool arg);
-    void setCompositionMode(CompositionMode mode);
-    void setWindow(const RectF &window);
-    void setViewport(const RectF &viewport);
-    void setFont(const Font &font);
-    void setPen(const Pen &pen);
-    void setNoPen();
-    void setBrush(const Brush &brush);
+    void set_antialiasing(bool arg);
+    void set_composition_mode(CompositionMode mode);
+    void set_window(const RectF &window);
+    void set_viewport(const RectF &viewport);
+    void set_font(const Font &font);
+    void set_pen(const Pen &pen);
+    void set_no_pen();
+    void set_brush(const Brush &brush);
     void save();
     void restore();
-    void setTransform(const Transform &transform);
+    void set_transform(const Transform &transform);
 
-    void drawPath(const PainterPath &path);
-    void drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode);
-    void drawText(const PointF &point, const String &text);
-    void drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text);
-    void drawSymbol(const PointF &point, char32_t ucs4Code);
-    void drawPixmap(const PointF &point, const Pixmap &pm);
-    void drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset);
+    void draw_path(const PainterPath &path);
+    void draw_polygon(const PointF *points, size_t point_count, PolygonMode mode);
+    void draw_text(const PointF &point, const String &text);
+    void draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text);
+    void draw_symbol(const PointF &point, char32_t ucs4_code);
+    void draw_pixmap(const PointF &point, const Pixmap &pm);
+    void draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset);
 
-    bool hasClipping() const;
-    void setClipRect(const RectF &rect);
-    void setMask(const RectF &background, const std::vector<RectF> &maskRects);
-    void setClipping(bool enable);
+    bool has_clipping() const;
+    void set_clip_rect(const RectF &rect);
+    void set_mask(const RectF &background, const std::vector<RectF> &mask_rects);
+    void set_clipping(bool enable);
 
 private:
-    void ensureOk(const char *what) const;
-    void validateAffine(const Transform &transform) const;
-    void applyTransform();
-    void updateViewTransform();
-    void setSourceColor(const Color &color);
-    double fontSizePixels(const Font &font) const;
-    std::shared_ptr<FtFaceEntry> faceFor(const Font &font);
+    void ensure_ok(const char *what) const;
+    void validate_affine(const Transform &transform) const;
+    void apply_transform();
+    void update_view_transform();
+    void set_source_color(const Color &color);
+    double font_size_pixels(const Font &font) const;
+    std::shared_ptr<FtFaceEntry> face_for(const Font &font);
 
-    void buildPath(const PainterPath &path);
-    void applyPen();
-    void applyBrushSource();
+    void build_path(const PainterPath &path);
+    void apply_pen();
+    void apply_brush_source();
 
-    std::vector<cairo_rectangle_t> copyClipRects();
-    cairo_rectangle_t deviceBounds(const RectF &rect) const;
-    void resetToBaseClip();
-    void applyDeviceClipRects(const std::vector<cairo_rectangle_t> &rects);
-    void clearUserClip();
+    std::vector<cairo_rectangle_t> copy_clip_rects();
+    cairo_rectangle_t device_bounds(const RectF &rect) const;
+    void reset_to_base_clip();
+    void apply_device_clip_rects(const std::vector<cairo_rectangle_t> &rects);
+    void clear_user_clip();
 
-    ShapedLine shapeText(const FtFaceEntry &entry, const Font &font, const std::u16string &text);
-    double measureText(const FtFaceEntry &entry, const Font &font, const std::u16string &text);
-    std::vector<std::u16string> wrapParagraph(const FtFaceEntry &entry, const Font &font, const std::u16string &paragraph, double maxWidth,
-                                              bool anywhere);
-    std::vector<ShapedLine> layoutLines(const FtFaceEntry &entry, const Font &font, const std::u16string &text, const RectF &rect,
-                                        TextFlags textFlags);
-    void applyFontState(const FtFaceEntry &entry, const Font &font, double pixelSize);
-    void drawTextDecorations(const FtFaceEntry &entry, const Font &font, double pixelSize, double x, double baseline, double width);
-    void drawShapedLine(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline, bool justify,
-                        double targetWidth);
-    void drawTextAtPoint(const Font &font, const PointF &point, const String &text);
-    void drawTextInRect(const Font &font, const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text);
+    ShapedLine shape_text(const FtFaceEntry &entry, const Font &font, const std::u16string &text);
+    double measure_text(const FtFaceEntry &entry, const Font &font, const std::u16string &text);
+    std::vector<std::u16string> wrap_paragraph(const FtFaceEntry &entry, const Font &font, const std::u16string &paragraph,
+                                               double max_width, bool anywhere);
+    std::vector<ShapedLine> layout_lines(const FtFaceEntry &entry, const Font &font, const std::u16string &text, const RectF &rect,
+                                         TextFlags text_flags);
+    void apply_font_state(const FtFaceEntry &entry, const Font &font, double pixel_size);
+    void draw_text_decorations(const FtFaceEntry &entry, const Font &font, double pixel_size, double x, double baseline, double width);
+    void draw_shaped_line(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline, bool justify,
+                          double target_width);
+    void draw_text_at_point(const Font &font, const PointF &point, const String &text);
+    void draw_text_in_rect(const Font &font, const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text);
 
-    cairo_surface_t *pixmapSurface(const Pixmap &pm);
+    cairo_surface_t *pixmap_surface(const Pixmap &pm);
 };
 
 // --------------------------------------------------------------- lifecycle
 
-CairoPainter::Impl::Impl(cairo_t *context, const IFontsDatabase &fontsDatabase, double deviceDpi)
-    : cr(context), fonts(fontsDatabase), dpi(deviceDpi) {
+CairoPainter::Impl::Impl(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi)
+    : cr(context), fonts(fonts_database), dpi(device_dpi) {
     if (!cr) {
         throw std::invalid_argument("CairoPainter: cairo_t context must not be null");
     }
-    if (!isFinite(dpi) || dpi <= 0.0) {
+    if (!is_finite(dpi) || dpi <= 0.0) {
         throw std::invalid_argument("CairoPainter: device DPI must be a positive finite number");
     }
 
@@ -595,35 +595,35 @@ CairoPainter::Impl::Impl(cairo_t *context, const IFontsDatabase &fontsDatabase, 
 
     state.font = Font();
     state.pen = Pen();
-    state.brush = Brush(BrushStyle::NoBrush);
+    state.brush = Brush(BrushStyle::NO_BRUSH);
 
     // Adopt a transform the caller applied to the cairo_t before handing it
     // over, mirroring QPainterProvider's initial transform read.
-    cairo_matrix_t initialMatrix;
-    cairo_get_matrix(cr, &initialMatrix);
-    const bool identityMatrix = initialMatrix.xx == 1.0 && initialMatrix.yx == 0.0 && initialMatrix.xy == 0.0 && initialMatrix.yy == 1.0 &&
-                                initialMatrix.x0 == 0.0 && initialMatrix.y0 == 0.0;
-    if (!identityMatrix) {
+    cairo_matrix_t initial_matrix;
+    cairo_get_matrix(cr, &initial_matrix);
+    const bool identity_matrix = initial_matrix.xx == 1.0 && initial_matrix.yx == 0.0 && initial_matrix.xy == 0.0 &&
+                                 initial_matrix.yy == 1.0 && initial_matrix.x0 == 0.0 && initial_matrix.y0 == 0.0;
+    if (!identity_matrix) {
         state.transform =
-            Transform(initialMatrix.xx, initialMatrix.yx, initialMatrix.xy, initialMatrix.yy, initialMatrix.x0, initialMatrix.y0);
-        state.worldTransform = state.transform;
-        state.transformExplicit = true;
+            Transform(initial_matrix.xx, initial_matrix.yx, initial_matrix.xy, initial_matrix.yy, initial_matrix.x0, initial_matrix.y0);
+        state.world_transform = state.transform;
+        state.transform_explicit = true;
     }
 
     try {
-        baseClip = copyClipRects();
-        baseClipKnown = true;
+        base_clip = copy_clip_rects();
+        base_clip_known = true;
     } catch (const std::runtime_error &) {
         // Some vector backends (PDF/SVG) do not expose their clip as a
         // rectangle list.  A fresh cairo_t's only clip is the surface bounds,
         // so treating it as "no extra base clip" is the safe interpretation.
-        baseClip.clear();
-        baseClipKnown = false;
+        base_clip.clear();
+        base_clip_known = false;
     }
 
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-    ensureOk("initialize");
+    ensure_ok("initialize");
 }
 
 CairoPainter::Impl::~Impl() {
@@ -635,37 +635,37 @@ CairoPainter::Impl::~Impl() {
     }
 }
 
-void CairoPainter::Impl::ensureOk(const char *what) const {
+void CairoPainter::Impl::ensure_ok(const char *what) const {
     const cairo_status_t status = cairo_status(cr);
     if (status != CAIRO_STATUS_SUCCESS) {
         throw std::runtime_error(std::string("CairoPainter: ") + what + ": " + cairo_status_to_string(status));
     }
 }
 
-bool CairoPainter::Impl::isActive() const { return active; }
+bool CairoPainter::Impl::is_active() const { return active; }
 
-void CairoPainter::Impl::beginTarget(const std::string &) {}
+void CairoPainter::Impl::begin_target(const std::string &) {}
 
-void CairoPainter::Impl::beforeEndTargetHook(Painter *) {}
+void CairoPainter::Impl::before_end_target_hook(Painter *) {}
 
-bool CairoPainter::Impl::endTarget(bool endDraw) {
+bool CairoPainter::Impl::end_target(bool end_draw) {
     if (!active) {
         return true;
     }
-    if (endDraw) {
+    if (end_draw) {
         active = false;
     }
     return cairo_status(cr) == CAIRO_STATUS_SUCCESS;
 }
 
-void CairoPainter::Impl::beginObject(const std::string &) {}
+void CairoPainter::Impl::begin_object(const std::string &) {}
 
-void CairoPainter::Impl::endObject() {}
+void CairoPainter::Impl::end_object() {}
 
 // --------------------------------------------------------------- transform
 
-void CairoPainter::Impl::validateAffine(const Transform &transform) const {
-    if (!finiteTransform(transform)) {
+void CairoPainter::Impl::validate_affine(const Transform &transform) const {
+    if (!finite_transform(transform)) {
         throw std::runtime_error("CairoPainter: non-finite transform");
     }
     if (std::abs(transform.m13()) > 1e-12 || std::abs(transform.m23()) > 1e-12 || std::abs(transform.m33() - 1.0) > 1e-12) {
@@ -673,8 +673,8 @@ void CairoPainter::Impl::validateAffine(const Transform &transform) const {
     }
 }
 
-void CairoPainter::Impl::applyTransform() {
-    validateAffine(state.transform);
+void CairoPainter::Impl::apply_transform() {
+    validate_affine(state.transform);
 
     cairo_matrix_t matrix;
     matrix.xx = state.transform.m11();
@@ -685,58 +685,58 @@ void CairoPainter::Impl::applyTransform() {
     matrix.y0 = state.transform.dy();
 
     cairo_set_matrix(cr, &matrix);
-    ensureOk("setTransform");
+    ensure_ok("setTransform");
 }
 
-void CairoPainter::Impl::updateViewTransform() {
-    const bool valid = finiteRect(state.window) && finiteRect(state.viewport) && state.window.width() > 0.0 &&
+void CairoPainter::Impl::update_view_transform() {
+    const bool valid = finite_rect(state.window) && finite_rect(state.viewport) && state.window.width() > 0.0 &&
                        state.window.height() > 0.0 && state.viewport.width() > 0.0 && state.viewport.height() > 0.0;
 
     if (!valid) {
-        state.hasView = false;
-        if (!state.transformExplicit) {
-            state.transform = state.worldTransform;
-            applyTransform();
+        state.has_view = false;
+        if (!state.transform_explicit) {
+            state.transform = state.world_transform;
+            apply_transform();
         }
         return;
     }
 
-    const double scaleX = state.viewport.width() / state.window.width();
-    const double scaleY = state.viewport.height() / state.window.height();
-    if (!isFinite(scaleX) || !isFinite(scaleY)) {
-        state.hasView = false;
-        if (!state.transformExplicit) {
-            state.transform = state.worldTransform;
-            applyTransform();
+    const double scale_x = state.viewport.width() / state.window.width();
+    const double scale_y = state.viewport.height() / state.window.height();
+    if (!is_finite(scale_x) || !is_finite(scale_y)) {
+        state.has_view = false;
+        if (!state.transform_explicit) {
+            state.transform = state.world_transform;
+            apply_transform();
         }
         return;
     }
 
-    const Transform viewTransform(scaleX, 0.0, 0.0, scaleY, state.viewport.x() - state.window.x() * scaleX,
-                                  state.viewport.y() - state.window.y() * scaleY);
-    if (!finiteTransform(viewTransform)) {
-        state.hasView = false;
-        if (!state.transformExplicit) {
-            state.transform = state.worldTransform;
-            applyTransform();
+    const Transform view_transform(scale_x, 0.0, 0.0, scale_y, state.viewport.x() - state.window.x() * scale_x,
+                                   state.viewport.y() - state.window.y() * scale_y);
+    if (!finite_transform(view_transform)) {
+        state.has_view = false;
+        if (!state.transform_explicit) {
+            state.transform = state.world_transform;
+            apply_transform();
         }
         return;
     }
 
-    state.viewTransform = viewTransform;
-    state.hasView = true;
+    state.view_transform = view_transform;
+    state.has_view = true;
 
-    if (!state.transformExplicit) {
-        const Transform effective = state.worldTransform * viewTransform;
-        if (!finiteTransform(effective)) {
+    if (!state.transform_explicit) {
+        const Transform effective = state.world_transform * view_transform;
+        if (!finite_transform(effective)) {
             throw std::runtime_error("CairoPainter: window/viewport composition produced non-finite values");
         }
         state.transform = effective;
-        applyTransform();
+        apply_transform();
     }
 }
 
-void CairoPainter::Impl::setTransform(const Transform &transform) {
+void CairoPainter::Impl::set_transform(const Transform &transform) {
     if (!active) {
         return;
     }
@@ -744,12 +744,12 @@ void CairoPainter::Impl::setTransform(const Transform &transform) {
     // muse::draw::Painter temporarily feeds a viewport transform computed with
     // a zero-sized window; that transform is singular/NaN.  Ignore it rather
     // than poisoning the cairo context.  The real transform follows immediately.
-    if (!finiteTransform(transform)) {
+    if (!finite_transform(transform)) {
         return;
     }
-    validateAffine(transform);
+    validate_affine(transform);
 
-    if (!state.transformExplicit && state.hasView) {
+    if (!state.transform_explicit && state.has_view) {
         // Two legitimate callers exist:
         //  * muse::draw::Painter passes world * viewport, and has already
         //    written its own window/viewport into our state as well;
@@ -758,100 +758,100 @@ void CairoPainter::Impl::setTransform(const Transform &transform) {
         // If the incoming matrix already equals the composition we would
         // produce, accept it as complete.  Otherwise treat it as the world
         // transform and compose it with the current window/viewport.
-        const Transform composed = state.worldTransform * state.viewTransform;
-        if (transformNearlyEqual(transform, composed) || transformNearlyEqual(transform, state.transform)) {
-            state.worldTransform = transform;
+        const Transform composed = state.world_transform * state.view_transform;
+        if (transform_nearly_equal(transform, composed) || transform_nearly_equal(transform, state.transform)) {
+            state.world_transform = transform;
             state.transform = transform;
-            state.transformExplicit = true;
-            applyTransform();
+            state.transform_explicit = true;
+            apply_transform();
             return;
         }
 
-        const Transform effective = transform * state.viewTransform;
-        if (!finiteTransform(effective)) {
+        const Transform effective = transform * state.view_transform;
+        if (!finite_transform(effective)) {
             throw std::runtime_error("CairoPainter: transform composition produced non-finite values");
         }
-        state.worldTransform = transform;
+        state.world_transform = transform;
         state.transform = effective;
-        applyTransform();
+        apply_transform();
         return;
     }
 
     // Once an explicit transform has been accepted as the complete matrix, it
     // stays authoritative.  This matches QPainterProvider and prevents double
     // composition when Painter subsequently calls setWindow()/setViewport().
-    state.worldTransform = transform;
+    state.world_transform = transform;
     state.transform = transform;
-    state.transformExplicit = true;
-    applyTransform();
+    state.transform_explicit = true;
+    apply_transform();
 }
 
-void CairoPainter::Impl::setWindow(const RectF &window) {
+void CairoPainter::Impl::set_window(const RectF &window) {
     if (!active) {
         return;
     }
     state.window = window;
-    updateViewTransform();
+    update_view_transform();
 }
 
-void CairoPainter::Impl::setViewport(const RectF &viewport) {
+void CairoPainter::Impl::set_viewport(const RectF &viewport) {
     if (!active) {
         return;
     }
     state.viewport = viewport;
-    updateViewTransform();
+    update_view_transform();
 }
 
 // --------------------------------------------------------- paint state
 
-void CairoPainter::Impl::setAntialiasing(bool arg) {
+void CairoPainter::Impl::set_antialiasing(bool arg) {
     if (!active) {
         return;
     }
     state.antialiasing = arg;
     cairo_set_antialias(cr, arg ? CAIRO_ANTIALIAS_GRAY : CAIRO_ANTIALIAS_NONE);
-    ensureOk("setAntialiasing");
+    ensure_ok("setAntialiasing");
 }
 
-void CairoPainter::Impl::setCompositionMode(CompositionMode mode) {
+void CairoPainter::Impl::set_composition_mode(CompositionMode mode) {
     if (!active) {
         return;
     }
 
     cairo_operator_t op;
     switch (mode) {
-        case CompositionMode::SourceOver: op = CAIRO_OPERATOR_OVER; break;
-        case CompositionMode::HardLight: op = CAIRO_OPERATOR_HARD_LIGHT; break;
+        case CompositionMode::SOURCE_OVER: op = CAIRO_OPERATOR_OVER; break;
+        case CompositionMode::HARD_LIGHT: op = CAIRO_OPERATOR_HARD_LIGHT; break;
         default: throw std::runtime_error("CairoPainter: unsupported composition mode " + std::to_string(static_cast<int>(mode)));
     }
 
     state.composition = mode;
     cairo_set_operator(cr, op);
-    ensureOk("setCompositionMode");
+    ensure_ok("setCompositionMode");
 }
 
-void CairoPainter::Impl::setFont(const Font &font) {
+void CairoPainter::Impl::set_font(const Font &font) {
     if (!active) {
         return;
     }
     state.font = font;
 }
 
-void CairoPainter::Impl::setPen(const Pen &pen) {
+void CairoPainter::Impl::set_pen(const Pen &pen) {
     if (!active) {
         return;
     }
     state.pen = pen;
 }
 
-void CairoPainter::Impl::setNoPen() {
+void CairoPainter::Impl::set_no_pen() {
     if (!active) {
         return;
     }
-    state.pen = Pen(PenStyle::NoPen);
+    state.pen = Pen(PenStyle::NO_PEN);
 }
 
-void CairoPainter::Impl::setBrush(const Brush &brush) {
+void CairoPainter::Impl::set_brush(const Brush &brush) {
     if (!active) {
         return;
     }
@@ -864,7 +864,7 @@ void CairoPainter::Impl::save() {
     }
     stack.push_back(state);
     cairo_save(cr);
-    ensureOk("save");
+    ensure_ok("save");
 }
 
 void CairoPainter::Impl::restore() {
@@ -872,13 +872,13 @@ void CairoPainter::Impl::restore() {
         return;
     }
     cairo_restore(cr);
-    ensureOk("restore");
+    ensure_ok("restore");
     state = std::move(stack.back());
     stack.pop_back();
 }
 
-void CairoPainter::Impl::setSourceColor(const Color &color) {
-    const Color c = color.isValid() ? color : Color::BLACK;
+void CairoPainter::Impl::set_source_color(const Color &color) {
+    const Color c = color.is_valid() ? color : Color::black;
     const double alpha = std::clamp(c.alpha(), 0, 255) / 255.0;
     const double red = std::clamp(c.red(), 0, 255) / 255.0;
     const double green = std::clamp(c.green(), 0, 255) / 255.0;
@@ -886,61 +886,61 @@ void CairoPainter::Impl::setSourceColor(const Color &color) {
     cairo_set_source_rgba(cr, red, green, blue, alpha);
 }
 
-double CairoPainter::Impl::fontSizePixels(const Font &font) const {
-    if (font.pixelSize() > 0) {
-        return double(font.pixelSize());
+double CairoPainter::Impl::font_size_pixels(const Font &font) const {
+    if (font.pixel_size() > 0) {
+        return double(font.pixel_size());
     }
-    if (font.pointSizeF() > 0.0) {
-        const double pixelSize = font.pointSizeF() * dpi / 72.0;
-        if (isFinite(pixelSize) && pixelSize > 0.0) {
-            return pixelSize;
+    if (font.point_size_f() > 0.0) {
+        const double pixel_size = font.point_size_f() * dpi / 72.0;
+        if (is_finite(pixel_size) && pixel_size > 0.0) {
+            return pixel_size;
         }
     }
     throw std::runtime_error("CairoPainter: font has neither a point size nor a pixel size");
 }
 
-std::shared_ptr<FtFaceEntry> CairoPainter::Impl::faceFor(const Font &font) { return fontCache().get(font, fonts); }
+std::shared_ptr<FtFaceEntry> CairoPainter::Impl::face_for(const Font &font) { return font_cache().get(font, fonts); }
 
-void CairoPainter::Impl::applyPen() {
-    if (state.pen.style() == PenStyle::NoPen) {
+void CairoPainter::Impl::apply_pen() {
+    if (state.pen.style() == PenStyle::NO_PEN) {
         return;
     }
 
-    setSourceColor(state.pen.color());
+    set_source_color(state.pen.color());
 
-    double width = state.pen.widthF();
-    if (!isFinite(width) || width < 0.0) {
+    double width = state.pen.width_f();
+    if (!is_finite(width) || width < 0.0) {
         width = 0.0;
     }
     // Cairo interprets a zero line width as a one-device-pixel hairline, which
     // matches Qt's cosmetic pen behaviour.
     cairo_set_line_width(cr, width);
 
-    switch (state.pen.capStyle()) {
-        case PenCapStyle::FlatCap: cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT); break;
-        case PenCapStyle::SquareCap: cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE); break;
-        case PenCapStyle::RoundCap: cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); break;
+    switch (state.pen.cap_style()) {
+        case PenCapStyle::FLAT_CAP: cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT); break;
+        case PenCapStyle::SQUARE_CAP: cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE); break;
+        case PenCapStyle::ROUND_CAP: cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND); break;
         default: throw std::runtime_error("CairoPainter: unsupported pen cap style");
     }
 
-    switch (state.pen.joinStyle()) {
-        case PenJoinStyle::MiterJoin: cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER); break;
-        case PenJoinStyle::BevelJoin: cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL); break;
-        case PenJoinStyle::RoundJoin: cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND); break;
+    switch (state.pen.join_style()) {
+        case PenJoinStyle::MITER_JOIN: cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER); break;
+        case PenJoinStyle::BEVEL_JOIN: cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL); break;
+        case PenJoinStyle::ROUND_JOIN: cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND); break;
         default: throw std::runtime_error("CairoPainter: unsupported pen join style");
     }
     // QPen's default miter limit is 2.0; Cairo's default is 10.0.
     cairo_set_miter_limit(cr, 2.0);
 
     switch (state.pen.style()) {
-        case PenStyle::NoPen: break;
-        case PenStyle::SolidLine: cairo_set_dash(cr, nullptr, 0, 0.0); break;
-        case PenStyle::DashLine:
-        case PenStyle::DotLine:
-        case PenStyle::DashDotLine:
-        case PenStyle::DashDotDotLine:
-        case PenStyle::CustomDashLine: {
-            const std::vector<double> pattern = state.pen.dashPattern();
+        case PenStyle::NO_PEN: break;
+        case PenStyle::SOLID_LINE: cairo_set_dash(cr, nullptr, 0, 0.0); break;
+        case PenStyle::DASH_LINE:
+        case PenStyle::DOT_LINE:
+        case PenStyle::DASH_DOT_LINE:
+        case PenStyle::DASH_DOT_DOT_LINE:
+        case PenStyle::CUSTOM_DASH_LINE: {
+            const std::vector<double> pattern = state.pen.dash_pattern();
             if (pattern.empty()) {
                 cairo_set_dash(cr, nullptr, 0, 0.0);
                 break;
@@ -954,26 +954,26 @@ void CairoPainter::Impl::applyPen() {
             if (!(unit > 0.0)) {
                 cairo_matrix_t ctm;
                 cairo_get_matrix(cr, &ctm);
-                const double scaleX = std::hypot(ctm.xx, ctm.yx);
-                const double scaleY = std::hypot(ctm.xy, ctm.yy);
-                const double scale = (scaleX + scaleY) / 2.0;
-                unit = (isFinite(scale) && scale > 0.0) ? 1.0 / scale : 1.0;
+                const double scale_x = std::hypot(ctm.xx, ctm.yx);
+                const double scale_y = std::hypot(ctm.xy, ctm.yy);
+                const double scale = (scale_x + scale_y) / 2.0;
+                unit = (is_finite(scale) && scale > 0.0) ? 1.0 / scale : 1.0;
             }
             std::vector<double> dashes;
             dashes.reserve(pattern.size());
-            bool allZero = true;
+            bool all_zero = true;
             for (double value : pattern) {
                 double dash = value * unit;
-                if (!isFinite(dash) || dash < 0.0) {
+                if (!is_finite(dash) || dash < 0.0) {
                     dash = 0.0;
                 }
                 if (dash > 0.0) {
-                    allZero = false;
+                    all_zero = false;
                 }
                 dashes.push_back(dash);
             }
 
-            if (allZero || dashes.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            if (all_zero || dashes.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
                 cairo_set_dash(cr, nullptr, 0, 0.0);
             } else {
                 cairo_set_dash(cr, dashes.data(), static_cast<int>(dashes.size()), 0.0);
@@ -982,20 +982,20 @@ void CairoPainter::Impl::applyPen() {
         default: throw std::runtime_error("CairoPainter: unsupported pen style " + std::to_string(static_cast<int>(state.pen.style())));
     }
 
-    ensureOk("pen");
+    ensure_ok("pen");
 }
 
-void CairoPainter::Impl::applyBrushSource() {
+void CairoPainter::Impl::apply_brush_source() {
     switch (state.brush.style()) {
-        case BrushStyle::NoBrush: return;
-        case BrushStyle::SolidPattern: setSourceColor(state.brush.color()); return;
+        case BrushStyle::NO_BRUSH: return;
+        case BrushStyle::SOLID_PATTERN: set_source_color(state.brush.color()); return;
         default: throw std::runtime_error("CairoPainter: unsupported brush style " + std::to_string(static_cast<int>(state.brush.style())));
     }
 }
 
 // --------------------------------------------------------------- clipping
 
-std::vector<cairo_rectangle_t> CairoPainter::Impl::copyClipRects() {
+std::vector<cairo_rectangle_t> CairoPainter::Impl::copy_clip_rects() {
     std::unique_ptr<cairo_rectangle_list_t, decltype(&cairo_rectangle_list_destroy)> list(cairo_copy_clip_rectangle_list(cr),
                                                                                           cairo_rectangle_list_destroy);
     if (!list) {
@@ -1022,49 +1022,49 @@ std::vector<cairo_rectangle_t> CairoPainter::Impl::copyClipRects() {
     std::vector<cairo_rectangle_t> rects;
     rects.reserve(list->num_rectangles > 0 ? static_cast<size_t>(list->num_rectangles) : 0u);
     for (int i = 0; i < list->num_rectangles; ++i) {
-        const cairo_rectangle_t &userRect = list->rectangles[i];
-        double minX = std::numeric_limits<double>::max();
-        double minY = std::numeric_limits<double>::max();
-        double maxX = std::numeric_limits<double>::lowest();
-        double maxY = std::numeric_limits<double>::lowest();
+        const cairo_rectangle_t &user_rect = list->rectangles[i];
+        double min_x = std::numeric_limits<double>::max();
+        double min_y = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double max_y = std::numeric_limits<double>::lowest();
 
-        const double xs[2] = {userRect.x, userRect.x + userRect.width};
-        const double ys[2] = {userRect.y, userRect.y + userRect.height};
+        const double xs[2] = {user_rect.x, user_rect.x + user_rect.width};
+        const double ys[2] = {user_rect.y, user_rect.y + user_rect.height};
         for (double x : xs) {
             for (double y : ys) {
                 double px = x;
                 double py = y;
                 cairo_matrix_transform_point(&ctm, &px, &py);
-                if (!isFinite(px) || !isFinite(py)) {
+                if (!is_finite(px) || !is_finite(py)) {
 
                     throw std::runtime_error("CairoPainter: clip rectangle maps to non-finite device coordinates");
                 }
-                minX = std::min(minX, px);
-                minY = std::min(minY, py);
-                maxX = std::max(maxX, px);
-                maxY = std::max(maxY, py);
+                min_x = std::min(min_x, px);
+                min_y = std::min(min_y, py);
+                max_x = std::max(max_x, px);
+                max_y = std::max(max_y, py);
             }
         }
 
-        cairo_rectangle_t deviceRect;
-        deviceRect.x = minX;
-        deviceRect.y = minY;
-        deviceRect.width = maxX - minX;
-        deviceRect.height = maxY - minY;
-        rects.push_back(deviceRect);
+        cairo_rectangle_t device_rect;
+        device_rect.x = min_x;
+        device_rect.y = min_y;
+        device_rect.width = max_x - min_x;
+        device_rect.height = max_y - min_y;
+        rects.push_back(device_rect);
     }
 
     return rects;
 }
 
-cairo_rectangle_t CairoPainter::Impl::deviceBounds(const RectF &rect) const {
+cairo_rectangle_t CairoPainter::Impl::device_bounds(const RectF &rect) const {
     cairo_matrix_t ctm;
     cairo_get_matrix(cr, &ctm);
 
-    double minX = std::numeric_limits<double>::max();
-    double minY = std::numeric_limits<double>::max();
-    double maxX = std::numeric_limits<double>::lowest();
-    double maxY = std::numeric_limits<double>::lowest();
+    double min_x = std::numeric_limits<double>::max();
+    double min_y = std::numeric_limits<double>::max();
+    double max_x = std::numeric_limits<double>::lowest();
+    double max_y = std::numeric_limits<double>::lowest();
 
     const double xs[2] = {rect.left(), rect.right()};
     const double ys[2] = {rect.top(), rect.bottom()};
@@ -1073,25 +1073,25 @@ cairo_rectangle_t CairoPainter::Impl::deviceBounds(const RectF &rect) const {
             double px = x;
             double py = y;
             cairo_matrix_transform_point(&ctm, &px, &py);
-            if (!isFinite(px) || !isFinite(py)) {
+            if (!is_finite(px) || !is_finite(py)) {
                 throw std::runtime_error("CairoPainter: clip rectangle maps to non-finite device coordinates");
             }
-            minX = std::min(minX, px);
-            minY = std::min(minY, py);
-            maxX = std::max(maxX, px);
-            maxY = std::max(maxY, py);
+            min_x = std::min(min_x, px);
+            min_y = std::min(min_y, py);
+            max_x = std::max(max_x, px);
+            max_y = std::max(max_y, py);
         }
     }
 
     cairo_rectangle_t out;
-    out.x = minX;
-    out.y = minY;
-    out.width = maxX - minX;
-    out.height = maxY - minY;
+    out.x = min_x;
+    out.y = min_y;
+    out.width = max_x - min_x;
+    out.height = max_y - min_y;
     return out;
 }
 
-void CairoPainter::Impl::resetToBaseClip() {
+void CairoPainter::Impl::reset_to_base_clip() {
     cairo_matrix_t saved;
     cairo_get_matrix(cr, &saved);
 
@@ -1102,12 +1102,12 @@ void CairoPainter::Impl::resetToBaseClip() {
     cairo_new_path(cr);
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
 
-    if (baseClipKnown) {
-        if (baseClip.empty()) {
+    if (base_clip_known) {
+        if (base_clip.empty()) {
             // A degenerate rectangle produces an empty clip region: nothing draws.
             cairo_rectangle(cr, 0.0, 0.0, 0.0, 0.0);
         } else {
-            for (const cairo_rectangle_t &rect : baseClip) {
+            for (const cairo_rectangle_t &rect : base_clip) {
                 cairo_rectangle(cr, rect.x, rect.y, rect.width, rect.height);
             }
         }
@@ -1116,10 +1116,10 @@ void CairoPainter::Impl::resetToBaseClip() {
     // If the backend did not expose its clip, leave the default surface clip.
 
     cairo_set_matrix(cr, &saved);
-    ensureOk("reset clip");
+    ensure_ok("reset clip");
 }
 
-void CairoPainter::Impl::applyDeviceClipRects(const std::vector<cairo_rectangle_t> &rects) {
+void CairoPainter::Impl::apply_device_clip_rects(const std::vector<cairo_rectangle_t> &rects) {
     cairo_matrix_t saved;
     cairo_get_matrix(cr, &saved);
 
@@ -1135,269 +1135,270 @@ void CairoPainter::Impl::applyDeviceClipRects(const std::vector<cairo_rectangle_
     }
     cairo_clip(cr);
     cairo_set_matrix(cr, &saved);
-    ensureOk("apply clip");
+    ensure_ok("apply clip");
 }
 
-void CairoPainter::Impl::clearUserClip() {
-    resetToBaseClip();
-    state.hasUserClip = false;
-    state.userClipRects.clear();
+void CairoPainter::Impl::clear_user_clip() {
+    reset_to_base_clip();
+    state.has_user_clip = false;
+    state.user_clip_rects.clear();
 }
 
-void CairoPainter::Impl::setClipRect(const RectF &rect) {
+void CairoPainter::Impl::set_clip_rect(const RectF &rect) {
     if (!active) {
         return;
     }
 
     const RectF r = rect.normalized();
-    if (!finiteRect(r) || !r.isValid()) {
-        clearUserClip();
+    if (!finite_rect(r) || !r.is_valid()) {
+        clear_user_clip();
         return;
     }
 
     // Compute the cached device-space bounds before mutating the clip so a
     // failure leaves the context unchanged.
-    const cairo_rectangle_t deviceRect = deviceBounds(r);
-    const bool clippingEnabled = state.clippingEnabled;
+    const cairo_rectangle_t device_rect = device_bounds(r);
+    const bool clipping_enabled = state.clipping_enabled;
 
-    resetToBaseClip();
+    reset_to_base_clip();
     cairo_new_path(cr);
     cairo_rectangle(cr, r.x(), r.y(), r.width(), r.height());
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
     cairo_clip(cr);
 
-    if (!clippingEnabled) {
-        resetToBaseClip();
+    if (!clipping_enabled) {
+        reset_to_base_clip();
     }
-    ensureOk("setClipRect");
+    ensure_ok("setClipRect");
 
     // The clip currently applied by Cairo is the exact transformed path; this
     // cached form is exact for axis-aligned transforms and a bounding box
     // otherwise, and is used when setClipping() is re-enabled.
-    state.userClipRects.clear();
-    state.userClipRects.push_back(deviceRect);
-    state.hasUserClip = true;
+    state.user_clip_rects.clear();
+    state.user_clip_rects.push_back(device_rect);
+    state.has_user_clip = true;
 }
 
-void CairoPainter::Impl::setMask(const RectF &background, const std::vector<RectF> &maskRects) {
+void CairoPainter::Impl::set_mask(const RectF &background, const std::vector<RectF> &mask_rects) {
     if (!active) {
         return;
     }
 
-    if (maskRects.empty()) {
-        clearUserClip();
+    if (mask_rects.empty()) {
+        clear_user_clip();
         return;
     }
 
     const RectF bg = background.normalized();
-    if (!finiteRect(bg) || !bg.isValid()) {
-        clearUserClip();
+    if (!finite_rect(bg) || !bg.is_valid()) {
+        clear_user_clip();
         return;
     }
 
-    const cairo_rectangle_t backgroundDevice = deviceBounds(bg);
-    std::vector<cairo_rectangle_t> maskDevices;
-    maskDevices.reserve(maskRects.size());
-    for (const RectF &rawRect : maskRects) {
-        const RectF rect = rawRect.normalized();
-        if (!finiteRect(rect) || !rect.isValid()) {
+    const cairo_rectangle_t background_device = device_bounds(bg);
+    std::vector<cairo_rectangle_t> mask_devices;
+    mask_devices.reserve(mask_rects.size());
+    for (const RectF &raw_rect : mask_rects) {
+        const RectF rect = raw_rect.normalized();
+        if (!finite_rect(rect) || !rect.is_valid()) {
             continue;
         }
-        const cairo_rectangle_t maskDevice = deviceBounds(rect);
-        if (maskDevice.width > 0.0 && maskDevice.height > 0.0) {
-            maskDevices.push_back(maskDevice);
+        const cairo_rectangle_t mask_device = device_bounds(rect);
+        if (mask_device.width > 0.0 && mask_device.height > 0.0) {
+            mask_devices.push_back(mask_device);
         }
     }
 
-    std::vector<cairo_rectangle_t> clipRects = subtractRects(backgroundDevice, maskDevices);
-    const bool clippingEnabled = state.clippingEnabled;
+    std::vector<cairo_rectangle_t> clip_rects = subtract_rects(background_device, mask_devices);
+    const bool clipping_enabled = state.clipping_enabled;
 
-    resetToBaseClip();
-    applyDeviceClipRects(clipRects);
-    if (!clippingEnabled) {
-        resetToBaseClip();
+    reset_to_base_clip();
+    apply_device_clip_rects(clip_rects);
+    if (!clipping_enabled) {
+        reset_to_base_clip();
     }
-    ensureOk("setMask");
+    ensure_ok("setMask");
 
-    state.userClipRects = std::move(clipRects);
-    state.hasUserClip = true;
+    state.user_clip_rects = std::move(clip_rects);
+    state.has_user_clip = true;
 }
 
-void CairoPainter::Impl::setClipping(bool enable) {
+void CairoPainter::Impl::set_clipping(bool enable) {
     if (!active) {
         return;
     }
-    if (state.clippingEnabled == enable) {
+    if (state.clipping_enabled == enable) {
         return;
     }
 
-    if (enable && state.hasUserClip) {
-        resetToBaseClip();
-        applyDeviceClipRects(state.userClipRects);
+    if (enable && state.has_user_clip) {
+        reset_to_base_clip();
+        apply_device_clip_rects(state.user_clip_rects);
     } else {
-        resetToBaseClip();
+        reset_to_base_clip();
     }
-    ensureOk("setClipping");
-    state.clippingEnabled = enable;
+    ensure_ok("setClipping");
+    state.clipping_enabled = enable;
 }
 
-bool CairoPainter::Impl::hasClipping() const { return state.clippingEnabled && state.hasUserClip; }
+bool CairoPainter::Impl::has_clipping() const { return state.clipping_enabled && state.has_user_clip; }
 
 // ------------------------------------------------------------------- paths
 
-void CairoPainter::Impl::buildPath(const PainterPath &path) {
-    bool haveCurrent = false;
-    bool haveCtrl1 = false;
-    bool haveCtrl2 = false;
+void CairoPainter::Impl::build_path(const PainterPath &path) {
+    bool have_current = false;
+    bool have_ctrl1 = false;
+    bool have_ctrl2 = false;
     PointF ctrl1;
     PointF ctrl2;
 
-    for (size_t i = 0; i < path.elementCount(); ++i) {
-        const PainterPath::Element e = path.elementAt(i);
+    for (size_t i = 0; i < path.element_count(); ++i) {
+        const PainterPath::Element e = path.element_at(i);
         switch (e.type) {
-            case PainterPath::ElementType::MoveToElement:
+            case PainterPath::ElementType::MOVE_TO_ELEMENT:
                 cairo_move_to(cr, e.x, e.y);
-                haveCurrent = true;
-                haveCtrl1 = false;
-                haveCtrl2 = false;
+                have_current = true;
+                have_ctrl1 = false;
+                have_ctrl2 = false;
                 break;
-            case PainterPath::ElementType::LineToElement:
-                if (!haveCurrent) {
+            case PainterPath::ElementType::LINE_TO_ELEMENT:
+                if (!have_current) {
                     cairo_move_to(cr, e.x, e.y);
-                    haveCurrent = true;
+                    have_current = true;
                 } else {
                     cairo_line_to(cr, e.x, e.y);
                 }
-                haveCtrl1 = false;
-                haveCtrl2 = false;
+                have_ctrl1 = false;
+                have_ctrl2 = false;
                 break;
-            case PainterPath::ElementType::CurveToElement:
+            case PainterPath::ElementType::CURVE_TO_ELEMENT:
                 ctrl1 = PointF(e.x, e.y);
-                haveCtrl1 = true;
-                haveCtrl2 = false;
+                have_ctrl1 = true;
+                have_ctrl2 = false;
                 break;
-            case PainterPath::ElementType::CurveToDataElement:
-                if (!haveCtrl1) {
-                    if (!haveCurrent) {
+            case PainterPath::ElementType::CURVE_TO_DATA_ELEMENT:
+                if (!have_ctrl1) {
+                    if (!have_current) {
                         cairo_move_to(cr, e.x, e.y);
-                        haveCurrent = true;
+                        have_current = true;
                     } else {
                         cairo_line_to(cr, e.x, e.y);
                     }
-                } else if (!haveCtrl2) {
+                } else if (!have_ctrl2) {
                     ctrl2 = PointF(e.x, e.y);
-                    haveCtrl2 = true;
+                    have_ctrl2 = true;
                 } else {
-                    if (!haveCurrent) {
+                    if (!have_current) {
                         cairo_move_to(cr, ctrl1.x(), ctrl1.y());
-                        haveCurrent = true;
+                        have_current = true;
                     }
                     cairo_curve_to(cr, ctrl1.x(), ctrl1.y(), ctrl2.x(), ctrl2.y(), e.x, e.y);
-                    haveCtrl1 = false;
-                    haveCtrl2 = false;
+                    have_ctrl1 = false;
+                    have_ctrl2 = false;
                 }
                 break;
         }
     }
 }
 
-void CairoPainter::Impl::drawPath(const PainterPath &path) {
+void CairoPainter::Impl::draw_path(const PainterPath &path) {
     if (!active) {
         return;
     }
-    ensureOk("drawPath");
-    if (path.isEmpty()) {
+    ensure_ok("drawPath");
+    if (path.is_empty()) {
         return;
     }
 
-    const bool hasBrush = state.brush.style() != BrushStyle::NoBrush;
-    const bool hasPen = state.pen.style() != PenStyle::NoPen;
-    if (!hasBrush && !hasPen) {
+    const bool has_brush = state.brush.style() != BrushStyle::NO_BRUSH;
+    const bool has_pen = state.pen.style() != PenStyle::NO_PEN;
+    if (!has_brush && !has_pen) {
         return;
     }
 
     cairo_new_path(cr);
-    buildPath(path);
+    build_path(path);
 
-    if (hasBrush) {
-        cairo_set_fill_rule(cr, path.fillRule() == PainterPath::FillRule::WindingFill ? CAIRO_FILL_RULE_WINDING : CAIRO_FILL_RULE_EVEN_ODD);
-        applyBrushSource();
-        if (hasPen) {
+    if (has_brush) {
+        cairo_set_fill_rule(cr,
+                            path.fill_rule() == PainterPath::FillRule::WINDING_FILL ? CAIRO_FILL_RULE_WINDING : CAIRO_FILL_RULE_EVEN_ODD);
+        apply_brush_source();
+        if (has_pen) {
             cairo_fill_preserve(cr);
         } else {
             cairo_fill(cr);
         }
     }
 
-    if (hasPen) {
-        applyPen();
+    if (has_pen) {
+        apply_pen();
         cairo_stroke(cr);
     }
-    ensureOk("drawPath");
+    ensure_ok("drawPath");
 }
 
-void CairoPainter::Impl::drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) {
+void CairoPainter::Impl::draw_polygon(const PointF *points, size_t point_count, PolygonMode mode) {
     if (!active) {
         return;
     }
-    ensureOk("drawPolygon");
-    if (!points || pointCount == 0) {
+    ensure_ok("drawPolygon");
+    if (!points || point_count == 0) {
         return;
     }
 
     bool fill = true;
-    cairo_fill_rule_t fillRule = CAIRO_FILL_RULE_EVEN_ODD;
+    cairo_fill_rule_t fill_rule = CAIRO_FILL_RULE_EVEN_ODD;
     switch (mode) {
-        case PolygonMode::OddEven:
+        case PolygonMode::ODD_EVEN:
             fill = true;
-            fillRule = CAIRO_FILL_RULE_EVEN_ODD;
+            fill_rule = CAIRO_FILL_RULE_EVEN_ODD;
             break;
-        case PolygonMode::Winding:
+        case PolygonMode::WINDING:
             fill = true;
-            fillRule = CAIRO_FILL_RULE_WINDING;
+            fill_rule = CAIRO_FILL_RULE_WINDING;
             break;
-        case PolygonMode::Convex:
+        case PolygonMode::CONVEX:
             fill = true;
-            fillRule = CAIRO_FILL_RULE_WINDING;
+            fill_rule = CAIRO_FILL_RULE_WINDING;
             break;
-        case PolygonMode::Polyline: fill = false; break;
+        case PolygonMode::POLYLINE: fill = false; break;
         default: throw std::runtime_error("CairoPainter: unsupported polygon mode " + std::to_string(static_cast<int>(mode)));
     }
 
-    const bool hasBrush = fill && state.brush.style() != BrushStyle::NoBrush;
-    const bool hasPen = state.pen.style() != PenStyle::NoPen;
-    if (!hasBrush && !hasPen) {
+    const bool has_brush = fill && state.brush.style() != BrushStyle::NO_BRUSH;
+    const bool has_pen = state.pen.style() != PenStyle::NO_PEN;
+    if (!has_brush && !has_pen) {
         return;
     }
 
     cairo_new_path(cr);
     cairo_move_to(cr, points[0].x(), points[0].y());
-    for (size_t i = 1; i < pointCount; ++i) {
+    for (size_t i = 1; i < point_count; ++i) {
         cairo_line_to(cr, points[i].x(), points[i].y());
     }
     if (fill) {
         cairo_close_path(cr);
     }
 
-    if (hasBrush) {
-        cairo_set_fill_rule(cr, fillRule);
-        applyBrushSource();
-        if (hasPen) {
+    if (has_brush) {
+        cairo_set_fill_rule(cr, fill_rule);
+        apply_brush_source();
+        if (has_pen) {
             cairo_fill_preserve(cr);
         } else {
             cairo_fill(cr);
         }
     }
-    if (hasPen) {
-        applyPen();
+    if (has_pen) {
+        apply_pen();
         cairo_stroke(cr);
     }
-    ensureOk("drawPolygon");
+    ensure_ok("drawPolygon");
 }
 
 // -------------------------------------------------------------------- text
 
-ShapedLine CairoPainter::Impl::shapeText(const FtFaceEntry &entry, const Font &font, const std::u16string &text) {
+ShapedLine CairoPainter::Impl::shape_text(const FtFaceEntry &entry, const Font &font, const std::u16string &text) {
     ShapedLine line;
     line.text = text;
     if (text.empty()) {
@@ -1407,78 +1408,78 @@ ShapedLine CairoPainter::Impl::shapeText(const FtFaceEntry &entry, const Font &f
         throw std::runtime_error("CairoPainter: text is too long");
     }
 
-    const double pixelSize = fontSizePixels(font);
-    const double scale = pixelSize / double(entry.hbUpem ? entry.hbUpem : entry.ftUpem);
+    const double pixel_size = font_size_pixels(font);
+    const double scale = pixel_size / double(entry.hb_upem ? entry.hb_upem : entry.ft_upem);
 
-    hb_font_t *hbFont = hb_font_create(entry.hb);
-    if (!hbFont) {
+    hb_font_t *hb_font = hb_font_create(entry.hb);
+    if (!hb_font) {
         throw std::runtime_error("CairoPainter: hb_font_create failed");
     }
-    hb_font_set_scale(hbFont, static_cast<int>(entry.hbUpem), static_cast<int>(entry.hbUpem));
+    hb_font_set_scale(hb_font, static_cast<int>(entry.hb_upem), static_cast<int>(entry.hb_upem));
 
     hb_buffer_t *buffer = hb_buffer_create();
     if (!buffer) {
-        hb_font_destroy(hbFont);
+        hb_font_destroy(hb_font);
         throw std::runtime_error("CairoPainter: hb_buffer_create failed");
     }
 
     hb_buffer_add_utf16(buffer, reinterpret_cast<const uint16_t *>(text.data()), static_cast<int>(text.size()), 0,
                         static_cast<int>(text.size()));
     hb_buffer_guess_segment_properties(buffer);
-    hb_shape(hbFont, buffer, nullptr, 0);
+    hb_shape(hb_font, buffer, nullptr, 0);
 
     unsigned int count = 0;
     const hb_glyph_info_t *infos = hb_buffer_get_glyph_infos(buffer, &count);
     const hb_glyph_position_t *positions = hb_buffer_get_glyph_positions(buffer, nullptr);
     if (count > 0 && (!infos || !positions)) {
         hb_buffer_destroy(buffer);
-        hb_font_destroy(hbFont);
+        hb_font_destroy(hb_font);
         throw std::runtime_error("CairoPainter: HarfBuzz returned an incomplete glyph buffer");
     }
 
     line.glyphs.reserve(count);
     line.clusters.reserve(count);
 
-    double penX = 0.0;
-    double penY = 0.0;
+    double pen_x = 0.0;
+    double pen_y = 0.0;
     for (unsigned int i = 0; i < count; ++i) {
-        const double xOffset = double(positions[i].x_offset) * scale;
-        const double yOffset = double(positions[i].y_offset) * scale;
+        const double x_offset_value = double(positions[i].x_offset) * scale;
+        const double y_offset_value = double(positions[i].y_offset) * scale;
 
         cairo_glyph_t glyph;
         glyph.index = static_cast<unsigned long>(infos[i].codepoint);
-        glyph.x = penX + xOffset;
-        glyph.y = penY - yOffset;
+        glyph.x = pen_x + x_offset_value;
+        glyph.y = pen_y - y_offset_value;
         line.glyphs.push_back(glyph);
         line.clusters.push_back(static_cast<unsigned int>(infos[i].cluster));
 
-        penX += double(positions[i].x_advance) * scale;
+        pen_x += double(positions[i].x_advance) * scale;
         // HarfBuzz y advances point up; Cairo user space points down.
-        penY -= double(positions[i].y_advance) * scale;
+        pen_y -= double(positions[i].y_advance) * scale;
     }
 
-    if (penX < 0.0) {
+    if (pen_x < 0.0) {
         // RTL shaping can produce a negative pen position.  Keep the line
         // origin at zero and draw the visual run to the right of it.
         for (cairo_glyph_t &glyph : line.glyphs) {
-            glyph.x -= penX;
+            glyph.x -= pen_x;
         }
-        line.width = -penX;
+        line.width = -pen_x;
     } else {
-        line.width = penX;
+        line.width = pen_x;
     }
 
     hb_buffer_destroy(buffer);
-    hb_font_destroy(hbFont);
+    hb_font_destroy(hb_font);
     return line;
 }
 
-double CairoPainter::Impl::measureText(const FtFaceEntry &entry, const Font &font, const std::u16string &text) {
-    return shapeText(entry, font, text).width;
+double CairoPainter::Impl::measure_text(const FtFaceEntry &entry, const Font &font, const std::u16string &text) {
+    return shape_text(entry, font, text).width;
 }
 
-std::vector<std::u16string> CairoPainter::Impl::wrapParagraph(const FtFaceEntry &entry, const Font &font, const std::u16string &paragraph,
-                                                              double maxWidth, bool anywhere) {
+std::vector<std::u16string> CairoPainter::Impl::wrap_paragraph(const FtFaceEntry &entry, const Font &font, const std::u16string &paragraph,
+                                                               double max_width, bool anywhere) {
     std::vector<std::u16string> lines;
     if (paragraph.empty()) {
         lines.push_back(paragraph);
@@ -1487,7 +1488,7 @@ std::vector<std::u16string> CairoPainter::Impl::wrapParagraph(const FtFaceEntry 
 
     size_t start = 0;
     while (start < paragraph.size()) {
-        while (start < paragraph.size() && isSpaceChar(paragraph[start])) {
+        while (start < paragraph.size() && is_space_char(paragraph[start])) {
             ++start;
         }
         if (start >= paragraph.size()) {
@@ -1495,15 +1496,15 @@ std::vector<std::u16string> CairoPainter::Impl::wrapParagraph(const FtFaceEntry 
         }
 
         size_t end = start;
-        size_t lastSpace = std::u16string::npos;
+        size_t last_space = std::u16string::npos;
         while (end < paragraph.size()) {
-            if (isSpaceChar(paragraph[end])) {
-                lastSpace = end;
+            if (is_space_char(paragraph[end])) {
+                last_space = end;
             }
             ++end;
 
-            const double width = measureText(entry, font, paragraph.substr(start, end - start));
-            if (width > maxWidth) {
+            const double width = measure_text(entry, font, paragraph.substr(start, end - start));
+            if (width > max_width) {
                 if (end > start + 1) {
                     --end;
                 }
@@ -1516,17 +1517,17 @@ std::vector<std::u16string> CairoPainter::Impl::wrapParagraph(const FtFaceEntry 
             break;
         }
 
-        size_t breakAt = end;
-        if (!anywhere && lastSpace != std::u16string::npos && lastSpace > start) {
-            breakAt = lastSpace;
+        size_t break_at = end;
+        if (!anywhere && last_space != std::u16string::npos && last_space > start) {
+            break_at = last_space;
         }
-        if (breakAt <= start) {
-            breakAt = start + 1;
+        if (break_at <= start) {
+            break_at = start + 1;
         }
 
-        lines.push_back(paragraph.substr(start, breakAt - start));
-        start = breakAt;
-        while (start < paragraph.size() && isSpaceChar(paragraph[start])) {
+        lines.push_back(paragraph.substr(start, break_at - start));
+        start = break_at;
+        while (start < paragraph.size() && is_space_char(paragraph[start])) {
             ++start;
         }
     }
@@ -1537,40 +1538,40 @@ std::vector<std::u16string> CairoPainter::Impl::wrapParagraph(const FtFaceEntry 
     return lines;
 }
 
-std::vector<ShapedLine> CairoPainter::Impl::layoutLines(const FtFaceEntry &entry, const Font &font, const std::u16string &text,
-                                                        const RectF &rect, TextFlags textFlags) {
-    bool wrap = textFlags.testFlag(TextWordWrap) || textFlags.testFlag(TextWrapAnywhere);
-    const bool anywhere = textFlags.testFlag(TextWrapAnywhere);
-    const double maxWidth = rect.width();
+std::vector<ShapedLine> CairoPainter::Impl::layout_lines(const FtFaceEntry &entry, const Font &font, const std::u16string &text,
+                                                         const RectF &rect, TextFlags text_flags) {
+    bool wrap = text_flags.test_flag(TEXT_WORD_WRAP) || text_flags.test_flag(TEXT_WRAP_ANYWHERE);
+    const bool anywhere = text_flags.test_flag(TEXT_WRAP_ANYWHERE);
+    const double max_width = rect.width();
 
-    std::vector<std::u16string> paragraphs = splitParagraphs(text);
-    if (textFlags.testFlag(TextSingleLine)) {
-        paragraphs = {joinWithSpaces(paragraphs)};
+    std::vector<std::u16string> paragraphs = split_paragraphs(text);
+    if (text_flags.test_flag(TEXT_SINGLE_LINE)) {
+        paragraphs = {join_with_spaces(paragraphs)};
         wrap = false;
     }
 
     std::vector<ShapedLine> lines;
     for (const std::u16string &paragraph : paragraphs) {
-        if (wrap && maxWidth > 0.0) {
-            const std::vector<std::u16string> wrapped = wrapParagraph(entry, font, paragraph, maxWidth, anywhere);
+        if (wrap && max_width > 0.0) {
+            const std::vector<std::u16string> wrapped = wrap_paragraph(entry, font, paragraph, max_width, anywhere);
             for (const std::u16string &line : wrapped) {
-                lines.push_back(shapeText(entry, font, line));
+                lines.push_back(shape_text(entry, font, line));
             }
         } else {
-            lines.push_back(shapeText(entry, font, paragraph));
+            lines.push_back(shape_text(entry, font, paragraph));
         }
     }
     return lines;
 }
 
-void CairoPainter::Impl::applyFontState(const FtFaceEntry &entry, const Font &font, double pixelSize) {
-    const bool faceBold = (entry.ft->style_flags & FT_STYLE_FLAG_BOLD) != 0;
-    const bool faceItalic = (entry.ft->style_flags & FT_STYLE_FLAG_ITALIC) != 0;
-    const bool synthBold = font.bold() && !entry.key.bold() && !faceBold;
-    const bool synthItalic = font.italic() && !entry.key.italic() && !faceItalic;
+void CairoPainter::Impl::apply_font_state(const FtFaceEntry &entry, const Font &font, double pixel_size) {
+    const bool face_bold = (entry.ft->style_flags & FT_STYLE_FLAG_BOLD) != 0;
+    const bool face_italic = (entry.ft->style_flags & FT_STYLE_FLAG_ITALIC) != 0;
+    const bool synth_bold = font.bold() && !entry.key.bold() && !face_bold;
+    const bool synth_italic = font.italic() && !entry.key.italic() && !face_italic;
 
-    cairo_set_font_face(cr, entry.cairoFace(synthBold, synthItalic));
-    cairo_set_font_size(cr, pixelSize);
+    cairo_set_font_face(cr, entry.cairo_face(synth_bold, synth_italic));
+    cairo_set_font_size(cr, pixel_size);
 
     cairo_font_options_t *options = cairo_font_options_create();
     cairo_font_options_set_antialias(options, state.antialiasing ? CAIRO_ANTIALIAS_GRAY : CAIRO_ANTIALIAS_NONE);
@@ -1579,11 +1580,11 @@ void CairoPainter::Impl::applyFontState(const FtFaceEntry &entry, const Font &fo
     cairo_set_font_options(cr, options);
     cairo_font_options_destroy(options);
 
-    ensureOk("font");
+    ensure_ok("font");
 }
 
-void CairoPainter::Impl::drawTextDecorations(const FtFaceEntry &entry, const Font &font, double pixelSize, double x, double baseline,
-                                             double width) {
+void CairoPainter::Impl::draw_text_decorations(const FtFaceEntry &entry, const Font &font, double pixel_size, double x, double baseline,
+                                               double width) {
     if (!font.underline() && !font.strike()) {
         return;
     }
@@ -1591,21 +1592,21 @@ void CairoPainter::Impl::drawTextDecorations(const FtFaceEntry &entry, const Fon
         return;
     }
 
-    const double scale = pixelSize / double(entry.ftUpem);
-    const double ascent = ascentFor(entry, pixelSize);
-    double thickness = double(entry.underlineThickness) * scale;
+    const double scale = pixel_size / double(entry.ft_upem);
+    const double ascent = ascent_for(entry, pixel_size);
+    double thickness = double(entry.underline_thickness_value) * scale;
     if (!(thickness > 0.0)) {
-        thickness = std::max(1.0, pixelSize * 0.05);
+        thickness = std::max(1.0, pixel_size * 0.05);
     }
 
     CairoStateGuard guard(cr);
-    setSourceColor(state.pen.color());
+    set_source_color(state.pen.color());
     cairo_set_dash(cr, nullptr, 0, 0.0);
     cairo_set_line_width(cr, thickness);
     cairo_new_path(cr);
 
     if (font.underline()) {
-        const double y = baseline - double(entry.underlinePosition) * scale;
+        const double y = baseline - double(entry.underline_position_value) * scale;
         cairo_move_to(cr, x, y);
         cairo_line_to(cr, x + width, y);
         cairo_stroke(cr);
@@ -1618,11 +1619,11 @@ void CairoPainter::Impl::drawTextDecorations(const FtFaceEntry &entry, const Fon
         cairo_stroke(cr);
     }
 
-    ensureOk("text decoration");
+    ensure_ok("text decoration");
 }
 
-void CairoPainter::Impl::drawShapedLine(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline,
-                                        bool justify, double targetWidth) {
+void CairoPainter::Impl::draw_shaped_line(const FtFaceEntry &entry, const Font &font, const ShapedLine &line, double x, double baseline,
+                                          bool justify, double target_width) {
     if (line.glyphs.empty()) {
         return;
     }
@@ -1630,23 +1631,23 @@ void CairoPainter::Impl::drawShapedLine(const FtFaceEntry &entry, const Font &fo
         throw std::runtime_error("CairoPainter: glyph run is too long");
     }
 
-    const double pixelSize = fontSizePixels(font);
-    applyFontState(entry, font, pixelSize);
-    setSourceColor(state.pen.color());
+    const double pixel_size = font_size_pixels(font);
+    apply_font_state(entry, font, pixel_size);
+    set_source_color(state.pen.color());
 
-    std::vector<char> isSpace(line.glyphs.size(), 0);
-    size_t spaceCount = 0;
+    std::vector<char> is_space(line.glyphs.size(), 0);
+    size_t space_count = 0;
     for (size_t i = 0; i < line.glyphs.size(); ++i) {
         const size_t cluster = line.clusters[i];
-        if (cluster < line.text.size() && isSpaceChar(line.text[cluster])) {
-            isSpace[i] = 1;
-            ++spaceCount;
+        if (cluster < line.text.size() && is_space_char(line.text[cluster])) {
+            is_space[i] = 1;
+            ++space_count;
         }
     }
 
     double extra = 0.0;
-    if (justify && targetWidth > line.width && spaceCount > 0) {
-        extra = (targetWidth - line.width) / double(spaceCount);
+    if (justify && target_width > line.width && space_count > 0) {
+        extra = (target_width - line.width) / double(space_count);
     }
 
     std::vector<cairo_glyph_t> glyphs = line.glyphs;
@@ -1654,135 +1655,136 @@ void CairoPainter::Impl::drawShapedLine(const FtFaceEntry &entry, const Font &fo
     for (size_t i = 0; i < glyphs.size(); ++i) {
         glyphs[i].x += x + shift;
         glyphs[i].y += baseline;
-        if (isSpace[i]) {
+        if (is_space[i]) {
             shift += extra;
         }
     }
 
     cairo_show_glyphs(cr, glyphs.data(), static_cast<int>(glyphs.size()));
-    ensureOk("drawText");
+    ensure_ok("drawText");
 
-    const double drawnWidth = line.width + extra * double(spaceCount);
-    drawTextDecorations(entry, font, pixelSize, x, baseline, drawnWidth);
+    const double drawn_width = line.width + extra * double(space_count);
+    draw_text_decorations(entry, font, pixel_size, x, baseline, drawn_width);
 }
 
-void CairoPainter::Impl::drawTextAtPoint(const Font &font, const PointF &point, const String &text) {
-    const std::shared_ptr<FtFaceEntry> entry = faceFor(font);
-    const double pixelSize = fontSizePixels(font);
-    const double lineHeight = lineHeightFor(*entry, pixelSize);
+void CairoPainter::Impl::draw_text_at_point(const Font &font, const PointF &point, const String &text) {
+    const std::shared_ptr<FtFaceEntry> entry = face_for(font);
+    const double pixel_size = font_size_pixels(font);
+    const double line_height = line_height_for(*entry, pixel_size);
 
-    const std::vector<std::u16string> paragraphs = splitParagraphs(normalizeText(text.toStdU16String(), true));
+    const std::vector<std::u16string> paragraphs = split_paragraphs(normalize_text(text.to_std_u16_string(), true));
 
     double baseline = point.y();
     for (const std::u16string &paragraph : paragraphs) {
-        const ShapedLine line = shapeText(*entry, font, paragraph);
-        drawShapedLine(*entry, font, line, point.x(), baseline, false, 0.0);
-        baseline += lineHeight;
+        const ShapedLine line = shape_text(*entry, font, paragraph);
+        draw_shaped_line(*entry, font, line, point.x(), baseline, false, 0.0);
+        baseline += line_height;
     }
 }
 
-void CairoPainter::Impl::drawTextInRect(const Font &font, const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
-    const std::shared_ptr<FtFaceEntry> entry = faceFor(font);
-    const double pixelSize = fontSizePixels(font);
-    const std::u16string prepared = normalizeText(text.toStdU16String(), true);
-    std::vector<ShapedLine> lines = layoutLines(*entry, font, prepared, rect, textFlags);
+void CairoPainter::Impl::draw_text_in_rect(const Font &font, const RectF &rect, Alignment alignment, TextFlags text_flags,
+                                           const String &text) {
+    const std::shared_ptr<FtFaceEntry> entry = face_for(font);
+    const double pixel_size = font_size_pixels(font);
+    const std::u16string prepared = normalize_text(text.to_std_u16_string(), true);
+    std::vector<ShapedLine> lines = layout_lines(*entry, font, prepared, rect, text_flags);
     if (lines.empty()) {
         return;
     }
 
-    const double ascent = ascentFor(*entry, pixelSize);
-    const double descent = descentFor(*entry, pixelSize);
-    const double lineHeight = lineHeightFor(*entry, pixelSize);
-    const int lineCount = static_cast<int>(lines.size());
+    const double ascent = ascent_for(*entry, pixel_size);
+    const double descent = descent_for(*entry, pixel_size);
+    const double line_height = line_height_for(*entry, pixel_size);
+    const int line_count = static_cast<int>(lines.size());
 
-    double firstBaseline;
-    if (alignment.testFlag(AlignTop)) {
-        firstBaseline = rect.y() + ascent;
-    } else if (alignment.testFlag(AlignBottom)) {
-        firstBaseline = rect.bottom() - descent - double(lineCount - 1) * lineHeight;
+    double first_baseline;
+    if (alignment.test_flag(ALIGN_TOP)) {
+        first_baseline = rect.y() + ascent;
+    } else if (alignment.test_flag(ALIGN_BOTTOM)) {
+        first_baseline = rect.bottom() - descent - double(line_count - 1) * line_height;
     } else {
-        const double blockHeight = double(lineCount - 1) * lineHeight + ascent + descent;
-        firstBaseline = rect.y() + (rect.height() - blockHeight) / 2.0 + ascent;
+        const double block_height = double(line_count - 1) * line_height + ascent + descent;
+        first_baseline = rect.y() + (rect.height() - block_height) / 2.0 + ascent;
     }
 
-    std::unique_ptr<CairoStateGuard> clipGuard;
-    if (!textFlags.testFlag(TextDontClip) && rect.isValid()) {
-        clipGuard = std::make_unique<CairoStateGuard>(cr);
+    std::unique_ptr<CairoStateGuard> clip_guard;
+    if (!text_flags.test_flag(TEXT_DONT_CLIP) && rect.is_valid()) {
+        clip_guard = std::make_unique<CairoStateGuard>(cr);
         cairo_new_path(cr);
         cairo_rectangle(cr, rect.x(), rect.y(), rect.width(), rect.height());
         cairo_clip(cr);
     }
 
-    for (int i = 0; i < lineCount; ++i) {
+    for (int i = 0; i < line_count; ++i) {
         const ShapedLine &line = lines[static_cast<size_t>(i)];
 
         double x = rect.x();
-        if (alignment.testFlag(AlignRight)) {
+        if (alignment.test_flag(ALIGN_RIGHT)) {
             x = rect.right() - line.width;
-        } else if (alignment.testFlag(AlignHCenter)) {
+        } else if (alignment.test_flag(ALIGN_H_CENTER)) {
             x = rect.x() + (rect.width() - line.width) / 2.0;
         }
 
-        const bool justify = alignment.testFlag(AlignJustify) && (i + 1) < lineCount &&
-                             (textFlags.testFlag(TextWordWrap) || textFlags.testFlag(TextWrapAnywhere));
+        const bool justify = alignment.test_flag(ALIGN_JUSTIFY) && (i + 1) < line_count &&
+                             (text_flags.test_flag(TEXT_WORD_WRAP) || text_flags.test_flag(TEXT_WRAP_ANYWHERE));
 
-        drawShapedLine(*entry, font, line, x, firstBaseline + double(i) * lineHeight, justify, rect.width());
+        draw_shaped_line(*entry, font, line, x, first_baseline + double(i) * line_height, justify, rect.width());
     }
 }
 
-void CairoPainter::Impl::drawText(const PointF &point, const String &text) {
+void CairoPainter::Impl::draw_text(const PointF &point, const String &text) {
     if (!active) {
         return;
     }
-    ensureOk("drawText");
+    ensure_ok("drawText");
     if (text.empty()) {
         return;
     }
-    if (!finitePoint(point)) {
+    if (!finite_point(point)) {
         throw std::invalid_argument("CairoPainter: drawText point is not finite");
     }
 
-    drawTextAtPoint(state.font, point, text);
-    ensureOk("drawText");
+    draw_text_at_point(state.font, point, text);
+    ensure_ok("drawText");
 }
 
-void CairoPainter::Impl::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
+void CairoPainter::Impl::draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text) {
     if (!active) {
         return;
     }
-    ensureOk("drawText");
+    ensure_ok("drawText");
     if (text.empty()) {
         return;
     }
 
     const RectF r = rect.normalized();
-    if (!finiteRect(r)) {
+    if (!finite_rect(r)) {
         throw std::invalid_argument("CairoPainter: drawText rectangle is not finite");
     }
-    if (!r.isValid()) {
+    if (!r.is_valid()) {
         return;
     }
 
-    drawTextInRect(state.font, r, alignment, textFlags, text);
-    ensureOk("drawText");
+    draw_text_in_rect(state.font, r, alignment, text_flags, text);
+    ensure_ok("drawText");
 }
 
-void CairoPainter::Impl::drawSymbol(const PointF &point, char32_t ucs4Code) {
+void CairoPainter::Impl::draw_symbol(const PointF &point, char32_t ucs4_code) {
     if (!active) {
         return;
     }
-    drawText(point, String::fromUcs4(ucs4Code));
+    draw_text(point, String::from_ucs4(ucs4_code));
 }
 
 // ----------------------------------------------------------------- pixmaps
 
-cairo_surface_t *CairoPainter::Impl::pixmapSurface(const Pixmap &pm) {
-    if (pm.isNull()) {
+cairo_surface_t *CairoPainter::Impl::pixmap_surface(const Pixmap &pm) {
+    if (pm.is_null()) {
         throw std::runtime_error("CairoPainter: cannot draw an empty Pixmap");
     }
 
     const ByteArray data = pm.data();
-    const uint64_t hash = fnv1a(data.constData(), data.size());
+    const uint64_t hash = fnv1a(data.const_data(), data.size());
     const unsigned int key = pm.key();
 
     auto existing = surfaces.find(key);
@@ -1798,11 +1800,11 @@ cairo_surface_t *CairoPainter::Impl::pixmapSurface(const Pixmap &pm) {
 
 #if CAIRO_HAS_PNG_FUNCTIONS
     PngReadClosure closure;
-    closure.data = data.constData();
+    closure.data = data.const_data();
     closure.size = data.size();
     closure.pos = 0;
 
-    cairo_surface_t *surface = cairo_image_surface_create_from_png_stream(&readPngStream, &closure);
+    cairo_surface_t *surface = cairo_image_surface_create_from_png_stream(&read_png_stream, &closure);
     if (!surface) {
         throw std::runtime_error("CairoPainter: cannot allocate a Cairo image surface for Pixmap");
     }
@@ -1829,30 +1831,30 @@ cairo_surface_t *CairoPainter::Impl::pixmapSurface(const Pixmap &pm) {
 #endif
 }
 
-void CairoPainter::Impl::drawPixmap(const PointF &point, const Pixmap &pm) {
+void CairoPainter::Impl::draw_pixmap(const PointF &point, const Pixmap &pm) {
     if (!active) {
         return;
     }
-    ensureOk("drawPixmap");
-    if (!finitePoint(point)) {
+    ensure_ok("drawPixmap");
+    if (!finite_point(point)) {
         throw std::invalid_argument("CairoPainter: drawPixmap point is not finite");
     }
 
-    cairo_surface_t *surface = pixmapSurface(pm);
-    const double surfaceWidth = double(cairo_image_surface_get_width(surface));
-    const double surfaceHeight = double(cairo_image_surface_get_height(surface));
-    if (!(surfaceWidth > 0.0) || !(surfaceHeight > 0.0)) {
+    cairo_surface_t *surface = pixmap_surface(pm);
+    const double surface_width = double(cairo_image_surface_get_width(surface));
+    const double surface_height = double(cairo_image_surface_get_height(surface));
+    if (!(surface_width > 0.0) || !(surface_height > 0.0)) {
         throw std::runtime_error("CairoPainter: invalid Pixmap image surface size");
     }
 
-    const double drawWidth = pm.width() > 0 ? double(pm.width()) : surfaceWidth;
-    const double drawHeight = pm.height() > 0 ? double(pm.height()) : surfaceHeight;
-    const double scaleX = drawWidth / surfaceWidth;
-    const double scaleY = drawHeight / surfaceHeight;
+    const double draw_width = pm.width() > 0 ? double(pm.width()) : surface_width;
+    const double draw_height = pm.height() > 0 ? double(pm.height()) : surface_height;
+    const double scale_x = draw_width / surface_width;
+    const double scale_y = draw_height / surface_height;
 
     CairoStateGuard guard(cr);
     cairo_translate(cr, point.x(), point.y());
-    cairo_scale(cr, scaleX, scaleY);
+    cairo_scale(cr, scale_x, scale_y);
 
     cairo_pattern_t *pattern = cairo_pattern_create_for_surface(surface);
     if (!pattern) {
@@ -1868,37 +1870,37 @@ void CairoPainter::Impl::drawPixmap(const PointF &point, const Pixmap &pm) {
     cairo_pattern_destroy(pattern);
 
     cairo_new_path(cr);
-    cairo_rectangle(cr, 0.0, 0.0, drawWidth, drawHeight);
+    cairo_rectangle(cr, 0.0, 0.0, draw_width, draw_height);
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
     cairo_fill(cr);
-    ensureOk("drawPixmap");
+    ensure_ok("drawPixmap");
 }
 
-void CairoPainter::Impl::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
+void CairoPainter::Impl::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
     if (!active) {
         return;
     }
-    ensureOk("drawTiledPixmap");
-    if (!finiteRect(rect) || !finitePoint(offset)) {
+    ensure_ok("drawTiledPixmap");
+    if (!finite_rect(rect) || !finite_point(offset)) {
         throw std::invalid_argument("CairoPainter: drawTiledPixmap arguments are not finite");
     }
 
     const RectF r = rect.normalized();
-    if (!r.isValid()) {
+    if (!r.is_valid()) {
         return;
     }
 
-    cairo_surface_t *surface = pixmapSurface(pm);
-    const double surfaceWidth = double(cairo_image_surface_get_width(surface));
-    const double surfaceHeight = double(cairo_image_surface_get_height(surface));
-    if (!(surfaceWidth > 0.0) || !(surfaceHeight > 0.0)) {
+    cairo_surface_t *surface = pixmap_surface(pm);
+    const double surface_width = double(cairo_image_surface_get_width(surface));
+    const double surface_height = double(cairo_image_surface_get_height(surface));
+    if (!(surface_width > 0.0) || !(surface_height > 0.0)) {
         throw std::runtime_error("CairoPainter: invalid Pixmap image surface size");
     }
 
-    const double drawWidth = pm.width() > 0 ? double(pm.width()) : surfaceWidth;
-    const double drawHeight = pm.height() > 0 ? double(pm.height()) : surfaceHeight;
-    const double scaleX = drawWidth / surfaceWidth;
-    const double scaleY = drawHeight / surfaceHeight;
+    const double draw_width = pm.width() > 0 ? double(pm.width()) : surface_width;
+    const double draw_height = pm.height() > 0 ? double(pm.height()) : surface_height;
+    const double scale_x = draw_width / surface_width;
+    const double scale_y = draw_height / surface_height;
 
     CairoStateGuard guard(cr);
     cairo_new_path(cr);
@@ -1907,7 +1909,7 @@ void CairoPainter::Impl::drawTiledPixmap(const RectF &rect, const Pixmap &pm, co
 
     // Qt anchors the tile at rectangle.topLeft() + offset.
     cairo_translate(cr, r.x() + offset.x(), r.y() + offset.y());
-    cairo_scale(cr, scaleX, scaleY);
+    cairo_scale(cr, scale_x, scale_y);
 
     cairo_pattern_t *pattern = cairo_pattern_create_for_surface(surface);
     if (!pattern) {
@@ -1924,49 +1926,49 @@ void CairoPainter::Impl::drawTiledPixmap(const RectF &rect, const Pixmap &pm, co
     cairo_pattern_destroy(pattern);
 
     cairo_paint(cr);
-    ensureOk("drawTiledPixmap");
+    ensure_ok("drawTiledPixmap");
 }
 
 // -------------------------------------------------------- CairoPainter glue
 
-CairoPainter::CairoPainter(cairo_t *context, const IFontsDatabase &fontsDatabase, double deviceDpi)
-    : impl_(std::make_unique<Impl>(context, fontsDatabase, deviceDpi)) {}
+CairoPainter::CairoPainter(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi)
+    : impl_(std::make_unique<Impl>(context, fonts_database, device_dpi)) {}
 
 CairoPainter::~CairoPainter() = default;
 
-cairo_t *CairoPainter::cairoContext() const { return impl_->cr; }
+cairo_t *CairoPainter::cairo_context() const { return impl_->cr; }
 
-bool CairoPainter::isActive() const { return impl_->isActive(); }
+bool CairoPainter::is_active() const { return impl_->is_active(); }
 
-void CairoPainter::beginTarget(const std::string &name) { impl_->beginTarget(name); }
+void CairoPainter::begin_target(const std::string &name) { impl_->begin_target(name); }
 
-void CairoPainter::beforeEndTargetHook(Painter *painter) { impl_->beforeEndTargetHook(painter); }
+void CairoPainter::before_end_target_hook(Painter *painter) { impl_->before_end_target_hook(painter); }
 
-bool CairoPainter::endTarget(bool endDraw) { return impl_->endTarget(endDraw); }
+bool CairoPainter::end_target(bool end_draw) { return impl_->end_target(end_draw); }
 
-void CairoPainter::beginObject(const std::string &name) { impl_->beginObject(name); }
+void CairoPainter::begin_object(const std::string &name) { impl_->begin_object(name); }
 
-void CairoPainter::endObject() { impl_->endObject(); }
+void CairoPainter::end_object() { impl_->end_object(); }
 
-void CairoPainter::setAntialiasing(bool arg) { impl_->setAntialiasing(arg); }
+void CairoPainter::set_antialiasing(bool arg) { impl_->set_antialiasing(arg); }
 
-void CairoPainter::setCompositionMode(CompositionMode mode) { impl_->setCompositionMode(mode); }
+void CairoPainter::set_composition_mode(CompositionMode mode) { impl_->set_composition_mode(mode); }
 
-void CairoPainter::setWindow(const RectF &window) { impl_->setWindow(window); }
+void CairoPainter::set_window(const RectF &window) { impl_->set_window(window); }
 
-void CairoPainter::setViewport(const RectF &viewport) { impl_->setViewport(viewport); }
+void CairoPainter::set_viewport(const RectF &viewport) { impl_->set_viewport(viewport); }
 
-void CairoPainter::setFont(const Font &font) { impl_->setFont(font); }
+void CairoPainter::set_font(const Font &font) { impl_->set_font(font); }
 
 const Font &CairoPainter::font() const { return impl_->state.font; }
 
-void CairoPainter::setPen(const Pen &pen) { impl_->setPen(pen); }
+void CairoPainter::set_pen(const Pen &pen) { impl_->set_pen(pen); }
 
-void CairoPainter::setNoPen() { impl_->setNoPen(); }
+void CairoPainter::set_no_pen() { impl_->set_no_pen(); }
 
 const Pen &CairoPainter::pen() const { return impl_->state.pen; }
 
-void CairoPainter::setBrush(const Brush &brush) { impl_->setBrush(brush); }
+void CairoPainter::set_brush(const Brush &brush) { impl_->set_brush(brush); }
 
 const Brush &CairoPainter::brush() const { return impl_->state.brush; }
 
@@ -1974,39 +1976,43 @@ void CairoPainter::save() { impl_->save(); }
 
 void CairoPainter::restore() { impl_->restore(); }
 
-double CairoPainter::deviceLogicalDpi() const { return impl_->dpi; }
+double CairoPainter::device_logical_dpi() const { return impl_->dpi; }
 
-void CairoPainter::setTransform(const Transform &transform) { impl_->setTransform(transform); }
+void CairoPainter::set_transform(const Transform &transform) { impl_->set_transform(transform); }
 
 const Transform &CairoPainter::transform() const {
     // Matches QPainterProvider: return the world transform last supplied via
     // setTransform().  When muse::draw::Painter supplies a complete
     // world*viewport matrix this is that matrix; for direct users it is the
     // world part before window/viewport composition.
-    return impl_->state.worldTransform;
+    return impl_->state.world_transform;
 }
 
-void CairoPainter::drawPath(const PainterPath &path) { impl_->drawPath(path); }
+void CairoPainter::draw_path(const PainterPath &path) { impl_->draw_path(path); }
 
-void CairoPainter::drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) { impl_->drawPolygon(points, pointCount, mode); }
-
-void CairoPainter::drawText(const PointF &point, const String &text) { impl_->drawText(point, text); }
-
-void CairoPainter::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
-    impl_->drawText(rect, alignment, textFlags, text);
+void CairoPainter::draw_polygon(const PointF *points, size_t point_count, PolygonMode mode) {
+    impl_->draw_polygon(points, point_count, mode);
 }
 
-void CairoPainter::drawSymbol(const PointF &point, char32_t ucs4Code) { impl_->drawSymbol(point, ucs4Code); }
+void CairoPainter::draw_text(const PointF &point, const String &text) { impl_->draw_text(point, text); }
 
-void CairoPainter::drawPixmap(const PointF &point, const Pixmap &pm) { impl_->drawPixmap(point, pm); }
+void CairoPainter::draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text) {
+    impl_->draw_text(rect, alignment, text_flags, text);
+}
 
-void CairoPainter::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) { impl_->drawTiledPixmap(rect, pm, offset); }
+void CairoPainter::draw_symbol(const PointF &point, char32_t ucs4_code) { impl_->draw_symbol(point, ucs4_code); }
 
-bool CairoPainter::hasClipping() const { return impl_->hasClipping(); }
+void CairoPainter::draw_pixmap(const PointF &point, const Pixmap &pm) { impl_->draw_pixmap(point, pm); }
 
-void CairoPainter::setClipRect(const RectF &rect) { impl_->setClipRect(rect); }
+void CairoPainter::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
+    impl_->draw_tiled_pixmap(rect, pm, offset);
+}
 
-void CairoPainter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { impl_->setMask(background, maskRects); }
+bool CairoPainter::has_clipping() const { return impl_->has_clipping(); }
 
-void CairoPainter::setClipping(bool enable) { impl_->setClipping(enable); }
+void CairoPainter::set_clip_rect(const RectF &rect) { impl_->set_clip_rect(rect); }
+
+void CairoPainter::set_mask(const RectF &background, const std::vector<RectF> &mask_rects) { impl_->set_mask(background, mask_rects); }
+
+void CairoPainter::set_clipping(bool enable) { impl_->set_clipping(enable); }
 } // namespace muse::draw

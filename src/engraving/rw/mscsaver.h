@@ -33,6 +33,6 @@ class MasterScore;
 
 class MscSaver {
 public:
-    bool writeMscz(MasterScore *score, MscWriter &mscWriter, const write::WriteContext *ctx = nullptr);
+    bool write_mscz(MasterScore *score, MscWriter &msc_writer, const write::WriteContext *ctx = nullptr);
 };
 } // namespace mu::engraving

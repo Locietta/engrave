@@ -39,26 +39,26 @@ class BendDataCollector {
 public:
 
     BendDataCollector(mu::engraving::Score *score);
-    void storeBendData(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
-    BendDataContext collectBendDataContext();
+    void store_bend_data(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values);
+    BendDataContext collect_bend_data_context();
 
 private:
     mu::engraving::Score *score_ = nullptr;
     std::unordered_map<mu::engraving::track_idx_t,
                        std::map<mu::engraving::Fraction, std::unordered_map<const mu::engraving::Note *, ImportedBendInfo>>>
-        bendInfoForNote_;
+        bend_info_for_note_;
 
     std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, tied_chords_bend_data_chunk_t>>
-        regroupedDataByTiedChords_;
+        regrouped_data_by_tied_chords_;
 
-    std::unique_ptr<BendDataCollectorSplitChord> bendDataCollectorSplitChord_;
+    std::unique_ptr<BendDataCollectorSplitChord> bend_data_collector_split_chord_;
 
     // converts bendInfoForNote_ to regroupedData_, leaves bendInfoForNote_ empty
     // bendInfoForNote_ is needed to store separate bend data for each note, while regroupedData_ stores in format, comfortoble for import
-    void regroupBendDataByTiedChords();
-    void fillBendDataContext(BendDataContext &bendDataCtx);
+    void regroup_bend_data_by_tied_chords();
+    void fill_bend_data_context(BendDataContext &bend_data_ctx);
 
     // if first chord in chunk has more segments than tied notes, move segments forward to other notes
-    void moveSegmentsToTiedNotes(tied_chords_bend_data_chunk_t &dataChunk, ImportedBendInfo &dataForFirstNote, size_t noteIdx);
+    void move_segments_to_tied_notes(tied_chords_bend_data_chunk_t &data_chunk, ImportedBendInfo &data_for_first_note, size_t note_idx);
 };
 } // namespace mu::iex::guitarpro

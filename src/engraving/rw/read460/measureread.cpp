@@ -65,102 +65,102 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read460;
 
-void MeasureRead::readMeasure(Measure *measure, XmlReader &e, ReadContext &ctx, int staffIdx) {
-    IF_ASSERT_FAILED(ctx.isSameScore(measure)) { return; }
+void MeasureRead::read_measure(Measure *measure, XmlReader &e, ReadContext &ctx, int staff_idx) {
+    IF_ASSERT_FAILED(ctx.is_same_score(measure)) { return; }
 
-    ctx.setCurrentMeasure(measure);
-    int nextTrack = staffIdx * VOICES;
-    ctx.setTrack(nextTrack);
+    ctx.set_current_measure(measure);
+    int next_track = staff_idx * ::mu::engraving::voices;
+    ctx.set_track(next_track);
 
-    for (int n = int(measure->mstaves().size()); n <= staffIdx; ++n) {
+    for (int n = int(measure->mstaves().size()); n <= staff_idx; ++n) {
         Staff *staff = ctx.staff(n);
         MStaff *s = new MStaff;
-        s->setLines(Factory::createStaffLines(measure));
-        s->lines()->setTrack(n * VOICES);
-        s->lines()->setVisible(!staff->isLinesInvisible(measure->tick()));
+        s->set_lines(Factory::create_staff_lines(measure));
+        s->lines()->set_track(n * ::mu::engraving::voices);
+        s->lines()->set_visible(!staff->is_lines_invisible(measure->tick()));
         measure->mstaves().push_back(s);
     }
 
     bool irregular = false;
-    if (e.hasAttribute("len")) {
+    if (e.has_attribute("len")) {
         bool ok = true;
-        measure->setTicks(Fraction::fromString(e.attribute("len"), &ok));
+        measure->set_ticks(Fraction::from_string(e.attribute("len"), &ok));
         if (!ok || measure->ticks() < Fraction(1, 128)) {
-            e.raiseError(muse::mtrc("engraving", "MSCX error at byte offset %1: invalid measure length: %2")
-                             .arg(e.byteOffset())
-                             .arg(e.attribute("len")));
+            e.raise_error(muse::mtrc("engraving", "MSCX error at byte offset %1: invalid measure length: %2")
+                              .arg(e.byte_offset())
+                              .arg(e.attribute("len")));
             return;
         }
         irregular = true;
     }
 
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
 
         if (tag == "voice") {
-            ctx.setTrack(nextTrack++);
-            ctx.setTick(measure->tick());
-            readVoice(measure, e, ctx, staffIdx, irregular);
+            ctx.set_track(next_track++);
+            ctx.set_tick(measure->tick());
+            read_voice(measure, e, ctx, staff_idx, irregular);
         } else if (tag == "Marker" || tag == "Jump") {
-            EngravingItem *el = Factory::createItemByName(tag, measure);
-            el->setTrack(ctx.track());
-            TRead::readItem(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            EngravingItem *el = Factory::create_item_by_name(tag, measure);
+            el->set_track(ctx.track());
+            TRead::read_item(el, e, ctx);
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             measure->add(el);
         } else if (tag == "stretch") {
-            double val = e.readDouble();
+            double val = e.read_double();
             if (val < 0.0) {
                 val = 0;
             }
-            measure->setUserStretch(val);
+            measure->set_user_stretch(val);
         } else if (tag == "noOffset") {
-            measure->setMeasureNumberOffset(e.readInt());
+            measure->set_measure_number_offset(e.read_int());
         } else if (tag == "measureNumberMode") {
-            measure->setMeasureNumberMode(MeasureNumberMode(e.readInt()));
+            measure->set_measure_number_mode(MeasureNumberMode(e.read_int()));
         } else if (tag == "irregular") {
-            measure->setExcludeFromNumbering(e.readBool());
+            measure->set_exclude_from_numbering(e.read_bool());
         } else if (tag == "breakMultiMeasureRest") {
-            measure->setBreakMultiMeasureRest(e.readBool());
+            measure->set_break_multi_measure_rest(e.read_bool());
         } else if (tag == "startRepeat") {
-            measure->setRepeatStart(true);
-            e.readNext();
+            measure->set_repeat_start(true);
+            e.read_next();
         } else if (tag == "endRepeat") {
-            measure->setRepeatCount(e.readInt());
-            measure->setRepeatEnd(true);
+            measure->set_repeat_count(e.read_int());
+            measure->set_repeat_end(true);
         } else if (tag == "vspacer" || tag == "vspacerDown") {
-            if (!measure->mstaves()[staffIdx]->vspacerDown()) {
-                Spacer *spacer = Factory::createSpacer(measure);
-                spacer->setSpacerType(SpacerType::DOWN);
-                spacer->setTrack(staffIdx * VOICES);
+            if (!measure->mstaves()[staff_idx]->vspacer_down()) {
+                Spacer *spacer = Factory::create_spacer(measure);
+                spacer->set_spacer_type(SpacerType::DOWN);
+                spacer->set_track(staff_idx * ::mu::engraving::voices);
                 measure->add(spacer);
             }
-            measure->mstaves()[staffIdx]->vspacerDown()->setGap(Spatium(e.readDouble()));
+            measure->mstaves()[staff_idx]->vspacer_down()->set_gap(Spatium(e.read_double()));
         } else if (tag == "vspacerFixed") {
-            if (!measure->mstaves()[staffIdx]->vspacerDown()) {
-                Spacer *spacer = Factory::createSpacer(measure);
-                spacer->setSpacerType(SpacerType::FIXED);
-                spacer->setTrack(staffIdx * VOICES);
+            if (!measure->mstaves()[staff_idx]->vspacer_down()) {
+                Spacer *spacer = Factory::create_spacer(measure);
+                spacer->set_spacer_type(SpacerType::FIXED);
+                spacer->set_track(staff_idx * ::mu::engraving::voices);
                 measure->add(spacer);
             }
-            measure->mstaves()[staffIdx]->vspacerDown()->setGap(Spatium(e.readDouble()));
+            measure->mstaves()[staff_idx]->vspacer_down()->set_gap(Spatium(e.read_double()));
         } else if (tag == "vspacerUp") {
-            if (!measure->mstaves()[staffIdx]->vspacerUp()) {
-                Spacer *spacer = Factory::createSpacer(measure);
-                spacer->setSpacerType(SpacerType::UP);
-                spacer->setTrack(staffIdx * VOICES);
+            if (!measure->mstaves()[staff_idx]->vspacer_up()) {
+                Spacer *spacer = Factory::create_spacer(measure);
+                spacer->set_spacer_type(SpacerType::UP);
+                spacer->set_track(staff_idx * ::mu::engraving::voices);
                 measure->add(spacer);
             }
-            measure->mstaves()[staffIdx]->vspacerUp()->setGap(Spatium(e.readDouble()));
+            measure->mstaves()[staff_idx]->vspacer_up()->set_gap(Spatium(e.read_double()));
         } else if (tag == "visible") {
-            measure->mstaves()[staffIdx]->setVisible(e.readInt());
+            measure->mstaves()[staff_idx]->set_visible(e.read_int());
         } else if (tag == "stemless") {
-            measure->mstaves()[staffIdx]->setStemless(e.readInt());
+            measure->mstaves()[staff_idx]->set_stemless(e.read_int());
         } else if (tag == "hideIfEmpty") {
-            measure->mstaves()[staffIdx]->setHideIfEmpty(TConv::fromXml(e.readAsciiText(), AutoOnOff::AUTO));
+            measure->mstaves()[staff_idx]->set_hide_if_empty(TConv::from_xml(e.read_ascii_text(), AutoOnOff::AUTO));
         } else if (tag == "measureRepeatCount") {
-            measure->setMeasureRepeatCount(e.readInt(), staffIdx);
+            measure->set_measure_repeat_count(e.read_int(), staff_idx);
         } else if (tag == "SystemDivider") {
             SystemDivider *sd = new SystemDivider(ctx.dummy());
             TRead::read(sd, e, ctx);
@@ -170,139 +170,139 @@ void MeasureRead::readMeasure(Measure *measure, XmlReader &e, ReadContext &ctx, 
             //! but when we add it to Measure, the parent will be rewritten.
             measure->add(sd);
         } else if (tag == "multiMeasureRest") {
-            measure->setMMRestCount(e.readInt());
+            measure->set_mm_rest_count(e.read_int());
             // set tick to previous measure
-            measure->setTick(ctx.lastMeasure()->tick());
-            ctx.setTick(ctx.lastMeasure()->tick());
+            measure->set_tick(ctx.last_measure()->tick());
+            ctx.set_tick(ctx.last_measure()->tick());
         } else if (tag == "MeasureNumber") {
-            MeasureNumber *noText = new MeasureNumber(measure);
-            TRead::read(noText, e, ctx);
-            noText->setTrack(ctx.track());
-            measure->add(noText);
+            MeasureNumber *no_text = new MeasureNumber(measure);
+            TRead::read(no_text, e, ctx);
+            no_text->set_track(ctx.track());
+            measure->add(no_text);
         } else if (tag == "MMRestRange") {
             MMRestRange *range = new MMRestRange(measure);
             TRead::read(range, e, ctx);
-            range->setTrack(ctx.track());
+            range->set_track(ctx.track());
             measure->add(range);
-        } else if (TRead::readProperties(static_cast<MeasureBase *>(measure), e, ctx)) {
+        } else if (TRead::read_properties(static_cast<MeasureBase *>(measure), e, ctx)) {
         } else {
             e.unknown();
         }
     }
-    ctx.checkConnectors();
-    if (measure->isMMRest()) {
-        Measure *lm = ctx.lastMeasure();
-        ctx.setTick(lm->endTick());
+    ctx.check_connectors();
+    if (measure->is_mm_rest()) {
+        Measure *lm = ctx.last_measure();
+        ctx.set_tick(lm->end_tick());
     }
-    ctx.setCurrentMeasure(nullptr);
+    ctx.set_current_measure(nullptr);
 
-    measure->connectTremolo();
+    measure->connect_tremolo();
 }
 
-void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, int staffIdx, bool irregular) {
+void MeasureRead::read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, int staff_idx, bool irregular) {
     Segment *segment = nullptr;
-    std::vector<Chord *> graceNotes;
-    Beam *startingBeam = nullptr;
+    std::vector<Chord *> grace_notes;
+    Beam *starting_beam = nullptr;
     Tuplet *tuplet = nullptr;
     Fermata *fermata = nullptr;
 
-    Staff *staff = ctx.staff(staffIdx);
-    Fraction timeStretch(staff->timeStretch(measure->tick()));
+    Staff *staff = ctx.staff(staff_idx);
+    Fraction time_stretch(staff->time_stretch(measure->tick()));
 
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
 
         if (tag == "location") {
             Location loc = Location::relative();
             TRead::read(&loc, e, ctx);
-            ctx.setLocation(loc);
-            if (loc.isTimeTick()) {
-                EditTimeTickAnchors::createTimeTickAnchor(measure, ctx.tick() - measure->tick(), track2staff(ctx.track()));
+            ctx.set_location(loc);
+            if (loc.is_time_tick()) {
+                EditTimeTickAnchors::create_time_tick_anchor(measure, ctx.tick() - measure->tick(), track2staff(ctx.track()));
             }
         } else if (tag == "tick") { // obsolete?
             LOGD() << "read midi tick";
-            ctx.setTick(Fraction::fromTicks(ctx.fileDivision(e.readInt())));
+            ctx.set_tick(Fraction::from_ticks(ctx.file_division(e.read_int())));
         } else if (tag == "BarLine") {
-            BarLine *barLine = Factory::createBarLine(ctx.dummy());
-            barLine->setTrack(ctx.track());
-            TRead::read(barLine, e, ctx);
+            BarLine *bar_line = Factory::create_bar_line(ctx.dummy());
+            bar_line->set_track(ctx.track());
+            TRead::read(bar_line, e, ctx);
             //
             //  StartRepeatBarLine: at rtick == 0, always BarLineType::START_REPEAT
             //  BarLine:            in the middle of a measure, has no semantic
             //  EndBarLine:         at the end of a measure
             //  BeginBarLine:       first segment of a measure, systemic barline
 
-            SegmentType st = SegmentType::Invalid;
+            SegmentType st = SegmentType::INVALID;
             Fraction t = ctx.tick() - measure->tick();
-            if (t.isNotZero() && (t != measure->ticks())) {
-                st = SegmentType::BarLine;
-            } else if (barLine->barLineType() == BarLineType::START_REPEAT && t.isZero()) {
-                st = SegmentType::StartRepeatBarLine;
-            } else if (barLine->barLineType() == BarLineType::START_REPEAT && t == measure->ticks()) {
+            if (t.is_not_zero() && (t != measure->ticks())) {
+                st = SegmentType::BAR_LINE;
+            } else if (bar_line->bar_line_type() == BarLineType::START_REPEAT && t.is_zero()) {
+                st = SegmentType::START_REPEAT_BAR_LINE;
+            } else if (bar_line->bar_line_type() == BarLineType::START_REPEAT && t == measure->ticks()) {
                 // old version, ignore
-                delete barLine;
-                barLine = 0;
-            } else if (t.isZero() && segment == 0) {
-                st = SegmentType::BeginBarLine;
+                delete bar_line;
+                bar_line = 0;
+            } else if (t.is_zero() && segment == 0) {
+                st = SegmentType::BEGIN_BAR_LINE;
             } else {
-                st = SegmentType::EndBarLine;
+                st = SegmentType::END_BAR_LINE;
             }
-            if (barLine) {
-                segment = measure->getSegmentR(st, t);
-                segment->add(barLine);
+            if (bar_line) {
+                segment = measure->get_segment_r(st, t);
+                segment->add(bar_line);
             }
             if (fermata) {
                 segment->add(fermata);
                 fermata = nullptr;
             }
         } else if (tag == "Chord") {
-            Chord *chord = Factory::createChord(ctx.dummy());
-            chord->setTrack(ctx.track());
+            Chord *chord = Factory::create_chord(ctx.dummy());
+            chord->set_track(ctx.track());
             TRead::read(chord, e, ctx);
-            if (startingBeam) {
-                startingBeam->add(chord); // also calls chord->setBeam(startingBeam)
-                startingBeam = nullptr;
+            if (starting_beam) {
+                starting_beam->add(chord); // also calls chord->setBeam(startingBeam)
+                starting_beam = nullptr;
             }
             //                  if (tuplet && !chord->isGrace())
             //                        chord->readAddTuplet(tuplet);
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            if (chord->noteType() != NoteType::NORMAL) {
-                graceNotes.push_back(chord);
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            if (chord->note_type() != NoteType::NORMAL) {
+                grace_notes.push_back(chord);
             } else {
                 segment->add(chord);
-                for (size_t i = 0; i < graceNotes.size(); ++i) {
-                    Chord *gc = graceNotes[i];
-                    gc->setGraceIndex(static_cast<int>(i));
+                for (size_t i = 0; i < grace_notes.size(); ++i) {
+                    Chord *gc = grace_notes[i];
+                    gc->set_grace_index(static_cast<int>(i));
                     chord->add(gc);
                 }
-                graceNotes.clear();
+                grace_notes.clear();
                 if (tuplet) {
                     tuplet->add(chord);
                 }
-                ctx.incTick(chord->actualTicks());
+                ctx.inc_tick(chord->actual_ticks());
             }
             if (fermata) {
                 segment->add(fermata);
                 fermata = nullptr;
             }
         } else if (tag == "Rest") {
-            if (measure->isMMRest()) {
-                segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-                MMRest *mmr = Factory::createMMRest(segment);
-                mmr->setTrack(ctx.track());
+            if (measure->is_mm_rest()) {
+                segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+                MMRest *mmr = Factory::create_mm_rest(segment);
+                mmr->set_track(ctx.track());
                 TRead::read(mmr, e, ctx);
                 segment->add(mmr);
-                ctx.incTick(mmr->actualTicks());
+                ctx.inc_tick(mmr->actual_ticks());
             } else {
-                segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-                Rest *rest = Factory::createRest(segment);
-                rest->setDurationType(DurationType::V_MEASURE);
-                rest->setTicks(measure->timesig() / timeStretch);
-                rest->setTrack(ctx.track());
+                segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+                Rest *rest = Factory::create_rest(segment);
+                rest->set_duration_type(DurationType::V_MEASURE);
+                rest->set_ticks(measure->timesig() / time_stretch);
+                rest->set_track(ctx.track());
                 TRead::read(rest, e, ctx);
-                if (startingBeam) {
-                    startingBeam->add(rest); // also calls rest->setBeam(startingBeam)
-                    startingBeam = nullptr;
+                if (starting_beam) {
+                    starting_beam->add(rest); // also calls rest->setBeam(startingBeam)
+                    starting_beam = nullptr;
                 }
 
                 segment->add(rest);
@@ -311,98 +311,98 @@ void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, in
                     fermata = nullptr;
                 }
 
-                if (!rest->ticks().isValid()) { // hack
-                    rest->setTicks(measure->timesig() / timeStretch);
+                if (!rest->ticks().is_valid()) { // hack
+                    rest->set_ticks(measure->timesig() / time_stretch);
                 }
 
                 if (tuplet) {
                     tuplet->add(rest);
                 }
-                ctx.incTick(rest->actualTicks());
+                ctx.inc_tick(rest->actual_ticks());
             }
         } else if (tag == "Breath") {
-            segment = measure->getSegment(SegmentType::Breath, ctx.tick());
-            Breath *breath = Factory::createBreath(segment);
-            breath->setTrack(ctx.track());
-            breath->setPlacement(breath->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
+            segment = measure->get_segment(SegmentType::BREATH, ctx.tick());
+            Breath *breath = Factory::create_breath(segment);
+            breath->set_track(ctx.track());
+            breath->set_placement(breath->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
             TRead::read(breath, e, ctx);
             segment->add(breath);
         } else if (tag == "Spanner") {
-            TRead::readSpanner(e, ctx, measure, ctx.track());
+            TRead::read_spanner(e, ctx, measure, ctx.track());
         } else if (tag == "MeasureRepeat" || tag == "RepeatMeasure") {
             //             4.x                       3.x
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            MeasureRepeat *mr = Factory::createMeasureRepeat(segment);
-            mr->setTrack(ctx.track());
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            MeasureRepeat *mr = Factory::create_measure_repeat(segment);
+            mr->set_track(ctx.track());
             TRead::read(mr, e, ctx);
-            if (!mr->numMeasures()) {
-                mr->setNumMeasures(1); // 3.x doesn't have any other possibilities
+            if (!mr->num_measures()) {
+                mr->set_num_measures(1); // 3.x doesn't have any other possibilities
             }
-            if (!measure->measureRepeatCount(staffIdx)) {
-                measure->setMeasureRepeatCount(1, staffIdx);
+            if (!measure->measure_repeat_count(staff_idx)) {
+                measure->set_measure_repeat_count(1, staff_idx);
             }
             segment->add(mr);
-            ctx.incTick(measure->ticks());
+            ctx.inc_tick(measure->ticks());
         } else if (tag == "Clef") {
-            Clef *clef = Factory::createClef(ctx.dummy());
-            clef->setTrack(ctx.track());
-            bool isHeader = false;
-            TRead::read(clef, e, ctx, &isHeader);
-            clef->setGenerated(false);
+            Clef *clef = Factory::create_clef(ctx.dummy());
+            clef->set_track(ctx.track());
+            bool is_header = false;
+            TRead::read(clef, e, ctx, &is_header);
+            clef->set_generated(false);
 
-            segment = measure->getSegment(isHeader ? SegmentType::HeaderClef : SegmentType::Clef, ctx.tick());
+            segment = measure->get_segment(is_header ? SegmentType::HEADER_CLEF : SegmentType::CLEF, ctx.tick());
             segment->add(clef);
         } else if (tag == "TimeSig") {
-            TimeSig *ts = Factory::createTimeSig(ctx.dummy());
-            ts->setTrack(ctx.track());
+            TimeSig *ts = Factory::create_time_sig(ctx.dummy());
+            ts->set_track(ctx.track());
             TRead::read(ts, e, ctx);
 
-            Fraction currTick = ctx.tick();
-            bool courtesySig = ts->isCourtesy();
-            segment = measure->getSegment(courtesySig ? SegmentType::TimeSigAnnounce : SegmentType::TimeSig, currTick);
+            Fraction curr_tick = ctx.tick();
+            bool courtesy_sig = ts->is_courtesy();
+            segment = measure->get_segment(courtesy_sig ? SegmentType::TIME_SIG_ANNOUNCE : SegmentType::TIME_SIG, curr_tick);
             segment->add(ts);
 
-            if (!courtesySig) {
-                if (currTick == measure->endTick()) {
-                    segment->setEndOfMeasureChange(true);
-                    measure->setEndOfMeasureChange(true);
+            if (!courtesy_sig) {
+                if (curr_tick == measure->end_tick()) {
+                    segment->set_end_of_measure_change(true);
+                    measure->set_end_of_measure_change(true);
                 }
 
-                if (currTick == measure->tick()) {
-                    timeStretch = ts->stretch().reduced();
-                    measure->setTimesig(ts->sig() / timeStretch);
+                if (curr_tick == measure->tick()) {
+                    time_stretch = ts->stretch().reduced();
+                    measure->set_timesig(ts->sig() / time_stretch);
 
                     if (!irregular) {
-                        measure->setTicks(measure->timesig());
+                        measure->set_ticks(measure->timesig());
                     }
                 }
 
-                if (currTick > measure->tick()) {
-                    ctx.setTimeSigForNextMeasure(ts->sig() / ts->stretch().reduced());
+                if (curr_tick > measure->tick()) {
+                    ctx.set_time_sig_for_next_measure(ts->sig() / ts->stretch().reduced());
                 }
             }
         } else if (tag == "KeySig") {
-            KeySig *ks = Factory::createKeySig(ctx.dummy());
-            ks->setTrack(ctx.track());
+            KeySig *ks = Factory::create_key_sig(ctx.dummy());
+            ks->set_track(ctx.track());
             TRead::read(ks, e, ctx);
 
-            Fraction curTick = ctx.tick();
-            bool courtesySig = ks->isCourtesy();
-            segment = measure->getSegment(courtesySig ? SegmentType::KeySigAnnounce : SegmentType::KeySig, curTick);
+            Fraction cur_tick = ctx.tick();
+            bool courtesy_sig = ks->is_courtesy();
+            segment = measure->get_segment(courtesy_sig ? SegmentType::KEY_SIG_ANNOUNCE : SegmentType::KEY_SIG, cur_tick);
             segment->add(ks);
 
-            if (!courtesySig) {
-                if (curTick == measure->endTick()) {
-                    segment->setEndOfMeasureChange(true);
-                    measure->setEndOfMeasureChange(true);
+            if (!courtesy_sig) {
+                if (cur_tick == measure->end_tick()) {
+                    segment->set_end_of_measure_change(true);
+                    measure->set_end_of_measure_change(true);
                 }
 
-                staff->setKey(curTick, ks->keySigEvent());
+                staff->set_key(cur_tick, ks->key_sig_event());
             }
         } else if (tag == "Text") {
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            StaffText *t = Factory::createStaffText(segment);
-            t->setTrack(ctx.track());
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            StaffText *t = Factory::create_staff_text(segment);
+            t->set_track(ctx.track());
             TRead::read(t, e, ctx);
             if (t->empty()) {
                 LOGD("==reading empty text: deleted");
@@ -414,25 +414,25 @@ void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, in
         //----------------------------------------------------
         // Annotation
         else if (tag == "Dynamic") {
-            segment = measure->getChordRestOrTimeTickSegment(ctx.tick());
-            Dynamic *dyn = Factory::createDynamic(segment);
-            dyn->setTrack(ctx.track());
+            segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());
+            Dynamic *dyn = Factory::create_dynamic(segment);
+            dyn->set_track(ctx.track());
             TRead::read(dyn, e, ctx);
             segment->add(dyn);
         } else if (tag == "Expression") {
-            segment = measure->getChordRestOrTimeTickSegment(ctx.tick());
-            Expression *expr = Factory::createExpression(segment);
-            expr->setTrack(ctx.track());
+            segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());
+            Expression *expr = Factory::create_expression(segment);
+            expr->set_track(ctx.track());
             TRead::read(expr, e, ctx);
             segment->add(expr);
         } else if (tag == "Harmony") {
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            Harmony *el = Factory::createHarmony(segment);
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            Harmony *el = Factory::create_harmony(segment);
 
-            el->setTrack(ctx.track());
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             if (el->chords().empty()) {
                 // Invalid harmony
@@ -441,109 +441,109 @@ void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, in
                 segment->add(el);
             }
         } else if (tag == "FretDiagram") {
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            FretDiagram *el = Factory::createFretDiagram(segment);
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            FretDiagram *el = Factory::create_fret_diagram(segment);
 
-            el->setTrack(ctx.track());
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "TremoloBar") {
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            TremoloBar *el = Factory::createTremoloBar(segment);
-            el->setTrack(ctx.track());
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            TremoloBar *el = Factory::create_tremolo_bar(segment);
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "Symbol") {
-            segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-            Symbol *el = Factory::createSymbol(segment);
+            segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+            Symbol *el = Factory::create_symbol(segment);
 
-            el->setTrack(ctx.track());
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "Tempo") {
-            segment = measure->getChordRestOrTimeTickSegment(ctx.tick());
-            TempoText *el = Factory::createTempoText(segment);
+            segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());
+            TempoText *el = Factory::create_tempo_text(segment);
 
-            el->setTrack(ctx.track());
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "StaffText") {
-            segment = measure->getChordRestOrTimeTickSegment(ctx.tick());
-            StaffText *el = Factory::createStaffText(segment);
-            el->setTrack(ctx.track());
+            segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());
+            StaffText *el = Factory::create_staff_text(segment);
+            el->set_track(ctx.track());
             TRead::read(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "Sticking" || tag == "SystemText" || tag == "PlayTechAnnotation" || tag == "Capo" || tag == "StringTunings" ||
                    tag == "RehearsalMark" || tag == "InstrumentChange" || tag == "StaffState" || tag == "FiguredBass" ||
                    tag == "HarpPedalDiagram") {
-            EngravingItem *el = Factory::createItemByName(tag, ctx.dummy());
-            if (el->allowTimeAnchor()) {
-                segment = measure->getChordRestOrTimeTickSegment(ctx.tick());
+            EngravingItem *el = Factory::create_item_by_name(tag, ctx.dummy());
+            if (el->allow_time_anchor()) {
+                segment = measure->get_chord_rest_or_time_tick_segment(ctx.tick());
             } else {
-                segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
+                segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
             }
 
-            el->setTrack(ctx.track());
-            TRead::readItem(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            el->set_track(ctx.track());
+            TRead::read_item(el, e, ctx);
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         } else if (tag == "Fermata") {
-            fermata = Factory::createFermata(ctx.dummy());
-            fermata->setTrack(ctx.track());
-            fermata->setPlacement(fermata->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
+            fermata = Factory::create_fermata(ctx.dummy());
+            fermata->set_track(ctx.track());
+            fermata->set_placement(fermata->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
             TRead::read(fermata, e, ctx);
         } else if (tag == "Image") {
-            if (MScore::noImages) {
-                e.skipCurrentElement();
+            if (MScore::no_images) {
+                e.skip_current_element();
             } else {
-                segment = measure->getSegment(SegmentType::ChordRest, ctx.tick());
-                Image *el = Factory::createImage(segment);
-                el->setTrack(ctx.track());
+                segment = measure->get_segment(SegmentType::CHORD_REST, ctx.tick());
+                Image *el = Factory::create_image(segment);
+                el->set_track(ctx.track());
                 TRead::read(el, e, ctx);
                 segment->add(el);
             }
         } else if (tag == "PlayCountText") {
-            segment = measure->getSegment(SegmentType::EndBarLine, ctx.tick());
-            EngravingItem *el = Factory::createItemByName(tag, segment);
+            segment = measure->get_segment(SegmentType::END_BAR_LINE, ctx.tick());
+            EngravingItem *el = Factory::create_item_by_name(tag, segment);
 
-            el->setTrack(ctx.track());
-            TRead::readItem(el, e, ctx);
-            if (el->systemFlag() && el->isTopSystemObject()) {
-                el->setTrack(0); // original system object always goes on top
+            el->set_track(ctx.track());
+            TRead::read_item(el, e, ctx);
+            if (el->system_flag() && el->is_top_system_object()) {
+                el->set_track(0); // original system object always goes on top
             }
             segment->add(el);
         }
         //----------------------------------------------------
         else if (tag == "Tuplet") {
-            Tuplet *oldTuplet = tuplet;
-            tuplet = Factory::createTuplet(measure);
-            tuplet->setTrack(ctx.track());
-            tuplet->setTick(ctx.tick());
+            Tuplet *old_tuplet = tuplet;
+            tuplet = Factory::create_tuplet(measure);
+            tuplet->set_track(ctx.track());
+            tuplet->set_tick(ctx.tick());
             TRead::read(tuplet, e, ctx);
-            if (oldTuplet) {
-                oldTuplet->add(tuplet);
+            if (old_tuplet) {
+                old_tuplet->add(tuplet);
             }
         } else if (tag == "endTuplet") {
             if (!tuplet) {
                 LOGD("Measure::read: encountered <endTuplet/> when no tuplet was started");
-                e.skipCurrentElement();
+                e.skip_current_element();
                 continue;
             }
             // Gap rests are serialized as location jumps. Restore a leading gap
@@ -553,60 +553,60 @@ void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, in
                 const Fraction start = tuplet->tick();
                 const Fraction gap = tuplet->elements().front()->tick() - start;
                 if (gap > Fraction(0, 1)) {
-                    Fraction duration = gap * staff->timeStretch(start);
+                    Fraction duration = gap * staff->time_stretch(start);
                     for (Tuplet *parent = tuplet; parent; parent = parent->tuplet()) {
                         duration *= parent->ratio();
                     }
-                    Segment *gapSegment = measure->getSegment(SegmentType::ChordRest, start);
-                    if (!gapSegment->element(ctx.track())) {
-                        Rest *rest = Factory::createRest(gapSegment);
-                        rest->setTrack(ctx.track());
-                        rest->setDurationType(TDuration(duration, true));
-                        rest->setTicks(duration);
-                        rest->setGap(true);
-                        gapSegment->add(rest);
+                    Segment *gap_segment = measure->get_segment(SegmentType::CHORD_REST, start);
+                    if (!gap_segment->element(ctx.track())) {
+                        Rest *rest = Factory::create_rest(gap_segment);
+                        rest->set_track(ctx.track());
+                        rest->set_duration_type(TDuration(duration, true));
+                        rest->set_ticks(duration);
+                        rest->set_gap(true);
+                        gap_segment->add(rest);
                         tuplet->add(rest);
                     }
                 }
             }
-            Tuplet *oldTuplet = tuplet;
+            Tuplet *old_tuplet = tuplet;
             tuplet = tuplet->tuplet();
-            if (oldTuplet->elements().empty()) {
+            if (old_tuplet->elements().empty()) {
                 // this should not happen and is a sign of input file corruption
-                LOGD("Measure:read: empty tuplet in measure index=%d, input file corrupted?", ctx.currentMeasureIndex());
+                LOGD("Measure:read: empty tuplet in measure index=%d, input file corrupted?", ctx.current_measure_index());
                 if (tuplet) {
-                    tuplet->remove(oldTuplet);
+                    tuplet->remove(old_tuplet);
                 }
-                delete oldTuplet;
+                delete old_tuplet;
             }
-            e.readNext();
+            e.read_next();
         } else if (tag == "Beam") {
-            Beam *beam = Factory::createBeam(ctx.score());
-            beam->setTrack(ctx.track());
+            Beam *beam = Factory::create_beam(ctx.score());
+            beam->set_track(ctx.track());
             TRead::read(beam, e, ctx);
-            if (startingBeam) {
+            if (starting_beam) {
                 LOGD("The read beam was not used");
-                delete startingBeam;
+                delete starting_beam;
             }
-            startingBeam = beam;
+            starting_beam = beam;
         } else if (tag == "Segment" && segment) {
             TRead::read(segment, e, ctx);
         } else if (tag == "Ambitus") {
-            segment = measure->getSegment(SegmentType::Ambitus, ctx.tick());
-            Ambitus *range = Factory::createAmbitus(segment);
+            segment = measure->get_segment(SegmentType::AMBITUS, ctx.tick());
+            Ambitus *range = Factory::create_ambitus(segment);
             TRead::read(range, e, ctx);
-            range->setTrack(trackZeroVoice(ctx.track()));
+            range->set_track(track_zero_voice(ctx.track()));
             segment->add(range);
         } else {
             e.unknown();
         }
     }
-    if (startingBeam) {
+    if (starting_beam) {
         LOGD("The read beam was not used");
-        delete startingBeam;
+        delete starting_beam;
     }
     if (tuplet) {
-        LOGD("Measure:readVoice: measure index=%d, <endTuplet/> not found", ctx.currentMeasureIndex());
+        LOGD("Measure:readVoice: measure index=%d, <endTuplet/> not found", ctx.current_measure_index());
         if (tuplet->elements().empty()) {
             if (tuplet->tuplet()) {
                 tuplet->tuplet()->remove(tuplet);
@@ -615,8 +615,8 @@ void MeasureRead::readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, in
         }
     }
     if (fermata) {
-        SegmentType st = (ctx.tick() == measure->endTick() ? SegmentType::EndBarLine : SegmentType::ChordRest);
-        segment = measure->getSegment(st, ctx.tick());
+        SegmentType st = (ctx.tick() == measure->end_tick() ? SegmentType::END_BAR_LINE : SegmentType::CHORD_REST);
+        segment = measure->get_segment(st, ctx.tick());
         segment->add(fermata);
         fermata = nullptr;
     }

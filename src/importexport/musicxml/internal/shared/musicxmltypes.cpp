@@ -29,17 +29,17 @@
 using namespace mu::engraving;
 using namespace mu::iex::musicxml;
 
-String MusicXmlInstrument::toString() const {
+String MusicXmlInstrument::to_string() const {
     return String(u"chan %1 prog %2 vol %3 pan %4 unpitched %5 name '%6' sound '%7' head %8 line %9 stemDir %10")
-        .arg(midiChannel)
-        .arg(midiProgram)
-        .arg(midiVolume)
-        .arg(midiPan)
+        .arg(midi_channel)
+        .arg(midi_program)
+        .arg(midi_volume)
+        .arg(midi_pan)
         .arg(unpitched)
         .arg(name, sound)
         .arg(int(notehead))
         .arg(line)
-        .arg(int(stemDirection));
+        .arg(int(stem_direction));
 }
 
 //---------------------------------------------------------
@@ -78,11 +78,11 @@ const String MusicXmlInstrList::instrument(const Fraction f) const {
 //   setInstrument
 //---------------------------------------------------------
 
-void MusicXmlInstrList::setInstrument(const String instr, const Fraction f) {
+void MusicXmlInstrList::set_instrument(const String instr, const Fraction f) {
     // TODO determine how to handle multiple instrument changes at the same time
     // current implementation keeps the first one
     if (!insert({f, instr}).second) {
-        LOGD() << "element already exists, instr: " << instr << ", tick: " << f.toString() << "(" << f.ticks() << ")";
+        LOGD() << "element already exists, instr: " << instr << ", tick: " << f.to_string() << "(" << f.ticks() << ")";
     }
     //(*this)[f] = instr;
 }
@@ -108,9 +108,9 @@ void MusicXmlInstrList::setInstrument(const String instr, const Fraction f) {
 //   addNumber
 //---------------------------------------------------------
 
-void LyricNumberHandler::addNumber(const String &number) {
-    if (numberToNo_.find(number) == numberToNo_.end()) {
-        numberToNo_[number] = -1; // unassigned
+void LyricNumberHandler::add_number(const String &number) {
+    if (number_to_no_.find(number) == number_to_no_.end()) {
+        number_to_no_[number] = -1; // unassigned
     }
 }
 
@@ -118,10 +118,10 @@ void LyricNumberHandler::addNumber(const String &number) {
 //   toString
 //---------------------------------------------------------
 
-String LyricNumberHandler::toString() const {
+String LyricNumberHandler::to_string() const {
     String res;
-    for (const auto &p : numberToNo_) {
-        if (!res.isEmpty()) {
+    for (const auto &p : number_to_no_) {
+        if (!res.is_empty()) {
             res += u" ";
         }
         res += String(u"%1:%2").arg(p.first).arg(p.second);
@@ -133,18 +133,18 @@ String LyricNumberHandler::toString() const {
 //   getLyricNo
 //---------------------------------------------------------
 
-int LyricNumberHandler::getLyricNo(const String &number) const {
-    const auto it = numberToNo_.find(number);
-    return it == numberToNo_.end() ? 0 : it->second;
+int LyricNumberHandler::get_lyric_no(const String &number) const {
+    const auto it = number_to_no_.find(number);
+    return it == number_to_no_.end() ? 0 : it->second;
 }
 
 //---------------------------------------------------------
 //   determineLyricNos
 //---------------------------------------------------------
 
-void LyricNumberHandler::determineLyricNos() {
+void LyricNumberHandler::determine_lyric_nos() {
     int i = 0;
-    for (auto &p : numberToNo_) {
+    for (auto &p : number_to_no_) {
         p.second = i;
         ++i;
     }

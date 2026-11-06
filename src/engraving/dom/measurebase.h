@@ -70,127 +70,127 @@ public:
     //! The system this measure is currently laid out on; null if not placed.
     System *system() const { return system_; }
 
-    void setSystem(System *s) { system_ = s; }
+    void set_system(System *s) { system_ = s; }
 
-    EngravingItem *layoutParent() const override;
+    EngravingItem *layout_parent() const override;
 
     //! A measure or frame is owned by its score, or by the frame it is nested in.
     //! A system merely places it; see setSystem(). These overloads hide
     //! EngravingItem::setOwnershipParent, so that no other parent can be set by accident.
-    void setOwnershipParent(Score *score);
-    void setOwnershipParent(Box *box);
+    void set_ownership_parent(Score *score);
+    void set_ownership_parent(Box *box);
 
-    System *prevNonVBoxSystem() const;
-    System *nextNonVBoxSystem() const;
+    System *prev_non_v_box_system() const;
+    System *next_non_v_box_system() const;
     Page *page() const;
-    Page *prevPage() const;
-    Page *nextPage() const;
+    Page *prev_page() const;
+    Page *next_page() const;
 
-    virtual void scanElements(std::function<void(EngravingItem *)> func) override;
+    virtual void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    virtual void setScore(Score *s) override;
+    virtual void set_score(Score *s) override;
 
     MeasureBase *next() const { return next_; }
 
-    MeasureBase *nextMM() const;
+    MeasureBase *next_mm() const;
 
-    void setNext(MeasureBase *e) { next_ = e; }
+    void set_next(MeasureBase *e) { next_ = e; }
 
     MeasureBase *prev() const { return prev_; }
 
-    MeasureBase *prevMM() const;
+    MeasureBase *prev_mm() const;
 
-    void setPrev(MeasureBase *e) { prev_ = e; }
+    void set_prev(MeasureBase *e) { prev_ = e; }
 
     MeasureBase *top() const;
 
-    MeasureBase *getInScore(Score *score, bool useNextMeasureFallback = false) const;
+    MeasureBase *get_in_score(Score *score, bool use_next_measure_fallback = false) const;
 
-    Measure *nextMeasure() const;
-    Measure *prevMeasure() const;
-    Measure *nextMeasureMM() const;
-    Measure *prevMeasureMM() const;
+    Measure *next_measure() const;
+    Measure *prev_measure() const;
+    Measure *next_measure_mm() const;
+    Measure *prev_measure_mm() const;
 
     ElementList &el() { return el_; }
 
     const ElementList &el() const { return el_; }
 
-    const MeasureBase *mbWithPrecedingSectionBreak() const;
-    LayoutBreak *sectionBreakElement() const;
+    const MeasureBase *mb_with_preceding_section_break() const;
+    LayoutBreak *section_break_element() const;
 
-    void undoSetBreak(bool v, LayoutBreakType type);
+    void undo_set_break(bool v, LayoutBreakType type);
 
-    void undoSetLineBreak(bool v) { undoSetBreak(v, LayoutBreakType::LINE); }
+    void undo_set_line_break(bool v) { undo_set_break(v, LayoutBreakType::LINE); }
 
-    void undoSetPageBreak(bool v) { undoSetBreak(v, LayoutBreakType::PAGE); }
+    void undo_set_page_break(bool v) { undo_set_break(v, LayoutBreakType::PAGE); }
 
-    void undoSetSectionBreak(bool v) { undoSetBreak(v, LayoutBreakType::SECTION); }
+    void undo_set_section_break(bool v) { undo_set_break(v, LayoutBreakType::SECTION); }
 
-    void undoSetNoBreak(bool v) { undoSetBreak(v, LayoutBreakType::NOBREAK); }
+    void undo_set_no_break(bool v) { undo_set_break(v, LayoutBreakType::NOBREAK); }
 
-    void cleanupLayoutBreaks(bool undo);
+    void cleanup_layout_breaks(bool undo);
 
-    virtual void moveTicks(const Fraction &diff) { setTick(tick() + diff); }
+    virtual void move_ticks(const Fraction &diff) { set_tick(tick() + diff); }
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
     Fraction tick() const override;
-    void setTick(const Fraction &f);
+    void set_tick(const Fraction &f);
 
     Fraction ticks() const { return len_; }
 
-    void setTicks(const Fraction &f) { len_ = f; }
+    void set_ticks(const Fraction &f) { len_ = f; }
 
-    Fraction endTick() const { return tick_ + len_; }
+    Fraction end_tick() const { return tick_ + len_; }
 
-    void triggerLayout() const override;
+    void trigger_layout() const override;
 
     double pause() const;
 
-    void clearElements();
-    ElementList takeElements();
+    void clear_elements();
+    ElementList take_elements();
 
-    bool lineBreak() const { return flag(ElementFlag::LINE_BREAK); }
+    bool line_break() const { return flag(ElementFlag::LINE_BREAK); }
 
-    void setLineBreak(bool v) { setFlag(ElementFlag::LINE_BREAK, v); }
+    void set_line_break(bool v) { set_flag(ElementFlag::LINE_BREAK, v); }
 
-    bool pageBreak() const { return flag(ElementFlag::PAGE_BREAK); }
+    bool page_break() const { return flag(ElementFlag::PAGE_BREAK); }
 
-    void setPageBreak(bool v) { setFlag(ElementFlag::PAGE_BREAK, v); }
+    void set_page_break(bool v) { set_flag(ElementFlag::PAGE_BREAK, v); }
 
-    bool sectionBreak() const { return flag(ElementFlag::SECTION_BREAK); }
+    bool section_break() const { return flag(ElementFlag::SECTION_BREAK); }
 
-    void setSectionBreak(bool v) { setFlag(ElementFlag::SECTION_BREAK, v); }
+    void set_section_break(bool v) { set_flag(ElementFlag::SECTION_BREAK, v); }
 
-    bool noBreak() const { return flag(ElementFlag::NO_BREAK); }
+    bool no_break() const { return flag(ElementFlag::NO_BREAK); }
 
-    void setNoBreak(bool v) { setFlag(ElementFlag::NO_BREAK, v); }
+    void set_no_break(bool v) { set_flag(ElementFlag::NO_BREAK, v); }
 
-    virtual void computeMinWidth() {}
+    virtual void compute_min_width() {}
 
     int index() const;
-    int measureIndex() const;
+    int measure_index() const;
 
-    bool isBefore(const EngravingItem *other) const override;
-    bool isBefore(const MeasureBase *other) const;
+    bool is_before(const EngravingItem *other) const override;
+    bool is_before(const MeasureBase *other) const;
 
-    bool isBeforeOrEqual(const MeasureBase *other) const { return other == this || isBefore(other); }
+    bool is_before_or_equal(const MeasureBase *other) const { return other == this || is_before(other); }
 
-    bool isAfter(const MeasureBase *other) const { return !isBeforeOrEqual(other); }
+    bool is_after(const MeasureBase *other) const { return !is_before_or_equal(other); }
 
-    bool isAfterOrEqual(const MeasureBase *other) const { return !isBefore(other); }
+    bool is_after_or_equal(const MeasureBase *other) const { return !is_before(other); }
 
-    const RangeLock *systemLock() const;
-    bool isStartOfSystemLock() const;
-    bool isEndOfSystemLock() const;
+    const RangeLock *system_lock() const;
+    bool is_start_of_system_lock() const;
+    bool is_end_of_system_lock() const;
 
-    const RangeLock *pageLock() const;
-    bool isStartOfPageLock() const;
-    bool isEndOfPageLock() const;
+    const RangeLock *page_lock() const;
+    bool is_start_of_page_lock() const;
+    bool is_end_of_page_lock() const;
 
 protected:
     MeasureBase(const ElementType &type, Score *parent);
@@ -234,11 +234,11 @@ public:
 
     void append(MeasureBase *);
 
-    void updateTickIndex();
+    void update_tick_index();
 
-    Measure *measureByTick(int tick) const;
-    MeasureBase *firstMeasureBaseAtTick(int tick) const;
-    std::vector<MeasureBase *> measureBasesAtTick(int tick) const;
+    Measure *measure_by_tick(int tick) const;
+    MeasureBase *first_measure_base_at_tick(int tick) const;
+    std::vector<MeasureBase *> measure_bases_at_tick(int tick) const;
 
 private:
     void push_back(MeasureBase *m);
@@ -251,7 +251,7 @@ private:
     // At a tick there can be any number of MeasureBases
     // There can only be one Measure
     // There can be any number of Boxes
-    std::multimap<int, MeasureBase *> tickIndex_;
+    std::multimap<int, MeasureBase *> tick_index_;
 };
 } // namespace mu::engraving
 #endif

@@ -36,10 +36,10 @@ using namespace mu::engraving;
 namespace mu::iex::guitarpro {
 ContiniousElementsBuilder::ContiniousElementsBuilder(Score *score) : score_(score) {}
 
-static mu::engraving::ElementType muTypeFromImportType(ContiniousElementsBuilder::ImportType importType) {
+static mu::engraving::ElementType mu_type_from_import_type(ContiniousElementsBuilder::ImportType import_type) {
     using import_t = ContiniousElementsBuilder::ImportType;
 
-    switch (importType) {
+    switch (import_type) {
         case import_t::LET_RING: return ElementType::LET_RING;
         case import_t::PALM_MUTE: return ElementType::PALM_MUTE;
         case import_t::RASGUEADO: return ElementType::RASGUEADO;
@@ -73,7 +73,7 @@ static mu::engraving::ElementType muTypeFromImportType(ContiniousElementsBuilder
     return ElementType::INVALID;
 }
 
-static String harmonicText(ContiniousElementsBuilder::ImportType type) {
+static String harmonic_text(ContiniousElementsBuilder::ImportType type) {
     static const std::unordered_map<ContiniousElementsBuilder::ImportType, String> names{
         {ContiniousElementsBuilder::ImportType::HARMONIC_ARTIFICIAL, u"AH"}, {ContiniousElementsBuilder::ImportType::HARMONIC_PINCH, u"PH"},
         {ContiniousElementsBuilder::ImportType::HARMONIC_TAP, u"TH"},        {ContiniousElementsBuilder::ImportType::HARMONIC_SEMI, u"SH"},
@@ -89,7 +89,7 @@ static String harmonicText(ContiniousElementsBuilder::ImportType type) {
     return String();
 }
 
-static mu::engraving::VibratoType vibratoTypeFromImportType(ContiniousElementsBuilder::ImportType type) {
+static mu::engraving::VibratoType vibrato_type_from_import_type(ContiniousElementsBuilder::ImportType type) {
     static const std::unordered_map<ContiniousElementsBuilder::ImportType, VibratoType> names{
         {ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_SLIGHT, VibratoType::GUITAR_VIBRATO},
         {ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_WIDE, VibratoType::GUITAR_VIBRATO_WIDE},
@@ -105,7 +105,7 @@ static mu::engraving::VibratoType vibratoTypeFromImportType(ContiniousElementsBu
     return VibratoType::GUITAR_VIBRATO;
 }
 
-static std::pair<bool, mu::engraving::OttavaType> ottavaType(ContiniousElementsBuilder::ImportType type) {
+static std::pair<bool, mu::engraving::OttavaType> ottava_type(ContiniousElementsBuilder::ImportType type) {
     static const std::unordered_map<ContiniousElementsBuilder::ImportType, mu::engraving::OttavaType> types{
         {ContiniousElementsBuilder::ImportType::OTTAVA_VA8, mu::engraving::OttavaType::OTTAVA_8VA},
         {ContiniousElementsBuilder::ImportType::OTTAVA_VB8, mu::engraving::OttavaType::OTTAVA_8VB},
@@ -121,8 +121,8 @@ static std::pair<bool, mu::engraving::OttavaType> ottavaType(ContiniousElementsB
 }
 
 /// whenever the continious line elements should end on rest or rest should be included in it
-static bool shouldSplitByRests(mu::engraving::ElementType muType) {
-    switch (muType) {
+static bool should_split_by_rests(mu::engraving::ElementType mu_type) {
+    switch (mu_type) {
         case ElementType::PICK_SCRAPE:
         case ElementType::TRILL:
         case ElementType::HARMONIC_MARK:
@@ -133,192 +133,192 @@ static bool shouldSplitByRests(mu::engraving::ElementType muType) {
     }
 }
 
-void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementType muType, ImportType importType, bool elemExists,
-                                                       sub_type_t subType) {
-    auto setStartCR = [](Spanner *elem, ChordRest *cr) {
-        elem->setTick(cr->tick());
-        elem->setStartElement(cr);
+void ContiniousElementsBuilder::build_continious_element(ChordRest *cr, ElementType mu_type, ImportType import_type, bool elem_exists,
+                                                         sub_type_t sub_type) {
+    auto set_start_cr = [](Spanner *elem, ChordRest *cr) {
+        elem->set_tick(cr->tick());
+        elem->set_start_element(cr);
     };
 
-    auto setEndCR = [](Spanner *elem, ChordRest *cr) {
-        elem->setTick2(cr->endTick());
-        elem->setEndElement(cr);
+    auto set_end_cr = [](Spanner *elem, ChordRest *cr) {
+        elem->set_tick2(cr->end_tick());
+        elem->set_end_element(cr);
     };
 
-    bool splitByRests = shouldSplitByRests(muType);
+    bool split_by_rests = should_split_by_rests(mu_type);
 
     track_idx_t track = cr->track();
 
-    auto &elements = elementsByType_[importType];
+    auto &elements = elements_by_type_[import_type];
     while (elements.size() < track + 1) {
         elements.push_back(nullptr);
     }
 
     auto &elem = elements[track];
-    auto &lastTypeForTrack = lastImportTypes_[muType][track][subType];
+    auto &last_type_for_track = last_import_types_[mu_type][track][sub_type];
 
-    ContiniousElementState state = calculateState(cr->isRest(), elemExists, splitByRests, lastTypeForTrack != importType);
+    ContiniousElementState state = calculate_state(cr->is_rest(), elem_exists, split_by_rests, last_type_for_track != import_type);
 
     /// handling the continious element according to its state
     switch (state) {
         case ContiniousElementState::CHORD_NO_ELEMENT:
-            lastTypeForTrack = ImportType::NONE;
+            last_type_for_track = ImportType::NONE;
             elem = nullptr;
             break;
 
         case ContiniousElementState::REST_BREAK:
-            lastTypeForTrack = ImportType::NONE;
+            last_type_for_track = ImportType::NONE;
             elem = nullptr;
             break;
 
         case ContiniousElementState::REST_CONTINUE:
         case ContiniousElementState::
             ELEMENT_ON_REST: // currently it's mistake: we cannot indicate Rest with any of continious elements in guitar pro
-            if (lastTypeForTrack != ImportType::NONE) {
-                elementsToAddToScore_[track][lastTypeForTrack].endedOnRest = true;
+            if (last_type_for_track != ImportType::NONE) {
+                elements_to_add_to_score_[track][last_type_for_track].ended_on_rest = true;
             }
 
             break;
 
         case ContiniousElementState::CONTINUE_CURRENT_LINE: {
-            ChordRest *lastCR = elem->endCR();
-            if (lastCR == cr) {
+            ChordRest *last_cr = elem->end_cr();
+            if (last_cr == cr) {
                 break;
             }
 
             if (elem->tick2() < cr->tick()) {
-                if (lastTypeForTrack != ImportType::NONE) {
-                    auto &lastTypeElementsToAdd = elementsToAddToScore_[track][lastTypeForTrack];
+                if (last_type_for_track != ImportType::NONE) {
+                    auto &last_type_elements_to_add = elements_to_add_to_score_[track][last_type_for_track];
 
                     /// removing info about the Rest and updating last element's ticks
-                    if (lastTypeElementsToAdd.endedOnRest) {
-                        lastTypeElementsToAdd.endedOnRest = false;
-                        Spanner *prevElem = lastTypeElementsToAdd.elements.back();
-                        if (!prevElem) {
+                    if (last_type_elements_to_add.ended_on_rest) {
+                        last_type_elements_to_add.ended_on_rest = false;
+                        Spanner *prev_elem = last_type_elements_to_add.elements.back();
+                        if (!prev_elem) {
                             LOGE() << "error while importing";
                             return;
                         }
 
-                        elem = prevElem;
-                        setEndCR(elem, cr);
+                        elem = prev_elem;
+                        set_end_cr(elem, cr);
                     } else {
                         // Simile mark case
-                        setEndCR(elem, cr);
+                        set_end_cr(elem, cr);
                     }
                 }
             } else {
-                setEndCR(elem, cr);
+                set_end_cr(elem, cr);
             }
 
             break;
         }
 
         case ContiniousElementState::CREATE_NEW_ITEM: {
-            EngravingItem *engItem = Factory::createItem(muType, score_->dummy());
+            EngravingItem *eng_item = Factory::create_item(mu_type, score_->dummy());
 
-            Spanner *newElem = dynamic_cast<Spanner *>(engItem);
-            IF_ASSERT_FAILED(newElem) { return; }
+            Spanner *new_elem = dynamic_cast<Spanner *>(eng_item);
+            IF_ASSERT_FAILED(new_elem) { return; }
 
-            elem = newElem;
+            elem = new_elem;
 
-            setStartCR(newElem, cr);
-            setEndCR(newElem, cr);
+            set_start_cr(new_elem, cr);
+            set_end_cr(new_elem, cr);
 
-            newElem->setTrack(track);
-            newElem->setTrack2(track);
+            new_elem->set_track(track);
+            new_elem->set_track2(track);
 
-            elementsToAddToScore_[track][importType].elements.push_back(newElem);
-            orderedAddedElements_.push_back(newElem);
-            lastTypeForTrack = importType;
+            elements_to_add_to_score_[track][import_type].elements.push_back(new_elem);
+            ordered_added_elements_.push_back(new_elem);
+            last_type_for_track = import_type;
             break;
         }
 
         default: break;
     }
 
-    if (!cr->isChord()) {
+    if (!cr->is_chord()) {
         return;
     }
 
-    setupAddedElement(cr->track(), importType);
+    setup_added_element(cr->track(), import_type);
 }
 
-void ContiniousElementsBuilder::notifyUncompletedMeasure() {
-    for (auto &trackMaps : elementsToAddToScore_) {
-        for (auto &typeMaps : trackMaps.second) {
-            typeMaps.second.endedOnRest = true;
+void ContiniousElementsBuilder::notify_uncompleted_measure() {
+    for (auto &track_maps : elements_to_add_to_score_) {
+        for (auto &type_maps : track_maps.second) {
+            type_maps.second.ended_on_rest = true;
         }
     }
 }
 
-static Chord *searchEndChord(Chord *startChord) {
-    ChordRest *nextCr = nullptr;
-    if (startChord->isGrace()) {
+static Chord *search_end_chord(Chord *start_chord) {
+    ChordRest *next_cr = nullptr;
+    if (start_chord->is_grace()) {
         //! this case when start note is a grace note so end note can be next note in grace notes
         //! or parent note of grace notes
-        Chord *parentGrace = toChord(startChord->parent());
+        Chord *parent_grace = to_chord(start_chord->parent());
 
-        auto it = parentGrace->graceNotes().begin();
-        for (; it != parentGrace->graceNotes().end(); ++it) {
-            if (*it == startChord) {
+        auto it = parent_grace->grace_notes().begin();
+        for (; it != parent_grace->grace_notes().end(); ++it) {
+            if (*it == start_chord) {
                 break;
             }
         }
 
-        if (it == parentGrace->graceNotes().end()) {
-            nextCr = nullptr;
-        } else if (std::next(it) == parentGrace->graceNotes().end()) {
-            nextCr = parentGrace;
+        if (it == parent_grace->grace_notes().end()) {
+            next_cr = nullptr;
+        } else if (std::next(it) == parent_grace->grace_notes().end()) {
+            next_cr = parent_grace;
         } else {
-            nextCr = *(++it);
+            next_cr = *(++it);
         }
     } else {
-        nextCr = startChord->segment()->next1()->nextChordRest(startChord->track());
-        if (!nextCr) {
+        next_cr = start_chord->segment()->next1()->next_chord_rest(start_chord->track());
+        if (!next_cr) {
             return nullptr;
         }
 
-        if (nextCr->isChord() && !toChord(nextCr)->graceNotes().empty()) {
-            nextCr = toChord(nextCr)->graceNotes().front();
+        if (next_cr->is_chord() && !to_chord(next_cr)->grace_notes().empty()) {
+            next_cr = to_chord(next_cr)->grace_notes().front();
         }
     }
 
-    return (nextCr && nextCr->isChord()) ? toChord(nextCr) : nullptr;
+    return (next_cr && next_cr->is_chord()) ? to_chord(next_cr) : nullptr;
 }
 
-void ContiniousElementsBuilder::addElementsToScore() {
-    for (auto &trackMaps : spannersWithoutEndElement_) {
-        for (auto &typeMaps : trackMaps.second) {
-            for (Spanner *elem : typeMaps.second) {
-                elem->setEndElement(searchEndChord(elem->endChord()));
+void ContiniousElementsBuilder::add_elements_to_score() {
+    for (auto &track_maps : spanners_without_end_element_) {
+        for (auto &type_maps : track_maps.second) {
+            for (Spanner *elem : type_maps.second) {
+                elem->set_end_element(search_end_chord(elem->end_chord()));
             }
         }
     }
 
-    for (Spanner *elem : orderedAddedElements_) {
-        score_->addElement(elem);
+    for (Spanner *elem : ordered_added_elements_) {
+        score_->add_element(elem);
     }
 }
 
 /// indicating the type of behaviour for continious element
-ContiniousElementsBuilder::ContiniousElementState ContiniousElementsBuilder::calculateState(bool isRest, bool elemExists, bool splitByRests,
-                                                                                            bool importTypeChanged) const {
+ContiniousElementsBuilder::ContiniousElementState
+ContiniousElementsBuilder::calculate_state(bool is_rest, bool elem_exists, bool split_by_rests, bool import_type_changed) const {
     ContiniousElementState state = ContiniousElementState::UNDEFINED;
 
-    if (isRest && splitByRests) {
+    if (is_rest && split_by_rests) {
         state = ContiniousElementState::REST_BREAK;
     } else {
-        if (!elemExists) {
-            if (!isRest) {
+        if (!elem_exists) {
+            if (!is_rest) {
                 state = ContiniousElementState::CHORD_NO_ELEMENT;
             } else {
                 state = ContiniousElementState::REST_CONTINUE;
             }
         } else {
             // element exists on current beat
-            if (isRest) {
+            if (is_rest) {
                 state = ContiniousElementState::ELEMENT_ON_REST;
-            } else if (importTypeChanged) {
+            } else if (import_type_changed) {
                 state = ContiniousElementState::CREATE_NEW_ITEM;
             } else {
                 state = ContiniousElementState::CONTINUE_CURRENT_LINE;
@@ -329,58 +329,58 @@ ContiniousElementsBuilder::ContiniousElementState ContiniousElementsBuilder::cal
     return state;
 }
 
-void ContiniousElementsBuilder::setupAddedElement(track_idx_t trackIdx, ImportType importType) {
-    ElementType muType = muTypeFromImportType(importType);
+void ContiniousElementsBuilder::setup_added_element(track_idx_t track_idx, ImportType import_type) {
+    ElementType mu_type = mu_type_from_import_type(import_type);
 
-    Spanner *lineElem = elementsByType_[importType][trackIdx];
-    if (!lineElem) {
+    Spanner *line_elem = elements_by_type_[import_type][track_idx];
+    if (!line_elem) {
         return;
     }
 
-    switch (muType) {
+    switch (mu_type) {
         case ElementType::TRILL: {
-            if (lineElem->isTrill()) {
-                toTrill(lineElem)->setTrillType(TrillType::TRILL_LINE);
+            if (line_elem->is_trill()) {
+                to_trill(line_elem)->set_trill_type(TrillType::TRILL_LINE);
             }
 
             break;
         }
         case ElementType::HAIRPIN: {
-            if (lineElem->isHairpin()) {
-                toHairpin(lineElem)->setHairpinType(importType == ImportType::HAIRPIN_CRESCENDO ? HairpinType::CRESC_HAIRPIN :
-                                                                                                  HairpinType::DIM_HAIRPIN);
+            if (line_elem->is_hairpin()) {
+                to_hairpin(line_elem)->set_hairpin_type(import_type == ImportType::HAIRPIN_CRESCENDO ? HairpinType::CRESC_HAIRPIN :
+                                                                                                       HairpinType::DIM_HAIRPIN);
             }
 
             break;
         }
         case ElementType::HARMONIC_MARK: {
-            if (lineElem->isTextLineBase()) {
-                const String &text = harmonicText(importType);
-                toTextLineBase(lineElem)->setBeginText(text);
-                toTextLineBase(lineElem)->setContinueText(text);
+            if (line_elem->is_text_line_base()) {
+                const String &text = harmonic_text(import_type);
+                to_text_line_base(line_elem)->set_begin_text(text);
+                to_text_line_base(line_elem)->set_continue_text(text);
             }
 
             break;
         }
         case ElementType::OTTAVA: {
-            const auto &[foundOttava, muOttavaType] = ottavaType(importType);
-            if (!foundOttava) {
+            const auto &[found_ottava, mu_ottava_type] = ottava_type(import_type);
+            if (!found_ottava) {
                 return;
             }
 
-            if (lineElem->isOttava()) {
-                toOttava(lineElem)->setOttavaType(muOttavaType);
+            if (line_elem->is_ottava()) {
+                to_ottava(line_elem)->set_ottava_type(mu_ottava_type);
             }
 
             break;
         }
         case ElementType::VIBRATO:
-            if (lineElem->isVibrato()) {
-                toVibrato(lineElem)->setVibratoType(vibratoTypeFromImportType(importType));
+            if (line_elem->is_vibrato()) {
+                to_vibrato(line_elem)->set_vibrato_type(vibrato_type_from_import_type(import_type));
             }
 
             break;
-        case ElementType::HAMMER_ON_PULL_OFF: spannersWithoutEndElement_[trackIdx][importType].insert(lineElem); break;
+        case ElementType::HAMMER_ON_PULL_OFF: spanners_without_end_element_[track_idx][import_type].insert(line_elem); break;
         default: break;
     }
 }

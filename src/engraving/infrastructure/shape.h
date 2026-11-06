@@ -46,7 +46,8 @@ class EngravingItem;
 struct ShapeElement : public RectF {
 public:
 
-    ShapeElement(const RectF &f, const EngravingItem *p, bool ignoreForLayout) : RectF(f), item_(p), ignoreForLayout_(ignoreForLayout) {}
+    ShapeElement(const RectF &f, const EngravingItem *p, bool ignore_for_layout)
+        : RectF(f), item_(p), ignore_for_layout_(ignore_for_layout) {}
 
     ShapeElement(const RectF &f, const EngravingItem *p) : RectF(f), item_(p) {}
 
@@ -54,13 +55,13 @@ public:
 
     const EngravingItem *item() const { return item_; }
 
-    void setItem(const EngravingItem *item) { item_ = item; }
+    void set_item(const EngravingItem *item) { item_ = item; }
 
-    bool ignoreForLayout() const { return ignoreForLayout_; }
+    bool ignore_for_layout() const { return ignore_for_layout_; }
 
 private:
     const EngravingItem *item_ = nullptr;
-    bool ignoreForLayout_ = false;
+    bool ignore_for_layout_ = false;
 };
 
 //---------------------------------------------------------
@@ -71,21 +72,21 @@ class Shape {
 public:
 
     enum class Type : unsigned char {
-        Fixed,    // fixed size, like just bbox
+        FIXED,    // fixed size, like just bbox
                   //        FixedX,     // not implemented (reserved)
                   //        FixedY,     // not implemented (reserved)
-        Composite // composed of other shapes
+        COMPOSITE // composed of other shapes
     };
 
-    Shape(Type t = Type::Fixed) : type_(t) {}
+    Shape(Type t = Type::FIXED) : type_(t) {}
 
-    Shape(const RectF &r, const EngravingItem *p = nullptr, Type t = Type::Fixed) : type_(t) { setBBox(r, p); }
+    Shape(const RectF &r, const EngravingItem *p = nullptr, Type t = Type::FIXED) : type_(t) { set_b_box(r, p); }
 
     Shape(const std::vector<RectF> &rects, const EngravingItem *p = nullptr);
 
     Type type() const { return type_; }
 
-    bool isComposite() const { return type_ == Type::Composite; }
+    bool is_composite() const { return type_ == Type::COMPOSITE; }
 
     size_t size() const { return elements_.size(); }
 
@@ -99,22 +100,22 @@ public:
         }
 
         switch (type_) {
-            case Type::Fixed: return this->bbox() == sh.bbox();
-            case Type::Composite: return this->elements_ == sh.elements_;
+            case Type::FIXED: return this->bbox() == sh.bbox();
+            case Type::COMPOSITE: return this->elements_ == sh.elements_;
         }
 
         return true;
     }
 
     // Fixed
-    void setBBox(const RectF &r, const EngravingItem *p = nullptr);
-    void addBBox(const RectF &r);
+    void set_b_box(const RectF &r, const EngravingItem *p = nullptr);
+    void add_b_box(const RectF &r);
 
     // Composite
     void add(const Shape &s);
-    void add(const ShapeElement &shapeEl);
+    void add(const ShapeElement &shape_el);
 
-    void add(const RectF &r, const EngravingItem *p, bool ignoreForLayout) { add(ShapeElement(r, p, ignoreForLayout)); }
+    void add(const RectF &r, const EngravingItem *p, bool ignore_for_layout) { add(ShapeElement(r, p, ignore_for_layout)); }
 
     void add(const RectF &r, const EngravingItem *p) { add(ShapeElement(r, p)); }
 
@@ -125,10 +126,10 @@ public:
 
     template <typename Predicate>
     inline bool remove_if(Predicate p) {
-        size_t origSize = elements_.size();
+        size_t orig_size = elements_.size();
         elements_.erase(std::remove_if(elements_.begin(), elements_.end(), p), elements_.end());
-        invalidateBBox();
-        return origSize != elements_.size();
+        invalidate_b_box();
+        return orig_size != elements_.size();
     }
 
     // ---
@@ -137,20 +138,20 @@ public:
 
     std::vector<ShapeElement> &elements() { return elements_; }
 
-    std::vector<RectF> toRects() const;
+    std::vector<RectF> to_rects() const;
 
     std::optional<ShapeElement> find_if(const std::function<bool(const ShapeElement &)> &func) const;
     std::optional<ShapeElement> find_first(ElementType type) const;
     std::optional<ShapeElement> get_first() const;
 
-    void removeInvisibles();
-    void removeTypes(const std::set<ElementType> &types);
+    void remove_invisibles();
+    void remove_types(const std::set<ElementType> &types);
 
-    void addHorizontalSpacing(EngravingItem *item, double left, double right);
+    void add_horizontal_spacing(EngravingItem *item, double left, double right);
 
     Shape &translate(const PointF &);
-    void translateX(double);
-    void translateY(double);
+    void translate_x(double);
+    void translate_y(double);
     Shape translated(const PointF &) const;
     Shape &scale(const SizeF &);
     Shape scaled(const SizeF &) const;
@@ -162,34 +163,34 @@ public:
     Shape transformed(const muse::draw::Transform &t);
 
     const RectF &bbox() const;
-    double minVerticalDistance(const Shape &, double minHorizontalClearance = 0.0) const;
-    double verticalClearance(const Shape &, double minHorizontalDistance = 0.0) const;
-    double topDistance(const PointF &) const;
-    double bottomDistance(const PointF &) const;
+    double min_vertical_distance(const Shape &, double min_horizontal_clearance = 0.0) const;
+    double vertical_clearance(const Shape &, double min_horizontal_distance = 0.0) const;
+    double top_distance(const PointF &) const;
+    double bottom_distance(const PointF &) const;
     double left() const;
     double right() const;
     double top() const;
     double bottom() const;
     double width() const;
     double height() const;
-    double topAtX(double x) const;
-    double bottomAtX(double x) const;
-    double rightMostEdgeAtHeight(double yAbove, double yBelow) const;
-    double leftMostEdgeAtHeight(double yAbove, double yBelow) const;
-    double leftMostEdgeAtTop() const;
+    double top_at_x(double x) const;
+    double bottom_at_x(double x) const;
+    double right_most_edge_at_height(double y_above, double y_below) const;
+    double left_most_edge_at_height(double y_above, double y_below) const;
+    double left_most_edge_at_top() const;
 
     bool contains(const PointF &) const;
     bool intersects(const RectF &rr) const;
     bool intersects(const Shape &other) const;
-    bool clearsVertically(const Shape &a) const;
+    bool clears_vertically(const Shape &a) const;
 
     void paint(muse::draw::Painter &painter) const;
 
 private:
 
-    void invalidateBBox();
+    void invalidate_b_box();
 
-    Type type_ = Type::Fixed;
+    Type type_ = Type::FIXED;
     std::vector<ShapeElement> elements_;
     mutable RectF bbox_; // cache
 };
@@ -202,11 +203,11 @@ std::string dump(const Shape &sh);
 //   intersects
 //---------------------------------------------------------
 
-inline static bool intersects(double a, double b, double c, double d, double minClearance = 0.0) {
+inline static bool intersects(double a, double b, double c, double d, double min_clearance = 0.0) {
     if (a == b || c == d) {
         return false;
     }
-    return (b + minClearance > c) && (a < d + minClearance);
+    return (b + min_clearance > c) && (a < d + min_clearance);
 }
 } // namespace mu::engraving
 

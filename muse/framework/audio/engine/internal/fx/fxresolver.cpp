@@ -27,7 +27,7 @@
 using namespace muse::audio;
 using namespace muse::audio::fx;
 
-std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) {
+std::vector<IFxProcessorPtr> FxResolver::resolve_master_fx_list(const AudioFxChain &fx_chain, const OutputSpec &output_spec) {
 
     TRACEFUNC;
 
@@ -36,26 +36,27 @@ std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain 
     std::vector<IFxProcessorPtr> result;
 
     for (const auto &resolver : resolvers_) {
-        AudioFxChain fxChainByType;
+        AudioFxChain fx_chain_by_type;
 
-        for (const auto &fx : fxChain) {
-            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
-                fxChainByType.insert(fx);
+        for (const auto &fx : fx_chain) {
+            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::UNDEFINED) {
+                fx_chain_by_type.insert(fx);
             }
         }
 
-        if (fxChainByType.empty()) {
+        if (fx_chain_by_type.empty()) {
             continue;
         }
 
-        std::vector<IFxProcessorPtr> fxList = resolver.second->resolveMasterFxList(std::move(fxChainByType), outputSpec);
-        result.insert(result.end(), fxList.begin(), fxList.end());
+        std::vector<IFxProcessorPtr> fx_list = resolver.second->resolve_master_fx_list(std::move(fx_chain_by_type), output_spec);
+        result.insert(result.end(), fx_list.begin(), fx_list.end());
     }
 
     return result;
 }
 
-std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, const AudioFxChain &fxChain, const OutputSpec &outputSpec) {
+std::vector<IFxProcessorPtr> FxResolver::resolve_fx_list(const TrackId track_id, const AudioFxChain &fx_chain,
+                                                         const OutputSpec &output_spec) {
 
     TRACEFUNC;
 
@@ -64,26 +65,26 @@ std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, co
     std::vector<IFxProcessorPtr> result;
 
     for (const auto &resolver : resolvers_) {
-        AudioFxChain fxChainByType;
+        AudioFxChain fx_chain_by_type;
 
-        for (const auto &fx : fxChain) {
-            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
-                fxChainByType.insert(fx);
+        for (const auto &fx : fx_chain) {
+            if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::UNDEFINED) {
+                fx_chain_by_type.insert(fx);
             }
         }
 
-        if (fxChainByType.empty()) {
+        if (fx_chain_by_type.empty()) {
             continue;
         }
 
-        std::vector<IFxProcessorPtr> fxList = resolver.second->resolveFxList(trackId, std::move(fxChainByType), outputSpec);
-        result.insert(result.end(), fxList.begin(), fxList.end());
+        std::vector<IFxProcessorPtr> fx_list = resolver.second->resolve_fx_list(track_id, std::move(fx_chain_by_type), output_spec);
+        result.insert(result.end(), fx_list.begin(), fx_list.end());
     }
 
     return result;
 }
 
-AudioResourceMetaList FxResolver::resolveAvailableResources() const {
+AudioResourceMetaList FxResolver::resolve_available_resources() const {
 
     TRACEFUNC;
 
@@ -92,25 +93,25 @@ AudioResourceMetaList FxResolver::resolveAvailableResources() const {
     AudioResourceMetaList result;
 
     for (const auto &pair : resolvers_) {
-        const AudioResourceMetaList &resolvedResources = pair.second->resolveResources();
-        result.insert(result.end(), resolvedResources.begin(), resolvedResources.end());
+        const AudioResourceMetaList &resolved_resources = pair.second->resolve_resources();
+        result.insert(result.end(), resolved_resources.begin(), resolved_resources.end());
     }
 
     return result;
 }
 
-void FxResolver::registerResolver(const AudioFxType type, IResolverPtr resolver) {
+void FxResolver::register_resolver(const AudioFxType type, IResolverPtr resolver) {
 
     std::lock_guard lock(mutex_);
 
     resolvers_.insert_or_assign(type, std::move(resolver));
 }
 
-void FxResolver::clearAllFx() {
+void FxResolver::clear_all_fx() {
 
     std::lock_guard lock(mutex_);
 
     for (auto it = resolvers_.begin(); it != resolvers_.end(); ++it) {
-        it->second->clearAllFx();
+        it->second->clear_all_fx();
     }
 }

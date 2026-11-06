@@ -35,13 +35,13 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-Ret mu::engraving::compat::loadMsczOrMscx(MasterScore *score, const io::path_t &path, bool ignoreVersionError) {
+Ret mu::engraving::compat::load_mscz_or_mscx(MasterScore *score, const io::PathT &path, bool ignore_version_error) {
     std::string suffix = io::suffix(path);
 
     MscReader::Params params;
-    params.filePath = path;
-    params.mode = mscIoModeBySuffix(suffix);
-    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) { return make_ret(Err::FileUnknownType, path); }
+    params.file_path = path;
+    params.mode = msc_io_mode_by_suffix(suffix);
+    IF_ASSERT_FAILED(params.mode != MscIoMode::UNKNOWN) { return make_ret(Err::FILE_UNKNOWN_TYPE, path); }
 
     MscReader reader(params);
     Ret ret = reader.open();
@@ -49,19 +49,19 @@ Ret mu::engraving::compat::loadMsczOrMscx(MasterScore *score, const io::path_t &
         return ret;
     }
 
-    score->setFileInfoProvider(std::make_shared<LocalFileInfoProvider>(path));
+    score->set_file_info_provider(std::make_shared<LocalFileInfoProvider>(path));
 
-    MscLoader scoreReader;
-    return scoreReader.loadMscz(score, reader, nullptr, ignoreVersionError);
+    MscLoader score_reader;
+    return score_reader.load_mscz(score, reader, nullptr, ignore_version_error);
 }
 
-Ret mu::engraving::compat::loadMsczOrMscx(EngravingProjectPtr project, const io::path_t &path, bool ignoreVersionError) {
+Ret mu::engraving::compat::load_mscz_or_mscx(EngravingProjectPtr project, const io::PathT &path, bool ignore_version_error) {
     std::string suffix = io::suffix(path);
 
     MscReader::Params params;
-    params.filePath = path;
-    params.mode = mscIoModeBySuffix(suffix);
-    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) { return make_ret(Err::FileUnknownType, path); }
+    params.file_path = path;
+    params.mode = msc_io_mode_by_suffix(suffix);
+    IF_ASSERT_FAILED(params.mode != MscIoMode::UNKNOWN) { return make_ret(Err::FILE_UNKNOWN_TYPE, path); }
 
     MscReader reader(params);
     Ret ret = reader.open();
@@ -69,7 +69,7 @@ Ret mu::engraving::compat::loadMsczOrMscx(EngravingProjectPtr project, const io:
         return ret;
     }
 
-    project->setFileInfoProvider(std::make_shared<LocalFileInfoProvider>(path));
+    project->set_file_info_provider(std::make_shared<LocalFileInfoProvider>(path));
 
-    return project->loadMscz(reader, nullptr, ignoreVersionError);
+    return project->load_mscz(reader, nullptr, ignore_version_error);
 }

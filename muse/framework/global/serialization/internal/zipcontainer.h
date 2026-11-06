@@ -31,23 +31,23 @@
 namespace muse {
 class ZipContainer {
 public:
-    static bool startsWithEntry(const uint8_t *data, size_t size, std::span<const uint8_t> name);
+    static bool starts_with_entry(const uint8_t *data, size_t size, std::span<const uint8_t> name);
 
     explicit ZipContainer(io::IODevice *device);
     ~ZipContainer();
 
-    enum Status { NoError, FileOpenError, FileReadError, FileWriteError, FileError };
+    enum Status { NO_ERROR, FILE_OPEN_ERROR, FILE_READ_ERROR, FILE_WRITE_ERROR, FILE_ERROR };
 
     struct FileInfo {
-        std::string filePath;
-        bool isDir = false;
-        bool isFile = false;
-        bool isSymLink = false;
+        std::string file_path;
+        bool is_dir = false;
+        bool is_file = false;
+        bool is_sym_link = false;
         unsigned int crc = 0;
         int64_t size = 0;
-        std::tm lastModified;
+        std::tm last_modified;
 
-        bool isValid() const { return isDir || isFile || isSymLink; }
+        bool is_valid() const { return is_dir || is_file || is_sym_link; }
     };
 
     Status status() const;
@@ -55,20 +55,20 @@ public:
     void close();
 
     // Read
-    std::vector<FileInfo> fileInfoList() const;
+    std::vector<FileInfo> file_info_list() const;
     int count() const;
 
-    bool fileExists(const std::string &fileName) const;
-    ByteArray fileData(const std::string &fileName) const;
+    bool file_exists(const std::string &file_name) const;
+    ByteArray file_data(const std::string &file_name) const;
 
     // Write
-    enum CompressionPolicy { AlwaysCompress, NeverCompress, AutoCompress };
+    enum CompressionPolicy { ALWAYS_COMPRESS, NEVER_COMPRESS, AUTO_COMPRESS };
 
-    void setCompressionPolicy(CompressionPolicy policy);
-    CompressionPolicy compressionPolicy() const;
+    void set_compression_policy(CompressionPolicy policy);
+    CompressionPolicy compression_policy() const;
 
-    void addFile(const std::string &fileName, const ByteArray &data);
-    void addDirectory(const std::string &dirName);
+    void add_file(const std::string &file_name, const ByteArray &data);
+    void add_directory(const std::string &dir_name);
 
 private:
 

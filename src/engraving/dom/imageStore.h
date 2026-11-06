@@ -49,11 +49,11 @@ public:
 
     bool loaded() const { return !buffer_.empty(); }
 
-    bool isUsed(Score *) const;
+    bool is_used(Score *) const;
 
-    bool isUsed() const { return !references_.empty(); }
+    bool is_used() const { return !references_.empty(); }
 
-    std::string hashName() const;
+    std::string hash_name() const;
 
     const muse::ByteArray &hash() const { return hash_; }
 
@@ -83,9 +83,9 @@ public:
     ImageStore &operator=(const ImageStore &) = delete;
     ~ImageStore();
 
-    ImageStoreItem *getImage(std::string name) const;
+    ImageStoreItem *get_image(std::string name) const;
     ImageStoreItem *add(const std::string &name, const muse::ByteArray &);
-    void clearUnused();
+    void clear_unused();
 
     typedef std::vector<ImageStoreItem *> ItemList;
     typedef ItemList::iterator iterator;
@@ -104,5 +104,5 @@ private:
     ItemList items_;
 };
 
-extern ImageStore imageStore; // this is the global imageStore
+extern ImageStore image_store; // this is the global imageStore
 } // namespace mu::engraving

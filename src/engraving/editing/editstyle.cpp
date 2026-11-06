@@ -32,38 +32,38 @@
 
 using namespace mu::engraving;
 
-static void changeChordStyle(Score *score) {
+static void change_chord_style(Score *score) {
     const MStyle &style = score->style();
-    score->chordList()->unload();
-    double emag = style.styleD(Sid::chordExtensionMag);
-    double eadjust = style.styleD(Sid::chordExtensionAdjust);
-    double mmag = style.styleD(Sid::chordModifierMag);
-    double madjust = style.styleD(Sid::chordModifierAdjust);
-    double stackedmmag = style.styleD(Sid::chordStackedModifierMag);
-    bool mstackModifiers = style.styleB(Sid::verticallyStackModifiers);
-    bool mexcludeModsHAlign = style.styleB(Sid::chordAlignmentExcludeModifiers);
-    String msymbolFont = style.styleSt(Sid::musicalTextFont);
-    ChordStylePreset preset = style.styleV(Sid::chordStyle).value<ChordStylePreset>();
-    score->chordList()->configureAutoAdjust(emag, eadjust, mmag, madjust, stackedmmag, mstackModifiers, mexcludeModsHAlign, msymbolFont,
-                                            preset);
-    if (score->style().styleB(Sid::chordsXmlFile)) {
-        score->chordList()->read(u"chords.xml");
+    score->chord_list()->unload();
+    double emag = style.style_d(Sid::CHORD_EXTENSION_MAG);
+    double eadjust = style.style_d(Sid::CHORD_EXTENSION_ADJUST);
+    double mmag = style.style_d(Sid::CHORD_MODIFIER_MAG);
+    double madjust = style.style_d(Sid::CHORD_MODIFIER_ADJUST);
+    double stackedmmag = style.style_d(Sid::CHORD_STACKED_MODIFIER_MAG);
+    bool mstack_modifiers = style.style_b(Sid::VERTICALLY_STACK_MODIFIERS);
+    bool mexclude_mods_h_align = style.style_b(Sid::CHORD_ALIGNMENT_EXCLUDE_MODIFIERS);
+    String msymbol_font = style.style_st(Sid::MUSICAL_TEXT_FONT);
+    ChordStylePreset preset = style.style_v(Sid::CHORD_STYLE).value<ChordStylePreset>();
+    score->chord_list()->configure_auto_adjust(emag, eadjust, mmag, madjust, stackedmmag, mstack_modifiers, mexclude_mods_h_align,
+                                               msymbol_font, preset);
+    if (score->style().style_b(Sid::CHORDS_XML_FILE)) {
+        score->chord_list()->read(u"chords.xml");
     }
-    score->chordList()->read(style.styleSt(Sid::chordDescriptionFile));
-    score->chordList()->setCustomChordList(style.styleV(Sid::chordStyle).value<ChordStylePreset>() == ChordStylePreset::CUSTOM);
+    score->chord_list()->read(style.style_st(Sid::CHORD_DESCRIPTION_FILE));
+    score->chord_list()->set_custom_chord_list(style.style_v(Sid::CHORD_STYLE).value<ChordStylePreset>() == ChordStylePreset::CUSTOM);
 }
 
 //---------------------------------------------------------
 //   ChangeStyle
 //----------------------------------------------------------
 
-ChangeStyle::ChangeStyle(Score *s, const MStyle &st, const bool overlapOnly) : score(s), style(st), overlap(overlapOnly) {}
+ChangeStyle::ChangeStyle(Score *s, const MStyle &st, const bool overlap_only) : score(s), style(st), overlap(overlap_only) {}
 
-StyleIdSet ChangeStyle::changedIds() const {
+StyleIdSet ChangeStyle::changed_ids() const {
     StyleIdSet result;
-    for (int _sid = 0; _sid < static_cast<int>(Sid::STYLES); ++_sid) {
-        Sid sid = static_cast<Sid>(_sid);
-        if (score->style().styleV(sid) != style.value(sid)) {
+    for (int sid_value = 0; sid_value < static_cast<int>(Sid::STYLES); ++sid_value) {
+        Sid sid = static_cast<Sid>(sid_value);
+        if (score->style().style_v(sid) != style.value(sid)) {
             result.insert(sid);
         }
     }
@@ -73,19 +73,19 @@ StyleIdSet ChangeStyle::changedIds() const {
 void ChangeStyle::flip() {
     MStyle tmp = score->style();
 
-    if (score->style().styleV(Sid::concertPitch) != style.value(Sid::concertPitch)) {
-        score->cmdConcertPitchChanged(style.value(Sid::concertPitch).toBool());
+    if (score->style().style_v(Sid::CONCERT_PITCH) != style.value(Sid::CONCERT_PITCH)) {
+        score->cmd_concert_pitch_changed(style.value(Sid::CONCERT_PITCH).to_bool());
     }
-    if (score->style().styleV(Sid::musicalSymbolFont) != style.value(Sid::musicalSymbolFont)) {
-        score->setEngravingFont(score->engravingFonts()->fontByName(style.styleSt(Sid::musicalSymbolFont).toStdString()));
+    if (score->style().style_v(Sid::MUSICAL_SYMBOL_FONT) != style.value(Sid::MUSICAL_SYMBOL_FONT)) {
+        score->set_engraving_font(score->engraving_fonts()->font_by_name(style.style_st(Sid::MUSICAL_SYMBOL_FONT).to_std_string()));
     }
 
-    score->setStyle(style, overlap);
-    changeChordStyle(score);
+    score->set_style(style, overlap);
+    change_chord_style(score);
     if (tmp.spatium() != style.spatium()) {
-        score->spatiumChanged(tmp.spatium(), style.spatium());
+        score->spatium_changed(tmp.spatium(), style.spatium());
     }
-    score->styleChanged();
+    score->style_changed();
     style = tmp;
 }
 
@@ -98,26 +98,26 @@ void ChangeStyle::undo() {
 //   ChangeStyleValues
 //----------------------------------------------------------
 
-static void changeStyleValue(Score *score, Sid idx, const PropertyValue &oldValue, const PropertyValue &newValue) {
-    score->style().set(idx, newValue);
+static void change_style_value(Score *score, Sid idx, const PropertyValue &old_value, const PropertyValue &new_value) {
+    score->style().set(idx, new_value);
     switch (idx) {
-        case Sid::chordExtensionMag:
-        case Sid::chordExtensionAdjust:
-        case Sid::chordModifierMag:
-        case Sid::chordModifierAdjust:
-        case Sid::chordDescriptionFile:
-        case Sid::verticallyStackModifiers:
-        case Sid::chordAlignmentExcludeModifiers:
-        case Sid::musicalTextFont: {
-            changeChordStyle(score);
+        case Sid::CHORD_EXTENSION_MAG:
+        case Sid::CHORD_EXTENSION_ADJUST:
+        case Sid::CHORD_MODIFIER_MAG:
+        case Sid::CHORD_MODIFIER_ADJUST:
+        case Sid::CHORD_DESCRIPTION_FILE:
+        case Sid::VERTICALLY_STACK_MODIFIERS:
+        case Sid::CHORD_ALIGNMENT_EXCLUDE_MODIFIERS:
+        case Sid::MUSICAL_TEXT_FONT: {
+            change_chord_style(score);
         } break;
-        case Sid::spatium: score->spatiumChanged(oldValue.toDouble(), newValue.toDouble()); break;
-        case Sid::defaultsVersion: score->style().setDefaultStyleVersion(newValue.toInt()); break;
-        case Sid::createMultiMeasureRests:
-            if (oldValue.toBool() == true && newValue.toBool() == false) {
-                Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
-                EditSystemLocks::removeSystemLocksContainingMMRests(tx, score);
-                EditPageLocks::removePageLocksContainingMMRests(tx, score);
+        case Sid::SPATIUM: score->spatium_changed(old_value.to_double(), new_value.to_double()); break;
+        case Sid::DEFAULTS_VERSION: score->style().set_default_style_version(new_value.to_int()); break;
+        case Sid::CREATE_MULTI_MEASURE_RESTS:
+            if (old_value.to_bool() == true && new_value.to_bool() == false) {
+                Transaction &tx = score->transaction_manager()->current_or_dummy_transaction();
+                EditSystemLocks::remove_system_locks_containing_mm_rests(tx, score);
+                EditPageLocks::remove_page_locks_containing_mm_rests(tx, score);
             }
             break;
         default: break;
@@ -129,23 +129,23 @@ void ChangeStyleValues::flip() {
         return;
     }
 
-    bool styleChanged = false;
+    bool style_changed = false;
     const MStyle &style = score_->style();
 
     for (auto &pair : values_) {
-        PropertyValue oldValue = style.styleV(pair.first);
-        if (oldValue == pair.second) {
+        PropertyValue old_value = style.style_v(pair.first);
+        if (old_value == pair.second) {
             continue;
         }
 
-        changeStyleValue(score_, pair.first, oldValue, pair.second);
-        pair.second = oldValue;
+        change_style_value(score_, pair.first, old_value, pair.second);
+        pair.second = old_value;
 
-        styleChanged = true;
+        style_changed = true;
     }
 
-    if (styleChanged) {
-        score_->styleChanged();
+    if (style_changed) {
+        score_->style_changed();
     }
 }
 
@@ -153,10 +153,10 @@ void ChangeStyleValues::flip() {
 //   EditStyle
 //---------------------------------------------------------
 
-bool EditStyle::loadStyle(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign, bool overlap) {
+bool EditStyle::load_style(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign, bool overlap) {
     TRACEFUNC;
 
-    if (!dev.open(muse::io::IODevice::ReadOnly)) {
+    if (!dev.open(muse::io::IODevice::READ_ONLY)) {
         LOGE() << "The style data is not available.";
         return false;
     }

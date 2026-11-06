@@ -35,7 +35,7 @@ class IFontFace;
 
 class FontsEngine : public IFontsEngine {
     IFontsDatabase &database_;
-    mutable uint64_t databaseRevision_ = 0;
+    mutable uint64_t database_revision_ = 0;
 
 public:
     explicit FontsEngine(IFontsDatabase &database) : database_(database) {}
@@ -43,35 +43,35 @@ public:
     ~FontsEngine();
 
     void init();
-    void setRenderCacheDirPath(const io::path_t &path, const std::string &revision = std::string()) override;
-    void clearLoadedFaces() override;
+    void set_render_cache_dir_path(const io::PathT &path, const std::string &revision = std::string()) override;
+    void clear_loaded_faces() override;
 
-    double lineSpacing(const Font &f) const override;
-    double xHeight(const Font &f) const override;
+    double line_spacing(const Font &f) const override;
+    double x_height(const Font &f) const override;
     double height(const Font &f) const override;
-    double capHeight(const Font &f) const override;
+    double cap_height(const Font &f) const override;
     double ascent(const Font &f) const override;
     double descent(const Font &f) const override;
 
-    double underlinePos(const Font &f) const override;
-    double lineWidth(const Font &f) const override;
-    double strikeOutPos(const Font &f) const override;
+    double underline_pos(const Font &f) const override;
+    double line_width(const Font &f) const override;
+    double strike_out_pos(const Font &f) const override;
 
-    bool inFont(const Font &f, char32_t ucs4) const override;
+    bool in_font(const Font &f, char32_t ucs4) const override;
 
-    double horizontalAdvance(const Font &f, const char32_t &ch) const override;
-    double horizontalAdvance(const Font &f, const std::u32string &text) const override;
+    double horizontal_advance(const Font &f, const char32_t &ch) const override;
+    double horizontal_advance(const Font &f, const std::u32string &text) const override;
 
-    RectF boundingRect(const Font &f, const char32_t &ch) const override;
-    RectF boundingRect(const Font &f, const std::u32string &text) const override;
-    RectF tightBoundingRect(const Font &f, const std::u32string &text) const override;
+    RectF bounding_rect(const Font &f, const char32_t &ch) const override;
+    RectF bounding_rect(const Font &f, const std::u32string &text) const override;
+    RectF tight_bounding_rect(const Font &f, const std::u32string &text) const override;
 
     // For draw
     std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const override;
 
     // For dev
-    using FontFaceFactory = std::function<IFontFace *(const FontDataKey &dataKey, Font::Type type)>;
-    void setFontFaceFactory(const FontFaceFactory &f);
+    using FontFaceFactory = std::function<IFontFace *(const FontDataKey &data_key, Font::Type type)>;
+    void set_font_face_factory(const FontFaceFactory &f);
 
 private:
 
@@ -87,27 +87,28 @@ private:
 
     struct RequireFace {
         IFontFace *face = nullptr; // real loaded face
-        std::vector<IFontFace *> subtitutionFaces;
-        FaceKey requireKey;        // require face
-        FontDataKey actualDataKey; // resolved face
+        std::vector<IFontFace *> subtitution_faces;
+        FaceKey require_key;         // require face
+        FontDataKey actual_data_key; // resolved face
 
-        bool isSymbolMode() const;
-        double pixelScale() const;
-        double pixelScaleFor(const IFontFace *loadedFace) const;
+        bool is_symbol_mode() const;
+        double pixel_scale() const;
+        double pixel_scale_for(const IFontFace *loaded_face) const;
     };
 
-    IFontFace *createFontFace(const FontData &fontData, Font::Type type) const;
-    RequireFace *fontFace(const Font &f, bool isSymbolMode = false) const;
-    IFontFace *fontFaceByActualDataKey(const FontDataKey &actualDataKey, Font::Type type, int loadedPixelSize, bool isSymbolMode) const;
-    IFontFace *sdfFontFaceFor(const IFontFace *layoutFace) const;
+    IFontFace *create_font_face(const FontData &font_data, Font::Type type) const;
+    RequireFace *font_face(const Font &f, bool is_symbol_mode = false) const;
+    IFontFace *font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int loaded_pixel_size,
+                                            bool is_symbol_mode) const;
+    IFontFace *sdf_font_face_for(const IFontFace *layout_face) const;
 
-    std::vector<FontFaceTextBlock> splitTextByFontFaces(const RequireFace *rf, const TextBlock &text) const;
+    std::vector<FontFaceTextBlock> split_text_by_font_faces(const RequireFace *rf, const TextBlock &text) const;
 
-    FontFaceFactory fontFaceFactory_;
+    FontFaceFactory font_face_factory_;
 
-    mutable std::vector<IFontFace *> loadedFaces_;
-    mutable std::vector<RequireFace *> requiredFaces_;
+    mutable std::vector<IFontFace *> loaded_faces_;
+    mutable std::vector<RequireFace *> required_faces_;
 
-    mutable FontRenderCache renderCache_;
+    mutable FontRenderCache render_cache_;
 };
 } // namespace muse::draw

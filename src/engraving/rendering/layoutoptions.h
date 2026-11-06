@@ -36,11 +36,11 @@ enum class LayoutMode : char { PAGE, FLOAT, LINE, SYSTEM, HORIZONTAL_FIXED };
 struct LayoutOptions {
     LayoutMode mode = LayoutMode::PAGE;
 
-    bool isShowVBox = true;
-    double noteHeadWidth = 0.0;
+    bool is_show_v_box = true;
+    double note_head_width = 0.0;
 
-    bool isMode(LayoutMode m) const { return mode == m; }
+    bool is_mode(LayoutMode m) const { return mode == m; }
 
-    bool isLinearMode() const { return mode == LayoutMode::LINE || mode == LayoutMode::HORIZONTAL_FIXED; }
+    bool is_linear_mode() const { return mode == LayoutMode::LINE || mode == LayoutMode::HORIZONTAL_FIXED; }
 };
 } // namespace mu::engraving

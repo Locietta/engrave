@@ -26,36 +26,37 @@
 #include "mpe/mpetypes.h"
 
 namespace muse::mpe::tests {
-inline ArrangementPattern createArrangementPattern(const duration_percentage_t durationFactor,
-                                                   const duration_percentage_t timestampOffset) {
+inline ArrangementPattern create_arrangement_pattern(const duration_percentage_t duration_factor,
+                                                     const duration_percentage_t timestamp_offset) {
     ArrangementPattern result;
-    result.durationFactor = durationFactor;
-    result.timestampOffset = timestampOffset;
+    result.duration_factor_value = duration_factor;
+    result.timestamp_offset_value = timestamp_offset;
     return result;
 }
 
-inline PitchPattern createSimplePitchPattern(const pitch_level_t incrementDiff = 0) {
+inline PitchPattern create_simple_pitch_pattern(const pitch_level_t increment_diff = 0) {
     PitchPattern result;
 
-    for (size_t i = 0; i < ArticulationMap::EXPECTED_SIZE; ++i) {
-        result.pitchOffsetMap.insert_or_assign(static_cast<int>(i) * TEN_PERCENT, static_cast<int>(i) * incrementDiff);
+    for (size_t i = 0; i < ArticulationMap::expected_size; ++i) {
+        result.pitch_offset_map.insert_or_assign(static_cast<int>(i) * ::muse::mpe::ten_percent, static_cast<int>(i) * increment_diff);
     }
 
     return result;
 }
 
-inline ExpressionPattern createSimpleExpressionPattern(const dynamic_level_t amplitudeLevel) {
+inline ExpressionPattern create_simple_expression_pattern(const dynamic_level_t amplitude_level) {
     ExpressionPattern result;
 
-    double amplitudeSqrt = std::sqrt(amplitudeLevel);
+    double amplitude_sqrt = std::sqrt(amplitude_level);
 
-    for (size_t i = 0; i < ArticulationMap::EXPECTED_SIZE; ++i) {
-        duration_percentage_t currentPos = static_cast<int>(i) * TEN_PERCENT;
+    for (size_t i = 0; i < ArticulationMap::expected_size; ++i) {
+        duration_percentage_t current_pos = static_cast<int>(i) * ::muse::mpe::ten_percent;
         dynamic_level_t value =
-            amplitudeLevel - static_cast<dynamic_level_t>(
-                                 std::pow((2 * (amplitudeSqrt / static_cast<float>(HUNDRED_PERCENT)) * currentPos) - amplitudeSqrt, 2));
+            amplitude_level -
+            static_cast<dynamic_level_t>(
+                std::pow((2 * (amplitude_sqrt / static_cast<float>(::muse::mpe::hundred_percent)) * current_pos) - amplitude_sqrt, 2));
 
-        result.dynamicOffsetMap.insert_or_assign(currentPos, value);
+        result.dynamic_offset_map.insert_or_assign(current_pos, value);
     }
 
     return result;

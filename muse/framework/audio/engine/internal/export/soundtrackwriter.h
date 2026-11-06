@@ -41,9 +41,9 @@ namespace muse::audio::soundtrack {
 class SoundTrackWriter {
 
 public:
-    SoundTrackWriter(io::IODevice &dstDevice, const SoundTrackFormat &format, const secs_t totalDuration, IAudioNodePtr source,
-                     std::function<void(uint64_t)> blockCompleted = {},
-                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoderFactory = {},
+    SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration, IAudioNodePtr source,
+                     std::function<void(uint64_t)> block_completed = {},
+                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
                      std::function<bool()> cancelled = {});
 
     Ret write();
@@ -51,21 +51,21 @@ public:
 
 
 private:
-    Ret writeStreaming();
-    bool pollCancellation();
+    Ret write_streaming();
+    bool poll_cancellation();
     std::function<bool()> cancelled_;
 
     IAudioNodePtr source_;
-    std::function<void(uint64_t)> blockCompleted_;
+    std::function<void(uint64_t)> block_completed_;
 
-    std::vector<float> intermBuffer_;
-    samples_t renderStep_ = 0;
-    samples_t leadingSilenceSamples_ = 0;
-    samples_t dataSamples_ = 0;
-    samples_t totalSamples_ = 0;
+    std::vector<float> interm_buffer_;
+    samples_t render_step_ = 0;
+    samples_t leading_silence_samples_ = 0;
+    samples_t data_samples_ = 0;
+    samples_t total_samples_ = 0;
 
-    encode::AbstractAudioEncoderPtr encoderPtr_;
+    encode::AbstractAudioEncoderPtr encoder_ptr_;
 
-    std::atomic<bool> isAborted_ = false;
+    std::atomic<bool> is_aborted_ = false;
 };
 } // namespace muse::audio::soundtrack

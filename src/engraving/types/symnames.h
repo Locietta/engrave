@@ -31,23 +31,23 @@
 
 namespace mu::engraving {
 struct SymNames {
-    static muse::AsciiStringView nameForSymId(SymId id);
-    static const muse::TranslatableString &userNameForSymId(SymId id);
-    static muse::String translatedUserNameForSymId(SymId id);
+    static muse::AsciiStringView name_for_sym_id(SymId id);
+    static const muse::TranslatableString &user_name_for_sym_id(SymId id);
+    static muse::String translated_user_name_for_sym_id(SymId id);
 
-    static SymId symIdByName(const muse::AsciiStringView &name, SymId def = SymId::noSym);
-    static SymId symIdByName(const muse::String &name, SymId def = SymId::noSym);
-    static SymId symIdByOldName(const muse::AsciiStringView &oldName);
-    static SymId symIdByUserName(const muse::String &userName);
+    static SymId sym_id_by_name(const muse::AsciiStringView &name, SymId def = SymId::NO_SYM);
+    static SymId sym_id_by_name(const muse::String &name, SymId def = SymId::NO_SYM);
+    static SymId sym_id_by_old_name(const muse::AsciiStringView &old_name);
+    static SymId sym_id_by_user_name(const muse::String &user_name);
 
 private:
-    static void loadNameToSymIdHash();
+    static void load_name_to_sym_id_hash();
 
-    static const std::array<muse::AsciiStringView, size_t(SymId::lastSym) + 1> s_symNames;
-    static const std::array<muse::TranslatableString, size_t(SymId::lastSym) + 1> s_symUserNames;
+    static const std::array<muse::AsciiStringView, size_t(SymId::LAST_SYM) + 1> s_sym_names;
+    static const std::array<muse::TranslatableString, size_t(SymId::LAST_SYM) + 1> s_sym_user_names;
 
     //! Will be initialized when first used
-    static std::map<muse::AsciiStringView, SymId> s_nameToSymIdHash;
-    static const std::map<muse::AsciiStringView, SymId> s_oldNameToSymIdHash;
+    static std::map<muse::AsciiStringView, SymId> s_name_to_sym_id_hash;
+    static const std::map<muse::AsciiStringView, SymId> s_old_name_to_sym_id_hash;
 };
 } // namespace mu::engraving

@@ -60,36 +60,36 @@ TieSegment::TieSegment(const ElementType &type, Tie *sp) : SlurTieSegment(type, 
 
 TieSegment::TieSegment(const TieSegment &s) : SlurTieSegment(s) {}
 
-void TieSegment::consolidateAdjustmentOffsetIntoUserOffset() {
-    for (size_t i = 0; i < adjustmentOffsets_.size(); ++i) {
+void TieSegment::consolidate_adjustment_offset_into_user_offset() {
+    for (size_t i = 0; i < adjustment_offsets_.size(); ++i) {
         Grip grip = static_cast<Grip>(i);
-        PointF adjustOffset = adjustmentOffsets_[i];
-        if (!adjustOffset.isNull()) {
-            ups(grip).p -= adjustOffset;
-            ups(grip).off = adjustOffset;
+        PointF adjust_offset = adjustment_offsets_[i];
+        if (!adjust_offset.is_null()) {
+            ups(grip).p -= adjust_offset;
+            ups(grip).off = adjust_offset;
         }
     }
-    resetAdjustmentOffset();
+    reset_adjustment_offset();
 }
 
-bool TieSegment::isEdited() const {
+bool TieSegment::is_edited() const {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
-        if (!ups_[i].off.isNull()) {
+        if (!ups_[i].off.is_null()) {
             return true;
         }
     }
     return false;
 }
 
-double TieSegment::minShoulderHeight() const { return style().styleAbsolute(Sid::tieMinShoulderHeight); }
+double TieSegment::min_shoulder_height() const { return style().style_absolute(Sid::TIE_MIN_SHOULDER_HEIGHT); }
 
-double TieSegment::maxShoulderHeight() const { return style().styleAbsolute(Sid::tieMaxShoulderHeight); }
+double TieSegment::max_shoulder_height() const { return style().style_absolute(Sid::TIE_MAX_SHOULDER_HEIGHT); }
 
-double TieSegment::endWidth() const { return style().styleAbsolute(Sid::tieEndWidth); }
+double TieSegment::end_width() const { return style().style_absolute(Sid::TIE_END_WIDTH); }
 
-double TieSegment::midWidth() const { return style().styleAbsolute(Sid::tieMidWidth); }
+double TieSegment::mid_width() const { return style().style_absolute(Sid::TIE_MID_WIDTH); }
 
-double TieSegment::dottedWidth() const { return style().styleAbsolute(Sid::tieDottedWidth); }
+double TieSegment::dotted_width() const { return style().style_absolute(Sid::TIE_DOTTED_WIDTH); }
 
 //---------------------------------------------------------
 //   Tie
@@ -97,16 +97,16 @@ double TieSegment::dottedWidth() const { return style().styleAbsolute(Sid::tieDo
 
 Tie::Tie(const ElementType &type, EngravingObject *parent) : SlurTie(type, parent) {}
 
-TieJumpPointList *Tie::startTieJumpPoints() const { return jumpPoint_ ? jumpPoint_->jumpPointList() : nullptr; }
+TieJumpPointList *Tie::start_tie_jump_points() const { return jump_point_ ? jump_point_->jump_point_list() : nullptr; }
 
-void Tie::updatePossibleJumpPoints() {
-    if (!tieJumpPoints()) {
+void Tie::update_possible_jump_points() {
+    if (!tie_jump_points()) {
         return;
     }
 
-    tieJumpPoints()->clear();
+    tie_jump_points()->clear();
 
-    const Note *note = toNote(ownershipParent());
+    const Note *note = to_note(ownership_parent());
     const Chord *chord = note ? note->chord() : nullptr;
     const Measure *measure = chord ? chord->measure() : nullptr;
     if (!measure) {
@@ -117,107 +117,107 @@ void Tie::updatePossibleJumpPoints() {
 
     // Check ties starting in this measure and ending in another
     // If they cross a repeat, add jump points
-    const bool hasFollowingJumpItem = chord->hasFollowingJumpItem();
+    const bool has_following_jump_item = chord->has_following_jump_item();
 
-    if (!hasFollowingJumpItem) {
-        const Note *tieEndNote = endNote();
-        const Chord *endChord = tieEndNote ? tieEndNote->chord() : nullptr;
-        if (!endChord) {
+    if (!has_following_jump_item) {
+        const Note *tie_end_note = end_note();
+        const Chord *end_chord = tie_end_note ? tie_end_note->chord() : nullptr;
+        if (!end_chord) {
             return;
         }
-        const Segment *endNoteSegment = endChord ? endChord->segment() : nullptr;
-        const ChordRest *finalCROfMeasure = measure->lastChordRest(track());
-        const bool finalCRHasFollowingJump = finalCROfMeasure ? finalCROfMeasure->hasFollowingJumpItem() : false;
-        const bool segsAreAdjacent = segmentsAreAdjacent(segment, endNoteSegment);
-        const bool segsAreInDifferentRepeatSegments = segmentsAreInDifferentRepeatSegments(segment, endNoteSegment);
+        const Segment *end_note_segment = end_chord ? end_chord->segment() : nullptr;
+        const ChordRest *final_cr_of_measure = measure->last_chord_rest(track());
+        const bool final_cr_has_following_jump = final_cr_of_measure ? final_cr_of_measure->has_following_jump_item() : false;
+        const bool segs_are_adjacent = segments_are_adjacent(segment, end_note_segment);
+        const bool segs_are_in_different_repeat_segments = segments_are_in_different_repeat_segments(segment, end_note_segment);
 
-        if (!(finalCRHasFollowingJump && segsAreAdjacent) || !segsAreInDifferentRepeatSegments) {
+        if (!(final_cr_has_following_jump && segs_are_adjacent) || !segs_are_in_different_repeat_segments) {
             return;
         }
     }
 
-    int jumpPointIdx = 0;
+    int jump_point_idx = 0;
 
-    Note *nextNote = searchTieNote(note);
-    nextNote = nextNote ? nextNote : endNote();
+    Note *next_note = search_tie_note(note);
+    next_note = next_note ? next_note : end_note();
 
-    if (nextNote) {
-        const bool hasTie = nextNote->tieBack();
-        TieJumpPoint *jumpPoint = new TieJumpPoint(nextNote, hasTie, jumpPointIdx, true);
-        tieJumpPoints()->add(jumpPoint);
-        jumpPointIdx++;
+    if (next_note) {
+        const bool has_tie = next_note->tie_back();
+        TieJumpPoint *jump_point = new TieJumpPoint(next_note, has_tie, jump_point_idx, true);
+        tie_jump_points()->add(jump_point);
+        jump_point_idx++;
     }
 
-    for (Measure *jumpMeasure : findFollowingRepeatMeasures(measure)) {
-        const Segment *firstCrSeg = jumpMeasure ? jumpMeasure->first(SegmentType::ChordRest) : nullptr;
-        if (!firstCrSeg) {
+    for (Measure *jump_measure : find_following_repeat_measures(measure)) {
+        const Segment *first_cr_seg = jump_measure ? jump_measure->first(SegmentType::CHORD_REST) : nullptr;
+        if (!first_cr_seg) {
             continue;
         }
 
-        nextNote = searchTieNote(note, firstCrSeg, false);
+        next_note = search_tie_note(note, first_cr_seg, false);
 
-        if (nextNote) {
-            bool hasIncomingTie = nextNote->tieBack();
-            TieJumpPoint *jumpPoint = new TieJumpPoint(nextNote, hasIncomingTie, jumpPointIdx, false);
-            tieJumpPoints()->add(jumpPoint);
-            jumpPointIdx++;
+        if (next_note) {
+            bool has_incoming_tie = next_note->tie_back();
+            TieJumpPoint *jump_point = new TieJumpPoint(next_note, has_incoming_tie, jump_point_idx, false);
+            tie_jump_points()->add(jump_point);
+            jump_point_idx++;
         }
     }
 
-    if (jumpPointIdx < 2 && !isPartialTie()) {
-        tieJumpPoints()->clear();
+    if (jump_point_idx < 2 && !is_partial_tie()) {
+        tie_jump_points()->clear();
     }
 }
 
-void Tie::addTiesToJumpPoints() {
-    updatePossibleJumpPoints();
-    TieJumpPointList *jumpPoints = tieJumpPoints();
-    if (!jumpPoints) {
+void Tie::add_ties_to_jump_points() {
+    update_possible_jump_points();
+    TieJumpPointList *jump_points = tie_jump_points();
+    if (!jump_points) {
         return;
     }
 
-    for (TieJumpPoint *jumpPoint : *jumpPoints) {
-        if (jumpPoint->followingNote()) {
-            jumpPoint->undoSetActive(true);
+    for (TieJumpPoint *jump_point : *jump_points) {
+        if (jump_point->following_note()) {
+            jump_point->undo_set_active(true);
             continue;
         }
-        jumpPoints->undoAddTieToScore(jumpPoint);
+        jump_points->undo_add_tie_to_score(jump_point);
     }
 
     // Update jump points for linked ties
-    for (EngravingObject *linkedTie : linkList()) {
-        if (!linkedTie || !linkedTie->isTie() || linkedTie == this) {
+    for (EngravingObject *linked_tie : link_list()) {
+        if (!linked_tie || !linked_tie->is_tie() || linked_tie == this) {
             continue;
         }
-        toTie(linkedTie)->updatePossibleJumpPoints();
+        to_tie(linked_tie)->update_possible_jump_points();
     }
 }
 
-void Tie::undoRemoveTiesFromJumpPoints() {
-    TieJumpPointList *jumpPoints = tieJumpPoints();
-    if (!jumpPoints) {
+void Tie::undo_remove_ties_from_jump_points() {
+    TieJumpPointList *jump_points = tie_jump_points();
+    if (!jump_points) {
         return;
     }
-    for (TieJumpPoint *jumpPoint : *jumpPoints) {
-        if (jumpPoint->followingNote() || !jumpPoint->active()) {
-            jumpPoint->undoSetActive(false);
+    for (TieJumpPoint *jump_point : *jump_points) {
+        if (jump_point->following_note() || !jump_point->active()) {
+            jump_point->undo_set_active(false);
             continue;
         }
 
-        jumpPoints->undoRemoveTieFromScore(jumpPoint);
+        jump_points->undo_remove_tie_from_score(jump_point);
     }
 }
 
-bool Tie::allJumpPointsInactive() const {
-    if (endNote()) {
+bool Tie::all_jump_points_inactive() const {
+    if (end_note()) {
         return false;
     }
-    if (!tieJumpPoints()) {
+    if (!tie_jump_points()) {
         return true;
     }
 
-    for (const TieJumpPoint *jumpPoint : *tieJumpPoints()) {
-        if (jumpPoint->active()) {
+    for (const TieJumpPoint *jump_point : *tie_jump_points()) {
+        if (jump_point->active()) {
             return false;
         }
     }
@@ -225,103 +225,103 @@ bool Tie::allJumpPointsInactive() const {
     return true;
 }
 
-TieJumpPointList *Tie::tieJumpPoints() { return startNote() ? startNote()->tieJumpPoints() : nullptr; }
+TieJumpPointList *Tie::tie_jump_points() { return start_note() ? start_note()->tie_jump_points() : nullptr; }
 
-const TieJumpPointList *Tie::tieJumpPoints() const { return startNote() ? startNote()->tieJumpPoints() : nullptr; }
+const TieJumpPointList *Tie::tie_jump_points() const { return start_note() ? start_note()->tie_jump_points() : nullptr; }
 
 Tie::Tie(EngravingObject *parent) : SlurTie(ElementType::TIE, parent) {}
 
 Tie::Tie(const Tie &t) : SlurTie(t) {
-    isInside_ = t.isInside_;
-    tiePlacement_ = t.tiePlacement_;
+    is_inside_ = t.is_inside_;
+    tie_placement_ = t.tie_placement_;
     // Jump points must be recalculated for this tie
-    jumpPoint_ = nullptr;
+    jump_point_ = nullptr;
 }
 
-PropertyValue Tie::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::TIE_PLACEMENT: return tiePlacement();
-        default: return SlurTie::getProperty(propertyId);
+PropertyValue Tie::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::TIE_PLACEMENT: return tie_placement();
+        default: return SlurTie::get_property(property_id);
     }
 }
 
-PropertyValue Tie::propertyDefault(Pid id) const {
+PropertyValue Tie::property_default(Pid id) const {
     switch (id) {
         case Pid::TIE_PLACEMENT: return TiePlacement::AUTO;
-        default: return SlurTie::propertyDefault(id);
+        default: return SlurTie::property_default(id);
     }
 }
 
-bool Tie::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::TIE_PLACEMENT: setTiePlacement(v.value<TiePlacement>()); break;
-        default: return SlurTie::setProperty(propertyId, v);
+bool Tie::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::TIE_PLACEMENT: set_tie_placement(v.value<TiePlacement>()); break;
+        default: return SlurTie::set_property(property_id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
-double Tie::scalingFactor() const {
-    const bool hasBothNotes = startNote() && endNote();
+double Tie::scaling_factor() const {
+    const bool has_both_notes = start_note() && end_note();
 
-    const Note *primaryNote = startNote() ? startNote() : endNote();
-    const Note *secondaryNote = hasBothNotes ? endNote() : nullptr;
+    const Note *primary_note = start_note() ? start_note() : end_note();
+    const Note *secondary_note = has_both_notes ? end_note() : nullptr;
 
-    if (!primaryNote) {
+    if (!primary_note) {
         return 1.0;
     }
 
-    if (primaryNote->isGrace()) {
-        return style().styleD(Sid::graceNoteMag);
+    if (primary_note->is_grace()) {
+        return style().style_d(Sid::GRACE_NOTE_MAG);
     }
 
-    if (hasBothNotes) {
-        return 0.5 * (primaryNote->chord()->intrinsicMag() + secondaryNote->chord()->intrinsicMag());
+    if (has_both_notes) {
+        return 0.5 * (primary_note->chord()->intrinsic_mag() + secondary_note->chord()->intrinsic_mag());
     }
 
-    return primaryNote->chord()->intrinsicMag();
+    return primary_note->chord()->intrinsic_mag();
 }
 
-void Tie::setStartNote(Note *note) {
-    setStartElement(note);
-    setOwnershipParent(note);
+void Tie::set_start_note(Note *note) {
+    set_start_element(note);
+    set_ownership_parent(note);
 }
 
-Note *Tie::startNote() const {
-    assert(!startElement() || startElement()->isNote());
-    return toNote(startElement());
+Note *Tie::start_note() const {
+    assert(!start_element() || start_element()->is_note());
+    return to_note(start_element());
 }
 
-Note *Tie::endNote() const { return toNote(endElement()); }
+Note *Tie::end_note() const { return to_note(end_element()); }
 
-bool Tie::isOuterTieOfChord(Grip startOrEnd) const {
-    if (isInside_) {
+bool Tie::is_outer_tie_of_chord(Grip start_or_end) const {
+    if (is_inside_) {
         return false;
     }
 
-    const bool start = startOrEnd == Grip::START;
-    const Note *note = start ? startNote() : endNote();
+    const bool start = start_or_end == Grip::START;
+    const Note *note = start ? start_note() : end_note();
     if (!note) {
         return false;
     }
 
     const Chord *chord = note->chord();
 
-    return (note == chord->upNote() && up()) || (note == chord->downNote() && !up());
+    return (note == chord->up_note() && up()) || (note == chord->down_note() && !up());
 }
 
-bool Tie::hasTiedSecondInside() const {
-    const Note *note = startNote();
+bool Tie::has_tied_second_inside() const {
+    const Note *note = start_note();
     if (!note) {
         return false;
     }
 
     const Chord *chord = note->chord();
     const int line = note->line();
-    const int secondInsideLine = up() ? line + 1 : line - 1;
+    const int second_inside_line = up() ? line + 1 : line - 1;
 
-    for (const Note *otherNote : chord->notes()) {
-        if (otherNote->line() == secondInsideLine && otherNote->tieFor() && otherNote->tieFor()->up() == up()) {
+    for (const Note *other_note : chord->notes()) {
+        if (other_note->line() == second_inside_line && other_note->tie_for() && other_note->tie_for()->up() == up()) {
             return true;
         }
     }
@@ -329,59 +329,59 @@ bool Tie::hasTiedSecondInside() const {
     return false;
 }
 
-bool Tie::isCrossStaff() const {
-    const Note *startN = startNote();
-    const Note *endN = endNote();
-    const Chord *startChord = startN ? startN->chord() : nullptr;
-    const Chord *endChord = endN ? endN->chord() : nullptr;
-    const staff_idx_t staff = staffIdx();
+bool Tie::is_cross_staff() const {
+    const Note *start_n = start_note();
+    const Note *end_n = end_note();
+    const Chord *start_chord = start_n ? start_n->chord() : nullptr;
+    const Chord *end_chord = end_n ? end_n->chord() : nullptr;
+    const staff_idx_t staff = staff_idx();
 
-    return (startChord && (startChord->staffMove() != 0 || startChord->vStaffIdx() != staff)) ||
-           (endChord && (endChord->staffMove() != 0 || endChord->vStaffIdx() != staff));
+    return (start_chord && (start_chord->staff_move() != 0 || start_chord->v_staff_idx() != staff)) ||
+           (end_chord && (end_chord->staff_move() != 0 || end_chord->v_staff_idx() != staff));
 }
 
-void Tie::changeTieType(Tie *oldTie, Note *endNote) {
+void Tie::change_tie_type(Tie *old_tie, Note *end_note) {
     // Replaces oldTie with an outgoing partial tie if no endNote is specified.  Otherwise replaces oldTie with a regular tie
-    Note *startNote = oldTie->startNote();
-    bool addPartialTie = !endNote;
-    Score *score = startNote ? startNote->score() : nullptr;
+    Note *start_note = old_tie->start_note();
+    bool add_partial_tie = !end_note;
+    Score *score = start_note ? start_note->score() : nullptr;
     if (!score) {
         return;
     }
 
-    Tie *newTie = addPartialTie ? Factory::createPartialTie(startNote) : Factory::createTie(startNote);
+    Tie *new_tie = add_partial_tie ? Factory::create_partial_tie(start_note) : Factory::create_tie(start_note);
 
-    score->undoRemoveElement(oldTie);
+    score->undo_remove_element(old_tie);
 
-    newTie->setStartNote(startNote);
-    newTie->setTick(startNote->tick());
-    newTie->setTrack(startNote->track());
-    startNote->setTieFor(newTie);
-    if (!addPartialTie) {
-        newTie->setEndNote(endNote);
-        endNote->setTieBack(newTie);
+    new_tie->set_start_note(start_note);
+    new_tie->set_tick(start_note->tick());
+    new_tie->set_track(start_note->track());
+    start_note->set_tie_for(new_tie);
+    if (!add_partial_tie) {
+        new_tie->set_end_note(end_note);
+        end_note->set_tie_back(new_tie);
     }
 
-    newTie->setStyleType(oldTie->styleType());
-    newTie->setTiePlacement(oldTie->tiePlacement());
-    newTie->setSlurDirection(oldTie->slurDirection());
+    new_tie->set_style_type(old_tie->style_type());
+    new_tie->set_tie_placement(old_tie->tie_placement());
+    new_tie->set_slur_direction(old_tie->slur_direction());
 
-    newTie->setVisible(oldTie->visible());
-    newTie->setOffset(oldTie->offset());
+    new_tie->set_visible(old_tie->visible());
+    new_tie->set_offset(old_tie->offset());
 
-    score->undoAddElement(newTie);
+    score->undo_add_element(new_tie);
 }
 
-void Tie::updateStartTieOnRemoval() {
-    if (!jumpPoint() || !startTie() || !startTieJumpPoints()) {
+void Tie::update_start_tie_on_removal() {
+    if (!jump_point() || !start_tie() || !start_tie_jump_points()) {
         return;
     }
-    jumpPoint()->undoSetActive(false);
-    Tie *_startTie = startTie();
-    if (startTieJumpPoints()->size() <= 1 || _startTie->allJumpPointsInactive()) {
-        score()->undoRemoveElement(_startTie);
+    jump_point()->undo_set_active(false);
+    Tie *start_tie = this->start_tie();
+    if (start_tie_jump_points()->size() <= 1 || start_tie->all_jump_points_inactive()) {
+        score()->undo_remove_element(start_tie);
     }
 }
 
-Tie *Tie::startTie() const { return startTieJumpPoints() ? startTieJumpPoints()->startTie() : nullptr; }
+Tie *Tie::start_tie() const { return start_tie_jump_points() ? start_tie_jump_points()->start_tie() : nullptr; }
 } // namespace mu::engraving

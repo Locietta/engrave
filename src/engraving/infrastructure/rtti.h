@@ -94,17 +94,17 @@ struct TypeList {};
 template <typename Impl>
 class Visitor {
 public:
-    enum Policy { MayBeNotFound = 0, ShouldBeFound };
+    enum Policy { MAY_BE_NOT_FOUND = 0, SHOULD_BE_FOUND };
 
     template <typename... Types, typename... Args>
     static bool visit(TypeList<Types...> types, Args &&...args) {
-        return visit(Policy::MayBeNotFound, types, std::forward<Args>(args)...);
+        return visit(Policy::MAY_BE_NOT_FOUND, types, std::forward<Args>(args)...);
     }
 
     template <typename... Types, typename... Args>
     static bool visit(Policy policy, TypeList<Types...> types, Args &&...args) {
         bool found = visit_helper(types, std::forward<Args>(args)...);
-        if (policy == Policy::ShouldBeFound) {
+        if (policy == Policy::SHOULD_BE_FOUND) {
             DO_ASSERT(found);
         }
         return found;
@@ -118,7 +118,7 @@ private:
 
     template <class Head, class... Tail, typename... Args>
     static bool visit_helper(TypeList<Head, Tail...>, Args &&...args) {
-        bool found = Impl::template doVisit<Head>(args...);
+        bool found = Impl::template do_visit<Head>(args...);
         if (!found) {
             found = visit_helper(TypeList<Tail...>{}, std::forward<Args>(args)...);
         }

@@ -45,23 +45,23 @@ namespace mu::iex::musicxml {
 //   errorStringWithLocation
 //---------------------------------------------------------
 
-String errorStringWithLocation(int64_t byteOffset, const String &error) {
-    return muse::mtrc("iex_musicxml", "byte offset %1:").arg(byteOffset) + u" " + error;
+String error_string_with_location(int64_t byte_offset, const String &error) {
+    return muse::mtrc("iex_musicxml", "byte offset %1:").arg(byte_offset) + u" " + error;
 }
 
 //---------------------------------------------------------
 //   checkAtEndElement
 //---------------------------------------------------------
 
-muse::String checkAtEndElement(const muse::XmlStreamReader &e, const muse::String &expName) {
-    if (e.isEndElement() && e.name() == expName.toAscii().constChar()) {
+muse::String check_at_end_element(const muse::XmlStreamReader &e, const muse::String &exp_name) {
+    if (e.is_end_element() && e.name() == exp_name.to_ascii().const_char()) {
         return String();
     }
 
     String res = muse::mtrc("iex_musicxml", "expected token type and name ‘EndElement %1’, actual ‘%2 %3’")
-                     .arg(expName)
-                     .arg(muse::String::fromAscii(e.tokenString().ascii()))
-                     .arg(muse::String::fromAscii(e.name().ascii()));
+                     .arg(exp_name)
+                     .arg(muse::String::from_ascii(e.token_string().ascii()))
+                     .arg(muse::String::from_ascii(e.name().ascii()));
     return res;
 }
 
@@ -78,13 +78,13 @@ muse::String checkAtEndElement(const muse::XmlStreamReader &e, const muse::Strin
  Note that non-integer values cannot be handled by mscore.
  */
 
-int MusicXmlSupport::stringToInt(const String &s, bool *ok) {
+int MusicXmlSupport::string_to_int(const String &s, bool *ok) {
     int res = 0;
     String str = s;
-    if (s.endsWith(u".0")) {
+    if (s.ends_with(u".0")) {
         str = s.left(s.size() - 2);
     }
-    res = str.toInt(ok);
+    res = str.to_int(ok);
     return res;
 }
 
@@ -96,7 +96,7 @@ int MusicXmlSupport::stringToInt(const String &s, bool *ok) {
  Convert MusicXML note type to fraction.
  */
 
-Fraction MusicXmlSupport::noteTypeToFraction(const String &type) {
+Fraction MusicXmlSupport::note_type_to_fraction(const String &type) {
     if (type == u"1024th") {
         return Fraction(1, 1024);
     } else if (type == u"512th") {
@@ -138,19 +138,19 @@ Fraction MusicXmlSupport::noteTypeToFraction(const String &type) {
  Convert note type, number of dots and actual and normal notes into a duration
  */
 
-Fraction MusicXmlSupport::calculateFraction(const String &type, int dots, int normalNotes, int actualNotes) {
+Fraction MusicXmlSupport::calculate_fraction(const String &type, int dots, int normal_notes, int actual_notes) {
     // type
-    Fraction f = MusicXmlSupport::noteTypeToFraction(type);
-    if (f.isValid()) {
+    Fraction f = MusicXmlSupport::note_type_to_fraction(type);
+    if (f.is_valid()) {
         // dot(s)
         Fraction f_no_dots = f;
         for (int i = 0; i < dots; ++i) {
             f += (f_no_dots / Fraction(2 << i, 1));
         }
         // tuplet
-        if (actualNotes > 0 && normalNotes > 0) {
-            f *= normalNotes;
-            f /= Fraction(actualNotes, 1);
+        if (actual_notes > 0 && normal_notes > 0) {
+            f *= normal_notes;
+            f /= Fraction(actual_notes, 1);
         }
         // clean up (just in case)
         f.reduce();
@@ -162,56 +162,56 @@ Fraction MusicXmlSupport::calculateFraction(const String &type, int dots, int no
 //   accSymId2MusicXmlString
 //---------------------------------------------------------
 
-String accSymId2MusicXmlString(const SymId id) {
+String acc_sym_id2_music_xml_string(const SymId id) {
     String s;
     switch (id) {
-        case SymId::accidentalSharp: s = u"sharp"; break;
-        case SymId::accidentalNatural: s = u"natural"; break;
-        case SymId::accidentalFlat: s = u"flat"; break;
-        case SymId::accidentalDoubleSharp: s = u"double-sharp"; break;
-        case SymId::accidentalSharpSharp: s = u"sharp-sharp"; break;
+        case SymId::ACCIDENTAL_SHARP: s = u"sharp"; break;
+        case SymId::ACCIDENTAL_NATURAL: s = u"natural"; break;
+        case SymId::ACCIDENTAL_FLAT: s = u"flat"; break;
+        case SymId::ACCIDENTAL_DOUBLE_SHARP: s = u"double-sharp"; break;
+        case SymId::ACCIDENTAL_SHARP_SHARP: s = u"sharp-sharp"; break;
         //case SymId::accidentalDoubleFlat:            s = u"double-flat"; break; // doesn't exist in MusicXML, but see below
-        case SymId::accidentalDoubleFlat: s = u"flat-flat"; break;
-        case SymId::accidentalNaturalSharp: s = u"natural-sharp"; break;
-        case SymId::accidentalNaturalFlat: s = u"natural-flat"; break;
-        case SymId::accidentalQuarterToneFlatStein: s = u"quarter-flat"; break;
-        case SymId::accidentalQuarterToneSharpStein: s = u"quarter-sharp"; break;
-        case SymId::accidentalThreeQuarterTonesFlatZimmermann: s = u"three-quarters-flat"; break;
+        case SymId::ACCIDENTAL_DOUBLE_FLAT: s = u"flat-flat"; break;
+        case SymId::ACCIDENTAL_NATURAL_SHARP: s = u"natural-sharp"; break;
+        case SymId::ACCIDENTAL_NATURAL_FLAT: s = u"natural-flat"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_FLAT_STEIN: s = u"quarter-flat"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_SHARP_STEIN: s = u"quarter-sharp"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ZIMMERMANN: s = u"three-quarters-flat"; break;
         //case SymId::noSym:                                     s = u"three-quarters-flat";  break; // AccidentalType::FLAT_FLAT_SLASH, MuseScore 1?
-        case SymId::accidentalThreeQuarterTonesSharpStein: s = u"three-quarters-sharp"; break;
-        case SymId::accidentalQuarterToneSharpArrowDown: s = u"sharp-down"; break;
-        case SymId::accidentalThreeQuarterTonesSharpArrowUp: s = u"sharp-up"; break;
-        case SymId::accidentalQuarterToneFlatNaturalArrowDown: s = u"natural-down"; break;
-        case SymId::accidentalQuarterToneSharpNaturalArrowUp: s = u"natural-up"; break;
-        case SymId::accidentalThreeQuarterTonesFlatArrowDown: s = u"flat-down"; break;
-        case SymId::accidentalQuarterToneFlatArrowUp: s = u"flat-up"; break;
-        case SymId::accidentalThreeQuarterTonesSharpArrowDown: s = u"double-sharp-down"; break;
-        case SymId::accidentalFiveQuarterTonesSharpArrowUp: s = u"double-sharp-up"; break;
-        case SymId::accidentalFiveQuarterTonesFlatArrowDown: s = u"flat-flat-down"; break;
-        case SymId::accidentalThreeQuarterTonesFlatArrowUp: s = u"flat-flat-up"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_STEIN: s = u"three-quarters-sharp"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_SHARP_ARROW_DOWN: s = u"sharp-down"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_UP: s = u"sharp-up"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_FLAT_NATURAL_ARROW_DOWN: s = u"natural-down"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_SHARP_NATURAL_ARROW_UP: s = u"natural-up"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_DOWN: s = u"flat-down"; break;
+        case SymId::ACCIDENTAL_QUARTER_TONE_FLAT_ARROW_UP: s = u"flat-up"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_DOWN: s = u"double-sharp-down"; break;
+        case SymId::ACCIDENTAL_FIVE_QUARTER_TONES_SHARP_ARROW_UP: s = u"double-sharp-up"; break;
+        case SymId::ACCIDENTAL_FIVE_QUARTER_TONES_FLAT_ARROW_DOWN: s = u"flat-flat-down"; break;
+        case SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_UP: s = u"flat-flat-up"; break;
 
-        case SymId::accidentalArrowDown: s = u"arrow-down"; break;
-        case SymId::accidentalArrowUp: s = u"arrow-up"; break;
+        case SymId::ACCIDENTAL_ARROW_DOWN: s = u"arrow-down"; break;
+        case SymId::ACCIDENTAL_ARROW_UP: s = u"arrow-up"; break;
 
-        case SymId::accidentalTripleSharp: s = u"triple-sharp"; break;
-        case SymId::accidentalTripleFlat: s = u"triple-flat"; break;
+        case SymId::ACCIDENTAL_TRIPLE_SHARP: s = u"triple-sharp"; break;
+        case SymId::ACCIDENTAL_TRIPLE_FLAT: s = u"triple-flat"; break;
 
-        case SymId::accidentalKucukMucennebSharp: s = u"slash-quarter-sharp"; break;
-        case SymId::accidentalBuyukMucennebSharp: s = u"slash-sharp"; break;
-        case SymId::accidentalBakiyeFlat: s = u"slash-flat"; break;
-        case SymId::accidentalBuyukMucennebFlat: s = u"double-slash-flat"; break;
+        case SymId::ACCIDENTAL_KUCUK_MUCENNEB_SHARP: s = u"slash-quarter-sharp"; break;
+        case SymId::ACCIDENTAL_BUYUK_MUCENNEB_SHARP: s = u"slash-sharp"; break;
+        case SymId::ACCIDENTAL_BAKIYE_FLAT: s = u"slash-flat"; break;
+        case SymId::ACCIDENTAL_BUYUK_MUCENNEB_FLAT: s = u"double-slash-flat"; break;
 
-        case SymId::accidental1CommaSharp: s = u"sharp-1"; break;
-        case SymId::accidental2CommaSharp: s = u"sharp-2"; break;
-        case SymId::accidental3CommaSharp: s = u"sharp-3"; break;
-        case SymId::accidental5CommaSharp: s = u"sharp-5"; break;
-        case SymId::accidental1CommaFlat: s = u"flat-1"; break;
-        case SymId::accidental2CommaFlat: s = u"flat-2"; break;
-        case SymId::accidental3CommaFlat: s = u"flat-3"; break;
-        case SymId::accidental4CommaFlat: s = u"flat-4"; break;
+        case SymId::ACCIDENTAL1_COMMA_SHARP: s = u"sharp-1"; break;
+        case SymId::ACCIDENTAL2_COMMA_SHARP: s = u"sharp-2"; break;
+        case SymId::ACCIDENTAL3_COMMA_SHARP: s = u"sharp-3"; break;
+        case SymId::ACCIDENTAL5_COMMA_SHARP: s = u"sharp-5"; break;
+        case SymId::ACCIDENTAL1_COMMA_FLAT: s = u"flat-1"; break;
+        case SymId::ACCIDENTAL2_COMMA_FLAT: s = u"flat-2"; break;
+        case SymId::ACCIDENTAL3_COMMA_FLAT: s = u"flat-3"; break;
+        case SymId::ACCIDENTAL4_COMMA_FLAT: s = u"flat-4"; break;
 
-        case SymId::accidentalSori: s = u"sori"; break;
-        case SymId::accidentalKoron: s = u"koron"; break;
+        case SymId::ACCIDENTAL_SORI: s = u"sori"; break;
+        case SymId::ACCIDENTAL_KORON: s = u"koron"; break;
         default: s = u"other"; LOGD("accSymId2MusicXmlString: unknown accidental %d", static_cast<int>(id));
     }
     return s;
@@ -221,84 +221,84 @@ String accSymId2MusicXmlString(const SymId id) {
 //   accSymId2SmuflMusicXmlString
 //---------------------------------------------------------
 
-String accSymId2SmuflMusicXmlString(const SymId id) { return String::fromAscii(SymNames::nameForSymId(id).ascii()); }
+String acc_sym_id2_smufl_music_xml_string(const SymId id) { return String::from_ascii(SymNames::name_for_sym_id(id).ascii()); }
 
 //---------------------------------------------------------
 //   musicXmlString2accSymId
 // see https://github.com/w3c/musicxml/blob/6e3a667b85855b04d7e4548ea508b537bc29fc52/schema/musicxml.xsd#L1392-L1439
 //---------------------------------------------------------
 
-SymId musicXmlString2accSymId(const String mxmlName, const String smufl) {
+SymId music_xml_string2acc_sym_id(const String mxml_name, const String smufl) {
     // map MusicXML accidental name to MuseScore enum SymId
     static const std::map<String, SymId> map{
-        {u"sharp", SymId::accidentalSharp},
-        {u"natural", SymId::accidentalNatural},
-        {u"flat", SymId::accidentalFlat},
-        {u"double-sharp", SymId::accidentalDoubleSharp},
-        {u"sharp-sharp", SymId::accidentalSharpSharp},
+        {u"sharp", SymId::ACCIDENTAL_SHARP},
+        {u"natural", SymId::ACCIDENTAL_NATURAL},
+        {u"flat", SymId::ACCIDENTAL_FLAT},
+        {u"double-sharp", SymId::ACCIDENTAL_DOUBLE_SHARP},
+        {u"sharp-sharp", SymId::ACCIDENTAL_SHARP_SHARP},
         //{ u"double-flat", SymId::accidentalDoubleFlat }, // shouldn't harm, but doesn't exist in MusicXML
-        {u"flat-flat", SymId::accidentalDoubleFlat},
-        {u"natural-sharp", SymId::accidentalNaturalSharp},
-        {u"natural-flat", SymId::accidentalNaturalFlat},
+        {u"flat-flat", SymId::ACCIDENTAL_DOUBLE_FLAT},
+        {u"natural-sharp", SymId::ACCIDENTAL_NATURAL_SHARP},
+        {u"natural-flat", SymId::ACCIDENTAL_NATURAL_FLAT},
 
-        {u"quarter-flat", SymId::accidentalQuarterToneFlatStein},
-        {u"quarter-sharp", SymId::accidentalQuarterToneSharpStein},
-        {u"three-quarters-flat", SymId::accidentalThreeQuarterTonesFlatZimmermann},
-        {u"three-quarters-sharp", SymId::accidentalThreeQuarterTonesSharpStein},
+        {u"quarter-flat", SymId::ACCIDENTAL_QUARTER_TONE_FLAT_STEIN},
+        {u"quarter-sharp", SymId::ACCIDENTAL_QUARTER_TONE_SHARP_STEIN},
+        {u"three-quarters-flat", SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ZIMMERMANN},
+        {u"three-quarters-sharp", SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_STEIN},
 
-        {u"sharp-down", SymId::accidentalQuarterToneSharpArrowDown},
-        {u"sharp-up", SymId::accidentalThreeQuarterTonesSharpArrowUp},
-        {u"natural-down", SymId::accidentalQuarterToneFlatNaturalArrowDown},
-        {u"natural-up", SymId::accidentalQuarterToneSharpNaturalArrowUp},
-        {u"flat-down", SymId::accidentalThreeQuarterTonesFlatArrowDown},
-        {u"flat-up", SymId::accidentalQuarterToneFlatArrowUp},
-        {u"double-sharp-down", SymId::accidentalThreeQuarterTonesSharpArrowDown},
-        {u"double-sharp-up", SymId::accidentalFiveQuarterTonesSharpArrowUp},
-        {u"flat-flat-down", SymId::accidentalFiveQuarterTonesFlatArrowDown},
-        {u"flat-flat-up", SymId::accidentalThreeQuarterTonesFlatArrowUp},
+        {u"sharp-down", SymId::ACCIDENTAL_QUARTER_TONE_SHARP_ARROW_DOWN},
+        {u"sharp-up", SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_UP},
+        {u"natural-down", SymId::ACCIDENTAL_QUARTER_TONE_FLAT_NATURAL_ARROW_DOWN},
+        {u"natural-up", SymId::ACCIDENTAL_QUARTER_TONE_SHARP_NATURAL_ARROW_UP},
+        {u"flat-down", SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_DOWN},
+        {u"flat-up", SymId::ACCIDENTAL_QUARTER_TONE_FLAT_ARROW_UP},
+        {u"double-sharp-down", SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_DOWN},
+        {u"double-sharp-up", SymId::ACCIDENTAL_FIVE_QUARTER_TONES_SHARP_ARROW_UP},
+        {u"flat-flat-down", SymId::ACCIDENTAL_FIVE_QUARTER_TONES_FLAT_ARROW_DOWN},
+        {u"flat-flat-up", SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_UP},
 
-        {u"arrow-down", SymId::accidentalArrowDown},
-        {u"arrow-up", SymId::accidentalArrowUp},
+        {u"arrow-down", SymId::ACCIDENTAL_ARROW_DOWN},
+        {u"arrow-up", SymId::ACCIDENTAL_ARROW_UP},
 
-        {u"triple-sharp", SymId::accidentalTripleSharp},
-        {u"triple-flat", SymId::accidentalTripleFlat},
+        {u"triple-sharp", SymId::ACCIDENTAL_TRIPLE_SHARP},
+        {u"triple-flat", SymId::ACCIDENTAL_TRIPLE_FLAT},
 
-        {u"slash-quarter-sharp", SymId::accidentalKucukMucennebSharp},
-        {u"slash-sharp", SymId::accidentalBuyukMucennebSharp},
-        {u"slash-flat", SymId::accidentalBakiyeFlat},
-        {u"double-slash-flat", SymId::accidentalBuyukMucennebFlat},
+        {u"slash-quarter-sharp", SymId::ACCIDENTAL_KUCUK_MUCENNEB_SHARP},
+        {u"slash-sharp", SymId::ACCIDENTAL_BUYUK_MUCENNEB_SHARP},
+        {u"slash-flat", SymId::ACCIDENTAL_BAKIYE_FLAT},
+        {u"double-slash-flat", SymId::ACCIDENTAL_BUYUK_MUCENNEB_FLAT},
 
-        {u"sharp-1", SymId::accidental1CommaSharp},
-        {u"sharp-2", SymId::accidental2CommaSharp},
-        {u"sharp-3", SymId::accidental3CommaSharp},
-        {u"sharp-5", SymId::accidental5CommaSharp},
-        {u"flat-1", SymId::accidental1CommaFlat},
-        {u"flat-2", SymId::accidental2CommaFlat},
-        {u"flat-3", SymId::accidental3CommaFlat},
-        {u"flat-4", SymId::accidental4CommaFlat},
+        {u"sharp-1", SymId::ACCIDENTAL1_COMMA_SHARP},
+        {u"sharp-2", SymId::ACCIDENTAL2_COMMA_SHARP},
+        {u"sharp-3", SymId::ACCIDENTAL3_COMMA_SHARP},
+        {u"sharp-5", SymId::ACCIDENTAL5_COMMA_SHARP},
+        {u"flat-1", SymId::ACCIDENTAL1_COMMA_FLAT},
+        {u"flat-2", SymId::ACCIDENTAL2_COMMA_FLAT},
+        {u"flat-3", SymId::ACCIDENTAL3_COMMA_FLAT},
+        {u"flat-4", SymId::ACCIDENTAL4_COMMA_FLAT},
 
-        {u"sori", SymId::accidentalSori},
-        {u"koron", SymId::accidentalKoron},
+        {u"sori", SymId::ACCIDENTAL_SORI},
+        {u"koron", SymId::ACCIDENTAL_KORON},
     };
 
-    auto it = map.find(mxmlName);
+    auto it = map.find(mxml_name);
     if (it != map.end()) {
         return it->second;
-    } else if (mxmlName == u"other") {
-        return SymNames::symIdByName(smufl);
+    } else if (mxml_name == u"other") {
+        return SymNames::sym_id_by_name(smufl);
     } else {
-        LOGD("musicXmlString2accSymId: unknown accidental '%s'", muPrintable(mxmlName));
+        LOGD("musicXmlString2accSymId: unknown accidental '%s'", muPrintable(mxml_name));
     }
 
     // default
-    return SymId::noSym;
+    return SymId::NO_SYM;
 }
 
 //---------------------------------------------------------
 //   accidentalType2MusicXmlString
 //---------------------------------------------------------
 
-String accidentalType2MusicXmlString(const AccidentalType type) {
+String accidental_type2_music_xml_string(const AccidentalType type) {
     String s;
     switch (type) {
         case AccidentalType::SHARP: s = u"sharp"; break;
@@ -353,7 +353,7 @@ String accidentalType2MusicXmlString(const AccidentalType type) {
     return s;
 }
 
-static const std::map<muse::String, AccidentalType> smuflAccidentalTypes{
+static const std::map<muse::String, AccidentalType> smufl_accidental_types{
     {u"accidentalDoubleFlatOneArrowDown", AccidentalType::DOUBLE_FLAT_ONE_ARROW_DOWN},
     {u"accidentalFlatOneArrowDown", AccidentalType::FLAT_ONE_ARROW_DOWN},
     {u"accidentalNaturalOneArrowDown", AccidentalType::NATURAL_ONE_ARROW_DOWN},
@@ -404,7 +404,9 @@ static const std::map<muse::String, AccidentalType> smuflAccidentalTypes{
 //   accidentalType2SmuflMusicXmlString
 //---------------------------------------------------------
 
-String accidentalType2SmuflMusicXmlString(const AccidentalType type) { return muse::key(smuflAccidentalTypes, type); }
+String accidental_type2_smufl_music_xml_string(const AccidentalType type) {
+    return muse::key(::mu::iex::musicxml::smufl_accidental_types, type);
+}
 
 //---------------------------------------------------------
 //   musicXmlString2accidentalType
@@ -415,7 +417,7 @@ String accidentalType2SmuflMusicXmlString(const AccidentalType type) { return mu
  see https://github.com/w3c/musicxml/blob/6e3a667b85855b04d7e4548ea508b537bc29fc52/schema/musicxml.xsd#L1392-L1439
  */
 
-AccidentalType musicXmlString2accidentalType(const String mxmlName, const String smufl) {
+AccidentalType music_xml_string2accidental_type(const String mxml_name, const String smufl) {
     // map MusicXML accidental name to MuseScore enum AccidentalType
     static const std::map<String, AccidentalType> map{
         {u"sharp", AccidentalType::SHARP},
@@ -468,13 +470,13 @@ AccidentalType musicXmlString2accidentalType(const String mxmlName, const String
         {u"koron", AccidentalType::KORON},
     };
 
-    auto it = map.find(mxmlName);
+    auto it = map.find(mxml_name);
     if (it != map.end()) {
         return it->second;
-    } else if (mxmlName == "other" && muse::contains(smuflAccidentalTypes, smufl)) {
-        return smuflAccidentalTypes.at(smufl);
+    } else if (mxml_name == "other" && muse::contains(::mu::iex::musicxml::smufl_accidental_types, smufl)) {
+        return ::mu::iex::musicxml::smufl_accidental_types.at(smufl);
     } else {
-        LOGD("musicXmlString2accidentalType: unknown accidental '%s'", muPrintable(mxmlName));
+        LOGD("musicXmlString2accidentalType: unknown accidental '%s'", muPrintable(mxml_name));
     }
     return AccidentalType::NONE;
 }
@@ -487,7 +489,7 @@ AccidentalType musicXmlString2accidentalType(const String mxmlName, const String
  Convert a MusicXML accidental text to a accidental character.
  */
 
-String musicXmlAccidentalTextToChar(const String mxmlName) {
+String music_xml_accidental_text_to_char(const String mxml_name) {
     // map MusicXML accidental name to MuseScore enum AccidentalType
     static const std::map<String, String> map{
         {u"sharp", u"♯"},
@@ -495,11 +497,11 @@ String musicXmlAccidentalTextToChar(const String mxmlName) {
         {u"flat", u"♭"},
     };
 
-    auto it = map.find(mxmlName);
+    auto it = map.find(mxml_name);
     if (it != map.end()) {
         return it->second;
     } else {
-        LOGD("musicXmlAccidentalTextToChar: unsupported accidental '%s'", muPrintable(mxmlName));
+        LOGD("musicXmlAccidentalTextToChar: unsupported accidental '%s'", muPrintable(mxml_name));
     }
     return u"";
 }
@@ -512,21 +514,21 @@ String musicXmlAccidentalTextToChar(const String mxmlName) {
  Convert a MusicXML alter tag into a microtonal accidental in MuseScore enum AccidentalType.
  */
 
-AccidentalType microtonalGuess(double val) {
-    if (muse::RealIsEqual(val, -1.5)) {
+AccidentalType microtonal_guess(double val) {
+    if (muse::real_is_equal(val, -1.5)) {
         return AccidentalType::MIRRORED_FLAT2;
-    } else if (muse::RealIsEqual(val, -0.5)) {
+    } else if (muse::real_is_equal(val, -0.5)) {
         return AccidentalType::MIRRORED_FLAT;
-    } else if (muse::RealIsEqual(val, 0.5)) {
+    } else if (muse::real_is_equal(val, 0.5)) {
         return AccidentalType::SHARP_SLASH;
-    } else if (muse::RealIsEqual(val, 1.5)) {
+    } else if (muse::real_is_equal(val, 1.5)) {
         return AccidentalType::SHARP_SLASH4;
     }
 
     for (int i = 1; i < static_cast<int>(AccidentalType::END); ++i) {
         AccidentalType type = static_cast<AccidentalType>(i);
-        double altVal = static_cast<int>(Accidental::subtype2value(type)) + Accidental::subtype2centOffset(type) / 100.0;
-        if (muse::RealIsEqual(val, altVal)) {
+        double alt_val = static_cast<int>(Accidental::subtype2value(type)) + Accidental::subtype2cent_offset(type) / 100.0;
+        if (muse::real_is_equal(val, alt_val)) {
             return type;
         }
     }
@@ -540,82 +542,82 @@ AccidentalType microtonalGuess(double val) {
 //   isLaissezVibrer
 //---------------------------------------------------------
 
-bool isLaissezVibrer(const SymId id) { return id == SymId::articLaissezVibrerAbove || id == SymId::articLaissezVibrerBelow; }
+bool is_laissez_vibrer(const SymId id) { return id == SymId::ARTIC_LAISSEZ_VIBRER_ABOVE || id == SymId::ARTIC_LAISSEZ_VIBRER_BELOW; }
 
-String harmonyXmlKind(const engraving::HarmonyInfo *h) {
+String harmony_xml_kind(const engraving::HarmonyInfo *h) {
     if (!h) {
         return String();
     }
     const ChordDescription *cd = h->descr();
-    return cd ? cd->xmlKind : String();
+    return cd ? cd->xml_kind : String();
 }
 
-String harmonyXmlText(const engraving::HarmonyInfo *h) {
+String harmony_xml_text(const engraving::HarmonyInfo *h) {
     if (!h) {
         return String();
     }
     const ChordDescription *cd = h->descr();
-    return cd ? cd->xmlText : String();
+    return cd ? cd->xml_text : String();
 }
 
-String harmonyXmlSymbols(const engraving::HarmonyInfo *h) {
+String harmony_xml_symbols(const engraving::HarmonyInfo *h) {
     if (!h) {
         return String();
     }
     const ChordDescription *cd = h->descr();
-    return cd ? cd->xmlSymbols : String();
+    return cd ? cd->xml_symbols : String();
 }
 
-String harmonyXmlParens(const engraving::HarmonyInfo *h) {
+String harmony_xml_parens(const engraving::HarmonyInfo *h) {
     if (!h) {
         return String();
     }
     const ChordDescription *cd = h->descr();
-    return cd ? cd->xmlParens : String();
+    return cd ? cd->xml_parens : String();
 }
 
-StringList harmonyXmlDegrees(const engraving::HarmonyInfo *h) {
+StringList harmony_xml_degrees(const engraving::HarmonyInfo *h) {
     if (!h) {
         return StringList();
     }
     const ChordDescription *cd = h->descr();
-    return cd ? cd->xmlDegrees : StringList();
+    return cd ? cd->xml_degrees : StringList();
 }
 
-const ChordDescription *harmonyFromXml(engraving::HarmonyInfo *info, engraving::Score *score, const muse::String &kind,
-                                       const muse::String &kindText, const muse::String &symbols, const muse::String &parens,
-                                       const std::vector<engraving::HDegree> &dl) {
+const ChordDescription *harmony_from_xml(engraving::HarmonyInfo *info, engraving::Score *score, const muse::String &kind,
+                                         const muse::String &kind_text, const muse::String &symbols, const muse::String &parens,
+                                         const std::vector<engraving::HDegree> &dl) {
     if (!info) {
         return nullptr;
     }
     ParsedChord *pc = new ParsedChord;
-    info->setTextName(pc->fromXml(kind, kindText, symbols, parens, dl, score->chordList()));
-    info->setParsedChord(pc);
-    const ChordDescription *cd = info->getDescription(info->textName(), pc);
+    info->set_text_name(pc->from_xml(kind, kind_text, symbols, parens, dl, score->chord_list()));
+    info->set_parsed_chord(pc);
+    const ChordDescription *cd = info->get_description(info->text_name(), pc);
     return cd;
 }
 
-String harmonyXmlFunction(const engraving::HarmonyInfo *info, const engraving::Harmony *h, engraving::Key key) {
-    if (!info || !tpcIsValid(info->rootTpc())) {
+String harmony_xml_function(const engraving::HarmonyInfo *info, const engraving::Harmony *h, engraving::Key key) {
+    if (!info || !tpc_is_valid(info->root_tpc())) {
         return String();
     }
     if (key == Key::INVALID) {
         const Staff *st = h->staff();
         key = st ? st->key(h->tick()) : Key::INVALID;
     }
-    return tpc2Function(info->rootTpc(), key);
+    return tpc2_function(info->root_tpc(), key);
 }
 
-String harmonyXmlFunction(const engraving::HarmonyInfo *info, const engraving::Harmony *h) {
-    if (!info || !tpcIsValid(info->rootTpc())) {
+String harmony_xml_function(const engraving::HarmonyInfo *info, const engraving::Harmony *h) {
+    if (!info || !tpc_is_valid(info->root_tpc())) {
         return String();
     }
     const Staff *st = h->staff();
     Key key = st ? st->key(h->tick()) : Key::INVALID;
-    return tpc2Function(info->rootTpc(), key);
+    return tpc2_function(info->root_tpc(), key);
 }
 
-void setHarmonyRootTpcFromFunction(HarmonyInfo *info, const Harmony *h, const muse::String &s, engraving::Key key) {
+void set_harmony_root_tpc_from_function(HarmonyInfo *info, const Harmony *h, const muse::String &s, engraving::Key key) {
     if (!info) {
         return;
     }
@@ -623,6 +625,6 @@ void setHarmonyRootTpcFromFunction(HarmonyInfo *info, const Harmony *h, const mu
         const Staff *st = h->staff();
         key = st ? st->key(h->tick()) : Key::INVALID;
     }
-    info->setRootTpc(function2Tpc(s, key));
+    info->set_root_tpc(function2_tpc(s, key));
 }
 } // namespace mu::iex::musicxml

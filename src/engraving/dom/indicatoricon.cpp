@@ -34,9 +34,9 @@ IndicatorIcon::IndicatorIcon(const ElementType &type, DummyParentOr<System> pare
     : EngravingItem(type, parent, flags) {}
 
 Font IndicatorIcon::font() const {
-    Font font(configuration()->iconsFontFamily(), Font::Type::Icon);
-    font.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE * magS());
+    Font font(configuration()->icons_font_family(), Font::Type::ICON);
+    font.set_point_size_f(::mu::engraving::ui_icons_default_font_size * mag_s());
     return font;
 }
 
-Fraction IndicatorIcon::tick() const { return system() ? system()->endTick() : Fraction(0, 1); }
+Fraction IndicatorIcon::tick() const { return system() ? system()->end_tick() : Fraction(0, 1); }

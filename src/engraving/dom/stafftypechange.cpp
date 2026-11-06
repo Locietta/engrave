@@ -41,60 +41,60 @@ StaffTypeChange::StaffTypeChange(DummyParentOr<MeasureBase> parent) : EngravingI
 
 StaffTypeChange::StaffTypeChange(const StaffTypeChange &lb) : EngravingItem(lb) {
     lw_ = lb.lw_;
-    ownsStaffType_ = lb.ownsStaffType_;
-    if (lb.ownsStaffType_ && lb.staffType_) {
-        staffType_ = new StaffType(*lb.staffType_);
+    owns_staff_type_ = lb.owns_staff_type_;
+    if (lb.owns_staff_type_ && lb.staff_type_) {
+        staff_type_ = new StaffType(*lb.staff_type_);
     } else {
-        staffType_ = lb.staffType_;
+        staff_type_ = lb.staff_type_;
     }
 }
 
 StaffTypeChange::~StaffTypeChange() {
-    if (staffType_ && ownsStaffType_) {
-        delete staffType_;
+    if (staff_type_ && owns_staff_type_) {
+        delete staff_type_;
     }
 }
 
-void StaffTypeChange::setStaffType(StaffType *st, bool owned) {
-    if (staffType_ && ownsStaffType_) {
-        delete staffType_;
+void StaffTypeChange::set_staff_type(StaffType *st, bool owned) {
+    if (staff_type_ && owns_staff_type_) {
+        delete staff_type_;
     }
 
-    staffType_ = st;
-    ownsStaffType_ = owned && (st != nullptr);
+    staff_type_ = st;
+    owns_staff_type_ = owned && (st != nullptr);
 }
 
 //---------------------------------------------------------
 //   spatiumChanged
 //---------------------------------------------------------
 
-void StaffTypeChange::spatiumChanged(double, double) { lw_ = spatium() * 0.3; }
+void StaffTypeChange::spatium_changed(double, double) { lw_ = spatium() * 0.3; }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue StaffTypeChange::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::STEP_OFFSET: return staffType_->stepOffset();
-        case Pid::STAFF_LINES: return staffType_->lines();
-        case Pid::LINE_DISTANCE: return staffType_->lineDistance();
-        case Pid::STAFF_SHOW_BARLINES: return staffType_->showBarlines();
-        case Pid::STAFF_SHOW_LEDGERLINES: return staffType_->showLedgerLines();
-        case Pid::STAFF_STEMLESS: return staffType_->stemless();
-        case Pid::HEAD_SCHEME: return staffType_->noteHeadScheme();
-        case Pid::STAFF_INSTRUMENT_LABEL_VISIBILITY: return staffType_->instrumentLabelVisibility();
-        case Pid::STAFF_GEN_CLEF: return staffType_->genClef();
-        case Pid::STAFF_GEN_TIMESIG: return staffType_->genTimesig();
-        case Pid::STAFF_GEN_KEYSIG: return staffType_->genKeysig();
-        case Pid::MAG: return staffType_->userMag();
-        case Pid::SMALL: return staffType_->isSmall();
-        case Pid::STAFF_INVISIBLE: return staffType_->invisible();
-        case Pid::STAFF_COLOR: return PropertyValue::fromValue(staffType_->color());
-        case Pid::STAFF_YOFFSET: return staffType_->yoffset();
-        case Pid::STAFF_LONG_NAME: return staffType_->longName();
-        case Pid::STAFF_SHORT_NAME: return staffType_->shortName();
-        default: return EngravingItem::getProperty(propertyId);
+PropertyValue StaffTypeChange::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::STEP_OFFSET: return staff_type_->step_offset();
+        case Pid::STAFF_LINES: return staff_type_->lines();
+        case Pid::LINE_DISTANCE: return staff_type_->line_distance();
+        case Pid::STAFF_SHOW_BARLINES: return staff_type_->show_barlines();
+        case Pid::STAFF_SHOW_LEDGERLINES: return staff_type_->show_ledger_lines();
+        case Pid::STAFF_STEMLESS: return staff_type_->stemless();
+        case Pid::HEAD_SCHEME: return staff_type_->note_head_scheme();
+        case Pid::STAFF_INSTRUMENT_LABEL_VISIBILITY: return staff_type_->instrument_label_visibility();
+        case Pid::STAFF_GEN_CLEF: return staff_type_->gen_clef();
+        case Pid::STAFF_GEN_TIMESIG: return staff_type_->gen_timesig();
+        case Pid::STAFF_GEN_KEYSIG: return staff_type_->gen_keysig();
+        case Pid::MAG: return staff_type_->user_mag();
+        case Pid::SMALL: return staff_type_->is_small();
+        case Pid::STAFF_INVISIBLE: return staff_type_->invisible();
+        case Pid::STAFF_COLOR: return PropertyValue::from_value(staff_type_->color());
+        case Pid::STAFF_YOFFSET: return staff_type_->yoffset();
+        case Pid::STAFF_LONG_NAME: return staff_type_->long_name();
+        case Pid::STAFF_SHORT_NAME: return staff_type_->short_name();
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
@@ -102,49 +102,51 @@ PropertyValue StaffTypeChange::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool StaffTypeChange::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::STEP_OFFSET: staffType_->setStepOffset(v.toInt()); break;
-        case Pid::STAFF_LINES: staffType_->setLines(v.toInt()); break;
-        case Pid::LINE_DISTANCE: staffType_->setLineDistance(v.value<Spatium>()); break;
-        case Pid::STAFF_SHOW_BARLINES: staffType_->setShowBarlines(v.toBool()); break;
-        case Pid::STAFF_SHOW_LEDGERLINES: staffType_->setShowLedgerLines(v.toBool()); break;
-        case Pid::STAFF_STEMLESS: staffType_->setStemless(v.toBool()); break;
-        case Pid::HEAD_SCHEME: staffType_->setNoteHeadScheme(v.value<NoteHeadScheme>()); break;
-        case Pid::STAFF_INSTRUMENT_LABEL_VISIBILITY: staffType_->setInstrumentLabelVisibility(v.value<InstrumentLabelVisibility>()); break;
-        case Pid::STAFF_GEN_CLEF: staffType_->setGenClef(v.toBool()); break;
-        case Pid::STAFF_GEN_TIMESIG: staffType_->setGenTimesig(v.toBool()); break;
-        case Pid::STAFF_GEN_KEYSIG: staffType_->setGenKeysig(v.toBool()); break;
+bool StaffTypeChange::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::STEP_OFFSET: staff_type_->set_step_offset(v.to_int()); break;
+        case Pid::STAFF_LINES: staff_type_->set_lines(v.to_int()); break;
+        case Pid::LINE_DISTANCE: staff_type_->set_line_distance(v.value<Spatium>()); break;
+        case Pid::STAFF_SHOW_BARLINES: staff_type_->set_show_barlines(v.to_bool()); break;
+        case Pid::STAFF_SHOW_LEDGERLINES: staff_type_->set_show_ledger_lines(v.to_bool()); break;
+        case Pid::STAFF_STEMLESS: staff_type_->set_stemless(v.to_bool()); break;
+        case Pid::HEAD_SCHEME: staff_type_->set_note_head_scheme(v.value<NoteHeadScheme>()); break;
+        case Pid::STAFF_INSTRUMENT_LABEL_VISIBILITY:
+            staff_type_->set_instrument_label_visibility(v.value<InstrumentLabelVisibility>());
+            break;
+        case Pid::STAFF_GEN_CLEF: staff_type_->set_gen_clef(v.to_bool()); break;
+        case Pid::STAFF_GEN_TIMESIG: staff_type_->set_gen_timesig(v.to_bool()); break;
+        case Pid::STAFF_GEN_KEYSIG: staff_type_->set_gen_keysig(v.to_bool()); break;
         case Pid::MAG: {
-            double _spatium = spatium();
-            staffType_->setUserMag(v.toDouble());
-            Staff *_staff = staff();
-            if (_staff) {
-                _staff->setLocalSpatium(_spatium, spatium(), tick());
+            double spatium_value = spatium();
+            staff_type_->set_user_mag(v.to_double());
+            Staff *staff_value = staff();
+            if (staff_value) {
+                staff_value->set_local_spatium(spatium_value, spatium(), tick());
             }
         } break;
         case Pid::SMALL: {
-            double _spatium = spatium();
-            staffType_->setSmall(v.toBool());
-            Staff *_staff = staff();
-            if (_staff) {
-                _staff->setLocalSpatium(_spatium, spatium(), tick());
+            double spatium_value = spatium();
+            staff_type_->set_small(v.to_bool());
+            Staff *staff_value = staff();
+            if (staff_value) {
+                staff_value->set_local_spatium(spatium_value, spatium(), tick());
             }
         } break;
-        case Pid::STAFF_INVISIBLE: staffType_->setInvisible(v.toBool()); break;
-        case Pid::STAFF_COLOR: staffType_->setColor(v.value<Color>()); break;
-        case Pid::STAFF_YOFFSET: staffType_->setYoffset(v.value<Spatium>()); break;
-        case Pid::STAFF_LONG_NAME: staffType_->setLongName(v.value<String>()); break;
-        case Pid::STAFF_SHORT_NAME: staffType_->setShortName(v.value<String>()); break;
+        case Pid::STAFF_INVISIBLE: staff_type_->set_invisible(v.to_bool()); break;
+        case Pid::STAFF_COLOR: staff_type_->set_color(v.value<Color>()); break;
+        case Pid::STAFF_YOFFSET: staff_type_->set_yoffset(v.value<Spatium>()); break;
+        case Pid::STAFF_LONG_NAME: staff_type_->set_long_name(v.value<String>()); break;
+        case Pid::STAFF_SHORT_NAME: staff_type_->set_short_name(v.value<String>()); break;
         default:
-            if (!EngravingItem::setProperty(propertyId, v)) {
+            if (!EngravingItem::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
 
-    if (ownershipParent()) {
-        staff()->staffTypeListChanged(measure()->tick());
+    if (ownership_parent()) {
+        staff()->staff_type_list_changed(measure()->tick());
     }
     return true;
 }
@@ -153,7 +155,7 @@ bool StaffTypeChange::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue StaffTypeChange::propertyDefault(Pid id) const {
+PropertyValue StaffTypeChange::property_default(Pid id) const {
     switch (id) {
         case Pid::STEP_OFFSET: return 0;
         case Pid::STAFF_LINES: return 5;
@@ -169,10 +171,10 @@ PropertyValue StaffTypeChange::propertyDefault(Pid id) const {
         case Pid::MAG: return 1.0;
         case Pid::SMALL: return false;
         case Pid::STAFF_INVISIBLE: return false;
-        case Pid::STAFF_COLOR: return PropertyValue::fromValue(configuration()->defaultColor());
+        case Pid::STAFF_COLOR: return PropertyValue::from_value(configuration()->default_color());
         case Pid::STAFF_YOFFSET: return 0.0_sp;
         case Pid::STAFF_LONG_NAME: return String();
         case Pid::STAFF_SHORT_NAME: return String();
-        default: return EngravingItem::propertyDefault(id);
+        default: return EngravingItem::property_default(id);
     }
 }

@@ -9,14 +9,14 @@
 
 namespace music {
 namespace {
-constexpr std::size_t MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+constexpr std::size_t max_import_bytes = 8 * 1024 * 1024;
 
 // Meta events whose payload length is read without a bounds/format check by the
 // importer.  Keep these in sync with MidiFile::readTrack/readEvent users.
-constexpr std::uint8_t SMF_META_END_OF_TRACK = 0x2f;
-constexpr std::uint8_t SMF_META_TEMPO = 0x51;
-constexpr std::uint8_t SMF_META_TIME_SIGNATURE = 0x58;
-constexpr std::uint8_t SMF_META_KEY_SIGNATURE = 0x59;
+constexpr std::uint8_t smf_meta_end_of_track = 0x2f;
+constexpr std::uint8_t smf_meta_tempo = 0x51;
+constexpr std::uint8_t smf_meta_time_signature = 0x58;
+constexpr std::uint8_t smf_meta_key_signature = 0x59;
 
 std::uint8_t to_byte(char c) { return static_cast<std::uint8_t>(static_cast<unsigned char>(c)); }
 
@@ -75,10 +75,10 @@ bool read_channel_data(std::string_view data, std::size_t end, std::size_t &pos,
 
 bool valid_meta_length(std::uint8_t meta_type, std::uint32_t length) {
     switch (meta_type) {
-        case SMF_META_END_OF_TRACK: return length == 0;
-        case SMF_META_TEMPO: return length == 3;
-        case SMF_META_TIME_SIGNATURE: return length == 4;
-        case SMF_META_KEY_SIGNATURE: return length == 2;
+        case ::music::smf_meta_end_of_track: return length == 0;
+        case ::music::smf_meta_tempo: return length == 3;
+        case ::music::smf_meta_time_signature: return length == 4;
+        case ::music::smf_meta_key_signature: return length == 2;
         case 0x20: // MIDI channel prefix
         case 0x21: // MIDI port
             return length == 1;
@@ -153,14 +153,14 @@ bool validate_track(std::string_view data, std::size_t begin, std::size_t end) {
             }
             // The importer divides by tempo and computes 2^denominator using
             // a signed int. Reject values that would make those operations invalid.
-            if (meta_type == SMF_META_TEMPO && (to_byte(data[pos]) | to_byte(data[pos + 1]) | to_byte(data[pos + 2])) == 0) {
+            if (meta_type == ::music::smf_meta_tempo && (to_byte(data[pos]) | to_byte(data[pos + 1]) | to_byte(data[pos + 2])) == 0) {
                 return false;
             }
-            if (meta_type == SMF_META_TIME_SIGNATURE && (to_byte(data[pos]) == 0 || to_byte(data[pos + 1]) > 30)) {
+            if (meta_type == ::music::smf_meta_time_signature && (to_byte(data[pos]) == 0 || to_byte(data[pos + 1]) > 30)) {
                 return false;
             }
             pos += length;
-            if (meta_type == SMF_META_END_OF_TRACK) {
+            if (meta_type == ::music::smf_meta_end_of_track) {
                 saw_end_of_track = true;
                 break;
             }
@@ -235,13 +235,13 @@ bool valid_smf(std::string_view data) {
 } // namespace
 
 mu::engraving::Err import_midi_score(mu::engraving::MasterScore *score, const std::string &bytes) {
-    if (!score || bytes.empty() || bytes.size() > MAX_IMPORT_BYTES) {
-        return mu::engraving::Err::FileBadFormat;
+    if (!score || bytes.empty() || bytes.size() > ::music::max_import_bytes) {
+        return mu::engraving::Err::FILE_BAD_FORMAT;
     }
     if (!valid_smf(std::string_view(bytes.data(), bytes.size()))) {
-        return mu::engraving::Err::FileBadFormat;
+        return mu::engraving::Err::FILE_BAD_FORMAT;
     }
 
-    return mu::iex::midi::importMidiFromBuffer(score, bytes);
+    return mu::iex::midi::import_midi_from_buffer(score, bytes);
 }
 } // namespace music

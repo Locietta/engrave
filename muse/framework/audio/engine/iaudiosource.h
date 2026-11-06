@@ -31,17 +31,17 @@ class IAudioSource {
 public:
     virtual ~IAudioSource() = default;
 
-    virtual void setMode(const ProcessMode mode) = 0;
+    virtual void set_mode(const ProcessMode mode) = 0;
     virtual ProcessMode mode() const = 0;
 
     //! set current output spec. Called by destination.
-    virtual void setOutputSpec(const OutputSpec &spec) = 0;
+    virtual void set_output_spec(const OutputSpec &spec) = 0;
 
     //! return substream count for this source: 1 for mono, 2 for stereo, 6 for surround
-    virtual unsigned int audioChannelsCount() const = 0;
+    virtual unsigned int audio_channels_count() const = 0;
 
     //! move buffer forward for sampleCount samples
-    virtual samples_t process(float *buffer, samples_t samplesPerChannel) = 0;
+    virtual samples_t process(float *buffer, samples_t samples_per_channel) = 0;
 };
 
 using IAudioSourcePtr = std::shared_ptr<IAudioSource>;

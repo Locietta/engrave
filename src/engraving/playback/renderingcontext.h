@@ -33,83 +33,84 @@
 
 namespace mu::engraving {
 struct RenderingContext {
-    muse::mpe::timestamp_t nominalTimestamp = 0;
-    muse::mpe::duration_t nominalDuration = 0;
-    muse::mpe::dynamic_level_t nominalDynamicLevel = 0;
-    int nominalPositionStartTick = 0;
-    int nominalPositionEndTick = 0;
-    int nominalDurationTicks = 0;
-    int positionTickOffset = 0;
+    muse::mpe::timestamp_t nominal_timestamp = 0;
+    muse::mpe::duration_t nominal_duration = 0;
+    muse::mpe::dynamic_level_t nominal_dynamic_level = 0;
+    int nominal_position_start_tick = 0;
+    int nominal_position_end_tick = 0;
+    int nominal_duration_ticks = 0;
+    int position_tick_offset = 0;
 
-    BeatsPerSecond beatsPerSecond = 0;
-    TimeSigFrac timeSignatureFraction;
+    BeatsPerSecond beats_per_second = 0;
+    TimeSigFrac time_signature_fraction;
 
-    muse::mpe::ArticulationMap commonArticulations;
+    muse::mpe::ArticulationMap common_articulations;
 
     const Score *score = nullptr;
     const muse::mpe::ArticulationsProfilePtr profile;
-    const PlaybackContextPtr playbackCtx;
+    const PlaybackContextPtr playback_ctx;
 
-    bool isValid() const {
-        return score && profile && playbackCtx && beatsPerSecond > 0 && nominalDuration > 0 && nominalDurationTicks > 0;
+    bool is_valid() const {
+        return score && profile && playback_ctx && beats_per_second > 0 && nominal_duration > 0 && nominal_duration_ticks > 0;
     }
 };
 
-inline RenderingContext buildRenderingCtx(const Chord *chord, const int tickPositionOffset,
-                                          const muse::mpe::ArticulationsProfilePtr profile, const PlaybackContextPtr playbackCtx,
-                                          const muse::mpe::ArticulationMap &articulations = {}) {
-    int chordPosTick = chord->tick().ticks();
-    int chordDurationTicks = chord->actualTicks().ticks();
-    int chordPosTickWithOffset = chordPosTick + tickPositionOffset;
+inline RenderingContext build_rendering_ctx(const Chord *chord, const int tick_position_offset,
+                                            const muse::mpe::ArticulationsProfilePtr profile, const PlaybackContextPtr playback_ctx,
+                                            const muse::mpe::ArticulationMap &articulations = {}) {
+    int chord_pos_tick = chord->tick().ticks();
+    int chord_duration_ticks = chord->actual_ticks().ticks();
+    int chord_pos_tick_with_offset = chord_pos_tick + tick_position_offset;
 
     const Score *score = chord->score();
 
-    auto chordTnD = timestampAndDurationFromStartAndDurationTicks(score, chordPosTick, chordDurationTicks, tickPositionOffset);
+    auto chord_tn_d =
+        timestamp_and_duration_from_start_and_duration_ticks(score, chord_pos_tick, chord_duration_ticks, tick_position_offset);
 
-    BeatsPerSecond bps = score->multipliedTempoAtUtick(chordPosTickWithOffset);
-    TimeSigFrac timeSignatureFraction = score->sigmap()->timesig(chordPosTick).timesig();
+    BeatsPerSecond bps = score->multiplied_tempo_at_utick(chord_pos_tick_with_offset);
+    TimeSigFrac time_signature_fraction = score->sigmap()->timesig(chord_pos_tick).timesig();
 
-    RenderingContext ctx{chordTnD.timestamp,
-                         chordTnD.duration,
-                         playbackCtx->appliableDynamicLevel(chord->track(), chordPosTickWithOffset),
-                         chordPosTick,
-                         chordPosTick + chordDurationTicks,
-                         chordDurationTicks,
-                         tickPositionOffset,
+    RenderingContext ctx{chord_tn_d.timestamp,
+                         chord_tn_d.duration,
+                         playback_ctx->appliable_dynamic_level(chord->track(), chord_pos_tick_with_offset),
+                         chord_pos_tick,
+                         chord_pos_tick + chord_duration_ticks,
+                         chord_duration_ticks,
+                         tick_position_offset,
                          bps,
-                         timeSignatureFraction,
+                         time_signature_fraction,
                          articulations,
                          score,
                          profile,
-                         playbackCtx};
+                         playback_ctx};
 
     return ctx;
 }
 
 struct NominalNoteCtx {
-    voice_idx_t voiceIdx = 0;
-    staff_idx_t staffIdx = 0;
+    voice_idx_t voice_idx = 0;
+    staff_idx_t staff_idx = 0;
     muse::mpe::timestamp_t timestamp = 0;
     muse::mpe::duration_t duration = 0;
     BeatsPerSecond tempo = 0;
-    muse::mpe::dynamic_level_t dynamicLevel = 0;
-    float userVelocityFraction = 0.f;
+    muse::mpe::dynamic_level_t dynamic_level = 0;
+    float user_velocity_fraction = 0.f;
 
-    muse::mpe::pitch_level_t pitchLevel = 0;
+    muse::mpe::pitch_level_t pitch_level = 0;
 
-    RenderingContext chordCtx;
+    RenderingContext chord_ctx;
     muse::mpe::ArticulationMap articulations;
 
     explicit NominalNoteCtx(const Note *note, const RenderingContext &ctx)
-        : voiceIdx(note->voice()), staffIdx(note->staffIdx()), timestamp(ctx.nominalTimestamp), duration(ctx.nominalDuration),
-          tempo(ctx.beatsPerSecond), dynamicLevel(ctx.nominalDynamicLevel), userVelocityFraction(note->userVelocityFraction()),
-          pitchLevel(notePitchLevel(note->playingTpc(), note->playingOctave(), note->playingTuning())), chordCtx(ctx),
-          articulations(ctx.commonArticulations) {}
+        : voice_idx(note->voice()), staff_idx(note->staff_idx()), timestamp(ctx.nominal_timestamp), duration(ctx.nominal_duration),
+          tempo(ctx.beats_per_second), dynamic_level(ctx.nominal_dynamic_level), user_velocity_fraction(note->user_velocity_fraction()),
+          pitch_level(note_pitch_level(note->playing_tpc(), note->playing_octave(), note->playing_tuning())), chord_ctx(ctx),
+          articulations(ctx.common_articulations) {}
 };
 
-inline muse::mpe::NoteEvent buildNoteEvent(const NominalNoteCtx &ctx, const muse::mpe::PitchCurve &pitchCurve = {}) {
-    return muse::mpe::NoteEvent(ctx.timestamp, ctx.duration, static_cast<muse::mpe::voice_layer_idx_t>(ctx.voiceIdx),
-                                static_cast<muse::mpe::staff_layer_idx_t>(ctx.staffIdx), ctx.pitchLevel, ctx.dynamicLevel,
-                                ctx.articulations, ctx.tempo.val, ctx.userVelocityFraction, pitchCurve);
+inline muse::mpe::NoteEvent build_note_event(const NominalNoteCtx &ctx, const muse::mpe::PitchCurve &pitch_curve = {}) {
+    return muse::mpe::NoteEvent(ctx.timestamp, ctx.duration, static_cast<muse::mpe::voice_layer_idx_t>(ctx.voice_idx),
+                                static_cast<muse::mpe::staff_layer_idx_t>(ctx.staff_idx), ctx.pitch_level, ctx.dynamic_level,
+                                ctx.articulations, ctx.tempo.val, ctx.user_velocity_fraction, pitch_curve);
 }
 } // namespace mu::engraving

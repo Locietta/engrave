@@ -40,43 +40,43 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void ChangeProperty::flip() {
-    LOG_UNDO() << element->typeName() << int(id) << "(" << propertyName(id) << ")" << element->getProperty(id) << "->" << property;
+    LOG_UNDO() << element->type_name() << int(id) << "(" << property_name(id) << ")" << element->get_property(id) << "->" << property;
 
-    PropertyValue v = element->getProperty(id);
-    PropertyFlags ps = element->propertyFlags(id);
+    PropertyValue v = element->get_property(id);
+    PropertyFlags ps = element->property_flags(id);
 
-    if (element->isChordLine() && (std::find(ChordLine::appearanceProperties.begin(), ChordLine::appearanceProperties.end(), id) !=
-                                       ChordLine::appearanceProperties.end() ||
-                                   id == Pid::APPEARANCE_LINKED_TO_MASTER)) {
-        auto *line = toChordLine(element);
-        auto restore = chordLineAppearance;
-        chordLineAppearance = line->appearanceState();
+    if (element->is_chord_line() && (std::find(ChordLine::appearance_properties.begin(), ChordLine::appearance_properties.end(), id) !=
+                                         ChordLine::appearance_properties.end() ||
+                                     id == Pid::APPEARANCE_LINKED_TO_MASTER)) {
+        auto *line = to_chord_line(element);
+        auto restore = chord_line_appearance;
+        chord_line_appearance = line->appearance_state();
         const auto next = property;
-        const auto nextFlags = flags;
+        const auto next_flags = flags;
         property = v;
         flags = ps;
         if (restore) {
-            line->restoreAppearance(*restore);
-            line->setPropertyFlags(id, nextFlags);
+            line->restore_appearance(*restore);
+            line->set_property_flags(id, next_flags);
         } else {
-            if (resetChordLinePath && id == Pid::PATH) {
-                line->resetProperty(id);
+            if (reset_chord_line_path && id == Pid::PATH) {
+                line->reset_property(id);
             } else {
-                line->setProperty(id, next);
+                line->set_property(id, next);
             }
-            line->setPropertyFlags(id, nextFlags);
+            line->set_property_flags(id, next_flags);
         }
         return;
     }
 
-    element->setProperty(id, property);
-    element->setPropertyFlags(id, flags);
+    element->set_property(id, property);
+    element->set_property_flags(id, flags);
 
     property = v;
     flags = ps;
 }
 
-std::vector<EngravingObject *> ChangeProperty::objectItems() const { return compoundObjects(element); }
+std::vector<EngravingObject *> ChangeProperty::object_items() const { return compound_objects(element); }
 
 //---------------------------------------------------------
 //   ChangeBracketProperty::flip
@@ -89,7 +89,7 @@ void ChangeBracketProperty::flip() {
 
     element = staff->score()->brackets(staff->idx())[level];
     ChangeProperty::flip();
-    level = toBracketItem(element)->column();
+    level = to_bracket_item(element)->column();
 }
 
 //---------------------------------------------------------
@@ -98,7 +98,7 @@ void ChangeBracketProperty::flip() {
 
 void ChangeTextLineProperty::flip() {
     ChangeProperty::flip();
-    if (element->isTextLine()) {
-        toTextLine(element)->initStyle();
+    if (element->is_text_line()) {
+        to_text_line(element)->init_style();
     }
 }

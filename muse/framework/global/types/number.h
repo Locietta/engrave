@@ -9,9 +9,9 @@
 
 namespace muse {
 // default
-inline constexpr int COMPARE_REAL_PREC(7);
+inline constexpr int compare_real_prec(7);
 
-inline constexpr double _pow_minus10(int prec) {
+inline constexpr double pow_minus10(int prec) {
     double result = 1.0;
     for (int i = 0; i < prec; ++i) {
         result /= 10;
@@ -20,14 +20,14 @@ inline constexpr double _pow_minus10(int prec) {
 }
 
 // use
-inline constexpr double _compare_real_epsilon = _pow_minus10(COMPARE_REAL_PREC);
+inline constexpr double compare_real_epsilon = pow_minus10(::muse::compare_real_prec);
 
 template <typename T>
 inline constexpr bool is_zero(T v) {
     if constexpr (std::numeric_limits<T>::is_integer) {
         return v == 0;
     } else {
-        return std::abs(v) <= _compare_real_epsilon;
+        return std::abs(v) <= ::muse::compare_real_epsilon;
     }
 }
 
@@ -36,7 +36,7 @@ inline constexpr bool is_equal(T v1, T v2) {
     if constexpr (std::numeric_limits<T>::is_integer) {
         return v1 == v2;
     } else {
-        return std::abs(v1 - v2) <= std::max(std::abs(v1), std::abs(v2)) * _compare_real_epsilon;
+        return std::abs(v1 - v2) <= std::max(std::abs(v1), std::abs(v2)) * ::muse::compare_real_epsilon;
     }
 }
 
@@ -55,26 +55,26 @@ inline T check_valid(T v, T def = T()) {
 }
 
 template <typename T>
-class number_t {
+class NumberT {
 public:
 
     using value_type = T;
 
-    constexpr number_t() = default;
+    constexpr NumberT() = default;
 
-    number_t(T v) : val_(muse::check_valid(v)) {}
+    NumberT(T v) : val_(muse::check_valid(v)) {}
 
     //! NOTE At the moment, not all compilers have std::is_nan is constexpr,
     //! so we can't make check_valid is constexpr,
     //! so we can't make a copy constructor is constexpr.
     //! This function is a helper for creating constexpr variables.
-    static constexpr number_t<T> make(T v) {
-        number_t<T> n;
+    static constexpr NumberT<T> make(T v) {
+        NumberT<T> n;
         n.val_ = v;
         return n;
     }
 
-    number_t<T> &operator=(T v) {
+    NumberT<T> &operator=(T v) {
         val_ = muse::check_valid(v);
         return *this;
     }
@@ -92,7 +92,7 @@ public:
 
     inline double to_double() const { return static_cast<double>(val_); }
 
-    inline number_t<T> operator-() const { return number_t<T>(-val_); }
+    inline NumberT<T> operator-() const { return NumberT<T>(-val_); }
 
     inline bool is_zero() const { return muse::is_zero(val_); }
 
@@ -100,82 +100,82 @@ public:
 
     inline bool is_positive() const { return val_ > static_cast<T>(0); }
 
-    inline bool operator==(const number_t<T> &n) const { return muse::is_equal(val_, n.val_); }
+    inline bool operator==(const NumberT<T> &n) const { return muse::is_equal(val_, n.val_); }
 
-    inline bool operator!=(const number_t<T> &n) const { return !muse::is_equal(val_, n.val_); }
+    inline bool operator!=(const NumberT<T> &n) const { return !muse::is_equal(val_, n.val_); }
 
     inline bool operator==(T n) const { return muse::is_equal(val_, n); }
 
     inline bool operator!=(T n) const { return !muse::is_equal(val_, n); }
 
-    inline bool operator>(const number_t<T> &n) const { return val_ > n.val_; }
+    inline bool operator>(const NumberT<T> &n) const { return val_ > n.val_; }
 
-    inline bool operator<(const number_t<T> &n) const { return val_ < n.val_; }
+    inline bool operator<(const NumberT<T> &n) const { return val_ < n.val_; }
 
     inline bool operator>(T n) const { return val_ > n; }
 
     inline bool operator<(T n) const { return val_ < n; }
 
-    inline bool operator>=(const number_t<T> &n) const { return val_ > n.val_ || muse::is_equal(val_, n.val_); }
+    inline bool operator>=(const NumberT<T> &n) const { return val_ > n.val_ || muse::is_equal(val_, n.val_); }
 
-    inline bool operator<=(const number_t<T> &n) const { return val_ < n.val_ || muse::is_equal(val_, n.val_); }
+    inline bool operator<=(const NumberT<T> &n) const { return val_ < n.val_ || muse::is_equal(val_, n.val_); }
 
     inline bool operator>=(T n) const { return val_ > n || muse::is_equal(val_, n); }
 
     inline bool operator<=(T n) const { return val_ < n || muse::is_equal(val_, n); }
 
-    inline number_t<T> operator+(const number_t<T> &n) const { return number_t<T>(val_ + n.val_); }
+    inline NumberT<T> operator+(const NumberT<T> &n) const { return NumberT<T>(val_ + n.val_); }
 
-    inline number_t<T> operator-(const number_t<T> &n) const { return number_t<T>(val_ - n.val_); }
+    inline NumberT<T> operator-(const NumberT<T> &n) const { return NumberT<T>(val_ - n.val_); }
 
-    inline number_t<T> operator+(T n) const { return number_t<T>(val_ + n); }
+    inline NumberT<T> operator+(T n) const { return NumberT<T>(val_ + n); }
 
-    inline number_t<T> operator-(T n) const { return number_t<T>(val_ - n); }
+    inline NumberT<T> operator-(T n) const { return NumberT<T>(val_ - n); }
 
-    inline number_t<T> &operator+=(const number_t<T> &n) {
+    inline NumberT<T> &operator+=(const NumberT<T> &n) {
         val_ += muse::check_valid(n.val_);
         return *this;
     }
 
-    inline number_t<T> &operator-=(const number_t<T> &n) {
+    inline NumberT<T> &operator-=(const NumberT<T> &n) {
         val_ -= muse::check_valid(n.val_);
         return *this;
     }
 
-    inline number_t<T> &operator+=(T n) {
+    inline NumberT<T> &operator+=(T n) {
         val_ += muse::check_valid(n);
         return *this;
     }
 
-    inline number_t<T> &operator-=(T n) {
+    inline NumberT<T> &operator-=(T n) {
         val_ -= muse::check_valid(n);
         return *this;
     }
 
-    inline number_t<T> operator/(const number_t<T> &n) const { return number_t<T>(val_ / n.val_); }
+    inline NumberT<T> operator/(const NumberT<T> &n) const { return NumberT<T>(val_ / n.val_); }
 
-    inline number_t<T> operator*(const number_t<T> &n) const { return number_t<T>(val_ * n.val_); }
+    inline NumberT<T> operator*(const NumberT<T> &n) const { return NumberT<T>(val_ * n.val_); }
 
-    inline number_t<T> operator/(T n) const { return number_t<T>(val_ / n); }
+    inline NumberT<T> operator/(T n) const { return NumberT<T>(val_ / n); }
 
-    inline number_t<T> operator*(T n) const { return number_t<T>(val_ * n); }
+    inline NumberT<T> operator*(T n) const { return NumberT<T>(val_ * n); }
 
-    inline number_t<T> &operator/=(const number_t<T> &n) {
+    inline NumberT<T> &operator/=(const NumberT<T> &n) {
         val_ /= muse::check_valid(n.val_, T(1));
         return *this;
     }
 
-    inline number_t<T> &operator*=(const number_t<T> &n) {
+    inline NumberT<T> &operator*=(const NumberT<T> &n) {
         val_ *= muse::check_valid(n.val_);
         return *this;
     }
 
-    inline number_t<T> &operator/=(T n) {
+    inline NumberT<T> &operator/=(T n) {
         val_ /= muse::check_valid(n, T(1));
         return *this;
     }
 
-    inline number_t<T> &operator*=(T n) {
+    inline NumberT<T> &operator*=(T n) {
         val_ *= muse::check_valid(n);
         return *this;
     }
@@ -186,12 +186,12 @@ protected:
 };
 
 template <typename T>
-inline number_t<T> operator*(T a, const number_t<T> &b) {
-    return number_t<T>(a * b.raw());
+inline NumberT<T> operator*(T a, const NumberT<T> &b) {
+    return NumberT<T>(a * b.raw());
 }
 
-using integer_t = number_t<int>;
-using real_t = number_t<double>;
+using integer_t = NumberT<int>;
+using real_t = NumberT<double>;
 
 template <typename T>
 const T &min(const T &a, const T &b) {
@@ -199,12 +199,12 @@ const T &min(const T &a, const T &b) {
 }
 
 template <typename T>
-const T &min(const number_t<T> &a, const T &b) {
+const T &min(const NumberT<T> &a, const T &b) {
     return std::min(a.raw(), b);
 }
 
 template <typename T>
-const T &min(const T &a, const number_t<T> &b) {
+const T &min(const T &a, const NumberT<T> &b) {
     return std::min(a, b.raw());
 }
 
@@ -214,12 +214,12 @@ const T &max(const T &a, const T &b) {
 }
 
 template <typename T>
-const T &max(const number_t<T> &a, const T &b) {
+const T &max(const NumberT<T> &a, const T &b) {
     return std::max(a.raw(), b);
 }
 
 template <typename T>
-const T &max(const T &a, const number_t<T> &b) {
+const T &max(const T &a, const NumberT<T> &b) {
     return std::max(a, b.raw());
 }
 
@@ -249,7 +249,7 @@ inline T divide(const T &dividend, const T &divisor, const T &def) {
 #endif
 
 template <typename T>
-inline number_t<T> divide(const number_t<T> &dividend, const number_t<T> &divisor, const number_t<T> &def) {
+inline NumberT<T> divide(const NumberT<T> &dividend, const NumberT<T> &divisor, const NumberT<T> &def) {
     if (divisor.is_zero()) {
         return def;
     }
@@ -258,7 +258,7 @@ inline number_t<T> divide(const number_t<T> &dividend, const number_t<T> &diviso
 } // namespace muse
 
 template <typename T>
-inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::number_t<T> &n) {
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::NumberT<T> &n) {
     s << n.raw();
     return s;
 }

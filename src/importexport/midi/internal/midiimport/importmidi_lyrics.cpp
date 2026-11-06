@@ -45,26 +45,31 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiLyrics {
-const std::string META_PREFIX = "@";
-const std::string TEXT_PREFIX = "@T";
+const std::string meta_prefix = "@";
+const std::string text_prefix = "@T";
 
-bool isMetaText(const std::string &text) { return text.substr(0, META_PREFIX.size()) == META_PREFIX; }
+bool is_meta_text(const std::string &text) {
+    return text.substr(0, ::mu::iex::midi::MidiLyrics::meta_prefix.size()) == ::mu::iex::midi::MidiLyrics::meta_prefix;
+}
 
-bool isLyricText(const std::string &text) { return !isMetaText(text) || text.substr(0, TEXT_PREFIX.size()) == TEXT_PREFIX; }
+bool is_lyric_text(const std::string &text) {
+    return !is_meta_text(text) ||
+           text.substr(0, ::mu::iex::midi::MidiLyrics::text_prefix.size()) == ::mu::iex::midi::MidiLyrics::text_prefix;
+}
 
-bool isLyricEvent(const MidiEvent &e) { return e.type() == ME_META && (e.metaType() == META_TEXT || e.metaType() == META_LYRIC); }
+bool is_lyric_event(const MidiEvent &e) { return e.type() == ME_META && (e.meta_type() == META_TEXT || e.meta_type() == META_LYRIC); }
 
-std::multimap<ReducedFraction, std::string> extractLyricsFromTrack(const MidiTrack &track, int division, bool isDivisionInTps) {
+std::multimap<ReducedFraction, std::string> extract_lyrics_from_track(const MidiTrack &track, int division, bool is_division_in_tps) {
     std::multimap<ReducedFraction, std::string> lyrics;
 
     for (const auto &i : track.events()) {
         const auto &e = i.second;
-        if (isLyricEvent(e)) {
+        if (is_lyric_event(e)) {
             const uchar *data = (uchar *) e.edata();
-            std::string text = MidiCharset::fromUchar(data);
+            std::string text = MidiCharset::from_uchar(data);
             text.erase(text.find_last_not_of(' ') + 1);
-            if (isLyricText(text)) {
-                const auto tick = toMuseScoreTicks(i.first, division, isDivisionInTps);
+            if (is_lyric_text(text)) {
+                const auto tick = to_muse_score_ticks(i.first, division, is_division_in_tps);
                 // no charset handling here
                 lyrics.insert({tick, text});
             }
@@ -75,22 +80,22 @@ std::multimap<ReducedFraction, std::string> extractLyricsFromTrack(const MidiTra
 
 #ifndef NDEBUG
 
-bool areEqualIndexesSuccessive(const std::vector<MTrack> &tracks) {
-    std::set<int> usedIndexes;
+bool are_equal_indexes_successive(const std::vector<MTrack> &tracks) {
+    std::set<int> used_indexes;
 
-    int prevIndex = -1;
+    int prev_index = -1;
     for (const MTrack &track : tracks) {
-        if (track.indexOfOperation < 0) {
+        if (track.index_of_operation < 0) {
             return false;
         }
-        if (track.indexOfOperation != prevIndex) {
-            const auto it = usedIndexes.find(track.indexOfOperation);
-            if (it == usedIndexes.end()) {
-                usedIndexes.insert(track.indexOfOperation);
+        if (track.index_of_operation != prev_index) {
+            const auto it = used_indexes.find(track.index_of_operation);
+            if (it == used_indexes.end()) {
+                used_indexes.insert(track.index_of_operation);
             } else {
                 return false;
             }
-            prevIndex = track.indexOfOperation;
+            prev_index = track.index_of_operation;
         }
     }
     return true;
@@ -101,65 +106,67 @@ bool areEqualIndexesSuccessive(const std::vector<MTrack> &tracks) {
 struct BestTrack {
     int index = -1;
     // <orig time, current time - after quantization>
-    std::vector<std::pair<ReducedFraction, ReducedFraction>> matchedLyricTimes;
+    std::vector<std::pair<ReducedFraction, ReducedFraction>> matched_lyric_times;
 };
 
 // find track to insert lyrics
 // it will be the track with max onTime match cases, except drum tracks
 
-BestTrack findBestTrack(const std::vector<MTrack> &tracks, const std::multimap<ReducedFraction, std::string> &lyricTrack,
-                        const std::set<int> &usedTracks) {
-    BestTrack bestTrack;
-    int maxMatches = 0;
+BestTrack find_best_track(const std::vector<MTrack> &tracks, const std::multimap<ReducedFraction, std::string> &lyric_track,
+                          const std::set<int> &used_tracks) {
+    BestTrack best_track;
+    int max_matches = 0;
 #ifndef NDEBUG
-    Q_ASSERT_X(areEqualIndexesSuccessive(tracks), "MidiLyrics::findBestTrack", "Equal indexes of operations are not successive");
+    Q_ASSERT_X(are_equal_indexes_successive(tracks), "MidiLyrics::findBestTrack", "Equal indexes of operations are not successive");
 #endif
     for (size_t i = 0; i != tracks.size(); ++i) {
-        if (tracks[i].mtrack->drumTrack() || usedTracks.find(static_cast<int>(i)) != usedTracks.end()) {
+        if (tracks[i].mtrack->drum_track() || used_tracks.find(static_cast<int>(i)) != used_tracks.end()) {
             continue;
         }
         // due to staff split there can be equal indexes of operation
-        if (i > 0 && tracks[i].indexOfOperation == tracks[i - 1].indexOfOperation) {
+        if (i > 0 && tracks[i].index_of_operation == tracks[i - 1].index_of_operation) {
             continue;
         }
 
         int matches = 0;
         for (const auto &chord : tracks[i].chords) {
             for (const auto &note : chord.second.notes) {
-                if (lyricTrack.find(note.origOnTime) != lyricTrack.end()) {
+                if (lyric_track.find(note.orig_on_time) != lyric_track.end()) {
                     ++matches;
-                    bestTrack.matchedLyricTimes.push_back({chord.first, note.origOnTime});
+                    best_track.matched_lyric_times.push_back({chord.first, note.orig_on_time});
                     break;
                 }
             }
         }
-        if (matches > maxMatches) {
-            maxMatches = matches;
-            bestTrack.index = tracks[i].indexOfOperation;
+        if (matches > max_matches) {
+            max_matches = matches;
+            best_track.index = tracks[i].index_of_operation;
         }
     }
 
-    return bestTrack;
+    return best_track;
 }
 
-bool isTitlePrefix(const muse::String &text) { return text.left(TEXT_PREFIX.size()) == muse::String::fromUtf8(TEXT_PREFIX); }
+bool is_title_prefix(const muse::String &text) {
+    return text.left(::mu::iex::midi::MidiLyrics::text_prefix.size()) == muse::String::from_utf8(::mu::iex::midi::MidiLyrics::text_prefix);
+}
 
-void addTitleToScore(Score *score, const muse::String &string, int textCounter) {
+void add_title_to_score(Score *score, const muse::String &string, int text_counter) {
     TextStyleType ssid = TextStyleType::DEFAULT;
-    if (textCounter == 1) {
+    if (text_counter == 1) {
         ssid = TextStyleType::TITLE;
-    } else if (textCounter == 2) {
+    } else if (text_counter == 2) {
         ssid = TextStyleType::COMPOSER;
     }
 
     MeasureBase *measure = score->first();
-    Text *text = mu::engraving::Factory::createText(measure, ssid);
-    text->setPlainText(string.right(string.size() - TEXT_PREFIX.size()));
+    Text *text = mu::engraving::Factory::create_text(measure, ssid);
+    text->set_plain_text(string.right(string.size() - ::mu::iex::midi::MidiLyrics::text_prefix.size()));
 
-    if (!measure->isVBox()) {
-        measure = mu::engraving::Factory::createVBox(score);
-        measure->setTick(Fraction(0, 1));
-        measure->setNext(score->first());
+    if (!measure->is_v_box()) {
+        measure = mu::engraving::Factory::create_v_box(score);
+        measure->set_tick(Fraction(0, 1));
+        measure->set_next(score->first());
         score->measures()->add(measure);
     }
     measure->add(text);
@@ -167,14 +174,14 @@ void addTitleToScore(Score *score, const muse::String &string, int textCounter) 
 
 // remove slashes in kar format
 
-muse::String removeSlashes(const muse::String &text) {
-    muse::String newText = text;
-    newText = newText.replace(u"/", u"");
-    newText = newText.replace(u"\\", u"");
-    return newText;
+muse::String remove_slashes(const muse::String &text) {
+    muse::String new_text = text;
+    new_text = new_text.replace(u"/", u"");
+    new_text = new_text.replace(u"\\", u"");
+    return new_text;
 }
 
-std::string removeSlashes(const std::string &text) {
+std::string remove_slashes(const std::string &text) {
     std::string str = text;
     char chars[] = "/\\";
     for (unsigned int i = 0; i != strlen(chars); ++i) {
@@ -183,14 +190,14 @@ std::string removeSlashes(const std::string &text) {
     return str;
 }
 
-void addTitleIfAny(const std::multimap<ReducedFraction, std::string> &lyricTrack, Score *score) {
-    int textCounter = 0;
-    for (const auto &lyric : lyricTrack) {
+void add_title_if_any(const std::multimap<ReducedFraction, std::string> &lyric_track, Score *score) {
+    int text_counter = 0;
+    for (const auto &lyric : lyric_track) {
         if (lyric.first == ReducedFraction(0, 1)) {
-            muse::String text = MidiCharset::convertToCharset(lyric.second);
-            if (isTitlePrefix(text)) {
-                ++textCounter;
-                addTitleToScore(score, text, textCounter);
+            muse::String text = MidiCharset::convert_to_charset(lyric.second);
+            if (is_title_prefix(text)) {
+                ++text_counter;
+                add_title_to_score(score, text, text_counter);
             }
         } else if (lyric.first > ReducedFraction(0, 1)) {
             break;
@@ -198,127 +205,127 @@ void addTitleIfAny(const std::multimap<ReducedFraction, std::string> &lyricTrack
     }
 }
 
-void addLyricsToScore(const std::multimap<ReducedFraction, std::string> &lyricTrack,
-                      const std::vector<std::pair<ReducedFraction, ReducedFraction>> &matchedLyricTimes, const Staff *staffAddTo) {
-    Score *score = staffAddTo->score();
+void add_lyrics_to_score(const std::multimap<ReducedFraction, std::string> &lyric_track,
+                         const std::vector<std::pair<ReducedFraction, ReducedFraction>> &matched_lyric_times, const Staff *staff_add_to) {
+    Score *score = staff_add_to->score();
 
-    addTitleIfAny(lyricTrack, score);
+    add_title_if_any(lyric_track, score);
 
-    for (const auto &timePair : matchedLyricTimes) {
-        const ReducedFraction quantizedTime = timePair.first;
-        const ReducedFraction originalTime = timePair.second;
-        const auto it = lyricTrack.find(originalTime);
+    for (const auto &time_pair : matched_lyric_times) {
+        const ReducedFraction quantized_time = time_pair.first;
+        const ReducedFraction original_time = time_pair.second;
+        const auto it = lyric_track.find(original_time);
 
-        Q_ASSERT_X(it != lyricTrack.end(), "MidiLyrics::addLyricsToScore", "Lyric time not found");
+        Q_ASSERT_X(it != lyric_track.end(), "MidiLyrics::addLyricsToScore", "Lyric time not found");
 
-        muse::String text = MidiCharset::convertToCharset(it->second);
-        if (originalTime != ReducedFraction(0, 1) || !isTitlePrefix(text)) { // not title
-            score->addLyrics(quantizedTime.fraction(), staffAddTo->idx(), removeSlashes(text).toXmlEscaped());
+        muse::String text = MidiCharset::convert_to_charset(it->second);
+        if (original_time != ReducedFraction(0, 1) || !is_title_prefix(text)) { // not title
+            score->add_lyrics(quantized_time.fraction(), staff_add_to->idx(), remove_slashes(text).to_xml_escaped());
         }
     }
 }
 
-void extractLyricsToMidiData(const MidiFile *mf) {
+void extract_lyrics_to_midi_data(const MidiFile *mf) {
     for (const auto &t : mf->tracks()) {
-        const auto lyrics = extractLyricsFromTrack(t, mf->division(), mf->isDivisionInTps());
+        const auto lyrics = extract_lyrics_from_track(t, mf->division(), mf->is_division_in_tps());
         if (!lyrics.empty()) {
-            midiImportOperations.data()->lyricTracks.push_back(lyrics);
+            midi_import_operations.data()->lyric_tracks.push_back(lyrics);
         }
     }
 }
 
-void setInitialLyricsFromMidiData(const std::vector<MTrack> &tracks) {
-    std::set<int> usedTracks;
-    auto &data = *midiImportOperations.data();
-    const auto &lyricTracks = data.lyricTracks;
-    if (lyricTracks.empty()) {
+void set_initial_lyrics_from_midi_data(const std::vector<MTrack> &tracks) {
+    std::set<int> used_tracks;
+    auto &data = *midi_import_operations.data();
+    const auto &lyric_tracks = data.lyric_tracks;
+    if (lyric_tracks.empty()) {
         return;
     }
 
-    for (size_t i = 0; i != lyricTracks.size(); ++i) {
-        const BestTrack bestTrack = findBestTrack(tracks, lyricTracks[i], usedTracks);
-        if (bestTrack.index >= 0) {
-            usedTracks.insert(bestTrack.index);
-            addLyricsToScore(lyricTracks[i], bestTrack.matchedLyricTimes, tracks[bestTrack.index].staff);
-            data.trackOpers.lyricTrackIndex.setValue(bestTrack.index, static_cast<int>(i));
+    for (size_t i = 0; i != lyric_tracks.size(); ++i) {
+        const BestTrack best_track = find_best_track(tracks, lyric_tracks[i], used_tracks);
+        if (best_track.index >= 0) {
+            used_tracks.insert(best_track.index);
+            add_lyrics_to_score(lyric_tracks[i], best_track.matched_lyric_times, tracks[best_track.index].staff);
+            data.track_opers.lyric_track_index.set_value(best_track.index, static_cast<int>(i));
         }
     }
 }
 
 std::vector<std::pair<ReducedFraction, ReducedFraction>>
-findMatchedLyricTimes(const std::multimap<ReducedFraction, MidiChord> &chords,
-                      const std::multimap<ReducedFraction, std::string> &lyricTrack) {
+find_matched_lyric_times(const std::multimap<ReducedFraction, MidiChord> &chords,
+                         const std::multimap<ReducedFraction, std::string> &lyric_track) {
     // <chord quantized on time, chord original on time>
-    std::vector<std::pair<ReducedFraction, ReducedFraction>> matchedLyricTimes;
+    std::vector<std::pair<ReducedFraction, ReducedFraction>> matched_lyric_times;
 
     for (const auto &chord : chords) {
         for (const auto &note : chord.second.notes) {
-            if (lyricTrack.find(note.origOnTime) != lyricTrack.end()) {
-                matchedLyricTimes.push_back({chord.first, note.origOnTime});
+            if (lyric_track.find(note.orig_on_time) != lyric_track.end()) {
+                matched_lyric_times.push_back({chord.first, note.orig_on_time});
                 break;
             }
         }
     }
-    return matchedLyricTimes;
+    return matched_lyric_times;
 }
 
-void setLyricsFromOperations(const std::vector<MTrack> &tracks) {
-    const auto &lyricTracks = midiImportOperations.data()->lyricTracks;
-    if (lyricTracks.empty()) {
+void set_lyrics_from_operations(const std::vector<MTrack> &tracks) {
+    const auto &lyric_tracks = midi_import_operations.data()->lyric_tracks;
+    if (lyric_tracks.empty()) {
         return;
     }
     for (const auto &track : tracks) {
-        const auto &opers = midiImportOperations.data()->trackOpers;
-        const int lyricTrackIndex = opers.lyricTrackIndex.value(track.indexOfOperation);
-        if (lyricTrackIndex >= 0 && static_cast<size_t>(lyricTrackIndex) < lyricTracks.size()) {
-            const auto &lyricTrack = lyricTracks[lyricTrackIndex];
-            const auto matchedLyricTimes = findMatchedLyricTimes(track.chords, lyricTrack);
+        const auto &opers = midi_import_operations.data()->track_opers;
+        const int lyric_track_index = opers.lyric_track_index.value(track.index_of_operation);
+        if (lyric_track_index >= 0 && static_cast<size_t>(lyric_track_index) < lyric_tracks.size()) {
+            const auto &lyric_track = lyric_tracks[lyric_track_index];
+            const auto matched_lyric_times = find_matched_lyric_times(track.chords, lyric_track);
 
-            addLyricsToScore(lyricTrack, matchedLyricTimes, track.staff);
+            add_lyrics_to_score(lyric_track, matched_lyric_times, track.staff);
         }
     }
 }
 
-void setLyricsToScore(std::vector<MTrack> &tracks) {
-    const auto *data = midiImportOperations.data();
-    if (data->processingsOfOpenedFile == 0) {
-        setInitialLyricsFromMidiData(tracks);
+void set_lyrics_to_score(std::vector<MTrack> &tracks) {
+    const auto *data = midi_import_operations.data();
+    if (data->processings_of_opened_file == 0) {
+        set_initial_lyrics_from_midi_data(tracks);
     } else {
-        setLyricsFromOperations(tracks);
+        set_lyrics_from_operations(tracks);
     }
 }
 
-std::vector<std::string> makeLyricsListForUI() {
+std::vector<std::string> make_lyrics_list_for_ui() {
     std::vector<std::string> list;
-    const auto &lyrics = midiImportOperations.data()->lyricTracks;
+    const auto &lyrics = midi_import_operations.data()->lyric_tracks;
     if (lyrics.empty()) {
         return list;
     }
 
-    const unsigned int symbolLimit = 16;
+    const unsigned int symbol_limit = 16;
 
-    for (const auto &trackLyric : lyrics) {
-        std::string lyricText;
+    for (const auto &track_lyric : lyrics) {
+        std::string lyric_text;
 
-        for (const auto &lyric : trackLyric) {
-            const auto &text = removeSlashes(lyric.second);
-            if (isMetaText(text)) {
+        for (const auto &lyric : track_lyric) {
+            const auto &text = remove_slashes(lyric.second);
+            if (is_meta_text(text)) {
                 continue;
             }
-            if (!lyricText.empty()) {
-                lyricText += " "; // visual text delimiter
+            if (!lyric_text.empty()) {
+                lyric_text += " "; // visual text delimiter
             }
-            if (lyricText.size() + text.size() > symbolLimit) {
-                lyricText += text.substr(0, symbolLimit - lyricText.size());
+            if (lyric_text.size() + text.size() > symbol_limit) {
+                lyric_text += text.substr(0, symbol_limit - lyric_text.size());
             } else {
-                lyricText += text;
+                lyric_text += text;
             }
-            if (lyricText.size() >= symbolLimit - 1) {
-                lyricText += "…";
+            if (lyric_text.size() >= symbol_limit - 1) {
+                lyric_text += "…";
                 break;
             }
         }
-        list.push_back(lyricText);
+        list.push_back(lyric_text);
     }
     return list;
 }

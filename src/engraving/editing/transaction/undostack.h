@@ -43,74 +43,74 @@ enum class CommandType : signed char;
 
 class UndoableTransaction {
 public:
-    UndoableTransaction(Score *s, const muse::TranslatableString &actionName);
+    UndoableTransaction(Score *s, const muse::TranslatableString &action_name);
     ~UndoableTransaction();
 
     void undo();
     void redo();
 
-    void appendCommand(UndoableCommand *cmd) { commands_.push_back(cmd); }
+    void append_command(UndoableCommand *cmd) { commands_.push_back(cmd); }
 
     void append(UndoableTransaction &&other);
 
-    void unwind(bool cleanUp = true);
-    void cleanup(bool wasDone);
+    void unwind(bool clean_up = true);
+    void cleanup(bool was_done);
 
     const std::vector<UndoableCommand *> &commands() const { return commands_; }
 
     bool empty() const { return commands_.empty(); }
 
-    bool hasCommandsMatchingFilter(UndoableCommandFilter, const EngravingItem *target) const;
-    bool hasCommandsNotMatchingFilters(const std::vector<UndoableCommandFilter> &filters, const EngravingItem *target) const;
-    void removeCommandsMatchingFilter(UndoableCommandFilter f, EngravingItem *target);
+    bool has_commands_matching_filter(UndoableCommandFilter, const EngravingItem *target) const;
+    bool has_commands_not_matching_filters(const std::vector<UndoableCommandFilter> &filters, const EngravingItem *target) const;
+    void remove_commands_matching_filter(UndoableCommandFilter f, EngravingItem *target);
 
-    const InputState &undoInputState() const;
-    const InputState &redoInputState() const;
+    const InputState &undo_input_state() const;
+    const InputState &redo_input_state() const;
 
     struct SelectionInfo {
         std::vector<EngravingItem *> elements;
-        Fraction tickStart;
-        Fraction tickEnd;
-        staff_idx_t staffStart = muse::nidx;
-        staff_idx_t staffEnd = muse::nidx;
-        Box *startBox = nullptr;
-        Box *endBox = nullptr;
+        Fraction tick_start;
+        Fraction tick_end;
+        staff_idx_t staff_start = muse::nidx;
+        staff_idx_t staff_end = muse::nidx;
+        Box *start_box = nullptr;
+        Box *end_box = nullptr;
 
-        bool isValid() const { return !elements.empty() || staffStart != muse::nidx; }
+        bool is_valid() const { return !elements.empty() || staff_start != muse::nidx; }
     };
 
-    const SelectionInfo &undoSelectionInfo() const;
-    const SelectionInfo &redoSelectionInfo() const;
+    const SelectionInfo &undo_selection_info() const;
+    const SelectionInfo &redo_selection_info() const;
 
-    void excludeElementFromSelectionInfo(EngravingItem *element);
-    static bool canRecordSelectedElement(const EngravingItem *e);
+    void exclude_element_from_selection_info(EngravingItem *element);
+    static bool can_record_selected_element(const EngravingItem *e);
 
     struct ChangesInfo {
-        ElementTypeSet changedObjectTypes;
-        std::map<EngravingObject *, std::unordered_set<CommandType>> changedObjects;
-        StyleIdSet changedStyleIdSet;
-        PropertyIdSet changedPropertyIdSet;
-        bool isTextEditing = false;
+        ElementTypeSet changed_object_types;
+        std::map<EngravingObject *, std::unordered_set<CommandType>> changed_objects;
+        StyleIdSet changed_style_id_set;
+        PropertyIdSet changed_property_id_set;
+        bool is_text_editing = false;
     };
 
-    ChangesInfo changesInfo(bool undo = false) const;
-    const muse::TranslatableString &actionName() const;
+    ChangesInfo changes_info(bool undo = false) const;
+    const muse::TranslatableString &action_name() const;
 
 private:
-    void appendCommands(UndoableTransaction &other);
+    void append_commands(UndoableTransaction &other);
 
     std::vector<UndoableCommand *> commands_;
 
-    InputState undoInputState_;
-    InputState redoInputState_;
-    SelectionInfo undoSelectionInfo_;
-    SelectionInfo redoSelectionInfo_;
-    muse::TranslatableString actionName_;
+    InputState undo_input_state_;
+    InputState redo_input_state_;
+    SelectionInfo undo_selection_info_;
+    SelectionInfo redo_selection_info_;
+    muse::TranslatableString action_name_;
 
     Score *score_ = nullptr;
 
-    static void fillSelectionInfo(SelectionInfo &, const Selection &);
-    static void applySelectionInfo(const SelectionInfo &, Selection &);
+    static void fill_selection_info(SelectionInfo &, const Selection &);
+    static void apply_selection_info(const SelectionInfo &, Selection &);
 };
 
 class UndoStack {
@@ -118,36 +118,36 @@ public:
     UndoStack();
     ~UndoStack();
 
-    bool isLocked() const;
-    void setLocked(bool locked);
+    bool is_locked() const;
+    void set_locked(bool locked);
 
-    bool hasActiveTransaction() const { return activeTransaction_ != nullptr; }
+    bool has_active_transaction() const { return active_transaction_ != nullptr; }
 
-    void beginTransaction(Score *, const muse::TranslatableString &actionName);
-    void endTransaction(bool rollback);
+    void begin_transaction(Score *, const muse::TranslatableString &action_name);
+    void end_transaction(bool rollback);
 
-    bool canUndo() const { return currentIndex_ > 0; }
+    bool can_undo() const { return current_index_ > 0; }
 
-    bool canRedo() const { return currentIndex_ < transactions_.size(); }
+    bool can_redo() const { return current_index_ < transactions_.size(); }
 
-    bool isClean() const { return cleanState_ == states_[currentIndex_]; }
+    bool is_clean() const { return clean_state_ == states_[current_index_]; }
 
     size_t size() const { return transactions_.size(); }
 
-    size_t currentIndex() const { return currentIndex_; }
+    size_t current_index() const { return current_index_; }
 
-    UndoableTransaction *activeTransaction() const { return activeTransaction_; }
+    UndoableTransaction *active_transaction() const { return active_transaction_; }
 
-    UndoableTransaction *last() const { return currentIndex_ > 0 ? transactions_[currentIndex_ - 1] : nullptr; }
+    UndoableTransaction *last() const { return current_index_ > 0 ? transactions_[current_index_ - 1] : nullptr; }
 
-    UndoableTransaction *prev() const { return currentIndex_ > 1 ? transactions_[currentIndex_ - 2] : nullptr; }
+    UndoableTransaction *prev() const { return current_index_ > 1 ? transactions_[current_index_ - 2] : nullptr; }
 
-    UndoableTransaction *next() const { return canRedo() ? transactions_[currentIndex_] : nullptr; }
+    UndoableTransaction *next() const { return can_redo() ? transactions_[current_index_] : nullptr; }
 
     /// Returns the transaction that led to the state with the given `idx`.
     /// For further discussion of the indices involved in UndoStack, see:
     /// https://github.com/musescore/MuseScore/pull/25389#discussion_r1825782176
-    UndoableTransaction *lastAtIndex(size_t idx) const {
+    UndoableTransaction *last_at_index(size_t idx) const {
         return idx > 0 && idx - 1 < transactions_.size() ? transactions_[idx - 1] : nullptr;
     }
 
@@ -155,22 +155,22 @@ public:
     void redo();
     void reopen();
 
-    void mergeTransactions(size_t startIdx);
+    void merge_transactions(size_t start_idx);
 
-    void cleanRedoStack() { remove(currentIndex_); }
+    void clean_redo_stack() { remove(current_index_); }
 
     // Retire history without changing the currently applied score state.
-    bool clearHistory();
+    bool clear_history();
 
 private:
     void remove(size_t idx);
 
-    UndoableTransaction *activeTransaction_ = nullptr;
+    UndoableTransaction *active_transaction_ = nullptr;
     std::vector<UndoableTransaction *> transactions_;
     std::vector<int> states_;
-    int nextState_ = 0;
-    int cleanState_ = 0;
-    size_t currentIndex_ = 0;
-    bool isLocked_ = false;
+    int next_state_ = 0;
+    int clean_state_ = 0;
+    size_t current_index_ = 0;
+    bool is_locked_ = false;
 };
 } // namespace mu::engraving

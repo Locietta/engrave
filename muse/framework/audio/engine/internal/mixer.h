@@ -41,45 +41,45 @@ public:
 
     void init();
 
-    Ret addTrack(TrackChainPtr trackChain, const AuxSendsParams &auxSends);
-    Ret addAuxTrack(TrackChainPtr trackChain);
-    Ret removeTrack(const TrackId trackId);
+    Ret add_track(TrackChainPtr track_chain, const AuxSendsParams &aux_sends);
+    Ret add_aux_track(TrackChainPtr track_chain);
+    Ret remove_track(const TrackId track_id);
 
-    void setAuxSends(const TrackId trackId, const AuxSendsParams &auxSends);
+    void set_aux_sends(const TrackId track_id, const AuxSendsParams &aux_sends);
 
-    void setTracksToProcessWhenIdle(const std::unordered_set<TrackId> &trackIds);
-    void setNonMutedTrackCount(size_t count);
+    void set_tracks_to_process_when_idle(const std::unordered_set<TrackId> &track_ids);
+    void set_non_muted_track_count(size_t count);
 
-    void process(float *buffer, samples_t samplesPerChannel) override;
+    void process(float *buffer, samples_t samples_per_channel) override;
 
     std::string dump() const override;
 
 private:
 
-    void onOutputSpecChanged(const OutputSpec &spec) override;
-    void onModeChanged(const ProcessMode mode) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
+    void on_mode_changed(const ProcessMode mode) override;
 
-    void doSelfProcess(float *, samples_t) override {}
+    void do_self_process(float *, samples_t) override {}
 
-    void processTrackChannels(size_t outBufferSize, size_t samplesPerChannel);
-    void mixOutputFromChannel(float *outBuffer, const float *inBuffer, size_t bufferSize) const;
-    void prepareAuxBuffers(size_t outBufferSize);
-    void writeTrackToAuxBuffers(const float *trackBuffer, size_t outBufferSize, const AuxSendsParams &auxSends);
-    void processAuxChannels(float *buffer, samples_t samplesPerChannel);
+    void process_track_channels(size_t out_buffer_size, size_t samples_per_channel);
+    void mix_output_from_channel(float *out_buffer, const float *in_buffer, size_t buffer_size) const;
+    void prepare_aux_buffers(size_t out_buffer_size);
+    void write_track_to_aux_buffers(const float *track_buffer, size_t out_buffer_size, const AuxSendsParams &aux_sends);
+    void process_aux_channels(float *buffer, samples_t samples_per_channel);
 
     struct TrackData {
-        TrackId trackId;
+        TrackId track_id;
         TrackChainPtr chain;
         std::vector<float> buffer;
         bool processed = false;
     };
 
     std::vector<TrackData> tracks_;
-    std::vector<TrackData> auxTracks_;
-    std::map<TrackId, AuxSendsParams> auxSends_;
+    std::vector<TrackData> aux_tracks_;
+    std::map<TrackId, AuxSendsParams> aux_sends_;
 
-    size_t nonMutedTrackCount_ = 0;
-    std::unordered_set<TrackId> tracksToProcessWhenIdle_;
+    size_t non_muted_track_count_ = 0;
+    std::unordered_set<TrackId> tracks_to_process_when_idle_;
 };
 
 using MixerPtr = std::shared_ptr<Mixer>;

@@ -34,38 +34,38 @@ class TieJumpPointList;
 // Stores information about an endpoint
 class TieJumpPoint {
 public:
-    TieJumpPoint(Note *note, bool active, int idx, bool followingNote);
+    TieJumpPoint(Note *note, bool active, int idx, bool following_note);
 
     TieJumpPoint() {}
 
     Note *note() const { return note_; }
 
-    Tie *endTie() const;
+    Tie *end_tie() const;
 
-    bool followingNote() const { return followingNote_; }
+    bool following_note() const { return following_note_; }
 
     const muse::String &id() const { return id_; }
 
     bool active() const { return active_; }
 
-    void setActive(bool v) { active_ = v; }
+    void set_active(bool v) { active_ = v; }
 
-    void undoSetActive(bool v);
+    void undo_set_active(bool v);
 
     // Stores the list that this end point belongs to. This is needed to find the start tie from an endpoint
-    void setJumpPointList(TieJumpPointList *jumpPointList) { jumpPointList_ = jumpPointList; }
+    void set_jump_point_list(TieJumpPointList *jump_point_list) { jump_point_list_ = jump_point_list; }
 
-    TieJumpPointList *jumpPointList() { return jumpPointList_; }
+    TieJumpPointList *jump_point_list() { return jump_point_list_; }
 
-    muse::TranslatableString menuTitle() const;
+    muse::TranslatableString menu_title() const;
 
 private:
-    muse::String precedingJumpItemName() const;
+    muse::String preceding_jump_item_name() const;
     Note *note_ = nullptr;
     bool active_ = false;
     muse::String id_;
-    TieJumpPointList *jumpPointList_ = nullptr;
-    bool followingNote_ = false;
+    TieJumpPointList *jump_point_list_ = nullptr;
+    bool following_note_ = false;
 };
 
 // Created & deleted by Note
@@ -79,28 +79,28 @@ public:
     void add(TieJumpPoint *item);
     void clear();
 
-    size_t size() const { return jumpPoints_.size(); }
+    size_t size() const { return jump_points_.size(); }
 
-    bool empty() const { return jumpPoints_.empty(); }
+    bool empty() const { return jump_points_.empty(); }
 
-    Tie *startTie() const;
+    Tie *start_tie() const;
 
-    TieJumpPoint *findJumpPoint(const muse::String &id);
-    void toggleJumpPoint(const muse::String &id);
+    TieJumpPoint *find_jump_point(const muse::String &id);
+    void toggle_jump_point(const muse::String &id);
 
-    void undoAddTieToScore(TieJumpPoint *jumpPoint);
-    void undoRemoveTieFromScore(TieJumpPoint *jumpPoint);
+    void undo_add_tie_to_score(TieJumpPoint *jump_point);
+    void undo_remove_tie_from_score(TieJumpPoint *jump_point);
 
-    std::vector<TieJumpPoint *>::iterator begin() { return jumpPoints_.begin(); }
+    std::vector<TieJumpPoint *>::iterator begin() { return jump_points_.begin(); }
 
-    std::vector<TieJumpPoint *>::const_iterator begin() const { return jumpPoints_.begin(); }
+    std::vector<TieJumpPoint *>::const_iterator begin() const { return jump_points_.begin(); }
 
-    std::vector<TieJumpPoint *>::iterator end() { return jumpPoints_.end(); }
+    std::vector<TieJumpPoint *>::iterator end() { return jump_points_.end(); }
 
-    std::vector<TieJumpPoint *>::const_iterator end() const { return jumpPoints_.end(); }
+    std::vector<TieJumpPoint *>::const_iterator end() const { return jump_points_.end(); }
 
 private:
-    std::vector<TieJumpPoint *> jumpPoints_;
+    std::vector<TieJumpPoint *> jump_points_;
     Note *note_ = nullptr;
 };
 } // namespace mu::engraving

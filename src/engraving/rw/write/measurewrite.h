@@ -35,10 +35,10 @@ namespace mu::engraving::write {
 class MeasureWrite {
 public:
 
-    static void writeMeasure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool writeSystemElements,
-                             bool forceTimeSig);
+    static void write_measure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool write_system_elements,
+                              bool force_time_sig);
 
 private:
-    static std::vector<Segment *> segmentsToWrite(const Measure *measure);
+    static std::vector<Segment *> segments_to_write(const Measure *measure);
 };
 } // namespace mu::engraving::write

@@ -38,7 +38,7 @@ using namespace mu::engraving;
 
 std::shared_ptr<EngravingProject> EngravingProject::create(const EngravingServices &services) {
     std::shared_ptr<EngravingProject> p = std::shared_ptr<EngravingProject>(new EngravingProject(services));
-    p->init(DefaultStyle::defaultStyle());
+    p->init(DefaultStyle::default_style());
     return p;
 }
 
@@ -51,7 +51,7 @@ std::shared_ptr<EngravingProject> EngravingProject::create(const MStyle &style, 
 EngravingProject::EngravingProject(const EngravingServices &services) : services_(services) { muse::ObjectAllocator::used(); }
 
 EngravingProject::~EngravingProject() {
-    delete masterScore_;
+    delete master_score_;
 
     muse::ObjectAllocator::unused();
 
@@ -60,60 +60,62 @@ EngravingProject::~EngravingProject() {
     // AllocatorsRegister::instance()->cleanupAll("engraving");
 }
 
-void EngravingProject::init(const MStyle &style) { masterScore_ = new MasterScore(services_, style, weak_from_this()); }
+void EngravingProject::init(const MStyle &style) { master_score_ = new MasterScore(services_, style, weak_from_this()); }
 
-IFileInfoProviderPtr EngravingProject::fileInfoProvider() const { return masterScore_->fileInfo(); }
+IFileInfoProviderPtr EngravingProject::file_info_provider() const { return master_score_->file_info(); }
 
-void EngravingProject::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider) { masterScore_->setFileInfoProvider(fileInfoProvider); }
+void EngravingProject::set_file_info_provider(IFileInfoProviderPtr file_info_provider) {
+    master_score_->set_file_info_provider(file_info_provider);
+}
 
-String EngravingProject::appVersion() const { return masterScore_->mscoreVersion(); }
+String EngravingProject::app_version() const { return master_score_->mscore_version(); }
 
-int EngravingProject::mscVersion() const { return masterScore_->mscVersion(); }
+int EngravingProject::msc_version() const { return master_score_->msc_version(); }
 
-bool EngravingProject::readOnly() const { return masterScore_->readOnly(); }
+bool EngravingProject::read_only() const { return master_score_->read_only(); }
 
-void EngravingProject::setMasterScore(MasterScore *score) { masterScore_ = score; }
+void EngravingProject::set_master_score(MasterScore *score) { master_score_ = score; }
 
-Ret EngravingProject::setupMasterScore(bool forceMode) {
+Ret EngravingProject::setup_master_score(bool force_mode) {
     TRACEFUNC;
 
-    masterScore_->updatePaddingTables();
-    for (Score *s : masterScore_->scoreList()) {
-        s->updatePaddingTables();
+    master_score_->update_padding_tables();
+    for (Score *s : master_score_->score_list()) {
+        s->update_padding_tables();
     }
 
-    masterScore_->setLayoutAll();
-    masterScore_->update();
-    masterScore_->initAutomation();
+    master_score_->set_layout_all();
+    master_score_->update();
+    master_score_->init_automation();
 
-    Ret ret = checkCorrupted();
-    isCorruptedUponLoading_ = !ret;
+    Ret ret = check_corrupted();
+    is_corrupted_upon_loading_ = !ret;
 
-    return forceMode ? muse::make_ok() : ret;
+    return force_mode ? muse::make_ok() : ret;
 }
 
-MasterScore *EngravingProject::masterScore() const { return masterScore_; }
+MasterScore *EngravingProject::master_score() const { return master_score_; }
 
-Ret EngravingProject::loadMscz(const MscReader &msc, rw::ReadInOutData *data, bool ignoreVersionError) {
+Ret EngravingProject::load_mscz(const MscReader &msc, rw::ReadInOutData *data, bool ignore_version_error) {
     TRACEFUNC;
 
-    MScore::setError(MsError::MS_NO_ERROR);
+    MScore::set_error(MsError::MS_NO_ERROR);
 
     MscLoader loader;
-    return loader.loadMscz(masterScore_, msc, data, ignoreVersionError);
+    return loader.load_mscz(master_score_, msc, data, ignore_version_error);
 }
 
-bool EngravingProject::writeMscz(MscWriter &writer, const write::WriteContext *ctx) {
+bool EngravingProject::write_mscz(MscWriter &writer, const write::WriteContext *ctx) {
     TRACEFUNC;
 
     MscSaver saver;
-    return saver.writeMscz(masterScore_, writer, ctx);
+    return saver.write_mscz(master_score_, writer, ctx);
 }
 
-bool EngravingProject::isCorruptedUponLoading() const { return isCorruptedUponLoading_; }
+bool EngravingProject::is_corrupted_upon_loading() const { return is_corrupted_upon_loading_; }
 
-Ret EngravingProject::checkCorrupted() const {
+Ret EngravingProject::check_corrupted() const {
     TRACEFUNC;
 
-    return masterScore_->sanityCheck();
+    return master_score_->sanity_check();
 }

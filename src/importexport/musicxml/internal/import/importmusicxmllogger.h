@@ -31,11 +31,11 @@ public:
 
     MusicXmlLogger() {}
 
-    void logDebugTrace(const muse::String &trace, const muse::XmlStreamReader *xmlreader = 0);
-    void logDebugInfo(const muse::String &info, const muse::XmlStreamReader *xmlreader = 0);
-    void logError(const muse::String &error, const muse::XmlStreamReader *xmlreader = 0);
+    void log_debug_trace(const muse::String &trace, const muse::XmlStreamReader *xmlreader = 0);
+    void log_debug_info(const muse::String &info, const muse::XmlStreamReader *xmlreader = 0);
+    void log_error(const muse::String &error, const muse::XmlStreamReader *xmlreader = 0);
 
-    void setLoggingLevel(const Level level) { level_ = level; }
+    void set_logging_level(const Level level) { level_ = level; }
 private:
     Level level_ = Level::MXML_INFO;
 };

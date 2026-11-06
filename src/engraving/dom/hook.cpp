@@ -31,40 +31,42 @@
 using namespace mu;
 using namespace mu::engraving;
 
-Hook::Hook(DummyParentOr<Chord> parent) : Symbol(ElementType::HOOK, parent, ElementFlag::NOTHING) { setZ(int(type()) * 100); }
+Hook::Hook(DummyParentOr<Chord> parent) : Symbol(ElementType::HOOK, parent, ElementFlag::NOTHING) { set_z(int(type()) * 100); }
 
-EngravingItem *Hook::elementBase() const { return chord(); }
+EngravingItem *Hook::element_base() const { return chord(); }
 
-void Hook::setHookType(int i) {
-    bool straight = style().styleB(Sid::useStraightNoteFlags);
-    hookType_ = i;
-    setSym(symIdForHookIndex(i, straight));
+void Hook::set_hook_type(int i) {
+    bool straight = style().style_b(Sid::USE_STRAIGHT_NOTE_FLAGS);
+    hook_type_ = i;
+    set_sym(sym_id_for_hook_index(i, straight));
 }
 
-PointF Hook::smuflAnchor() const { return symSmuflAnchor(sym_, chord()->up() ? SmuflAnchorId::stemUpNW : SmuflAnchorId::stemDownSW); }
+PointF Hook::smufl_anchor() const {
+    return sym_smufl_anchor(sym_, chord()->up() ? SmuflAnchorId::STEM_UP_NW : SmuflAnchorId::STEM_DOWN_SW);
+}
 
-SymId Hook::symIdForHookIndex(int index, bool straight) {
+SymId Hook::sym_id_for_hook_index(int index, bool straight) {
     switch (index) {
-        case 0: return SymId::noSym;
-        case 1: return straight ? SymId::flag8thUpStraight : SymId::flag8thUp;
-        case 2: return straight ? SymId::flag16thUpStraight : SymId::flag16thUp;
-        case 3: return straight ? SymId::flag32ndUpStraight : SymId::flag32ndUp;
-        case 4: return straight ? SymId::flag64thUpStraight : SymId::flag64thUp;
-        case 5: return straight ? SymId::flag128thUpStraight : SymId::flag128thUp;
-        case 6: return straight ? SymId::flag256thUpStraight : SymId::flag256thUp;
-        case 7: return straight ? SymId::flag512thUpStraight : SymId::flag512thUp;
-        case 8: return straight ? SymId::flag1024thUpStraight : SymId::flag1024thUp;
+        case 0: return SymId::NO_SYM;
+        case 1: return straight ? SymId::FLAG8TH_UP_STRAIGHT : SymId::FLAG8TH_UP;
+        case 2: return straight ? SymId::FLAG16TH_UP_STRAIGHT : SymId::FLAG16TH_UP;
+        case 3: return straight ? SymId::FLAG32ND_UP_STRAIGHT : SymId::FLAG32ND_UP;
+        case 4: return straight ? SymId::FLAG64TH_UP_STRAIGHT : SymId::FLAG64TH_UP;
+        case 5: return straight ? SymId::FLAG128TH_UP_STRAIGHT : SymId::FLAG128TH_UP;
+        case 6: return straight ? SymId::FLAG256TH_UP_STRAIGHT : SymId::FLAG256TH_UP;
+        case 7: return straight ? SymId::FLAG512TH_UP_STRAIGHT : SymId::FLAG512TH_UP;
+        case 8: return straight ? SymId::FLAG1024TH_UP_STRAIGHT : SymId::FLAG1024TH_UP;
 
-        case -1: return straight ? SymId::flag8thDownStraight : SymId::flag8thDown;
-        case -2: return straight ? SymId::flag16thDownStraight : SymId::flag16thDown;
-        case -3: return straight ? SymId::flag32ndDownStraight : SymId::flag32ndDown;
-        case -4: return straight ? SymId::flag64thDownStraight : SymId::flag64thDown;
-        case -5: return straight ? SymId::flag128thDownStraight : SymId::flag128thDown;
-        case -6: return straight ? SymId::flag256thDownStraight : SymId::flag256thDown;
-        case -7: return straight ? SymId::flag512thDownStraight : SymId::flag512thDown;
-        case -8: return straight ? SymId::flag1024thDownStraight : SymId::flag1024thDown;
+        case -1: return straight ? SymId::FLAG8TH_DOWN_STRAIGHT : SymId::FLAG8TH_DOWN;
+        case -2: return straight ? SymId::FLAG16TH_DOWN_STRAIGHT : SymId::FLAG16TH_DOWN;
+        case -3: return straight ? SymId::FLAG32ND_DOWN_STRAIGHT : SymId::FLAG32ND_DOWN;
+        case -4: return straight ? SymId::FLAG64TH_DOWN_STRAIGHT : SymId::FLAG64TH_DOWN;
+        case -5: return straight ? SymId::FLAG128TH_DOWN_STRAIGHT : SymId::FLAG128TH_DOWN;
+        case -6: return straight ? SymId::FLAG256TH_DOWN_STRAIGHT : SymId::FLAG256TH_DOWN;
+        case -7: return straight ? SymId::FLAG512TH_DOWN_STRAIGHT : SymId::FLAG512TH_DOWN;
+        case -8: return straight ? SymId::FLAG1024TH_DOWN_STRAIGHT : SymId::FLAG1024TH_DOWN;
         default: LOGE() << "No hook/flag for hook index: " << index; break;
     }
 
-    return SymId::noSym;
+    return SymId::NO_SYM;
 }

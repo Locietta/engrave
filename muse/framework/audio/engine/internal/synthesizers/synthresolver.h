@@ -31,18 +31,18 @@
 namespace muse::audio::synth {
 class SynthResolver : public ISynthResolver {
 public:
-    void init(const AudioInputParams &defaultInputParams, const audio::OutputSpec &defaultOutputSpec) override;
+    void init(const AudioInputParams &default_input_params, const audio::OutputSpec &default_output_spec) override;
 
-    ISynthesizerPtr resolveSynth(const TrackId trackId, const AudioInputParams &params, const OutputSpec &spec,
-                                 const PlaybackSetupData &setupData) const override;
-    ISynthesizerPtr resolveDefaultSynth(const TrackId trackId) const override;
-    AudioInputParams resolveDefaultInputParams() const override;
-    AudioResourceMetaList resolveAvailableResources() const override;
-    SoundPresetList resolveAvailableSoundPresets(const AudioResourceMeta &resourceMeta) const override;
+    ISynthesizerPtr resolve_synth(const TrackId track_id, const AudioInputParams &params, const OutputSpec &spec,
+                                  const PlaybackSetupData &setup_data) const override;
+    ISynthesizerPtr resolve_default_synth(const TrackId track_id) const override;
+    AudioInputParams resolve_default_input_params() const override;
+    AudioResourceMetaList resolve_available_resources() const override;
+    SoundPresetList resolve_available_sound_presets(const AudioResourceMeta &resource_meta) const override;
 
-    void registerResolver(const AudioSourceType type, IResolverPtr resolver) override;
+    void register_resolver(const AudioSourceType type, IResolverPtr resolver) override;
 
-    void clearSources() override;
+    void clear_sources() override;
 
 private:
     using SynthPair = std::pair<audio::AudioResourceId, ISynthesizerPtr>;
@@ -50,8 +50,8 @@ private:
     mutable std::mutex mutex_;
 
     std::map<AudioSourceType, IResolverPtr> resolvers_;
-    AudioInputParams defaultInputParams_;
-    OutputSpec defaultOutputSpec_;
+    AudioInputParams default_input_params_;
+    OutputSpec default_output_spec_;
 };
 } // namespace muse::audio::synth
 

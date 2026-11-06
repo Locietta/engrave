@@ -45,53 +45,53 @@ public:
 
     ~TremoloSingleChord() override;
 
-    Chord *chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return to_chord(ownership_parent()); }
 
-    int subtype() const override { return static_cast<int>(tremoloType_); }
+    int subtype() const override { return static_cast<int>(tremolo_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    void setTremoloType(TremoloType t);
+    void set_tremolo_type(TremoloType t);
 
-    TremoloType tremoloType() const { return tremoloType_; }
+    TremoloType tremolo_type() const { return tremolo_type_; }
 
-    double minHeight() const;
+    double min_height() const;
 
-    double chordMag() const;
+    double chord_mag() const;
 
-    TDuration durationType() const;
-    void setDurationType(TDuration d);
+    TDuration duration_type() const;
+    void set_duration_type(TDuration d);
 
-    Fraction tremoloLen() const;
+    Fraction tremolo_len() const;
 
-    bool isBuzzRoll() const { return tremoloType_ == TremoloType::BUZZ_ROLL; }
+    bool is_buzz_roll() const { return tremolo_type_ == TremoloType::BUZZ_ROLL; }
 
     int lines() const { return lines_; }
 
-    void spatiumChanged(double oldValue, double newValue) override;
-    void localSpatiumChanged(double oldValue, double newValue) override;
-    void styleChanged() override;
-    staff_idx_t vStaffIdx() const override;
+    void spatium_changed(double old_value, double new_value) override;
+    void local_spatium_changed(double old_value, double new_value) override;
+    void style_changed() override;
+    staff_idx_t v_staff_idx() const override;
 
-    bool playTremolo() const { return playTremolo_; }
+    bool play_tremolo() const { return play_tremolo_; }
 
-    void setPlayTremolo(bool v) { playTremolo_ = v; }
+    void set_play_tremolo(bool v) { play_tremolo_ = v; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    bool isMovable() const override { return true; }
+    bool is_movable() const override { return true; }
 
-    muse::draw::PainterPath basePath(double stretch = 0) const;
+    muse::draw::PainterPath base_path(double stretch = 0) const;
 
     const muse::draw::PainterPath &path() const { return path_; }
 
-    void setPath(const muse::draw::PainterPath &p) { path_ = p; }
+    void set_path(const muse::draw::PainterPath &p) { path_ = p; }
 
-    void computeShape();
+    void compute_shape();
 
 private:
     friend class Factory;
@@ -99,10 +99,10 @@ private:
     TremoloSingleChord(DummyParentOr<Chord> parent);
     TremoloSingleChord(const TremoloSingleChord &);
 
-    TremoloType tremoloType_ = TremoloType::INVALID_TREMOLO;
-    TDuration durationType_;
+    TremoloType tremolo_type_ = TremoloType::INVALID_TREMOLO;
+    TDuration duration_type_;
     muse::draw::PainterPath path_;
-    bool playTremolo_ = true;
+    bool play_tremolo_ = true;
 
     int lines_ = 0; // derived from _subtype
 };

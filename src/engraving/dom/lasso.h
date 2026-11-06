@@ -33,6 +33,6 @@ public:
 
     virtual Lasso *clone() const override { return new Lasso(*this); }
 
-    bool isEmpty() const { return ldata()->bbox().isEmpty(); }
+    bool is_empty() const { return ldata()->bbox().is_empty(); }
 };
 } // namespace mu::engraving

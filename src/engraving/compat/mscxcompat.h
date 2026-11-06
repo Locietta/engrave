@@ -25,6 +25,6 @@
 #include "../engravingproject.h"
 
 namespace mu::engraving::compat {
-muse::Ret loadMsczOrMscx(MasterScore *score, const muse::io::path_t &path, bool ignoreVersionError = false);
-muse::Ret loadMsczOrMscx(EngravingProjectPtr project, const muse::io::path_t &path, bool ignoreVersionError = false);
+muse::Ret load_mscz_or_mscx(MasterScore *score, const muse::io::PathT &path, bool ignore_version_error = false);
+muse::Ret load_mscz_or_mscx(EngravingProjectPtr project, const muse::io::PathT &path, bool ignore_version_error = false);
 } // namespace mu::engraving::compat

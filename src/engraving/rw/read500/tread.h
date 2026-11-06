@@ -192,7 +192,7 @@ public:
     TRead() = default;
 
     // factory
-    static void readItem(EngravingItem *el, XmlReader &xml, ReadContext &ctx);
+    static void read_item(EngravingItem *el, XmlReader &xml, ReadContext &ctx);
 
     // types
 
@@ -227,7 +227,7 @@ public:
     static void read(Chord *ch, XmlReader &xml, ReadContext &ctx);
     static void read(ChordLine *l, XmlReader &xml, ReadContext &ctx);
     /// @param isHeader receives whether the clef belongs in a header clef segment
-    static void read(Clef *c, XmlReader &xml, ReadContext &ctx, bool *isHeader = nullptr);
+    static void read(Clef *c, XmlReader &xml, ReadContext &ctx, bool *is_header = nullptr);
     static void read(Capo *c, XmlReader &xml, ReadContext &ctx);
 
     static void read(Excerpt *item, XmlReader &xml, ReadContext &ctx);
@@ -253,7 +253,7 @@ public:
     static void read(Hook *h, XmlReader &xml, ReadContext &ctx);
 
     static void read(Instrument *item, XmlReader &xml, ReadContext &ctx, Part *part);
-    static void read(InstrChannel *item, XmlReader &e, ReadContext &ctx, Part *part, const InstrumentTrackId &instrId);
+    static void read(InstrChannel *item, XmlReader &e, ReadContext &ctx, Part *part, const InstrumentTrackId &instr_id);
     static void read(InstrumentChange *c, XmlReader &xml, ReadContext &ctx);
 
     static void read(KeyList *item, XmlReader &xml, ReadContext &ctx);
@@ -342,86 +342,86 @@ public:
 
     // temp compat
 
-    static PropertyValue readPropertyValue(Pid type, XmlReader &e, ReadContext &ctx);
-    static bool readProperty(EngravingItem *item, const AsciiStringView &, XmlReader &, ReadContext &, Pid);
-    static void readProperty(EngravingItem *item, XmlReader &, ReadContext &, Pid);
-    static bool readStyledProperty(EngravingItem *item, const AsciiStringView &tag, XmlReader &xml, ReadContext &ctx);
+    static PropertyValue read_property_value(Pid type, XmlReader &e, ReadContext &ctx);
+    static bool read_property(EngravingItem *item, const AsciiStringView &, XmlReader &, ReadContext &, Pid);
+    static void read_property(EngravingItem *item, XmlReader &, ReadContext &, Pid);
+    static bool read_styled_property(EngravingItem *item, const AsciiStringView &tag, XmlReader &xml, ReadContext &ctx);
 
-    static bool readItemProperties(EngravingItem *item, XmlReader &xml, ReadContext &ctx);
-    static bool readBoxProperties(Box *b, XmlReader &xml, ReadContext &ctx);
-    static bool readTextProperties(TextBase *t, XmlReader &xml, ReadContext &ctx);
+    static bool read_item_properties(EngravingItem *item, XmlReader &xml, ReadContext &ctx);
+    static bool read_box_properties(Box *b, XmlReader &xml, ReadContext &ctx);
+    static bool read_text_properties(TextBase *t, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(Ambitus *a, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Arpeggio *a, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Articulation *a, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(BSymbol *sym, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Chord *ch, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(ChordRest *ch, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Clef *c, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Fermata *f, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Ambitus *a, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Arpeggio *a, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Articulation *a, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(BSymbol *sym, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Chord *ch, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(ChordRest *ch, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Clef *c, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Fermata *f, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(GuitarBendSegment *g, const AsciiStringView &tag, XmlReader &xml, ReadContext &);
+    static bool read_properties(GuitarBendSegment *g, const AsciiStringView &tag, XmlReader &xml, ReadContext &);
 
-    static bool readProperties(Instrument *item, XmlReader &xml, ReadContext &ctx, Part *part, bool *customDrumset);
+    static bool read_properties(Instrument *item, XmlReader &xml, ReadContext &ctx, Part *part, bool *custom_drumset);
 
-    static bool readProperties(LedgerLine *l, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(LineSegment *l, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Lyrics *l, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(LedgerLine *l, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(LineSegment *l, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Lyrics *l, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(MMRest *r, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(MeasureNumberBase *r, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(MeasureBase *b, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(MMRest *r, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(MeasureNumberBase *r, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(MeasureBase *b, XmlReader &xml, ReadContext &ctx);
 
     static void read(NamedEventList *item, XmlReader &xml);
-    static bool readProperties(Note *n, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Note *n, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(Ornament *o, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Ottava *o, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Ornament *o, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Ottava *o, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(Part *p, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Part *p, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(SLine *l, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Slur *s, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(SlurTie *s, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Spanner *s, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(Staff *s, XmlReader &e, ReadContext &ctx);
-    static bool readProperties(Stem *s, XmlReader &e, ReadContext &ctx);
+    static bool read_properties(SLine *l, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Slur *s, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(SlurTie *s, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Spanner *s, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Staff *s, XmlReader &e, ReadContext &ctx);
+    static bool read_properties(Stem *s, XmlReader &e, ReadContext &ctx);
 
-    static bool readProperties(TextLineBase *b, XmlReader &e, ReadContext &ctx);
-    static bool readProperties(Volta *v, XmlReader &e, ReadContext &ctx);
+    static bool read_properties(TextLineBase *b, XmlReader &e, ReadContext &ctx);
+    static bool read_properties(Volta *v, XmlReader &e, ReadContext &ctx);
 
-    static void readPageLocks(Score *score, XmlReader &e);
-    static void readSystemLocks(Score *score, XmlReader &e);
-    static void readSystemDividers(Score *score, XmlReader &e, ReadContext &ctx);
+    static void read_page_locks(Score *score, XmlReader &e);
+    static void read_system_locks(Score *score, XmlReader &e);
+    static void read_system_dividers(Score *score, XmlReader &e, ReadContext &ctx);
 
-    static void readScoreSpanners(Score *score, XmlReader &e, ReadContext &ctx);
+    static void read_score_spanners(Score *score, XmlReader &e, ReadContext &ctx);
 
-    static void readItemEID(EngravingObject *item, XmlReader &xml, ReadContext &ctx);
-    static void readItemLink(EngravingItem *item, XmlReader &xml, ReadContext &ctx);
+    static void read_item_eid(EngravingObject *item, XmlReader &xml, ReadContext &ctx);
+    static void read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx);
 
-    static String readLegacyStaffName(XmlReader &xml);
+    static String read_legacy_staff_name(XmlReader &xml);
 
-    static void readStaffLabel(StaffLabel &item, XmlReader &xml);
-    static void readInstrumentLabel(InstrumentLabel &item, XmlReader &xml);
+    static void read_staff_label(StaffLabel &item, XmlReader &xml);
+    static void read_instrument_label(InstrumentLabel &item, XmlReader &xml);
 
 private:
-    static bool readProperties(Box *b, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(HBox *b, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(Box *b, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(HBox *b, XmlReader &xml, ReadContext &ctx);
 
-    static bool readProperties(TextBase *t, XmlReader &xml, ReadContext &ctx);
-    static bool readProperties(StaffTextBase *t, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(TextBase *t, XmlReader &xml, ReadContext &ctx);
+    static bool read_properties(StaffTextBase *t, XmlReader &xml, ReadContext &ctx);
 
-    static void readPageLock(Score *score, XmlReader &e);
-    static void readSystemLock(Score *score, XmlReader &e);
+    static void read_page_lock(Score *score, XmlReader &e);
+    static void read_system_lock(Score *score, XmlReader &e);
 
-    static void readHopoText(HammerOnPullOffSegment *hopoSeg, XmlReader &xml, ReadContext &ctx, int idx);
+    static void read_hopo_text(HammerOnPullOffSegment *hopo_seg, XmlReader &xml, ReadContext &ctx, int idx);
 
-    static String lineBreakFromTag(const String &str);
+    static String line_break_from_tag(const String &str);
 
-    static void readNoteParenGroup(Chord *ch, XmlReader &e, ReadContext &ctx);
+    static void read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx);
 
-    static bool readProperties(StaffLabel &item, XmlReader &xml);
-    static bool readProperties(InstrumentLabel &item, XmlReader &xml);
+    static bool read_properties(StaffLabel &item, XmlReader &xml);
+    static bool read_properties(InstrumentLabel &item, XmlReader &xml);
 
     static void read(BracketItem *b, XmlReader &xml, ReadContext &ctx);
 };

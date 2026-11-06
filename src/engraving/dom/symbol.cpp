@@ -44,23 +44,23 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 Symbol::Symbol(const ElementType &type, EngravingObject *parent, ElementFlags f) : BSymbol(type, parent, f) {
-    sym_ = SymId::accidentalSharp; // arbitrary valid default
+    sym_ = SymId::ACCIDENTAL_SHARP; // arbitrary valid default
 }
 
 Symbol::Symbol(EngravingObject *parent, ElementFlags f) : Symbol(ElementType::SYMBOL, parent, f) {}
 
 Symbol::Symbol(const Symbol &s) : BSymbol(s) {
     sym_ = s.sym_;
-    scoreFont_ = s.scoreFont_;
-    symbolsSize_ = s.symbolsSize_;
-    symAngle_ = s.symAngle_;
+    score_font_ = s.score_font_;
+    symbols_size_ = s.symbols_size_;
+    sym_angle_ = s.sym_angle_;
 }
 
-void Symbol::setSym(SymId s, const std::shared_ptr<IEngravingFont> &sf) {
+void Symbol::set_sym(SymId s, const std::shared_ptr<IEngravingFont> &sf) {
     sym_ = s;
 
     if (sf.get()) {
-        scoreFont_ = sf;
+        score_font_ = sf;
     }
 }
 
@@ -68,7 +68,7 @@ void Symbol::setSym(SymId s, const std::shared_ptr<IEngravingFont> &sf) {
 //   symName
 //---------------------------------------------------------
 
-AsciiStringView Symbol::symName() const { return SymNames::nameForSymId(sym_); }
+AsciiStringView Symbol::sym_name() const { return SymNames::name_for_sym_id(sym_); }
 
 //---------------------------------------------------------
 //   accessibleInfo
@@ -78,67 +78,67 @@ AsciiStringView Symbol::symName() const { return SymNames::nameForSymId(sym_); }
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Symbol::subtypeUserName() const { return SymNames::userNameForSymId(sym_); }
+muse::TranslatableString Symbol::subtype_user_name() const { return SymNames::user_name_for_sym_id(sym_); }
 
 //---------------------------------------------------------
 //   Symbol::getProperty
 //---------------------------------------------------------
-PropertyValue Symbol::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::SYMBOL: return PropertyValue::fromValue(sym_);
+PropertyValue Symbol::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::SYMBOL: return PropertyValue::from_value(sym_);
         case Pid::SCORE_FONT:
-            if (scoreFont_) {
-                return PropertyValue::fromValue(String::fromStdString(scoreFont_->name()));
+            if (score_font_) {
+                return PropertyValue::from_value(String::from_std_string(score_font_->name()));
             } else {
-                return PropertyValue::fromValue(String());
+                return PropertyValue::from_value(String());
             }
-        case Pid::SYMBOLS_SIZE: return PropertyValue::fromValue(symbolsSize_);
-        case Pid::SYMBOL_ANGLE: return PropertyValue::fromValue(symAngle_);
+        case Pid::SYMBOLS_SIZE: return PropertyValue::from_value(symbols_size_);
+        case Pid::SYMBOL_ANGLE: return PropertyValue::from_value(sym_angle_);
         default: break;
     }
-    return BSymbol::getProperty(propertyId);
+    return BSymbol::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   Symbol::setProperty
 //---------------------------------------------------------
 
-bool Symbol::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
+bool Symbol::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
         case Pid::SYMBOL: sym_ = v.value<SymId>(); break;
-        case Pid::SCORE_FONT: scoreFont_ = score()->engravingFonts()->fontByName(v.value<String>().toStdString()); break;
-        case Pid::SYMBOLS_SIZE: symbolsSize_ = v.toDouble(); break;
-        case Pid::SYMBOL_ANGLE: symAngle_ = v.toDouble(); break;
+        case Pid::SCORE_FONT: score_font_ = score()->engraving_fonts()->font_by_name(v.value<String>().to_std_string()); break;
+        case Pid::SYMBOLS_SIZE: symbols_size_ = v.to_double(); break;
+        case Pid::SYMBOL_ANGLE: sym_angle_ = v.to_double(); break;
         default: break;
     }
-    triggerLayout();
-    return BSymbol::setProperty(propertyId, v);
+    trigger_layout();
+    return BSymbol::set_property(property_id, v);
 }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Symbol::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::SYMBOL: return SymId::accidentalSharp;
+PropertyValue Symbol::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::SYMBOL: return SymId::ACCIDENTAL_SHARP;
         case Pid::SYMBOL_ANGLE: return 0.0;
         case Pid::SYMBOLS_SIZE: return 1.0;
         case Pid::SCORE_FONT:
-            if (scoreFont_) {
-                return style().styleSt(Sid::musicalSymbolFont);
+            if (score_font_) {
+                return style().style_st(Sid::MUSICAL_SYMBOL_FONT);
             } else {
                 return String();
             }
         default: break;
     }
-    return EngravingItem::propertyDefault(propertyId);
+    return EngravingItem::property_default(property_id);
 }
 
 void Symbol::reset() {
-    undoResetProperty(Pid::SYMBOLS_SIZE);
-    undoResetProperty(Pid::SYMBOL_ANGLE);
-    undoResetProperty(Pid::SCORE_FONT);
+    undo_reset_property(Pid::SYMBOLS_SIZE);
+    undo_reset_property(Pid::SYMBOL_ANGLE);
+    undo_reset_property(Pid::SCORE_FONT);
     BSymbol::reset();
 }
 
@@ -148,7 +148,7 @@ void Symbol::reset() {
 
 FSymbol::FSymbol(DummyParentOr<EngravingItem> parent) : BSymbol(ElementType::FSYMBOL, parent) {
     code_ = 0;
-    font_.setNoFontMerging(true);
+    font_.set_no_font_merging(true);
 }
 
 FSymbol::FSymbol(const FSymbol &s) : BSymbol(s) {
@@ -163,7 +163,7 @@ FSymbol::FSymbol(const FSymbol &s) : BSymbol(s) {
 // and String use the UTF-16 encoding internally (like QChar, QString).
 //---------------------------------------------------------
 
-String FSymbol::toString() const { return String::fromUcs4(code_); }
+String FSymbol::to_string() const { return String::from_ucs4(code_); }
 
 //---------------------------------------------------------
 //   accessibleInfo
@@ -176,8 +176,8 @@ String FSymbol::toString() const { return String::fromUcs4(code_); }
 //   setFont
 //---------------------------------------------------------
 
-void FSymbol::setFont(const Font &f) {
+void FSymbol::set_font(const Font &f) {
     font_ = f;
-    font_.setNoFontMerging(true);
+    font_.set_no_font_merging(true);
 }
 } // namespace mu::engraving

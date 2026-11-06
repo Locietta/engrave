@@ -11,7 +11,7 @@ namespace muse::draw {
 
 // Single-face fonts retain upstream alias behavior. Collections select an exact
 // family/bold/italic key, so registering a later face never renders face zero.
-inline FT_Error newMatchingMemoryFace(FT_Library library, const FT_Byte *bytes, FT_Long size, const FontDataKey &key, FT_Face *result) {
+inline FT_Error new_matching_memory_face(FT_Library library, const FT_Byte *bytes, FT_Long size, const FontDataKey &key, FT_Face *result) {
     if (!result || !bytes || size <= 0) return FT_Err_Invalid_Argument;
     *result = nullptr;
     FT_Face face = nullptr;

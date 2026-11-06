@@ -24,89 +24,89 @@
 #include "style.h"
 
 namespace mu::engraving {
-const std::vector<Sid> &pageStyles() {
-    static const std::vector<Sid> styles{Sid::pageWidth,
-                                         Sid::pageHeight,
-                                         Sid::pagePrintableWidth,
-                                         Sid::pageEvenTopMargin,
-                                         Sid::pageEvenBottomMargin,
-                                         Sid::pageEvenLeftMargin,
-                                         Sid::pageOddTopMargin,
-                                         Sid::pageOddBottomMargin,
-                                         Sid::pageOddLeftMargin,
-                                         Sid::pageTwosided,
-                                         Sid::spatium};
+const std::vector<Sid> &page_styles() {
+    static const std::vector<Sid> styles{Sid::PAGE_WIDTH,
+                                         Sid::PAGE_HEIGHT,
+                                         Sid::PAGE_PRINTABLE_WIDTH,
+                                         Sid::PAGE_EVEN_TOP_MARGIN,
+                                         Sid::PAGE_EVEN_BOTTOM_MARGIN,
+                                         Sid::PAGE_EVEN_LEFT_MARGIN,
+                                         Sid::PAGE_ODD_TOP_MARGIN,
+                                         Sid::PAGE_ODD_BOTTOM_MARGIN,
+                                         Sid::PAGE_ODD_LEFT_MARGIN,
+                                         Sid::PAGE_TWOSIDED,
+                                         Sid::SPATIUM};
 
     return styles;
 }
 
 PageSizeGetAccessor::PageSizeGetAccessor(const MStyle &style) : style_(style) {}
 
-double PageSizeGetAccessor::width() const { return style_.styleD(Sid::pageWidth); }
+double PageSizeGetAccessor::width() const { return style_.style_d(Sid::PAGE_WIDTH); }
 
-double PageSizeGetAccessor::height() const { return style_.styleD(Sid::pageHeight); }
+double PageSizeGetAccessor::height() const { return style_.style_d(Sid::PAGE_HEIGHT); }
 
-double PageSizeGetAccessor::printableWidth() const { return style_.styleD(Sid::pagePrintableWidth); }
+double PageSizeGetAccessor::printable_width() const { return style_.style_d(Sid::PAGE_PRINTABLE_WIDTH); }
 
-double PageSizeGetAccessor::evenTopMargin() const { return style_.styleD(Sid::pageEvenTopMargin); }
+double PageSizeGetAccessor::even_top_margin() const { return style_.style_d(Sid::PAGE_EVEN_TOP_MARGIN); }
 
-double PageSizeGetAccessor::evenBottomMargin() const { return style_.styleD(Sid::pageEvenBottomMargin); }
+double PageSizeGetAccessor::even_bottom_margin() const { return style_.style_d(Sid::PAGE_EVEN_BOTTOM_MARGIN); }
 
-double PageSizeGetAccessor::evenLeftMargin() const { return style_.styleD(Sid::pageEvenLeftMargin); }
+double PageSizeGetAccessor::even_left_margin() const { return style_.style_d(Sid::PAGE_EVEN_LEFT_MARGIN); }
 
-double PageSizeGetAccessor::oddTopMargin() const { return style_.styleD(Sid::pageOddTopMargin); }
+double PageSizeGetAccessor::odd_top_margin() const { return style_.style_d(Sid::PAGE_ODD_TOP_MARGIN); }
 
-double PageSizeGetAccessor::oddBottomMargin() const { return style_.styleD(Sid::pageOddBottomMargin); }
+double PageSizeGetAccessor::odd_bottom_margin() const { return style_.style_d(Sid::PAGE_ODD_BOTTOM_MARGIN); }
 
-double PageSizeGetAccessor::oddLeftMargin() const { return style_.styleD(Sid::pageOddLeftMargin); }
+double PageSizeGetAccessor::odd_left_margin() const { return style_.style_d(Sid::PAGE_ODD_LEFT_MARGIN); }
 
-double PageSizeGetAccessor::twosided() const { return style_.styleD(Sid::pageTwosided); }
+double PageSizeGetAccessor::twosided() const { return style_.style_d(Sid::PAGE_TWOSIDED); }
 
-double PageSizeGetAccessor::spatium() const { return style_.styleD(Sid::spatium); }
+double PageSizeGetAccessor::spatium() const { return style_.style_d(Sid::SPATIUM); }
 
 PageSizeSetAccessor::PageSizeSetAccessor(MStyle &style) : style_(style) {}
 
-double PageSizeSetAccessor::width() const { return style_.styleD(Sid::pageWidth); }
+double PageSizeSetAccessor::width() const { return style_.style_d(Sid::PAGE_WIDTH); }
 
-double PageSizeSetAccessor::height() const { return style_.styleD(Sid::pageHeight); }
+double PageSizeSetAccessor::height() const { return style_.style_d(Sid::PAGE_HEIGHT); }
 
-double PageSizeSetAccessor::printableWidth() const { return style_.styleD(Sid::pagePrintableWidth); }
+double PageSizeSetAccessor::printable_width() const { return style_.style_d(Sid::PAGE_PRINTABLE_WIDTH); }
 
-double PageSizeSetAccessor::evenTopMargin() const { return style_.styleD(Sid::pageEvenTopMargin); }
+double PageSizeSetAccessor::even_top_margin() const { return style_.style_d(Sid::PAGE_EVEN_TOP_MARGIN); }
 
-double PageSizeSetAccessor::evenBottomMargin() const { return style_.styleD(Sid::pageEvenBottomMargin); }
+double PageSizeSetAccessor::even_bottom_margin() const { return style_.style_d(Sid::PAGE_EVEN_BOTTOM_MARGIN); }
 
-double PageSizeSetAccessor::evenLeftMargin() const { return style_.styleD(Sid::pageEvenLeftMargin); }
+double PageSizeSetAccessor::even_left_margin() const { return style_.style_d(Sid::PAGE_EVEN_LEFT_MARGIN); }
 
-double PageSizeSetAccessor::oddTopMargin() const { return style_.styleD(Sid::pageOddTopMargin); }
+double PageSizeSetAccessor::odd_top_margin() const { return style_.style_d(Sid::PAGE_ODD_TOP_MARGIN); }
 
-double PageSizeSetAccessor::oddBottomMargin() const { return style_.styleD(Sid::pageOddBottomMargin); }
+double PageSizeSetAccessor::odd_bottom_margin() const { return style_.style_d(Sid::PAGE_ODD_BOTTOM_MARGIN); }
 
-double PageSizeSetAccessor::oddLeftMargin() const { return style_.styleD(Sid::pageOddLeftMargin); }
+double PageSizeSetAccessor::odd_left_margin() const { return style_.style_d(Sid::PAGE_ODD_LEFT_MARGIN); }
 
-double PageSizeSetAccessor::twosided() const { return style_.styleD(Sid::pageTwosided); }
+double PageSizeSetAccessor::twosided() const { return style_.style_d(Sid::PAGE_TWOSIDED); }
 
-double PageSizeSetAccessor::spatium() const { return style_.styleD(Sid::spatium); }
+double PageSizeSetAccessor::spatium() const { return style_.style_d(Sid::SPATIUM); }
 
-void PageSizeSetAccessor::setWidth(double v) { style_.set(Sid::pageWidth, v); }
+void PageSizeSetAccessor::set_width(double v) { style_.set(Sid::PAGE_WIDTH, v); }
 
-void PageSizeSetAccessor::setHeight(double v) { style_.set(Sid::pageHeight, v); }
+void PageSizeSetAccessor::set_height(double v) { style_.set(Sid::PAGE_HEIGHT, v); }
 
-void PageSizeSetAccessor::setPrintableWidth(double v) { style_.set(Sid::pagePrintableWidth, v); }
+void PageSizeSetAccessor::set_printable_width(double v) { style_.set(Sid::PAGE_PRINTABLE_WIDTH, v); }
 
-void PageSizeSetAccessor::setEvenTopMargin(double v) { style_.set(Sid::pageEvenTopMargin, v); }
+void PageSizeSetAccessor::set_even_top_margin(double v) { style_.set(Sid::PAGE_EVEN_TOP_MARGIN, v); }
 
-void PageSizeSetAccessor::setEvenBottomMargin(double v) { style_.set(Sid::pageEvenBottomMargin, v); }
+void PageSizeSetAccessor::set_even_bottom_margin(double v) { style_.set(Sid::PAGE_EVEN_BOTTOM_MARGIN, v); }
 
-void PageSizeSetAccessor::setEvenLeftMargin(double v) { style_.set(Sid::pageEvenLeftMargin, v); }
+void PageSizeSetAccessor::set_even_left_margin(double v) { style_.set(Sid::PAGE_EVEN_LEFT_MARGIN, v); }
 
-void PageSizeSetAccessor::setOddTopMargin(double v) { style_.set(Sid::pageOddTopMargin, v); }
+void PageSizeSetAccessor::set_odd_top_margin(double v) { style_.set(Sid::PAGE_ODD_TOP_MARGIN, v); }
 
-void PageSizeSetAccessor::setOddBottomMargin(double v) { style_.set(Sid::pageOddBottomMargin, v); }
+void PageSizeSetAccessor::set_odd_bottom_margin(double v) { style_.set(Sid::PAGE_ODD_BOTTOM_MARGIN, v); }
 
-void PageSizeSetAccessor::setOddLeftMargin(double v) { style_.set(Sid::pageOddLeftMargin, v); }
+void PageSizeSetAccessor::set_odd_left_margin(double v) { style_.set(Sid::PAGE_ODD_LEFT_MARGIN, v); }
 
-void PageSizeSetAccessor::setTwosided(double v) { style_.set(Sid::pageTwosided, v); }
+void PageSizeSetAccessor::set_twosided(double v) { style_.set(Sid::PAGE_TWOSIDED, v); }
 
-void PageSizeSetAccessor::setSpatium(double v) { style_.set(Sid::spatium, v); }
+void PageSizeSetAccessor::set_spatium(double v) { style_.set(Sid::SPATIUM, v); }
 } // namespace mu::engraving

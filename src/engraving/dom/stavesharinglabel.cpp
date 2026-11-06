@@ -22,13 +22,13 @@
 #include "stavesharinglabel.h"
 
 namespace mu::engraving {
-static const ElementStyle STAVE_SHARING_LABEL_STYLE{
-    {Sid::staveSharingLabelPlacement, Pid::PLACEMENT},
-    {Sid::staveSharingLabelMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle stave_sharing_label_element_style{
+    {Sid::STAVE_SHARING_LABEL_PLACEMENT, Pid::PLACEMENT},
+    {Sid::STAVE_SHARING_LABEL_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 StaveSharingLabel::StaveSharingLabel(DummyParentOr<Segment> parent, TextStyleType tid)
     : StaffTextBase(ElementType::STAVE_SHARING_LABEL, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    initElementStyle(&STAVE_SHARING_LABEL_STYLE);
+    init_element_style(&::mu::engraving::stave_sharing_label_element_style);
 }
 } // namespace mu::engraving

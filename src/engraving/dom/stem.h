@@ -39,43 +39,43 @@ public:
 
     Stem *clone() const override { return new Stem(*this); }
 
-    EngravingItem *elementBase() const override;
+    EngravingItem *element_base() const override;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     void reset() override;
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    staff_idx_t vStaffIdx() const override;
+    staff_idx_t v_staff_idx() const override;
 
-    Chord *chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return to_chord(ownership_parent()); }
 
     bool up() const;
 
-    Spatium baseLength() const { return baseLength_; }
+    Spatium base_length() const { return base_length_; }
 
-    void setBaseLength(Spatium baseLength);
+    void set_base_length(Spatium base_length);
 
-    Spatium userLength() const { return userLength_; }
+    Spatium user_length() const { return user_length_; }
 
-    void setUserLength(Spatium userLength) { userLength_ = userLength; }
+    void set_user_length(Spatium user_length) { user_length_ = user_length; }
 
-    Spatium lineWidth() const { return lineWidth_; }
+    Spatium line_width() const { return line_width_; }
 
-    double lineWidthMag() const;
+    double line_width_mag() const;
 
-    void setLineWidth(Spatium lineWidth) { lineWidth_ = lineWidth; }
+    void set_line_width(Spatium line_width) { line_width_ = line_width; }
 
-    PointF flagPosition() const;
+    PointF flag_position() const;
 
-    double length() const { return absoluteFromSpatium(baseLength_ + userLength_); }
+    double length() const { return absolute_from_spatium(base_length_ + user_length_); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;
-        double beamCorrection = 0.0;
+        double beam_correction = 0.0;
     };
     DECLARE_LAYOUTDATA_METHODS(Stem)
 
@@ -83,9 +83,9 @@ private:
     friend class Factory;
     Stem(DummyParentOr<Chord> parent);
 
-    Spatium baseLength_ = 0.0_sp;
+    Spatium base_length_ = 0.0_sp;
 
-    Spatium userLength_ = 0.0_sp;
-    Spatium lineWidth_ = 0.0_sp;
+    Spatium user_length_ = 0.0_sp;
+    Spatium line_width_ = 0.0_sp;
 };
 } // namespace mu::engraving

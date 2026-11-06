@@ -32,6 +32,6 @@ namespace mu::engraving::read500 {
 class StaffRead {
 public:
 
-    static void readStaff(Score *score, XmlReader &, ReadContext &ctx);
+    static void read_staff(Score *score, XmlReader &, ReadContext &ctx);
 };
 } // namespace mu::engraving::read500

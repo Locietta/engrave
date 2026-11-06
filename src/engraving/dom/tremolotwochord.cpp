@@ -46,50 +46,50 @@ namespace mu::engraving {
 //   tremoloStyle
 //---------------------------------------------------------
 
-static const ElementStyle TREMOLO_STYLE{{Sid::tremoloStyle, Pid::TREMOLO_STYLE}};
+static const ElementStyle tremolo_style{{Sid::TREMOLO_STYLE, Pid::TREMOLO_STYLE}};
 
 //---------------------------------------------------------
 //   Tremolo
 //---------------------------------------------------------
 
 TremoloTwoChord::TremoloTwoChord(DummyParentOr<Chord> parent) : BeamBase(ElementType::TREMOLO_TWOCHORD, parent, ElementFlag::MOVABLE) {
-    initElementStyle(&TREMOLO_STYLE);
+    init_element_style(&::mu::engraving::tremolo_style);
 }
 
 TremoloTwoChord::TremoloTwoChord(const TremoloTwoChord &t) : BeamBase(t) {
-    setTremoloType(t.tremoloType());
+    set_tremolo_type(t.tremolo_type());
     chord1_ = t.chord1();
     chord2_ = t.chord2();
-    durationType_ = t.durationType_;
+    duration_type_ = t.duration_type_;
 }
 
 TremoloTwoChord::~TremoloTwoChord() {
     //
     // delete all references from chords
     //
-    if (chord1_ && chord1_->tremoloTwoChord() == this) {
-        chord1_->setTremoloTwoChord(nullptr);
+    if (chord1_ && chord1_->tremolo_two_chord() == this) {
+        chord1_->set_tremolo_two_chord(nullptr);
     }
-    if (chord2_ && chord2_->tremoloTwoChord() == this) {
-        chord2_->setTremoloTwoChord(nullptr);
+    if (chord2_ && chord2_->tremolo_two_chord() == this) {
+        chord2_->set_tremolo_two_chord(nullptr);
     }
 
-    clearBeamSegments();
+    clear_beam_segments();
 }
 
 //---------------------------------------------------------
 //   chordMag
 //---------------------------------------------------------
 
-double TremoloTwoChord::chordMag() const { return chord() ? chord()->intrinsicMag() : 1.0; }
+double TremoloTwoChord::chord_mag() const { return chord() ? chord()->intrinsic_mag() : 1.0; }
 
 //---------------------------------------------------------
 //   minHeight
 //---------------------------------------------------------
 
-double TremoloTwoChord::minHeight() const {
-    const double sw = style().styleS(Sid::tremoloLineWidth).val() * chordMag();
-    const double td = style().styleS(Sid::tremoloDistance).val() * chordMag();
+double TremoloTwoChord::min_height() const {
+    const double sw = style().style_s(Sid::TREMOLO_LINE_WIDTH).val() * chord_mag();
+    const double td = style().style_s(Sid::TREMOLO_DISTANCE).val() * chord_mag();
     return (lines() - 1) * td + sw;
 }
 
@@ -97,18 +97,18 @@ double TremoloTwoChord::minHeight() const {
 //   chordBeamAnchor
 //---------------------------------------------------------
 
-PointF TremoloTwoChord::chordBeamAnchor(const ChordRest *chord, ChordBeamAnchorType anchorType) const {
-    return rendering::score::BeamTremoloLayout::chordBeamAnchor(this->ldata(), chord, anchorType);
+PointF TremoloTwoChord::chord_beam_anchor(const ChordRest *chord, ChordBeamAnchorType anchor_type) const {
+    return rendering::score::BeamTremoloLayout::chord_beam_anchor(this->ldata(), chord, anchor_type);
 }
 
 //---------------------------------------------------------
 //   setTremoloType
 //---------------------------------------------------------
 
-void TremoloTwoChord::setTremoloType(TremoloType t) {
-    IF_ASSERT_FAILED(isTremoloTwoChord(t)) { return; }
-    tremoloType_ = t;
-    switch (tremoloType()) {
+void TremoloTwoChord::set_tremolo_type(TremoloType t) {
+    IF_ASSERT_FAILED(is_tremolo_two_chord(t)) { return; }
+    tremolo_type_ = t;
+    switch (tremolo_type()) {
         case TremoloType::R16:
         case TremoloType::C16: lines_ = 2; break;
         case TremoloType::R32:
@@ -122,7 +122,7 @@ void TremoloTwoChord::setTremoloType(TremoloType t) {
         default: lines_ = 1; break;
     }
 
-    styleChanged();
+    style_changed();
 }
 
 //---------------------------------------------------------
@@ -131,33 +131,33 @@ void TremoloTwoChord::setTremoloType(TremoloType t) {
 
 void TremoloTwoChord::reset() {
     EngravingItem::reset();
-    if (userModified()) {
+    if (user_modified()) {
         //undoChangeProperty(Pid::BEAM_POS, PropertyValue::fromValue(beamPos()));
-        undoChangeProperty(Pid::USER_MODIFIED, false);
+        undo_change_property(Pid::USER_MODIFIED, false);
     }
-    undoChangeProperty(Pid::STEM_DIRECTION, DirectionV::AUTO);
-    resetProperty(Pid::BEAM_NO_SLOPE);
+    undo_change_property(Pid::STEM_DIRECTION, DirectionV::AUTO);
+    reset_property(Pid::BEAM_NO_SLOPE);
 }
 
 //---------------------------------------------------------
 //   setBeamDirection
 //---------------------------------------------------------
 
-void TremoloTwoChord::setDirection(DirectionV d) {
+void TremoloTwoChord::set_direction(DirectionV d) {
     if (direction() == d) {
         return;
     }
 
-    doSetDirection(d);
+    do_set_direction(d);
 
     if (d != DirectionV::AUTO) {
-        setUp(d == DirectionV::UP);
+        set_up(d == DirectionV::UP);
     }
     if (chord1_) {
-        chord1_->setStemDirection(d);
+        chord1_->set_stem_direction(d);
     }
     if (chord2_) {
-        chord2_->setStemDirection(d);
+        chord2_->set_stem_direction(d);
     }
 }
 
@@ -166,27 +166,27 @@ void TremoloTwoChord::setDirection(DirectionV d) {
 //    Return true if tremolo is two-note cross-staff and beams between staves
 //---------------------------------------------------------
 
-bool TremoloTwoChord::crossStaffBeamBetween() const {
-    return ((chord1_->staffMove() > chord2_->staffMove()) && chord1_->up() && !chord2_->up()) ||
-           ((chord1_->staffMove() < chord2_->staffMove()) && !chord1_->up() && chord2_->up());
+bool TremoloTwoChord::cross_staff_beam_between() const {
+    return ((chord1_->staff_move() > chord2_->staff_move()) && chord1_->up() && !chord2_->up()) ||
+           ((chord1_->staff_move() < chord2_->staff_move()) && !chord1_->up() && chord2_->up());
 }
 
-TDuration TremoloTwoChord::durationType() const { return durationType_; }
+TDuration TremoloTwoChord::duration_type() const { return duration_type_; }
 
-void TremoloTwoChord::setDurationType(TDuration d) {
-    if (durationType_ == d) {
+void TremoloTwoChord::set_duration_type(TDuration d) {
+    if (duration_type_ == d) {
         return;
     }
 
-    durationType_ = d;
-    styleChanged();
+    duration_type_ = d;
+    style_changed();
 }
 
 //---------------------------------------------------------
 //   tremoloLen
 //---------------------------------------------------------
 
-Fraction TremoloTwoChord::tremoloLen() const {
+Fraction TremoloTwoChord::tremolo_len() const {
     Fraction f;
     switch (lines()) {
         case 1: f.set(1, 8); break;
@@ -203,36 +203,36 @@ Fraction TremoloTwoChord::tremoloLen() const {
 //   setBeamPos
 //---------------------------------------------------------
 
-void TremoloTwoChord::setBeamPos(const PairF &bp) {
-    int idx = directionIdx();
-    setUserModified(true);
-    setGenerated(false);
+void TremoloTwoChord::set_beam_pos(const PairF &bp) {
+    int idx = direction_idx();
+    set_user_modified(true);
+    set_generated(false);
 
-    double _spatium = spatium();
-    beamFragment_.py1[idx] = bp.first * _spatium;
-    beamFragment_.py2[idx] = bp.second * _spatium;
+    double spatium_value = spatium();
+    beam_fragment_.py1[idx] = bp.first * spatium_value;
+    beam_fragment_.py2[idx] = bp.second * spatium_value;
 }
 
 //---------------------------------------------------------
 //   beamPos
 //---------------------------------------------------------
 
-PairF TremoloTwoChord::beamPos() const {
-    int idx = directionIdx();
-    double _spatium = spatium();
-    return PairF(beamFragment_.py1[idx] / _spatium, beamFragment_.py2[idx] / _spatium);
+PairF TremoloTwoChord::beam_pos() const {
+    int idx = direction_idx();
+    double spatium_value = spatium();
+    return PairF(beam_fragment_.py1[idx] / spatium_value, beam_fragment_.py2[idx] / spatium_value);
 }
 
 //---------------------------------------------------------
 //   triggerLayout
 //---------------------------------------------------------
 
-void TremoloTwoChord::triggerLayout() const {
+void TremoloTwoChord::trigger_layout() const {
     if (chord1_ && chord2_) {
-        toChordRest(chord1_)->triggerLayout();
-        toChordRest(chord2_)->triggerLayout();
+        to_chord_rest(chord1_)->trigger_layout();
+        to_chord_rest(chord2_)->trigger_layout();
     } else {
-        EngravingItem::triggerLayout();
+        EngravingItem::trigger_layout();
     }
 }
 
@@ -240,51 +240,51 @@ void TremoloTwoChord::triggerLayout() const {
 //   subtypeName
 //---------------------------------------------------------
 
-TranslatableString TremoloTwoChord::subtypeUserName() const { return TConv::userName(tremoloType()); }
+TranslatableString TremoloTwoChord::subtype_user_name() const { return TConv::user_name(tremolo_type()); }
 
 //---------------------------------------------------------
 //   customStyleApplicable
 //---------------------------------------------------------
 
-bool TremoloTwoChord::customStyleApplicable() const {
-    return (durationType().type() == DurationType::V_HALF) && (staffType()->group() != StaffGroup::TAB);
+bool TremoloTwoChord::custom_style_applicable() const {
+    return (duration_type().type() == DurationType::V_HALF) && (staff_type()->group() != StaffGroup::TAB);
 }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue TremoloTwoChord::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::TREMOLO_TYPE: return int(tremoloType_);
+PropertyValue TremoloTwoChord::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::TREMOLO_TYPE: return int(tremolo_type_);
         case Pid::TREMOLO_STYLE: return int(style_);
-        case Pid::PLAY: return playTremolo_;
+        case Pid::PLAY: return play_tremolo_;
         default: break;
     }
-    return BeamBase::getProperty(propertyId);
+    return BeamBase::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool TremoloTwoChord::setProperty(Pid propertyId, const PropertyValue &val) {
-    switch (propertyId) {
-        case Pid::TREMOLO_TYPE: setTremoloType(TremoloType(val.toInt())); break;
+bool TremoloTwoChord::set_property(Pid property_id, const PropertyValue &val) {
+    switch (property_id) {
+        case Pid::TREMOLO_TYPE: set_tremolo_type(TremoloType(val.to_int())); break;
         case Pid::TREMOLO_STYLE:
-            if (customStyleApplicable()) {
-                setTremoloStyle(TremoloStyle(val.toInt()));
+            if (custom_style_applicable()) {
+                set_tremolo_style(TremoloStyle(val.to_int()));
             }
             break;
         case Pid::BEAM_POS:
-            if (userModified()) {
-                setBeamPos(val.value<PairF>());
+            if (user_modified()) {
+                set_beam_pos(val.value<PairF>());
             }
             break;
-        case Pid::PLAY: setPlayTremolo(val.toBool()); break;
-        default: return BeamBase::setProperty(propertyId, val);
+        case Pid::PLAY: set_play_tremolo(val.to_bool()); break;
+        default: return BeamBase::set_property(property_id, val);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -292,11 +292,11 @@ bool TremoloTwoChord::setProperty(Pid propertyId, const PropertyValue &val) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue TremoloTwoChord::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::TREMOLO_STYLE: return style().styleI(Sid::tremoloStyle);
+PropertyValue TremoloTwoChord::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::TREMOLO_STYLE: return style().style_i(Sid::TREMOLO_STYLE);
         case Pid::PLAY: return true;
-        default: return BeamBase::propertyDefault(propertyId);
+        default: return BeamBase::property_default(property_id);
     }
 }
 
@@ -304,85 +304,85 @@ PropertyValue TremoloTwoChord::propertyDefault(Pid propertyId) const {
 //   scanElements
 //---------------------------------------------------------
 
-void TremoloTwoChord::scanElements(std::function<void(EngravingItem *)> func) {
-    if (chord() && chord()->tremoloChordType() == TremoloChordType::TremoloSecondChord) {
+void TremoloTwoChord::scan_elements(std::function<void(EngravingItem *)> func) {
+    if (chord() && chord()->tremolo_chord_type() == TremoloChordType::TREMOLO_SECOND_CHORD) {
         return;
     }
-    EngravingItem::scanElements(func);
+    EngravingItem::scan_elements(func);
 }
 
-void TremoloTwoChord::clearBeamSegments() {
-    BeamSegment *chord1Segment = chord1_ ? chord1_->beamlet() : nullptr;
-    BeamSegment *chord2Segment = chord2_ ? chord2_->beamlet() : nullptr;
+void TremoloTwoChord::clear_beam_segments() {
+    BeamSegment *chord1_segment = chord1_ ? chord1_->beamlet() : nullptr;
+    BeamSegment *chord2_segment = chord2_ ? chord2_->beamlet() : nullptr;
 
-    if (chord1Segment || chord2Segment) {
-        for (BeamSegment *segment : beamSegments_) {
-            if (chord1Segment && chord1Segment == segment) {
-                chord1_->setBeamlet(nullptr);
-            } else if (chord2Segment && chord2Segment == segment) {
-                chord2_->setBeamlet(nullptr);
+    if (chord1_segment || chord2_segment) {
+        for (BeamSegment *segment : beam_segments_) {
+            if (chord1_segment && chord1_segment == segment) {
+                chord1_->set_beamlet(nullptr);
+            } else if (chord2_segment && chord2_segment == segment) {
+                chord2_->set_beamlet(nullptr);
             }
         }
     }
 
-    BeamBase::clearBeamSegments();
+    BeamBase::clear_beam_segments();
 }
 
-int TremoloTwoChord::maxCRMove() const { return std::max(chord1_->staffMove(), chord2_->staffMove()); }
+int TremoloTwoChord::max_cr_move() const { return std::max(chord1_->staff_move(), chord2_->staff_move()); }
 
-int TremoloTwoChord::minCRMove() const { return std::min(chord1_->staffMove(), chord2_->staffMove()); }
+int TremoloTwoChord::min_cr_move() const { return std::min(chord1_->staff_move(), chord2_->staff_move()); }
 
 // used for palettes
-PainterPath TremoloTwoChord::basePath(double stretch) const {
-    bool tradAlternate = style_ == TremoloStyle::TRADITIONAL_ALTERNATE;
-    if (tradAlternate && muse::RealIsEqual(stretch, 0.)) {
+PainterPath TremoloTwoChord::base_path(double stretch) const {
+    bool trad_alternate = style_ == TremoloStyle::TRADITIONAL_ALTERNATE;
+    if (trad_alternate && muse::real_is_equal(stretch, 0.)) {
         // this shape will have to be constructed after the stretch
         // is known
         return PainterPath();
     }
 
     // TODO: This should be a style setting, to replace tremoloStrokeLengthMultiplier
-    static constexpr Spatium stemGapSp = 0.65_sp;
+    static constexpr Spatium stem_gap_sp = 0.65_sp;
 
-    const double sp = spatium() * chordMag();
+    const double sp = spatium() * chord_mag();
 
     // overall width of two-note tremolos should not be changed if chordMag() isn't 1.0
-    double w2 = sp * style().styleS(Sid::tremoloWidth).val() * .5 / chordMag();
-    double lw = sp * style().styleS(Sid::tremoloLineWidth).val();
-    double td = sp * style().styleS(Sid::tremoloDistance).val();
+    double w2 = sp * style().style_s(Sid::TREMOLO_WIDTH).val() * .5 / chord_mag();
+    double lw = sp * style().style_s(Sid::TREMOLO_LINE_WIDTH).val();
+    double td = sp * style().style_s(Sid::TREMOLO_DISTANCE).val();
 
     PainterPath ppath;
 
     // first line
-    ppath.addRect(-w2, 0.0, 2.0 * w2, lw);
+    ppath.add_rect(-w2, 0.0, 2.0 * w2, lw);
     double ty = td;
 
     // other lines
     for (int i = 1; i < lines_; i++) {
-        if (tradAlternate) {
-            double stemWidth1 = chord1_->stem()->lineWidthMag() / stretch;
-            double stemWidth2 = chord2_->stem()->lineWidthMag() / stretch;
-            double inset = stemGapSp.toAbsolute(spatium()) / stretch;
+        if (trad_alternate) {
+            double stem_width1 = chord1_->stem()->line_width_mag() / stretch;
+            double stem_width2 = chord2_->stem()->line_width_mag() / stretch;
+            double inset = stem_gap_sp.to_absolute(spatium()) / stretch;
 
-            ppath.addRect(-w2 + inset + stemWidth1, ty, 2.0 * w2 - (inset * 2.) - (stemWidth2 + stemWidth1), lw);
+            ppath.add_rect(-w2 + inset + stem_width1, ty, 2.0 * w2 - (inset * 2.) - (stem_width2 + stem_width1), lw);
         } else {
-            ppath.addRect(-w2, ty, 2.0 * w2, lw);
+            ppath.add_rect(-w2, ty, 2.0 * w2, lw);
         }
         ty += td;
     }
 
     if (!chord()) {
         // for the palette or for one-note tremolos
-        Transform shearTransform;
-        shearTransform.shear(0.0, -(lw / 2.0) / w2);
-        ppath = shearTransform.map(ppath);
+        Transform shear_transform;
+        shear_transform.shear(0.0, -(lw / 2.0) / w2);
+        ppath = shear_transform.map(ppath);
     }
 
     return ppath;
 }
 
-void TremoloTwoChord::computeShape() {
-    path_ = basePath();
-    setbbox(path_.boundingRect());
+void TremoloTwoChord::compute_shape() {
+    path_ = base_path();
+    setbbox(path_.bounding_rect());
 }
 } // namespace mu::engraving

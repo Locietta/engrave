@@ -39,32 +39,32 @@
 
 using namespace mu::engraving::rendering::score;
 
-void ModifyDom::setCrossMeasure(const Measure *measure, LayoutContext &ctx) {
-    bool crossMeasure = ctx.conf().styleB(Sid::crossMeasureValues);
+void ModifyDom::set_cross_measure(const Measure *measure, LayoutContext &ctx) {
+    bool cross_measure = ctx.conf().style_b(Sid::CROSS_MEASURE_VALUES);
     const DomAccessor &dom = ctx.dom();
-    for (staff_idx_t staffIdx = 0; staffIdx < dom.nstaves(); ++staffIdx) {
-        const Staff *staff = dom.staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
+        const Staff *staff = dom.staff(staff_idx);
         if (!staff->show()) {
             continue;
         }
 
-        track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack = startTrack + VOICES;
+        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+        track_idx_t end_track = start_track + ::mu::engraving::voices;
 
         for (const Segment &segment : measure->segments()) {
-            if (!segment.isJustType(SegmentType::ChordRest)) {
+            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
                 continue;
             }
 
-            for (track_idx_t t = startTrack; t < endTrack; ++t) {
+            for (track_idx_t t = start_track; t < end_track; ++t) {
                 ChordRest *cr = segment.cr(t);
                 if (!cr) {
                     continue;
                 }
-                if (cr->isChord()) {
-                    Chord *chord = toChord(cr);
-                    if (!chord->isGrace()) {
-                        ChordLayout::crossMeasureSetup(chord, crossMeasure, ctx);
+                if (cr->is_chord()) {
+                    Chord *chord = to_chord(cr);
+                    if (!chord->is_grace()) {
+                        ChordLayout::cross_measure_setup(chord, cross_measure, ctx);
                     }
                 }
             }
@@ -72,11 +72,11 @@ void ModifyDom::setCrossMeasure(const Measure *measure, LayoutContext &ctx) {
     }
 }
 
-void ModifyDom::connectTremolo(Measure *m) { m->connectTremolo(); }
+void ModifyDom::connect_tremolo(Measure *m) { m->connect_tremolo(); }
 
-void ModifyDom::cmdUpdateNotes(const Measure *measure, const DomAccessor &dom) {
-    for (staff_idx_t staffIdx = 0; staffIdx < dom.nstaves(); ++staffIdx) {
-        const Staff *staff = dom.staff(staffIdx);
+void ModifyDom::cmd_update_notes(const Measure *measure, const DomAccessor &dom) {
+    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
+        const Staff *staff = dom.staff(staff_idx);
         if (!staff->show()) {
             continue;
         }
@@ -84,41 +84,41 @@ void ModifyDom::cmdUpdateNotes(const Measure *measure, const DomAccessor &dom) {
         AccidentalState as; // list of already set accidentals for this measure
         // initAccidentalState
         {
-            as.init(staff->keySigEvent(measure->tick()));
+            as.init(staff->key_sig_event(measure->tick()));
 
             // Trills may carry an accidental into this measure that requires a force-restate
             int ticks = measure->tick().ticks();
-            auto spanners = dom.spannerMap().findOverlapping(ticks, ticks, true);
+            auto spanners = dom.spanner_map().find_overlapping(ticks, ticks, true);
             for (auto iter : spanners) {
                 Spanner *spanner = iter.value;
-                if (spanner->staffIdx() != staffIdx || !spanner->isTrill() || spanner->tick() == measure->tick() ||
+                if (spanner->staff_idx() != staff_idx || !spanner->is_trill() || spanner->tick() == measure->tick() ||
                     spanner->tick2() == measure->tick()) {
                     continue;
                 }
-                Ornament *ornament = toTrill(spanner)->ornament();
-                Note *trillNote = ornament ? ornament->noteAbove() : nullptr;
-                if (trillNote && trillNote->accidental() && ornament->showAccidental() == OrnamentShowAccidental::DEFAULT) {
-                    int line = absStep(trillNote->tpc(), trillNote->epitch());
-                    as.setForceRestateAccidental(line, true);
+                Ornament *ornament = to_trill(spanner)->ornament();
+                Note *trill_note = ornament ? ornament->note_above() : nullptr;
+                if (trill_note && trill_note->accidental() && ornament->show_accidental() == OrnamentShowAccidental::DEFAULT) {
+                    int line = abs_step(trill_note->tpc(), trill_note->epitch());
+                    as.set_force_restate_accidental(line, true);
                 }
             }
         }
 
-        const TrackRange trackRange = staff->part()->trackRange();
-        track_idx_t mainTrack = staffIdx * VOICES;
+        const TrackRange track_range = staff->part()->track_range();
+        track_idx_t main_track = staff_idx * ::mu::engraving::voices;
 
         for (const Segment &segment : measure->segments()) {
-            if (segment.isJustType(SegmentType::KeySig)) {
-                KeySig *ks = item_cast<KeySig *>(segment.element(mainTrack));
+            if (segment.is_just_type(SegmentType::KEY_SIG)) {
+                KeySig *ks = item_cast<KeySig *>(segment.element(main_track));
                 if (ks) {
                     Fraction tick = segment.tick();
-                    as.init(staff->keySigEvent(tick));
+                    as.init(staff->key_sig_event(tick));
                 }
-            } else if (segment.isJustType(SegmentType::ChordRest)) {
-                for (track_idx_t t = trackRange.startTrack; t < trackRange.endTrack; ++t) {
+            } else if (segment.is_just_type(SegmentType::CHORD_REST)) {
+                for (track_idx_t t = track_range.start_track; t < track_range.end_track; ++t) {
                     Chord *chord = item_cast<Chord *>(segment.element(t), CastMode::MAYBE_BAD); // maybe Rest
                     if (chord) {
-                        chord->cmdUpdateNotes(&as, staffIdx);
+                        chord->cmd_update_notes(&as, staff_idx);
                     }
                 }
             }
@@ -126,47 +126,47 @@ void ModifyDom::cmdUpdateNotes(const Measure *measure, const DomAccessor &dom) {
     }
 }
 
-void ModifyDom::createStems(const Measure *measure, LayoutContext &ctx) {
+void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
     const DomAccessor &dom = ctx.dom();
-    for (staff_idx_t staffIdx = 0; staffIdx < dom.nstaves(); ++staffIdx) {
-        const Staff *staff = dom.staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
+        const Staff *staff = dom.staff(staff_idx);
         if (!staff->show()) {
             continue;
         }
 
-        track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack = startTrack + VOICES;
+        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+        track_idx_t end_track = start_track + ::mu::engraving::voices;
 
         for (const Segment &segment : measure->segments()) {
-            if (!segment.isJustType(SegmentType::ChordRest)) {
+            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
                 continue;
             }
 
-            for (track_idx_t t = startTrack; t < endTrack; ++t) {
+            for (track_idx_t t = start_track; t < end_track; ++t) {
                 ChordRest *cr = segment.cr(t);
                 if (!cr) {
                     continue;
                 }
 
-                auto createStems = [](Chord *chord) {
-                    if (!chord->shouldHaveStem()) {
-                        chord->removeStem();
+                auto create_stems = [](Chord *chord) {
+                    if (!chord->should_have_stem()) {
+                        chord->remove_stem();
                         return;
                     }
 
                     if (!chord->stem()) {
-                        chord->createStem();
+                        chord->create_stem();
                     }
                 };
 
-                if (cr->isChord()) {
-                    Chord *chord = toChord(cr);
+                if (cr->is_chord()) {
+                    Chord *chord = to_chord(cr);
 
-                    for (Chord *c : chord->graceNotes()) {
-                        createStems(c);
+                    for (Chord *c : chord->grace_notes()) {
+                        create_stems(c);
                     }
 
-                    createStems(chord); // create stems needed to calculate spacing
+                    create_stems(chord); // create stems needed to calculate spacing
                     // stem direction can change later during beam processing
                 }
             }
@@ -174,26 +174,26 @@ void ModifyDom::createStems(const Measure *measure, LayoutContext &ctx) {
     }
 }
 
-void ModifyDom::setTrackForChordGraceNotes(Measure *measure, const DomAccessor &dom) {
-    for (staff_idx_t staffIdx = 0; staffIdx < dom.nstaves(); ++staffIdx) {
-        track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack = startTrack + VOICES;
+void ModifyDom::set_track_for_chord_grace_notes(Measure *measure, const DomAccessor &dom) {
+    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
+        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
+        track_idx_t end_track = start_track + ::mu::engraving::voices;
 
         for (const Segment &segment : measure->segments()) {
-            if (!segment.isJustType(SegmentType::ChordRest)) {
+            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
                 continue;
             }
 
-            for (track_idx_t t = startTrack; t < endTrack; ++t) {
+            for (track_idx_t t = start_track; t < end_track; ++t) {
                 ChordRest *cr = segment.cr(t);
                 if (!cr) {
                     continue;
                 }
 
-                if (cr->isChord()) {
-                    Chord *chord = toChord(cr);
-                    for (Chord *c : chord->graceNotes()) {
-                        c->setTrack(t);
+                if (cr->is_chord()) {
+                    Chord *chord = to_chord(cr);
+                    for (Chord *c : chord->grace_notes()) {
+                        c->set_track(t);
                     }
                 }
             }
@@ -201,8 +201,8 @@ void ModifyDom::setTrackForChordGraceNotes(Measure *measure, const DomAccessor &
     }
 }
 
-void ModifyDom::sortMeasureSegments(Measure *measure, LayoutContext &ctx) {
-    measure = measure->coveringMMRestOrThis();
+void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
+    measure = measure->covering_mm_rest_or_this();
 
     // Move segments between measure which need to move
 
@@ -212,38 +212,38 @@ void ModifyDom::sortMeasureSegments(Measure *measure, LayoutContext &ctx) {
 
     // Loop through clef, key, time sigs in this bar.  If any are found and shouldn't be in this bar, move to the next
 
-    auto changeAppliesToRepeatAndContinuation = [&](const Segment &seg) -> bool {
+    auto change_applies_to_repeat_and_continuation = [&](const Segment &seg) -> bool {
         // Check if the change applies to the beginning of the repeat section as well as the continuation
-        const std::vector<Measure *> measures = findFollowingRepeatMeasures(measure);
-        for (const Measure *repeatMeasure : measures) {
-            if (repeatMeasure == measure->nextMeasureMM()) {
+        const std::vector<Measure *> measures = find_following_repeat_measures(measure);
+        for (const Measure *repeat_measure : measures) {
+            if (repeat_measure == measure->next_measure_mm()) {
                 continue;
             }
-            const Fraction startTick = repeatMeasure->tick();
-            for (track_idx_t track = 0; track < ctx.dom().nstaves(); track += VOICES) {
+            const Fraction start_tick = repeat_measure->tick();
+            for (track_idx_t track = 0; track < ctx.dom().nstaves(); track += ::mu::engraving::voices) {
                 const Staff *staff = ctx.dom().staff(track2staff(track));
 
-                if (seg.isKeySigType()) {
-                    const Key continuationKey = staff->key(seg.tick());
-                    const Key repeatKey = staff->key(startTick);
-                    const Key keyBeforeContinuation = staff->key(seg.tick() - Fraction::eps());
-                    return keyBeforeContinuation != continuationKey && continuationKey == repeatKey;
+                if (seg.is_key_sig_type()) {
+                    const Key continuation_key = staff->key(seg.tick());
+                    const Key repeat_key = staff->key(start_tick);
+                    const Key key_before_continuation = staff->key(seg.tick() - Fraction::eps());
+                    return key_before_continuation != continuation_key && continuation_key == repeat_key;
                 }
 
-                if (seg.isTimeSigType()) {
-                    const TimeSig *continuationTimeSig = staff->timeSig(seg.tick());
-                    const TimeSig *repeatTimeSig = staff->timeSig(startTick);
-                    const TimeSig *timeSigBeforeContinuation = staff->timeSig(seg.tick() - Fraction::eps());
-                    return continuationTimeSig && repeatTimeSig && timeSigBeforeContinuation &&
-                           timeSigBeforeContinuation->sig() != continuationTimeSig->sig() &&
-                           continuationTimeSig->sig() == repeatTimeSig->sig();
+                if (seg.is_time_sig_type()) {
+                    const TimeSig *continuation_time_sig = staff->time_sig(seg.tick());
+                    const TimeSig *repeat_time_sig = staff->time_sig(start_tick);
+                    const TimeSig *time_sig_before_continuation = staff->time_sig(seg.tick() - Fraction::eps());
+                    return continuation_time_sig && repeat_time_sig && time_sig_before_continuation &&
+                           time_sig_before_continuation->sig() != continuation_time_sig->sig() &&
+                           continuation_time_sig->sig() == repeat_time_sig->sig();
                 }
 
-                if (seg.isClefType()) {
-                    const ClefType continuationClef = staff->clef(seg.tick());
-                    const ClefType repeatClef = staff->clef(startTick);
-                    const ClefType clefBeforeContinuation = staff->clef(seg.tick() - Fraction::eps());
-                    if (clefBeforeContinuation != continuationClef && continuationClef == repeatClef) {
+                if (seg.is_clef_type()) {
+                    const ClefType continuation_clef = staff->clef(seg.tick());
+                    const ClefType repeat_clef = staff->clef(start_tick);
+                    const ClefType clef_before_continuation = staff->clef(seg.tick() - Fraction::eps());
+                    if (clef_before_continuation != continuation_clef && continuation_clef == repeat_clef) {
                         return true;
                     }
                 }
@@ -252,231 +252,231 @@ void ModifyDom::sortMeasureSegments(Measure *measure, LayoutContext &ctx) {
         return false;
     };
 
-    auto clefSegBarlinePosition = [&](const Segment &seg) -> ClefToBarlinePosition {
+    auto clef_seg_barline_position = [&](const Segment &seg) -> ClefToBarlinePosition {
         for (EngravingItem *el : seg.elist()) {
-            if (!el || !el->isClef()) {
+            if (!el || !el->is_clef()) {
                 continue;
             }
-            const Clef *clef = toClef(el);
-            if (clef->clefToBarlinePosition() != ClefToBarlinePosition::AUTO) {
-                return clef->clefToBarlinePosition();
+            const Clef *clef = to_clef(el);
+            if (clef->clef_to_barline_position() != ClefToBarlinePosition::AUTO) {
+                return clef->clef_to_barline_position();
             }
         }
         return ClefToBarlinePosition::AUTO;
     };
 
-    MeasureBase *nextMb = measure ? measure->nextMM() : nullptr;
+    MeasureBase *next_mb = measure ? measure->next_mm() : nullptr;
 
-    if (!nextMb || !nextMb->isMeasure()) {
+    if (!next_mb || !next_mb->is_measure()) {
         return;
     }
 
-    Measure *nextMeasure = toMeasure(nextMb);
+    Measure *next_measure = to_measure(next_mb);
 
-    const bool sigsShouldBeInThisMeasure = ((measure->repeatEnd() && ctx.conf().styleB(Sid::changesBeforeBarlineRepeats)) ||
-                                            (measure->repeatJump() && ctx.conf().styleB(Sid::changesBeforeBarlineOtherJumps)));
-    std::vector<Segment *> segsToRemove;
+    const bool sigs_should_be_in_this_measure = ((measure->repeat_end() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_REPEATS)) ||
+                                                 (measure->repeat_jump() && ctx.conf().style_b(Sid::CHANGES_BEFORE_BARLINE_OTHER_JUMPS)));
+    std::vector<Segment *> segs_to_remove;
 
-    std::vector<Segment *> segsToMoveToNextMeasure;
+    std::vector<Segment *> segs_to_move_to_next_measure;
     for (Segment &seg : measure->segments()) {
-        if (seg.tick() != measure->endTick() || seg.isChordRestType()) {
+        if (seg.tick() != measure->end_tick() || seg.is_chord_rest_type()) {
             continue;
         }
 
         // Move clefs at the end of this measure into the next measure
-        if (seg.isClefType()) {
-            ClefToBarlinePosition pos = clefSegBarlinePosition(seg);
+        if (seg.is_clef_type()) {
+            ClefToBarlinePosition pos = clef_seg_barline_position(seg);
             // Clef position explicitly set by user
             if (pos == ClefToBarlinePosition::BEFORE) {
                 continue;
             } else if (pos == ClefToBarlinePosition::AFTER) {
-                segsToMoveToNextMeasure.push_back(&seg);
+                segs_to_move_to_next_measure.push_back(&seg);
                 continue;
             }
 
             // AUTO on normal barline
-            if (!measure->repeatEnd()) {
+            if (!measure->repeat_end()) {
                 continue;
             }
 
             // Otherwise, pos is AUTO
             // Place changes before barline & clefs before repeats style settings
-            if ((!sigsShouldBeInThisMeasure && !changeAppliesToRepeatAndContinuation(seg)) ||
-                (measure->repeatEnd() && !ctx.conf().styleB(Sid::placeClefsBeforeRepeats))) {
-                segsToMoveToNextMeasure.push_back(&seg);
+            if ((!sigs_should_be_in_this_measure && !change_applies_to_repeat_and_continuation(seg)) ||
+                (measure->repeat_end() && !ctx.conf().style_b(Sid::PLACE_CLEFS_BEFORE_REPEATS))) {
+                segs_to_move_to_next_measure.push_back(&seg);
                 continue;
             }
         }
 
         // Move key sigs and time sigs at the end of this measure into the next measure
-        if ((seg.isKeySigType() || seg.isTimeSigType()) && !seg.header() && !seg.trailer() &&
-            (!sigsShouldBeInThisMeasure || !changeAppliesToRepeatAndContinuation(seg))) {
-            if (nextMeasure && nextMeasure->findSegmentR(seg.segmentType(), Fraction(0, 1))) {
-                segsToRemove.push_back(&seg);
+        if ((seg.is_key_sig_type() || seg.is_time_sig_type()) && !seg.header() && !seg.trailer() &&
+            (!sigs_should_be_in_this_measure || !change_applies_to_repeat_and_continuation(seg))) {
+            if (next_measure && next_measure->find_segment_r(seg.segment_type(), Fraction(0, 1))) {
+                segs_to_remove.push_back(&seg);
                 continue;
             }
-            segsToMoveToNextMeasure.push_back(&seg);
+            segs_to_move_to_next_measure.push_back(&seg);
         }
     }
 
     // No next measure, so these segments are useless
-    if (!nextMeasure) {
-        for (Segment *seg : segsToMoveToNextMeasure) {
-            ctx.mutDom().doUndoRemoveElement(seg);
+    if (!next_measure) {
+        for (Segment *seg : segs_to_move_to_next_measure) {
+            ctx.mut_dom().do_undo_remove_element(seg);
         }
         return;
     }
 
-    std::vector<Segment *> segsToMoveToThisMeasure;
-    for (Segment &seg : nextMeasure->segments()) {
-        if (seg.tick() != nextMeasure->tick() || seg.isChordRestType()) {
+    std::vector<Segment *> segs_to_move_to_this_measure;
+    for (Segment &seg : next_measure->segments()) {
+        if (seg.tick() != next_measure->tick() || seg.is_chord_rest_type()) {
             continue;
         }
 
         // Move clefs at the beginning of the next measure into this measure
-        if (seg.isClefType()) {
-            ClefToBarlinePosition pos = clefSegBarlinePosition(seg);
+        if (seg.is_clef_type()) {
+            ClefToBarlinePosition pos = clef_seg_barline_position(seg);
             // Clef position explicitly set by user
             if (pos == ClefToBarlinePosition::BEFORE) {
-                segsToMoveToThisMeasure.push_back(&seg);
+                segs_to_move_to_this_measure.push_back(&seg);
                 continue;
             } else if (pos == ClefToBarlinePosition::AFTER) {
                 continue;
             }
 
-            if (!measure->repeatEnd()) {
-                segsToMoveToThisMeasure.push_back(&seg);
+            if (!measure->repeat_end()) {
+                segs_to_move_to_this_measure.push_back(&seg);
                 continue;
             }
 
             // Otherwise, pos is AUTO
             // Place changes before barline & clefs before repeats style settings
-            if ((sigsShouldBeInThisMeasure && changeAppliesToRepeatAndContinuation(seg)) || !measure->repeatEnd() ||
-                ctx.conf().styleB(Sid::placeClefsBeforeRepeats)) {
-                segsToMoveToThisMeasure.push_back(&seg);
+            if ((sigs_should_be_in_this_measure && change_applies_to_repeat_and_continuation(seg)) || !measure->repeat_end() ||
+                ctx.conf().style_b(Sid::PLACE_CLEFS_BEFORE_REPEATS)) {
+                segs_to_move_to_this_measure.push_back(&seg);
             }
         }
 
         // Move key sigs and time sigs at the start of the next measure to the end of this measure
-        if ((seg.isTimeSigType() || seg.isKeySigType()) && !seg.header() && !seg.trailer() && sigsShouldBeInThisMeasure &&
-            changeAppliesToRepeatAndContinuation(seg)) {
-            if (measure->findSegmentR(seg.segmentType(), measure->ticks())) {
-                segsToRemove.push_back(&seg);
+        if ((seg.is_time_sig_type() || seg.is_key_sig_type()) && !seg.header() && !seg.trailer() && sigs_should_be_in_this_measure &&
+            change_applies_to_repeat_and_continuation(seg)) {
+            if (measure->find_segment_r(seg.segment_type(), measure->ticks())) {
+                segs_to_remove.push_back(&seg);
                 continue;
             }
-            segsToMoveToThisMeasure.push_back(&seg);
+            segs_to_move_to_this_measure.push_back(&seg);
         }
     }
 
-    for (Segment *seg : segsToRemove) {
+    for (Segment *seg : segs_to_remove) {
         // Don't add duplicate segs to a measure
-        ctx.mutDom().doUndoRemoveElement(seg);
+        ctx.mut_dom().do_undo_remove_element(seg);
 
         // Remove from underlying measures
-        Measure *segMeasure = seg->measure();
-        if (segMeasure && segMeasure->isMMRest()) {
+        Measure *seg_measure = seg->measure();
+        if (seg_measure && seg_measure->is_mm_rest()) {
             Measure *target = nullptr;
             // Segments at the start of the measure -> mmRestFirst, end -> mmRestLast
-            if (seg->rtick() == Fraction(0, 1) || seg->tick() == segMeasure->tick()) {
-                target = segMeasure->mmRestFirst();
+            if (seg->rtick() == Fraction(0, 1) || seg->tick() == seg_measure->tick()) {
+                target = seg_measure->mm_rest_first();
             } else {
-                target = segMeasure->mmRestLast();
+                target = seg_measure->mm_rest_last();
             }
-            if (target && target != segMeasure) {
-                Segment *counterpart = target->findSegmentR(seg->segmentType(), seg->rtick());
+            if (target && target != seg_measure) {
+                Segment *counterpart = target->find_segment_r(seg->segment_type(), seg->rtick());
                 if (counterpart) {
-                    ctx.mutDom().doUndoRemoveElement(counterpart);
+                    ctx.mut_dom().do_undo_remove_element(counterpart);
                 }
             }
         }
     }
 
-    for (Segment *seg : segsToMoveToNextMeasure) {
-        Fraction origRtick = seg->rtick();
+    for (Segment *seg : segs_to_move_to_next_measure) {
+        Fraction orig_rtick = seg->rtick();
 
-        seg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, false);
-        measure->score()->undo(new ChangeSegmentParent(seg, nextMeasure, Fraction(0, 1)));
+        seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
+        measure->score()->undo(new ChangeSegmentParent(seg, next_measure, Fraction(0, 1)));
 
         // Move in underlying segments
-        if (measure->isMMRest()) {
-            Measure *fromMmLast = measure->mmRestLast();
-            if (fromMmLast) {
-                Segment *underlyingSeg = fromMmLast->findSegmentR(seg->segmentType(), origRtick);
-                if (underlyingSeg) {
-                    underlyingSeg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, false);
-                    if (nextMeasure->isMMRest() && nextMeasure->mmRestFirst()) {
-                        nextMeasure->score()->undo(new ChangeSegmentParent(underlyingSeg, nextMeasure->mmRestFirst(), Fraction(0, 1)));
+        if (measure->is_mm_rest()) {
+            Measure *from_mm_last = measure->mm_rest_last();
+            if (from_mm_last) {
+                Segment *underlying_seg = from_mm_last->find_segment_r(seg->segment_type(), orig_rtick);
+                if (underlying_seg) {
+                    underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
+                    if (next_measure->is_mm_rest() && next_measure->mm_rest_first()) {
+                        next_measure->score()->undo(new ChangeSegmentParent(underlying_seg, next_measure->mm_rest_first(), Fraction(0, 1)));
                     } else {
-                        ctx.mutDom().doUndoRemoveElement(underlyingSeg);
+                        ctx.mut_dom().do_undo_remove_element(underlying_seg);
                     }
                 }
             }
         }
 
         // If the destination is an MMRest but the source is not, create underlying segment
-        if (nextMeasure->isMMRest() && !measure->isMMRest()) {
-            Measure *mmFirst = nextMeasure->mmRestFirst();
-            if (mmFirst && mmFirst != nextMeasure) {
-                Segment *mmSeg = mmFirst->undoGetSegmentR(seg->segmentType(), Fraction(0, 1));
-                mmSeg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, false);
-                for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += VOICES) {
+        if (next_measure->is_mm_rest() && !measure->is_mm_rest()) {
+            Measure *mm_first = next_measure->mm_rest_first();
+            if (mm_first && mm_first != next_measure) {
+                Segment *mm_seg = mm_first->undo_get_segment_r(seg->segment_type(), Fraction(0, 1));
+                mm_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
+                for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
                     EngravingItem *e = seg->element(track);
                     if (!e) {
                         continue;
                     }
-                    if (!mmSeg->element(track)) {
+                    if (!mm_seg->element(track)) {
                         bool generated = e->generated();
-                        EngravingItem *eClone = generated ? e->clone() : e->linkedClone();
-                        eClone->setGenerated(generated);
-                        eClone->setOwnershipParent(mmSeg);
-                        ctx.mutDom().doUndoAddElement(eClone);
+                        EngravingItem *e_clone = generated ? e->clone() : e->linked_clone();
+                        e_clone->set_generated(generated);
+                        e_clone->set_ownership_parent(mm_seg);
+                        ctx.mut_dom().do_undo_add_element(e_clone);
                     }
                 }
             }
         }
     }
 
-    for (Segment *seg : segsToMoveToThisMeasure) {
-        Fraction origRtick = seg->rtick();
+    for (Segment *seg : segs_to_move_to_this_measure) {
+        Fraction orig_rtick = seg->rtick();
 
-        seg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, true);
+        seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
         measure->score()->undo(new ChangeSegmentParent(seg, measure, measure->ticks()));
 
         // Move in underlying segments
-        if (nextMeasure->isMMRest()) {
-            Measure *fromMmFirst = nextMeasure->mmRestFirst();
-            if (fromMmFirst) {
-                Segment *underlyingSeg = fromMmFirst->findSegmentR(seg->segmentType(), origRtick);
-                if (underlyingSeg) {
-                    underlyingSeg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, true);
-                    if (measure->isMMRest() && measure->mmRestLast()) {
+        if (next_measure->is_mm_rest()) {
+            Measure *from_mm_first = next_measure->mm_rest_first();
+            if (from_mm_first) {
+                Segment *underlying_seg = from_mm_first->find_segment_r(seg->segment_type(), orig_rtick);
+                if (underlying_seg) {
+                    underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
+                    if (measure->is_mm_rest() && measure->mm_rest_last()) {
                         measure->score()->undo(
-                            new ChangeSegmentParent(underlyingSeg, measure->mmRestLast(), measure->mmRestLast()->ticks()));
+                            new ChangeSegmentParent(underlying_seg, measure->mm_rest_last(), measure->mm_rest_last()->ticks()));
                     } else {
-                        ctx.mutDom().doUndoRemoveElement(underlyingSeg);
+                        ctx.mut_dom().do_undo_remove_element(underlying_seg);
                     }
                 }
             }
         }
 
         // If the destination is an MMRest but the source is not, create underlying segment
-        if (measure->isMMRest() && !nextMeasure->isMMRest()) {
-            Measure *mmLast = measure->mmRestLast();
-            if (mmLast && mmLast != measure) {
-                Segment *mmSeg = mmLast->undoGetSegmentR(seg->segmentType(), measure->ticks());
-                mmSeg->undoChangeProperty(Pid::END_OF_MEASURE_CHANGE, true);
+        if (measure->is_mm_rest() && !next_measure->is_mm_rest()) {
+            Measure *mm_last = measure->mm_rest_last();
+            if (mm_last && mm_last != measure) {
+                Segment *mm_seg = mm_last->undo_get_segment_r(seg->segment_type(), measure->ticks());
+                mm_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
                 // Clone per-track elements from the moved segment into the underlying mmrest segment
-                for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += VOICES) {
+                for (track_idx_t track = 0; track < ctx.dom().ntracks(); track += ::mu::engraving::voices) {
                     EngravingItem *e = seg->element(track);
                     if (!e) {
                         continue;
                     }
-                    if (!mmSeg->element(track)) {
+                    if (!mm_seg->element(track)) {
                         bool generated = e->generated();
-                        EngravingItem *eClone = generated ? e->clone() : e->linkedClone();
-                        eClone->setGenerated(generated);
-                        eClone->setOwnershipParent(mmSeg);
-                        ctx.mutDom().doUndoAddElement(eClone);
+                        EngravingItem *e_clone = generated ? e->clone() : e->linked_clone();
+                        e_clone->set_generated(generated);
+                        e_clone->set_ownership_parent(mm_seg);
+                        ctx.mut_dom().do_undo_add_element(e_clone);
                     }
                 }
             }
@@ -484,57 +484,57 @@ void ModifyDom::sortMeasureSegments(Measure *measure, LayoutContext &ctx) {
     }
 
     // Check end of measure changes for top and underlying measures
-    measure->checkEndOfMeasureChange();
-    if (measure->isMMRest()) {
-        Measure *mmLast = measure->mmRestLast();
-        if (mmLast) {
-            mmLast->checkEndOfMeasureChange();
+    measure->check_end_of_measure_change();
+    if (measure->is_mm_rest()) {
+        Measure *mm_last = measure->mm_rest_last();
+        if (mm_last) {
+            mm_last->check_end_of_measure_change();
         }
     }
-    if (nextMeasure->isMMRest()) {
-        Measure *mmFirst = nextMeasure->mmRestFirst();
-        if (mmFirst) {
-            mmFirst->checkEndOfMeasureChange();
+    if (next_measure->is_mm_rest()) {
+        Measure *mm_first = next_measure->mm_rest_first();
+        if (mm_first) {
+            mm_first->check_end_of_measure_change();
         }
     }
 
     // Sort segments at start of next measure
-    removeAndAddBeginSegments(nextMeasure);
-    if (nextMeasure->isMMRest()) {
-        Measure *mmFirst = nextMeasure->mmRestFirst();
-        if (mmFirst) {
-            removeAndAddBeginSegments(mmFirst);
+    remove_and_add_begin_segments(next_measure);
+    if (next_measure->is_mm_rest()) {
+        Measure *mm_first = next_measure->mm_rest_first();
+        if (mm_first) {
+            remove_and_add_begin_segments(mm_first);
         }
     }
 
     // Sort segments at start of first measure
-    Measure *prevMeasure = measure->prevMeasure();
-    if (prevMeasure && prevMeasure == ctx.dom().firstMeasure()) {
-        removeAndAddBeginSegments(prevMeasure);
-        if (prevMeasure->isMMRest()) {
-            Measure *mmFirst = prevMeasure->mmRestFirst();
-            if (mmFirst) {
-                removeAndAddBeginSegments(mmFirst);
+    Measure *prev_measure = measure->prev_measure();
+    if (prev_measure && prev_measure == ctx.dom().first_measure()) {
+        remove_and_add_begin_segments(prev_measure);
+        if (prev_measure->is_mm_rest()) {
+            Measure *mm_first = prev_measure->mm_rest_first();
+            if (mm_first) {
+                remove_and_add_begin_segments(mm_first);
             }
         }
     }
 }
 
-void ModifyDom::removeAndAddBeginSegments(Measure *measure) {
-    std::vector<Segment *> segsToSort;
+void ModifyDom::remove_and_add_begin_segments(Measure *measure) {
+    std::vector<Segment *> segs_to_sort;
     for (Segment &seg : measure->segments()) {
-        if (seg.rtick() != Fraction(0, 1) || seg.isChordRestType() || seg.isEndBarLineType()) {
+        if (seg.rtick() != Fraction(0, 1) || seg.is_chord_rest_type() || seg.is_end_bar_line_type()) {
             continue;
         }
 
-        segsToSort.push_back(&seg);
+        segs_to_sort.push_back(&seg);
     }
 
     // Re-add the segments. They will be placed in their correct positions
-    for (Segment *seg : segsToSort) {
+    for (Segment *seg : segs_to_sort) {
         measure->segments().remove(seg);
     }
-    for (Segment *seg : segsToSort) {
+    for (Segment *seg : segs_to_sort) {
         measure->add(seg);
     }
 }

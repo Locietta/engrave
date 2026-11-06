@@ -41,39 +41,39 @@ class BracketItem final : public EngravingItem {
 public:
     EngravingItem *clone() const override;
 
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    size_t bracketSpan() const { return bracketSpan_; }
+    size_t bracket_span() const { return bracket_span_; }
 
-    BracketType bracketType() const { return bracketType_; }
+    BracketType bracket_type() const { return bracket_type_; }
 
-    void setBracketSpan(size_t v) { bracketSpan_ = v; }
+    void set_bracket_span(size_t v) { bracket_span_ = v; }
 
-    void setBracketType(BracketType v) { bracketType_ = v; }
+    void set_bracket_type(BracketType v) { bracket_type_ = v; }
 
-    staff_idx_t startStaffIdx() const { return startStaffIdx_; }
+    staff_idx_t start_staff_idx() const { return start_staff_idx_; }
 
-    void setStartStaffIdx(staff_idx_t staffIdx) { startStaffIdx_ = staffIdx; }
+    void set_start_staff_idx(staff_idx_t staff_idx) { start_staff_idx_ = staff_idx; }
 
-    Staff *startStaff() const;
+    Staff *start_staff() const;
 
     size_t column() const { return column_; }
 
-    void setColumn(size_t v) { column_ = v; }
+    void set_column(size_t v) { column_ = v; }
 
     StaffLabel &label() { return name_; }
 
     const StaffLabel &label() const { return name_; }
 
-    const String &longName() const { return name_.longName(); }
+    const String &long_name() const { return name_.long_name(); }
 
-    const String &shortName() const { return name_.shortName(); }
+    const String &short_name() const { return name_.short_name(); }
 
-    bool showText() const { return showText_; }
+    bool show_text() const { return show_text_; }
 
-    bool showBracket() const { return showBracket_; }
+    bool show_bracket() const { return show_bracket_; }
 
     bool intersects(const BracketItem *other) const;
     bool intersects(staff_idx_t first, staff_idx_t last) const;
@@ -83,16 +83,16 @@ private:
     friend class Factory;
 
     BracketItem(DummyParentOr<EngravingItem> parent);
-    BracketItem(DummyParentOr<EngravingItem> parent, BracketType bracketType, size_t span);
+    BracketItem(DummyParentOr<EngravingItem> parent, BracketType bracket_type, size_t span);
 
-    BracketType bracketType_ = BracketType::NO_BRACKET;
+    BracketType bracket_type_ = BracketType::NO_BRACKET;
     size_t column_ = 0;
-    size_t bracketSpan_ = 0;
-    staff_idx_t startStaffIdx_ = muse::nidx;
+    size_t bracket_span_ = 0;
+    staff_idx_t start_staff_idx_ = muse::nidx;
 
     StaffLabel name_ = StaffLabel(muse::mtrc("systemBrackets", "GROUP"), muse::mtrc("systemBrackets", "GR.", "Short for GROUP"));
-    bool showText_ = true;
-    bool showBracket_ = true;
+    bool show_text_ = true;
+    bool show_bracket_ = true;
 };
 } // namespace mu::engraving
 #endif

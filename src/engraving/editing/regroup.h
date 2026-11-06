@@ -33,10 +33,11 @@ class Regroup {
 public:
     /// Combine consecutive rests into fewer rests of longer duration, and tied
     /// notes/chords into fewer notes of longer duration. Only operates on one voice.
-    static void regroupNotesAndRests(Transaction &tx, Score *score, const Fraction &startTick, const Fraction &endTick, track_idx_t track);
+    static void regroup_notes_and_rests(Transaction &tx, Score *score, const Fraction &start_tick, const Fraction &end_tick,
+                                        track_idx_t track);
 
     /// Regroups notes and rests in the current selection (or the whole score if nothing
     /// is selected), restoring the original selection afterwards.
-    static void regroupNotesAndRestsInSelection(Transaction &tx, Score *score);
+    static void regroup_notes_and_rests_in_selection(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

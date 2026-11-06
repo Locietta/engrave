@@ -46,32 +46,32 @@ public:
 
     void unknown();
 
-    bool readBool() { return XmlStreamReader::readInt(); }
+    bool read_bool() { return XmlStreamReader::read_int(); }
 
-    double readDouble(bool *ok = nullptr) { return XmlStreamReader::readDouble(ok); }
+    double read_double(bool *ok = nullptr) { return XmlStreamReader::read_double(ok); }
 
-    double readDouble(double min, double max);
+    double read_double(double min, double max);
 
-    PointF readPoint();
-    SizeF readSize();
-    ScaleF readScale();
-    RectF readRect();
-    Color readColor();
-    Fraction readFraction();
-    String readXml();
+    PointF read_point();
+    SizeF read_size();
+    ScaleF read_scale();
+    RectF read_rect();
+    Color read_color();
+    Fraction read_fraction();
+    String read_xml();
 
-    void setDocName(const String &s) { docName_ = s; }
+    void set_doc_name(const String &s) { doc_name_ = s; }
 
-    String docName() const { return docName_; }
+    String doc_name() const { return doc_name_; }
 
     // for reading old files (< 3.01)
-    void setByteOffsetAdjustment(int64_t val) { byteOffsetAdjustment_ = val; }
+    void set_byte_offset_adjustment(int64_t val) { byte_offset_adjustment_ = val; }
 
 private:
 
-    void htmlToString(int level, String *);
+    void html_to_string(int level, String *);
 
-    String docName_; // used for error reporting
-    int64_t byteOffsetAdjustment_ = 0;
+    String doc_name_; // used for error reporting
+    int64_t byte_offset_adjustment_ = 0;
 };
 } // namespace mu::engraving

@@ -36,12 +36,12 @@ namespace mu::iex::musicxml {
 //   MScoreTextToMXML
 //---------------------------------------------------------
 
-MScoreTextToMusicXml::MScoreTextToMusicXml(const String &tag, const String &attr, const CharFormat &defFmt, const String &mtf)
-    : attribs(attr), tagname(tag), oldFormat(defFmt), musicalTextFont(mtf) {
+MScoreTextToMusicXml::MScoreTextToMusicXml(const String &tag, const String &attr, const CharFormat &def_fmt, const String &mtf)
+    : attribs(attr), tagname(tag), old_format(def_fmt), musical_text_font(mtf) {
     // set MusicXML defaults
-    oldFormat.setBold(false);
-    oldFormat.setItalic(false);
-    oldFormat.setUnderline(false);
+    old_format.set_bold(false);
+    old_format.set_italic(false);
+    old_format.set_underline(false);
 }
 
 //---------------------------------------------------------
@@ -53,17 +53,17 @@ MScoreTextToMusicXml::MScoreTextToMusicXml(const String &tag, const String &attr
 //    part name and shortName
 //---------------------------------------------------------
 
-String MScoreTextToMusicXml::toPlainText(const String &text) {
+String MScoreTextToMusicXml::to_plain_text(const String &text) {
     String res;
-    bool inElem = false;
+    bool in_elem = false;
     for (size_t i = 0; i < text.size(); ++i) {
         Char ch = text.at(i);
         if (ch == u'<') {
-            inElem = true;
+            in_elem = true;
         } else if (ch == u'>') {
-            inElem = false;
+            in_elem = false;
         } else {
-            if (!inElem) {
+            if (!in_elem) {
                 res += ch;
             }
         }
@@ -77,7 +77,7 @@ String MScoreTextToMusicXml::toPlainText(const String &text) {
 //    convert to plain text plus <sym>[name]</sym> encoded symbols
 //---------------------------------------------------------
 
-String MScoreTextToMusicXml::toPlainTextPlusSymbols(const std::list<TextFragment> &list) {
+String MScoreTextToMusicXml::to_plain_text_plus_symbols(const std::list<TextFragment> &list) {
     String res;
     for (const TextFragment &f : list) {
         res += f.text;
@@ -89,16 +89,16 @@ String MScoreTextToMusicXml::toPlainTextPlusSymbols(const std::list<TextFragment
 //   plainTextPlusSymbolsSize
 //---------------------------------------------------------
 
-static int plainTextPlusSymbolsFragmentSize(const TextFragment &f) { return f.columns(); }
+static int plain_text_plus_symbols_fragment_size(const TextFragment &f) { return f.columns(); }
 
 //---------------------------------------------------------
 //   plainTextPlusSymbolsSize
 //---------------------------------------------------------
 
-static int plainTextPlusSymbolsListSize(const std::list<TextFragment> &list) {
+static int plain_text_plus_symbols_list_size(const std::list<TextFragment> &list) {
     int res = 0;
     for (const TextFragment &f : list) {
-        res += plainTextPlusSymbolsFragmentSize(f);
+        res += plain_text_plus_symbols_fragment_size(f);
     }
     return res;
 }
@@ -130,43 +130,43 @@ bool MScoreTextToMusicXml::split(const std::list<TextFragment> &in, const int po
     right.clear();
 
     // set pos to begin of first fragment
-    std::list<TextFragment>::const_iterator fragmentNr = in.begin();
+    std::list<TextFragment>::const_iterator fragment_nr = in.begin();
     TextFragment fragment;
-    if (fragmentNr != in.end()) {
-        fragment = *fragmentNr;
+    if (fragment_nr != in.end()) {
+        fragment = *fragment_nr;
     }
-    std::list<TextFragment> *currentDest = &left;
-    int currentMaxSize = pos;
+    std::list<TextFragment> *current_dest = &left;
+    int current_max_size = pos;
 
     // while text left
-    while (fragmentNr != in.end()) {
-        int destSize = plainTextPlusSymbolsListSize(*currentDest);
-        int fragSize = plainTextPlusSymbolsFragmentSize(fragment);
+    while (fragment_nr != in.end()) {
+        int dest_size = plain_text_plus_symbols_list_size(*current_dest);
+        int frag_size = plain_text_plus_symbols_fragment_size(fragment);
         // if no room left in current destination (check applies only to left and mid)
-        if ((currentDest != &right && destSize >= currentMaxSize) || currentDest == &right) {
+        if ((current_dest != &right && dest_size >= current_max_size) || current_dest == &right) {
             // move to next destination
-            if (currentDest == &left) {
-                currentDest = &mid;
-                currentMaxSize = len;
-            } else if (currentDest == &mid) {
-                currentDest = &right;
+            if (current_dest == &left) {
+                current_dest = &mid;
+                current_max_size = len;
+            } else if (current_dest == &mid) {
+                current_dest = &right;
             }
         }
         // if current fragment fits in current destination (check applies only to left and mid)
-        if ((currentDest != &right && destSize + fragSize <= currentMaxSize) || currentDest == &right) {
+        if ((current_dest != &right && dest_size + frag_size <= current_max_size) || current_dest == &right) {
             // add it
-            currentDest->push_back(fragment);
+            current_dest->push_back(fragment);
             // move to next fragment
-            fragmentNr++;
-            if (fragmentNr != in.end()) {
-                fragment = *fragmentNr;
+            fragment_nr++;
+            if (fragment_nr != in.end()) {
+                fragment = *fragment_nr;
             }
         } else {
             // split current fragment
-            TextFragment rightPart = fragment.split(currentMaxSize - plainTextPlusSymbolsListSize(*currentDest));
+            TextFragment right_part = fragment.split(current_max_size - plain_text_plus_symbols_list_size(*current_dest));
             // add first part to current destination
-            currentDest->push_back(fragment);
-            fragment = rightPart;
+            current_dest->push_back(fragment);
+            fragment = right_part;
         }
     }
 
@@ -186,14 +186,14 @@ bool MScoreTextToMusicXml::split(const std::list<TextFragment> &in, const int po
 //   writeTextFragments
 //---------------------------------------------------------
 
-void MScoreTextToMusicXml::writeTextFragments(const std::list<TextFragment> &fr, XmlWriter &xml) {
+void MScoreTextToMusicXml::write_text_fragments(const std::list<TextFragment> &fr, XmlWriter &xml) {
     //dumpText(fr);
-    bool firstTime = true; // write additional attributes only the first time characters are written
+    bool first_time = true; // write additional attributes only the first time characters are written
     for (const TextFragment &f : fr) {
-        newFormat = f.format;
-        String formatAttr = updateFormat();
-        xml.tagRaw(tagname + (firstTime ? attribs : String()) + formatAttr, f.text);
-        firstTime = false;
+        new_format = f.format;
+        String format_attr = update_format();
+        xml.tag_raw(tagname + (first_time ? attribs : String()) + format_attr, f.text);
+        first_time = false;
     }
 }
 
@@ -202,10 +202,10 @@ void MScoreTextToMusicXml::writeTextFragments(const std::list<TextFragment> &fr,
 //    add one attribute if necessary
 //---------------------------------------------------------
 
-static String attribute(bool needed, bool value, String trueString, String falseString) {
+static String attribute(bool needed, bool value, String true_string, String false_string) {
     String res;
     if (needed) {
-        res = value ? trueString : falseString;
+        res = value ? true_string : false_string;
     }
     if (!res.empty()) {
         res = u" " + res;
@@ -220,21 +220,21 @@ static String attribute(bool needed, bool value, String trueString, String false
 //    copy newFormat to oldFormat
 //---------------------------------------------------------
 
-String MScoreTextToMusicXml::updateFormat() {
-    if (newFormat.fontFamily() == "ScoreText") {
-        newFormat.setFontFamily(musicalTextFont);
+String MScoreTextToMusicXml::update_format() {
+    if (new_format.font_family() == "ScoreText") {
+        new_format.set_font_family(musical_text_font);
     }
     String res;
-    res += attribute(newFormat.bold() != oldFormat.bold(), newFormat.bold(), u"font-weight=\"bold\"", u"font-weight=\"normal\"");
-    res += attribute(newFormat.italic() != oldFormat.italic(), newFormat.italic(), u"font-style=\"italic\"", u"font-style=\"normal\"");
-    res += attribute(newFormat.underline() != oldFormat.underline(), newFormat.underline(), u"underline=\"1\"", u"underline=\"0\"");
-    res += attribute(newFormat.strike() != oldFormat.strike(), newFormat.strike(), u"line-through=\"1\"", u"line-though=\"0\"");
-    res +=
-        attribute(newFormat.fontFamily() != oldFormat.fontFamily(), true, String(u"font-family=\"%1\"").arg(newFormat.fontFamily()), u"");
-    bool needSize = newFormat.fontSize() < 0.99 * oldFormat.fontSize() || newFormat.fontSize() > 1.01 * oldFormat.fontSize();
-    res += attribute(needSize, true, String(u"font-size=\"%1\"").arg(newFormat.fontSize()), u"");
+    res += attribute(new_format.bold() != old_format.bold(), new_format.bold(), u"font-weight=\"bold\"", u"font-weight=\"normal\"");
+    res += attribute(new_format.italic() != old_format.italic(), new_format.italic(), u"font-style=\"italic\"", u"font-style=\"normal\"");
+    res += attribute(new_format.underline() != old_format.underline(), new_format.underline(), u"underline=\"1\"", u"underline=\"0\"");
+    res += attribute(new_format.strike() != old_format.strike(), new_format.strike(), u"line-through=\"1\"", u"line-though=\"0\"");
+    res += attribute(new_format.font_family() != old_format.font_family(), true,
+                     String(u"font-family=\"%1\"").arg(new_format.font_family()), u"");
+    bool need_size = new_format.font_size() < 0.99 * old_format.font_size() || new_format.font_size() > 1.01 * old_format.font_size();
+    res += attribute(need_size, true, String(u"font-size=\"%1\"").arg(new_format.font_size()), u"");
     //LOGD("updateFormat() res '%s'", muPrintable(res));
-    oldFormat = newFormat;
+    old_format = new_format;
     return res;
 }
 } // namespace mu::iex::musicxml

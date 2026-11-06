@@ -35,7 +35,7 @@ public:
 
     Matrix inverted(bool *invertible) const {
         double dtr = determinant();
-        if (muse::RealIsNull(dtr)) {
+        if (muse::real_is_null(dtr)) {
             if (invertible) {
                 *invertible = false;
             }
@@ -65,8 +65,8 @@ public:
     double dy() const { return dy_; }
 
     bool operator==(const Matrix &other) const {
-        return RealIsEqual(m11_, other.m11_) && RealIsEqual(m12_, other.m12_) && RealIsEqual(m21_, other.m21_) &&
-               RealIsEqual(m22_, other.m22_) && RealIsEqual(dx_, other.dx_) && RealIsEqual(dy_, other.dy_);
+        return real_is_equal(m11_, other.m11_) && real_is_equal(m12_, other.m12_) && real_is_equal(m21_, other.m21_) &&
+               real_is_equal(m22_, other.m22_) && real_is_equal(dx_, other.dx_) && real_is_equal(dy_, other.dy_);
     }
 
 private:

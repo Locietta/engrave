@@ -31,43 +31,43 @@ Tapping::Tapping(DummyParentOr<ChordRest> parent) : Articulation(parent, Element
 
 Tapping::Tapping(const Tapping &other) : Articulation(other) { hand_ = other.hand_; }
 
-void Tapping::setSelected(bool f) {
+void Tapping::set_selected(bool f) {
     if (text_) {
-        text_->setSelected(f);
+        text_->set_selected(f);
     }
-    if (halfSlurAbove_) {
-        halfSlurAbove_->setSelected(f);
+    if (half_slur_above_) {
+        half_slur_above_->set_selected(f);
     }
-    if (halfSlurBelow_) {
-        halfSlurBelow_->setSelected(f);
+    if (half_slur_below_) {
+        half_slur_below_->set_selected(f);
     }
 
-    EngravingItem::setSelected(f);
+    EngravingItem::set_selected(f);
 }
 
-LHTappingShowItems Tapping::lhShowItems() const {
+LHTappingShowItems Tapping::lh_show_items() const {
     DO_ASSERT(hand_ == TappingHand::LEFT);
 
     const MStyle &s = style();
-    bool tabStaff = staffType()->isTabStaff();
+    bool tab_staff = staff_type()->is_tab_staff();
 
-    return s.styleV(tabStaff ? Sid::lhTappingShowItemsTab : Sid::lhTappingShowItemsNormalStave).value<LHTappingShowItems>();
+    return s.style_v(tab_staff ? Sid::LH_TAPPING_SHOW_ITEMS_TAB : Sid::LH_TAPPING_SHOW_ITEMS_NORMAL_STAVE).value<LHTappingShowItems>();
 }
 
-void Tapping::styleChanged() {
+void Tapping::style_changed() {
     if (text_) {
-        text_->styleChanged();
+        text_->style_changed();
     }
-    Articulation::styleChanged();
+    Articulation::style_changed();
 }
 
 double Tapping::mag() const { return ldata()->mag() * Articulation::mag(); }
 
 int Tapping::subtype() const { return static_cast<int>(hand_); }
 
-TranslatableString Tapping::typeUserName() const { return EngravingItem::typeUserName(); }
+TranslatableString Tapping::type_user_name() const { return EngravingItem::type_user_name(); }
 
-TranslatableString Tapping::subtypeUserName() const {
+TranslatableString Tapping::subtype_user_name() const {
     return hand_ == TappingHand::LEFT ? TranslatableString("engraving", "Left-hand") : TranslatableString("engraving", "Right-hand");
 }
 
@@ -79,21 +79,21 @@ TappingHalfSlurSegment::TappingHalfSlurSegment(TappingHalfSlur *sp) : SlurSegmen
 
 TappingHalfSlurSegment::TappingHalfSlurSegment(const TappingHalfSlurSegment &other) : SlurSegment(other) {}
 
-static ElementStyle tapTextStyle;
+static ElementStyle tap_text_style;
 
 TappingText::TappingText(Tapping *parent)
     : TextBase(ElementType::TAPPING_TEXT, parent, TextStyleType::HAMMER_ON_PULL_OFF,
                ElementFlag::MOVABLE | ElementFlag::GENERATED | ElementFlag::ON_STAFF) {
-    initElementStyle(&tapTextStyle);
+    init_element_style(&tap_text_style);
 }
 
 TappingText::TappingText(const TappingText &t) : TextBase(t) {}
 
-Color TappingText::curColor(const rendering::PaintOptions &opt) const {
+Color TappingText::cur_color(const rendering::PaintOptions &opt) const {
     if (Tapping *t = tapping()) {
-        return t->curColor(opt);
+        return t->cur_color(opt);
     }
 
-    return EngravingItem::curColor(opt);
+    return EngravingItem::cur_color(opt);
 }
 } // namespace mu::engraving

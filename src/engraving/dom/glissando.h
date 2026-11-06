@@ -43,11 +43,11 @@ class GlissandoSegment final : public LineSegment {
 public:
     GlissandoSegment(Glissando *sp);
 
-    Glissando *glissando() const { return toGlissando(spanner()); }
+    Glissando *glissando() const { return to_glissando(spanner()); }
 
     GlissandoSegment *clone() const override { return new GlissandoSegment(*this); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 };
 
 //---------------------------------------------------------
@@ -58,54 +58,54 @@ class Glissando final : public SLine {
     OBJECT_ALLOCATOR(engraving, Glissando)
     DECLARE_CLASSOF(ElementType::GLISSANDO)
 
-    M_PROPERTY(String, text, setText)
-    M_PROPERTY(GlissandoType, glissandoType, setGlissandoType)
-    M_PROPERTY(GlissandoStyle, glissandoStyle, setGlissandoStyle)
-    M_PROPERTY(bool, glissandoShift, setGlissandoShift)
-    M_PROPERTY(String, fontFace, setFontFace)
-    M_PROPERTY(double, fontSize, setFontSize)
-    M_PROPERTY(bool, showText, setShowText)
-    M_PROPERTY(FontStyle, fontStyle, setFontStyle)
-    M_PROPERTY(int, easeIn, setEaseIn)
-    M_PROPERTY(int, easeOut, setEaseOut)
+    M_PROPERTY(String, text, set_text)
+    M_PROPERTY(GlissandoType, glissando_type, set_glissando_type)
+    M_PROPERTY(GlissandoStyle, glissando_style, set_glissando_style)
+    M_PROPERTY(bool, glissando_shift, set_glissando_shift)
+    M_PROPERTY(String, font_face, set_font_face)
+    M_PROPERTY(double, font_size, set_font_size)
+    M_PROPERTY(bool, show_text, set_show_text)
+    M_PROPERTY(FontStyle, font_style, set_font_style)
+    M_PROPERTY(int, ease_in, set_ease_in)
+    M_PROPERTY(int, ease_out, set_ease_out)
 
 public:
-    static constexpr double GLISS_PALETTE_WIDTH = 4.0;
-    static constexpr double GLISS_PALETTE_HEIGHT = 4.0;
+    static constexpr double gliss_palette_width = 4.0;
+    static constexpr double gliss_palette_height = 4.0;
 
     Glissando(DummyParentOr<EngravingItem> parent);
     Glissando(const Glissando &);
 
     Anchor anchor() const override { return Anchor::NOTE; }
 
-    static Note *guessInitialNote(Chord *chord);
+    static Note *guess_initial_note(Chord *chord);
 
-    std::optional<bool> isHarpGliss() const { return isHarpGliss_; }
+    std::optional<bool> is_harp_gliss() const { return is_harp_gliss_; }
 
-    void setIsHarpGliss(std::optional<bool> v) { isHarpGliss_ = v; }
+    void set_is_harp_gliss(std::optional<bool> v) { is_harp_gliss_ = v; }
 
     // overridden inherited methods
     Glissando *clone() const override { return new Glissando(*this); }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
     // property/style methods
-    Sid getPropertyStyle(Pid id) const override;
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    Sid get_property_style(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    static bool pitchSteps(const Spanner *spanner, std::vector<int> &pitchOffsets);
+    static bool pitch_steps(const Spanner *spanner, std::vector<int> &pitch_offsets);
 
 protected:
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 
 private:
 
-    std::optional<bool> isHarpGliss_ = std::nullopt;
+    std::optional<bool> is_harp_gliss_ = std::nullopt;
 };
 } // namespace mu::engraving

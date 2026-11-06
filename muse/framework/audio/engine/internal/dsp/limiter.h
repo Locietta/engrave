@@ -30,22 +30,22 @@
 namespace muse::audio::dsp {
 class Limiter {
 public:
-    Limiter(const unsigned int sampleRate);
+    Limiter(const unsigned int sample_rate);
 
-    bool isActive() const;
-    void setIsActive(const bool active);
+    bool is_active() const;
+    void set_is_active(const bool active);
 
-    void process(const float &linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel);
+    void process(const float &linear_rms, float *buffer, const audioch_t &audio_channels_count, const samples_t samples_per_channel);
 
 private:
-    volume_db_t gainSmoothing(const float newGainReduction) const;
-    volume_db_t computeGain(const volume_db_t &logarithmSample) const;
+    volume_db_t gain_smoothing(const float new_gain_reduction) const;
+    volume_db_t compute_gain(const volume_db_t &logarithm_sample) const;
 
-    EnvelopeFilterConfig filterConfig_;
+    EnvelopeFilterConfig filter_config_;
 
-    float previousGainReduction_ = 0.f;
+    float previous_gain_reduction_ = 0.f;
 
-    bool isActive_ = false;
+    bool is_active_ = false;
 };
 
 using LimiterPtr = std::unique_ptr<Limiter>;

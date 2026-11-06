@@ -35,7 +35,7 @@ class EditTuplet {
 public:
     // Divides each selected chord/rest into a tuplet (3:2 on a quarter: 3 eighths in the time of a quarter). Keeps a range
     // selection, otherwise selects the start of the first tuplet. Returns the tuplets in score order
-    static std::vector<Tuplet *> addTuplets(Transaction &tx, Score *score, const Fraction &ratio, TupletNumberType numberType,
-                                            TupletBracketType bracketType, bool autoBaseLen);
+    static std::vector<Tuplet *> add_tuplets(Transaction &tx, Score *score, const Fraction &ratio, TupletNumberType number_type,
+                                             TupletBracketType bracket_type, bool auto_base_len);
 };
 } // namespace mu::engraving

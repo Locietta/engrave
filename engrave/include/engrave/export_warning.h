@@ -43,8 +43,8 @@ struct ExportWarning {
 
     ExportWarning() = default;
 
-    ExportWarning(std::string code_, std::string message_, std::optional<ElementId> source)
-        : code(std::move(code_)), message(std::move(message_)) {
+    ExportWarning(std::string input_code, std::string input_message, std::optional<ElementId> source)
+        : code(std::move(input_code)), message(std::move(input_message)) {
         if (!source) return;
         std::string kind = "score";
         if (code == export_warning_code::shared_part)
@@ -62,8 +62,8 @@ struct ExportWarning {
         object = ExportWarningObject{std::move(kind), to_string(*source)};
     }
 
-    ExportWarning(std::string code_, std::string message_, ExportWarningObject source)
-        : code(std::move(code_)), message(std::move(message_)), object(std::move(source)) {}
+    ExportWarning(std::string input_code, std::string input_message, ExportWarningObject source)
+        : code(std::move(input_code)), message(std::move(input_message)), object(std::move(source)) {}
 };
 
 } // namespace engrave

@@ -16,13 +16,13 @@ int main(int argc, char **argv) {
         const std::string raw{std::istreambuf_iterator<char>(input), {}};
         muse::ByteArray bytes(reinterpret_cast<const uint8_t *>(raw.data()), raw.size());
         muse::io::Buffer buffer(&bytes);
-        if (!buffer.open(muse::io::IODevice::ReadOnly)) throw std::runtime_error("Cannot open buffer");
+        if (!buffer.open(muse::io::IODevice::READ_ONLY)) throw std::runtime_error("Cannot open buffer");
         muse::ZipReader reader(&buffer);
-        const bool exists = reader.fileExists(argv[2]);
-        const auto extracted = reader.fileData(argv[2]);
-        const bool error = reader.hasError();
+        const bool exists = reader.file_exists(argv[2]);
+        const auto extracted = reader.file_data(argv[2]);
+        const bool error = reader.has_error();
         std::ofstream output(std::filesystem::u8path(argv[3]), std::ios::binary | std::ios::trunc);
-        output.write(extracted.constChar(), static_cast<std::streamsize>(extracted.size()));
+        output.write(extracted.const_char(), static_cast<std::streamsize>(extracted.size()));
         output.close();
         if (!output) throw std::runtime_error("Cannot write extracted test result");
         std::cout << nlohmann::json{{"exists", exists}, {"error", error}, {"size", extracted.size()}, {"buffer_size", buffer.size()}}.dump()

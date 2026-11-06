@@ -28,43 +28,43 @@
 
 using namespace mu::engraving;
 
-static const ElementStyle CAPO_STYLE{
-    {Sid::staffTextPlacement, Pid::PLACEMENT},
-    {Sid::staffTextMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle capo_style{
+    {Sid::STAFF_TEXT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::STAFF_TEXT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
-Capo::Capo(DummyParentOr<Segment> parent, TextStyleType textStyleType)
-    : StaffTextBase(ElementType::CAPO, parent, textStyleType, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    initElementStyle(&CAPO_STYLE);
+Capo::Capo(DummyParentOr<Segment> parent, TextStyleType text_style_type)
+    : StaffTextBase(ElementType::CAPO, parent, text_style_type, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
+    init_element_style(&::capo_style);
 
     params_.active = true;
-    params_.fretPosition = 1;
+    params_.fret_position = 1;
 }
 
 Capo *Capo::clone() const { return new Capo(*this); }
 
-PropertyValue Capo::getProperty(Pid id) const {
+PropertyValue Capo::get_property(Pid id) const {
     if (id == Pid::ACTIVE) {
         return params_.active;
     } else if (id == Pid::CAPO_FRET_POSITION) {
-        return params_.fretPosition;
+        return params_.fret_position;
     } else if (id == Pid::CAPO_IGNORED_STRINGS) {
-        std::vector<int> ignoredStrings;
-        ignoredStrings.reserve(params_.ignoredStrings.size());
-        for (string_idx_t string : params_.ignoredStrings) {
-            ignoredStrings.push_back(static_cast<int>(string));
+        std::vector<int> ignored_strings;
+        ignored_strings.reserve(params_.ignored_strings.size());
+        for (string_idx_t string : params_.ignored_strings) {
+            ignored_strings.push_back(static_cast<int>(string));
         }
-        return ignoredStrings;
+        return ignored_strings;
     } else if (id == Pid::CAPO_GENERATE_TEXT) {
-        return shouldAutomaticallyGenerateText_;
+        return should_automatically_generate_text_;
     } else if (id == Pid::CAPO_TRANSPOSE_MODE) {
-        return params_.transposeMode;
+        return params_.transpose_mode;
     }
 
-    return StaffTextBase::getProperty(id);
+    return StaffTextBase::get_property(id);
 }
 
-PropertyValue Capo::propertyDefault(Pid id) const {
+PropertyValue Capo::property_default(Pid id) const {
     if (id == Pid::ACTIVE) {
         return true;
     } else if (id == Pid::CAPO_FRET_POSITION) {
@@ -77,79 +77,80 @@ PropertyValue Capo::propertyDefault(Pid id) const {
         return CapoParams::TransposeMode::PLAYBACK_ONLY;
     }
 
-    return StaffTextBase::propertyDefault(id);
+    return StaffTextBase::property_default(id);
 }
 
-bool Capo::setProperty(Pid id, const PropertyValue &val) {
+bool Capo::set_property(Pid id, const PropertyValue &val) {
     if (id == Pid::ACTIVE) {
-        params_.active = val.toBool();
+        params_.active = val.to_bool();
     } else if (id == Pid::CAPO_FRET_POSITION) {
-        params_.fretPosition = val.toInt();
+        params_.fret_position = val.to_int();
     } else if (id == Pid::CAPO_IGNORED_STRINGS) {
-        params_.ignoredStrings.clear();
-        auto ignoredStrings = val.value<std::vector<int>>();
-        for (int string : ignoredStrings) {
-            params_.ignoredStrings.insert(static_cast<string_idx_t>(string));
+        params_.ignored_strings.clear();
+        auto ignored_strings = val.value<std::vector<int>>();
+        for (int string : ignored_strings) {
+            params_.ignored_strings.insert(static_cast<string_idx_t>(string));
         }
     } else if (id == Pid::CAPO_GENERATE_TEXT) {
-        shouldAutomaticallyGenerateText_ = val.toBool();
+        should_automatically_generate_text_ = val.to_bool();
 
-        if (!shouldAutomaticallyGenerateText_) {
-            setXmlText(customText_);
+        if (!should_automatically_generate_text_) {
+            set_xml_text(custom_text_);
         }
     } else if (id == Pid::CAPO_TRANSPOSE_MODE) {
-        params_.transposeMode = val.value<CapoParams::TransposeMode>();
+        params_.transpose_mode = val.value<CapoParams::TransposeMode>();
     } else {
-        return StaffTextBase::setProperty(id, val);
+        return StaffTextBase::set_property(id, val);
     }
 
-    triggerLayout();
+    trigger_layout();
 
     if (Score *s = score()) {
-        s->updateCapo();
+        s->update_capo();
     }
 
     return true;
 }
 
-void Capo::setXmlText(const String &text) {
-    if (!shouldAutomaticallyGenerateText_) {
-        customText_ = text;
+void Capo::set_xml_text(const String &text) {
+    if (!should_automatically_generate_text_) {
+        custom_text_ = text;
     }
 
-    StaffTextBase::setXmlText(text);
+    StaffTextBase::set_xml_text(text);
 }
 
 const CapoParams &Capo::params() const { return params_; }
 
-void Capo::setParams(const CapoParams &params) { params_ = params; }
+void Capo::set_params(const CapoParams &params) { params_ = params; }
 
-bool Capo::shouldAutomaticallyGenerateText() const { return shouldAutomaticallyGenerateText_; }
+bool Capo::should_automatically_generate_text() const { return should_automatically_generate_text_; }
 
-muse::String Capo::generateText(size_t stringCount) const {
-    if (!params_.active || params_.fretPosition == 0) {
+muse::String Capo::generate_text(size_t string_count) const {
+    if (!params_.active || params_.fret_position == 0) {
         return muse::mtrc("engraving", "No capo");
     }
 
-    if (params_.ignoredStrings.empty()) {
-        return muse::mtrc("engraving", "Capo %1").arg(params_.fretPosition);
+    if (params_.ignored_strings.empty()) {
+        return muse::mtrc("engraving", "Capo %1").arg(params_.fret_position);
     }
 
-    StringList stringsToApply;
+    StringList strings_to_apply;
 
-    for (string_idx_t idx = 0; idx < stringCount; ++idx) {
-        if (muse::contains(params_.ignoredStrings, idx)) {
+    for (string_idx_t idx = 0; idx < string_count; ++idx) {
+        if (muse::contains(params_.ignored_strings, idx)) {
             continue;
         }
 
-        stringsToApply.emplace_back(String::number(idx + 1));
+        strings_to_apply.emplace_back(String::number(idx + 1));
     }
 
-    if (stringsToApply.empty()) {
+    if (strings_to_apply.empty()) {
         return muse::mtrc("engraving", "No capo");
     }
 
-    String text = muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2").arg(params_.fretPosition).arg(stringsToApply.join(u", "));
+    String text =
+        muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2").arg(params_.fret_position).arg(strings_to_apply.join(u", "));
 
     return text;
 }
@@ -158,7 +159,7 @@ void Capo::added() {
     StaffTextBase::added();
 
     if (Score *s = score()) {
-        s->updateCapo();
+        s->update_capo();
     }
 }
 
@@ -166,6 +167,6 @@ void Capo::removed() {
     StaffTextBase::removed();
 
     if (Score *s = score()) {
-        s->updateCapo();
+        s->update_capo();
     }
 }

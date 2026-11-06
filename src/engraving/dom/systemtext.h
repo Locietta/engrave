@@ -39,12 +39,12 @@ public:
 
     SystemText *clone() const override { return new SystemText(*this); }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    bool canBeExcludedFromOtherParts() const override { return true; }
+    bool can_be_excluded_from_other_parts() const override { return true; }
 
 protected:
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 };
 } // namespace mu::engraving
 #endif

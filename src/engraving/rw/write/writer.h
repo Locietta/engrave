@@ -32,20 +32,20 @@ public:
 
     Writer();
 
-    bool writeScore(Score *score, muse::io::IODevice *device, rw::WriteInOutData *out) override;
+    bool write_score(Score *score, muse::io::IODevice *device, rw::WriteInOutData *out) override;
 
     static void write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::WriteScoreHook &hook);
 
-    muse::ByteArray writeStaffSelection(Score *score, const SelectionFilter &filter, staff_idx_t staffStart, staff_idx_t staffEnd,
-                                        const Fraction &tickStart, const Fraction &tickEnd, Segment *startSegment,
-                                        Segment *endSegment) override;
+    muse::ByteArray write_staff_selection(Score *score, const SelectionFilter &filter, staff_idx_t staff_start, staff_idx_t staff_end,
+                                          const Fraction &tick_start, const Fraction &tick_end, Segment *start_segment,
+                                          Segment *end_segment) override;
 
-    muse::ByteArray writeSymbolListSelection(track_idx_t fromTrack, track_idx_t toTrack,
-                                             const std::vector<SelectedSymbol> &symbols) override;
+    muse::ByteArray write_symbol_list_selection(track_idx_t from_track, track_idx_t to_track,
+                                                const std::vector<SelectedSymbol> &symbols) override;
 
 private:
-    void writeSegments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool,
-                       bool) override;
-    void doWriteItem(const EngravingItem *item, XmlWriter &xml) override;
+    void write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool,
+                        bool) override;
+    void do_write_item(const EngravingItem *item, XmlWriter &xml) override;
 };
 } // namespace mu::engraving::write

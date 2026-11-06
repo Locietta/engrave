@@ -43,8 +43,8 @@ constexpr std::size_t max_audio_settings_tracks = 4096;
 std::optional<double> settings_number(const muse::JsonObject &object, const char *key) {
     if (!object.contains(key)) return std::nullopt;
     const auto value = object.value(key);
-    if (!value.isNumber()) return std::nullopt;
-    const double number = value.toDouble();
+    if (!value.is_number()) return std::nullopt;
+    const double number = value.to_double();
     if (!std::isfinite(number)) return std::nullopt;
     return number;
 }
@@ -52,8 +52,8 @@ std::optional<double> settings_number(const muse::JsonObject &object, const char
 std::optional<bool> settings_bool(const muse::JsonObject &object, const char *key) {
     if (!object.contains(key)) return std::nullopt;
     const auto value = object.value(key);
-    if (!value.isBool()) return std::nullopt;
-    return value.toBool();
+    if (!value.is_bool()) return std::nullopt;
+    return value.to_bool();
 }
 
 // Unknown fields are ignored by design. Out-of-range known fields are ignored
@@ -95,27 +95,27 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
                 continue;
             }
             const InstrumentTrackId id{part->id(), instrument->id()};
-            if (!id.isValid() || !seen_instruments.insert(id.instrumentId).second) {
+            if (!id.is_valid() || !seen_instruments.insert(id.instrument_id).second) {
                 continue;
             }
 
             ScoreAudioTrackInfo info;
             info.id = id;
-            info.part_id = part->id().toStdString();
-            info.instrument_id = id.instrumentId.toStdString();
-            info.part_name = part->partName().toStdString();
-            info.instrument_name = instrument->trackName().toStdString();
+            info.part_id = part->id().to_std_string();
+            info.instrument_id = id.instrument_id.to_std_string();
+            info.part_name = part->part_name().to_std_string();
+            info.instrument_name = instrument->track_name().to_std_string();
             info.chord_symbols = false;
             info.part_index = part_index;
             result.push_back(std::move(info));
         }
 
-        if (part->hasChordSymbol()) {
+        if (part->has_chord_symbol()) {
             ScoreAudioTrackInfo info;
-            info.id = model.chordSymbolsTrackId(part->id());
-            info.part_id = part->id().toStdString();
-            info.instrument_id = info.id.instrumentId.toStdString();
-            info.part_name = part->partName().toStdString();
+            info.id = model.chord_symbols_track_id(part->id());
+            info.part_id = part->id().to_std_string();
+            info.instrument_id = info.id.instrument_id.to_std_string();
+            info.part_name = part->part_name().to_std_string();
             // Mirror PlaybackController's mixer title for the pseudo track.
             info.instrument_name = "Chords." + info.part_name;
             info.chord_symbols = true;
@@ -162,7 +162,7 @@ bool json_nesting_ok(std::string_view text, std::size_t max_depth = 64) {
 
 const muse::ZipReader::FileInfo *find_zip_entry(const std::vector<muse::ZipReader::FileInfo> &entries, std::string_view name) {
     for (const auto &entry : entries) {
-        if (entry.filePath.toStdString() == name) {
+        if (entry.file_path.to_std_string() == name) {
             return &entry;
         }
     }
@@ -174,50 +174,50 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
     if (mscz_bytes.size() < 4) return result;
     try {
         muse::io::ByteView buffer(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(mscz_bytes.data()), mscz_bytes.size()));
-        if (!buffer.open(muse::io::IODevice::ReadOnly)) return result;
+        if (!buffer.open(muse::io::IODevice::READ_ONLY)) return result;
         muse::ZipReader zip(&buffer);
-        if (zip.hasError()) return result;
+        if (zip.has_error()) return result;
 
-        const auto file_infos = zip.fileInfoList();
+        const auto file_infos = zip.file_info_list();
         if (file_infos.empty() || file_infos.size() > 4096) return result;
 
         // 1. Root audiosettings.json for the full score. Check uncompressed size BEFORE reading.
         const auto *root_entry = find_zip_entry(file_infos, "audiosettings.json");
         if (root_entry && root_entry->size <= max_audio_settings_bytes) {
-            const muse::ByteArray json = zip.fileData("audiosettings.json");
-            if (!zip.hasError() && !json.empty() && json.size() <= max_audio_settings_bytes) {
-                const std::string_view json_view(reinterpret_cast<const char *>(json.constData()), json.size());
+            const muse::ByteArray json = zip.file_data("audiosettings.json");
+            if (!zip.has_error() && !json.empty() && json.size() <= max_audio_settings_bytes) {
+                const std::string_view json_view(reinterpret_cast<const char *>(json.const_data()), json.size());
                 if (json_nesting_ok(json_view, 64)) {
                     std::string error;
-                    const muse::JsonDocument document = muse::JsonDocument::fromJson(json, &error);
-                    if (error.empty() && document.isObject()) {
-                        const muse::JsonObject root = document.rootObject();
+                    const muse::JsonDocument document = muse::JsonDocument::from_json(json, &error);
+                    if (error.empty() && document.is_object()) {
+                        const muse::JsonObject root = document.root_object();
 
                         const auto master = root.value("master");
-                        if (master.isObject()) apply_settings_output(result.master, master.toObject());
+                        if (master.is_object()) apply_settings_output(result.master, master.to_object());
 
                         const auto tracks = root.value("tracks");
-                        if (tracks.isArray()) {
-                            const muse::JsonArray array = tracks.toArray();
+                        if (tracks.is_array()) {
+                            const muse::JsonArray array = tracks.to_array();
                             if (array.size() <= max_audio_settings_tracks) {
                                 for (std::size_t index = 0; index < array.size(); ++index) {
                                     const auto entry = array.at(index);
-                                    if (!entry.isObject()) continue;
-                                    const muse::JsonObject track = entry.toObject();
+                                    if (!entry.is_object()) continue;
+                                    const muse::JsonObject track = entry.to_object();
                                     const auto part_id = track.value("partId");
                                     const auto instrument_id = track.value("instrumentId");
-                                    if (!part_id.isString() || !instrument_id.isString()) continue;
+                                    if (!part_id.is_string() || !instrument_id.is_string()) continue;
 
                                     AudioOutputParams output;
                                     const auto settings = track.value("out");
-                                    if (settings.isObject()) apply_settings_output(output, settings.toObject());
+                                    if (settings.is_object()) apply_settings_output(output, settings.to_object());
                                     const auto solo_mute = track.value("soloMuteState");
-                                    if (solo_mute.isObject()) {
-                                        const muse::JsonObject state = solo_mute.toObject();
+                                    if (solo_mute.is_object()) {
+                                        const muse::JsonObject state = solo_mute.to_object();
                                         if (const auto solo = settings_bool(state, "solo")) output.solo = *solo;
                                         if (const auto muted = settings_bool(state, "mute")) output.muted = *muted;
                                     }
-                                    result.tracks.emplace(std::make_pair(part_id.toStdString(), instrument_id.toStdString()), output);
+                                    result.tracks.emplace(std::make_pair(part_id.to_std_string(), instrument_id.to_std_string()), output);
                                 }
                             }
                         }
@@ -229,7 +229,7 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
         // 2. Discover excerpts and parse their notation solo/mute settings.
         std::vector<std::string> excerpt_names;
         for (const auto &entry : file_infos) {
-            const std::string path = entry.filePath.toStdString();
+            const std::string path = entry.file_path.to_std_string();
             if (path.starts_with("Excerpts/") && (path.ends_with(".mscx") || path.ends_with(".MSCX"))) {
                 const std::size_t slash = path.find('/', 9);
                 if (slash != std::string::npos) {
@@ -241,7 +241,7 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
             }
         }
         for (const auto &entry : file_infos) {
-            const std::string path = entry.filePath.toStdString();
+            const std::string path = entry.file_path.to_std_string();
             if (path.starts_with("Excerpts/") && path.ends_with("/audiosettings.json")) {
                 std::string name = path.substr(9, path.size() - 9 - 18);
                 if (!name.empty() && std::find(excerpt_names.begin(), excerpt_names.end(), name) == excerpt_names.end()) {
@@ -257,40 +257,40 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes) {
             const auto *excerpt_entry = find_zip_entry(file_infos, file_path);
             if (!excerpt_entry || excerpt_entry->size > max_audio_settings_bytes) continue;
 
-            const muse::ByteArray json = zip.fileData(file_path);
-            if (zip.hasError() || json.empty() || json.size() > max_audio_settings_bytes) continue;
+            const muse::ByteArray json = zip.file_data(file_path);
+            if (zip.has_error() || json.empty() || json.size() > max_audio_settings_bytes) continue;
 
-            const std::string_view json_view(reinterpret_cast<const char *>(json.constData()), json.size());
+            const std::string_view json_view(reinterpret_cast<const char *>(json.const_data()), json.size());
             if (!json_nesting_ok(json_view, 64)) continue;
 
             std::string error;
-            const muse::JsonDocument document = muse::JsonDocument::fromJson(json, &error);
-            if (!error.empty() || !document.isObject()) continue;
+            const muse::JsonDocument document = muse::JsonDocument::from_json(json, &error);
+            if (!error.empty() || !document.is_object()) continue;
 
-            const muse::JsonObject root = document.rootObject();
+            const muse::JsonObject root = document.root_object();
             const auto tracks = root.value("tracks");
-            if (!tracks.isArray()) continue;
+            if (!tracks.is_array()) continue;
 
-            const muse::JsonArray array = tracks.toArray();
+            const muse::JsonArray array = tracks.to_array();
             if (array.size() > max_audio_settings_tracks) continue;
 
             std::map<std::pair<std::string, std::string>, TrackSoloMute> solo_mute_map;
             for (std::size_t index = 0; index < array.size(); ++index) {
                 const auto item = array.at(index);
-                if (!item.isObject()) continue;
-                const muse::JsonObject track = item.toObject();
+                if (!item.is_object()) continue;
+                const muse::JsonObject track = item.to_object();
                 const auto part_id = track.value("partId");
                 const auto instrument_id = track.value("instrumentId");
-                if (!part_id.isString() || !instrument_id.isString()) continue;
+                if (!part_id.is_string() || !instrument_id.is_string()) continue;
 
                 TrackSoloMute sm;
                 const auto solo_mute = track.value("soloMuteState");
-                if (solo_mute.isObject()) {
-                    const muse::JsonObject state = solo_mute.toObject();
+                if (solo_mute.is_object()) {
+                    const muse::JsonObject state = solo_mute.to_object();
                     if (const auto solo = settings_bool(state, "solo")) sm.solo = *solo;
                     if (const auto muted = settings_bool(state, "mute")) sm.muted = *muted;
                 }
-                solo_mute_map.emplace(std::make_pair(part_id.toStdString(), instrument_id.toStdString()), sm);
+                solo_mute_map.emplace(std::make_pair(part_id.to_std_string(), instrument_id.to_std_string()), sm);
             }
             result.excerpt_tracks_by_index[i] = solo_mute_map;
             result.excerpt_tracks_by_name[name] = std::move(solo_mute_map);

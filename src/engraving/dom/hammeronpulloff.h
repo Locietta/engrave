@@ -35,37 +35,37 @@ public:
 
     HammerOnPullOffText *clone() const override { return new HammerOnPullOffText(*this); }
 
-    HammerOnPullOffSegment *hopoSegment() const { return toHammerOnPullOffSegment(ownershipParent()); }
+    HammerOnPullOffSegment *hopo_segment() const { return to_hammer_on_pull_off_segment(ownership_parent()); }
 
-    Chord *startChord() const { return startChord_; }
+    Chord *start_chord() const { return start_chord_; }
 
-    Chord *endChord() const { return endChord_; }
+    Chord *end_chord() const { return end_chord_; }
 
-    void setStartChord(Chord *c) { startChord_ = c; }
+    void set_start_chord(Chord *c) { start_chord_ = c; }
 
-    void setEndChord(Chord *c) { endChord_ = c; }
+    void set_end_chord(Chord *c) { end_chord_ = c; }
 
-    bool isUserModified() const override;
+    bool is_user_modified() const override;
 
-    bool isValid() const { return isValid_; }
+    bool is_valid() const { return is_valid_; }
 
-    void setIsValid(bool v) { isValid_ = v; }
+    void set_is_valid(bool v) { is_valid_ = v; }
 
-    bool isHammerOn() const { return isHammerOn_; }
+    bool is_hammer_on() const { return is_hammer_on_; }
 
-    void setIsHammerOn(bool v) { isHammerOn_ = v; }
+    void set_is_hammer_on(bool v) { is_hammer_on_ = v; }
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
 private:
-    Chord *startChord_ = nullptr;
-    Chord *endChord_ = nullptr;
-    bool isValid_ = true;
-    bool isHammerOn_ = true;
+    Chord *start_chord_ = nullptr;
+    Chord *end_chord_ = nullptr;
+    bool is_valid_ = true;
+    bool is_hammer_on_ = true;
 };
 
 class HammerOnPullOffSegment final : public SlurSegment {
@@ -78,38 +78,38 @@ public:
 
     HammerOnPullOffSegment *clone() const override { return new HammerOnPullOffSegment(*this); }
 
-    HammerOnPullOff *hammerOnPullOff() const { return toHammerOnPullOff(spanner()); }
+    HammerOnPullOff *hammer_on_pull_off() const { return to_hammer_on_pull_off(spanner()); }
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    void setTrack(track_idx_t idx) override;
-    void setSelected(bool f) override;
+    void set_track(track_idx_t idx) override;
+    void set_selected(bool f) override;
 
-    void updateHopoText();
+    void update_hopo_text();
 
-    void addHopoText(HammerOnPullOffText *t) { hopoText_.push_back(t); }
+    void add_hopo_text(HammerOnPullOffText *t) { hopo_text_.push_back(t); }
 
-    const std::vector<HammerOnPullOffText *> &hopoText() const { return hopoText_; }
+    const std::vector<HammerOnPullOffText *> &hopo_text() const { return hopo_text_; }
 
-    bool isUserModified() const override;
-    bool isValid() const;
+    bool is_user_modified() const override;
+    bool is_valid() const;
 
     void reset() override;
 
 private:
     struct HopoTextRegion {
-        Chord *startChord = nullptr;
-        Chord *endChord = nullptr;
-        bool isHammerOn = true;
-        bool isValid = true;
+        Chord *start_chord = nullptr;
+        Chord *end_chord = nullptr;
+        bool is_hammer_on = true;
+        bool is_valid = true;
     };
 
-    std::vector<HopoTextRegion> computeHopoTextRegions(Chord *startChord, Chord *endChord);
-    void resolveStartEndNotes(Note **startNote, Note **endNote, Chord *startChord, Chord *endChord, bool isTabStaff);
+    std::vector<HopoTextRegion> compute_hopo_text_regions(Chord *start_chord, Chord *end_chord);
+    void resolve_start_end_notes(Note **start_note, Note **end_note, Chord *start_chord, Chord *end_chord, bool is_tab_staff);
 
-    std::vector<HammerOnPullOffText *> hopoText_;
+    std::vector<HammerOnPullOffText *> hopo_text_;
 };
 
 class HammerOnPullOff final : public Slur {
@@ -119,7 +119,7 @@ class HammerOnPullOff final : public Slur {
 public:
     HammerOnPullOff *clone() const override { return new HammerOnPullOff(*this); }
 
-    SlurTieSegment *newSlurTieSegment() override { return new HammerOnPullOffSegment(this); }
+    SlurTieSegment *new_slur_tie_segment() override { return new HammerOnPullOffSegment(this); }
 
     friend class Factory;
 

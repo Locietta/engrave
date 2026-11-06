@@ -38,379 +38,396 @@ using namespace muse::mpe;
 
 namespace mu::engraving {
 struct IntervalsInfo {
-    bool intervalBelowIsAuto = false;
-    bool intervalAboveIsAuto = false;
+    bool interval_below_is_auto = false;
+    bool interval_above_is_auto = false;
 
-    Interval intervalBelow;
-    Interval intervalAbove;
+    Interval interval_below;
+    Interval interval_above;
 };
 
 struct DisclosurePattern {
-    int prefixDurationTicks = 0;
-    std::vector<mpe::pitch_level_t> prefixPitchOffsets;
+    int prefix_duration_ticks = 0;
+    std::vector<mpe::pitch_level_t> prefix_pitch_offsets;
 
-    bool isAlterationsRepeatAllowed = false;
-    std::vector<mpe::pitch_level_t> alterationStepPitchOffsets;
+    bool is_alterations_repeat_allowed = false;
+    std::vector<mpe::pitch_level_t> alteration_step_pitch_offsets;
 
-    int suffixDurationTicks = 0;
-    std::vector<mpe::pitch_level_t> suffixPitchOffsets;
+    int suffix_duration_ticks = 0;
+    std::vector<mpe::pitch_level_t> suffix_pitch_offsets;
 
     struct DurationBoundaries {
-        float lowTempoDurationTicks = 0.f;
-        float mediumTempoDurationTicks = 0.f;
-        float highTempoDurationTicks = 0.f;
+        float low_tempo_duration_ticks = 0.f;
+        float medium_tempo_duration_ticks = 0.f;
+        float high_tempo_duration_ticks = 0.f;
     };
 
     DurationBoundaries boundaries;
 
-    float subNoteDurationTicks(const double bps) const;
-    DisclosurePattern buildActualPattern(const Note *note, const IntervalsInfo &intervalsInfo, const double bps) const;
+    float sub_note_duration_ticks(const double bps) const;
+    DisclosurePattern build_actual_pattern(const Note *note, const IntervalsInfo &intervals_info, const double bps) const;
 
 private:
-    void updatePitchOffsets(const Note *note, const IntervalsInfo &intervalsInfo, std::vector<mpe::pitch_level_t> &pitchOffsets);
+    void update_pitch_offsets(const Note *note, const IntervalsInfo &intervals_info, std::vector<mpe::pitch_level_t> &pitch_offsets);
 };
 
-static IntervalsInfo makeIntervalsInfo(const OrnamentInterval &below, const OrnamentInterval &above) {
+static IntervalsInfo make_intervals_info(const OrnamentInterval &below, const OrnamentInterval &above) {
     IntervalsInfo result;
-    result.intervalBelowIsAuto = below.type == IntervalType::AUTO;
-    result.intervalAboveIsAuto = above.type == IntervalType::AUTO;
-    result.intervalBelow = Interval::fromOrnamentInterval(below);
-    result.intervalAbove = Interval::fromOrnamentInterval(above);
+    result.interval_below_is_auto = below.type == IntervalType::AUTO;
+    result.interval_above_is_auto = above.type == IntervalType::AUTO;
+    result.interval_below = Interval::from_ornament_interval(below);
+    result.interval_above = Interval::from_ornament_interval(above);
 
     return result;
 }
 } // namespace mu::engraving
 
-static const std::unordered_map<ArticulationType, DisclosurePattern> DISCLOSURE_RULES = {
-    {ArticulationType::Trill,
+static const std::unordered_map<ArticulationType, DisclosurePattern> disclosure_rules = {
+    {ArticulationType::TRILL,
      {/*prefixDurationTicks*/ 0,
       /*prefixPitchOffsets*/ {},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {0, PITCH_LEVEL_STEP},
+      /*alterationStepPitchOffsets*/ {0, ::muse::mpe::pitch_level_step},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {QUAVER_TICKS / 10.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::TrillBaroque,
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::quaver_ticks / 10.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::TRILL_BAROQUE,
      {/*prefixDurationTicks*/ 0,
       /*prefixPitchOffsets*/ {},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ DEMISEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {QUAVER_TICKS / 10.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::LinePrall,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 3,
-      /*prefixPitchOffsets*/ {2 * PITCH_LEVEL_STEP, 2 * PITCH_LEVEL_STEP, 2 * PITCH_LEVEL_STEP},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::quaver_ticks / 10.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::LINE_PRALL,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 3,
+      /*prefixPitchOffsets*/ {2 * ::muse::mpe::pitch_level_step, 2 * ::muse::mpe::pitch_level_step, 2 * ::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ DEMISEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS, DEMISEMIQUAVER_TICKS, DEMISEMIQUAVER_TICKS}}},
-    {ArticulationType::UpPrall,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::demisemiquaver_ticks}}},
+    {ArticulationType::UP_PRALL,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS, DEMISEMIQUAVER_TICKS, DEMISEMIQUAVER_TICKS}}},
-    {ArticulationType::UpMordent,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::demisemiquaver_ticks}}},
+    {ArticulationType::UP_MORDENT,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::UpperMordent,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {0, PITCH_LEVEL_STEP},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::UPPER_MORDENT,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {0, ::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ false,
       /*alterationStepPitchOffsets*/ {0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS / 2.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::LowerMordent,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {0, -PITCH_LEVEL_STEP},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks / 2.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::LOWER_MORDENT,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {0, -::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ false,
       /*alterationStepPitchOffsets*/ {0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS / 2.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::UpperMordentBaroque,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 3,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, 0, PITCH_LEVEL_STEP},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks / 2.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::UPPER_MORDENT_BAROQUE,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 3,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0, ::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ false,
       /*alterationStepPitchOffsets*/ {0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS / 2.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::MordentWithUpperPrefix,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 4,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, PITCH_LEVEL_STEP, PITCH_LEVEL_STEP, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks / 2.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::MORDENT_WITH_UPPER_PREFIX,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 4,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, ::muse::mpe::pitch_level_step, ::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::DownMordent,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 4,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, PITCH_LEVEL_STEP, PITCH_LEVEL_STEP, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::DOWN_MORDENT,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 4,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, ::muse::mpe::pitch_level_step, ::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::PrallUp,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::PRALL_UP,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*suffixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::PrallDown,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*suffixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::PRALL_DOWN,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ true,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
-      /*suffixDurationTicks*/ SEMIQUAVER_TICKS * 4,
-      /*suffixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0, 0, 0},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::Turn,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 3,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, 0, -PITCH_LEVEL_STEP},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
+      /*suffixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 4,
+      /*suffixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0, 0, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::TURN,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 3,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0, -::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ false,
       /*alterationStepPitchOffsets*/ {0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS / 2.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::InvertedTurn,
-     {/*prefixDurationTicks*/ DEMISEMIQUAVER_TICKS * 3,
-      /*prefixPitchOffsets*/ {-PITCH_LEVEL_STEP, 0, PITCH_LEVEL_STEP},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks / 2.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::INVERTED_TURN,
+     {/*prefixDurationTicks*/ ::mu::engraving::demisemiquaver_ticks * 3,
+      /*prefixPitchOffsets*/ {-::muse::mpe::pitch_level_step, 0, ::muse::mpe::pitch_level_step},
       /*isAlterationsRepeatAllowed*/ false,
       /*alterationStepPitchOffsets*/ {0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {DEMISEMIQUAVER_TICKS / 2.f, DEMISEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::Tremblement,
-     {/*prefixDurationTicks*/ SEMIQUAVER_TICKS * 2,
-      /*prefixPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::demisemiquaver_ticks / 2.f, ::mu::engraving::demisemiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::TREMBLEMENT,
+     {/*prefixDurationTicks*/ ::mu::engraving::semiquaver_ticks * 2,
+      /*prefixPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
       /*isAlterationsRepeatAllowed*/ false,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
-    {ArticulationType::PrallMordent,
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
+    {ArticulationType::PRALL_MORDENT,
      {/*prefixDurationTicks*/ 0,
       /*prefixPitchOffsets*/ {},
       /*isAlterationsRepeatAllowed*/ false,
-      /*alterationStepPitchOffsets*/ {PITCH_LEVEL_STEP, 0, -PITCH_LEVEL_STEP, 0},
+      /*alterationStepPitchOffsets*/ {::muse::mpe::pitch_level_step, 0, -::muse::mpe::pitch_level_step, 0},
       /*suffixDurationTicks*/ 0,
       /*suffixPitchOffsets*/ {},
-      /*minSupportedNoteDurationTicks*/ {SEMIQUAVER_TICKS, SEMIQUAVER_TICKS, SEMIQUAVER_TICKS}}},
+      /*minSupportedNoteDurationTicks*/
+      {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
 };
 
-const ArticulationTypeSet &OrnamentsRenderer::supportedTypes() {
-    static const ArticulationTypeSet types = {ArticulationType::Trill,
-                                              ArticulationType::TrillBaroque,
-                                              ArticulationType::LinePrall,
-                                              ArticulationType::UpPrall,
-                                              ArticulationType::UpMordent,
-                                              ArticulationType::UpperMordent,
-                                              ArticulationType::LowerMordent,
-                                              ArticulationType::MordentWithUpperPrefix,
-                                              ArticulationType::DownMordent,
-                                              ArticulationType::PrallUp,
-                                              ArticulationType::PrallDown,
-                                              ArticulationType::Turn,
-                                              ArticulationType::InvertedTurn,
-                                              ArticulationType::Tremblement,
-                                              ArticulationType::PrallMordent,
-                                              ArticulationType::UpperMordentBaroque,
-                                              ArticulationType::LowerMordentBaroque};
+const ArticulationTypeSet &OrnamentsRenderer::supported_types() {
+    static const ArticulationTypeSet types = {ArticulationType::TRILL,
+                                              ArticulationType::TRILL_BAROQUE,
+                                              ArticulationType::LINE_PRALL,
+                                              ArticulationType::UP_PRALL,
+                                              ArticulationType::UP_MORDENT,
+                                              ArticulationType::UPPER_MORDENT,
+                                              ArticulationType::LOWER_MORDENT,
+                                              ArticulationType::MORDENT_WITH_UPPER_PREFIX,
+                                              ArticulationType::DOWN_MORDENT,
+                                              ArticulationType::PRALL_UP,
+                                              ArticulationType::PRALL_DOWN,
+                                              ArticulationType::TURN,
+                                              ArticulationType::INVERTED_TURN,
+                                              ArticulationType::TREMBLEMENT,
+                                              ArticulationType::PRALL_MORDENT,
+                                              ArticulationType::UPPER_MORDENT_BAROQUE,
+                                              ArticulationType::LOWER_MORDENT_BAROQUE};
 
     return types;
 }
 
-void OrnamentsRenderer::doRender(const EngravingItem *item, const ArticulationType preferredType, const RenderingContext &ctx,
-                                 mpe::PlaybackEventList &result) {
-    const Chord *chord = toChord(item);
+void OrnamentsRenderer::do_render(const EngravingItem *item, const ArticulationType preferred_type, const RenderingContext &ctx,
+                                  mpe::PlaybackEventList &result) {
+    const Chord *chord = to_chord(item);
     IF_ASSERT_FAILED(chord) { return; }
 
-    auto search = DISCLOSURE_RULES.find(preferredType);
-    if (search == DISCLOSURE_RULES.end()) {
+    auto search = ::disclosure_rules.find(preferred_type);
+    if (search == ::disclosure_rules.end()) {
         return;
     }
 
-    IntervalsInfo intervalsInfo;
-    bool isArticulation = false;
+    IntervalsInfo intervals_info;
+    bool is_articulation = false;
 
-    if (Ornament *ornament = chord->findOrnament(true)) {
-        intervalsInfo = makeIntervalsInfo(ornament->intervalBelow(), ornament->intervalAbove());
-        isArticulation = muse::contains(chord->articulations(), toArticulation(ornament));
+    if (Ornament *ornament = chord->find_ornament(true)) {
+        intervals_info = make_intervals_info(ornament->interval_below(), ornament->interval_above());
+        is_articulation = muse::contains(chord->articulations(), to_articulation(ornament));
     } else {
-        intervalsInfo = makeIntervalsInfo(DEFAULT_ORNAMENT_INTERVAL, DEFAULT_ORNAMENT_INTERVAL);
+        intervals_info = make_intervals_info(::mu::engraving::default_ornament_interval, ::mu::engraving::default_ornament_interval);
     }
 
-    const DisclosurePattern &nominalPattern = search->second;
+    const DisclosurePattern &nominal_pattern = search->second;
 
     for (const Note *note : chord->notes()) {
-        if (!NoteRenderer::shouldRender(note, ctx, ctx.commonArticulations)) {
+        if (!NoteRenderer::should_render(note, ctx, ctx.common_articulations)) {
             continue;
         }
 
-        RenderingContext ornamentCtx(ctx);
-        if (isArticulation && note->tieFor()) {
-            applyTiedNotesDuration(note, preferredType, ornamentCtx);
+        RenderingContext ornament_ctx(ctx);
+        if (is_articulation && note->tie_for()) {
+            apply_tied_notes_duration(note, preferred_type, ornament_ctx);
         }
 
-        NominalNoteCtx noteCtx(note, ornamentCtx);
-        NoteArticulationsParser::buildNoteArticulationMap(note, noteCtx.chordCtx, noteCtx.articulations);
+        NominalNoteCtx note_ctx(note, ornament_ctx);
+        NoteArticulationsParser::build_note_articulation_map(note, note_ctx.chord_ctx, note_ctx.articulations);
 
-        convert(preferredType, nominalPattern.buildActualPattern(note, intervalsInfo, ornamentCtx.beatsPerSecond.val), std::move(noteCtx),
-                result);
+        convert(preferred_type, nominal_pattern.build_actual_pattern(note, intervals_info, ornament_ctx.beats_per_second.val),
+                std::move(note_ctx), result);
     }
 }
 
-void OrnamentsRenderer::applyTiedNotesDuration(const Note *note, const ArticulationType ornamentType, RenderingContext &ctx) {
-    const Note *lastTiedNote = note->lastTiedNote(false);
-    if (!lastTiedNote || lastTiedNote == note) {
+void OrnamentsRenderer::apply_tied_notes_duration(const Note *note, const ArticulationType ornament_type, RenderingContext &ctx) {
+    const Note *last_tied_note = note->last_tied_note(false);
+    if (!last_tied_note || last_tied_note == note) {
         return;
     }
 
-    ctx.nominalPositionEndTick = lastTiedNote->chord()->endTick().ticks();
-    ctx.nominalDuration = timestampFromTicks(ctx.score, ctx.nominalPositionEndTick + ctx.positionTickOffset) - ctx.nominalTimestamp;
-    ctx.nominalDurationTicks = ctx.nominalPositionEndTick - ctx.nominalPositionStartTick;
+    ctx.nominal_position_end_tick = last_tied_note->chord()->end_tick().ticks();
+    ctx.nominal_duration =
+        timestamp_from_ticks(ctx.score, ctx.nominal_position_end_tick + ctx.position_tick_offset) - ctx.nominal_timestamp;
+    ctx.nominal_duration_ticks = ctx.nominal_position_end_tick - ctx.nominal_position_start_tick;
 
-    mpe::ArticulationMeta &meta = ctx.commonArticulations.at(ornamentType).meta;
-    meta.overallDuration = ctx.nominalDuration;
+    mpe::ArticulationMeta &meta = ctx.common_articulations.at(ornament_type).meta;
+    meta.overall_duration = ctx.nominal_duration;
 }
 
-void OrnamentsRenderer::convert(const ArticulationType type, const DisclosurePattern &pattern, NominalNoteCtx &&noteCtx,
+void OrnamentsRenderer::convert(const ArticulationType type, const DisclosurePattern &pattern, NominalNoteCtx &&note_ctx,
                                 mpe::PlaybackEventList &result) {
-    if (noteCtx.chordCtx.nominalDurationTicks <= pattern.boundaries.lowTempoDurationTicks) {
-        result.emplace_back(buildNoteEvent(noteCtx));
+    if (note_ctx.chord_ctx.nominal_duration_ticks <= pattern.boundaries.low_tempo_duration_ticks) {
+        result.emplace_back(build_note_event(note_ctx));
         return;
     }
 
     // convert prefix
-    if (!pattern.prefixPitchOffsets.empty()) {
-        createEvents(type, noteCtx, 1, pattern.prefixDurationTicks, noteCtx.chordCtx.nominalDurationTicks, pattern.prefixPitchOffsets,
-                     result);
+    if (!pattern.prefix_pitch_offsets.empty()) {
+        create_events(type, note_ctx, 1, pattern.prefix_duration_ticks, note_ctx.chord_ctx.nominal_duration_ticks,
+                      pattern.prefix_pitch_offsets, result);
     }
 
     // convert body
-    if (!pattern.alterationStepPitchOffsets.empty()) {
-        int alterationsCount = 1;
+    if (!pattern.alteration_step_pitch_offsets.empty()) {
+        int alterations_count = 1;
 
-        if (pattern.isAlterationsRepeatAllowed) {
-            alterationsCount =
-                alterationsNumberByTempo(noteCtx.chordCtx.beatsPerSecond.val, noteCtx.chordCtx.nominalDurationTicks, pattern);
+        if (pattern.is_alterations_repeat_allowed) {
+            alterations_count =
+                alterations_number_by_tempo(note_ctx.chord_ctx.beats_per_second.val, note_ctx.chord_ctx.nominal_duration_ticks, pattern);
         }
 
-        if (alterationsCount == 0) {
-            result.emplace_back(buildNoteEvent(noteCtx));
+        if (alterations_count == 0) {
+            result.emplace_back(build_note_event(note_ctx));
         } else {
-            createEvents(type, noteCtx, alterationsCount,
-                         noteCtx.chordCtx.nominalDurationTicks - pattern.prefixDurationTicks - pattern.suffixDurationTicks,
-                         noteCtx.chordCtx.nominalDurationTicks, pattern.alterationStepPitchOffsets, result);
+            create_events(type, note_ctx, alterations_count,
+                          note_ctx.chord_ctx.nominal_duration_ticks - pattern.prefix_duration_ticks - pattern.suffix_duration_ticks,
+                          note_ctx.chord_ctx.nominal_duration_ticks, pattern.alteration_step_pitch_offsets, result);
         }
     }
 
     // convert suffix
-    if (!pattern.suffixPitchOffsets.empty()) {
-        createEvents(type, noteCtx, 1, pattern.suffixDurationTicks, noteCtx.chordCtx.nominalDurationTicks, pattern.suffixPitchOffsets,
-                     result);
+    if (!pattern.suffix_pitch_offsets.empty()) {
+        create_events(type, note_ctx, 1, pattern.suffix_duration_ticks, note_ctx.chord_ctx.nominal_duration_ticks,
+                      pattern.suffix_pitch_offsets, result);
     }
 }
 
-int OrnamentsRenderer::alterationsNumberByTempo(const double beatsPerSeconds, const int principalNoteDurationTicks,
-                                                const DisclosurePattern &pattern) {
-    float subNotesCount = principalNoteDurationTicks / pattern.subNoteDurationTicks(beatsPerSeconds);
+int OrnamentsRenderer::alterations_number_by_tempo(const double beats_per_seconds, const int principal_note_duration_ticks,
+                                                   const DisclosurePattern &pattern) {
+    float sub_notes_count = principal_note_duration_ticks / pattern.sub_note_duration_ticks(beats_per_seconds);
 
-    return static_cast<int>(std::max(subNotesCount / 2, 0.f));
+    return static_cast<int>(std::max(sub_notes_count / 2, 0.f));
 }
 
-void OrnamentsRenderer::createEvents(const ArticulationType type, NominalNoteCtx &noteCtx, const int alterationsCount,
-                                     const int availableDurationTicks, const int overallDurationTicks,
-                                     const std::vector<mpe::pitch_level_t> &pitchOffsets, mpe::PlaybackEventList &result) {
-    float availableDurationRatio = availableDurationTicks / static_cast<float>(overallDurationTicks);
+void OrnamentsRenderer::create_events(const ArticulationType type, NominalNoteCtx &note_ctx, const int alterations_count,
+                                      const int available_duration_ticks, const int overall_duration_ticks,
+                                      const std::vector<mpe::pitch_level_t> &pitch_offsets, mpe::PlaybackEventList &result) {
+    float available_duration_ratio = available_duration_ticks / static_cast<float>(overall_duration_ticks);
 
-    size_t totalNotesCount = alterationsCount * pitchOffsets.size();
-    float durationStep = (noteCtx.duration * availableDurationRatio) / totalNotesCount;
+    size_t total_notes_count = alterations_count * pitch_offsets.size();
+    float duration_step = (note_ctx.duration * available_duration_ratio) / total_notes_count;
 
-    track_idx_t trackIdx = staff2track(noteCtx.staffIdx, noteCtx.voiceIdx);
+    track_idx_t track_idx = staff2track(note_ctx.staff_idx, note_ctx.voice_idx);
 
-    for (int alterationStep = 0; alterationStep < alterationsCount; ++alterationStep) {
-        for (size_t alterationSubNoteIdx = 0; alterationSubNoteIdx < pitchOffsets.size(); ++alterationSubNoteIdx) {
-            NominalNoteCtx subNoteCtx(noteCtx);
-            subNoteCtx.duration = durationStep;
-            subNoteCtx.pitchLevel += pitchOffsets.at(alterationSubNoteIdx);
+    for (int alteration_step = 0; alteration_step < alterations_count; ++alteration_step) {
+        for (size_t alteration_sub_note_idx = 0; alteration_sub_note_idx < pitch_offsets.size(); ++alteration_sub_note_idx) {
+            NominalNoteCtx sub_note_ctx(note_ctx);
+            sub_note_ctx.duration = duration_step;
+            sub_note_ctx.pitch_level += pitch_offsets.at(alteration_sub_note_idx);
 
-            int utick = timestampToTick(subNoteCtx.chordCtx.score, subNoteCtx.timestamp);
-            subNoteCtx.dynamicLevel = noteCtx.chordCtx.playbackCtx->appliableDynamicLevel(trackIdx, utick);
+            int utick = timestamp_to_tick(sub_note_ctx.chord_ctx.score, sub_note_ctx.timestamp);
+            sub_note_ctx.dynamic_level = note_ctx.chord_ctx.playback_ctx->appliable_dynamic_level(track_idx, utick);
 
-            updateArticulationBoundaries(type, subNoteCtx.timestamp, subNoteCtx.duration, subNoteCtx.articulations);
+            update_articulation_boundaries(type, sub_note_ctx.timestamp, sub_note_ctx.duration, sub_note_ctx.articulations);
 
-            result.emplace_back(buildNoteEvent(subNoteCtx));
+            result.emplace_back(build_note_event(sub_note_ctx));
 
-            noteCtx.timestamp += durationStep;
+            note_ctx.timestamp += duration_step;
         }
     }
 }
 
-float DisclosurePattern::subNoteDurationTicks(const double bps) const {
-    if (muse::RealIsEqualOrMore(bps, PRESTISSIMO_BPS_BOUND)) {
-        return boundaries.highTempoDurationTicks;
+float DisclosurePattern::sub_note_duration_ticks(const double bps) const {
+    if (muse::real_is_equal_or_more(bps, ::mu::engraving::prestissimo_bps_bound)) {
+        return boundaries.high_tempo_duration_ticks;
     }
 
-    if (muse::RealIsEqualOrMore(bps, MODERATO_BPS_BOUND)) {
-        return boundaries.mediumTempoDurationTicks;
+    if (muse::real_is_equal_or_more(bps, ::mu::engraving::moderato_bps_bound)) {
+        return boundaries.medium_tempo_duration_ticks;
     }
 
-    return boundaries.lowTempoDurationTicks;
+    return boundaries.low_tempo_duration_ticks;
 }
 
-DisclosurePattern DisclosurePattern::buildActualPattern(const Note *note, const IntervalsInfo &intervalsInfo, const double bps) const {
+DisclosurePattern DisclosurePattern::build_actual_pattern(const Note *note, const IntervalsInfo &intervals_info, const double bps) const {
     DisclosurePattern result = *this;
 
-    result.updatePitchOffsets(note, intervalsInfo, result.prefixPitchOffsets);
-    result.updatePitchOffsets(note, intervalsInfo, result.alterationStepPitchOffsets);
-    result.updatePitchOffsets(note, intervalsInfo, result.suffixPitchOffsets);
+    result.update_pitch_offsets(note, intervals_info, result.prefix_pitch_offsets);
+    result.update_pitch_offsets(note, intervals_info, result.alteration_step_pitch_offsets);
+    result.update_pitch_offsets(note, intervals_info, result.suffix_pitch_offsets);
 
-    float subNoteTicks = subNoteDurationTicks(bps);
+    float sub_note_ticks = sub_note_duration_ticks(bps);
 
-    result.prefixDurationTicks = muse::RealRound(prefixPitchOffsets.size() * subNoteTicks, 0);
-    result.suffixDurationTicks = muse::RealRound(suffixPitchOffsets.size() * subNoteTicks, 0);
+    result.prefix_duration_ticks = muse::real_round(prefix_pitch_offsets.size() * sub_note_ticks, 0);
+    result.suffix_duration_ticks = muse::real_round(suffix_pitch_offsets.size() * sub_note_ticks, 0);
 
     return result;
 }
 
-void DisclosurePattern::updatePitchOffsets(const Note *note, const IntervalsInfo &intervalsInfo,
-                                           std::vector<mpe::pitch_level_t> &pitchOffsets) {
-    for (pitch_level_t &pitchOffset : pitchOffsets) {
-        if (pitchOffset == 0) {
+void DisclosurePattern::update_pitch_offsets(const Note *note, const IntervalsInfo &intervals_info,
+                                             std::vector<mpe::pitch_level_t> &pitch_offsets) {
+    for (pitch_level_t &pitch_offset : pitch_offsets) {
+        if (pitch_offset == 0) {
             continue;
         }
 
         semitone_t semitones = 0;
 
-        if (pitchOffset < 0) {
-            if (intervalsInfo.intervalBelowIsAuto) {
-                semitones = std::abs(chromaticPitchSteps(note, note, -intervalsInfo.intervalBelow.diatonic));
+        if (pitch_offset < 0) {
+            if (intervals_info.interval_below_is_auto) {
+                semitones = std::abs(chromatic_pitch_steps(note, note, -intervals_info.interval_below.diatonic));
             } else {
-                semitones = intervalsInfo.intervalBelow.chromatic;
+                semitones = intervals_info.interval_below.chromatic;
             }
-        } else if (pitchOffset > 0) {
-            if (intervalsInfo.intervalAboveIsAuto) {
-                semitones = std::abs(chromaticPitchSteps(note, note, intervalsInfo.intervalAbove.diatonic));
+        } else if (pitch_offset > 0) {
+            if (intervals_info.interval_above_is_auto) {
+                semitones = std::abs(chromatic_pitch_steps(note, note, intervals_info.interval_above.diatonic));
             } else {
-                semitones = intervalsInfo.intervalAbove.chromatic;
+                semitones = intervals_info.interval_above.chromatic;
             }
         }
 
-        pitchOffset *= semitones;
+        pitch_offset *= semitones;
     }
 }

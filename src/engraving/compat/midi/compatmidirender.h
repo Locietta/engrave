@@ -43,45 +43,46 @@ class Trill;
 
 class CompatMidiRender {
 public:
-    static void renderScore(Score *score, EventsHolder &events, const CompatMidiRendererInternal::Context &ctx, bool expandRepeats);
-    static int getControllerForSnd(Score *score, int globalSndController);
-    static void createPlayEvents(const Score *score, Measure const *start = nullptr, Measure const *end = nullptr,
-                                 const CompatMidiRendererInternal::Context &context = CompatMidiRendererInternal::Context());
+    static void render_score(Score *score, EventsHolder &events, const CompatMidiRendererInternal::Context &ctx, bool expand_repeats);
+    static int get_controller_for_snd(Score *score, int global_snd_controller);
+    static void create_play_events(const Score *score, Measure const *start = nullptr, Measure const *end = nullptr,
+                                   const CompatMidiRendererInternal::Context &context = CompatMidiRendererInternal::Context());
 
     static int tick(const CompatMidiRendererInternal::Context &ctx, int tick);
 private:
-    static void createPlayEvents(const Score *score, const CompatMidiRendererInternal::Context &context, Chord *chord,
-                                 Chord *prevChord = nullptr, Chord *nextChord = nullptr);
-    static void createGraceNotesPlayEvents(const Score *score, const Fraction &tick, Chord *chord, int &ontime, int &trailtime);
-    static std::vector<NoteEventList> renderChord(const CompatMidiRendererInternal::Context &context, Chord *chord, Chord *prevChord,
-                                                  int gateTime, int ontime, int trailtime);
-    static void renderArpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime);
-    static void renderTremolo(Chord *chord, std::vector<NoteEventList> &ell, int &ontime, double tremoloPartOfChord = 1.0);
-    static void renderChordArticulation(const CompatMidiRendererInternal::Context &context, Chord *chord, std::vector<NoteEventList> &ell,
-                                        int &gateTime, double graceOnBeatProportion, bool tremoloBefore = false);
-    static void updateGateTime(const Instrument *instr, int &gateTime, const String &articulationName,
-                               const CompatMidiRendererInternal::Context &context);
-    static void renderGlissando(NoteEventList *events, Note *notestart, double graceOnBeatProportion, bool tremoloBefore = false);
-    static bool renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, int requestedTicksPerNote,
-                                       const std::vector<int> &prefix, const std::vector<int> &body, bool repeatp, bool sustainp,
-                                       const std::vector<int> &suffix, int fastestFreq = 64, int slowestFreq = 8, // 64 Hz and 8 Hz
-                                       double graceOnBeatProportion = 0, bool tremoloBefore = false);
-    static bool renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, SymId articulationType,
-                                       OrnamentStyle ornamentStyle);
-    static bool renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, TrillType trillType, OrnamentStyle ornamentStyle);
-    static void createSlideInNotePlayEvents(Note *note, Chord *prevChord, NoteEventList *el);
-    static void createSlideOutNotePlayEvents(Note *note, NoteEventList *el, int onTime, bool hasTremolo);
+    static void create_play_events(const Score *score, const CompatMidiRendererInternal::Context &context, Chord *chord,
+                                   Chord *prev_chord = nullptr, Chord *next_chord = nullptr);
+    static void create_grace_notes_play_events(const Score *score, const Fraction &tick, Chord *chord, int &ontime, int &trailtime);
+    static std::vector<NoteEventList> render_chord(const CompatMidiRendererInternal::Context &context, Chord *chord, Chord *prev_chord,
+                                                   int gate_time, int ontime, int trailtime);
+    static void render_arpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime);
+    static void render_tremolo(Chord *chord, std::vector<NoteEventList> &ell, int &ontime, double tremolo_part_of_chord = 1.0);
+    static void render_chord_articulation(const CompatMidiRendererInternal::Context &context, Chord *chord, std::vector<NoteEventList> &ell,
+                                          int &gate_time, double grace_on_beat_proportion, bool tremolo_before = false);
+    static void update_gate_time(const Instrument *instr, int &gate_time, const String &articulation_name,
+                                 const CompatMidiRendererInternal::Context &context);
+    static void render_glissando(NoteEventList *events, Note *notestart, double grace_on_beat_proportion, bool tremolo_before = false);
+    static bool render_note_articulation(NoteEventList *events, Note *note, bool chromatic, int requested_ticks_per_note,
+                                         const std::vector<int> &prefix, const std::vector<int> &body, bool repeatp, bool sustainp,
+                                         const std::vector<int> &suffix, int fastest_freq = 64, int slowest_freq = 8, // 64 Hz and 8 Hz
+                                         double grace_on_beat_proportion = 0, bool tremolo_before = false);
+    static bool render_note_articulation(NoteEventList *events, Note *note, bool chromatic, SymId articulation_type,
+                                         OrnamentStyle ornament_style);
+    static bool render_note_articulation(NoteEventList *events, Note *note, bool chromatic, TrillType trill_type,
+                                         OrnamentStyle ornament_style);
+    static void create_slide_in_note_play_events(Note *note, Chord *prev_chord, NoteEventList *el);
+    static void create_slide_out_note_play_events(Note *note, NoteEventList *el, int on_time, bool has_tremolo);
 
     // Helpers
-    static Chord *getChordFromSegment(Segment *segment, track_idx_t track);
-    static Trill *findFirstTrill(Chord *chord);
-    static int adjustTrailtime(int trailtime, Chord *currentChord, Chord *nextChord);
-    static bool noteIsGlissandoStart(Note *note);
-    static int slideLengthChordDependent(Chord *chord);
-    static std::set<size_t> getNotesIndexesToRender(Chord *chord);
-    static Glissando *backGlissando(Note *note);
-    static bool isGlissandoValid(Glissando *glissando);
-    static const Drumset *getDrumset(const Chord *chord);
-    static int totalTiedNoteTicks(Note *note);
+    static Chord *get_chord_from_segment(Segment *segment, track_idx_t track);
+    static Trill *find_first_trill(Chord *chord);
+    static int adjust_trailtime(int trailtime, Chord *current_chord, Chord *next_chord);
+    static bool note_is_glissando_start(Note *note);
+    static int slide_length_chord_dependent(Chord *chord);
+    static std::set<size_t> get_notes_indexes_to_render(Chord *chord);
+    static Glissando *back_glissando(Note *note);
+    static bool is_glissando_valid(Glissando *glissando);
+    static const Drumset *get_drumset(const Chord *chord);
+    static int total_tied_note_ticks(Note *note);
 };
 } // namespace mu::engraving

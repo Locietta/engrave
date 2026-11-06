@@ -50,25 +50,26 @@ void PauseMap::calculate(const Score *s) {
     insert(std::pair<const int, int>(0, 0)); // can't start with a pause
 
     const TimeSigMap *sigmap = s->sigmap();
-    const RepeatList &repeatList = s->repeatList();
+    const RepeatList &repeat_list = s->repeat_list();
 
-    for (const TempoTimePoint &point : s->tempoTimeline().points()) {
+    for (const TempoTimePoint &point : s->tempo_timeline().points()) {
         const int utick = point.utick;
 
         if (point.pause <= 0.0) {
             // We have a regular tempo change.
-            tempoEvents_[tickWithPauses(utick)] = point.bps;
+            tempo_events_[tick_with_pauses(utick)] = point.bps;
             continue;
         }
 
         // We have a pause event.
-        const int tick = repeatList.utick2tick(utick);
-        Fraction timeSig(sigmap->timesig(tick).timesig());
-        double quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
-        int ticksPerMeasure = quarterNotesPerMeasure * Constants::DIVISION; // store a full measure of ticks to keep barlines in same places
-        tempoEvents_[tickWithPauses(utick)] = quarterNotesPerMeasure / point.pause;       // new tempo for pause
-        insert(std::pair<const int, int>(utick, ticksPerMeasure + offsetAtUTick(utick))); // store running total of extra ticks
-        tempoEvents_[tickWithPauses(utick)] = point.bps;                                  // restore previous tempo
+        const int tick = repeat_list.utick2tick(utick);
+        Fraction time_sig(sigmap->timesig(tick).timesig());
+        double quarter_notes_per_measure = (4.0 * time_sig.numerator()) / time_sig.denominator();
+        int ticks_per_measure =
+            quarter_notes_per_measure * Constants::division; // store a full measure of ticks to keep barlines in same places
+        tempo_events_[tick_with_pauses(utick)] = quarter_notes_per_measure / point.pause;      // new tempo for pause
+        insert(std::pair<const int, int>(utick, ticks_per_measure + offset_at_u_tick(utick))); // store running total of extra ticks
+        tempo_events_[tick_with_pauses(utick)] = point.bps;                                    // restore previous tempo
     }
 }
 
@@ -77,7 +78,7 @@ void PauseMap::calculate(const Score *s) {
 //    In total, how many extra ticks have been inserted prior to this utick.
 //---------------------------------------------------------
 
-int PauseMap::offsetAtUTick(int utick) const {
+int PauseMap::offset_at_u_tick(int utick) const {
     // make sure calculate was called
     IF_ASSERT_FAILED(!empty()) { LOGE() << "accessing empty container"; }
 

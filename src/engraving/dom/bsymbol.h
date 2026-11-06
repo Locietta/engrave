@@ -38,25 +38,25 @@ class BSymbol : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BSymbol)
 public:
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
     BSymbol &operator=(const BSymbol &) = delete;
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     Align align() const { return align_; }
 
-    void setAlign(Align a) { align_ = a; }
+    void set_align(Align a) { align_ = a; }
 
     const std::vector<EngravingItem *> &leafs() const { return leafs_; }
 
-    PointF pagePos() const override;
-    PointF canvasPos() const override;
+    PointF page_pos() const override;
+    PointF canvas_pos() const override;
 
 protected:
     BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags f = ElementFlag::NOTHING);

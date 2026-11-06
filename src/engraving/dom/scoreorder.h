@@ -40,13 +40,13 @@ class Score;
 struct ScoreGroup {
     String family;
     String section;
-    String unsorted;         // isEmpty()  : equal to <unsorted/>
-                             // !isEmpty() : equal to <unsorted group="unsorted"/>
-    bool notUnsorted = true; // not an unsorted group
+    String unsorted;          // isEmpty()  : equal to <unsorted/>
+                              // !isEmpty() : equal to <unsorted group="unsorted"/>
+    bool not_unsorted = true; // not an unsorted group
 
     bool bracket = false;
-    bool barLineSpan = true;
-    bool thinBracket = true;
+    bool bar_line_span = true;
+    bool thin_bracket = true;
 };
 
 //---------------------------------------------------------
@@ -65,7 +65,7 @@ struct InstrumentOverwrite {
 struct ScoreOrder {
     String id;
     TranslatableString name;
-    std::map<String, InstrumentOverwrite> instrumentMap;
+    std::map<String, InstrumentOverwrite> instrument_map;
     std::vector<ScoreGroup> groups;
     bool customized = false;
 
@@ -75,28 +75,28 @@ struct ScoreOrder {
     bool operator==(const ScoreOrder &order) const;
     bool operator!=(const ScoreOrder &order) const;
 
-    bool readBoolAttribute(XmlReader &reader, const char *name, bool defValue);
-    void readInstrument(XmlReader &reader);
-    void readSoloists(XmlReader &reader, const String section);
-    void readSection(XmlReader &reader);
-    bool hasGroup(const String &id, const String &group = String()) const;
+    bool read_bool_attribute(XmlReader &reader, const char *name, bool def_value);
+    void read_instrument(XmlReader &reader);
+    void read_soloists(XmlReader &reader, const String section);
+    void read_section(XmlReader &reader);
+    bool has_group(const String &id, const String &group = String()) const;
 
-    bool isValid() const;
-    bool isCustom() const;
-    TranslatableString getName() const;
-    String getFamilyName(const InstrumentTemplate *instrTemplate, bool soloist) const;
-    ScoreGroup newUnsortedGroup(const String group, const String section) const;
-    ScoreGroup getGroup(const String family, const String instrumentGroup) const;
-    int instrumentSortingIndex(const String &instrumentId, bool isSoloist) const;
-    bool isScoreOrder(const std::vector<int> &indices) const;
-    bool isScoreOrder(const Score *score) const;
+    bool is_valid() const;
+    bool is_custom() const;
+    TranslatableString get_name() const;
+    String get_family_name(const InstrumentTemplate *instr_template, bool soloist) const;
+    ScoreGroup new_unsorted_group(const String group, const String section) const;
+    ScoreGroup get_group(const String family, const String instrument_group) const;
+    int instrument_sorting_index(const String &instrument_id, bool is_soloist) const;
+    bool is_score_order(const std::vector<int> &indices) const;
+    bool is_score_order(const Score *score) const;
 
-    void setBracketsAndBarlines(Score *score);
+    void set_brackets_and_barlines(Score *score);
 
     void read(XmlReader &reader);
     void write(XmlWriter &xml) const;
 
-    void updateInstruments(const Score *score);
+    void update_instruments(const Score *score);
 };
 } // namespace mu::engraving
 

@@ -34,25 +34,25 @@ namespace mu::engraving {
 //---------------------------------------------------------
 struct NoteVal {
     int pitch = -1;
-    int velocityOverride = 0;
+    int velocity_override = 0;
     int tpc1 = Tpc::TPC_INVALID;
     int tpc2 = Tpc::TPC_INVALID;
-    int fret = INVALID_FRET_INDEX;
-    int string = INVALID_STRING_INDEX;
-    NoteHeadGroup headGroup = NoteHeadGroup::HEAD_NORMAL;
+    int fret = ::mu::engraving::invalid_fret_index;
+    int string = ::mu::engraving::invalid_string_index;
+    NoteHeadGroup head_group = NoteHeadGroup::HEAD_NORMAL;
 
     NoteVal() {}
 
     NoteVal(int p) : pitch(p) {}
 
     bool operator==(const NoteVal &v) const {
-        return pitch == v.pitch && velocityOverride == v.velocityOverride && tpc1 == v.tpc1 && tpc2 == v.tpc2 && fret == v.fret &&
-               string == v.string && headGroup == v.headGroup;
+        return pitch == v.pitch && velocity_override == v.velocity_override && tpc1 == v.tpc1 && tpc2 == v.tpc2 && fret == v.fret &&
+               string == v.string && head_group == v.head_group;
     }
 
-    int tpc(bool concertPitch) const { return concertPitch ? tpc1 : tpc2; }
+    int tpc(bool concert_pitch) const { return concert_pitch ? tpc1 : tpc2; }
 
-    bool isRest() const { return pitch == -1; }
+    bool is_rest() const { return pitch == -1; }
 };
 
 using NoteValList = std::vector<NoteVal>;

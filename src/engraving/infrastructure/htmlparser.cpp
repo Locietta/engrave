@@ -25,11 +25,11 @@
 
 namespace mu::engraving {
 muse::String HtmlParser::parse(const muse::String &in_html) {
-    if (in_html.isEmpty()) {
+    if (in_html.is_empty()) {
         return in_html;
     }
 
-    std::string html = in_html.toStdString();
+    std::string html = in_html.to_std_string();
 
     //! NOTE Get body
     auto body_b = html.find("<body");
@@ -60,44 +60,44 @@ muse::String HtmlParser::parse(const muse::String &in_html) {
     }
 
     //! NOTE Format blocks
-    auto extractText = [](const std::string &block) {
+    auto extract_text = [](const std::string &block) {
         std::string text;
-        bool isTag = false;
+        bool is_tag = false;
         for (const char &c : block) {
             if (c == '<') {
-                isTag = true;
+                is_tag = true;
             } else if (c == '>') {
-                isTag = false;
-            } else if (!isTag) {
+                is_tag = false;
+            } else if (!is_tag) {
                 text += c;
             }
         }
         return text;
     };
 
-    auto extractFont = [](const std::string &block) {
+    auto extract_font = [](const std::string &block) {
         auto fontsize_b = block.find("font-size");
         if (fontsize_b != std::string::npos) {
-            std::string fontSize;
+            std::string font_size;
             bool started = false;
             for (auto i = fontsize_b; i < block.size(); ++i) {
                 const char &c = block.at(i);
                 if (strchr(".0123456789", c) != nullptr) {
                     started = true;
-                    fontSize += c;
+                    font_size += c;
                 } else if (started) {
                     break;
                 }
             }
 
-            return std::string("<font size=\"") + fontSize + std::string("\"/>");
+            return std::string("<font size=\"") + font_size + std::string("\"/>");
         }
         return std::string();
     };
 
-    auto formatRichText = [extractText, extractFont](const std::string &block) {
-        std::string text = extractText(block);
-        std::string font = extractFont(block);
+    auto format_rich_text = [extract_text, extract_font](const std::string &block) {
+        std::string text = extract_text(block);
+        std::string font = extract_font(block);
         if (!font.empty()) {
             text = font + text;
         }
@@ -111,10 +111,10 @@ muse::String HtmlParser::parse(const muse::String &in_html) {
             text += "\n";
         }
 
-        text += formatRichText(block);
+        text += format_rich_text(block);
     }
 
-    auto replaceSym = [](std::string &str, int cc, std::string_view sym) {
+    auto replace_sym = [](std::string &str, int cc, std::string_view sym) {
         std::string code;
         code.resize(3);
         code[2] = static_cast<char>(cc);
@@ -127,21 +127,21 @@ muse::String HtmlParser::parse(const muse::String &in_html) {
     };
 
     //! NOTE replace utf8 code /*utf16 code*/ on sym
-    replaceSym(text, 0xee848e /*0xe10e*/, "<sym>accidentalNatural</sym>");                                               //natural
-    replaceSym(text, 0xee848c /*0xe10c*/, "<sym>accidentalSharp</sym>");                                                 // sharp
-    replaceSym(text, 0xee848d /*0xe10d*/, "<sym>accidentalFlat</sym>");                                                  // flat
-    replaceSym(text, 0xee8484 /*0xe104*/, "<sym>metNoteHalfUp</sym>");                                                   // note2_Sym
-    replaceSym(text, 0xee8485 /*0xe105*/, "<sym>metNoteQuarterUp</sym>");                                                // note4_Sym
-    replaceSym(text, 0xee8486 /*0xe106*/, "<sym>metNote8thUp</sym>");                                                    // note8_Sym
-    replaceSym(text, 0xee8487 /*0xe107*/, "<sym>metNote16thUp</sym>");                                                   // note16_Sym
-    replaceSym(text, 0xee8488 /*0xe108*/, "<sym>metNote32ndUp</sym>");                                                   // note32_Sym
-    replaceSym(text, 0xee8489 /*0xe109*/, "<sym>metNote64thUp</sym>");                                                   // note64_Sym
-    replaceSym(text, 0xee848a /*0xe10a*/, "<sym>metAugmentationDot</sym>");                                              // dot
-    replaceSym(text, 0xee848b /*0xe10b*/, "<sym>metAugmentationDot</sym><sym>space</sym><sym>metAugmentationDot</sym>"); // dotdot
-    replaceSym(text, 0xee85a7 /*0xe167*/, "<sym>segno</sym>");                                                           // segno
-    replaceSym(text, 0xee85a8 /*0xe168*/, "<sym>coda</sym>");                                                            // coda
-    replaceSym(text, 0xee85a9 /*0xe169*/, "<sym>codaSquare</sym>");                                                      // varcoda
+    replace_sym(text, 0xee848e /*0xe10e*/, "<sym>accidentalNatural</sym>");                                               //natural
+    replace_sym(text, 0xee848c /*0xe10c*/, "<sym>accidentalSharp</sym>");                                                 // sharp
+    replace_sym(text, 0xee848d /*0xe10d*/, "<sym>accidentalFlat</sym>");                                                  // flat
+    replace_sym(text, 0xee8484 /*0xe104*/, "<sym>metNoteHalfUp</sym>");                                                   // note2_Sym
+    replace_sym(text, 0xee8485 /*0xe105*/, "<sym>metNoteQuarterUp</sym>");                                                // note4_Sym
+    replace_sym(text, 0xee8486 /*0xe106*/, "<sym>metNote8thUp</sym>");                                                    // note8_Sym
+    replace_sym(text, 0xee8487 /*0xe107*/, "<sym>metNote16thUp</sym>");                                                   // note16_Sym
+    replace_sym(text, 0xee8488 /*0xe108*/, "<sym>metNote32ndUp</sym>");                                                   // note32_Sym
+    replace_sym(text, 0xee8489 /*0xe109*/, "<sym>metNote64thUp</sym>");                                                   // note64_Sym
+    replace_sym(text, 0xee848a /*0xe10a*/, "<sym>metAugmentationDot</sym>");                                              // dot
+    replace_sym(text, 0xee848b /*0xe10b*/, "<sym>metAugmentationDot</sym><sym>space</sym><sym>metAugmentationDot</sym>"); // dotdot
+    replace_sym(text, 0xee85a7 /*0xe167*/, "<sym>segno</sym>");                                                           // segno
+    replace_sym(text, 0xee85a8 /*0xe168*/, "<sym>coda</sym>");                                                            // coda
+    replace_sym(text, 0xee85a9 /*0xe169*/, "<sym>codaSquare</sym>");                                                      // varcoda
 
-    return muse::String::fromStdString(text);
+    return muse::String::from_std_string(text);
 }
 } // namespace mu::engraving

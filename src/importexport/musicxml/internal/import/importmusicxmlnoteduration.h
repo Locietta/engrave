@@ -43,32 +43,32 @@ public:
     MusicXmlNoteDuration(int divs, MusicXmlLogger *logger, MusicXmlParserPass1 *pass1)
         : divs_(divs), pass1_(pass1), logger_(logger) { /* nothing so far */ }
 
-    muse::String checkTiming(const muse::String &type, const bool rest, const bool grace);
+    muse::String check_timing(const muse::String &type, const bool rest, const bool grace);
 
     engraving::Fraction duration() const { return dura_; } // duration to use
 
-    engraving::Fraction calculatedDuration() const { return calcDura_; } // value calculated from note type etcetera
+    engraving::Fraction calculated_duration() const { return calc_dura_; } // value calculated from note type etcetera
 
-    engraving::Fraction specifiedDuration() const { return specDura_; } // value read from the duration element
+    engraving::Fraction specified_duration() const { return spec_dura_; } // value read from the duration element
 
     int dots() const { return dots_; }
 
-    engraving::TDuration normalType() const { return normalType_; }
+    engraving::TDuration normal_type() const { return normal_type_; }
 
-    bool readProperties(muse::XmlStreamReader &e);
+    bool read_properties(muse::XmlStreamReader &e);
 
-    engraving::Fraction timeMod() const { return timeMod_; }
+    engraving::Fraction time_mod() const { return time_mod_; }
 
 private:
     void duration(muse::XmlStreamReader &e);
-    void timeModification(muse::XmlStreamReader &e);
+    void time_modification(muse::XmlStreamReader &e);
     const int divs_; // the current divisions value
     int dots_ = 0;
-    engraving::Fraction calcDura_;
-    engraving::Fraction specDura_;
+    engraving::Fraction calc_dura_;
+    engraving::Fraction spec_dura_;
     engraving::Fraction dura_;
-    engraving::TDuration normalType_;
-    engraving::Fraction timeMod_{1, 1}; // default to no time modification
+    engraving::TDuration normal_type_;
+    engraving::Fraction time_mod_{1, 1}; // default to no time modification
     MusicXmlParserPass1 *pass1_ = nullptr;
     MusicXmlLogger *logger_ = nullptr; ///< Error logger
 };

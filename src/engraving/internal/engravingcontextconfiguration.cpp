@@ -24,6 +24,6 @@
 
 using namespace mu::engraving;
 
-double EngravingContextConfiguration::guiScaling() const { return 1.0; }
+double EngravingContextConfiguration::gui_scaling() const { return 1.0; }
 
-bool EngravingContextConfiguration::isAccessibleEnabled() const { return false; }
+bool EngravingContextConfiguration::is_accessible_enabled() const { return false; }

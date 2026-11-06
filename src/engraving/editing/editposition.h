@@ -30,7 +30,7 @@ class Transaction;
 
 class EditPosition {
 public:
-    static void freezeItemsPositions(Transaction &tx, const std::vector<EngravingItem *> &items);
-    static void freezeItemPosition(Transaction &tx, EngravingItem *item);
+    static void freeze_items_positions(Transaction &tx, const std::vector<EngravingItem *> &items);
+    static void freeze_item_position(Transaction &tx, EngravingItem *item);
 };
 } // namespace mu::engraving

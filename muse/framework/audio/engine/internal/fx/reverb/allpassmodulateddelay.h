@@ -30,44 +30,44 @@ class AllPassModulatedDelay {
 public:
     AllPassModulatedDelay() {}
 
-    void allocateForMaxDelaySamples(int maxDelaySamples) { buffer_.setSize(maxDelaySamples); }
+    void allocate_for_max_delay_samples(int max_delay_samples) { buffer_.set_size(max_delay_samples); }
 
-    void setBaseDelay(float samples, float maxModulationOffset) {
-        int allocSize = int(samples + maxModulationOffset + 16.f); // some extra space for interpolation
-        if (samples != baseDelay_ || allocSize > buffer_.getAllocatedSize()) {
-            allocateForMaxDelaySamples(allocSize);
-            baseDelay_ = samples;
-            setModOffset(0.f);
+    void set_base_delay(float samples, float max_modulation_offset) {
+        int alloc_size = int(samples + max_modulation_offset + 16.f); // some extra space for interpolation
+        if (samples != base_delay_ || alloc_size > buffer_.get_allocated_size()) {
+            allocate_for_max_delay_samples(alloc_size);
+            base_delay_ = samples;
+            set_mod_offset(0.f);
             reset();
         }
     }
 
-    float getBaseDelay() const { return baseDelay_; }
+    float get_base_delay() const { return base_delay_; }
 
-    void setModOffset(float smpOffset) {
-        float total = -baseDelay_ + smpOffset; // negative!
+    void set_mod_offset(float smp_offset) {
+        float total = -base_delay_ + smp_offset; // negative!
         float flr = std::floor(total);
-        modFraction_ = total - flr;
-        readOffset_ = int(flr);
+        mod_fraction_ = total - flr;
+        read_offset_ = int(flr);
     }
 
-    void writeSampleAndAdvance(float sample) {
-        buffer_.writeOffset0(sample);
+    void write_sample_and_advance(float sample) {
+        buffer_.write_offset0(sample);
         buffer_.advance(1);
     }
 
-    float readSample() {
-        auto res = buffer_.read(readOffset_);
-        auto x1 = buffer_.read(readOffset_ + 1);
+    float read_sample() {
+        auto res = buffer_.read(read_offset_);
+        auto x1 = buffer_.read(read_offset_ + 1);
 
-        res += modFraction_ * (x1 - y1_);
+        res += mod_fraction_ * (x1 - y1_);
         y1_ = res;
         return res;
     }
 
-    float processSample(float sample) {
-        writeSampleAndAdvance(sample);
-        return readSample();
+    float process_sample(float sample) {
+        write_sample_and_advance(sample);
+        return read_sample();
     }
 
     void reset() {
@@ -76,9 +76,9 @@ public:
     }
 
 private:
-    int readOffset_ = 0;
-    float modFraction_ = 0.f;
-    float baseDelay_ = 0.f;
+    int read_offset_ = 0;
+    float mod_fraction_ = 0.f;
+    float base_delay_ = 0.f;
 
     CircularSampleBuffer<float> buffer_;
     float y1_ = 0.f;

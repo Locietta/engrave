@@ -40,7 +40,7 @@ namespace mu::iex::musicxml {
  Convert MusicXML note type to fraction.
  */
 
-static Fraction noteTypeToFraction(const String &type) {
+static Fraction note_type_to_fraction(const String &type) {
     if (type == u"1024th") {
         return Fraction(1, 1024);
     } else if (type == u"512th") {
@@ -82,10 +82,10 @@ static Fraction noteTypeToFraction(const String &type) {
  Convert note type, number of dots and actual and normal notes into a duration
  */
 
-static Fraction calculateFraction(const String &type, const int dots, const Fraction timeMod) {
+static Fraction calculate_fraction(const String &type, const int dots, const Fraction time_mod) {
     // type
-    Fraction f = noteTypeToFraction(type);
-    if (f.isValid()) {
+    Fraction f = note_type_to_fraction(type);
+    if (f.is_valid()) {
         // dot(s)
         Fraction ff = f;
         for (int i = 0; i < dots; ++i) {
@@ -93,8 +93,8 @@ static Fraction calculateFraction(const String &type, const int dots, const Frac
             f += ff;
         }
         // tuplet
-        if (timeMod.isValid()) {
-            f *= timeMod;
+        if (time_mod.is_valid()) {
+            f *= time_mod;
         }
         // clean up (just in case)
         f.reduce();
@@ -111,43 +111,43 @@ static Fraction calculateFraction(const String &type, const int dots, const Frac
  Return empty string if OK, message in case of error.
  */
 
-String MusicXmlNoteDuration::checkTiming(const String &type, const bool rest, const bool grace) {
+String MusicXmlNoteDuration::check_timing(const String &type, const bool rest, const bool grace) {
     //LOGD("type %s rest %d grace %d", muPrintable(type), rest, grace);
-    String errorStr;
+    String error_str;
 
     // normalize duration
-    if (specDura_.isValid()) {
-        specDura_.reduce();
+    if (spec_dura_.is_valid()) {
+        spec_dura_.reduce();
     }
 
     // default: use calculated duration
-    calcDura_ = calculateFraction(type, dots_, timeMod_);
-    if (calcDura_.isValid()) {
-        dura_ = calcDura_;
+    calc_dura_ = calculate_fraction(type, dots_, time_mod_);
+    if (calc_dura_.is_valid()) {
+        dura_ = calc_dura_;
     }
 
-    if (specDura_.isValid() && calcDura_.isValid()) {
-        if (specDura_ != calcDura_) {
-            errorStr =
-                String(u"calculated duration (%1) not equal to specified duration (%2)").arg(calcDura_.toString(), specDura_.toString());
+    if (spec_dura_.is_valid() && calc_dura_.is_valid()) {
+        if (spec_dura_ != calc_dura_) {
+            error_str = String(u"calculated duration (%1) not equal to specified duration (%2)")
+                            .arg(calc_dura_.to_string(), spec_dura_.to_string());
             //LOGD("rest %d type '%s' timemod %s", rest, muPrintable(type), muPrintable(_timeMod.print()));
 
-            if (rest && type == "whole" && specDura_.isValid()) {
+            if (rest && type == "whole" && spec_dura_.is_valid()) {
                 // Sibelius whole measure rest (not an error)
-                errorStr = u"";
-                dura_ = specDura_;
-            } else if (grace && specDura_ == Fraction(0, 1)) {
+                error_str = u"";
+                dura_ = spec_dura_;
+            } else if (grace && spec_dura_ == Fraction(0, 1)) {
                 // grace note (not an error)
-                errorStr = u"";
-                dura_ = specDura_;
+                error_str = u"";
+                dura_ = spec_dura_;
             } else {
-                if (std::abs(calcDura_.ticks() - specDura_.ticks()) <= pass1_->maxDiff()) {
-                    errorStr += u" -> assuming rounding error";
-                    pass1_->insertAdjustedDuration(dura_, calcDura_);
-                    dura_ = calcDura_;
-                    specDura_ = calcDura_; // prevent changing off time
+                if (std::abs(calc_dura_.ticks() - spec_dura_.ticks()) <= pass1_->max_diff()) {
+                    error_str += u" -> assuming rounding error";
+                    pass1_->insert_adjusted_duration(dura_, calc_dura_);
+                    dura_ = calc_dura_;
+                    spec_dura_ = calc_dura_; // prevent changing off time
                 } else {
-                    errorStr += u" -> using calculated duration";
+                    error_str += u" -> using calculated duration";
                 }
             }
 
@@ -157,31 +157,31 @@ String MusicXmlNoteDuration::checkTiming(const String &type, const bool rest, co
             // based on note type. If actual is 2/3 of expected, the rest is part
             // of a tuplet.
             if (rest) {
-                if (2 * calcDura_.ticks() == 3 * specDura_.ticks()) {
-                    timeMod_ = Fraction(2, 3);
-                    errorStr += errorStr.isEmpty() ? u" ->" : u",";
-                    errorStr += u" assuming triplet";
-                    dura_ = specDura_;
+                if (2 * calc_dura_.ticks() == 3 * spec_dura_.ticks()) {
+                    time_mod_ = Fraction(2, 3);
+                    error_str += error_str.is_empty() ? u" ->" : u",";
+                    error_str += u" assuming triplet";
+                    dura_ = spec_dura_;
                 }
             }
         }
-    } else if (specDura_.isValid() && !calcDura_.isValid()) {
+    } else if (spec_dura_.is_valid() && !calc_dura_.is_valid()) {
         // do not report an error for typeless (whole measure) rests
         if (!(rest && type == "")) {
-            errorStr = u"calculated duration invalid, using specified duration";
+            error_str = u"calculated duration invalid, using specified duration";
         }
-        dura_ = specDura_;
-    } else if (!specDura_.isValid() && calcDura_.isValid()) {
+        dura_ = spec_dura_;
+    } else if (!spec_dura_.is_valid() && calc_dura_.is_valid()) {
         if (!grace) {
-            errorStr = u"specified duration invalid, using calculated duration";
+            error_str = u"specified duration invalid, using calculated duration";
         }
     } else {
-        errorStr = u"calculated and specified duration invalid, using 4/4";
+        error_str = u"calculated and specified duration invalid, using 4/4";
         dura_ = Fraction(4, 4);
     }
 
-    pass1_->insertSeenDenominator(dura_.reduced().denominator());
-    return errorStr;
+    pass1_->insert_seen_denominator(dura_.reduced().denominator());
+    return error_str;
 }
 
 //---------------------------------------------------------
@@ -193,11 +193,11 @@ String MusicXmlNoteDuration::checkTiming(const String &type, const bool rest, co
  */
 
 void MusicXmlNoteDuration::duration(muse::XmlStreamReader &e) {
-    logger_->logDebugTrace(u"MusicXmlParserPass1::duration", &e);
+    logger_->log_debug_trace(u"MusicXmlParserPass1::duration", &e);
 
-    specDura_.set(0, 0); // invalid unless set correctly
-    int intDura = e.readAsciiText().toInt();
-    specDura_ = pass1_->calcTicks(intDura, divs_, &e); // Duration reading (and rounding) code consolidated to pass1
+    spec_dura_.set(0, 0); // invalid unless set correctly
+    int int_dura = e.read_ascii_text().to_int();
+    spec_dura_ = pass1_->calc_ticks(int_dura, divs_, &e); // Duration reading (and rounding) code consolidated to pass1
 }
 
 //---------------------------------------------------------
@@ -209,18 +209,18 @@ void MusicXmlNoteDuration::duration(muse::XmlStreamReader &e) {
  Return true if handled.
  */
 
-bool MusicXmlNoteDuration::readProperties(muse::XmlStreamReader &e) {
+bool MusicXmlNoteDuration::read_properties(muse::XmlStreamReader &e) {
     const AsciiStringView tag(e.name());
     //LOGD("tag %s", muPrintable(tag.toString()));
     if (tag == "dot") {
         dots_++;
-        e.skipCurrentElement(); // skip but don't log
+        e.skip_current_element(); // skip but don't log
         return true;
     } else if (tag == "duration") {
         duration(e);
         return true;
     } else if (tag == "time-modification") {
-        timeModification(e);
+        time_modification(e);
         return true;
     }
     return false;
@@ -234,41 +234,41 @@ bool MusicXmlNoteDuration::readProperties(muse::XmlStreamReader &e) {
  Parse the /score-partwise/part/measure/note/time-modification node.
  */
 
-void MusicXmlNoteDuration::timeModification(muse::XmlStreamReader &e) {
-    logger_->logDebugTrace(u"MusicXmlParserPass1::timeModification", &e);
+void MusicXmlNoteDuration::time_modification(muse::XmlStreamReader &e) {
+    logger_->log_debug_trace(u"MusicXmlParserPass1::timeModification", &e);
 
-    int intActual = 0;
-    int intNormal = 0;
-    String strActual;
-    String strNormal;
+    int int_actual = 0;
+    int int_normal = 0;
+    String str_actual;
+    String str_normal;
 
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "actual-notes") {
-            strActual = e.readText();
+            str_actual = e.read_text();
         } else if (tag == "normal-notes") {
-            strNormal = e.readText();
+            str_normal = e.read_text();
         } else if (tag == "normal-type") {
             // "measure" is not a valid normal-type,
             // but would be accepted by setType()
-            String strNormalType = e.readText();
-            if (strNormalType != u"measure") {
-                muse::ByteArray ba = strNormalType.toAscii();
-                normalType_.setType(TConv::fromXml(ba.constChar(), DurationType::V_INVALID));
+            String str_normal_type = e.read_text();
+            if (str_normal_type != u"measure") {
+                muse::ByteArray ba = str_normal_type.to_ascii();
+                normal_type_.set_type(TConv::from_xml(ba.const_char(), DurationType::V_INVALID));
             }
         } else {
-            logger_->logDebugInfo(String(u"skipping '%1'").arg(String::fromAscii(e.name().ascii())), &e);
-            e.skipCurrentElement();
+            logger_->log_debug_info(String(u"skipping '%1'").arg(String::from_ascii(e.name().ascii())), &e);
+            e.skip_current_element();
         }
     }
 
-    intActual = strActual.toInt();
-    intNormal = strNormal.toInt();
-    if (intActual > 0 && intNormal > 0) {
-        timeMod_.set(intNormal, intActual);
+    int_actual = str_actual.to_int();
+    int_normal = str_normal.to_int();
+    if (int_actual > 0 && int_normal > 0) {
+        time_mod_.set(int_normal, int_actual);
     } else {
-        timeMod_.set(1, 1);
-        logger_->logError(String(u"illegal time-modification: actual-notes %1 normal-notes %2").arg(strActual, strNormal), &e);
+        time_mod_.set(1, 1);
+        logger_->log_error(String(u"illegal time-modification: actual-notes %1 normal-notes %2").arg(str_actual, str_normal), &e);
     }
 }
 } // namespace mu::iex::musicxml

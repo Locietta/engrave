@@ -31,56 +31,57 @@
 
 using namespace mu::engraving;
 
-static ElementStyle playCountStyle{
-    {Sid::repeatPlayCountPlacement, Pid::PLACEMENT},
-    {Sid::repeatPlayCountMinDistance, Pid::MIN_DISTANCE},
+static ElementStyle play_count_style{
+    {Sid::REPEAT_PLAY_COUNT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::REPEAT_PLAY_COUNT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 PlayCountText::PlayCountText(DummyParentOr<Segment> parent, TextStyleType tid)
     : TextBase(ElementType::PLAY_COUNT_TEXT, parent, tid, ElementFlag::SYSTEM | ElementFlag::ON_STAFF) {
-    initElementStyle(&playCountStyle);
+    init_element_style(&play_count_style);
 }
 
-PropertyValue PlayCountText::getProperty(Pid id) const {
+PropertyValue PlayCountText::get_property(Pid id) const {
     switch (id) {
-        case Pid::PLAY_COUNT_TEXT_SETTING: return playCountTextSetting_;
-        case Pid::PLAY_COUNT_TEXT: return playCountCustomText_;
-        default: return TextBase::getProperty(id);
+        case Pid::PLAY_COUNT_TEXT_SETTING: return play_count_text_setting_;
+        case Pid::PLAY_COUNT_TEXT: return play_count_custom_text_;
+        default: return TextBase::get_property(id);
     }
 }
 
-bool PlayCountText::setProperty(Pid id, const PropertyValue &v) {
+bool PlayCountText::set_property(Pid id, const PropertyValue &v) {
     Segment *s = segment();
     Measure *m = s ? s->measure() : nullptr;
 
     switch (id) {
         case Pid::PLAY_COUNT_TEXT_SETTING:
-            playCountTextSetting_ = v.value<AutoCustomHide>();
-            if (playCountTextSetting() == AutoCustomHide::CUSTOM && playCountCustomText().isEmpty()) {
-                int repeatCount = m ? m->repeatCount() : 2;
-                String text =
-                    TConv::translatedUserName(style().styleV(Sid::repeatPlayCountPreset).value<RepeatPlayCountPreset>()).arg(repeatCount);
-                undoChangeProperty(Pid::PLAY_COUNT_TEXT, text);
+            play_count_text_setting_ = v.value<AutoCustomHide>();
+            if (play_count_text_setting() == AutoCustomHide::CUSTOM && play_count_custom_text().is_empty()) {
+                int repeat_count = m ? m->repeat_count() : 2;
+                String text = TConv::translated_user_name(style().style_v(Sid::REPEAT_PLAY_COUNT_PRESET).value<RepeatPlayCountPreset>())
+                                  .arg(repeat_count);
+                undo_change_property(Pid::PLAY_COUNT_TEXT, text);
             }
             break;
-        case Pid::PLAY_COUNT_TEXT: playCountCustomText_ = v.value<String>(); break;
-        default: return TextBase::setProperty(id, v);
+        case Pid::PLAY_COUNT_TEXT: play_count_custom_text_ = v.value<String>(); break;
+        default: return TextBase::set_property(id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
-PropertyValue PlayCountText::propertyDefault(Pid propertyId) const {
+PropertyValue PlayCountText::property_default(Pid property_id) const {
     Segment *s = segment();
     Measure *m = s ? s->measure() : nullptr;
 
-    switch (propertyId) {
+    switch (property_id) {
         case Pid::PLAY_COUNT_TEXT_SETTING: return AutoCustomHide::AUTO;
         case Pid::PLAY_COUNT_TEXT: {
-            int repeatCount = m ? m->repeatCount() : 2;
-            return TConv::translatedUserName(style().styleV(Sid::repeatPlayCountPreset).value<RepeatPlayCountPreset>()).arg(repeatCount);
+            int repeat_count = m ? m->repeat_count() : 2;
+            return TConv::translated_user_name(style().style_v(Sid::REPEAT_PLAY_COUNT_PRESET).value<RepeatPlayCountPreset>())
+                .arg(repeat_count);
         }
-        default: return TextBase::propertyDefault(propertyId);
+        default: return TextBase::property_default(property_id);
     }
 }
 
@@ -88,5 +89,5 @@ mu::engraving::BarLine *mu::engraving::PlayCountText::barline() const {
     Segment *seg = segment();
     EngravingItem *el = seg ? seg->element(track()) : nullptr;
 
-    return toBarLine(el);
+    return to_bar_line(el);
 }

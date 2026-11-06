@@ -69,9 +69,9 @@ private:
     int count_;
 };
 
-void assignKeyListToStaff(const KeyList &kl, Staff *staff) {
+void assign_key_list_to_staff(const KeyList &kl, Staff *staff) {
     Score *score = staff->score();
-    const track_idx_t track = staff->idx() * VOICES;
+    const track_idx_t track = staff->idx() * ::mu::engraving::voices;
     Key pkey = Key::C;
 
     for (auto it = kl.begin(); it != kl.end(); ++it) {
@@ -81,26 +81,26 @@ void assignKeyListToStaff(const KeyList &kl, Staff *staff) {
             continue;
         }
         pkey = key;
-        Measure *m = score->tick2measure(Fraction::fromTicks(tick));
+        Measure *m = score->tick2measure(Fraction::from_ticks(tick));
         if (!m) {
             continue;
         }
-        Segment *seg = m->getSegment(SegmentType::KeySig, Fraction::fromTicks(tick));
-        KeySig *ks = Factory::createKeySig(seg);
-        ks->setTrack(track);
-        ks->setGenerated(false);
-        ks->setKey(key);
-        ks->mutldata()->setMag(staff->staffMag(Fraction::fromTicks(tick)));
+        Segment *seg = m->get_segment(SegmentType::KEY_SIG, Fraction::from_ticks(tick));
+        KeySig *ks = Factory::create_key_sig(seg);
+        ks->set_track(track);
+        ks->set_generated(false);
+        ks->set_key(key);
+        ks->mutldata()->set_mag(staff->staff_mag(Fraction::from_ticks(tick)));
         seg->add(ks);
     }
 }
 
-Key findKey(const std::vector<MTrack> &tracks) {
+Key find_key(const std::vector<MTrack> &tracks) {
     const int octave = 12;
     std::vector<int> counts(octave);
 
     for (const auto &track : tracks) {
-        if (track.mtrack->drumTrack()) {
+        if (track.mtrack->drum_track()) {
             continue;
         }
         for (auto it = track.chords.begin(); it != track.chords.end(); ++it) {
@@ -130,50 +130,50 @@ Key findKey(const std::vector<MTrack> &tracks) {
     return keys[0].key();
 }
 
-void recognizeMainKeySig(std::vector<MTrack> &tracks) {
-    bool needToFindKey = false;
+void recognize_main_key_sig(std::vector<MTrack> &tracks) {
+    bool need_to_find_key = false;
 
-    const auto &opers = midiImportOperations;
-    const bool isHuman = opers.data()->trackOpers.isHumanPerformance.value();
-    if (isHuman) {
-        needToFindKey = true;
+    const auto &opers = midi_import_operations;
+    const bool is_human = opers.data()->track_opers.is_human_performance.value();
+    if (is_human) {
+        need_to_find_key = true;
     }
 
-    if (!needToFindKey) {
+    if (!need_to_find_key) {
         for (const MTrack &track : tracks) {
-            if (track.mtrack->drumTrack()) {
+            if (track.mtrack->drum_track()) {
                 continue;
             }
-            if (!track.hasKey) {
-                needToFindKey = true;
+            if (!track.has_key) {
+                need_to_find_key = true;
                 break;
             }
         }
     }
-    if (!needToFindKey) {
+    if (!need_to_find_key) {
         return;
     }
 
-    const Key key = findKey(tracks);
+    const Key key = find_key(tracks);
 
     for (MTrack &track : tracks) {
-        if (track.mtrack->drumTrack()) {
+        if (track.mtrack->drum_track()) {
             continue;
         }
 
-        if (!track.hasKey || isHuman) {
+        if (!track.has_key || is_human) {
             KeySigEvent ke;
             Interval v = track.staff->part()->instrument()->transpose();
             Score *score = track.staff->score();
-            ke.setConcertKey(key);
-            if (!v.isZero() && !score->style().styleB(Sid::concertPitch)) {
+            ke.set_concert_key(key);
+            if (!v.is_zero() && !score->style().style_b(Sid::CONCERT_PITCH)) {
                 v.flip();
-                ke.setKey(Transpose::transposeKey(key, v));
+                ke.set_key(Transpose::transpose_key(key, v));
             }
 
-            KeyList &staffKeyList = *track.staff->keyList();
-            staffKeyList[0] = ke;
-            assignKeyListToStaff(staffKeyList, track.staff);
+            KeyList &staff_key_list = *track.staff->key_list();
+            staff_key_list[0] = ke;
+            assign_key_list_to_staff(staff_key_list, track.staff);
         }
     }
 }

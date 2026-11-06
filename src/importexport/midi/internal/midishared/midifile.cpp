@@ -34,22 +34,22 @@
 using namespace mu::engraving;
 
 namespace {
-[[noreturn]] void throwMidiError(const std::string &msg) { throw std::runtime_error(msg); }
+[[noreturn]] void throw_midi_error(const std::string &msg) { throw std::runtime_error(msg); }
 } // namespace
 
 namespace mu::iex::midi {
 MidiFile::MidiFile() {
     fp = 0;
-    _division = 0;
-    _isDivisionInTps = false;
-    _format = 1;
-    _noRunningStatus = false;
+    division_value = 0;
+    is_division_in_tps_value = false;
+    format_value = 1;
+    no_running_status = false;
 
     status = 0;
     sstatus = 0;
     click = 0;
-    curPos = 0;
-    _writeError = false;
+    cur_pos = 0;
+    write_error = false;
 }
 
 //---------------------------------------------------------
@@ -59,56 +59,56 @@ MidiFile::MidiFile() {
 
 bool MidiFile::write(MidiIODevice *out) {
     fp = out;
-    _writeError = false;
+    write_error = false;
     write("MThd", 4);
-    writeLong(6);        // header len
-    writeShort(_format); // format
-    writeShort(static_cast<int>(_tracks.size()));
-    writeShort(_division);
-    for (const auto &t : _tracks) {
-        if (writeTrack(t) || _writeError) {
+    write_long(6);             // header len
+    write_short(format_value); // format
+    write_short(static_cast<int>(tracks_value.size()));
+    write_short(division_value);
+    for (const auto &t : tracks_value) {
+        if (write_track(t) || write_error) {
             return true;
         }
     }
-    return _writeError;
+    return write_error;
 }
 
 //---------------------------------------------------------
 //   write
 //---------------------------------------------------------
 
-void MidiFile::writeEvent(const MidiEvent &event) {
+void MidiFile::write_event(const MidiEvent &event) {
     switch (event.type()) {
         case ME_NOTEON:
-            writeStatus(ME_NOTEON, event.channel());
+            write_status(ME_NOTEON, event.channel());
             put(event.pitch());
             put(event.velo());
             break;
 
         case ME_NOTEOFF:
-            writeStatus(ME_NOTEOFF, event.channel());
+            write_status(ME_NOTEOFF, event.channel());
             put(event.pitch());
             put(event.velo());
             break;
 
         case ME_PITCHBEND:
-            writeStatus(ME_PITCHBEND, event.channel());
-            put(event.dataA());
-            put(event.dataB());
+            write_status(ME_PITCHBEND, event.channel());
+            put(event.data_a());
+            put(event.data_b());
             break;
 
         case ME_CONTROLLER:
             switch (event.controller()) {
                 case CTRL_PROGRAM:
-                    writeStatus(ME_PROGRAM, event.channel());
+                    write_status(ME_PROGRAM, event.channel());
                     put(event.value() & 0x7f);
                     break;
                 case CTRL_PRESS:
-                    writeStatus(ME_AFTERTOUCH, event.channel());
+                    write_status(ME_AFTERTOUCH, event.channel());
                     put(event.value() & 0x7f);
                     break;
                 default:
-                    writeStatus(ME_CONTROLLER, event.channel());
+                    write_status(ME_CONTROLLER, event.channel());
                     put(event.controller());
                     put(event.value() & 0x7f);
                     break;
@@ -117,16 +117,16 @@ void MidiFile::writeEvent(const MidiEvent &event) {
 
         case ME_META:
             put(ME_META);
-            put(event.metaType());
+            put(event.meta_type());
             // Don't null terminate text meta events
-            if (event.metaType() >= 0x1 && event.metaType() <= 0x14) {
+            if (event.meta_type() >= 0x1 && event.meta_type() <= 0x14) {
                 putvl(event.len() - 1);
                 write(event.edata(), event.len() - 1);
             } else {
                 putvl(event.len());
                 write(event.edata(), event.len());
             }
-            resetRunningStatus(); // really ?!
+            reset_running_status(); // really ?!
             break;
 
         case ME_SYSEX:
@@ -134,7 +134,7 @@ void MidiFile::writeEvent(const MidiEvent &event) {
             putvl(event.len() + 1); // including 0xf7
             write(event.edata(), event.len());
             put(ME_ENDSYSEX);
-            resetRunningStatus();
+            reset_running_status();
             break;
     }
 }
@@ -143,10 +143,10 @@ void MidiFile::writeEvent(const MidiEvent &event) {
 //   writeTrack
 //---------------------------------------------------------
 
-bool MidiFile::writeTrack(const MidiTrack &t) {
+bool MidiFile::write_track(const MidiTrack &t) {
     write("MTrk", 4);
     int64_t lenpos = static_cast<int64_t>(fp->pos());
-    writeLong(0); // dummy len
+    write_long(0); // dummy len
 
     status = -1;
     int tick = 0;
@@ -157,8 +157,8 @@ bool MidiFile::writeTrack(const MidiTrack &t) {
         // if track channel != -1, then use this
         //    channel for all events in this track
         //
-        if (t.outChannel() != -1) {
-            writeEvent(i.second);
+        if (t.out_channel() != -1) {
+            write_event(i.second);
         }
         tick = ntick;
     }
@@ -174,21 +174,21 @@ bool MidiFile::writeTrack(const MidiTrack &t) {
     putvl(0);  // len 0
     int64_t endpos = static_cast<int64_t>(fp->pos());
     fp->seek(static_cast<size_t>(lenpos));
-    writeLong(static_cast<int>(endpos - lenpos - 4)); // tracklen
+    write_long(static_cast<int>(endpos - lenpos - 4)); // tracklen
     fp->seek(static_cast<size_t>(endpos));
-    return _writeError;
+    return write_error;
 }
 
 //---------------------------------------------------------
 //   writeStatus
 //---------------------------------------------------------
 
-void MidiFile::writeStatus(int nstat, int c) {
+void MidiFile::write_status(int nstat, int c) {
     nstat |= (c & 0xf);
     //
     //  running status; except for Sysex- and Meta Events
     //
-    if (_noRunningStatus || (((nstat & 0xf0) != 0xf0) && (nstat != status))) {
+    if (no_running_status || (((nstat & 0xf0) != 0xf0) && (nstat != status))) {
         status = nstat;
         put(nstat);
     }
@@ -201,8 +201,8 @@ void MidiFile::writeStatus(int nstat, int c) {
 
 bool MidiFile::read(MidiIODevice *in) {
     fp = in;
-    _tracks.clear();
-    curPos = 0;
+    tracks_value.clear();
+    cur_pos = 0;
 
     // === Read header_chunk = "MThd" + <header_length> + <format> + <n> + <division>
     //
@@ -230,17 +230,17 @@ bool MidiFile::read(MidiIODevice *in) {
     char tmp[4];
 
     read(tmp, 4);
-    int len = readLong();
+    int len = read_long();
     if (memcmp(tmp, "MThd", 4) || len < 6) {
-        throwMidiError("bad midifile: MThd expected");
+        throw_midi_error("bad midifile: MThd expected");
     }
 
     if (len > 6) {
-        throwMidiError("unsupported MIDI header data size: " + std::to_string(len) + " instead of 6");
+        throw_midi_error("unsupported MIDI header data size: " + std::to_string(len) + " instead of 6");
     }
 
-    _format = readShort();
-    int ntracks = readShort();
+    format_value = read_short();
+    int ntracks = read_short();
 
     // ================ Read MIDI division =================
     //
@@ -253,43 +253,43 @@ bool MidiFile::read(MidiIODevice *in) {
     //  |       | 1 |  -frames/second   |   ticks/frame   |
     //  +-------+---+-------------------+-----------------+
 
-    unsigned char firstByte = 0;
-    read(&firstByte, 1);
-    unsigned char secondByte = 0;
-    read(&secondByte, 1);
-    const int topBit = (firstByte & 0x80) >> 7;
+    unsigned char first_byte = 0;
+    read(&first_byte, 1);
+    unsigned char second_byte = 0;
+    read(&second_byte, 1);
+    const int top_bit = (first_byte & 0x80) >> 7;
 
-    if (topBit == 0) { // ticks per beat
-        _isDivisionInTps = false;
-        _division = (firstByte << 8) | (secondByte & 0xff);
+    if (top_bit == 0) { // ticks per beat
+        is_division_in_tps_value = false;
+        division_value = (first_byte << 8) | (second_byte & 0xff);
     } else { // ticks per second = fps * ticks per frame
-        _isDivisionInTps = true;
-        const int framesPerSecond = -static_cast<signed char>(firstByte);
-        const int ticksPerFrame = secondByte;
-        if (framesPerSecond == 29) {
-            _division = static_cast<int>(std::lround(29.97 * ticksPerFrame));
+        is_division_in_tps_value = true;
+        const int frames_per_second = -static_cast<signed char>(first_byte);
+        const int ticks_per_frame = second_byte;
+        if (frames_per_second == 29) {
+            division_value = static_cast<int>(std::lround(29.97 * ticks_per_frame));
         } else {
-            _division = framesPerSecond * ticksPerFrame;
+            division_value = frames_per_second * ticks_per_frame;
         }
     }
 
     // =====================================================
 
-    switch (_format) {
+    switch (format_value) {
         case 0:
-            if (readTrack()) {
+            if (read_track()) {
                 return false;
             }
             break;
         case 1:
             for (int i = 0; i < ntracks; i++) {
-                if (readTrack()) {
+                if (read_track()) {
                     return false;
                 }
             }
             break;
         default:
-            throwMidiError("midi file format " + std::to_string(_format) + " not implemented");
+            throw_midi_error("midi file format " + std::to_string(format_value) + " not implemented");
 
             // Prevent "unreachable code" warning
             // return false;
@@ -302,41 +302,41 @@ bool MidiFile::read(MidiIODevice *in) {
 //    return true on error
 //---------------------------------------------------------
 
-bool MidiFile::readTrack() {
+bool MidiFile::read_track() {
     char tmp[4];
     read(tmp, 4);
     if (memcmp(tmp, "MTrk", 4)) {
-        throwMidiError("bad midifile: MTrk expected");
+        throw_midi_error("bad midifile: MTrk expected");
     }
-    int len = readLong(); // len
-    int64_t endPos = curPos + len;
+    int len = read_long(); // len
+    int64_t end_pos = cur_pos + len;
     status = -1;
     sstatus = -1; // running status, will not be reset on meta or sysex
     click = 0;
-    _tracks.push_back(MidiTrack());
+    tracks_value.push_back(MidiTrack());
 
     int port = 0;
-    _tracks.back().setOutPort(port);
-    _tracks.back().setOutChannel(-1);
+    tracks_value.back().set_out_port(port);
+    tracks_value.back().set_out_channel(-1);
 
     for (;;) {
         MidiEvent event;
-        if (!readEvent(&event)) {
+        if (!read_event(&event)) {
             return true;
         }
 
         // check for end of track:
-        if ((event.type() == ME_META) && (event.metaType() == META_EOT)) {
+        if ((event.type() == ME_META) && (event.meta_type() == META_EOT)) {
             break;
         }
-        _tracks.back().insert(click, event);
+        tracks_value.back().insert(click, event);
     }
-    if (curPos != endPos) {
-        LOGW("bad track len: %lld != %lld, %lld bytes too much\n", static_cast<long long>(endPos), static_cast<long long>(curPos),
-             static_cast<long long>(endPos - curPos));
-        if (curPos < endPos) {
-            LOGW("  skip %lld\n", static_cast<long long>(endPos - curPos));
-            fp->seek(static_cast<size_t>(endPos));
+    if (cur_pos != end_pos) {
+        LOGW("bad track len: %lld != %lld, %lld bytes too much\n", static_cast<long long>(end_pos), static_cast<long long>(cur_pos),
+             static_cast<long long>(end_pos - cur_pos));
+        if (cur_pos < end_pos) {
+            LOGW("  skip %lld\n", static_cast<long long>(end_pos - cur_pos));
+            fp->seek(static_cast<size_t>(end_pos));
         }
     }
     return false;
@@ -348,10 +348,10 @@ bool MidiFile::readTrack() {
  *---------------------------------------------------------*/
 
 void MidiFile::read(void *p, int64_t len) {
-    curPos += len;
+    cur_pos += len;
     const size_t rv = fp->read(static_cast<uint8_t *>(p), static_cast<size_t>(len));
     if (rv != static_cast<size_t>(len)) {
-        throwMidiError("bad midifile: unexpected EOF");
+        throw_midi_error("bad midifile: unexpected EOF");
     }
 }
 
@@ -364,8 +364,8 @@ bool MidiFile::write(const void *p, int64_t len) {
     if (rv == static_cast<size_t>(len)) {
         return false;
     }
-    _writeError = true;
-    LOGD("write midifile failed: %s", fp->errorString().c_str());
+    write_error = true;
+    LOGD("write midifile failed: %s", fp->error_string().c_str());
     return true;
 }
 
@@ -373,7 +373,7 @@ bool MidiFile::write(const void *p, int64_t len) {
 //   readShort
 //---------------------------------------------------------
 
-int MidiFile::readShort() {
+int MidiFile::read_short() {
     char c;
     int val = 0;
     for (int i = 0; i < 2; ++i) {
@@ -388,7 +388,7 @@ int MidiFile::readShort() {
 //   writeShort
 //---------------------------------------------------------
 
-void MidiFile::writeShort(int i) {
+void MidiFile::write_short(int i) {
     put(i >> 8);
     put(i);
 }
@@ -398,7 +398,7 @@ void MidiFile::writeShort(int i) {
 //   writeLong
 //---------------------------------------------------------
 
-int MidiFile::readLong() {
+int MidiFile::read_long() {
     char c;
     int val = 0;
     for (int i = 0; i < 4; ++i) {
@@ -413,7 +413,7 @@ int MidiFile::readLong() {
 //   writeLong
 //---------------------------------------------------------
 
-void MidiFile::writeLong(int i) {
+void MidiFile::write_long(int i) {
     put(i >> 24);
     put(i >> 16);
     put(i >> 8);
@@ -466,9 +466,9 @@ void MidiFile::putvl(unsigned val) {
 //---------------------------------------------------------
 
 MidiTrack::MidiTrack() {
-    _outChannel = -1;
-    _outPort = -1;
-    _drumTrack = false;
+    out_channel_value = -1;
+    out_port_value = -1;
+    drum_track_value = false;
 }
 
 MidiTrack::~MidiTrack() {}
@@ -477,14 +477,14 @@ MidiTrack::~MidiTrack() {}
 //   insert
 //---------------------------------------------------------
 
-void MidiTrack::insert(int tick, const MidiEvent &event) { _events.insert({tick, event}); }
+void MidiTrack::insert(int tick, const MidiEvent &event) { events_value.insert({tick, event}); }
 
 //---------------------------------------------------------
 //   readEvent
 //    return true on success
 //---------------------------------------------------------
 
-bool MidiFile::readEvent(MidiEvent *event) {
+bool MidiFile::read_event(MidiEvent *event) {
     uchar me, a, b;
 
     int nclick = getvl();
@@ -502,7 +502,7 @@ bool MidiFile::readEvent(MidiEvent *event) {
         }
     }
 
-    int dataLen;
+    int data_len;
 
     if (me == 0xf0 || me == 0xf7) {
         status = -1; // no running status
@@ -511,18 +511,18 @@ bool MidiFile::readEvent(MidiEvent *event) {
             LOGD("readEvent: error 3");
             return false;
         }
-        dataLen = len;
+        data_len = len;
         std::vector<unsigned char> data(len + 1);
         read(data.data(), len);
         if (data[len - 1] != 0xf7) {
             LOGD("SYSEX does not end with 0xf7!");
             // more to come?
         } else {
-            dataLen--; // don't count 0xf7
+            data_len--; // don't count 0xf7
         }
-        event->setType(ME_SYSEX);
-        event->setEData(std::move(data));
-        event->setLen(dataLen);
+        event->set_type(ME_SYSEX);
+        event->set_e_data(std::move(data));
+        event->set_len(data_len);
         return true;
     }
 
@@ -530,20 +530,20 @@ bool MidiFile::readEvent(MidiEvent *event) {
         status = -1; // no running status
         uchar type;
         read(&type, 1);
-        dataLen = getvl(); // read len
-        if (dataLen == -1) {
+        data_len = getvl(); // read len
+        if (data_len == -1) {
             LOGD("readEvent: error 6");
             return false;
         }
-        std::vector<unsigned char> data(dataLen + 1);
-        if (dataLen) {
-            read(data.data(), dataLen);
+        std::vector<unsigned char> data(data_len + 1);
+        if (data_len) {
+            read(data.data(), data_len);
         }
 
-        event->setType(ME_META);
-        event->setMetaType(type);
-        event->setLen(dataLen);
-        event->setEData(std::move(data));
+        event->set_type(ME_META);
+        event->set_meta_type(type);
+        event->set_len(data_len);
+        event->set_e_data(std::move(data));
         return true;
     }
 
@@ -573,35 +573,35 @@ bool MidiFile::readEvent(MidiEvent *event) {
             read(&b, 1);
             break;
     }
-    event->setType(status & 0xf0);
-    event->setChannel(channel);
+    event->set_type(status & 0xf0);
+    event->set_channel(channel);
     switch (status & 0xf0) {
         case ME_NOTEOFF:
-            event->setDataA(a & 0x7f);
-            event->setDataB(b & 0x7f);
+            event->set_data_a(a & 0x7f);
+            event->set_data_b(b & 0x7f);
             break;
         case ME_NOTEON:
-            event->setDataA(a & 0x7f);
-            event->setDataB(b & 0x7f);
+            event->set_data_a(a & 0x7f);
+            event->set_data_b(b & 0x7f);
             break;
         case ME_POLYAFTER:
-            event->setType(ME_CONTROLLER);
-            event->setController(CTRL_POLYAFTER);
-            event->setValue(((a & 0x7f) << 8) + (b & 0x7f));
+            event->set_type(ME_CONTROLLER);
+            event->set_controller(CTRL_POLYAFTER);
+            event->set_value(((a & 0x7f) << 8) + (b & 0x7f));
             break;
         case ME_CONTROLLER: // controller
-            event->setController(a & 0x7f);
-            event->setValue(b & 0x7f);
+            event->set_controller(a & 0x7f);
+            event->set_value(b & 0x7f);
             break;
         case ME_PITCHBEND: // pitch bend
-            event->setDataA(a & 0x7f);
-            event->setDataB(b & 0x7f);
+            event->set_data_a(a & 0x7f);
+            event->set_data_b(b & 0x7f);
             break;
-        case ME_PROGRAM: event->setValue(a & 0x7f); break;
+        case ME_PROGRAM: event->set_value(a & 0x7f); break;
         case ME_AFTERTOUCH:
-            event->setType(ME_CONTROLLER);
-            event->setController(CTRL_PRESS);
-            event->setValue(a & 0x7f);
+            event->set_type(ME_CONTROLLER);
+            event->set_controller(CTRL_PRESS);
+            event->set_value(a & 0x7f);
             break;
         default: // f1 f2 f3 f4 f5 f6 f7 f8 f9
             LOGD("BAD STATUS 0x%02x, me 0x%02x", status, me);
@@ -626,10 +626,10 @@ bool MidiFile::readEvent(MidiEvent *event) {
 //   setOutChannel
 //---------------------------------------------------------
 
-void MidiTrack::setOutChannel(int n) {
-    _outChannel = n;
-    if (_outChannel == 9) {
-        _drumTrack = true;
+void MidiTrack::set_out_channel(int n) {
+    out_channel_value = n;
+    if (out_channel_value == 9) {
+        drum_track_value = true;
     }
 }
 
@@ -639,7 +639,7 @@ void MidiTrack::setOutChannel(int n) {
 //      into a note event with tick duration
 //---------------------------------------------------------
 
-void MidiTrack::mergeNoteOnOff() {
+void MidiTrack::merge_note_on_off() {
     std::multimap<int, MidiEvent> el;
 
     int hbank = 0xff;
@@ -648,9 +648,9 @@ void MidiTrack::mergeNoteOnOff() {
     int rpnl = -1;
     int datah = 0;
     int datal = 0;
-    int dataType = 0; // 0 : disabled, 0x20000 : rpn, 0x30000 : nrpn;
+    int data_type = 0; // 0 : disabled, 0x20000 : rpn, 0x30000 : nrpn;
 
-    for (auto i = _events.begin(); i != _events.end(); ++i) {
+    for (auto i = events_value.begin(); i != events_value.end(); ++i) {
         MidiEvent &ev = i->second;
         if (ev.type() == ME_INVALID) {
             continue;
@@ -661,11 +661,11 @@ void MidiTrack::mergeNoteOnOff() {
                 int cn = ev.controller();
                 if (cn == CTRL_HBANK) {
                     hbank = val;
-                    ev.setType(ME_INVALID);
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_LBANK) {
                     lbank = val;
-                    ev.setType(ME_INVALID);
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_HDATA) {
                     datah = val;
@@ -675,7 +675,7 @@ void MidiTrack::mergeNoteOnOff() {
                     auto ii = i;
                     ++ii;
                     bool found = false;
-                    for (; ii != _events.end(); ++ii) {
+                    for (; ii != events_value.end(); ++ii) {
                         MidiEvent &ev1 = ii->second;
                         if (ev1.type() == ME_CONTROLLER) {
                             if (ev1.controller() == CTRL_LDATA) {
@@ -688,14 +688,14 @@ void MidiTrack::mergeNoteOnOff() {
                     if (!found) {
                         if (rpnh == -1 || rpnl == -1) {
                             LOGD("parameter number not defined, data 0x%x", datah);
-                            ev.setType(ME_INVALID);
+                            ev.set_type(ME_INVALID);
                             continue;
                         } else {
-                            ev.setController(dataType | (rpnh << 8) | rpnl);
-                            ev.setValue(datah);
+                            ev.set_controller(data_type | (rpnh << 8) | rpnl);
+                            ev.set_value(datah);
                         }
                     } else {
-                        ev.setType(ME_INVALID);
+                        ev.set_type(ME_INVALID);
                         continue;
                     }
                 } else if (cn == CTRL_LDATA) {
@@ -710,32 +710,32 @@ void MidiTrack::mergeNoteOnOff() {
                     // eg. that LDATA is always send last
 
                     // 14 Bit RPN/NRPN
-                    ev.setController((dataType + 0x30000) | (rpnh << 8) | rpnl);
-                    ev.setValue((datah << 7) | datal);
+                    ev.set_controller((data_type + 0x30000) | (rpnh << 8) | rpnl);
+                    ev.set_value((datah << 7) | datal);
                 } else if (cn == CTRL_HRPN) {
                     rpnh = val;
-                    dataType = 0x20000;
-                    ev.setType(ME_INVALID);
+                    data_type = 0x20000;
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_LRPN) {
                     rpnl = val;
-                    dataType = 0x20000;
-                    ev.setType(ME_INVALID);
+                    data_type = 0x20000;
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_HNRPN) {
                     rpnh = val;
-                    dataType = 0x30000;
-                    ev.setType(ME_INVALID);
+                    data_type = 0x30000;
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_LNRPN) {
                     rpnl = val;
-                    dataType = 0x30000;
-                    ev.setType(ME_INVALID);
+                    data_type = 0x30000;
+                    ev.set_type(ME_INVALID);
                     continue;
                 } else if (cn == CTRL_PROGRAM) {
-                    ev.setValue((hbank << 16) | (lbank << 8) | ev.value());
+                    ev.set_value((hbank << 16) | (lbank << 8) | ev.value());
                     // TODO el.insert(ev);
-                    ev.setType(ME_INVALID);
+                    ev.set_type(ME_INVALID);
                     continue;
                 }
             } else if (ev.type() == ME_SYSEX) {
@@ -754,29 +754,29 @@ void MidiTrack::mergeNoteOnOff() {
                             // 4 - DRUM 3
                             // 5 - DRUM 4
                             if (buffer[6] != 0 && buffer[4] == ev.channel()) {
-                                _drumTrack = true;
+                                drum_track_value = true;
                             }
-                            ev.setType(ME_INVALID);
+                            ev.set_type(ME_INVALID);
                             continue;
                         }
                     }
                 }
             }
             el.insert(std::pair<int, MidiEvent>(i->first, ev));
-            ev.setType(ME_INVALID);
+            ev.set_type(ME_INVALID);
             continue;
         }
         int tick = i->first;
         if (ev.type() == ME_NOTEOFF || ev.velo() == 0) {
             LOGD("-extra note off at %d", tick);
-            ev.setType(ME_INVALID);
+            ev.set_type(ME_INVALID);
             continue;
         }
-        MidiEvent note(ME_NOTE, ev.channel(), ev.dataA(), ev.dataB());
+        MidiEvent note(ME_NOTE, ev.channel(), ev.data_a(), ev.data_b());
 
         auto k = i;
         ++k;
-        for (; k != _events.end(); ++k) {
+        for (; k != events_value.end(); ++k) {
             MidiEvent &e = k->second;
             if (e.type() != ME_NOTEON && e.type() != ME_NOTEOFF) {
                 continue;
@@ -786,19 +786,19 @@ void MidiTrack::mergeNoteOnOff() {
                 if (t <= 0) {
                     t = 1;
                 }
-                note.setLen(t);
-                e.setType(ME_INVALID);
+                note.set_len(t);
+                e.set_type(ME_INVALID);
                 break;
             }
         }
-        if (k == _events.end()) {
+        if (k == events_value.end()) {
             LOGD("-no note-off for note at %d", tick);
-            note.setLen(1);
+            note.set_len(1);
         }
         el.insert(std::pair<int, MidiEvent>(tick, note));
-        ev.setType(ME_INVALID);
+        ev.set_type(ME_INVALID);
     }
-    _events = el;
+    events_value = el;
 }
 
 //---------------------------------------------------------
@@ -807,18 +807,18 @@ void MidiTrack::mergeNoteOnOff() {
 //    then split events into separate tracks
 //---------------------------------------------------------
 
-void MidiFile::separateChannel() {
-    for (size_t i = 0; i < _tracks.size(); ++i) {
+void MidiFile::separate_channel() {
+    for (size_t i = 0; i < tracks_value.size(); ++i) {
         // create a list of channels used in current track
         std::vector<int> channel;
-        MidiTrack &midiTrack = _tracks[i]; // current track
-        for (const auto &ie : midiTrack.events()) {
+        MidiTrack &midi_track = tracks_value[i]; // current track
+        for (const auto &ie : midi_track.events()) {
             const MidiEvent &e = ie.second;
-            if (e.isChannelEvent() && !muse::contains(channel, static_cast<int>(e.channel()))) {
+            if (e.is_channel_event() && !muse::contains(channel, static_cast<int>(e.channel()))) {
                 channel.push_back(e.channel());
             }
         }
-        midiTrack.setOutChannel(channel.empty() ? 0 : channel[0]);
+        midi_track.set_out_channel(channel.empty() ? 0 : channel[0]);
         size_t nn = channel.size();
         if (nn <= 1) {
             continue;
@@ -828,24 +828,24 @@ void MidiFile::separateChannel() {
         // insert additional tracks, assign to them found channels
         for (size_t ii = 1; ii < nn; ++ii) {
             MidiTrack t;
-            t.setOutChannel(channel[ii]);
-            _tracks.insert(_tracks.begin() + i + ii, t);
+            t.set_out_channel(channel[ii]);
+            tracks_value.insert(tracks_value.begin() + i + ii, t);
         }
 
         //! NOTE: Midi track memory area may be invalid after inserting new elements into tracks
         //!       Let's get the actual track data again
-        MidiTrack &actualMidiTrack = _tracks[i];
+        MidiTrack &actual_midi_track = tracks_value[i];
 
         // extract all different channel events from current track to inserted tracks
-        for (auto ie = actualMidiTrack.events().begin(); ie != actualMidiTrack.events().end();) {
+        for (auto ie = actual_midi_track.events().begin(); ie != actual_midi_track.events().end();) {
             const MidiEvent &e = ie->second;
-            if (e.isChannelEvent()) {
+            if (e.is_channel_event()) {
                 int ch = e.channel();
-                size_t idx = muse::indexOf(channel, ch);
-                MidiTrack &t = _tracks[i + idx];
-                if (&t != &actualMidiTrack) {
+                size_t idx = muse::index_of(channel, ch);
+                MidiTrack &t = tracks_value[i + idx];
+                if (&t != &actual_midi_track) {
                     t.insert(ie->first, e);
-                    ie = actualMidiTrack.events().erase(ie);
+                    ie = actual_midi_track.events().erase(ie);
                     continue;
                 }
             }

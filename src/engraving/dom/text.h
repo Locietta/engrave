@@ -39,20 +39,20 @@ public:
 
     Text *clone() const override { return new Text(*this); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
-    PropertyValue propertyDefault(Pid id) const override;
-    PropertyValue getProperty(Pid id) const override;
+    EngravingObject *property_delegate(Pid) const override;
+    PropertyValue property_default(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
 
-    static String readXmlText(XmlReader &r, Score *score);
+    static String read_xml_text(XmlReader &r, Score *score);
 
-    void setLayoutToParentWidth(bool v) { layoutToParentWidth_ = v; }
+    void set_layout_to_parent_width(bool v) { layout_to_parent_width_ = v; }
 
-    bool hasVoiceAssignmentProperties() const override;
-    VoiceAssignment voiceAssignment() const;
+    bool has_voice_assignment_properties() const override;
+    VoiceAssignment voice_assignment() const;
 
-    bool collectForDrawing() const override;
+    bool collect_for_drawing() const override;
 
-    bool positionRelativeToNoteheadRest() const override;
+    bool position_relative_to_notehead_rest() const override;
 };
 } // namespace mu::engraving
 

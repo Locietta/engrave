@@ -30,4 +30,4 @@ DummyParent::DummyParent(Score *score) : EngravingObject(ElementType::DUMMY, sco
 
 DummyParent::~DummyParent() { delete root_; }
 
-void DummyParent::init() { root_ = new RootItem(score(), RootItem::Kind::Dummy); }
+void DummyParent::init() { root_ = new RootItem(score(), RootItem::Kind::DUMMY); }

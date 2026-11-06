@@ -28,23 +28,23 @@
 
 using namespace mu::engraving;
 
-static constexpr char SEPARATOR = '_';
+static constexpr char separator_constant = '_';
 
-static char *toBase64Chars(char *const first, char *const last, uint64_t n) {
-    static constexpr char CHARS[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static char *to_base64_chars(char *const first, char *const last, uint64_t n) {
+    static constexpr char chars[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    IF_ASSERT_FAILED(static_cast<size_t>(last - first) >= EID::MAX_UINT64_BASE64_SIZE) { return first; }
+    IF_ASSERT_FAILED(static_cast<size_t>(last - first) >= EID::max_uin_t64_bas_e64_size) { return first; }
 
     char *it = first;
     do {
-        *it++ = CHARS[n % 64];
+        *it++ = chars[n % 64];
         n = n / 64;
     } while (n != 0);
 
     return it;
 }
 
-static constexpr int charToInt(char c) {
+static constexpr int char_to_int(char c) {
     switch (c) {
         case 'A': return 0;
         case 'B': return 1;
@@ -116,14 +116,14 @@ static constexpr int charToInt(char c) {
 
 // The half a base64 string encodes; false when it is empty, longer than a uint64
 // needs, or contains a character outside the alphabet.
-static bool base64StrToInt64(const std::string_view s, uint64_t &result) {
-    if (s.empty() || s.size() > EID::MAX_UINT64_BASE64_SIZE) {
+static bool base64_str_to_int64(const std::string_view s, uint64_t &result) {
+    if (s.empty() || s.size() > EID::max_uin_t64_bas_e64_size) {
         return false;
     }
 
     uint64_t value = 0;
     for (auto iter = s.rbegin(); iter != s.rend(); ++iter) {
-        const int digit = charToInt(*iter);
+        const int digit = char_to_int(*iter);
         if (digit < 0) {
             return false;
         }
@@ -134,58 +134,58 @@ static bool base64StrToInt64(const std::string_view s, uint64_t &result) {
     return true;
 }
 
-char *EID::toChars(char *const first, char *const last) const {
-    IF_ASSERT_FAILED(static_cast<size_t>(last - first) >= MAX_STR_SIZE) { return first; }
+char *EID::to_chars(char *const first, char *const last) const {
+    IF_ASSERT_FAILED(static_cast<size_t>(last - first) >= ::mu::engraving::EID::max_str_size) { return first; }
 
-    char *it = toBase64Chars(first, last, first_);
-    *it++ = SEPARATOR;
-    it = toBase64Chars(it, last, second_);
+    char *it = to_base64_chars(first, last, first_);
+    *it++ = ::separator_constant;
+    it = to_base64_chars(it, last, second_);
 
     return it;
 }
 
-std::string EID::toStdString() const {
-    std::string base64Repr(MAX_STR_SIZE, char{});
-    const char *last = toChars(base64Repr.data(), base64Repr.data() + base64Repr.size());
-    base64Repr.resize(last - base64Repr.data());
+std::string EID::to_std_string() const {
+    std::string base64_repr(::mu::engraving::EID::max_str_size, char{});
+    const char *last = to_chars(base64_repr.data(), base64_repr.data() + base64_repr.size());
+    base64_repr.resize(last - base64_repr.data());
 
-    return base64Repr;
+    return base64_repr;
 }
 
-EID EID::fromStdString(const std::string &s) { return fromStdString(std::string_view(s)); }
+EID EID::from_std_string(const std::string &s) { return from_std_string(std::string_view(s)); }
 
-EID EID::fromStdString(const std::string_view &s) {
-    const size_t separator = s.find(SEPARATOR);
-    if (separator == std::string_view::npos || s.find(SEPARATOR, separator + 1) != std::string_view::npos) {
+EID EID::from_std_string(const std::string_view &s) {
+    const size_t separator = s.find(::separator_constant);
+    if (separator == std::string_view::npos || s.find(::separator_constant, separator + 1) != std::string_view::npos) {
         return EID::invalid();
     }
 
     uint64_t first = 0;
     uint64_t second = 0;
-    if (!base64StrToInt64(s.substr(0, separator), first) || !base64StrToInt64(s.substr(separator + 1), second)) {
+    if (!base64_str_to_int64(s.substr(0, separator), first) || !base64_str_to_int64(s.substr(separator + 1), second)) {
         return EID::invalid();
     }
 
     return EID(first, second);
 }
 
-EID EID::newUnique() {
+EID EID::new_unique() {
     static std::random_device s_device;
     thread_local static std::mt19937_64 s_engine(s_device());
-    thread_local static std::uniform_int_distribution<uint64_t> s_unifDist;
+    thread_local static std::uniform_int_distribution<uint64_t> s_unif_dist;
 
-    return EID(s_unifDist(s_engine), s_unifDist(s_engine));
+    return EID(s_unif_dist(s_engine), s_unif_dist(s_engine));
 }
 
 // FOR UNIT TESTING
 // EIDs are creates sequentially instead of randomly for test repeatability
 
-EID EID::newUniqueTestMode(uint64_t &maxVal) {
-    ++maxVal;
-    return EID(maxVal, maxVal);
+EID EID::new_unique_test_mode(uint64_t &max_val) {
+    ++max_val;
+    return EID(max_val, max_val);
 }
 
-void EID::updateMaxValTestMode(const EID &curEID, uint64_t &maxVal) {
-    maxVal = std::max(maxVal, curEID.first_);
-    maxVal = std::max(maxVal, curEID.second_);
+void EID::update_max_val_test_mode(const EID &cur_eid, uint64_t &max_val) {
+    max_val = std::max(max_val, cur_eid.first_);
+    max_val = std::max(max_val, cur_eid.second_);
 }

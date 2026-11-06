@@ -37,41 +37,41 @@ public:
 
     MMRest *clone() const override { return new MMRest(*this, false); }
 
-    EngravingItem *linkedClone() override { return new MMRest(*this, true); }
+    EngravingItem *linked_clone() override { return new MMRest(*this, true); }
 
-    bool shouldShowNumberByDefault() const;
-    bool showNumber() const;
+    bool should_show_number_by_default() const;
+    bool show_number() const;
 
-    PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
-    PropertyValue getProperty(Pid) const override;
+    PropertyValue property_default(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
+    PropertyValue get_property(Pid) const override;
 
-    RectF numberRect() const override;
-    PointF numberPos() const;
+    RectF number_rect() const override;
+    PointF number_pos() const;
 
-    void setNumberOffset(const Spatium y) { numberOffset_ = y; }
+    void set_number_offset(const Spatium y) { number_offset_ = y; }
 
-    Spatium numberOffset() const { return numberOffset_; }
+    Spatium number_offset() const { return number_offset_; }
 
-    double yNumberPos() const;
+    double y_number_pos() const;
 
-    bool isOldStyle() const;
+    bool is_old_style() const;
 
     struct LayoutData : public Rest::LayoutData {
         int number = 0; // number of measures represented
-        double yNumberPos = 0.0;
-        SymIdList numberSym;
-        SymIdList restSyms;     // stores symbols when using old-style rests
-        double symsWidth = 0.0; // width of symbols with spacing when using old-style
+        double y_number_pos = 0.0;
+        SymIdList number_sym;
+        SymIdList rest_syms;     // stores symbols when using old-style rests
+        double syms_width = 0.0; // width of symbols with spacing when using old-style
 
-        ld_field<double> restWidth = {"[MMRest] restWidth", 0.0}; // width of multimeasure rest
+        ld_field<double> rest_width = {"[MMRest] restWidth", 0.0}; // width of multimeasure rest
 
-        void setNumberSym(int n) { numberSym = timeSigSymIdsFromString(String::number(n)); }
+        void set_number_sym(int n) { number_sym = time_sig_sym_ids_from_string(String::number(n)); }
     };
     DECLARE_LAYOUTDATA_METHODS(MMRest)
 
 private:
-    Spatium numberOffset_ = 0.0_sp; // vertical offset of number relative to its style position
-    bool numberVisible_ = false;    // show or hide number
+    Spatium number_offset_ = 0.0_sp; // vertical offset of number relative to its style position
+    bool number_visible_ = false;    // show or hide number
 };
 } // namespace mu::engraving

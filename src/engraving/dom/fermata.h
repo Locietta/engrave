@@ -52,43 +52,43 @@ public:
 
     double mag() const override;
 
-    SymId symId() const { return symId_; }
+    SymId sym_id() const { return sym_id_; }
 
-    void setSymId(SymId id) { symId_ = id; }
+    void set_sym_id(SymId id) { sym_id_ = id; }
 
-    void setSymIdAndTimeStretch(SymId id);
-    FermataType fermataType() const;
+    void set_sym_id_and_time_stretch(SymId id);
+    FermataType fermata_type() const;
     int subtype() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
-    void resetProperty(Pid id) override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    void reset_property(Pid id) override;
 
-    Segment *segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return to_segment(ownership_parent()); }
 
     Measure *measure() const;
     System *system() const;
     Page *page() const;
 
-    double timeStretch() const { return timeStretch_; }
+    double time_stretch() const { return time_stretch_; }
 
-    void setTimeStretch(double val) { timeStretch_ = val; }
+    void set_time_stretch(double val) { time_stretch_ = val; }
 
     bool play() const { return play_; }
 
-    void setPlay(bool val) { play_ = val; }
+    void set_play(bool val) { play_ = val; }
 
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
 private:
 
     friend class Factory;
     Fermata(EngravingObject *parent);
 
-    SymId symId_ = SymId::noSym;
-    double timeStretch_ = -1.0;
+    SymId sym_id_ = SymId::NO_SYM;
+    double time_stretch_ = -1.0;
     bool play_ = true;
 };
 } // namespace mu::engraving

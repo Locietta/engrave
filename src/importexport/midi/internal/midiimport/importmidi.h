@@ -18,7 +18,7 @@ namespace mu::iex::midi {
 //! entry in the process-global MidiImportOperations data, runs the ordinary
 //! converter pipeline, and removes the entry before returning (including when
 //! a conversion exception unwinds).  No filesystem access is performed.
-engraving::Err importMidiFromBuffer(engraving::MasterScore *score, const std::string &bytes);
+engraving::Err import_midi_from_buffer(engraving::MasterScore *score, const std::string &bytes);
 } // namespace mu::iex::midi
 
 #endif // IMPORTMIDI_H

@@ -35,20 +35,20 @@ class TupletLayout {
 public:
     static void layout(Tuplet *item, LayoutContext &ctx);
 
-    static void layoutTupletAndNestedTuplets(Tuplet *t, LayoutContext &ctx);
-    static bool isTopTuplet(ChordRest *cr);
-    static bool notTopTuplet(ChordRest *cr);
+    static void layout_tuplet_and_nested_tuplets(Tuplet *t, LayoutContext &ctx);
+    static bool is_top_tuplet(ChordRest *cr);
+    static bool not_top_tuplet(ChordRest *cr);
 
 private:
-    static void createNumber(Tuplet *item, LayoutContext &ctx);
-    static void computeDirection(Tuplet *item);
-    static void computeStartEndCR(Tuplet *item, const ChordRest **cr1, const ChordRest **cr2);
-    static void layoutBracket(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2, LayoutContext &ctx);
-    static bool placeNumberOnRhythmicCenter(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2, LayoutContext &ctx);
-    static bool isSymmetric(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2);
-    static double computeRhythmicCenter(Tuplet *item, const ChordRest *endChord);
-    static Fraction centerTick(Tuplet *item);
-    static void extendToEndOfDuration(Tuplet *item, const ChordRest *endCR);
+    static void create_number(Tuplet *item, LayoutContext &ctx);
+    static void compute_direction(Tuplet *item);
+    static void compute_start_end_cr(Tuplet *item, const ChordRest **cr1, const ChordRest **cr2);
+    static void layout_bracket(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2, LayoutContext &ctx);
+    static bool place_number_on_rhythmic_center(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2, LayoutContext &ctx);
+    static bool is_symmetric(Tuplet *item, const ChordRest *cr1, const ChordRest *cr2);
+    static double compute_rhythmic_center(Tuplet *item, const ChordRest *end_chord);
+    static Fraction center_tick(Tuplet *item);
+    static void extend_to_end_of_duration(Tuplet *item, const ChordRest *end_cr);
 };
 } // namespace mu::engraving::rendering::score
 

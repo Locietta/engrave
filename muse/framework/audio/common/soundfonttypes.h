@@ -33,10 +33,10 @@
 
 namespace muse::audio::synth {
 using SoundFontUri = Uri;
-using SoundFontPath = io::path_t;
+using SoundFontPath = io::PathT;
 
-inline bool isSoundFont(const io::path_t &filePath) {
-    std::string ext = io::suffix(filePath);
+inline bool is_sound_font(const io::PathT &file_path) {
+    std::string ext = io::suffix(file_path);
     return ext == "sf2" || ext == "sf3";
 }
 
@@ -53,10 +53,10 @@ struct SoundFontMeta {
 
 using SoundFontsMap = std::map<SoundFontUri, SoundFontMeta>;
 
-inline const String SOUNDFONT_NAME_ATTRIBUTE(u"soundFontName");
-inline const String PRESET_NAME_ATTRIBUTE(u"presetName");
-inline const String PRESET_BANK_ATTRIBUTE(u"presetBank");
-inline const String PRESET_PROGRAM_ATTRIBUTE(u"presetProgram");
+inline const String soundfont_name_attribute(u"soundFontName");
+inline const String preset_name_attribute(u"presetName");
+inline const String preset_bank_attribute(u"presetBank");
+inline const String preset_program_attribute(u"presetProgram");
 } // namespace muse::audio::synth
 
 #endif // MUSE_AUDIO_SOUNDFONTTYPES_H

@@ -30,17 +30,17 @@ namespace mu::engraving {
 class ChangeHarpPedalState : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeHarpPedalState)
     HarpPedalDiagram *diagram;
-    std::array<PedalPosition, HARP_STRING_NO> pedalState;
+    std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_value;
 
     void flip() override;
 
 public:
-    ChangeHarpPedalState(HarpPedalDiagram *_diagram, std::array<PedalPosition, HARP_STRING_NO> _pedalState)
-        : diagram(_diagram), pedalState(_pedalState) {}
+    ChangeHarpPedalState(HarpPedalDiagram *input_diagram, std::array<PedalPosition, ::mu::engraving::harp_string_no> input_pedal_state)
+        : diagram(input_diagram), pedal_state_value(input_pedal_state) {}
 
     UNDO_NAME("ChangeHarpPedalState")
     //    UNDO_CHANGED_OBJECTS({ diagram })
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 };
 
 class ChangeSingleHarpPedal : public UndoableCommand {
@@ -53,11 +53,11 @@ class ChangeSingleHarpPedal : public UndoableCommand {
     void flip() override;
 
 public:
-    ChangeSingleHarpPedal(HarpPedalDiagram *_diagram, HarpStringType _type, PedalPosition _pos)
-        : diagram(_diagram), type(_type), pos(_pos) {}
+    ChangeSingleHarpPedal(HarpPedalDiagram *input_diagram, HarpStringType input_type, PedalPosition input_pos)
+        : diagram(input_diagram), type(input_type), pos(input_pos) {}
 
     UNDO_NAME("ChangeSingleHarpPedal")
     //    UNDO_CHANGED_OBJECTS({ diagram });
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 };
 } // namespace mu::engraving

@@ -33,11 +33,11 @@ class Transaction;
 
 class EditTimeSig {
 public:
-    static void addTimeSig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staffIdx, TimeSig *ts, bool local);
-    static void removeTimeSig(Transaction &tx, Score *score, TimeSig *ts);
+    static void add_time_sig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staff_idx, TimeSig *ts, bool local);
+    static void remove_time_sig(Transaction &tx, Score *score, TimeSig *ts);
 
-    static bool rewriteMeasures(Transaction &tx, Score *score, Measure *startMeasure, Measure *endMeasure, const Fraction &newTimeSig,
-                                staff_idx_t staffIdx);
-    static bool rewriteMeasures(Transaction &tx, Score *score, Measure *fm, const Fraction &ns, staff_idx_t staffIdx);
+    static bool rewrite_measures(Transaction &tx, Score *score, Measure *start_measure, Measure *end_measure, const Fraction &new_time_sig,
+                                 staff_idx_t staff_idx);
+    static bool rewrite_measures(Transaction &tx, Score *score, Measure *fm, const Fraction &ns, staff_idx_t staff_idx);
 };
 } // namespace mu::engraving

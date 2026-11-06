@@ -41,35 +41,35 @@ namespace {
 struct CaptureOutputBuffer final : io::Buffer {
     explicit CaptureOutputBuffer(ByteArray *data) : Buffer(data) {}
 protected:
-    bool resizeData(size_t size) override {
-        if (io::activeWriteBudget && !io::activeWriteBudget->outputSize(size)) return false;
-        return Buffer::resizeData(size);
+    bool resize_data(size_t size) override {
+        if (io::active_write_budget && !io::active_write_budget->output_size(size)) return false;
+        return Buffer::resize_data(size);
     }
 };
 
 void check(const Ret &result) {
-    if (!result) throw std::runtime_error(result.toString());
+    if (!result) throw std::runtime_error(result.to_string());
 }
 
-std::string bytes(const ByteArray &data) { return {reinterpret_cast<const char *>(data.constData()), data.size()}; }
+std::string bytes(const ByteArray &data) { return {reinterpret_cast<const char *>(data.const_data()), data.size()}; }
 
 ByteArray byte_array(const std::string &data) { return ByteArray(data.data(), data.size()); }
 
 void check_zip(ZipReader &zip) {
     uint64_t total = 0;
-    const auto entries = zip.fileInfoList();
+    const auto entries = zip.file_info_list();
     if (entries.empty() || entries.size() > 4096) throw std::invalid_argument("Invalid archive entry count");
     for (const auto &entry : entries) {
         if (entry.size > 64 * 1024 * 1024 || total + entry.size > 128 * 1024 * 1024)
             throw std::invalid_argument("Uncompressed archive exceeds size limit");
         total += entry.size;
     }
-    if (zip.hasError()) throw std::invalid_argument("Invalid archive");
+    if (zip.has_error()) throw std::invalid_argument("Invalid archive");
 }
 
 void finish_load(engraving::EngravingProject &project) {
-    auto *score = project.masterScore();
-    score->connectTies();
+    auto *score = project.master_score();
+    score->connect_ties();
     // 5.0 moved the post-load MIDI wiring out of EngravingProject::setupMasterScore
     // into the MSCX reader (rw/read500/read500.cpp:307-315), so a score that did not
     // come from MSCX keeps an empty MasterScore::midiMapping(): every InstrChannel
@@ -77,24 +77,24 @@ void finish_load(engraving::EngravingProject &project) {
     // MasterScore::playbackChannel() indexes midiMapping_ with it
     // (dom/masterscore.h:185), i.e. reads 72*(channel()+1) bytes out of bounds.
     // Run the same three steps, in the same order, where every reader converges.
-    for (auto *part : score->parts()) part->updateHarmonyChannels(false);
-    score->rebuildMidiMapping();
-    score->updateChannel();
-    check(project.setupMasterScore(true));
+    for (auto *part : score->parts()) part->update_harmony_channels(false);
+    score->rebuild_midi_mapping();
+    score->update_channel();
+    check(project.setup_master_score(true));
     // MusicXML import can call Part::setMidiProgram after the MIDI mapping was
     // built, leaving playback channels on the template program until an MSCZ
     // reload rebuilds them. Sync now so playback is stable across reloads.
     for (auto *part : score->parts()) {
         for (const auto &pair : part->instruments()) {
             for (auto *channel : pair.second->channel()) {
-                if (auto *playback = score->playbackChannel(channel)) {
-                    playback->setProgram(channel->program());
-                    playback->setBank(channel->bank());
+                if (auto *playback = score->playback_channel(channel)) {
+                    playback->set_program(channel->program());
+                    playback->set_bank(channel->bank());
                 }
             }
         }
     }
-    score->setLayoutAll();
+    score->set_layout_all();
     score->update();
 }
 } // namespace
@@ -111,14 +111,14 @@ void initialize_native_runtime(const std::string &assets) {
 
 void apply_score_versions(engraving::MasterScore *score, const std::string &version, int revision, int msc_version) {
     if (!score) throw std::invalid_argument("Score version restore requires a master score");
-    score->setMscoreVersion(String::fromStdString(version));
-    score->setMscoreRevision(revision);
-    score->setMscVersion(msc_version);
+    score->set_mscore_version(String::from_std_string(version));
+    score->set_mscore_revision(revision);
+    score->set_msc_version(msc_version);
 }
 
 void copy_score_versions(engraving::MasterScore *source, engraving::MasterScore *target) {
     if (!source || !target) throw std::invalid_argument("Score version copy requires two master scores");
-    apply_score_versions(target, source->mscoreVersion().toStdString(), source->mscoreRevision(), source->mscVersion());
+    apply_score_versions(target, source->mscore_version().to_std_string(), source->mscore_revision(), source->msc_version());
 }
 
 ScoreProject load_native_score(const EngineContext &context, const std::string &input, const std::string &format) {
@@ -126,28 +126,28 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
     // Like NotationProject::doImport (project/internal/notationproject.cpp:304) and
     // importMusicXmlfromBuffer, the whole reading + setup phase is a load: layout
     // inside it runs outside a transaction and must not push undo commands or warn.
-    engraving::ScoreLoad scoreLoad;
+    engraving::ScoreLoad score_load;
     auto project = engraving::EngravingProject::create(context.engraving());
-    project->setFileInfoProvider(std::make_shared<engraving::LocalFileInfoProvider>("Untitled.mscz"));
+    project->set_file_info_provider(std::make_shared<engraving::LocalFileInfoProvider>("Untitled.mscz"));
     ByteArray data = byte_array(input);
     if (format == "mxl" || format == "mscz") {
         io::Buffer buffer(&data);
-        buffer.open(io::IODevice::ReadOnly);
+        buffer.open(io::IODevice::READ_ONLY);
         ZipReader zip(&buffer);
         check_zip(zip);
         if (format == "mxl") {
-            XmlStreamReader xml(zip.fileData("META-INF/container.xml"));
+            XmlStreamReader xml(zip.file_data("META-INF/container.xml"));
             std::string root;
-            while (!xml.atEnd()) {
-                xml.readNext();
-                if (root.empty() && xml.isStartElement() && xml.name() == "rootfile") {
-                    root = xml.attribute("full-path").toStdString();
+            while (!xml.at_end()) {
+                xml.read_next();
+                if (root.empty() && xml.is_start_element() && xml.name() == "rootfile") {
+                    root = xml.attribute("full-path").to_std_string();
                 }
             }
-            if (xml.error() != XmlStreamReader::NoError) throw std::invalid_argument("Malformed MXL container.xml");
+            if (xml.error() != XmlStreamReader::NO_ERROR) throw std::invalid_argument("Malformed MXL container.xml");
             if (root.empty()) throw std::invalid_argument("MXL has no rootfile");
-            data = zip.fileData(root);
-            if (zip.hasError() || data.empty() || data.size() > 8 * 1024 * 1024)
+            data = zip.file_data(root);
+            if (zip.has_error() || data.empty() || data.size() > 8 * 1024 * 1024)
                 throw std::invalid_argument("MXL rootfile must contain 1..8388608 bytes");
         }
     }
@@ -155,41 +155,41 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
         ByteArray archive;
         if (format == "mscx") {
             io::Buffer out(&archive);
-            out.open(io::IODevice::WriteOnly);
+            out.open(io::IODevice::WRITE_ONLY);
             ZipWriter zip(&out);
-            zip.addFile("score.mscx", data);
+            zip.add_file("score.mscx", data);
             zip.close();
             data = archive;
         }
         io::Buffer buffer(&data);
         engraving::MscReader::Params params;
         params.device = &buffer;
-        params.mode = engraving::MscIoMode::Zip;
+        params.mode = engraving::MscIoMode::ZIP;
         engraving::MscReader reader(params);
         check(reader.open());
-        if (!reader.imageFileNames().empty())
+        if (!reader.image_file_names().empty())
             throw std::invalid_argument("Embedded score images are not yet supported by the native backend");
         engraving::rw::ReadInOutData inout;
-        inout.forcePageMode = true;
-        const auto loaded = project->loadMscz(reader, &inout, false);
-        if (loaded.code() == static_cast<int>(engraving::Err::FileTooOld)) throw UnsupportedScoreVersion(loaded.toString());
+        inout.force_page_mode = true;
+        const auto loaded = project->load_mscz(reader, &inout, false);
+        if (loaded.code() == static_cast<int>(engraving::Err::FILE_TOO_OLD)) throw UnsupportedScoreVersion(loaded.to_string());
         check(loaded);
     } else if (format == "musicxml" || format == "xml" || format == "mxl") {
         XmlStreamReader scan(data);
-        while (!scan.atEnd()) {
-            scan.readNext();
-            if (scan.isStartElement() && scan.name() == "image")
+        while (!scan.at_end()) {
+            scan.read_next();
+            if (scan.is_start_element() && scan.name() == "image")
                 throw std::invalid_argument("Embedded score images are not yet supported by the native backend");
         }
-        if (scan.error() != XmlStreamReader::NoError) throw std::invalid_argument("Malformed MusicXML");
-        if (iex::musicxml::importMusicXmlfromBuffer(project->masterScore(), u"input.musicxml", data, context.musicXml()) !=
-            engraving::Err::NoError)
+        if (scan.error() != XmlStreamReader::NO_ERROR) throw std::invalid_argument("Malformed MusicXML");
+        if (iex::musicxml::import_music_xmlfrom_buffer(project->master_score(), u"input.musicxml", data, context.music_xml()) !=
+            engraving::Err::NO_ERROR)
             throw std::runtime_error("MusicXML import failed");
     } else if (format == "mid" || format == "midi" || format == "kar") {
-        if (import_midi_score(project->masterScore(), input) != engraving::Err::NoError) throw std::runtime_error("MIDI import failed");
+        if (import_midi_score(project->master_score(), input) != engraving::Err::NO_ERROR) throw std::runtime_error("MIDI import failed");
     } else if (format == "gp" || format == "gp3" || format == "gp4" || format == "gp5" || format == "gp6" || format == "gp7" ||
                format == "gpx" || format == "gtp" || format == "ptb") {
-        import_guitarpro_score(project->masterScore(), input);
+        import_guitarpro_score(project->master_score(), input);
     } else
         throw std::invalid_argument("Unsupported score input format");
     finish_load(*project);
@@ -197,17 +197,17 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
 }
 
 ScoreProject load_native_score_dir(const EngineContext &context, const std::string &mscx_path) {
-    engraving::ScoreLoad scoreLoad;
+    engraving::ScoreLoad score_load;
     auto project = engraving::EngravingProject::create(context.engraving());
-    project->setFileInfoProvider(std::make_shared<engraving::LocalFileInfoProvider>("Untitled.mscz"));
+    project->set_file_info_provider(std::make_shared<engraving::LocalFileInfoProvider>("Untitled.mscz"));
     engraving::MscReader::Params params;
-    params.filePath = io::path_t(mscx_path);
-    params.mode = engraving::MscIoMode::Dir;
+    params.file_path = io::PathT(mscx_path);
+    params.mode = engraving::MscIoMode::DIR;
     engraving::MscReader reader(params);
     check(reader.open());
     engraving::rw::ReadInOutData inout;
-    inout.forcePageMode = true;
-    check(project->loadMscz(reader, &inout, false));
+    inout.force_page_mode = true;
+    check(project->load_mscz(reader, &inout, false));
     finish_load(*project);
     return project;
 }
@@ -224,19 +224,19 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     (void) soundfont;
-    auto *score = select_score(project->masterScore(), options.excerpt_id);
+    auto *score = select_score(project->master_score(), options.excerpt_id);
     if (format == "metadata") return score_metadata(score).dump();
     if (format == "measurePositions" || format == "segmentPositions") return score_positions(score, format == "segmentPositions").dump();
     if (format == "svg" || format == "png" || format == "pdf") return render_score(context, score, format, options);
 
     ByteArray data;
     CaptureOutputBuffer buffer(&data);
-    buffer.open(io::IODevice::WriteOnly);
+    buffer.open(io::IODevice::WRITE_ONLY);
     bool success = false;
     if (format == "musicxml")
-        success = iex::musicxml::saveXml(score, &buffer, context.musicXml());
+        success = iex::musicxml::save_xml(score, &buffer, context.music_xml());
     else if (format == "mxl")
-        success = iex::musicxml::saveMxl(score, &buffer, context.musicXml());
+        success = iex::musicxml::save_mxl(score, &buffer, context.music_xml());
     else if (format == "mscz" || format == "mscx") {
         // Writer::writeScore stamps the writing program's version into every score it
         // writes; an export is read-only for the document, so restore the file's values
@@ -253,92 +253,92 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
 
             ~RestoreVersions() {
                 for (const auto &f : fields) {
-                    f.score->setMscoreVersion(f.version);
-                    f.score->setMscoreRevision(f.revision);
-                    f.score->setMscVersion(f.msc);
+                    f.score->set_mscore_version(f.version);
+                    f.score->set_mscore_revision(f.revision);
+                    f.score->set_msc_version(f.msc);
                 }
             }
         } restore_versions;
 
-        auto *master = project->masterScore();
-        restore_versions.fields.push_back({master, master->mscoreVersion(), master->mscoreRevision(), master->mscVersion()});
+        auto *master = project->master_score();
+        restore_versions.fields.push_back({master, master->mscore_version(), master->mscore_revision(), master->msc_version()});
         for (engraving::Excerpt *excerpt : master->excerpts()) {
-            if (auto *part = excerpt->excerptScore())
-                restore_versions.fields.push_back({part, part->mscoreVersion(), part->mscoreRevision(), part->mscVersion()});
+            if (auto *part = excerpt->excerpt_score())
+                restore_versions.fields.push_back({part, part->mscore_version(), part->mscore_revision(), part->msc_version()});
         }
         if (format == "mscx" && options.standalone_score && options.excerpt_id == -1) {
             // An MSCX has no separate style file; embed the master's style in
             // the score itself, without changing the legacy archive writer.
             engraving::rw::WriteInOutData inout(score);
-            inout.ctx.setInlineStyle(true);
-            inout.ctx.setInlineExcerpts(true);
-            success = engraving::rw::RWRegister::writer()->writeScore(score, &buffer, &inout);
-        } else if (format == "mscx" && options.standalone_score && options.excerpt_id >= 0 && io::activeWriteBudget) {
+            inout.ctx.set_inline_style(true);
+            inout.ctx.set_inline_excerpts(true);
+            success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
+        } else if (format == "mscx" && options.standalone_score && options.excerpt_id >= 0 && io::active_write_budget) {
             // The archive path serializes this same score XML, compresses it,
             // then inflates it again. Write that XML directly so its output
             // cap applies before the uncompressed result is allocated.
-            const auto original_tags = score->metaTags();
+            const auto original_tags = score->meta_tags();
 
             struct RestoreTags {
                 engraving::Score *score;
                 std::map<String, String> tags;
 
-                ~RestoreTags() { score->setMetaTags(tags); }
+                ~RestoreTags() { score->set_meta_tags(tags); }
             } restore{score, original_tags};
 
-            auto effective_tags = project->masterScore()->metaTags();
+            auto effective_tags = project->master_score()->meta_tags();
             for (const auto &[key, value] : original_tags) effective_tags.insert_or_assign(key, value);
-            score->setMetaTags(effective_tags);
+            score->set_meta_tags(effective_tags);
             engraving::rw::WriteInOutData inout(score);
-            inout.ctx.setStandalone(true);
-            success = engraving::rw::RWRegister::writer()->writeScore(score, &buffer, &inout);
+            inout.ctx.set_standalone(true);
+            success = engraving::rw::RWRegister::writer()->write_score(score, &buffer, &inout);
         } else {
             engraving::MscWriter::Params params;
             params.device = &buffer;
-            params.mainFileName = u"score.mscx";
+            params.main_file_name = u"score.mscx";
             engraving::MscWriter writer(params);
             check(writer.open());
             if (options.excerpt_id == -1) {
-                success = project->writeMscz(writer);
+                success = project->write_mscz(writer);
             } else {
                 // Same upstream writer/style logic as MscSaver::exportPart, without a Qt thumbnail.
-                const auto original_tags = score->metaTags();
+                const auto original_tags = score->meta_tags();
 
                 struct RestoreTags {
                     engraving::Score *score;
                     std::map<String, String> tags;
 
-                    ~RestoreTags() { score->setMetaTags(tags); }
+                    ~RestoreTags() { score->set_meta_tags(tags); }
                 } restore{score, original_tags};
 
-                auto effective_tags = project->masterScore()->metaTags();
+                auto effective_tags = project->master_score()->meta_tags();
                 for (const auto &[key, value] : original_tags) effective_tags.insert_or_assign(key, value);
-                score->setMetaTags(effective_tags);
+                score->set_meta_tags(effective_tags);
                 ByteArray style_data, score_data;
                 io::Buffer style_buffer(&style_data), score_buffer(&score_data);
-                style_buffer.open(io::IODevice::WriteOnly);
-                score_buffer.open(io::IODevice::WriteOnly);
+                style_buffer.open(io::IODevice::WRITE_ONLY);
+                score_buffer.open(io::IODevice::WRITE_ONLY);
                 score->style().write(&style_buffer);
                 engraving::rw::WriteInOutData inout(score);
-                inout.ctx.setStandalone(options.standalone_score);
+                inout.ctx.set_standalone(options.standalone_score);
                 success =
-                    engraving::rw::RWRegister::writer()->writeScore(score, &score_buffer, options.standalone_score ? &inout : nullptr);
-                writer.writeStyleFile(style_data);
-                writer.writeScoreFile(score_data);
+                    engraving::rw::RWRegister::writer()->write_score(score, &score_buffer, options.standalone_score ? &inout : nullptr);
+                writer.write_style_file(style_data);
+                writer.write_score_file(score_data);
             }
             writer.close();
-            success = success && !writer.hasError();
+            success = success && !writer.has_error();
             if (format == "mscx" && success) {
                 buffer.close();
-                ByteArray msczData = std::move(data);
+                ByteArray mscz_data = std::move(data);
                 data = ByteArray();
-                io::Buffer msczBuf(&msczData);
+                io::Buffer mscz_buf(&mscz_data);
                 engraving::MscReader::Params rparams;
-                rparams.device = &msczBuf;
-                rparams.mode = engraving::MscIoMode::Zip;
+                rparams.device = &mscz_buf;
+                rparams.mode = engraving::MscIoMode::ZIP;
                 engraving::MscReader reader(rparams);
                 check(reader.open());
-                data = reader.readScoreFile();
+                data = reader.read_score_file();
                 reader.close();
                 success = !data.empty();
             }

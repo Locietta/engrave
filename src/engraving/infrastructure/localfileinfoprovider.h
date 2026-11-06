@@ -29,21 +29,21 @@
 namespace mu::engraving {
 class LocalFileInfoProvider : public IFileInfoProvider {
 public:
-    explicit LocalFileInfoProvider(const muse::io::path_t &filePath);
+    explicit LocalFileInfoProvider(const muse::io::PathT &file_path);
 
     bool saved() const override;
 
-    muse::io::path_t path() const override;
-    muse::io::path_t fileName(bool includingExtension = true) const override;
-    muse::io::path_t absoluteDirPath() const override;
+    muse::io::PathT path() const override;
+    muse::io::PathT file_name(bool including_extension = true) const override;
+    muse::io::PathT absolute_dir_path() const override;
 
-    muse::String displayName() const override;
+    muse::String display_name() const override;
 
-    muse::DateTime birthTime() const override;
-    muse::DateTime lastModified() const override;
-    bool isNewlyCreated() const override;
+    muse::DateTime birth_time() const override;
+    muse::DateTime last_modified() const override;
+    bool is_newly_created() const override;
 
 private:
-    muse::io::path_t path_;
+    muse::io::PathT path_;
 };
 } // namespace mu::engraving

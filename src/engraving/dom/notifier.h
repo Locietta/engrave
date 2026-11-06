@@ -52,11 +52,11 @@ public:
     Listener &operator=(Listener &&);
     virtual ~Listener();
 
-    void setNotifier(Notifier<Data> *n);
+    void set_notifier(Notifier<Data> *n);
 
-    void detachNotifier(Notifier<Data> *n) {
+    void detach_notifier(Notifier<Data> *n) {
         if (notifier_ == n) {
-            setNotifier(nullptr);
+            set_notifier(nullptr);
         }
     }
 
@@ -88,30 +88,30 @@ public:
     Notifier &operator=(const Notifier<Data> &) { return *this; }
 
     ~Notifier() {
-        atChange_ = true; // we don't need to update listeners list anymore
+        at_change_ = true; // we don't need to update listeners list anymore
         for (Listener<Data> *l : listeners_) {
-            l->detachNotifier(this);
+            l->detach_notifier(this);
         }
     }
 
-    void addListener(Listener<Data> *l) {
-        if (atChange_ || !l) {
+    void add_listener(Listener<Data> *l) {
+        if (at_change_ || !l) {
             return;
         }
-        atChange_ = true;
+        at_change_ = true;
         listeners_.push_back(l);
-        l->setNotifier(this);
-        atChange_ = false;
+        l->set_notifier(this);
+        at_change_ = false;
     }
 
-    void removeListener(Listener<Data> *l) {
-        if (atChange_ || !l) {
+    void remove_listener(Listener<Data> *l) {
+        if (at_change_ || !l) {
             return;
         }
-        atChange_ = true;
+        at_change_ = true;
         listeners_.erase(std::remove(listeners_.begin(), listeners_.end(), l), listeners_.end());
-        l->detachNotifier(this);
-        atChange_ = false;
+        l->detach_notifier(this);
+        at_change_ = false;
     }
 
     void notify(Data d) const {
@@ -123,24 +123,24 @@ public:
 private:
 
     std::vector<Listener<Data> *> listeners_;
-    bool atChange_ = false;
+    bool at_change_ = false;
 };
 
 template <typename Data>
 Listener<Data>::Listener(Listener<Data> &&other) {
     if (Notifier<Data> *n = other.notifier()) {
-        n->removeListener(other);
-        setNotifier(n);
+        n->remove_listener(other);
+        set_notifier(n);
     }
 }
 
 template <typename Data>
 Listener<Data> &Listener<Data>::operator=(Listener<Data> &&other) {
     if (Notifier<Data> *n = other.notifier()) {
-        n->removeListener(other);
-        setNotifier(n);
+        n->remove_listener(other);
+        set_notifier(n);
     } else {
-        setNotifier(nullptr);
+        set_notifier(nullptr);
     }
 
     return *this;
@@ -149,22 +149,22 @@ Listener<Data> &Listener<Data>::operator=(Listener<Data> &&other) {
 template <typename Data>
 Listener<Data>::~Listener() {
     if (notifier_) {
-        notifier_->removeListener(this);
+        notifier_->remove_listener(this);
     }
 }
 
 template <typename Data>
-void Listener<Data>::setNotifier(Notifier<Data> *n) {
+void Listener<Data>::set_notifier(Notifier<Data> *n) {
     if (n == notifier_) {
         return;
     }
-    Notifier<Data> *oldNotifier = notifier_;
+    Notifier<Data> *old_notifier = notifier_;
     notifier_ = n;
-    if (oldNotifier) {
-        oldNotifier->removeListener(this);
+    if (old_notifier) {
+        old_notifier->remove_listener(this);
     }
     if (notifier_) {
-        notifier_->addListener(this);
+        notifier_->add_listener(this);
     }
 }
 
@@ -172,8 +172,8 @@ template <typename Data>
 void swap(Listener<Data> &l1, Listener<Data> &l2) {
     Notifier<Data> *n1 = l1.notifier();
     Notifier<Data> *n2 = l2.notifier();
-    l1.setNotifier(n2);
-    l2.setNotifier(n1);
+    l1.set_notifier(n2);
+    l2.set_notifier(n1);
 }
 } // namespace mu::engraving
 #endif

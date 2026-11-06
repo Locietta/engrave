@@ -74,7 +74,7 @@ using mu::engraving::StaffType;
 std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
 // Ticks per whole note: the engine divides a quarter note into Constants::DIVISION.
-constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::DIVISION;
+constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::division;
 
 // A position or length in ticks, as a fraction of a whole note.  Not reduced, so
 // that a tick is the same fraction wherever it is reported.
@@ -86,17 +86,17 @@ bool before(const Fraction &a, const Fraction &b) { return a < b; }
 
 Fraction fraction_of(const mu::engraving::Fraction &value) { return {value.numerator(), value.denominator()}; }
 
-std::string plain_text(const muse::String &text) { return text.toStdString(); }
+std::string plain_text(const muse::String &text) { return text.to_std_string(); }
 
 // --- properties -----------------------------------------------------------
 
 PropertyRead read_property(const EngravingObject &object, Pid pid) {
-    const mu::engraving::P_TYPE type = mu::engraving::propertyType(pid);
+    const mu::engraving::PType type = mu::engraving::property_type(pid);
     PropertyRead read;
     read.name = api::name_of(pid);
-    read.value = api::to_value(type, object.getProperty(pid));
-    const mu::engraving::PropertyValue fallback = object.propertyDefault(pid);
-    if (fallback.isValid()) {
+    read.value = api::to_value(type, object.get_property(pid));
+    const mu::engraving::PropertyValue fallback = object.property_default(pid);
+    if (fallback.is_valid()) {
         const Value default_value = api::to_value(type, fallback);
         const auto *actual_fraction = std::get_if<Fraction>(&read.value);
         const auto *default_fraction = std::get_if<Fraction>(&default_value);
@@ -105,7 +105,7 @@ PropertyRead read_property(const EngravingObject &object, Pid pid) {
                               actual_fraction->num == default_fraction->num && actual_fraction->den == default_fraction->den :
                               read.value == default_value;
     }
-    read.styled = object.isStyled(pid);
+    read.styled = object.is_styled(pid);
     return read;
 }
 
@@ -128,7 +128,7 @@ bool has_property(const std::vector<Pid> &pids, Pid pid) { return std::ranges::f
 
 int score_index(MasterScore &master, const Score *score) {
     int index = 0;
-    for (const Score *candidate : master.scoreList()) {
+    for (const Score *candidate : master.score_list()) {
         if (candidate == score) return index;
         ++index;
     }
@@ -142,7 +142,7 @@ struct MeasureIndex {
     std::vector<int> ticks;
 
     explicit MeasureIndex(Score &score) {
-        for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
             measures.push_back(measure);
             ticks.push_back(measure->tick().ticks());
         }
@@ -161,13 +161,13 @@ struct MeasureIndex {
 };
 
 int duration_ticks(const EngravingItem &item) {
-    if (item.isChordRest()) {
+    if (item.is_chord_rest()) {
         const auto &rest = static_cast<const ChordRest &>(item);
         // A grace note has no length of its own in this model.
-        if (rest.isChord() && mu::engraving::toChord(&rest)->isGrace()) return 0;
-        return rest.actualTicks().ticks();
+        if (rest.is_chord() && mu::engraving::to_chord(&rest)->is_grace()) return 0;
+        return rest.actual_ticks().ticks();
     }
-    if (item.isSpanner()) return static_cast<const Spanner &>(item).ticks().ticks();
+    if (item.is_spanner()) return static_cast<const Spanner &>(item).ticks().ticks();
     return 0;
 }
 
@@ -181,12 +181,12 @@ struct Where {
 
 Where where_of(const EngravingObject &object, const MeasureIndex &index) {
     Where where;
-    if (object.isMeasure()) {
-        const Measure *measure = mu::engraving::toMeasure(&object);
+    if (object.is_measure()) {
+        const Measure *measure = mu::engraving::to_measure(&object);
         where.tick = whole_notes(measure->tick().ticks());
         where.duration = whole_notes(measure->ticks().ticks());
         where.measure_index = index.index_of(measure);
-    } else if (object.isEngravingItem()) {
+    } else if (object.is_engraving_item()) {
         const auto &item = static_cast<const EngravingItem &>(object);
         where.tick = whole_notes(item.tick().ticks());
         where.duration = whole_notes(duration_ticks(item));
@@ -196,25 +196,25 @@ Where where_of(const EngravingObject &object, const MeasureIndex &index) {
     }
     if (where.measure_index >= 0) {
         const Measure *measure = index.measures[static_cast<std::size_t>(where.measure_index)];
-        if (measure->eid().isValid()) where.measure = from_engine(measure->eid());
+        if (measure->eid().is_valid()) where.measure = from_engine(measure->eid());
     }
     return where;
 }
 
 // The staff and voice an element sits on; both -1 for an element that is not on one.
 std::pair<std::int32_t, std::int32_t> staff_and_voice(const EngravingObject &object) {
-    if (!object.isEngravingItem()) return {-1, -1};
+    if (!object.is_engraving_item()) return {-1, -1};
     const auto track = static_cast<const EngravingItem &>(object).track();
     if (track == muse::nidx) return {-1, -1};
-    return {static_cast<std::int32_t>(track / mu::engraving::VOICES), static_cast<std::int32_t>(track % mu::engraving::VOICES)};
+    return {static_cast<std::int32_t>(track / mu::engraving::voices), static_cast<std::int32_t>(track % mu::engraving::voices)};
 }
 
 // The nearest element above this one that has an id.  The score itself is not one:
 // it is the document, not the element's parent.
 std::optional<ElementId> parent_of(const EngravingObject &object) {
-    for (EngravingObject *parent = object.ownershipParent(); parent; parent = parent->ownershipParent()) {
+    for (EngravingObject *parent = object.ownership_parent(); parent; parent = parent->ownership_parent()) {
         if (parent->type() == mu::engraving::ElementType::SCORE) return std::nullopt;
-        if (parent->eid().isValid()) return from_engine(parent->eid());
+        if (parent->eid().is_valid()) return from_engine(parent->eid());
     }
     return std::nullopt;
 }
@@ -226,7 +226,7 @@ std::vector<ElementId> links_of(const EngravingObject &object, MasterScore &mast
     if (!group) return links;
     std::vector<std::pair<int, ElementId>> ordered;
     for (const EngravingObject *member : *group) {
-        if (!member || !member->eid().isValid()) continue;
+        if (!member || !member->eid().is_valid()) continue;
         ordered.emplace_back(score_index(master, member->score()), from_engine(member->eid()));
     }
     std::ranges::sort(ordered);
@@ -236,12 +236,12 @@ std::vector<ElementId> links_of(const EngravingObject &object, MasterScore &mast
 }
 
 std::optional<LayoutBox> box_of(const EngravingItem &item, const Score &score) {
-    const MeasureBase *base = const_cast<EngravingItem &>(item).findMeasureBase();
+    const MeasureBase *base = const_cast<EngravingItem &>(item).find_measure_base();
     const Page *page = base ? base->page() : nullptr;
     if (!page) return std::nullopt;
-    const mu::engraving::page_idx_t index = score.pageIdx(page);
+    const mu::engraving::page_idx_t index = score.page_idx(page);
     if (index == muse::nidx) return std::nullopt;
-    const mu::engraving::RectF box = item.pageBoundingRect(mu::engraving::LD_ACCESS::MAYBE_NOTINITED);
+    const mu::engraving::RectF box = item.page_bounding_rect(mu::engraving::LdAccess::MAYBE_NOTINITED);
     return LayoutBox{static_cast<std::int32_t>(index), box.x(), box.y(), box.width(), box.height()};
 }
 
@@ -266,15 +266,15 @@ std::int32_t part_index(const Score &score, const Part *part) {
 void fill_parts(Outline &outline, Score &score) {
     for (Part *part : score.parts()) {
         PartInfo info;
-        if (part->eid().isValid()) info.id = from_engine(part->eid());
-        info.name = plain_text(part->longName());
-        info.instrument_id = part->instrumentId().toStdString();
+        if (part->eid().is_valid()) info.id = from_engine(part->eid());
+        info.name = plain_text(part->long_name());
+        info.instrument_id = part->instrument_id().to_std_string();
         for (Staff *staff : part->staves()) {
             StaffInfo row;
-            if (staff->eid().isValid()) row.id = from_engine(staff->eid());
+            if (staff->eid().is_valid()) row.id = from_engine(staff->eid());
             row.index = static_cast<std::int32_t>(staff->idx());
             row.part = part_index(score, part);
-            const StaffType *type = staff->staffType(mu::engraving::Fraction(0, 1));
+            const StaffType *type = staff->staff_type(mu::engraving::Fraction(0, 1));
             if (type) {
                 row.group = staff_group(type->group());
                 row.lines = type->lines();
@@ -287,9 +287,9 @@ void fill_parts(Outline &outline, Score &score) {
 }
 
 void fill_measures(Outline &outline, Score &score) {
-    for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
         MeasureInfo info;
-        if (measure->eid().isValid()) info.id = from_engine(measure->eid());
+        if (measure->eid().is_valid()) info.id = from_engine(measure->eid());
         info.index = static_cast<std::int32_t>(outline.measures.size());
         info.tick = whole_notes(measure->tick().ticks());
         info.duration = whole_notes(measure->ticks().ticks());
@@ -300,33 +300,33 @@ void fill_measures(Outline &outline, Score &score) {
 // The time signatures, key signatures and tempo markings of a score, in the order a
 // score shows them: by tick, then staff, then type.
 void fill_signatures(Outline &outline, Score &score) {
-    for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
         for (Segment *segment = measure->first(); segment; segment = segment->next()) {
             for (EngravingItem *item : segment->elist()) {
                 // A generated signature is layout's (the clef of a header, a courtesy
                 // signature), not one the score holds.
                 if (!item || item->generated()) continue;
-                if (!item->isTimeSig() && !item->isKeySig()) continue;
+                if (!item->is_time_sig() && !item->is_key_sig()) continue;
                 SignatureInfo info;
                 info.tick = whole_notes(item->tick().ticks());
                 info.staff = staff_and_voice(*item).first;
-                if (item->isTimeSig()) {
+                if (item->is_time_sig()) {
                     info.type = "TimeSig";
-                    info.timesig = fraction_of(mu::engraving::toTimeSig(item)->sig());
+                    info.timesig = fraction_of(mu::engraving::to_time_sig(item)->sig());
                 } else {
                     info.type = "KeySig";
-                    info.key = static_cast<std::int32_t>(mu::engraving::toKeySig(item)->concertKey());
+                    info.key = static_cast<std::int32_t>(mu::engraving::to_key_sig(item)->concert_key());
                 }
                 outline.signatures.push_back(std::move(info));
             }
             for (EngravingItem *item : segment->annotations()) {
-                if (!item || item->generated() || !item->isTempoText()) continue;
-                const auto *tempo = mu::engraving::toTempoText(item);
+                if (!item || item->generated() || !item->is_tempo_text()) continue;
+                const auto *tempo = mu::engraving::to_tempo_text(item);
                 SignatureInfo info;
                 info.type = "Tempo";
                 info.tick = whole_notes(item->tick().ticks());
                 info.bpm = std::round(tempo->tempo().val * 60.0 * 1e4) / 1e4;
-                info.text = plain_text(tempo->plainText());
+                info.text = plain_text(tempo->plain_text());
                 outline.signatures.push_back(std::move(info));
             }
         }
@@ -340,10 +340,10 @@ void fill_signatures(Outline &outline, Score &score) {
 
 void fill_excerpts(Outline &outline, MasterScore &master) {
     for (const mu::engraving::Excerpt *excerpt : master.excerpts()) {
-        Score *score = excerpt ? excerpt->excerptScore() : nullptr;
+        Score *score = excerpt ? excerpt->excerpt_score() : nullptr;
         if (!score) continue;
         ExcerptInfo info;
-        if (score->eid().isValid()) info.id = from_engine(score->eid());
+        if (score->eid().is_valid()) info.id = from_engine(score->eid());
         info.name = plain_text(excerpt->name());
         info.pages = static_cast<std::int32_t>(score->npages());
         outline.excerpts.push_back(std::move(info));
@@ -376,7 +376,7 @@ Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterS
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure", what));
         }
         const MeasureIndex index(score);
-        const auto position = index.index_of(mu::engraving::toMeasure(found->object));
+        const auto position = index.index_of(mu::engraving::to_measure(found->object));
         if (position < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure of the score", what));
         return position;
     };
@@ -435,7 +435,7 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    MasterScore &master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->master_score();
     const Result<Score *> selected = select_score(master, selection);
     if (!selected) return std::unexpected(selected.error());
     Score &score = **selected;
@@ -469,7 +469,7 @@ Result<QueryResult> Document::query(const Query &request) {
     impl_->engine->check_thread();
     if (!impl_->poisoned && request.layout_boxes) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    MasterScore &master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->master_score();
     const Result<Score *> selected = select_score(master, request.score);
     if (!selected) return std::unexpected(selected.error());
     Score &score = **selected;
@@ -490,8 +490,8 @@ Result<QueryResult> Document::query(const Query &request) {
         }
     }
     for (const std::int32_t voice : request.voices) {
-        if (voice < 0 || voice >= static_cast<std::int32_t>(mu::engraving::VOICES)) {
-            return fail(ErrorCode::INVALID_ARGUMENT, std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
+        if (voice < 0 || voice >= static_cast<std::int32_t>(mu::engraving::voices)) {
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("voice {} is not in 0..{}", voice, mu::engraving::voices - 1));
         }
     }
     if ((request.from_tick && request.from_tick->den <= 0) || (request.to_tick && request.to_tick->den <= 0)) {
@@ -514,7 +514,7 @@ Result<QueryResult> Document::query(const Query &request) {
     for (const LiveId &entry : live_ids(master)) {
         EngravingObject &object = *entry.object;
         if (entry.placement.score != index) continue;
-        const std::string type = object.typeName();
+        const std::string type = object.type_name();
         if (!request.types.empty() && std::ranges::find(request.types, type) == request.types.end()) continue;
         const auto [staff, voice] = staff_and_voice(object);
         if (!request.staves.empty() && !contains(request.staves, staff)) continue;
@@ -536,7 +536,7 @@ Result<QueryResult> Document::query(const Query &request) {
         info.duration = where.duration;
         info.parent = parent_of(object);
         info.links = links_of(object, master);
-        if (object.isEngravingItem()) {
+        if (object.is_engraving_item()) {
             const auto &item = static_cast<const EngravingItem &>(object);
             if (request.layout_boxes) info.box = box_of(item, score);
         }
@@ -573,7 +573,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    MasterScore &master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->master_score();
     const Result<Resolved> resolved = std::visit(
         [&master](const auto &value) -> Result<Resolved> {
             using T = std::decay_t<decltype(value)>;
@@ -587,7 +587,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     if (!resolved) return std::unexpected(resolved.error());
     const EngravingObject &object = *resolved->object;
 
-    const std::vector<Pid> known = api::pids_of(object.typeName());
+    const std::vector<Pid> known = api::pids_of(object.type_name());
     if (props.empty()) {
         std::vector<PropertyRead> reads;
         reads.reserve(known.size());
@@ -599,7 +599,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     if (!named) return std::unexpected(named.error());
     for (std::size_t i = 0; i < named->size(); ++i) {
         if (!has_property(known, (*named)[i])) {
-            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", object.typeName(), props[i]));
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", object.type_name(), props[i]));
         }
     }
     std::vector<PropertyRead> reads;

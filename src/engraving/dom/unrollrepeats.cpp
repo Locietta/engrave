@@ -42,43 +42,43 @@
 #include "log.h"
 
 namespace mu::engraving {
-static void removeRepeatMarkings(Score *score) {
+static void remove_repeat_markings(Score *score) {
     // remove bar-level repeats
-    for (Measure *m = score->firstMeasure(); m; m = m->nextMeasure()) {
-        m->setRepeatStart(false);
-        m->setRepeatEnd(false);
+    for (Measure *m = score->first_measure(); m; m = m->next_measure()) {
+        m->set_repeat_start(false);
+        m->set_repeat_end(false);
     }
 
     // remove volta markers
-    auto smap = score->spannerMap().map();
+    auto smap = score->spanner_map().map();
     for (auto it = smap.cbegin(); it != smap.cend(); ++it) {
         Spanner *s = (*it).second;
-        if (!s || !s->isVolta()) {
+        if (!s || !s->is_volta()) {
             continue;
         }
-        score->removeSpanner(s);
+        score->remove_spanner(s);
     }
 
     // remove coda/fine labels and jumps
-    std::vector<EngravingItem *> elems = score->getChildren(false);
+    std::vector<EngravingItem *> elems = score->get_children(false);
     for (auto e : elems) {
-        if (e->isMarker() || e->isJump()) {
-            score->deleteItem(e);
-        } else if (e->isBarLine()) {
-            toBarLine(e)->setBarLineType(BarLineType::NORMAL);
+        if (e->is_marker() || e->is_jump()) {
+            score->delete_item(e);
+        } else if (e->is_bar_line()) {
+            to_bar_line(e)->set_bar_line_type(BarLineType::NORMAL);
         }
     }
 
     // set the last bar line to end symbol
-    score->lastMeasure()->setEndBarLineType(BarLineType::END, false);
-    Segment *last = score->lastMeasure()->segments().last();
-    if (last->segmentType() == SegmentType::EndBarLine) {
+    score->last_measure()->set_end_bar_line_type(BarLineType::END, false);
+    Segment *last = score->last_measure()->segments().last();
+    if (last->segment_type() == SegmentType::END_BAR_LINE) {
         auto els = last->elist();
         for (size_t i = 0; i < els.size(); i++) {
             if (!els[i]) {
                 continue;
             }
-            toBarLine(els[i])->setBarLineType(BarLineType::END);
+            to_bar_line(els[i])->set_bar_line_type(BarLineType::END);
         }
     }
 }
@@ -89,20 +89,20 @@ static void removeRepeatMarkings(Score *score) {
 //    has been unrolled
 //---------------------------------------------------------
 
-static void createExcerpts(MasterScore *cs, const std::vector<Excerpt *> &excerpts) {
+static void create_excerpts(MasterScore *cs, const std::vector<Excerpt *> &excerpts) {
     // borrowed from musescore.cpp endsWith(".pdf")
     for (Excerpt *e : excerpts) {
-        Score *nscore = e->masterScore()->createScore();
-        e->setExcerptScore(nscore);
-        nscore->style().set(Sid::createMultiMeasureRests, true);
-        cs->transactionManager()->transaction(TranslatableString("undoableAction", "Create parts"), [&](auto &tx) {
+        Score *nscore = e->master_score()->create_score();
+        e->set_excerpt_score(nscore);
+        nscore->style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+        cs->transaction_manager()->transaction(TranslatableString("undoableAction", "Create parts"), [&](auto &tx) {
             tx.push(new AddExcerpt(e));
-            Excerpt::createExcerpt(e);
+            Excerpt::create_excerpt(e);
 
             // borrowed from excerptsdialog.cpp
             // a new excerpt is created in AddExcerpt, make sure the parts are filed
-            for (Excerpt *ee : e->masterScore()->excerpts()) {
-                if (ee->excerptScore() == nscore && ee != e) {
+            for (Excerpt *ee : e->master_score()->excerpts()) {
+                if (ee->excerpt_score() == nscore && ee != e) {
                     ee->parts().clear();
                     ee->parts().insert(ee->parts().end(), e->parts().begin(), e->parts().end());
                 }
@@ -116,15 +116,15 @@ static void createExcerpts(MasterScore *cs, const std::vector<Excerpt *> &excerp
 //    unroll all the repeats
 //---------------------------------------------------------
 
-MasterScore *MasterScore::unrollRepeats() {
+MasterScore *MasterScore::unroll_repeats() {
     MasterScore *original = this;
 
     // create a copy of the original score to play with
     MasterScore *score = original->clone();
 
     // if no repeats, just return the score as-is
-    const RepeatList &expandedRepeats = original->expandedRepeatList();
-    if (expandedRepeats.size() == 1) {
+    const RepeatList &expanded_repeats = original->expanded_repeat_list();
+    if (expanded_repeats.size() == 1) {
         return score;
     }
 
@@ -133,36 +133,36 @@ MasterScore *MasterScore::unrollRepeats() {
     excerpts.reserve(score->excerpts().size());
     for (Excerpt *e : score->excerpts()) {
         excerpts.push_back(new Excerpt(*e, false));
-        score->masterScore()->deleteExcerpt(e);
+        score->master_score()->delete_excerpt(e);
     }
 
     // follow along with the repeatList
     bool first = true;
-    for (const RepeatSegment *rs : expandedRepeats) {
-        Fraction startTick = Fraction::fromTicks(rs->tick);
-        Fraction endTick = Fraction::fromTicks(rs->endTick());
+    for (const RepeatSegment *rs : expanded_repeats) {
+        Fraction start_tick = Fraction::from_ticks(rs->tick);
+        Fraction end_tick = Fraction::from_ticks(rs->end_tick());
 
         // first segment left from clone, everything past that removed
         if (first) {
-            if (endTick <= score->lastMeasure()->tick()) { // check if we actually need to remove any measures
-                score->deleteMeasures(score->tick2measure(endTick), score->lastMeasure());
+            if (end_tick <= score->last_measure()->tick()) { // check if we actually need to remove any measures
+                score->delete_measures(score->tick2measure(end_tick), score->last_measure());
             }
             first = false;
         } else { // just append this section from the original to the new score
-            score->appendMeasuresFromScore(original, startTick, endTick);
+            score->append_measures_from_score(original, start_tick, end_tick);
         }
     }
 
-    removeRepeatMarkings(score);
+    remove_repeat_markings(score);
 
-    score->updateTicksAndTimeSigMap();
+    score->update_ticks_and_time_sig_map();
 
-    score->setLayoutAll();
-    score->doLayout();
+    score->set_layout_all();
+    score->do_layout();
 
     // re-create excerpt parts
     if (!excerpts.empty()) {
-        createExcerpts(score, excerpts);
+        create_excerpts(score, excerpts);
     }
 
     return score;

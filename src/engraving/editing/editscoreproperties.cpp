@@ -32,10 +32,10 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void ChangeMetaTags::flip() {
-    std::map<String, String> t = score->metaTags();
-    score->setMetaTags(metaTags);
-    score->setLayoutAll();
-    metaTags = t;
+    std::map<String, String> t = score->meta_tags();
+    score->set_meta_tags(meta_tags);
+    score->set_layout_all();
+    meta_tags = t;
 }
 
 //---------------------------------------------------------
@@ -43,9 +43,9 @@ void ChangeMetaTags::flip() {
 //---------------------------------------------------------
 
 void ChangeMetaText::flip() {
-    String s = score->metaTag(id);
-    score->setMetaTag(id, text);
-    score->setLayoutAll();
+    String s = score->meta_tag(id);
+    score->set_meta_tag(id, text);
+    score->set_layout_all();
     text = s;
 }
 
@@ -54,8 +54,8 @@ void ChangeMetaText::flip() {
 //---------------------------------------------------------
 
 void ChangeScoreOrder::flip() {
-    ScoreOrder s = score->scoreOrder();
-    score->setScoreOrder(order);
+    ScoreOrder s = score->score_order();
+    score->set_score_order(order);
     order = s;
 }
 
@@ -64,10 +64,10 @@ void ChangeScoreOrder::flip() {
 //---------------------------------------------------------
 
 void ChangePageNumberOffset::flip() {
-    int po = score->pageNumberOffset();
+    int po = score->page_number_offset();
 
-    score->setPageNumberOffset(pageOffset);
-    score->setLayoutAll();
+    score->set_page_number_offset(page_offset);
+    score->set_layout_all();
 
-    pageOffset = po;
+    page_offset = po;
 }

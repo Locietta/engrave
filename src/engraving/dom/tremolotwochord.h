@@ -46,88 +46,88 @@ public:
 
     ~TremoloTwoChord() override;
 
-    Chord *chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return to_chord(ownership_parent()); }
 
-    int subtype() const override { return static_cast<int>(tremoloType_); }
+    int subtype() const override { return static_cast<int>(tremolo_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    void setTremoloType(TremoloType t);
+    void set_tremolo_type(TremoloType t);
 
-    TremoloType tremoloType() const { return tremoloType_; }
+    TremoloType tremolo_type() const { return tremolo_type_; }
 
-    double minHeight() const;
+    double min_height() const;
     void reset() override;
 
-    PointF chordBeamAnchor(const ChordRest *chord, ChordBeamAnchorType anchorType) const;
+    PointF chord_beam_anchor(const ChordRest *chord, ChordBeamAnchorType anchor_type) const;
 
-    double chordMag() const;
+    double chord_mag() const;
 
     Chord *chord1() const { return chord1_; }
 
-    void setChord1(Chord *ch) { chord1_ = ch; }
+    void set_chord1(Chord *ch) { chord1_ = ch; }
 
     Chord *chord2() const { return chord2_; }
 
-    void setChord2(Chord *ch) { chord2_ = ch; }
+    void set_chord2(Chord *ch) { chord2_ = ch; }
 
-    void setChords(Chord *c1, Chord *c2) {
+    void set_chords(Chord *c1, Chord *c2) {
         chord1_ = c1;
         chord2_ = c2;
     }
 
-    PairF beamPos() const;
+    PairF beam_pos() const;
 
-    TDuration durationType() const;
-    void setDurationType(TDuration d);
+    TDuration duration_type() const;
+    void set_duration_type(TDuration d);
 
-    Fraction tremoloLen() const;
+    Fraction tremolo_len() const;
 
     int lines() const { return lines_; }
 
-    bool crossStaffBeamBetween() const;
+    bool cross_staff_beam_between() const;
 
-    void triggerLayout() const override;
+    void trigger_layout() const override;
 
-    TremoloStyle tremoloStyle() const { return style_; }
+    TremoloStyle tremolo_style() const { return style_; }
 
-    void setTremoloStyle(TremoloStyle v) { style_ = v; }
+    void set_tremolo_style(TremoloStyle v) { style_ = v; }
 
-    void setDirection(DirectionV v) override;
+    void set_direction(DirectionV v) override;
 
-    void setBeamFragment(const BeamFragment &bf) { beamFragment_ = bf; }
+    void set_beam_fragment(const BeamFragment &bf) { beam_fragment_ = bf; }
 
-    const BeamFragment &beamFragment() const { return beamFragment_; }
+    const BeamFragment &beam_fragment() const { return beam_fragment_; }
 
-    BeamFragment &beamFragment() { return beamFragment_; }
+    BeamFragment &beam_fragment() { return beam_fragment_; }
 
-    bool playTremolo() const { return playTremolo_; }
+    bool play_tremolo() const { return play_tremolo_; }
 
-    void setPlayTremolo(bool v) { playTremolo_ = v; }
+    void set_play_tremolo(bool v) { play_tremolo_ = v; }
 
-    bool customStyleApplicable() const;
+    bool custom_style_applicable() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    bool isMovable() const override { return true; }
+    bool is_movable() const override { return true; }
 
-    void clearBeamSegments() override;
+    void clear_beam_segments() override;
 
-    int maxCRMove() const override;
-    int minCRMove() const override;
+    int max_cr_move() const override;
+    int min_cr_move() const override;
 
     //! NOTE for palettes
-    muse::draw::PainterPath basePath(double stretch = 0) const;
+    muse::draw::PainterPath base_path(double stretch = 0) const;
 
     const muse::draw::PainterPath &path() const { return path_; }
 
-    void setPath(const muse::draw::PainterPath &p) { path_ = p; }
+    void set_path(const muse::draw::PainterPath &p) { path_ = p; }
 
-    void computeShape();
+    void compute_shape();
     //! -----------------
 
 private:
@@ -136,13 +136,13 @@ private:
     TremoloTwoChord(DummyParentOr<Chord> parent);
     TremoloTwoChord(const TremoloTwoChord &);
 
-    void setBeamPos(const PairF &bp);
+    void set_beam_pos(const PairF &bp);
 
-    TremoloType tremoloType_ = TremoloType::INVALID_TREMOLO;
+    TremoloType tremolo_type_ = TremoloType::INVALID_TREMOLO;
     Chord *chord1_ = nullptr;
     Chord *chord2_ = nullptr;
-    TDuration durationType_;
-    bool playTremolo_ = true;
+    TDuration duration_type_;
+    bool play_tremolo_ = true;
 
     int lines_ = 0; // derived from _subtype
     TremoloStyle style_ = TremoloStyle::DEFAULT;
@@ -150,7 +150,7 @@ private:
     // continue from one system to the other (or indeed, one measure to the other)
     // we will want a vector of fragments similar to Beam's _beamFragments structure.
     // for now, a single fragment is sufficient
-    BeamFragment beamFragment_;
+    BeamFragment beam_fragment_;
 
     //! NOTE for palette
     PainterPath path_;

@@ -31,22 +31,22 @@ class MoveTremolo : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, MoveTremolo)
 
     Score *score = nullptr;
-    Fraction chord1Tick;
-    Fraction chord2Tick;
+    Fraction chord1_tick;
+    Fraction chord2_tick;
     TremoloTwoChord *trem = nullptr;
     track_idx_t track = 0;
 
-    Chord *oldC1 = nullptr;
-    Chord *oldC2 = nullptr;
+    Chord *old_c1 = nullptr;
+    Chord *old_c2 = nullptr;
 
     void undo() override;
     void redo() override;
 
 public:
     MoveTremolo(Score *s, Fraction c1, Fraction c2, TremoloTwoChord *tr, track_idx_t t)
-        : score(s), chord1Tick(c1), chord2Tick(c2), trem(tr), track(t) {}
+        : score(s), chord1_tick(c1), chord2_tick(c2), trem(tr), track(t) {}
 
-    UNDO_TYPE(CommandType::MoveTremolo)
+    UNDO_TYPE(CommandType::MOVE_TREMOLO)
     UNDO_NAME("MoveTremolo")
     UNDO_CHANGED_OBJECTS({trem})
 };

@@ -115,9 +115,9 @@ public:
 
     constexpr inline bool operator!() const { return !i; }
 
-    constexpr inline bool testFlag(Enum flag) const { return (i & Int(flag)) == Int(flag) && (Int(flag) != 0 || i == Int(flag)); }
+    constexpr inline bool test_flag(Enum flag) const { return (i & Int(flag)) == Int(flag) && (Int(flag) != 0 || i == Int(flag)); }
 
-    constexpr inline Flags &setFlag(Enum flag, bool on = true) { return on ? (*this |= flag) : (*this &= ~Int(flag)); }
+    constexpr inline Flags &set_flag(Enum flag, bool on = true) { return on ? (*this |= flag) : (*this &= ~Int(flag)); }
 
 private:
     Int i = 0;

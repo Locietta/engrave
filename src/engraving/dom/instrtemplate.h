@@ -81,63 +81,63 @@ public:
     InstrumentTemplate &operator=(const InstrumentTemplate &);
 
     String id;
-    String soundId;
-    String trackName;
-    InstrumentLabel instrumentName;
-    String musicXmlId;  ///< used in MusicXML 3.0
-    String description; ///< a longer description of the instrument
+    String sound_id;
+    String track_name;
+    InstrumentLabel instrument_name;
+    String music_xml_id; ///< used in MusicXML 3.0
+    String description;  ///< a longer description of the instrument
 
-    size_t staffCount = 0;
-    int sequenceOrder = 0;
+    size_t staff_count = 0;
+    int sequence_order = 0;
 
     Trait trait;
 
-    int minPitchA = 0; // pitch range playable by an amateur
-    int maxPitchA = 0;
-    int minPitchP = 0; // pitch range playable by professional
-    int maxPitchP = 0;
+    int min_pitch_a = 0; // pitch range playable by an amateur
+    int max_pitch_a = 0;
+    int min_pitch_p = 0; // pitch range playable by professional
+    int max_pitch_p = 0;
 
     Interval transpose; // for transposing instruments
 
-    StaffGroup staffGroup;
-    const StaffType *staffTypePreset = nullptr;
-    bool useDrumset = false;
+    StaffGroup staff_group;
+    const StaffType *staff_type_preset = nullptr;
+    bool use_drumset = false;
     Drumset *drumset = nullptr;
 
-    StringData stringData;
+    StringData string_data;
 
-    std::vector<NamedEventList> midiActions;
-    std::vector<MidiArticulation> midiArticulations;
+    std::vector<NamedEventList> midi_actions;
+    std::vector<MidiArticulation> midi_articulations;
     std::vector<InstrChannel> channel;
     std::vector<const InstrumentGenre *> genres; //; list of genres this instrument belongs to
     const InstrumentFamily *family = nullptr;    //; family the instrument belongs to
 
-    ClefTypeList clefTypes[MAX_STAVES];
-    int staffLines[MAX_STAVES];
-    BracketType bracket[MAX_STAVES]; // bracket type (NO_BRACKET)
-    int bracketSpan[MAX_STAVES];
-    std::array<bool, MAX_STAVES> barlineSpan{};
-    bool smallStaff[MAX_STAVES];
+    ClefTypeList clef_types[::mu::engraving::max_staves];
+    int staff_lines[::mu::engraving::max_staves];
+    BracketType bracket[::mu::engraving::max_staves]; // bracket type (NO_BRACKET)
+    int bracket_span[::mu::engraving::max_staves];
+    std::array<bool, ::mu::engraving::max_staves> barline_span{};
+    bool small_staff[::mu::engraving::max_staves];
 
     bool extended = false; // belongs to extended instrument set if true
-    bool singleNoteDynamics = false;
+    bool single_note_dynamics = false;
 
-    String groupId;
+    String group_id;
 
-    GlissandoStyle glissandoStyle = GlissandoStyle::CHROMATIC;
+    GlissandoStyle glissando_style = GlissandoStyle::CHROMATIC;
 
-    bool isValid() const;
+    bool is_valid() const;
 
     void write(XmlWriter &xml) const;
     void read(XmlReader &);
-    ClefTypeList clefType(staff_idx_t staffIdx) const;
-    String familyId() const;
-    bool containsGenre(const String &genreId) const;
+    ClefTypeList clef_type(staff_idx_t staff_idx) const;
+    String family_id() const;
+    bool contains_genre(const String &genre_id) const;
 
 private:
     void init(const InstrumentTemplate &);
-    void setPitchRange(const String &s, int &a, int &b) const;
-    void linkGenre(const String &);
+    void set_pitch_range(const String &s, int &a, int &b) const;
+    void link_genre(const String &);
 };
 
 //---------------------------------------------------------
@@ -148,7 +148,7 @@ struct InstrumentGroup {
     String id;
     String name;
     bool extended; // belongs to extended instruments set if true
-    std::vector<const InstrumentTemplate *> instrumentTemplates;
+    std::vector<const InstrumentTemplate *> instrument_templates;
     void read(XmlReader &);
     void clear();
 
@@ -160,32 +160,32 @@ struct InstrumentGroup {
 //---------------------------------------------------------
 
 struct InstrumentIndex {
-    int groupIndex = 0;
-    int instrIndex = 0;
-    size_t templateCount = 0;
-    const InstrumentTemplate *instrTemplate = nullptr;
+    int group_index = 0;
+    int instr_index = 0;
+    size_t template_count = 0;
+    const InstrumentTemplate *instr_template = nullptr;
 
     InstrumentIndex(int g, int i, const InstrumentTemplate *it);
 };
 
-extern std::vector<const InstrumentGenre *> instrumentGenres;
-extern std::vector<const InstrumentFamily *> instrumentFamilies;
-extern std::vector<const InstrumentGroup *> instrumentGroups;
-extern std::vector<MidiArticulation> midiArticulations;
-extern std::vector<ScoreOrder> instrumentOrders;
-extern void clearInstrumentTemplates();
-extern bool loadInstrumentTemplates(const muse::io::path_t &instrTemplatesPath);
-extern const InstrumentTemplate *combinedTemplateSearch(const Instrument &instrument);
-extern InstrumentIndex searchTemplateIndexForTrackName(const String &trackName);
-extern InstrumentIndex searchTemplateIndexForId(const String &id);
-extern const InstrumentTemplate *searchTemplate(const String &name);
-extern const InstrumentTemplate *searchTemplateForMusicXmlId(const String &mxmlId);
-extern const InstrumentTemplate *searchTemplateForInstrNameList(const std::vector<String> &nameList, bool useDrumset = false,
-                                                                bool caseSensitive = true);
-extern const InstrumentTemplate *searchTemplateForMidiProgram(int bank, int program, bool useDrumset = false);
-extern const InstrumentGenre *searchInstrumentGenre(const String &id);
+extern std::vector<const InstrumentGenre *> instrument_genres;
+extern std::vector<const InstrumentFamily *> instrument_families;
+extern std::vector<const InstrumentGroup *> instrument_groups;
+extern std::vector<MidiArticulation> midi_articulations;
+extern std::vector<ScoreOrder> instrument_orders;
+extern void clear_instrument_templates();
+extern bool load_instrument_templates(const muse::io::PathT &instr_templates_path);
+extern const InstrumentTemplate *combined_template_search(const Instrument &instrument);
+extern InstrumentIndex search_template_index_for_track_name(const String &track_name);
+extern InstrumentIndex search_template_index_for_id(const String &id);
+extern const InstrumentTemplate *search_template(const String &name);
+extern const InstrumentTemplate *search_template_for_music_xml_id(const String &mxml_id);
+extern const InstrumentTemplate *search_template_for_instr_name_list(const std::vector<String> &name_list, bool use_drumset = false,
+                                                                     bool case_sensitive = true);
+extern const InstrumentTemplate *search_template_for_midi_program(int bank, int program, bool use_drumset = false);
+extern const InstrumentGenre *search_instrument_genre(const String &id);
 
-extern void addTemplateToGroup(const InstrumentTemplate *templ, const String &groupId);
+extern void add_template_to_group(const InstrumentTemplate *templ, const String &group_id);
 
-extern ClefType defaultClef(int patch);
+extern ClefType default_clef(int patch);
 } // namespace mu::engraving

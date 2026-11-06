@@ -33,94 +33,94 @@
 
 using namespace mu::engraving::rendering::score;
 
-void DynamicsLayout::layoutDynamic(Dynamic *item, TextBase::LayoutData *ldata, const LayoutConfiguration &conf) {
-    doLayoutDynamic(item, ldata, conf);
+void DynamicsLayout::layout_dynamic(Dynamic *item, TextBase::LayoutData *ldata, const LayoutConfiguration &conf) {
+    do_layout_dynamic(item, ldata, conf);
 
     // If the dynamic contains custom text, keep it aligned
-    double customTextOffset = computeCustomTextOffset(item, ldata, conf);
-    ldata->moveX(-customTextOffset);
+    double custom_text_offset = compute_custom_text_offset(item, ldata, conf);
+    ldata->move_x(-custom_text_offset);
 
-    if (item->autoplace() && item->avoidBarLines()) {
-        manageBarlineCollisions(item, ldata);
+    if (item->autoplace() && item->avoid_bar_lines()) {
+        manage_barline_collisions(item, ldata);
     }
 }
 
-void DynamicsLayout::doLayoutDynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf) {
-    ldata->disconnectSnappedItems();
+void DynamicsLayout::do_layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf) {
+    ldata->disconnect_snapped_items();
 
-    HairpinSegment *snapBeforeHairpinAcrossSysBreak = item->findSnapBeforeHairpinAcrossSystemBreak();
-    if (snapBeforeHairpinAcrossSysBreak) {
-        ldata->connectItemSnappedBefore(snapBeforeHairpinAcrossSysBreak);
+    HairpinSegment *snap_before_hairpin_across_sys_break = item->find_snap_before_hairpin_across_system_break();
+    if (snap_before_hairpin_across_sys_break) {
+        ldata->connect_item_snapped_before(snap_before_hairpin_across_sys_break);
     }
 
-    const StaffType *stType = item->staffType();
-    if (stType && stType->isHiddenElementOnTab(Sid::dynamicsShowTabCommon, Sid::dynamicsShowTabSimple)) {
-        ldata->setIsSkipDraw(true);
+    const StaffType *st_type = item->staff_type();
+    if (st_type && st_type->is_hidden_element_on_tab(Sid::DYNAMICS_SHOW_TAB_COMMON, Sid::DYNAMICS_SHOW_TAB_SIMPLE)) {
+        ldata->set_is_skip_draw(true);
         return;
     }
-    ldata->setIsSkipDraw(false);
+    ldata->set_is_skip_draw(false);
 
-    item->setPlacementBasedOnVoiceAssignment(conf.styleV(Sid::dynamicsHairpinVoiceBasedPlacement).value<DirectionV>());
+    item->set_placement_based_on_voice_assignment(conf.style_v(Sid::DYNAMICS_HAIRPIN_VOICE_BASED_PLACEMENT).value<DirectionV>());
 
     // If "Center on notehead" is on, override user position. Restore later
-    AlignH userPosition = item->getProperty(Pid::POSITION).value<AlignH>();
-    AlignH hPos = item->centerOnNotehead() ? AlignH::HCENTER : item->position();
-    item->setPosition(hPos);
-    TextLayout::layoutBaseTextBase(item, ldata);
-    item->setPosition(userPosition);
+    AlignH user_position = item->get_property(Pid::POSITION).value<AlignH>();
+    AlignH h_pos = item->center_on_notehead() ? AlignH::HCENTER : item->position();
+    item->set_position(h_pos);
+    TextLayout::layout_base_text_base(item, ldata);
+    item->set_position(user_position);
 
     const Segment *s = item->segment();
-    if (!s || (!item->centerOnNotehead() && item->position() == AlignH::LEFT)) {
+    if (!s || (!item->center_on_notehead() && item->position() == AlignH::LEFT)) {
         return;
     }
 
-    if (item->anchorToEndOfPrevious()) {
-        layoutDynamicToEndOfPrevious(item, ldata);
+    if (item->anchor_to_end_of_previous()) {
+        layout_dynamic_to_end_of_previous(item, ldata);
         return;
     }
 
-    if (!item->centerOnNotehead()) {
+    if (!item->center_on_notehead()) {
         return;
     }
 
     // Use SMuFL optical center for dynamic if available
-    SymId symId = TConv::symId(item->dynamicType());
-    double opticalCenter = item->symSmuflAnchor(symId, SmuflAnchorId::opticalCenter).x();
-    if (symId != SymId::noSym && opticalCenter) {
-        double symWidth = item->symBbox(symId).width();
-        double offset = symWidth / 2 - opticalCenter + item->symBbox(symId).left();
-        double spatiumScaling = item->spatium() / conf.spatium();
-        offset *= spatiumScaling;
-        ldata->moveX(offset);
+    SymId sym_id = TConv::sym_id(item->dynamic_type());
+    double optical_center = item->sym_smufl_anchor(sym_id, SmuflAnchorId::OPTICAL_CENTER).x();
+    if (sym_id != SymId::NO_SYM && optical_center) {
+        double sym_width = item->sym_bbox(sym_id).width();
+        double offset = sym_width / 2 - optical_center + item->sym_bbox(sym_id).left();
+        double spatium_scaling = item->spatium() / conf.spatium();
+        offset *= spatium_scaling;
+        ldata->move_x(offset);
     }
 }
 
-double DynamicsLayout::computeCustomTextOffset(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf) {
-    if (!item->centerOnNotehead() || item->dynamicType() == DynamicType::OTHER) {
+double DynamicsLayout::compute_custom_text_offset(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf) {
+    if (!item->center_on_notehead() || item->dynamic_type() == DynamicType::OTHER) {
         return 0.0;
     }
 
-    String referenceString = String::fromUtf8(Dynamic::dynInfo(item->dynamicType()).text);
-    if (item->xmlText() == referenceString) {
+    String reference_string = String::from_utf8(Dynamic::dyn_info(item->dynamic_type()).text);
+    if (item->xml_text() == reference_string) {
         return 0.0;
     }
 
-    Dynamic referenceDynamic(*item);
-    referenceDynamic.setXmlText(referenceString);
-    doLayoutDynamic(&referenceDynamic, referenceDynamic.mutldata(), conf);
+    Dynamic reference_dynamic(*item);
+    reference_dynamic.set_xml_text(reference_string);
+    do_layout_dynamic(&reference_dynamic, reference_dynamic.mutldata(), conf);
 
-    TextFragment referenceFragment;
-    if (!referenceDynamic.ldata()->blocks.empty()) {
-        TextBlock referenceBlock = referenceDynamic.ldata()->blocks.front();
-        if (!referenceBlock.fragments().empty()) {
-            referenceFragment = referenceDynamic.ldata()->blocks.front().fragments().front();
+    TextFragment reference_fragment;
+    if (!reference_dynamic.ldata()->blocks.empty()) {
+        TextBlock reference_block = reference_dynamic.ldata()->blocks.front();
+        if (!reference_block.fragments().empty()) {
+            reference_fragment = reference_dynamic.ldata()->blocks.front().fragments().front();
         }
     }
 
     for (const TextBlock &block : ldata->blocks) {
         for (const TextFragment &fragment : block.fragments()) {
-            if (fragment.text == referenceFragment.text) {
-                return fragment.pos.x() - referenceFragment.pos.x();
+            if (fragment.text == reference_fragment.text) {
+                return fragment.pos.x() - reference_fragment.pos.x();
             }
         }
     }
@@ -128,105 +128,105 @@ double DynamicsLayout::computeCustomTextOffset(Dynamic *item, Dynamic::LayoutDat
     return 0.0;
 }
 
-void DynamicsLayout::layoutDynamicToEndOfPrevious(const Dynamic *item, TextBase::LayoutData *ldata) {
-    Segment *curSegment = item->segment();
-    Segment *leftMostSegment = curSegment;
-    Segment *prevSeg = curSegment;
+void DynamicsLayout::layout_dynamic_to_end_of_previous(const Dynamic *item, TextBase::LayoutData *ldata) {
+    Segment *cur_segment = item->segment();
+    Segment *left_most_segment = cur_segment;
+    Segment *prev_seg = cur_segment;
     while (true) {
-        prevSeg = prevSeg->prev1enabled();
-        if (!prevSeg || prevSeg->tick() != curSegment->tick()) {
+        prev_seg = prev_seg->prev1enabled();
+        if (!prev_seg || prev_seg->tick() != cur_segment->tick()) {
             break;
         }
-        if (prevSeg->isActive() && prevSeg->hasElements(item->staffIdx())) {
-            leftMostSegment = prevSeg;
+        if (prev_seg->is_active() && prev_seg->has_elements(item->staff_idx())) {
+            left_most_segment = prev_seg;
             break;
         }
     }
 
-    double xDiff = curSegment->x() + curSegment->measure()->x() - (leftMostSegment->x() + leftMostSegment->measure()->x());
-    ldata->setPosX(-xDiff - ldata->bbox().right() - 0.50 * item->spatium());
+    double x_diff = cur_segment->x() + cur_segment->measure()->x() - (left_most_segment->x() + left_most_segment->measure()->x());
+    ldata->set_pos_x(-x_diff - ldata->bbox().right() - 0.50 * item->spatium());
 }
 
-void DynamicsLayout::manageBarlineCollisions(const Dynamic *item, TextBase::LayoutData *ldata) {
-    if (item->score()->nstaves() <= 1 || item->anchorToEndOfPrevious()) {
+void DynamicsLayout::manage_barline_collisions(const Dynamic *item, TextBase::LayoutData *ldata) {
+    if (item->score()->nstaves() <= 1 || item->anchor_to_end_of_previous()) {
         return;
     }
 
-    Segment *thisSegment = item->segment();
-    if (!thisSegment) {
+    Segment *this_segment = item->segment();
+    if (!this_segment) {
         return;
     }
 
-    System *system = thisSegment->measure()->system();
+    System *system = this_segment->measure()->system();
     if (!system) {
         return;
     }
 
-    staff_idx_t staffIdx = item->staffIdx();
-    staff_idx_t barLineStaff = muse::nidx;
-    if (item->placeAbove()) {
+    staff_idx_t staff_idx = item->staff_idx();
+    staff_idx_t bar_line_staff = muse::nidx;
+    if (item->place_above()) {
         // need to find the barline from the staff above
         // taking into account there could be invisible staves
-        if (staffIdx == 0) {
+        if (staff_idx == 0) {
             return;
         }
-        for (int staffIndex = static_cast<int>(staffIdx) - 1; staffIndex >= 0; --staffIndex) {
-            if (system->staff(staffIndex)->show()) {
-                barLineStaff = staffIndex;
+        for (int staff_index = static_cast<int>(staff_idx) - 1; staff_index >= 0; --staff_index) {
+            if (system->staff(staff_index)->show()) {
+                bar_line_staff = staff_index;
                 break;
             }
         }
     } else {
-        barLineStaff = staffIdx;
+        bar_line_staff = staff_idx;
     }
 
-    if (barLineStaff == muse::nidx) {
+    if (bar_line_staff == muse::nidx) {
         return;
     }
 
-    if (!item->score()->staff(barLineStaff)->barLineSpan()) {
+    if (!item->score()->staff(bar_line_staff)->bar_line_span()) {
         return; // Barline doesn't extend through staves
     }
 
-    const double minBarLineDistance = 0.25 * item->spatium();
+    const double min_bar_line_distance = 0.25 * item->spatium();
 
-    RectF referenceBBox = ldata->bbox();
+    RectF reference_b_box = ldata->bbox();
 
     // Check barlines to the right
-    Segment *rightBarLineSegment = nullptr;
-    for (Segment *segment = thisSegment; segment && segment->measure()->system() == system; segment = segment->next1enabled()) {
-        if (segment->segmentType() & SegmentType::BarLineTypes) {
-            rightBarLineSegment = segment;
+    Segment *right_bar_line_segment = nullptr;
+    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->next1enabled()) {
+        if (segment->segment_type() & SegmentType::BAR_LINE_TYPES) {
+            right_bar_line_segment = segment;
             break;
         }
     }
 
-    if (rightBarLineSegment) {
-        EngravingItem *e = rightBarLineSegment->element(barLineStaff * VOICES);
+    if (right_bar_line_segment) {
+        EngravingItem *e = right_bar_line_segment->element(bar_line_staff * ::mu::engraving::voices);
         if (e) {
-            double rightMargin = e->ldata()->bbox().translated(e->pagePos()).left() -
-                                 referenceBBox.translated(item->pagePos() - item->offset()).right() - minBarLineDistance;
-            if (rightMargin < 0) {
-                ldata->moveX(rightMargin);
+            double right_margin = e->ldata()->bbox().translated(e->page_pos()).left() -
+                                  reference_b_box.translated(item->page_pos() - item->offset()).right() - min_bar_line_distance;
+            if (right_margin < 0) {
+                ldata->move_x(right_margin);
             }
         }
     }
 
     // Check barlines to the left
-    Segment *leftBarLineSegment = nullptr;
-    for (Segment *segment = thisSegment; segment && segment->measure()->system() == system; segment = segment->prev1enabled()) {
-        if (segment->segmentType() & SegmentType::BarLineTypes) {
-            leftBarLineSegment = segment;
+    Segment *left_bar_line_segment = nullptr;
+    for (Segment *segment = this_segment; segment && segment->measure()->system() == system; segment = segment->prev1enabled()) {
+        if (segment->segment_type() & SegmentType::BAR_LINE_TYPES) {
+            left_bar_line_segment = segment;
             break;
         }
     }
-    if (leftBarLineSegment) {
-        EngravingItem *e = leftBarLineSegment->element(barLineStaff * VOICES);
+    if (left_bar_line_segment) {
+        EngravingItem *e = left_bar_line_segment->element(bar_line_staff * ::mu::engraving::voices);
         if (e) {
-            double leftMargin = referenceBBox.translated(item->pagePos() - item->offset()).left() -
-                                e->ldata()->bbox().translated(e->pagePos()).right() - minBarLineDistance;
-            if (leftMargin < 0) {
-                ldata->moveX(-leftMargin);
+            double left_margin = reference_b_box.translated(item->page_pos() - item->offset()).left() -
+                                 e->ldata()->bbox().translated(e->page_pos()).right() - min_bar_line_distance;
+            if (left_margin < 0) {
+                ldata->move_x(-left_margin);
             }
         }
     }

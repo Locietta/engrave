@@ -51,27 +51,27 @@ public:
 
     EngravingItem *connector();
     const EngravingItem *connector() const;
-    EngravingItem *releaseConnector(); // returns connector and "forgets" it by
+    EngravingItem *release_connector(); // returns connector and "forgets" it by
     // setting an internal pointer to it to zero
 
     bool read();
     void update();
-    void addToScore(bool pasteMode);
+    void add_to_score(bool paste_mode);
 
-    static void readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader &e, ReadContext &ctx);
+    static void read_connector(std::shared_ptr<ConnectorInfoReader> info, XmlReader &e, ReadContext &ctx);
 
-    static void readAddConnector(ChordRest *item, ConnectorInfoReader *info, bool pasteMode);
-    static void readAddConnector(Measure *item, ConnectorInfoReader *info, bool pasteMode);
-    static void readAddConnector(Note *item, ConnectorInfoReader *info, bool pasteMode);
-    static void readAddConnector(Score *item, ConnectorInfoReader *info, bool pasteMode);
+    static void read_add_connector(ChordRest *item, ConnectorInfoReader *info, bool paste_mode);
+    static void read_add_connector(Measure *item, ConnectorInfoReader *info, bool paste_mode);
+    static void read_add_connector(Note *item, ConnectorInfoReader *info, bool paste_mode);
+    static void read_add_connector(Score *item, ConnectorInfoReader *info, bool paste_mode);
 
 private:
-    void readEndpointLocation(Location &l);
-    Fraction curTick() const;
+    void read_endpoint_location(Location &l);
+    Fraction cur_tick() const;
 
     XmlReader *reader_ = nullptr;
     ReadContext *ctx_ = nullptr;
     EngravingItem *connector_ = nullptr;
-    EngravingObject *connectorReceiver_ = nullptr;
+    EngravingObject *connector_receiver_ = nullptr;
 };
 } // namespace mu::engraving::read460

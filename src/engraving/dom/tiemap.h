@@ -37,9 +37,9 @@ class TieMap : public ElementMap {
 public:
     TieMap() {}
 
-    Tie *findNew(Tie *o) const { return (Tie *) (ElementMap::findNew((EngravingItem *) o)); }
+    Tie *find_new(Tie *o) const { return (Tie *) (ElementMap::find_new((EngravingItem *) o)); }
 
-    void add(Tie *_o, Tie *_n) { ElementMap::add((EngravingItem *) _o, (EngravingItem *) _n); }
+    void add(Tie *input_o, Tie *n) { ElementMap::add((EngravingItem *) input_o, (EngravingItem *) n); }
 };
 } // namespace mu::engraving
 #endif

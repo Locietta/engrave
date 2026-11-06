@@ -37,27 +37,27 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-double SystemHeaderLayout::layoutBrackets(System *system, LayoutContext &ctx) {
+double SystemHeaderLayout::layout_brackets(System *system, LayoutContext &ctx) {
     size_t nstaves = system->staves().size();
-    size_t columns = system->getBracketsColumnsCount();
+    size_t columns = system->get_brackets_columns_count();
 
-    std::vector<double> bracketWidth(columns, 0.0);
+    std::vector<double> bracket_width(columns, 0.0);
 
     std::vector<Bracket *> bl;
     bl.swap(system->brackets());
 
-    for (size_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
+    for (size_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
         for (size_t i = 0; i < columns; ++i) {
-            for (BracketItem *bi : ctx.dom().brackets(staffIdx)) {
-                if (bi->column() != i || bi->bracketType() == BracketType::NO_BRACKET) {
+            for (BracketItem *bi : ctx.dom().brackets(staff_idx)) {
+                if (bi->column() != i || bi->bracket_type() == BracketType::NO_BRACKET) {
                     continue;
                 }
-                Bracket *b = createBracket(system, ctx, bi, i, static_cast<int>(staffIdx), bl, system->firstMeasure());
+                Bracket *b = create_bracket(system, ctx, bi, i, static_cast<int>(staff_idx), bl, system->first_measure());
                 if (b != nullptr) {
-                    b->mutldata()->bracketHeight.set_value(3.5 * b->spatium() * 2); // dummy
-                    TLayout::layoutBracket(b, b->mutldata(), ctx.conf());
-                    if (bi->bracketType() != BracketType::GROUP) { // Because Group brackets always stay outside
-                        bracketWidth[i] = std::max(bracketWidth[i], b->ldata()->bracketWidth());
+                    b->mutldata()->bracket_height.set_value(3.5 * b->spatium() * 2); // dummy
+                    TLayout::layout_bracket(b, b->mutldata(), ctx.conf());
+                    if (bi->bracket_type() != BracketType::GROUP) { // Because Group brackets always stay outside
+                        bracket_width[i] = std::max(bracket_width[i], b->ldata()->bracket_width());
                     }
                 }
             }
@@ -68,91 +68,92 @@ double SystemHeaderLayout::layoutBrackets(System *system, LayoutContext &ctx) {
         delete b;
     }
 
-    double totalBracketWidth = 0.0;
+    double total_bracket_width = 0.0;
 
     if (!system->brackets().empty()) {
-        for (double w : bracketWidth) {
-            totalBracketWidth += w;
+        for (double w : bracket_width) {
+            total_bracket_width += w;
         }
     }
 
-    return totalBracketWidth;
+    return total_bracket_width;
 }
 
-Bracket *SystemHeaderLayout::createBracket(System *system, LayoutContext &ctx, BracketItem *bi, size_t column, staff_idx_t staffIdx,
-                                           std::vector<Bracket *> &bl, Measure *measure) {
+Bracket *SystemHeaderLayout::create_bracket(System *system, LayoutContext &ctx, BracketItem *bi, size_t column, staff_idx_t staff_idx,
+                                            std::vector<Bracket *> &bl, Measure *measure) {
     if (!measure) {
         return nullptr;
     }
 
     size_t nstaves = system->staves().size();
-    staff_idx_t firstStaff = staffIdx;
-    staff_idx_t lastStaff = staffIdx + bi->bracketSpan() - 1;
-    if (lastStaff >= nstaves) {
-        lastStaff = nstaves - 1;
+    staff_idx_t first_staff = staff_idx;
+    staff_idx_t last_staff = staff_idx + bi->bracket_span() - 1;
+    if (last_staff >= nstaves) {
+        last_staff = nstaves - 1;
     }
 
-    for (; firstStaff <= lastStaff; ++firstStaff) {
-        if (system->staff(firstStaff)->show()) {
+    for (; first_staff <= last_staff; ++first_staff) {
+        if (system->staff(first_staff)->show()) {
             break;
         }
     }
-    for (; lastStaff >= firstStaff; --lastStaff) {
-        if (system->staff(lastStaff)->show()) {
+    for (; last_staff >= first_staff; --last_staff) {
+        if (system->staff(last_staff)->show()) {
             break;
         }
     }
-    size_t span = lastStaff - firstStaff + 1;
+    size_t span = last_staff - first_staff + 1;
     //
     // do not show bracket if it only spans one
     // system due to some invisible staves
     //
-    if (span > 1 || (bi->bracketSpan() == span) ||
-        (span == 1 && ctx.conf().styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden) && bi->bracketType() != BracketType::SQUARE) ||
-        (span == 1 && ctx.conf().styleB(Sid::alwaysShowSquareBracketsWhenEmptyStavesAreHidden) &&
-         bi->bracketType() == BracketType::SQUARE)) {
+    if (span > 1 || (bi->bracket_span() == span) ||
+        (span == 1 && ctx.conf().style_b(Sid::ALWAYS_SHOW_BRACKETS_WHEN_EMPTY_STAVES_ARE_HIDDEN) &&
+         bi->bracket_type() != BracketType::SQUARE) ||
+        (span == 1 && ctx.conf().style_b(Sid::ALWAYS_SHOW_SQUARE_BRACKETS_WHEN_EMPTY_STAVES_ARE_HIDDEN) &&
+         bi->bracket_type() == BracketType::SQUARE)) {
         //
         // this bracket is visible
         //
         Bracket *b = 0;
-        track_idx_t track = staffIdx * VOICES;
+        track_idx_t track = staff_idx * ::mu::engraving::voices;
         for (size_t k = 0; k < bl.size(); ++k) {
-            if (bl[k]->track() == track && bl[k]->column() == column && bl[k]->bracketType() == bi->bracketType() &&
+            if (bl[k]->track() == track && bl[k]->column() == column && bl[k]->bracket_type() == bi->bracket_type() &&
                 bl[k]->measure() == measure) {
-                b = muse::takeAt(bl, k);
+                b = muse::take_at(bl, k);
                 break;
             }
         }
         if (b == 0) {
-            b = Factory::createBracket(ctx.mutDom().dummyParent());
-            b->setBracketItem(bi);
-            b->setGenerated(true);
-            b->setTrack(track);
-            b->setMeasure(measure);
+            b = Factory::create_bracket(ctx.mut_dom().dummy_parent());
+            b->set_bracket_item(bi);
+            b->set_generated(true);
+            b->set_track(track);
+            b->set_measure(measure);
         }
         system->add(b);
 
         if (bi->selected()) {
-            bool needSelect = true;
+            bool need_select = true;
 
             std::vector<EngravingItem *> brackets = ctx.selection().elements(ElementType::BRACKET);
             for (const EngravingItem *element : brackets) {
-                if (toBracket(element)->bracketItem() == bi) {
-                    needSelect = false;
+                if (to_bracket(element)->bracket_item() == bi) {
+                    need_select = false;
                     break;
                 }
             }
 
-            if (needSelect) {
+            if (need_select) {
                 ctx.select(b, SelectType::ADD);
             }
         }
 
-        b->setStaffSpan(firstStaff, lastStaff);
+        b->set_staff_span(first_staff, last_staff);
 
         InstrumentLabelVisibility visibility =
-            resolveInstrumentLabelVisibility(ctx.dom().staff(firstStaff), measure->tick(), ctx, ctx.state().firstSystem());
-        b->setLabelType(resolveInstrumentNameType(visibility));
+            resolve_instrument_label_visibility(ctx.dom().staff(first_staff), measure->tick(), ctx, ctx.state().first_system());
+        b->set_label_type(resolve_instrument_name_type(visibility));
 
         return b;
     }
@@ -160,7 +161,7 @@ Bracket *SystemHeaderLayout::createBracket(System *system, LayoutContext &ctx, B
     return nullptr;
 }
 
-void SystemHeaderLayout::addBrackets(System *system, Measure *measure, LayoutContext &ctx) {
+void SystemHeaderLayout::add_brackets(System *system, Measure *measure, LayoutContext &ctx) {
     if (system->staves().empty()) { // ignore vbox
         return;
     }
@@ -172,21 +173,21 @@ void SystemHeaderLayout::addBrackets(System *system, Measure *measure, LayoutCon
     //    create brackets
     //---------------------------------------------------
 
-    size_t columns = system->getBracketsColumnsCount();
+    size_t columns = system->get_brackets_columns_count();
 
     std::vector<Bracket *> bl;
     bl.swap(system->brackets());
 
-    for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
+    for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
         for (size_t i = 0; i < columns; ++i) {
-            for (BracketItem *bi : ctx.dom().brackets(staffIdx)) {
-                if (bi->column() != i || bi->bracketType() == BracketType::NO_BRACKET) {
+            for (BracketItem *bi : ctx.dom().brackets(staff_idx)) {
+                if (bi->column() != i || bi->bracket_type() == BracketType::NO_BRACKET) {
                     continue;
                 }
-                createBracket(system, ctx, bi, i, staffIdx, bl, measure);
+                create_bracket(system, ctx, bi, i, staff_idx, bl, measure);
             }
         }
-        if (!system->staff(staffIdx)->show()) {
+        if (!system->staff(staff_idx)->show()) {
             continue;
         }
     }
@@ -194,16 +195,16 @@ void SystemHeaderLayout::addBrackets(System *system, Measure *measure, LayoutCon
     //---------------------------------------------------
     //  layout brackets
     //---------------------------------------------------
-    layoutBracketsVertical(system, ctx);
+    layout_brackets_vertical(system, ctx);
 
-    setBracketsXPosition(system, measure->x());
+    set_brackets_x_position(system, measure->x());
 
     muse::join(system->brackets(), bl);
 }
 
-double SystemHeaderLayout::totalBracketOffset(LayoutContext &ctx) {
-    if (ctx.state().totalBracketsWidth() >= 0) {
-        return ctx.state().totalBracketsWidth();
+double SystemHeaderLayout::total_bracket_offset(LayoutContext &ctx) {
+    if (ctx.state().total_brackets_width() >= 0) {
+        return ctx.state().total_brackets_width();
     }
 
     size_t columns = 0;
@@ -214,10 +215,10 @@ double SystemHeaderLayout::totalBracketOffset(LayoutContext &ctx) {
     }
 
     size_t nstaves = ctx.dom().nstaves();
-    std::vector<double> bracketWidth(nstaves, 0.0);
-    for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-        for (BracketItem *bi : ctx.dom().brackets(staffIdx)) {
-            if (bi->bracketType() == BracketType::NO_BRACKET || !bi->visible() || bi->bracketType() == BracketType::GROUP) {
+    std::vector<double> bracket_width(nstaves, 0.0);
+    for (staff_idx_t staff_idx = 0; staff_idx < nstaves; ++staff_idx) {
+        for (BracketItem *bi : ctx.dom().brackets(staff_idx)) {
+            if (bi->bracket_type() == BracketType::NO_BRACKET || !bi->visible() || bi->bracket_type() == BracketType::GROUP) {
                 continue;
             }
 
@@ -225,263 +226,263 @@ double SystemHeaderLayout::totalBracketOffset(LayoutContext &ctx) {
             //! Of course, we don't need to worry about invisible staves,
             //! but we do need to worry about brackets that span past the
             //! last staff.
-            staff_idx_t firstStaff = staffIdx;
-            staff_idx_t lastStaff = staffIdx + bi->bracketSpan() - 1;
-            if (lastStaff >= nstaves) {
-                lastStaff = nstaves - 1;
+            staff_idx_t first_staff = staff_idx;
+            staff_idx_t last_staff = staff_idx + bi->bracket_span() - 1;
+            if (last_staff >= nstaves) {
+                last_staff = nstaves - 1;
             }
 
-            for (; firstStaff <= lastStaff; ++firstStaff) {
-                if (ctx.dom().staff(firstStaff)->show()) {
+            for (; first_staff <= last_staff; ++first_staff) {
+                if (ctx.dom().staff(first_staff)->show()) {
                     break;
                 }
             }
-            for (; lastStaff >= firstStaff; --lastStaff) {
-                if (ctx.dom().staff(lastStaff)->show()) {
+            for (; last_staff >= first_staff; --last_staff) {
+                if (ctx.dom().staff(last_staff)->show()) {
                     break;
                 }
             }
 
-            size_t span = lastStaff - firstStaff + 1;
-            if (span > 1 || (bi->bracketSpan() == span) ||
-                (span == 1 && ctx.conf().styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))) {
-                Bracket *dummyBr = Factory::createBracket(ctx.mutDom().dummyParent(), /*isAccessibleEnabled=*/false);
-                dummyBr->setBracketItem(bi);
-                dummyBr->setStaffSpan(firstStaff, lastStaff);
-                dummyBr->mutldata()->bracketHeight.set_value(3.5 * dummyBr->spatium() * 2); // default
-                TLayout::layoutBracket(dummyBr, dummyBr->mutldata(), ctx.conf());
-                for (staff_idx_t stfIdx = firstStaff; stfIdx <= lastStaff; ++stfIdx) {
-                    bracketWidth[stfIdx] += dummyBr->ldata()->bracketWidth();
+            size_t span = last_staff - first_staff + 1;
+            if (span > 1 || (bi->bracket_span() == span) ||
+                (span == 1 && ctx.conf().style_b(Sid::ALWAYS_SHOW_BRACKETS_WHEN_EMPTY_STAVES_ARE_HIDDEN))) {
+                Bracket *dummy_br = Factory::create_bracket(ctx.mut_dom().dummy_parent(), /*isAccessibleEnabled=*/false);
+                dummy_br->set_bracket_item(bi);
+                dummy_br->set_staff_span(first_staff, last_staff);
+                dummy_br->mutldata()->bracket_height.set_value(3.5 * dummy_br->spatium() * 2); // default
+                TLayout::layout_bracket(dummy_br, dummy_br->mutldata(), ctx.conf());
+                for (staff_idx_t stf_idx = first_staff; stf_idx <= last_staff; ++stf_idx) {
+                    bracket_width[stf_idx] += dummy_br->ldata()->bracket_width();
                 }
-                delete dummyBr;
+                delete dummy_br;
             }
         }
     }
 
-    double totalBracketsWidth = 0.0;
-    for (double w : bracketWidth) {
-        totalBracketsWidth = std::max(totalBracketsWidth, w);
+    double total_brackets_width = 0.0;
+    for (double w : bracket_width) {
+        total_brackets_width = std::max(total_brackets_width, w);
     }
-    ctx.mutState().setTotalBracketsWidth(totalBracketsWidth);
+    ctx.mut_state().set_total_brackets_width(total_brackets_width);
 
-    return totalBracketsWidth;
+    return total_brackets_width;
 }
 
-void SystemHeaderLayout::setBracketsXPosition(System *system, double xPosition) {
+void SystemHeaderLayout::set_brackets_x_position(System *system, double x_position) {
     std::vector<Bracket *> brackets = system->brackets();
     for (Bracket *b1 : brackets) {
-        BracketType bracketType = b1->bracketType();
+        BracketType bracket_type = b1->bracket_type();
         // For brackets that are drawn, we must correct for half line width
-        double lineWidthCorrection = 0.0;
-        if (bracketType == BracketType::NORMAL || bracketType == BracketType::LINE) {
-            lineWidthCorrection = system->style().styleAbsolute(Sid::bracketWidth) / 2;
+        double line_width_correction = 0.0;
+        if (bracket_type == BracketType::NORMAL || bracket_type == BracketType::LINE) {
+            line_width_correction = system->style().style_absolute(Sid::BRACKET_WIDTH) / 2;
         }
         // Compute offset cause by other stacked brackets
-        double xOffset = 0;
+        double x_offset = 0;
         for (const Bracket *b2 : brackets) {
-            if (!b2->bracketItem()->visible() || b2->bracketType() == BracketType::GROUP) {
+            if (!b2->bracket_item()->visible() || b2->bracket_type() == BracketType::GROUP) {
                 continue;
             }
             if (b1->column() > b2->column() && b1->intersects(b2)) {
-                xOffset += b2->ldata()->bracketWidth();
+                x_offset += b2->ldata()->bracket_width();
             }
         }
         // Set position
-        double x = xPosition - xOffset - b1->ldata()->bracketWidth() + lineWidthCorrection;
-        b1->mutldata()->setPosX(x);
+        double x = x_position - x_offset - b1->ldata()->bracket_width() + line_width_correction;
+        b1->mutldata()->set_pos_x(x);
     }
 }
 
-void SystemHeaderLayout::layoutBracketsVertical(System *system, LayoutContext &ctx) {
+void SystemHeaderLayout::layout_brackets_vertical(System *system, LayoutContext &ctx) {
     for (Bracket *b : system->brackets()) {
-        int staffIdx1 = static_cast<int>(b->firstStaff());
-        int staffIdx2 = static_cast<int>(b->lastStaff());
+        int staff_idx1 = static_cast<int>(b->first_staff());
+        int staff_idx2 = static_cast<int>(b->last_staff());
         double sy = 0; // assume bracket not visible
         double ey = 0;
         // if start staff not visible, try next staff
-        while (staffIdx1 <= staffIdx2 && !system->staves().at(staffIdx1)->show()) {
-            ++staffIdx1;
+        while (staff_idx1 <= staff_idx2 && !system->staves().at(staff_idx1)->show()) {
+            ++staff_idx1;
         }
         // if end staff not visible, try prev staff
-        while (staffIdx1 <= staffIdx2 && !system->staves().at(staffIdx2)->show()) {
-            --staffIdx2;
+        while (staff_idx1 <= staff_idx2 && !system->staves().at(staff_idx2)->show()) {
+            --staff_idx2;
         }
         // if the score doesn't have "alwaysShowBracketsWhenEmptyStavesAreHidden" as true,
         // the bracket will be shown IF:
         // it spans at least 2 visible staves (staffIdx1 < staffIdx2) OR
         // it spans just one visible staff (staffIdx1 == staffIdx2) but it is required to do so
         // (the second case happens at least when the bracket is initially dropped)
-        bool notHidden = ctx.conf().styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden) ?
-                             (staffIdx1 <= staffIdx2) :
-                             (staffIdx1 < staffIdx2) || (b->span() == 1 && staffIdx1 == staffIdx2);
-        if (notHidden) { // set vert. pos. and height to visible spanned staves
-            sy = system->staves().at(staffIdx1)->bbox().top();
-            ey = system->staves().at(staffIdx2)->bbox().bottom();
+        bool not_hidden = ctx.conf().style_b(Sid::ALWAYS_SHOW_BRACKETS_WHEN_EMPTY_STAVES_ARE_HIDDEN) ?
+                              (staff_idx1 <= staff_idx2) :
+                              (staff_idx1 < staff_idx2) || (b->span() == 1 && staff_idx1 == staff_idx2);
+        if (not_hidden) { // set vert. pos. and height to visible spanned staves
+            sy = system->staves().at(staff_idx1)->bbox().top();
+            ey = system->staves().at(staff_idx2)->bbox().bottom();
         }
 
         Bracket::LayoutData *bldata = b->mutldata();
-        bldata->setPosY(sy);
-        bldata->bracketHeight = ey - sy;
-        TLayout::layoutBracket(b, bldata, ctx.conf());
+        bldata->set_pos_y(sy);
+        bldata->bracket_height = ey - sy;
+        TLayout::layout_bracket(b, bldata, ctx.conf());
     }
 }
 
-bool SystemHeaderLayout::stackLabelsVertically(System *system) {
+bool SystemHeaderLayout::stack_labels_vertically(System *system) {
     const MStyle &style = system->style();
     // Ignore long/short overrides
-    bool longName = system->ldata()->useLongNames();
+    bool long_name = system->ldata()->use_long_names();
     InstrumentNamesAlign align =
-        style.styleV(longName ? Sid::instrumentNamesAlignLong : Sid::instrumentNamesAlignShort).value<InstrumentNamesAlign>();
+        style.style_v(long_name ? Sid::INSTRUMENT_NAMES_ALIGN_LONG : Sid::INSTRUMENT_NAMES_ALIGN_SHORT).value<InstrumentNamesAlign>();
     return align == InstrumentNamesAlign::CENTER_CENTER ||
-           (align == InstrumentNamesAlign::RIGHT_RIGHT && style.styleB(Sid::instrumentNamesStackVertically));
+           (align == InstrumentNamesAlign::RIGHT_RIGHT && style.style_b(Sid::INSTRUMENT_NAMES_STACK_VERTICALLY));
 }
 
-void SystemHeaderLayout::computeInstrumentNameOffset(System *system, LayoutContext &ctx) {
+void SystemHeaderLayout::compute_instrument_name_offset(System *system, LayoutContext &ctx) {
     // Get standard instrument name distance
-    double instrumentNameOffset = ctx.conf().styleAbsolute(Sid::instrumentNameOffset);
+    double instrument_name_offset = ctx.conf().style_absolute(Sid::INSTRUMENT_NAME_OFFSET);
     // Now scale it depending on the text size (which also may not follow staff scaling)
-    double textSizeScaling = 1.0;
-    double actualSize = 0.0;
-    double defaultSize = 0.0;
-    bool followStaffSize = true;
-    if (ctx.state().startWithLongNames()) {
-        actualSize = ctx.conf().styleD(Sid::longInstrumentFontSize);
-        defaultSize = DefaultStyle::defaultStyle().value(Sid::longInstrumentFontSize).toDouble();
-        followStaffSize = ctx.conf().styleB(Sid::longInstrumentFontSpatiumDependent);
+    double text_size_scaling = 1.0;
+    double actual_size = 0.0;
+    double default_size = 0.0;
+    bool follow_staff_size = true;
+    if (ctx.state().start_with_long_names()) {
+        actual_size = ctx.conf().style_d(Sid::LONG_INSTRUMENT_FONT_SIZE);
+        default_size = DefaultStyle::default_style().value(Sid::LONG_INSTRUMENT_FONT_SIZE).to_double();
+        follow_staff_size = ctx.conf().style_b(Sid::LONG_INSTRUMENT_FONT_SPATIUM_DEPENDENT);
     } else {
-        actualSize = ctx.conf().styleD(Sid::shortInstrumentFontSize);
-        defaultSize = DefaultStyle::defaultStyle().value(Sid::shortInstrumentFontSize).toDouble();
-        followStaffSize = ctx.conf().styleB(Sid::shortInstrumentFontSpatiumDependent);
+        actual_size = ctx.conf().style_d(Sid::SHORT_INSTRUMENT_FONT_SIZE);
+        default_size = DefaultStyle::default_style().value(Sid::SHORT_INSTRUMENT_FONT_SIZE).to_double();
+        follow_staff_size = ctx.conf().style_b(Sid::SHORT_INSTRUMENT_FONT_SPATIUM_DEPENDENT);
     }
-    textSizeScaling = actualSize / defaultSize;
-    if (!followStaffSize) {
-        textSizeScaling *= DefaultStyle::defaultStyle().value(Sid::spatium).toDouble() / ctx.conf().styleD(Sid::spatium);
+    text_size_scaling = actual_size / default_size;
+    if (!follow_staff_size) {
+        text_size_scaling *= DefaultStyle::default_style().value(Sid::SPATIUM).to_double() / ctx.conf().style_d(Sid::SPATIUM);
     }
-    textSizeScaling = std::max(textSizeScaling, 1.0);
-    instrumentNameOffset *= textSizeScaling;
+    text_size_scaling = std::max(text_size_scaling, 1.0);
+    instrument_name_offset *= text_size_scaling;
 
-    system->mutldata()->setInstrumentNameOffset(instrumentNameOffset);
+    system->mutldata()->set_instrument_name_offset(instrument_name_offset);
 }
 
-void SystemHeaderLayout::computeGroupBracketsWidths(System *system, LayoutContext &ctx) {
+void SystemHeaderLayout::compute_group_brackets_widths(System *system, LayoutContext &ctx) {
     System::LayoutData *ldata = system->mutldata();
-    ldata->clearGroupBracketsWidth();
+    ldata->clear_group_brackets_width();
 
-    std::vector<Bracket *> groupBrackets;
+    std::vector<Bracket *> group_brackets;
     for (Bracket *bracket : system->brackets()) {
-        if (bracket->bracketType() == BracketType::GROUP) {
-            groupBrackets.push_back(bracket);
+        if (bracket->bracket_type() == BracketType::GROUP) {
+            group_brackets.push_back(bracket);
         }
     }
 
-    if (groupBrackets.empty()) {
+    if (group_brackets.empty()) {
         return;
     }
 
-    std::sort(groupBrackets.begin(), groupBrackets.end(), [](Bracket *b1, Bracket *b2) { return b1->column() < b2->column(); });
+    std::sort(group_brackets.begin(), group_brackets.end(), [](Bracket *b1, Bracket *b2) { return b1->column() < b2->column(); });
 
-    bool hangIntoMargin = ctx.conf().styleB(Sid::groupBracketHangTextIntoMargin) &&
-                          ctx.conf().styleV(Sid::groupBracketTextOrientation).value<Orientation>() == Orientation::VERTICAL;
-    double bracketDistToNames = ctx.conf().styleAbsolute(Sid::groupBracketDistanceToNames);
+    bool hang_into_margin = ctx.conf().style_b(Sid::GROUP_BRACKET_HANG_TEXT_INTO_MARGIN) &&
+                            ctx.conf().style_v(Sid::GROUP_BRACKET_TEXT_ORIENTATION).value<Orientation>() == Orientation::VERTICAL;
+    double bracket_dist_to_names = ctx.conf().style_absolute(Sid::GROUP_BRACKET_DISTANCE_TO_NAMES);
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        Bracket *firstBracketOnThisStaff = nullptr;
-        for (Bracket *b : groupBrackets) {
-            if (b->contains(staffIdx)) {
-                firstBracketOnThisStaff = b;
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        Bracket *first_bracket_on_this_staff = nullptr;
+        for (Bracket *b : group_brackets) {
+            if (b->contains(staff_idx)) {
+                first_bracket_on_this_staff = b;
                 break;
             }
         }
 
-        if (!firstBracketOnThisStaff) {
+        if (!first_bracket_on_this_staff) {
             continue;
         }
 
         std::vector<Bracket *> stack;
-        double bracketWidth = 0.0;
-        computeStackedBracketsWidth(firstBracketOnThisStaff, groupBrackets, bracketWidth, stack);
-        if (hangIntoMargin) {
-            bracketWidth += stack.back()->ldata()->bbox().left();
+        double bracket_width = 0.0;
+        compute_stacked_brackets_width(first_bracket_on_this_staff, group_brackets, bracket_width, stack);
+        if (hang_into_margin) {
+            bracket_width += stack.back()->ldata()->bbox().left();
         }
 
-        ldata->setGroupBracketsWidthAtStaffIdx(staffIdx, bracketWidth + bracketDistToNames);
+        ldata->set_group_brackets_width_at_staff_idx(staff_idx, bracket_width + bracket_dist_to_names);
     }
 
-    if (!ctx.conf().styleB(Sid::instrumentNamesAlignIncludeGroupBrackets)) {
-        double maxGroupBracketWidth = 0.0;
-        for (const auto &pair : ldata->groupBracketsWidth()) {
-            maxGroupBracketWidth = std::max(maxGroupBracketWidth, pair.second);
+    if (!ctx.conf().style_b(Sid::INSTRUMENT_NAMES_ALIGN_INCLUDE_GROUP_BRACKETS)) {
+        double max_group_bracket_width = 0.0;
+        for (const auto &pair : ldata->group_brackets_width()) {
+            max_group_bracket_width = std::max(max_group_bracket_width, pair.second);
         }
-        for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-            ldata->setGroupBracketsWidthAtStaffIdx(staffIdx, maxGroupBracketWidth);
+        for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+            ldata->set_group_brackets_width_at_staff_idx(staff_idx, max_group_bracket_width);
         }
     }
 }
 
-void SystemHeaderLayout::computeStackedBracketsWidth(Bracket *first, const std::vector<Bracket *> &allGroupBracketsOrderedByColumn,
-                                                     double &width, std::vector<Bracket *> &stack) {
+void SystemHeaderLayout::compute_stacked_brackets_width(Bracket *first, const std::vector<Bracket *> &all_group_brackets_ordered_by_column,
+                                                        double &width, std::vector<Bracket *> &stack) {
     stack.push_back(first);
 
     width += first->ldata()->bbox().width();
-    double bracketDist = first->style().styleAbsolute(Sid::groupBracketDistanceToGroupBracket);
+    double bracket_dist = first->style().style_absolute(Sid::GROUP_BRACKET_DISTANCE_TO_GROUP_BRACKET);
 
-    for (Bracket *b2 : allGroupBracketsOrderedByColumn) {
+    for (Bracket *b2 : all_group_brackets_ordered_by_column) {
         if (muse::contains(stack, b2)) {
             continue;
         }
         if (b2->column() > first->column() && b2->intersects(first)) {
             stack.push_back(b2);
-            computeStackedBracketsWidth(b2, allGroupBracketsOrderedByColumn, width, stack);
-            width += bracketDist;
+            compute_stacked_brackets_width(b2, all_group_brackets_ordered_by_column, width, stack);
+            width += bracket_dist;
         }
     }
 }
 
-double SystemHeaderLayout::nameWidthIncludingGroupBrackets(InstrumentName *name, System *system) {
+double SystemHeaderLayout::name_width_including_group_brackets(InstrumentName *name, System *system) {
     const System::LayoutData *ldata = system->ldata();
-    double groupBracketsWidth = ldata->groupBracketsWidthAtStaffIdx(name->effectiveStaffIdx());
+    double group_brackets_width = ldata->group_brackets_width_at_staff_idx(name->effective_staff_idx());
     double result = name->width();
-    if (!muse::RealIsNull(groupBracketsWidth)) {
-        result += groupBracketsWidth;
+    if (!muse::real_is_null(group_brackets_width)) {
+        result += group_brackets_width;
     }
     return result;
 }
 
-void SystemHeaderLayout::computeInstrumentNamesWidth(System *system, LayoutContext &ctx) {
-    computeGroupBracketsWidths(system, ctx);
+void SystemHeaderLayout::compute_instrument_names_width(System *system, LayoutContext &ctx) {
+    compute_group_brackets_widths(system, ctx);
 
     System::LayoutData *ldata = system->mutldata();
-    ldata->setFirstColumnWidth(0.0);
-    ldata->setSecondColumnWidth(0.0);
-    ldata->setTotalNamesWidth(0.0);
+    ldata->set_first_column_width(0.0);
+    ldata->set_second_column_width(0.0);
+    ldata->set_total_names_width(0.0);
 
-    std::unordered_set<Part *> partsWithIndividualStaffNames;
-    std::unordered_set<Part *> partsWithGroupNames;
+    std::unordered_set<Part *> parts_with_individual_staff_names;
+    std::unordered_set<Part *> parts_with_group_names;
 
-    std::vector<InstrumentName *> groupNames;
-    std::vector<InstrumentName *> instrumentNames;
-    std::vector<InstrumentName *> sharedStaveNames;
+    std::vector<InstrumentName *> group_names;
+    std::vector<InstrumentName *> instrument_names;
+    std::vector<InstrumentName *> shared_stave_names;
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        const SysStaff *sysStaff = system->staff(staffIdx);
-        const Staff *staff = ctx.dom().staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        const SysStaff *sys_staff = system->staff(staff_idx);
+        const Staff *staff = ctx.dom().staff(staff_idx);
 
-        if (InstrumentName *groupName = sysStaff->name(InstrumentNameRole::GROUP)) {
-            if (groupName->instrumentNameType() == InstrumentNameType::LONG && groupName->effectiveStaffIdx() == muse::nidx) {
+        if (InstrumentName *group_name = sys_staff->name(InstrumentNameRole::GROUP)) {
+            if (group_name->instrument_name_type() == InstrumentNameType::LONG && group_name->effective_staff_idx() == muse::nidx) {
                 // NOTE: We can only do this for long-name systems because they don't need to have
                 // the left barline aligned with the other systems across the page.
-                groupName->mutldata()->setIsSkipDraw(true);
+                group_name->mutldata()->set_is_skip_draw(true);
                 continue;
             }
-            groupName->mutldata()->setIsSkipDraw(false);
+            group_name->mutldata()->set_is_skip_draw(false);
 
-            groupNames.push_back(groupName);
-            groupName->mutldata()->setColumn(1);
-            for (staff_idx_t groupIdx = groupName->staffIdx(); groupIdx < groupName->ldata()->endIdxOfGroup(); ++groupIdx) {
-                partsWithGroupNames.insert(ctx.dom().staff(groupIdx)->part());
+            group_names.push_back(group_name);
+            group_name->mutldata()->set_column(1);
+            for (staff_idx_t group_idx = group_name->staff_idx(); group_idx < group_name->ldata()->end_idx_of_group(); ++group_idx) {
+                parts_with_group_names.insert(ctx.dom().staff(group_idx)->part());
             }
-            ldata->setSecondColumnWidth(std::max(ldata->secondColumnWidth(), nameWidthIncludingGroupBrackets(groupName, system)));
-            ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), nameWidthIncludingGroupBrackets(groupName, system)));
+            ldata->set_second_column_width(std::max(ldata->second_column_width(), name_width_including_group_brackets(group_name, system)));
+            ldata->set_total_names_width(std::max(ldata->total_names_width(), name_width_including_group_brackets(group_name, system)));
         }
 
         if (!staff->show()) {
@@ -489,308 +490,310 @@ void SystemHeaderLayout::computeInstrumentNamesWidth(System *system, LayoutConte
             continue;
         }
 
-        if (InstrumentName *name = sysStaff->name(InstrumentNameRole::STAFF)) {
-            if (name->instrumentNameType() == InstrumentNameType::LONG && !sysStaff->show()) {
+        if (InstrumentName *name = sys_staff->name(InstrumentNameRole::STAFF)) {
+            if (name->instrument_name_type() == InstrumentNameType::LONG && !sys_staff->show()) {
                 // NOTE: We can only do this for long-name systems because they don't need to have
                 // the left barline aligned with the other systems across the page.
-                name->mutldata()->setIsSkipDraw(true);
+                name->mutldata()->set_is_skip_draw(true);
                 continue;
             }
-            name->mutldata()->setIsSkipDraw(false);
+            name->mutldata()->set_is_skip_draw(false);
 
-            name->mutldata()->setColumn(0);
-            partsWithIndividualStaffNames.insert(ctx.dom().staff(staffIdx)->part());
-            ldata->setFirstColumnWidth(std::max(ldata->firstColumnWidth(), name->width()));
-            ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), nameWidthIncludingGroupBrackets(name, system)));
+            name->mutldata()->set_column(0);
+            parts_with_individual_staff_names.insert(ctx.dom().staff(staff_idx)->part());
+            ldata->set_first_column_width(std::max(ldata->first_column_width(), name->width()));
+            ldata->set_total_names_width(std::max(ldata->total_names_width(), name_width_including_group_brackets(name, system)));
         }
     }
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        const SysStaff *sysStaff = system->staff(staffIdx);
-        const Staff *staff = ctx.dom().staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        const SysStaff *sys_staff = system->staff(staff_idx);
+        const Staff *staff = ctx.dom().staff(staff_idx);
         Part *part = staff->part();
 
-        if (!part->show() || part->visibleStavesCount() == 0) {
+        if (!part->show() || part->visible_staves_count() == 0) {
             // We know that the part is hidden in the entire score so safe to skip
             continue;
         }
 
-        InstrumentName *instrName = sysStaff->name(InstrumentNameRole::PART);
-        if (!instrName) {
-            instrName = sysStaff->name(InstrumentNameRole::SHARED_STAFF);
+        InstrumentName *instr_name = sys_staff->name(InstrumentNameRole::PART);
+        if (!instr_name) {
+            instr_name = sys_staff->name(InstrumentNameRole::SHARED_STAFF);
         }
-        if (!instrName) {
+        if (!instr_name) {
             continue;
         }
 
-        if (instrName->instrumentNameType() == InstrumentNameType::LONG && instrName->effectiveStaffIdx() == muse::nidx) {
+        if (instr_name->instrument_name_type() == InstrumentNameType::LONG && instr_name->effective_staff_idx() == muse::nidx) {
             // NOTE: We can only do this for long-name systems because they don't need to have
             // the left barline aligned with the other systems across the page.
-            instrName->mutldata()->setIsSkipDraw(true);
+            instr_name->mutldata()->set_is_skip_draw(true);
             continue;
         }
-        instrName->mutldata()->setIsSkipDraw(false);
+        instr_name->mutldata()->set_is_skip_draw(false);
 
-        if (instrName->instrumentNameRole() == InstrumentNameRole::PART) {
-            instrumentNames.push_back(instrName);
+        if (instr_name->instrument_name_role() == InstrumentNameRole::PART) {
+            instrument_names.push_back(instr_name);
         } else {
-            sharedStaveNames.push_back(instrName);
+            shared_stave_names.push_back(instr_name);
         }
 
-        ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), nameWidthIncludingGroupBrackets(instrName, system)));
+        ldata->set_total_names_width(std::max(ldata->total_names_width(), name_width_including_group_brackets(instr_name, system)));
 
-        if (partsWithGroupNames.count(part)) {
-            instrName->mutldata()->setColumn(0);
-            ldata->setFirstColumnWidth(std::max(ldata->firstColumnWidth(), instrName->width()));
+        if (parts_with_group_names.count(part)) {
+            instr_name->mutldata()->set_column(0);
+            ldata->set_first_column_width(std::max(ldata->first_column_width(), instr_name->width()));
         } else {
-            instrName->mutldata()->setColumn(1);
-            ldata->setSecondColumnWidth(std::max(ldata->secondColumnWidth(), nameWidthIncludingGroupBrackets(instrName, system)));
+            instr_name->mutldata()->set_column(1);
+            ldata->set_second_column_width(std::max(ldata->second_column_width(), name_width_including_group_brackets(instr_name, system)));
         }
     }
 
-    auto sumWidth = [&](InstrumentName *outerName, InstrumentName *innerName) {
-        AlignH staffNameAlign = innerName->position();
-        if (staffNameAlign == AlignH::LEFT || staffNameAlign == AlignH::JUSTIFY) {
-            return ldata->firstColumnWidth() + nameWidthIncludingGroupBrackets(outerName, system) + ldata->instrumentNameOffset();
-        } else if (staffNameAlign == AlignH::HCENTER) {
-            double sumWidth = innerName->width() + nameWidthIncludingGroupBrackets(outerName, system) + ldata->instrumentNameOffset();
-            double move = 0.5 * (ldata->firstColumnWidth() - innerName->width());
-            return sumWidth + move;
+    auto sum_width = [&](InstrumentName *outer_name, InstrumentName *inner_name) {
+        AlignH staff_name_align = inner_name->position();
+        if (staff_name_align == AlignH::LEFT || staff_name_align == AlignH::JUSTIFY) {
+            return ldata->first_column_width() + name_width_including_group_brackets(outer_name, system) + ldata->instrument_name_offset();
+        } else if (staff_name_align == AlignH::HCENTER) {
+            double sum_width =
+                inner_name->width() + name_width_including_group_brackets(outer_name, system) + ldata->instrument_name_offset();
+            double move = 0.5 * (ldata->first_column_width() - inner_name->width());
+            return sum_width + move;
         } else {
-            return innerName->width() + ldata->instrumentNameOffset() + nameWidthIncludingGroupBrackets(outerName, system);
+            return inner_name->width() + ldata->instrument_name_offset() + name_width_including_group_brackets(outer_name, system);
         }
     };
 
-    for (InstrumentName *sharedStaffName : sharedStaveNames) {
-        if (sharedStaffName->ldata()->column() == 0) {
+    for (InstrumentName *shared_staff_name : shared_stave_names) {
+        if (shared_staff_name->ldata()->column() == 0) {
             continue;
         }
-        Part *part = ctx.dom().staff(sharedStaffName->staffIdx())->part();
-        for (staff_idx_t idx : part->staveIdxList()) {
-            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->isSkipDraw()) {
-                ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), sumWidth(sharedStaffName, n)));
+        Part *part = ctx.dom().staff(shared_staff_name->staff_idx())->part();
+        for (staff_idx_t idx : part->stave_idx_list()) {
+            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->is_skip_draw()) {
+                ldata->set_total_names_width(std::max(ldata->total_names_width(), sum_width(shared_staff_name, n)));
             }
         }
     }
 
-    if (stackLabelsVertically(system)) {
+    if (stack_labels_vertically(system)) {
         return;
     }
 
-    for (InstrumentName *groupName : groupNames) {
-        staff_idx_t startStaff = groupName->staffIdx();
-        staff_idx_t endStaff = groupName->ldata()->endIdxOfGroup();
-        if (groupName->instrumentNameType() == InstrumentNameType::LONG &&
-            system->visiblePartsOfGroup(startStaff, endStaff).size() % 2 == 0) {
+    for (InstrumentName *group_name : group_names) {
+        staff_idx_t start_staff = group_name->staff_idx();
+        staff_idx_t end_staff = group_name->ldata()->end_idx_of_group();
+        if (group_name->instrument_name_type() == InstrumentNameType::LONG &&
+            system->visible_parts_of_group(start_staff, end_staff).size() % 2 == 0) {
             continue;
         }
-        for (staff_idx_t idx = startStaff; idx < endStaff; ++idx) {
-            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->isSkipDraw()) {
-                ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), sumWidth(groupName, n)));
+        for (staff_idx_t idx = start_staff; idx < end_staff; ++idx) {
+            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->is_skip_draw()) {
+                ldata->set_total_names_width(std::max(ldata->total_names_width(), sum_width(group_name, n)));
             }
-            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::PART); n && !n->ldata()->isSkipDraw()) {
-                ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), sumWidth(groupName, n)));
+            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::PART); n && !n->ldata()->is_skip_draw()) {
+                ldata->set_total_names_width(std::max(ldata->total_names_width(), sum_width(group_name, n)));
             }
         }
     }
 
-    for (InstrumentName *instrName : instrumentNames) {
-        if (instrName->ldata()->column() == 0) {
+    for (InstrumentName *instr_name : instrument_names) {
+        if (instr_name->ldata()->column() == 0) {
             continue;
         }
-        Part *part = ctx.dom().staff(instrName->staffIdx())->part();
-        if (instrName->instrumentNameType() == InstrumentNameType::LONG && system->visibleStavesOfPart(part).size() % 2 == 0) {
+        Part *part = ctx.dom().staff(instr_name->staff_idx())->part();
+        if (instr_name->instrument_name_type() == InstrumentNameType::LONG && system->visible_staves_of_part(part).size() % 2 == 0) {
             continue;
         }
-        for (staff_idx_t idx : part->staveIdxList()) {
-            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->isSkipDraw()) {
-                ldata->setTotalNamesWidth(std::max(ldata->totalNamesWidth(), sumWidth(instrName, n)));
+        for (staff_idx_t idx : part->stave_idx_list()) {
+            if (InstrumentName *n = system->staff(idx)->name(InstrumentNameRole::STAFF); n && !n->ldata()->is_skip_draw()) {
+                ldata->set_total_names_width(std::max(ldata->total_names_width(), sum_width(instr_name, n)));
             }
         }
     }
 }
 
-void SystemHeaderLayout::setInstrumentNamesVerticalPos(System *system, LayoutContext &ctx) {
-    std::set<const Part *> partsWithIndividualStaffNames;
+void SystemHeaderLayout::set_instrument_names_vertical_pos(System *system, LayoutContext &ctx) {
+    std::set<const Part *> parts_with_individual_staff_names;
 
-    for (staff_idx_t staffIdx = 0; staffIdx < ctx.dom().nstaves(); ++staffIdx) {
-        SysStaff *s = system->staff(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < ctx.dom().nstaves(); ++staff_idx) {
+        SysStaff *s = system->staff(staff_idx);
         for (InstrumentNameRole role : {InstrumentNameRole::STAFF, InstrumentNameRole::SHARED_STAFF}) {
-            if (InstrumentName *individualName = s->name(role)) {
-                const RectF &staffBBox = s->bbox();
-                const RectF &nameBBox = individualName->ldata()->bbox();
-                individualName->mutldata()->setPosY(0.5 * (staffBBox.top() + staffBBox.bottom() - nameBBox.bottom() - nameBBox.top()));
-                partsWithIndividualStaffNames.insert(ctx.dom().staff(staffIdx)->part());
+            if (InstrumentName *individual_name = s->name(role)) {
+                const RectF &staff_b_box = s->bbox();
+                const RectF &name_b_box = individual_name->ldata()->bbox();
+                individual_name->mutldata()->set_pos_y(0.5 *
+                                                       (staff_b_box.top() + staff_b_box.bottom() - name_b_box.bottom() - name_b_box.top()));
+                parts_with_individual_staff_names.insert(ctx.dom().staff(staff_idx)->part());
             }
         }
     }
 
-    bool stackVertically = stackLabelsVertically(system);
+    bool stack_vertically = stack_labels_vertically(system);
 
-    staff_idx_t staffIdx = 0;
+    staff_idx_t staff_idx = 0;
     for (const Part *p : ctx.dom().parts()) {
         size_t nstaves = p->nstaves();
 
-        SysStaff *s = system->staff(staffIdx);
+        SysStaff *s = system->staff(staff_idx);
 
         InstrumentName *t = s->name(InstrumentNameRole::PART);
-        if (!t || t->effectiveStaffIdx() == muse::nidx) {
-            staffIdx += nstaves;
+        if (!t || t->effective_staff_idx() == muse::nidx) {
+            staff_idx += nstaves;
             continue;
         }
 
         const RectF &bbox = t->ldata()->bbox();
-        double yCenter = 0.5 * (bbox.bottom() + bbox.top());
+        double y_center = 0.5 * (bbox.bottom() + bbox.top());
 
-        std::vector<staff_idx_t> visibleStavesOfPart = system->visibleStavesOfPart(p);
-        size_t visibleStavesCount = visibleStavesOfPart.size();
-        DO_ASSERT(visibleStavesCount > 0);
+        std::vector<staff_idx_t> visible_staves_of_part = system->visible_staves_of_part(p);
+        size_t visible_staves_count = visible_staves_of_part.size();
+        DO_ASSERT(visible_staves_count > 0);
 
         double y1 = 0;
         double y2 = 0;
 
-        if (!muse::contains(partsWithIndividualStaffNames, p)) {
-            SysStaff *topSt = system->staff(visibleStavesOfPart.front());
-            SysStaff *bottomSt = system->staff(visibleStavesOfPart.back());
-            y1 = topSt->bbox().top();
-            y2 = bottomSt->bbox().bottom();
-            t->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+        if (!muse::contains(parts_with_individual_staff_names, p)) {
+            SysStaff *top_st = system->staff(visible_staves_of_part.front());
+            SysStaff *bottom_st = system->staff(visible_staves_of_part.back());
+            y1 = top_st->bbox().top();
+            y2 = bottom_st->bbox().bottom();
+            t->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
 
-            staffIdx += nstaves;
+            staff_idx += nstaves;
             continue;
         }
 
-        if (visibleStavesCount % 2 == 0) {
-            SysStaff *staffAboveMid = system->staff(visibleStavesOfPart[visibleStavesCount / 2 - 1]);
-            SysStaff *staffBelowMid = system->staff(visibleStavesOfPart[visibleStavesCount / 2]);
-            y1 = staffAboveMid->bbox().top();
-            y2 = staffBelowMid->bbox().bottom();
-            t->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+        if (visible_staves_count % 2 == 0) {
+            SysStaff *staff_above_mid = system->staff(visible_staves_of_part[visible_staves_count / 2 - 1]);
+            SysStaff *staff_below_mid = system->staff(visible_staves_of_part[visible_staves_count / 2]);
+            y1 = staff_above_mid->bbox().top();
+            y2 = staff_below_mid->bbox().bottom();
+            t->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
 
-            staffIdx += nstaves;
+            staff_idx += nstaves;
             continue;
         }
 
-        SysStaff *midStaff = system->staff(visibleStavesOfPart[visibleStavesCount / 2]);
-        y1 = midStaff->bbox().top();
-        y2 = midStaff->bbox().bottom();
-        if (InstrumentName *staffName = midStaff->name(InstrumentNameRole::STAFF)) {
-            if (stackVertically || t->ldata()->column() == 0) {
-                double lineSpacing = t->lineSpacing();
-                double instrNameBottom = t->ldata()->blocks.back().y();
-                double centerY = 0.5 * (midStaff->bbox().top() + midStaff->bbox().bottom());
-                t->mutldata()->setPosY(centerY - instrNameBottom - 0.25 * lineSpacing);
-                double staffNameTop = staffName->ldata()->blocks.front().y();
-                staffName->mutldata()->setPosY(centerY - staffNameTop + 0.75 * lineSpacing);
-            } else if (staffName->ldata()->rows() == 1 && t->ldata()->rows() == 1) {
-                t->mutldata()->setPosY(staffName->y());
+        SysStaff *mid_staff = system->staff(visible_staves_of_part[visible_staves_count / 2]);
+        y1 = mid_staff->bbox().top();
+        y2 = mid_staff->bbox().bottom();
+        if (InstrumentName *staff_name = mid_staff->name(InstrumentNameRole::STAFF)) {
+            if (stack_vertically || t->ldata()->column() == 0) {
+                double line_spacing = t->line_spacing();
+                double instr_name_bottom = t->ldata()->blocks.back().y();
+                double center_y = 0.5 * (mid_staff->bbox().top() + mid_staff->bbox().bottom());
+                t->mutldata()->set_pos_y(center_y - instr_name_bottom - 0.25 * line_spacing);
+                double staff_name_top = staff_name->ldata()->blocks.front().y();
+                staff_name->mutldata()->set_pos_y(center_y - staff_name_top + 0.75 * line_spacing);
+            } else if (staff_name->ldata()->rows() == 1 && t->ldata()->rows() == 1) {
+                t->mutldata()->set_pos_y(staff_name->y());
             } else {
-                t->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+                t->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
             }
         }
 
-        staffIdx += nstaves;
+        staff_idx += nstaves;
     }
 
     for (staff_idx_t idx = 0; idx < system->staves().size(); ++idx) {
-        InstrumentName *groupName = system->staff(idx)->name(InstrumentNameRole::GROUP);
-        if (!groupName || groupName->effectiveStaffIdx() == muse::nidx) {
+        InstrumentName *group_name = system->staff(idx)->name(InstrumentNameRole::GROUP);
+        if (!group_name || group_name->effective_staff_idx() == muse::nidx) {
             continue;
         }
 
-        const RectF &bbox = groupName->ldata()->bbox();
-        double yCenter = 0.5 * (bbox.bottom() + bbox.top());
+        const RectF &bbox = group_name->ldata()->bbox();
+        double y_center = 0.5 * (bbox.bottom() + bbox.top());
 
-        std::vector<Part *> visibleParts = system->visiblePartsOfGroup(idx, groupName->ldata()->endIdxOfGroup());
-        size_t visiblePartsCount = visibleParts.size();
-        DO_ASSERT(visiblePartsCount > 0);
+        std::vector<Part *> visible_parts = system->visible_parts_of_group(idx, group_name->ldata()->end_idx_of_group());
+        size_t visible_parts_count = visible_parts.size();
+        DO_ASSERT(visible_parts_count > 0);
 
         double y1 = 0;
         double y2 = 0;
 
-        if (visiblePartsCount % 2 == 0) {
-            Part *partAboveMid = visibleParts[visiblePartsCount / 2 - 1];
-            staff_idx_t staffIdxAboveMid = system->lastVisibleSysStaffOfPart(partAboveMid);
-            DO_ASSERT(staffIdxAboveMid != muse::nidx);
-            SysStaff *staffAboveMid = system->staff(staffIdxAboveMid);
+        if (visible_parts_count % 2 == 0) {
+            Part *part_above_mid = visible_parts[visible_parts_count / 2 - 1];
+            staff_idx_t staff_idx_above_mid = system->last_visible_sys_staff_of_part(part_above_mid);
+            DO_ASSERT(staff_idx_above_mid != muse::nidx);
+            SysStaff *staff_above_mid = system->staff(staff_idx_above_mid);
 
-            Part *partBelowMid = visibleParts[visiblePartsCount / 2];
-            staff_idx_t staffIdxBelowMid = system->firstVisibleSysStaffOfPart(partBelowMid);
-            DO_ASSERT(staffIdxBelowMid != muse::nidx);
-            SysStaff *staffBelowMid = system->staff(staffIdxBelowMid);
+            Part *part_below_mid = visible_parts[visible_parts_count / 2];
+            staff_idx_t staff_idx_below_mid = system->first_visible_sys_staff_of_part(part_below_mid);
+            DO_ASSERT(staff_idx_below_mid != muse::nidx);
+            SysStaff *staff_below_mid = system->staff(staff_idx_below_mid);
 
-            y1 = staffAboveMid->bbox().top();
-            y2 = staffBelowMid->bbox().bottom();
-            groupName->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+            y1 = staff_above_mid->bbox().top();
+            y2 = staff_below_mid->bbox().bottom();
+            group_name->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
 
             continue;
         }
 
-        Part *midPart = visibleParts[visiblePartsCount / 2];
-        InstrumentName *instrName = system->staff(*midPart->staveIdxList().begin())->name(InstrumentNameRole::PART);
-        std::vector<staff_idx_t> visibleStaves = system->visibleStavesOfPart(midPart);
-        size_t visibleStavesCount = visibleStaves.size();
+        Part *mid_part = visible_parts[visible_parts_count / 2];
+        InstrumentName *instr_name = system->staff(*mid_part->stave_idx_list().begin())->name(InstrumentNameRole::PART);
+        std::vector<staff_idx_t> visible_staves = system->visible_staves_of_part(mid_part);
+        size_t visible_staves_count = visible_staves.size();
 
-        if (visibleStavesCount % 2) {
-            SysStaff *midStaff = system->staff(visibleStaves[visibleStavesCount / 2]);
-            y1 = midStaff->bbox().top();
-            y2 = midStaff->bbox().bottom();
+        if (visible_staves_count % 2) {
+            SysStaff *mid_staff = system->staff(visible_staves[visible_staves_count / 2]);
+            y1 = mid_staff->bbox().top();
+            y2 = mid_staff->bbox().bottom();
         } else {
-            SysStaff *staffAboveMid = system->staff(visibleStaves[visibleStavesCount / 2 - 1]);
-            SysStaff *staffBelowMid = system->staff(visibleStaves[visibleStavesCount / 2]);
-            y1 = staffAboveMid->bbox().top();
-            y2 = staffBelowMid->bbox().bottom();
+            SysStaff *staff_above_mid = system->staff(visible_staves[visible_staves_count / 2 - 1]);
+            SysStaff *staff_below_mid = system->staff(visible_staves[visible_staves_count / 2]);
+            y1 = staff_above_mid->bbox().top();
+            y2 = staff_below_mid->bbox().bottom();
         }
 
-        if (instrName) {
-            if (stackVertically) {
-                double lineSpacing = groupName->lineSpacing();
-                double groupNameBottom = groupName->ldata()->blocks.back().y();
-                if (visibleStavesCount % 2 && system->staff(visibleStaves[visibleStavesCount / 2])->name(InstrumentNameRole::STAFF)) {
-                    groupName->mutldata()->setPosY(instrName->y() - groupNameBottom - lineSpacing);
+        if (instr_name) {
+            if (stack_vertically) {
+                double line_spacing = group_name->line_spacing();
+                double group_name_bottom = group_name->ldata()->blocks.back().y();
+                if (visible_staves_count % 2 && system->staff(visible_staves[visible_staves_count / 2])->name(InstrumentNameRole::STAFF)) {
+                    group_name->mutldata()->set_pos_y(instr_name->y() - group_name_bottom - line_spacing);
                 } else {
-                    double centerY = 0.5 * (y1 + y2);
-                    groupName->mutldata()->setPosY(centerY - groupNameBottom - 0.25 * lineSpacing);
-                    double instrNameTop = instrName->ldata()->blocks.front().y();
-                    instrName->mutldata()->setPosY(centerY - instrNameTop + 0.75 * lineSpacing);
+                    double center_y = 0.5 * (y1 + y2);
+                    group_name->mutldata()->set_pos_y(center_y - group_name_bottom - 0.25 * line_spacing);
+                    double instr_name_top = instr_name->ldata()->blocks.front().y();
+                    instr_name->mutldata()->set_pos_y(center_y - instr_name_top + 0.75 * line_spacing);
                 }
-            } else if (instrName->ldata()->rows() == 1 && groupName->ldata()->rows() == 1) {
-                groupName->mutldata()->setPosY(instrName->y());
+            } else if (instr_name->ldata()->rows() == 1 && group_name->ldata()->rows() == 1) {
+                group_name->mutldata()->set_pos_y(instr_name->y());
             } else {
-                groupName->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+                group_name->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
             }
 
             continue;
         }
 
-        if (visibleStavesCount % 2 == 0) {
-            groupName->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+        if (visible_staves_count % 2 == 0) {
+            group_name->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
             continue;
         }
 
-        SysStaff *midStaff = system->staff(visibleStaves[visibleStavesCount / 2]);
-        InstrumentName *staffName = midStaff->name(InstrumentNameRole::STAFF);
-        if (!staffName) {
-            groupName->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+        SysStaff *mid_staff = system->staff(visible_staves[visible_staves_count / 2]);
+        InstrumentName *staff_name = mid_staff->name(InstrumentNameRole::STAFF);
+        if (!staff_name) {
+            group_name->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
             continue;
         }
 
-        if (stackVertically) {
-            double lineSpacing = groupName->lineSpacing();
-            double groupNameBottom = groupName->ldata()->blocks.back().y();
-            double centerY = 0.5 * (y1 + y2);
-            groupName->mutldata()->setPosY(centerY - groupNameBottom - 0.25 * lineSpacing);
-            double staffNameTop = staffName->ldata()->blocks.front().y();
-            staffName->mutldata()->setPosY(centerY - staffNameTop + 0.75 * lineSpacing);
-        } else if (staffName->ldata()->rows() == 1 && groupName->ldata()->rows() == 1) {
-            groupName->mutldata()->setPosY(staffName->y());
+        if (stack_vertically) {
+            double line_spacing = group_name->line_spacing();
+            double group_name_bottom = group_name->ldata()->blocks.back().y();
+            double center_y = 0.5 * (y1 + y2);
+            group_name->mutldata()->set_pos_y(center_y - group_name_bottom - 0.25 * line_spacing);
+            double staff_name_top = staff_name->ldata()->blocks.front().y();
+            staff_name->mutldata()->set_pos_y(center_y - staff_name_top + 0.75 * line_spacing);
+        } else if (staff_name->ldata()->rows() == 1 && group_name->ldata()->rows() == 1) {
+            group_name->mutldata()->set_pos_y(staff_name->y());
         } else {
-            groupName->mutldata()->setPosY(0.5 * (y1 + y2) - yCenter);
+            group_name->mutldata()->set_pos_y(0.5 * (y1 + y2) - y_center);
         }
     }
 }
 
-void SystemHeaderLayout::setInstrumentNamesHorizontalPos(System *system) {
+void SystemHeaderLayout::set_instrument_names_horizontal_pos(System *system) {
     //---------------------------------------------------
     //  layout instrument names x position
     //     at this point it is not clear which staves will
@@ -798,26 +801,27 @@ void SystemHeaderLayout::setInstrumentNamesHorizontalPos(System *system) {
     //---------------------------------------------------
 
     System::LayoutData *ldata = system->mutldata();
-    double totalNamesWidth = ldata->totalNamesWidth();
-    double firstColumnWidth = ldata->firstColumnWidth();
+    double total_names_width = ldata->total_names_width();
+    double first_column_width = ldata->first_column_width();
     // Ignore long/short overrides
-    InstrumentNamesAlign align = system->style()
-                                     .styleV(ldata->useLongNames() ? Sid::instrumentNamesAlignLong : Sid::instrumentNamesAlignShort)
-                                     .value<InstrumentNamesAlign>();
+    InstrumentNamesAlign align =
+        system->style()
+            .style_v(ldata->use_long_names() ? Sid::INSTRUMENT_NAMES_ALIGN_LONG : Sid::INSTRUMENT_NAMES_ALIGN_SHORT)
+            .value<InstrumentNamesAlign>();
 
-    auto placeFirstColumnName = [&](InstrumentName *name) {
+    auto place_first_column_name = [&](InstrumentName *name) {
         const RectF &bbox = name->ldata()->bbox();
         if (align == InstrumentNamesAlign::CENTER_CENTER) {
-            double groupBracketsWidth = ldata->groupBracketsWidthAtStaffIdx(name->effectiveStaffIdx());
-            name->mutldata()->setPosX(0.5 * totalNamesWidth - 0.5 * (bbox.right() + bbox.left()) + groupBracketsWidth);
+            double group_brackets_width = ldata->group_brackets_width_at_staff_idx(name->effective_staff_idx());
+            name->mutldata()->set_pos_x(0.5 * total_names_width - 0.5 * (bbox.right() + bbox.left()) + group_brackets_width);
         } else {
             switch (name->position()) {
                 case AlignH::JUSTIFY:
-                case AlignH::LEFT: name->mutldata()->setPosX(totalNamesWidth - firstColumnWidth - bbox.left()); break;
+                case AlignH::LEFT: name->mutldata()->set_pos_x(total_names_width - first_column_width - bbox.left()); break;
                 case AlignH::HCENTER:
-                    name->mutldata()->setPosX(totalNamesWidth - 0.5 * firstColumnWidth - 0.5 * (bbox.right() + bbox.left()));
+                    name->mutldata()->set_pos_x(total_names_width - 0.5 * first_column_width - 0.5 * (bbox.right() + bbox.left()));
                     break;
-                case AlignH::RIGHT: name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+                case AlignH::RIGHT: name->mutldata()->set_pos_x(total_names_width - bbox.right());
             }
         }
     };
@@ -825,224 +829,228 @@ void SystemHeaderLayout::setInstrumentNamesHorizontalPos(System *system) {
     for (const SysStaff *s : system->staves()) {
         for (InstrumentNameRole role : {InstrumentNameRole::STAFF, InstrumentNameRole::SHARED_STAFF, InstrumentNameRole::PART}) {
             InstrumentName *n = s->name(role);
-            if (n && n->ldata()->column() == 0 && n->effectiveStaffIdx() != muse::nidx) {
-                placeFirstColumnName(n);
+            if (n && n->ldata()->column() == 0 && n->effective_staff_idx() != muse::nidx) {
+                place_first_column_name(n);
             }
         }
     }
 
-    bool stackVertically = stackLabelsVertically(system);
+    bool stack_vertically = stack_labels_vertically(system);
 
-    auto placeSecondColumnName = [&](InstrumentName *name, staff_idx_t staffIdx) {
-        bool doStackVertically = stackVertically && name->instrumentNameRole() != InstrumentNameRole::SHARED_STAFF;
+    auto place_second_column_name = [&](InstrumentName *name, staff_idx_t staff_idx) {
+        bool do_stack_vertically = stack_vertically && name->instrument_name_role() != InstrumentNameRole::SHARED_STAFF;
         const RectF &bbox = name->ldata()->bbox();
-        double groupBracketsWidth = ldata->groupBracketsWidthAtStaffIdx(name->effectiveStaffIdx());
+        double group_brackets_width = ldata->group_brackets_width_at_staff_idx(name->effective_staff_idx());
 
         if (align == InstrumentNamesAlign::LEFT_RIGHT) {
-            name->mutldata()->setPosX(groupBracketsWidth - bbox.left());
+            name->mutldata()->set_pos_x(group_brackets_width - bbox.left());
             return;
         }
 
         if (align == InstrumentNamesAlign::CENTER_CENTER) {
-            name->mutldata()->setPosX(0.5 * totalNamesWidth - 0.5 * (bbox.right() + bbox.left()) + 0.5 * groupBracketsWidth);
+            name->mutldata()->set_pos_x(0.5 * total_names_width - 0.5 * (bbox.right() + bbox.left()) + 0.5 * group_brackets_width);
             return;
         }
 
         if (align == InstrumentNamesAlign::CENTER_RIGHT) {
-            name->mutldata()->setPosX(0.5 * ldata->secondColumnWidth() - 0.5 * (bbox.right() + bbox.left()) + 0.5 * groupBracketsWidth);
+            name->mutldata()->set_pos_x(0.5 * ldata->second_column_width() - 0.5 * (bbox.right() + bbox.left()) +
+                                        0.5 * group_brackets_width);
             return;
         }
 
-        if (doStackVertically) {
-            name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+        if (do_stack_vertically) {
+            name->mutldata()->set_pos_x(total_names_width - bbox.right());
             return;
         }
 
-        if (name->instrumentNameRole() == InstrumentNameRole::SHARED_STAFF) {
-            if (InstrumentName *staffName = system->staff(name->staffIdx())->name(InstrumentNameRole::STAFF)) {
-                name->mutldata()->setPosX(staffName->x() + staffName->ldata()->bbox().left() - bbox.right() -
-                                          ldata->instrumentNameOffset());
+        if (name->instrument_name_role() == InstrumentNameRole::SHARED_STAFF) {
+            if (InstrumentName *staff_name = system->staff(name->staff_idx())->name(InstrumentNameRole::STAFF)) {
+                name->mutldata()->set_pos_x(staff_name->x() + staff_name->ldata()->bbox().left() - bbox.right() -
+                                            ldata->instrument_name_offset());
             } else {
-                name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+                name->mutldata()->set_pos_x(total_names_width - bbox.right());
             }
 
             return;
         }
 
-        if (name->instrumentNameRole() == InstrumentNameRole::PART) {
-            const Part *p = system->score()->staff(staffIdx)->part();
-            std::vector<staff_idx_t> visibleStavesForPart = system->visibleStavesOfPart(p);
-            size_t visibleStaveCount = visibleStavesForPart.size();
-            if (visibleStaveCount % 2 == 0) {
-                name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+        if (name->instrument_name_role() == InstrumentNameRole::PART) {
+            const Part *p = system->score()->staff(staff_idx)->part();
+            std::vector<staff_idx_t> visible_staves_for_part = system->visible_staves_of_part(p);
+            size_t visible_stave_count = visible_staves_for_part.size();
+            if (visible_stave_count % 2 == 0) {
+                name->mutldata()->set_pos_x(total_names_width - bbox.right());
                 return;
             }
 
-            staff_idx_t centerStaff = visibleStavesForPart[visibleStaveCount / 2];
-            if (InstrumentName *staffName = system->staff(centerStaff)->name(InstrumentNameRole::STAFF)) {
-                name->mutldata()->setPosX(staffName->x() + staffName->ldata()->bbox().left() - bbox.right() -
-                                          ldata->instrumentNameOffset());
+            staff_idx_t center_staff = visible_staves_for_part[visible_stave_count / 2];
+            if (InstrumentName *staff_name = system->staff(center_staff)->name(InstrumentNameRole::STAFF)) {
+                name->mutldata()->set_pos_x(staff_name->x() + staff_name->ldata()->bbox().left() - bbox.right() -
+                                            ldata->instrument_name_offset());
             } else {
-                name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+                name->mutldata()->set_pos_x(total_names_width - bbox.right());
             }
 
             return;
         }
 
-        std::vector<Part *> visiblePartsOfGroup = system->visiblePartsOfGroup(staffIdx, name->ldata()->endIdxOfGroup());
-        size_t visiblePartsCount = visiblePartsOfGroup.size();
-        if (visiblePartsCount % 2 == 0) {
-            name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+        std::vector<Part *> visible_parts_of_group = system->visible_parts_of_group(staff_idx, name->ldata()->end_idx_of_group());
+        size_t visible_parts_count = visible_parts_of_group.size();
+        if (visible_parts_count % 2 == 0) {
+            name->mutldata()->set_pos_x(total_names_width - bbox.right());
             return;
         }
 
-        Part *centerPart = visiblePartsOfGroup[visiblePartsCount / 2];
-        if (InstrumentName *instrName = system->staff(*centerPart->staveIdxList().begin())->name(InstrumentNameRole::PART)) {
-            name->mutldata()->setPosX(instrName->x() + instrName->ldata()->bbox().left() - bbox.right() - ldata->instrumentNameOffset());
+        Part *center_part = visible_parts_of_group[visible_parts_count / 2];
+        if (InstrumentName *instr_name = system->staff(*center_part->stave_idx_list().begin())->name(InstrumentNameRole::PART)) {
+            name->mutldata()->set_pos_x(instr_name->x() + instr_name->ldata()->bbox().left() - bbox.right() -
+                                        ldata->instrument_name_offset());
             return;
         }
 
-        std::vector<staff_idx_t> visibleStavesOfPart = system->visibleStavesOfPart(centerPart);
-        size_t visibleStavesCount = visibleStavesOfPart.size();
-        if (visibleStavesCount % 2 == 0) {
-            name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+        std::vector<staff_idx_t> visible_staves_of_part = system->visible_staves_of_part(center_part);
+        size_t visible_staves_count = visible_staves_of_part.size();
+        if (visible_staves_count % 2 == 0) {
+            name->mutldata()->set_pos_x(total_names_width - bbox.right());
             return;
         }
 
-        staff_idx_t centerStaff = visibleStavesOfPart[visibleStavesCount / 2];
-        if (InstrumentName *staffName = system->staff(centerStaff)->name(InstrumentNameRole::STAFF)) {
-            name->mutldata()->setPosX(staffName->x() + staffName->ldata()->bbox().left() - bbox.right() - ldata->instrumentNameOffset());
+        staff_idx_t center_staff = visible_staves_of_part[visible_staves_count / 2];
+        if (InstrumentName *staff_name = system->staff(center_staff)->name(InstrumentNameRole::STAFF)) {
+            name->mutldata()->set_pos_x(staff_name->x() + staff_name->ldata()->bbox().left() - bbox.right() -
+                                        ldata->instrument_name_offset());
         } else {
-            name->mutldata()->setPosX(totalNamesWidth - bbox.right());
+            name->mutldata()->set_pos_x(total_names_width - bbox.right());
         }
     };
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        const SysStaff *s = system->staff(staffIdx);
-        InstrumentName *instrName = s->name(InstrumentNameRole::PART);
-        if (!instrName) {
-            instrName = s->name(InstrumentNameRole::SHARED_STAFF);
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        const SysStaff *s = system->staff(staff_idx);
+        InstrumentName *instr_name = s->name(InstrumentNameRole::PART);
+        if (!instr_name) {
+            instr_name = s->name(InstrumentNameRole::SHARED_STAFF);
         }
-        if (!instrName) {
+        if (!instr_name) {
             continue;
         }
-        if (instrName && instrName->effectiveStaffIdx() != muse::nidx && instrName->ldata()->column() > 0) {
-            placeSecondColumnName(instrName, staffIdx);
+        if (instr_name && instr_name->effective_staff_idx() != muse::nidx && instr_name->ldata()->column() > 0) {
+            place_second_column_name(instr_name, staff_idx);
         }
     }
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        const SysStaff *s = system->staff(staffIdx);
-        InstrumentName *groupName = s->name(InstrumentNameRole::GROUP);
-        if (groupName && groupName->effectiveStaffIdx() != muse::nidx) {
-            placeSecondColumnName(groupName, staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        const SysStaff *s = system->staff(staff_idx);
+        InstrumentName *group_name = s->name(InstrumentNameRole::GROUP);
+        if (group_name && group_name->effective_staff_idx() != muse::nidx) {
+            place_second_column_name(group_name, staff_idx);
         }
     }
 }
 
-void SystemHeaderLayout::setGroupBracketsHorizontalPos(System *system) {
-    std::vector<Bracket *> groupBrackets;
+void SystemHeaderLayout::set_group_brackets_horizontal_pos(System *system) {
+    std::vector<Bracket *> group_brackets;
     for (Bracket *b : system->brackets()) {
-        if (b->bracketType() == BracketType::GROUP) {
-            groupBrackets.push_back(b);
+        if (b->bracket_type() == BracketType::GROUP) {
+            group_brackets.push_back(b);
         }
     }
-    std::sort(groupBrackets.begin(), groupBrackets.end(), [](Bracket *b1, Bracket *b2) { return b1->column() > b2->column(); });
+    std::sort(group_brackets.begin(), group_brackets.end(), [](Bracket *b1, Bracket *b2) { return b1->column() > b2->column(); });
 
     const MStyle &style = system->style();
-    bool intoMargin = style.styleB(Sid::groupBracketHangTextIntoMargin) &&
-                      style.styleV(Sid::groupBracketTextOrientation).value<Orientation>() == Orientation::VERTICAL;
-    double bracketsDist = style.styleAbsolute(Sid::groupBracketDistanceToGroupBracket);
+    bool into_margin = style.style_b(Sid::GROUP_BRACKET_HANG_TEXT_INTO_MARGIN) &&
+                       style.style_v(Sid::GROUP_BRACKET_TEXT_ORIENTATION).value<Orientation>() == Orientation::VERTICAL;
+    double brackets_dist = style.style_absolute(Sid::GROUP_BRACKET_DISTANCE_TO_GROUP_BRACKET);
 
-    for (Bracket *b : groupBrackets) {
-        b->mutldata()->setPosX(intoMargin ? 0.0 : -b->mutldata()->bbox().left());
-        for (Bracket *bb : groupBrackets) {
+    for (Bracket *b : group_brackets) {
+        b->mutldata()->set_pos_x(into_margin ? 0.0 : -b->mutldata()->bbox().left());
+        for (Bracket *bb : group_brackets) {
             if (bb == b) {
                 break;
             }
             if (bb->column() > b->column() && bb->intersects(b)) {
-                b->mutldata()->setPosX(bb->x() + bb->ldata()->bbox().right() - b->ldata()->bbox().left() + bracketsDist);
+                b->mutldata()->set_pos_x(bb->x() + bb->ldata()->bbox().right() - b->ldata()->bbox().left() + brackets_dist);
             }
         }
     }
 }
 
-InstrumentName *SystemHeaderLayout::updateName(System *system, staff_idx_t staffIdx, LayoutContext &ctx, const String &name,
-                                               InstrumentNameType type, InstrumentNameRole role) {
-    SysStaff *sysStaff = system->staff(staffIdx);
-    InstrumentName *iname = sysStaff->name(role);
+InstrumentName *SystemHeaderLayout::update_name(System *system, staff_idx_t staff_idx, LayoutContext &ctx, const String &name,
+                                                InstrumentNameType type, InstrumentNameRole role) {
+    SysStaff *sys_staff = system->staff(staff_idx);
+    InstrumentName *iname = sys_staff->name(role);
 
     if (name.empty()) {
         if (iname) {
-            ctx.mutDom().removeElement(iname);
+            ctx.mut_dom().remove_element(iname);
         }
         return nullptr;
     }
 
     if (!iname) {
         iname = new InstrumentName(system);
-        iname->setGenerated(true);
-        iname->setSysStaff(sysStaff);
-        iname->setTrack(staffIdx * VOICES);
-        iname->setInstrumentNameRole(role);
-        ctx.mutDom().addElement(iname);
+        iname->set_generated(true);
+        iname->set_sys_staff(sys_staff);
+        iname->set_track(staff_idx * ::mu::engraving::voices);
+        iname->set_instrument_name_role(role);
+        ctx.mut_dom().add_element(iname);
     }
 
-    iname->setInstrumentNameType(type);
-    iname->setAlign(Align(iname->align().horizontal, AlignV::BASELINE));
-    iname->setXmlText(name);
+    iname->set_instrument_name_type(type);
+    iname->set_align(Align(iname->align().horizontal, AlignV::BASELINE));
+    iname->set_xml_text(name);
 
-    iname->mutldata()->setColumn(0); // Reset here, will be computed later
-    TLayout::layoutInstrumentName(iname, iname->mutldata());
+    iname->mutldata()->set_column(0); // Reset here, will be computed later
+    TLayout::layout_instrument_name(iname, iname->mutldata());
 
     return iname;
 }
 
-String SystemHeaderLayout::formattedInstrumentName(System *system, Part *part, const Fraction &tick, bool longNames) {
+String SystemHeaderLayout::formatted_instrument_name(System *system, Part *part, const Fraction &tick, bool long_names) {
     Instrument *instr = part->instrument(tick);
-    const InstrumentLabel &label = instr->instrumentLabel();
+    const InstrumentLabel &label = instr->instrument_label();
 
     const MStyle &style = system->style();
-    bool trailingDot = style.styleB(Sid::instrumentNumeralsTrailingDotSingle);
+    bool trailing_dot = style.style_b(Sid::INSTRUMENT_NUMERALS_TRAILING_DOT_SINGLE);
 
-    if (muse::contains(system->ldata()->partsWithGroupName(), part)) {
-        if (label.useCustomIndividualName()) {
-            return longNames ? label.customNameLongIndividual() : label.customNameShortIndividual();
+    if (muse::contains(system->ldata()->parts_with_group_name(), part)) {
+        if (label.use_custom_individual_name()) {
+            return long_names ? label.custom_name_long_individual() : label.custom_name_short_individual();
         }
 
         int number = part->number(tick);
         String result = number > 0 ? String::number(number) : String();
-        if (!result.isEmpty() && trailingDot) {
+        if (!result.is_empty() && trailing_dot) {
             result += '.';
         }
 
         return result;
     }
 
-    if (label.useCustomName()) {
-        return longNames ? label.customNameLong() : label.customNameShort();
+    if (label.use_custom_name()) {
+        return long_names ? label.custom_name_long() : label.custom_name_short();
     }
 
-    String instrName = longNames ? instr->longName() : instr->shortName();
+    String instr_name = long_names ? instr->long_name() : instr->short_name();
 
-    bool showTranspo = longNames ? label.showTranspositionLong() : label.showTranspositionShort();
-    showTranspo &= style.styleB(longNames ? Sid::instrumentNamesShowTranspositionLong : Sid::instrumentNamesShowTranspositionShort);
-    String transposition = showTranspo ? instr->transposition() : String();
+    bool show_transpo = long_names ? label.show_transposition_long() : label.show_transposition_short();
+    show_transpo &=
+        style.style_b(long_names ? Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_LONG : Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_SHORT);
+    String transposition = show_transpo ? instr->transposition() : String();
 
-    bool showNumber = longNames ? label.showNumberLong() : label.showNumberShort();
-    String number = instr->number() > 0 && showNumber ? String::number(instr->number()) : String();
+    bool show_number = long_names ? label.show_number_long() : label.show_number_short();
+    String number = instr->number() > 0 && show_number ? String::number(instr->number()) : String();
 
-    InstrumentNamesFormat nameFormat =
-        style.styleV(longNames ? Sid::instrumentNamesFormatLong : Sid::instrumentNamesFormatShort).value<InstrumentNamesFormat>();
+    InstrumentNamesFormat name_format =
+        style.style_v(long_names ? Sid::INSTRUMENT_NAMES_FORMAT_LONG : Sid::INSTRUMENT_NAMES_FORMAT_SHORT).value<InstrumentNamesFormat>();
 
-    bool addTrailingDot = trailingDot && (transposition.empty() || nameFormat == InstrumentNamesFormat::NAME_IN_TRANSP_NUM ||
-                                          nameFormat == InstrumentNamesFormat::TRANSP_NAME_NUM);
-    if (addTrailingDot) {
+    bool add_trailing_dot = trailing_dot && (transposition.empty() || name_format == InstrumentNamesFormat::NAME_IN_TRANSP_NUM ||
+                                             name_format == InstrumentNamesFormat::TRANSP_NAME_NUM);
+    if (add_trailing_dot) {
         number += '.';
     }
 
     if (transposition.empty()) {
-        String result = instrName;
+        String result = instr_name;
         if (!number.empty()) {
             result += u" " + number;
         }
@@ -1052,131 +1060,136 @@ String SystemHeaderLayout::formattedInstrumentName(System *system, Part *part, c
     //: For instrument transposition, e.g. Horn in F
     String in = TranslatableString("notation", "in").translated();
 
-    switch (nameFormat) {
+    switch (name_format) {
         case InstrumentNamesFormat::NAME_IN_TRANSP_NUM:
-            return instrName + u" " + in + u" " + transposition + (number.empty() ? String() : u" " + number);
+            return instr_name + u" " + in + u" " + transposition + (number.empty() ? String() : u" " + number);
         case InstrumentNamesFormat::NAME_NUM_IN_TRANSP:
-            return instrName + (number.empty() ? String() : u" " + number) + u" " + in + u" " + transposition;
-        case InstrumentNamesFormat::TRANSP_NAME_NUM: return transposition + u" " + instrName + (number.empty() ? String() : u" " + number);
+            return instr_name + (number.empty() ? String() : u" " + number) + u" " + in + u" " + transposition;
+        case InstrumentNamesFormat::TRANSP_NAME_NUM: return transposition + u" " + instr_name + (number.empty() ? String() : u" " + number);
         default: {
-            String result = style.styleSt(longNames ? Sid::instrumentNamesCustomFormatLong : Sid::instrumentNamesCustomFormatShort);
-            return resolveTokens(result, instrName, transposition, number);
+            String result =
+                style.style_st(long_names ? Sid::INSTRUMENT_NAMES_CUSTOM_FORMAT_LONG : Sid::INSTRUMENT_NAMES_CUSTOM_FORMAT_SHORT);
+            return resolve_tokens(result, instr_name, transposition, number);
         }
     }
 }
 
-String SystemHeaderLayout::formattedGroupName(System *system, Part *part, const Fraction &tick, bool longNames) {
+String SystemHeaderLayout::formatted_group_name(System *system, Part *part, const Fraction &tick, bool long_names) {
     const MStyle &style = system->style();
 
     Instrument *instr = part->instrument(tick);
-    const InstrumentLabel &label = instr->instrumentLabel();
+    const InstrumentLabel &label = instr->instrument_label();
 
-    if (label.useCustomGroupName()) {
-        return longNames ? label.customNameLongGroup() : label.customNameShortGroup();
+    if (label.use_custom_group_name()) {
+        return long_names ? label.custom_name_long_group() : label.custom_name_short_group();
     }
 
-    String instrName = longNames ? instr->longName() : instr->shortName();
+    String instr_name = long_names ? instr->long_name() : instr->short_name();
 
-    bool showTranspo = longNames ? label.showTranspositionLong() : label.showTranspositionShort();
-    showTranspo &= style.styleB(longNames ? Sid::instrumentNamesShowTranspositionLong : Sid::instrumentNamesShowTranspositionShort);
+    bool show_transpo = long_names ? label.show_transposition_long() : label.show_transposition_short();
+    show_transpo &=
+        style.style_b(long_names ? Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_LONG : Sid::INSTRUMENT_NAMES_SHOW_TRANSPOSITION_SHORT);
 
-    String transposition = showTranspo ? instr->transposition() : String();
+    String transposition = show_transpo ? instr->transposition() : String();
 
     if (transposition.empty()) {
-        return instrName;
+        return instr_name;
     }
 
-    InstrumentNamesFormat nameFormat =
-        style.styleV(longNames ? Sid::instrumentNamesFormatLong : Sid::instrumentNamesFormatShort).value<InstrumentNamesFormat>();
+    InstrumentNamesFormat name_format =
+        style.style_v(long_names ? Sid::INSTRUMENT_NAMES_FORMAT_LONG : Sid::INSTRUMENT_NAMES_FORMAT_SHORT).value<InstrumentNamesFormat>();
 
     //: For instrument transposition, e.g. Horn in F
     String in = TranslatableString("notation", "in").translated();
 
-    switch (nameFormat) {
-        case InstrumentNamesFormat::NAME_IN_TRANSP_NUM: return instrName + u" " + in + u" " + transposition;
-        case InstrumentNamesFormat::NAME_NUM_IN_TRANSP: return instrName + u" " + in + u" " + transposition;
-        case InstrumentNamesFormat::TRANSP_NAME_NUM: return transposition + u" " + instrName;
+    switch (name_format) {
+        case InstrumentNamesFormat::NAME_IN_TRANSP_NUM: return instr_name + u" " + in + u" " + transposition;
+        case InstrumentNamesFormat::NAME_NUM_IN_TRANSP: return instr_name + u" " + in + u" " + transposition;
+        case InstrumentNamesFormat::TRANSP_NAME_NUM: return transposition + u" " + instr_name;
         default: {
-            String result = style.styleSt(longNames ? Sid::instrumentNamesCustomFormatLong : Sid::instrumentNamesCustomFormatShort);
-            return resolveTokens(result, instrName, transposition, /*number*/ String());
+            String result =
+                style.style_st(long_names ? Sid::INSTRUMENT_NAMES_CUSTOM_FORMAT_LONG : Sid::INSTRUMENT_NAMES_CUSTOM_FORMAT_SHORT);
+            return resolve_tokens(result, instr_name, transposition, /*number*/ String());
         }
     }
 }
 
-String SystemHeaderLayout::formattedSharedStaffLabel(staff_idx_t staffIdx, const SharedTrackMap &trackMap,
-                                                     const std::vector<Part *> &originParts) {
-    if (originParts.empty()) {
+String SystemHeaderLayout::formatted_shared_staff_label(staff_idx_t staff_idx, const SharedTrackMap &track_map,
+                                                        const std::vector<Part *> &origin_parts) {
+    if (origin_parts.empty()) {
         return String();
     }
 
-    Score *score = originParts.front()->score();
+    Score *score = origin_parts.front()->score();
     const MStyle &style = score->style();
-    bool trailingDotSingle = style.styleB(Sid::instrumentNumeralsTrailingDotSingle);
-    bool trailingDotMultiple = style.styleB(Sid::instrumentNumeralsTrailingDotMultiple);
-    SharedLabelOrientation orientation = style.styleV(Sid::instrumentNumeralsOrientation).value<SharedLabelOrientation>();
-    int horizontalLimit = style.styleI(Sid::instrumentNumeralsHorizontalThreshold);
-    int verticalLimit = style.styleI(Sid::instrumentNumeralsVerticalThreshold);
-    int hyphenLimit = style.styleB(Sid::instrumentNumeralsHyphenEnable) ? style.styleI(Sid::instrumentNumeralsHyphenThreshold) : INT_MAX;
+    bool trailing_dot_single = style.style_b(Sid::INSTRUMENT_NUMERALS_TRAILING_DOT_SINGLE);
+    bool trailing_dot_multiple = style.style_b(Sid::INSTRUMENT_NUMERALS_TRAILING_DOT_MULTIPLE);
+    SharedLabelOrientation orientation = style.style_v(Sid::INSTRUMENT_NUMERALS_ORIENTATION).value<SharedLabelOrientation>();
+    int horizontal_limit = style.style_i(Sid::INSTRUMENT_NUMERALS_HORIZONTAL_THRESHOLD);
+    int vertical_limit = style.style_i(Sid::INSTRUMENT_NUMERALS_VERTICAL_THRESHOLD);
+    int hyphen_limit =
+        style.style_b(Sid::INSTRUMENT_NUMERALS_HYPHEN_ENABLE) ? style.style_i(Sid::INSTRUMENT_NUMERALS_HYPHEN_THRESHOLD) : INT_MAX;
 
-    std::vector<const Instrument *> instrumentsMappedToFirstVoice;
-    std::vector<const Instrument *> instrumentsMappedToSecondVoice;
-    for (auto [originTrack, sharedTrack] : trackMap) {
-        if (track2staff(sharedTrack) == staffIdx) {
-            if (track2voice(sharedTrack) == 0) {
-                instrumentsMappedToFirstVoice.push_back(score->staff(track2staff(originTrack))->part()->instrument());
+    std::vector<const Instrument *> instruments_mapped_to_first_voice;
+    std::vector<const Instrument *> instruments_mapped_to_second_voice;
+    for (auto [origin_track, shared_track] : track_map) {
+        if (track2staff(shared_track) == staff_idx) {
+            if (track2voice(shared_track) == 0) {
+                instruments_mapped_to_first_voice.push_back(score->staff(track2staff(origin_track))->part()->instrument());
             } else {
-                instrumentsMappedToSecondVoice.push_back(score->staff(track2staff(originTrack))->part()->instrument());
+                instruments_mapped_to_second_voice.push_back(score->staff(track2staff(origin_track))->part()->instrument());
             }
         }
     }
 
-    size_t totInstrumentCount = instrumentsMappedToFirstVoice.size() + instrumentsMappedToSecondVoice.size();
+    size_t tot_instrument_count = instruments_mapped_to_first_voice.size() + instruments_mapped_to_second_voice.size();
 
-    SharedLabelOrientation actualOrientation;
+    SharedLabelOrientation actual_orientation;
     switch (orientation) {
-        case SharedLabelOrientation::VOICE: actualOrientation = orientation; break;
+        case SharedLabelOrientation::VOICE: actual_orientation = orientation; break;
         case SharedLabelOrientation::HORIZONTAL:
-            actualOrientation = totInstrumentCount > size_t(horizontalLimit) ? SharedLabelOrientation::VOICE : orientation;
+            actual_orientation = tot_instrument_count > size_t(horizontal_limit) ? SharedLabelOrientation::VOICE : orientation;
             break;
         case SharedLabelOrientation::VERTICAL:
-            actualOrientation = totInstrumentCount > size_t(verticalLimit) ? SharedLabelOrientation::VOICE : orientation;
+            actual_orientation = tot_instrument_count > size_t(vertical_limit) ? SharedLabelOrientation::VOICE : orientation;
             break;
         default: // should not happen, but don't leave actualOrientation uninitialized
             ASSERT_X("Unexpected SharedLabelOrientation value: " << static_cast<int>(orientation));
-            actualOrientation = SharedLabelOrientation::VOICE;
+            actual_orientation = SharedLabelOrientation::VOICE;
             break;
     }
 
-    if (actualOrientation == SharedLabelOrientation::HORIZONTAL || actualOrientation == SharedLabelOrientation::VERTICAL) {
+    if (actual_orientation == SharedLabelOrientation::HORIZONTAL || actual_orientation == SharedLabelOrientation::VERTICAL) {
         // Put all instruments in single vector
-        instrumentsMappedToFirstVoice.insert(instrumentsMappedToFirstVoice.end(), instrumentsMappedToSecondVoice.begin(),
-                                             instrumentsMappedToSecondVoice.end());
-        std::sort(instrumentsMappedToFirstVoice.begin(), instrumentsMappedToFirstVoice.end(),
+        instruments_mapped_to_first_voice.insert(instruments_mapped_to_first_voice.end(), instruments_mapped_to_second_voice.begin(),
+                                                 instruments_mapped_to_second_voice.end());
+        std::sort(instruments_mapped_to_first_voice.begin(), instruments_mapped_to_first_voice.end(),
                   [](const Instrument *a, const Instrument *b) { return a->number() < b->number(); });
 
         String result;
 
-        if (actualOrientation == SharedLabelOrientation::HORIZONTAL) {
-            result = formatSharedVoiceLabel(instrumentsMappedToFirstVoice, trailingDotSingle, trailingDotMultiple, hyphenLimit);
+        if (actual_orientation == SharedLabelOrientation::HORIZONTAL) {
+            result = format_shared_voice_label(instruments_mapped_to_first_voice, trailing_dot_single, trailing_dot_multiple, hyphen_limit);
         } else {
-            result = formatVerticalSharedLabel(instrumentsMappedToFirstVoice, trailingDotSingle);
+            result = format_vertical_shared_label(instruments_mapped_to_first_voice, trailing_dot_single);
         }
 
         return result;
     }
 
-    String result = formatSharedVoiceLabel(instrumentsMappedToFirstVoice, trailingDotSingle, trailingDotMultiple, hyphenLimit);
+    String result = format_shared_voice_label(instruments_mapped_to_first_voice, trailing_dot_single, trailing_dot_multiple, hyphen_limit);
 
-    if (instrumentsMappedToSecondVoice.empty()) {
+    if (instruments_mapped_to_second_voice.empty()) {
         return result;
     }
 
-    result += '\n' + formatSharedVoiceLabel(instrumentsMappedToSecondVoice, trailingDotSingle, trailingDotMultiple, hyphenLimit);
+    result +=
+        '\n' + format_shared_voice_label(instruments_mapped_to_second_voice, trailing_dot_single, trailing_dot_multiple, hyphen_limit);
 
     return result;
 }
 
-String SystemHeaderLayout::formatVerticalSharedLabel(const std::vector<const Instrument *> &instruments, bool trailingDotSingle) {
+String SystemHeaderLayout::format_vertical_shared_label(const std::vector<const Instrument *> &instruments, bool trailing_dot_single) {
     String result;
 
     for (const Instrument *instr : instruments) {
@@ -1186,7 +1199,7 @@ String SystemHeaderLayout::formatVerticalSharedLabel(const std::vector<const Ins
 
         result += String::number(instr->number());
 
-        if (trailingDotSingle) {
+        if (trailing_dot_single) {
             result += '.';
         }
     }
@@ -1194,12 +1207,12 @@ String SystemHeaderLayout::formatVerticalSharedLabel(const std::vector<const Ins
     return result;
 }
 
-String SystemHeaderLayout::formatSharedVoiceLabel(const std::vector<const Instrument *> &instruments, bool trailingDotSingle,
-                                                  bool trailingDotMultiple, int hyphenLimit) {
+String SystemHeaderLayout::format_shared_voice_label(const std::vector<const Instrument *> &instruments, bool trailing_dot_single,
+                                                     bool trailing_dot_multiple, int hyphen_limit) {
     String result;
 
-    size_t voiceCount = instruments.size();
-    bool putTrailingDot = (voiceCount <= 1 && trailingDotSingle) || (voiceCount > 1 && trailingDotMultiple);
+    size_t voice_count = instruments.size();
+    bool put_trailing_dot = (voice_count <= 1 && trailing_dot_single) || (voice_count > 1 && trailing_dot_multiple);
 
     for (size_t i = 0; i < instruments.size(); ++i) {
         if (!result.empty() && result.back() != '\n') {
@@ -1207,14 +1220,14 @@ String SystemHeaderLayout::formatSharedVoiceLabel(const std::vector<const Instru
         }
 
         const Instrument *instr = instruments[i];
-        int startNumber = instr->number();
-        int curNumber = startNumber;
+        int start_number = instr->number();
+        int cur_number = start_number;
         for (size_t j = i + 1; j < instruments.size(); ++j) {
-            const Instrument *nextInstr = instruments[j];
-            int nextNumber = nextInstr->number();
-            if (nextNumber == curNumber + 1) {
-                curNumber = nextNumber;
-                if (nextNumber - startNumber >= hyphenLimit) {
+            const Instrument *next_instr = instruments[j];
+            int next_number = next_instr->number();
+            if (next_number == cur_number + 1) {
+                cur_number = next_number;
+                if (next_number - start_number >= hyphen_limit) {
                     i = j;
                 } else {
                     continue;
@@ -1224,36 +1237,36 @@ String SystemHeaderLayout::formatSharedVoiceLabel(const std::vector<const Instru
             }
         }
 
-        if (curNumber - startNumber >= hyphenLimit) {
-            result += String::number(startNumber);
+        if (cur_number - start_number >= hyphen_limit) {
+            result += String::number(start_number);
 
-            if (putTrailingDot) {
+            if (put_trailing_dot) {
                 result += '.';
             }
 
-            result += u'–' + String::number(curNumber);
+            result += u'–' + String::number(cur_number);
         } else {
-            result += String::number(startNumber);
+            result += String::number(start_number);
         }
     }
 
-    if (!result.isEmpty() && putTrailingDot) {
+    if (!result.is_empty() && put_trailing_dot) {
         result += u".";
     }
 
     return result;
 }
 
-String &SystemHeaderLayout::resolveTokens(String &str, const String &name, const String &transposition, const String &number) {
-    static const String NAME = u"$name";
-    static const String TRANSP = u"$transposition";
-    static const String NUMBER = u"$number";
+String &SystemHeaderLayout::resolve_tokens(String &str, const String &name, const String &transposition, const String &number) {
+    static const String name_value = u"$name";
+    static const String transp = u"$transposition";
+    static const String number_value = u"$number";
 
-    str.replace(NAME, name);
-    str.replace(TRANSP, transposition);
+    str.replace(name_value, name);
+    str.replace(transp, transposition);
 
     if (!number.empty()) {
-        str.replace(NUMBER, number);
+        str.replace(number_value, number);
     } else if (str.contains(u" $number")) {
         str.remove(u" $number");
     } else if (str.contains(u"$number ")) {
@@ -1265,137 +1278,137 @@ String &SystemHeaderLayout::resolveTokens(String &str, const String &name, const
     return str;
 }
 
-InstrumentLabelVisibility SystemHeaderLayout::resolveInstrumentLabelVisibility(const Staff *staff, const Fraction &tick, LayoutContext &ctx,
-                                                                               bool firstSystem) {
-    const InstrumentLabelVisibility local = staff->staffType(tick)->instrumentLabelVisibility();
+InstrumentLabelVisibility SystemHeaderLayout::resolve_instrument_label_visibility(const Staff *staff, const Fraction &tick,
+                                                                                  LayoutContext &ctx, bool first_system) {
+    const InstrumentLabelVisibility local = staff->staff_type(tick)->instrument_label_visibility();
     if (local != InstrumentLabelVisibility::AUTO) {
         return local;
     }
 
-    if (ctx.conf().styleB(Sid::hideInstrumentNameIfOneInstrument) && ctx.dom().visiblePartCount() <= 1) {
-        std::vector<Part *> visibleParts = ctx.dom().visibleParts();
-        if (visibleParts.size() == 0) {
+    if (ctx.conf().style_b(Sid::HIDE_INSTRUMENT_NAME_IF_ONE_INSTRUMENT) && ctx.dom().visible_part_count() <= 1) {
+        std::vector<Part *> visible_parts = ctx.dom().visible_parts();
+        if (visible_parts.size() == 0) {
             return InstrumentLabelVisibility::HIDE;
         }
-        if (visibleParts.size() == 1 && !visibleParts.front()->isSharedPart()) {
+        if (visible_parts.size() == 1 && !visible_parts.front()->is_shared_part()) {
             return InstrumentLabelVisibility::HIDE;
         }
     }
 
-    const Sid sid = firstSystem ? Sid::firstSystemInstNameVisibility : Sid::subsSystemInstNameVisibility;
-    const InstrumentLabelVisibility styleVisibility = ctx.conf().styleV(sid).value<InstrumentLabelVisibility>();
-    if (firstSystem && styleVisibility == InstrumentLabelVisibility::LONG && !ctx.state().startWithLongNames()) {
+    const Sid sid = first_system ? Sid::FIRST_SYSTEM_INST_NAME_VISIBILITY : Sid::SUBS_SYSTEM_INST_NAME_VISIBILITY;
+    const InstrumentLabelVisibility style_visibility = ctx.conf().style_v(sid).value<InstrumentLabelVisibility>();
+    if (first_system && style_visibility == InstrumentLabelVisibility::LONG && !ctx.state().start_with_long_names()) {
         return InstrumentLabelVisibility::SHORT;
     }
-    return styleVisibility;
+    return style_visibility;
 }
 
-InstrumentNameType SystemHeaderLayout::resolveInstrumentNameType(InstrumentLabelVisibility visibility) {
+InstrumentNameType SystemHeaderLayout::resolve_instrument_name_type(InstrumentLabelVisibility visibility) {
     return visibility == InstrumentLabelVisibility::LONG ? InstrumentNameType::LONG : InstrumentNameType::SHORT;
 }
 
-void SystemHeaderLayout::setInstrumentNames(System *system, LayoutContext &ctx) {
+void SystemHeaderLayout::set_instrument_names(System *system, LayoutContext &ctx) {
     if (system->vbox()) {
         return;
     }
 
-    const Measure *firstMeasure = system->firstMeasure();
-    if (!firstMeasure) {
+    const Measure *first_measure = system->first_measure();
+    if (!first_measure) {
         return;
     }
 
-    Fraction tick = firstMeasure->tick();
+    Fraction tick = first_measure->tick();
 
-    bool subsSysLongName =
-        ctx.conf().styleV(Sid::subsSystemInstNameVisibility).value<InstrumentLabelVisibility>() == InstrumentLabelVisibility::LONG;
-    bool longName = ctx.mutState().firstSystem() ? ctx.mutState().startWithLongNames() : subsSysLongName;
+    bool subs_sys_long_name =
+        ctx.conf().style_v(Sid::SUBS_SYSTEM_INST_NAME_VISIBILITY).value<InstrumentLabelVisibility>() == InstrumentLabelVisibility::LONG;
+    bool long_name = ctx.mut_state().first_system() ? ctx.mut_state().start_with_long_names() : subs_sys_long_name;
 
     System::LayoutData *ldata = system->mutldata();
-    ldata->setUseLongNames(longName);
+    ldata->set_use_long_names(long_name);
 
-    InstrumentNameType type = longName ? InstrumentNameType::LONG : InstrumentNameType::SHORT;
+    InstrumentNameType type = long_name ? InstrumentNameType::LONG : InstrumentNameType::SHORT;
 
     // We do not show instrument names for video export
-    if (!ctx.conf().isShowInstrumentNames()) {
+    if (!ctx.conf().is_show_instrument_names()) {
         for (staff_idx_t idx = 0; idx < system->staves().size(); ++idx) {
-            updateName(system, idx, ctx, String(), type, InstrumentNameRole::STAFF);
-            updateName(system, idx, ctx, String(), type, InstrumentNameRole::SHARED_STAFF);
-            updateName(system, idx, ctx, String(), type, InstrumentNameRole::PART);
-            updateName(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
+            update_name(system, idx, ctx, String(), type, InstrumentNameRole::STAFF);
+            update_name(system, idx, ctx, String(), type, InstrumentNameRole::SHARED_STAFF);
+            update_name(system, idx, ctx, String(), type, InstrumentNameRole::PART);
+            update_name(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
         }
         return;
     }
 
-    updateGroupNames(system, ctx, tick);
+    update_group_names(system, ctx, tick);
 
-    bool firstSystem = ctx.state().firstSystem();
+    bool first_system = ctx.state().first_system();
 
-    for (size_t staffIdx = 0; staffIdx < system->staves().size(); /*empty*/) {
-        Part *part = ctx.dom().staff(staffIdx)->part();
-        size_t partNstaves = part->nstaves();
-        size_t visibleStavesCount = part->visibleStavesCount();
+    for (size_t staff_idx = 0; staff_idx < system->staves().size(); /*empty*/) {
+        Part *part = ctx.dom().staff(staff_idx)->part();
+        size_t part_nstaves = part->nstaves();
+        size_t visible_staves_count = part->visible_staves_count();
 
-        if (part->isSharedPart() && part->show()) {
-            setSharedPartNames(toSharedPart(part), staffIdx, system, ctx, tick);
-            staffIdx += partNstaves;
+        if (part->is_shared_part() && part->show()) {
+            set_shared_part_names(to_shared_part(part), staff_idx, system, ctx, tick);
+            staff_idx += part_nstaves;
             continue;
         }
 
-        for (size_t idxInPart = 0; idxInPart < partNstaves; ++idxInPart) {
-            staff_idx_t globalIdx = staffIdx + idxInPart;
-            const Staff *staff = ctx.dom().staff(globalIdx);
+        for (size_t idx_in_part = 0; idx_in_part < part_nstaves; ++idx_in_part) {
+            staff_idx_t global_idx = staff_idx + idx_in_part;
+            const Staff *staff = ctx.dom().staff(global_idx);
 
-            InstrumentLabelVisibility visibility = resolveInstrumentLabelVisibility(staff, tick, ctx, firstSystem);
-            InstrumentNameType staffNameType = resolveInstrumentNameType(visibility);
+            InstrumentLabelVisibility visibility = resolve_instrument_label_visibility(staff, tick, ctx, first_system);
+            InstrumentNameType staff_name_type = resolve_instrument_name_type(visibility);
             bool hide = visibility == InstrumentLabelVisibility::HIDE;
-            bool staffLongName = staffNameType == InstrumentNameType::LONG;
+            bool staff_long_name = staff_name_type == InstrumentNameType::LONG;
 
-            String instrumentName;
-            if (idxInPart == 0 && part->show() && visibleStavesCount > 0 && !hide) {
-                instrumentName = formattedInstrumentName(system, part, tick, staffLongName);
+            String instrument_name;
+            if (idx_in_part == 0 && part->show() && visible_staves_count > 0 && !hide) {
+                instrument_name = formatted_instrument_name(system, part, tick, staff_long_name);
             }
-            updateName(system, globalIdx, ctx, instrumentName, staffNameType, InstrumentNameRole::PART);
+            update_name(system, global_idx, ctx, instrument_name, staff_name_type, InstrumentNameRole::PART);
 
-            String staffName;
+            String staff_name;
             if (staff->show() && !hide) {
-                staffName = staffLongName ? staff->individualStaffNameLong(tick) : staff->individualStaffNameShort(tick);
+                staff_name = staff_long_name ? staff->individual_staff_name_long(tick) : staff->individual_staff_name_short(tick);
             }
-            updateName(system, globalIdx, ctx, staffName, staffNameType, InstrumentNameRole::STAFF);
+            update_name(system, global_idx, ctx, staff_name, staff_name_type, InstrumentNameRole::STAFF);
         }
 
-        staffIdx += partNstaves;
+        staff_idx += part_nstaves;
     }
 }
 
-void SystemHeaderLayout::setSharedPartNames(SharedPart *sharedPart, staff_idx_t startStaffIdx, System *system, LayoutContext &ctx,
-                                            const Fraction &tick) {
+void SystemHeaderLayout::set_shared_part_names(SharedPart *shared_part, staff_idx_t start_staff_idx, System *system, LayoutContext &ctx,
+                                               const Fraction &tick) {
     InstrumentLabelVisibility visibility =
-        resolveInstrumentLabelVisibility(ctx.dom().staff(startStaffIdx), tick, ctx, ctx.state().firstSystem());
-    InstrumentNameType type = resolveInstrumentNameType(visibility);
-    bool hideStartStaff = visibility == InstrumentLabelVisibility::HIDE;
+        resolve_instrument_label_visibility(ctx.dom().staff(start_staff_idx), tick, ctx, ctx.state().first_system());
+    InstrumentNameType type = resolve_instrument_name_type(visibility);
+    bool hide_start_staff = visibility == InstrumentLabelVisibility::HIDE;
 
-    if (!sharedPart->show() || sharedPart->visibleStavesCount() == 0) {
-        for (size_t relStaffIdx = 0; relStaffIdx < sharedPart->nstaves(); ++relStaffIdx) {
-            size_t globalStaffIdx = startStaffIdx + relStaffIdx;
-            updateName(system, globalStaffIdx, ctx, String(), type, InstrumentNameRole::GROUP);
-            updateName(system, globalStaffIdx, ctx, String(), type, InstrumentNameRole::PART);
-            updateName(system, globalStaffIdx, ctx, String(), type, InstrumentNameRole::SHARED_STAFF);
-            updateName(system, globalStaffIdx, ctx, String(), type, InstrumentNameRole::STAFF);
+    if (!shared_part->show() || shared_part->visible_staves_count() == 0) {
+        for (size_t rel_staff_idx = 0; rel_staff_idx < shared_part->nstaves(); ++rel_staff_idx) {
+            size_t global_staff_idx = start_staff_idx + rel_staff_idx;
+            update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::GROUP);
+            update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::PART);
+            update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::SHARED_STAFF);
+            update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::STAFF);
         }
 
         return;
     }
 
-    if (!sharedPart->isSameInstruments()) {
+    if (!shared_part->is_same_instruments()) {
         // TODO
         return;
     }
 
-    const Instrument *instr = sharedPart->instrument();
-    bool useGroup = useGroupNames(instr->group(), ctx) && sharedPart->isSameInstrumentsAtTick(tick);
+    const Instrument *instr = shared_part->instrument();
+    bool use_group = use_group_names(instr->group(), ctx) && shared_part->is_same_instruments_at_tick(tick);
 
-    const SharedTrackMap &trackMap = sharedPart->trackMapAtTick(tick);
-    const std::vector<Part *> originParts = sharedPart->originParts();
+    const SharedTrackMap &track_map = shared_part->track_map_at_tick(tick);
+    const std::vector<Part *> origin_parts = shared_part->origin_parts();
 
     // If using group names, assign normal PART name (one name covers all shared staves). Obtains the style
     //
@@ -1409,176 +1422,177 @@ void SystemHeaderLayout::setSharedPartNames(SharedPart *sharedPart, staff_idx_t 
     //
     // Horn 3.4
 
-    for (size_t relStaffIdx = 0; relStaffIdx < sharedPart->nstaves(); ++relStaffIdx) {
-        size_t globalStaffIdx = startStaffIdx + relStaffIdx;
-        Part *originPart = sharedPart->originPartForStaff(globalStaffIdx, tick);
+    for (size_t rel_staff_idx = 0; rel_staff_idx < shared_part->nstaves(); ++rel_staff_idx) {
+        size_t global_staff_idx = start_staff_idx + rel_staff_idx;
+        Part *origin_part = shared_part->origin_part_for_staff(global_staff_idx, tick);
 
-        InstrumentLabelVisibility partVisibility =
-            resolveInstrumentLabelVisibility(ctx.dom().staff(globalStaffIdx), tick, ctx, ctx.state().firstSystem());
-        InstrumentNameType partNameType = resolveInstrumentNameType(partVisibility);
-        bool partLongName = partNameType == InstrumentNameType::LONG;
-        bool hidePartName = partVisibility == InstrumentLabelVisibility::HIDE;
+        InstrumentLabelVisibility part_visibility =
+            resolve_instrument_label_visibility(ctx.dom().staff(global_staff_idx), tick, ctx, ctx.state().first_system());
+        InstrumentNameType part_name_type = resolve_instrument_name_type(part_visibility);
+        bool part_long_name = part_name_type == InstrumentNameType::LONG;
+        bool hide_part_name = part_visibility == InstrumentLabelVisibility::HIDE;
 
-        String staffGroupName;
-        if (!hidePartName) {
-            staffGroupName = formattedGroupName(system, originPart ? originPart : sharedPart, tick, partLongName);
+        String staff_group_name;
+        if (!hide_part_name) {
+            staff_group_name = formatted_group_name(system, origin_part ? origin_part : shared_part, tick, part_long_name);
         }
 
-        if (useGroup && !hideStartStaff) {
-            if (relStaffIdx == 0) {
-                updateName(system, globalStaffIdx, ctx, staffGroupName, partNameType, InstrumentNameRole::PART);
+        if (use_group && !hide_start_staff) {
+            if (rel_staff_idx == 0) {
+                update_name(system, global_staff_idx, ctx, staff_group_name, part_name_type, InstrumentNameRole::PART);
             }
 
-            updateName(system, globalStaffIdx, ctx, String(), partNameType, InstrumentNameRole::SHARED_STAFF);
+            update_name(system, global_staff_idx, ctx, String(), part_name_type, InstrumentNameRole::SHARED_STAFF);
         } else {
-            if (relStaffIdx == 0) {
-                updateName(system, globalStaffIdx, ctx, String(), type, InstrumentNameRole::PART);
+            if (rel_staff_idx == 0) {
+                update_name(system, global_staff_idx, ctx, String(), type, InstrumentNameRole::PART);
             }
-            updateName(system, globalStaffIdx, ctx, staffGroupName, partNameType, InstrumentNameRole::SHARED_STAFF);
+            update_name(system, global_staff_idx, ctx, staff_group_name, part_name_type, InstrumentNameRole::SHARED_STAFF);
         }
 
-        String staffLabel;
-        if (!hidePartName) {
-            staffLabel = formattedSharedStaffLabel(globalStaffIdx, trackMap, originParts);
+        String staff_label;
+        if (!hide_part_name) {
+            staff_label = formatted_shared_staff_label(global_staff_idx, track_map, origin_parts);
         }
 
-        updateName(system, globalStaffIdx, ctx, staffLabel, partNameType, InstrumentNameRole::STAFF);
+        update_name(system, global_staff_idx, ctx, staff_label, part_name_type, InstrumentNameRole::STAFF);
     }
 }
 
-void SystemHeaderLayout::updateGroupNames(System *system, LayoutContext &ctx, const Fraction &tick) {
-    bool firstSystem = ctx.state().firstSystem();
+void SystemHeaderLayout::update_group_names(System *system, LayoutContext &ctx, const Fraction &tick) {
+    bool first_system = ctx.state().first_system();
 
     System::LayoutData *ldata = system->mutldata();
-    ldata->clearPartsWithGroupNames();
+    ldata->clear_parts_with_group_names();
 
-    for (staff_idx_t startOfGroup = 0; startOfGroup < system->staves().size();) {
-        Part *curPart = ctx.dom().staff(startOfGroup)->part();
-        const Instrument *curInstrument = curPart->instrument(tick);
-        const InstrumentLabel &curLabel = curInstrument->instrumentLabel();
-        if (!curInstrument->instrumentLabel().allowGroupName() || !curPart->show() || curPart->isSharedPart()) {
-            ++startOfGroup;
+    for (staff_idx_t start_of_group = 0; start_of_group < system->staves().size();) {
+        Part *cur_part = ctx.dom().staff(start_of_group)->part();
+        const Instrument *cur_instrument = cur_part->instrument(tick);
+        const InstrumentLabel &cur_label = cur_instrument->instrument_label();
+        if (!cur_instrument->instrument_label().allow_group_name() || !cur_part->show() || cur_part->is_shared_part()) {
+            ++start_of_group;
             continue;
         }
 
-        InstrumentLabelVisibility visibility = resolveInstrumentLabelVisibility(ctx.dom().staff(startOfGroup), tick, ctx, firstSystem);
-        InstrumentNameType type = resolveInstrumentNameType(visibility);
+        InstrumentLabelVisibility visibility =
+            resolve_instrument_label_visibility(ctx.dom().staff(start_of_group), tick, ctx, first_system);
+        InstrumentNameType type = resolve_instrument_name_type(visibility);
         bool hide = visibility == InstrumentLabelVisibility::HIDE;
 
-        std::vector<Part *> partsInThisGroup;
+        std::vector<Part *> parts_in_this_group;
 
-        staff_idx_t endOfGroup = startOfGroup;
-        while (endOfGroup < system->staves().size()) {
-            Part *nextPart = ctx.dom().staff(endOfGroup)->part();
-            Instrument *nextInstrument = nextPart->instrument(tick);
-            InstrumentLabel &nextLabel = nextInstrument->instrumentLabel();
-            if (nextPart != curPart &&
-                (nextInstrument->id() != curInstrument->id() || !nextLabel.allowGroupName() || nextPart->isSharedPart())) {
+        staff_idx_t end_of_group = start_of_group;
+        while (end_of_group < system->staves().size()) {
+            Part *next_part = ctx.dom().staff(end_of_group)->part();
+            Instrument *next_instrument = next_part->instrument(tick);
+            InstrumentLabel &next_label = next_instrument->instrument_label();
+            if (next_part != cur_part &&
+                (next_instrument->id() != cur_instrument->id() || !next_label.allow_group_name() || next_part->is_shared_part())) {
                 break;
             }
-            if (nextLabel.useCustomGroupName() && (nextLabel.customNameLongGroup() != curLabel.customNameLongGroup() ||
-                                                   nextLabel.customNameShortGroup() != curLabel.customNameShortGroup())) {
+            if (next_label.use_custom_group_name() && (next_label.custom_name_long_group() != cur_label.custom_name_long_group() ||
+                                                       next_label.custom_name_short_group() != cur_label.custom_name_short_group())) {
                 break;
             }
 
-            if (type == InstrumentNameType::LONG && system->visibleStavesOfPart(nextPart).size() == 0) {
+            if (type == InstrumentNameType::LONG && system->visible_staves_of_part(next_part).size() == 0) {
                 // NOTE: We can only do this for long-name systems because they don't need to have
                 // the left barline aligned with the other systems across the page.
-                endOfGroup += nextPart->nstaves();
+                end_of_group += next_part->nstaves();
                 continue;
             }
 
-            if (nextPart->show() && nextPart->visibleStavesCount() > 0) {
-                partsInThisGroup.push_back(nextPart);
-                nextLabel.setUseCustomGroupName(curLabel.useCustomGroupName());
-                nextLabel.setCustomNameLongGroup(curLabel.customNameLongGroup());
-                nextLabel.setCustomNameShortGroup(curLabel.customNameShortGroup());
+            if (next_part->show() && next_part->visible_staves_count() > 0) {
+                parts_in_this_group.push_back(next_part);
+                next_label.set_use_custom_group_name(cur_label.use_custom_group_name());
+                next_label.set_custom_name_long_group(cur_label.custom_name_long_group());
+                next_label.set_custom_name_short_group(cur_label.custom_name_short_group());
             }
 
-            endOfGroup += nextPart->nstaves();
+            end_of_group += next_part->nstaves();
         }
 
-        if (!hide && partsInThisGroup.size() > 1 && useGroupNames(curInstrument->group(), ctx)) {
-            String name = formattedGroupName(system, curPart, tick, type == InstrumentNameType::LONG);
-            InstrumentName *groupName = updateName(system, startOfGroup, ctx, name, type, InstrumentNameRole::GROUP);
+        if (!hide && parts_in_this_group.size() > 1 && use_group_names(cur_instrument->group(), ctx)) {
+            String name = formatted_group_name(system, cur_part, tick, type == InstrumentNameType::LONG);
+            InstrumentName *group_name = update_name(system, start_of_group, ctx, name, type, InstrumentNameRole::GROUP);
 
-            if (groupName) {
-                groupName->mutldata()->setEndIdxOfGroup(endOfGroup);
+            if (group_name) {
+                group_name->mutldata()->set_end_idx_of_group(end_of_group);
 
-                for (Part *p : partsInThisGroup) {
-                    ldata->addPartWithGroupNames(p, groupName);
+                for (Part *p : parts_in_this_group) {
+                    ldata->add_part_with_group_names(p, group_name);
                 }
             }
 
-            for (staff_idx_t idx = startOfGroup + 1; idx < endOfGroup; ++idx) {
-                updateName(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
+            for (staff_idx_t idx = start_of_group + 1; idx < end_of_group; ++idx) {
+                update_name(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
             }
         } else {
-            for (staff_idx_t idx = startOfGroup; idx < endOfGroup; ++idx) {
-                updateName(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
+            for (staff_idx_t idx = start_of_group; idx < end_of_group; ++idx) {
+                update_name(system, idx, ctx, String(), type, InstrumentNameRole::GROUP);
             }
         }
 
-        startOfGroup = endOfGroup;
+        start_of_group = end_of_group;
     }
 
-    for (staff_idx_t staffIdx = 0; staffIdx < system->staves().size(); ++staffIdx) {
-        if (system->staff(staffIdx)->name(InstrumentNameRole::GROUP)) {
-            Part *part = ctx.dom().staff(staffIdx)->part();
-            if (!muse::contains(ldata->partsWithGroupName(), part)) {
+    for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
+        if (system->staff(staff_idx)->name(InstrumentNameRole::GROUP)) {
+            Part *part = ctx.dom().staff(staff_idx)->part();
+            if (!muse::contains(ldata->parts_with_group_name(), part)) {
                 // name is empty here, so the InstrumentNameType is unused (see updateName)
-                updateName(system, staffIdx, ctx, String(), InstrumentNameType::SHORT, InstrumentNameRole::GROUP);
+                update_name(system, staff_idx, ctx, String(), InstrumentNameType::SHORT, InstrumentNameRole::GROUP);
             }
         }
     }
 }
 
-bool SystemHeaderLayout::useGroupNames(const String &instrumentGroup, LayoutContext &ctx) {
+bool SystemHeaderLayout::use_group_names(const String &instrument_group, LayoutContext &ctx) {
     const MStyle &style = ctx.conf().style();
 
-    if (instrumentGroup == "woodwinds" || instrumentGroup == "brass") {
-        return style.styleB(Sid::windsNameByGroup);
+    if (instrument_group == "woodwinds" || instrument_group == "brass") {
+        return style.style_b(Sid::WINDS_NAME_BY_GROUP);
     }
-    if (instrumentGroup == "vocals") {
-        return style.styleB(Sid::vocalsNameByGroup);
+    if (instrument_group == "vocals") {
+        return style.style_b(Sid::VOCALS_NAME_BY_GROUP);
     }
-    if (instrumentGroup == "strings") {
-        return style.styleB(Sid::stringsNameByGroup);
+    if (instrument_group == "strings") {
+        return style.style_b(Sid::STRINGS_NAME_BY_GROUP);
     }
 
-    return style.styleB(Sid::othersNameByGroup);
+    return style.style_b(Sid::OTHERS_NAME_BY_GROUP);
 }
 
-void SystemHeaderLayout::updateSystemHeaderWidth(System *system, LayoutContext &ctx) {
+void SystemHeaderLayout::update_system_header_width(System *system, LayoutContext &ctx) {
     if (system->staves().empty()) { // ignore vbox
         return;
     }
 
-    SystemHeaderLayout::computeInstrumentNameOffset(system, ctx);
-    double instrumentNameOffset = system->ldata()->instrumentNameOffset();
+    SystemHeaderLayout::compute_instrument_name_offset(system, ctx);
+    double instrument_name_offset = system->ldata()->instrument_name_offset();
 
     //---------------------------------------------------
     //  find x position of staves
     //---------------------------------------------------
-    SystemHeaderLayout::layoutBrackets(system, ctx);
-    double maxBracketsWidth = SystemHeaderLayout::totalBracketOffset(ctx);
+    SystemHeaderLayout::layout_brackets(system, ctx);
+    double max_brackets_width = SystemHeaderLayout::total_bracket_offset(ctx);
 
-    SystemHeaderLayout::setInstrumentNames(system, ctx);
-    SystemHeaderLayout::computeInstrumentNamesWidth(system, ctx);
-    double maxNamesWidth = system->ldata()->totalNamesWidth();
-    double indent = maxNamesWidth > 0 ? maxNamesWidth + instrumentNameOffset : 0.0;
-    if (ctx.state().firstSystem() && ctx.state().firstSystemIndent()) {
-        indent = std::max(indent, system->styleP(Sid::firstSystemIndentationValue) * system->mag() - maxBracketsWidth);
-        maxNamesWidth = indent - instrumentNameOffset;
+    SystemHeaderLayout::set_instrument_names(system, ctx);
+    SystemHeaderLayout::compute_instrument_names_width(system, ctx);
+    double max_names_width = system->ldata()->total_names_width();
+    double indent = max_names_width > 0 ? max_names_width + instrument_name_offset : 0.0;
+    if (ctx.state().first_system() && ctx.state().first_system_indent()) {
+        indent = std::max(indent, system->style_p(Sid::FIRST_SYSTEM_INDENTATION_VALUE) * system->mag() - max_brackets_width);
+        max_names_width = indent - instrument_name_offset;
     }
 
-    if (muse::RealIsNull(indent)) {
-        if (ctx.conf().styleB(Sid::alignSystemToMargin)) {
-            system->setLeftMargin(0.0);
+    if (muse::real_is_null(indent)) {
+        if (ctx.conf().style_b(Sid::ALIGN_SYSTEM_TO_MARGIN)) {
+            system->set_left_margin(0.0);
         } else {
-            system->setLeftMargin(maxBracketsWidth);
+            system->set_left_margin(max_brackets_width);
         }
     } else {
-        system->setLeftMargin(indent + maxBracketsWidth);
+        system->set_left_margin(indent + max_brackets_width);
     }
 }

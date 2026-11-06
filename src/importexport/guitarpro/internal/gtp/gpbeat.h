@@ -12,20 +12,20 @@ namespace mu::iex::guitarpro {
 class GPBeat {
 public:
     enum class DynamicType { FFF, FF, F, MF, MP, P, PP, PPP };
-    enum class LegatoType { None, Start, Mediate, End };
-    enum class Arpeggio { None, Up, Down };
-    enum class Brush { None, Up, Down };
-    enum class GraceNotes { None, OnBeat, BeforeBeat };
-    enum class VibratoWTremBar { None, Slight, Wide };
-    enum class VibratoLeftHand { None, Slight, Wide };
-    enum class Fadding { None, FadeIn, FadeOut, VolumeSwell };
-    enum class Hairpin { None, Crescendo, Decrescendo };
-    enum class PickStroke { None, Up, Down };
-    enum class Wah { None, Open, Closed };
-    enum class Golpe { None, Finger, Thumb };
-    enum class TappingHand { None, Right, Left };
+    enum class LegatoType { NONE, START, MEDIATE, END };
+    enum class Arpeggio { NONE, UP, DOWN };
+    enum class Brush { NONE, UP, DOWN };
+    enum class GraceNotes { NONE, ON_BEAT, BEFORE_BEAT };
+    enum class VibratoWTremBar { NONE, SLIGHT, WIDE };
+    enum class VibratoLeftHand { NONE, SLIGHT, WIDE };
+    enum class Fadding { NONE, FADE_IN, FADE_OUT, VOLUME_SWELL };
+    enum class Hairpin { NONE, CRESCENDO, DECRESCENDO };
+    enum class PickStroke { NONE, UP, DOWN };
+    enum class Wah { NONE, OPEN, CLOSED };
+    enum class Golpe { NONE, FINGER, THUMB };
+    enum class TappingHand { NONE, RIGHT, LEFT };
     enum class Rasgueado {
-        None,
+        NONE,
         II_1,
         MII_1,
         MII_2,
@@ -45,9 +45,9 @@ public:
         PEAMI_1
     };
 
-    enum class OttavaType { None, ma15, va8, vb8, mb15 };
+    enum class OttavaType { NONE, MA15, VA8, VB8, MB15 };
 
-    enum class HarmonicMarkType { None, Artificial, Pinch, Tap, Semi, FeedBack };
+    enum class HarmonicMarkType { NONE, ARTIFICIAL, PINCH, TAP, SEMI, FEED_BACK };
 
     struct HarmonicMarkInfo {
         bool artificial = false;
@@ -69,177 +69,177 @@ public:
 
     struct StemOrientation {
         bool up = false; /// taken in consideration only if userDefined == true
-        bool userDefined = false;
+        bool user_defined = false;
     };
 
     enum class BeamMode { AUTO, JOINED, BROKEN, BROKEN2, BROKEN2_JOINED };
 
     struct {
         bool operator()(const std::shared_ptr<GPNote> &a, const std::shared_ptr<GPNote> &b) const {
-            auto aPitch = a->midiPitch().octave * 12 + a->midiPitch().tone;
-            auto bPitch = b->midiPitch().octave * 12 + b->midiPitch().tone;
-            return aPitch > bPitch;
+            auto a_pitch = a->midi_pitch().octave * 12 + a->midi_pitch().tone;
+            auto b_pitch = b->midi_pitch().octave * 12 + b->midi_pitch().tone;
+            return a_pitch > b_pitch;
         }
-    } comparePitch;
+    } compare_pitch;
 
     using Whammy = GPNote::Bend;
 
-    void addGPNote(const std::shared_ptr<GPNote> &n) { _notes.push_back(n); }
+    void add_gp_note(const std::shared_ptr<GPNote> &n) { notes_value.push_back(n); }
 
-    void sortGPNotes();
+    void sort_gp_notes();
 
-    void addGPRhythm(const std::shared_ptr<GPRhythm> &n) { _rhythm = n; }
+    void add_gp_rhythm(const std::shared_ptr<GPRhythm> &n) { rhythm = n; }
 
-    void setDynamic(GPBeat::DynamicType t) { _dynamic = t; }
+    void set_dynamic(GPBeat::DynamicType t) { dynamic_value = t; }
 
-    void setLegatoType(GPBeat::LegatoType t) { _legato = t; }
+    void set_legato_type(GPBeat::LegatoType t) { legato = t; }
 
-    void setOttavaType(GPBeat::OttavaType ottavaType) { _ottavaType = ottavaType; }
+    void set_ottava_type(GPBeat::OttavaType input_ottava_type) { ottava_type_value = input_ottava_type; }
 
-    GPBeat::OttavaType ottavaType() const { return _ottavaType; }
+    GPBeat::OttavaType ottava_type() const { return ottava_type_value; }
 
-    bool isRest() const { return _notes.empty(); }
+    bool is_rest() const { return notes_value.empty(); }
 
-    DynamicType dynamic() const { return _dynamic; }
+    DynamicType dynamic() const { return dynamic_value; }
 
-    LegatoType legatoType() const { return _legato; }
+    LegatoType legato_type() const { return legato; }
 
     std::pair<int, GPRhythm::RhytmType> lenth() const;
     GPRhythm::Tuplet tuplet() const;
 
-    void setLetRing(bool letRing) { _letRing = letRing; }
+    void set_let_ring(bool input_let_ring) { let_ring_value = input_let_ring; }
 
-    bool letRing() const { return _letRing; }
+    bool let_ring() const { return let_ring_value; }
 
-    void setPalmMute(bool palmMute) { _palmMute = palmMute; }
+    void set_palm_mute(bool input_palm_mute) { palm_mute_value = input_palm_mute; }
 
-    bool palmMute() const { return _palmMute; }
+    bool palm_mute() const { return palm_mute_value; }
 
-    void setTrill(bool trill) { _trill = trill; }
+    void set_trill(bool trill) { trill_value = trill; }
 
-    bool trill() const { return _trill; }
+    bool trill() const { return trill_value; }
 
-    void addHarmonicMarkType(GPBeat::HarmonicMarkType type);
+    void add_harmonic_mark_type(GPBeat::HarmonicMarkType type);
 
-    bool harmonicMarkArtificial() const { return _harmonicMarkInfo.artificial; }
+    bool harmonic_mark_artificial() const { return harmonic_mark_info.artificial; }
 
-    bool harmonicMarkPinch() const { return _harmonicMarkInfo.pinch; }
+    bool harmonic_mark_pinch() const { return harmonic_mark_info.pinch; }
 
-    bool harmonicMarkTap() const { return _harmonicMarkInfo.tap; }
+    bool harmonic_mark_tap() const { return harmonic_mark_info.tap; }
 
-    bool harmonicMarkSemi() const { return _harmonicMarkInfo.semi; }
+    bool harmonic_mark_semi() const { return harmonic_mark_info.semi; }
 
-    bool harmonicMarkFeedback() const { return _harmonicMarkInfo.feedback; }
+    bool harmonic_mark_feedback() const { return harmonic_mark_info.feedback; }
 
-    void setTappingHand(TappingHand hand) { _tappingHand = hand; }
+    void set_tapping_hand(TappingHand hand) { tapping_hand_value = hand; }
 
-    TappingHand tappingHand() const { return _tappingHand; }
+    TappingHand tapping_hand() const { return tapping_hand_value; }
 
-    void setSlapped(bool s) { _slapped = s; }
+    void set_slapped(bool s) { slapped_value = s; }
 
-    bool slapped() const { return _slapped; }
+    bool slapped() const { return slapped_value; }
 
-    void setPopped(bool s) { _popped = s; }
+    void set_popped(bool s) { popped_value = s; }
 
-    bool popped() const { return _popped; }
+    bool popped() const { return popped_value; }
 
-    void setArpeggio(Arpeggio ar) { _arpeggio = ar; }
+    void set_arpeggio(Arpeggio ar) { arpeggio_value = ar; }
 
-    Arpeggio arpeggio() const { return _arpeggio; }
+    Arpeggio arpeggio() const { return arpeggio_value; }
 
-    void setArpeggioStretch(double arpeggioStretch) { _arpeggioStretch = arpeggioStretch; }
+    void set_arpeggio_stretch(double input_arpeggio_stretch) { arpeggio_stretch_value = input_arpeggio_stretch; }
 
-    double arpeggioStretch() const { return _arpeggioStretch; }
+    double arpeggio_stretch() const { return arpeggio_stretch_value; }
 
-    void setBrush(Brush br) { _brush = br; }
+    void set_brush(Brush br) { brush_value = br; }
 
-    Brush brush() const { return _brush; }
+    Brush brush() const { return brush_value; }
 
-    void setGraceNotes(GraceNotes gn) { _graceNotes = gn; }
+    void set_grace_notes(GraceNotes gn) { grace_notes_value = gn; }
 
-    GraceNotes graceNotes() const { return _graceNotes; }
+    GraceNotes grace_notes() const { return grace_notes_value; }
 
-    void setFreeText(const muse::String &s) { _freeText = s; }
+    void set_free_text(const muse::String &s) { free_text_value = s; }
 
-    const muse::String &freeText() const { return _freeText; }
+    const muse::String &free_text() const { return free_text_value; }
 
-    void setTime(int t) { _time = t; }
+    void set_time(int t) { time_value = t; }
 
-    int time() const { return _time; }
+    int time() const { return time_value; }
 
-    void setVibratoWTremBar(VibratoWTremBar v) { _vibratoWTremBar = v; }
+    void set_vibrato_w_trem_bar(VibratoWTremBar v) { vibrato_w_trem_bar_value = v; }
 
-    VibratoWTremBar vibratoWTremBar() const { return _vibratoWTremBar; }
+    VibratoWTremBar vibrato_w_trem_bar() const { return vibrato_w_trem_bar_value; }
 
-    void setVibratoLeftHand(VibratoLeftHand v) { _vibratoLeftHand = v; }
+    void set_vibrato_left_hand(VibratoLeftHand v) { vibrato_left_hand_value = v; }
 
-    VibratoLeftHand vibratoLeftHand() const { return _vibratoLeftHand; }
+    VibratoLeftHand vibrato_left_hand() const { return vibrato_left_hand_value; }
 
-    void setFadding(Fadding f) { _fadding = f; }
+    void set_fadding(Fadding f) { fadding_value = f; }
 
-    Fadding fadding() const { return _fadding; }
+    Fadding fadding() const { return fadding_value; }
 
-    void setHairpin(Hairpin h) { _hairpin = h; }
+    void set_hairpin(Hairpin h) { hairpin_value = h; }
 
-    Hairpin hairpin() const { return _hairpin; }
+    Hairpin hairpin() const { return hairpin_value; }
 
-    void setRasgueado(Rasgueado r) { _rasgueado = r; }
+    void set_rasgueado(Rasgueado r) { rasgueado_value = r; }
 
-    Rasgueado rasgueado() const { return _rasgueado; }
+    Rasgueado rasgueado() const { return rasgueado_value; }
 
-    void setPickStroke(PickStroke p) { _pickStroke = p; }
+    void set_pick_stroke(PickStroke p) { pick_stroke_value = p; }
 
-    PickStroke pickStroke() const { return _pickStroke; }
+    PickStroke pick_stroke() const { return pick_stroke_value; }
 
-    void setTremolo(Tremolo tr) { _tremolo = tr; }
+    void set_tremolo(Tremolo tr) { tremolo_value = tr; }
 
-    Tremolo tremolo() const { return _tremolo; }
+    Tremolo tremolo() const { return tremolo_value; }
 
-    void setWah(Wah w) { _wah = w; }
+    void set_wah(Wah w) { wah_value = w; }
 
-    Wah wah() const { return _wah; }
+    Wah wah() const { return wah_value; }
 
-    void setGolpe(Golpe g) { golpe_ = g; }
+    void set_golpe(Golpe g) { golpe_ = g; }
 
     Golpe golpe() const { return golpe_; }
 
-    void setBarreFret(int v) { _barre.fret = v; }
+    void set_barre_fret(int v) { barre_value.fret = v; }
 
-    void setBarreString(int v) { _barre.string = v; }
+    void set_barre_string(int v) { barre_value.string = v; }
 
-    Barre barre() const { return _barre; }
+    Barre barre() const { return barre_value; }
 
-    void setId(int id) { _id = id; }
+    void set_id(int id) { id_value = id; }
 
-    int id() const { return _id; }
+    int id() const { return id_value; }
 
-    void setWhammy(const Whammy &whammy) { whammy_ = whammy; }
+    void set_whammy(const Whammy &whammy) { whammy_ = whammy; }
 
     const Whammy &whammy() const { return whammy_; }
 
-    bool hasWhammy() const { return !whammy_.isEmpty(); }
+    bool has_whammy() const { return !whammy_.is_empty(); }
 
-    void setPickScrape(bool pickScrape) { pickScrape_ = pickScrape; }
+    void set_pick_scrape(bool pick_scrape) { pick_scrape_ = pick_scrape; }
 
-    bool pickScrape() const { return pickScrape_; }
+    bool pick_scrape() const { return pick_scrape_; }
 
-    void setDeadSlapped(bool deadSlapped) { deadSlapped_ = deadSlapped; }
+    void set_dead_slapped(bool dead_slapped) { dead_slapped_ = dead_slapped; }
 
-    bool deadSlapped() const { return deadSlapped_; }
+    bool dead_slapped() const { return dead_slapped_; }
 
-    void setStemOrientationUp(bool up) { stemOrientation_.up = up; }
+    void set_stem_orientation_up(bool up) { stem_orientation_.up = up; }
 
-    void setStemOrientationUserDefined(bool userDefined) { stemOrientation_.userDefined = userDefined; }
+    void set_stem_orientation_user_defined(bool user_defined) { stem_orientation_.user_defined = user_defined; }
 
-    bool stemOrientationUp() const { return stemOrientation_.up; }
+    bool stem_orientation_up() const { return stem_orientation_.up; }
 
-    bool stemOrientationUserDefined() const { return stemOrientation_.userDefined; }
+    bool stem_orientation_user_defined() const { return stem_orientation_.user_defined; }
 
-    void setBeamMode(BeamMode mode) { beamMode_ = mode; }
+    void set_beam_mode(BeamMode mode) { beam_mode_ = mode; }
 
-    BeamMode beamMode() const { return beamMode_; }
+    BeamMode beam_mode() const { return beam_mode_; }
 
-    const std::vector<std::shared_ptr<GPNote>> &notes() const { return _notes; }
+    const std::vector<std::shared_ptr<GPNote>> &notes() const { return notes_value; }
 
     //! NOTE In GP version 6.2.0+ already arranged lyrics are written into bits, so the lyrics field of the beat is enough.
     //! In earlier versions of GP, there was no arrangement of lyrics by bits,
@@ -249,28 +249,28 @@ public:
     //! Therefore, in order to write lyrics into such bits, a key was added - the bar number (master bar)
 
     struct Key {
-        int32_t trackId{-1};
-        int32_t mbarId{-1};
+        int32_t track_id{-1};
+        int32_t mbar_id{-1};
 
         Key() {}
 
-        Key(int32_t ti, int32_t mi) : trackId(ti), mbarId(mi) {}
+        Key(int32_t ti, int32_t mi) : track_id(ti), mbar_id(mi) {}
 
         bool operator<(const Key &other) const {
-            if (trackId != other.trackId) {
-                return trackId < other.trackId;
+            if (track_id != other.track_id) {
+                return track_id < other.track_id;
             }
-            return mbarId < other.mbarId;
+            return mbar_id < other.mbar_id;
         }
     };
 
-    void setLyrics(const std::string &ly) { setLyrics(-1, -1, ly); }
+    void set_lyrics(const std::string &ly) { set_lyrics(-1, -1, ly); }
 
-    void setLyrics(int32_t ti, int32_t mi, const std::string &ly) { _lyrics[Key(ti, mi)] = ly; }
+    void set_lyrics(int32_t ti, int32_t mi, const std::string &ly) { lyrics_value[Key(ti, mi)] = ly; }
 
     const std::string &lyrics(int32_t ti = -1, int32_t mi = -1) const {
         Key key(ti, mi);
-        if (_lyrics.find(key) == _lyrics.end()) {
+        if (lyrics_value.find(key) == lyrics_value.end()) {
             if (ti != -1 && mi != -1) {
                 return lyrics(-1, -1);
             }
@@ -278,63 +278,63 @@ public:
             static std::string dummy;
             return dummy;
         }
-        return _lyrics.at(key);
+        return lyrics_value.at(key);
     }
 
     //! NOTE Same problem as with lyrics
-    void setDiagramIdx(int idx) { setDiagramIdx(-1, -1, idx); }
+    void set_diagram_idx(int idx) { set_diagram_idx(-1, -1, idx); }
 
-    void setDiagramIdx(int32_t ti, int32_t mi, int idx) { _diagramIdx[Key(ti, mi)] = idx; }
+    void set_diagram_idx(int32_t ti, int32_t mi, int idx) { diagram_idx_value[Key(ti, mi)] = idx; }
 
-    int diagramIdx(int32_t ti = -1, int32_t mi = -1) const {
+    int diagram_idx(int32_t ti = -1, int32_t mi = -1) const {
         Key key(ti, mi);
-        if (_diagramIdx.find(key) == _diagramIdx.end()) {
+        if (diagram_idx_value.find(key) == diagram_idx_value.end()) {
             if (ti != -1 && mi != -1) {
-                return diagramIdx(-1, -1);
+                return diagram_idx(-1, -1);
             }
 
             return -1;
         }
-        return _diagramIdx.at(key);
+        return diagram_idx_value.at(key);
     }
 
 private:
-    int _id = -1;
-    std::vector<std::shared_ptr<GPNote>> _notes;
-    std::map<Key, std::string> _lyrics;
-    std::map<Key, int> _diagramIdx;
-    std::shared_ptr<GPRhythm> _rhythm;
-    DynamicType _dynamic = DynamicType::MF;
-    LegatoType _legato = LegatoType::None;
-    OttavaType _ottavaType = OttavaType::None;
-    bool _letRing = false;
-    bool _palmMute = false;
-    bool _trill = false;
-    TappingHand _tappingHand = TappingHand::None;
-    bool _slapped = false;
-    bool _popped = false;
-    HarmonicMarkInfo _harmonicMarkInfo;
-    Arpeggio _arpeggio = Arpeggio::None;
-    Brush _brush = Brush::None;
-    GraceNotes _graceNotes = GraceNotes::None;
-    int _time = -1;
-    muse::String _freeText;
-    VibratoWTremBar _vibratoWTremBar = VibratoWTremBar::None;
-    VibratoLeftHand _vibratoLeftHand = VibratoLeftHand::None;
-    Fadding _fadding = Fadding::None;
-    Hairpin _hairpin = Hairpin::None;
-    Rasgueado _rasgueado = Rasgueado::None;
-    PickStroke _pickStroke = PickStroke::None;
-    Tremolo _tremolo;
-    Wah _wah = Wah::None;
-    Golpe golpe_ = Golpe::None;
-    Barre _barre;
-    double _arpeggioStretch = 0.0;
+    int id_value = -1;
+    std::vector<std::shared_ptr<GPNote>> notes_value;
+    std::map<Key, std::string> lyrics_value;
+    std::map<Key, int> diagram_idx_value;
+    std::shared_ptr<GPRhythm> rhythm;
+    DynamicType dynamic_value = DynamicType::MF;
+    LegatoType legato = LegatoType::NONE;
+    OttavaType ottava_type_value = OttavaType::NONE;
+    bool let_ring_value = false;
+    bool palm_mute_value = false;
+    bool trill_value = false;
+    TappingHand tapping_hand_value = TappingHand::NONE;
+    bool slapped_value = false;
+    bool popped_value = false;
+    HarmonicMarkInfo harmonic_mark_info;
+    Arpeggio arpeggio_value = Arpeggio::NONE;
+    Brush brush_value = Brush::NONE;
+    GraceNotes grace_notes_value = GraceNotes::NONE;
+    int time_value = -1;
+    muse::String free_text_value;
+    VibratoWTremBar vibrato_w_trem_bar_value = VibratoWTremBar::NONE;
+    VibratoLeftHand vibrato_left_hand_value = VibratoLeftHand::NONE;
+    Fadding fadding_value = Fadding::NONE;
+    Hairpin hairpin_value = Hairpin::NONE;
+    Rasgueado rasgueado_value = Rasgueado::NONE;
+    PickStroke pick_stroke_value = PickStroke::NONE;
+    Tremolo tremolo_value;
+    Wah wah_value = Wah::NONE;
+    Golpe golpe_ = Golpe::NONE;
+    Barre barre_value;
+    double arpeggio_stretch_value = 0.0;
     Whammy whammy_;
-    bool pickScrape_ = false;
-    bool deadSlapped_ = false;
-    StemOrientation stemOrientation_;
-    BeamMode beamMode_ = BeamMode::AUTO;
+    bool pick_scrape_ = false;
+    bool dead_slapped_ = false;
+    StemOrientation stem_orientation_;
+    BeamMode beam_mode_ = BeamMode::AUTO;
 };
 } // namespace mu::iex::guitarpro
 

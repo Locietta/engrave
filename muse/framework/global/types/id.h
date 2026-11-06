@@ -37,7 +37,7 @@ public:
 
     constexpr ID(const uint64_t &id) : id_(id) {}
 
-    bool isValid() const;
+    bool is_valid() const;
 
     ID &operator=(const ID &id);
     ID &operator+=(const ID &id);
@@ -51,8 +51,8 @@ public:
     bool operator<(const ID &id) const;
     bool operator>(const ID &id) const;
 
-    uint64_t toUint64() const;
-    std::string toStdString() const;
+    uint64_t to_uint64() const;
+    std::string to_std_string() const;
 
 
 private:
@@ -61,11 +61,11 @@ private:
 
 using IDList = std::vector<ID>;
 
-inline bool containsId(const IDList &list, const ID &id) { return std::find(list.cbegin(), list.cend(), id) != list.cend(); }
+inline bool contains_id(const IDList &list, const ID &id) { return std::find(list.cbegin(), list.cend(), id) != list.cend(); }
 } // namespace muse
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::ID &v) {
-    s << v.toUint64();
+    s << v.to_uint64();
     return s;
 }
 

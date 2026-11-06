@@ -40,105 +40,105 @@ using namespace muse::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
-bool MscSaver::writeMscz(MasterScore *score, MscWriter &mscWriter, const write::WriteContext *ctx) {
+bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write::WriteContext *ctx) {
     TRACEFUNC;
 
-    IF_ASSERT_FAILED(mscWriter.isOpened()) { return false; }
+    IF_ASSERT_FAILED(msc_writer.is_opened()) { return false; }
 
     // Write style of MasterScore
     {
         //! NOTE The style is writing to a separate file only for the master score.
         //! At the moment, the style for the parts is still writing to the score file.
-        ByteArray styleData;
-        auto styleBuf = Buffer::opened(IODevice::WriteOnly, &styleData);
-        score->style().write(&styleBuf);
-        mscWriter.writeStyleFile(styleData);
+        ByteArray style_data;
+        auto style_buf = Buffer::opened(IODevice::WRITE_ONLY, &style_data);
+        score->style().write(&style_buf);
+        msc_writer.write_style_file(style_data);
     }
 
-    WriteInOutData masterWriteOutData(score);
+    WriteInOutData master_write_out_data(score);
 
     if (ctx) {
-        masterWriteOutData.ctx = *ctx;
+        master_write_out_data.ctx = *ctx;
     }
 
     // Write MasterScore
     {
-        ByteArray scoreData;
-        auto scoreBuf = Buffer::opened(IODevice::ReadWrite, &scoreData);
+        ByteArray score_data;
+        auto score_buf = Buffer::opened(IODevice::READ_WRITE, &score_data);
 
-        RWRegister::writer()->writeScore(score, &scoreBuf, &masterWriteOutData);
+        RWRegister::writer()->write_score(score, &score_buf, &master_write_out_data);
 
-        mscWriter.writeScoreFile(scoreData);
+        msc_writer.write_score_file(score_data);
     }
 
     // Write Excerpts
     {
-        if (!ctx || !ctx->shouldWriteRange()) {
+        if (!ctx || !ctx->should_write_range()) {
             const std::vector<Excerpt *> &excerpts = score->excerpts();
 
             struct ExcerptData {
-                String fileName;
-                ByteArray styleData;
-                ByteArray scoreData;
+                String file_name;
+                ByteArray style_data;
+                ByteArray score_data;
             };
 
-            auto serializeExcerpt = [masterWriteOutData, score](Excerpt *excerpt, size_t excerptIndex) -> ExcerptData {
-                Score *partScore = excerpt->excerptScore();
-                IF_ASSERT_FAILED(partScore && partScore != score) { return ExcerptData(); }
+            auto serialize_excerpt = [master_write_out_data, score](Excerpt *excerpt, size_t excerpt_index) -> ExcerptData {
+                Score *part_score = excerpt->excerpt_score();
+                IF_ASSERT_FAILED(part_score && part_score != score) { return ExcerptData(); }
 
-                excerpt->updateFileName(excerptIndex);
+                excerpt->update_file_name(excerpt_index);
 
                 ExcerptData data;
-                data.fileName = excerpt->fileName();
+                data.file_name = excerpt->file_name();
 
-                auto styleBuf = Buffer::opened(IODevice::WriteOnly, &data.styleData);
-                partScore->style().write(&styleBuf);
+                auto style_buf = Buffer::opened(IODevice::WRITE_ONLY, &data.style_data);
+                part_score->style().write(&style_buf);
 
-                WriteInOutData writeOutData = masterWriteOutData;
-                auto scoreBuf = Buffer::opened(IODevice::ReadWrite, &data.scoreData);
-                RWRegister::writer()->writeScore(partScore, &scoreBuf, &writeOutData);
+                WriteInOutData write_out_data = master_write_out_data;
+                auto score_buf = Buffer::opened(IODevice::READ_WRITE, &data.score_data);
+                RWRegister::writer()->write_score(part_score, &score_buf, &write_out_data);
 
                 return data;
             };
 
-            for (size_t excerptIndex = 0; excerptIndex < excerpts.size(); ++excerptIndex) {
-                Excerpt *excerpt = excerpts.at(excerptIndex);
+            for (size_t excerpt_index = 0; excerpt_index < excerpts.size(); ++excerpt_index) {
+                Excerpt *excerpt = excerpts.at(excerpt_index);
 
-                ExcerptData data = serializeExcerpt(excerpt, excerptIndex);
-                mscWriter.addExcerptStyleFile(data.fileName, data.styleData);
-                mscWriter.addExcerptFile(data.fileName, data.scoreData);
+                ExcerptData data = serialize_excerpt(excerpt, excerpt_index);
+                msc_writer.add_excerpt_style_file(data.file_name, data.style_data);
+                msc_writer.add_excerpt_file(data.file_name, data.score_data);
             }
         }
     }
 
     // Write ChordList
     {
-        ChordList *chordList = score->chordList();
-        if (chordList->customChordList() && !chordList->empty()) {
-            ByteArray chlData;
-            auto chlBuf = Buffer::opened(IODevice::WriteOnly, &chlData);
-            chordList->write(&chlBuf);
-            mscWriter.writeChordListFile(chlData);
+        ChordList *chord_list = score->chord_list();
+        if (chord_list->custom_chord_list() && !chord_list->empty()) {
+            ByteArray chl_data;
+            auto chl_buf = Buffer::opened(IODevice::WRITE_ONLY, &chl_data);
+            chord_list->write(&chl_buf);
+            msc_writer.write_chord_list_file(chl_data);
         }
     }
 
     // Write images
     {
-        for (ImageStoreItem *ip : imageStore) {
-            if (!ip->isUsed(score)) {
+        for (ImageStoreItem *ip : image_store) {
+            if (!ip->is_used(score)) {
                 continue;
             }
             ByteArray data = ip->buffer();
-            mscWriter.addImageFile(String::fromStdString(ip->hashName()), data);
+            msc_writer.add_image_file(String::from_std_string(ip->hash_name()), data);
         }
     }
 
     // Write automation
     {
-        if (score->automationData()) {
-            ByteArray data = AutomationRW::write(*score->automationData(), false /*writeGenerated*/);
+        if (score->automation_data()) {
+            ByteArray data = AutomationRW::write(*score->automation_data(), false /*writeGenerated*/);
             if (!data.empty()) {
-                mscWriter.writeAutomationJsonFile(data);
+                msc_writer.write_automation_json_file(data);
             }
         }
     }

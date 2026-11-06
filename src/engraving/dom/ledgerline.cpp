@@ -34,7 +34,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 LedgerLine::LedgerLine(DummyParentOr<EngravingItem> s) : EngravingItem(ElementType::LEDGER_LINE, s, ElementFlag::ON_STAFF) {
-    setSelectable(false);
+    set_selectable(false);
     len_ = 0.;
 }
 
@@ -44,5 +44,5 @@ LedgerLine::~LedgerLine() {}
 //   spatiumChanged
 //---------------------------------------------------------
 
-void LedgerLine::spatiumChanged(double oldValue, double newValue) { len_ = (len_ / oldValue) * newValue; }
+void LedgerLine::spatium_changed(double old_value, double new_value) { len_ = (len_ / old_value) * new_value; }
 } // namespace mu::engraving

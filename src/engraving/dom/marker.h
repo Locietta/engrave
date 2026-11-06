@@ -40,69 +40,69 @@ public:
     Marker(DummyParentOr<EngravingItem> parent);
     Marker(DummyParentOr<EngravingItem> parent, TextStyleType);
 
-    void setMarkerType(MarkerType t);
+    void set_marker_type(MarkerType t);
 
-    MarkerType markerType() const { return markerType_; }
+    MarkerType marker_type() const { return marker_type_; }
 
-    String markerTypeUserName() const;
+    String marker_type_user_name() const;
 
-    inline bool isSegno() const { return markerType_ == MarkerType::SEGNO || markerType_ == MarkerType::VARSEGNO; }
+    inline bool is_segno() const { return marker_type_ == MarkerType::SEGNO || marker_type_ == MarkerType::VARSEGNO; }
 
-    inline bool isCoda() const {
-        return markerType_ == MarkerType::CODA || markerType_ == MarkerType::VARCODA || markerType_ == MarkerType::CODETTA;
+    inline bool is_coda() const {
+        return marker_type_ == MarkerType::CODA || marker_type_ == MarkerType::VARCODA || marker_type_ == MarkerType::CODETTA;
     }
 
-    inline bool isToCoda() const {
-        return markerType_ == MarkerType::TOCODA || markerType_ == MarkerType::TOCODASYM || markerType_ == MarkerType::DA_CODA ||
-               markerType_ == MarkerType::DA_DBLCODA;
+    inline bool is_to_coda() const {
+        return marker_type_ == MarkerType::TOCODA || marker_type_ == MarkerType::TOCODASYM || marker_type_ == MarkerType::DA_CODA ||
+               marker_type_ == MarkerType::DA_DBLCODA;
     }
 
-    inline bool isRightMarker() const { return muse::contains(Marker::RIGHT_MARKERS, markerType_); }
+    inline bool is_right_marker() const { return muse::contains(Marker::right_markers, marker_type_); }
 
     Marker *clone() const override { return new Marker(*this); }
 
-    int subtype() const override { return int(markerType_); }
+    int subtype() const override { return int(marker_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    Measure *measure() const { return (Measure *) ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownership_parent(); }
 
     String label() const { return label_; }
 
-    void setLabel(const String &s) { label_ = s; }
+    void set_label(const String &s) { label_ = s; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
-    bool centerOnSymbol() const { return centerOnSymbol_; }
+    bool center_on_symbol() const { return center_on_symbol_; }
 
-    void setCenterOnSymbol(bool val) { centerOnSymbol_ = val; }
+    void set_center_on_symbol(bool val) { center_on_symbol_ = val; }
 
-    static constexpr std::array<MarkerType, 5> RIGHT_MARKERS{
+    static constexpr std::array<MarkerType, 5> right_markers{
         MarkerType::FINE, MarkerType::TOCODA, MarkerType::TOCODASYM, MarkerType::DA_CODA, MarkerType::DA_DBLCODA,
     };
 
-    String symbolString() const;
+    String symbol_string() const;
 
 private:
-    MarkerType markerType_ = MarkerType::FINE;
+    MarkerType marker_type_ = MarkerType::FINE;
     String label_ = u"fine"; ///< referenced from Jump() element
 
-    bool centerOnSymbol_ = true;
+    bool center_on_symbol_ = true;
 };
 
 struct MarkerTypeTableItem {
     MarkerType type;
     AsciiStringView text;
     AsciiStringView label;
-    bool rightAligned;
+    bool right_aligned;
 };
 
-extern const std::vector<MarkerTypeTableItem> markerTypeTable;
+extern const std::vector<MarkerTypeTableItem> marker_type_table;
 } // namespace mu::engraving

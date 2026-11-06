@@ -36,39 +36,39 @@ public:
     AbstractSynthesizer(const audio::AudioInputParams &params, const engine::IAudioEngineConfiguration &config);
     virtual ~AbstractSynthesizer() = default;
 
-    virtual void setMode(const ProcessMode mode) override;
+    virtual void set_mode(const ProcessMode mode) override;
     ProcessMode mode() const override;
 
     const audio::AudioInputParams &params() const override;
 
-    void setup(const mpe::PlaybackData &playbackData) override;
+    void setup(const mpe::PlaybackData &playback_data) override;
 
-    void prepareToPlay() override;
-    bool readyToPlay() const override;
+    void prepare_to_play() override;
+    bool ready_to_play() const override;
 
-    bool hasPendingChunks() const override;
-    void processInput() override;
-    InputProcessingProgress inputProcessingProgress() const override;
+    bool has_pending_chunks() const override;
+    void process_input() override;
+    InputProcessingProgress input_processing_progress() const override;
 
-    void clearCache() override;
+    void clear_cache() override;
 
 protected:
     const engine::IAudioEngineConfiguration *config() const { return &config_; }
 
-    virtual void setupSound(const mpe::PlaybackSetupData &setupData) = 0;
-    virtual void setupEvents(const mpe::PlaybackData &playbackData) = 0;
+    virtual void setup_sound(const mpe::PlaybackSetupData &setup_data) = 0;
+    virtual void setup_events(const mpe::PlaybackData &playback_data) = 0;
 
-    msecs_t samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const;
-    samples_t microSecsToSamples(const msecs_t msec, const samples_t sampleRate) const;
+    msecs_t samples_to_msecs(const samples_t samples_per_channel, const samples_t sample_rate) const;
+    samples_t micro_secs_to_samples(const msecs_t msec, const samples_t sample_rate) const;
 
-    ProcessMode mode_ = ProcessMode::Undefined;
+    ProcessMode mode_ = ProcessMode::UNDEFINED;
 
-    mpe::PlaybackSetupData setupData_;
+    mpe::PlaybackSetupData setup_data_;
 
     audio::AudioInputParams params_;
     const engine::IAudioEngineConfiguration &config_;
 
-    InputProcessingProgress inputProcessingProgress_;
-    bool hasPendingChunks_ = false;
+    InputProcessingProgress input_processing_progress_;
+    bool has_pending_chunks_ = false;
 };
 } // namespace muse::audio::synth

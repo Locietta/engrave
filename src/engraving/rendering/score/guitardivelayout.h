@@ -35,21 +35,21 @@ class GuitarDiveLayout {
 public:
     friend class GuitarBendLayout;
 
-    static void updateDiveSequences(const std::vector<mu::engraving::GuitarBend *> &bends, const LayoutContext &ctx);
-    static void layoutDiveTabStaff(GuitarBendSegment *item, LayoutContext &);
+    static void update_dive_sequences(const std::vector<mu::engraving::GuitarBend *> &bends, const LayoutContext &ctx);
+    static void layout_dive_tab_staff(GuitarBendSegment *item, LayoutContext &);
 
 private:
-    static PointF computeStartPosOnStaff(GuitarBendSegment *item, LayoutContext &ctx);
-    static PointF computeEndPosOnStaff(GuitarBendSegment *item, LayoutContext &ctx);
+    static PointF compute_start_pos_on_staff(GuitarBendSegment *item, LayoutContext &ctx);
+    static PointF compute_end_pos_on_staff(GuitarBendSegment *item, LayoutContext &ctx);
 
-    static PointF computeStartPosAboveStaff(GuitarBendSegment *item, LayoutContext &ctx);
-    static PointF computeEndPosAboveStaff(GuitarBendSegment *item, LayoutContext &);
+    static PointF compute_start_pos_above_staff(GuitarBendSegment *item, LayoutContext &ctx);
+    static PointF compute_end_pos_above_staff(GuitarBendSegment *item, LayoutContext &);
 
-    static LineSegment *findPrevHoldOrBendSegment(GuitarBendSegment *item, bool excludeFullReleaseDive = false);
+    static LineSegment *find_prev_hold_or_bend_segment(GuitarBendSegment *item, bool exclude_full_release_dive = false);
 
-    static void layoutDip(GuitarBendSegment *item, LayoutContext &ctx);
-    static void layoutScoop(GuitarBendSegment *item);
+    static void layout_dip(GuitarBendSegment *item, LayoutContext &ctx);
+    static void layout_scoop(GuitarBendSegment *item);
 
-    static RectF getNoteAndParenthesesShape(const Note *note);
+    static RectF get_note_and_parentheses_shape(const Note *note);
 };
 } // namespace mu::engraving::rendering::score

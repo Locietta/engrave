@@ -32,28 +32,28 @@ class PlayTechAnnotation final : public StaffTextBase {
     DECLARE_CLASSOF(ElementType::PLAYTECH_ANNOTATION)
 
 public:
-    PlayTechAnnotation(DummyParentOr<Segment> parent, PlayingTechniqueType techniqueType = PlayingTechniqueType::Natural,
+    PlayTechAnnotation(DummyParentOr<Segment> parent, PlayingTechniqueType technique_type = PlayingTechniqueType::NATURAL,
                        TextStyleType tid = TextStyleType::STAFF);
 
-    PlayingTechniqueType techniqueType() const;
-    void setTechniqueType(const PlayingTechniqueType techniqueType);
+    PlayingTechniqueType technique_type() const;
+    void set_technique_type(const PlayingTechniqueType technique_type);
 
-    bool playPlayTechAnnotation() const { return playPlayTechAnnotation_; }
+    bool play_play_tech_annotation() const { return play_play_tech_annotation_; }
 
-    void setPlayPlayTechAnnotation(bool play) { playPlayTechAnnotation_ = play; }
+    void set_play_play_tech_annotation(bool play) { play_play_tech_annotation_ = play; }
 
     PlayTechAnnotation *clone() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    bool isHandbellsSymbol() const;
+    bool is_handbells_symbol() const;
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &val) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &val) override;
+    PropertyValue property_default(Pid id) const override;
 
 private:
-    PlayingTechniqueType techniqueType_ = PlayingTechniqueType::Undefined;
-    bool playPlayTechAnnotation_ = true;
+    PlayingTechniqueType technique_type_ = PlayingTechniqueType::UNDEFINED;
+    bool play_play_tech_annotation_ = true;
 };
 } // namespace mu::engraving
 

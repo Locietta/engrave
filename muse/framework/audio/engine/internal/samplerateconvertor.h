@@ -30,8 +30,8 @@ class SampleRateConvertor {
 public:
     enum Method { SINC, FIR };
 
-    explicit SampleRateConvertor(const std::vector<float> &data, unsigned int channelsCount, unsigned int sampleRateIn,
-                                 unsigned int sampleRateOut);
+    explicit SampleRateConvertor(const std::vector<float> &data, unsigned int channels_count, unsigned int sample_rate_in,
+                                 unsigned int sample_rate_out);
 
     //! offline convert full data set
     std::vector<float> convert();
@@ -39,9 +39,9 @@ public:
     //! online convert
     unsigned int convert(float *buffer, unsigned int from, unsigned int count);
 
-    void setChannelCount(unsigned int count);
-    void setSampleRateIn(unsigned int sampleRate);
-    void setSampleRateOut(unsigned int sampleRate);
+    void set_channel_count(unsigned int count);
+    void set_sample_rate_in(unsigned int sample_rate);
+    void set_sample_rate_out(unsigned int sample_rate);
 
 private:
 
@@ -50,27 +50,27 @@ private:
 
     //! output sample value
     float y(unsigned int sample, unsigned int channel) const;
-    float ySinc(unsigned int sample, unsigned int channel) const;
-    float yFIR(unsigned int sample, unsigned int channel) const;
+    float y_sinc(unsigned int sample, unsigned int channel) const;
+    float y_fir(unsigned int sample, unsigned int channel) const;
 
     //! return true if there are samples in input buffer for conversion
-    bool availableSamples(unsigned int sample) const;
+    bool available_samples(unsigned int sample) const;
 
     //! calculate window function values
-    void initWindow();
+    void init_window();
 
-    const static unsigned int USE_SAMPLES = 16; //!< this value defines the quality and complexity of SRC.
+    const static unsigned int use_samples = 16; //!< this value defines the quality and complexity of SRC.
     const std::vector<float> &data_;
 
     //! values of window function for USE_SAMPLES
-    const static unsigned int FIR_LENGTH = 33;
-    unsigned int M_ = 1, L_ = 1;
+    const static unsigned int fir_length = 33;
+    unsigned int m_ = 1, l_ = 1;
     std::vector<float> fir_;
     mutable std::deque<float> y_;
 
-    unsigned int channelsCount_ = 0;
-    unsigned int sampleRateIn_ = 0;
-    unsigned int sampleRateOut_ = 0;
+    unsigned int channels_count_ = 0;
+    unsigned int sample_rate_in_ = 0;
+    unsigned int sample_rate_out_ = 0;
     Method method_ = FIR;
 };
 } // namespace muse::audio::engine

@@ -41,7 +41,7 @@ public:
 
     HarmonicMarkSegment *clone() const override { return new HarmonicMarkSegment(*this); }
 
-    HarmonicMark *harmonicMark() const { return (HarmonicMark *) spanner(); }
+    HarmonicMark *harmonic_mark() const { return (HarmonicMark *) spanner(); }
 
     friend class HarmonicMark;
 };
@@ -61,14 +61,14 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    Sid getPropertyStyle(Pid) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &value) override;
+    PropertyValue property_default(Pid property_id) const override;
+    Sid get_property_style(Pid) const override;
+    bool set_property(Pid property_id, const PropertyValue &value) override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
 private:
 

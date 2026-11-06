@@ -26,7 +26,7 @@
 #include "styledef.h"
 
 namespace mu::engraving {
-const std::vector<Sid> &pageStyles();
+const std::vector<Sid> &page_styles();
 
 class MStyle;
 
@@ -36,13 +36,13 @@ public:
 
     double width() const;
     double height() const;
-    double printableWidth() const;
-    double evenTopMargin() const;
-    double evenBottomMargin() const;
-    double evenLeftMargin() const;
-    double oddTopMargin() const;
-    double oddBottomMargin() const;
-    double oddLeftMargin() const;
+    double printable_width() const;
+    double even_top_margin() const;
+    double even_bottom_margin() const;
+    double even_left_margin() const;
+    double odd_top_margin() const;
+    double odd_bottom_margin() const;
+    double odd_left_margin() const;
     double twosided() const;
     double spatium() const;
 
@@ -56,27 +56,27 @@ public:
 
     double width() const;
     double height() const;
-    double printableWidth() const;
-    double evenTopMargin() const;
-    double evenBottomMargin() const;
-    double evenLeftMargin() const;
-    double oddTopMargin() const;
-    double oddBottomMargin() const;
-    double oddLeftMargin() const;
+    double printable_width() const;
+    double even_top_margin() const;
+    double even_bottom_margin() const;
+    double even_left_margin() const;
+    double odd_top_margin() const;
+    double odd_bottom_margin() const;
+    double odd_left_margin() const;
     double twosided() const;
     double spatium() const;
 
-    void setWidth(double v);
-    void setHeight(double v);
-    void setPrintableWidth(double v);
-    void setEvenTopMargin(double v);
-    void setEvenBottomMargin(double v);
-    void setEvenLeftMargin(double v);
-    void setOddTopMargin(double v);
-    void setOddBottomMargin(double v);
-    void setOddLeftMargin(double v);
-    void setTwosided(double v);
-    void setSpatium(double v);
+    void set_width(double v);
+    void set_height(double v);
+    void set_printable_width(double v);
+    void set_even_top_margin(double v);
+    void set_even_bottom_margin(double v);
+    void set_even_left_margin(double v);
+    void set_odd_top_margin(double v);
+    void set_odd_bottom_margin(double v);
+    void set_odd_left_margin(double v);
+    void set_twosided(double v);
+    void set_spatium(double v);
 
 private:
     MStyle &style_;

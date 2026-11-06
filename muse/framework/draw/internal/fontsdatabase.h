@@ -32,17 +32,17 @@ class FontsDatabase : public IFontsDatabase {
 public:
     FontsDatabase() = default;
 
-    void setDefaultFont(Font::Type type, const FontDataKey &key) override;
-    void insertSubstitution(const String &f1, const String &substituteName) override;
-    void removeSubstitutions(const String &f1, const std::vector<String> &substituteNames) override;
+    void set_default_font(Font::Type type, const FontDataKey &key) override;
+    void insert_substitution(const String &f1, const String &substitute_name) override;
+    void remove_substitutions(const String &f1, const std::vector<String> &substitute_names) override;
 
-    int addFont(const FontDataKey &key, const io::path_t &path) override;
-    int addFont(const FontDataKey &key, std::shared_ptr<io::IODevice> device) override;
-    void removeFont(const FontDataKey &key) override;
+    int add_font(const FontDataKey &key, const io::PathT &path) override;
+    int add_font(const FontDataKey &key, std::shared_ptr<io::IODevice> device) override;
+    void remove_font(const FontDataKey &key) override;
 
-    FontDataKey actualFont(const FontDataKey &requireKey, Font::Type type) const override;
-    std::vector<FontDataKey> substitutionFonts(const FontDataKey &requireKey) const override;
-    FontData fontData(const FontDataKey &requireKey, Font::Type type) const override;
+    FontDataKey actual_font(const FontDataKey &require_key, Font::Type type) const override;
+    std::vector<FontDataKey> substitution_fonts(const FontDataKey &require_key) const override;
+    FontData font_data(const FontDataKey &require_key, Font::Type type) const override;
 
     uint64_t revision() const override;
 
@@ -56,12 +56,12 @@ private:
         bool valid() const { return id > -1; }
     };
 
-    const FontDataKey &defaultFont(Font::Type type) const;
-    const FontInfo &fontInfo(const FontDataKey &key) const;
+    const FontDataKey &default_font(Font::Type type) const;
+    const FontInfo &font_info(const FontDataKey &key) const;
     void release(const FontInfo &fi);
 
     std::map<Font::Type, FontDataKey> defaults_;
-    std::map<FontDataKey, std::vector<FontDataKey>> familySubstitutions_;
+    std::map<FontDataKey, std::vector<FontDataKey>> family_substitutions_;
     std::map<FontDataKey, FontInfo> fonts_;
     uint64_t revision_ = 0;
 };

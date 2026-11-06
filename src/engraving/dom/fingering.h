@@ -44,16 +44,16 @@ public:
 
     Fingering *clone() const override { return new Fingering(*this); }
 
-    Note *note() const { return toNote(ownershipParent()); }
+    Note *note() const { return to_note(ownership_parent()); }
 
-    ElementType layoutType() const;
-    PlacementV calculatePlacement() const;
+    ElementType layout_type() const;
+    PlacementV calculate_placement() const;
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    bool isOnCrossBeamSide() const;
+    bool is_on_cross_beam_side() const;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 };
 } // namespace mu::engraving
 #endif

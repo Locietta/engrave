@@ -26,42 +26,42 @@
 namespace mu::engraving {
 class Parenthesis : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Parenthesis)
-    M_PROPERTY2(DirectionH, direction, setDirection, DirectionH::LEFT)
+    M_PROPERTY2(DirectionH, direction, set_direction, DirectionH::LEFT)
 
 public:
-    static constexpr double PARENTHESIS_END_WIDTH = 0.1;
+    static constexpr double parenthesis_end_width = 0.1;
 
     Parenthesis(DummyParentOr<EngravingItem> parent);
     Parenthesis(const Parenthesis &p);
 
     Parenthesis *clone() const override { return new Parenthesis(*this); }
 
-    Segment *segment() const { return ownershipParent() && ownershipParent()->isSegment() ? toSegment(ownershipParent()) : nullptr; }
+    Segment *segment() const { return ownership_parent() && ownership_parent()->is_segment() ? to_segment(ownership_parent()) : nullptr; }
 
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    bool followParentCurColor() const;
-    void setFollowParentColor(bool val);
+    bool follow_parent_cur_color() const;
+    void set_follow_parent_color(bool val);
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
         ld_field<muse::draw::PainterPath> path = "[Parenthesis] path";
-        ld_field<double> startY = {"[Parenthesis] startY", 0.0};
+        ld_field<double> start_y = {"[Parenthesis] startY", 0.0};
         ld_field<double> height = {"[Parenthesis] height", 0.0};
-        ld_field<double> midPointThickness = {"[Parenthesis] midPointThickness", 0.0};
-        ld_field<double> endPointThickness = {"[Parenthesis] endPointThickness", PARENTHESIS_END_WIDTH};
-        ld_field<double> shoulderWidth = {"[Parenthesis] endPointThickness", 0.0};
-        ld_field<double> intrinsicMag = {"[Parenthesis] intrinsicMag", 1.0}; // Mag separate from staff scale
-        ld_field<SymId> symId = {"[Parenthesis] symId", SymId::noSym};
-        ld_field<double> symScale = {"[Parenthesis] symScale", 1.0};
+        ld_field<double> mid_point_thickness = {"[Parenthesis] midPointThickness", 0.0};
+        ld_field<double> end_point_thickness = {"[Parenthesis] endPointThickness", ::mu::engraving::Parenthesis::parenthesis_end_width};
+        ld_field<double> shoulder_width = {"[Parenthesis] endPointThickness", 0.0};
+        ld_field<double> intrinsic_mag = {"[Parenthesis] intrinsicMag", 1.0}; // Mag separate from staff scale
+        ld_field<SymId> sym_id = {"[Parenthesis] symId", SymId::NO_SYM};
+        ld_field<double> sym_scale = {"[Parenthesis] symScale", 1.0};
     };
 
     DECLARE_LAYOUTDATA_METHODS(Parenthesis);
 
 private:
-    bool followParentColor_ = false;
+    bool follow_parent_color_ = false;
 };
 } // namespace mu::engraving

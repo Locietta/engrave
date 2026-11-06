@@ -30,7 +30,7 @@ class Transaction;
 
 class EditVoice {
 public:
-    static void changeSelectedElementsVoice(Transaction &tx, Score *score, voice_idx_t voice);
-    static void changeSelectedElementsVoiceAssignment(Transaction &tx, Score *score, VoiceAssignment voiceAssignment);
+    static void change_selected_elements_voice(Transaction &tx, Score *score, voice_idx_t voice);
+    static void change_selected_elements_voice_assignment(Transaction &tx, Score *score, VoiceAssignment voice_assignment);
 };
 } // namespace mu::engraving

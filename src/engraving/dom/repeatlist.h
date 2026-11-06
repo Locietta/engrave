@@ -47,25 +47,25 @@ public:
     int tick; // start tick
     int utick;
     double pause;
-    int playbackCount;
+    int playback_count;
 
-    RepeatSegment(int playbackCount);
+    RepeatSegment(int playback_count);
 
-    void addMeasure(Measure const *const);
-    void addMeasures(Measure const *const);
-    bool containsMeasure(Measure const *const) const;
-    bool endsWithMeasure(Measure const *const) const;
-    bool startsWithMeasure(Measure const *const) const;
-    bool isEmpty() const;
+    void add_measure(Measure const *const);
+    void add_measures(Measure const *const);
+    bool contains_measure(Measure const *const) const;
+    bool ends_with_measure(Measure const *const) const;
+    bool starts_with_measure(Measure const *const) const;
+    bool is_empty() const;
     int len() const;
-    int endTick() const;
-    void popMeasure();
+    int end_tick() const;
+    void pop_measure();
 
-    Measure const *firstMeasure() const { return measureList_.empty() ? nullptr : measureList_.front(); }
+    Measure const *first_measure() const { return measure_list_.empty() ? nullptr : measure_list_.front(); }
 
-    Measure const *lastMeasure() const { return measureList_.empty() ? nullptr : measureList_.back(); }
+    Measure const *last_measure() const { return measure_list_.empty() ? nullptr : measure_list_.back(); }
 
-    const std::vector<const Measure *> &measureList() const;
+    const std::vector<const Measure *> &measure_list() const;
 
     friend bool operator==(const RepeatSegment &lhs, const RepeatSegment &rhs);
 
@@ -73,12 +73,12 @@ public:
 
     friend class RepeatList;
 private:
-    std::vector<const Measure *> measureList_;
+    std::vector<const Measure *> measure_list_;
 };
 
 struct RepeatSegmentInfo {
     int tick = 0;
-    int endTick = 0;
+    int end_tick = 0;
     int utick = 0;
 };
 
@@ -95,40 +95,40 @@ public:
     RepeatList &operator=(const RepeatList &) = delete;
     ~RepeatList();
 
-    void update(bool expand, bool updateTies = true);
+    void update(bool expand, bool update_ties = true);
 
-    void setScoreChanged() { scoreChanged_ = true; }
+    void set_score_changed() { score_changed_ = true; }
 
     const Score *score() const { return score_; }
 
     int utick2tick(int tick) const;
     int tick2utick(int tick) const;
-    void updateUticks();
+    void update_uticks();
     int ticks() const;
 
-    std::vector<RepeatSegment *>::const_iterator findRepeatSegmentFromUTick(int utick) const;
-    std::vector<RepeatSegmentInfo> segmentInfoList() const;
+    std::vector<RepeatSegment *>::const_iterator find_repeat_segment_from_u_tick(int utick) const;
+    std::vector<RepeatSegmentInfo> segment_info_list() const;
 
 private:
-    void collectRepeatListElements();
+    void collect_repeat_list_elements();
     std::pair<std::vector<RepeatListElementList>::const_iterator, RepeatListElementList::const_iterator>
-    findMarker(muse::String label, std::vector<RepeatListElementList>::const_iterator referenceSectionIt,
-               RepeatListElementList::const_iterator referenceRepeatListElementIt) const;
+    find_marker(muse::String label, std::vector<RepeatListElementList>::const_iterator reference_section_it,
+                RepeatListElementList::const_iterator reference_repeat_list_element_it) const;
 
-    void performJump(std::vector<RepeatListElementList>::const_iterator sectionIt,
-                     RepeatListElementList::const_iterator repeatListElementTargetIt, bool withRepeats, int *const playbackCount,
-                     Volta const **const activeVolta, RepeatListElement const **const startRepeatReference) const;
+    void perform_jump(std::vector<RepeatListElementList>::const_iterator section_it,
+                      RepeatListElementList::const_iterator repeat_list_element_target_it, bool with_repeats, int *const playback_count,
+                      Volta const **const active_volta, RepeatListElement const **const start_repeat_reference) const;
     void unwind();
     void flatten();
 
     Score *score_ = nullptr;
-    mutable unsigned utick2tickHint_ = 0; // cached RepeatList index for utick2tick
+    mutable unsigned utick2tick_hint_ = 0; // cached RepeatList index for utick2tick
 
     bool expanded_ = false;
-    bool scoreChanged_ = true;
+    bool score_changed_ = true;
 
-    std::set<std::pair<Jump const *const, int>> jumpsTaken_; // take the jumps only once, so track them during unwind
-    std::vector<RepeatListElementList> rlElements_;          // all elements of the score that influence the RepeatList
+    std::set<std::pair<Jump const *const, int>> jumps_taken_; // take the jumps only once, so track them during unwind
+    std::vector<RepeatListElementList> rl_elements_;          // all elements of the score that influence the RepeatList
 };
 } // namespace mu::engraving
 #endif

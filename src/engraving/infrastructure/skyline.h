@@ -43,7 +43,7 @@ class Segment;
 
 class SkylineLine {
 public:
-    SkylineLine(bool n) : isNorth_(n) {}
+    SkylineLine(bool n) : is_north_(n) {}
 
     void add(const ShapeElement &r);
 
@@ -56,36 +56,36 @@ public:
         return shape_.remove_if(p);
     }
 
-    SkylineLine getFilteredCopy(std::function<bool(const ShapeElement &)> filterOut) const;
+    SkylineLine get_filtered_copy(std::function<bool(const ShapeElement &)> filter_out) const;
 
     void clear();
     // TODO: avoid passing down minHorizontalClearance (in future it must be done
     // item-by-item similar to what we do for horizontal spacing)
-    double minDistance(const SkylineLine &, double minHorizontalClearance = 0.0) const;
-    double minDistanceToShapeAbove(const Shape &, double minHorizontalClearance = 0.0) const;
-    double minDistanceToShapeBelow(const Shape &, double minHorizontalClearance = 0.0) const;
-    double verticalClearanceAbove(const Shape &shapeAbove) const;
-    double verticalClearanceBelow(const Shape &shapeBelow) const;
+    double min_distance(const SkylineLine &, double min_horizontal_clearance = 0.0) const;
+    double min_distance_to_shape_above(const Shape &, double min_horizontal_clearance = 0.0) const;
+    double min_distance_to_shape_below(const Shape &, double min_horizontal_clearance = 0.0) const;
+    double vertical_clearance_above(const Shape &shape_above) const;
+    double vertical_clearance_below(const Shape &shape_below) const;
     double max() const;
     bool valid() const;
 
-    SkylineLine &translateY(double y);
+    SkylineLine &translate_y(double y);
 
-    double top(double startX = -DBL_MAX, double endX = DBL_MAX);
-    double bottom(double startX = -DBL_MAX, double endX = DBL_MAX);
+    double top(double start_x = -DBL_MAX, double end_x = DBL_MAX);
+    double bottom(double start_x = -DBL_MAX, double end_x = DBL_MAX);
 
-    bool isNorth() const { return isNorth_; }
+    bool is_north() const { return is_north_; }
 
     const std::vector<ShapeElement> &elements() const { return shape_.elements(); }
 
     std::vector<ShapeElement> &elements() { return shape_.elements(); }
 
 private:
-    double staffLinesTopAtX(double x) const;
-    double staffLinesBottomAtX(double x) const;
+    double staff_lines_top_at_x(double x) const;
+    double staff_lines_bottom_at_x(double x) const;
 
 private:
-    const bool isNorth_;
+    const bool is_north_;
     Shape shape_;
 
     struct StaffLineEdge {
@@ -95,9 +95,9 @@ private:
         StaffLineEdge(double t, double b) : top(t), bottom(b) {}
     };
 
-    std::map<double, StaffLineEdge> staffLineEdges_;
+    std::map<double, StaffLineEdge> staff_line_edges_;
 
-    bool hasValidStaffLineEdges() const { return !staffLineEdges_.empty(); }
+    bool has_valid_staff_line_edges() const { return !staff_line_edges_.empty(); }
 };
 
 //---------------------------------------------------------
@@ -105,11 +105,11 @@ private:
 //---------------------------------------------------------
 
 class Skyline {
-    SkylineLine _north;
-    SkylineLine _south;
+    SkylineLine north_value;
+    SkylineLine south_value;
 
 public:
-    Skyline() : _north(true), _south(false) {}
+    Skyline() : north_value(true), south_value(false) {}
 
     void clear();
     void add(const Shape &s);
@@ -119,17 +119,17 @@ public:
 
     // TODO: avoid passing down minHorizontalClearance (in future it must be done
     // item-by-item similar to what we do for horizontal spacing)
-    double minDistance(const Skyline &, double minHorizontalClearance = 0.0) const;
+    double min_distance(const Skyline &, double min_horizontal_clearance = 0.0) const;
 
-    SkylineLine &north() { return _north; }
+    SkylineLine &north() { return north_value; }
 
-    SkylineLine &south() { return _south; }
+    SkylineLine &south() { return south_value; }
 
-    const SkylineLine &north() const { return _north; }
+    const SkylineLine &north() const { return north_value; }
 
-    const SkylineLine &south() const { return _south; }
+    const SkylineLine &south() const { return south_value; }
 
-    void paint(muse::draw::Painter &painter, double lineWidth) const; // DEBUG only
+    void paint(muse::draw::Painter &painter, double line_width) const; // DEBUG only
 };
 
 void dump(const SkylineLine &slylineline, std::stringstream &ss);

@@ -35,24 +35,24 @@ class Shape;
 namespace mu::engraving::rendering::score {
 class ChordBracketLayout {
 public:
-    static void layoutSegment(Segment *segment, LayoutContext &ctx);
-    static void updateHorizontalSpacing(const Segment *firstSegment, const Segment *secondSegment, staff_idx_t staffIdx,
-                                        double squeezeFactor, double &minDistance);
-    static void updateVerticalGeometry(ChordBracket *bracket, LayoutContext &ctx);
+    static void layout_segment(Segment *segment, LayoutContext &ctx);
+    static void update_horizontal_spacing(const Segment *first_segment, const Segment *second_segment, staff_idx_t staff_idx,
+                                          double squeeze_factor, double &min_distance);
+    static void update_vertical_geometry(ChordBracket *bracket, LayoutContext &ctx);
 
 private:
     struct BracketVisualSpan {
-        staff_idx_t topStaff = 0;
-        staff_idx_t bottomStaff = 0;
+        staff_idx_t top_staff = 0;
+        staff_idx_t bottom_staff = 0;
 
         // Staff-local coordinates.
-        double topY = 0.0;
-        double bottomY = 0.0;
+        double top_y = 0.0;
+        double bottom_y = 0.0;
     };
 
-    static std::vector<ChordBracket *> chordBracketsInSegment(const Segment *segment);
-    static BracketVisualSpan bracketVisualSpan(const ChordBracket *bracket);
-    static Shape bracketCollisionShape(const ChordBracket *bracket, const BracketVisualSpan &span, staff_idx_t staffIdx, double x);
-    static void layoutHorizontal(ChordBracket *bracket);
+    static std::vector<ChordBracket *> chord_brackets_in_segment(const Segment *segment);
+    static BracketVisualSpan bracket_visual_span(const ChordBracket *bracket);
+    static Shape bracket_collision_shape(const ChordBracket *bracket, const BracketVisualSpan &span, staff_idx_t staff_idx, double x);
+    static void layout_horizontal(ChordBracket *bracket);
 };
 } // namespace mu::engraving::rendering::score

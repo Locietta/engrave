@@ -37,9 +37,9 @@ enum class VoiceCount { V_1 = 0, V_2, V_3, V_4 };
 
 enum class Swing { NONE = 0, SWING, SHUFFLE };
 
-enum class TimeSigNumerator { _2 = 0, _3, _4, _5, _6, _7, _9, _12, _15, _21 };
+enum class TimeSigNumerator { TWO = 0, THREE, FOUR, FIVE, SIX, SEVEN, NINE, TWELVE, FIFTEEN, TWENTY_ONE };
 
-enum class TimeSigDenominator { _2 = 0, _4, _8, _16, _32 };
+enum class TimeSigDenominator { TWO = 0, FOUR, EIGHT, SIXTEEN, THIRTY_TWO };
 } // namespace MidiOperations
 } // namespace mu::iex::midi
 

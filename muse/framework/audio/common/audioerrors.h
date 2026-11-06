@@ -24,54 +24,56 @@
 
 #include "global/types/ret.h"
 
+#undef NO_ERROR
+
 namespace muse::audio {
 enum class Err {
-    Undefined = int(Ret::Code::Undefined),
-    NoError = int(Ret::Code::Ok),
-    UnknownError = int(Ret::Code::AudioFirst),
+    UNDEFINED = int(Ret::Code::UNDEFINED),
+    NO_ERROR = int(Ret::Code::OK),
+    UNKNOWN_ERROR = int(Ret::Code::AUDIO_FIRST),
 
     // driver
-    DriverNotFound = 301,
-    DriverOpenFailed = 302,
+    DRIVER_NOT_FOUND = 301,
+    DRIVER_OPEN_FAILED = 302,
 
     // engine
-    EngineInvalidParameter = 310,
+    ENGINE_INVALID_PARAMETER = 310,
 
-    AudioStreamNotPresent = 320,
+    AUDIO_STREAM_NOT_PRESENT = 320,
 
     // synth
-    SynthNotInited = 330,
-    NoLoadedSoundFonts = 331,
-    SoundFontFailedLoad = 332,
-    SoundFontFailedUnload = 333,
-    UnknownSynthType = 334,
+    SYNTH_NOT_INITED = 330,
+    NO_LOADED_SOUND_FONTS = 331,
+    SOUND_FONT_FAILED_LOAD = 332,
+    SOUND_FONT_FAILED_UNLOAD = 333,
+    UNKNOWN_SYNTH_TYPE = 334,
 
     // common
-    InvalidTrackId = 340,
-    InvalidMixerChannelId = 341,
-    InvalidSequenceId = 342,
-    InvalidSetupData = 343,
-    InvalidAudioSource = 344,
-    InvalidAudioFilePath = 345,
-    InvalidFxParams = 346,
-    InvalidAudioSourceParams = 347,
-    DisabledAudioExport = 348,
-    NoAudioToExport = 349,
-    ErrorEncode = 350,
-    UnknownPluginType = 351,
-    InvalidAudioOutput = 352,
-    InvalidSynth = 353,
-    AudioContextAlreadyExists = 354,
-    InvalidContext = 355,
-    InvalidRpcData = 356,
-    NoSignalNode = 357,
+    INVALID_TRACK_ID = 340,
+    INVALID_MIXER_CHANNEL_ID = 341,
+    INVALID_SEQUENCE_ID = 342,
+    INVALID_SETUP_DATA = 343,
+    INVALID_AUDIO_SOURCE = 344,
+    INVALID_AUDIO_FILE_PATH = 345,
+    INVALID_FX_PARAMS = 346,
+    INVALID_AUDIO_SOURCE_PARAMS = 347,
+    DISABLED_AUDIO_EXPORT = 348,
+    NO_AUDIO_TO_EXPORT = 349,
+    ERROR_ENCODE = 350,
+    UNKNOWN_PLUGIN_TYPE = 351,
+    INVALID_AUDIO_OUTPUT = 352,
+    INVALID_SYNTH = 353,
+    AUDIO_CONTEXT_ALREADY_EXISTS = 354,
+    INVALID_CONTEXT = 355,
+    INVALID_RPC_DATA = 356,
+    NO_SIGNAL_NODE = 357,
 
     // clock
-    InvalidTimeLoop = 360,
+    INVALID_TIME_LOOP = 360,
 
     // online sounds
-    OnlineSoundsProcessingError = 361,
-    OnlineSoundsLimitReached = 362,
+    ONLINE_SOUNDS_PROCESSING_ERROR = 361,
+    ONLINE_SOUNDS_LIMIT_REACHED = 362,
 };
 
 inline Ret make_ret(Err e) { return Ret(static_cast<int>(e)); }

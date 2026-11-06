@@ -28,85 +28,85 @@
 #include "global/logstream.h"
 
 namespace muse::io {
-struct path_t;
-using paths_t = std::vector<path_t>;
+struct PathT;
+using paths_t = std::vector<PathT>;
 
-struct path_t {
-    path_t() = default;
-    path_t(const String &s);
-    path_t(const std::string &s);
-    path_t(std::string &&s);
-    path_t(const char *s);
+struct PathT {
+    PathT() = default;
+    PathT(const String &s);
+    PathT(const std::string &s);
+    PathT(std::string &&s);
+    PathT(const char *s);
 
     bool empty() const;
     size_t size() const;
-    bool hasSuffix(const char *str) const;
+    bool has_suffix(const char *str) const;
 
-    path_t appendingComponent(const path_t &other) const;
-    path_t appendingSuffix(const path_t &suffix) const;
+    PathT appending_component(const PathT &other) const;
+    PathT appending_suffix(const PathT &suffix) const;
 
-    inline path_t &operator=(const String &other) {
-        path_ = other.toStdString();
+    inline PathT &operator=(const String &other) {
+        path_ = other.to_std_string();
         return *this;
     }
 
-    inline path_t &operator=(const char *other) {
+    inline PathT &operator=(const char *other) {
         path_ = other;
         return *this;
     }
 
-    inline bool operator==(const path_t &other) const { return path_ == other.path_; }
+    inline bool operator==(const PathT &other) const { return path_ == other.path_; }
 
-    inline bool operator!=(const path_t &other) const { return !(path_ == other.path_); }
+    inline bool operator!=(const PathT &other) const { return !(path_ == other.path_); }
 
-    inline path_t operator+(const path_t &other) const {
-        path_t p = *this;
+    inline PathT operator+(const PathT &other) const {
+        PathT p = *this;
         p += other;
         return p;
     }
 
-    inline path_t operator+(const String &other) const {
-        path_t p = *this;
+    inline PathT operator+(const String &other) const {
+        PathT p = *this;
         p += other;
         return p;
     }
 
-    inline path_t operator+(const char *other) const {
-        path_t p = *this;
+    inline PathT operator+(const char *other) const {
+        PathT p = *this;
         p += other;
         return p;
     }
 
-    inline path_t operator+(const char other) const {
-        path_t p = *this;
+    inline PathT operator+(const char other) const {
+        PathT p = *this;
         p += other;
         return p;
     }
 
-    inline path_t &operator+=(const path_t &other) {
+    inline PathT &operator+=(const PathT &other) {
         path_ += other.path_;
         return *this;
     }
 
-    inline path_t &operator+=(const String &other) {
-        path_ += other.toStdString();
+    inline PathT &operator+=(const String &other) {
+        path_ += other.to_std_string();
         return *this;
     }
 
-    inline path_t &operator+=(const char *other) {
+    inline PathT &operator+=(const char *other) {
         path_ += other;
         return *this;
     }
 
-    inline path_t &operator+=(const char other) {
+    inline PathT &operator+=(const char other) {
         path_ += other;
         return *this;
     }
 
-    inline bool operator<(const path_t &other) const { return path_ < other.path_; }
+    inline bool operator<(const PathT &other) const { return path_ < other.path_; }
 
-    String toString() const;
-    const std::string &toStdString() const;
+    String to_string() const;
+    const std::string &to_std_string() const;
     const char *c_str() const;
 
 
@@ -114,34 +114,34 @@ private:
     std::string path_;
 };
 
-inline path_t operator+(const String &one, const path_t &other) { return path_t(one) + other; }
+inline PathT operator+(const String &one, const PathT &other) { return PathT(one) + other; }
 
-inline path_t operator+(const char *one, const path_t &other) { return path_t(one) + other; }
+inline PathT operator+(const char *one, const PathT &other) { return PathT(one) + other; }
 
-inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::io::path_t &p) {
-    s << p.toStdString();
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::io::PathT &p) {
+    s << p.to_std_string();
     return s;
 }
 
-std::string suffix(const path_t &path);
-path_t filename(const path_t &path, bool includingExtension = true);
-path_t basename(const path_t &path);
-path_t completeBasename(const path_t &path);
-path_t absolutePath(const path_t &path);
-path_t absoluteFilePath(const path_t &path);
+std::string suffix(const PathT &path);
+PathT filename(const PathT &path, bool including_extension = true);
+PathT basename(const PathT &path);
+PathT complete_basename(const PathT &path);
+PathT absolute_path(const PathT &path);
+PathT absolute_file_path(const PathT &path);
 //path_t dirname(const path_t& path);
-path_t dirpath(const path_t &path);
-path_t absoluteDirpath(const path_t &path);
+PathT dirpath(const PathT &path);
+PathT absolute_dirpath(const PathT &path);
 
-bool isAbsolute(const path_t &path);
+bool is_absolute(const PathT &path);
 
-bool isAllowedFileName(const path_t &fn);
-path_t escapeFileName(const path_t &fn);
+bool is_allowed_file_name(const PathT &fn);
+PathT escape_file_name(const PathT &fn);
 
-path_t toNativeSeparators(const path_t &path);
+PathT to_native_separators(const PathT &path);
 
-paths_t pathsFromString(const std::string &str, const std::string &delim = ";");
-std::string pathsToString(const paths_t &ps, const std::string &delim = ";");
+paths_t paths_from_string(const std::string &str, const std::string &delim = ";");
+std::string paths_to_string(const paths_t &ps, const std::string &delim = ";");
 } // namespace muse::io
 
 #endif // MUSE_IO_PATH_H

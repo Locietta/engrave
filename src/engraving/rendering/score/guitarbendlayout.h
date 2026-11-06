@@ -37,27 +37,28 @@ class GuitarBendLayout {
 public:
     /* If system is different from nullptr, only the segment belonging to it is laid out.
      * Otherwise, all segments which have a system are laid out. */
-    static void updateSegmentsAndLayout(SLine *item, LayoutContext &ctx, System *system = nullptr);
+    static void update_segments_and_layout(SLine *item, LayoutContext &ctx, System *system = nullptr);
 
-    static void layoutStandardStaff(GuitarBendSegment *item, LayoutContext &ctx);
-    static void layoutTabStaff(GuitarBendSegment *item, LayoutContext &);
-    static void layoutHoldLine(GuitarBendHoldSegment *item);
+    static void layout_standard_staff(GuitarBendSegment *item, LayoutContext &ctx);
+    static void layout_tab_staff(GuitarBendSegment *item, LayoutContext &);
+    static void layout_hold_line(GuitarBendHoldSegment *item);
 
 private:
     // Standard staff layout
-    static void layoutAngularBend(GuitarBendSegment *item, LayoutContext &ctx);
-    static void computeUp(GuitarBend *item);
-    static void computeIsInside(GuitarBend *item);
-    static void avoidBadStaffLineIntersection(GuitarBendSegment *item, PointF &point);
-    static void adjustX(GuitarBendSegment *item, PointF &startPos, PointF &endPos, const Note *startNote, const Note *endNote);
-    static void layoutSlightBend(GuitarBendSegment *item, LayoutContext &);
+    static void layout_angular_bend(GuitarBendSegment *item, LayoutContext &ctx);
+    static void compute_up(GuitarBend *item);
+    static void compute_is_inside(GuitarBend *item);
+    static void avoid_bad_staff_line_intersection(GuitarBendSegment *item, PointF &point);
+    static void adjust_x(GuitarBendSegment *item, PointF &start_pos, PointF &end_pos, const Note *start_note, const Note *end_note);
+    static void layout_slight_bend(GuitarBendSegment *item, LayoutContext &);
 
     // TAB layout
-    static void layoutBendTabStaff(GuitarBendSegment *item, LayoutContext &);
-    static PointF computeStartPos(GuitarBendSegment *item, Note *startNote, double distAboveTab, double verticalPad, double arrowHeight);
-    static PointF computeEndPos(GuitarBendSegment *item, Note *endNote, double distAboveTab, double verticalPad, double arrowHeight,
-                                double arrowWidth, const PointF &startPos, const PointF &prevEndPoint);
-    static void checkConflictWithOtherBends(GuitarBendSegment *item);
-    static bool startOnEndNote(GuitarBend *bend);
+    static void layout_bend_tab_staff(GuitarBendSegment *item, LayoutContext &);
+    static PointF compute_start_pos(GuitarBendSegment *item, Note *start_note, double dist_above_tab, double vertical_pad,
+                                    double arrow_height);
+    static PointF compute_end_pos(GuitarBendSegment *item, Note *end_note, double dist_above_tab, double vertical_pad, double arrow_height,
+                                  double arrow_width, const PointF &start_pos, const PointF &prev_end_point);
+    static void check_conflict_with_other_bends(GuitarBendSegment *item);
+    static bool start_on_end_note(GuitarBend *bend);
 };
 } // namespace mu::engraving::rendering::score

@@ -29,7 +29,7 @@ class Transaction;
 
 class EditCrossStaff {
 public:
-    static void moveUp(Transaction &tx, Score *score, ChordRest *cr);
-    static void moveDown(Transaction &tx, Score *score, ChordRest *cr);
+    static void move_up(Transaction &tx, Score *score, ChordRest *cr);
+    static void move_down(Transaction &tx, Score *score, ChordRest *cr);
 };
 } // namespace mu::engraving

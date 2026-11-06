@@ -54,8 +54,8 @@ using Expect = std::function<std::string(Document &, const SegmentAddress &)>;
 // --- the document as the checks find it ----------------------------------------
 
 Measure &measure_of(Score &score, std::size_t index) {
-    Measure *measure = score.firstMeasure();
-    for (std::size_t i = 0; i < index && measure; ++i) measure = measure->nextMeasure();
+    Measure *measure = score.first_measure();
+    for (std::size_t i = 0; i < index && measure; ++i) measure = measure->next_measure();
     if (!measure) throw std::invalid_argument(std::format("the score has no measure {}", index));
     return *measure;
 }
@@ -77,7 +77,7 @@ SegmentAddress address_in(Score &score, std::size_t index, std::int32_t staff, s
 Segment &segment_of(Document &document, const SegmentAddress &address) {
     const Result<Resolved> found = resolve(master_of(document), Address{address});
     if (!found) throw std::invalid_argument(found.error().message);
-    return *mu::engraving::toSegment(found->object);
+    return *mu::engraving::to_segment(found->object);
 }
 
 mu::engraving::track_idx_t track_of(const SegmentAddress &address) { return mu::engraving::staff2track(address.staff, address.voice); }
@@ -87,16 +87,16 @@ mu::engraving::track_idx_t track_of(const SegmentAddress &address) { return mu::
 // The text of a type at an address's track, found by its text: no fixture has the
 // text a case writes.
 EngravingItem *find_text(Segment &segment, ElementType type, std::string_view text, mu::engraving::track_idx_t track) {
-    for (EngravingItem *item : segment.findAnnotations(type, track, track)) {
-        if (item->isTextBase() && mu::engraving::toTextBase(item)->plainText().toStdString() == text) return item;
+    for (EngravingItem *item : segment.find_annotations(type, track, track)) {
+        if (item->is_text_base() && mu::engraving::to_text_base(item)->plain_text().to_std_string() == text) return item;
     }
     return nullptr;
 }
 
 std::string expect_text(Document &document, const SegmentAddress &at, ElementType type, std::string_view text) {
     EngravingItem *item = find_text(segment_of(document, at), type, text, track_of(at));
-    if (!item) return std::format("the segment holds no {} with the new text", mu::engraving::TConv::toXml(type).ascii());
-    return item->eid().isValid() ? std::string{} : "the new text has no id";
+    if (!item) return std::format("the segment holds no {} with the new text", mu::engraving::TConv::to_xml(type).ascii());
+    return item->eid().is_valid() ? std::string{} : "the new text has no id";
 }
 
 // A system object is copied to every score; each copy takes its own id.
@@ -105,10 +105,10 @@ std::string expect_text_in_every_score(Document &document, const SegmentAddress 
     if (!problem.empty()) return problem;
     const EngravingItem *item = find_text(segment_of(document, at), type, text, track_of(at));
     for (const mu::engraving::Excerpt *excerpt : master_of(document).excerpts()) {
-        const EngravingItem *copy = item->findLinkedInScore(excerpt->excerptScore());
+        const EngravingItem *copy = item->find_linked_in_score(excerpt->excerpt_score());
         if (!copy) return "an excerpt has no copy of the new text";
-        if (!copy->eid().isValid()) return "a copy in an excerpt has no id";
-        if (mu::engraving::toTextBase(copy)->plainText().toStdString() != text) return "a copy in an excerpt has another text";
+        if (!copy->eid().is_valid()) return "a copy in an excerpt has no id";
+        if (mu::engraving::to_text_base(copy)->plain_text().to_std_string() != text) return "a copy in an excerpt has another text";
     }
     return {};
 }
@@ -116,10 +116,10 @@ std::string expect_text_in_every_score(Document &document, const SegmentAddress 
 std::string expect_lyrics(Document &document, const SegmentAddress &at, std::string_view text, int verse) {
     Segment &segment = segment_of(document, at);
     EngravingItem *item = segment.element(track_of(at));
-    if (!item || !item->isChord()) return "the address no longer holds a chord";
-    for (const Lyrics *lyrics : mu::engraving::toChord(item)->lyrics()) {
-        if (lyrics->plainText().toStdString() != text) continue;
-        if (!lyrics->eid().isValid()) return "the new lyrics have no id";
+    if (!item || !item->is_chord()) return "the address no longer holds a chord";
+    for (const Lyrics *lyrics : mu::engraving::to_chord(item)->lyrics()) {
+        if (lyrics->plain_text().to_std_string() != text) continue;
+        if (!lyrics->eid().is_valid()) return "the new lyrics have no id";
         if (lyrics->track() != track_of(at)) return "the lyrics are on another track";
         return lyrics->verse() == verse ? std::string{} : "the lyrics got another verse";
     }
@@ -128,11 +128,11 @@ std::string expect_lyrics(Document &document, const SegmentAddress &at, std::str
 
 std::string expect_articulation(Document &document, const ElementId &chord_id, std::string_view symbol) {
     const EngravingObject &anchor = element(document, chord_id);
-    if (!anchor.isChord()) return "the anchor is no longer a chord";
-    const Chord &chord = *mu::engraving::toChord(&anchor);
+    if (!anchor.is_chord()) return "the anchor is no longer a chord";
+    const Chord &chord = *mu::engraving::to_chord(&anchor);
     for (const Articulation *articulation : chord.articulations()) {
-        if (mu::engraving::SymNames::nameForSymId(articulation->symId()).ascii() != symbol) continue;
-        if (!articulation->eid().isValid()) return "the new articulation has no id";
+        if (mu::engraving::SymNames::name_for_sym_id(articulation->sym_id()).ascii() != symbol) continue;
+        if (!articulation->eid().is_valid()) return "the new articulation has no id";
         return articulation->track() == chord.track() ? std::string{} : "the articulation is on another track";
     }
     return std::format("the chord has no '{}' articulation", symbol);
@@ -140,10 +140,10 @@ std::string expect_articulation(Document &document, const ElementId &chord_id, s
 
 std::string expect_fermata(Document &document, const SegmentAddress &at, std::string_view symbol) {
     Segment &segment = segment_of(document, at);
-    for (EngravingItem *item : segment.findAnnotations(ElementType::FERMATA, track_of(at), track_of(at))) {
-        if (!item->isFermata()) continue;
-        if (mu::engraving::SymNames::nameForSymId(mu::engraving::toFermata(item)->symId()).ascii() != symbol) continue;
-        return item->eid().isValid() ? std::string{} : "the new fermata has no id";
+    for (EngravingItem *item : segment.find_annotations(ElementType::FERMATA, track_of(at), track_of(at))) {
+        if (!item->is_fermata()) continue;
+        if (mu::engraving::SymNames::name_for_sym_id(mu::engraving::to_fermata(item)->sym_id()).ascii() != symbol) continue;
+        return item->eid().is_valid() ? std::string{} : "the new fermata has no id";
     }
     return std::format("the segment has no '{}' fermata", symbol);
 }
@@ -151,11 +151,11 @@ std::string expect_fermata(Document &document, const SegmentAddress &at, std::st
 // A tempo text: the text it was made with, and the tempo it derived from it.
 std::string expect_tempo_text(Document &document, const SegmentAddress &at, std::string_view text, double bpm) {
     Segment &segment = segment_of(document, at);
-    for (EngravingItem *item : segment.findAnnotations(ElementType::TEMPO_TEXT, track_of(at), track_of(at))) {
-        const auto &tempo = *mu::engraving::toTempoText(item);
-        if (tempo.xmlText().toStdString() != text) continue;
-        if (!item->eid().isValid()) return "the new tempo text has no id";
-        const double derived = tempo.tempoBpm();
+    for (EngravingItem *item : segment.find_annotations(ElementType::TEMPO_TEXT, track_of(at), track_of(at))) {
+        const auto &tempo = *mu::engraving::to_tempo_text(item);
+        if (tempo.xml_text().to_std_string() != text) continue;
+        if (!item->eid().is_valid()) return "the new tempo text has no id";
+        const double derived = tempo.tempo_bpm();
         return std::abs(derived - bpm) < 0.01 ? std::string{} : std::format("the tempo is {}, not {}", derived, bpm);
     }
     return "the segment has no tempo text with the new text";
@@ -163,10 +163,10 @@ std::string expect_tempo_text(Document &document, const SegmentAddress &at, std:
 
 std::string expect_dynamic(Document &document, const SegmentAddress &at, DynamicType type, std::string_view text) {
     Segment &segment = segment_of(document, at);
-    for (EngravingItem *item : segment.findAnnotations(ElementType::DYNAMIC, track_of(at), track_of(at))) {
-        if (!item->isDynamic() || mu::engraving::toDynamic(item)->dynamicType() != type) continue;
-        if (mu::engraving::toDynamic(item)->xmlText().toStdString() != text) return "the dynamic has another text";
-        return item->eid().isValid() ? std::string{} : "the new dynamic has no id";
+    for (EngravingItem *item : segment.find_annotations(ElementType::DYNAMIC, track_of(at), track_of(at))) {
+        if (!item->is_dynamic() || mu::engraving::to_dynamic(item)->dynamic_type() != type) continue;
+        if (mu::engraving::to_dynamic(item)->xml_text().to_std_string() != text) return "the dynamic has another text";
+        return item->eid().is_valid() ? std::string{} : "the new dynamic has no id";
     }
     return "the segment has no dynamic of the given type";
 }

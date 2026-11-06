@@ -26,14 +26,14 @@
 
 namespace muse::io {
 using StreamId = int;
-static constexpr StreamId INVALID_STREAM_ID = -1;
-static constexpr uint64_t STREAM_POS_CURRENT = ~uint64_t(0);
+static constexpr StreamId invalid_stream_id = -1;
+static constexpr uint64_t stream_pos_current = ~uint64_t(0);
 
-enum class OpenMode { WriteOnly, Append };
+enum class OpenMode { WRITE_ONLY, APPEND };
 
-enum class ScanMode { FilesInCurrentDir, FoldersInCurrentDir, FilesAndFoldersInCurrentDir, FilesInCurrentDirAndSubdirs };
+enum class ScanMode { FILES_IN_CURRENT_DIR, FOLDERS_IN_CURRENT_DIR, FILES_AND_FOLDERS_IN_CURRENT_DIR, FILES_IN_CURRENT_DIR_AND_SUBDIRS };
 
-enum class EntryType { Undefined = 0, File, Dir };
+enum class EntryType { UNDEFINED = 0, FILE, DIR };
 } // namespace muse::io
 
 #endif // MUSE_IO_IOENUMS_H

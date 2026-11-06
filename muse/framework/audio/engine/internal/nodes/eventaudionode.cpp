@@ -31,48 +31,48 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-EventAudioNode::EventAudioNode(const IAudioFactory &audioFactory, TrackId trackId, const mpe::PlaybackData &playbackData)
-    : audioFactory_(audioFactory), trackId_(trackId), playbackData_(playbackData) {}
+EventAudioNode::EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data)
+    : audio_factory_(audio_factory), track_id_(track_id), playback_data_(playback_data) {}
 
-void EventAudioNode::onModeChanged(const ProcessMode mode) {
+void EventAudioNode::on_mode_changed(const ProcessMode mode) {
 
     if (!synth_) {
         return;
     }
 
-    synth_->setMode(mode);
-    synth_->flushSound();
+    synth_->set_mode(mode);
+    synth_->flush_sound();
 }
 
-void EventAudioNode::onOutputSpecChanged(const OutputSpec &spec) {
+void EventAudioNode::on_output_spec_changed(const OutputSpec &spec) {
     if (!synth_) {
         return;
     }
 
-    synth_->setOutputSpec(spec);
+    synth_->set_output_spec(spec);
 }
 
-void EventAudioNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
+void EventAudioNode::do_self_process(float *buffer, samples_t samples_per_channel) {
     if (!synth_) {
         return;
     }
 
     OfflineTimer timer(OfflineTiming::current().synth);
-    synth_->process(buffer, samplesPerChannel);
+    synth_->process(buffer, samples_per_channel);
 }
 
-void EventAudioNode::seek(const TimePosition &position, const bool flushSound) {
+void EventAudioNode::seek(const TimePosition &position, const bool flush_sound) {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    if (synth_->playbackPosition() == position) {
+    if (synth_->playback_position() == position) {
         return;
     }
 
-    synth_->setPlaybackPosition(position);
+    synth_->set_playback_position(position);
 
-    if (flushSound) {
-        synth_->flushSound();
+    if (flush_sound) {
+        synth_->flush_sound();
     }
 }
 
@@ -80,28 +80,28 @@ void EventAudioNode::flush() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    synth_->flushSound();
+    synth_->flush_sound();
 }
 
-const AudioInputParams &EventAudioNode::inputParams() const { return params_; }
+const AudioInputParams &EventAudioNode::input_params() const { return params_; }
 
-void EventAudioNode::applyInputParams(const AudioInputParams &requiredParams) {
-    IF_ASSERT_FAILED(outputSpec_.isValid()) { return; }
+void EventAudioNode::apply_input_params(const AudioInputParams &required_params) {
+    IF_ASSERT_FAILED(output_spec_.is_valid()) { return; }
 
-    if (params_.isValid() && params_ == requiredParams) {
+    if (params_.is_valid() && params_ == required_params) {
         return;
     }
 
-    SynthCtx ctx = currentSynthCtx();
+    SynthCtx ctx = current_synth_ctx();
 
     if (synth_) {
-        playbackData_ = synth_->playbackData();
+        playback_data_ = synth_->playback_data();
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audioFactory()->makeSynth(trackId_, requiredParams, playbackData_.setupData);
+    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, playback_data_.setup_data);
 
     if (!synth.ret) {
-        synth = audioFactory()->makeDefaultSynth(trackId_);
+        synth = audio_factory()->make_default_synth(track_id_);
         IF_ASSERT_FAILED(synth.val) {
             LOGE() << "Default synth not found!";
             return;
@@ -110,78 +110,78 @@ void EventAudioNode::applyInputParams(const AudioInputParams &requiredParams) {
 
     synth_ = synth.val;
 
-    setupSource();
+    setup_source();
 
-    if (ctx.isValid()) {
-        restoreSynthCtx(ctx);
+    if (ctx.is_valid()) {
+        restore_synth_ctx(ctx);
     } else {
-        synth_->setMode(ProcessMode::Idle);
+        synth_->set_mode(ProcessMode::IDLE);
     }
 
-    setName(std::string("Source[") + synth_->name() + "]");
+    set_name(std::string("Source[") + synth_->name() + "]");
 
     params_ = synth_->params();
 }
 
-void EventAudioNode::prepareToPlay() {
+void EventAudioNode::prepare_to_play() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    synth_->prepareToPlay();
+    synth_->prepare_to_play();
 }
 
-bool EventAudioNode::readyToPlay() const {
+bool EventAudioNode::ready_to_play() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
-    return synth_->readyToPlay();
+    return synth_->ready_to_play();
 }
 
-bool EventAudioNode::hasPendingChunks() const {
+bool EventAudioNode::has_pending_chunks() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
-    return synth_->hasPendingChunks();
+    return synth_->has_pending_chunks();
 }
 
-void EventAudioNode::processInput() {
+void EventAudioNode::process_input() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    synth_->processInput();
+    synth_->process_input();
 }
 
-InputProcessingProgress EventAudioNode::inputProcessingProgress() const {
+InputProcessingProgress EventAudioNode::input_processing_progress() const {
 
     IF_ASSERT_FAILED(synth_) { return {}; }
 
-    return synth_->inputProcessingProgress();
+    return synth_->input_processing_progress();
 }
 
-void EventAudioNode::clearCache() {
+void EventAudioNode::clear_cache() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    synth_->clearCache();
+    synth_->clear_cache();
 }
 
-EventAudioNode::SynthCtx EventAudioNode::currentSynthCtx() const {
+EventAudioNode::SynthCtx EventAudioNode::current_synth_ctx() const {
     if (!synth_) {
         return SynthCtx();
     }
 
-    return {synth_->mode(), synth_->playbackPosition()};
+    return {synth_->mode(), synth_->playback_position()};
 }
 
-void EventAudioNode::restoreSynthCtx(const SynthCtx &ctx) {
-    synth_->setPlaybackPosition(ctx.playbackPosition);
-    synth_->setMode(ctx.mode);
+void EventAudioNode::restore_synth_ctx(const SynthCtx &ctx) {
+    synth_->set_playback_position(ctx.playback_position);
+    synth_->set_mode(ctx.mode);
 }
 
-void EventAudioNode::setupSource() {
+void EventAudioNode::setup_source() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
-    synth_->setOutputSpec(outputSpec_);
-    synth_->setup(playbackData_);
+    synth_->set_output_spec(output_spec_);
+    synth_->setup(playback_data_);
 }

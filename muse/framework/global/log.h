@@ -29,6 +29,14 @@
 #include "profiler.h"                            // IWYU pragma: export
 #include "thirdparty/kors_logger/src/log_base.h" // IWYU pragma: export
 
+// The logger's generic macros collide with Ret::Code enumerators.
+#undef NOT_IMPLEMENTED
+#undef NOT_SUPPORTED
+#undef NOT_IMPL_RETURN
+#define MUSE_NOT_IMPLEMENTED LOGD() << "Not implemented!!"
+#define MUSE_NOT_SUPPORTED LOGW() << "Not supported!!"
+#define NOT_IMPL_RETURN MUSE_NOT_IMPLEMENTED return
+
 #undef FALLTHROUGH
 
 #if __has_cpp_attribute(fallthrough)

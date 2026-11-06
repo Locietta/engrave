@@ -32,8 +32,8 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 int ticks_beat(int n) {
-    int m = (Constants::DIVISION * 4) / n;
-    if ((Constants::DIVISION * 4) % n) {
+    int m = (Constants::division * 4) / n;
+    if ((Constants::division * 4) % n) {
         ASSERT_X(String(u"Mscore: ticks_beat(): bad divisor %1").arg(n));
     }
     return m;
@@ -43,7 +43,7 @@ int ticks_beat(int n) {
 //   ticks_measure
 //---------------------------------------------------------
 
-static int ticks_measure(const Fraction &f) { return (Constants::DIVISION * 4 * f.numerator()) / f.denominator(); }
+static int ticks_measure(const Fraction &f) { return (Constants::division * 4 * f.numerator()) / f.denominator(); }
 
 //---------------------------------------------------------
 //   rtick2beatType
@@ -51,36 +51,36 @@ static int ticks_measure(const Fraction &f) { return (Constants::DIVISION * 4 * 
 //    actual timeSig is different from the nominal timeSig.
 //---------------------------------------------------------
 
-BeatType TimeSigFrac::rtick2beatType(int rtick) const {
+BeatType TimeSigFrac::rtick2beat_type(int rtick) const {
     if (rtick == 0) {
         return BeatType::DOWNBEAT; // note: only return DOWNBEAT for rtick = 0, not for rtick = measureTicks,
     }
-    if (rtick % dUnitTicks() != 0) {
+    if (rtick % d_unit_ticks() != 0) {
         return BeatType::SUBBEAT;
     }
 
-    if (isCompound()) {
-        if (rtick % beatTicks() != 0) {
+    if (is_compound()) {
+        if (rtick % beat_ticks() != 0) {
             return BeatType::COMPOUND_SUBBEAT;
         }
     }
 
-    const int beatNum = rtick / beatTicks();
+    const int beat_num = rtick / beat_ticks();
 
-    int stressBeat = 0;
+    int stress_beat = 0;
 
-    if (isTriple()) {
-        stressBeat = 3;
-    } else if (isDuple()) {
-        stressBeat = 2;
+    if (is_triple()) {
+        stress_beat = 3;
+    } else if (is_duple()) {
+        stress_beat = 2;
     } else {
-        stressBeat = (numerator() + 1) / 2; // Assumes 5/4 timeSig = (3+2)/4. (The same assumption is used for beaming)
+        stress_beat = (numerator() + 1) / 2; // Assumes 5/4 timeSig = (3+2)/4. (The same assumption is used for beaming)
     }
-    if (stressBeat && beatNum % stressBeat == 0) {
-        return isCompound() ? BeatType::COMPOUND_STRESSED : BeatType::SIMPLE_STRESSED;
+    if (stress_beat && beat_num % stress_beat == 0) {
+        return is_compound() ? BeatType::COMPOUND_STRESSED : BeatType::SIMPLE_STRESSED;
     }
 
-    return isCompound() ? BeatType::COMPOUND_UNSTRESSED : BeatType::SIMPLE_UNSTRESSED;
+    return is_compound() ? BeatType::COMPOUND_UNSTRESSED : BeatType::SIMPLE_UNSTRESSED;
 }
 
 //---------------------------------------------------------
@@ -94,20 +94,20 @@ BeatType TimeSigFrac::rtick2beatType(int rtick) const {
 //    actual timeSig is different from the nominal timeSig.
 //---------------------------------------------------------
 
-BeatType TimeSigFrac::strongestBeatInRange(int rtick1, int rtick2, int *dUnitsCrossed, int *subbeatTick, bool saveLast) const {
+BeatType TimeSigFrac::strongest_beat_in_range(int rtick1, int rtick2, int *d_units_crossed, int *subbeat_tick, bool save_last) const {
     assert(rtick2 > rtick1);
 
     BeatType strongest = BeatType::SUBBEAT;
 
-    for (int rtick = rtick1 + ticksToNextDUnit(rtick1); rtick < rtick2; rtick += dUnitTicks()) {
-        if (dUnitsCrossed) {
-            (*dUnitsCrossed)++;
+    for (int rtick = rtick1 + ticks_to_next_d_unit(rtick1); rtick < rtick2; rtick += d_unit_ticks()) {
+        if (d_units_crossed) {
+            (*d_units_crossed)++;
         }
-        BeatType type = rtick2beatType(rtick);
-        if (static_cast<int>(type) < static_cast<int>(strongest) + saveLast) { // "<" behaves like "<=" if saveLast is true
+        BeatType type = rtick2beat_type(rtick);
+        if (static_cast<int>(type) < static_cast<int>(strongest) + save_last) { // "<" behaves like "<=" if saveLast is true
             strongest = type;
-            if (subbeatTick) {
-                (*subbeatTick) = rtick;
+            if (subbeat_tick) {
+                (*subbeat_tick) = rtick;
             }
         }
     }
@@ -120,14 +120,14 @@ BeatType TimeSigFrac::strongestBeatInRange(int rtick1, int rtick2, int *dUnitsCr
 //    divides dUnitTicks() by 2 once for each level.
 //---------------------------------------------------------
 
-int TimeSigFrac::subbeatTicks(int level) const {
-    assert(level <= maxSubbeatLevel());
-    int subbeatTicks = dUnitTicks();
+int TimeSigFrac::subbeat_ticks(int level) const {
+    assert(level <= max_subbeat_level());
+    int subbeat_ticks = d_unit_ticks();
     while (level > 0) {
-        subbeatTicks /= 2;
+        subbeat_ticks /= 2;
         level--;
     }
-    return subbeatTicks;
+    return subbeat_ticks;
 }
 
 //---------------------------------------------------------
@@ -135,11 +135,11 @@ int TimeSigFrac::subbeatTicks(int level) const {
 //    subdivision beyond this level would result in rounding errors
 //---------------------------------------------------------
 
-int TimeSigFrac::maxSubbeatLevel() const {
+int TimeSigFrac::max_subbeat_level() const {
     int level = 0;
-    int subbeatTicks = dUnitTicks();
-    while (subbeatTicks % 2 == 0) {
-        subbeatTicks /= 2;
+    int subbeat_ticks = d_unit_ticks();
+    while (subbeat_ticks % 2 == 0) {
+        subbeat_ticks /= 2;
         level++;
     }
     return level;
@@ -159,17 +159,17 @@ int TimeSigFrac::maxSubbeatLevel() const {
 //    actual timeSig is different from the nominal timeSig.
 //---------------------------------------------------------
 
-int TimeSigFrac::rtick2subbeatLevel(int rtick) const {
+int TimeSigFrac::rtick2subbeat_level(int rtick) const {
     int level = 0;
-    int subbeatTicks = dUnitTicks();
-    int remainder = rtick % subbeatTicks;
+    int subbeat_ticks = d_unit_ticks();
+    int remainder = rtick % subbeat_ticks;
     while (remainder != 0) {
         level++;
-        if (subbeatTicks % 2 != 0) {
+        if (subbeat_ticks % 2 != 0) {
             return -level; // further sub-division would split measure into chunks of unequal length.
         }
-        subbeatTicks /= 2;
-        remainder %= subbeatTicks;
+        subbeat_ticks /= 2;
+        remainder %= subbeat_ticks;
     }
     return level;
 }
@@ -182,23 +182,23 @@ int TimeSigFrac::rtick2subbeatLevel(int rtick) const {
 //    actual timeSig is different from the nominal timeSig.
 //---------------------------------------------------------
 
-int TimeSigFrac::strongestSubbeatLevelInRange(int rtick1, int rtick2, int *subbeatTick) const {
+int TimeSigFrac::strongest_subbeat_level_in_range(int rtick1, int rtick2, int *subbeat_tick) const {
     assert(rtick2 > rtick1);
 
-    for (int level = 0, subbeatTicks = dUnitTicks();;) {
-        int n = rtick1 / subbeatTicks;
-        int m = (rtick2 - 1) / subbeatTicks; // -1 to make the range exclusive
+    for (int level = 0, subbeat_ticks = d_unit_ticks();;) {
+        int n = rtick1 / subbeat_ticks;
+        int m = (rtick2 - 1) / subbeat_ticks; // -1 to make the range exclusive
         if (m > n) {
-            if (subbeatTick) {
-                (*subbeatTick) = m * subbeatTicks;
+            if (subbeat_tick) {
+                (*subbeat_tick) = m * subbeat_ticks;
             }
             return level;
         }
         level++;
-        if (subbeatTicks % 2 != 0) {
+        if (subbeat_ticks % 2 != 0) {
             return -level; // further sub-division would split measure into chunks of unequal length.
         }
-        subbeatTicks /= 2;
+        subbeat_ticks /= 2;
     }
 }
 
@@ -212,10 +212,10 @@ bool SigEvent::operator==(const SigEvent &e) const { return timesig_.identical(e
 //   add
 //---------------------------------------------------------
 
-const TimeSigFrac TimeSigMap::DEFAULT_TIME_SIGNATURE(4, 4);
+const TimeSigFrac TimeSigMap::default_time_signature(4, 4);
 
 void TimeSigMap::add(int tick, const Fraction &f) {
-    if (!f.isValid()) {
+    if (!f.is_valid()) {
         LOGD("illegal signature %d/%d", f.numerator(), f.denominator());
     }
     (*this)[tick] = SigEvent(f);
@@ -242,7 +242,7 @@ void TimeSigMap::del(int tick) {
 //    excluded.
 //---------------------------------------------------------
 
-void TimeSigMap::clearRange(int tick1, int tick2) {
+void TimeSigMap::clear_range(int tick1, int tick2) {
     iterator first = lower_bound(tick1);
     iterator last = lower_bound(tick2);
     if (first == last) {
@@ -266,7 +266,7 @@ void TimeSigMap::normalize() {
     for (auto i = begin(); i != end(); ++i) {
         SigEvent &e = i->second;
         bar += TimeSigFrac(i->first - tick, tm).reduced();
-        e.setBar(bar.numerator() / bar.denominator());
+        e.set_bar(bar.numerator() / bar.denominator());
         tick = i->first;
         tm = ticks_measure(e.timesig());
     }
@@ -277,7 +277,7 @@ void TimeSigMap::normalize() {
 //---------------------------------------------------------
 
 const SigEvent &TimeSigMap::timesig(int tick) const {
-    static const SigEvent ev(DEFAULT_TIME_SIGNATURE);
+    static const SigEvent ev(::mu::engraving::TimeSigMap::default_time_signature);
     if (empty()) {
         return ev;
     }
@@ -298,7 +298,7 @@ const SigEvent &TimeSigMap::timesig(int tick) const {
 //    tick - position of t in beat (in ticks)
 //---------------------------------------------------------
 
-void TimeSigMap::tickValues(int t, int *bar, int *beat, int *tick) const {
+void TimeSigMap::tick_values(int t, int *bar, int *beat, int *tick) const {
     if (empty()) {
         *bar = 0;
         *beat = 0;
@@ -314,19 +314,19 @@ void TimeSigMap::tickValues(int t, int *bar, int *beat, int *tick) const {
     }
     --e;
     int delta = t - e->first;
-    int ticksB = ticks_beat(e->second.timesig().denominator()); // ticks in beat
-    int ticksM = ticksB * e->second.timesig().numerator();      // ticks in measure (bar)
-    if (ticksM == 0) {
-        LOGD("TimeSigMap::tickValues: at %d %s", t, muPrintable(e->second.timesig().toString()));
+    int ticks_b = ticks_beat(e->second.timesig().denominator()); // ticks in beat
+    int ticks_m = ticks_b * e->second.timesig().numerator();     // ticks in measure (bar)
+    if (ticks_m == 0) {
+        LOGD("TimeSigMap::tickValues: at %d %s", t, muPrintable(e->second.timesig().to_string()));
         *bar = 0;
         *beat = 0;
         *tick = 0;
         return;
     }
-    *bar = e->second.bar() + delta / ticksM;
-    int rest = delta % ticksM;
-    *beat = rest / ticksB;
-    *tick = rest % ticksB;
+    *bar = e->second.bar() + delta / ticks_m;
+    int rest = delta % ticks_m;
+    *beat = rest / ticks_b;
+    *tick = rest % ticks_b;
 }
 
 //---------------------------------------------------------
@@ -337,7 +337,7 @@ void TimeSigMap::tickValues(int t, int *bar, int *beat, int *tick) const {
 
 String TimeSigMap::pos(int t) const {
     int bar, beat, tick;
-    tickValues(t, &bar, &beat, &tick);
+    tick_values(t, &bar, &beat, &tick);
     return String(u"%1:%2:%3").arg(bar + 1, beat, tick);
 }
 
@@ -364,31 +364,31 @@ int TimeSigMap::bar2tick(int bar, int beat) const {
         }
         return 0;
     }
-    --e;                                                        // current TimeSigMap value
-    int ticksB = ticks_beat(e->second.timesig().denominator()); // ticks per beat
-    int ticksM = ticksB * e->second.timesig().numerator();      // bar length in ticks
-    return e->first + (bar - e->second.bar()) * ticksM + ticksB * beat;
+    --e;                                                         // current TimeSigMap value
+    int ticks_b = ticks_beat(e->second.timesig().denominator()); // ticks per beat
+    int ticks_m = ticks_b * e->second.timesig().numerator();     // bar length in ticks
+    return e->first + (bar - e->second.bar()) * ticks_m + ticks_b * beat;
 }
 
 //---------------------------------------------------------
 //   ticksPerMeasure
 //---------------------------------------------------------
 
-int ticksPerMeasure(int numerator, int denominator) { return ticks_beat(denominator) * numerator; }
+int ticks_per_measure(int numerator, int denominator) { return ticks_beat(denominator) * numerator; }
 
 //---------------------------------------------------------
 //   rasterEval
 //---------------------------------------------------------
 
-unsigned rasterEval(unsigned t, int raster, int startTick, int numerator, int denominator, int addition) {
-    int delta = t - startTick;
-    int ticksM = ticksPerMeasure(numerator, denominator);
+unsigned raster_eval(unsigned t, int raster, int start_tick, int numerator, int denominator, int addition) {
+    int delta = t - start_tick;
+    int ticks_m = ticks_per_measure(numerator, denominator);
     if (raster == 0) {
-        raster = ticksM;
+        raster = ticks_m;
     }
-    int rest = delta % ticksM;
-    int bb = (delta / ticksM) * ticksM;
-    return startTick + bb + ((rest + addition) / raster) * raster;
+    int rest = delta % ticks_m;
+    int bb = (delta / ticks_m) * ticks_m;
+    return start_tick + bb + ((rest + addition) / raster) * raster;
 }
 
 //---------------------------------------------------------
@@ -405,7 +405,7 @@ unsigned TimeSigMap::raster(unsigned t, int raster) const {
         return t;
     }
     auto timesig = e->second.timesig();
-    return rasterEval(t, raster, e->first, timesig.numerator(), timesig.denominator(), raster / 2);
+    return raster_eval(t, raster, e->first, timesig.numerator(), timesig.denominator(), raster / 2);
 }
 
 //---------------------------------------------------------
@@ -419,7 +419,7 @@ unsigned TimeSigMap::raster1(unsigned t, int raster) const {
     }
     auto e = upper_bound(t);
     auto timesig = e->second.timesig();
-    return rasterEval(t, raster, e->first, timesig.numerator(), timesig.denominator(), 0);
+    return raster_eval(t, raster, e->first, timesig.numerator(), timesig.denominator(), 0);
 }
 
 //---------------------------------------------------------
@@ -433,17 +433,17 @@ unsigned TimeSigMap::raster2(unsigned t, int raster) const {
     }
     auto e = upper_bound(t);
     auto timesig = e->second.timesig();
-    return rasterEval(t, raster, e->first, timesig.numerator(), timesig.denominator(), raster - 1);
+    return raster_eval(t, raster, e->first, timesig.numerator(), timesig.denominator(), raster - 1);
 }
 
 //---------------------------------------------------------
 //   rasterStep
 //---------------------------------------------------------
 
-int TimeSigMap::rasterStep(unsigned t, int raster) const {
+int TimeSigMap::raster_step(unsigned t, int raster) const {
     if (raster == 0) {
         auto timesig = upper_bound(t)->second.timesig();
-        return ticksPerMeasure(timesig.denominator(), timesig.numerator());
+        return ticks_per_measure(timesig.denominator(), timesig.numerator());
     }
     return raster;
 }
@@ -455,7 +455,7 @@ int TimeSigMap::rasterStep(unsigned t, int raster) const {
 void TimeSigMap::dump() const {
     LOGD("TimeSigMap:");
     for (auto i = begin(); i != end(); ++i) {
-        LOGD("%6d timesig: %s measure: %d", i->first, muPrintable(i->second.timesig().toString()), i->second.bar());
+        LOGD("%6d timesig: %s measure: %d", i->first, muPrintable(i->second.timesig().to_string()), i->second.bar());
     }
 }
 
@@ -463,5 +463,5 @@ void TimeSigMap::dump() const {
 //   dUnitTicks
 //---------------------------------------------------------
 
-int TimeSigFrac::dUnitTicks() const { return (4 * Constants::DIVISION) / denominator(); }
+int TimeSigFrac::d_unit_ticks() const { return (4 * Constants::division) / denominator(); }
 } // namespace mu::engraving

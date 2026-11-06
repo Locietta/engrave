@@ -29,15 +29,15 @@ using namespace mu::engraving;
 
 TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent)
     : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE) {
-    setGenerated(true);
+    set_generated(true);
     tab_ = 0;
     text_ = String();
 }
 
 TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent, const StaffType *tab, DurationType type, int dots)
     : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE) {
-    setGenerated(true);
-    setDuration(type, dots, tab);
+    set_generated(true);
+    set_duration(type, dots, tab);
 }
 
 TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol &e) : EngravingItem(e) {
@@ -45,7 +45,7 @@ TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol &e) : EngravingItem
     text_ = e.text_;
 }
 
-void TabDurationSymbol::setDuration(DurationType type, int dots, const StaffType *tab) {
+void TabDurationSymbol::set_duration(DurationType type, int dots, const StaffType *tab) {
     tab_ = tab;
-    text_ = tab->durationString(type, dots);
+    text_ = tab->duration_string(type, dots);
 }

@@ -37,15 +37,15 @@ public:
 
     GuitarBendImporter(mu::engraving::Score *score);
 
-    void collectBend(mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
-    void collectDive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues);
-    void addElementsToScore();
+    void collect_bend(mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values);
+    void collect_dive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitch_values);
+    void add_elements_to_score();
 
 private:
 
-    BendDataCollector bendCollector_;
-    DiveDataCollector diveCollector_;
-    BendBuilder bendBuilder_;
+    BendDataCollector bend_collector_;
+    DiveDataCollector dive_collector_;
+    BendBuilder bend_builder_;
     mu::engraving::Score *score_ = nullptr;
 };
 } // namespace mu::iex::guitarpro

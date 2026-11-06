@@ -34,16 +34,16 @@ class ReadContext;
 class Read500 : public rw::IReader {
 public:
 
-    muse::Ret readScoreFile(Score *score, XmlReader &e, rw::ReadInOutData *data) override;
+    muse::Ret read_score_file(Score *score, XmlReader &e, rw::ReadInOutData *data) override;
 
-    static bool readScoreTag(Score *score, XmlReader &e, ReadContext &ctx);
+    static bool read_score_tag(Score *score, XmlReader &e, ReadContext &ctx);
 
-    bool pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fraction scale) override;
-    void pasteSymbols(XmlReader &e, ChordRest *dst) override;
-    void readTremoloCompat(compat::TremoloCompat *item, XmlReader &xml) override;
+    bool paste_staff(XmlReader &e, Segment *dst, staff_idx_t dst_staff, Fraction scale) override;
+    void paste_symbols(XmlReader &e, ChordRest *dst) override;
+    void read_tremolo_compat(compat::TremoloCompat *item, XmlReader &xml) override;
 
 private:
-    bool preparePasteDurationElement(Score *score, const Fraction &tick, const Fraction &ticks, const track_idx_t track);
-    void doReadItem(EngravingItem *item, XmlReader &xml) override;
+    bool prepare_paste_duration_element(Score *score, const Fraction &tick, const Fraction &ticks, const track_idx_t track);
+    void do_read_item(EngravingItem *item, XmlReader &xml) override;
 };
 } // namespace mu::engraving::read500

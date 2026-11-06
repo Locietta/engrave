@@ -41,20 +41,20 @@ public:
 
     ActionIcon *clone() const override;
 
-    void setActionType(ActionIconType val);
-    ActionIconType actionType() const;
+    void set_action_type(ActionIconType val);
+    ActionIconType action_type() const;
 
     const muse::TranslatableString &title() const;
     char16_t icon() const;
 
-    const muse::draw::Font &iconFont() const { return iconFont_; }
+    const muse::draw::Font &icon_font() const { return icon_font_; }
 
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
 
 private:
-    ActionIconType actionType_ = ActionIconType::UNDEFINED;
+    ActionIconType action_type_ = ActionIconType::UNDEFINED;
     muse::TranslatableString title_;
-    muse::draw::Font iconFont_;
+    muse::draw::Font icon_font_;
 };
 } // namespace mu::engraving

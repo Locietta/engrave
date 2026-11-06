@@ -19,11 +19,11 @@ public:
     };
 
     struct StaffProperties {
-        int fretCount{24};
-        int capoFret{0};
+        int fret_count{24};
+        int capo_fret{0};
         std::vector<int> tuning;
-        bool useFlats{false};
-        bool ignoreFlats{false};
+        bool use_flats{false};
+        bool ignore_flats{false};
     };
 
     struct InstrumentString {
@@ -34,9 +34,9 @@ public:
     struct Diagram {
         int id{0};
         muse::String name;
-        int stringCount{0};
-        int fretCount{0};
-        int baseFret{0};
+        int string_count{0};
+        int fret_count{0};
+        int base_fret{0};
         std::unordered_map<int, int> frets;
         // there are some other tags
         // which cant be used in MU
@@ -58,43 +58,43 @@ public:
         float position = 0;
     };
 
-    GPTrack(int idx) : _idx(idx) {}
+    GPTrack(int idx) : idx_value(idx) {}
 
     virtual ~GPTrack() = default;
 
-    void setName(const muse::String &n) { _name = n; }
+    void set_name(const muse::String &n) { name_value = n; }
 
-    muse::String name() const { return _name; }
+    muse::String name() const { return name_value; }
 
-    void setShortName(const muse::String &s) { _shortName = s; }
+    void set_short_name(const muse::String &s) { short_name_value = s; }
 
-    muse::String shortName() const { return _shortName; }
+    muse::String short_name() const { return short_name_value; }
 
-    void setInstrument(const muse::String &s) { _instrument = s; }
+    void set_instrument(const muse::String &s) { instrument_value = s; }
 
-    muse::String instrument() const { return _instrument; }
+    muse::String instrument() const { return instrument_value; }
 
-    void setRSE(const RSE &r) { _rse = r; }
+    void set_rse(const RSE &r) { rse_value = r; }
 
-    const RSE &rse() const { return _rse; }
+    const RSE &rse() const { return rse_value; }
 
-    void setProgramm(int pr) { _programm = pr; }
+    void set_programm(int pr) { programm_value = pr; }
 
-    int programm() const { return _programm; }
+    int programm() const { return programm_value; }
 
-    void setMidiChannel(int ch) { _midiChannel = ch; }
+    void set_midi_channel(int ch) { midi_channel_value = ch; }
 
-    int midiChannel() const { return _midiChannel; }
+    int midi_channel() const { return midi_channel_value; }
 
-    void setIsGuitar(bool arg) { _isGuitar = arg; }
+    void set_is_guitar(bool arg) { is_guitar_value = arg; }
 
-    bool isGuitar() const { return _isGuitar; }
+    bool is_guitar() const { return is_guitar_value; }
 
-    void setStaffProperties(const StaffProperties &st) { _staffProperties = st; }
+    void set_staff_properties(const StaffProperties &st) { staff_properties_value = st; }
 
-    const StaffProperties &staffProperties() const { return _staffProperties; }
+    const StaffProperties &staff_properties() const { return staff_properties_value; }
 
-    void addSound(Sound sound);
+    void add_sound(Sound sound);
 
     struct SoundAutomationPos {
         int bar = 0;
@@ -103,66 +103,66 @@ public:
         bool operator<(const SoundAutomationPos &other) const { return std::tie(bar, pos) < std::tie(other.bar, other.pos); }
     };
 
-    void addSoundAutomation(SoundAutomation val) { _automations.insert({{val.bar, val.position}, val}); }
+    void add_sound_automation(SoundAutomation val) { automations.insert({{val.bar, val.position}, val}); }
 
-    const std::unordered_map<muse::String, Sound> &sounds() { return _sounds; }
+    const std::unordered_map<muse::String, Sound> &sounds() { return sounds_value; }
 
-    const std::map<SoundAutomationPos, SoundAutomation> &soundAutomations() { return _automations; }
+    const std::map<SoundAutomationPos, SoundAutomation> &sound_automations() { return automations; }
 
     std::vector<InstrumentString> strings() const {
         std::vector<InstrumentString> ss;
-        for (size_t i = 0; i < _staffProperties.tuning.size(); ++i) {
-            ss.push_back({static_cast<int>(i + 1), _staffProperties.tuning.at(i)});
+        for (size_t i = 0; i < staff_properties_value.tuning.size(); ++i) {
+            ss.push_back({static_cast<int>(i + 1), staff_properties_value.tuning.at(i)});
         }
 
         return ss;
     }
 
-    void setStaffCount(size_t n) { _staffCount = n; }
+    void set_staff_count(size_t n) { staff_count_value = n; }
 
-    size_t staffCount() const { return _staffCount; }
+    size_t staff_count() const { return staff_count_value; }
 
-    void setTranspose(int t) { _transpose = t; }
+    void set_transpose(int t) { transpose_value = t; }
 
-    int transpose() const { return _transpose; }
+    int transpose() const { return transpose_value; }
 
-    void addDiagram(std::pair<int, Diagram> &&d) { _diagrams.insert(d); }
+    void add_diagram(std::pair<int, Diagram> &&d) { diagrams.insert(d); }
 
-    const std::unordered_map<int, Diagram> &diagram() const { return _diagrams; }
+    const std::unordered_map<int, Diagram> &diagram() const { return diagrams; }
 
-    void setLyrics(const std::string &l) { _lyrics = l; }
+    void set_lyrics(const std::string &l) { lyrics_value = l; }
 
-    const std::string &lyrics() const { return _lyrics; }
+    const std::string &lyrics() const { return lyrics_value; }
 
-    void setLyricsOffset(int n) { _lyricsOffset = n; }
+    void set_lyrics_offset(int n) { lyrics_offset_value = n; }
 
-    int lyricsOffset() const { return _lyricsOffset; }
+    int lyrics_offset() const { return lyrics_offset_value; }
 
-    void setLineCount(int n) { _lineCount = n; }
+    void set_line_count(int n) { line_count_value = n; }
 
-    int lineCount() const { return _lineCount; }
+    int line_count() const { return line_count_value; }
 
-    int idx() const { return _idx; }
+    int idx() const { return idx_value; }
 
 protected:
 
-    muse::String _name;
-    muse::String _shortName;
-    muse::String _instrument;
-    RSE _rse;
-    int _programm{0};
-    int _midiChannel{0};
-    bool _isGuitar{false};
-    int _idx{-1};
-    size_t _staffCount{1};
-    StaffProperties _staffProperties;
-    std::unordered_map<muse::String, Sound> _sounds;
-    std::map<SoundAutomationPos, SoundAutomation> _automations;
-    int _transpose{0};
-    std::unordered_map<int, Diagram> _diagrams;
-    std::string _lyrics;
-    int _lyricsOffset = {0};
-    int _lineCount{5}; // for percussion lines
+    muse::String name_value;
+    muse::String short_name_value;
+    muse::String instrument_value;
+    RSE rse_value;
+    int programm_value{0};
+    int midi_channel_value{0};
+    bool is_guitar_value{false};
+    int idx_value{-1};
+    size_t staff_count_value{1};
+    StaffProperties staff_properties_value;
+    std::unordered_map<muse::String, Sound> sounds_value;
+    std::map<SoundAutomationPos, SoundAutomation> automations;
+    int transpose_value{0};
+    std::unordered_map<int, Diagram> diagrams;
+    std::string lyrics_value;
+    int lyrics_offset_value = {0};
+    int line_count_value{5}; // for percussion lines
 };
 
 class GP6Track : public GPTrack {

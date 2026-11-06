@@ -32,7 +32,7 @@ namespace mu::engraving {
 //   Lasso
 //---------------------------------------------------------
 
-Lasso::Lasso(Score *s) : EngravingItem(ElementType::LASSO, s) { setVisible(false); }
+Lasso::Lasso(Score *s) : EngravingItem(ElementType::LASSO, s) { set_visible(false); }
 
 //---------------------------------------------------------
 //   gripsPositions

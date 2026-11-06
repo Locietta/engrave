@@ -30,23 +30,23 @@
 
 namespace mu::engraving {
 enum KeyboardModifier {
-    NoModifier = 0x00000000,
-    ShiftModifier = 0x02000000,
-    ControlModifier = 0x04000000,
-    AltModifier = 0x08000000,
-    MetaModifier = 0x10000000,
-    KeypadModifier = 0x20000000,
-    GroupSwitchModifier = 0x40000000,
+    NO_MODIFIER = 0x00000000,
+    SHIFT_MODIFIER = 0x02000000,
+    CONTROL_MODIFIER = 0x04000000,
+    ALT_MODIFIER = 0x08000000,
+    META_MODIFIER = 0x10000000,
+    KEYPAD_MODIFIER = 0x20000000,
+    GROUP_SWITCH_MODIFIER = 0x40000000,
     // Do not extend the mask to include 0x01000000
-    KeyboardModifierMask = 0xfe000000
+    KEYBOARD_MODIFIER_MASK = 0xfe000000
 };
 DECLARE_FLAGS(KeyboardModifiers, KeyboardModifier)
 DECLARE_OPERATORS_FOR_FLAGS(KeyboardModifiers)
 
 #ifdef __APPLE__
-constexpr KeyboardModifier TextEditingControlModifier = AltModifier;
+constexpr KeyboardModifier text_editing_control_modifier = ALT_MODIFIER;
 #else
-constexpr KeyboardModifier TextEditingControlModifier = ControlModifier;
+constexpr KeyboardModifier text_editing_control_modifier = CONTROL_MODIFIER;
 #endif
 
 //---------------------------------------------------------
@@ -85,20 +85,20 @@ public:
     KeyboardModifiers modifiers;
 
     // drop data:
-    PointF dragOffset;
+    PointF drag_offset;
     EngravingItem *element = nullptr;
-    EngravingItem *dropElement = nullptr;
+    EngravingItem *drop_element = nullptr;
     track_idx_t track = muse::nidx;
 
     EditData() = default;
 
     void clear();
 
-    std::shared_ptr<ElementEditData> getData(const EngravingItem *) const;
-    void addData(std::shared_ptr<ElementEditData>);
-    bool control(bool textEditing = false) const;
+    std::shared_ptr<ElementEditData> get_data(const EngravingItem *) const;
+    void add_data(std::shared_ptr<ElementEditData>);
+    bool control(bool text_editing = false) const;
 
-    bool shift() const { return modifiers & ShiftModifier; }
+    bool shift() const { return modifiers & SHIFT_MODIFIER; }
 
 private:
     std::vector<std::shared_ptr<ElementEditData>> data_;

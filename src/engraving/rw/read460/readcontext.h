@@ -61,125 +61,126 @@ public:
     ~ReadContext();
 
     Score *score() const;
-    void setScore(Score *score);
+    void set_score(Score *score);
 
     const MStyle &style() const;
-    std::shared_ptr<IEngravingFontsProvider> engravingFonts() const;
+    std::shared_ptr<IEngravingFontsProvider> engraving_fonts() const;
 
-    bool pasteMode() const { return _pasteMode; }
+    bool paste_mode() const { return paste_mode_value; }
 
-    void setPasteMode(bool v) { _pasteMode = v; }
+    void set_paste_mode(bool v) { paste_mode_value = v; }
 
-    String mscoreVersion() const;
-    int mscVersion() const;
+    String mscore_version() const;
+    int msc_version() const;
 
-    int fileDivision() const;
-    int fileDivision(int t) const;
+    int file_division() const;
+    int file_division(int t) const;
 
     double spatium() const;
-    void setSpatium(double v);
+    void set_spatium(double v);
 
-    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { propertiesToSkip_ = propertiesToSkip; }
+    void set_properties_to_skip(const PropertyIdSet &properties_to_skip) { properties_to_skip_ = properties_to_skip; }
 
-    bool shouldSkipProperty(Pid pid) const { return muse::contains(propertiesToSkip_, pid); }
+    bool should_skip_property(Pid pid) const { return muse::contains(properties_to_skip_, pid); }
 
-    bool forcePageMode() const { return forcePageMode_; }
+    bool force_page_mode() const { return force_page_mode_; }
 
-    void setForcePageMode(bool v) { forcePageMode_ = v; }
+    void set_force_page_mode(bool v) { force_page_mode_ = v; }
 
     DummyParent *dummy() const;
 
     Staff *staff(staff_idx_t n);
 
-    bool isSameScore(const EngravingObject *obj) const;
+    bool is_same_score(const EngravingObject *obj) const;
 
-    Fraction tick() const { return _tick + _tickOffset; }
+    Fraction tick() const { return tick_value + tick_offset_value; }
 
     Fraction rtick() const;
 
-    Fraction tickOffset() const { return _tickOffset; }
+    Fraction tick_offset() const { return tick_offset_value; }
 
-    void setTick(const Fraction &f);
-    void incTick(const Fraction &f);
+    void set_tick(const Fraction &f);
+    void inc_tick(const Fraction &f);
 
-    void setTickOffset(const Fraction &val) { _tickOffset = val; }
+    void set_tick_offset(const Fraction &val) { tick_offset_value = val; }
 
-    track_idx_t track() const { return _track + _trackOffset; }
+    track_idx_t track() const { return track_value + track_offset_value; }
 
-    void setTrackOffset(int val) { _trackOffset = val; }
+    void set_track_offset(int val) { track_offset_value = val; }
 
-    int trackOffset() const { return _trackOffset; }
+    int track_offset() const { return track_offset_value; }
 
-    void setTrack(track_idx_t val) { _track = val; }
+    void set_track(track_idx_t val) { track_value = val; }
 
-    void setCurrentMeasure(Measure *m) { _curMeasure = m; }
+    void set_current_measure(Measure *m) { cur_measure = m; }
 
-    Measure *currentMeasure() const { return _curMeasure; }
+    Measure *current_measure() const { return cur_measure; }
 
-    void setLastMeasure(Measure *m) { _lastMeasure = m; }
+    void set_last_measure(Measure *m) { last_measure_value = m; }
 
-    Measure *lastMeasure() const { return _lastMeasure; }
+    Measure *last_measure() const { return last_measure_value; }
 
-    void setCurrentMeasureIndex(int idx) { _curMeasureIdx = idx; }
+    void set_current_measure_index(int idx) { cur_measure_idx = idx; }
 
-    int currentMeasureIndex() const { return _curMeasureIdx; }
+    int current_measure_index() const { return cur_measure_idx; }
 
-    Interval transpose() const { return _transpose; }
+    Interval transpose() const { return transpose_value; }
 
-    void setTransposeChromatic(int8_t v) { _transpose.chromatic = v; }
+    void set_transpose_chromatic(int8_t v) { transpose_value.chromatic = v; }
 
-    void setTransposeDiatonic(int8_t v) { _transpose.diatonic = v; }
+    void set_transpose_diatonic(int8_t v) { transpose_value.diatonic = v; }
 
-    TracksMap &tracks() { return _tracks; }
+    TracksMap &tracks() { return tracks_value; }
 
-    void addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting);
+    void add_part_audio_setting_compat(PartAudioSettingsCompat part_audio_setting);
 
-    const SettingsCompat &settingCompat() { return _settingsCompat; }
+    const SettingsCompat &setting_compat() { return settings_compat; }
 
-    Fraction timeSigForNextMeasure() { return timeSigForNextMeasure_; }
+    Fraction time_sig_for_next_measure() { return time_sig_for_next_measure_; }
 
-    void setTimeSigForNextMeasure(Fraction timeSig) { timeSigForNextMeasure_ = timeSig; }
+    void set_time_sig_for_next_measure(Fraction time_sig) { time_sig_for_next_measure_ = time_sig; }
 
-    Location location(bool forceAbsFrac = false) const;
-    void fillLocation(Location &, bool forceAbsFrac = false) const;
-    void setLocation(const Location &); // sets a new reading point, taking into account its type (absolute or relative).
+    Location location(bool force_abs_frac = false) const;
+    void fill_location(Location &, bool force_abs_frac = false) const;
+    void set_location(const Location &); // sets a new reading point, taking into account its type (absolute or relative).
 
-    void addConnectorInfoLater(std::shared_ptr<ConnectorInfoReader> c); // add connector info to be checked after calling checkConnectors()
-    void checkConnectors();
-    void reconnectBrokenConnectors();
-    void clearOrphanedConnectors();
+    void
+    add_connector_info_later(std::shared_ptr<ConnectorInfoReader> c); // add connector info to be checked after calling checkConnectors()
+    void check_connectors();
+    void reconnect_broken_connectors();
+    void clear_orphaned_connectors();
 
 private:
-    void addConnectorInfo(std::shared_ptr<ConnectorInfoReader>);
-    void removeConnector(const ConnectorInfoReader *); // Removes the whole ConnectorInfo chain from the connectors list.
+    void add_connector_info(std::shared_ptr<ConnectorInfoReader>);
+    void remove_connector(const ConnectorInfoReader *); // Removes the whole ConnectorInfo chain from the connectors list.
 
     Score *score_ = nullptr;
 
-    bool _pasteMode = false; // modifies read behaviour on paste operation
-    bool forcePageMode_ = false;
+    bool paste_mode_value = false; // modifies read behaviour on paste operation
+    bool force_page_mode_ = false;
 
-    std::vector<std::shared_ptr<ConnectorInfoReader>> _connectors;
+    std::vector<std::shared_ptr<ConnectorInfoReader>> connectors;
     std::vector<std::shared_ptr<ConnectorInfoReader>>
-        _pendingConnectors; // connectors that are pending to be updated and added to _connectors. That will happen when checkConnectors() is called.
+        pending_connectors; // connectors that are pending to be updated and added to _connectors. That will happen when checkConnectors() is called.
 
-    Fraction _tick{Fraction(0, 1)};
-    Fraction _tickOffset{Fraction(0, 1)};
-    int _intTick = 0;
+    Fraction tick_value{Fraction(0, 1)};
+    Fraction tick_offset_value{Fraction(0, 1)};
+    int int_tick = 0;
 
-    int _trackOffset = 0;
-    track_idx_t _track = 0;
+    int track_offset_value = 0;
+    track_idx_t track_value = 0;
 
-    Measure *_curMeasure = nullptr;
-    Measure *_lastMeasure = nullptr;
-    int _curMeasureIdx = 0;
+    Measure *cur_measure = nullptr;
+    Measure *last_measure_value = nullptr;
+    int cur_measure_idx = 0;
 
-    Interval _transpose;
-    TracksMap _tracks;
+    Interval transpose_value;
+    TracksMap tracks_value;
 
-    SettingsCompat _settingsCompat;
+    SettingsCompat settings_compat;
 
-    PropertyIdSet propertiesToSkip_;
+    PropertyIdSet properties_to_skip_;
 
-    Fraction timeSigForNextMeasure_ = Fraction(0, 1);
+    Fraction time_sig_for_next_measure_ = Fraction(0, 1);
 };
 } // namespace mu::engraving::read460

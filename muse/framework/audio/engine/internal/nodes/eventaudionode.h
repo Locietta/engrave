@@ -33,45 +33,45 @@ namespace muse::audio::engine {
 class EventAudioNode : public AudioSourceNode {
 public:
     // audioFactory makes the synthesizer for the input params; it must outlive the node.
-    EventAudioNode(const IAudioFactory &audioFactory, TrackId trackId, const mpe::PlaybackData &playbackData);
+    EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data);
 
-    void seek(const TimePosition &position, const bool flushSound = true) override;
+    void seek(const TimePosition &position, const bool flush_sound = true) override;
     void flush() override;
 
-    const AudioInputParams &inputParams() const override;
-    void applyInputParams(const AudioInputParams &requiredParams) override;
+    const AudioInputParams &input_params() const override;
+    void apply_input_params(const AudioInputParams &required_params) override;
 
-    void prepareToPlay() override;
-    bool readyToPlay() const override;
+    void prepare_to_play() override;
+    bool ready_to_play() const override;
 
-    bool hasPendingChunks() const override;
-    void processInput() override;
-    InputProcessingProgress inputProcessingProgress() const override;
+    bool has_pending_chunks() const override;
+    void process_input() override;
+    InputProcessingProgress input_processing_progress() const override;
 
-    void clearCache() override;
+    void clear_cache() override;
 
 private:
     struct SynthCtx {
-        ProcessMode mode = ProcessMode::Undefined;
-        TimePosition playbackPosition;
+        ProcessMode mode = ProcessMode::UNDEFINED;
+        TimePosition playback_position;
 
-        bool isValid() const { return mode != ProcessMode::Undefined; }
+        bool is_valid() const { return mode != ProcessMode::UNDEFINED; }
     };
 
-    void onModeChanged(const ProcessMode mode) override;
-    void onOutputSpecChanged(const OutputSpec &spec) override;
+    void on_mode_changed(const ProcessMode mode) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
 
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    void setupSource();
-    SynthCtx currentSynthCtx() const;
-    void restoreSynthCtx(const SynthCtx &ctx);
+    void setup_source();
+    SynthCtx current_synth_ctx() const;
+    void restore_synth_ctx(const SynthCtx &ctx);
 
-    const IAudioFactory *audioFactory() const { return &audioFactory_; }
+    const IAudioFactory *audio_factory() const { return &audio_factory_; }
 
-    const IAudioFactory &audioFactory_;
-    TrackId trackId_ = -1;
-    mpe::PlaybackData playbackData_;
+    const IAudioFactory &audio_factory_;
+    TrackId track_id_ = -1;
+    mpe::PlaybackData playback_data_;
     synth::ISynthesizerPtr synth_ = nullptr;
     AudioInputParams params_;
 };

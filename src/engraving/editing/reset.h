@@ -30,12 +30,12 @@ class Transaction;
 
 class Reset {
 public:
-    static void resetAllPositions(Transaction &tx, Score *score);
-    static void resetToDefaultLayout(Transaction &tx, Score *score);
-    static void resetTextStyleOverrides(Score *score); //! Not undoable
-    static void resetAllStyles(Transaction &tx, Score *score, const StyleIdSet &exceptTheseOnes = {});
+    static void reset_all_positions(Transaction &tx, Score *score);
+    static void reset_to_default_layout(Transaction &tx, Score *score);
+    static void reset_text_style_overrides(Score *score); //! Not undoable
+    static void reset_all_styles(Transaction &tx, Score *score, const StyleIdSet &except_these_ones = {});
 
     // Removes system/page breaks and spacers
-    static void resetMeasuresLayout(Transaction &tx, Score *score);
+    static void reset_measures_layout(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

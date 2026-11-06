@@ -68,14 +68,14 @@ using namespace mu::engraving;
 
 namespace music {
 namespace {
-constexpr sample_rate_t kDefaultSampleRate = 44100;
-constexpr samples_t kSamplesPerChannel = 4096;
-constexpr audioch_t kAudioChannelCount = 2;
-constexpr double kPlaybackTailSecs = 3.0;
-constexpr const char *kReverbTrackName = "Reverb";
-constexpr const char *kAuxTrackName = "Aux 2";
-constexpr const char *kMetronomeTrackName = "Metronome";
-constexpr const char *kChordsTrackNamePrefix = "Chords.";
+constexpr sample_rate_t k_default_sample_rate = 44100;
+constexpr samples_t k_samples_per_channel = 4096;
+constexpr audioch_t k_audio_channel_count = 2;
+constexpr double k_playback_tail_secs = 3.0;
+constexpr const char *k_reverb_track_name = "Reverb";
+constexpr const char *k_aux_track_name = "Aux 2";
+constexpr const char *k_metronome_track_name = "Metronome";
+constexpr const char *k_chords_track_name_prefix = "Chords.";
 
 // Capturing midi::IMidiOutPort. FluidSynth sends every event it handles (after
 // the staff -> channel remap), which is the event stream later golden tests
@@ -84,28 +84,28 @@ constexpr const char *kChordsTrackNamePrefix = "Chords.";
 // reports completed frames after each chunk, so this is the start of the
 // chunk currently being rendered.
 struct CapturingMidiOutPort final : midi::IMidiOutPort {
-    midi::MidiDeviceList availableDevices() const override { return {}; }
+    midi::MidiDeviceList available_devices() const override { return {}; }
 
     Ret connect(const midi::MidiDeviceID &) override { return make_ok(); }
 
     void disconnect() override {}
 
-    bool isConnected() const override { return true; }
+    bool is_connected() const override { return true; }
 
-    midi::MidiDeviceID deviceID() const override { return "engine-capture"; }
+    midi::MidiDeviceID device_id() const override { return "engine-capture"; }
 
-    bool supportsMIDI20Output() const override { return false; }
+    bool supports_mid_i20_output() const override { return false; }
 
-    Ret sendEvent(const midi::Event &event) override {
+    Ret send_event(const midi::Event &event) override {
         if (hook) {
-            hook(event, renderedFrames);
+            hook(event, rendered_frames);
         }
 
         return make_ok();
     }
 
     EngineAudioMidiEventHook hook;
-    std::uint64_t renderedFrames = 0;
+    std::uint64_t rendered_frames = 0;
 };
 
 } // namespace
@@ -117,35 +117,35 @@ struct EngineAudio::State {
     explicit State(const muse::mpe::IArticulationProfilesRepository &profiles) : profiles(profiles) {}
 
     const muse::mpe::IArticulationProfilesRepository &profiles;
-    CapturingMidiOutPort midiOutPort;
+    CapturingMidiOutPort midi_out_port;
     std::unique_ptr<engine::AudioServices> services;
-    bool servicesInitialized = false;
+    bool services_initialized = false;
     engine::AudioFactory *factory = nullptr;
-    int sampleRate = kDefaultSampleRate;
+    int sample_rate_value = ::music::k_default_sample_rate;
     // One entry per SoundFont of the setup, in its order; the first is the
     // default.
-    std::vector<std::string> soundfontPaths;
-    std::vector<AudioInputParams> fontInputs;
+    std::vector<std::string> soundfont_paths_value;
+    std::vector<AudioInputParams> font_inputs;
     // The default font's identity, for the callers that predate the list.
-    std::string soundfontPath;
-    std::string soundfontUri;
-    std::string soundfontId;
+    std::string soundfont_path_value;
+    std::string soundfont_uri;
+    std::string soundfont_id;
 };
 
 EngineAudio::EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
 
 EngineAudio::~EngineAudio() {
-    const bool initialized = state_ && state_->servicesInitialized;
+    const bool initialized = state_ && state_->services_initialized;
     state_.reset();
-    if (initialized) synth::releaseSoundFontCache();
+    if (initialized) synth::release_sound_font_cache();
 }
 
 namespace {
-OutputSpec output_spec(int sampleRate) {
+OutputSpec output_spec(int input_sample_rate) {
     OutputSpec spec;
-    spec.sampleRate = sampleRate;
-    spec.samplesPerChannel = kSamplesPerChannel;
-    spec.audioChannelCount = kAudioChannelCount;
+    spec.sample_rate = input_sample_rate;
+    spec.samples_per_channel = ::music::k_samples_per_channel;
+    spec.audio_channel_count = ::music::k_audio_channel_count;
     return spec;
 }
 
@@ -153,61 +153,61 @@ OutputSpec output_spec(int sampleRate) {
 // the chain in an AudioOutputParams because the engine took output params;
 // 5.0's TrackParams carries the fx chain directly.
 AudioFxChain make_reverb_fx_chain() {
-    AudioFxParams reverbParams;
-    reverbParams.resourceMeta = makeReverbMeta();
-    reverbParams.categories.insert(AudioFxCategory::FxReverb);
-    reverbParams.chainOrder = 0;
-    reverbParams.active = true;
+    AudioFxParams reverb_params;
+    reverb_params.resource_meta = make_reverb_meta();
+    reverb_params.categories.insert(AudioFxCategory::FX_REVERB);
+    reverb_params.chain_order = 0;
+    reverb_params.active = true;
 
     AudioFxChain chain;
-    chain.emplace(reverbParams.chainOrder, std::move(reverbParams));
+    chain.emplace(reverb_params.chain_order, std::move(reverb_params));
     return chain;
 }
 
 SoundTrackFormat make_soundtrack_format(EngineAudioFormat format, const AudioRenderRequest &request, const OutputSpec &spec) {
     SoundTrackFormat result;
-    result.outputSpec = spec;
+    result.output_spec = spec;
 
     switch (format) {
-        case EngineAudioFormat::Wav:
+        case EngineAudioFormat::WAV:
             result.type = SoundTrackType::WAV;
-            result.sampleFormat = AudioSampleFormat::Float32;
-            result.bitRate = 0;
+            result.sample_format = AudioSampleFormat::FLOAT32;
+            result.bit_rate = 0;
             break;
-        case EngineAudioFormat::Flac:
+        case EngineAudioFormat::FLAC:
             result.type = SoundTrackType::FLAC;
-            result.sampleFormat = AudioSampleFormat::Int16;
-            result.bitRate = 0;
+            result.sample_format = AudioSampleFormat::INT16;
+            result.bit_rate = 0;
             break;
-        case EngineAudioFormat::Ogg:
+        case EngineAudioFormat::OGG:
             // Desktop OggWriter hard-codes 128 kbps (oggwriter.cpp:42).
             result.type = SoundTrackType::OGG;
-            result.sampleFormat = AudioSampleFormat::Undefined;
-            result.bitRate = 128;
+            result.sample_format = AudioSampleFormat::UNDEFINED;
+            result.bit_rate = 128;
             break;
-        case EngineAudioFormat::Mp3:
+        case EngineAudioFormat::MP3:
             // Desktop default exportMp3Bitrate is 128
             // (audioexportconfiguration.cpp:44).
             result.type = SoundTrackType::MP3;
-            result.sampleFormat = AudioSampleFormat::Undefined;
-            result.bitRate = 128;
+            result.sample_format = AudioSampleFormat::UNDEFINED;
+            result.bit_rate = 128;
             break;
-        case EngineAudioFormat::Aac:
+        case EngineAudioFormat::AAC:
             // Desktop AacWriter reuses exportMp3Bitrate for the AAC bitrate.
             result.type = SoundTrackType::AAC;
-            result.sampleFormat = AudioSampleFormat::Undefined;
-            result.bitRate = 128;
+            result.sample_format = AudioSampleFormat::UNDEFINED;
+            result.bit_rate = 128;
             break;
     }
 
     // Caller overrides; the API validates them against the format.
-    if (request.bit_rate > 0) result.bitRate = request.bit_rate;
+    if (request.bit_rate > 0) result.bit_rate = request.bit_rate;
     if (request.bit_depth == 16)
-        result.sampleFormat = AudioSampleFormat::Int16;
+        result.sample_format = AudioSampleFormat::INT16;
     else if (request.bit_depth == 24)
-        result.sampleFormat = AudioSampleFormat::Int24;
+        result.sample_format = AudioSampleFormat::INT24;
     else if (request.bit_depth == 32)
-        result.sampleFormat = AudioSampleFormat::Float32;
+        result.sample_format = AudioSampleFormat::FLOAT32;
 
     return result;
 }
@@ -219,15 +219,15 @@ SoundTrackFormat make_soundtrack_format(EngineAudioFormat format, const AudioRen
 // codecs, SoundFonts and cancellation callbacks remain on the owner thread.
 // Join before returning: cancellation never leaves deferred cleanup behind.
 void release_playback_events(PlaybackModel &model) {
-    const auto ids = model.existingTrackIdSet();
+    const auto ids = model.existing_track_id_set();
     size_t count = 0;
-    for (const auto &id : ids) count += model.resolveTrackPlaybackData(id).originEvents.size();
+    for (const auto &id : ids) count += model.resolve_track_playback_data(id).origin_events.size();
     if (count < 16384 || ids.size() < 2) return;
 
     std::array<std::vector<mpe::PlaybackEventsMap>, 4> batches;
     size_t index = 0;
     for (const auto &id : ids) {
-        auto &events = model.resolveTrackPlaybackData(id).originEvents;
+        auto &events = model.resolve_track_playback_data(id).origin_events;
         batches[index++ % batches.size()].push_back(std::move(events));
         events = {};
     }
@@ -249,53 +249,53 @@ void release_playback_events(PlaybackModel &model) {
 
 const char *audio_format_name(EngineAudioFormat format) {
     switch (format) {
-        case EngineAudioFormat::Wav: return "WAV";
-        case EngineAudioFormat::Flac: return "FLAC";
-        case EngineAudioFormat::Ogg: return "Ogg";
-        case EngineAudioFormat::Mp3: return "MP3";
-        case EngineAudioFormat::Aac: return "AAC";
+        case EngineAudioFormat::WAV: return "WAV";
+        case EngineAudioFormat::FLAC: return "FLAC";
+        case EngineAudioFormat::OGG: return "Ogg";
+        case EngineAudioFormat::MP3: return "MP3";
+        case EngineAudioFormat::AAC: return "AAC";
     }
     return "audio";
 }
 
 AudioOutputCodec audio_output_codec_of(EngineAudioFormat format) {
     switch (format) {
-        case EngineAudioFormat::Wav: return AudioOutputCodec::Wav;
-        case EngineAudioFormat::Flac: return AudioOutputCodec::Flac;
-        case EngineAudioFormat::Ogg: return AudioOutputCodec::Ogg;
-        case EngineAudioFormat::Mp3: return AudioOutputCodec::Mp3;
-        case EngineAudioFormat::Aac: return AudioOutputCodec::Aac;
+        case EngineAudioFormat::WAV: return AudioOutputCodec::WAV;
+        case EngineAudioFormat::FLAC: return AudioOutputCodec::FLAC;
+        case EngineAudioFormat::OGG: return AudioOutputCodec::OGG;
+        case EngineAudioFormat::MP3: return AudioOutputCodec::MP3;
+        case EngineAudioFormat::AAC: return AudioOutputCodec::AAC;
     }
-    return AudioOutputCodec::Wav;
+    return AudioOutputCodec::WAV;
 }
 
 // Mirrors the desktop mixer title rules in playbackcontroller.cpp:1155-1186
 // (addTrack) and resolveAuxTrackTitle() (:77-89). Translation is not available
 // in the native host, so the English labels are used verbatim.
 std::string track_name(const MasterScore *master, const PlaybackModel &model, const InstrumentTrackId &id) {
-    if (id == model.metronomeTrackId()) {
-        return kMetronomeTrackName;
+    if (id == model.metronome_track_id()) {
+        return ::music::k_metronome_track_name;
     }
 
-    const Part *part = master->partById(id.partId);
+    const Part *part = master->part_by_id(id.part_id);
     if (!part) {
-        return id.instrumentId.toStdString();
+        return id.instrument_id.to_std_string();
     }
 
-    if (model.isChordSymbolsTrack(id)) {
-        return std::string(kChordsTrackNamePrefix) + part->partName().toStdString();
+    if (model.is_chord_symbols_track(id)) {
+        return std::string(::music::k_chords_track_name_prefix) + part->part_name().to_std_string();
     }
 
     const Instrument *primary = part->instrument();
-    if (primary && primary->id() == id.instrumentId) {
-        return part->partName().toStdString();
+    if (primary && primary->id() == id.instrument_id) {
+        return part->part_name().to_std_string();
     }
 
-    if (const Instrument *instrument = part->instrumentById(id.instrumentId)) {
-        return "(" + instrument->trackName().toStdString() + ")";
+    if (const Instrument *instrument = part->instrument_by_id(id.instrument_id)) {
+        return "(" + instrument->track_name().to_std_string() + ")";
     }
 
-    return id.instrumentId.toStdString();
+    return id.instrument_id.to_std_string();
 }
 
 // 4.7.6 filled AudioOutputParams. 5.0 splits it: ControlParams carries only
@@ -312,26 +312,26 @@ void set_track_control(ControlParams &control, const EngineAudioTrackParams &par
 // both chains preserves existing gain initialization and sample arithmetic.
 engine::TrackChainPtr make_master_chain(const IAudioNodePtr &context, const OutputSpec &spec, const AudioRenderRequest &request,
                                         std::string &error) {
-    IAudioNodePtr contextNode = std::dynamic_pointer_cast<IAudioNode>(context);
-    if (!contextNode) {
+    IAudioNodePtr context_node = std::dynamic_pointer_cast<IAudioNode>(context);
+    if (!context_node) {
         error = "audio context is not an audio node";
         return nullptr;
     }
 
     engine::AutomationControlNodePtr control = std::make_shared<engine::AutomationControlNode>();
-    engine::TrackChainPtr chain = std::make_shared<engine::TrackChain>(MASTER_TRACK_ID, "Master");
+    engine::TrackChainPtr chain = std::make_shared<engine::TrackChain>(::muse::audio::master_track_id, "Master");
 
     // Output spec and mode first: TrackChain::rebuild() pushes both into every
     // node it adds (nodes/chainnode.h:70-80), so the control node computes its
     // channel gains once, and only the explicit set* calls below can retarget
     // them.
-    chain->setOutputSpec(spec);
-    chain->setMode(ProcessMode::Idle);
+    chain->set_output_spec(spec);
+    chain->set_mode(ProcessMode::IDLE);
 
-    chain->setSource(contextNode);
-    chain->setFxChain(nullptr); // 5.0 has no master fx chain (audiocontext.cpp:72)
-    chain->setControl(control);
-    chain->setSignal(std::make_shared<engine::SignalNode>());
+    chain->set_source(context_node);
+    chain->set_fx_chain(nullptr); // 5.0 has no master fx chain (audiocontext.cpp:72)
+    chain->set_control(control);
+    chain->set_signal(std::make_shared<engine::SignalNode>());
     chain->rebuild();
 
     // Mirrors AudioContext::onControlParamsChanged() (audiocontext.cpp:310-331)
@@ -346,11 +346,11 @@ engine::TrackChainPtr make_master_chain(const IAudioNodePtr &context, const Outp
     // dsp/smoothlinearvalue.h:108-114) and only the first set* call after a
     // marker reset does so, so the pan is stored first and the volume written
     // once more to re-initialize both channel gains from (volume, pan).
-    const volume_db_t masterVolume(static_cast<float>(request.master_volume_db));
-    control->setPan(balance_t(static_cast<float>(request.master_balance)));
-    control->setMuted(false);
-    control->setPlayheadPosition(nullptr);
-    control->setVolume(masterVolume);
+    const volume_db_t master_volume(static_cast<float>(request.master_volume_db));
+    control->set_pan(balance_t(static_cast<float>(request.master_balance)));
+    control->set_muted(false);
+    control->set_playhead_position(nullptr);
+    control->set_volume(master_volume);
 
     return chain;
 }
@@ -366,7 +366,7 @@ void fluid_log_to_logger(int level, const char *message, void *) {
 } // namespace
 
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook) {
-    audio.state().midiOutPort.hook = std::move(hook);
+    audio.state().midi_out_port.hook = std::move(hook);
 }
 
 bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths, std::string *error) {
@@ -381,13 +381,13 @@ bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths,
         return fail("no SoundFont was given (one .sf2 or .sf3 file is needed)");
     }
     for (const std::string &path : soundfont_paths) {
-        if (path.empty() || !synth::isSoundFont(io::path_t(path))) {
+        if (path.empty() || !synth::is_sound_font(io::PathT(path))) {
             return fail("SoundFont must be an existing .sf2 or .sf3 file: " + path);
         }
     }
 
     // Uri::fromLocalFile() resolves the absolute path through the engine's file system.
-    if (!io::fileSystem()) {
+    if (!io::file_system()) {
         return fail("native runtime (IFileSystem) is not initialised; create the EngineContext first");
     }
 
@@ -403,7 +403,7 @@ bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths,
     // files are immutable, so a later repository load reads the same bytes.
     std::map<std::string, std::string> names;
     for (const std::string &path : soundfont_paths) {
-        const auto parsed = synth::FluidSoundFontParser::parseSoundFont(io::path_t(path));
+        const auto parsed = synth::FluidSoundFontParser::parse_sound_font(io::PathT(path));
         if (!parsed.ret) return fail("failed to load SoundFont '" + path + "'");
         const auto [it, inserted] = names.emplace(parsed.val.name, path);
         if (!inserted && it->second != path) return fail("SoundFonts have the same resource name: " + parsed.val.name);
@@ -418,40 +418,41 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
         return false;
     };
     const std::vector<std::string> &soundfont_paths = setup.soundfonts;
-    if (state.servicesInitialized) {
-        if (!state.soundfontId.empty() && state.soundfontPaths == soundfont_paths && state.sampleRate == setup.sample_rate) return true;
-        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
+    if (state.services_initialized) {
+        if (!state.soundfont_id.empty() && state.soundfont_paths_value == soundfont_paths && state.sample_rate_value == setup.sample_rate)
+            return true;
+        if (state.sample_rate_value != setup.sample_rate) return fail("audio sample rate is fixed");
     }
     if (setup.sample_rate < 8000 || setup.sample_rate > 192000)
         return fail("audio sample rate must be between 8000 and 192000 Hz: " + std::to_string(setup.sample_rate));
     if (!validate_engine_soundfonts(soundfont_paths, error)) return false;
 
-    if (!state.servicesInitialized) {
+    if (!state.services_initialized) {
         // The factory, repository and synth/effect resolvers are kept for the
         // EngineContext lifetime; each render creates fresh synthesizer tracks.
-        state.services = std::make_unique<engine::AudioServices>(&state.midiOutPort);
-        state.servicesInitialized = true;
+        state.services = std::make_unique<engine::AudioServices>(&state.midi_out_port);
+        state.services_initialized = true;
         AudioEngineConfig config;
-        config.useSoundFontLowPassFilter = true;
-        state.sampleRate = setup.sample_rate;
+        config.use_sound_font_low_pass_filter = true;
+        state.sample_rate_value = setup.sample_rate;
         engine::AudioEngineConfiguration &configuration = state.services->configuration();
-        configuration.setConfig(config);
-        state.services->synthResolver().init(configuration.defaultAudioInputParams(), output_spec(state.sampleRate));
+        configuration.set_config(config);
+        state.services->synth_resolver().init(configuration.default_audio_input_params(), output_spec(state.sample_rate_value));
         state.factory = &state.services->factory();
-        state.factory->setOutputSpec(output_spec(state.sampleRate));
+        state.factory->set_output_spec(output_spec(state.sample_rate_value));
     }
-    auto *repository = &state.services->soundFontRepository();
+    auto *repository = &state.services->sound_font_repository();
     const auto uris = [](const std::vector<std::string> &paths) {
         std::vector<Uri> result;
-        for (const auto &path : paths) result.push_back(Uri::fromLocalFile(io::path_t(path)));
+        for (const auto &path : paths) result.push_back(Uri::from_local_file(io::PathT(path)));
         return result;
     };
     // loadSoundFonts replaces the repository and notifies FluidResolver, which
     // clears and rebuilds its resource cache. If loading fails, restore the
     // previous repository before returning without publishing the new selection.
-    repository->loadSoundFonts(uris(soundfont_paths));
+    repository->load_sound_fonts(uris(soundfont_paths));
     const auto restore = [&]() {
-        if (!state.soundfontPaths.empty()) repository->loadSoundFonts(uris(state.soundfontPaths));
+        if (!state.soundfont_paths_value.empty()) repository->load_sound_fonts(uris(state.soundfont_paths_value));
     };
 
     // 6. Explicit source resource for every track, taken from the engine's own
@@ -459,13 +460,13 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
     // it a track would resolve to the engine default ("MS Basic",
     // audioengineconfiguration.cpp:35-41, 103-109), which is absent from this
     // process, and the track would be silent.
-    const AudioResourceMetaList resources = state.factory->availableInputResources();
+    const AudioResourceMetaList resources = state.factory->available_input_resources();
     std::vector<AudioInputParams> inputs;
-    std::string defaultId, defaultUri;
+    std::string default_id, default_uri;
     for (std::size_t index = 0; index < soundfont_paths.size(); ++index) {
         const std::string &path = soundfont_paths[index];
-        const Uri uri = Uri::fromLocalFile(io::path_t(path));
-        const synth::SoundFontsMap &soundfonts = repository->soundFonts();
+        const Uri uri = Uri::from_local_file(io::PathT(path));
+        const synth::SoundFontsMap &soundfonts = repository->sound_fonts();
         auto it = soundfonts.find(uri);
         if (it == soundfonts.end()) {
             restore();
@@ -474,7 +475,7 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
 
         const AudioResourceMeta *found = nullptr;
         for (const AudioResourceMeta &meta : resources) {
-            if (meta.id == it->second.name && isResourceType(meta, AudioResourceType::FluidSoundfont)) {
+            if (meta.id == it->second.name && is_resource_type(meta, AudioResourceType::FLUID_SOUNDFONT)) {
                 found = &meta;
                 break;
             }
@@ -485,38 +486,38 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
         }
 
         AudioInputParams input;
-        input.resourceMeta = *found;
+        input.resource_meta = *found;
         inputs.push_back(input);
         if (index == 0) {
-            defaultUri = uri.toString();
-            defaultId = it->second.name;
+            default_uri = uri.to_string();
+            default_id = it->second.name;
         }
     }
 
-    state.fontInputs = std::move(inputs);
-    state.soundfontPaths = soundfont_paths;
-    state.soundfontPath = soundfont_paths.front();
-    state.soundfontUri = std::move(defaultUri);
-    state.soundfontId = std::move(defaultId);
+    state.font_inputs = std::move(inputs);
+    state.soundfont_paths_value = soundfont_paths;
+    state.soundfont_path_value = soundfont_paths.front();
+    state.soundfont_uri = std::move(default_uri);
+    state.soundfont_id = std::move(default_id);
 
     return true;
 }
 
 bool initialize_engine_audio(EngineAudio &audio, const std::string &soundfont_path, std::string *error) {
-    return initialize_engine_audio(audio, EngineAudioSetup{{soundfont_path}, kDefaultSampleRate}, error);
+    return initialize_engine_audio(audio, EngineAudioSetup{{soundfont_path}, ::music::k_default_sample_rate}, error);
 }
 
 bool engine_audio_initialized(const EngineAudio &audio) {
     EngineAudio::State &state = audio.state();
-    return state.servicesInitialized && !state.soundfontId.empty();
+    return state.services_initialized && !state.soundfont_id.empty();
 }
 
-std::string engine_soundfont_resource_id(const EngineAudio &audio) { return audio.state().soundfontId; }
+std::string engine_soundfont_resource_id(const EngineAudio &audio) { return audio.state().soundfont_id; }
 
-std::string engine_soundfont_uri(const EngineAudio &audio) { return audio.state().soundfontUri; }
+std::string engine_soundfont_uri(const EngineAudio &audio) { return audio.state().soundfont_uri; }
 
 AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, const AudioRenderRequest &request) {
-    OfflineTimingReport timingReport;
+    OfflineTimingReport timing_report;
     AudioRenderResult result;
     const auto fail = [&result](AudioRenderResult::Failure kind, std::string message) {
         result.ok = false;
@@ -526,18 +527,18 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     };
 
     EngineAudio::State &state = audio.state();
-    if (!state.servicesInitialized || !state.factory || state.soundfontId.empty()) {
-        return fail(AudioRenderResult::Failure::EngineFailure, "audio engine is not initialised");
+    if (!state.services_initialized || !state.factory || state.soundfont_id.empty()) {
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "audio engine is not initialised");
     }
     if (!master) {
-        return fail(AudioRenderResult::Failure::EngineFailure, "score is null");
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "score is null");
     }
     if (request.output_path.empty()) {
-        return fail(AudioRenderResult::Failure::EngineFailure, "output path is empty");
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "output path is empty");
     }
 
     bool cancelled = false;
-    std::exception_ptr callbackError;
+    std::exception_ptr callback_error;
     const auto poll = [&] {
         // Encoder file writes may originate in C codec callbacks. Unwind only
         // after leaving the codec, closing the file and idling the graph.
@@ -545,52 +546,52 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             try {
                 cancelled = request.cancelled();
             } catch (...) {
-                callbackError = std::current_exception();
+                callback_error = std::current_exception();
                 cancelled = true;
             }
         }
         return cancelled;
     };
-    const std::function<bool()> cancellationPoll = poll;
-    OfflineCancellation cancellationScope(cancellationPoll);
-    const auto abortSetup = [&]() {
-        if (callbackError) std::rethrow_exception(callbackError);
-        return fail(AudioRenderResult::Failure::Cancelled, "audio render cancelled during setup");
+    const std::function<bool()> cancellation_poll = poll;
+    OfflineCancellation cancellation_scope(cancellation_poll);
+    const auto abort_setup = [&]() {
+        if (callback_error) std::rethrow_exception(callback_error);
+        return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled during setup");
     };
-    if (poll()) return abortSetup();
+    if (poll()) return abort_setup();
 
-    auto setupTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().setup);
-    MasterScore *masterScore = master;
+    auto setup_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().setup);
+    MasterScore *master_score = master;
     // Excerpt selection mutes every master part that is absent from, or
     // invisible in, the excerpt (masternotation.cpp:748-770).
-    std::set<ID> mutedParts;
-    bool excerptSelected = false;
+    std::set<ID> muted_parts;
+    bool excerpt_selected = false;
     if (request.excerpt_id >= 0) {
-        const std::vector<Excerpt *> &excerpts = masterScore->excerpts();
+        const std::vector<Excerpt *> &excerpts = master_score->excerpts();
         if (static_cast<std::size_t>(request.excerpt_id) >= excerpts.size()) {
-            return fail(AudioRenderResult::Failure::EngineFailure, "excerpt id is out of range");
+            return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "excerpt id is out of range");
         }
 
         const Excerpt *excerpt = excerpts[static_cast<std::size_t>(request.excerpt_id)];
         if (!excerpt) {
-            return fail(AudioRenderResult::Failure::EngineFailure, "excerpt entry is null");
+            return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "excerpt entry is null");
         }
 
-        const Score *excerptScore = excerpt->excerptScore();
-        if (!excerptScore || excerptScore->masterScore() != masterScore) {
-            return fail(AudioRenderResult::Failure::EngineFailure, "excerpt has no score owned by this master score");
+        const Score *excerpt_score = excerpt->excerpt_score();
+        if (!excerpt_score || excerpt_score->master_score() != master_score) {
+            return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "excerpt has no score owned by this master score");
         }
 
-        for (const Part *part : masterScore->parts()) {
+        for (const Part *part : master_score->parts()) {
             if (!part) {
                 continue;
             }
-            const Part *excerptPart = excerptScore->partById(part->id());
-            if (!excerptPart || !excerptPart->isVisible()) {
-                mutedParts.insert(part->id());
+            const Part *excerpt_part = excerpt_score->part_by_id(part->id());
+            if (!excerpt_part || !excerpt_part->is_visible()) {
+                muted_parts.insert(part->id());
             }
         }
-        excerptSelected = true;
+        excerpt_selected = true;
     }
 
     // PlaybackModel stays alive until the render has consumed the playback data
@@ -600,9 +601,9 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // Declared before the graph: its references are gone before event cleanup.
     DEFER { release_playback_events(model); };
 #endif
-    model.setPlayRepeats(request.use_repeats);
-    model.setPlayChordSymbols(false);
-    model.setIsMetronomeEnabled(false);
+    model.set_play_repeats(request.use_repeats);
+    model.set_play_chord_symbols(false);
+    model.set_is_metronome_enabled(false);
     {
         OfflineTimer timer(OfflineTiming::current().model);
 
@@ -612,18 +613,18 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
         OfflineCancellation::ModelScope phase;
         try {
-            model.load(masterScore, [&] {
+            model.load(master_score, [&] {
                 if (poll()) throw CancelledModel{};
             });
         } catch (const CancelledModel &) {
-            return abortSetup();
+            return abort_setup();
         }
     }
-    if (poll()) return abortSetup();
+    if (poll()) return abort_setup();
 
-    const InstrumentTrackIdSet existingTrackIds = model.existingTrackIdSet();
-    if (existingTrackIds.empty()) {
-        return fail(AudioRenderResult::Failure::InvalidScore, "score has no playable tracks");
+    const InstrumentTrackIdSet existing_track_ids = model.existing_track_id_set();
+    if (existing_track_ids.empty()) {
+        return fail(AudioRenderResult::Failure::INVALID_SCORE, "score has no playable tracks");
     }
 
     // Repeat-expanded play time plus the upstream 3 s tail
@@ -635,90 +636,91 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // with muse::secs_to_msecs(), which rounds (global/types/secs.h:33), so the
     // conversion is spelled out here: the truncation is what fixes the render
     // length in whole milliseconds, and therefore the exact frame count.
-    const int lastUtick = masterScore->repeatList(request.use_repeats).ticks();
-    const double playTime = masterScore->utick2utime(lastUtick);
-    const msecs_t totalDurationMs = msecs_t(static_cast<int64_t>((playTime + kPlaybackTailSecs) * 1000.0));
+    const int last_utick = master_score->repeat_list(request.use_repeats).ticks();
+    const double play_time = master_score->utick2utime(last_utick);
+    const msecs_t total_duration_ms = msecs_t(static_cast<int64_t>((play_time + ::music::k_playback_tail_secs) * 1000.0));
     // Compare the raw value: msecs_t is a number_t<int64_t> since 5.0 and its
     // operator<=(T) / operator<=(number_t<T>) overloads are equally viable for an
     // int literal (C2666). The meaning is unchanged - a non-positive millisecond
     // duration means the score has nothing to play.
-    if (totalDurationMs.raw() <= 0) {
-        return fail(AudioRenderResult::Failure::InvalidScore, "score has no audio duration");
+    if (total_duration_ms.raw() <= 0) {
+        return fail(AudioRenderResult::Failure::INVALID_SCORE, "score has no audio duration");
     }
 
     // 4.7.6 wrote (msecs * 1000 * rate) / 1000000 output frames. The writer
     // derives its frame count from a secs_t duration with llround()
     // (soundtrackwriter.cpp:66-72), so hand it the frame count converted back
     // to time: the render then has exactly the same length as before.
-    const std::uint64_t totalFrames = static_cast<std::uint64_t>(totalDurationMs) * 1000ULL * state.sampleRate / 1000000ULL;
-    const secs_t renderSecs = secs_t(static_cast<double>(totalFrames) / static_cast<double>(state.sampleRate));
+    const std::uint64_t total_frames = static_cast<std::uint64_t>(total_duration_ms) * 1000ULL * state.sample_rate_value / 1000000ULL;
+    const secs_t render_secs = secs_t(static_cast<double>(total_frames) / static_cast<double>(state.sample_rate_value));
 
     // Refuse an oversized render before the encoder creates the file. The
     // parent applies the same projection before spawning a worker; this guard
     // also covers direct callers (engine_audio_probe, tests).
-    const double durationSecs = static_cast<double>(totalDurationMs) / 1000.0;
-    const std::uint64_t projectedBytes = projected_audio_bytes(audio_output_codec_of(request.format), durationSecs, state.sampleRate);
-    if (projectedBytes > kAudioOutputLimit) {
-        return fail(AudioRenderResult::Failure::ResourceLimit, std::string("projected ") + audio_format_name(request.format) +
-                                                                   " output of " + std::to_string(static_cast<int>(durationSecs / 60.0)) +
-                                                                   " min (~" + std::to_string(projectedBytes / (1024 * 1024)) +
-                                                                   " MiB) exceeds the 1 GiB audio export limit");
+    const double duration_secs_value = static_cast<double>(total_duration_ms) / 1000.0;
+    const std::uint64_t projected_bytes =
+        projected_audio_bytes(audio_output_codec_of(request.format), duration_secs_value, state.sample_rate_value);
+    if (projected_bytes > ::music::k_audio_output_limit) {
+        return fail(AudioRenderResult::Failure::RESOURCE_LIMIT,
+                    std::string("projected ") + audio_format_name(request.format) + " output of " +
+                        std::to_string(static_cast<int>(duration_secs_value / 60.0)) + " min (~" +
+                        std::to_string(projected_bytes / (1024 * 1024)) + " MiB) exceeds the 1 GiB audio export limit");
     }
 
-    engine::OfflineRenderSession context(*state.factory, output_spec(state.sampleRate));
-    std::string chainError;
-    engine::TrackChainPtr masterChain = make_master_chain(context.output(), output_spec(state.sampleRate), request, chainError);
-    if (!masterChain) {
-        return fail(AudioRenderResult::Failure::EngineFailure, std::move(chainError));
+    engine::OfflineRenderSession context(*state.factory, output_spec(state.sample_rate_value));
+    std::string chain_error;
+    engine::TrackChainPtr master_chain = make_master_chain(context.output(), output_spec(state.sample_rate_value), request, chain_error);
+    if (!master_chain) {
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, std::move(chain_error));
     }
 
-    DEFER { masterChain->clear(); };
+    DEFER { master_chain->clear(); };
 
     // The public mix is indexed by the same deterministic track list that
     // score_audio_tracks reports. Keep the list for the selected excerpt: for
     // a part export it contains only the excerpt's parts, while master tracks
     // outside it keep neutral values and are muted below.
-    const std::vector<EngineAudioTrackInfo> mixTracks = engine_audio_tracks(masterScore, request.excerpt_id);
-    std::map<InstrumentTrackId, std::size_t> mixIndex;
-    for (std::size_t index = 0; index < mixTracks.size(); ++index) {
-        mixIndex.emplace(mixTracks[index].id, index);
+    const std::vector<EngineAudioTrackInfo> mix_tracks = engine_audio_tracks(master_score, request.excerpt_id);
+    std::map<InstrumentTrackId, std::size_t> mix_index;
+    for (std::size_t index = 0; index < mix_tracks.size(); ++index) {
+        mix_index.emplace(mix_tracks[index].id, index);
     }
-    const auto trackParams = [&request](std::size_t index) {
+    const auto track_params = [&request](std::size_t index) {
         return index < request.tracks.size() ? request.tracks[index] : EngineAudioTrackParams{};
     };
 
     // updateSoloMuteStates() derives forceMute from any non-metronome solo.
-    bool hasSolo = false;
-    for (std::size_t index = 0; index < mixTracks.size(); ++index) {
-        if (mixTracks[index].id == model.metronomeTrackId()) {
+    bool has_solo = false;
+    for (std::size_t index = 0; index < mix_tracks.size(); ++index) {
+        if (mix_tracks[index].id == model.metronome_track_id()) {
             continue;
         }
-        if (trackParams(index).solo) {
-            hasSolo = true;
+        if (track_params(index).solo) {
+            has_solo = true;
             break;
         }
     }
 
     // Deterministic track order: upstream iterates the unordered track set, but
     // deterministic ids/mix order are needed for byte-identical exports.
-    std::vector<InstrumentTrackId> orderedTrackIds(existingTrackIds.cbegin(), existingTrackIds.cend());
-    std::sort(orderedTrackIds.begin(), orderedTrackIds.end());
+    std::vector<InstrumentTrackId> ordered_track_ids(existing_track_ids.cbegin(), existing_track_ids.cend());
+    std::sort(ordered_track_ids.begin(), ordered_track_ids.end());
 
-    auto tracksTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
-    for (const InstrumentTrackId &trackId : orderedTrackIds) {
-        if (poll()) return abortSetup();
-        const mpe::PlaybackData &playbackData = model.resolveTrackPlaybackData(trackId);
-        if (!playbackData.isValid()) {
+    auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
+    for (const InstrumentTrackId &track_id : ordered_track_ids) {
+        if (poll()) return abort_setup();
+        const mpe::PlaybackData &playback_data = model.resolve_track_playback_data(track_id);
+        if (!playback_data.is_valid()) {
             continue;
         }
 
-        const bool isMetronome = trackId == model.metronomeTrackId();
-        const bool isChordSymbols = model.isChordSymbolsTrack(trackId);
+        const bool is_metronome = track_id == model.metronome_track_id();
+        const bool is_chord_symbols = model.is_chord_symbols_track(track_id);
 
-        const auto index = mixIndex.find(trackId);
+        const auto index = mix_index.find(track_id);
         EngineAudioTrackParams mix;
-        if (index != mixIndex.end()) {
-            mix = trackParams(index->second);
+        if (index != mix_index.end()) {
+            mix = track_params(index->second);
         }
 
         // Fold forceMute as PlaybackController::updateSoloMuteStates does:
@@ -726,18 +728,18 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         // ControlParams::muted, nodes/automationcontrolnode.cpp:49-52).
         // Chord-symbol and metronome tracks are force-muted because chord
         // playback and the metronome are off.
-        const bool forceMute = !isMetronome && hasSolo && !mix.solo;
+        const bool force_mute = !is_metronome && has_solo && !mix.solo;
 
         TrackParams params;
         const int font = mix.soundfont < 0 ? 0 : mix.soundfont;
-        if (static_cast<std::size_t>(font) >= state.fontInputs.size()) {
-            return fail(AudioRenderResult::Failure::EngineFailure, "track names an unknown SoundFont");
+        if (static_cast<std::size_t>(font) >= state.font_inputs.size()) {
+            return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "track names an unknown SoundFont");
         }
-        params.source = state.fontInputs[static_cast<std::size_t>(font)];
+        params.source = state.font_inputs[static_cast<std::size_t>(font)];
         set_track_control(params.control, mix);
         params.control.muted =
-            mix.muted || forceMute || isChordSymbols || isMetronome || (excerptSelected && mutedParts.count(trackId.partId) > 0);
-        if (!isMetronome) {
+            mix.muted || force_mute || is_chord_symbols || is_metronome || (excerpt_selected && muted_parts.count(track_id.part_id) > 0);
+        if (!is_metronome) {
             // Desktop adds the two Fluid default sends only for non-metronome
             // tracks (playbackcontroller.cpp:1220-1227; defaultAuxSendValue is
             // 0.30 for both, playbackconfiguration.cpp:272-289). Mixer index 0
@@ -757,37 +759,37 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             // that send was discarded there; keeping it zero reproduces the
             // 4.7.6 mix bit-exactly.
             const double send = request.reverb ? request.reverb_send : 0.0;
-            params.auxSends = {AuxSendParams{static_cast<gain_t>(send), true}, AuxSendParams{0.0f, true}};
+            params.aux_sends = {AuxSendParams{static_cast<gain_t>(send), true}, AuxSendParams{0.0f, true}};
         }
 
-        const std::string name = track_name(masterScore, model, trackId);
-        RetVal2<TrackId, TrackParams> added = context.addTrack(name, playbackData, params);
-        if (poll()) return abortSetup();
+        const std::string name = track_name(master_score, model, track_id);
+        RetVal2<TrackId, TrackParams> added = context.add_track(name, playback_data, params);
+        if (poll()) return abort_setup();
         if (!added.ret) {
-            return fail(AudioRenderResult::Failure::EngineFailure, "addTrack failed: " + added.ret.toString());
+            return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addTrack failed: " + added.ret.to_string());
         }
     }
 
     // Aux 0 is the Muse Reverb send target; aux 1 is empty (desktop adds
     // AUX_CHANNEL_NUM aux tracks, playbackcontroller.cpp:1717-1719, in
     // addAuxTrack (:1304-1360)).
-    tracksTimer.reset();
-    auto auxTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().aux);
-    TrackParams reverbParams;
-    reverbParams.fxChain = make_reverb_fx_chain();
-    RetVal2<TrackId, TrackParams> reverb = context.addAuxTrack(kReverbTrackName, reverbParams);
+    tracks_timer.reset();
+    auto aux_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().aux);
+    TrackParams reverb_params;
+    reverb_params.fx_chain = make_reverb_fx_chain();
+    RetVal2<TrackId, TrackParams> reverb = context.add_aux_track(::music::k_reverb_track_name, reverb_params);
     if (!reverb.ret) {
-        return fail(AudioRenderResult::Failure::EngineFailure, "addAuxTrack(reverb) failed: " + reverb.ret.toString());
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addAuxTrack(reverb) failed: " + reverb.ret.to_string());
     }
-    RetVal2<TrackId, TrackParams> aux2 = context.addAuxTrack(kAuxTrackName, TrackParams());
+    RetVal2<TrackId, TrackParams> aux2 = context.add_aux_track(::music::k_aux_track_name, TrackParams());
     if (!aux2.ret) {
-        return fail(AudioRenderResult::Failure::EngineFailure, "addAuxTrack(aux 2) failed: " + aux2.ret.toString());
+        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addAuxTrack(aux 2) failed: " + aux2.ret.to_string());
     }
 
-    auxTimer.reset();
-    if (poll()) return abortSetup();
-    context.resetSources();
-    if (poll()) return abortSetup();
+    aux_timer.reset();
+    if (poll()) return abort_setup();
+    context.reset_sources();
+    if (poll()) return abort_setup();
 
     // libopusenc dithers with rand(). 4.7.6 also relied on this for the Ogg
     // stream serial; 5.0 pins the serial itself (oggencoder.cpp:88-91), so the
@@ -797,12 +799,12 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     std::srand(0);
 
     // The writer reports completed frames after each successfully encoded block.
-    state.midiOutPort.renderedFrames = 0;
+    state.midi_out_port.rendered_frames = 0;
 
-    setupTimer.reset();
+    setup_timer.reset();
     io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes, request.max_write_bytes, poll);
-    if (!device.open(io::IODevice::WriteOnly)) {
-        return fail(AudioRenderResult::Failure::Io,
+    if (!device.open(io::IODevice::WRITE_ONLY)) {
+        return fail(AudioRenderResult::Failure::IO,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '" + request.output_path + "'");
     }
 
@@ -810,59 +812,59 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
     soundtrack::SoundTrackWriter writer(
-        device, make_soundtrack_format(request.format, request, output_spec(state.sampleRate)), renderSecs, masterChain,
-        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; }, request.encoder_factory, poll);
-    const Ret writeRet = writer.write();
+        device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, master_chain,
+        [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
+    const Ret write_ret = writer.write();
 
     // Flush before the FileSystem size check below.
     device.close();
 
     // Leave the graph idle, like AudioContext::doSaveSoundTrack()
     // (audiocontext.cpp:934-940).
-    masterChain->setMode(ProcessMode::Idle);
+    master_chain->set_mode(ProcessMode::IDLE);
 
     if (poll()) {
-        std::error_code removeError;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), removeError);
-        if (removeError) return fail(AudioRenderResult::Failure::Io, "cannot remove cancelled audio output: " + removeError.message());
-        if (callbackError) std::rethrow_exception(callbackError);
-        return fail(AudioRenderResult::Failure::Cancelled, "audio render cancelled");
+        std::error_code remove_error;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
+        if (remove_error) return fail(AudioRenderResult::Failure::IO, "cannot remove cancelled audio output: " + remove_error.message());
+        if (callback_error) std::rethrow_exception(callback_error);
+        return fail(AudioRenderResult::Failure::CANCELLED, "audio render cancelled");
     }
 
-    if (device.limitExceeded()) {
-        std::error_code removeError;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), removeError);
-        if (removeError) {
-            return fail(AudioRenderResult::Failure::Io,
-                        "cannot remove over-budget audio output: '" + request.output_path + "': " + removeError.message());
+    if (device.limit_exceeded()) {
+        std::error_code remove_error;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
+        if (remove_error) {
+            return fail(AudioRenderResult::Failure::IO,
+                        "cannot remove over-budget audio output: '" + request.output_path + "': " + remove_error.message());
         }
-        return fail(AudioRenderResult::Failure::ResourceLimit, "audio intermediate byte limit exceeded");
+        return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, "audio intermediate byte limit exceeded");
     }
 
-    if (!writeRet || device.hasError()) {
+    if (!write_ret || device.has_error()) {
         // SoundTrackWriter returns Err::ErrorEncode when an encoder could not
         // be created or stopped accepting data, e.g. the destination is not
         // writable, and the bare Ret has no context. Name the format and path
         // instead of reporting the raw code.
-        const std::string detail = device.hasError() ? device.errorString() : writeRet.toString();
-        return fail(device.hasError() ? AudioRenderResult::Failure::Io : AudioRenderResult::Failure::EngineFailure,
+        const std::string detail = device.has_error() ? device.error_string() : write_ret.to_string();
+        return fail(device.has_error() ? AudioRenderResult::Failure::IO : AudioRenderResult::Failure::ENGINE_FAILURE,
                     std::string(audio_format_name(request.format)) + " encoder failed (" + detail + "): '" + request.output_path + "'");
     }
 
     result.ok = true;
-    result.frames = totalFrames;
-    result.play_time_secs = playTime;
-    result.duration_secs = durationSecs;
-    std::error_code sizeError;
-    const auto size = std::filesystem::file_size(std::filesystem::u8path(request.output_path), sizeError);
-    if (sizeError) {
-        return fail(AudioRenderResult::Failure::Io,
-                    "cannot determine audio output size: '" + request.output_path + "': " + sizeError.message());
+    result.frames = total_frames;
+    result.play_time_secs = play_time;
+    result.duration_secs = duration_secs_value;
+    std::error_code size_error;
+    const auto size = std::filesystem::file_size(std::filesystem::u8path(request.output_path), size_error);
+    if (size_error) {
+        return fail(AudioRenderResult::Failure::IO,
+                    "cannot determine audio output size: '" + request.output_path + "': " + size_error.message());
     }
     result.bytes = static_cast<std::uint64_t>(size);
     if (result.bytes == 0) {
         result.ok = false;
-        result.failure = AudioRenderResult::Failure::EngineFailure;
+        result.failure = AudioRenderResult::Failure::ENGINE_FAILURE;
         result.error = "audio export reported success but wrote no data";
     }
 

@@ -12,20 +12,20 @@
 namespace mu::iex::guitarpro {
 class GPNote {
 public:
-    enum class TieType { None, Start, Mediate, End };
-    enum class VibratoType { None, Slight, Wide };
-    enum class Ornament { None, LowerMordent, UpperMordent, InvertedTurn, Turn };
-    enum class HammerOn { None, Start, End };
+    enum class TieType { NONE, START, MEDIATE, END };
+    enum class VibratoType { NONE, SLIGHT, WIDE };
+    enum class Ornament { NONE, LOWER_MORDENT, UPPER_MORDENT, INVERTED_TURN, TURN };
+    enum class HammerOn { NONE, START, END };
 
-    enum class PickScrape { None, Down, Up };
+    enum class PickScrape { NONE, DOWN, UP };
 
     struct Harmonic {
-        enum class Type { None, Natural, Artificial, Pinch, Tap, Semi, FeedBack, Types };
+        enum class Type { NONE, NATURAL, ARTIFICIAL, PINCH, TAP, SEMI, FEED_BACK, TYPES };
         float fret{0};
-        Type type{Type::None};
+        Type type{Type::NONE};
 
-        static bool isArtificial(Type type) {
-            return type == Type::Artificial || type == Type::Pinch || type == Type::Tap || type == Type::Semi || type == Type::FeedBack;
+        static bool is_artificial(Type type) {
+            return type == Type::ARTIFICIAL || type == Type::PINCH || type == Type::TAP || type == Type::SEMI || type == Type::FEED_BACK;
         }
     };
 
@@ -40,169 +40,169 @@ public:
     };
 
     struct Bend {
-        float destinationOffset{-1};
-        float destinationValue{-1};
-        float middleOffset1{-1};
-        float middleOffset2{-1};
-        float middleValue{-1};
-        float originOffset{-1};
-        float originValue{-1};
+        float destination_offset{-1};
+        float destination_value{-1};
+        float middle_offset1{-1};
+        float middle_offset2{-1};
+        float middle_value{-1};
+        float origin_offset{-1};
+        float origin_value{-1};
 
-        bool isEmpty() const {
-            return destinationValue == -1 && destinationOffset == -1 && middleValue == -1 && middleOffset1 == -1 && middleOffset2 == -1 &&
-                   originOffset == -1 && originValue == -1;
+        bool is_empty() const {
+            return destination_value == -1 && destination_offset == -1 && middle_value == -1 && middle_offset1 == -1 &&
+                   middle_offset2 == -1 && origin_offset == -1 && origin_value == -1;
         }
     };
 
     struct Trill {
-        int auxillaryFret{-1};
+        int auxillary_fret{-1};
         int speed{-1};
     };
 
-    void addProperties(std::unordered_set<std::unique_ptr<INoteProperty>> &&pr) { _properties.swap(pr); }
+    void add_properties(std::unordered_set<std::unique_ptr<INoteProperty>> &&pr) { properties_value.swap(pr); }
 
-    void setTieType(GPNote::TieType t) { _tie = t; }
+    void set_tie_type(GPNote::TieType t) { tie = t; }
 
-    void setMidi(int m) { _midiPitch.midi = m; }
+    void set_midi(int m) { midi_pitch_value.midi = m; }
 
-    int midi() const { return _midiPitch.midi; }
+    int midi() const { return midi_pitch_value.midi; }
 
-    void setString(int s) { _midiPitch.string = s; }
+    void set_string(int s) { midi_pitch_value.string = s; }
 
-    int string() const { return _midiPitch.string; }
+    int string() const { return midi_pitch_value.string; }
 
-    void setFret(int f) { _midiPitch.fret = f; }
+    void set_fret(int f) { midi_pitch_value.fret = f; }
 
-    int fret() const { return _midiPitch.fret; }
+    int fret() const { return midi_pitch_value.fret; }
 
-    void setOctave(int o) { _midiPitch.octave = o; }
+    void set_octave(int o) { midi_pitch_value.octave = o; }
 
-    void setTone(int t) { _midiPitch.tone = t; }
+    void set_tone(int t) { midi_pitch_value.tone = t; }
 
-    void setVariation(int t) { _midiPitch.variation = t; }
+    void set_variation(int t) { midi_pitch_value.variation = t; }
 
-    void setElement(int t) { _midiPitch.element = t; }
+    void set_element(int t) { midi_pitch_value.element = t; }
 
-    void setAccidental(int acc) { _accidental = acc; }
+    void set_accidental(int acc) { accidental_value = acc; }
 
-    int accidental() const { return _accidental; }
+    int accidental() const { return accidental_value; }
 
-    void setHarmonicFret(float f) { _harmonic.fret = f; }
+    void set_harmonic_fret(float f) { harmonic_value.fret = f; }
 
-    void setHarmonicType(Harmonic::Type t) { _harmonic.type = t; }
+    void set_harmonic_type(Harmonic::Type t) { harmonic_value.type = t; }
 
-    const Harmonic &harmonic() const { return _harmonic; }
+    const Harmonic &harmonic() const { return harmonic_value; }
 
-    void setLetRing(bool lr) { _letRing = lr; }
+    void set_let_ring(bool lr) { let_ring_value = lr; }
 
-    bool letRing() const { return _letRing; }
+    bool let_ring() const { return let_ring_value; }
 
-    void setPalmMute(bool pm) { _palmMuted = pm; }
+    void set_palm_mute(bool pm) { palm_muted = pm; }
 
-    bool palmMute() const { return _palmMuted; }
+    bool palm_mute() const { return palm_muted; }
 
-    const MidiPitch &midiPitch() const { return _midiPitch; }
+    const MidiPitch &midi_pitch() const { return midi_pitch_value; }
 
-    TieType tieType() const { return _tie; }
+    TieType tie_type() const { return tie; }
 
-    void setBend(std::unique_ptr<Bend> &&b) { _bend.swap(b); }
+    void set_bend(std::unique_ptr<Bend> &&b) { bend_value.swap(b); }
 
-    const Bend *bend() const { return _bend.get(); }
+    const Bend *bend() const { return bend_value.get(); }
 
-    void setGhostNote(bool b) { _ghostNote = b; }
+    void set_ghost_note(bool b) { ghost_note_value = b; }
 
-    bool ghostNote() const { return _ghostNote; }
+    bool ghost_note() const { return ghost_note_value; }
 
-    void setMute(bool m) { _muted = m; }
+    void set_mute(bool m) { muted_value = m; }
 
     //! muted = dead note
-    bool muted() const { return _muted; }
+    bool muted() const { return muted_value; }
 
-    void setRightHandTapping(bool t) { _rightHandTapping = t; }
+    void set_right_hand_tapping(bool t) { right_hand_tapping_value = t; }
 
-    bool rightHandTapping() const { return _rightHandTapping; }
+    bool right_hand_tapping() const { return right_hand_tapping_value; }
 
-    void setLeftHandTapped(bool v) { _leftHandTapped = v; }
+    void set_left_hand_tapped(bool v) { left_hand_tapped_value = v; }
 
-    bool leftHandTapped() const { return _leftHandTapped; }
+    bool left_hand_tapped() const { return left_hand_tapped_value; }
 
-    void setAccent(const std::bitset<4> &b) { _accent = b; }
+    void set_accent(const std::bitset<4> &b) { accent = b; }
 
-    const std::bitset<4> &accents() const { return _accent; }
+    const std::bitset<4> &accents() const { return accent; }
 
-    void setSlides(const std::bitset<6> &s) { _slides = s; }
+    void set_slides(const std::bitset<6> &s) { slides_value = s; }
 
-    const std::bitset<6> &slides() const { return _slides; }
+    const std::bitset<6> &slides() const { return slides_value; }
 
-    void setLeftFingering(const muse::String &ch) { _leftFingering = ch; }
+    void set_left_fingering(const muse::String &ch) { left_fingering_value = ch; }
 
-    const muse::String &leftFingering() const { return _leftFingering; }
+    const muse::String &left_fingering() const { return left_fingering_value; }
 
-    void setRightFingering(const muse::String &ch) { _rightFingering = ch; }
+    void set_right_fingering(const muse::String &ch) { right_fingering_value = ch; }
 
-    const muse::String &rightFingering() const { return _rightFingering; }
+    const muse::String &right_fingering() const { return right_fingering_value; }
 
-    void setShowStringNumber(bool show) { showStringNumber_ = show; }
+    void set_show_string_number(bool show) { show_string_number_ = show; }
 
-    bool showStringNumber() const { return showStringNumber_; }
+    bool show_string_number() const { return show_string_number_; }
 
-    void setVibratoType(VibratoType v) { _vibrato = v; }
+    void set_vibrato_type(VibratoType v) { vibrato = v; }
 
-    VibratoType vibratoType() const { return _vibrato; }
+    VibratoType vibrato_type() const { return vibrato; }
 
-    void setTrillFret(int fr) { _trill.auxillaryFret = fr; }
+    void set_trill_fret(int fr) { trill_value.auxillary_fret = fr; }
 
-    void setTrillSpeed(int tr) { _trill.speed = tr; }
+    void set_trill_speed(int tr) { trill_value.speed = tr; }
 
-    Trill trill() const { return _trill; }
+    Trill trill() const { return trill_value; }
 
-    void setOrnament(Ornament o) { _ornament = o; }
+    void set_ornament(Ornament o) { ornament_value = o; }
 
-    Ornament ornament() const { return _ornament; }
+    Ornament ornament() const { return ornament_value; }
 
-    void setHammerOn(HammerOn h) { _hammer = h; }
+    void set_hammer_on(HammerOn h) { hammer = h; }
 
-    HammerOn hammerOn() const { return _hammer; }
+    HammerOn hammer_on() const { return hammer; }
 
-    void setPickScrape(PickScrape p) { _pickScrape = p; }
+    void set_pick_scrape(PickScrape p) { pick_scrape_value = p; }
 
-    PickScrape pickScrape() const { return _pickScrape; }
+    PickScrape pick_scrape() const { return pick_scrape_value; }
 
-    void setId(int id) { _id = id; }
+    void set_id(int id) { id_value = id; }
 
-    int id() const { return _id; }
+    int id() const { return id_value; }
 
-    const std::unordered_set<std::unique_ptr<INoteProperty>> &properties() const { return _properties; }
+    const std::unordered_set<std::unique_ptr<INoteProperty>> &properties() const { return properties_value; }
 
-    static constexpr int invalidAccidental = -10;
+    static constexpr int invalid_accidental = -10;
 
 private:
-    int _id{-1};
-    TieType _tie{TieType::None};
-    std::unordered_set<std::unique_ptr<INoteProperty>> _properties;
-    MidiPitch _midiPitch;
+    int id_value{-1};
+    TieType tie{TieType::NONE};
+    std::unordered_set<std::unique_ptr<INoteProperty>> properties_value;
+    MidiPitch midi_pitch_value;
 
-    int _accidental = invalidAccidental;
-    Harmonic _harmonic;
-    std::unique_ptr<Bend> _bend;
-    bool _letRing{false};
-    bool _palmMuted{false};
-    bool _ghostNote{false};
-    bool _muted{false};
+    int accidental_value = ::mu::iex::guitarpro::GPNote::invalid_accidental;
+    Harmonic harmonic_value;
+    std::unique_ptr<Bend> bend_value;
+    bool let_ring_value{false};
+    bool palm_muted{false};
+    bool ghost_note_value{false};
+    bool muted_value{false};
     //[0] - staccato, [1] - unknown, [2] - heavily accidental, [3] - accidental
-    std::bitset<4> _accent{0};
+    std::bitset<4> accent{0};
     //[0] shifSlide, [1] - legatoSlide, [2] - slideDownWard, [3] - slidewUpWard, [4] - slideInFormBelow, [5] - slideInFormAbove,
-    std::bitset<6> _slides{0};
-    muse::String _leftFingering;
-    muse::String _rightFingering;
-    VibratoType _vibrato{VibratoType::None};
-    Trill _trill;
-    Ornament _ornament{Ornament::None};
-    bool _rightHandTapping = false;
-    bool _leftHandTapped = false;
-    HammerOn _hammer{HammerOn::None};
-    PickScrape _pickScrape{PickScrape::None};
-    bool showStringNumber_ = false;
+    std::bitset<6> slides_value{0};
+    muse::String left_fingering_value;
+    muse::String right_fingering_value;
+    VibratoType vibrato{VibratoType::NONE};
+    Trill trill_value;
+    Ornament ornament_value{Ornament::NONE};
+    bool right_hand_tapping_value = false;
+    bool left_hand_tapped_value = false;
+    HammerOn hammer{HammerOn::NONE};
+    PickScrape pick_scrape_value{PickScrape::NONE};
+    bool show_string_number_ = false;
 };
 } // namespace mu::iex::guitarpro
 

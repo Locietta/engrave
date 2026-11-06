@@ -33,31 +33,31 @@ struct ParenPaddingTable;
 namespace mu::engraving::rendering::score {
 class ParenthesisLayout {
 public:
-    static void layoutParentheses(const EngravingItem *parent, const LayoutContext &ctx);
-    static void layoutChordParentheses(const Chord *chord, const LayoutContext &ctx);
-    static void layoutParenthesis(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_parentheses(const EngravingItem *parent, const LayoutContext &ctx);
+    static void layout_chord_parentheses(const Chord *chord, const LayoutContext &ctx);
+    static void layout_parenthesis(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
 
-    static double computeParenthesisPadding(const EngravingItem *item1, const EngravingItem *item2);
-    static double computeInternalParenthesisPadding(const EngravingItem *item1, const EngravingItem *item2);
+    static double compute_parenthesis_padding(const EngravingItem *item1, const EngravingItem *item2);
+    static double compute_internal_parenthesis_padding(const EngravingItem *item1, const EngravingItem *item2);
 
-    static void createPathAndShape(Parenthesis *item, Parenthesis::LayoutData *ldata);
-    static void createSmuflShape(Parenthesis *item, Parenthesis::LayoutData *ldata);
+    static void create_path_and_shape(Parenthesis *item, Parenthesis::LayoutData *ldata);
+    static void create_smufl_shape(Parenthesis *item, Parenthesis::LayoutData *ldata);
 private:
-    static void layoutParentheses(Parenthesis *leftParen, Parenthesis *rightParen, Shape &dummyItemShape, bool itemAddToSkyline,
-                                  const LayoutContext &ctx);
+    static void layout_parentheses(Parenthesis *left_paren, Parenthesis *right_paren, Shape &dummy_item_shape, bool item_add_to_skyline,
+                                   const LayoutContext &ctx);
 
-    static void setLayoutValues(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
-    static void setClefValues(Parenthesis *item, Parenthesis::LayoutData *ldata);
-    static void setTimeSigValues(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
-    static void setChordValues(Parenthesis *item, Parenthesis::LayoutData *ldata);
-    static void setHarmonyValues(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
-    static void setDefaultValues(Parenthesis *item, Parenthesis::LayoutData *ldata);
+    static void set_layout_values(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
+    static void set_clef_values(Parenthesis *item, Parenthesis::LayoutData *ldata);
+    static void set_time_sig_values(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
+    static void set_chord_values(Parenthesis *item, Parenthesis::LayoutData *ldata);
+    static void set_harmony_values(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);
+    static void set_default_values(Parenthesis *item, Parenthesis::LayoutData *ldata);
 
-    static Shape getParentShape(const EngravingItem *parent);
+    static Shape get_parent_shape(const EngravingItem *parent);
 
-    static Shape getNoteShape(const Note *note, Parenthesis *paren);
+    static Shape get_note_shape(const Note *note, Parenthesis *paren);
 
-    static bool isInternalParenPadding(const EngravingItem *item1, const EngravingItem *item2);
-    static double computeExternalParenthesisPadding(const EngravingItem *item1, const EngravingItem *item2);
+    static bool is_internal_paren_padding(const EngravingItem *item1, const EngravingItem *item2);
+    static double compute_external_parenthesis_padding(const EngravingItem *item1, const EngravingItem *item2);
 };
 } // namespace mu::engraving::rendering::score

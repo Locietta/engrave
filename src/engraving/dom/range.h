@@ -67,26 +67,26 @@ public:
 
     track_idx_t track() const { return track_; }
 
-    void setTrack(track_idx_t val) { track_ = val; }
+    void set_track(track_idx_t val) { track_ = val; }
 
     void read(const Segment *fs, const Segment *ls);
     bool write(Score *, const Fraction &) const;
 
-    void appendGap(const Fraction &, Score *score);
+    void append_gap(const Fraction &, Score *score);
     bool truncate(const Fraction &);
     void dump() const;
 
 private:
 
-    Tuplet *writeTuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest) const;
+    Tuplet *write_tuplet(Tuplet *parent, Tuplet *tuplet, Measure *&measure, Fraction &rest) const;
     void append(EngravingItem *);
-    void appendTuplet(Tuplet *srcTuplet, Tuplet *dstTuplet);
-    void combineTuplet(Tuplet *dst, Tuplet *src);
+    void append_tuplet(Tuplet *src_tuplet, Tuplet *dst_tuplet);
+    void combine_tuplet(Tuplet *dst, Tuplet *src);
 
     Fraction duration_;
     ScoreRange *range_ = nullptr;
     track_idx_t track_ = 0;
-    ClonedChordMap clonedChord_;
+    ClonedChordMap cloned_chord_;
 };
 
 //---------------------------------------------------------
@@ -107,7 +107,7 @@ public:
     ScoreRange() {}
 
     ~ScoreRange();
-    void read(Segment *first, Segment *last, bool readSpanner = true);
+    void read(Segment *first, Segment *last, bool read_spanner = true);
     bool write(Score *, const Fraction &) const;
     Fraction ticks() const;
 
@@ -124,66 +124,66 @@ protected:
 
 private:
     struct BarLinesBackup {
-        Fraction sPosition;
-        bool formerMeasureStartOrEnd;
+        Fraction s_position;
+        bool former_measure_start_or_end;
         BarLine *bl = nullptr;
     };
 
-    std::vector<BarLinesBackup> barLines_;
+    std::vector<BarLinesBackup> bar_lines_;
 
-    void backupBarLines(Segment *first, Segment *last);
-    bool insertBarLine(Measure *m, const BarLinesBackup &barLine) const;
-    void restoreBarLines(Score *score, const Fraction &tick) const;
-    void deleteBarLines();
+    void backup_bar_lines(Segment *first, Segment *last);
+    bool insert_bar_line(Measure *m, const BarLinesBackup &bar_line) const;
+    void restore_bar_lines(Score *score, const Fraction &tick) const;
+    void delete_bar_lines();
 
     struct BreaksBackup {
-        Fraction sPosition;
-        LayoutBreakType lBreakType;
+        Fraction s_position;
+        LayoutBreakType l_break_type;
     };
 
     std::vector<BreaksBackup> breaks_;
 
-    void backupBreaks(Segment *first, Segment *last);
-    void restoreBreaks(Score *score, const Fraction &tick) const;
+    void backup_breaks(Segment *first, Segment *last);
+    void restore_breaks(Score *score, const Fraction &tick) const;
 
     struct StartEndRepeatBackup {
-        Fraction sPosition;
-        bool isStartRepeat;
+        Fraction s_position;
+        bool is_start_repeat;
     };
 
-    std::vector<StartEndRepeatBackup> startEndRepeats_;
+    std::vector<StartEndRepeatBackup> start_end_repeats_;
 
-    void backupRepeats(Segment *first, Segment *last);
-    void restoreRepeats(Score *score, const Fraction &tick) const;
+    void backup_repeats(Segment *first, Segment *last);
+    void restore_repeats(Score *score, const Fraction &tick) const;
 
     struct SpacerBackup {
-        Fraction sPosition;
-        staff_idx_t staffIdx;
+        Fraction s_position;
+        staff_idx_t staff_idx;
         Spacer *s = nullptr;
     };
 
-    void backupSpacers(Segment *first, Segment *last);
-    void restoreSpacers(Score *score, const Fraction &tick) const;
-    void deleteSpacers();
+    void backup_spacers(Segment *first, Segment *last);
+    void restore_spacers(Score *score, const Fraction &tick) const;
+    void delete_spacers();
 
     struct JumpsMarkersBackup {
-        Fraction sPosition;
+        Fraction s_position;
         EngravingItem *e = nullptr;
     };
 
-    bool endOfMeasureElement(EngravingItem *e) const;
-    void backupJumpsAndMarkers(Segment *first, Segment *last);
-    void restoreJumpsAndMarkers(Score *score, const Fraction &tick) const;
-    void deleteJumpsAndMarkers();
+    bool end_of_measure_element(EngravingItem *e) const;
+    void backup_jumps_and_markers(Segment *first, Segment *last);
+    void restore_jumps_and_markers(Score *score, const Fraction &tick) const;
+    void delete_jumps_and_markers();
 
-    void restoreVolta(Score *score, const Fraction &tick, Volta *v) const;
+    void restore_volta(Score *score, const Fraction &tick, Volta *v) const;
 
     friend class TrackList;
 
     std::vector<TrackList *> tracks_;
-    std::vector<Tie *> startTies_;
+    std::vector<Tie *> start_ties_;
     std::vector<SpacerBackup> spacers_;
-    std::vector<JumpsMarkersBackup> jumpsMarkers_;
+    std::vector<JumpsMarkersBackup> jumps_markers_;
     Segment *first_ = nullptr;
     Segment *last_ = nullptr;
 };

@@ -38,20 +38,20 @@ namespace muse::audio::engine {
 class AudioSourceNode : public AudioNode<SourceTag> {
 public:
 
-    virtual void seek(const TimePosition &position, const bool flushSound = true) = 0;
+    virtual void seek(const TimePosition &position, const bool flush_sound = true) = 0;
     virtual void flush() = 0;
 
-    virtual const AudioInputParams &inputParams() const = 0;
-    virtual void applyInputParams(const AudioInputParams &requiredParams) = 0;
+    virtual const AudioInputParams &input_params() const = 0;
+    virtual void apply_input_params(const AudioInputParams &required_params) = 0;
 
-    virtual void prepareToPlay() = 0;
-    virtual bool readyToPlay() const = 0;
+    virtual void prepare_to_play() = 0;
+    virtual bool ready_to_play() const = 0;
 
-    virtual bool hasPendingChunks() const = 0;
-    virtual void processInput() = 0;
-    virtual InputProcessingProgress inputProcessingProgress() const = 0;
+    virtual bool has_pending_chunks() const = 0;
+    virtual void process_input() = 0;
+    virtual InputProcessingProgress input_processing_progress() const = 0;
 
-    virtual void clearCache() = 0;
+    virtual void clear_cache() = 0;
 };
 
 using AudioSourceNodePtr = std::shared_ptr<AudioSourceNode>;

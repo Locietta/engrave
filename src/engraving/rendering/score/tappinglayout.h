@@ -29,13 +29,15 @@
 namespace mu::engraving::rendering::score {
 class TappingLayout {
 public:
-    static void layoutTapping(Tapping *item, Tapping::LayoutData *ldata, LayoutContext &ctx);
+    static void layout_tapping(Tapping *item, Tapping::LayoutData *ldata, LayoutContext &ctx);
 
 private:
-    static void layoutLeftHandTapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tabStaff, LayoutContext &ctx);
-    static void updateHalfSlurs(Tapping *item, const MStyle &style, bool tabStaff, LayoutContext &ctx);
-    static void layoutHalfSlur(Tapping *item, TappingHalfSlur *slur, LayoutContext &ctx);
+    static void layout_left_hand_tapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tab_staff,
+                                         LayoutContext &ctx);
+    static void update_half_slurs(Tapping *item, const MStyle &style, bool tab_staff, LayoutContext &ctx);
+    static void layout_half_slur(Tapping *item, TappingHalfSlur *slur, LayoutContext &ctx);
 
-    static void layoutRightHandTapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tabStaff, LayoutContext &ctx);
+    static void layout_right_hand_tapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tab_staff,
+                                          LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

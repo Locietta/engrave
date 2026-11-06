@@ -33,296 +33,296 @@ class TConv {
 public:
     TConv() = default;
 
-    static String toXml(const std::vector<int> &v);
-    static std::vector<int> fromXml(const String &tag, const std::vector<int> &def);
+    static String to_xml(const std::vector<int> &v);
+    static std::vector<int> from_xml(const String &tag, const std::vector<int> &def);
 
-    static String toXml(const std::vector<string_idx_t> &v);
-    static std::vector<string_idx_t> fromXml(const String &tag, const std::vector<string_idx_t> &def);
+    static String to_xml(const std::vector<string_idx_t> &v);
+    static std::vector<string_idx_t> from_xml(const String &tag, const std::vector<string_idx_t> &def);
 
-    static const TranslatableString &userName(ElementType v);
-    static const TranslatableString &capitalizedUserName(ElementType v);
+    static const TranslatableString &user_name(ElementType v);
+    static const TranslatableString &capitalized_user_name(ElementType v);
 
-    static AsciiStringView toXml(ElementType v);
-    static ElementType fromXml(const AsciiStringView &tag, ElementType def, bool silent = false);
+    static AsciiStringView to_xml(ElementType v);
+    static ElementType from_xml(const AsciiStringView &tag, ElementType def, bool silent = false);
 
-    static String toXml(AlignH v);
-    static String toXml(AlignV v);
-    static String toXml(Align v);
-    static Align fromXml(const String &str, Align def);
-    static AlignH fromXml(const AsciiStringView &str, AlignH def);
-    static AlignV fromXml(const AsciiStringView &str, AlignV def);
+    static String to_xml(AlignH v);
+    static String to_xml(AlignV v);
+    static String to_xml(Align v);
+    static Align from_xml(const String &str, Align def);
+    static AlignH from_xml(const AsciiStringView &str, AlignH def);
+    static AlignV from_xml(const AsciiStringView &str, AlignV def);
 
-    static String toXml(OrnamentInterval interval);
-    static OrnamentInterval fromXml(const String &str, OrnamentInterval def);
-    static IntervalStep fromXml(const AsciiStringView &tag, IntervalStep def);
-    static IntervalType fromXml(const AsciiStringView &tag, IntervalType def);
+    static String to_xml(OrnamentInterval interval);
+    static OrnamentInterval from_xml(const String &str, OrnamentInterval def);
+    static IntervalStep from_xml(const AsciiStringView &tag, IntervalStep def);
+    static IntervalType from_xml(const AsciiStringView &tag, IntervalType def);
 
-    static String translatedUserName(SymId v);
-    static AsciiStringView toXml(SymId v);
-    static SymId fromXml(const AsciiStringView &tag, SymId def);
+    static String translated_user_name(SymId v);
+    static AsciiStringView to_xml(SymId v);
+    static SymId from_xml(const AsciiStringView &tag, SymId def);
 
-    static String translatedUserName(Orientation v);
-    static AsciiStringView toXml(Orientation v);
-    static Orientation fromXml(const AsciiStringView &tag, Orientation def);
+    static String translated_user_name(Orientation v);
+    static AsciiStringView to_xml(Orientation v);
+    static Orientation from_xml(const AsciiStringView &tag, Orientation def);
 
-    static String translatedUserName(SharedLabelOrientation v);
-    static AsciiStringView toXml(SharedLabelOrientation v);
-    static SharedLabelOrientation fromXml(const AsciiStringView &tag, SharedLabelOrientation def);
+    static String translated_user_name(SharedLabelOrientation v);
+    static AsciiStringView to_xml(SharedLabelOrientation v);
+    static SharedLabelOrientation from_xml(const AsciiStringView &tag, SharedLabelOrientation def);
 
-    static String translatedUserName(NoteHeadType v);
-    static AsciiStringView toXml(NoteHeadType v);
-    static NoteHeadType fromXml(const AsciiStringView &tag, NoteHeadType def);
-    static String translatedUserName(NoteHeadScheme v);
-    static AsciiStringView toXml(NoteHeadScheme v);
-    static NoteHeadScheme fromXml(const AsciiStringView &tag, NoteHeadScheme def);
-    static String translatedUserName(InstrumentLabelVisibility v);
-    static AsciiStringView toXml(InstrumentLabelVisibility v);
-    static InstrumentLabelVisibility fromXml(const AsciiStringView &tag, InstrumentLabelVisibility def);
-    static const TranslatableString &userName(NoteHeadGroup v);
-    static String translatedUserName(NoteHeadGroup v);
-    static AsciiStringView toXml(NoteHeadGroup v);
-    static NoteHeadGroup fromXml(const AsciiStringView &tag, NoteHeadGroup def);
+    static String translated_user_name(NoteHeadType v);
+    static AsciiStringView to_xml(NoteHeadType v);
+    static NoteHeadType from_xml(const AsciiStringView &tag, NoteHeadType def);
+    static String translated_user_name(NoteHeadScheme v);
+    static AsciiStringView to_xml(NoteHeadScheme v);
+    static NoteHeadScheme from_xml(const AsciiStringView &tag, NoteHeadScheme def);
+    static String translated_user_name(InstrumentLabelVisibility v);
+    static AsciiStringView to_xml(InstrumentLabelVisibility v);
+    static InstrumentLabelVisibility from_xml(const AsciiStringView &tag, InstrumentLabelVisibility def);
+    static const TranslatableString &user_name(NoteHeadGroup v);
+    static String translated_user_name(NoteHeadGroup v);
+    static AsciiStringView to_xml(NoteHeadGroup v);
+    static NoteHeadGroup from_xml(const AsciiStringView &tag, NoteHeadGroup def);
 
-    static const TranslatableString &userName(ClefType v);
-    static String translatedUserName(ClefType v);
-    static AsciiStringView toXml(ClefType v);
-    static ClefType fromXml(const AsciiStringView &tag, ClefType def);
+    static const TranslatableString &user_name(ClefType v);
+    static String translated_user_name(ClefType v);
+    static AsciiStringView to_xml(ClefType v);
+    static ClefType from_xml(const AsciiStringView &tag, ClefType def);
 
-    static SymId symId(DynamicType v);
-    static DynamicType dynamicType(SymId v);
-    static DynamicType dynamicType(const AsciiStringView &string);
-    static bool dynamicValid(const AsciiStringView &tag);
-    static const TranslatableString &userName(DynamicType v);
-    static String translatedUserName(DynamicType v);
-    static AsciiStringView toXml(DynamicType v);
-    static DynamicType fromXml(const AsciiStringView &tag, DynamicType def);
-    static String translatedUserName(DynamicSpeed v);
-    static AsciiStringView toXml(DynamicSpeed v);
-    static DynamicSpeed fromXml(const AsciiStringView &tag, DynamicSpeed def);
+    static SymId sym_id(DynamicType v);
+    static DynamicType dynamic_type(SymId v);
+    static DynamicType dynamic_type(const AsciiStringView &string);
+    static bool dynamic_valid(const AsciiStringView &tag);
+    static const TranslatableString &user_name(DynamicType v);
+    static String translated_user_name(DynamicType v);
+    static AsciiStringView to_xml(DynamicType v);
+    static DynamicType from_xml(const AsciiStringView &tag, DynamicType def);
+    static String translated_user_name(DynamicSpeed v);
+    static AsciiStringView to_xml(DynamicSpeed v);
+    static DynamicSpeed from_xml(const AsciiStringView &tag, DynamicSpeed def);
 
-    static String translatedUserName(HookType v);
-    static String toXml(HookType v);
-    static HookType fromXml(const AsciiStringView &tag, HookType def);
+    static String translated_user_name(HookType v);
+    static String to_xml(HookType v);
+    static HookType from_xml(const AsciiStringView &tag, HookType def);
 
-    static AsciiStringView toXml(LineType v);
-    static LineType fromXml(const AsciiStringView &tag, LineType def);
+    static AsciiStringView to_xml(LineType v);
+    static LineType from_xml(const AsciiStringView &tag, LineType def);
 
-    static String translatedUserName(KeyMode v);
-    static AsciiStringView toXml(KeyMode v);
-    static KeyMode fromXml(const AsciiStringView &tag, KeyMode def);
+    static String translated_user_name(KeyMode v);
+    static AsciiStringView to_xml(KeyMode v);
+    static KeyMode from_xml(const AsciiStringView &tag, KeyMode def);
 
-    static const TranslatableString &userName(TextStyleType v);
-    static String translatedUserName(TextStyleType v);
-    static AsciiStringView toXml(TextStyleType v);
-    static TextStyleType fromXml(const AsciiStringView &tag, TextStyleType def);
+    static const TranslatableString &user_name(TextStyleType v);
+    static String translated_user_name(TextStyleType v);
+    static AsciiStringView to_xml(TextStyleType v);
+    static TextStyleType from_xml(const AsciiStringView &tag, TextStyleType def);
 
-    static AsciiStringView toXml(ChangeMethod v);
-    static ChangeMethod fromXml(const AsciiStringView &tag, ChangeMethod def);
-    static std::map<int /*positionTick*/, int> easingValueCurve(const int ticksDuration, const int stepsCount, const int amplitude,
-                                                                const ChangeMethod method);
-    static std::map<int /*positionTick*/, double> easingValueCurve(const int ticksDuration, const int stepsCount, const double amplitude,
-                                                                   const ChangeMethod method);
+    static AsciiStringView to_xml(ChangeMethod v);
+    static ChangeMethod from_xml(const AsciiStringView &tag, ChangeMethod def);
+    static std::map<int /*positionTick*/, int> easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
+                                                                  const ChangeMethod method);
+    static std::map<int /*positionTick*/, double> easing_value_curve(const int ticks_duration, const int steps_count,
+                                                                     const double amplitude, const ChangeMethod method);
 
-    static String toXml(const PitchValue &v);
+    static String to_xml(const PitchValue &v);
 
-    static const char *userName(AccidentalVal accidental, bool full);
-    static String toXml(AccidentalRole v);
-    static AccidentalRole fromXml(const AsciiStringView &tag, AccidentalRole def);
+    static const char *user_name(AccidentalVal accidental, bool full);
+    static String to_xml(AccidentalRole v);
+    static AccidentalRole from_xml(const AsciiStringView &tag, AccidentalRole def);
 
-    static String toXml(BeatsPerSecond v, int precision);
-    static BeatsPerSecond fromXml(const AsciiStringView &tag, BeatsPerSecond def);
+    static String to_xml(BeatsPerSecond v, int precision);
+    static BeatsPerSecond from_xml(const AsciiStringView &tag, BeatsPerSecond def);
 
-    static String translatedUserName(DurationType v);
-    static AsciiStringView toXml(DurationType v);
-    static DurationType fromXml(const AsciiStringView &tag, DurationType def);
+    static String translated_user_name(DurationType v);
+    static AsciiStringView to_xml(DurationType v);
+    static DurationType from_xml(const AsciiStringView &tag, DurationType def);
 
-    static const TranslatableString &userName(PlayingTechniqueType v);
-    static AsciiStringView toXml(PlayingTechniqueType v);
-    static PlayingTechniqueType fromXml(const AsciiStringView &tag, PlayingTechniqueType def);
+    static const TranslatableString &user_name(PlayingTechniqueType v);
+    static AsciiStringView to_xml(PlayingTechniqueType v);
+    static PlayingTechniqueType from_xml(const AsciiStringView &tag, PlayingTechniqueType def);
 
-    static const TranslatableString &userName(GradualTempoChangeType v);
-    static AsciiStringView toXml(GradualTempoChangeType v);
-    static GradualTempoChangeType fromXml(const AsciiStringView &tag, GradualTempoChangeType def);
+    static const TranslatableString &user_name(GradualTempoChangeType v);
+    static AsciiStringView to_xml(GradualTempoChangeType v);
+    static GradualTempoChangeType from_xml(const AsciiStringView &tag, GradualTempoChangeType def);
 
-    static AsciiStringView toXml(OrnamentStyle v);
-    static OrnamentStyle fromXml(const AsciiStringView &str, OrnamentStyle def);
+    static AsciiStringView to_xml(OrnamentStyle v);
+    static OrnamentStyle from_xml(const AsciiStringView &str, OrnamentStyle def);
 
-    static AsciiStringView toXml(PlacementV v);
-    static PlacementV fromXml(const AsciiStringView &str, PlacementV def);
-    static AsciiStringView toXml(PlacementH v);
-    static PlacementH fromXml(const AsciiStringView &str, PlacementH def);
+    static AsciiStringView to_xml(PlacementV v);
+    static PlacementV from_xml(const AsciiStringView &str, PlacementV def);
+    static AsciiStringView to_xml(PlacementH v);
+    static PlacementH from_xml(const AsciiStringView &str, PlacementH def);
 
-    static AsciiStringView toXml(TextPlace v);
-    static TextPlace fromXml(const AsciiStringView &str, TextPlace def);
+    static AsciiStringView to_xml(TextPlace v);
+    static TextPlace from_xml(const AsciiStringView &str, TextPlace def);
 
-    static String translatedUserName(DirectionV v);
-    static AsciiStringView toXml(DirectionV v);
-    static DirectionV fromXml(const AsciiStringView &str, DirectionV def);
-    static String translatedUserName(DirectionH v);
-    static AsciiStringView toXml(DirectionH v);
-    static DirectionH fromXml(const AsciiStringView &str, DirectionH def);
+    static String translated_user_name(DirectionV v);
+    static AsciiStringView to_xml(DirectionV v);
+    static DirectionV from_xml(const AsciiStringView &str, DirectionV def);
+    static String translated_user_name(DirectionH v);
+    static AsciiStringView to_xml(DirectionH v);
+    static DirectionH from_xml(const AsciiStringView &str, DirectionH def);
 
-    static const TranslatableString &userName(LayoutBreakType v);
-    static AsciiStringView toXml(LayoutBreakType v);
-    static LayoutBreakType fromXml(const AsciiStringView &str, LayoutBreakType def);
+    static const TranslatableString &user_name(LayoutBreakType v);
+    static AsciiStringView to_xml(LayoutBreakType v);
+    static LayoutBreakType from_xml(const AsciiStringView &str, LayoutBreakType def);
 
-    static AsciiStringView toXml(VeloType v);
-    static VeloType fromXml(const AsciiStringView &str, VeloType def);
+    static AsciiStringView to_xml(VeloType v);
+    static VeloType from_xml(const AsciiStringView &str, VeloType def);
 
-    static AsciiStringView toXml(BeamMode v);
-    static BeamMode fromXml(const AsciiStringView &str, BeamMode def);
+    static AsciiStringView to_xml(BeamMode v);
+    static BeamMode from_xml(const AsciiStringView &str, BeamMode def);
 
-    static AsciiStringView toXml(GlissandoStyle v);
-    static GlissandoStyle fromXml(const AsciiStringView &str, GlissandoStyle def);
+    static AsciiStringView to_xml(GlissandoStyle v);
+    static GlissandoStyle from_xml(const AsciiStringView &str, GlissandoStyle def);
 
-    static AsciiStringView toXml(BarLineType v);
-    static BarLineType fromXml(const AsciiStringView &str, BarLineType def);
+    static AsciiStringView to_xml(BarLineType v);
+    static BarLineType from_xml(const AsciiStringView &str, BarLineType def);
 
-    static const TranslatableString &userName(TremoloType v);
-    static AsciiStringView toXml(TremoloType v);
-    static TremoloType fromXml(const AsciiStringView &str, TremoloType def);
+    static const TranslatableString &user_name(TremoloType v);
+    static AsciiStringView to_xml(TremoloType v);
+    static TremoloType from_xml(const AsciiStringView &str, TremoloType def);
 
-    static AsciiStringView toXml(TremoloBarType v);
-    static TremoloBarType fromXml(const AsciiStringView &str, TremoloBarType def);
+    static AsciiStringView to_xml(TremoloBarType v);
+    static TremoloBarType from_xml(const AsciiStringView &str, TremoloBarType def);
 
-    static const TranslatableString &userName(BracketType v);
-    static String translatedUserName(BracketType v);
-    static AsciiStringView toXml(BracketType v);
-    static BracketType fromXml(const AsciiStringView &str, BracketType def);
+    static const TranslatableString &user_name(BracketType v);
+    static String translated_user_name(BracketType v);
+    static AsciiStringView to_xml(BracketType v);
+    static BracketType from_xml(const AsciiStringView &str, BracketType def);
 
-    static const TranslatableString &userName(ArpeggioType v);
-    static AsciiStringView toXml(ArpeggioType v);
-    static ArpeggioType fromXml(const AsciiStringView &tag, ArpeggioType def);
+    static const TranslatableString &user_name(ArpeggioType v);
+    static AsciiStringView to_xml(ArpeggioType v);
+    static ArpeggioType from_xml(const AsciiStringView &tag, ArpeggioType def);
 
-    static const TranslatableString &userName(EmbellishmentType v);
-    static String translatedUserName(EmbellishmentType v);
-    static String toXml(EmbellishmentType v);
-    static EmbellishmentType fromXml(const AsciiStringView &tag, EmbellishmentType def);
-    static StringList embellishmentNotes(EmbellishmentType v);
-    static size_t embellishmentsCount();
+    static const TranslatableString &user_name(EmbellishmentType v);
+    static String translated_user_name(EmbellishmentType v);
+    static String to_xml(EmbellishmentType v);
+    static EmbellishmentType from_xml(const AsciiStringView &tag, EmbellishmentType def);
+    static StringList embellishment_notes(EmbellishmentType v);
+    static size_t embellishments_count();
 
-    static const TranslatableString &userName(ChordLineType v, bool straight, bool wavy);
-    static AsciiStringView toXml(ChordLineType v);
-    static ChordLineType fromXml(const AsciiStringView &tag, ChordLineType def);
+    static const TranslatableString &user_name(ChordLineType v, bool straight, bool wavy);
+    static AsciiStringView to_xml(ChordLineType v);
+    static ChordLineType from_xml(const AsciiStringView &tag, ChordLineType def);
 
-    static AsciiStringView toXml(GuitarBendType v);
-    static GuitarBendType fromXml(const AsciiStringView &tag, GuitarBendType def);
+    static AsciiStringView to_xml(GuitarBendType v);
+    static GuitarBendType from_xml(const AsciiStringView &tag, GuitarBendType def);
 
-    static AsciiStringView toXml(NoteCaseType v);
-    static NoteCaseType fromXml(const AsciiStringView &tag, NoteCaseType def);
+    static AsciiStringView to_xml(NoteCaseType v);
+    static NoteCaseType from_xml(const AsciiStringView &tag, NoteCaseType def);
 
-    static const String &userName(DrumNum v);
+    static const String &user_name(DrumNum v);
 
-    static const TranslatableString &userName(GlissandoType v);
-    static AsciiStringView toXml(GlissandoType v);
-    static GlissandoType fromXml(const AsciiStringView &tag, GlissandoType def);
+    static const TranslatableString &user_name(GlissandoType v);
+    static AsciiStringView to_xml(GlissandoType v);
+    static GlissandoType from_xml(const AsciiStringView &tag, GlissandoType def);
 
-    static const TranslatableString &userName(JumpType v);
-    static String translatedUserName(JumpType v);
+    static const TranslatableString &user_name(JumpType v);
+    static String translated_user_name(JumpType v);
 
-    static const TranslatableString &userName(MarkerType v);
-    static String translatedUserName(MarkerType v);
-    static AsciiStringView toXml(MarkerType v);
-    static MarkerType fromXml(const AsciiStringView &tag, MarkerType def);
+    static const TranslatableString &user_name(MarkerType v);
+    static String translated_user_name(MarkerType v);
+    static AsciiStringView to_xml(MarkerType v);
+    static MarkerType from_xml(const AsciiStringView &tag, MarkerType def);
 
-    static String translatedUserName(StaffGroup v);
-    static AsciiStringView toXml(StaffGroup v);
-    static StaffGroup fromXml(const AsciiStringView &tag, StaffGroup def);
+    static String translated_user_name(StaffGroup v);
+    static AsciiStringView to_xml(StaffGroup v);
+    static StaffGroup from_xml(const AsciiStringView &tag, StaffGroup def);
 
-    static const TranslatableString &userName(StaffTypes v);
-    static String translatedUserName(StaffTypes v);
-    static AsciiStringView toXml(StaffTypes v);
-    static StaffTypes fromXml(const AsciiStringView &tag, StaffTypes def);
+    static const TranslatableString &user_name(StaffTypes v);
+    static String translated_user_name(StaffTypes v);
+    static AsciiStringView to_xml(StaffTypes v);
+    static StaffTypes from_xml(const AsciiStringView &tag, StaffTypes def);
 
-    static const TranslatableString &userName(TrillType v);
-    static String translatedUserName(TrillType v);
-    static AsciiStringView toXml(TrillType v);
-    static TrillType fromXml(const AsciiStringView &tag, TrillType def);
+    static const TranslatableString &user_name(TrillType v);
+    static String translated_user_name(TrillType v);
+    static AsciiStringView to_xml(TrillType v);
+    static TrillType from_xml(const AsciiStringView &tag, TrillType def);
 
-    static const TranslatableString &userName(VibratoType v);
-    static String translatedUserName(VibratoType v);
-    static AsciiStringView toXml(VibratoType v);
-    static VibratoType fromXml(const AsciiStringView &tag, VibratoType def);
+    static const TranslatableString &user_name(VibratoType v);
+    static String translated_user_name(VibratoType v);
+    static AsciiStringView to_xml(VibratoType v);
+    static VibratoType from_xml(const AsciiStringView &tag, VibratoType def);
 
-    static const TranslatableString &userName(ArticulationTextType v);
+    static const TranslatableString &user_name(ArticulationTextType v);
     static String text(ArticulationTextType v);
-    static AsciiStringView toXml(ArticulationTextType v);
-    static ArticulationTextType fromXml(const AsciiStringView &tag, ArticulationTextType def);
+    static AsciiStringView to_xml(ArticulationTextType v);
+    static ArticulationTextType from_xml(const AsciiStringView &tag, ArticulationTextType def);
 
-    static AsciiStringView toXml(LyricsSyllabic v);
-    static LyricsSyllabic fromXml(const AsciiStringView &tag, LyricsSyllabic def);
+    static AsciiStringView to_xml(LyricsSyllabic v);
+    static LyricsSyllabic from_xml(const AsciiStringView &tag, LyricsSyllabic def);
 
-    static AsciiStringView toXml(LyricsDashSystemStart v);
-    static LyricsDashSystemStart fromXml(const AsciiStringView &tag, LyricsDashSystemStart def);
+    static AsciiStringView to_xml(LyricsDashSystemStart v);
+    static LyricsDashSystemStart from_xml(const AsciiStringView &tag, LyricsDashSystemStart def);
 
-    static const TranslatableString &userName(Key v, bool isAtonal = false, bool isCustom = false);
-    static String translatedUserName(Key v, bool isAtonal = false, bool isCustom = false);
+    static const TranslatableString &user_name(Key v, bool is_atonal = false, bool is_custom = false);
+    static String translated_user_name(Key v, bool is_atonal = false, bool is_custom = false);
 
-    static AsciiStringView toXml(TiePlacement interval);
-    static TiePlacement fromXml(const AsciiStringView &str, TiePlacement def);
+    static AsciiStringView to_xml(TiePlacement interval);
+    static TiePlacement from_xml(const AsciiStringView &str, TiePlacement def);
 
-    static AsciiStringView toXml(TieDotsPlacement placement);
-    static TieDotsPlacement fromXml(const AsciiStringView &str, TieDotsPlacement def);
+    static AsciiStringView to_xml(TieDotsPlacement placement);
+    static TieDotsPlacement from_xml(const AsciiStringView &str, TieDotsPlacement def);
 
-    static AsciiStringView toXml(VoiceAssignment voiceAppl);
-    static VoiceAssignment fromXml(const AsciiStringView &str, VoiceAssignment def);
+    static AsciiStringView to_xml(VoiceAssignment voice_appl);
+    static VoiceAssignment from_xml(const AsciiStringView &str, VoiceAssignment def);
 
-    static AsciiStringView toXml(AutoOnOff autoOnOff);
-    static AutoOnOff fromXml(const AsciiStringView &str, AutoOnOff def);
+    static AsciiStringView to_xml(AutoOnOff auto_on_off);
+    static AutoOnOff from_xml(const AsciiStringView &str, AutoOnOff def);
 
-    static AsciiStringView toXml(CapoParams::TransposeMode autoOnOff);
-    static CapoParams::TransposeMode fromXml(const AsciiStringView &str, CapoParams::TransposeMode def);
+    static AsciiStringView to_xml(CapoParams::TransposeMode auto_on_off);
+    static CapoParams::TransposeMode from_xml(const AsciiStringView &str, CapoParams::TransposeMode def);
 
-    static AsciiStringView toXml(PartialSpannerDirection v);
-    static PartialSpannerDirection fromXml(const AsciiStringView &str, PartialSpannerDirection def);
+    static AsciiStringView to_xml(PartialSpannerDirection v);
+    static PartialSpannerDirection from_xml(const AsciiStringView &str, PartialSpannerDirection def);
 
-    static AsciiStringView toXml(TimeSigPlacement timeSigPos);
-    static TimeSigPlacement fromXml(const AsciiStringView &str, TimeSigPlacement def);
+    static AsciiStringView to_xml(TimeSigPlacement time_sig_pos);
+    static TimeSigPlacement from_xml(const AsciiStringView &str, TimeSigPlacement def);
 
-    static AsciiStringView toXml(TimeSigStyle timeSigStyle);
-    static TimeSigStyle fromXml(const AsciiStringView &str, TimeSigStyle def);
+    static AsciiStringView to_xml(TimeSigStyle time_sig_style);
+    static TimeSigStyle from_xml(const AsciiStringView &str, TimeSigStyle def);
 
-    static AsciiStringView toXml(TimeSigVSMargin timeSigVSMargin);
-    static TimeSigVSMargin fromXml(const AsciiStringView &str, TimeSigVSMargin def);
+    static AsciiStringView to_xml(TimeSigVSMargin time_sig_vs_margin);
+    static TimeSigVSMargin from_xml(const AsciiStringView &str, TimeSigVSMargin def);
 
-    static AsciiStringView toXml(NoteSpellingType noteSpellingType);
-    static NoteSpellingType fromXml(const AsciiStringView &str, NoteSpellingType def);
+    static AsciiStringView to_xml(NoteSpellingType note_spelling_type);
+    static NoteSpellingType from_xml(const AsciiStringView &str, NoteSpellingType def);
 
-    static AsciiStringView toXml(ChordStylePreset chordStylePreset);
-    static ChordStylePreset fromXml(const AsciiStringView &str, ChordStylePreset def);
+    static AsciiStringView to_xml(ChordStylePreset chord_style_preset);
+    static ChordStylePreset from_xml(const AsciiStringView &str, ChordStylePreset def);
 
-    static AsciiStringView toXml(TappingHand tappingHand);
-    static TappingHand fromXml(const AsciiStringView &str, TappingHand def);
+    static AsciiStringView to_xml(TappingHand tapping_hand);
+    static TappingHand from_xml(const AsciiStringView &str, TappingHand def);
 
-    static AsciiStringView toXml(LHTappingSymbol lh);
-    static LHTappingSymbol fromXml(const AsciiStringView &str, LHTappingSymbol def);
+    static AsciiStringView to_xml(LHTappingSymbol lh);
+    static LHTappingSymbol from_xml(const AsciiStringView &str, LHTappingSymbol def);
 
-    static AsciiStringView toXml(RHTappingSymbol rh);
-    static RHTappingSymbol fromXml(const AsciiStringView &str, RHTappingSymbol def);
+    static AsciiStringView to_xml(RHTappingSymbol rh);
+    static RHTappingSymbol from_xml(const AsciiStringView &str, RHTappingSymbol def);
 
-    static AsciiStringView toXml(ParenthesesMode pm);
-    static ParenthesesMode fromXml(const AsciiStringView &str, ParenthesesMode def);
+    static AsciiStringView to_xml(ParenthesesMode pm);
+    static ParenthesesMode from_xml(const AsciiStringView &str, ParenthesesMode def);
 
-    static const TranslatableString &userName(RepeatPlayCountPreset v);
-    static String translatedUserName(RepeatPlayCountPreset v);
-    static AsciiStringView toXml(RepeatPlayCountPreset repeatPreset);
-    static RepeatPlayCountPreset fromXml(const AsciiStringView &str, RepeatPlayCountPreset def);
+    static const TranslatableString &user_name(RepeatPlayCountPreset v);
+    static String translated_user_name(RepeatPlayCountPreset v);
+    static AsciiStringView to_xml(RepeatPlayCountPreset repeat_preset);
+    static RepeatPlayCountPreset from_xml(const AsciiStringView &str, RepeatPlayCountPreset def);
 
-    static AsciiStringView toXml(AutoCustomHide autoOnOff);
-    static AutoCustomHide fromXml(const AsciiStringView &str, AutoCustomHide def);
+    static AsciiStringView to_xml(AutoCustomHide auto_on_off);
+    static AutoCustomHide from_xml(const AsciiStringView &str, AutoCustomHide def);
 
-    static AsciiStringView toXml(MeasureNumberPlacement v);
-    static MeasureNumberPlacement fromXml(const AsciiStringView &str, MeasureNumberPlacement def);
+    static AsciiStringView to_xml(MeasureNumberPlacement v);
+    static MeasureNumberPlacement from_xml(const AsciiStringView &str, MeasureNumberPlacement def);
 
-    static AsciiStringView toXml(InstrumentNamesAlign v);
-    static InstrumentNamesAlign fromXml(const AsciiStringView &str, InstrumentNamesAlign def);
+    static AsciiStringView to_xml(InstrumentNamesAlign v);
+    static InstrumentNamesAlign from_xml(const AsciiStringView &str, InstrumentNamesAlign def);
 
-    static AsciiStringView toXml(InstrumentNamesFormat v);
-    static InstrumentNamesFormat fromXml(const AsciiStringView &str, InstrumentNamesFormat def);
+    static AsciiStringView to_xml(InstrumentNamesFormat v);
+    static InstrumentNamesFormat from_xml(const AsciiStringView &str, InstrumentNamesFormat def);
 
-    static const TranslatableString &userName(ActionIconType v);
-    static char16_t iconCode(ActionIconType v);
-    static AsciiStringView toXml(ActionIconType v);
-    static ActionIconType fromXml(const AsciiStringView &str, ActionIconType def);
+    static const TranslatableString &user_name(ActionIconType v);
+    static char16_t icon_code(ActionIconType v);
+    static AsciiStringView to_xml(ActionIconType v);
+    static ActionIconType from_xml(const AsciiStringView &str, ActionIconType def);
 };
 } // namespace mu::engraving

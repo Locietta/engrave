@@ -176,8 +176,8 @@ class TWrite {
 public:
     TWrite() = default;
 
-    static void writeItem(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeItems(const ElementList &items, XmlWriter &xml, WriteContext &ctx);
+    static void write_item(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_items(const ElementList &items, XmlWriter &xml, WriteContext &ctx);
 
     static void write(const Accidental *item, XmlWriter &xml, WriteContext &ctx);
     static void write(const ActionIcon *item, XmlWriter &xml, WriteContext &ctx);
@@ -312,69 +312,69 @@ public:
 
     static void write(const WhammyBar *item, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeSegments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool, bool);
-    static void writeSegments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, const std::vector<Segment *> &segments,
-                              bool, bool);
+    static void write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool, bool);
+    static void write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, const std::vector<Segment *> &segments,
+                               bool, bool);
 
-    static void writeProperty(const EngravingItem *item, XmlWriter &xml, Pid pid, bool force = false);
+    static void write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, bool force = false);
 
-    static void writePageLocks(const Score *score, XmlWriter &xml);
-    static void writeSystemLocks(const Score *score, XmlWriter &xml);
-    static void writeSystemDividers(const Score *score, XmlWriter &xml, WriteContext &ctx);
+    static void write_page_locks(const Score *score, XmlWriter &xml);
+    static void write_system_locks(const Score *score, XmlWriter &xml);
+    static void write_system_dividers(const Score *score, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeScoreSpanners(const Score *score, XmlWriter &xml, WriteContext &ctx);
-    static void writeScoreSpanners(const Score *score, track_idx_t startTrack, track_idx_t endTrack, Segment *startSegment,
-                                   Segment *endSegment, XmlWriter &xml, WriteContext &ctx);
+    static void write_score_spanners(const Score *score, XmlWriter &xml, WriteContext &ctx);
+    static void write_score_spanners(const Score *score, track_idx_t start_track, track_idx_t end_track, Segment *start_segment,
+                                     Segment *end_segment, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeItemEid(const EngravingObject *item, XmlWriter &xml);
-    static void writeItemLink(const EngravingObject *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_item_eid(const EngravingObject *item, XmlWriter &xml);
+    static void write_item_link(const EngravingObject *item, XmlWriter &xml, WriteContext &ctx);
 
     static void write(const StaffLabel &item, XmlWriter &xml);
     static void write(const InstrumentLabel &item, XmlWriter &xml);
 
 private:
 
-    static void writeStyledProperties(const EngravingItem *item, XmlWriter &xml);
+    static void write_styled_properties(const EngravingItem *item, XmlWriter &xml);
 
-    static void writeItemProperties(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeBoxProperties(const Box *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const Articulation *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const Arpeggio *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const Box *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const HBox *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_item_properties(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_box_properties(const Box *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Articulation *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Arpeggio *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Box *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const HBox *item, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeProperties(const ChordRest *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeChordRestBeam(const ChordRest *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const ChordRest *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_chord_rest_beam(const ChordRest *item, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeProperties(const Part *part, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Part *part, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeProperties(const Rest *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Rest *item, XmlWriter &xml, WriteContext &ctx);
 
     static void write(const StaffTextBase *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const StaffTextBase *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const SlurTie *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeSlur(const SlurTieSegment *seg, XmlWriter &xml, WriteContext &ctx, int no);
+    static void write_properties(const StaffTextBase *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const SlurTie *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_slur(const SlurTieSegment *seg, XmlWriter &xml, WriteContext &ctx, int no);
 
-    static void writeProperties(const HammerOnPullOffSegment *seg, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const HammerOnPullOffSegment *seg, XmlWriter &xml, WriteContext &ctx);
     static void write(const HammerOnPullOffText *item, XmlWriter &xml, WriteContext &ctx, size_t idx);
 
-    static void writeProperties(const SLine *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const GuitarBendSegment *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const Spanner *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const BSymbol *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const SLine *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const GuitarBendSegment *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const Spanner *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const BSymbol *item, XmlWriter &xml, WriteContext &ctx);
 
-    static void writeProperties(const TextLineBase *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeProperties(const TextBase *item, XmlWriter &xml, WriteContext &ctx, bool writeText);
+    static void write_properties(const TextLineBase *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_properties(const TextBase *item, XmlWriter &xml, WriteContext &ctx, bool write_text);
 
-    static void writeTupletStart(DurationElement *item, XmlWriter &xml, WriteContext &ctx);
-    static void writeTupletEnd(DurationElement *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_tuplet_start(DurationElement *item, XmlWriter &xml, WriteContext &ctx);
+    static void write_tuplet_end(DurationElement *item, XmlWriter &xml, WriteContext &ctx);
 
-    static void writePageLock(const RangeLock *pageLock, XmlWriter &xml);
-    static void writeSystemLock(const RangeLock *systemLock, XmlWriter &xml);
+    static void write_page_lock(const RangeLock *page_lock, XmlWriter &xml);
+    static void write_system_lock(const RangeLock *system_lock, XmlWriter &xml);
 
-    static muse::String lineBreakToTag(const String &str);
-    static void writeProperties(const StaffLabel &item, XmlWriter &xml);
-    static void writeProperties(const InstrumentLabel &item, XmlWriter &xml);
+    static muse::String line_break_to_tag(const String &str);
+    static void write_properties(const StaffLabel &item, XmlWriter &xml);
+    static void write_properties(const InstrumentLabel &item, XmlWriter &xml);
 
     static void write(const BracketItem *item, XmlWriter &xml);
 };

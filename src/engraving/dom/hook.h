@@ -39,24 +39,24 @@ public:
 
     Hook *clone() const override { return new Hook(*this); }
 
-    double mag() const override { return layoutParent()->mag(); }
+    double mag() const override { return layout_parent()->mag(); }
 
-    EngravingItem *elementBase() const override;
+    EngravingItem *element_base() const override;
 
-    void setHookType(int v);
+    void set_hook_type(int v);
 
-    int hookType() const { return hookType_; }
+    int hook_type() const { return hook_type_; }
 
-    Chord *chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return to_chord(ownership_parent()); }
 
-    PointF smuflAnchor() const;
+    PointF smufl_anchor() const;
 
     //! @p index: the number of flags (positive: upwards, negative: downwards)
     //! @p straight: whether to use straight flags
-    static SymId symIdForHookIndex(int index, bool straight);
+    static SymId sym_id_for_hook_index(int index, bool straight);
 
 private:
-    int hookType_ = 0;
+    int hook_type_ = 0;
 };
 } // namespace mu::engraving
 #endif

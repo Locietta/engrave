@@ -35,15 +35,15 @@ namespace mu::engraving {
 
 class NoteEvent {
 public:
-    constexpr static int NOTE_LENGTH = 1000;
-    constexpr static double GHOST_VELOCITY_MULTIPLIER = 0.6;
-    constexpr static double DEFAULT_VELOCITY_MULTIPLIER = 1.0;
-    constexpr static int SLIDE_AMOUNT = 3;
+    constexpr static int note_length = 1000;
+    constexpr static double ghost_velocity_multiplier = 0.6;
+    constexpr static double default_velocity_multiplier = 1.0;
+    constexpr static int slide_amount = 3;
 
     NoteEvent() {}
 
     NoteEvent(int a, int b, int c, double d = 1.0, double play = true, int offset = 0)
-        : pitch_(a), ontime_(b), len_(c), velocityMultiplier_(d), play_(play), offset_(offset) {}
+        : pitch_(a), ontime_(b), len_(c), velocity_multiplier_(d), play_(play), offset_(offset) {}
 
     int pitch() const { return pitch_; }
 
@@ -53,7 +53,7 @@ public:
 
     int len() const { return len_; }
 
-    double velocityMultiplier() const { return velocityMultiplier_; }
+    double velocity_multiplier() const { return velocity_multiplier_; }
 
     bool play() const { return play_; }
 
@@ -61,26 +61,26 @@ public:
 
     bool slide() const { return slide_; }
 
-    void setPitch(int v) { pitch_ = v; }
+    void set_pitch(int v) { pitch_ = v; }
 
-    void setOntime(int v) { ontime_ = v; }
+    void set_ontime(int v) { ontime_ = v; }
 
-    void setLen(int v) { len_ = v; }
+    void set_len(int v) { len_ = v; }
 
-    void setVelocityMultiplier(double velocityMultiplier) { velocityMultiplier_ = velocityMultiplier; }
+    void set_velocity_multiplier(double velocity_multiplier) { velocity_multiplier_ = velocity_multiplier; }
 
-    void setOffset(int v) { offset_ = v; }
+    void set_offset(int v) { offset_ = v; }
 
-    void setSlide(bool slide) { slide_ = slide; }
+    void set_slide(bool slide) { slide_ = slide; }
 
     bool operator==(const NoteEvent &) const;
 
 private:
-    int pitch_ = 0;                                           // relative pitch to note pitch
-    int ontime_ = 0;                                          // one unit is 1/1000 of nominal note len
-    int len_ = NOTE_LENGTH;                                   // one unit is 1/1000 of nominal note len
-    double velocityMultiplier_ = DEFAULT_VELOCITY_MULTIPLIER; // can be used to lower sound (0-1)
-    bool play_ = true;                                        // when 'false', note event is used only for length calculation
+    int pitch_ = 0;                                                                        // relative pitch to note pitch
+    int ontime_ = 0;                                                                       // one unit is 1/1000 of nominal note len
+    int len_ = ::mu::engraving::NoteEvent::note_length;                                    // one unit is 1/1000 of nominal note len
+    double velocity_multiplier_ = ::mu::engraving::NoteEvent::default_velocity_multiplier; // can be used to lower sound (0-1)
+    bool play_ = true; // when 'false', note event is used only for length calculation
     int offset_ = 0;
     bool slide_ = false; // event is slide or glissando
 };

@@ -29,52 +29,52 @@ using namespace mu::iex::musicxml;
 //---------------------------------------------------------
 
 VoiceDesc::VoiceDesc() : staff_(-1), voice_(-1), overlaps_(false) {
-    for (int i = 0; i < MAX_STAVES; ++i) {
-        chordRests_[i] = 0;
-        staffAlloc_[i] = -1;
+    for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
+        chord_rests_[i] = 0;
+        staff_alloc_[i] = -1;
         voices_[i] = -1;
     }
 }
 
-void VoiceDesc::incrChordRests(int s) {
-    if (0 <= s && s < MAX_STAVES) {
-        chordRests_[s]++;
+void VoiceDesc::incr_chord_rests(int s) {
+    if (0 <= s && s < ::mu::engraving::max_staves) {
+        chord_rests_[s]++;
     }
 }
 
-int VoiceDesc::numberChordRests() const {
+int VoiceDesc::number_chord_rests() const {
     int res = 0;
-    for (int i = 0; i < MAX_STAVES; ++i) {
-        res += chordRests_[i];
+    for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
+        res += chord_rests_[i];
     }
     return res;
 }
 
-int VoiceDesc::preferredStaff() const {
+int VoiceDesc::preferred_staff() const {
     int max = 0;
     int res = 0;
-    for (int i = 0; i < MAX_STAVES; ++i) {
-        if (chordRests_[i] > max) {
-            max = chordRests_[i];
+    for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
+        if (chord_rests_[i] > max) {
+            max = chord_rests_[i];
             res = i;
         }
     }
     return res;
 }
 
-String VoiceDesc::toString() const {
+String VoiceDesc::to_string() const {
     String res = u"[";
-    for (int i = 0; i < MAX_STAVES; ++i) {
-        res += String(u" %1").arg(chordRests_[i]);
+    for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
+        res += String(u" %1").arg(chord_rests_[i]);
     }
     res += String(u" ] overlaps %1").arg(overlaps_);
     if (overlaps_) {
         res += u" staffAlloc [";
-        for (int i = 0; i < MAX_STAVES; ++i) {
-            res += String(u" %1").arg(staffAlloc_[i]);
+        for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
+            res += String(u" %1").arg(staff_alloc_[i]);
         }
         res += u" ] voices [";
-        for (int i = 0; i < MAX_STAVES; ++i) {
+        for (int i = 0; i < ::mu::engraving::max_staves; ++i) {
             res += String(u" %1").arg(voices_[i]);
         }
         res += u" ]";

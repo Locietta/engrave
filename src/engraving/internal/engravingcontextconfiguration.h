@@ -28,8 +28,8 @@ namespace mu::engraving {
 class EngravingContextConfiguration : public IEngravingContextConfiguration {
 public:
 
-    double guiScaling() const override;
+    double gui_scaling() const override;
 
-    bool isAccessibleEnabled() const override;
+    bool is_accessible_enabled() const override;
 };
 } // namespace mu::engraving

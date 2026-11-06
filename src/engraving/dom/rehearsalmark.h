@@ -35,30 +35,30 @@ class RehearsalMark final : public TextBase {
     DECLARE_CLASSOF(ElementType::REHEARSAL_MARK)
 
 public:
-    enum class Type : unsigned char { Main = 0, Additional };
+    enum class Type : unsigned char { MAIN = 0, ADDITIONAL };
 
     RehearsalMark(DummyParentOr<Segment> parent);
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
     RehearsalMark *clone() const override { return new RehearsalMark(*this); }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    void setType(Type type);
+    void set_type(Type type);
 
     Type type() const { return type_; }
 
-    void styleChanged() override;
+    void style_changed() override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
 private:
-    void applyTypeStyle();
+    void apply_type_style();
 
-    Type type_ = Type::Main;
+    Type type_ = Type::MAIN;
 };
 } // namespace mu::engraving
 #endif

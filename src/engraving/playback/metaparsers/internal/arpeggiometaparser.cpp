@@ -27,27 +27,27 @@
 using namespace mu::engraving;
 using namespace muse;
 
-void ArpeggioMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    IF_ASSERT_FAILED(item->isArpeggio()) { return; }
+void ArpeggioMetaParser::do_parse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->is_arpeggio()) { return; }
 
-    const Arpeggio *arpeggio = toArpeggio(item);
+    const Arpeggio *arpeggio = to_arpeggio(item);
 
-    if (!arpeggio->playArpeggio()) {
+    if (!arpeggio->play_arpeggio()) {
         return;
     }
 
-    mpe::ArticulationType type = mpe::ArticulationType::Undefined;
+    mpe::ArticulationType type = mpe::ArticulationType::UNDEFINED;
 
-    switch (arpeggio->arpeggioType()) {
-        case ArpeggioType::NORMAL: type = mpe::ArticulationType::Arpeggio; break;
-        case ArpeggioType::UP: type = mpe::ArticulationType::ArpeggioUp; break;
-        case ArpeggioType::DOWN: type = mpe::ArticulationType::ArpeggioDown; break;
-        case ArpeggioType::DOWN_STRAIGHT: type = mpe::ArticulationType::ArpeggioStraightDown; break;
-        case ArpeggioType::UP_STRAIGHT: type = mpe::ArticulationType::ArpeggioStraightUp; break;
+    switch (arpeggio->arpeggio_type()) {
+        case ArpeggioType::NORMAL: type = mpe::ArticulationType::ARPEGGIO; break;
+        case ArpeggioType::UP: type = mpe::ArticulationType::ARPEGGIO_UP; break;
+        case ArpeggioType::DOWN: type = mpe::ArticulationType::ARPEGGIO_DOWN; break;
+        case ArpeggioType::DOWN_STRAIGHT: type = mpe::ArticulationType::ARPEGGIO_STRAIGHT_DOWN; break;
+        case ArpeggioType::UP_STRAIGHT: type = mpe::ArticulationType::ARPEGGIO_STRAIGHT_UP; break;
         default: break;
     }
 
-    if (type == mpe::ArticulationType::Undefined) {
+    if (type == mpe::ArticulationType::UNDEFINED) {
         return;
     }
 
@@ -56,11 +56,11 @@ void ArpeggioMetaParser::doParse(const EngravingItem *item, const RenderingConte
         return;
     }
 
-    mpe::ArticulationMeta articulationMeta;
-    articulationMeta.type = type;
-    articulationMeta.pattern = pattern;
-    articulationMeta.timestamp = ctx.nominalTimestamp;
-    articulationMeta.overallDuration = ctx.nominalDuration * arpeggio->Stretch();
+    mpe::ArticulationMeta articulation_meta;
+    articulation_meta.type = type;
+    articulation_meta.pattern = pattern;
+    articulation_meta.timestamp = ctx.nominal_timestamp;
+    articulation_meta.overall_duration = ctx.nominal_duration * arpeggio->stretch();
 
-    appendArticulationData(std::move(articulationMeta), result);
+    append_articulation_data(std::move(articulation_meta), result);
 }

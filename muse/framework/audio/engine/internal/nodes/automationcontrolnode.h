@@ -39,25 +39,25 @@ namespace muse::audio::engine {
 class AutomationControlNode : public AudioNode<AutomationControlTag> {
 public:
 
-    void setPlayheadPosition(const PlayheadPositionPtr &playheadPosition);
-    void setVolume(const AutomatableValue<volume_db_t> &volume);
-    void setPan(const AutomatableValue<balance_t> &pan);
-    void setMuted(bool muted);
+    void set_playhead_position(const PlayheadPositionPtr &playhead_position);
+    void set_volume(const AutomatableValue<volume_db_t> &volume);
+    void set_pan(const AutomatableValue<balance_t> &pan);
+    void set_muted(bool muted);
     bool muted() const;
 
 protected:
 
-    secs_t currentPos() const;
-    void updateChannelGains(secs_t pos);
+    secs_t current_pos() const;
+    void update_channel_gains(secs_t pos);
 
-    void onOutputSpecChanged(const OutputSpec &spec) override;
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    PlayheadPositionPtr playheadPosition_;
+    PlayheadPositionPtr playhead_position_;
     AutomatableValue<volume_db_t> volume_;
     AutomatableValue<balance_t> pan_;
-    std::vector<dsp::SmoothLinearValue<float>> channelGains_;
-    std::optional<secs_t> lastGainsPos_;
+    std::vector<dsp::SmoothLinearValue<float>> channel_gains_;
+    std::optional<secs_t> last_gains_pos_;
 };
 
 using AutomationControlNodePtr = std::shared_ptr<AutomationControlNode>;

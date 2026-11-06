@@ -41,59 +41,59 @@ public:
 
     MeasureRepeat *clone() const override { return new MeasureRepeat(*this); }
 
-    EngravingItem *linkedClone() override { return EngravingItem::linkedClone(); }
+    EngravingItem *linked_clone() override { return EngravingItem::linked_clone(); }
 
-    static constexpr int MAX_NUM_MEASURES = 4;
+    static constexpr int max_num_measures = 4;
 
-    void setNumMeasures(int n);
+    void set_num_measures(int n);
 
-    int numMeasures() const { return numMeasures_; }
+    int num_measures() const { return num_measures_; }
 
-    void setNumberOffset(const Spatium y) { numberOffset_ = y; }
+    void set_number_offset(const Spatium y) { number_offset_ = y; }
 
-    Spatium numberOffset() const { return numberOffset_; }
+    Spatium number_offset() const { return number_offset_; }
 
-    Measure *firstMeasureOfGroup() const;
-    const Measure *referringMeasure(const Measure *measure) const;
+    Measure *first_measure_of_group() const;
+    const Measure *referring_measure(const Measure *measure) const;
 
     Fraction ticks() const override;
 
-    Fraction actualTicks() const { return Rest::ticks(); }
+    Fraction actual_ticks() const { return Rest::ticks(); }
 
-    PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
-    PropertyValue getProperty(Pid) const override;
+    PropertyValue property_default(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
+    PropertyValue get_property(Pid) const override;
 
-    int subtype() const override { return numMeasures_; }
+    int subtype() const override { return num_measures_; }
 
-    muse::TranslatableString subtypeUserName() const override;
+    muse::TranslatableString subtype_user_name() const override;
 
-    bool placeMultiple() const override { return numMeasures() == 1; } // prevent overlapping additions with range selection
+    bool place_multiple() const override { return num_measures() == 1; } // prevent overlapping additions with range selection
 
-    RectF numberRect() const override;
+    RectF number_rect() const override;
 
-    PointF numberPosition(const RectF &numberBbox) const;
+    PointF number_position(const RectF &number_bbox) const;
 
     struct LayoutData : public Rest::LayoutData {
-        SymId symId = SymId::noSym;
-        SymIdList numberSym;
+        SymId sym_id = SymId::NO_SYM;
+        SymIdList number_sym;
 
-        void setSymId(SymId id) { symId = id; }
+        void set_sym_id(SymId id) { sym_id = id; }
 
-        void setNumberSym(int n) { numberSym = timeSigSymIdsFromString(String::number(n)); }
+        void set_number_sym(int n) { number_sym = time_sig_sym_ids_from_string(String::number(n)); }
 
-        void setNumberSym(const String &s) { numberSym = timeSigSymIdsFromString(s); }
+        void set_number_sym(const String &s) { number_sym = time_sig_sym_ids_from_string(s); }
 
-        void clearNumberSym() { numberSym.clear(); }
+        void clear_number_sym() { number_sym.clear(); }
 
-        LineF extenderLineLeft = LineF();
-        LineF extenderLineRight = LineF();
+        LineF extender_line_left = LineF();
+        LineF extender_line_right = LineF();
     };
     DECLARE_LAYOUTDATA_METHODS(MeasureRepeat)
 
 private:
-    int numMeasures_ = 0;
-    Spatium numberOffset_ = 0.0_sp; // vertical offset of number relative to its style position
+    int num_measures_ = 0;
+    Spatium number_offset_ = 0.0_sp; // vertical offset of number relative to its style position
 };
 } // namespace mu::engraving
 #endif

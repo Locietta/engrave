@@ -35,69 +35,69 @@ namespace mu::engraving::compat {
 //---------------------------------------------------------
 
 class PageFormat {
-    muse::SizeF _size;
-    double _printableWidth; // _width - left margin - right margin
-    double _evenLeftMargin; // values in inch
-    double _oddLeftMargin;
-    double _evenTopMargin;
-    double _evenBottomMargin;
-    double _oddTopMargin;
-    double _oddBottomMargin;
-    bool _twosided;
+    muse::SizeF size_value;
+    double printable_width_value;  // _width - left margin - right margin
+    double even_left_margin_value; // values in inch
+    double odd_left_margin_value;
+    double even_top_margin_value;
+    double even_bottom_margin_value;
+    double odd_top_margin_value;
+    double odd_bottom_margin_value;
+    bool twosided_value;
 
 public:
     PageFormat() {}
 
-    const muse::SizeF &size() const { return _size; } // size in inch
+    const muse::SizeF &size() const { return size_value; } // size in inch
 
-    double width() const { return _size.width(); }
+    double width() const { return size_value.width(); }
 
-    double height() const { return _size.height(); }
+    double height() const { return size_value.height(); }
 
-    void setSize(const muse::SizeF &s) { _size = s; }
+    void set_size(const muse::SizeF &s) { size_value = s; }
 
     void read206(XmlReader &);
 
-    double evenLeftMargin() const { return _evenLeftMargin; }
+    double even_left_margin() const { return even_left_margin_value; }
 
-    double oddLeftMargin() const { return _oddLeftMargin; }
+    double odd_left_margin() const { return odd_left_margin_value; }
 
-    double evenTopMargin() const { return _evenTopMargin; }
+    double even_top_margin() const { return even_top_margin_value; }
 
-    double evenBottomMargin() const { return _evenBottomMargin; }
+    double even_bottom_margin() const { return even_bottom_margin_value; }
 
-    double oddTopMargin() const { return _oddTopMargin; }
+    double odd_top_margin() const { return odd_top_margin_value; }
 
-    double oddBottomMargin() const { return _oddBottomMargin; }
+    double odd_bottom_margin() const { return odd_bottom_margin_value; }
 
-    double printableWidth() const { return _printableWidth; }
+    double printable_width() const { return printable_width_value; }
 
-    void setEvenLeftMargin(double val) { _evenLeftMargin = val; }
+    void set_even_left_margin(double val) { even_left_margin_value = val; }
 
-    void setOddLeftMargin(double val) { _oddLeftMargin = val; }
+    void set_odd_left_margin(double val) { odd_left_margin_value = val; }
 
-    void setEvenTopMargin(double val) { _evenTopMargin = val; }
+    void set_even_top_margin(double val) { even_top_margin_value = val; }
 
-    void setEvenBottomMargin(double val) { _evenBottomMargin = val; }
+    void set_even_bottom_margin(double val) { even_bottom_margin_value = val; }
 
-    void setOddTopMargin(double val) { _oddTopMargin = val; }
+    void set_odd_top_margin(double val) { odd_top_margin_value = val; }
 
-    void setOddBottomMargin(double val) { _oddBottomMargin = val; }
+    void set_odd_bottom_margin(double val) { odd_bottom_margin_value = val; }
 
-    void setPrintableWidth(double val) { _printableWidth = val; }
+    void set_printable_width(double val) { printable_width_value = val; }
 
-    bool twosided() const { return _twosided; }
+    bool twosided() const { return twosided_value; }
 
-    void setTwosided(bool val) { _twosided = val; }
+    void set_twosided(bool val) { twosided_value = val; }
 
     // convenience functions
-    double evenRightMargin() const { return _size.width() - _printableWidth - _evenLeftMargin; }
+    double even_right_margin() const { return size_value.width() - printable_width_value - even_left_margin_value; }
 
-    double oddRightMargin() const { return _size.width() - _printableWidth - _oddLeftMargin; }
+    double odd_right_margin() const { return size_value.width() - printable_width_value - odd_left_margin_value; }
 };
 
-void initPageFormat(MStyle *style, PageFormat *pf);
-void setPageFormat(MStyle *style, const PageFormat &pf);
-void readPageFormat206(MStyle *style, XmlReader &e);
+void init_page_format(MStyle *style, PageFormat *pf);
+void set_page_format(MStyle *style, const PageFormat &pf);
+void read_page_format206(MStyle *style, XmlReader &e);
 } // namespace mu::engraving::compat
 #endif // MU_ENGRAVING_READPAGEFORMAT_H

@@ -33,7 +33,7 @@ class PaintDebugger;
 
 class DebugPaint {
 public:
-    static void paintElementDebug(muse::draw::Painter &painter, const EngravingItem *item);
-    static void paintPageDebug(muse::draw::Painter &painter, const Page *page, const std::vector<EngravingItem *> &items);
+    static void paint_element_debug(muse::draw::Painter &painter, const EngravingItem *item);
+    static void paint_page_debug(muse::draw::Painter &painter, const Page *page, const std::vector<EngravingItem *> &items);
 };
 } // namespace mu::engraving::rendering::score

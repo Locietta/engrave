@@ -31,80 +31,80 @@ public:
 
     void init();
 
-    muse::io::path_t appDataPath() const override;
+    muse::io::PathT app_data_path() const override;
 
-    muse::io::path_t defaultStyleFilePath() const override;
-    void setDefaultStyleFilePath(const muse::io::path_t &path) override;
+    muse::io::PathT default_style_file_path() const override;
+    void set_default_style_file_path(const muse::io::PathT &path) override;
 
-    muse::io::path_t partStyleFilePath() const override;
-    void setPartStyleFilePath(const muse::io::path_t &path) override;
+    muse::io::PathT part_style_file_path() const override;
+    void set_part_style_file_path(const muse::io::PathT &path) override;
 
-    SizeF defaultPageSize() const override;
+    SizeF default_page_size() const override;
 
-    bool canLayoutIcons() const override;
-    String iconsFontFamily() const override;
+    bool can_layout_icons() const override;
+    String icons_font_family() const override;
 
-    Color defaultColor() const override;
+    Color default_color() const override;
 
-    Color displayedDefaultColor(bool inverted) const override;
-    void setDisplayedDefaultColor(Color color, bool inverted) override;
-    void resetDisplayedDefaultColors() override;
+    Color displayed_default_color(bool inverted) const override;
+    void set_displayed_default_color(Color color, bool inverted) override;
+    void reset_displayed_default_colors() override;
 
-    Color indicatorIconInvertedSelectionColor() const override;
-    Color lassoColor() const override;
-    Color warningColor() const override;
-    Color warningSelectedColor() const override;
-    Color criticalColor() const override;
-    Color criticalBackgroundColor() const override;
-    Color criticalSelectedColor() const override;
-    Color thumbnailBackgroundColor() const override;
-    Color noteBackgroundColor() const override;
-    Color fontPrimaryColor() const override;
-    Color voiceColor(voice_idx_t voiceIdx) const override;
+    Color indicator_icon_inverted_selection_color() const override;
+    Color lasso_color() const override;
+    Color warning_color() const override;
+    Color warning_selected_color() const override;
+    Color critical_color() const override;
+    Color critical_background_color() const override;
+    Color critical_selected_color() const override;
+    Color thumbnail_background_color() const override;
+    Color note_background_color() const override;
+    Color font_primary_color() const override;
+    Color voice_color(voice_idx_t voice_idx) const override;
 
-    Color selectionColor(voice_idx_t voiceIndex = 0, bool itemVisible = true, bool itemIsUnlinkedFromScore = false) const override;
-    void setSelectionColor(voice_idx_t voiceIndex, Color color) override;
+    Color selection_color(voice_idx_t voice_index = 0, bool item_visible = true, bool item_is_unlinked_from_score = false) const override;
+    void set_selection_color(voice_idx_t voice_index, Color color) override;
 
-    Color highlightSelectionColor(voice_idx_t voice = 0) const override;
+    Color highlight_selection_color(voice_idx_t voice = 0) const override;
 
-    bool dynamicsApplyToAllVoices() const override;
-    void setDynamicsApplyToAllVoices(bool v) override;
+    bool dynamics_apply_to_all_voices() const override;
+    void set_dynamics_apply_to_all_voices(bool v) override;
 
-    bool autoUpdateFretboardDiagrams() const override;
-    void setAutoUpdateFretboardDiagrams(bool v) override;
+    bool auto_update_fretboard_diagrams() const override;
+    void set_auto_update_fretboard_diagrams(bool v) override;
 
-    Color formattingColor() const override;
+    Color formatting_color() const override;
 
-    Color frameColor() const override;
+    Color frame_color() const override;
 
-    Color scoreGreyColor() const override;
+    Color score_grey_color() const override;
 
-    Color invisibleColor() const override;
+    Color invisible_color() const override;
 
-    Color unlinkedColor() const override;
+    Color unlinked_color() const override;
 
-    const DebuggingOptions &debuggingOptions() const override;
-    void setDebuggingOptions(const DebuggingOptions &options) override;
+    const DebuggingOptions &debugging_options() const override;
+    void set_debugging_options(const DebuggingOptions &options) override;
 
-    bool allowReadingImagesFromOutsideMscz() const override;
+    bool allow_reading_images_from_outside_mscz() const override;
 
-    bool guitarProImportExperimental() const override;
-    bool negativeFretsAllowed() const override;
-    void setGuitarProMultivoiceEnabled(bool multiVoice) override;
-    bool guitarProMultivoiceEnabled() const override;
-    bool minDistanceForPartialSkylineCalculated() const override;
-    bool specificSlursLayoutWorkaround() const override;
-    bool preferSameStringForTranspose() const override;
-    void setPreferSameStringForTranspose(bool preferSameString) override;
-    bool keepDeadNotesUnchangedOnTranspose() const override;
+    bool guitar_pro_import_experimental() const override;
+    bool negative_frets_allowed() const override;
+    void set_guitar_pro_multivoice_enabled(bool multi_voice) override;
+    bool guitar_pro_multivoice_enabled() const override;
+    bool min_distance_for_partial_skyline_calculated() const override;
+    bool specific_slurs_layout_workaround() const override;
+    bool prefer_same_string_for_transpose() const override;
+    void set_prefer_same_string_for_transpose(bool prefer_same_string) override;
+    bool keep_dead_notes_unchanged_on_transpose() const override;
 
 private:
 
-    DebuggingOptions debuggingOptions_;
+    DebuggingOptions debugging_options_;
 
-    Color cachedDisplayedDefaultColor_;
-    Color cachedInvertedDisplayedDefaultColor_;
+    Color cached_displayed_default_color_;
+    Color cached_inverted_displayed_default_color_;
 
-    bool multiVoice_ = false;
+    bool multi_voice_ = false;
 };
 } // namespace mu::engraving

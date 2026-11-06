@@ -45,97 +45,97 @@ public:
     ~Painter();
 
     IPaintProviderPtr provider() const;
-    void setProvider(const IPaintProviderPtr &p, bool reinit = true);
+    void set_provider(const IPaintProviderPtr &p, bool reinit = true);
 
-    bool isActive() const;
-    bool endDraw();
+    bool is_active() const;
+    bool end_draw();
 
     //! NOTE These are methods for debugging and automated testing.
-    void beginObject(const std::string &name);
-    void endObject();
+    void begin_object(const std::string &name);
+    void end_object();
 
     // state
-    void setAntialiasing(bool arg);
-    void setCompositionMode(CompositionMode mode);
+    void set_antialiasing(bool arg);
+    void set_composition_mode(CompositionMode mode);
 
-    void setFont(const Font &font);
+    void set_font(const Font &font);
     const Font &font() const;
 
-    void setPen(const Pen &pen);
-    inline void setPen(const Color &color);
-    void setNoPen();
+    void set_pen(const Pen &pen);
+    inline void set_pen(const Color &color);
+    void set_no_pen();
     const Pen &pen() const;
 
-    void setBrush(const Brush &brush);
+    void set_brush(const Brush &brush);
     const Brush &brush() const;
 
-    void setWorldTransform(const Transform &matrix, bool combine = false);
-    const Transform &worldTransform() const;
+    void set_world_transform(const Transform &matrix, bool combine = false);
+    const Transform &world_transform() const;
     void scale(double sx, double sy);
     void rotate(double angle);
     void translate(double dx, double dy);
     inline void translate(const PointF &offset);
 
     RectF window() const;
-    void setWindow(const RectF &window);
+    void set_window(const RectF &window);
     RectF viewport() const;
-    void setViewport(const RectF &viewport);
+    void set_viewport(const RectF &viewport);
 
     void save();
     void restore();
 
-    double deviceLogicalDpi() const;
+    double device_logical_dpi() const;
 
     // drawing
-    void fillPath(const PainterPath &path, const Brush &brush);
-    void drawPath(const PainterPath &path);
-    void strokePath(const PainterPath &path, const Pen &pen);
+    void fill_path(const PainterPath &path, const Brush &brush);
+    void draw_path(const PainterPath &path);
+    void stroke_path(const PainterPath &path, const Pen &pen);
 
-    void drawLines(const LineF *lines, size_t lineCount);
-    void drawLines(const PointF *pointPairs, size_t lineCount);
-    inline void drawLine(const LineF &line);
-    inline void drawLine(const PointF &p1, const PointF &p2);
-    inline void drawLine(double x1, double y1, double x2, double y2);
-    inline void drawLines(const std::vector<LineF> &lines);
+    void draw_lines(const LineF *lines, size_t line_count);
+    void draw_lines(const PointF *point_pairs, size_t line_count);
+    inline void draw_line(const LineF &line);
+    inline void draw_line(const PointF &p1, const PointF &p2);
+    inline void draw_line(double x1, double y1, double x2, double y2);
+    inline void draw_lines(const std::vector<LineF> &lines);
 
-    inline void drawRect(const RectF &rect);
-    inline void drawRect(double x1, double y1, double w, double h);
+    inline void draw_rect(const RectF &rect);
+    inline void draw_rect(double x1, double y1, double w, double h);
 
-    void drawRects(const RectF *rects, size_t rectCount);
+    void draw_rects(const RectF *rects, size_t rect_count);
 
-    void drawRoundedRect(const RectF &rect, double xRadius, double yRadius);
+    void draw_rounded_rect(const RectF &rect, double x_radius, double y_radius);
 
-    void drawEllipse(const RectF &rect);
-    inline void drawEllipse(const PointF &center, double rx, double ry);
+    void draw_ellipse(const RectF &rect);
+    inline void draw_ellipse(const PointF &center, double rx, double ry);
 
-    void drawPolyline(const PointF *points, size_t pointCount);
-    inline void drawPolyline(const PolygonF &polyline);
+    void draw_polyline(const PointF *points, size_t point_count);
+    inline void draw_polyline(const PolygonF &polyline);
 
-    void drawPolygon(const PointF *points, size_t pointCount, FillRule fillRule = FillRule::OddEvenFill);
-    inline void drawPolygon(const PolygonF &polygon, FillRule fillRule = FillRule::OddEvenFill);
+    void draw_polygon(const PointF *points, size_t point_count, FillRule fill_rule = FillRule::ODD_EVEN_FILL);
+    inline void draw_polygon(const PolygonF &polygon, FillRule fill_rule = FillRule::ODD_EVEN_FILL);
 
-    void drawConvexPolygon(const PointF *points, size_t pointCount);
-    inline void drawConvexPolygon(const PolygonF &polygon);
+    void draw_convex_polygon(const PointF *points, size_t point_count);
+    inline void draw_convex_polygon(const PolygonF &polygon);
 
-    void drawArc(const RectF &rect, int a, int alen);
+    void draw_arc(const RectF &rect, int a, int alen);
 
-    void drawText(const PointF &point, const String &text);
-    inline void drawText(double x, double y, const String &text);
+    void draw_text(const PointF &point, const String &text);
+    inline void draw_text(double x, double y, const String &text);
 
-    void drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text);
+    void draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text);
 
-    void drawSymbol(const PointF &point, char32_t ucs4Code);
+    void draw_symbol(const PointF &point, char32_t ucs4_code);
 
-    void fillRect(const RectF &rect, const Brush &brush);
+    void fill_rect(const RectF &rect, const Brush &brush);
 
-    void drawPixmap(const PointF &point, const Pixmap &pm);
-    void drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset = PointF());
+    void draw_pixmap(const PointF &point, const Pixmap &pm);
+    void draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset = PointF());
 
-    bool hasClipping() const;
+    bool has_clipping() const;
 
-    void setClipRect(const RectF &rect);
-    void setMask(const RectF &background, const std::vector<RectF> &maskRects);
-    void setClipping(bool enable);
+    void set_clip_rect(const RectF &rect);
+    void set_mask(const RectF &background, const std::vector<RectF> &mask_rects);
+    void set_clipping(bool enable);
 
     //! NOTE Provider for tests.
     //! We're not ready to use DI (ModuleIoC) here yet
@@ -146,61 +146,61 @@ private:
     struct State {
         RectF window;
         RectF viewport;
-        bool isVxF = false;
-        Transform viewTransform;
-        bool isWxF = false;
-        Transform worldTransform; // World transformation matrix, not window and viewport
-        Transform transform;      // Complete transformation matrix
+        bool is_vx_f = false;
+        Transform view_transform;
+        bool is_wx_f = false;
+        Transform world_transform; // World transformation matrix, not window and viewport
+        Transform transform;       // Complete transformation matrix
     };
 
     void init();
-    State &editableState();
+    State &editable_state();
     const State &state() const;
-    void updateViewTransform();
-    void updateMatrix();
+    void update_view_transform();
+    void update_matrix();
 
-    void applyFontSizeScaling();
+    void apply_font_size_scaling();
 
-    bool endTarget(bool endDraw);
+    bool end_target(bool end_draw);
 
     IPaintProviderPtr provider_;
     std::string name_;
     std::stack<State> states_;
 };
 
-inline void Painter::setPen(const Color &color) { setPen(Pen(color.isValid() ? color : Color::BLACK)); }
+inline void Painter::set_pen(const Color &color) { set_pen(Pen(color.is_valid() ? color : Color::black)); }
 
 inline void Painter::translate(const PointF &offset) { translate(offset.x(), offset.y()); }
 
-inline void Painter::drawLine(const LineF &l) { drawLines(&l, 1); }
+inline void Painter::draw_line(const LineF &l) { draw_lines(&l, 1); }
 
-inline void Painter::drawLine(const PointF &p1, const PointF &p2) { drawLine(LineF(p1, p2)); }
+inline void Painter::draw_line(const PointF &p1, const PointF &p2) { draw_line(LineF(p1, p2)); }
 
-inline void Painter::drawLine(double x1, double y1, double x2, double y2) {
+inline void Painter::draw_line(double x1, double y1, double x2, double y2) {
     LineF l(PointF(x1, y1), PointF(x2, y2));
-    drawLines(&l, 1);
+    draw_lines(&l, 1);
 }
 
-inline void Painter::drawLines(const std::vector<LineF> &lines) { drawLines(lines.data(), lines.size()); }
+inline void Painter::draw_lines(const std::vector<LineF> &lines) { draw_lines(lines.data(), lines.size()); }
 
-inline void Painter::drawRect(const RectF &rect) { drawRects(&rect, 1); }
+inline void Painter::draw_rect(const RectF &rect) { draw_rects(&rect, 1); }
 
-inline void Painter::drawRect(double x, double y, double w, double h) {
+inline void Painter::draw_rect(double x, double y, double w, double h) {
     RectF r(x, y, w, h);
-    drawRects(&r, 1);
+    draw_rects(&r, 1);
 }
 
-inline void Painter::drawEllipse(const PointF &center, double rx, double ry) {
-    drawEllipse(RectF(center.x() - rx, center.y() - ry, 2 * rx, 2 * ry));
+inline void Painter::draw_ellipse(const PointF &center, double rx, double ry) {
+    draw_ellipse(RectF(center.x() - rx, center.y() - ry, 2 * rx, 2 * ry));
 }
 
-inline void Painter::drawPolyline(const PolygonF &polyline) { drawPolyline(polyline.data(), polyline.size()); }
+inline void Painter::draw_polyline(const PolygonF &polyline) { draw_polyline(polyline.data(), polyline.size()); }
 
-inline void Painter::drawPolygon(const PolygonF &polygon, FillRule fillRule) { drawPolygon(polygon.data(), polygon.size(), fillRule); }
+inline void Painter::draw_polygon(const PolygonF &polygon, FillRule fill_rule) { draw_polygon(polygon.data(), polygon.size(), fill_rule); }
 
-inline void Painter::drawConvexPolygon(const PolygonF &poly) { drawConvexPolygon(poly.data(), poly.size()); }
+inline void Painter::draw_convex_polygon(const PolygonF &poly) { draw_convex_polygon(poly.data(), poly.size()); }
 
-inline void Painter::drawText(double x, double y, const String &text) { drawText(PointF(x, y), text); }
+inline void Painter::draw_text(double x, double y, const String &text) { draw_text(PointF(x, y), text); }
 
 class PainterItemMarker {
 public:
@@ -208,14 +208,14 @@ public:
         if (!enabled) {
             return;
         }
-        p->beginObject(name);
+        p->begin_object(name);
     }
 
     ~PainterItemMarker() {
         if (!enabled) {
             return;
         }
-        painter_->endObject();
+        painter_->end_object();
     }
 
     static bool enabled;

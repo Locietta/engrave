@@ -51,29 +51,29 @@ public:
 
     SLine *line() const { return (SLine *) spanner(); }
 
-    virtual void spatiumChanged(double, double) override;
-    virtual void localSpatiumChanged(double, double) override;
+    virtual void spatium_changed(double, double) override;
+    virtual void local_spatium_changed(double, double) override;
 
     friend class SLine;
 
-    virtual EngravingObject *propertyDelegate(Pid) const override;
+    virtual EngravingObject *property_delegate(Pid) const override;
 
-    Spatium lineWidth() const;
+    Spatium line_width() const;
 
-    double absoluteFromSpatium(const Spatium &sp) const override;
+    double absolute_from_spatium(const Spatium &sp) const override;
 
 protected:
-    virtual void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, System *sys);
+    virtual void rebase_offsets_on_anchor_changed(Grip grip, const PointF &old_pos, System *sys);
 
 private:
-    PointF leftAnchorPosition(const double &systemPositionY) const;
-    PointF rightAnchorPosition(const double &systemPositionY) const;
+    PointF left_anchor_position(const double &system_position_y) const;
+    PointF right_anchor_position(const double &system_position_y) const;
 
-    Segment *findSegmentForGrip(Grip grip, PointF pos) const;
-    static PointF deltaRebaseLeft(const Segment *oldSeg, const Segment *newSeg);
-    static PointF deltaRebaseRight(const Segment *oldSeg, const Segment *newSeg);
-    static Fraction lastSegmentEndTick(const Segment *lastSeg, const Spanner *s);
-    LineSegment *rebaseAnchor(Grip grip, Segment *newSeg);
+    Segment *find_segment_for_grip(Grip grip, PointF pos) const;
+    static PointF delta_rebase_left(const Segment *old_seg, const Segment *new_seg);
+    static PointF delta_rebase_right(const Segment *old_seg, const Segment *new_seg);
+    static Fraction last_segment_end_tick(const Segment *last_seg, const Spanner *s);
+    LineSegment *rebase_anchor(Grip grip, Segment *new_seg);
 };
 
 //---------------------------------------------------------
@@ -88,67 +88,67 @@ public:
     SLine(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
     SLine(const SLine &);
 
-    virtual LineSegment *createLineSegment() = 0;
-    void setLen(double l);
+    virtual LineSegment *create_line_segment() = 0;
+    void set_len(double l);
 
     bool diagonal() const { return diagonal_; }
 
-    void setDiagonal(bool v) { diagonal_ = v; }
+    void set_diagonal(bool v) { diagonal_ = v; }
 
-    Spatium lineWidth() const { return lineWidth_; }
+    Spatium line_width() const { return line_width_; }
 
-    Color lineColor() const { return lineColor_; }
+    Color line_color() const { return line_color_; }
 
-    LineType lineStyle() const { return lineStyle_; }
+    LineType line_style() const { return line_style_; }
 
-    void setLineWidth(const Spatium &v) { lineWidth_ = v; }
+    void set_line_width(const Spatium &v) { line_width_ = v; }
 
-    void setLineColor(const Color &v) { lineColor_ = v; }
+    void set_line_color(const Color &v) { line_color_ = v; }
 
-    void setLineStyle(LineType v) { lineStyle_ = v; }
+    void set_line_style(LineType v) { line_style_ = v; }
 
-    double dashLineLen() const { return dashLineLen_; }
+    double dash_line_len() const { return dash_line_len_; }
 
-    void setDashLineLen(double val) { dashLineLen_ = val; }
+    void set_dash_line_len(double val) { dash_line_len_ = val; }
 
-    double dashGapLen() const { return dashGapLen_; }
+    double dash_gap_len() const { return dash_gap_len_; }
 
-    void setDashGapLen(double val) { dashGapLen_ = val; }
+    void set_dash_gap_len(double val) { dash_gap_len_ = val; }
 
-    LineSegment *frontSegment() { return toLineSegment(Spanner::frontSegment()); }
+    LineSegment *front_segment() { return to_line_segment(Spanner::front_segment()); }
 
-    const LineSegment *frontSegment() const { return toLineSegment(Spanner::frontSegment()); }
+    const LineSegment *front_segment() const { return to_line_segment(Spanner::front_segment()); }
 
-    LineSegment *backSegment() { return toLineSegment(Spanner::backSegment()); }
+    LineSegment *back_segment() { return to_line_segment(Spanner::back_segment()); }
 
-    const LineSegment *backSegment() const { return toLineSegment(Spanner::backSegment()); }
+    const LineSegment *back_segment() const { return to_line_segment(Spanner::back_segment()); }
 
-    LineSegment *segmentAt(int n) { return toLineSegment(Spanner::segmentAt(n)); }
+    LineSegment *segment_at(int n) { return to_line_segment(Spanner::segment_at(n)); }
 
-    const LineSegment *segmentAt(int n) const { return toLineSegment(Spanner::segmentAt(n)); }
+    const LineSegment *segment_at(int n) const { return to_line_segment(Spanner::segment_at(n)); }
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    virtual PointF linePos(Grip grip, System **system) const;
+    virtual PointF line_pos(Grip grip, System **system) const;
 
-    virtual bool allowTimeAnchor() const override { return true; }
+    virtual bool allow_time_anchor() const override { return true; }
 
-    void undoMoveStart(Fraction tickDiff);
-    void undoMoveEnd(Fraction tickDiff);
+    void undo_move_start(Fraction tick_diff);
+    void undo_move_end(Fraction tick_diff);
 
-    static Note *guessFinalNote(Note *startNote);
+    static Note *guess_final_note(Note *start_note);
 
 private:
 
     friend class LineSegment;
 
-    Spatium lineWidth_;
-    Color lineColor_;
-    LineType lineStyle_ = LineType::SOLID;
-    double dashLineLen_ = 5.0;
-    double dashGapLen_ = 5.0;
+    Spatium line_width_;
+    Color line_color_;
+    LineType line_style_ = LineType::SOLID;
+    double dash_line_len_ = 5.0;
+    double dash_gap_len_ = 5.0;
     bool diagonal_ = false;
 };
 } // namespace mu::engraving

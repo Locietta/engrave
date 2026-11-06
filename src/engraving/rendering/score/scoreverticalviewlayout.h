@@ -28,11 +28,11 @@ namespace mu::engraving::rendering::score {
 class ScoreVerticalViewLayout {
 public:
 
-    static void layoutVerticalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void layout_vertical_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
 
 private:
 
-    static void doLayout(LayoutContext &ctx);
+    static void do_layout(LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score
 

@@ -35,38 +35,39 @@ namespace mu::engraving {
 class PitchWheelRenderer {
 public:
     struct PitchWheelFunction {
-        int32_t mStartTick = 0;
-        int32_t mEndTick = 0;
+        int32_t m_start_tick = 0;
+        int32_t m_end_tick = 0;
         std::function<int(uint32_t)> func;
     };
 
-    PitchWheelRenderer(PitchWheelSpecs wheelSpec);
+    PitchWheelRenderer(PitchWheelSpecs input_wheel_spec);
 
-    void addPitchWheelFunction(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staffIdx, MidiInstrumentEffect effect);
+    void add_pitch_wheel_function(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staff_idx, MidiInstrumentEffect effect);
 
-    EventsHolder renderPitchWheel() const noexcept;
+    EventsHolder render_pitch_wheel() const noexcept;
 
-    static void generateRanges(const std::vector<PitchWheelFunction> &functions, std::map<int, int, std::greater<>> &ranges);
+    static void generate_ranges(const std::vector<PitchWheelFunction> &functions, std::map<int, int, std::greater<>> &ranges);
 
 private:
 
     struct PitchWheelFunctions {
-        int32_t startTick = std::numeric_limits<int32_t>::max();
-        int32_t endTick = 0;
+        int32_t start_tick = std::numeric_limits<int32_t>::max();
+        int32_t end_tick = 0;
         std::vector<PitchWheelFunction> functions;
     };
 
-    void renderChannelPitchWheel(EventsHolder &pitchWheelEvents, const PitchWheelFunctions &functions, uint32_t channel) const noexcept;
+    void render_channel_pitch_wheel(EventsHolder &pitch_wheel_events, const PitchWheelFunctions &functions,
+                                    uint32_t channel) const noexcept;
 
-    int32_t findNextStartTick(const std::vector<PitchWheelFunction> &functions) const noexcept;
+    int32_t find_next_start_tick(const std::vector<PitchWheelFunction> &functions) const noexcept;
 
-    int32_t calculatePitchBend(const std::vector<PitchWheelFunction> &functions, int32_t tick) const noexcept;
+    int32_t calculate_pitch_bend(const std::vector<PitchWheelFunction> &functions, int32_t tick) const noexcept;
 
-    std::map<uint32_t /*channel*/, PitchWheelFunctions> _functions;
+    std::map<uint32_t /*channel*/, PitchWheelFunctions> functions_value;
 
-    PitchWheelSpecs _wheelSpec;
+    PitchWheelSpecs wheel_spec_value;
 
-    std::unordered_map<int, MidiInstrumentEffect> _effectByChannel;
-    std::unordered_map<int, staff_idx_t> _staffIdxByChannel;
+    std::unordered_map<int, MidiInstrumentEffect> effect_by_channel;
+    std::unordered_map<int, staff_idx_t> staff_idx_by_channel;
 };
 } // namespace mu::engraving

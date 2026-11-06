@@ -41,14 +41,14 @@ public:
     typedef typename Data::iterator iterator;
     typedef typename Data::const_iterator const_iterator;
 
-    SharedHashMap() { dataPtr_ = std::make_shared<Data>(); }
+    SharedHashMap() { data_ptr_ = std::make_shared<Data>(); }
 
-    SharedHashMap(const size_t reserveSize) { dataPtr_ = std::make_shared<Data>(reserveSize); }
+    SharedHashMap(const size_t reserve_size) { data_ptr_ = std::make_shared<Data>(reserve_size); }
 
-    SharedHashMap(std::initializer_list<PairType> initList) { dataPtr_ = std::make_shared<Data>(initList); }
+    SharedHashMap(std::initializer_list<PairType> init_list) { data_ptr_ = std::make_shared<Data>(init_list); }
 
-    SharedHashMap &operator=(std::initializer_list<PairType> initList) {
-        dataPtr_ = std::make_shared<Data>(initList);
+    SharedHashMap &operator=(std::initializer_list<PairType> init_list) {
+        data_ptr_ = std::make_shared<Data>(init_list);
         return *this;
     }
 
@@ -57,168 +57,168 @@ public:
     SharedHashMap &operator=(const SharedHashMap &) = default;
     SharedHashMap &operator=(SharedHashMap &&) = default;
 
-    const ValType &at(const KeyType &key) const { return dataPtr_->at(key); }
+    const ValType &at(const KeyType &key) const { return data_ptr_->at(key); }
 
     ValType &at(const KeyType &key) {
-        ensureDetach();
-        return dataPtr_->at(key);
+        ensure_detach();
+        return data_ptr_->at(key);
     }
 
     ValType &operator[](const KeyType &key) {
-        ensureDetach();
-        return dataPtr_->operator[](key);
+        ensure_detach();
+        return data_ptr_->operator[](key);
     }
 
     ValType &operator[](KeyType &&key) {
-        ensureDetach();
-        return dataPtr_->operator[](std::forward<KeyType>(key));
+        ensure_detach();
+        return data_ptr_->operator[](std::forward<KeyType>(key));
     }
 
     iterator begin() noexcept {
-        ensureDetach();
-        return dataPtr_->begin();
+        ensure_detach();
+        return data_ptr_->begin();
     }
 
     iterator end() noexcept {
-        ensureDetach();
-        return dataPtr_->end();
+        ensure_detach();
+        return data_ptr_->end();
     }
 
-    const_iterator begin() const noexcept { return dataPtr_->cbegin(); }
+    const_iterator begin() const noexcept { return data_ptr_->cbegin(); }
 
-    const_iterator end() const noexcept { return dataPtr_->cend(); }
+    const_iterator end() const noexcept { return data_ptr_->cend(); }
 
-    const_iterator cbegin() const noexcept { return dataPtr_->cbegin(); }
+    const_iterator cbegin() const noexcept { return data_ptr_->cbegin(); }
 
-    const_iterator cend() const noexcept { return dataPtr_->cend(); }
+    const_iterator cend() const noexcept { return data_ptr_->cend(); }
 
-    const_iterator find(const KeyType &key) const noexcept { return dataPtr_->find(key); }
+    const_iterator find(const KeyType &key) const noexcept { return data_ptr_->find(key); }
 
     iterator find(const KeyType &key) noexcept {
-        ensureDetach();
-        return dataPtr_->find(key);
+        ensure_detach();
+        return data_ptr_->find(key);
     }
 
     bool contains(const KeyType &key) const noexcept { return find(key) != end(); }
 
-    bool empty() const noexcept { return dataPtr_->empty(); }
+    bool empty() const noexcept { return data_ptr_->empty(); }
 
-    size_t size() const noexcept { return dataPtr_->size(); }
+    size_t size() const noexcept { return data_ptr_->size(); }
 
     void insert(const PairType &pair) {
-        ensureDetach();
-        dataPtr_->insert(pair);
+        ensure_detach();
+        data_ptr_->insert(pair);
     }
 
     void insert(PairType &&pair) {
-        ensureDetach();
-        dataPtr_->insert(std::forward<PairType>(pair));
+        ensure_detach();
+        data_ptr_->insert(std::forward<PairType>(pair));
     }
 
     void insert(const_iterator first, const_iterator last) {
-        ensureDetach();
-        dataPtr_->insert(first, last);
+        ensure_detach();
+        data_ptr_->insert(first, last);
     }
 
     iterator insert(const_iterator hint, const PairType &pair) {
-        return withDetachedHint(hint, [this, &pair](const_iterator h) { return dataPtr_->insert(h, pair); });
+        return with_detached_hint(hint, [this, &pair](const_iterator h) { return data_ptr_->insert(h, pair); });
     }
 
     iterator insert(const_iterator hint, PairType &&pair) {
-        return withDetachedHint(hint, [this, &pair](const_iterator h) { return dataPtr_->insert(h, std::forward<PairType>(pair)); });
+        return with_detached_hint(hint, [this, &pair](const_iterator h) { return data_ptr_->insert(h, std::forward<PairType>(pair)); });
     }
 
     void merge(SharedHashMap &source) {
-        ensureDetach();
-        source.ensureDetach();
-        dataPtr_->merge(*source.dataPtr_);
+        ensure_detach();
+        source.ensure_detach();
+        data_ptr_->merge(*source.data_ptr_);
     }
 
     void insert_or_assign(const KeyType &key, ValType &&val) {
-        ensureDetach();
-        dataPtr_->insert_or_assign(key, std::forward<ValType>(val));
+        ensure_detach();
+        data_ptr_->insert_or_assign(key, std::forward<ValType>(val));
     }
 
     void insert_or_assign(const KeyType &key, const ValType &val) {
-        ensureDetach();
-        dataPtr_->insert_or_assign(key, val);
+        ensure_detach();
+        data_ptr_->insert_or_assign(key, val);
     }
 
     template <typename... Args>
     void emplace(Args &&...args) {
-        ensureDetach();
-        dataPtr_->emplace(std::forward<Args>(args)...);
+        ensure_detach();
+        data_ptr_->emplace(std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     iterator emplace_hint(const_iterator hint, Args &&...args) {
-        return withDetachedHint(hint,
-                                [this, &args...](const_iterator h) { return dataPtr_->emplace_hint(h, std::forward<Args>(args)...); });
+        return with_detached_hint(hint,
+                                  [this, &args...](const_iterator h) { return data_ptr_->emplace_hint(h, std::forward<Args>(args)...); });
     }
 
     template <typename... Args>
     std::pair<iterator, bool> try_emplace(const KeyType &key, Args &&...args) {
-        ensureDetach();
-        return dataPtr_->try_emplace(key, std::forward<Args>(args)...);
+        ensure_detach();
+        return data_ptr_->try_emplace(key, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     iterator try_emplace(const_iterator hint, const KeyType &key, Args &&...args) {
-        return withDetachedHint(
-            hint, [this, &key, &args...](const_iterator h) { return dataPtr_->try_emplace(h, key, std::forward<Args>(args)...); });
+        return with_detached_hint(
+            hint, [this, &key, &args...](const_iterator h) { return data_ptr_->try_emplace(h, key, std::forward<Args>(args)...); });
     }
 
     template <typename... Args>
     iterator try_emplace(const_iterator hint, KeyType &&key, Args &&...args) {
-        return withDetachedHint(hint, [this, &key, &args...](const_iterator h) {
-            return dataPtr_->try_emplace(h, std::forward<KeyType>(key), std::forward<Args>(args)...);
+        return with_detached_hint(hint, [this, &key, &args...](const_iterator h) {
+            return data_ptr_->try_emplace(h, std::forward<KeyType>(key), std::forward<Args>(args)...);
         });
     }
 
     void clear() noexcept {
-        ensureDetach();
-        dataPtr_->clear();
+        ensure_detach();
+        data_ptr_->clear();
     }
 
     void erase(const KeyType &key) {
-        ensureDetach();
-        dataPtr_->erase(key);
+        ensure_detach();
+        data_ptr_->erase(key);
     }
 
     iterator erase(const_iterator pos) {
-        return withDetachedHint(pos, [this](const_iterator p) { return dataPtr_->erase(p); });
+        return with_detached_hint(pos, [this](const_iterator p) { return data_ptr_->erase(p); });
     }
 
     void erase(const_iterator first, const_iterator last) {
-        if (dataPtr_.use_count() == 1) {
-            dataPtr_->erase(first, last);
+        if (data_ptr_.use_count() == 1) {
+            data_ptr_->erase(first, last);
         } else {
-            auto [dfirst, dlast] = detachAndReanchorRange(first, last);
-            dataPtr_->erase(dfirst, dlast);
+            auto [dfirst, dlast] = detach_and_reanchor_range(first, last);
+            data_ptr_->erase(dfirst, dlast);
         }
     }
 
     bool operator==(const SharedHashMap &another) const noexcept {
-        if (dataPtr_ == another.dataPtr_) {
+        if (data_ptr_ == another.data_ptr_) {
             return true;
         }
 
-        return *dataPtr_ == *another.dataPtr_;
+        return *data_ptr_ == *another.data_ptr_;
     }
 
     bool operator!=(const SharedHashMap &another) const noexcept { return !this->operator==(another); }
 
 private:
-    void ensureDetach() {
-        if (!dataPtr_) {
+    void ensure_detach() {
+        if (!data_ptr_) {
             return;
         }
 
-        if (dataPtr_.use_count() == 1) {
+        if (data_ptr_.use_count() == 1) {
             return;
         }
 
-        dataPtr_ = std::make_shared<Data>(*dataPtr_);
+        data_ptr_ = std::make_shared<Data>(*data_ptr_);
     }
 
     // Detach-safe descriptor of a position
@@ -226,45 +226,45 @@ private:
 
     using Anchor = std::variant<AtEnd, KeyType>;
 
-    Anchor describeAnchor(const_iterator it) const {
-        if (it == dataPtr_->cend()) {
+    Anchor describe_anchor(const_iterator it) const {
+        if (it == data_ptr_->cend()) {
             return AtEnd{};
         }
         return it->first;
     }
 
-    const_iterator resolveAnchor(const Anchor &a) const {
+    const_iterator resolve_anchor(const Anchor &a) const {
         if (std::holds_alternative<AtEnd>(a)) {
-            return dataPtr_->cend();
+            return data_ptr_->cend();
         }
-        return dataPtr_->find(std::get<KeyType>(a));
+        return data_ptr_->find(std::get<KeyType>(a));
     }
 
-    const_iterator detachAndReanchor(const_iterator hint) {
-        const Anchor a = describeAnchor(hint);
-        ensureDetach();
-        return resolveAnchor(a);
+    const_iterator detach_and_reanchor(const_iterator hint) {
+        const Anchor a = describe_anchor(hint);
+        ensure_detach();
+        return resolve_anchor(a);
     }
 
     template <typename Op>
-    auto withDetachedHint(const_iterator hint, Op &&op) {
-        if (dataPtr_.use_count() == 1) {
+    auto with_detached_hint(const_iterator hint, Op &&op) {
+        if (data_ptr_.use_count() == 1) {
             return op(hint);
         }
 
-        const_iterator dhint = detachAndReanchor(hint);
+        const_iterator dhint = detach_and_reanchor(hint);
         return op(dhint);
     }
 
-    std::pair<const_iterator, const_iterator> detachAndReanchorRange(const_iterator first, const_iterator last) {
-        const Anchor firstAnchor = describeAnchor(first);
-        const Anchor lastAnchor = describeAnchor(last);
+    std::pair<const_iterator, const_iterator> detach_and_reanchor_range(const_iterator first, const_iterator last) {
+        const Anchor first_anchor = describe_anchor(first);
+        const Anchor last_anchor = describe_anchor(last);
 
-        ensureDetach();
+        ensure_detach();
 
-        return {resolveAnchor(firstAnchor), resolveAnchor(lastAnchor)};
+        return {resolve_anchor(first_anchor), resolve_anchor(last_anchor)};
     }
 
-    DataPtr dataPtr_ = nullptr;
+    DataPtr data_ptr_ = nullptr;
 };
 } // namespace muse

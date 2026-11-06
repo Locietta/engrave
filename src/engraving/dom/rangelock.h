@@ -29,19 +29,19 @@
 namespace mu::engraving {
 class RangeLock {
 public:
-    RangeLock(MeasureBase *start, MeasureBase *end) : startMB_(start), endMB_(end) {
-        assert(startMB_->isBefore(endMB_) || startMB_ == endMB_);
+    RangeLock(MeasureBase *start, MeasureBase *end) : start_mb_(start), end_mb_(end) {
+        assert(start_mb_->is_before(end_mb_) || start_mb_ == end_mb_);
     }
 
-    MeasureBase *startMB() const { return startMB_; }
+    MeasureBase *start_mb() const { return start_mb_; }
 
-    MeasureBase *endMB() const { return endMB_; }
+    MeasureBase *end_mb() const { return end_mb_; }
 
     bool contains(const MeasureBase *mb) const;
 
 private:
-    MeasureBase *startMB_;
-    MeasureBase *endMB_;
+    MeasureBase *start_mb_;
+    MeasureBase *end_mb_;
 };
 
 class RangeLocks {
@@ -49,26 +49,26 @@ public:
     void add(const RangeLock *lock);
     void remove(const RangeLock *lock);
 
-    void removeLockStartingAt(const MeasureBase *mb) { rangeLocks_.erase(mb); }
+    void remove_lock_starting_at(const MeasureBase *mb) { range_locks_.erase(mb); }
 
-    void clear() { rangeLocks_.clear(); }
+    void clear() { range_locks_.clear(); }
 
-    const RangeLock *lockStartingAt(const MeasureBase *mb) const;
-    const RangeLock *lockContaining(const MeasureBase *mb) const;
-    std::vector<const RangeLock *> locksContainedInRange(const MeasureBase *start, const MeasureBase *end) const;
+    const RangeLock *lock_starting_at(const MeasureBase *mb) const;
+    const RangeLock *lock_containing(const MeasureBase *mb) const;
+    std::vector<const RangeLock *> locks_contained_in_range(const MeasureBase *start, const MeasureBase *end) const;
 
-    std::vector<const RangeLock *> allLocks() const;
+    std::vector<const RangeLock *> all_locks() const;
 
 private:
 #ifndef NDEBUG
-    void sanityCheck();
+    void sanity_check();
     void dump() const;
 #endif
 
     struct Ordering {
-        bool operator()(const MeasureBase *a, const MeasureBase *b) const { return a->isBefore(b); }
+        bool operator()(const MeasureBase *a, const MeasureBase *b) const { return a->is_before(b); }
     };
 
-    std::map<const MeasureBase *, const RangeLock *, Ordering> rangeLocks_;
+    std::map<const MeasureBase *, const RangeLock *, Ordering> range_locks_;
 };
 } // namespace mu::engraving

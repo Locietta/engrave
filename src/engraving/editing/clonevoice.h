@@ -30,7 +30,7 @@ class Segment;
 
 class CloneVoice {
 public:
-    static void cloneVoice(Segment *sourceSeg, const Fraction &lTick, Segment *destSeg, track_idx_t strack, track_idx_t dtrack,
-                           bool deleteSource, bool link);
+    static void clone_voice(Segment *source_seg, const Fraction &l_tick, Segment *dest_seg, track_idx_t strack, track_idx_t dtrack,
+                            bool delete_source, bool link);
 };
 } // namespace mu::engraving

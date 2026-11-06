@@ -29,18 +29,18 @@
 namespace mu::engraving::rendering::score {
 class BoxLayout {
 public:
-    static void layoutBox(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx); // factory
+    static void layout_box(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx); // factory
 
-    static void layoutHBox(const HBox *item, HBox::LayoutData *ldata, const LayoutContext &ctx);
-    static void layoutHBox2(HBox *item, const LayoutContext &ctx);
+    static void layout_h_box(const HBox *item, HBox::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_h_box2(HBox *item, const LayoutContext &ctx);
 
-    static void layoutVBox(const VBox *item, VBox::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_v_box(const VBox *item, VBox::LayoutData *ldata, const LayoutContext &ctx);
 
-    static void layoutTBox(const TBox *item, TBox::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_t_box(const TBox *item, TBox::LayoutData *ldata, const LayoutContext &ctx);
 
-    static void layoutFBox(const FBox *item, FBox::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_f_box(const FBox *item, FBox::LayoutData *ldata, const LayoutContext &ctx);
 
 private:
-    static void layoutBaseBox(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx); // base class
+    static void layout_base_box(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx); // base class
 };
 } // namespace mu::engraving::rendering::score

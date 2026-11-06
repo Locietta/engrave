@@ -32,8 +32,8 @@
 namespace muse::draw {
 using glyph_idx_t = uint32_t;
 
-static constexpr double DPI_F = 5.0;
-static constexpr double DPI = 72.0 * DPI_F;
+static constexpr double dpi_f = 5.0;
+static constexpr double dpi = 72.0 * ::muse::draw::dpi_f;
 
 struct FontDataKey {
     FontDataKey() = default;
@@ -72,7 +72,7 @@ private:
     bool italic_ = false;
 };
 
-inline FontDataKey dataKeyForFont(const Font &f) { return FontDataKey(f.family(), f.bold(), f.italic()); }
+inline FontDataKey data_key_for_font(const Font &f) { return FontDataKey(f.family(), f.bold(), f.italic()); }
 
 struct FontData {
     FontDataKey key;
@@ -82,38 +82,38 @@ struct FontData {
 };
 
 struct FaceKey {
-    FontDataKey dataKey;
-    Font::Type type = Font::Type::Undefined;
-    int pixelSize = 0;
+    FontDataKey data_key;
+    Font::Type type = Font::Type::UNDEFINED;
+    int pixel_size = 0;
 
     FaceKey() = default;
 
-    FaceKey(const FontDataKey &dk, Font::Type t, int ps) : dataKey(dk), type(t), pixelSize(ps) {}
+    FaceKey(const FontDataKey &dk, Font::Type t, int ps) : data_key(dk), type(t), pixel_size(ps) {}
 
-    inline bool operator==(const FaceKey &o) const { return type == o.type && dataKey == o.dataKey && pixelSize == o.pixelSize; }
+    inline bool operator==(const FaceKey &o) const { return type == o.type && data_key == o.data_key && pixel_size == o.pixel_size; }
 
     inline bool operator!=(const FaceKey &o) const { return !this->operator==(o); }
 
     inline bool operator<(const FaceKey &o) const {
         if (type != o.type) {
             return type < o.type;
-        } else if (dataKey != o.dataKey) {
-            return dataKey < o.dataKey;
+        } else if (data_key != o.data_key) {
+            return data_key < o.data_key;
         } else {
-            return pixelSize < o.pixelSize;
+            return pixel_size < o.pixel_size;
         }
     }
 };
 
-inline int pixelSizeForFont(const Font &f) {
-    if (f.pixelSize() > 0) {
-        return f.pixelSize();
+inline int pixel_size_for_font(const Font &f) {
+    if (f.pixel_size() > 0) {
+        return f.pixel_size();
     } else {
-        return f.pointSizeF() * DPI / 72.0;
+        return f.point_size_f() * ::muse::draw::dpi / 72.0;
     }
 }
 
-inline FaceKey faceKeyForFont(const Font &f) { return FaceKey(dataKeyForFont(f), f.type(), pixelSizeForFont(f)); }
+inline FaceKey face_key_for_font(const Font &f) { return FaceKey(data_key_for_font(f), f.type(), pixel_size_for_font(f)); }
 
 struct Sdf {
     muse::ByteArray bitmap;
@@ -128,15 +128,15 @@ struct GlyphImage {
     Sdf sdf;
     float range = 0.f;
 
-    bool isNull() const { return rect.isNull(); }
+    bool is_null() const { return rect.is_null(); }
 };
 
 struct FontParams {
     std::string name;
-    Font::Type type = Font::Type::Undefined;
+    Font::Type type = Font::Type::UNDEFINED;
     bool bold = false;
     bool italic = false;
-    float pointSize = 0.0f;
+    float point_size = 0.0f;
     bool underline = false;
     bool strike = false;
 };

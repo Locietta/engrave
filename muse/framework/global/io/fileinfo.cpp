@@ -24,130 +24,130 @@
 using namespace muse;
 using namespace muse::io;
 
-FileInfo::FileInfo(const path_t &filePath) : filePath_(filePath.toString()) {}
+FileInfo::FileInfo(const PathT &file_path) : file_path_(file_path.to_string()) {}
 
 String FileInfo::path() const {
-    size_t lastSep = filePath_.lastIndexOf(u'/');
-    if (lastSep == muse::nidx) {
+    size_t last_sep = file_path_.last_index_of(u'/');
+    if (last_sep == muse::nidx) {
 #if defined(_WIN32)
-        if (filePath_.size() >= 2 && filePath_.at(1) == u':') {
-            return filePath_.left(2);
+        if (file_path_.size() >= 2 && file_path_.at(1) == u':') {
+            return file_path_.left(2);
         }
 #endif
         return String(u'.');
     }
-    if (lastSep == 0) {
+    if (last_sep == 0) {
         return String(u'/');
     }
 #if defined(_WIN32)
-    if (lastSep == 2 && filePath_.at(1) == u':') {
-        return filePath_.left(lastSep + 1);
+    if (last_sep == 2 && file_path_.at(1) == u':') {
+        return file_path_.left(last_sep + 1);
     }
 #endif
-    return filePath_.left(lastSep);
+    return file_path_.left(last_sep);
 }
 
-String FileInfo::filePath() const { return filePath_; }
+String FileInfo::file_path() const { return file_path_; }
 
-String FileInfo::canonicalFilePath() const { return fileSystem()->canonicalFilePath(filePath_).toString(); }
+String FileInfo::canonical_file_path() const { return file_system()->canonical_file_path(file_path_).to_string(); }
 
-String FileInfo::absolutePath() const { return fileSystem()->absolutePath(filePath_).toString(); }
+String FileInfo::absolute_path() const { return file_system()->absolute_path(file_path_).to_string(); }
 
-String FileInfo::absoluteFilePath() const { return fileSystem()->absoluteFilePath(filePath_).toString(); }
+String FileInfo::absolute_file_path() const { return file_system()->absolute_file_path(file_path_).to_string(); }
 
-String FileInfo::fileName() const {
-    size_t lastSep = filePath_.lastIndexOf(u'/');
+String FileInfo::file_name() const {
+    size_t last_sep = file_path_.last_index_of(u'/');
 #if defined(_WIN32)
-    if (lastSep == muse::nidx && filePath_.size() >= 2 && filePath_.at(1) == u':') {
-        return filePath_.mid(2);
+    if (last_sep == muse::nidx && file_path_.size() >= 2 && file_path_.at(1) == u':') {
+        return file_path_.mid(2);
     }
 #endif
-    return filePath_.mid(lastSep + 1);
+    return file_path_.mid(last_sep + 1);
 }
 
-String FileInfo::baseName() const {
-    size_t lastSep = filePath_.lastIndexOf(u'/');
-    size_t from = lastSep + 1;
-    size_t firstDot = filePath_.indexOf(u'.', from);
-    size_t to = firstDot > 0 ? firstDot : filePath_.size();
+String FileInfo::base_name() const {
+    size_t last_sep = file_path_.last_index_of(u'/');
+    size_t from = last_sep + 1;
+    size_t first_dot = file_path_.index_of(u'.', from);
+    size_t to = first_dot > 0 ? first_dot : file_path_.size();
     size_t length = to - from;
 
 #if defined(_WIN32)
-    if (lastSep == muse::nidx && filePath_.size() >= 2 && filePath_.at(1) == u':') {
-        return filePath_.mid(2, length - 2);
+    if (last_sep == muse::nidx && file_path_.size() >= 2 && file_path_.at(1) == u':') {
+        return file_path_.mid(2, length - 2);
     }
 #endif
-    return filePath_.mid(from, length);
+    return file_path_.mid(from, length);
 }
 
-String FileInfo::completeBaseName() const {
-    size_t lastSep = filePath_.lastIndexOf(u'/');
-    size_t from = lastSep + 1;
-    size_t lastDot = filePath_.lastIndexOf(u'.');
-    size_t to = lastDot > 0 ? lastDot : filePath_.size();
+String FileInfo::complete_base_name() const {
+    size_t last_sep = file_path_.last_index_of(u'/');
+    size_t from = last_sep + 1;
+    size_t last_dot = file_path_.last_index_of(u'.');
+    size_t to = last_dot > 0 ? last_dot : file_path_.size();
     size_t length = to - from;
 
 #if defined(_WIN32)
-    if (lastSep == muse::nidx && filePath_.size() >= 2 && filePath_.at(1) == u':') {
-        return filePath_.mid(2, length - 2);
+    if (last_sep == muse::nidx && file_path_.size() >= 2 && file_path_.at(1) == u':') {
+        return file_path_.mid(2, length - 2);
     }
 #endif
-    return filePath_.mid(from, length);
+    return file_path_.mid(from, length);
 }
 
-String FileInfo::suffix() const { return doSuffix(filePath_); }
+String FileInfo::suffix() const { return do_suffix(file_path_); }
 
-String FileInfo::suffix(const path_t &filePath) { return doSuffix(filePath.toString()); }
+String FileInfo::suffix(const PathT &file_path) { return do_suffix(file_path.to_string()); }
 
-String FileInfo::doSuffix(const String &filePath) {
-    size_t lastDot = filePath.lastIndexOf(u'.');
-    if (lastDot == muse::nidx) {
+String FileInfo::do_suffix(const String &file_path) {
+    size_t last_dot = file_path.last_index_of(u'.');
+    if (last_dot == muse::nidx) {
         return String();
     }
 
-    size_t lastSep = filePath.lastIndexOf(u'/');
-    if (lastSep == muse::nidx) {
-        lastSep = 0;
+    size_t last_sep = file_path.last_index_of(u'/');
+    if (last_sep == muse::nidx) {
+        last_sep = 0;
     }
 
-    if (lastDot < lastSep) {
+    if (last_dot < last_sep) {
         return String();
     }
 
-    return filePath.mid(lastDot + 1);
+    return file_path.mid(last_dot + 1);
 }
 
-DateTime FileInfo::birthTime() const { return fileSystem()->birthTime(filePath_); }
+DateTime FileInfo::birth_time() const { return file_system()->birth_time(file_path_); }
 
-DateTime FileInfo::lastModified() const { return fileSystem()->lastModified(filePath_); }
+DateTime FileInfo::last_modified() const { return file_system()->last_modified(file_path_); }
 
-EntryType FileInfo::entryType() const { return fileSystem()->entryType(filePath_); }
+EntryType FileInfo::entry_type() const { return file_system()->entry_type(file_path_); }
 
-bool FileInfo::isRelative() const { return !isAbsolute(); }
+bool FileInfo::is_relative() const { return !is_absolute(); }
 
-bool FileInfo::isAbsolute() const {
+bool FileInfo::is_absolute() const {
 #ifdef _WIN32
-    return (filePath_.size() >= 3 && filePath_.at(0).isLetter() && filePath_.at(1) == u':' && filePath_.at(2) == u'/') ||
-           (!filePath_.isEmpty() && (filePath_.at(0) == u'/' || filePath_.at(0) == u':'));
+    return (file_path_.size() >= 3 && file_path_.at(0).is_letter() && file_path_.at(1) == u':' && file_path_.at(2) == u'/') ||
+           (!file_path_.is_empty() && (file_path_.at(0) == u'/' || file_path_.at(0) == u':'));
 #else
-    return !filePath_.empty() && (filePath_.at(0) == u'/' || filePath_.at(0) == u':');
+    return !file_path_.empty() && (file_path_.at(0) == u'/' || file_path_.at(0) == u':');
 #endif
 }
 
-bool FileInfo::isSymLink() const { return fileSystem()->isSymLink(filePath_); }
+bool FileInfo::is_sym_link() const { return file_system()->is_sym_link(file_path_); }
 
-path_t FileInfo::symLinkTarget() const { return fileSystem()->symLinkTarget(filePath_); }
+PathT FileInfo::sym_link_target() const { return file_system()->sym_link_target(file_path_); }
 
-bool FileInfo::exists() const { return fileSystem()->exists(filePath_); }
+bool FileInfo::exists() const { return file_system()->exists(file_path_); }
 
-bool FileInfo::exists(const path_t &filePath) { return fileSystem()->exists(filePath); }
+bool FileInfo::exists(const PathT &file_path) { return file_system()->exists(file_path); }
 
-path_t FileInfo::dirPath() const {
-    size_t lastSep = filePath_.lastIndexOf(u'/');
-    if (lastSep == muse::nidx) {
+PathT FileInfo::dir_path() const {
+    size_t last_sep = file_path_.last_index_of(u'/');
+    if (last_sep == muse::nidx) {
         return ".";
     }
-    return filePath_.mid(0, lastSep);
+    return file_path_.mid(0, last_sep);
 }
 
-Dir FileInfo::dir() const { return Dir(dirPath()); }
+Dir FileInfo::dir() const { return Dir(dir_path()); }

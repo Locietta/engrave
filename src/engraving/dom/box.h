@@ -39,75 +39,75 @@ class Box : public MeasureBase {
 public:
     Box(const ElementType &type, Score *parent);
 
-    virtual bool acceptDrop(EditData &) const override;
+    virtual bool accept_drop(EditData &) const override;
     virtual EngravingItem *drop(Transaction &tx, EditData &) override;
     virtual void add(EngravingItem *e) override;
-    virtual double absoluteFromSpatium(const Spatium &val) const override;
+    virtual double absolute_from_spatium(const Spatium &val) const override;
 
-    RectF contentRect() const;
+    RectF content_rect() const;
 
-    Spatium boxWidth() const { return boxWidth_; }
+    Spatium box_width() const { return box_width_; }
 
-    void setBoxWidth(Spatium val) { boxWidth_ = val; }
+    void set_box_width(Spatium val) { box_width_ = val; }
 
-    Spatium boxHeight() const { return boxHeight_; }
+    Spatium box_height() const { return box_height_; }
 
-    void setBoxHeight(Spatium val) { boxHeight_ = val; }
+    void set_box_height(Spatium val) { box_height_ = val; }
 
-    double leftMargin() const { return leftMargin_; }
+    double left_margin() const { return left_margin_; }
 
-    double rightMargin() const { return rightMargin_; }
+    double right_margin() const { return right_margin_; }
 
-    double topMargin() const { return topMargin_; }
+    double top_margin() const { return top_margin_; }
 
-    double bottomMargin() const { return bottomMargin_; }
+    double bottom_margin() const { return bottom_margin_; }
 
-    void setLeftMargin(double val) { leftMargin_ = val; }
+    void set_left_margin(double val) { left_margin_ = val; }
 
-    void setRightMargin(double val) { rightMargin_ = val; }
+    void set_right_margin(double val) { right_margin_ = val; }
 
-    void setTopMargin(double val) { topMargin_ = val; }
+    void set_top_margin(double val) { top_margin_ = val; }
 
-    void setBottomMargin(double val) { bottomMargin_ = val; }
+    void set_bottom_margin(double val) { bottom_margin_ = val; }
 
-    Spatium topGap() const { return topGap_; }
+    Spatium top_gap() const { return top_gap_; }
 
-    void setTopGap(Spatium val) { topGap_ = val; }
+    void set_top_gap(Spatium val) { top_gap_ = val; }
 
-    Spatium bottomGap() const { return bottomGap_; }
+    Spatium bottom_gap() const { return bottom_gap_; }
 
-    void setBottomGap(Spatium val) { bottomGap_ = val; }
+    void set_bottom_gap(Spatium val) { bottom_gap_ = val; }
 
-    bool isAutoSizeEnabled() const { return isAutoSizeEnabled_; }
+    bool is_auto_size_enabled() const { return is_auto_size_enabled_; }
 
-    void setAutoSizeEnabled(const bool val) { isAutoSizeEnabled_ = val; }
+    void set_auto_size_enabled(const bool val) { is_auto_size_enabled_ = val; }
 
-    void copyValues(Box *origin);
-    bool isTitleFrame() const;
+    void copy_values(Box *origin);
+    bool is_title_frame() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
     // TODO: add a grip for moving the entire box
     // overridden in descendants
 
-    bool canBeExcludedFromOtherParts() const override { return true; }
+    bool can_be_excluded_from_other_parts() const override { return true; }
 
-    void manageExclusionFromParts(bool exclude) override;
+    void manage_exclusion_from_parts(bool exclude) override;
 
 private:
-    Spatium boxWidth_;  // only valid for HBox
-    Spatium boxHeight_; // only valid for VBox
-    Spatium topGap_;    // distance from previous system (left border for hbox)
-                        // initialized with Sid::systemFrameDistance
-    Spatium bottomGap_; // distance to next system (right border for hbox)
-                        // initialized with Sid::frameSystemDistance
-    double leftMargin_ = 0.0;
-    double rightMargin_ = 0.0; // inner margins in metric mm
-    double topMargin_ = 0.0;
-    double bottomMargin_ = 0.0;
-    bool isAutoSizeEnabled_ = true;
+    Spatium box_width_;  // only valid for HBox
+    Spatium box_height_; // only valid for VBox
+    Spatium top_gap_;    // distance from previous system (left border for hbox)
+                         // initialized with Sid::systemFrameDistance
+    Spatium bottom_gap_; // distance to next system (right border for hbox)
+                         // initialized with Sid::frameSystemDistance
+    double left_margin_ = 0.0;
+    double right_margin_ = 0.0; // inner margins in metric mm
+    double top_margin_ = 0.0;
+    double bottom_margin_ = 0.0;
+    bool is_auto_size_enabled_ = true;
 };
 
 //---------------------------------------------------------
@@ -124,19 +124,19 @@ public:
 
     HBox *clone() const override { return new HBox(*this); }
 
-    bool isMovable() const override;
-    void computeMinWidth() override;
+    bool is_movable() const override;
+    void compute_min_width() override;
 
-    bool createSystemHeader() const { return createSystemHeader_; }
+    bool create_system_header() const { return create_system_header_; }
 
-    void setCreateSystemHeader(bool val) { createSystemHeader_ = val; }
+    void set_create_system_header(bool val) { create_system_header_ = val; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
 private:
-    bool createSystemHeader_ = true;
+    bool create_system_header_ = true;
 };
 
 //---------------------------------------------------------
@@ -155,25 +155,25 @@ public:
 
     void add(EngravingItem *e) override;
 
-    double minHeight() const;
-    double maxHeight() const;
+    double min_height() const;
+    double max_height() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
+    PropertyValue get_property(Pid property_id) const override;
+    PropertyValue property_default(Pid) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
 
-    Spatium paddingToNotationAbove() const { return paddingToNotationAbove_; }
+    Spatium padding_to_notation_above() const { return padding_to_notation_above_; }
 
-    Spatium paddingToNotationBelow() const { return paddingToNotationBelow_; }
+    Spatium padding_to_notation_below() const { return padding_to_notation_below_; }
 
 protected:
     VBox(const ElementType &type, Score *parent);
 
 private:
-    Spatium paddingToNotationAbove_;
-    Spatium paddingToNotationBelow_;
+    Spatium padding_to_notation_above_;
+    Spatium padding_to_notation_below_;
 };
 
 //---------------------------------------------------------
@@ -193,48 +193,48 @@ public:
     void init();
 
     void add(EngravingItem *) override;
-    void addAtIdx(FretDiagram *fretDiagram, size_t idx);
+    void add_at_idx(FretDiagram *fret_diagram, size_t idx);
 
-    double textScale() const { return textScale_; }
+    double text_scale() const { return text_scale_; }
 
-    double diagramScale() const { return diagramScale_; }
+    double diagram_scale() const { return diagram_scale_; }
 
-    Spatium columnGap() const { return columnGap_; }
+    Spatium column_gap() const { return column_gap_; }
 
-    Spatium rowGap() const { return rowGap_; }
+    Spatium row_gap() const { return row_gap_; }
 
-    int chordsPerRow() const { return chordsPerRow_; }
+    int chords_per_row() const { return chords_per_row_; }
 
-    AlignH contentHorizontalAlignment() const { return contentAlignmentH_; }
+    AlignH content_horizontal_alignment() const { return content_alignment_h_; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &val) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &val) override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    void undoReorderElements(const StringList &newOrder);
-    void reorderElements(const StringList &newOrder);
-    StringList diagramsOrder() const;
+    void undo_reorder_elements(const StringList &new_order);
+    void reorder_elements(const StringList &new_order);
+    StringList diagrams_order() const;
 
-    bool needsRebuild() const { return needsRebuild_; }
+    bool needs_rebuild() const { return needs_rebuild_; }
 
-    void setNeedsRebuild(bool v) { needsRebuild_ = v; }
+    void set_needs_rebuild(bool v) { needs_rebuild_ = v; }
 
 private:
 
-    void updateInvisibleDiagrams(const StringList &currentDiagrams);
-    size_t computeInsertionIdx(const String &nameOfDiagramBeforeThis);
+    void update_invisible_diagrams(const StringList &current_diagrams);
+    size_t compute_insertion_idx(const String &name_of_diagram_before_this);
 
-    double textScale_ = 0.0;
-    double diagramScale_ = 0.0;
-    Spatium columnGap_;
-    Spatium rowGap_;
-    int chordsPerRow_ = 0;
+    double text_scale_ = 0.0;
+    double diagram_scale_ = 0.0;
+    Spatium column_gap_;
+    Spatium row_gap_;
+    int chords_per_row_ = 0;
 
-    bool needsRebuild_ = false;
+    bool needs_rebuild_ = false;
 
-    AlignH contentAlignmentH_ = AlignH::HCENTER;
+    AlignH content_alignment_h_ = AlignH::HCENTER;
 
-    StringList diagramsOrderInScore_;
+    StringList diagrams_order_in_score_;
 };
 
 //---------------------------------------------------------
@@ -255,7 +255,7 @@ public:
 
     Text *text() const { return text_; }
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
     TBox *clone() const override { return new TBox(*this); }
 
@@ -263,7 +263,7 @@ public:
     void add(EngravingItem *e) override;
     void remove(EngravingItem *el) override;
 
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue property_default(Pid) const override;
 
 
 private:

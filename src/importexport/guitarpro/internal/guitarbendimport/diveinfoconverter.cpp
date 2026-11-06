@@ -28,103 +28,105 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-static std::vector<SegmentData> classifyDiveSegments(const PitchValues &pitchValues) {
+static std::vector<SegmentData> classify_dive_segments(const PitchValues &pitch_values) {
     enum class Dir { NONE, UP, DOWN };
 
     std::vector<SegmentData> segments;
-    Dir prevDir = Dir::NONE;
-    size_t segStartIdx = 0;
+    Dir prev_dir = Dir::NONE;
+    size_t seg_start_idx = 0;
 
-    for (size_t i = 0; i + 1 < pitchValues.size(); ++i) {
-        const int dp = pitchValues[i + 1].pitch - pitchValues[i].pitch;
+    for (size_t i = 0; i + 1 < pitch_values.size(); ++i) {
+        const int dp = pitch_values[i + 1].pitch - pitch_values[i].pitch;
         if (dp == 0) {
             continue;
         }
 
-        const int qt = gpPitchToQuarterTones(dp);
+        const int qt = gp_pitch_to_quarter_tones(dp);
         if (qt == 0) {
             continue;
         }
 
-        Dir curDir = dp > 0 ? Dir::UP : Dir::DOWN;
+        Dir cur_dir = dp > 0 ? Dir::UP : Dir::DOWN;
 
-        if (curDir == prevDir && !segments.empty()) {
+        if (cur_dir == prev_dir && !segments.empty()) {
             SegmentData &last = segments.back();
-            last.quarterTones = gpPitchToQuarterTones(pitchValues[i + 1].pitch - pitchValues[segStartIdx].pitch);
-            last.endFactor = static_cast<double>(pitchValues[i + 1].time) / PitchValue::MAX_TIME;
+            last.quarter_tones = gp_pitch_to_quarter_tones(pitch_values[i + 1].pitch - pitch_values[seg_start_idx].pitch);
+            last.end_factor = static_cast<double>(pitch_values[i + 1].time) / PitchValue::max_time;
             continue;
         }
 
-        segStartIdx = i;
+        seg_start_idx = i;
         SegmentData seg;
-        seg.quarterTones = qt;
-        seg.startFactor = static_cast<double>(pitchValues[i].time) / PitchValue::MAX_TIME;
-        seg.endFactor = static_cast<double>(pitchValues[i + 1].time) / PitchValue::MAX_TIME;
+        seg.quarter_tones = qt;
+        seg.start_factor = static_cast<double>(pitch_values[i].time) / PitchValue::max_time;
+        seg.end_factor = static_cast<double>(pitch_values[i + 1].time) / PitchValue::max_time;
         segments.push_back(std::move(seg));
 
-        prevDir = curDir;
+        prev_dir = cur_dir;
     }
 
     return segments;
 }
 
-int gpPitchToQuarterTones(int gpPitch) { return static_cast<int>(std::lround(static_cast<float>(gpPitch) / GP_PITCH_PER_QUARTERTONE)); }
+int gp_pitch_to_quarter_tones(int gp_pitch) {
+    return static_cast<int>(std::lround(static_cast<float>(gp_pitch) / ::mu::iex::guitarpro::gp_pitch_per_quartertone));
+}
 
-ImportedDiveInfo DiveInfoConverter::fromPitchValues(const PitchValues &pitchValues, bool isContinuedWhammy) {
+ImportedDiveInfo DiveInfoConverter::from_pitch_values(const PitchValues &pitch_values, bool is_continued_whammy) {
     ImportedDiveInfo info;
 
-    if (pitchValues.size() < 2) {
+    if (pitch_values.size() < 2) {
         return info;
     }
 
-    const int originPitch = pitchValues.front().pitch;
-    const int destPitch = pitchValues.back().pitch;
-    const int originQuarterTones = gpPitchToQuarterTones(originPitch);
+    const int origin_pitch = pitch_values.front().pitch;
+    const int dest_pitch = pitch_values.back().pitch;
+    const int origin_quarter_tones = gp_pitch_to_quarter_tones(origin_pitch);
 
-    std::vector<SegmentData> chain = classifyDiveSegments(pitchValues);
+    std::vector<SegmentData> chain = classify_dive_segments(pitch_values);
 
-    if (isContinuedWhammy && destPitch == originPitch) {
+    if (is_continued_whammy && dest_pitch == origin_pitch) {
         return info;
-    } else if (!isContinuedWhammy && originPitch != 0 && destPitch == originPitch) {
+    } else if (!is_continued_whammy && origin_pitch != 0 && dest_pitch == origin_pitch) {
         info.type = DiveType::PRE_DIVE;
-        info.quarterTones = -gpPitchToQuarterTones(originPitch);
-        info.endFactor = 1.0;
+        info.quarter_tones = -gp_pitch_to_quarter_tones(origin_pitch);
+        info.end_factor = 1.0;
         return info;
-    } else if (!isContinuedWhammy && originPitch != 0) {
+    } else if (!is_continued_whammy && origin_pitch != 0) {
         info.type = DiveType::PRE_DIVE;
-        info.quarterTones = -originQuarterTones;
-        info.endFactor = 1.0;
-        info.graceDiveSegments = std::move(chain);
+        info.quarter_tones = -origin_quarter_tones;
+        info.end_factor = 1.0;
+        info.grace_dive_segments = std::move(chain);
         return info;
     } else if (chain.empty()) {
         return info;
     }
 
     info.type = DiveType::DIVE;
-    info.graceDiveSegments = std::move(chain);
+    info.grace_dive_segments = std::move(chain);
 
-    if (info.graceDiveSegments.size() == 1) {
-        SegmentData &only = info.graceDiveSegments.front();
-        only.quarterTones = gpPitchToQuarterTones(destPitch - originPitch);
-        only.startFactor = static_cast<double>(pitchValues.front().time) / PitchValue::MAX_TIME;
-        only.endFactor = static_cast<double>(pitchValues.back().time) / PitchValue::MAX_TIME;
+    if (info.grace_dive_segments.size() == 1) {
+        SegmentData &only = info.grace_dive_segments.front();
+        only.quarter_tones = gp_pitch_to_quarter_tones(dest_pitch - origin_pitch);
+        only.start_factor = static_cast<double>(pitch_values.front().time) / PitchValue::max_time;
+        only.end_factor = static_cast<double>(pitch_values.back().time) / PitchValue::max_time;
     }
 
     return info;
 }
 
-ImportedDiveInfo DiveInfoConverter::fillDiveInfo(const Note *note, const PitchValues &pitchValues, bool isContinuedWhammy) {
-    if (!note || pitchValues.size() < 2) {
+ImportedDiveInfo DiveInfoConverter::fill_dive_info(const Note *note, const PitchValues &pitch_values, bool is_continued_whammy) {
+    if (!note || pitch_values.size() < 2) {
         return {};
     }
 
-    ImportedDiveInfo info = fromPitchValues(pitchValues, isContinuedWhammy);
+    ImportedDiveInfo info = from_pitch_values(pitch_values, is_continued_whammy);
 
     if (info.type == DiveType::NONE) {
         return info;
     }
 
-    if (info.type == DiveType::DIVE && info.graceDiveSegments.empty()) {
+    if (info.type == DiveType::DIVE && info.grace_dive_segments.empty()) {
         info.type = DiveType::NONE;
         return info;
     }

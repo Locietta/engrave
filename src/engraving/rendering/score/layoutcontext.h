@@ -38,15 +38,15 @@
 #ifdef MUE_ENABLE_ENGRAVING_RENDER_DEBUG
 #include "logstream.h"
 #include "logstream.h"
-#define LAYOUT_CALL_CLEAR mu::engraving::rendering::dev::LayoutDebug::instance()->callClear
+#define LAYOUT_CALL_CLEAR mu::engraving::rendering::dev::LayoutDebug::instance()->call_clear
 #define LAYOUT_CALL_BEGIN(name) mu::engraving::rendering::dev::LayoutDebug::CallBegin(name)
-#define LAYOUT_CALL_END mu::engraving::rendering::dev::LayoutDebug::instance()->callEnd
+#define LAYOUT_CALL_END mu::engraving::rendering::dev::LayoutDebug::instance()->call_end
 #define LAYOUT_CALL()                                               \
     mu::engraving::rendering::dev::LayoutDebug::CallMarker _ldcall; \
     _ldcall.begin(FUNCNAME).stream
-#define LAYOUT_ITEM_INFO(item) item->typeName() << "(" << item->eid() << ")"
+#define LAYOUT_ITEM_INFO(item) item->type_name() << "(" << item->eid() << ")"
 
-#define LAYOUT_CALL_PRINT mu::engraving::rendering::dev::LayoutDebug::instance()->callPrint
+#define LAYOUT_CALL_PRINT mu::engraving::rendering::dev::LayoutDebug::instance()->call_print
 #else
 #define LAYOUT_CALL_CLEAR()
 #define LAYOUT_CALL_BEGIN(name, info)
@@ -94,65 +94,65 @@ class LayoutConfiguration {
 public:
     LayoutConfiguration(IGetScoreInternal *s);
 
-    LayoutMode viewMode() const { return options().mode; }
+    LayoutMode view_mode() const { return options().mode; }
 
-    bool isMode(LayoutMode m) const { return options().isMode(m); }
+    bool is_mode(LayoutMode m) const { return options().is_mode(m); }
 
-    bool isLineMode() const { return isMode(LayoutMode::LINE); }
+    bool is_line_mode() const { return is_mode(LayoutMode::LINE); }
 
-    bool isLinearMode() const { return options().isLinearMode(); }
+    bool is_linear_mode() const { return options().is_linear_mode(); }
 
-    bool isFloatMode() const { return isMode(LayoutMode::FLOAT); }
+    bool is_float_mode() const { return is_mode(LayoutMode::FLOAT); }
 
-    bool isPrintingMode() const;
+    bool is_printing_mode() const;
 
-    bool isShowVBox() const { return options().isShowVBox; }
+    bool is_show_v_box() const { return options().is_show_v_box; }
 
-    double noteHeadWidth() const { return options().noteHeadWidth; }
+    double note_head_width() const { return options().note_head_width; }
 
-    bool isShowInvisible() const;
-    int pageNumberOffset() const;
-    bool isVerticalSpreadEnabled() const;
-    double maxSystemDistance() const;
-    bool isShowInstrumentNames() const;
+    bool is_show_invisible() const;
+    int page_number_offset() const;
+    bool is_vertical_spread_enabled() const;
+    double max_system_distance() const;
+    bool is_show_instrument_names() const;
 
-    std::shared_ptr<const IEngravingFont> engravingFont() const;
+    std::shared_ptr<const IEngravingFont> engraving_font() const;
 
     const MStyle &style() const;
 
-    const PropertyValue &styleV(Sid idx) const { return style().styleV(idx); }
+    const PropertyValue &style_v(Sid idx) const { return style().style_v(idx); }
 
-    Spatium styleS(Sid idx) const { return style().styleS(idx); }
+    Spatium style_s(Sid idx) const { return style().style_s(idx); }
 
-    double styleAbsolute(Sid idx) const { return style().styleAbsolute(idx); }
+    double style_absolute(Sid idx) const { return style().style_absolute(idx); }
 
-    String styleSt(Sid idx) const { return style().styleSt(idx); }
+    String style_st(Sid idx) const { return style().style_st(idx); }
 
-    bool styleB(Sid idx) const { return style().styleB(idx); }
+    bool style_b(Sid idx) const { return style().style_b(idx); }
 
-    double styleD(Sid idx) const { return style().styleD(idx); }
+    double style_d(Sid idx) const { return style().style_d(idx); }
 
-    int styleI(Sid idx) const { return style().styleI(idx); }
+    int style_i(Sid idx) const { return style().style_i(idx); }
 
-    double spatium() const { return styleD(Sid::spatium); }
+    double spatium() const { return style_d(Sid::SPATIUM); }
 
-    double defaultSpatium() const { return style().defaultSpatium(); }
+    double default_spatium() const { return style().default_spatium(); }
 
     double point(const Spatium sp) const { return sp.val() * spatium(); }
 
-    double magS(double mag) const { return mag * (spatium() / defaultSpatium()); }
+    double mag_s(double mag) const { return mag * (spatium() / default_spatium()); }
 
-    double loWidth() const { return styleD(Sid::pageWidth) * DPI; }
+    double lo_width() const { return style_d(Sid::PAGE_WIDTH) * ::mu::engraving::dpi; }
 
-    double loHeight() const { return styleD(Sid::pageHeight) * DPI; }
+    double lo_height() const { return style_d(Sid::PAGE_HEIGHT) * ::mu::engraving::dpi; }
 
-    bool firstSystemIndent() const { return styleB(Sid::enableIndentationOnFirstSystem); }
+    bool first_system_indent() const { return style_b(Sid::ENABLE_INDENTATION_ON_FIRST_SYSTEM); }
 
 private:
     const Score *score() const;
     const LayoutOptions &options() const;
 
-    IGetScoreInternal *getScore_ = nullptr;
+    IGetScoreInternal *get_score_ = nullptr;
 };
 
 class DomAccessor {
@@ -162,8 +162,8 @@ public:
 
     // Const access
     const std::vector<Part *> &parts() const;
-    size_t visiblePartCount() const;
-    std::vector<Part *> visibleParts() const;
+    size_t visible_part_count() const;
+    std::vector<Part *> visible_parts() const;
 
     size_t npages() const;
     const std::vector<Page *> &pages() const;
@@ -171,214 +171,214 @@ public:
     const std::vector<System *> &systems() const;
 
     size_t nstaves() const;
-    size_t visibleStaffCount() const;
+    size_t visible_staff_count() const;
     const std::vector<Staff *> &staves() const;
     const Staff *staff(staff_idx_t idx) const;
-    bool allStavesInvisible() const;
+    bool all_staves_invisible() const;
 
     size_t ntracks() const;
 
     size_t nmeasures() const;
 
     const Measure *tick2measure(const Fraction &tick) const;
-    const Measure *tick2measureMM(const Fraction &tick) const;
-    const Measure *firstMeasure() const;
-    const Measure *lastMeasure() const;
-    const Measure *lastMeasureMM() const;
+    const Measure *tick2measure_mm(const Fraction &tick) const;
+    const Measure *first_measure() const;
+    const Measure *last_measure() const;
+    const Measure *last_measure_mm() const;
 
-    const SpannerMap &spannerMap() const;
+    const SpannerMap &spanner_map() const;
 
-    const Segment *lastSegment() const;
+    const Segment *last_segment() const;
 
-    const ChordRest *findCR(Fraction tick, track_idx_t track) const;
+    const ChordRest *find_cr(Fraction tick, track_idx_t track) const;
 
-    const RangeLocks *systemLocks() const;
-    const RangeLocks *pageLocks() const;
+    const RangeLocks *system_locks() const;
+    const RangeLocks *page_locks() const;
 
-    const PaddingTable &paddingTable() const;
+    const PaddingTable &padding_table() const;
 
-    const std::vector<BracketItem *> &brackets(staff_idx_t staffIdx) const;
+    const std::vector<BracketItem *> &brackets(staff_idx_t staff_idx) const;
 
     // Mutable access
     std::vector<Page *> &pages();
     std::vector<System *> &systems();
 
     MeasureBase *first();
-    Measure *firstMeasure();
-    Measure *lastMeasure();
-    Measure *lastMeasureMM();
+    Measure *first_measure();
+    Measure *last_measure();
+    Measure *last_measure_mm();
     Measure *tick2measure(const Fraction &tick);
-    Measure *tick2measureMM(const Fraction &tick);
+    Measure *tick2measure_mm(const Fraction &tick);
 
-    ChordRest *findCR(Fraction tick, track_idx_t track);
+    ChordRest *find_cr(Fraction tick, track_idx_t track);
 
     // Create/Remove
     const Score *score() const;
     Score *score();
-    DummyParent *dummyParent() const;
-    void doUndoAddElement(EngravingItem *);
-    void undoAddElement(EngravingItem *item, bool addToLinkedStaves = true, bool ctrlModifier = false);
-    void doUndoRemoveElement(EngravingItem *item);
-    void undoRemoveElement(EngravingItem *item);
+    DummyParent *dummy_parent() const;
+    void do_undo_add_element(EngravingItem *);
+    void undo_add_element(EngravingItem *item, bool add_to_linked_staves = true, bool ctrl_modifier = false);
+    void do_undo_remove_element(EngravingItem *item);
+    void undo_remove_element(EngravingItem *item);
     void undo(UndoableCommand *cmd) const;
-    void addElement(EngravingItem *item);
-    void removeElement(EngravingItem *item);
-    void updateLocksOnCreateMMRest(Measure *first, Measure *last);
-    void undoChangeParent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool changeLinksParents = true);
+    void add_element(EngravingItem *item);
+    void remove_element(EngravingItem *item);
+    void update_locks_on_create_mm_rest(Measure *first, Measure *last);
+    void undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool change_links_parents = true);
 
-    void addUnmanagedSpanner(Spanner *s);
-    const std::set<Spanner *> &unmanagedSpanners() const;
+    void add_unmanaged_spanner(Spanner *s);
+    const std::set<Spanner *> &unmanaged_spanners() const;
 
 private:
-    IGetScoreInternal *getScore_ = nullptr;
+    IGetScoreInternal *get_score_ = nullptr;
 };
 
 class LayoutState {
 public:
 
     // Const
-    bool firstSystem() const { return firstSystem_; }
+    bool first_system() const { return first_system_; }
 
-    bool firstSystemIndent() const { return firstSystemIndent_; }
+    bool first_system_indent() const { return first_system_indent_; }
 
-    bool startWithLongNames() const { return startWithLongNames_; }
+    bool start_with_long_names() const { return start_with_long_names_; }
 
     const Fraction &tick() const { return tick_; }
 
-    const Fraction &startTick() const { return startTick_; }
+    const Fraction &start_tick() const { return start_tick_; }
 
-    const Fraction &endTick() const { return endTick_; }
+    const Fraction &end_tick() const { return end_tick_; }
 
-    bool isLayoutAll() const { return isLayoutAll_; }
+    bool is_layout_all() const { return is_layout_all_; }
 
     const Page *page() const { return page_; }
 
-    page_idx_t pageIdx() const { return pageIdx_; }
+    page_idx_t page_idx() const { return page_idx_; }
 
-    const std::vector<System *> &systemList() const { return systemList_; }
+    const std::vector<System *> &system_list() const { return system_list_; }
 
-    const System *prevSystem() const { return prevSystem_; }
+    const System *prev_system() const { return prev_system_; }
 
-    const System *curSystem() const { return curSystem_; }
+    const System *cur_system() const { return cur_system_; }
 
-    const MeasureBase *prevMeasure() const { return prevMeasure_; }
+    const MeasureBase *prev_measure() const { return prev_measure_; }
 
-    const MeasureBase *curMeasure() const { return curMeasure_; }
+    const MeasureBase *cur_measure() const { return cur_measure_; }
 
-    const MeasureBase *nextMeasure() const { return nextMeasure_; }
+    const MeasureBase *next_measure() const { return next_measure_; }
 
-    const MeasureBase *systemOldMeasure() const { return systemOldMeasure_; }
+    const MeasureBase *system_old_measure() const { return system_old_measure_; }
 
-    const MeasureBase *pageOldMeasure() const { return pageOldMeasure_; }
+    const MeasureBase *page_old_measure() const { return page_old_measure_; }
 
-    int measureNumber() const { return measureNumber_; }
+    int measure_number() const { return measure_number_; }
 
-    bool rangeDone() const { return rangeDone_; }
+    bool range_done() const { return range_done_; }
 
-    const std::unordered_set<System *> &systemsNeedingCentering() const { return systemsNeedingCentering_; }
+    const std::unordered_set<System *> &systems_needing_centering() const { return systems_needing_centering_; }
 
-    bool mustRecomputeHeadersFooters() const { return mustRecomputeHeadersFooters_; }
+    bool must_recompute_headers_footers() const { return must_recompute_headers_footers_; }
 
-    double totalBracketsWidth() const { return totalBracketsWidth_; }
+    double total_brackets_width() const { return total_brackets_width_; }
 
     // Mutable
-    void setFirstSystem(bool val) { firstSystem_ = val; }
+    void set_first_system(bool val) { first_system_ = val; }
 
-    void setFirstSystemIndent(bool val) { firstSystemIndent_ = val; }
+    void set_first_system_indent(bool val) { first_system_indent_ = val; }
 
-    void setStartWithLongNames(bool val) { startWithLongNames_ = val; }
+    void set_start_with_long_names(bool val) { start_with_long_names_ = val; }
 
-    void setTick(const Fraction &t) { tick_ = t; }
+    void set_tick(const Fraction &t) { tick_ = t; }
 
-    void setStartTick(const Fraction &t) { startTick_ = t; }
+    void set_start_tick(const Fraction &t) { start_tick_ = t; }
 
-    void setEndTick(const Fraction &t) { endTick_ = t; }
+    void set_end_tick(const Fraction &t) { end_tick_ = t; }
 
-    void setIsLayoutAll(bool v) { isLayoutAll_ = v; }
+    void set_is_layout_all(bool v) { is_layout_all_ = v; }
 
     Page *page() { return page_; }
 
-    void setPage(Page *p) { page_ = p; }
+    void set_page(Page *p) { page_ = p; }
 
-    void setPageIdx(page_idx_t idx) { pageIdx_ = idx; }
+    void set_page_idx(page_idx_t idx) { page_idx_ = idx; }
 
-    std::vector<System *> &systemList() { return systemList_; }
+    std::vector<System *> &system_list() { return system_list_; }
 
-    void setSystemList(const std::vector<System *> &l) { systemList_ = l; }
+    void set_system_list(const std::vector<System *> &l) { system_list_ = l; }
 
-    System *prevSystem() { return prevSystem_; }
+    System *prev_system() { return prev_system_; }
 
-    void setPrevSystem(System *s) { prevSystem_ = s; }
+    void set_prev_system(System *s) { prev_system_ = s; }
 
-    System *curSystem() { return curSystem_; }
+    System *cur_system() { return cur_system_; }
 
-    void setCurSystem(System *s) { curSystem_ = s; }
+    void set_cur_system(System *s) { cur_system_ = s; }
 
-    MeasureBase *prevMeasure() { return prevMeasure_; }
+    MeasureBase *prev_measure() { return prev_measure_; }
 
-    void setPrevMeasure(MeasureBase *m) { prevMeasure_ = m; }
+    void set_prev_measure(MeasureBase *m) { prev_measure_ = m; }
 
-    MeasureBase *curMeasure() { return curMeasure_; }
+    MeasureBase *cur_measure() { return cur_measure_; }
 
-    void setCurMeasure(MeasureBase *m) { curMeasure_ = m; }
+    void set_cur_measure(MeasureBase *m) { cur_measure_ = m; }
 
-    MeasureBase *nextMeasure() { return nextMeasure_; }
+    MeasureBase *next_measure() { return next_measure_; }
 
-    void setNextMeasure(MeasureBase *m) { nextMeasure_ = m; }
+    void set_next_measure(MeasureBase *m) { next_measure_ = m; }
 
-    void setSystemOldMeasure(MeasureBase *m) { systemOldMeasure_ = m; }
+    void set_system_old_measure(MeasureBase *m) { system_old_measure_ = m; }
 
-    void setPageOldMeasure(MeasureBase *m) { pageOldMeasure_ = m; }
+    void set_page_old_measure(MeasureBase *m) { page_old_measure_ = m; }
 
-    void setMeasureNumber(int n) { measureNumber_ = n; }
+    void set_measure_number(int n) { measure_number_ = n; }
 
-    void setRangeDone(bool val) { rangeDone_ = val; }
+    void set_range_done(bool val) { range_done_ = val; }
 
-    void addSystemNeedingCentering(System *s) { systemsNeedingCentering_.insert(s); }
+    void add_system_needing_centering(System *s) { systems_needing_centering_.insert(s); }
 
-    void removeSystemNeedingCentering(System *s) { systemsNeedingCentering_.erase(s); }
+    void remove_system_needing_centering(System *s) { systems_needing_centering_.erase(s); }
 
-    void clearSystemsNeedingCentering() { systemsNeedingCentering_.clear(); }
+    void clear_systems_needing_centering() { systems_needing_centering_.clear(); }
 
-    void setMustRecomputeHeadersFooters(bool val) { mustRecomputeHeadersFooters_ = val; }
+    void set_must_recompute_headers_footers(bool val) { must_recompute_headers_footers_ = val; }
 
-    void setTotalBracketsWidth(double val) { totalBracketsWidth_ = val; }
+    void set_total_brackets_width(double val) { total_brackets_width_ = val; }
 
 private:
 
-    bool firstSystem_ = true;
-    bool firstSystemIndent_ = true;
-    bool startWithLongNames_ = true;
+    bool first_system_ = true;
+    bool first_system_indent_ = true;
+    bool start_with_long_names_ = true;
 
     Fraction tick_{0, 1};
-    Fraction startTick_;
-    Fraction endTick_;
-    bool isLayoutAll_ = false;
+    Fraction start_tick_;
+    Fraction end_tick_;
+    bool is_layout_all_ = false;
 
     Page *page_ = nullptr;
-    page_idx_t pageIdx_ = 0; // index in Score->page()s
+    page_idx_t page_idx_ = 0; // index in Score->page()s
 
-    std::vector<System *> systemList_; // reusable systems
-    System *prevSystem_ = nullptr;     // used during page layout
-    System *curSystem_ = nullptr;
+    std::vector<System *> system_list_; // reusable systems
+    System *prev_system_ = nullptr;     // used during page layout
+    System *cur_system_ = nullptr;
 
-    MeasureBase *prevMeasure_ = nullptr;
-    MeasureBase *curMeasure_ = nullptr;
-    MeasureBase *nextMeasure_ = nullptr;
-    MeasureBase *systemOldMeasure_ = nullptr;
-    MeasureBase *pageOldMeasure_ = nullptr;
-    int measureNumber_ = 0;
+    MeasureBase *prev_measure_ = nullptr;
+    MeasureBase *cur_measure_ = nullptr;
+    MeasureBase *next_measure_ = nullptr;
+    MeasureBase *system_old_measure_ = nullptr;
+    MeasureBase *page_old_measure_ = nullptr;
+    int measure_number_ = 0;
 
-    bool rangeDone_ = false;
+    bool range_done_ = false;
 
     std::unordered_set<System *>
-        systemsNeedingCentering_; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
+        systems_needing_centering_; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
 
-    bool mustRecomputeHeadersFooters_ =
+    bool must_recompute_headers_footers_ =
         false; // we may need to re-compute headers/footers after laying out all pages if they contained a page count
 
     // cache
-    double totalBracketsWidth_ = -1.0;
+    double total_brackets_width_ = -1.0;
 };
 
 class LayoutDebug {
@@ -392,28 +392,28 @@ public:
 
         CallBeginMarker(const std::string_view &n) : name(n) {}
 
-        ~CallBeginMarker() { LayoutDebug::instance()->callBegin(name, stream.str()); }
+        ~CallBeginMarker() { LayoutDebug::instance()->call_begin(name, stream.str()); }
     };
 
     struct CallMarker {
         CallBeginMarker begin(const std::string_view &n) { return CallBeginMarker(n); }
 
-        ~CallMarker() { LayoutDebug::instance()->callEnd(); }
+        ~CallMarker() { LayoutDebug::instance()->call_end(); }
     };
 
-    void callClear();
-    void callBegin(const std::string_view &name, const std::string_view &info);
-    void callEnd();
+    void call_clear();
+    void call_begin(const std::string_view &name, const std::string_view &info);
+    void call_end();
 
-    void callDump(std::stringstream &ss) const;
+    void call_dump(std::stringstream &ss) const;
 
-    std::string callDump() const {
+    std::string call_dump() const {
         std::stringstream ss;
-        callDump(ss);
+        call_dump(ss);
         return ss.str();
     }
 
-    void callPrint();
+    void call_print();
 
 private:
 
@@ -424,9 +424,9 @@ private:
         std::vector<Call> nested;
     };
 
-    static void callDump(const LayoutDebug::Call &c, std::stringstream &ss, int &indent);
+    static void call_dump(const LayoutDebug::Call &c, std::stringstream &ss, int &indent);
 
-    Call *currentCall_;
+    Call *current_call_;
     std::vector<Call> calls_;
 };
 
@@ -438,20 +438,20 @@ public:
     LayoutContext(const LayoutContext &) = delete;
     LayoutContext &operator=(const LayoutContext &) = delete;
 
-    bool isValid() const;
+    bool is_valid() const;
 
     // Conf
-    IEngravingFontPtr engravingFont() const;
+    IEngravingFontPtr engraving_font() const;
 
     const LayoutConfiguration &conf() const { return configuration_; }
 
     // Dom access
     const DomAccessor &dom() const;
-    DomAccessor &mutDom();
+    DomAccessor &mut_dom();
 
     // State
     const LayoutState &state() const;
-    LayoutState &mutState();
+    LayoutState &mut_state();
 
     // Other
     const Selection &selection() const;

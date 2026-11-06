@@ -32,8 +32,8 @@ namespace mu::iex::midi {
 class MTrack;
 
 namespace Simplify {
-void simplifyDurationsForDrums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
-void simplifyDurationsNotDrums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+void simplify_durations_for_drums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+void simplify_durations_not_drums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
 } // namespace Simplify
 } // namespace mu::iex::midi
 

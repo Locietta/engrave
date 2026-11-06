@@ -31,7 +31,7 @@ namespace mu::engraving {
 
 struct ChannelActions {
     int channel = 0;
-    StringList midiActionNames;
+    StringList midi_action_names;
 };
 
 //---------------------------------------------------------
@@ -48,50 +48,50 @@ public:
 
     Segment *segment() const;
 
-    String channelName(voice_idx_t voice) const { return channelNames_[voice]; }
+    String channel_name(voice_idx_t voice) const { return channel_names_[voice]; }
 
-    void setChannelName(voice_idx_t v, const String &s) { channelNames_[v] = s; }
+    void set_channel_name(voice_idx_t v, const String &s) { channel_names_[v] = s; }
 
-    void setSwingParameters(int unit, int ratio) {
-        swingParameters_.swingUnit = unit;
-        swingParameters_.swingRatio = ratio;
+    void set_swing_parameters(int unit, int ratio) {
+        swing_parameters_.swing_unit = unit;
+        swing_parameters_.swing_ratio = ratio;
     }
 
-    const std::vector<ChannelActions> &channelActions() const { return channelActions_; }
+    const std::vector<ChannelActions> &channel_actions() const { return channel_actions_; }
 
-    std::vector<ChannelActions> &channelActions() { return channelActions_; }
+    std::vector<ChannelActions> &channel_actions() { return channel_actions_; }
 
-    const SwingParameters &swingParameters() const { return swingParameters_; }
+    const SwingParameters &swing_parameters() const { return swing_parameters_; }
 
-    void clearAeolusStops();
-    void setAeolusStop(int group, int idx, bool val);
-    void setAeolusStop(int group, int val);
-    bool getAeolusStop(int group, int idx) const;
-    int aeolusStop(int group) const;
+    void clear_aeolus_stops();
+    void set_aeolus_stop(int group, int idx, bool val);
+    void set_aeolus_stop(int group, int val);
+    bool get_aeolus_stop(int group, int idx) const;
+    int aeolus_stop(int group) const;
 
-    void setSetAeolusStops(bool val) { setAeolusStops_ = val; }
+    void set_set_aeolus_stops(bool val) { set_aeolus_stops_ = val; }
 
-    void setSwing(bool checked) { swing_ = checked; }
+    void set_swing(bool checked) { swing_ = checked; }
 
-    void setCapo(int fretId) { capo_ = fretId; }
+    void set_capo(int fret_id) { capo_ = fret_id; }
 
-    bool setAeolusStops() const { return setAeolusStops_; }
+    bool set_aeolus_stops() const { return set_aeolus_stops_; }
 
     bool swing() const { return swing_; }
 
     int capo() const { return capo_; }
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 
     void added() override;
     void removed() override;
 
 private:
-    String channelNames_[4];
-    std::vector<ChannelActions> channelActions_;
-    SwingParameters swingParameters_;
-    bool setAeolusStops_ = false;
-    int aeolusStops_[4]{0, 0, 0, 0};
+    String channel_names_[4];
+    std::vector<ChannelActions> channel_actions_;
+    SwingParameters swing_parameters_;
+    bool set_aeolus_stops_ = false;
+    int aeolus_stops_[4]{0, 0, 0, 0};
     bool swing_ = false;
     int capo_ = 0;
 };

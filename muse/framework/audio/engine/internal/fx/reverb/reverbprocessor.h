@@ -41,50 +41,50 @@ public:
     AudioFxType type() const override;
     std::string name() const override;
     const AudioFxParams &params() const override;
-    void setOutputSpec(const OutputSpec &spec) override;
+    void set_output_spec(const OutputSpec &spec) override;
 
     bool active() const override;
-    void setActive(bool active) override;
+    void set_active(bool active) override;
 
-    void setMode(const ProcessMode mode) override;
+    void set_mode(const ProcessMode mode) override;
 
-    bool shouldProcessDuringSilence() const override;
+    bool should_process_during_silence() const override;
 
-    void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
+    void process(float *buffer, samples_t sample_count, samples_t playback_position_samples = 0) override;
 
 private:
     enum Params {
-        Quality,
-        VelvetIn,
-        VelvetOut,
+        QUALITY,
+        VELVET_IN,
+        VELVET_OUT,
 
-        DryLevel,
-        LateLevel,
-        ERLevel,
-        ERtoLate,
+        DRY_LEVEL,
+        LATE_LEVEL,
+        ER_LEVEL,
+        E_RTO_LATE,
 
-        PreDelayMs,
-        StereoSpread,
-        ModDelayFreq,
-        ModDelayAmp,
-        ModType, // currently 0 = sine with regular phase offset | 1 = all channel synced sine
+        PRE_DELAY_MS,
+        STEREO_SPREAD,
+        MOD_DELAY_FREQ,
+        MOD_DELAY_AMP,
+        MOD_TYPE, // currently 0 = sine with regular phase offset | 1 = all channel synced sine
 
-        ReverbTimeMs,
-        LateRoomScale,
-        TimeLow,
-        TimeMid,
-        TimeHigh,
-        FeedbackTop,
-        XoverLowMid,
-        XoverMidHigh,
+        REVERB_TIME_MS,
+        LATE_ROOM_SCALE,
+        TIME_LOW,
+        TIME_MID,
+        TIME_HIGH,
+        FEEDBACK_TOP,
+        XOVER_LOW_MID,
+        XOVER_MID_HIGH,
 
-        LowCutFreq,
-        HighCutFreq,
-        PeakFreq,
-        PeakGain,
-        PeakQ,
+        LOW_CUT_FREQ,
+        HIGH_CUT_FREQ,
+        PEAK_FREQ,
+        PEAK_GAIN,
+        PEAK_Q,
 
-        NumParams,
+        NUM_PARAMS,
     };
 
     struct ParameterInfo {
@@ -92,15 +92,15 @@ private:
         std::pair<float, float> range;
     };
 
-    void getParameterInfo(int32_t index, ParameterInfo &info);
+    void get_parameter_info(int32_t index, ParameterInfo &info);
 
-    float getParameter(int32_t index);
+    float get_parameter(int32_t index);
 
-    void setParameter(int32_t index, float newValue);
+    void set_parameter(int32_t index, float new_value);
 
-    bool setFormat(audioch_t audioChannelsCount, double sampleRate, int32_t maximumBlockSize);
+    bool set_format(audioch_t input_audio_channels_count, double input_sample_rate, int32_t maximum_block_size);
 
-    void deleteSignalBuffers();
+    void delete_signal_buffers();
 
     void reset();
 
@@ -108,44 +108,44 @@ private:
     struct Processor {
         struct Parameter {
             std::string name;
-            std::pair<float, float> valueRange = {0.f, 1.f};
-            float currentValue = 0.f;
+            std::pair<float, float> value_range = {0.f, 1.f};
+            float current_value = 0.f;
         };
 
-        std::vector<Parameter> _param;
+        std::vector<Parameter> param;
 
-        void allocateParameters(int num);
-        void setupParameter(int index, const std::string &name, std::pair<float, float> valueRange, float initialValue);
-        bool setFormat(audioch_t audioChannelsCount, double sampleRate, int32_t maximumBlockSize);
+        void allocate_parameters(int num);
+        void setup_parameter(int index, const std::string &name, std::pair<float, float> value_range, float initial_value);
+        bool set_format(audioch_t input_audio_channels_count, double input_sample_rate, int32_t maximum_block_size);
 
-        audioch_t _audioChannelsCount = 0;
-        double _sampleRate = 0.0;
-        double _sampleT = 0.0;
-        int _blockSize = 0;
+        audioch_t audio_channels_count_value = 0;
+        double sample_rate_value = 0.0;
+        double sample_t = 0.0;
+        int block_size = 0;
     };
 
     Processor processor_;
 
     // Specific effect data
     template <int num_lines>
-    void _processLines(float **signalPtr, int32_t numSamples);
+    void process_lines(float **signal_ptr, int32_t num_samples);
     static constexpr int max_num_delays = 24;
 
-    void calculateTailParams();
-    void calculateModParams();
+    void calculate_tail_params();
+    void calculate_mod_params();
 
-    struct impl;
-    impl *d = nullptr; // aligned pointer
+    struct Impl;
+    Impl *d = nullptr; // aligned pointer
 
-    float lateGain_ = 0.1f;
-    float lateGainCorrection_ = 1.f;
-    float erToLateGain_ = 0.f;
+    float late_gain_ = 0.1f;
+    float late_gain_correction_ = 1.f;
+    float er_to_late_gain_ = 0.f;
 
     int delays_ = 16;
 
     AudioFxParams params_;
 
-    float **signalBuffers_ = nullptr;
+    float **signal_buffers_ = nullptr;
 };
 } // namespace muse::audio::fx
 

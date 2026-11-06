@@ -49,8 +49,8 @@ bool same(Fraction left, Fraction right) { return left.num * right.den == right.
 
 // The measure at an index of a score, in score order.
 Measure &measure_of(Score &score, std::size_t index) {
-    Measure *measure = score.firstMeasure();
-    for (std::size_t i = 0; i < index && measure; ++i) measure = measure->nextMeasure();
+    Measure *measure = score.first_measure();
+    for (std::size_t i = 0; i < index && measure; ++i) measure = measure->next_measure();
     if (!measure) throw std::invalid_argument(std::format("the score has no measure {}", index));
     return *measure;
 }
@@ -73,7 +73,7 @@ SegmentAddress address_in(Score &score, std::size_t index, std::int32_t staff, s
 SegmentAddress address_of(const mu::engraving::ChordRest &cr) {
     SegmentAddress address;
     address.measure = from_engine(cr.measure()->eid());
-    address.staff = static_cast<std::int32_t>(cr.staffIdx());
+    address.staff = static_cast<std::int32_t>(cr.staff_idx());
     address.voice = static_cast<std::int32_t>(cr.voice());
     address.tick = {cr.tick().numerator(), cr.tick().denominator()};
     address.kind = "ChordRest";
@@ -83,7 +83,7 @@ SegmentAddress address_of(const mu::engraving::ChordRest &cr) {
 Segment &segment_of(Document &document, const SegmentAddress &address) {
     const Result<Resolved> found = resolve(master_of(document), Address{address});
     if (!found) throw std::invalid_argument(found.error().message);
-    return *mu::engraving::toSegment(found->object);
+    return *mu::engraving::to_segment(found->object);
 }
 
 // The chord or rest at an address, or nothing.
@@ -99,14 +99,14 @@ EngravingObject *find(Document &document, const Ref &ref) {
 }
 
 Fraction length_of(const EngravingItem &item) {
-    const mu::engraving::Fraction ticks = mu::engraving::toChordRest(&item)->ticks();
+    const mu::engraving::Fraction ticks = mu::engraving::to_chord_rest(&item)->ticks();
     return {ticks.numerator(), ticks.denominator()};
 }
 
 std::vector<int> pitches_of(const EngravingItem &item) {
     std::vector<int> pitches;
-    if (!item.isChord()) return pitches;
-    for (const Note *note : mu::engraving::toChord(&item)->notes()) pitches.push_back(note->pitch());
+    if (!item.is_chord()) return pitches;
+    for (const Note *note : mu::engraving::to_chord(&item)->notes()) pitches.push_back(note->pitch());
     std::ranges::sort(pitches);
     return pitches;
 }
@@ -118,8 +118,8 @@ std::string expect_entered(Document &document, const SegmentAddress &address, Fr
     EngravingItem *item = item_at(document, address);
     if (!item) return "nothing was entered";
     if (!same(length_of(*item), length)) return "the entered chord or rest has another length";
-    if (pitches.empty()) return item->isRest() ? std::string{} : "a rest was not entered";
-    if (!item->isChord()) return "a chord was not entered";
+    if (pitches.empty()) return item->is_rest() ? std::string{} : "a rest was not entered";
+    if (!item->is_chord()) return "a chord was not entered";
     std::ranges::sort(pitches);
     return pitches_of(*item) == pitches ? std::string{} : "the entered chord has other pitches";
 }
@@ -127,20 +127,20 @@ std::string expect_entered(Document &document, const SegmentAddress &address, Fr
 std::string expect_pitch(Document &document, const ElementId &id, int pitch, std::optional<int> tpc, const std::vector<int> others) {
     EngravingObject *object = find(document, id);
     if (!object) return "the note is gone";
-    if (!object->isNote()) return "the id no longer names a note";
-    Note &note = *mu::engraving::toNote(object);
+    if (!object->is_note()) return "the id no longer names a note";
+    Note &note = *mu::engraving::to_note(object);
     if (note.pitch() != pitch) return std::format("the pitch is {} and not {}", note.pitch(), pitch);
     // The engine's own spelling of that pitch at that position, unless the request gave one.
     if (note.tpc1() != tpc.value_or(note.tpc1default(pitch))) return "the concert spelling is another one";
-    if (note.staff()->transpose(note.chord()->tick()).isZero() && note.tpc2() != note.tpc1())
+    if (note.staff()->transpose(note.chord()->tick()).is_zero() && note.tpc2() != note.tpc1())
         return "the written spelling differs on a staff that does not transpose";
     for (const int other : others) {
         if (!std::ranges::contains(pitches_of(note), other)) return std::format("the chord lost its pitch {}", other);
     }
     // The engine changes the pitch of every linked note with the one it was given.
-    for (const EngravingObject *linked : note.linkList()) {
-        if (linked == &note || !linked->isNote()) continue;
-        if (mu::engraving::toNote(linked)->pitch() != pitch) return "a linked note kept its pitch";
+    for (const EngravingObject *linked : note.link_list()) {
+        if (linked == &note || !linked->is_note()) continue;
+        if (mu::engraving::to_note(linked)->pitch() != pitch) return "a linked note kept its pitch";
     }
     return {};
 }
@@ -180,7 +180,7 @@ OpCase pitch_case(std::string name, std::string fixture, int pitch, std::optiona
         .make =
             [shared, match, pitch, tpc](Document &document) {
                 shared->note = find_id(document, "Note", match);
-                const Note &note = *mu::engraving::toNote(&element(document, shared->note));
+                const Note &note = *mu::engraving::to_note(&element(document, shared->note));
                 shared->others = pitches_of(note);
                 std::erase(shared->others, note.pitch());
                 return Batch{{SetPitch{shared->note, pitch, tpc}}};
@@ -204,7 +204,7 @@ OpCase duration_case(std::string name, std::string fixture, std::string type, Fr
         .make =
             [shared, type, duration, match](Document &document) {
                 shared->chord_rest = find_id(document, type, match);
-                shared->at = address_of(*mu::engraving::toChordRest(&element(document, shared->chord_rest)));
+                shared->at = address_of(*mu::engraving::to_chord_rest(&element(document, shared->chord_rest)));
                 return Batch{{SetDuration{shared->chord_rest, duration}}};
             },
         .expect =
@@ -212,7 +212,7 @@ OpCase duration_case(std::string name, std::string fixture, std::string type, Fr
                 EngravingObject *object = find(document, shared->chord_rest);
                 if (!object) return std::string("the chord or rest is gone");
                 if (item_at(document, shared->at) != object) return std::string("the segment holds another element");
-                return same(length_of(*mu::engraving::toEngravingItem(object)), duration) ? std::string{} : "it has another length";
+                return same(length_of(*mu::engraving::to_engraving_item(object)), duration) ? std::string{} : "it has another length";
             },
     };
 }
@@ -233,16 +233,16 @@ OpCase remove_case(std::string name, std::string fixture, std::string type, Matc
                 Removal &removal = shared->removal;
                 removal.target = find_id(document, type, match);
                 EngravingObject &object = element(document, removal.target);
-                for (const EngravingObject *linked : object.linkList()) {
-                    if (linked != &object && takes_id(*linked) && linked->eid().isValid())
+                for (const EngravingObject *linked : object.link_list()) {
+                    if (linked != &object && takes_id(*linked) && linked->eid().is_valid())
                         removal.linked.push_back(from_engine(linked->eid()));
                 }
-                if (object.isEngravingItem() && mu::engraving::toEngravingItem(&object)->isChordRest()) {
-                    EngravingItem &item = *mu::engraving::toEngravingItem(&object);
-                    removal.at = address_of(*mu::engraving::toChordRest(&item));
+                if (object.is_engraving_item() && mu::engraving::to_engraving_item(&object)->is_chord_rest()) {
+                    EngravingItem &item = *mu::engraving::to_engraving_item(&object);
+                    removal.at = address_of(*mu::engraving::to_chord_rest(&item));
                     removal.length = length_of(item);
-                } else if (object.isNote()) {
-                    Note &note = *mu::engraving::toNote(&object);
+                } else if (object.is_note()) {
+                    Note &note = *mu::engraving::to_note(&object);
                     removal.at = address_of(*note.chord());
                     removal.remaining = pitches_of(*note.chord());
                     std::erase(removal.remaining, note.pitch());
@@ -255,12 +255,12 @@ OpCase remove_case(std::string name, std::string fixture, std::string type, Matc
 }
 
 Matcher is_pitch(int pitch) {
-    return [pitch](const EngravingObject &object) { return mu::engraving::toNote(&object)->pitch() == pitch; };
+    return [pitch](const EngravingObject &object) { return mu::engraving::to_note(&object)->pitch() == pitch; };
 }
 
 Matcher in_chord_of(std::size_t notes) {
     return [notes](const EngravingObject &object) {
-        const Chord *chord = mu::engraving::toNote(&object)->chord();
+        const Chord *chord = mu::engraving::to_note(&object)->chord();
         return chord && chord->notes().size() == notes;
     };
 }
@@ -273,7 +273,7 @@ std::string expect_removed_chord(Document &document, const Removal &removal) {
     }
     if (!removal.at) return "the case did not record where the chord sat";
     EngravingItem *item = item_at(document, *removal.at);
-    if (!item || !item->isRest()) return "no rest took its place";
+    if (!item || !item->is_rest()) return "no rest took its place";
     return same(length_of(*item), removal.length) ? std::string{} : "the rest has another length";
 }
 
@@ -282,7 +282,7 @@ std::string expect_removed_note(Document &document, const Removal &removal) {
     if (find(document, removal.target)) return "the note is still there";
     if (!removal.at) return "the case did not record where the chord sat";
     EngravingItem *item = item_at(document, *removal.at);
-    if (!item || !item->isChord()) return "the chord went with the note";
+    if (!item || !item->is_chord()) return "the chord went with the note";
     return pitches_of(*item) == removal.remaining ? std::string{} : "the chord lost another note";
 }
 
@@ -297,9 +297,9 @@ const bool registered = register_cases({
                [](Document &document, const SegmentAddress &at) {
                    if (std::string problem = expect_entered(document, at, {1, 4}, {65}); !problem.empty()) return problem;
                    // The piece in the next bar is tied to the entry.
-                   const Note &note = *mu::engraving::toChord(item_at(document, at))->notes().front();
-                   if (!note.tieFor()) return std::string("the tie to the next bar is missing");
-                   const Note *next = note.tieFor()->endNote();
+                   const Note &note = *mu::engraving::to_chord(item_at(document, at))->notes().front();
+                   if (!note.tie_for()) return std::string("the tie to the next bar is missing");
+                   const Note *next = note.tie_for()->end_note();
                    if (!next || next->pitch() != 65) return std::string("the tie ends on another pitch");
                    return std::string{};
                }),

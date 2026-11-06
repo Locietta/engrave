@@ -452,13 +452,13 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
         std::ifstream file(path, std::ios::binary);
         return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
     };
-    const auto originalBytes = read(source);
-    ASSERT_FALSE(originalBytes.empty());
+    const auto original_bytes = read(source);
+    ASSERT_FALSE(original_bytes.empty());
     ASSERT_TRUE(g_engine->add_font(copy));
-    const auto firstSnapshot = g_engine->runtime_fonts();
+    const auto first_snapshot = g_engine->runtime_fonts();
     const auto first =
-        std::find_if(firstSnapshot.begin(), firstSnapshot.end(), [&](const auto &font) { return read(font.path) == originalBytes; });
-    ASSERT_NE(first, firstSnapshot.end());
+        std::find_if(first_snapshot.begin(), first_snapshot.end(), [&](const auto &font) { return read(font.path) == original_bytes; });
+    ASSERT_NE(first, first_snapshot.end());
     const auto original = *first;
     EXPECT_GT(original.id, 0);
     EXPECT_FALSE(original.family.empty());
@@ -475,7 +475,7 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
     }
     ASSERT_TRUE(g_engine->add_font(copy));
     const auto replaced = g_engine->runtime_fonts();
-    ASSERT_EQ(replaced.size(), firstSnapshot.size());
+    ASSERT_EQ(replaced.size(), first_snapshot.size());
     const auto entry = std::find_if(replaced.begin(), replaced.end(), [&](const auto &font) {
         return font.family == original.family && font.bold == original.bold && font.italic == original.italic;
     });
@@ -483,7 +483,7 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
     EXPECT_NE(entry->id, original.id);
     EXPECT_NE(entry->path, original.path);
     EXPECT_NE(entry->content_fingerprint, original.content_fingerprint);
-    EXPECT_EQ(read(original.path), originalBytes);
+    EXPECT_EQ(read(original.path), original_bytes);
     EXPECT_EQ(read(entry->path), read(copy));
 
     ASSERT_TRUE(g_engine->add_font(source));

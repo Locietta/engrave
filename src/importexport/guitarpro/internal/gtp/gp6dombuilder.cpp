@@ -7,9 +7,9 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::createGPTrack(XmlDomNode *trackNode, XmlDomNode *versionNode) {
-    UNUSED(versionNode);
-    static const std::set<String> sUnusedNodes = {
+std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::create_gp_track(XmlDomNode *track_node, XmlDomNode *version_node) {
+    UNUSED(version_node);
+    static const std::set<String> s_unused_nodes = {
         u"Color", // we don't use icon color for the tracks
         u"SystemsDefaultLayout",
         u"SystemsLayout",          // we have our own layout algorithms
@@ -22,73 +22,73 @@ std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::createGPTrack(XmlDomNode
         u"PlaybackState"           // ignored
     };
 
-    int trackIdx = trackNode->toElement().attribute("id").value().toInt();
-    auto track = std::make_unique<GPTrack>(trackIdx);
-    XmlDomNode trackChildNode = trackNode->firstChild();
+    int track_idx = track_node->to_element().attribute("id").value().to_int();
+    auto track = std::make_unique<GPTrack>(track_idx);
+    XmlDomNode track_child_node = track_node->first_child();
 
-    while (!trackChildNode.isNull()) {
-        String nodeName = trackChildNode.nodeName();
-        if (nodeName == u"Name") {
-            track->setName(trackChildNode.toElement().text());
-        } else if (nodeName == u"RSE") {
-            GPTrack::RSE rse = readTrackRSE(&trackChildNode);
-            track->setRSE(rse);
+    while (!track_child_node.is_null()) {
+        String node_name = track_child_node.node_name();
+        if (node_name == u"Name") {
+            track->set_name(track_child_node.to_element().text());
+        } else if (node_name == u"RSE") {
+            GPTrack::RSE rse = read_track_rse(&track_child_node);
+            track->set_rse(rse);
 
-            XmlDomNode bankChangesNode = trackChildNode.firstChildElement("BankChanges");
-            if (!bankChangesNode.isNull()) {
-                XmlDomNode bankChange = bankChangesNode.firstChild();
-                while (!bankChange.isNull()) {
-                    GPTrack::SoundAutomation automation = readRsePickUp(bankChange);
-                    track->addSoundAutomation(automation);
-                    bankChange = bankChange.nextSibling();
+            XmlDomNode bank_changes_node = track_child_node.first_child_element("BankChanges");
+            if (!bank_changes_node.is_null()) {
+                XmlDomNode bank_change = bank_changes_node.first_child();
+                while (!bank_change.is_null()) {
+                    GPTrack::SoundAutomation automation = read_rse_pick_up(bank_change);
+                    track->add_sound_automation(automation);
+                    bank_change = bank_change.next_sibling();
                 }
             }
-        } else if (nodeName == u"GeneralMidi") {
-            if (trackChildNode.hasChildNodes()) {
-                auto programm = trackChildNode.firstChildElement("Program").text().toInt();
-                track->setProgramm(programm);
-                int midiChannel = trackChildNode.firstChildElement("PrimaryChannel").text().toInt();
-                track->setMidiChannel(midiChannel);
+        } else if (node_name == u"GeneralMidi") {
+            if (track_child_node.has_child_nodes()) {
+                auto programm = track_child_node.first_child_element("Program").text().to_int();
+                track->set_programm(programm);
+                int midi_channel = track_child_node.first_child_element("PrimaryChannel").text().to_int();
+                track->set_midi_channel(midi_channel);
             }
-        } else if (nodeName == u"ShortName") {
-            track->setShortName(trackChildNode.toElement().text());
-        } else if (nodeName == u"Properties") {
-            readTrackProperties(&trackChildNode, track.get(), false);
-        } else if (nodeName == u"Instrument") {
-            setUpInstrument(&trackChildNode, track.get());
-        } else if (nodeName == u"Lyrics") {
-            readLyrics(trackChildNode, track.get());
-        } else if (sUnusedNodes.find(nodeName) != sUnusedNodes.end()) {
+        } else if (node_name == u"ShortName") {
+            track->set_short_name(track_child_node.to_element().text());
+        } else if (node_name == u"Properties") {
+            read_track_properties(&track_child_node, track.get(), false);
+        } else if (node_name == u"Instrument") {
+            set_up_instrument(&track_child_node, track.get());
+        } else if (node_name == u"Lyrics") {
+            read_lyrics(track_child_node, track.get());
+        } else if (s_unused_nodes.find(node_name) != s_unused_nodes.end()) {
             // these nodes are not used (see comment to the sUnusedNodes variable)
         }
 
-        trackChildNode = trackChildNode.nextSibling();
+        track_child_node = track_child_node.next_sibling();
     }
 
-    return std::make_pair(trackIdx, std::move(track));
+    return std::make_pair(track_idx, std::move(track));
 }
 
-void GP6DomBuilder::setUpInstrument(XmlDomNode *trackChildNode, GPTrack *track) {
-    String ref = trackChildNode->toElement().attribute("ref").value();
-    track->setInstrument(ref);
-    if (ref.endsWith(u"-gs") || ref.startsWith(u'2')) { // grand staff
-        track->setStaffCount(2);
+void GP6DomBuilder::set_up_instrument(XmlDomNode *track_child_node, GPTrack *track) {
+    String ref = track_child_node->to_element().attribute("ref").value();
+    track->set_instrument(ref);
+    if (ref.ends_with(u"-gs") || ref.starts_with(u'2')) { // grand staff
+        track->set_staff_count(2);
     }
 
     if (ref.contains(u"gtr") || ref.contains(u"bass")) {
         //! NOTE Guitar notation is transposed to octave by default (see music grammar)
-        track->setTranspose(-12);
+        track->set_transpose(-12);
 
-        track->setIsGuitar(true);
+        track->set_is_guitar(true);
     }
 }
 
-GPTrack::SoundAutomation GP6DomBuilder::readRsePickUp(XmlDomNode &bankChangesNode) const {
+GPTrack::SoundAutomation GP6DomBuilder::read_rse_pick_up(XmlDomNode &bank_changes_node) const {
     GPTrack::SoundAutomation result;
 
-    result.bar = bankChangesNode.toElement().attribute("barIndex").value().toInt();
-    result.value = bankChangesNode.toElement().attribute("bankId").value();
-    result.position = bankChangesNode.toElement().attribute("tickOffset").value().toFloat();
+    result.bar = bank_changes_node.to_element().attribute("barIndex").value().to_int();
+    result.value = bank_changes_node.to_element().attribute("bankId").value();
+    result.position = bank_changes_node.to_element().attribute("tickOffset").value().to_float();
 
     return result;
 }

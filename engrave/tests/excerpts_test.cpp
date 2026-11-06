@@ -38,13 +38,13 @@ void save(const std::filesystem::path &path, const std::string &bytes) {
 std::string export_selection(const music::EngineContext &context, mu::engraving::Score *score, bool midi) {
     muse::ByteArray bytes;
     muse::io::Buffer buffer(&bytes);
-    buffer.open(muse::io::IODevice::WriteOnly);
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
     if (midi) {
         mu::iex::midi::ExportMidi writer(score);
         expect(writer.write(&buffer, true, true), "Excerpt MIDI export failed");
     } else
-        expect(mu::iex::musicxml::saveXml(score, &buffer, context.musicXml()), "Excerpt XML export failed");
-    return {reinterpret_cast<const char *>(bytes.constData()), bytes.size()};
+        expect(mu::iex::musicxml::save_xml(score, &buffer, context.music_xml()), "Excerpt XML export failed");
+    return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
 }
 
 const char *fixture = R"(<score-partwise version="4.0"><part-list>
@@ -74,28 +74,28 @@ mu::engraving::ChordLine *check_chordline_playback(mu::engraving::Score *score, 
     const auto check = [=](bool value, const char *message) {
         if (!value) throw std::runtime_error(std::string(enabled ? "Enabled " : "Disabled ") + stage + ": " + message);
     };
-    check(score && score->firstMeasure(), "Missing measure");
-    auto *chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    check(score && score->first_measure(), "Missing measure");
+    auto *chord = score->first_measure()->find_chord(Fraction(0, 1), 0);
     check(chord && chord->notes().size() == 1, "Missing fixture chord");
-    auto *line = chord->chordLine();
-    check(line && line->chordLineType() == ChordLineType::FALL, "Missing fall");
-    check(line->playChordLine() == enabled, "Playback flag changed");
-    check(line->getProperty(Pid::PLAY).toBool() == enabled, "PLAY property changed");
+    auto *line = chord->chord_line();
+    check(line && line->chord_line_type() == ChordLineType::FALL, "Missing fall");
+    check(line->play_chord_line() == enabled, "Playback flag changed");
+    check(line->get_property(Pid::PLAY).to_bool() == enabled, "PLAY property changed");
 
     // Exercise the playback consumer as well as the stored property. A nonempty
     // Fall profile ensures the enabled control cannot pass by emitting nothing.
     auto profile = std::make_shared<ArticulationsProfile>();
     ArticulationPattern pattern;
-    pattern.emplace(
-        0, ArticulationPatternSegment(ArrangementPattern(HUNDRED_PERCENT, 0), PitchPattern(2, HUNDRED_PERCENT, 0),
-                                      ExpressionPattern(2, HUNDRED_PERCENT, dynamicLevelFromType(muse::mpe::DynamicType::Natural))));
-    profile->setPattern(ArticulationType::Fall, pattern);
+    pattern.emplace(0, ArticulationPatternSegment(
+                           ArrangementPattern(::muse::mpe::hundred_percent, 0), PitchPattern(2, ::muse::mpe::hundred_percent, 0),
+                           ExpressionPattern(2, ::muse::mpe::hundred_percent, dynamic_level_from_type(muse::mpe::DynamicType::NATURAL))));
+    profile->set_pattern(ArticulationType::FALL, pattern);
     auto playback = std::make_shared<PlaybackContext>(score);
-    const auto rendering = buildRenderingCtx(chord, 0, profile, playback);
-    check(rendering.isValid(), "Invalid playback rendering context");
+    const auto rendering = build_rendering_ctx(chord, 0, profile, playback);
+    check(rendering.is_valid(), "Invalid playback rendering context");
     ArticulationMap articulations;
-    ChordArticulationsParser::buildChordArticulationMap(chord, rendering, articulations);
-    check(articulations.contains(ArticulationType::Fall) == enabled, "Fall playback articulation changed");
+    ChordArticulationsParser::build_chord_articulation_map(chord, rendering, articulations);
+    check(articulations.contains(ArticulationType::FALL) == enabled, "Fall playback articulation changed");
     check(articulations.size() == (enabled ? 1u : 0u), "Unexpected playback articulations");
     return line;
 }
@@ -109,7 +109,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
         input.replace(play, disabled_play.size(), "<play>1</play>");
     }
     auto project = music::load_native_score(context, input, "mscx");
-    auto *master = project->masterScore();
+    auto *master = project->master_score();
     expect(music::list_score_excerpts(master).empty(), "Chordline fixture already has excerpts");
     auto *original = check_chordline_playback(master, enabled, "master before generation");
     expect(music::generate_score_excerpts(master), "Chordline excerpt was not generated");
@@ -122,7 +122,7 @@ void test_chordline_playback(const music::EngineContext &context, const std::fil
     const auto archive = music::export_native_score(context, project, "mscz", 0, "");
     save(out / (enabled ? "chordline-enabled.mscz" : "chordline-disabled.mscz"), archive);
     auto reopened = music::load_native_score(context, archive, "mscz");
-    auto *reopened_master = reopened->masterScore();
+    auto *reopened_master = reopened->master_score();
     expect(music::list_score_excerpts(reopened_master).size() == 1, "Saved chordline excerpt lost");
     expect(!music::generate_score_excerpts(reopened_master), "Saved chordline excerpt regenerated");
     check_chordline_playback(reopened_master, enabled, "reopened master");
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
         test_chordline_playback(context, out, false);
         test_chordline_playback(context, out, true);
         auto project = music::load_native_score(context, fixture, "musicxml");
-        auto *master = project->masterScore();
+        auto *master = project->master_score();
         expect(music::list_score_excerpts(master).empty(), "Unexpected initial excerpts");
         expect(music::generate_score_excerpts(master), "No excerpts generated");
         auto records = music::list_score_excerpts(master);
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
             auto *selected = music::select_score(master, i);
             expect(selected->parts().size() == 1 && selected->nstaves() == 1 && selected->npages() > 0,
                    "Excerpt staff/part/layout filter failed");
-            expect(records[i].part_ids.at(0) == master->parts()[i]->id().toStdString(), "Excerpt part ID mismatch");
+            expect(records[i].part_ids.at(0) == master->parts()[i]->id().to_std_string(), "Excerpt part ID mismatch");
             save(out / ("part" + std::to_string(i) + ".musicxml"), export_selection(context, selected, false));
             save(out / ("part" + std::to_string(i) + ".mid"), export_selection(context, selected, true));
             save(out / ("part" + std::to_string(i) + ".svg"), music::render_score(context, selected, "svg", 0));
@@ -170,27 +170,27 @@ int main(int argc, char **argv) {
         const auto archive = music::export_native_score(context, project, "mscz", 0, "");
         save(out / "with-excerpts.mscz", archive);
         auto reopened = music::load_native_score(context, archive, "mscz");
-        expect(music::list_score_excerpts(reopened->masterScore()).size() == 2, "Saved excerpts lost on reopen");
-        expect(!music::generate_score_excerpts(reopened->masterScore()), "Loaded excerpts were regenerated");
+        expect(music::list_score_excerpts(reopened->master_score()).size() == 2, "Saved excerpts lost on reopen");
+        expect(!music::generate_score_excerpts(reopened->master_score()), "Loaded excerpts were regenerated");
         for (int i = 0; i < 2; ++i) {
-            auto *selected = music::select_score(reopened->masterScore(), i);
+            auto *selected = music::select_score(reopened->master_score(), i);
             expect(selected->parts().size() == 1 && selected->npages() > 0, "Reopened excerpt invalid");
             save(out / ("reopened-part" + std::to_string(i) + ".musicxml"), export_selection(context, selected, false));
         }
         auto hidden = music::load_native_score(context, fixture, "musicxml");
-        hidden->masterScore()->parts()[1]->setShow(false);
-        expect(music::generate_score_excerpts(hidden->masterScore()), "Visible excerpt missing");
-        expect(music::list_score_excerpts(hidden->masterScore()).size() == 1, "Hidden part generated excerpt");
+        hidden->master_score()->parts()[1]->set_show(false);
+        expect(music::generate_score_excerpts(hidden->master_score()), "Visible excerpt missing");
+        expect(music::list_score_excerpts(hidden->master_score()).size() == 1, "Hidden part generated excerpt");
         // No title Text exists in this fixture, so workTitle is the selected title source.
-        master->setMetaTag(u"workTitle", muse::String::fromUtf8("\xE4\xB8\xAD\xE6\x96\x87 /\xC2\xA0\xE3\x80\x80"
-                                                                "A.B\xEF\xBB\xBF"
-                                                                "C"));
+        master->set_meta_tag(u"workTitle", muse::String::from_utf8("\xE4\xB8\xAD\xE6\x96\x87 /\xC2\xA0\xE3\x80\x80"
+                                                                   "A.B\xEF\xBB\xBF"
+                                                                   "C"));
         expect(music::score_title_filename_safe(master) == "\xE4\xB8\xAD\xE6\x96\x87"
                                                            "_A_B_C",
                "Unicode filename-safe title mismatch");
         music::MetadataTrack binding;
-        binding.part_id = master->parts()[0]->id().toStdString();
-        binding.instrument_id = master->parts()[0]->instrumentId().toStdString();
+        binding.part_id = master->parts()[0]->id().to_std_string();
+        binding.instrument_id = master->parts()[0]->instrument_id().to_std_string();
         binding.type = "fluid_soundfont";
         binding.name = "Test preset";
         binding.sound_id = "test-resource-id";
@@ -206,14 +206,14 @@ int main(int argc, char **argv) {
         expect(duplicate_rejected, "Duplicate metadata track accepted");
         save(out / "metadata.json", metadata.dump(2));
         auto track_project = music::load_native_score(context, fixture, "musicxml");
-        auto *tracks_score = track_project->masterScore();
-        tracks_score->parts()[0]->setId(muse::ID(uint64_t(10)));
-        tracks_score->parts()[1]->setId(muse::ID(uint64_t(2)));
+        auto *tracks_score = track_project->master_score();
+        tracks_score->parts()[0]->set_id(muse::ID(uint64_t(10)));
+        tracks_score->parts()[1]->set_id(muse::ID(uint64_t(2)));
         music::MetadataTrack upper = binding, lower = binding;
         upper.part_id = "10";
-        upper.instrument_id = tracks_score->parts()[0]->instrumentId().toStdString();
+        upper.instrument_id = tracks_score->parts()[0]->instrument_id().to_std_string();
         lower.part_id = "2";
-        lower.instrument_id = tracks_score->parts()[1]->instrumentId().toStdString();
+        lower.instrument_id = tracks_score->parts()[1]->instrument_id().to_std_string();
         lower.type = "vst_plugin";
         lower.vendor = "Actual test vendor";
         lower.sound_id = lower.name;
@@ -241,9 +241,9 @@ int main(int argc, char **argv) {
             instrument_rejected = true;
         }
         expect(instrument_rejected, "Invalid metadata instrument accepted");
-        tracks_score->setMetaTag(u"workTitle", muse::String::fromUtf8("A\xC2\x85\xE1\xA0\x8E"
-                                                                      "B\xE2\x80\xA8"
-                                                                      "C"));
+        tracks_score->set_meta_tag(u"workTitle", muse::String::from_utf8("A\xC2\x85\xE1\xA0\x8E"
+                                                                         "B\xE2\x80\xA8"
+                                                                         "C"));
         expect(music::score_title_filename_safe(tracks_score) == "A\xC2\x85\xE1\xA0\x8E"
                                                                  "B_C",
                "Non-JS whitespace was replaced");

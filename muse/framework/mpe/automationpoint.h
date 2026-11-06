@@ -41,7 +41,7 @@ struct AutomationPoint {
 
         static constexpr Ease none() { return {}; }
 
-        bool isNone() const { return *this == none(); }
+        bool is_none() const { return *this == none(); }
 
         bool operator==(const Ease &e) const { return t == e.t && value == e.value; }
     };
@@ -61,10 +61,10 @@ struct AutomationPoint {
 
     using InValue = std::variant<ArrivalFromPrevious, ExplicitArrival>;
 
-    InValue inValue = ArrivalFromPrevious{};
-    real_t outValue = 0.;
+    InValue in_value = ArrivalFromPrevious{};
+    real_t out_value = 0.;
 
-    bool operator==(const AutomationPoint &p) const { return inValue == p.inValue && outValue == p.outValue; }
+    bool operator==(const AutomationPoint &p) const { return in_value == p.in_value && out_value == p.out_value; }
 };
 
 template <typename KeyT>
@@ -81,78 +81,78 @@ inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) n
                 return v.ease;
             }
         },
-        point.inValue);
+        point.in_value);
 }
 
 //! NOTE: resolves what this point's arrival value actually is, given prevOutValue
 //! (the outValue of whatever precedes it in its curve, if any)
-inline real_t resolveInValue(const AutomationPoint &point, std::optional<real_t> prevOutValue) noexcept {
+inline real_t resolve_in_value(const AutomationPoint &point, std::optional<real_t> prev_out_value) noexcept {
     return std::visit(
         [&](const auto &v) -> real_t {
             using T = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<T, AutomationPoint::ArrivalFromPrevious>) {
-                return prevOutValue ? *prevOutValue : real_t(0.0);
+                return prev_out_value ? *prev_out_value : real_t(0.0);
             } else {
                 return v.value;
             }
         },
-        point.inValue);
+        point.in_value);
 }
 
 //! NOTE: value at normalized position t ([0, 1]) across the segment arriving at point
 //! The segment is split into two quadratic Bezier arcs meeting at the bend point. The arcs
 //! share a tangent there, producing a smooth bend whose position follows bend.t. When there's
 //! no bend, this reduces to a straight line
-inline real_t evaluateAt(const AutomationPoint &point, std::optional<real_t> prevOutValue, real_t t) noexcept {
-    const real_t prevOut = prevOutValue ? *prevOutValue : real_t(0.0);
-    const real_t thisIn = resolveInValue(point, prevOutValue);
-    const real_t range = thisIn - prevOut;
-    const std::optional<AutomationPoint::Ease> pointEase = ease(point);
+inline real_t evaluate_at(const AutomationPoint &point, std::optional<real_t> prev_out_value, real_t t) noexcept {
+    const real_t prev_out = prev_out_value ? *prev_out_value : real_t(0.0);
+    const real_t this_in = resolve_in_value(point, prev_out_value);
+    const real_t range = this_in - prev_out;
+    const std::optional<AutomationPoint::Ease> point_ease = ease(point);
 
-    if (!pointEase || pointEase->isNone() || pointEase->t <= 0.0 || pointEase->t >= 1.0) {
-        return std::clamp(prevOut + range * t, real_t(0.0), real_t(1.0));
+    if (!point_ease || point_ease->is_none() || point_ease->t <= 0.0 || point_ease->t >= 1.0) {
+        return std::clamp(prev_out + range * t, real_t(0.0), real_t(1.0));
     }
 
-    auto quadraticBezier = [](real_t s, real_t p0, real_t p1, real_t p2) {
+    auto quadratic_bezier = [](real_t s, real_t p0, real_t p1, real_t p2) {
         const real_t u = 1.0 - s;
         return std::clamp(u * u * p0 + 2.0 * u * s * p1 + s * s * p2, real_t(0.0), real_t(1.0));
     };
 
-    const real_t fraction = std::clamp(pointEase->value, real_t(0.0), real_t(1.0));
-    const real_t bendValue = prevOut + fraction * range;
-    const real_t lo = std::min(prevOut, thisIn);
-    const real_t hi = std::max(prevOut, thisIn);
-    const real_t halfSlope = 0.5 * range;
-    const real_t remainder = 1.0 - pointEase->t;
+    const real_t fraction = std::clamp(point_ease->value, real_t(0.0), real_t(1.0));
+    const real_t bend_value = prev_out + fraction * range;
+    const real_t lo = std::min(prev_out, this_in);
+    const real_t hi = std::max(prev_out, this_in);
+    const real_t half_slope = 0.5 * range;
+    const real_t remainder = 1.0 - point_ease->t;
 
     // Clamped control points (q1, q2) for each arc
-    const real_t q1 = std::clamp(bendValue - pointEase->t * halfSlope, lo, hi);
+    const real_t q1 = std::clamp(bend_value - point_ease->t * half_slope, lo, hi);
 
-    if (t <= pointEase->t) {
-        return quadraticBezier(t / pointEase->t, prevOut, q1, bendValue);
+    if (t <= point_ease->t) {
+        return quadratic_bezier(t / point_ease->t, prev_out, q1, bend_value);
     }
 
-    const real_t q2 = std::clamp(bendValue + remainder * halfSlope, lo, hi);
-    return quadraticBezier((t - pointEase->t) / remainder, bendValue, q2, thisIn);
+    const real_t q2 = std::clamp(bend_value + remainder * half_slope, lo, hi);
+    return quadratic_bezier((t - point_ease->t) / remainder, bend_value, q2, this_in);
 }
 
 template <typename Key>
-inline real_t evaluateCurveAt(const AutomationCurve<Key> &curve, const typename AutomationCurve<Key>::key_type &pos) {
+inline real_t evaluate_curve_at(const AutomationCurve<Key> &curve, const typename AutomationCurve<Key>::key_type &pos) {
     if (curve.empty()) {
         return real_t{};
     }
 
-    auto it = findLessOrEqual(curve, pos);
+    auto it = find_less_or_equal(curve, pos);
     if (it == curve.end()) {
         //! NOTE: hold the first point's value backwards in time, matching standard envelope semantics
-        return curve.begin()->second.outValue;
+        return curve.begin()->second.out_value;
     }
 
-    real_t normalized = it->second.outValue;
+    real_t normalized = it->second.out_value;
     const auto next = std::next(it);
     if (next != curve.end()) {
         const real_t t = static_cast<real_t>(pos - it->first) / static_cast<real_t>(next->first - it->first);
-        normalized = evaluateAt(next->second, it->second.outValue, t);
+        normalized = evaluate_at(next->second, it->second.out_value, t);
     }
 
     return normalized;
@@ -160,29 +160,29 @@ inline real_t evaluateCurveAt(const AutomationCurve<Key> &curve, const typename 
 
 //! NOTE: resamples a curve into discrete samples for consumers that can't evaluate on read
 template <typename Key, typename Callback>
-void resampleCurve(const AutomationCurve<Key> &curve, Key stepInterval, Callback &&onSample) {
+void resample_curve(const AutomationCurve<Key> &curve, Key step_interval, Callback &&on_sample) {
     for (auto it = curve.cbegin(); it != curve.cend(); ++it) {
-        onSample(it->first, it->second.outValue);
+        on_sample(it->first, it->second.out_value);
 
         const auto next = std::next(it);
         if (next == curve.cend()) {
             continue;
         }
 
-        const real_t nextArrival = resolveInValue(next->second, it->second.outValue);
-        const std::optional<AutomationPoint::Ease> nextEase = ease(next->second);
-        const bool isFlat = (!nextEase || nextEase->isNone()) && muse::RealIsEqual(nextArrival, it->second.outValue);
-        if (isFlat) {
+        const real_t next_arrival = resolve_in_value(next->second, it->second.out_value);
+        const std::optional<AutomationPoint::Ease> next_ease = ease(next->second);
+        const bool is_flat = (!next_ease || next_ease->is_none()) && muse::real_is_equal(next_arrival, it->second.out_value);
+        if (is_flat) {
             continue;
         }
 
-        const Key intervalDuration = next->first - it->first;
-        const size_t steps = std::max(size_t((intervalDuration + stepInterval - 1) / stepInterval), size_t(1));
+        const Key interval_duration = next->first - it->first;
+        const size_t steps = std::max(size_t((interval_duration + step_interval - 1) / step_interval), size_t(1));
 
         for (size_t j = 1; j < steps; ++j) {
-            const Key t = it->first + intervalDuration * j / steps;
-            const real_t normalized = evaluateAt(next->second, it->second.outValue, real_t(j) / real_t(steps));
-            onSample(t, normalized);
+            const Key t = it->first + interval_duration * j / steps;
+            const real_t normalized = evaluate_at(next->second, it->second.out_value, real_t(j) / real_t(steps));
+            on_sample(t, normalized);
         }
     }
 }

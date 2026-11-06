@@ -30,7 +30,7 @@ namespace muse::audio::engine {
 class IPlayheadPosition {
 public:
     virtual ~IPlayheadPosition() = default;
-    virtual const TimePosition &currentPosition() const = 0;
+    virtual const TimePosition &current_position() const = 0;
 };
 
 class IPlayhead : public IPlayheadPosition {

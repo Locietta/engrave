@@ -40,15 +40,15 @@ struct RuntimeSoundFontInfo {
 struct RuntimeAssets {
     // cacheRoot is the parent directory of the runtime cache directory; empty
     // selects the system temporary directory.
-    explicit RuntimeAssets(const std::filesystem::path &cacheRoot = {});
+    explicit RuntimeAssets(const std::filesystem::path &cache_root = {});
     ~RuntimeAssets();
 
     RuntimeAssets(const RuntimeAssets &) = delete;
     RuntimeAssets &operator=(const RuntimeAssets &) = delete;
 
-    muse::draw::IFontsDatabase &fontsDatabase();
-    muse::draw::IFontsEngine &fontsEngine();
-    muse::draw::IFontProvider &fontProvider();
+    muse::draw::IFontsDatabase &fonts_database();
+    muse::draw::IFontsEngine &fonts_engine();
+    muse::draw::IFontProvider &font_provider();
 
     // Owner-thread final shutdown, after scores and background jobs have been
     // destroyed. Releases cached faces; retained files survive outstanding leases.
@@ -64,14 +64,14 @@ struct RuntimeAssets {
     // A family whose only faces are not regular (e.g. a Medium face that FreeType
     // flags bold) also satisfies regular lookups when upstream has no such family.
     // The score layer owns relayout.
-    RuntimeFontInfo addFont(const std::string &source_path);
+    RuntimeFontInfo add_font(const std::string &source_path);
 
     // Returns an immutable snapshot of the currently selected fonts.
     std::vector<RuntimeFontInfo> fonts() const;
 
     // Copies and validates a SoundFont. The immutable retained path remains valid
     // until shutdown and the last lease. Owner-thread only.
-    RuntimeSoundFontInfo freezeSoundFont(const std::string &source_path);
+    RuntimeSoundFontInfo freeze_sound_font(const std::string &source_path);
 
 private:
     struct Impl;

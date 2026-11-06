@@ -34,7 +34,7 @@ public:
 
 private:
 
-    void doRun(Score *score, LayoutContext &ctx) override;
+    void do_run(Score *score, LayoutContext &ctx) override;
 
     void scan(EngravingItem *item, LayoutContext &ctx);
 };

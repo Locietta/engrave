@@ -29,15 +29,15 @@ class AbstractAudioSource : public IAudioSource {
 public:
     virtual ~AbstractAudioSource() = default;
 
-    virtual void setMode(const ProcessMode mode) override;
+    virtual void set_mode(const ProcessMode mode) override;
     ProcessMode mode() const override;
 
-    virtual void setOutputSpec(const OutputSpec &spec) override;
+    virtual void set_output_spec(const OutputSpec &spec) override;
 
 
 protected:
-    ProcessMode mode_ = ProcessMode::Undefined;
-    OutputSpec outputSpec_;
+    ProcessMode mode_ = ProcessMode::UNDEFINED;
+    OutputSpec output_spec_;
 };
 } // namespace muse::audio::engine
 

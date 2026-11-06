@@ -30,24 +30,24 @@ namespace muse {
 class Version {
 public:
     Version() = default;
-    Version(int major, int minor = 0, int patch = 0, const String &suffix = String(), int suffixVersion = 0);
-    Version(const String &versionStr);
-    Version(const std::string &versionStr);
+    Version(int major, int minor = 0, int patch = 0, const String &suffix = String(), int suffix_version = 0);
+    Version(const String &version_str);
+    Version(const std::string &version_str);
 
     int major() const;
     int minor() const;
     int patch() const;
 
     const String &suffix() const;
-    int suffixVersion() const;
-    void setSuffix(const String &suffix);
+    int suffix_version() const;
+    void set_suffix(const String &suffix);
 
-    bool isNull() const;
+    bool is_null() const;
 
-    bool preRelease() const;
+    bool pre_release() const;
 
-    String toString() const;
-    std::string toStdString() const;
+    String to_string() const;
+    std::string to_std_string() const;
 
     bool operator<(const Version &other) const;
     bool operator==(const Version &other) const;
@@ -58,6 +58,6 @@ private:
     int minor_ = 0;
     int patch_ = 0;
     String suffix_;
-    int suffixVersion_ = 0;
+    int suffix_version_ = 0;
 };
 } // namespace muse

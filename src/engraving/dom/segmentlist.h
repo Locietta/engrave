@@ -52,7 +52,7 @@ public:
 
     Segment *first() const { return first_; }
 
-    Segment *firstActive() const;
+    Segment *first_active() const;
     Segment *first(SegmentType) const;
     Segment *first(ElementFlag) const;
 
@@ -60,51 +60,51 @@ public:
 
     Segment *last(ElementFlag) const;
     Segment *last(SegmentType) const;
-    Segment *firstCRSegment() const;
+    Segment *first_cr_segment() const;
     void remove(Segment *);
     void push_back(Segment *);
     void push_front(Segment *);
     void insert(Segment *e, Segment *el); // insert e before el
 
-    class iterator {
+    class Iterator {
         Segment *p;
     public:
-        iterator(Segment *s) { p = s; }
+        Iterator(Segment *s) { p = s; }
 
-        iterator operator++() {
-            iterator i(p);
+        Iterator operator++() {
+            Iterator i(p);
             p = p->next();
             return i;
         }
 
-        bool operator!=(const iterator &i) const { return p != i.p; }
+        bool operator!=(const Iterator &i) const { return p != i.p; }
 
         Segment &operator*() { return *p; }
     };
 
-    class const_iterator {
+    class ConstIterator {
         const Segment *p;
     public:
-        const_iterator(const Segment *s) { p = s; }
+        ConstIterator(const Segment *s) { p = s; }
 
-        const_iterator operator++() {
-            const_iterator i(p);
+        ConstIterator operator++() {
+            ConstIterator i(p);
             p = p->next();
             return i;
         }
 
-        bool operator!=(const const_iterator &i) const { return p != i.p; }
+        bool operator!=(const ConstIterator &i) const { return p != i.p; }
 
         const Segment &operator*() const { return *p; }
     };
 
-    iterator begin() { return first_; }
+    Iterator begin() { return first_; }
 
-    iterator end() { return 0; }
+    Iterator end() { return 0; }
 
-    const_iterator begin() const { return first_; }
+    ConstIterator begin() const { return first_; }
 
-    const_iterator end() const { return 0; }
+    ConstIterator end() const { return 0; }
 
 private:
 

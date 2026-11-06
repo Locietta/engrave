@@ -31,9 +31,9 @@ class Transaction;
 class SplitJoinMeasure {
 public:
     /// Splits the measure at the given tick, at the given tick.
-    static void splitMeasure(Transaction &tx, MasterScore *masterScore, const Fraction &tick);
+    static void split_measure(Transaction &tx, MasterScore *master_score, const Fraction &tick);
 
     /// Joins the measures from tick1 up to (including) tick2.
-    static void joinMeasures(Transaction &tx, MasterScore *masterScore, const Fraction &tick1, const Fraction &tick2);
+    static void join_measures(Transaction &tx, MasterScore *master_score, const Fraction &tick1, const Fraction &tick2);
 };
 } // namespace mu::engraving

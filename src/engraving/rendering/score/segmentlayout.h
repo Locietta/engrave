@@ -29,16 +29,16 @@ namespace mu::engraving::rendering::score {
 class SegmentLayout {
 public:
 
-    static void layoutMeasureIndependentElements(const Segment &segment, track_idx_t track, const LayoutContext &ctx);
-    static void setChordMag(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
-                            const LayoutConfiguration &conf);
-    static void checkStaffMoveValidity(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack);
-    static void layoutChordDrumset(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
-                                   const LayoutConfiguration &conf);
+    static void layout_measure_independent_elements(const Segment &segment, track_idx_t track, const LayoutContext &ctx);
+    static void set_chord_mag(const Staff *staff, const Segment &segment, track_idx_t start_track, track_idx_t end_track,
+                              const LayoutConfiguration &conf);
+    static void check_staff_move_validity(const Segment &segment, track_idx_t start_track, track_idx_t end_track);
+    static void layout_chord_drumset(const Staff *staff, const Segment &segment, track_idx_t start_track, track_idx_t end_track,
+                                     const LayoutConfiguration &conf);
 
-    static void computeChordsUp(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx);
+    static void compute_chords_up(const Segment &segment, track_idx_t start_track, track_idx_t end_track, const LayoutContext &ctx);
 
-    static void layoutChordsStem(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx);
+    static void layout_chords_stem(const Segment &segment, track_idx_t start_track, track_idx_t end_track, const LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score
 

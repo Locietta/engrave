@@ -38,51 +38,52 @@ class SysStaff;
 namespace mu::engraving::rendering::score {
 class SystemHeaderLayout {
 public:
-    static void updateSystemHeaderWidth(System *system, LayoutContext &ctx);
+    static void update_system_header_width(System *system, LayoutContext &ctx);
 
-    static double layoutBrackets(System *system, LayoutContext &ctx);
-    static void addBrackets(System *system, Measure *measure, LayoutContext &ctx);
-    static double totalBracketOffset(LayoutContext &ctx);
-    static void setBracketsXPosition(System *system, double xPosition);
-    static void layoutBracketsVertical(System *system, LayoutContext &ctx);
+    static double layout_brackets(System *system, LayoutContext &ctx);
+    static void add_brackets(System *system, Measure *measure, LayoutContext &ctx);
+    static double total_bracket_offset(LayoutContext &ctx);
+    static void set_brackets_x_position(System *system, double x_position);
+    static void layout_brackets_vertical(System *system, LayoutContext &ctx);
 
-    static void computeInstrumentNameOffset(System *system, LayoutContext &ctx);
-    static void computeInstrumentNamesWidth(System *system, LayoutContext &ctx);
-    static void setInstrumentNamesVerticalPos(System *system, LayoutContext &ctx);
-    static void setInstrumentNamesHorizontalPos(System *system);
-    static void setGroupBracketsHorizontalPos(System *system);
-    static void setInstrumentNames(System *system, LayoutContext &ctx);
+    static void compute_instrument_name_offset(System *system, LayoutContext &ctx);
+    static void compute_instrument_names_width(System *system, LayoutContext &ctx);
+    static void set_instrument_names_vertical_pos(System *system, LayoutContext &ctx);
+    static void set_instrument_names_horizontal_pos(System *system);
+    static void set_group_brackets_horizontal_pos(System *system);
+    static void set_instrument_names(System *system, LayoutContext &ctx);
 
-    static String formatSharedVoiceLabel(const std::vector<const Instrument *> &instruments, bool trailingDotSingle,
-                                         bool trailingDotMultiple, int hyphenLimit);
+    static String format_shared_voice_label(const std::vector<const Instrument *> &instruments, bool trailing_dot_single,
+                                            bool trailing_dot_multiple, int hyphen_limit);
 
 private:
-    static Bracket *createBracket(System *system, LayoutContext &ctx, BracketItem *bi, size_t column, staff_idx_t staffIdx,
-                                  std::vector<Bracket *> &bl, Measure *measure);
-    static void computeGroupBracketsWidths(System *system, LayoutContext &ctx);
-    static void computeStackedBracketsWidth(Bracket *first, const std::vector<Bracket *> &allGroupBracketsOrderedByColumn, double &width,
-                                            std::vector<Bracket *> &stack);
+    static Bracket *create_bracket(System *system, LayoutContext &ctx, BracketItem *bi, size_t column, staff_idx_t staff_idx,
+                                   std::vector<Bracket *> &bl, Measure *measure);
+    static void compute_group_brackets_widths(System *system, LayoutContext &ctx);
+    static void compute_stacked_brackets_width(Bracket *first, const std::vector<Bracket *> &all_group_brackets_ordered_by_column,
+                                               double &width, std::vector<Bracket *> &stack);
 
-    static void setSharedPartNames(SharedPart *sharedPart, staff_idx_t startStaffIdx, System *system, LayoutContext &ctx,
-                                   const Fraction &tick = {0, 1});
+    static void set_shared_part_names(SharedPart *shared_part, staff_idx_t start_staff_idx, System *system, LayoutContext &ctx,
+                                      const Fraction &tick = {0, 1});
 
-    static void updateGroupNames(System *system, LayoutContext &ctx, const Fraction &tick);
-    static bool useGroupNames(const String &instrumentGroup, LayoutContext &ctx);
-    static InstrumentName *updateName(System *system, staff_idx_t staffIdx, LayoutContext &ctx, const String &name, InstrumentNameType type,
-                                      InstrumentNameRole role);
-    static String formattedInstrumentName(System *system, Part *part, const Fraction &tick, bool longNames);
-    static String formattedGroupName(System *system, Part *part, const Fraction &tick, bool longNames);
+    static void update_group_names(System *system, LayoutContext &ctx, const Fraction &tick);
+    static bool use_group_names(const String &instrument_group, LayoutContext &ctx);
+    static InstrumentName *update_name(System *system, staff_idx_t staff_idx, LayoutContext &ctx, const String &name,
+                                       InstrumentNameType type, InstrumentNameRole role);
+    static String formatted_instrument_name(System *system, Part *part, const Fraction &tick, bool long_names);
+    static String formatted_group_name(System *system, Part *part, const Fraction &tick, bool long_names);
 
-    static InstrumentLabelVisibility resolveInstrumentLabelVisibility(const Staff *staff, const Fraction &tick, LayoutContext &ctx,
-                                                                      bool firstSystem);
-    static InstrumentNameType resolveInstrumentNameType(InstrumentLabelVisibility visibility);
+    static InstrumentLabelVisibility resolve_instrument_label_visibility(const Staff *staff, const Fraction &tick, LayoutContext &ctx,
+                                                                         bool first_system);
+    static InstrumentNameType resolve_instrument_name_type(InstrumentLabelVisibility visibility);
 
-    static String formattedSharedStaffLabel(staff_idx_t staffIdx, const SharedTrackMap &trackMap, const std::vector<Part *> &originParts);
-    static String formatVerticalSharedLabel(const std::vector<const Instrument *> &instruments, bool trailingDotSingle);
+    static String formatted_shared_staff_label(staff_idx_t staff_idx, const SharedTrackMap &track_map,
+                                               const std::vector<Part *> &origin_parts);
+    static String format_vertical_shared_label(const std::vector<const Instrument *> &instruments, bool trailing_dot_single);
 
-    static String &resolveTokens(String &str, const String &name, const String &transposition, const String &number);
-    static double nameWidthIncludingGroupBrackets(InstrumentName *name, System *system);
+    static String &resolve_tokens(String &str, const String &name, const String &transposition, const String &number);
+    static double name_width_including_group_brackets(InstrumentName *name, System *system);
 
-    static bool stackLabelsVertically(System *system);
+    static bool stack_labels_vertically(System *system);
 };
 } // namespace mu::engraving::rendering::score

@@ -34,36 +34,38 @@ namespace MidiTuplet {
 struct TupletInfo;
 
 struct TiedTuplet {
-    int tupletId;
+    int tuplet_id;
     int voice;
     std::pair<const ReducedFraction, MidiChord> *chord; // chord the tuplet is tied with
-    std::vector<int> tiedNoteIndexes;                   // indexes of tied notes of that chord
+    std::vector<int> tied_note_indexes;                 // indexes of tied notes of that chord
 };
 
-int tupletVoiceLimit();
+int tuplet_voice_limit();
 
-bool excludeExtraVoiceTuplets(std::vector<TupletInfo> &tuplets, std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &nonTuplets,
-                              std::list<TiedTuplet> &backTiedTuplets, const std::multimap<ReducedFraction, MidiChord> &chords,
-                              const ReducedFraction &basicQuant, const ReducedFraction &barStart, int barIndex);
+bool exclude_extra_voice_tuplets(std::vector<TupletInfo> &tuplets,
+                                 std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &non_tuplets,
+                                 std::list<TiedTuplet> &back_tied_tuplets, const std::multimap<ReducedFraction, MidiChord> &chords,
+                                 const ReducedFraction &basic_quant, const ReducedFraction &bar_start, int bar_index);
 
-std::list<TiedTuplet> findBackTiedTuplets(const std::multimap<ReducedFraction, MidiChord> &chords, const std::vector<TupletInfo> &tuplets,
-                                          const ReducedFraction &prevBarStart, const ReducedFraction &startBarTick,
-                                          const ReducedFraction &basicQuant, int currentBarIndex);
+std::list<TiedTuplet> find_back_tied_tuplets(const std::multimap<ReducedFraction, MidiChord> &chords,
+                                             const std::vector<TupletInfo> &tuplets, const ReducedFraction &prev_bar_start,
+                                             const ReducedFraction &start_bar_tick, const ReducedFraction &basic_quant,
+                                             int current_bar_index);
 
-void assignVoices(std::vector<TupletInfo> &tuplets, std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &nonTuplets,
-                  std::list<TiedTuplet> &backTiedTuplets, const std::multimap<ReducedFraction, MidiChord> &chords,
-                  const ReducedFraction &basicQuant, const ReducedFraction &barStart, int barIndex);
+void assign_voices(std::vector<TupletInfo> &tuplets, std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &non_tuplets,
+                   std::list<TiedTuplet> &back_tied_tuplets, const std::multimap<ReducedFraction, MidiChord> &chords,
+                   const ReducedFraction &basic_quant, const ReducedFraction &bar_start, int bar_index);
 
-std::pair<ReducedFraction, ReducedFraction> chordInterval(const std::pair<const ReducedFraction, MidiChord> &chord,
-                                                          const std::multimap<ReducedFraction, MidiChord> &chords,
-                                                          const ReducedFraction &basicQuant, const ReducedFraction &barStart);
+std::pair<ReducedFraction, ReducedFraction> chord_interval(const std::pair<const ReducedFraction, MidiChord> &chord,
+                                                           const std::multimap<ReducedFraction, MidiChord> &chords,
+                                                           const ReducedFraction &basic_quant, const ReducedFraction &bar_start);
 
 #ifndef NDEBUG
 
-bool haveOverlappingVoices(const std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &nonTuplets,
-                           const std::vector<TupletInfo> &tuplets, const std::list<TiedTuplet> &backTiedTuplets,
-                           const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basicQuant,
-                           const ReducedFraction &barStart);
+bool have_overlapping_voices(const std::list<std::multimap<ReducedFraction, MidiChord>::iterator> &non_tuplets,
+                             const std::vector<TupletInfo> &tuplets, const std::list<TiedTuplet> &back_tied_tuplets,
+                             const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
+                             const ReducedFraction &bar_start);
 
 #endif
 } // namespace MidiTuplet

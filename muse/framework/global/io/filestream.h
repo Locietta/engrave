@@ -30,27 +30,27 @@ namespace muse::io {
 class FileStream : public IODevice {
 public:
     FileStream() = default;
-    explicit FileStream(const path_t &filePath);
+    explicit FileStream(const PathT &file_path);
     ~FileStream() override;
 
     FileStream(const FileStream &) = delete;
     FileStream &operator=(const FileStream &) = delete;
 
-    const path_t &filePath() const;
+    const PathT &file_path() const;
 
 protected:
-    bool doOpen(OpenMode m) override;
-    void doClose() override;
-    size_t dataSize() const override;
-    const uint8_t *rawData() const override;
-    bool resizeData(size_t size) override;
-    size_t writeData(const uint8_t *data, size_t len) override;
+    bool do_open(OpenMode m) override;
+    void do_close() override;
+    size_t data_size() const override;
+    const uint8_t *raw_data() const override;
+    bool resize_data(size_t size) override;
+    size_t write_data(const uint8_t *data, size_t len) override;
 
 private:
-    path_t filePath_;
+    PathT file_path_;
     size_t size_ = 0;
 
-    StreamId streamId_ = INVALID_STREAM_ID;
-    size_t expectedPos_ = 0;
+    StreamId stream_id_ = ::muse::io::invalid_stream_id;
+    size_t expected_pos_ = 0;
 };
 } // namespace muse::io

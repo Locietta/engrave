@@ -35,53 +35,53 @@ public:
 
     PartialTieSegment *clone() const override { return new PartialTieSegment(*this); }
 
-    PartialTie *partialTie() const { return (PartialTie *) spanner(); }
+    PartialTie *partial_tie() const { return (PartialTie *) spanner(); }
 private:
-    String formatBarsAndBeats() const override;
+    String format_bars_and_beats() const override;
 };
 
 class PartialTie : public Tie {
     OBJECT_ALLOCATOR(engraving, PartialTie)
     DECLARE_CLASSOF(ElementType::PARTIAL_TIE);
 
-    M_PROPERTY2(PartialSpannerDirection, partialSpannerDirection, setPartialSpannerDirection, PartialSpannerDirection::OUTGOING)
+    M_PROPERTY2(PartialSpannerDirection, partial_spanner_direction, set_partial_spanner_direction, PartialSpannerDirection::OUTGOING)
 
 public:
     PartialTie(DummyParentOr<Note> parent);
 
-    Note *parentNote() const { return parent() ? toNote(parent()) : nullptr; }
+    Note *parent_note() const { return parent() ? to_note(parent()) : nullptr; }
 
     PartialTie *clone() const override { return new PartialTie(*this); }
 
-    inline bool isOutgoing() const { return _partialSpannerDirection == PartialSpannerDirection::OUTGOING; }
+    inline bool is_outgoing() const { return partial_spanner_direction_value == PartialSpannerDirection::OUTGOING; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    PropertyValue get_property(Pid property_id) const override;
+    PropertyValue property_default(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
 
-    SlurTieSegment *newSlurTieSegment() override;
+    SlurTieSegment *new_slur_tie_segment() override;
 
-    Note *note() const { return isOutgoing() ? startNote() : endNote(); }
+    Note *note() const { return is_outgoing() ? start_note() : end_note(); }
 
-    void setStartNote(Note *note) override;
-    void setEndNote(Note *note) override;
+    void set_start_note(Note *note) override;
+    void set_end_note(Note *note) override;
 
-    TieJumpPointList *tieJumpPoints() override;
-    const TieJumpPointList *tieJumpPoints() const override;
-    bool allJumpPointsInactive() const override;
+    TieJumpPointList *tie_jump_points() override;
+    const TieJumpPointList *tie_jump_points() const override;
+    bool all_jump_points_inactive() const override;
 
-    Note *startNote() const override;
+    Note *start_note() const override;
 
-    PartialTieSegment *frontSegment() { return toPartialTieSegment(Spanner::frontSegment()); }
+    PartialTieSegment *front_segment() { return to_partial_tie_segment(Spanner::front_segment()); }
 
-    const PartialTieSegment *frontSegment() const { return toPartialTieSegment(Spanner::frontSegment()); }
+    const PartialTieSegment *front_segment() const { return to_partial_tie_segment(Spanner::front_segment()); }
 
-    PartialTieSegment *backSegment() { return toPartialTieSegment(Spanner::backSegment()); }
+    PartialTieSegment *back_segment() { return to_partial_tie_segment(Spanner::back_segment()); }
 
-    const PartialTieSegment *backSegment() const { return toPartialTieSegment(Spanner::backSegment()); }
+    const PartialTieSegment *back_segment() const { return to_partial_tie_segment(Spanner::back_segment()); }
 
-    PartialTieSegment *segmentAt(int n) { return toPartialTieSegment(Spanner::segmentAt(n)); }
+    PartialTieSegment *segment_at(int n) { return to_partial_tie_segment(Spanner::segment_at(n)); }
 
-    const PartialTieSegment *segmentAt(int n) const { return toPartialTieSegment(Spanner::segmentAt(n)); }
+    const PartialTieSegment *segment_at(int n) const { return to_partial_tie_segment(Spanner::segment_at(n)); }
 };
 } // namespace mu::engraving

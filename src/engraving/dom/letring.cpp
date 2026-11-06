@@ -32,43 +32,43 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle letRingStyle{
-    {Sid::letRingFontFace, Pid::BEGIN_FONT_FACE},
-    {Sid::letRingFontFace, Pid::CONTINUE_FONT_FACE},
-    {Sid::letRingFontFace, Pid::END_FONT_FACE},
-    {Sid::letRingFontSize, Pid::BEGIN_FONT_SIZE},
-    {Sid::letRingFontSize, Pid::CONTINUE_FONT_SIZE},
-    {Sid::letRingFontSize, Pid::END_FONT_SIZE},
-    {Sid::letRingFontStyle, Pid::BEGIN_FONT_STYLE},
-    {Sid::letRingFontStyle, Pid::CONTINUE_FONT_STYLE},
-    {Sid::letRingFontStyle, Pid::END_FONT_STYLE},
-    {Sid::letRingTextAlign, Pid::BEGIN_TEXT_ALIGN},
-    {Sid::letRingTextAlign, Pid::CONTINUE_TEXT_ALIGN},
-    {Sid::letRingTextAlign, Pid::END_TEXT_ALIGN},
-    {Sid::letRingPosition, Pid::BEGIN_TEXT_POSITION},
-    {Sid::letRingPosition, Pid::CONTINUE_TEXT_POSITION},
-    {Sid::letRingPosition, Pid::END_TEXT_POSITION},
-    {Sid::letRingHookHeight, Pid::BEGIN_HOOK_HEIGHT},
-    {Sid::letRingHookHeight, Pid::END_HOOK_HEIGHT},
-    {Sid::letRingLineStyle, Pid::LINE_STYLE},
-    {Sid::letRingDashLineLen, Pid::DASH_LINE_LEN},
-    {Sid::letRingDashGapLen, Pid::DASH_GAP_LEN},
-    {Sid::letRingFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
-    {Sid::letRingEndHookType, Pid::END_HOOK_TYPE},
-    {Sid::letRingLineWidth, Pid::LINE_WIDTH},
-    {Sid::letRingPlacement, Pid::PLACEMENT},
-    {Sid::letRingMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::letRingMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::letRingMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
+static const ElementStyle let_ring_style{
+    {Sid::LET_RING_FONT_FACE, Pid::BEGIN_FONT_FACE},
+    {Sid::LET_RING_FONT_FACE, Pid::CONTINUE_FONT_FACE},
+    {Sid::LET_RING_FONT_FACE, Pid::END_FONT_FACE},
+    {Sid::LET_RING_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+    {Sid::LET_RING_FONT_SIZE, Pid::CONTINUE_FONT_SIZE},
+    {Sid::LET_RING_FONT_SIZE, Pid::END_FONT_SIZE},
+    {Sid::LET_RING_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+    {Sid::LET_RING_FONT_STYLE, Pid::CONTINUE_FONT_STYLE},
+    {Sid::LET_RING_FONT_STYLE, Pid::END_FONT_STYLE},
+    {Sid::LET_RING_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::LET_RING_TEXT_ALIGN, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::LET_RING_TEXT_ALIGN, Pid::END_TEXT_ALIGN},
+    {Sid::LET_RING_POSITION, Pid::BEGIN_TEXT_POSITION},
+    {Sid::LET_RING_POSITION, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::LET_RING_POSITION, Pid::END_TEXT_POSITION},
+    {Sid::LET_RING_HOOK_HEIGHT, Pid::BEGIN_HOOK_HEIGHT},
+    {Sid::LET_RING_HOOK_HEIGHT, Pid::END_HOOK_HEIGHT},
+    {Sid::LET_RING_LINE_STYLE, Pid::LINE_STYLE},
+    {Sid::LET_RING_DASH_LINE_LEN, Pid::DASH_LINE_LEN},
+    {Sid::LET_RING_DASH_GAP_LEN, Pid::DASH_GAP_LEN},
+    {Sid::LET_RING_FONT_SPATIUM_DEPENDENT, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
+    {Sid::LET_RING_END_HOOK_TYPE, Pid::END_HOOK_TYPE},
+    {Sid::LET_RING_LINE_WIDTH, Pid::LINE_WIDTH},
+    {Sid::LET_RING_PLACEMENT, Pid::PLACEMENT},
+    {Sid::LET_RING_MUSICAL_SYMBOL_SIZE, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::LET_RING_MUSICAL_SYMBOL_SIZE, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::LET_RING_MUSICAL_SYMBOL_SIZE, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
 };
 
 LetRingSegment::LetRingSegment(LetRing *sp)
     : TextLineBaseSegment(ElementType::LET_RING_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
+    end_text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------
@@ -76,29 +76,29 @@ LetRingSegment::LetRingSegment(LetRing *sp)
 //---------------------------------------------------------
 
 LetRing::LetRing(DummyParentOr<EngravingItem> parent) : ChordTextLineBase(ElementType::LET_RING, parent) {
-    initElementStyle(&letRingStyle);
-    resetProperty(Pid::LINE_VISIBLE);
+    init_element_style(&::mu::engraving::let_ring_style);
+    reset_property(Pid::LINE_VISIBLE);
 
-    resetProperty(Pid::BEGIN_TEXT_PLACE);
-    resetProperty(Pid::BEGIN_TEXT);
-    resetProperty(Pid::CONTINUE_TEXT_PLACE);
-    resetProperty(Pid::CONTINUE_TEXT);
-    resetProperty(Pid::END_TEXT_PLACE);
-    resetProperty(Pid::END_TEXT);
+    reset_property(Pid::BEGIN_TEXT_PLACE);
+    reset_property(Pid::BEGIN_TEXT);
+    reset_property(Pid::CONTINUE_TEXT_PLACE);
+    reset_property(Pid::CONTINUE_TEXT);
+    reset_property(Pid::END_TEXT_PLACE);
+    reset_property(Pid::END_TEXT);
 }
 
-static const ElementStyle letRingSegmentStyle{
-    {Sid::letRingMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle let_ring_segment_style{
+    {Sid::LET_RING_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment *LetRing::createLineSegment() {
+LineSegment *LetRing::create_line_segment() {
     LetRingSegment *lr = new LetRingSegment(this);
-    lr->setTrack(track());
-    lr->initElementStyle(&letRingSegmentStyle);
+    lr->set_track(track());
+    lr->init_element_style(&::mu::engraving::let_ring_segment_style);
     return lr;
 }
 
@@ -106,24 +106,24 @@ LineSegment *LetRing::createLineSegment() {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue LetRing::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::LINE_WIDTH: return style().styleV(Sid::letRingLineWidth);
+PropertyValue LetRing::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::LINE_WIDTH: return style().style_v(Sid::LET_RING_LINE_WIDTH);
 
         case Pid::ALIGN: return Align(AlignH::LEFT, AlignV::BASELINE);
 
-        case Pid::LINE_STYLE: return style().styleV(Sid::letRingLineStyle);
+        case Pid::LINE_STYLE: return style().style_v(Sid::LET_RING_LINE_STYLE);
 
         case Pid::LINE_VISIBLE: return true;
 
         case Pid::BEGIN_TEXT_OFFSET:
         case Pid::CONTINUE_TEXT_OFFSET:
-        case Pid::END_TEXT_OFFSET: return PropertyValue::fromValue(PointF(0, 0));
+        case Pid::END_TEXT_OFFSET: return PropertyValue::from_value(PointF(0, 0));
 
-        case Pid::BEGIN_FONT_STYLE: return style().styleV(Sid::letRingFontStyle);
+        case Pid::BEGIN_FONT_STYLE: return style().style_v(Sid::LET_RING_FONT_STYLE);
 
         case Pid::BEGIN_TEXT:
-        case Pid::CONTINUE_TEXT: return style().styleV(Sid::letRingText);
+        case Pid::CONTINUE_TEXT: return style().style_v(Sid::LET_RING_TEXT);
         case Pid::END_TEXT: return "";
 
         case Pid::BEGIN_HOOK_TYPE: return HookType::NONE;
@@ -142,7 +142,7 @@ PropertyValue LetRing::propertyDefault(Pid propertyId) const {
         case Pid::END_LINE_ARROW_HEIGHT:
         case Pid::END_LINE_ARROW_WIDTH: return 0.0;
 
-        default: return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::property_default(property_id);
     }
 }
 
@@ -150,26 +150,26 @@ PropertyValue LetRing::propertyDefault(Pid propertyId) const {
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid LetRing::getPropertyStyle(Pid id) const {
+Sid LetRing::get_property_style(Pid id) const {
     switch (id) {
-        case Pid::PLACEMENT: return Sid::letRingPlacement;
-        case Pid::BEGIN_FONT_FACE: return Sid::letRingFontFace;
+        case Pid::PLACEMENT: return Sid::LET_RING_PLACEMENT;
+        case Pid::BEGIN_FONT_FACE: return Sid::LET_RING_FONT_FACE;
         case Pid::BEGIN_FONT_SIZE:
         case Pid::CONTINUE_FONT_SIZE:
-        case Pid::END_FONT_SIZE: return Sid::letRingFontSize;
+        case Pid::END_FONT_SIZE: return Sid::LET_RING_FONT_SIZE;
         case Pid::BEGIN_FONT_STYLE:
         case Pid::CONTINUE_FONT_STYLE:
-        case Pid::END_FONT_STYLE: return Sid::letRingFontStyle;
+        case Pid::END_FONT_STYLE: return Sid::LET_RING_FONT_STYLE;
         case Pid::BEGIN_TEXT_ALIGN:
         case Pid::CONTINUE_TEXT_ALIGN:
-        case Pid::END_TEXT_ALIGN: return Sid::letRingTextAlign;
+        case Pid::END_TEXT_ALIGN: return Sid::LET_RING_TEXT_ALIGN;
         case Pid::BEGIN_HOOK_HEIGHT:
-        case Pid::END_HOOK_HEIGHT: return Sid::letRingHookHeight;
-        case Pid::BEGIN_TEXT: return Sid::letRingText;
+        case Pid::END_HOOK_HEIGHT: return Sid::LET_RING_HOOK_HEIGHT;
+        case Pid::BEGIN_TEXT: return Sid::LET_RING_TEXT;
         default: break;
     }
-    return TextLineBase::getPropertyStyle(id);
+    return TextLineBase::get_property_style(id);
 }
 
-Sid LetRing::defaultPosSid() const { return placeAbove() ? Sid::letRingPosAbove : Sid::letRingPosBelow; }
+Sid LetRing::default_pos_sid() const { return place_above() ? Sid::LET_RING_POS_ABOVE : Sid::LET_RING_POS_BELOW; }
 } // namespace mu::engraving

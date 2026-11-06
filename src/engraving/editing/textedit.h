@@ -36,27 +36,27 @@ struct TextEditData : public ElementEditData {
     OBJECT_ALLOCATOR(engraving, TextEditData)
 public:
 
-    String oldXmlText;
-    size_t startUndoIdx = 0;
+    String old_xml_text;
+    size_t start_undo_idx = 0;
 
-    bool deleteText = false;
+    bool delete_text = false;
 
-    String selectedText;
-    String selectedPlainText;
-    static constexpr const char *mimeRichTextFormat = "application/musescore/richtext";
+    String selected_text;
+    String selected_plain_text;
+    static constexpr const char *mime_rich_text_format = "application/musescore/richtext";
 
-    TextEditData(TextBase *t) : textBase_(t) {}
+    TextEditData(TextBase *t) : text_base_(t) {}
 
     TextEditData(const TextEditData &) = delete;
     TextEditData &operator=(const TextEditData &) = delete;
     ~TextEditData();
 
-    virtual EditDataType type() override { return EditDataType::TextEditData; }
+    virtual EditDataType type() override { return EditDataType::TEXT_EDIT_DATA; }
 
-    void setDeleteText(bool val) { deleteText = val; }
+    void set_delete_text(bool val) { delete_text = val; }
 
 private:
-    TextBase *textBase_ = nullptr;
+    TextBase *text_base_ = nullptr;
 };
 
 //---------------------------------------------------------
@@ -67,14 +67,14 @@ class TextEditUndoableCommand : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, TextEditUndoableCommand)
 
 public:
-    UNDO_TYPE(CommandType::TextEdit)
+    UNDO_TYPE(CommandType::TEXT_EDIT)
     UNDO_NAME("TextEdit")
     UNDO_CHANGED_OBJECTS({cursor_.text()})
 
     TextEditUndoableCommand(const TextCursor &tc) : cursor_(tc) {}
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override {
-        return f == UndoableCommandFilter::TextEdit && cursor_.text() == target;
+    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override {
+        return f == UndoableCommandFilter::TEXT_EDIT && cursor_.text() == target;
     }
 
     TextCursor &cursor() { return cursor_; }
@@ -93,18 +93,18 @@ class ChangeTextProperties : public TextEditUndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeTextProperties)
 
 public:
-    ChangeTextProperties(const TextCursor *tc, Pid propId, const PropertyValue &propVal, PropertyFlags flags);
+    ChangeTextProperties(const TextCursor *tc, Pid prop_id, const PropertyValue &prop_val, PropertyFlags flags);
     void undo() override;
     void redo() override;
 
 private:
 
-    void restoreSelection();
+    void restore_selection();
 
-    String xmlText_;
-    Pid propertyId_;
-    PropertyValue propertyVal_;
-    FontStyle existingStyle_;
+    String xml_text_;
+    Pid property_id_;
+    PropertyValue property_val_;
+    FontStyle existing_style_;
     PropertyFlags flags_;
 };
 
@@ -124,8 +124,8 @@ public:
     const String &string() const { return s_; }
 
 protected:
-    void insertText();
-    void removeText();
+    void insert_text();
+    void remove_text();
 
 private:
 
@@ -142,9 +142,9 @@ class InsertText : public ChangeText {
 public:
     InsertText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
 
-    virtual void redo() override { insertText(); }
+    virtual void redo() override { insert_text(); }
 
-    virtual void undo() override { removeText(); }
+    virtual void undo() override { remove_text(); }
     UNDO_NAME("InsertText")
 };
 
@@ -157,9 +157,9 @@ class RemoveText : public ChangeText {
 public:
     RemoveText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
 
-    virtual void redo() override { removeText(); }
+    virtual void redo() override { remove_text(); }
 
-    virtual void undo() override { insertText(); }
+    virtual void undo() override { insert_text(); }
     UNDO_NAME("RemoveText")
 };
 

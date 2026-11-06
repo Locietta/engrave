@@ -33,7 +33,7 @@ std::vector<std::byte> bytes_of(std::string data) {
 // part it touched; a score that never reached the layout has no page to draw yet.
 void prepare_layout(mu::engraving::Score &score) {
     if (score.npages() == 0 && score.nmeasures() > 0) {
-        score.doLayout();
+        score.do_layout();
         score.update();
     }
 }
@@ -53,7 +53,7 @@ Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
-    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), selection);
+    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), selection);
     if (!selected) return std::unexpected(selected.error());
     prepare_layout(**selected);
     return static_cast<std::int32_t>((*selected)->npages());
@@ -63,7 +63,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
-    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), options.score);
+    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
     mu::engraving::Score &score = **selected;
     prepare_layout(score);
@@ -81,7 +81,8 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     const std::int32_t first = options.first_page;
     const std::int32_t last = options.last_page < 0 ? npages - 1 : options.last_page;
     if (first < 0 || last < first || last >= npages) {
-        return fail(ErrorCode::INVALID_ARGUMENT, std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
+        return fail(ErrorCode::INVALID_ARGUMENT,
+                    std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
     }
 
     music::ExportOptions backend;
@@ -120,7 +121,7 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     if (kind != PositionKind::MEASURE && kind != PositionKind::SEGMENT) return fail(ErrorCode::INVALID_ARGUMENT, "unknown position kind");
     if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::CANCELLED, "position capture cancelled");
-    const auto selected = select_score(*impl_->project->masterScore(), selection);
+    const auto selected = select_score(*impl_->project->master_score(), selection);
     if (!selected) return std::unexpected(selected.error());
     impl_->refresh_fonts();
     prepare_layout(**selected);

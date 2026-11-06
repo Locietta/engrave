@@ -39,7 +39,7 @@ namespace mu::engraving {
 
 ChordTextLineBase::ChordTextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags f) : TextLineBase(type, parent, f) {}
 
-void ChordTextLineBase::doComputeEndElement() {
-    setEndElement(score()->findChordRestEndingBeforeTickInStaff(tick2(), track2staff(track2())));
+void ChordTextLineBase::do_compute_end_element() {
+    set_end_element(score()->find_chord_rest_ending_before_tick_in_staff(tick2(), track2staff(track2())));
 }
 } // namespace mu::engraving
