@@ -1,0 +1,401 @@
+{
+ "annotations": [
+  {
+   "dynamic": "f",
+   "tick": 0,
+   "track": 0,
+   "type": "Dynamic"
+  },
+  {
+   "bpm": 120.0,
+   "subtype": "Tempo",
+   "text": " = 120",
+   "tick": 0,
+   "track": 0,
+   "type": "Tempo"
+  }
+ ],
+ "events": [
+  [
+   [
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 5,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 55,
+       "string": 3,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 6,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 65,
+       "string": 1,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 480,
+     "ticks": 240
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 6,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "string": 1,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 720,
+     "ticks": 240
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 6,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 65,
+       "string": 1,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 960,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "grace8after",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 8,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "string": 1,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 960,
+     "ticks": 0
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 2,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "string": 2,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 1920,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "grace8after",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 4,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 59,
+       "string": 2,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 1920,
+     "ticks": 0
+    },
+    {
+     "duration": "eighth",
+     "grace": "grace8after",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 4,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "string": 2,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 1920,
+     "ticks": 0
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 1,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 60,
+       "string": 1,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 2880,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "grace8after",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 3,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "string": 1,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 2880,
+     "ticks": 0
+    },
+    {
+     "duration": "eighth",
+     "grace": "appoggiatura",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 2,
+       "ghost": true,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "string": 2,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 3840,
+     "ticks": 0
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 2,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 59,
+       "string": 2,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 3840,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "appoggiatura",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 3,
+       "ghost": true,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 53,
+       "string": 3,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 4800,
+     "ticks": 0
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 3,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 55,
+       "string": 3,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 4800,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "grace8after",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 5,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 53,
+       "string": 3,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 4800,
+     "ticks": 0
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 1920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 3840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": ""
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "electric-guitar",
+   "longName": "Guitar I",
+   "partName": "Guitar I",
+   "shortName": "od.guit.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    -12,
+    -7
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   5760,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [
+  {
+   "subtype": "Single barline",
+   "tick": 1920,
+   "track": 0,
+   "type": "BarLine"
+  },
+  {
+   "subtype": "Single barline",
+   "tick": 3840,
+   "track": 0,
+   "type": "BarLine"
+  }
+ ],
+ "signatures": [
+  {
+   "key": 0,
+   "staff": 0,
+   "tick": 0,
+   "type": "KeySig",
+   "value": 0
+  },
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [],
+ "tempoMap": [
+  [
+   0,
+   120.0
+  ]
+ ]
+}

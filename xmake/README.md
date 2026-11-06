@@ -6,7 +6,7 @@ Native score, MusicXML/MXL, MIDI, Guitar Pro/PowerTab and MNX imports and the MN
 exporter are compiled; all audio encoders, including AAC, are always enabled. Native score saves omit thumbnails and serialize excerpts sequentially.
 
 Tests and their GoogleTest dependency are opt-in. Add `--engrave_tests=y` to the
-complete configure command, then run `xmake build -P . -y -j8 c0_gate`. This builds
+complete configure command, then run `xmake build -P . -y -j8 engine_tests`. This builds
 the supported unit-test closure, including `diagnostics_test` and `io_boundary_test`,
 the public API embedder/header-leak check and output probes. It does not execute
 them. Individual tests and optional development probes remain explicit even in a
@@ -26,3 +26,6 @@ directory contract and `python tools/test_install_assets.py` for packaging check
 Fonts and SoundFonts supplied by consumers remain external; no assets are embedded
 in the library. The hard fork accepts selected upstream fixes by cherry-pick;
 Historical deletions are preserved in Git history; upstream sync tooling is retired.
+
+Execute the standalone closure and golden checks with `python tests/gate.py`; see
+the root README for runtime prefixes, tool versions and full arguments.

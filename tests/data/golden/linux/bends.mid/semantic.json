@@ -1,0 +1,220 @@
+{
+ "annotations": [
+  {
+   "bpm": 120.0,
+   "subtype": "Tempo",
+   "text": " = 120",
+   "tick": 0,
+   "track": 0,
+   "type": "Tempo"
+  }
+ ],
+ "events": [
+  [
+   [
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 0,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 1920,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 3840,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 7680,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 9600,
+     "ticks": 1920
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 1920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 3840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 5760,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 7680,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 9600,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": ""
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "electric-guitar",
+   "longName": "Electric Guitar, Electric Guitar",
+   "partName": "Electric Guitar, Electric Guitar",
+   "shortName": "El. Guit.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   11520,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [],
+ "signatures": [
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [],
+ "tempoMap": [
+  [
+   0,
+   120.0
+  ]
+ ]
+}

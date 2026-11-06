@@ -1,0 +1,2259 @@
+{
+ "fixture": "bend.gp",
+ "platform": "shared",
+ "eventTotal": 373,
+ "events": [
+  {
+   "channel": 0,
+   "data": 0,
+   "frame": 0,
+   "index": 123,
+   "opcode": "Opcode::ControlChange"
+  },
+  {
+   "channel": 0,
+   "data": 0,
+   "frame": 0,
+   "index": 64,
+   "opcode": "Opcode::ControlChange"
+  },
+  {
+   "channel": 0,
+   "frame": 0,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 0,
+   "note": 55,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "note": 55,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "note": 65,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 20480,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 24576,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 28672,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8874
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 32768,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 36864,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 40960,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 45056,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 49152,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 53248,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 57344,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 61440,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 65536,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 69632,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 73728,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 73728,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 73728,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 73728,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 73728,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8874
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "note": 65,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "note": 57,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 86016,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 90112,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 94208,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 98304,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 98304,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 98304,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 98304,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 98304,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8874
+  },
+  {
+   "channel": 0,
+   "frame": 106496,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 106496,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 106496,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 110592,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 114688,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "note": 57,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "note": 60,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8206
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8219
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8233
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8247
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8260
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8274
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8287
+  },
+  {
+   "channel": 0,
+   "frame": 131072,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8301
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8315
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8328
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8342
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8356
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8369
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8383
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8397
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8410
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8424
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8438
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8451
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8465
+  },
+  {
+   "channel": 0,
+   "frame": 135168,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8478
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8492
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8506
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8519
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8533
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8547
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8560
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8574
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8588
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8601
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8615
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8628
+  },
+  {
+   "channel": 0,
+   "frame": 139264,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8642
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8656
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8669
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8683
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8697
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8710
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8724
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8738
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8751
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8765
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8779
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8792
+  },
+  {
+   "channel": 0,
+   "frame": 143360,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8806
+  },
+  {
+   "channel": 0,
+   "frame": 147456,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8819
+  },
+  {
+   "channel": 0,
+   "frame": 147456,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8833
+  },
+  {
+   "channel": 0,
+   "frame": 147456,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8847
+  },
+  {
+   "channel": 0,
+   "frame": 147456,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8860
+  },
+  {
+   "channel": 0,
+   "frame": 147456,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8874
+  },
+  {
+   "channel": 0,
+   "frame": 172032,
+   "note": 60,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 172032,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 176128,
+   "note": 59,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 217088,
+   "note": 59,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 217088,
+   "note": 55,
+   "opcode": "Opcode::NoteOn",
+   "velocity": 96
+  },
+  {
+   "channel": 0,
+   "frame": 217088,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  },
+  {
+   "channel": 0,
+   "frame": 217088,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8178
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8165
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8151
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8137
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8124
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8110
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8097
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8083
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8069
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8056
+  },
+  {
+   "channel": 0,
+   "frame": 221184,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8042
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8028
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8015
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8001
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7987
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7974
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7960
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7946
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7933
+  },
+  {
+   "channel": 0,
+   "frame": 225280,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7919
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7906
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7892
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7878
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7865
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7851
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7837
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7824
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7810
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7796
+  },
+  {
+   "channel": 0,
+   "frame": 229376,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7783
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7769
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7756
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7742
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7728
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7715
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7701
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7687
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7674
+  },
+  {
+   "channel": 0,
+   "frame": 233472,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7660
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7646
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7633
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7619
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7605
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7592
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7578
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7565
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7551
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7537
+  },
+  {
+   "channel": 0,
+   "frame": 237568,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7524
+  },
+  {
+   "channel": 0,
+   "frame": 241664,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 7510
+  },
+  {
+   "channel": 0,
+   "frame": 262144,
+   "note": 55,
+   "opcode": "Opcode::NoteOff",
+   "velocity": 0
+  },
+  {
+   "channel": 0,
+   "frame": 262144,
+   "opcode": "Opcode::PitchBend",
+   "pitchBend": 8192
+  }
+ ]
+}

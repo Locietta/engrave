@@ -2,7 +2,7 @@
 --
 -- Standalone build:
 --   xmake f -m release && xmake build
--- Tests: xmake f --engrave_tests=y && xmake build c0_gate
+-- Tests: xmake f --engrave_tests=y && xmake build engine_tests
 --
 -- The engine targets themselves live in xmake/engrave.lua, which is also the
 -- file the engrave-mcp superproject includes from its pinned vendor/engrave

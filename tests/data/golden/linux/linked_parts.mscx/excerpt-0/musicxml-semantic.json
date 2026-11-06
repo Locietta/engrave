@@ -1,0 +1,483 @@
+{
+ "creators": {
+  "composer": [
+   "Composer / arranger"
+  ]
+ },
+ "movement_title": null,
+ "part_list": {
+  "groups": [
+   {
+    "number": 1,
+    "symbol": "none",
+    "type": "start"
+   },
+   {
+    "number": 1,
+    "type": "stop"
+   }
+  ],
+  "parts": [
+   {
+    "abbreviation": "Fl.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 74,
+      "name": "Flute",
+      "pan": 0,
+      "sound": "wind.flutes.flute",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Flute"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Fl.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 74,
+     "name": "Flute",
+     "pan": 0,
+     "sound": "wind.flutes.flute",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        },
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 2
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "staves": 2,
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 0,
+       "tie": [
+        "start"
+       ],
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 480,
+       "tie": [
+        "stop"
+       ],
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 0,
+       "tie": [
+        "start"
+       ],
+       "type": "quarter",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 480,
+       "tie": [
+        "stop"
+       ],
+       "type": "quarter",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "rest": {
+        "measure": false
+       },
+       "staff": 2,
+       "tick": 960,
+       "type": "half",
+       "voice": 5
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "tie": [
+        "start"
+       ],
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "tie": [
+        "stop"
+       ],
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "tie": [
+        "start"
+       ],
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 3360,
+       "tie": [
+        "stop"
+       ],
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 1920,
+       "tie": [
+        "start"
+       ],
+       "type": "eighth",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 1920,
+       "tie": [
+        "stop"
+       ],
+       "type": "quarter",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 2,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 2880,
+       "tie": [
+        "start"
+       ],
+       "type": "quarter",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 2,
+       "tick": 3360,
+       "tie": [
+        "stop"
+       ],
+       "type": "eighth",
+       "voice": 5
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 2,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 5
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Flute"
+  }
+ ],
+ "rights": [],
+ "work_title": "Untitled score"
+}

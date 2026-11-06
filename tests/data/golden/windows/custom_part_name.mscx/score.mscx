@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <programVersion></programVersion>
+  <programRevision></programRevision>
+  <Score>
+    <eid>e1</eid>
+    <Division>480</Division>
+    <Style>
+      <pageWidth>8.26772</pageWidth>
+      <pageHeight>11.6929</pageHeight>
+      <pagePrintableWidth>7.08661</pagePrintableWidth>
+      <pageEvenLeftMargin>0.590551</pageEvenLeftMargin>
+      <pageOddLeftMargin>0.590551</pageOddLeftMargin>
+      <pageEvenTopMargin>0.590551</pageEvenTopMargin>
+      <pageEvenBottomMargin>0.590551</pageEvenBottomMargin>
+      <pageOddTopMargin>0.590551</pageOddTopMargin>
+      <pageOddBottomMargin>0.590551</pageOddBottomMargin>
+      <spatium>1.75</spatium>
+      </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <open>1</open>
+    <metaTag name="arranger"></metaTag>
+    <metaTag name="audioComUrl"></metaTag>
+    <metaTag name="composer">Yannis A. Paul</metaTag>
+    <metaTag name="copyright"></metaTag>
+    <metaTag name="creationDate"></metaTag>
+    <metaTag name="lyricist"></metaTag>
+    <metaTag name="movementNumber"></metaTag>
+    <metaTag name="movementTitle"></metaTag>
+    <metaTag name="mscVersion">4.00</metaTag>
+    <metaTag name="platform"></metaTag>
+    <metaTag name="poet"></metaTag>
+    <metaTag name="source"></metaTag>
+    <metaTag name="sourceRevisionId"></metaTag>
+    <metaTag name="translator"></metaTag>
+    <metaTag name="workNumber"></metaTag>
+    <metaTag name="workTitle">Idee in Noten no.8</metaTag>
+    <Part id="1">
+      <eid>e2</eid>
+      <Staff>
+        <eid>e3</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+          </StaffType>
+        <BracketItem>
+          <type>Brace</type>
+          <bracketSpan>1</bracketSpan>
+          <level>0</level>
+          </BracketItem>
+        <barLineSpan>1</barLineSpan>
+        </Staff>
+      <Instrument id="piano">
+        <InstrumentLabel>
+          <longName>Klavier</longName>
+          <shortName>Flgl.</shortName>
+          </InstrumentLabel>
+        <trackName>Klavier</trackName>
+        <minPitchP>21</minPitchP>
+        <maxPitchP>108</maxPitchP>
+        <minPitchA>21</minPitchA>
+        <maxPitchA>108</maxPitchA>
+        <instrumentId>keyboard.piano</instrumentId>
+        <clef staff="2">F</clef>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>95</gateTime>
+          </Articulation>
+        <Articulation name="staccatissimo">
+          <velocity>100</velocity>
+          <gateTime>33</gateTime>
+          </Articulation>
+        <Articulation name="staccato">
+          <velocity>100</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="portato">
+          <velocity>100</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="tenuto">
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="marcato">
+          <velocity>120</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Channel>
+          <program value="0"/>
+          <synti>Fluid</synti>
+          </Channel>
+        </Instrument>
+      </Part>
+    <Staff id="1">
+      <Measure>
+        <eid>e4</eid>
+        <voice>
+          <TimeSig>
+            <eid>e5</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+            </TimeSig>
+          <Dynamic>
+            <subtype>p</subtype>
+            <velocity>49</velocity>
+            <eid>e6</eid>
+            </Dynamic>
+          <Chord>
+            <eid>e7</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e8</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e9</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e10</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e11</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e12</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e13</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e14</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          </voice>
+        </Measure>
+      <Measure>
+        <eid>e15</eid>
+        <startRepeat/>
+        <endRepeat>2</endRepeat>
+        <voice>
+          <Dynamic>
+            <subtype>f</subtype>
+            <velocity>96</velocity>
+            <eid>e16</eid>
+            </Dynamic>
+          <Chord>
+            <eid>e17</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e18</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e19</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e20</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e21</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e22</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          <Dynamic>
+            <subtype>fff</subtype>
+            <velocity>126</velocity>
+            <eid>e23</eid>
+            <visible>0</visible>
+            </Dynamic>
+          <Chord>
+            <eid>e24</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e25</eid>
+              <pitch>65</pitch>
+              <tpc>13</tpc>
+              </Note>
+            </Chord>
+          </voice>
+        </Measure>
+      <Measure>
+        <eid>e26</eid>
+        <voice>
+          <Dynamic>
+            <subtype>ppp</subtype>
+            <velocity>16</velocity>
+            <eid>e27</eid>
+            </Dynamic>
+          <Chord>
+            <eid>e28</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e29</eid>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e30</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e31</eid>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e32</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e33</eid>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+              </Note>
+            </Chord>
+          <Dynamic>
+            <subtype>p</subtype>
+            <velocity>49</velocity>
+            <eid>e34</eid>
+            </Dynamic>
+          <Chord>
+            <eid>e35</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e36</eid>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+              </Note>
+            </Chord>
+          </voice>
+        </Measure>
+      </Staff>
+    <SpannerMap>
+      <HairPin>
+        <subtype>0</subtype>
+        <beginHookHeight>-1.9</beginHookHeight>
+        <endHookHeight>-1.9</endHookHeight>
+        <track2>0</track2>
+        <startTick>0/1</startTick>
+        <ticks>1/1</ticks>
+        <eid>e37</eid>
+        <track>0</track>
+        <Segment>
+          <subtype>0</subtype>
+          <offset x="0" y="1.75"/>
+          <off2 x="1.16325" y="0"/>
+          <eid>e38</eid>
+          <track>0</track>
+          <offset x="0" y="1.75"/>
+          </Segment>
+        </HairPin>
+      <HairPin>
+        <subtype>0</subtype>
+        <direction>down</direction>
+        <beginHookHeight>-1.9</beginHookHeight>
+        <endHookHeight>-1.9</endHookHeight>
+        <track2>0</track2>
+        <startTick>1/1</startTick>
+        <ticks>3/4</ticks>
+        <eid>e39</eid>
+        <track>0</track>
+        <Segment>
+          <subtype>0</subtype>
+          <offset x="0" y="3.5"/>
+          <off2 x="-0.3776" y="0"/>
+          <eid>e40</eid>
+          <track>0</track>
+          <offset x="0" y="3.5"/>
+          </Segment>
+        </HairPin>
+      <HairPin>
+        <subtype>0</subtype>
+        <direction>down</direction>
+        <beginHookHeight>-1.9</beginHookHeight>
+        <endHookHeight>-1.9</endHookHeight>
+        <track2>0</track2>
+        <startTick>2/1</startTick>
+        <ticks>3/4</ticks>
+        <eid>e41</eid>
+        <track>0</track>
+        <Segment>
+          <subtype>0</subtype>
+          <offset x="0" y="2"/>
+          <off2 x="10.0585" y="0"/>
+          <eid>e42</eid>
+          <track>0</track>
+          <offset x="0" y="2"/>
+          </Segment>
+        </HairPin>
+      </SpannerMap>
+    </Score>
+  </museScore>

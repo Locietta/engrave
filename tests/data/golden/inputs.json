@@ -1,0 +1,99 @@
+{
+  "fixtures": {
+    "bend.gp": {
+      "fixture_sha256": "8114407dae4f9312abb348229d5c619275c6906b2ffa2bc62b63fbb167af8c0e"
+    },
+    "bends.mid": {
+      "fixture_sha256": "39f30289f493ce6c97a29f94e748ab00ad1e5aa10221f18139cabbb84eb0539e"
+    },
+    "chordline_path.mscx": {
+      "fixture_sha256": "c45e82a063455315c11880a4272f584a3603ef2962fceda2897ed3b00c619bf3"
+    },
+    "coverage.musicxml": {
+      "fixture_sha256": "ebba437fec5252694b844ae47b2f701f813535098a5ecfabad5cb98b0d3083d5"
+    },
+    "created.json": {
+      "converter_sha256": "a8b337a0ed017a1e29db1eaee03dd8f7831639935f194fea16f255103695ce42",
+      "fixture_sha256": "93d5565119ae0d56c97c4eadb33bae8b336f1b5c84ae1f582dea5fb9473493f9",
+      "input_sha256": "c31b8e2512cf0a0452ba9b916d0feac54dee9adee3506fd1707ec583708792d6"
+    },
+    "custom_part_name.mscx": {
+      "fixture_sha256": "43940b4eb1128c9428e3f2ba521d1051b7b63d9782de1da533e84907dcfccdca"
+    },
+    "drums_import.musicxml": {
+      "fixture_sha256": "07f649ff614f9058a8c3da6e80660aaf38023650ea40a9e45531c5e915229ce9"
+    },
+    "edit-replace-measures": {
+      "converter_sha256": "a8b337a0ed017a1e29db1eaee03dd8f7831639935f194fea16f255103695ce42",
+      "fixture_sha256": "93d5565119ae0d56c97c4eadb33bae8b336f1b5c84ae1f582dea5fb9473493f9",
+      "input_sha256": "c31b8e2512cf0a0452ba9b916d0feac54dee9adee3506fd1707ec583708792d6",
+      "scenario_sha256": "db8fd759937a08148f668fc69fc6b571943402dbec706adcadcb37fcb982bdfd"
+    },
+    "edit-set-pitches-coverage": {
+      "fixture_sha256": "ebba437fec5252694b844ae47b2f701f813535098a5ecfabad5cb98b0d3083d5",
+      "scenario_sha256": "be8ec3d2337486553692c9585814dfaa6710c6d383bad2c5c4fd58eb20ee4fde"
+    },
+    "edit-set-pitches-linked": {
+      "fixture_sha256": "c45e82a063455315c11880a4272f584a3603ef2962fceda2897ed3b00c619bf3",
+      "scenario_sha256": "b72d94d4e9126e24cc4c3eb8d0f0c4d6b9f87bc1e865ca74242a3d7c3eea4fcd"
+    },
+    "evening.musicxml": {
+      "fixture_sha256": "376f316a8a80ee8e13688f315040534179f3f9f670bb85ad830531cfe6c0b2a6"
+    },
+    "ghost_note.mscx": {
+      "fixture_sha256": "831172bfc81626a64c05a76f160890e1452cc50e59ab64ee1a9ece9b37c7815a"
+    },
+    "graceArps.mnx": {
+      "fixture_sha256": "47a2fd5a717c2156da1f3a8dc7b26edb31ae514b0f9dff2e33bef53f68e56508"
+    },
+    "hairpins_and_repeats.mscx": {
+      "fixture_sha256": "6c462d2bd1f26f25013363492fba39a6bb097ea4238c4ebb6748b8ce74b50f7a"
+    },
+    "layout_elements.mscx": {
+      "fixture_sha256": "f56fcbf8a00d644ce99bebaff0a587b558bbd78e2a55f82f2eee80c91ff63394"
+    },
+    "linked_parts.mscx": {
+      "fixture_sha256": "afeed12e70f91074c0a38be9ed261a797ffea261082514de2a6c00251ccbed3e"
+    },
+    "lyrics.mscx": {
+      "fixture_sha256": "747c5cfb2bfac43b81090d545ea6d3fb8cd26db628b0a9cc0eb43f1cd5b99b35"
+    },
+    "named_noteheads_perc.musicxml": {
+      "fixture_sha256": "91cb901acf7ca9e82cbbb79b2fc67cbeefcb2483430fd2ff5a071d7cbea4da5a"
+    },
+    "pedal.mscx": {
+      "fixture_sha256": "1401cc3c79a66d5b755991d7cd4df8367f96878e40ca2249b7a15eaad4c1a1cf"
+    },
+    "perc_stem_dir.musicxml": {
+      "fixture_sha256": "ff0bbdb454c496364faa9927ec92bd29b52eed201734e30e99c73c55f59c4c4f"
+    },
+    "percussionKit.mnx": {
+      "fixture_sha256": "1ae38631f12500e6142d51874227bc06335d5139b55aed7ef24cf7ea052549fd"
+    },
+    "repeat70.mscx": {
+      "fixture_sha256": "6f8419d3239c5b6958f94e5a26b1a78103b7b8c09880d7d57e5a1ae109a20655"
+    },
+    "repeat71.mscx": {
+      "fixture_sha256": "0484b66f23d5498484bd8ca8eba7c5871145b01665af1a79348f5e4857a3a622"
+    },
+    "repeat72.mscx": {
+      "fixture_sha256": "f6f86642df227c851cdf2ac5e00a5d883560788cfa796af4b4a435537dedcbc7"
+    },
+    "repeat_with_2_voltas.mscx": {
+      "fixture_sha256": "05111b03145fdac611c491375a0dba82f7787a5697d4a40c1afdb70ca164d1b6"
+    },
+    "slurs.mscz": {
+      "fixture_sha256": "bba43c6622453d578a88dd08c5190a4de931863645fd61b4437549b2bb728cad"
+    },
+    "tab_grace_prebend.mscx": {
+      "fixture_sha256": "166e61c7bc1a51dea63f05fa953faa93880d2839555b2fb230cd39f69a3d31a7"
+    },
+    "tupletSimple.mnx": {
+      "fixture_sha256": "bda6edf6de96c168e6b1bf7993d71eb45b3c4cdc6656db4d3873b2f46d872eab"
+    },
+    "two-notes.mnx": {
+      "fixture_sha256": "66fa043f52283c2439f4fa36f0f9e3cd7d6e047291b679d0f21ed1bc972a7193"
+    }
+  },
+  "source_commit": "278b99496f83b2702c22ff503e8790359b00b2af"
+}

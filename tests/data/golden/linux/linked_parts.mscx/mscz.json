@@ -1,0 +1,29 @@
+{
+ "entries": [
+  {
+   "name": "Excerpts/0_Flute/0_Flute.mscx",
+   "sha256": "42e2cb5e586a87244e7ae98128fcc0079c9a5294e92e69c35cd3d1ebfda47a46"
+  },
+  {
+   "name": "Excerpts/0_Flute/0_Flute.mss",
+   "size": 108996
+  },
+  {
+   "name": "META-INF/container.xml",
+   "size": 339
+  },
+  {
+   "name": "automation.json",
+   "size": 3
+  },
+  {
+   "name": "score.mscx",
+   "sha256": "45547bf1cfd367d23c2162d5f68194de4166b8cd8f5b9439c72286882a5dfe28"
+  },
+  {
+   "name": "score_style.mss",
+   "size": 108996
+  }
+ ],
+ "texts": {}
+}

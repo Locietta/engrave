@@ -1,0 +1,216 @@
+{
+ "annotations": [
+  {
+   "dynamic": "f",
+   "tick": 0,
+   "track": 0,
+   "type": "Dynamic"
+  },
+  {
+   "bpm": 135.0,
+   "subtype": "Tempo",
+   "text": " = 135",
+   "tick": 0,
+   "track": 0,
+   "type": "Tempo"
+  }
+ ],
+ "events": [
+  [
+   [
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 19,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 59,
+       "string": 5,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 17,
+       "ghost": true,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "string": 5,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 960,
+     "ticks": 960
+    }
+   ],
+   [],
+   [],
+   []
+  ],
+  [
+   [
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 19,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 59,
+       "string": 5,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fret": 17,
+       "ghost": true,
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "string": 5,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 960,
+     "ticks": 960
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "originalFormat": "gp",
+  "source": "",
+  "sourceRevisionId": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": ""
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "guitar-steel",
+   "longName": "Guitar",
+   "partName": "Guitar",
+   "shortName": "dist.guit.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    },
+    {
+     "group": "tablature",
+     "index": 1,
+     "invisible": false,
+     "lines": 6
+    }
+   ],
+   "transpose": [
+    -12,
+    -7
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   1920,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [
+  {
+   "subtype": "Final barline",
+   "tick": 1920,
+   "track": 0,
+   "type": "BarLine"
+  },
+  {
+   "subtype": "Final barline",
+   "tick": 1920,
+   "track": 4,
+   "type": "BarLine"
+  }
+ ],
+ "signatures": [
+  {
+   "key": 0,
+   "staff": 0,
+   "tick": 0,
+   "type": "KeySig",
+   "value": 0
+  },
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [],
+ "tempoMap": [
+  [
+   0,
+   135.0
+  ]
+ ]
+}

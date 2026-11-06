@@ -1,4 +1,4 @@
-# Naming rules shared with the engrave-mcp host (see ../../.clang-tidy).
+# Engine naming policy; self-contained in this checkout.
 Checks: "-*,readability-identifier-naming"
 HeaderFilterRegex: '.*[\\/](engrave|src|muse)[\\/].*'
 ExcludeHeaderFilterRegex: '.*[\\/]thirdparty[\\/].*'

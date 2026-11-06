@@ -1,0 +1,266 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "El. Guit.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 28,
+      "name": "Electric Guitar",
+      "pan": 0,
+      "sound": "pluck.guitar.electric",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Electric Guitar, Electric Guitar"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "El. Guit.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 28,
+     "name": "Electric Guitar",
+     "pan": 0,
+     "sound": "pluck.guitar.electric",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "octave_change": -1,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [
+      {
+       "metronome": {
+        "beat_unit": "quarter",
+        "per_minute": "120"
+       },
+       "placement": "above",
+       "sound": {
+        "tempo": 120
+       },
+       "tick": 0
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 7680,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 3,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 5760,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "4",
+     "start_tick": 5760,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 9600,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 4,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 7680,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "5",
+     "start_tick": 7680,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 11520,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 5,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 9600,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "6",
+     "start_tick": 9600,
+     "unhandled": []
+    }
+   ],
+   "name": "Electric Guitar, Electric Guitar"
+  }
+ ],
+ "rights": [],
+ "work_title": null
+}

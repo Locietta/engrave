@@ -404,7 +404,7 @@ target("audio_engine_link_check")
 target_end()
 
 -- The complete engine gate closure; no MCP host dependency.
-target("c0_gate")
+target("engine_tests")
     set_kind("phony")
     set_default(false)
     add_deps("engrave_api_test", "engrave_handles_test", "engrave_describe_test",

@@ -1,0 +1,13 @@
+{
+ "corpora": {
+  "engrave-1": {
+   "entries": 25,
+   "manifest_sha256": "37beac4f29a6985ef1410580e916c0af49856c5f0553f9a41e6112941e37ee3e"
+  },
+  "engrave-19": {
+   "entries": 25,
+   "manifest_sha256": "b2af6efd2f4fafc7ed12a5c918f6eed95fa186c3f6414f604f0d8ba6cb78068f"
+  }
+ },
+ "schema": 1
+}

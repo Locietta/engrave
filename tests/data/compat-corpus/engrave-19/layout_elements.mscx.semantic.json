@@ -1,0 +1,1122 @@
+{
+ "annotations": [
+  {
+   "subtype": "System",
+   "text": "System Text",
+   "tick": 0,
+   "track": 0,
+   "type": "SystemText"
+  },
+  {
+   "bpm": 144.0,
+   "subtype": "Tempo",
+   "text": "Allegro",
+   "tick": 0,
+   "track": 0,
+   "type": "Tempo"
+  },
+  {
+   "tick": 0,
+   "track": 4,
+   "type": "FretDiagram"
+  },
+  {
+   "dynamic": "f",
+   "tick": 1920,
+   "track": 0,
+   "type": "Dynamic"
+  },
+  {
+   "subtype": "Staff",
+   "text": "Staff Text",
+   "tick": 1920,
+   "track": 0,
+   "type": "StaffText"
+  },
+  {
+   "subtype": "Expression",
+   "text": "Expression",
+   "tick": 3840,
+   "track": 0,
+   "type": "Expression"
+  },
+  {
+   "subtype": "Fermata above",
+   "tick": 5760,
+   "track": 0,
+   "type": "Fermata"
+  },
+  {
+   "subtype": "Instrument change",
+   "text": "Change Instr.",
+   "tick": 5760,
+   "track": 0,
+   "type": "InstrumentChange"
+  },
+  {
+   "subtype": "Rehearsal mark",
+   "text": "A",
+   "tick": 11520,
+   "track": 0,
+   "type": "RehearsalMark"
+  },
+  {
+   "subtype": "Right hand, 3 ranks, 8' stop + upper tremolo 8' stop + 16' stop (accordion)",
+   "tick": 12000,
+   "track": 0,
+   "type": "Symbol"
+  },
+  {
+   "subtype": "Default",
+   "text": "5\n3",
+   "tick": 12480,
+   "track": 0,
+   "type": "FiguredBass"
+  },
+  {
+   "subtype": "Default",
+   "text": "",
+   "tick": 12960,
+   "track": 0,
+   "type": "FiguredBass"
+  },
+  {
+   "subtype": "Rehearsal mark",
+   "text": "B",
+   "tick": 13920,
+   "track": 0,
+   "type": "RehearsalMark"
+  },
+  {
+   "tick": 13920,
+   "track": 4,
+   "type": "TremoloBar"
+  },
+  {
+   "harmony": "C",
+   "subtype": "Chord symbol",
+   "text": "C",
+   "tick": 14400,
+   "track": 4,
+   "type": "Harmony"
+  },
+  {
+   "harmony": "D",
+   "subtype": "Chord symbol",
+   "text": "D",
+   "tick": 15120,
+   "track": 4,
+   "type": "Harmony"
+  }
+ ],
+ "events": [
+  [
+   [
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 61,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 63,
+       "tpc1": 23,
+       "tpc2": 23
+      }
+     ],
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 64,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 960,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 66,
+       "tpc1": 20,
+       "tpc2": 20
+      }
+     ],
+     "tick": 1440,
+     "ticks": 480
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 61,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 1920,
+     "ticks": 160,
+     "tuplet": "3/2"
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 63,
+       "tpc1": 23,
+       "tpc2": 23
+      }
+     ],
+     "tick": 2080,
+     "ticks": 160,
+     "tuplet": "3/2"
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 64,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 2240,
+     "ticks": 160,
+     "tuplet": "3/2"
+    },
+    {
+     "dots": 1,
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 68,
+       "tieTo": [
+        3840,
+        0,
+        68
+       ],
+       "tpc1": 22,
+       "tpc2": 22
+      }
+     ],
+     "tick": 2400,
+     "ticks": 1440
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 68,
+       "tpc1": 22,
+       "tpc2": 22
+      }
+     ],
+     "tick": 3840,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 68,
+       "tpc1": 22,
+       "tpc2": 22
+      }
+     ],
+     "tick": 4320,
+     "ticks": 960
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 69,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 5280,
+     "ticks": 240
+    },
+    {
+     "duration": "eighth",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 71,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 5520,
+     "ticks": 240
+    },
+    {
+     "duration": "eighth",
+     "grace": "acciaccatura",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 5760,
+     "ticks": 0
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "tpc1": 27,
+       "tpc2": 27
+      }
+     ],
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 69,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 7680,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 71,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 8160,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "elements": [
+      "TremoloSingleChord:Eighth through stem"
+     ],
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 73,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 8640,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "kind": "rest",
+     "tick": 9120,
+     "ticks": 480
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 9600,
+     "ticks": 1920
+    },
+    {
+     "duration": "quarter",
+     "elements": [
+      "Arpeggio:Arpeggio"
+     ],
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "fingerings": [
+        "1"
+       ],
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 48,
+       "tpc1": 14,
+       "tpc2": 14
+      },
+      {
+       "fingerings": [
+        "3"
+       ],
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 52,
+       "tpc1": 18,
+       "tpc2": 18
+      },
+      {
+       "fingerings": [
+        "5"
+       ],
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 55,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 11520,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 48,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 12000,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 55,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 12480,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "kind": "rest",
+     "tick": 12960,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 13440,
+     "ticks": 960
+    },
+    {
+     "duration": "measure",
+     "kind": "measureRepeat",
+     "tick": 14400,
+     "ticks": 2880
+    }
+   ],
+   [],
+   [],
+   []
+  ],
+  [
+   [
+    {
+     "duration": "32nd",
+     "grace": "grace32",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 66,
+       "tpc1": 20,
+       "tpc2": 20
+      }
+     ],
+     "tick": 0,
+     "ticks": 0
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 64,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "kind": "rest",
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 960,
+     "ticks": 960
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "lyrics": [
+      [
+       0,
+       "Ly"
+      ]
+     ],
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 73,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 1920,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "lyrics": [
+      [
+       0,
+       "rics"
+      ]
+     ],
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 2400,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 78,
+       "tpc1": 20,
+       "tpc2": 20
+      }
+     ],
+     "tick": 2880,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "lyrics": [
+      [
+       0,
+       "ly"
+      ]
+     ],
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 3360,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 73,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 3840,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "lyrics": [
+      [
+       0,
+       "rics"
+      ]
+     ],
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 4320,
+     "ticks": 480
+    },
+    {
+     "duration": "half",
+     "grace": "none",
+     "kind": "chord",
+     "lyrics": [
+      [
+       0,
+       "ly"
+      ]
+     ],
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 64,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 4800,
+     "ticks": 960
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 7680,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 9600,
+     "ticks": 1920
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 69,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 11520,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 70,
+       "tpc1": 12,
+       "tpc2": 12
+      }
+     ],
+     "tick": 12000,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 72,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 12480,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 74,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 12960,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 13440,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 77,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 13920,
+     "ticks": 480
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 69,
+       "tpc1": 17,
+       "tpc2": 17
+      },
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 72,
+       "tpc1": 14,
+       "tpc2": 14
+      },
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 14400,
+     "ticks": 1920
+    },
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 16320,
+     "ticks": 960
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 1920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 3840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 5760,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "elements": [
+    {
+     "tick": 7680,
+     "track": 0,
+     "type": "StaffTypeChange"
+    }
+   ],
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 7680,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "elements": [
+    {
+     "subtype": "System break",
+     "tick": 9600,
+     "type": "LayoutBreak"
+    }
+   ],
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 9600,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 11520,
+   "ticks": 2880,
+   "timesig": "12/8"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 14400,
+   "ticks": 2880,
+   "timesig": "12/8"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": ""
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "piano",
+   "longName": "Piano",
+   "partName": "Piano",
+   "shortName": "",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    },
+    {
+     "group": "pitched",
+     "index": 1,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   17280,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [
+  {
+   "subtype": "Double barline",
+   "tick": 7680,
+   "track": 0,
+   "type": "BarLine"
+  },
+  {
+   "subtype": "Double barline",
+   "tick": 7680,
+   "track": 4,
+   "type": "BarLine"
+  },
+  {
+   "subtype": "Breath mark (tick-like)",
+   "tick": 9120,
+   "track": 0,
+   "type": "Breath"
+  }
+ ],
+ "signatures": [
+  {
+   "key": 4,
+   "staff": 0,
+   "tick": 0,
+   "type": "KeySig",
+   "value": 4
+  },
+  {
+   "key": 4,
+   "staff": 1,
+   "tick": 0,
+   "type": "KeySig",
+   "value": 4
+  },
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  },
+  {
+   "staff": 1,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  },
+  {
+   "staff": 0,
+   "tick": 7680,
+   "type": "Clef",
+   "value": "C2"
+  },
+  {
+   "staff": 0,
+   "tick": 11520,
+   "type": "Clef",
+   "value": "F3"
+  },
+  {
+   "key": -1,
+   "staff": 0,
+   "tick": 11520,
+   "type": "KeySig",
+   "value": -1
+  },
+  {
+   "key": -1,
+   "staff": 1,
+   "tick": 11520,
+   "type": "KeySig",
+   "value": -1
+  },
+  {
+   "staff": 0,
+   "tick": 11520,
+   "type": "TimeSig",
+   "value": "12/8"
+  },
+  {
+   "staff": 1,
+   "tick": 11520,
+   "type": "TimeSig",
+   "value": "12/8"
+  }
+ ],
+ "spanners": [
+  {
+   "anchor": 0,
+   "subtype": "Crescendo hairpin",
+   "tick": 0,
+   "tick2": 1920,
+   "track": 0,
+   "track2": 0,
+   "type": "HairPin"
+  },
+  {
+   "anchor": 2,
+   "subtype": "Solid",
+   "tick": 0,
+   "tick2": 1920,
+   "track": 0,
+   "track2": 0,
+   "type": "Slur"
+  },
+  {
+   "anchor": 0,
+   "beginText": "<sym>keyboardPedalPed</sym>",
+   "tick": 0,
+   "tick2": 1920,
+   "track": 4,
+   "track2": 4,
+   "type": "Pedal"
+  },
+  {
+   "anchor": 0,
+   "beginText": "<sym>dynamicMezzo</sym><sym>dynamicForte</sym>",
+   "subtype": "Crescendo hairpin",
+   "tick": 3840,
+   "tick2": 5760,
+   "track": 0,
+   "track2": 0,
+   "type": "HairPin"
+  },
+  {
+   "anchor": 0,
+   "beginText": "<sym>ottava</sym>",
+   "subtype": "8va alta",
+   "tick": 11520,
+   "tick2": 12000,
+   "track": 4,
+   "track2": 4,
+   "type": "Ottava"
+  }
+ ],
+ "tempoMap": [
+  [
+   0,
+   144.0
+  ],
+  [
+   5760,
+   72.0
+  ],
+  [
+   7680,
+   144.0
+  ]
+ ]
+}
