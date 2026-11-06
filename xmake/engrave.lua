@@ -459,7 +459,7 @@ target_end()
 option("engrave_tests")
     set_default(false)
     set_showmenu(true)
-    set_description("Enable engine tests and c0_gate (no test targets build by default)")
+    set_description("Enable engine tests and engine_tests (no test targets build by default)")
 option_end()
 if has_config("engrave_tests") then
     includes(path.join(fork_root, "xmake", "tests.lua"))
