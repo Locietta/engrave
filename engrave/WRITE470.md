@@ -16,7 +16,7 @@ struct ExportOptions {
 };
 ```
 
-Any version string other than `"5.00"` or `"4.70"`, or requesting a non-default version on other file formats (MusicXML, MIDI), returns `ErrorCode::Unsupported`.
+Any version string other than `"5.00"` or `"4.70"`, or requesting a non-default version on other file formats (MusicXML, MIDI), returns `ErrorCode::UNSUPPORTED`.
 
 ### Warning Structure and Ordering Contract
 Use `Document::export_score_with_warnings(ExportOptions)` to receive exported bytes and ordered compatibility warnings:
@@ -43,7 +43,7 @@ struct ExportOutput {
   - Non-EID warning locators retain document-wide score indices (master score 0, followed by excerpts in source order) even when exporting an excerpt.
 
 ### Fail-Closed Behavior
-- **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::Unsupported` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
+- **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::UNSUPPORTED` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
 - **Refused Export**: If an export is refused due to incompatible features, no bytes are produced (`bytes` is empty), and `Error::export_warnings` details all blocking elements.
 
 ## 2. Bounded Supported Subset
@@ -74,7 +74,7 @@ Five feature families are converted into compatible 4.70 structures while emitti
 
 ## 4. Refused Features
 
-The exporter strictly refuses output (`ErrorCode::Unsupported`) when encountering constructs that cannot be faithfully represented or downgraded in 4.70:
+The exporter strictly refuses output (`ErrorCode::UNSUPPORTED`) when encountering constructs that cannot be faithfully represented or downgraded in 4.70:
 
 | Code | Exact Frozen Message | Object Kind & Source ID |
 |---|---|---|
@@ -103,6 +103,6 @@ Style properties are guarded against the verified 4.70 style catalogue (`engrave
 ## 6. Cooperative Cancellation
 
 During 4.70 XML conversion, serialization progress is checked against `CaptureOptions::cancelled` every <= 4 KiB:
-- An observed cancellation aborts serialization immediately with `ErrorCode::Cancelled`.
+- An observed cancellation aborts serialization immediately with `ErrorCode::CANCELLED`.
 - No output file or partial XML bytes are published.
 - Working buffer budgets (`CaptureOptions::max_working_bytes`) and final byte budgets (`CaptureOptions::max_bytes`) remain strictly enforced throughout the conversion.

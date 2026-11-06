@@ -16,7 +16,7 @@ The library serves as the core engraving and playback engine for the [`engrave-m
 Capabilities can be queried programmatically via `Engine::capabilities()`.
 
 ### Input Formats
-- **MuseScore**: `.mscz` (compressed archive) and `.mscx` (uncompressed XML), versions 4.60 and later. Files created with MuseScore versions prior to 4.6 (mscVersion < 460) return `ErrorCode::Unsupported`.
+- **MuseScore**: `.mscz` (compressed archive) and `.mscx` (uncompressed XML), versions 4.60 to 5.00. Files created with MuseScore versions prior to 4.60 (mscVersion < 460) return `ErrorCode::UNSUPPORTED`; versions above the current 5.00 format (mscVersion > 500) are rejected.
 - **MusicXML**: Uncompressed `.musicxml` / `.xml` and compressed `.mxl`.
 - **MIDI**: Standard MIDI Files (`.mid`, `.midi`, `.kar`).
 - **Guitar Pro**: Guitar Pro 1–7 (`.gtp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp`) and PowerTab (`.ptb`).
