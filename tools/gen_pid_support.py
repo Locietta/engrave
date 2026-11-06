@@ -186,14 +186,14 @@ def parse_properties(sources):
     """
     properties = {}
     definition = re.compile(
-        r"^[ \t]*[\w][\w:<>,*&\s]*?\b(\w+)::(getProperty|setProperty)\s*\([^)]*\)\s*"
+        r"^[ \t]*[\w][\w:<>,*&\s]*?\b(\w+)::(get_property|set_property)\s*\([^)]*\)\s*"
         r"(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?\{",
         re.M)
     for text in sources.values():
         for match in definition.finditer(text):
             start, end = blocks(text, match.end() - 1)
             body = text[start:end]
-            kind = "get" if match.group(2) == "getProperty" else "set"
+            kind = "get" if match.group(2) == "get_property" else "set"
             entry = properties.setdefault(
                 match.group(1), {"get": set(), "set": set(), "get_forwards": True, "set_forwards": True})
             entry[kind].update(re.findall(r"case Pid::(\w+)\s*:", body))
@@ -261,7 +261,7 @@ def parse_pid_names(root):
     """
     text = (root / "src" / "engraving" / "dom" / "property.cpp").read_text(encoding="utf-8")
     rows = re.findall(
-        r'\{\s*Pid::(\w+)\s*,\s*P_TYPE::\w+\s*,\s*PropertyGroup::\w+\s*,\s*(?:true|false)\s*,\s*"([^"]*)"', text)
+        r'\{\s*Pid::(\w+)\s*,\s*PType::\w+\s*,\s*PropertyGroup::\w+\s*,\s*(?:true|false)\s*,\s*"([^"]*)"', text)
     xml_names = dict(rows)
     api_names = {}
     taken = set()
