@@ -26,12 +26,11 @@
 #include <engraving/types/pitchvalue.h>
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class DiveDataCollector {
-public:
+struct DiveDataCollector {
     DiveDataCollector() = default;
 
     void collect_dive_data(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitch_values);

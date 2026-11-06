@@ -25,8 +25,7 @@
 #include "serialization/xmlstreamreader.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlLogger {
-public:
+struct MusicXmlLogger {
     enum class Level : char { MXML_TRACE, MXML_INFO, MXML_ERROR };
 
     MusicXmlLogger() {}

@@ -26,19 +26,18 @@
 #include "../types/types.h"
 
 namespace muse {
-class ByteArray;
+struct ByteArray;
 } // namespace muse
 
 namespace mu::engraving {
-class ChordRest;
-class IMimeData;
-class Score;
-class Segment;
-class Transaction;
-class XmlReader;
+struct ChordRest;
+struct IMimeData;
+struct Score;
+struct Segment;
+struct Transaction;
+struct XmlReader;
 
-class Paste {
-public:
+struct Paste {
 
     static bool paste_staff_list(Transaction &tx, Score *score, muse::ByteArray &data, Fraction scale = Fraction(1, 1));
     static bool paste_symbol_list(Transaction &tx, Score *score, muse::ByteArray &data);

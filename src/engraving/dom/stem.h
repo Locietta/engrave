@@ -25,10 +25,11 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Chord;
-class Transaction;
+struct Chord;
+struct Transaction;
 
-class Stem final : public EngravingItem {
+struct Stem final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Stem)
     DECLARE_CLASSOF(ElementType::STEM)
 
@@ -80,7 +81,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Stem)
 
 private:
-    friend class Factory;
+    friend struct Factory;
     Stem(DummyParentOr<Chord> parent);
 
     Spatium base_length_ = 0.0_sp;

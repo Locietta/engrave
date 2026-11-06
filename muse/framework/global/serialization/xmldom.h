@@ -44,11 +44,10 @@ static_assert(std::is_trivially_copyable_v<XmlHandle>, "Xml handle struct must b
 using xml_node_handle = XmlHandle;
 using xml_attr_handle = XmlHandle;
 
-class XmlDomElement;
-class XmlDomAttribute;
+struct XmlDomElement;
+struct XmlDomAttribute;
 
-class XmlDomNode {
-public:
+struct XmlDomNode {
 
     XmlDomNode() = default;
 
@@ -67,8 +66,8 @@ public:
     XmlDomElement to_element() const;
 
 protected:
-    friend class XmlDomDocument;
-    friend class XmlDomElement;
+    friend struct XmlDomDocument;
+    friend struct XmlDomElement;
 
     XmlDomNode(const std::shared_ptr<XmlDomImplData> &xml, xml_node_handle node);
 
@@ -76,8 +75,7 @@ protected:
     xml_node_handle node_{};
 };
 
-class XmlDomElement : public XmlDomNode {
-public:
+struct XmlDomElement : XmlDomNode {
 
     String text() const;
 
@@ -86,14 +84,13 @@ public:
 
 private:
 
-    friend class XmlDomDocument;
-    friend class XmlDomNode;
+    friend struct XmlDomDocument;
+    friend struct XmlDomNode;
 
     XmlDomElement(const std::shared_ptr<XmlDomImplData> &data, xml_node_handle node);
 };
 
-class XmlDomAttribute {
-public:
+struct XmlDomAttribute {
 
     bool is_null() const;
     String attribute_name() const;
@@ -103,7 +100,7 @@ public:
     XmlDomAttribute next_attribute() const;
 
 private:
-    friend class XmlDomElement;
+    friend struct XmlDomElement;
 
     explicit XmlDomAttribute(const std::shared_ptr<XmlDomImplData> &data, xml_attr_handle attribute);
 
@@ -111,8 +108,7 @@ private:
     xml_attr_handle attribute_{};
 };
 
-class XmlDomDocument {
-public:
+struct XmlDomDocument {
     XmlDomDocument();
 
     void set_content(const ByteArray &data);

@@ -24,33 +24,32 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class LaissezVib;
-class LaissezVibSegment;
-class Slur;
-class SlurSegment;
+struct LaissezVib;
+struct LaissezVibSegment;
+struct Slur;
+struct SlurSegment;
 struct SlurTiePos;
-class SlurTieSegment;
-class SpannerSegment;
-class System;
-class Chord;
-class TieSegment;
-class Tie;
-class TremoloTwoChord;
+struct SlurTieSegment;
+struct SpannerSegment;
+struct System;
+struct Chord;
+struct TieSegment;
+struct Tie;
+struct TremoloTwoChord;
 enum class Grip : signed char;
-class Note;
-class PartialTie;
-class PartialTieSegment;
-class TappingHalfSlur;
-class TappingHalfSlurSegment;
+struct Note;
+struct PartialTie;
+struct PartialTieSegment;
+struct TappingHalfSlur;
+struct TappingHalfSlurSegment;
 } // namespace mu::engraving
 
 namespace muse::draw {
-class Transform;
+struct Transform;
 } // namespace muse::draw
 
 namespace mu::engraving::rendering::score {
-class SlurTieLayout {
-public:
+struct SlurTieLayout {
     static SpannerSegment *layout_system(Slur *item, System *system, LayoutContext &ctx);
 
     static TieSegment *layout_tie_for(Tie *item, System *system);

@@ -40,8 +40,7 @@ struct TempoTimePoint {
     double pause = 0.0; // seconds held at utick before "time" was reached, if this point is a pause
 };
 
-class TempoTimeline {
-public:
+struct TempoTimeline {
     void rebuild(const AutomationCurve &tempo_curve, const PausesMap &pauses);
     void rebuild(const TempoValues &tempo_values, const PausesMap &pauses);
 

@@ -26,14 +26,15 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
 //---------------------------------------------------------
 //   @@ StemSlash
 ///    used for grace notes of type acciaccatura
 //---------------------------------------------------------
 
-class StemSlash final : public EngravingItem {
+struct StemSlash final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, StemSlash)
     DECLARE_CLASSOF(ElementType::STEM_SLASH)
 
@@ -53,7 +54,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     StemSlash(DummyParentOr<Chord> parent);
 };
 } // namespace mu::engraving

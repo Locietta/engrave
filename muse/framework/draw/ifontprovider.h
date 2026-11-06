@@ -33,8 +33,7 @@
 #include "types/geometry.h"
 
 namespace muse::draw {
-class IFontProvider {
-public:
+struct IFontProvider {
     virtual ~IFontProvider() = default;
 
     virtual int add_symbol_font(const String &family, const io::PathT &path) = 0;

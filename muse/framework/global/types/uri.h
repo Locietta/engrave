@@ -30,8 +30,7 @@
 #include "val.h"
 
 namespace muse {
-class Uri {
-public:
+struct Uri {
     Uri() = default;
     explicit Uri(const std::string &str);
     explicit Uri(const muse::String &str);
@@ -71,8 +70,7 @@ private:
     std::string path_;
 };
 
-class UriQuery {
-public:
+struct UriQuery {
 
     using Params = std::map<std::string /*key*/, Val>;
 

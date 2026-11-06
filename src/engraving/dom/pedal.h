@@ -26,13 +26,14 @@
 #include "textlinebase.h"
 
 namespace mu::engraving {
-class Pedal;
+struct Pedal;
 
 //---------------------------------------------------------
 //   @@ PedalSegment
 //---------------------------------------------------------
 
-class PedalSegment final : public TextLineBaseSegment {
+struct PedalSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, PedalSegment)
     DECLARE_CLASSOF(ElementType::PEDAL_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     Pedal *pedal() const { return to_pedal(spanner()); }
 
-    friend class Pedal;
+    friend struct Pedal;
 };
 
 //---------------------------------------------------------
 //   @@ Pedal
 //---------------------------------------------------------
 
-class Pedal final : public TextLineBase {
+struct Pedal final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, Pedal)
     DECLARE_CLASSOF(ElementType::PEDAL)
 
@@ -77,7 +79,7 @@ public:
     Pedal *find_next_in_staff() const;
     bool connect45_hook_to_next() const;
 
-    friend class PedalLine;
+    friend struct PedalLine;
 };
 } // namespace mu::engraving
 #endif

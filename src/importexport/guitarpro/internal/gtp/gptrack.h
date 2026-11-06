@@ -7,8 +7,7 @@
 #include "types/string.h"
 
 namespace mu::iex::guitarpro {
-class GPTrack {
-public:
+struct GPTrack {
     struct RSE {
         float pan{0};
         float volume{0};
@@ -165,15 +164,13 @@ protected:
     int line_count_value{5}; // for percussion lines
 };
 
-class GP6Track : public GPTrack {
-public:
+struct GP6Track : GPTrack {
     GP6Track(int idx) : GPTrack(idx) {}
 
 private:
 };
 
-class GP7Track : public GPTrack {
-public:
+struct GP7Track : GPTrack {
     GP7Track(int idx) : GPTrack(idx) {}
 
 private:

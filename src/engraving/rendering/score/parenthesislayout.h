@@ -25,14 +25,13 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Segment;
-class System;
+struct Segment;
+struct System;
 struct ParenPaddingTable;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ParenthesisLayout {
-public:
+struct ParenthesisLayout {
     static void layout_parentheses(const EngravingItem *parent, const LayoutContext &ctx);
     static void layout_chord_parentheses(const Chord *chord, const LayoutContext &ctx);
     static void layout_parenthesis(Parenthesis *item, Parenthesis::LayoutData *ldata, const LayoutContext &ctx);

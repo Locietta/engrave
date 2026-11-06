@@ -30,22 +30,22 @@
 #include "xmlreader.h"
 
 namespace mu::engraving {
-class Score;
-class EngravingItem;
+struct Score;
+struct EngravingItem;
 
-class Accidental;
-class ChordRest;
-class Harmony;
-class Segment;
-class Spanner;
-class StaffTypeChange;
-class Symbol;
-class Text;
-class Tuplet;
+struct Accidental;
+struct ChordRest;
+struct Harmony;
+struct Segment;
+struct Spanner;
+struct StaffTypeChange;
+struct Symbol;
+struct Text;
+struct Tuplet;
 
-class Chord;
-class TremoloSingleChord;
-class TremoloTwoChord;
+struct Chord;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
@@ -55,8 +55,7 @@ struct TremoloCompat;
 namespace mu::engraving::rw {
 struct ReadInOutData;
 
-class IReader {
-public:
+struct IReader {
     virtual ~IReader() = default;
 
     virtual muse::Ret read_score_file(Score *score, XmlReader &xml, rw::ReadInOutData *out) = 0;

@@ -26,21 +26,20 @@
 #include "shape.h"
 
 namespace mu::engraving {
-class Accidental;
-class Chord;
-class EngravingItem;
-class LedgerLine;
-class Shape;
+struct Accidental;
+struct Chord;
+struct EngravingItem;
+struct LedgerLine;
+struct Shape;
 struct ShapeElement;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class LayoutContext;
+struct LayoutContext;
 
 using AccidentalGroups = std::vector<std::vector<Accidental *>>;
 
-class AccidentalsLayout {
-public:
+struct AccidentalsLayout {
     static void layout_accidentals(const std::vector<Chord *> &chords, LayoutContext &ctx);
 
 private:

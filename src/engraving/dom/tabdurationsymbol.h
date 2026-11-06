@@ -32,7 +32,8 @@ namespace mu::engraving {
 
 enum class TabBeamGrid : char { NONE = 0, INITIAL, MEDIALFINAL, NUM_OF };
 
-class TabDurationSymbol final : public EngravingItem {
+struct TabDurationSymbol final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, TabDurationSymbol)
     DECLARE_CLASSOF(ElementType::TAB_DURATION_SYMBOL)
 

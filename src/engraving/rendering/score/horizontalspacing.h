@@ -24,25 +24,24 @@
 #include "types/types.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordBracket;
-class EngravingItem;
-class Fraction;
-class Lyrics;
-class Note;
-class Rest;
-class Shape;
-class StemSlash;
-class Segment;
-class Measure;
-class System;
+struct Chord;
+struct ChordBracket;
+struct EngravingItem;
+struct Fraction;
+struct Lyrics;
+struct Note;
+struct Rest;
+struct Shape;
+struct StemSlash;
+struct Segment;
+struct Measure;
+struct System;
 enum class ElementType : unsigned char;
 enum class KerningType : unsigned char;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class HorizontalSpacing {
-public:
+struct HorizontalSpacing {
 
     static double compute_spacing_for_full_system(System *system, double stretch_reduction = 1.0, double squeeze_factor = 1.0,
                                                   bool override_min_measure_width = false);

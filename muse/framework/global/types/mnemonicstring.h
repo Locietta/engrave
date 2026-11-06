@@ -25,8 +25,7 @@
 #include "translatablestring.h"
 
 namespace muse {
-class MnemonicString {
-public:
+struct MnemonicString {
     MnemonicString() = default;
 
     MnemonicString(const TranslatableString &raw) : raw_(raw) {}

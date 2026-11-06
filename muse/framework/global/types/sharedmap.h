@@ -28,8 +28,7 @@
 
 namespace muse {
 template <typename KeyType, typename ValType>
-class SharedMap {
-public:
+struct SharedMap {
 
     // like std
     using key_type = KeyType;

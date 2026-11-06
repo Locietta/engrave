@@ -26,8 +26,7 @@
 #include "circularsamplebuffer.h"
 
 namespace muse::audio::fx {
-class AllPassModulatedDelay {
-public:
+struct AllPassModulatedDelay {
     AllPassModulatedDelay() {}
 
     void allocate_for_max_delay_samples(int max_delay_samples) { buffer_.set_size(max_delay_samples); }

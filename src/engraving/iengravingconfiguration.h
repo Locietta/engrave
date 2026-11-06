@@ -27,8 +27,7 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class IEngravingConfiguration {
-public:
+struct IEngravingConfiguration {
     virtual ~IEngravingConfiguration() = default;
 
     virtual muse::io::PathT app_data_path() const = 0;

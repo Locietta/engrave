@@ -27,7 +27,8 @@
 #include "../dom/harppedaldiagram.h"
 
 namespace mu::engraving {
-class ChangeHarpPedalState : public UndoableCommand {
+struct ChangeHarpPedalState : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeHarpPedalState)
     HarpPedalDiagram *diagram;
     std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_value;
@@ -43,7 +44,8 @@ public:
     std::vector<EngravingObject *> object_items() const override;
 };
 
-class ChangeSingleHarpPedal : public UndoableCommand {
+struct ChangeSingleHarpPedal : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeSingleHarpPedal)
 
     HarpPedalDiagram *diagram;

@@ -27,14 +27,15 @@
 
 namespace mu::engraving {
 template <typename Data>
-class Notifier;
+struct Notifier;
 
 //---------------------------------------------------------
 //   Listener
 //---------------------------------------------------------
 
 template <typename Data>
-class Listener {
+struct Listener {
+private:
     OBJECT_ALLOCATOR(engraving, Listener)
 
 public:
@@ -78,8 +79,7 @@ private:
 //---------------------------------------------------------
 
 template <typename Data>
-class Notifier {
-public:
+struct Notifier {
     Notifier() = default;
 
     // do not copy listeners list

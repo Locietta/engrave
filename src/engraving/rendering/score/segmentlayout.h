@@ -26,8 +26,7 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class SegmentLayout {
-public:
+struct SegmentLayout {
 
     static void layout_measure_independent_elements(const Segment &segment, track_idx_t track, const LayoutContext &ctx);
     static void set_chord_mag(const Staff *staff, const Segment &segment, track_idx_t start_track, track_idx_t end_track,

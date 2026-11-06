@@ -58,8 +58,7 @@ using namespace mu::engraving;
 
 static const String parts_data_dir(u"parts_data/");
 
-class EngravingPartsTests : public ::testing::Test {
-public:
+struct EngravingPartsTests : ::testing::Test {
     void test_part_creation(const String &test);
     void create_linked_staff(MasterScore *score);
 

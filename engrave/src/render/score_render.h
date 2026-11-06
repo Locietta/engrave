@@ -6,7 +6,7 @@
 #include "engrave/src/score/export_options.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace music {

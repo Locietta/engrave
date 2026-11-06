@@ -33,7 +33,8 @@
 // everything contained in .h file for performance reasons
 
 namespace mu::engraving {
-class Fraction {
+struct Fraction {
+private:
     // ensure 64 bit to avoid overflows in comparisons
     int64_t numerator_ = 0;
     int64_t denominator_ = 1;

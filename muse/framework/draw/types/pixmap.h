@@ -27,8 +27,7 @@
 #include "geometry.h"
 
 namespace muse::draw {
-class Pixmap {
-public:
+struct Pixmap {
 
     Pixmap() = default;
 

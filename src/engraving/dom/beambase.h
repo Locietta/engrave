@@ -25,8 +25,8 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Beam;
-class TremoloTwoChord;
+struct Beam;
+struct TremoloTwoChord;
 
 enum class BeamType : unsigned char { INVALID, BEAM, TREMOLO };
 
@@ -44,7 +44,8 @@ struct BeamFragment {
 
 enum class ChordBeamAnchorType : unsigned char { START, END, MIDDLE };
 
-class BeamSegment {
+struct BeamSegment {
+private:
     OBJECT_ALLOCATOR(engraving, BeamSegment)
 public:
     LineF line;
@@ -61,7 +62,8 @@ public:
     BeamSegment(EngravingItem *b);
 };
 
-class BeamBase : public EngravingItem {
+struct BeamBase : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, BeamBase)
     DECLARE_CLASSOF(ElementType::INVALID) // dummy
 

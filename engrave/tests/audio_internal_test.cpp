@@ -34,8 +34,7 @@
 
 namespace {
 
-class FailingFinalizer final : public muse::audio::encode::AbstractAudioEncoder {
-public:
+struct FailingFinalizer final : muse::audio::encode::AbstractAudioEncoder {
     FailingFinalizer(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool fail_encode, int &ended)
         : AbstractAudioEncoder(format), device_(device), fail_encode_(fail_encode), ended_(ended) {}
 
@@ -64,8 +63,7 @@ private:
 
 // Sets cancellation inside encode/end, then attempts two distinct device writes.
 // The second write must be rejected immediately, before control returns to writer.
-class CancellingEncoder final : public muse::audio::encode::AbstractAudioEncoder {
-public:
+struct CancellingEncoder final : muse::audio::encode::AbstractAudioEncoder {
     CancellingEncoder(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool &cancelled, bool final, int &encoded,
                       int &writes)
         : AbstractAudioEncoder(format), device_(device), cancelled_(cancelled), final_(final), encoded_(encoded), writes_(writes) {}
@@ -337,7 +335,8 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     auto &audio = engrave::DocumentAccess::context(document).audio();
     auto *master = engrave::DocumentAccess::master_score(document);
 
-    class LargeWriter final : public muse::audio::encode::AbstractAudioEncoder {
+    struct LargeWriter final : muse::audio::encode::AbstractAudioEncoder {
+    private:
         muse::io::IODevice &device;
         bool final;
         bool &armed;

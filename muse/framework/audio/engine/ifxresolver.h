@@ -28,12 +28,10 @@
 #include "ifxprocessor.h"
 
 namespace muse::audio::fx {
-class IFxResolver {
-public:
+struct IFxResolver {
     virtual ~IFxResolver() = default;
 
-    class IResolver {
-    public:
+    struct IResolver {
         virtual ~IResolver() = default;
 
         virtual std::vector<IFxProcessorPtr> resolve_fx_list(const audio::TrackId track_id, const AudioFxChain &fx_chain,

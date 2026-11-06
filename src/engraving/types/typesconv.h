@@ -29,8 +29,7 @@
 #include "engraving/dom/tremolobar.h"
 
 namespace mu::engraving {
-class TConv {
-public:
+struct TConv {
     TConv() = default;
 
     static String to_xml(const std::vector<int> &v);

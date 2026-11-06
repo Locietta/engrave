@@ -32,40 +32,40 @@
 #include "segmentlist.h"
 
 namespace mu::engraving::read400 {
-class MeasureRead;
+struct MeasureRead;
 } // namespace mu::engraving::read400
 
 namespace mu::engraving::read410 {
-class MeasureRead;
+struct MeasureRead;
 } // namespace mu::engraving::read410
 
 namespace mu::engraving::read460 {
-class MeasureRead;
+struct MeasureRead;
 } // namespace mu::engraving::read460
 
 namespace mu::engraving::read500 {
-class MeasureRead;
+struct MeasureRead;
 } // namespace mu::engraving::read500
 
 namespace mu::engraving::write {
-class MeasureWrite;
+struct MeasureWrite;
 } // namespace mu::engraving::write
 
 namespace mu::engraving {
-class AccidentalState;
-class Chord;
-class ChordRest;
-class MMRestRange;
-class MeasureNumber;
-class MeasureRepeat;
-class Note;
-class Part;
-class Score;
-class Spacer;
-class Staff;
-class System;
-class TieMap;
-class Transaction;
+struct AccidentalState;
+struct Chord;
+struct ChordRest;
+struct MMRestRange;
+struct MeasureNumber;
+struct MeasureRepeat;
+struct Note;
+struct Part;
+struct Score;
+struct Spacer;
+struct Staff;
+struct System;
+struct TieMap;
+struct Transaction;
 
 //---------------------------------------------------------
 //   MeasureNumberMode
@@ -82,8 +82,7 @@ enum class MeasureNumberMode : char {
 ///   Per staff values of measure.
 //---------------------------------------------------------
 
-class MStaff {
-public:
+struct MStaff {
     MStaff() {}
 
     ~MStaff();
@@ -162,7 +161,8 @@ private:
 //   @P lastSegment     Segment       the last segment of the measure (read-only)
 //---------------------------------------------------------
 
-class Measure final : public MeasureBase {
+struct Measure final : MeasureBase {
+private:
     OBJECT_ALLOCATOR(engraving, Measure)
     DECLARE_CLASSOF(ElementType::MEASURE)
 
@@ -456,7 +456,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     Measure(Score *parent);
     Measure(const Measure &);

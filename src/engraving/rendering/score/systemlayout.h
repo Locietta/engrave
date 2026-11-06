@@ -31,39 +31,38 @@
 #include "../../types/types.h"
 
 namespace mu::engraving {
-class BarLine;
-class Bracket;
-class BracketItem;
-class Chord;
-class Dynamic;
-class Expression;
-class FiguredBass;
-class FretDiagram;
-class Harmony;
-class HarpPedalDiagram;
-class Image;
-class InstrumentChange;
-class Measure;
-class MeasureNumber;
-class MMRest;
-class MMRestRange;
-class Parenthesis;
-class RehearsalMark;
-class Score;
-class Segment;
-class SkylineLine;
-class Spanner;
-class StaffText;
-class Sticking;
-class System;
-class SystemText;
-class TempoText;
-class TimeSig;
+struct BarLine;
+struct Bracket;
+struct BracketItem;
+struct Chord;
+struct Dynamic;
+struct Expression;
+struct FiguredBass;
+struct FretDiagram;
+struct Harmony;
+struct HarpPedalDiagram;
+struct Image;
+struct InstrumentChange;
+struct Measure;
+struct MeasureNumber;
+struct MMRest;
+struct MMRestRange;
+struct Parenthesis;
+struct RehearsalMark;
+struct Score;
+struct Segment;
+struct SkylineLine;
+struct Spanner;
+struct StaffText;
+struct Sticking;
+struct System;
+struct SystemText;
+struct TempoText;
+struct TimeSig;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class SystemLayout {
-public:
+struct SystemLayout {
     static System *collect_system(LayoutContext &ctx);
     static void layout_system_elements(System *system, LayoutContext &ctx);
 

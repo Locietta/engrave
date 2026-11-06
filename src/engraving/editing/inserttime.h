@@ -27,7 +27,8 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class InsertTime : public UndoableCommand {
+struct InsertTime : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertTime)
 
     Score *score = nullptr;
@@ -46,7 +47,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class InsertTimeUnmanagedSpanner : public UndoableCommand {
+struct InsertTimeUnmanagedSpanner : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertTimeUnmanagedSpanner)
 
     Score *score = nullptr;

@@ -25,12 +25,11 @@
 #include "abstractaudioencoder.h"
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-class WavEncoder : public AbstractAudioEncoder {
-public:
+struct WavEncoder : AbstractAudioEncoder {
     WavEncoder(const SoundTrackFormat &, io::IODevice &);
 
     bool begin(samples_t total_samples_number) override;

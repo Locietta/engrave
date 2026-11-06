@@ -27,13 +27,12 @@
 #include "writecontext.h"
 
 namespace mu::engraving {
-class Measure;
-class Segment;
+struct Measure;
+struct Segment;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class MeasureWrite {
-public:
+struct MeasureWrite {
 
     static void write_measure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool write_system_elements,
                               bool force_time_sig);

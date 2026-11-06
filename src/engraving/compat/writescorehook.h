@@ -23,17 +23,16 @@
 #define MU_ENGRAVING_WRITESCOREHOOK_H
 
 namespace mu::engraving {
-class Score;
-class XmlWriter;
+struct Score;
+struct XmlWriter;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class WriteContext;
+struct WriteContext;
 } // namespace mu::engraving::write
 
 namespace mu::engraving::compat {
-class WriteScoreHook {
-public:
+struct WriteScoreHook {
     WriteScoreHook() = default;
 
     void on_write_style302(Score *score, XmlWriter &xml, bool inline_style = false);

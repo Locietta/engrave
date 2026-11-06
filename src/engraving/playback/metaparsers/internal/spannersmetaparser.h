@@ -26,8 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class SpannersMetaParser : public MetaParserBase<SpannersMetaParser> {
-public:
+struct SpannersMetaParser : MetaParserBase<SpannersMetaParser> {
     static bool is_able_to_parse(const EngravingItem *spanner_item);
 
 private:

@@ -30,13 +30,12 @@
 #include "importmidi_tuplet.h"
 
 namespace mu::engraving {
-class Tie;
-class TimeSigMap;
+struct Tie;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MidiNote {
-public:
+struct MidiNote {
     int pitch = 0;
     int velo = 0;
     ReducedFraction off_time;
@@ -51,8 +50,7 @@ public:
     ReducedFraction orig_on_time;
 };
 
-class MidiChord {
-public:
+struct MidiChord {
     int voice = 0;
     std::vector<MidiNote> notes;
     bool is_in_tuplet = false;
@@ -70,7 +68,7 @@ public:
     }
 };
 
-class MTrack;
+struct MTrack;
 
 namespace MChord {
 bool is_grand_staff_program(GM1Program);

@@ -25,15 +25,14 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Chord;
-class Stem;
-class StaffType;
-class Rest;
+struct Chord;
+struct Stem;
+struct StaffType;
+struct Rest;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class StemLayout {
-public:
+struct StemLayout {
     // all in spatium units
     static constexpr double stafftype_tab_defaultstemlen_up = 3.0;
     static constexpr double stafftype_tab_defaultstemdist_up = 1.0;

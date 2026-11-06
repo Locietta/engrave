@@ -25,11 +25,10 @@
 #include "mpe/events.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 struct NominalNoteCtx;
 
-class GlissandosRenderer {
-public:
+struct GlissandosRenderer {
     static muse::mpe::duration_t discrete_glissando_step_duration(const Note *note, const muse::mpe::duration_t note_duration);
 
     static void render_discrete_glissando(const Note *note, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result);

@@ -32,7 +32,8 @@ namespace mu::engraving {
 //   @P markerType  enum (Marker.CODA, .CODETTA, .FINE, .SEGNO, .TOCODA, .USER, .VARCODA, .VARSEGNO)
 //---------------------------------------------------------
 
-class Marker final : public TextBase {
+struct Marker final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Marker)
     DECLARE_CLASSOF(ElementType::MARKER)
 

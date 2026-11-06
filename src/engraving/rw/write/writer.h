@@ -27,8 +27,7 @@
 #include "../compat/writescorehook.h"
 
 namespace mu::engraving::write {
-class Writer : public rw::IWriter {
-public:
+struct Writer : rw::IWriter {
 
     Writer();
 

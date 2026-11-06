@@ -32,7 +32,7 @@
 #include "write/writecontext.h"
 
 namespace mu::engraving {
-class LinkedObjects;
+struct LinkedObjects;
 } // namespace mu::engraving
 
 namespace mu::engraving::rw {

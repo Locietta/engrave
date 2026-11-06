@@ -28,8 +28,7 @@
 //! See Project class description for detail
 
 namespace mu::engraving::compat {
-class ScoreAccess {
-public:
+struct ScoreAccess {
 
     static MasterScore *create_master_score(const EngravingServices &services);
     static MasterScore *create_master_score_with_base_style(const EngravingServices &services);

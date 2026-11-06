@@ -520,7 +520,7 @@ TEST(Export470, HiddenPartTiesAreRefusedInBothFormats) {
     }
 }
 
-class WarningIdentity : public testing::TestWithParam<std::optional<engrave::ExportWarningObject>> {};
+struct WarningIdentity : testing::TestWithParam<std::optional<engrave::ExportWarningObject>> {};
 
 TEST_P(WarningIdentity, InvalidArgumentWithoutArtifact) {
     auto document = open_path(write470_fixture());
@@ -638,8 +638,7 @@ void expect_code(const engrave::Result<T> &result, ErrorCode expected, std::stri
 
 /// One transaction on the score, so that an engine command may run (the batch API is
 /// S6's; a read test drives the primitive the same way the handle tests do).
-class Command {
-public:
+struct Command {
     explicit Command(MasterScore &score) : score_(score) {
         mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
         score_.start_cmd(muse::TranslatableString::untranslatable("engrave read test"));

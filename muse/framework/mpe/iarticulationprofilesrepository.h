@@ -28,8 +28,7 @@
 #include "mpetypes.h"
 
 namespace muse::mpe {
-class IArticulationProfilesRepository {
-public:
+struct IArticulationProfilesRepository {
     virtual ~IArticulationProfilesRepository() = default;
 
     virtual ArticulationsProfilePtr create_new() const = 0;

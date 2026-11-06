@@ -26,13 +26,14 @@
 namespace mu::engraving {
 enum class Pid : short;
 
-class RootItem;
-class Score;
+struct RootItem;
+struct Score;
 
 //! The parent an object has while it is not attached to anything. It is not part of
 //! the score and nothing is laid out in it - it is not even an item; it only keeps
 //! unattached objects reachable, and heads the accessibility tree they form.
-class DummyParent : public EngravingObject {
+struct DummyParent : EngravingObject {
+private:
     OBJECT_ALLOCATOR(engraving, DummyParent)
 public:
     DummyParent(Score *score);

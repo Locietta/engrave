@@ -39,7 +39,8 @@ namespace {
 // Undo commands
 //-------------------------------------------------------------------
 
-class ConnectSharedPart : public UndoableCommand {
+struct ConnectSharedPart : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ConnectSharedPart)
 
     SharedPart *shared_part = nullptr;
@@ -56,7 +57,8 @@ public:
     UNDO_NAME("Connect shared part")
 };
 
-class DisconnectSharedPart : public UndoableCommand {
+struct DisconnectSharedPart : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, DisconnectSharedPart)
 
     SharedPart *shared_part = nullptr;

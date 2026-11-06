@@ -26,8 +26,8 @@
 #include <map>
 
 namespace mu::iex::midi {
-class ReducedFraction;
-class MidiChord;
+struct ReducedFraction;
+struct MidiChord;
 
 namespace MidiTuplet {
 struct TupletInfo;

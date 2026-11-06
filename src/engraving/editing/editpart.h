@@ -31,7 +31,8 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class InsertPart : public UndoableCommand {
+struct InsertPart : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertPart)
 
     Part *part_ = nullptr;
@@ -48,7 +49,8 @@ public:
     UNDO_CHANGED_OBJECTS({part_})
 };
 
-class RemovePart : public UndoableCommand {
+struct RemovePart : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemovePart)
 
     Part *part_ = nullptr;
@@ -65,7 +67,8 @@ public:
     UNDO_CHANGED_OBJECTS({part_})
 };
 
-class SetSoloist : public UndoableCommand {
+struct SetSoloist : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SetSoloist)
 
     Part *part = nullptr;
@@ -81,7 +84,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangePart : public UndoableCommand {
+struct ChangePart : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangePart)
 
     Part *part = nullptr;
@@ -98,7 +102,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangeInstrumentLong : public UndoableCommand {
+struct ChangeInstrumentLong : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeInstrumentLong)
 
     Part *part = nullptr;
@@ -115,7 +120,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangeInstrumentShort : public UndoableCommand {
+struct ChangeInstrumentShort : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeInstrumentShort)
 
     Part *part = nullptr;
@@ -132,7 +138,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangeInstrumentGroupOptions : public UndoableCommand {
+struct ChangeInstrumentGroupOptions : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeInstrumentGroupOptions)
 
     Part *part = nullptr;
@@ -151,7 +158,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangeInstrumentNumber : public UndoableCommand {
+struct ChangeInstrumentNumber : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeInstrumentNumber)
 
     Part *part = nullptr;
@@ -168,7 +176,8 @@ public:
     UNDO_CHANGED_OBJECTS({part})
 };
 
-class ChangeDrumset : public UndoableCommand {
+struct ChangeDrumset : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeDrumset)
 
     Instrument *instrument = nullptr;
@@ -184,7 +193,8 @@ public:
     UNDO_NAME("ChangeDrumset")
 };
 
-class ChangeStringData : public UndoableCommand {
+struct ChangeStringData : UndoableCommand {
+private:
     Instrument *instrument_ = nullptr;
     StringTunings *string_tunings_ = nullptr;
     StringData string_data_;
@@ -199,7 +209,8 @@ public:
     UNDO_NAME("ChangeStringData")
 };
 
-class ChangePatch : public UndoableCommand {
+struct ChangePatch : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangePatch)
 
     Score *score = nullptr;
@@ -214,7 +225,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class SetUserBankController : public UndoableCommand {
+struct SetUserBankController : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SetUserBankController)
 
     InstrChannel *channel = nullptr;
@@ -227,15 +239,14 @@ public:
     UNDO_NAME("SetUserBankController")
 };
 
-class InstrumentTemplate;
+struct InstrumentTemplate;
 struct ScoreOrder;
-class Staff;
-class StaffType;
+struct Staff;
+struct StaffType;
 enum class PreferSharpFlat : char;
 enum class StaffTypes : signed char;
 
-class EditPart {
-public:
+struct EditPart {
     static void replace_part_instrument(Score *score, Part *part, const Instrument &new_instrument,
                                         const StaffType *new_staff_type = nullptr);
 

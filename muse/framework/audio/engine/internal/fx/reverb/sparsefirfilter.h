@@ -29,8 +29,7 @@
 #include "circularsamplebuffer.h"
 
 namespace muse::audio::fx {
-class SparseFirFilter {
-public:
+struct SparseFirFilter {
     SparseFirFilter() {}
 
     void reset() { buffer_.reset(); }

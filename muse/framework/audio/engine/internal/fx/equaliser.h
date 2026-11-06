@@ -25,8 +25,7 @@
 #include "../../ifxprocessor.h"
 
 namespace muse::audio::fx {
-class Equaliser : public IFxProcessor {
-public:
+struct Equaliser : IFxProcessor {
     Equaliser();
 
     void set_output_spec(const OutputSpec &spec) override;

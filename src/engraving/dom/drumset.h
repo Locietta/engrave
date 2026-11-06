@@ -28,9 +28,9 @@
 #include <array>
 
 namespace mu::engraving {
-class XmlWriter;
-class XmlReader;
-class Articulation;
+struct XmlWriter;
+struct XmlReader;
+struct Articulation;
 
 struct DrumInstrumentVariant {
     int pitch = ::mu::engraving::invalid_pitch;
@@ -86,8 +86,7 @@ static const int drum_instruments = 128;
 //    possible midi notes in a drumset
 //---------------------------------------------------------
 
-class Drumset {
-public:
+struct Drumset {
     bool is_valid(int pitch) const;
 
     NoteHeadGroup note_head(int pitch) const { return drums_[pitch].notehead; }

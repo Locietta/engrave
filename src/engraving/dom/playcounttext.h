@@ -25,7 +25,8 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class PlayCountText final : public TextBase {
+struct PlayCountText final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, PlayCountText)
     DECLARE_CLASSOF(ElementType::PLAY_COUNT_TEXT)
 
@@ -53,7 +54,7 @@ public:
     bool position_relative_to_notehead_rest() const override { return false; }
 
 private:
-    friend class Factory;
+    friend struct Factory;
     PlayCountText(DummyParentOr<Segment> parent, TextStyleType tid = TextStyleType::REPEAT_PLAY_COUNT);
 
     AutoCustomHide play_count_text_setting_ = AutoCustomHide::AUTO;

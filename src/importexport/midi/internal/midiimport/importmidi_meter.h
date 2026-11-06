@@ -26,11 +26,11 @@
 #include <vector>
 
 namespace mu::engraving {
-class TDuration;
+struct TDuration;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class ReducedFraction;
+struct ReducedFraction;
 
 namespace MidiTuplet {
 struct TupletData;

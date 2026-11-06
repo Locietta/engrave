@@ -28,8 +28,7 @@
 
 namespace muse {
 template <typename KeyType, typename ValType>
-class SharedHashMap {
-public:
+struct SharedHashMap {
     // like std
     using key_type = KeyType;
     using mapped_type = ValType;

@@ -26,8 +26,7 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class AudioEngineConfiguration : public IAudioEngineConfiguration {
-public:
+struct AudioEngineConfiguration : IAudioEngineConfiguration {
     AudioEngineConfiguration() = default;
 
     void set_config(const AudioEngineConfig &conf) override;

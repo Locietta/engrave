@@ -25,8 +25,7 @@
 #include "../iengravingcontextconfiguration.h"
 
 namespace mu::engraving {
-class EngravingContextConfiguration : public IEngravingContextConfiguration {
-public:
+struct EngravingContextConfiguration : IEngravingContextConfiguration {
 
     double gui_scaling() const override;
 

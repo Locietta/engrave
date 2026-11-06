@@ -28,15 +28,16 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Glissando;
-class Note;
+struct Glissando;
+struct Note;
 enum class GlissandoType : unsigned char;
 
 //---------------------------------------------------------
 //   @@ GlissandoSegment
 //---------------------------------------------------------
 
-class GlissandoSegment final : public LineSegment {
+struct GlissandoSegment final : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, GlissandoSegment)
     DECLARE_CLASSOF(ElementType::GLISSANDO_SEGMENT)
 
@@ -54,7 +55,8 @@ public:
 //   Glissando
 //---------------------------------------------------------
 
-class Glissando final : public SLine {
+struct Glissando final : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, Glissando)
     DECLARE_CLASSOF(ElementType::GLISSANDO)
 

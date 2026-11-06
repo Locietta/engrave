@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class LetRing;
+struct LetRing;
 
 //---------------------------------------------------------
 //   @@ LetRingSegment
 //---------------------------------------------------------
 
-class LetRingSegment final : public TextLineBaseSegment {
+struct LetRingSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, LetRingSegment)
     DECLARE_CLASSOF(ElementType::LET_RING_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     LetRing *let_ring() const { return (LetRing *) spanner(); }
 
-    friend class LetRing;
+    friend struct LetRing;
 };
 
 //---------------------------------------------------------
 //   @@ LetRing
 //---------------------------------------------------------
 
-class LetRing final : public ChordTextLineBase {
+struct LetRing final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, LetRing)
     DECLARE_CLASSOF(ElementType::LET_RING)
 

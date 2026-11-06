@@ -27,14 +27,13 @@
 #include "abstractaudioencoder.h"
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
 struct AacEncoderHandler;
 
-class AacEncoder : public AbstractAudioEncoder {
-public:
+struct AacEncoder : AbstractAudioEncoder {
     AacEncoder(const SoundTrackFormat &, io::IODevice &);
 
     ~AacEncoder() noexcept override;

@@ -24,8 +24,7 @@
 #include "../imusicxmlconfiguration.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlConfiguration : public IMusicXmlConfiguration {
-public:
+struct MusicXmlConfiguration : IMusicXmlConfiguration {
     void init();
 
     bool import_breaks() const override;

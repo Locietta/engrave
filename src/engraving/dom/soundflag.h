@@ -27,7 +27,8 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving {
-class SoundFlag final : public EngravingItem {
+struct SoundFlag final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, SoundFlag)
     DECLARE_CLASSOF(ElementType::SOUND_FLAG)
 

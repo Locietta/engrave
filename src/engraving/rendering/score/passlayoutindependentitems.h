@@ -25,12 +25,11 @@
 #include "passbase.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class PassLayoutIndependentItems : public PassBase {
-public:
+struct PassLayoutIndependentItems : PassBase {
 
 private:
 

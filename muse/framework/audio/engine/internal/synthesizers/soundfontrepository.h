@@ -27,8 +27,7 @@
 #include "audio/engine/isoundfontrepository.h"
 
 namespace muse::audio::synth {
-class SoundFontRepository : public ISoundFontRepository {
-public:
+struct SoundFontRepository : ISoundFontRepository {
     void load_sound_fonts(const std::vector<SoundFontUri> &uris) override;
     void add_sound_font(const SoundFontUri &uri) override;
     void add_sound_font_data(const SoundFontUri &uri, const ByteArray &data) override;

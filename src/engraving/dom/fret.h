@@ -33,11 +33,11 @@ struct PathT;
 } // namespace muse::io
 
 namespace mu::engraving {
-class Chord;
-class Factory;
-class Harmony;
-class StringData;
-class Transaction;
+struct Chord;
+struct Factory;
+struct Harmony;
+struct StringData;
+struct Transaction;
 
 // Keep this in order - not used directly for comparisons, but the dots will appear in
 // this order in fret multidot mode. See fretproperties.cpp.
@@ -45,8 +45,7 @@ enum class FretDotType : signed char { NORMAL = 0, CROSS, SQUARE, TRIANGLE = 3 }
 
 enum class FretMarkerType : signed char { NONE, CIRCLE, CROSS };
 
-class FretItem {
-public:
+struct FretItem {
     struct Barre {
         int start_string = -1;
         int end_string = -1;
@@ -126,7 +125,8 @@ struct DiagramInfo {
 //   Note that, while strings are zero-indexed, frets are one-indexed
 //---------------------------------------------------------
 
-class FretDiagram final : public EngravingItem {
+struct FretDiagram final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, FretDiagram)
     DECLARE_CLASSOF(ElementType::FRET_DIAGRAM)
 
@@ -244,7 +244,7 @@ public:
 
     bool allow_time_anchor() const override { return ownership_parent() && parent()->is_segment(); }
 
-    friend class FretUndoData;
+    friend struct FretUndoData;
 
     struct FingeringItem {
         String finger_number;
@@ -273,7 +273,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(FretDiagram)
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     FretDiagram(DummyParentOr<Segment> parent);
     FretDiagram(const FretDiagram &);

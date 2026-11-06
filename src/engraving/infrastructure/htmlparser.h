@@ -25,8 +25,7 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class HtmlParser {
-public:
+struct HtmlParser {
     static muse::String parse(const muse::String &name);
 };
 } // namespace mu::engraving

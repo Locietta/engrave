@@ -40,7 +40,7 @@
 using namespace mu;
 
 namespace mu::engraving {
-class DrumSet;
+struct DrumSet;
 
 bool InputState::is_valid() const { return segment_ != nullptr && track_ != muse::nidx; }
 

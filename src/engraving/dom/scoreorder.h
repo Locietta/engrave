@@ -28,10 +28,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class XmlWriter;
-class XmlReader;
-class InstrumentTemplate;
-class Score;
+struct XmlWriter;
+struct XmlReader;
+struct InstrumentTemplate;
+struct Score;
 
 //---------------------------------------------------------
 //   ScoreGroup

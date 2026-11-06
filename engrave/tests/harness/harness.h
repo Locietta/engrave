@@ -37,8 +37,8 @@
 #include "engrave/src/api/batch.h"
 
 namespace mu::engraving {
-class EngravingObject;
-class MasterScore;
+struct EngravingObject;
+struct MasterScore;
 } // namespace mu::engraving
 
 namespace engrave::harness {

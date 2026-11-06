@@ -29,8 +29,7 @@
 #include "nodes/fxchain.h"
 
 namespace muse::audio::engine {
-class IAudioFactory {
-public:
+struct IAudioFactory {
     virtual ~IAudioFactory() = default;
 
     // Available resources

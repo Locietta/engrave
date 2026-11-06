@@ -26,8 +26,7 @@
 #include "geometry.h"
 
 namespace muse::draw {
-class Bezier {
-public:
+struct Bezier {
     Bezier() = default;
     Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
 
@@ -48,7 +47,7 @@ public:
 private:
     void parameter_split_left(double t, Bezier *left);
 
-    friend class PainterPath;
+    friend struct PainterPath;
 
     double x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_;
 };

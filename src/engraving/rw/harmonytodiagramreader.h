@@ -24,8 +24,7 @@
 #include "xmlreader.h"
 
 namespace mu::engraving::rw {
-class HarmonyToDiagramReader {
-public:
+struct HarmonyToDiagramReader {
     struct FretDiagramInfo {
         String xml;
         String pattern;

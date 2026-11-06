@@ -27,8 +27,7 @@
 #include "measurebase.h"
 
 namespace mu::engraving {
-class RangeLock {
-public:
+struct RangeLock {
     RangeLock(MeasureBase *start, MeasureBase *end) : start_mb_(start), end_mb_(end) {
         assert(start_mb_->is_before(end_mb_) || start_mb_ == end_mb_);
     }
@@ -44,8 +43,7 @@ private:
     MeasureBase *end_mb_;
 };
 
-class RangeLocks {
-public:
+struct RangeLocks {
     void add(const RangeLock *lock);
     void remove(const RangeLock *lock);
 

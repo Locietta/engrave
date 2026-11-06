@@ -26,13 +26,12 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 
-class Staff;
-class StringData;
+struct Staff;
+struct StringData;
 
-class EditCapo {
-public:
+struct EditCapo {
     static void update_notation_for_capo_change(const CapoParams &old_params, const CapoParams &new_params, const Staff *staff,
                                                 int start_tick, int end_tick);
 

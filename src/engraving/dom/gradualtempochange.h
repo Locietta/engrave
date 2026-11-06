@@ -29,9 +29,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class GradualTempoChangeSegment;
+struct GradualTempoChangeSegment;
 
-class GradualTempoChange : public TextLineBase {
+struct GradualTempoChange : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, GradualTempoChange)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE)
 
@@ -76,10 +77,11 @@ private:
 
     bool align_right_of_rehearsal_mark_ = true;
 
-    friend class GradualTempoChangeSegment;
+    friend struct GradualTempoChangeSegment;
 };
 
-class GradualTempoChangeSegment : public TextLineBaseSegment {
+struct GradualTempoChangeSegment : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, GradualTempoChangeSegment)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT)
 
@@ -93,7 +95,7 @@ public:
     GradualTempoChangeSegment *find_element_to_snap_before() const;
     TempoText *find_element_to_snap_after() const;
 
-    friend class GradualTempoChange;
+    friend struct GradualTempoChange;
 };
 } // namespace mu::engraving
 

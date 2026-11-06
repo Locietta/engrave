@@ -27,8 +27,7 @@
 #include <vector>
 
 namespace muse {
-class ByteArray {
-public:
+struct ByteArray {
     typedef uint8_t value_type;
 
     ByteArray();

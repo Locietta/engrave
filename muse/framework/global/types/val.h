@@ -34,12 +34,11 @@
 #include "io/path.h"
 
 namespace muse {
-class Val;
+struct Val;
 using ValList = std::vector<Val>;
 using ValMap = std::map<std::string, Val>;
 
-class Val {
-public:
+struct Val {
     enum class Type { UNDEFINED = 0, BOOL, INT, INT64, DOUBLE, STRING, LIST, MAP, COLOR };
 
     Val() = default;
@@ -217,8 +216,7 @@ private:
 };
 
 //! NOTE Helper class for the serialization/deserialization of lists and maps
-class ValJson {
-public:
+struct ValJson {
     static bool to_string(const ValList &list, std::string &str);
     static bool to_string(const ValMap &map, std::string &str);
     static bool from_string(const std::string &str, ValList &list);

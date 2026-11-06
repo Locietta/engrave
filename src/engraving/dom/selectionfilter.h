@@ -81,8 +81,7 @@ enum class ElementsSelectionFilterTypes : unsigned int {
 using SelectionFilterTypesVariant =
     std::variant<VoicesSelectionFilterTypes, NotesInChordSelectionFilterTypes, ElementsSelectionFilterTypes>;
 
-class SelectionFilter {
-public:
+struct SelectionFilter {
     SelectionFilter() = default;
 
     inline bool operator==(const SelectionFilter &f) const {

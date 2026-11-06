@@ -26,8 +26,7 @@
 #include "../dom/location.h"
 
 namespace mu::engraving {
-class LinksIndexer {
-public:
+struct LinksIndexer {
 
     inline bool operator==(const LinksIndexer &i) const {
         return last_local_index == i.last_local_index && last_linked_element_loc == i.last_linked_element_loc;

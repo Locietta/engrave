@@ -25,12 +25,11 @@
 #include "readcontext.h"
 
 namespace mu::engraving {
-class MeasureBase;
+struct MeasureBase;
 } // namespace mu::engraving
 
 namespace mu::engraving::read460 {
-class StaffRead {
-public:
+struct StaffRead {
 
     static void read_staff(Score *score, XmlReader &, ReadContext &ctx);
 };

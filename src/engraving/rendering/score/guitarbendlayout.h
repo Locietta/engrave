@@ -24,17 +24,16 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class GuitarBend;
-class GuitarBendSegment;
-class GuitarBendHoldSegment;
-class Note;
-class SLine;
-class System;
+struct GuitarBend;
+struct GuitarBendSegment;
+struct GuitarBendHoldSegment;
+struct Note;
+struct SLine;
+struct System;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class GuitarBendLayout {
-public:
+struct GuitarBendLayout {
     /* If system is different from nullptr, only the segment belonging to it is laid out.
      * Otherwise, all segments which have a system are laid out. */
     static void update_segments_and_layout(SLine *item, LayoutContext &ctx, System *system = nullptr);

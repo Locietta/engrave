@@ -29,8 +29,7 @@
 #include "mpe/iarticulationprofilesrepository.h"
 
 namespace muse::mpe {
-class ArticulationProfilesRepository : public IArticulationProfilesRepository {
-public:
+struct ArticulationProfilesRepository : IArticulationProfilesRepository {
     explicit ArticulationProfilesRepository(io::IFileSystem &file_system) : file_system_(file_system) {}
 
     ArticulationsProfilePtr create_new() const override;

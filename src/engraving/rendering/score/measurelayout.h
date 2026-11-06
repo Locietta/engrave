@@ -25,19 +25,18 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Measure;
-class MeasureBase;
-class Parenthesis;
-class Score;
-class Segment;
-class StaffLines;
+struct Measure;
+struct MeasureBase;
+struct Parenthesis;
+struct Score;
+struct Segment;
+struct StaffLines;
 enum class SegmentType;
 enum class CourtesySegmentPosition : char;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class MeasureLayout {
-public:
+struct MeasureLayout {
     struct MeasureStartEndPos {
         MeasureStartEndPos(double x1, double x2) : x1(x1), x2(x2) {}
 

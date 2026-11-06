@@ -27,7 +27,8 @@
 #include "utils.h"
 
 namespace mu::engraving {
-class MMRest final : public Rest {
+struct MMRest final : Rest {
+private:
     OBJECT_ALLOCATOR(engraving, MMRest)
     DECLARE_CLASSOF(ElementType::MMREST)
 

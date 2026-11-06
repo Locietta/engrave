@@ -28,8 +28,7 @@
 #include "audio/common/soundfonttypes.h"
 
 namespace muse::audio::synth {
-class FluidSoundFontParser {
-public:
+struct FluidSoundFontParser {
     static RetVal<SoundFontMeta> parse_sound_font(const SoundFontPath &path);
 };
 } // namespace muse::audio::synth

@@ -25,7 +25,8 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class Capo final : public StaffTextBase {
+struct Capo final : StaffTextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Capo)
     DECLARE_CLASSOF(ElementType::CAPO)
 

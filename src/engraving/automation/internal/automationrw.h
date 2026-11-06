@@ -24,10 +24,9 @@
 #include "global/types/bytearray.h"
 
 namespace mu::engraving {
-class AutomationData;
+struct AutomationData;
 
-class AutomationRW {
-public:
+struct AutomationRW {
     static void read(AutomationData &data, const muse::ByteArray &json);
     static muse::ByteArray write(const AutomationData &data, bool write_generated);
 };

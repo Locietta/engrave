@@ -23,14 +23,13 @@
 #define MU_ENGRAVING_PASSBASE_DEV_H
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class LayoutContext;
+struct LayoutContext;
 
-class PassBase {
-public:
+struct PassBase {
     virtual ~PassBase() = default;
 
     void run(Score *score, LayoutContext &ctx);

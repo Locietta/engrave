@@ -4,9 +4,9 @@
 #include "../../dom/engravingobject.h"
 
 namespace mu::engraving {
-class Chord;
-class TremoloSingleChord;
-class TremoloTwoChord;
+struct Chord;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {

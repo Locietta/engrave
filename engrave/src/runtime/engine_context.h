@@ -4,15 +4,15 @@
 #include <string>
 
 namespace muse::io {
-class IFileSystem;
+struct IFileSystem;
 } // namespace muse::io
 
 namespace muse::draw {
-class IFontsDatabase;
+struct IFontsDatabase;
 } // namespace muse::draw
 
 namespace muse::mpe {
-class IArticulationProfilesRepository;
+struct IArticulationProfilesRepository;
 } // namespace muse::mpe
 
 namespace mu::engraving {
@@ -20,7 +20,7 @@ struct EngravingServices;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-class IMusicXmlConfiguration;
+struct IMusicXmlConfiguration;
 } // namespace mu::iex::musicxml
 
 namespace music {

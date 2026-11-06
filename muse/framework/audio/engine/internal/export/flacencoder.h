@@ -27,14 +27,13 @@
 #include <memory>
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-class FlacHandler;
+struct FlacHandler;
 
-class FlacEncoder : public AbstractAudioEncoder {
-public:
+struct FlacEncoder : AbstractAudioEncoder {
     FlacEncoder(const SoundTrackFormat &, io::IODevice &);
 
     ~FlacEncoder() noexcept override;

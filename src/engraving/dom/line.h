@@ -26,8 +26,8 @@
 #include "spanner.h"
 
 namespace mu::engraving {
-class SLine;
-class System;
+struct SLine;
+struct System;
 
 //---------------------------------------------------------
 //   @@ LineSegment
@@ -39,7 +39,8 @@ class System;
 ///    For every staff a segment is created.
 //---------------------------------------------------------
 
-class LineSegment : public SpannerSegment {
+struct LineSegment : SpannerSegment {
+private:
     OBJECT_ALLOCATOR(engraving, LineSegment)
 protected:
 
@@ -54,7 +55,7 @@ public:
     virtual void spatium_changed(double, double) override;
     virtual void local_spatium_changed(double, double) override;
 
-    friend class SLine;
+    friend struct SLine;
 
     virtual EngravingObject *property_delegate(Pid) const override;
 
@@ -81,7 +82,8 @@ private:
 ///    virtual base class for Hairpin, Trill and TextLine
 //---------------------------------------------------------
 
-class SLine : public Spanner {
+struct SLine : Spanner {
+private:
     OBJECT_ALLOCATOR(engraving, SLine)
 
 public:
@@ -142,7 +144,7 @@ public:
 
 private:
 
-    friend class LineSegment;
+    friend struct LineSegment;
 
     Spatium line_width_;
     Color line_color_;

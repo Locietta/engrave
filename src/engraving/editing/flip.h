@@ -23,11 +23,10 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class Flip {
-public:
+struct Flip {
     static void flip(Transaction &tx, Score *score);
     static void flip_horizontally(Transaction &tx, Score *score);
     static void mirror_note_head(Transaction &tx, Score *score);

@@ -36,31 +36,30 @@
 #endif
 
 namespace mu::engraving {
-class Articulation;
-class Chord;
-class ChordRest;
-class Dynamic;
-class EngravingObject;
-class EngravingItem;
-class Fermata;
-class Instrument;
-class Hairpin;
-class Measure;
-class Note;
-class Part;
-class Rest;
-class Score;
-class Segment;
-class Staff;
-class TremoloTwoChord;
-class Tuplet;
+struct Articulation;
+struct Chord;
+struct ChordRest;
+struct Dynamic;
+struct EngravingObject;
+struct EngravingItem;
+struct Fermata;
+struct Instrument;
+struct Hairpin;
+struct Measure;
+struct Note;
+struct Part;
+struct Rest;
+struct Score;
+struct Segment;
+struct Staff;
+struct TremoloTwoChord;
+struct Tuplet;
 
 enum class Pid : short;
 } // namespace mu::engraving
 
 namespace mu::iex::mnxio {
-class MnxImporter {
-public:
+struct MnxImporter {
     MnxImporter(engraving::Score *s, mnx::Document &&doc) : score_(s), mnx_document_(std::move(doc)) {}
 
     void import_mnx();

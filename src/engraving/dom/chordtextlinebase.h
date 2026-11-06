@@ -30,7 +30,8 @@ namespace mu::engraving {
 //   @@ ChordTextLineBase
 //---------------------------------------------------------
 
-class ChordTextLineBase : public TextLineBase {
+struct ChordTextLineBase : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, ChordTextLineBase)
 public:
     ChordTextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
@@ -38,7 +39,7 @@ public:
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
 protected:
-    friend class TextLineBaseSegment;
+    friend struct TextLineBaseSegment;
 
     void do_compute_end_element() override;
 };

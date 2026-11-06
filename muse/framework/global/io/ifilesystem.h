@@ -30,8 +30,7 @@
 #include "ioenums.h"
 
 namespace muse::io {
-class IFileSystem {
-public:
+struct IFileSystem {
     virtual ~IFileSystem() = default;
 
     virtual Ret exists(const io::PathT &path) const = 0;

@@ -32,11 +32,10 @@
 //! QSettings are used only in the implementation for compatibility with current settings.
 //! Perhaps in the future this will be changed.
 
-class QSettings;
+struct QSettings;
 
 namespace muse {
-class Settings {
-public:
+struct Settings {
     static Settings *instance();
 
     struct Key {

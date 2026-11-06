@@ -25,11 +25,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Score;
-class Segment;
+struct Score;
+struct Segment;
 
-class CloneVoice {
-public:
+struct CloneVoice {
     static void clone_voice(Segment *source_seg, const Fraction &l_tick, Segment *dest_seg, track_idx_t strack, track_idx_t dtrack,
                             bool delete_source, bool link);
 };

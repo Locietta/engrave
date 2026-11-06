@@ -24,13 +24,12 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Measure;
-class Segment;
+struct Measure;
+struct Segment;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class MMRestLayout {
-public:
+struct MMRestLayout {
 
     static void create_multi_measure_rests_if_need(Measure *first_measure, LayoutContext &ctx);
     static void layout_mm_rest_range(Measure *m, LayoutContext &ctx);

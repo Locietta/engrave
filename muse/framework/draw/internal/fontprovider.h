@@ -27,7 +27,8 @@
 #include "ifontsengine.h"
 
 namespace muse::draw {
-class FontProvider : public IFontProvider {
+struct FontProvider : IFontProvider {
+private:
     IFontsDatabase &database_;
     IFontsEngine &engine_;
 

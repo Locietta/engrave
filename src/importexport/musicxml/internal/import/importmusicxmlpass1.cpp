@@ -68,8 +68,7 @@ namespace mu::iex::musicxml {
  List of note start/stop times in a voice in all staves.
 */
 
-class NoteList {
-public:
+struct NoteList {
     NoteList();
     void add_note(const int start_tick, const int end_tick, const size_t staff);
     void dump(const int &voice) const;
@@ -94,8 +93,7 @@ private:
  but only between staves.
 */
 
-class VoiceOverlapDetector {
-public:
+struct VoiceOverlapDetector {
     VoiceOverlapDetector();
     void add_note(const int start_tick, const int end_tick, const int &voice, const int staff);
     void dump() const;

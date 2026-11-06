@@ -28,11 +28,11 @@
 #include "internal/midishared/generalmidi.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
+struct MTrack;
 
 namespace MidiInstr {
 muse::String instrument_name(GM1Program, bool is_drum_track);

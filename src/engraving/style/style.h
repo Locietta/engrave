@@ -33,16 +33,15 @@
 #include "styledef.h"
 
 namespace mu::engraving::compat {
-class ReadChordListHook;
-class ReadStyleHook;
+struct ReadChordListHook;
+struct ReadStyleHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
-class XmlReader;
-class XmlWriter;
+struct XmlReader;
+struct XmlWriter;
 
-class MStyle {
-public:
+struct MStyle {
     MStyle() = default;
 
     const PropertyValue &style_v(Sid idx) const { return value(idx); }
@@ -101,7 +100,7 @@ public:
     static Sid style_idx(const String &name);
 
 private:
-    friend class compat::ReadStyleHook;
+    friend struct compat::ReadStyleHook;
 
     void read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook, int msc_version);
 

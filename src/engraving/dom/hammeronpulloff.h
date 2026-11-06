@@ -25,7 +25,8 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class HammerOnPullOffText final : public TextBase {
+struct HammerOnPullOffText final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, HammerOnPullOffText)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF_TEXT)
 
@@ -68,7 +69,8 @@ private:
     bool is_hammer_on_ = true;
 };
 
-class HammerOnPullOffSegment final : public SlurSegment {
+struct HammerOnPullOffSegment final : SlurSegment {
+private:
     OBJECT_ALLOCATOR(engraving, HammerOnPullOffSegment)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF_SEGMENT)
 
@@ -112,7 +114,8 @@ private:
     std::vector<HammerOnPullOffText *> hopo_text_;
 };
 
-class HammerOnPullOff final : public Slur {
+struct HammerOnPullOff final : Slur {
+private:
     OBJECT_ALLOCATOR(engraving, HammerOnPullOff)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF)
 
@@ -121,7 +124,7 @@ public:
 
     SlurTieSegment *new_slur_tie_segment() override { return new HammerOnPullOffSegment(this); }
 
-    friend class Factory;
+    friend struct Factory;
 
     HammerOnPullOff(DummyParentOr<EngravingItem> parent);
     HammerOnPullOff(const HammerOnPullOff &);

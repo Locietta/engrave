@@ -29,17 +29,16 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class ChordRest;
-class Dynamic;
-class Fraction;
-class Hairpin;
-class Score;
-class Transaction;
+struct ChordRest;
+struct Dynamic;
+struct Fraction;
+struct Hairpin;
+struct Score;
+struct Transaction;
 
 enum class HairpinType : signed char;
 
-class EditHairpin {
-public:
+struct EditHairpin {
     static std::vector<Hairpin *> add_hairpins(Transaction &tx, Score *score, HairpinType type);
     static Hairpin *add_hairpin(Transaction &tx, Score *score, HairpinType type, ChordRest *cr1, ChordRest *cr2 = nullptr);
     static Hairpin *add_hairpin(Transaction &tx, Score *score, HairpinType type, Fraction s_tick, Fraction e_tick, track_idx_t track);

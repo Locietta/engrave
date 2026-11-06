@@ -27,8 +27,7 @@
 #include "dir.h"
 
 namespace muse::io {
-class FileInfo {
-public:
+struct FileInfo {
     FileInfo() = default;
     FileInfo(const PathT &file_path);
 

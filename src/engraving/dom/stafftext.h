@@ -26,7 +26,8 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class StaffText final : public StaffTextBase {
+struct StaffText final : StaffTextBase {
+private:
     OBJECT_ALLOCATOR(engraving, StaffText)
     DECLARE_CLASSOF(ElementType::STAFF_TEXT)
 

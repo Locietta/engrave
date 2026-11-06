@@ -71,8 +71,7 @@ private:
 // ============================
 // Char (UTF-16)
 // ============================
-class Char {
-public:
+struct Char {
 
     enum SpecialCharacter {
         NULL = 0x0000,
@@ -198,8 +197,7 @@ private:
 // ============================
 // UtfCodec
 // ============================
-class UtfCodec {
-public:
+struct UtfCodec {
     enum class Encoding {
         UNKNOWN,
         UTF_8,
@@ -220,11 +218,10 @@ public:
 // ============================
 // String (UTF-16)
 // ============================
-class StringList;
-class AsciiStringView;
+struct StringList;
+struct AsciiStringView;
 
-class String {
-public:
+struct String {
 
     String();
     String(const char16_t *str);
@@ -438,8 +435,7 @@ private:
 #endif
 };
 
-class StringList : public std::vector<String> {
-public:
+struct StringList : std::vector<String> {
     StringList() = default;
 
     StringList(std::initializer_list<String> l) : std::vector<String>(l) {}
@@ -475,8 +471,7 @@ public:
 // AsciiStringView (ASCII)
 // Be carefully!!, this class just hold pointer to string (no copy), so source string should be present, while use view
 // ============================
-class AsciiStringView {
-public:
+struct AsciiStringView {
 
     constexpr AsciiStringView() = default;
 

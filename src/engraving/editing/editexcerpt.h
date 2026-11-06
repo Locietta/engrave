@@ -29,7 +29,8 @@
 #include "../dom/part.h"
 
 namespace mu::engraving {
-class AddExcerpt : public UndoableCommand {
+struct AddExcerpt : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddExcerpt)
 
     Excerpt *excerpt = nullptr;
@@ -48,7 +49,8 @@ public:
     UNDO_NAME("AddExcerpt")
 };
 
-class RemoveExcerpt : public UndoableCommand {
+struct RemoveExcerpt : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveExcerpt)
 
     Excerpt *excerpt = nullptr;
@@ -68,7 +70,8 @@ public:
     UNDO_NAME("RemoveExcerpt")
 };
 
-class SwapExcerpt : public UndoableCommand {
+struct SwapExcerpt : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SwapExcerpt)
 
     MasterScore *score = nullptr;
@@ -85,7 +88,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeExcerptTitle : public UndoableCommand {
+struct ChangeExcerptTitle : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeExcerptTitle)
 
     Excerpt *excerpt = nullptr;
@@ -100,7 +104,8 @@ public:
     UNDO_NAME("ChangeExcerptTitle")
 };
 
-class AddPartToExcerpt : public UndoableCommand {
+struct AddPartToExcerpt : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddPartToExcerpt)
 
     Excerpt *excerpt_ = nullptr;

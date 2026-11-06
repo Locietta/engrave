@@ -30,19 +30,18 @@
 #include "compatmidirenderinternal.h"
 
 namespace mu::engraving {
-class Chord;
-class Drumset;
-class Glissando;
-class Instrument;
-class Measure;
-class Note;
-class NoteEventList;
-class Score;
-class Segment;
-class Trill;
+struct Chord;
+struct Drumset;
+struct Glissando;
+struct Instrument;
+struct Measure;
+struct Note;
+struct NoteEventList;
+struct Score;
+struct Segment;
+struct Trill;
 
-class CompatMidiRender {
-public:
+struct CompatMidiRender {
     static void render_score(Score *score, EventsHolder &events, const CompatMidiRendererInternal::Context &ctx, bool expand_repeats);
     static int get_controller_for_snd(Score *score, int global_snd_controller);
     static void create_play_events(const Score *score, Measure const *start = nullptr, Measure const *end = nullptr,

@@ -4,8 +4,7 @@
 #include <utility>
 
 namespace mu::iex::guitarpro {
-class GPRhythm {
-public:
+struct GPRhythm {
     enum class RhytmType { SIXTY_FOURTH, THIRTY_SECOND, SIXTEENTH, EIGHTH, QUARTER, HALF, WHOLE };
 
     struct Tuplet {

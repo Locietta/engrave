@@ -26,13 +26,13 @@
 #include <map>
 
 namespace mu::engraving {
-class TimeSigMap;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class ReducedFraction;
-class MidiChord;
-class MTrack;
+struct ReducedFraction;
+struct MidiChord;
+struct MTrack;
 
 namespace MidiBeat {
 void remove_every2nd_beat(std::set<ReducedFraction> &beat_set);

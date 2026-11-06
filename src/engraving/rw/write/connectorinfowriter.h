@@ -31,15 +31,16 @@
 //---------------------------------------------------------
 
 namespace mu::engraving {
-class XmlWriter;
-class Spanner;
-class MeasureBase;
+struct XmlWriter;
+struct Spanner;
+struct MeasureBase;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class WriteContext;
+struct WriteContext;
 
-class ConnectorInfoWriter : public ConnectorInfo {
+struct ConnectorInfoWriter : ConnectorInfo {
+private:
     OBJECT_ALLOCATOR(engraving, ConnectorInfoWriter)
 
 public:
@@ -64,7 +65,8 @@ private:
 ///   Helper class for writing Spanners
 //-----------------------------------------------------------------------------
 
-class SpannerWriter : public ConnectorInfoWriter {
+struct SpannerWriter : ConnectorInfoWriter {
+private:
     OBJECT_ALLOCATOR(engraving, SpannerWriter)
 protected:
     const char *tag_name() const override { return "Spanner"; }

@@ -25,14 +25,13 @@
 #include "../infrastructure/mscwriter.h"
 
 namespace mu::engraving::write {
-class WriteContext;
+struct WriteContext;
 } // namespace mu::engraving::write
 
 namespace mu::engraving {
-class MasterScore;
+struct MasterScore;
 
-class MscSaver {
-public:
+struct MscSaver {
     bool write_mscz(MasterScore *score, MscWriter &msc_writer, const write::WriteContext *ctx = nullptr);
 };
 } // namespace mu::engraving

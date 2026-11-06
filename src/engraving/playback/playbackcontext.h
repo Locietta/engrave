@@ -31,18 +31,17 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Segment;
-class PlayTechAnnotation;
-class SoundFlag;
-class Score;
-class Part;
-class MeasureRepeat;
-class TextBase;
-class ChordRest;
-class RepeatSegment;
+struct Segment;
+struct PlayTechAnnotation;
+struct SoundFlag;
+struct Score;
+struct Part;
+struct MeasureRepeat;
+struct TextBase;
+struct ChordRest;
+struct RepeatSegment;
 
-class PlaybackContext {
-public:
+struct PlaybackContext {
     explicit PlaybackContext(const Score *score);
 
     muse::mpe::dynamic_level_t appliable_dynamic_level(const track_idx_t track_idx, const int nominal_position_tick) const;

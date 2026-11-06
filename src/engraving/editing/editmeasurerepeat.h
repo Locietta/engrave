@@ -25,14 +25,13 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Fraction;
-class Measure;
-class MeasureRepeat;
-class Score;
-class Transaction;
+struct Fraction;
+struct Measure;
+struct MeasureRepeat;
+struct Score;
+struct Transaction;
 
-class EditMeasureRepeat {
-public:
+struct EditMeasureRepeat {
     static void add_measure_repeat(Transaction &tx, Score *score, Measure *first_measure, int num_measures, staff_idx_t staff_idx);
     static bool make_measure_repeat_group(Transaction &tx, Score *score, Measure *first_measure, int num_measures, staff_idx_t staff_idx);
 

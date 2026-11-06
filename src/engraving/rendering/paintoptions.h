@@ -27,7 +27,7 @@
 #include "types/color.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering {

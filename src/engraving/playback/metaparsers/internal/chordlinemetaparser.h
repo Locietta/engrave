@@ -26,7 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class ChordLineMetaParser : public MetaParserBase<ChordLineMetaParser> {
+struct ChordLineMetaParser : MetaParserBase<ChordLineMetaParser> {
 protected:
     friend MetaParserBase;
 

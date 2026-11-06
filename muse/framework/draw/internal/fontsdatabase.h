@@ -28,8 +28,7 @@
 #include "ifontsdatabase.h"
 
 namespace muse::draw {
-class FontsDatabase : public IFontsDatabase {
-public:
+struct FontsDatabase : IFontsDatabase {
     FontsDatabase() = default;
 
     void set_default_font(Font::Type type, const FontDataKey &key) override;

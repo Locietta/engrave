@@ -38,7 +38,8 @@ struct ChannelActions {
 //   StaffTextBase
 //---------------------------------------------------------
 
-class StaffTextBase : public TextBase {
+struct StaffTextBase : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, StaffTextBase)
 
 public:

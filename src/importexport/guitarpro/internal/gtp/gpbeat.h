@@ -9,8 +9,7 @@
 #include "gprhythm.h"
 
 namespace mu::iex::guitarpro {
-class GPBeat {
-public:
+struct GPBeat {
     enum class DynamicType { FFF, FF, F, MF, MP, P, PP, PPP };
     enum class LegatoType { NONE, START, MEDIATE, END };
     enum class Arpeggio { NONE, UP, DOWN };

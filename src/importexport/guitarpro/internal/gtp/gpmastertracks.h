@@ -7,8 +7,7 @@
 #include "types/string.h"
 
 namespace mu::iex::guitarpro {
-class GPMasterTracks {
-public:
+struct GPMasterTracks {
     struct Automation {
         enum class Type { TEMPO, VOLUME, PAN };
         int bar{0};

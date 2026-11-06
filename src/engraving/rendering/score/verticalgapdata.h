@@ -25,11 +25,11 @@
 #include <vector>
 
 namespace mu::engraving {
-class MStyle;
-class Spacer;
-class Staff;
-class SysStaff;
-class System;
+struct MStyle;
+struct Spacer;
+struct Staff;
+struct SysStaff;
+struct System;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
@@ -38,8 +38,7 @@ namespace mu::engraving::rendering::score {
 //    helper class for spreading staves over a page
 //---------------------------------------------------------
 
-class VerticalGapData {
-public:
+struct VerticalGapData {
     const MStyle *style = nullptr;
     System *system = nullptr;
     SysStaff *sys_staff = nullptr;
@@ -82,8 +81,7 @@ private:
 //    helper class for spreading staves over a page
 //---------------------------------------------------------
 
-class VerticalGapDataList : public std::vector<VerticalGapData *> {
-public:
+struct VerticalGapDataList : std::vector<VerticalGapData *> {
     void delete_all();
     double sum_stretch_factor() const;
     double smallest(double limit = -1.0) const;

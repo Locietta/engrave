@@ -24,7 +24,8 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class StaveSharingLabel final : public StaffTextBase {
+struct StaveSharingLabel final : StaffTextBase {
+private:
     OBJECT_ALLOCATOR(engraving, StaveSharingLabel)
     DECLARE_CLASSOF(ElementType::STAVE_SHARING_LABEL)
 

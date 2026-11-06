@@ -33,8 +33,7 @@ struct FxTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class FxNode : public AudioNode<FxTag> {
-public:
+struct FxNode : AudioNode<FxTag> {
 
     explicit FxNode(IFxProcessorPtr fx_processor, PlayheadPositionPtr playhead_position = nullptr);
 

@@ -26,11 +26,11 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-class IMusicXmlConfiguration;
+struct IMusicXmlConfiguration;
 
 bool save_mxl(engraving::Score *, muse::io::IODevice *, const IMusicXmlConfiguration &configuration);
 bool save_mxl(engraving::Score *score, const muse::String &name, const IMusicXmlConfiguration &configuration);

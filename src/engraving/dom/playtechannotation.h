@@ -27,7 +27,8 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class PlayTechAnnotation final : public StaffTextBase {
+struct PlayTechAnnotation final : StaffTextBase {
+private:
     OBJECT_ALLOCATOR(engraving, PlayTechAnnotation)
     DECLARE_CLASSOF(ElementType::PLAYTECH_ANNOTATION)
 

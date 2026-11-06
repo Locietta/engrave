@@ -31,7 +31,8 @@ enum class TripletFeelType : unsigned char { NONE, TRIPLET_8TH, TRIPLET_16TH, DO
 //   TripletFeel
 //---------------------------------------------------------
 
-class TripletFeel final : public SystemText {
+struct TripletFeel final : SystemText {
+private:
     OBJECT_ALLOCATOR(engraving, TripletFeel)
     DECLARE_CLASSOF(ElementType::TRIPLET_FEEL)
 

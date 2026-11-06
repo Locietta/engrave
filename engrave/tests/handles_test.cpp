@@ -186,8 +186,7 @@ EngravingObject *first_live(MasterScore &master, ElementType type) {
 // --- transactions ---------------------------------------------------------
 
 /// One transaction on the score, so that the engine's undo commands may run.
-class Command {
-public:
+struct Command {
     explicit Command(MasterScore &score) : score_(score) {
         mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
         score_.start_cmd(muse::TranslatableString::untranslatable("engrave handles test"));

@@ -27,8 +27,7 @@
 #include "path.h"
 
 namespace muse::io {
-class File : public IODevice {
-public:
+struct File : IODevice {
 
     File() = default;
     File(const PathT &file_path);

@@ -6337,8 +6337,7 @@ void TLayout::layout_whammy_bar_segment(WhammyBarSegment *item, LayoutContext &c
 
 using LayoutSystemTypes = rtti::TypeList<LyricsLine, Slur, HammerOnPullOff, TappingHalfSlur, Volta>;
 
-class LayoutSystemVisitor : public rtti::Visitor<LayoutSystemVisitor> {
-public:
+struct LayoutSystemVisitor : rtti::Visitor<LayoutSystemVisitor> {
     template <typename T>
     static bool do_visit(Spanner *item, System *system, LayoutContext &ctx, SpannerSegment **seg_out) {
         if (T::classof(item)) {

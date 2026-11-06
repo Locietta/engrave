@@ -30,8 +30,7 @@
 #include "../types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsDatabase {
-public:
+struct IFontsDatabase {
     virtual ~IFontsDatabase() = default;
 
     virtual void set_default_font(Font::Type type, const FontDataKey &key) = 0;

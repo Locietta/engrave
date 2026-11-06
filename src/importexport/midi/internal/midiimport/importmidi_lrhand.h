@@ -26,9 +26,9 @@
 #include "internal/midishared/generalmidi.h"
 
 namespace mu::iex::midi {
-class MTrack;
-class MidiChord;
-class ReducedFraction;
+struct MTrack;
+struct MidiChord;
+struct ReducedFraction;
 
 namespace LRHand {
 bool need_to_split(const std::multimap<ReducedFraction, MidiChord> &chords, GM1Program, bool is_drum_track);

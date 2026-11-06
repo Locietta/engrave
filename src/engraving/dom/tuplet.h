@@ -29,8 +29,8 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Text;
-class Spanner;
+struct Text;
+struct Spanner;
 
 //------------------------------------------------------------------------
 //   @@ Tuplet
@@ -42,7 +42,8 @@ class Spanner;
 //!    A single tuplet note has duration of _baseLen * _ratio.denominator() / _ratio.numerator().
 //------------------------------------------------------------------------
 
-class Tuplet final : public DurationElement {
+struct Tuplet final : DurationElement {
+private:
     OBJECT_ALLOCATOR(engraving, Tuplet)
     DECLARE_CLASSOF(ElementType::TUPLET)
 
@@ -175,7 +176,7 @@ public:
 
 private:
 
-    friend class DurationElement;
+    friend struct DurationElement;
 
     void add_duration_element(DurationElement *de);
     void remove_duration_element(DurationElement *de);

@@ -25,9 +25,9 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Chord;
-class Factory;
-class Transaction;
+struct Chord;
+struct Factory;
+struct Transaction;
 
 //---------------------------------------------------------
 //   @@ Arpeggio
@@ -35,7 +35,8 @@ class Transaction;
 
 enum class AnchorRebaseDirection : unsigned char { UP, DOWN };
 
-class Arpeggio : public EngravingItem {
+struct Arpeggio : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Arpeggio)
     DECLARE_CLASSOF(ElementType::ARPEGGIO)
 
@@ -111,7 +112,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Arpeggio)
 
 protected:
-    friend class Factory;
+    friend struct Factory;
 
     Arpeggio(DummyParentOr<Chord> parent, ElementType type = ElementType::ARPEGGIO);
 

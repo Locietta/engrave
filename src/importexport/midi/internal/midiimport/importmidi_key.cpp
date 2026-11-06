@@ -47,8 +47,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiKey {
-class KeyData {
-public:
+struct KeyData {
     KeyData(Key key, int count) : key_(key), count_(count) {}
 
     Key key() const { return key_; }

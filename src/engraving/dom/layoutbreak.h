@@ -26,14 +26,15 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving {
-class Factory;
-class Transaction;
+struct Factory;
+struct Transaction;
 
 //---------------------------------------------------------
 //   @@ LayoutBreak
 ///    symbols for line break, page break etc.
 //---------------------------------------------------------
-class LayoutBreak final : public EngravingItem {
+struct LayoutBreak final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, LayoutBreak)
     DECLARE_CLASSOF(ElementType::LAYOUT_BREAK)
 
@@ -94,7 +95,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     LayoutBreak(DummyParentOr<MeasureBase> parent);
     LayoutBreak(const LayoutBreak &);
 

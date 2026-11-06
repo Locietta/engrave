@@ -27,8 +27,8 @@
 #include "durationtype.h"
 
 namespace mu::engraving {
-class Beam;
-class Tuplet;
+struct Beam;
+struct Tuplet;
 
 //---------------------------------------------------------
 //   @@ DurationElement
@@ -38,7 +38,8 @@ class Tuplet;
 //   @P globalDuration Fraction  played duration
 //---------------------------------------------------------
 
-class DurationElement : public EngravingItem {
+struct DurationElement : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, DurationElement)
 public:
     ~DurationElement();

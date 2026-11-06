@@ -25,8 +25,7 @@
 #include "engraving/dom/score.h"
 
 namespace mu::engraving {
-class TestUtils {
-public:
+struct TestUtils {
     static Score *create_part(MasterScore *master_score, size_t part_number = 0);
     static Score *create_empty_part(MasterScore *master_score);
     static void create_parts(MasterScore *master_score, size_t number_of_parts);

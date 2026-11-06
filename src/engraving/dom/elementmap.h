@@ -28,13 +28,14 @@
 #include "global/allocator.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 
 //---------------------------------------------------------
 //   ElementMap
 //---------------------------------------------------------
 
-class ElementMap : public std::unordered_map<EngravingItem *, EngravingItem *> {
+struct ElementMap : std::unordered_map<EngravingItem *, EngravingItem *> {
+private:
     OBJECT_ALLOCATOR(engraving, ElementMap)
 public:
     ElementMap() {}

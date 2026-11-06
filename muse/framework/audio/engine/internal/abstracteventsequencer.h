@@ -33,8 +33,7 @@
 
 namespace muse::audio::engine {
 template <class... Types>
-class AbstractEventSequencer {
-public:
+struct AbstractEventSequencer {
     using EventType = std::variant<Types...>;
     using EventSequence = std::vector<EventType>;
     using EventSequenceMap = std::map<msecs_t, EventSequence>;

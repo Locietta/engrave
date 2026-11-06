@@ -25,12 +25,12 @@
 #include <map>
 
 namespace mu::engraving {
-class DurationElement;
-class Staff;
+struct DurationElement;
+struct Staff;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class ReducedFraction;
+struct ReducedFraction;
 
 namespace MidiTuplet {
 struct TupletData;

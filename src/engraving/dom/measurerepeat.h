@@ -28,9 +28,10 @@
 #include "utils.h"
 
 namespace mu::engraving {
-class Segment;
+struct Segment;
 
-class MeasureRepeat final : public Rest {
+struct MeasureRepeat final : Rest {
+private:
     OBJECT_ALLOCATOR(engraving, MeasureRepeat)
     DECLARE_CLASSOF(ElementType::MEASURE_REPEAT)
 

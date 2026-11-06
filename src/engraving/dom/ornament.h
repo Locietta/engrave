@@ -24,9 +24,10 @@
 #include "articulation.h"
 
 namespace mu::engraving {
-class AccidentalState;
+struct AccidentalState;
 
-class Ornament final : public Articulation {
+struct Ornament final : Articulation {
+private:
     OBJECT_ALLOCATOR(engraving, Ornament)
     DECLARE_CLASSOF(ElementType::ORNAMENT)
 

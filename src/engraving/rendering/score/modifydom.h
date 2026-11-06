@@ -25,15 +25,14 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Measure;
+struct Measure;
 } // namespace mu::engraving
 
 //! NOTE Here collected functions of DOM modification, witch called on layout stage.
 //! They probably need to be called either before the layout or directly during the DOM modification,
 //! but not during the layout.
 namespace mu::engraving::rendering::score {
-class ModifyDom {
-public:
+struct ModifyDom {
 
     static void set_cross_measure(const Measure *measure, LayoutContext &ctx);
     static void connect_tremolo(Measure *m);

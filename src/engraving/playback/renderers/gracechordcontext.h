@@ -27,7 +27,7 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
 struct GraceChordCtx {
     RenderingContext principal_chord_ctx;

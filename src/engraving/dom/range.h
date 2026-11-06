@@ -31,27 +31,28 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class Measure;
-class Tuplet;
-class Segment;
-class Spanner;
-class ScoreRange;
-class ChordRest;
-class Chord;
-class Note;
-class Score;
-class Tie;
-class BarLine;
-class Spacer;
-class Marker;
-class Volta;
+struct EngravingItem;
+struct Measure;
+struct Tuplet;
+struct Segment;
+struct Spanner;
+struct ScoreRange;
+struct ChordRest;
+struct Chord;
+struct Note;
+struct Score;
+struct Tie;
+struct BarLine;
+struct Spacer;
+struct Marker;
+struct Volta;
 
 //---------------------------------------------------------
 //   TrackList
 //---------------------------------------------------------
 
-class TrackList : public std::vector<EngravingItem *> {
+struct TrackList : std::vector<EngravingItem *> {
+private:
     OBJECT_ALLOCATOR(engraving, TrackList)
 
 public:
@@ -102,8 +103,7 @@ struct Annotation {
 //   ScoreRange
 //---------------------------------------------------------
 
-class ScoreRange {
-public:
+struct ScoreRange {
     ScoreRange() {}
 
     ~ScoreRange();
@@ -178,7 +178,7 @@ private:
 
     void restore_volta(Score *score, const Fraction &tick, Volta *v) const;
 
-    friend class TrackList;
+    friend struct TrackList;
 
     std::vector<TrackList *> tracks_;
     std::vector<Tie *> start_ties_;

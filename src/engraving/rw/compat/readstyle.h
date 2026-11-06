@@ -27,14 +27,13 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class Score;
-class XmlReader;
-class MStyle;
+struct Score;
+struct XmlReader;
+struct MStyle;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class ReadStyleHook {
-public:
+struct ReadStyleHook {
     ReadStyleHook(Score *score, const muse::ByteArray &score_data, const muse::String &complete_base_name);
 
     void setup_default_style();

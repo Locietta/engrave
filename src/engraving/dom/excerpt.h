@@ -28,16 +28,15 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class MasterScore;
-class Measure;
-class Part;
-class Score;
-class Staff;
-class Spanner;
-class TieMap;
+struct MasterScore;
+struct Measure;
+struct Part;
+struct Score;
+struct Staff;
+struct Spanner;
+struct TieMap;
 
-class Excerpt {
-public:
+struct Excerpt {
     Excerpt(MasterScore *master_score = nullptr) { master_score_ = master_score; }
 
     Excerpt(const Excerpt &ex, bool copy_contents = true);
@@ -100,7 +99,7 @@ public:
     static void create_linked_tabs(MasterScore *score);
 
 private:
-    friend class MasterScore;
+    friend struct MasterScore;
 
     static void promote_gap_rests_to_real_rests(const Measure *measure, staff_idx_t staff_idx);
     static void clone_mm_rests(Score *source_score, Score *dst_score, const std::vector<staff_idx_t> &source_staves_indexes,

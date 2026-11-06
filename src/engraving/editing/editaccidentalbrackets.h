@@ -23,11 +23,10 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditAccidentalBrackets {
-public:
+struct EditAccidentalBrackets {
     static void add_bracket(Transaction &tx, Score *score);
     static void add_braces(Transaction &tx, Score *score);
 };

@@ -29,20 +29,19 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class BspTreeVisitor;
-class InsertItemBspTreeVisitor;
-class RemoveItemBspTreeVisitor;
-class FindItemBspTreeVisitor;
+struct BspTreeVisitor;
+struct InsertItemBspTreeVisitor;
+struct RemoveItemBspTreeVisitor;
+struct FindItemBspTreeVisitor;
 
-class EngravingItem;
+struct EngravingItem;
 
 //---------------------------------------------------------
 //   BspTree
 //    binary space partitioning
 //---------------------------------------------------------
 
-class BspTree {
-public:
+struct BspTree {
     struct Node {
         enum class Type : char { HORIZONTAL, VERTICAL, LEAF };
 
@@ -98,7 +97,8 @@ public:
 //   BspTreeVisitor
 //---------------------------------------------------------
 
-class BspTreeVisitor {
+struct BspTreeVisitor {
+private:
     OBJECT_ALLOCATOR(engraving, BspTreeVisitor)
 public:
     virtual ~BspTreeVisitor() {}

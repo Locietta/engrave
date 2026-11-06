@@ -41,8 +41,7 @@ struct WriteRange {
     }
 };
 
-class WriteContext {
-public:
+struct WriteContext {
 
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 

@@ -36,8 +36,7 @@ struct AutomationControlTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class AutomationControlNode : public AudioNode<AutomationControlTag> {
-public:
+struct AutomationControlNode : AudioNode<AutomationControlTag> {
 
     void set_playhead_position(const PlayheadPositionPtr &playhead_position);
     void set_volume(const AutomatableValue<volume_db_t> &volume);

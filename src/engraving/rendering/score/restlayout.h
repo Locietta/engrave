@@ -28,7 +28,7 @@
 #include "dom/rest.h"
 
 namespace mu::engraving {
-class MMRest;
+struct MMRest;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
@@ -36,8 +36,7 @@ using RestGroup = std::vector<Rest *>;
 using RestGroups = std::vector<RestGroup>;
 using InterruptionPoints = std::array<std::list<Fraction>, ::mu::engraving::voices>;
 
-class RestLayout {
-public:
+struct RestLayout {
     static void layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
     static void fill_shape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf);
 

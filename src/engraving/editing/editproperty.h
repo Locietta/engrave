@@ -29,7 +29,8 @@
 #include "../dom/staff.h"
 
 namespace mu::engraving {
-class ChangeProperty : public UndoableCommand {
+struct ChangeProperty : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeProperty)
 protected:
     EngravingObject *element = nullptr;
@@ -61,7 +62,8 @@ public:
     }
 };
 
-class ChangeBracketProperty : public ChangeProperty {
+struct ChangeBracketProperty : ChangeProperty {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeBracketProperty)
 
     Staff *staff = nullptr;
@@ -76,7 +78,8 @@ public:
     UNDO_CHANGED_OBJECTS({})
 };
 
-class ChangeTextLineProperty : public ChangeProperty {
+struct ChangeTextLineProperty : ChangeProperty {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeTextLineProperty)
 
     void flip() override;

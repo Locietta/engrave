@@ -65,13 +65,14 @@ static const OttavaDefault ottava_default[] = {
     {OttavaType::OTTAVA_22MA, 36, "22ma", TranslatableString("engraving/ottavatype", "22ma alta")},
     {OttavaType::OTTAVA_22MB, -36, "22mb", TranslatableString("engraving/ottavatype", "22ma bassa")}};
 
-class Ottava;
+struct Ottava;
 
 //---------------------------------------------------------
 //   @@ OttavaSegment
 //---------------------------------------------------------
 
-class OttavaSegment final : public TextLineBaseSegment {
+struct OttavaSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, OttavaSegment)
     DECLARE_CLASSOF(ElementType::OTTAVA_SEGMENT)
 
@@ -97,7 +98,8 @@ private:
 //   @P ottavaType  enum (Ottava.OTTAVA_8VA, .OTTAVA_8VB, .OTTAVA_15MA, .OTTAVA_15MB, .OTTAVA_22MA, .OTTAVA_22MB)
 //---------------------------------------------------------
 
-class Ottava final : public TextLineBase {
+struct Ottava final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, Ottava)
     DECLARE_CLASSOF(ElementType::OTTAVA)
 
@@ -142,7 +144,7 @@ protected:
 
 private:
 
-    friend class OttavaSegment;
+    friend struct OttavaSegment;
 
     void update_styled_properties();
     Sid get_property_style(Pid) const override;

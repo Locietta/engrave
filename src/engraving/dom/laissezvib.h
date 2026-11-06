@@ -25,7 +25,8 @@
 #include "tie.h"
 
 namespace mu::engraving {
-class LaissezVibSegment : public TieSegment {
+struct LaissezVibSegment : TieSegment {
+private:
     OBJECT_ALLOCATOR(engraving, LaissezVibSegment)
     DECLARE_CLASSOF(ElementType::LAISSEZ_VIB_SEGMENT)
 
@@ -46,7 +47,8 @@ private:
     String format_bars_and_beats() const override;
 };
 
-class LaissezVib : public Tie {
+struct LaissezVib : Tie {
+private:
     OBJECT_ALLOCATOR(engraving, LaissezVib)
     DECLARE_CLASSOF(ElementType::LAISSEZ_VIB);
 

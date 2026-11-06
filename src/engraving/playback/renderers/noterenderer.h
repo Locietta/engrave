@@ -25,10 +25,9 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 
-class NoteRenderer {
-public:
+struct NoteRenderer {
     static bool should_render(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations);
     static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
 

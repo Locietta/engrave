@@ -27,8 +27,7 @@
 #include "engraving/types/fraction.h"
 
 namespace mu::iex::midi {
-class ReducedFraction {
-public:
+struct ReducedFraction {
     ReducedFraction();
     ReducedFraction(int z, int n);
     explicit ReducedFraction(const engraving::Fraction &);

@@ -28,8 +28,7 @@
 #include "drawtypes.h"
 
 namespace muse::draw {
-class Pen {
-public:
+struct Pen {
 
     Pen(PenStyle style) : style_(style) {}
 

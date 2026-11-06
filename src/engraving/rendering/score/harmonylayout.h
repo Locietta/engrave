@@ -28,13 +28,12 @@
 #include "dom/harmony.h"
 
 namespace mu::engraving {
-class Segment;
-class System;
+struct Segment;
+struct System;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class HarmonyLayout {
-public:
+struct HarmonyLayout {
     static void layout_harmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
 
 private:

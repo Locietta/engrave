@@ -27,8 +27,7 @@
 #include "../dom/fret.h"
 
 namespace mu::engraving {
-class FretUndoData {
-public:
+struct FretUndoData {
     FretUndoData() = default;
     FretUndoData(FretDiagram *fd);
 
@@ -50,7 +49,8 @@ private:
     double user_mag_ = 1.0;
 };
 
-class FretDataChange : public UndoableCommand {
+struct FretDataChange : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, FretDataChange)
 
     FretDiagram *diagram_ = nullptr;
@@ -70,7 +70,8 @@ public:
     UNDO_CHANGED_OBJECTS({diagram_})
 };
 
-class FretDot : public UndoableCommand {
+struct FretDot : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, FretDot)
 
     FretDiagram *diagram = nullptr;
@@ -92,7 +93,8 @@ public:
     UNDO_CHANGED_OBJECTS({diagram})
 };
 
-class FretMarker : public UndoableCommand {
+struct FretMarker : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, FretMarker)
 
     FretDiagram *diagram = nullptr;
@@ -111,7 +113,8 @@ public:
     UNDO_CHANGED_OBJECTS({diagram})
 };
 
-class FretBarre : public UndoableCommand {
+struct FretBarre : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, FretBarre)
 
     FretDiagram *diagram = nullptr;
@@ -132,7 +135,8 @@ public:
     UNDO_CHANGED_OBJECTS({diagram})
 };
 
-class FretClear : public UndoableCommand {
+struct FretClear : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, FretClear)
 
     FretDiagram *diagram = nullptr;
@@ -149,7 +153,8 @@ public:
     UNDO_CHANGED_OBJECTS({diagram})
 };
 
-class AddFretDiagramToFretBox : public UndoableCommand {
+struct AddFretDiagramToFretBox : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddFretDiagramToFretBox)
 
     FretDiagram *fret_diagram_ = nullptr;
@@ -166,7 +171,8 @@ public:
     UNDO_CHANGED_OBJECTS({fret_diagram_})
 };
 
-class RemoveFretDiagramFromFretBox : public UndoableCommand {
+struct RemoveFretDiagramFromFretBox : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveFretDiagramFromFretBox)
 
     FretDiagram *fret_diagram_ = nullptr;

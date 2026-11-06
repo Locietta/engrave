@@ -40,7 +40,7 @@
 #include "../editing/editdata.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 #define DECLARE_LAYOUTDATA_METHODS(Class)                                                                      \
@@ -49,14 +49,14 @@ class Painter;
     LayoutData *create_layout_data() const override { return new Class::LayoutData(); }
 
 namespace mu::engraving::rendering {
-class IScoreRenderer;
+struct IScoreRenderer;
 } // namespace mu::engraving::rendering
 
 namespace mu::engraving {
-class IEngravingConfiguration;
-class IEngravingContextConfiguration;
+struct IEngravingConfiguration;
+struct IEngravingContextConfiguration;
 
-class Transaction;
+struct Transaction;
 
 template <typename T>
 inline void dump(const ld_field<T> &f, std::stringstream &ss) {
@@ -67,11 +67,11 @@ inline void dump(const ld_field<T> &f, std::stringstream &ss) {
     }
 }
 
-class Factory;
-class XmlReader;
+struct Factory;
+struct XmlReader;
 
 enum class Pid : short;
-class StaffType;
+struct StaffType;
 
 //---------------------------------------------------------
 //   ElementFlag
@@ -135,7 +135,8 @@ enum class KerningType : unsigned char {
 ///     score layout elements.
 //-------------------------------------------------------------------
 
-class EngravingItem : public EngravingObject {
+struct EngravingItem : EngravingObject {
+private:
     M_PROPERTY2(bool, is_position_linked_to_master, set_position_linked_to_master, true)
     M_PROPERTY2(bool, is_appearance_linked_to_master, set_appearance_linked_to_master, true)
     M_PROPERTY2(bool, exclude_from_other_parts, set_exclude_from_other_parts, false)
@@ -600,7 +601,7 @@ public:
 
         bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
 
-        friend class EngravingItem;
+        friend struct EngravingItem;
 
         const EngravingItem *item_ = nullptr;
         bool is_skip_draw_ = false;
@@ -712,7 +713,7 @@ protected:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     bool accessible_enabled_ = false;
 
@@ -737,7 +738,8 @@ using ElementPtr = std::shared_ptr<EngravingItem>;
 //   ElementList
 //---------------------------------------------------------
 
-class ElementList : public std::vector<EngravingItem *> {
+struct ElementList : std::vector<EngravingItem *> {
+private:
     OBJECT_ALLOCATOR(engraving, ElementList)
 public:
     ElementList() {}

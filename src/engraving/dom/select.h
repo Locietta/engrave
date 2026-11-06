@@ -30,19 +30,19 @@
 #include "selectionfilter.h"
 
 namespace mu::engraving {
-class Score;
-class Page;
-class System;
-class ChordRest;
-class EngravingItem;
-class Segment;
-class Note;
-class Measure;
-class MeasureBase;
-class Chord;
-class Tuplet;
-class GuitarBend;
-class Box;
+struct Score;
+struct Page;
+struct System;
+struct ChordRest;
+struct EngravingItem;
+struct Segment;
+struct Note;
+struct Measure;
+struct MeasureBase;
+struct Chord;
+struct Tuplet;
+struct GuitarBend;
+struct Box;
 
 //---------------------------------------------------------
 //   ElementPattern
@@ -104,8 +104,7 @@ struct SelectedSymbol {
 //    (no Chord element etc.).
 //-------------------------------------------------------------------
 
-class Selection {
-public:
+struct Selection {
     Selection() {
         score_ = 0;
         state_ = SelState::NONE;

@@ -7,8 +7,7 @@
 namespace muse::audio::engine {
 // Owns one render graph. Synth and effect resolver caches are released with it.
 // The former offline ContextPlayer stayed stopped: control/FX time is zero.
-class OfflineRenderSession {
-public:
+struct OfflineRenderSession {
     OfflineRenderSession(IAudioFactory &factory, const OutputSpec &spec);
     ~OfflineRenderSession();
     OfflineRenderSession(const OfflineRenderSession &) = delete;

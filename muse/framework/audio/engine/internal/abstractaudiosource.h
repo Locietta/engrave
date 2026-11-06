@@ -25,8 +25,7 @@
 #include "../iaudiosource.h"
 
 namespace muse::audio::engine {
-class AbstractAudioSource : public IAudioSource {
-public:
+struct AbstractAudioSource : IAudioSource {
     virtual ~AbstractAudioSource() = default;
 
     virtual void set_mode(const ProcessMode mode) override;

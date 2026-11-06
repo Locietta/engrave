@@ -24,8 +24,7 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class IAudioEngineConfiguration {
-public:
+struct IAudioEngineConfiguration {
     virtual ~IAudioEngineConfiguration() = default;
 
     virtual void set_config(const AudioEngineConfig &conf) = 0;

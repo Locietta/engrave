@@ -39,7 +39,8 @@ namespace mu::engraving {
 //   @P playUntil   string
 //---------------------------------------------------------
 
-class Jump final : public TextBase {
+struct Jump final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Jump)
     DECLARE_CLASSOF(ElementType::JUMP)
 

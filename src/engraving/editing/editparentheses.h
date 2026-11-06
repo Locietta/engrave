@@ -25,13 +25,12 @@
 #include <vector>
 
 namespace mu::engraving {
-class EngravingItem;
-class Note;
-class Score;
-class Transaction;
+struct EngravingItem;
+struct Note;
+struct Score;
+struct Transaction;
 
-class EditParentheses {
-public:
+struct EditParentheses {
     static void toggle_parentheses(Transaction &tx, Score *score);
 
     static void add_parentheses_to_notes(Transaction &tx, const std::vector<Note *> &notes);

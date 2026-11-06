@@ -27,9 +27,9 @@
 #include "../editing/elementeditdata.h"
 
 namespace mu::engraving {
-class Factory;
-class Segment;
-class Transaction;
+struct Factory;
+struct Segment;
+struct Transaction;
 
 static constexpr int min_barline_fromto_dist = 2;
 static constexpr int min_barline_span_fromto = -2;
@@ -63,7 +63,8 @@ struct BarLineTableItem {
 //   @P barLineType  enum  (BarLineType.NORMAL, .DOUBLE, .START_REPEAT, .END_REPEAT, .BROKEN, .END, .END_START_REPEAT, .DOTTED)
 //---------------------------------------------------------
 
-class BarLine final : public EngravingItem {
+struct BarLine final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, BarLine)
     DECLARE_CLASSOF(ElementType::BAR_LINE)
 
@@ -154,7 +155,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     BarLine(DummyParentOr<Segment> parent);
     BarLine(const BarLine &);
 

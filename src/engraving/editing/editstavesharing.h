@@ -24,19 +24,18 @@
 #include <vector>
 
 namespace mu::engraving {
-class Instrument;
-class KeyList;
-class Part;
-class Score;
-class SharedPart;
-class StaffType;
-class Transaction;
+struct Instrument;
+struct KeyList;
+struct Part;
+struct Score;
+struct SharedPart;
+struct StaffType;
+struct Transaction;
 
 using StaveSharingGroup = std::vector<Part *>;
 using StaveSharingGroups = std::vector<StaveSharingGroup>;
 
-class EditStaveSharing {
-public:
+struct EditStaveSharing {
     static void toggle_stave_sharing(Transaction &tx, Score *score, bool on);
     static void handle_remove_part(Transaction &tx, Part *part);
 

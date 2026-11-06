@@ -30,15 +30,16 @@
 //---------------------------------------------------------
 
 namespace mu::engraving {
-class ChordRest;
-class Measure;
-class Note;
+struct ChordRest;
+struct Measure;
+struct Note;
 } // namespace mu::engraving
 
 namespace mu::engraving::read460 {
-class ReadContext;
+struct ReadContext;
 
-class ConnectorInfoReader final : public ConnectorInfo {
+struct ConnectorInfoReader final : ConnectorInfo {
+private:
     OBJECT_ALLOCATOR(engraving, ConnectorInfoReader)
 
 public:

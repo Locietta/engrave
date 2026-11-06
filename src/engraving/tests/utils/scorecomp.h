@@ -27,8 +27,7 @@
 #include "engraving/dom/score.h"
 
 namespace mu::engraving {
-class ScoreComp {
-public:
+struct ScoreComp {
     static bool save_compare_score(Score *, const String &save_name, const String &compare_with_local_path);
     static bool save_compare_mime_data(muse::ByteArray mime_data, const String &save_name, const String &compare_with_local_path);
     static bool compare_files(const String &full_path1, const String &full_path2);

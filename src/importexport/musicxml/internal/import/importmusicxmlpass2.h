@@ -30,37 +30,37 @@
 #include "musicxmltupletstate.h"
 
 namespace mu::engraving {
-class Accidental;
-class Beam;
-class ChordRest;
-class EngravingItem;
-class FiguredBass;
-class FiguredBassItem;
-class Fraction;
-class FretDiagram;
-class Glissando;
-class GradualTempoChange;
-class Hairpin;
-class Harmony;
-class Instrument;
-class Jump;
-class Lyrics;
-class Marker;
-class Measure;
-class Note;
-class Pedal;
-class Score;
-class SLine;
-class Slur;
-class Spanner;
-class Staff;
-class Sticking;
-class StringData;
-class Text;
-class Tie;
-class Trill;
-class Tuplet;
-class Volta;
+struct Accidental;
+struct Beam;
+struct ChordRest;
+struct EngravingItem;
+struct FiguredBass;
+struct FiguredBassItem;
+struct Fraction;
+struct FretDiagram;
+struct Glissando;
+struct GradualTempoChange;
+struct Hairpin;
+struct Harmony;
+struct Instrument;
+struct Jump;
+struct Lyrics;
+struct Marker;
+struct Measure;
+struct Note;
+struct Pedal;
+struct Score;
+struct SLine;
+struct Slur;
+struct Spanner;
+struct Staff;
+struct Sticking;
+struct StringData;
+struct Text;
+struct Tie;
+struct Trill;
+struct Tuplet;
+struct Volta;
 enum class TupletBracketType : unsigned char;
 enum class TupletNumberType : unsigned char;
 } // namespace mu::engraving
@@ -120,8 +120,7 @@ struct MusicXmlTupletDesc {
  The description of Slurs being handled
  */
 
-class SlurDesc {
-public:
+struct SlurDesc {
     enum class State : unsigned char { NONE, START, STOP };
 
     SlurDesc() : slur_(0), state_(State::NONE) {}
@@ -206,8 +205,7 @@ using HarmonyMap = std::multimap<int, HarmonyDesc>;
 //   MusicXmlLyricsExtend
 //---------------------------------------------------------
 
-class MusicXmlLyricsExtend {
-public:
+struct MusicXmlLyricsExtend {
     MusicXmlLyricsExtend() {}
 
     void init();
@@ -247,8 +245,7 @@ typedef std::map<engraving::String, std::pair<engraving::String, engraving::Dura
 //   MusicXmlParserLyric
 //---------------------------------------------------------
 
-class MusicXmlParserLyric {
-public:
+struct MusicXmlParserLyric {
     MusicXmlParserLyric(const LyricNumberHandler lyric_number_handler, muse::XmlStreamReader &e, engraving::Score *score,
                         const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff);
 
@@ -288,8 +285,7 @@ private:
 //      Most with text base attributes (font-*, placement)
 //---------------------------------------------------------
 
-class Notation {
-public:
+struct Notation {
     Notation(const muse::String &name, const muse::String &parent = {}, const engraving::SymId &sym_id = engraving::SymId::NO_SYM) {
         name_ = name;
         parent_ = parent;
@@ -353,10 +349,10 @@ struct DelayedArpeggio {
     }
 };
 
-class MusicXmlLogger;
-class MusicXmlDelayedDirectionElement;
-class MusicXmlInferredFingering;
-class MusicXmlParserPass2;
+struct MusicXmlLogger;
+struct MusicXmlDelayedDirectionElement;
+struct MusicXmlInferredFingering;
+struct MusicXmlParserPass2;
 
 using DelayedDirectionsList = std::vector<MusicXmlDelayedDirectionElement *>;
 using InferredFingeringsList = std::vector<MusicXmlInferredFingering *>;
@@ -381,8 +377,7 @@ using MusicXmlTieMap = std::map<TieLocation, engraving::Tie *>;
 //   MusicXmlParserNotations
 //---------------------------------------------------------
 
-class MusicXmlParserNotations {
-public:
+struct MusicXmlParserNotations {
     MusicXmlParserNotations(muse::XmlStreamReader &e, engraving::Score *score, MusicXmlLogger *logger, MusicXmlParserPass2 &pass2);
     void parse();
     void add_to_score(engraving::ChordRest *const cr, engraving::Note *const note, const engraving::Fraction &tick, SlurStack &slurs,
@@ -454,8 +449,7 @@ private:
 //   MusicXmlParserPass2
 //---------------------------------------------------------
 
-class MusicXmlParserPass2 {
-public:
+struct MusicXmlParserPass2 {
     MusicXmlParserPass2(engraving::Score *score, MusicXmlParserPass1 &pass1, MusicXmlLogger *logger);
 
     const IMusicXmlConfiguration *configuration() const { return pass1_.configuration(); }
@@ -605,8 +599,7 @@ private:
 //   MusicXmlParserDirection
 //---------------------------------------------------------
 
-class MusicXmlParserDirection {
-public:
+struct MusicXmlParserDirection {
     MusicXmlParserDirection(muse::XmlStreamReader &e, engraving::Score *score, MusicXmlParserPass1 &pass1, MusicXmlParserPass2 &pass2,
                             MusicXmlLogger *logger);
 
@@ -723,8 +716,7 @@ private:
  before being added to the score.
  */
 
-class MusicXmlDelayedDirectionElement {
-public:
+struct MusicXmlDelayedDirectionElement {
     MusicXmlDelayedDirectionElement(double total_y, engraving::EngravingItem *element, engraving::track_idx_t track, muse::String placement,
                                     engraving::Measure *measure, engraving::Fraction tick)
         : total_y_(total_y), element_(element), track_(track), placement_(placement), measure_(measure), tick_(tick) {}
@@ -757,8 +749,7 @@ private:
  Helper class to allow Direction elements to be reinterpreted as fingerings
  */
 
-class MusicXmlInferredFingering {
-public:
+struct MusicXmlInferredFingering {
     MusicXmlInferredFingering(double total_y, engraving::EngravingItem *element, muse::String &text, engraving::track_idx_t track,
                               muse::String placement, engraving::Measure *measure, engraving::Fraction tick, bool need_use_default_font);
 

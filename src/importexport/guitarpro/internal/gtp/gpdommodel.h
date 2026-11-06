@@ -18,8 +18,7 @@
 #include "inoteproperty.h"
 
 namespace mu::iex::guitarpro {
-class GPDomModel {
-public:
+struct GPDomModel {
 
     GPDomModel() = default;
     virtual ~GPDomModel() = default;

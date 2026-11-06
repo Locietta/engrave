@@ -25,13 +25,13 @@
 #include "importmidi_operation.h"
 
 namespace mu::engraving {
-class TimeSigMap;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MidiChord;
-class MTrack;
-class ReducedFraction;
+struct MidiChord;
+struct MTrack;
+struct ReducedFraction;
 
 namespace Quantize {
 ReducedFraction quant_value_to_fraction(MidiOperations::QuantValue quant_value);

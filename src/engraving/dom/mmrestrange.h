@@ -27,7 +27,8 @@
 namespace mu::engraving {
 enum class MMRestRangeBracketType : unsigned char { BRACKETS, PARENTHESES, NONE };
 
-class MMRestRange : public MeasureNumberBase {
+struct MMRestRange : MeasureNumberBase {
+private:
     OBJECT_ALLOCATOR(engraving, MMRestRange)
     DECLARE_CLASSOF(ElementType::MMREST_RANGE)
 

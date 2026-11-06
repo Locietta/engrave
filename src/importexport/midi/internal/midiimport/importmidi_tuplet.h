@@ -27,14 +27,14 @@
 #include "importmidi_fraction.h"
 
 namespace mu::engraving {
-class TimeSigMap;
-class DurationElement;
+struct TimeSigMap;
+struct DurationElement;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MidiChord;
-class MidiNote;
-class MTrack;
+struct MidiChord;
+struct MidiNote;
+struct MTrack;
 
 namespace MidiTuplet {
 struct TupletInfo;

@@ -25,14 +25,13 @@
 #include "segment.h"
 
 namespace mu::engraving {
-class Segment;
+struct Segment;
 
 //---------------------------------------------------------
 //   SegmentList
 //---------------------------------------------------------
 
-class SegmentList {
-public:
+struct SegmentList {
     SegmentList() { clear(); }
 
     void clear() {
@@ -66,7 +65,8 @@ public:
     void push_front(Segment *);
     void insert(Segment *e, Segment *el); // insert e before el
 
-    class Iterator {
+    struct Iterator {
+    private:
         Segment *p;
     public:
         Iterator(Segment *s) { p = s; }
@@ -82,7 +82,8 @@ public:
         Segment &operator*() { return *p; }
     };
 
-    class ConstIterator {
+    struct ConstIterator {
+    private:
         const Segment *p;
     public:
         ConstIterator(const Segment *s) { p = s; }

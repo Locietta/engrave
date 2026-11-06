@@ -27,14 +27,14 @@
 
 namespace mu::engraving {
 enum class AccidentalType : unsigned char;
-class Articulation;
-class Chord;
+struct Articulation;
+struct Chord;
 struct ChordDescription;
-class Fraction;
-class Harmony;
-class HarmonyInfo;
-class HDegree;
-class Score;
+struct Fraction;
+struct Harmony;
+struct HarmonyInfo;
+struct HDegree;
+struct Score;
 enum class SymId;
 enum class Key : signed char;
 } // namespace mu::engraving
@@ -44,8 +44,7 @@ namespace mu::iex::musicxml {
 //   MusicXmlSupport -- MusicXML import support functions
 //---------------------------------------------------------
 
-class MusicXmlSupport {
-public:
+struct MusicXmlSupport {
     static int string_to_int(const muse::String &s, bool *ok);
     static engraving::Fraction note_type_to_fraction(const muse::String &type);
     static engraving::Fraction calculate_fraction(const muse::String &type, int dots, int normal_notes, int actual_notes);

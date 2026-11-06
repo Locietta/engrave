@@ -31,9 +31,10 @@
 #include "fontrendercache.h"
 
 namespace muse::draw {
-class IFontFace;
+struct IFontFace;
 
-class FontsEngine : public IFontsEngine {
+struct FontsEngine : IFontsEngine {
+private:
     IFontsDatabase &database_;
     mutable uint64_t database_revision_ = 0;
 

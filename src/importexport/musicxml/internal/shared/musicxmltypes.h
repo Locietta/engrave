@@ -28,7 +28,7 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Arpeggio;
+struct Arpeggio;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
@@ -94,23 +94,20 @@ struct MusicXmlInstrument {
 
 typedef std::map<muse::String, MusicXmlInstrument> MusicXmlInstruments;
 
-class MusicXmlIntervalList : public std::map<engraving::Fraction, engraving::Interval> {
-public:
+struct MusicXmlIntervalList : std::map<engraving::Fraction, engraving::Interval> {
     MusicXmlIntervalList() {}
 
     engraving::Interval interval(const engraving::Fraction f) const;
 };
 
-class MusicXmlInstrList : public std::map<engraving::Fraction, muse::String> {
-public:
+struct MusicXmlInstrList : std::map<engraving::Fraction, muse::String> {
     MusicXmlInstrList() {}
 
     const muse::String instrument(const engraving::Fraction f) const;
     void set_instrument(const muse::String instr, const engraving::Fraction f);
 };
 
-class LyricNumberHandler {
-public:
+struct LyricNumberHandler {
     LyricNumberHandler() {}
 
     void add_number(const muse::String &number);

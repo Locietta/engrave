@@ -49,7 +49,8 @@ enum class BeatType : unsigned char {
 //   Time Signature Fraction   (n/d - numerator/denominator)
 //-------------------------------------------------------------------
 
-class TimeSigFrac : public Fraction {
+struct TimeSigFrac : Fraction {
+private:
     OBJECT_ALLOCATOR(engraving, TimeSigFrac)
 public:
     using Fraction::Fraction;
@@ -118,8 +119,7 @@ public:
 //    a nominal duration different from actual duration.
 //-------------------------------------------------------------------
 
-class SigEvent {
-public:
+struct SigEvent {
     constexpr SigEvent() : bar_(0) {} ///< default SigEvent is invalid
 
     SigEvent(const Fraction &s, int bar = 0) : timesig_(s), nominal_(s), bar_(bar) {}
@@ -155,7 +155,8 @@ private:
 //   SigList
 //---------------------------------------------------------
 
-class TimeSigMap : public std::map<int, SigEvent> {
+struct TimeSigMap : std::map<int, SigEvent> {
+private:
     OBJECT_ALLOCATOR(engraving, TimeSigMap)
 
 public:

@@ -25,8 +25,7 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class ScoreVerticalViewLayout {
-public:
+struct ScoreVerticalViewLayout {
 
     static void layout_vertical_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
 

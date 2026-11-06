@@ -28,7 +28,7 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
 enum class AccidentalVal : signed char;
 
@@ -59,8 +59,7 @@ struct CustDef {
 //   KeySigEvent
 //---------------------------------------------------------
 
-class KeySigEvent {
-public:
+struct KeySigEvent {
     KeySigEvent() = default;
 
     bool operator==(const KeySigEvent &e) const;
@@ -119,8 +118,7 @@ static const int tie_context_constant = 0x10;
 static const int min_acc_state = 0;
 static const int max_acc_state = 75;
 
-class AccidentalState {
-public:
+struct AccidentalState {
     AccidentalState() {}
 
     void init(Key key);

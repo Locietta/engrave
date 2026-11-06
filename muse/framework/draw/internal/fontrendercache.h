@@ -30,8 +30,7 @@
 #include "types/fontstypes.h"
 
 namespace muse::draw {
-class FontRenderCache {
-public:
+struct FontRenderCache {
     void init();
     void set_cache_dir_path(const io::PathT &path, const std::string &revision = std::string());
 

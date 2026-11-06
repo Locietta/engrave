@@ -28,13 +28,12 @@
 #include "mscio.h"
 
 namespace muse {
-class ZipWriter;
-class TextStream;
+struct ZipWriter;
+struct TextStream;
 } // namespace muse
 
 namespace mu::engraving {
-class MscWriter {
-public:
+struct MscWriter {
 
     struct Params {
         muse::io::IODevice *device = nullptr;

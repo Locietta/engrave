@@ -4,8 +4,7 @@
 #include "gpbar.h"
 
 namespace mu::iex::guitarpro {
-class GPMasterBar {
-public:
+struct GPMasterBar {
     struct Repeat {
         enum class Type { NONE, START, END, START_END };
         Type type{Type::NONE};

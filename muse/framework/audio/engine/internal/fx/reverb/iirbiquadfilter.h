@@ -174,8 +174,7 @@ inline SampleT process_sample_d_f2(SampleT x0, const Coeffs<CoeffT> &cf, DF2Stat
 
 //! Utility class to process a DF1 biquad with coefficient smoothing.
 template <typename coeffT>
-class DF1Processor {
-public:
+struct DF1Processor {
     DF1Processor() {
         set_smoothing_steps(32);
         reset();

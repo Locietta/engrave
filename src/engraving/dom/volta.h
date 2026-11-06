@@ -26,16 +26,17 @@
 #include "textlinebase.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
-class Volta;
-class Measure;
+struct Volta;
+struct Measure;
 
 //---------------------------------------------------------
 //   @@ VoltaSegment
 //---------------------------------------------------------
 
-class VoltaSegment final : public TextLineBaseSegment {
+struct VoltaSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, VoltaSegment)
     DECLARE_CLASSOF(ElementType::VOLTA_SEGMENT)
 
@@ -54,7 +55,8 @@ public:
 //   @P voltaType  enum (Volta.CLOSE, Volta.OPEN)
 //---------------------------------------------------------
 
-class Volta final : public TextLineBase {
+struct Volta final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, Volta)
     DECLARE_CLASSOF(ElementType::VOLTA)
 

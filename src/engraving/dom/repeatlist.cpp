@@ -301,8 +301,7 @@ void RepeatList::flatten() {
 //---------------------------------------------------------
 enum class RepeatListElementType : unsigned char { SECTION_BREAK, VOLTA_START, VOLTA_END, REPEAT_START, REPEAT_END, JUMP, MARKER };
 
-class RepeatListElement {
-public:
+struct RepeatListElement {
     RepeatListElementType const repeat_list_element_type;
     EngravingItem const *const element;
     Measure const *const measure; // convenience, should be measure containing element

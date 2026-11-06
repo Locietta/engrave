@@ -25,12 +25,12 @@
 #include <map>
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
-class ReducedFraction;
+struct MTrack;
+struct ReducedFraction;
 
 namespace MidiTempo {
 ReducedFraction time2_tick(double time, double ticks_per_sec);

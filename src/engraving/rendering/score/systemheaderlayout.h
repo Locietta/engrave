@@ -27,17 +27,16 @@
 #include "dom/sharedpart.h"
 
 namespace mu::engraving {
-class Bracket;
-class BracketItem;
-class InstrumentName;
-class Staff;
-class System;
-class SysStaff;
+struct Bracket;
+struct BracketItem;
+struct InstrumentName;
+struct Staff;
+struct System;
+struct SysStaff;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class SystemHeaderLayout {
-public:
+struct SystemHeaderLayout {
     static void update_system_header_width(System *system, LayoutContext &ctx);
 
     static double layout_brackets(System *system, LayoutContext &ctx);

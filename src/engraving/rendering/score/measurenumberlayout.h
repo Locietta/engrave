@@ -27,8 +27,7 @@
 #include "engraving/dom/mmrestrange.h"
 
 namespace mu::engraving::rendering::score {
-class MeasureNumberLayout {
-public:
+struct MeasureNumberLayout {
     static void layout_measure_number(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx);
     static void layout_mm_rest_range(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx);
 

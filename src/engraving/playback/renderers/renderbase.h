@@ -29,8 +29,7 @@
 
 namespace mu::engraving {
 template <class T>
-class RenderBase {
-public:
+struct RenderBase {
     static bool is_able_to_render(const muse::mpe::ArticulationType &type) {
         const muse::mpe::ArticulationTypeSet &supported_types = T::supported_types();
 

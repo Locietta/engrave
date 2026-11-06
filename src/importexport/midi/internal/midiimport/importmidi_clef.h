@@ -25,8 +25,8 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Staff;
-class InstrumentTemplate;
+struct Staff;
+struct InstrumentTemplate;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiClef {

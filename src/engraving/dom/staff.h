@@ -38,16 +38,16 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class BracketItem;
-class Clef;
-class Factory;
-class InstrumentTemplate;
-class KeyList;
-class Note;
-class Part;
-class Score;
-class StaffType;
-class TimeSig;
+struct BracketItem;
+struct Clef;
+struct Factory;
+struct InstrumentTemplate;
+struct KeyList;
+struct Note;
+struct Part;
+struct Score;
+struct StaffType;
+struct TimeSig;
 
 enum class Key : signed char;
 
@@ -56,7 +56,8 @@ enum class Key : signed char;
 ///    Global staff data not directly related to drawing.
 //---------------------------------------------------------
 
-class Staff final : public EngravingItem {
+struct Staff final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Staff)
 
 public:
@@ -281,13 +282,13 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Staff(Part *parent);
     Staff(const Staff &staff);
 
     double staff_mag(const StaffType *) const;
 
-    friend class Excerpt;
+    friend struct Excerpt;
     void set_voice_visible(voice_idx_t voice, bool visible);
     void update_visibility_voices(const Staff *master_staff, const TracksMap &tracks);
 

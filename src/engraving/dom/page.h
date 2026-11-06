@@ -31,21 +31,22 @@
 #include "text.h"
 
 namespace mu::engraving {
-class Factory;
-class System;
-class Text;
-class Measure;
-class RangeLock;
+struct Factory;
+struct System;
+struct Text;
+struct Measure;
+struct RangeLock;
 
-class Score;
-class MeasureBase;
+struct Score;
+struct MeasureBase;
 
 //---------------------------------------------------------
 //   @@ Page
 //   @P pagenumber int (read only)
 //---------------------------------------------------------
 
-class Page final : public EngravingItem {
+struct Page final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Page)
     DECLARE_CLASSOF(ElementType::PAGE)
 
@@ -113,7 +114,7 @@ public:
 
 
 private:
-    friend class Factory;
+    friend struct Factory;
     Page(Score *parent);
 
     void do_rebuild_bsp_tree();

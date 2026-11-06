@@ -26,9 +26,9 @@
 #include "playback/filters/filterbase.h"
 
 namespace mu::engraving {
-class TremoloFilter : public FilterBase<TremoloFilter> {
+struct TremoloFilter : FilterBase<TremoloFilter> {
 protected:
-    friend class FilterBase<TremoloFilter>;
+    friend struct FilterBase<TremoloFilter>;
     static bool is_playable(const EngravingItem *item, const RenderingContext &ctx);
 };
 } // namespace mu::engraving

@@ -31,14 +31,12 @@
 #include "bezier.h"
 
 namespace muse::draw {
-class PainterPath {
-public:
+struct PainterPath {
     enum class ElementType { MOVE_TO_ELEMENT, LINE_TO_ELEMENT, CURVE_TO_ELEMENT, CURVE_TO_DATA_ELEMENT };
 
     enum class FillRule { ODD_EVEN_FILL, WINDING_FILL };
 
-    class Element {
-    public:
+    struct Element {
         double x = 0.0;
         double y = 0.0;
         ElementType type = ElementType::MOVE_TO_ELEMENT;
@@ -151,7 +149,7 @@ private:
 
     std::vector<Element> elements_;
 
-    friend class Transform;
+    friend struct Transform;
 };
 
 inline void dump(const PainterPath &p, std::stringstream &ss) {

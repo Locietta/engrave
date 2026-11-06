@@ -10,9 +10,9 @@
 #include <vector>
 
 namespace muse::draw {
-class IFontsDatabase;
-class IFontsEngine;
-class IFontProvider;
+struct IFontsDatabase;
+struct IFontsEngine;
+struct IFontProvider;
 } // namespace muse::draw
 
 namespace music {

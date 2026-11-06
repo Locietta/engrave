@@ -26,11 +26,11 @@
 #include <vector>
 
 namespace mu::engraving {
-class TimeSigMap;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
+struct MTrack;
 
 namespace MidiDrum {
 void split_drum_voices(std::multimap<int, MTrack> &tracks);

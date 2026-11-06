@@ -27,8 +27,7 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class IAudioSource {
-public:
+struct IAudioSource {
     virtual ~IAudioSource() = default;
 
     virtual void set_mode(const ProcessMode mode) = 0;

@@ -115,92 +115,91 @@
 #include "../../dom/ornament.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 
-class BagpipeEmbellishment;
-class Beam;
+struct BagpipeEmbellishment;
+struct Beam;
 
-class Chord;
+struct Chord;
 
-class Glissando;
-class GlissandoSegment;
-class GradualTempoChangeSegment;
-class GradualTempoChange;
+struct Glissando;
+struct GlissandoSegment;
+struct GradualTempoChangeSegment;
+struct GradualTempoChange;
 
-class HairpinSegment;
-class Hairpin;
-class HammerOnPullOff;
-class HammerOnPullOffSegment;
-class HammerOnPullOffText;
-class HarmonicMarkSegment;
+struct HairpinSegment;
+struct Hairpin;
+struct HammerOnPullOff;
+struct HammerOnPullOffSegment;
+struct HammerOnPullOffText;
+struct HarmonicMarkSegment;
 
-class LedgerLine;
-class LetRing;
-class LetRingSegment;
-class LineSegment;
-class Lyrics;
-class LyricsLine;
-class LyricsLineSegment;
+struct LedgerLine;
+struct LetRing;
+struct LetRingSegment;
+struct LineSegment;
+struct Lyrics;
+struct LyricsLine;
+struct LyricsLineSegment;
 
-class Ottava;
-class OttavaSegment;
+struct Ottava;
+struct OttavaSegment;
 
-class PalmMute;
-class PalmMuteSegment;
-class Parenthesis;
-class Pedal;
-class PedalSegment;
-class PickScrapeSegment;
+struct PalmMute;
+struct PalmMuteSegment;
+struct Parenthesis;
+struct Pedal;
+struct PedalSegment;
+struct PickScrapeSegment;
 
-class NoteLineSegment;
+struct NoteLineSegment;
 
-class RasgueadoSegment;
+struct RasgueadoSegment;
 
-class ShadowNote;
-class SLine;
-class Slur;
-class Spacer;
-class SpannerSegment;
-class StaffLines;
-class StringTunings;
+struct ShadowNote;
+struct SLine;
+struct Slur;
+struct Spacer;
+struct SpannerSegment;
+struct StaffLines;
+struct StringTunings;
 
-class BSymbol;
-class Symbol;
-class FSymbol;
+struct BSymbol;
+struct Symbol;
+struct FSymbol;
 
-class SystemDivider;
-class SystemText;
+struct SystemDivider;
+struct SystemText;
 
-class TabDurationSymbol;
-class Tapping;
-class TempoText;
-class Text;
-class TextLine;
-class TextLineSegment;
-class TextLineBase;
-class TextLineBaseSegment;
-class Tie;
-class TimeSig;
-class TimeTickAnchor;
-class TremoloSingleChord;
-class TremoloTwoChord;
-class TremoloBar;
-class TrillSegment;
-class TripletFeel;
-class Trill;
-class Tuplet;
+struct TabDurationSymbol;
+struct Tapping;
+struct TempoText;
+struct Text;
+struct TextLine;
+struct TextLineSegment;
+struct TextLineBase;
+struct TextLineBaseSegment;
+struct Tie;
+struct TimeSig;
+struct TimeTickAnchor;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
+struct TremoloBar;
+struct TrillSegment;
+struct TripletFeel;
+struct Trill;
+struct Tuplet;
 
-class VibratoSegment;
-class Vibrato;
-class Volta;
-class VoltaSegment;
+struct VibratoSegment;
+struct Vibrato;
+struct Volta;
+struct VoltaSegment;
 
-class WhammyBarSegment;
+struct WhammyBarSegment;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class TLayout {
-public:
+struct TLayout {
 
     static void layout_item(EngravingItem *item, LayoutContext &ctx); // factory
 
@@ -384,7 +383,7 @@ public:
 
 private:
 
-    friend class SlurTieLayout;
+    friend struct SlurTieLayout;
 
     static void layout_figured_bass_item(const FiguredBassItem *item, FiguredBassItem::LayoutData *ldata, const LayoutContext &ctx);
 

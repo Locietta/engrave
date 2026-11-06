@@ -25,14 +25,15 @@
 #include "slurtie.h"
 
 namespace mu::engraving {
-class TieJumpPointList;
-class TieJumpPoint;
+struct TieJumpPointList;
+struct TieJumpPoint;
 //---------------------------------------------------------
 //   @@ TieSegment
 ///    a single segment of a tie
 //---------------------------------------------------------
 
-class TieSegment : public SlurTieSegment {
+struct TieSegment : SlurTieSegment {
+private:
     OBJECT_ALLOCATOR(engraving, TieSegment)
     DECLARE_CLASSOF(ElementType::TIE_SEGMENT)
 
@@ -82,7 +83,8 @@ private:
 //!    a Tie has a Note as startElement/endElement
 //---------------------------------------------------------
 
-class Tie : public SlurTie {
+struct Tie : SlurTie {
+private:
     OBJECT_ALLOCATOR(engraving, Tie)
     DECLARE_CLASSOF(ElementType::TIE)
 

@@ -23,11 +23,10 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditStretch {
-public:
+struct EditStretch {
     static void add_stretch(Transaction &tx, Score *score, double val);
     static void reset_user_stretch(Transaction &tx, Score *score);
 };

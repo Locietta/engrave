@@ -49,7 +49,7 @@ static constexpr duration_t demi_semi_quaver_note_duration = ::quarter_note_dura
 static constexpr duration_t half_note_duration = ::quarter_note_duration * 2;             // duration in microseconds for 1/2 120BPM
 static constexpr duration_t whole_note_duration = ::quarter_note_duration * 4;            // duration in microseconds for 4/4 120BPM
 
-class EngravingPlaybackEventsRendererTests : public ::testing::Test {
+struct EngravingPlaybackEventsRendererTests : ::testing::Test {
 protected:
     void SetUp() override {
         dummy_pattern_segment_.arrangement_pattern =

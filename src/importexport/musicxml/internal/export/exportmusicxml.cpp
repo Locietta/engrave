@@ -174,8 +174,7 @@ typedef std::map<track_idx_t, const FiguredBass *> FigBassMap;
 //   attributes -- prints <attributes> tag when necessary
 //---------------------------------------------------------
 
-class Attributes {
-public:
+struct Attributes {
     Attributes() { start(); }
 
     void do_attr(XmlWriter &xml, bool attr);
@@ -221,8 +220,7 @@ void Attributes::stop(XmlWriter &xml) {
 //   notations -- prints <notations> tag when necessary
 //---------------------------------------------------------
 
-class Notations {
-public:
+struct Notations {
     void tag(XmlWriter &xml, const EngravingItem *e, const AsciiStringView &container = "");
     void etag(XmlWriter &xml);
     void close_container(XmlWriter &xml);
@@ -237,8 +235,7 @@ private:
 //   slur handler -- prints <slur> tags
 //---------------------------------------------------------
 
-class SlurHandler {
-public:
+struct SlurHandler {
     SlurHandler();
 
     void set_export_layout(bool export_layout) { export_layout_ = export_layout; }
@@ -259,8 +256,7 @@ private:
 //   glissando handler -- prints <glissando> tags
 //---------------------------------------------------------
 
-class GlissandoHandler {
-public:
+struct GlissandoHandler {
     GlissandoHandler();
     void reset();
     void do_glissando_start(Glissando *gliss, Notations &notations, XmlWriter &xml);
@@ -282,8 +278,7 @@ private:
  To be called once at the start of each measure in a part.
  */
 
-class MeasureNumberStateHandler final {
-public:
+struct MeasureNumberStateHandler final {
     MeasureNumberStateHandler();
     void update_for_measure(const Measure *const m);
     String measure_number() const;
@@ -325,8 +320,7 @@ typedef std::map<const Instrument *, int> MusicXmlInstrumentMap;
 // exports run one at a time on the engine's owner thread.
 static const IMusicXmlConfiguration *s_export_configuration = nullptr;
 
-class ExportMusicXml {
-public:
+struct ExportMusicXml {
     ExportMusicXml(Score *s, const IMusicXmlConfiguration &configuration) : configuration_(configuration) {
         assert(!s_export_configuration);
         s_export_configuration = &configuration;
@@ -1078,7 +1072,8 @@ void GlissandoHandler::do_glissando_stop(Glissando *gliss, Notations &notations,
 //   directions anchor -- anchor directions at another element or a specific tick
 //---------------------------------------------------------
 
-class DirectionsAnchor {
+struct DirectionsAnchor {
+private:
     EngravingItem *direct; // the element containing the direction
     EngravingItem *anchor; // the element it is attached to
     bool start;            // whether it is attached to start or end

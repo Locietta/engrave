@@ -31,9 +31,10 @@
 #include "chord.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
-class TremoloSingleChord final : public EngravingItem {
+struct TremoloSingleChord final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, TremoloSingleChord)
     DECLARE_CLASSOF(ElementType::TREMOLO_SINGLECHORD)
 
@@ -94,7 +95,7 @@ public:
     void compute_shape();
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     TremoloSingleChord(DummyParentOr<Chord> parent);
     TremoloSingleChord(const TremoloSingleChord &);

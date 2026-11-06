@@ -39,18 +39,17 @@
 #include "types/symid.h"
 
 namespace muse {
-class JsonObject;
+struct JsonObject;
 } // namespace muse
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class Shape;
+struct Shape;
 
-class EngravingFont : public IEngravingFont {
-public:
+struct EngravingFont : IEngravingFont {
     EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
                   const std::string &family, const muse::io::PathT &file_path, const muse::io::PathT &metadata_path);
     EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
@@ -96,7 +95,7 @@ public:
 
 private:
 
-    friend class SymbolFonts;
+    friend struct SymbolFonts;
 
     struct Sym {
         char32_t code;

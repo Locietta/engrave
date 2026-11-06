@@ -25,12 +25,11 @@
 #include <string>
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class DumpLayoutData {
-public:
+struct DumpLayoutData {
     DumpLayoutData();
 
     static std::string dump(const Score *s);

@@ -36,8 +36,7 @@
 
 namespace muse::audio::fx {
 template <typename SampleT>
-class CircularSampleBuffer {
-public:
+struct CircularSampleBuffer {
     CircularSampleBuffer() {}
 
     ~CircularSampleBuffer() {

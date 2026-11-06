@@ -56,7 +56,8 @@ struct BagpipeNoteInfo {
 //    dummy element, used for drag&drop
 //---------------------------------------------------------
 
-class BagpipeEmbellishment final : public EngravingItem {
+struct BagpipeEmbellishment final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, BagpipeEmbellishment)
     DECLARE_CLASSOF(ElementType::BAGPIPE_EMBELLISHMENT)
 

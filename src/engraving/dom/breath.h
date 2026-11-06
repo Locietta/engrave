@@ -26,7 +26,7 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
 //---------------------------------------------------------
 //   BreathType
@@ -43,7 +43,8 @@ struct BreathType {
 //!    breathType() is index in symList
 //---------------------------------------------------------
 
-class Breath final : public EngravingItem {
+struct Breath final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Breath)
     DECLARE_CLASSOF(ElementType::BREATH)
 
@@ -80,7 +81,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Breath(DummyParentOr<Segment> parent);
 
     double pause_ = 0.0;

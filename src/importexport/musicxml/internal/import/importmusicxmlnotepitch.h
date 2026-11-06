@@ -27,7 +27,7 @@
 #include "engraving/dom/accidental.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlLogger;
+struct MusicXmlLogger;
 
 //---------------------------------------------------------
 //   musicXmlNotePitch
@@ -37,8 +37,7 @@ class MusicXmlLogger;
  Parse the note pitch related part of the /score-partwise/part/measure/note node.
  */
 
-class MusicXmlNotePitch {
-public:
+struct MusicXmlNotePitch {
     MusicXmlNotePitch(MusicXmlLogger *logger) : logger_(logger) { /* nothing so far */ }
 
     void pitch(muse::XmlStreamReader &e);

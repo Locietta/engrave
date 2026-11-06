@@ -27,8 +27,8 @@
 #include "groups.h"
 
 namespace mu::engraving {
-class Segment;
-class Transaction;
+struct Segment;
+struct Transaction;
 
 //---------------------------------------------------------
 //   TimeSigType
@@ -47,7 +47,8 @@ enum class TimeSigType : unsigned char {
 ///    This class represents a time signature.
 //---------------------------------------------------------------------------------------
 
-class TimeSig final : public EngravingItem {
+struct TimeSig final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, TimeSig)
     DECLARE_CLASSOF(ElementType::TIMESIG)
 
@@ -161,7 +162,7 @@ protected:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     TimeSig(DummyParentOr<Segment> parent);
 
     String numerator_string_; // calculated from actualSig() if !customText

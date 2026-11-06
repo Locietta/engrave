@@ -33,8 +33,7 @@ namespace mu::engraving {
 //    NoteEvent
 //---------------------------------------------------------
 
-class NoteEvent {
-public:
+struct NoteEvent {
     constexpr static int note_length = 1000;
     constexpr static double ghost_velocity_multiplier = 0.6;
     constexpr static double default_velocity_multiplier = 1.0;
@@ -89,7 +88,8 @@ private:
 //   NoteEventList
 //---------------------------------------------------------
 
-class NoteEventList : public std::vector<NoteEvent> {
+struct NoteEventList : std::vector<NoteEvent> {
+private:
     OBJECT_ALLOCATOR(engraving, NoteEventList)
 public:
     NoteEventList();

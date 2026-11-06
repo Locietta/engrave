@@ -26,13 +26,12 @@
 #include "guitarbendimporttypes.h"
 
 namespace mu::engraving {
-class Note;
-class Chord;
+struct Note;
+struct Chord;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendInfoConverter {
-public:
+struct BendInfoConverter {
     static ImportedBendInfo fill_bend_info(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values);
 };
 } // namespace mu::iex::guitarpro

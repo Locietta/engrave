@@ -27,8 +27,7 @@
 #include "engraving/iengravingconfiguration.h"
 
 namespace mu::engraving {
-class EngravingConfigurationMock : public IEngravingConfiguration {
-public:
+struct EngravingConfigurationMock : IEngravingConfiguration {
     MOCK_METHOD(muse::io::PathT, app_data_path, (), (const, override));
 
     MOCK_METHOD(muse::io::PathT, default_style_file_path, (), (const, override));

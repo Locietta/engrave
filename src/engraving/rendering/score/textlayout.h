@@ -27,8 +27,7 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving::rendering::score {
-class TextLayout {
-public:
+struct TextLayout {
     static void layout_base_text_base(const TextBase *item, TextBase::LayoutData *data);
     static void layout_base_text_base(TextBase *item, LayoutContext &ctx);
     static void layout_base_text_base1(const TextBase *item, TextBase::LayoutData *data);

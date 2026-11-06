@@ -26,7 +26,7 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
 //---------------------------------------------------------
 //    @@ LedgerLine
@@ -37,7 +37,8 @@ class Chord;
 //!    y-origin:   SStaff
 //---------------------------------------------------------
 
-class LedgerLine final : public EngravingItem {
+struct LedgerLine final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, LedgerLine)
     DECLARE_CLASSOF(ElementType::LEDGER_LINE)
 

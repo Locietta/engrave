@@ -28,7 +28,8 @@
 #include "../ifxresolver.h"
 
 namespace muse::audio::engine {
-class AudioFactory : public IAudioFactory {
+struct AudioFactory : IAudioFactory {
+private:
     OutputSpec spec_;
     synth::ISynthResolver &synth_resolver_;
     fx::IFxResolver &fx_resolver_;

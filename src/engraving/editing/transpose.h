@@ -28,10 +28,9 @@
 #include "../dom/interval.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
-class Transpose {
-public:
+struct Transpose {
     static bool transpose(Transaction &tx, Score *score, TransposeMode mode, TransposeDirection direction, Key tr_key,
                           int transpose_interval, bool tr_keys, bool transpose_chord_names, bool use_double_sharps_flats);
     static void transpose_keys(Transaction &tx, Score *score, staff_idx_t staff_start, staff_idx_t staff_end, const Fraction &ts,

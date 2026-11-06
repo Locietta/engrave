@@ -30,8 +30,7 @@
 #include "soundmapping.h"
 
 namespace muse::audio::synth {
-class FluidSequencer : public engine::AbstractEventSequencer<midi::Event> {
-public:
+struct FluidSequencer : engine::AbstractEventSequencer<midi::Event> {
     void init(const mpe::PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override, bool use_dynamic_events,
               midi::channel_t max_channels);
 

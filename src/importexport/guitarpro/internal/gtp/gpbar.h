@@ -4,8 +4,7 @@
 #include "gpvoice.h"
 
 namespace mu::iex::guitarpro {
-class GPBar {
-public:
+struct GPBar {
     enum class ClefType { G2, F4, C3, C4, NEUTRAL };
     enum class OttaviaType { MA15, VA8, REGULAR, VB8, MB15 };
     enum class SimileMark { NONE, SIMPLE, FIRST_OF_DOUBLE, SECOND_OF_DOUBLE };

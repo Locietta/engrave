@@ -92,8 +92,7 @@ template <typename... Types>
 struct TypeList {};
 
 template <typename Impl>
-class Visitor {
-public:
+struct Visitor {
     enum Policy { MAY_BE_NOT_FOUND = 0, SHOULD_BE_FOUND };
 
     template <typename... Types, typename... Args>

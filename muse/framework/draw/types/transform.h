@@ -29,10 +29,9 @@
 #include "geometry.h"
 
 namespace muse::draw {
-class PainterPath;
+struct PainterPath;
 
-class Transform {
-public:
+struct Transform {
 
     enum class TransformationType { NONE = 0x00, TRANSLATE = 0x01, SCALE = 0x02, ROTATE = 0x04, SHEAR = 0x08, PROJECT = 0x10 };
 

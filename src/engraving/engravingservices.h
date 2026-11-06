@@ -6,16 +6,16 @@
 #include <memory>
 
 namespace muse::draw {
-class IImageProvider;
+struct IImageProvider;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class IEngravingConfiguration;
-class IEngravingContextConfiguration;
-class IEngravingFontsProvider;
+struct IEngravingConfiguration;
+struct IEngravingContextConfiguration;
+struct IEngravingFontsProvider;
 
 namespace rendering {
-class IScoreRenderer;
+struct IScoreRenderer;
 } // namespace rendering
 
 // The engine services a score uses. The engine context owns the only instance

@@ -25,8 +25,7 @@
 #include "passbase.h"
 
 namespace mu::engraving::rendering::score {
-class PassResetLayoutData : public PassBase {
-public:
+struct PassResetLayoutData : PassBase {
     PassResetLayoutData() = default;
 
 private:

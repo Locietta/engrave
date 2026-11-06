@@ -31,14 +31,13 @@ namespace mu::engraving {
 enum class SymId;
 enum class AccidentalType : unsigned char;
 enum class Key : signed char;
-class Score;
-class EngravingItem;
-class Articulation;
+struct Score;
+struct EngravingItem;
+struct Articulation;
 
 enum class UpDownMode : char { CHROMATIC, OCTAVE, DIATONIC };
 
-class EditNote {
-public:
+struct EditNote {
     static void toggle_ornament(Score *score, SymId attr);
     static void toggle_accidental(Score *score, AccidentalType at);
     static void apply_accidental_to_input_notes(Score *score, AccidentalType accidental_type);
@@ -52,7 +51,8 @@ private:
     static void up_down_chromatic(bool up, int pitch, Note *n, Key key, int tpc1, int tpc2, int &new_pitch, int &new_tpc1, int &new_tpc2);
 };
 
-class ChangeVelocity : public UndoableCommand {
+struct ChangeVelocity : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeVelocity)
 
     Note *note = nullptr;
@@ -68,7 +68,8 @@ public:
     UNDO_CHANGED_OBJECTS({note})
 };
 
-class ChangeNoteEventList : public UndoableCommand {
+struct ChangeNoteEventList : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeNoteEventList)
 
     Note *note = nullptr;
@@ -83,7 +84,8 @@ public:
     UNDO_CHANGED_OBJECTS({note});
 };
 
-class ChangeNoteEvent : public UndoableCommand {
+struct ChangeNoteEvent : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeNoteEvent)
 
     Note *note = nullptr;
@@ -99,7 +101,8 @@ public:
     UNDO_CHANGED_OBJECTS({note})
 };
 
-class ChangeChordPlayEventType : public UndoableCommand {
+struct ChangeChordPlayEventType : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeChordPlayEventType)
 
     Chord *chord = nullptr;

@@ -44,8 +44,7 @@ using namespace mu::engraving;
 
 namespace mu::iex::mnxio {
 namespace {
-class MeasureNumberState {
-public:
+struct MeasureNumberState {
     MeasureNumberState() { init(); }
 
     int display_number(const Measure *measure) {

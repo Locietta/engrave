@@ -32,12 +32,12 @@
 #include "engraving/types/types.h"
 
 namespace muse::draw {
-class Painter;
-class Transform;
+struct Painter;
+struct Transform;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 
 //---------------------------------------------------------
 //   ShapeElement
@@ -68,8 +68,7 @@ private:
 //   Shape
 //---------------------------------------------------------
 
-class Shape {
-public:
+struct Shape {
 
     enum class Type : unsigned char {
         FIXED,    // fixed size, like just bbox

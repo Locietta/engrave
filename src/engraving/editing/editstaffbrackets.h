@@ -27,11 +27,10 @@
 #include "../dom/staff.h"
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditStaffBrackets {
-public:
+struct EditStaffBrackets {
     static void undo_add_bracket(Score *score, Staff *staff, size_t level, BracketType type, size_t span);
     static void undo_remove_bracket(Score *score, Bracket *bracket);
 
@@ -49,7 +48,8 @@ public:
     static void insert_bracket(Score *score, staff_idx_t staff_idx, BracketItem *b);
 };
 
-class RemoveBracket : public UndoableCommand {
+struct RemoveBracket : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveBracket)
 
     Staff *staff = nullptr;
@@ -67,7 +67,8 @@ public:
     UNDO_NAME("RemoveBracket")
 };
 
-class AddBracket : public UndoableCommand {
+struct AddBracket : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddBracket)
 
     Staff *staff = nullptr;

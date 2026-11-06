@@ -25,12 +25,12 @@
 #include <vector>
 
 namespace mu::engraving {
-class KeyList;
-class Staff;
+struct KeyList;
+struct Staff;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
+struct MTrack;
 
 namespace MidiKey {
 void assign_key_list_to_staff(const engraving::KeyList &kl, engraving::Staff *staff);

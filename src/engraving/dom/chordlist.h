@@ -30,18 +30,18 @@
 #include "../types/types.h"
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace mu::engraving::compat {
-class ReadChordListHook;
+struct ReadChordListHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
-class ChordList;
-class MStyle;
-class XmlWriter;
-class XmlReader;
+struct ChordList;
+struct MStyle;
+struct XmlWriter;
+struct XmlReader;
 
 //---------------------------------------------------------
 //   class HDegree
@@ -49,8 +49,7 @@ class XmlReader;
 
 enum class HDegreeType : char { UNDEF, ADD, ALTER, SUBTRACT };
 
-class HDegree {
-public:
+struct HDegree {
     HDegree() = default;
 
     HDegree(int v, int a, HDegreeType t) {
@@ -77,8 +76,7 @@ private:
 //   HChord
 //---------------------------------------------------------
 
-class HChord {
-public:
+struct HChord {
     HChord() = default;
 
     HChord(int k) { keys_ = k; }
@@ -317,8 +315,7 @@ using RenderActionParenPtr = std::shared_ptr<RenderActionParen>;
 
 enum class ChordTokenClass : char { ALL, QUALITY, EXTENSION, MODIFIER, TYPE, ACCIDENTAL };
 
-class ChordToken {
-public:
+struct ChordToken {
     ChordTokenClass token_class;
     StringList names;
     std::vector<RenderActionPtr> render_list;
@@ -334,8 +331,7 @@ public:
 //    Generates a list of render instructions to lay this chord out
 //---------------------------------------------------------
 
-class ParsedChord {
-public:
+struct ParsedChord {
     ParsedChord() = default;
 
     bool parse(const String &, const ChordList *, bool syntax_only = false, bool prefer_minor = false);
@@ -469,7 +465,8 @@ struct ChordFont {
 //    Reads chord XML files and stores the list of known chords
 //---------------------------------------------------------
 
-class ChordList : public std::map<int, ChordDescription> {
+struct ChordList : std::map<int, ChordDescription> {
+private:
     OBJECT_ALLOCATOR(engraving, ChordList)
 
 public:
@@ -519,7 +516,7 @@ public:
 
 private:
 
-    friend class compat::ReadChordListHook;
+    friend struct compat::ReadChordListHook;
 
     void read(XmlReader &xml, int msc_version);
     void write(XmlWriter &xml) const;

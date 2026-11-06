@@ -28,14 +28,13 @@
 #include "../paintoptions.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class Page;
-class Score;
+struct EngravingItem;
+struct Page;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class Paint {
-public:
+struct Paint {
     static void paint_score(muse::draw::Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt);
     static void paint_item(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt);
     static void paint_items(muse::draw::Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt);

@@ -27,7 +27,7 @@
 #include "../types/fraction.h"
 
 namespace mu::engraving {
-class Harmony;
+struct Harmony;
 
 //voicing modes to use
 enum class Voicing : signed char { INVALID = -1, AUTO = 0, ROOT_ONLY, CLOSE, DROP_2, SIX_NOTE, FOUR_NOTE, THREE_NOTE };
@@ -47,8 +47,7 @@ enum class HDuration : signed char {
 ///     symbols. This is what is used to
 ///     allow for chord symbol playback
 //-----------------------------------------
-class RealizedHarmony {
-public:
+struct RealizedHarmony {
     using PitchMap = std::multimap<int, int>; //map from pitch to tpc
 
     RealizedHarmony() : harmony_(0), notes_(PitchMap()), dirty_(1) {}

@@ -28,9 +28,10 @@
 #include "global/allocator.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
-class Hook final : public Symbol {
+struct Hook final : Symbol {
+private:
     OBJECT_ALLOCATOR(engraving, Hook)
     DECLARE_CLASSOF(ElementType::HOOK)
 

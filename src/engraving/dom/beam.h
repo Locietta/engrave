@@ -27,12 +27,12 @@
 #include "property.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class Factory;
-class Skyline;
-class System;
-class Transaction;
+struct Chord;
+struct ChordRest;
+struct Factory;
+struct Skyline;
+struct System;
+struct Transaction;
 enum class ActionIconType : signed char;
 enum class SpannerSegmentType : unsigned char;
 
@@ -46,7 +46,8 @@ struct TremAnchor {
 //   @@ Beam
 //---------------------------------------------------------
 
-class Beam final : public BeamBase {
+struct Beam final : BeamBase {
+private:
     OBJECT_ALLOCATOR(engraving, Beam)
     DECLARE_CLASSOF(ElementType::BEAM)
 
@@ -191,8 +192,8 @@ public:
 
 private:
 
-    friend class Factory;
-    friend class BeamSegment;
+    friend struct Factory;
+    friend struct BeamSegment;
     Beam(Score *parent);
     Beam(const Beam &);
 

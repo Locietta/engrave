@@ -28,8 +28,7 @@
 #include "envelopefilterconfig.h"
 
 namespace muse::audio::dsp {
-class Limiter {
-public:
+struct Limiter {
     Limiter(const unsigned int sample_rate);
 
     bool is_active() const;

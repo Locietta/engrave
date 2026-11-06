@@ -28,8 +28,7 @@
 namespace mu::engraving {
 struct DisclosurePattern;
 
-class OrnamentsRenderer : public RenderBase<OrnamentsRenderer> {
-public:
+struct OrnamentsRenderer : RenderBase<OrnamentsRenderer> {
     static const muse::mpe::ArticulationTypeSet &supported_types();
 
     static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,

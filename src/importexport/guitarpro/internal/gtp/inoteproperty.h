@@ -2,14 +2,12 @@
 #define MU_IMPORTEXPORT_INOTEPROPERTY_H
 
 namespace mu::iex::guitarpro {
-class INoteProperty {
-public:
+struct INoteProperty {
     INoteProperty() = default;
     virtual ~INoteProperty() = default;
 };
 
-class BendProperty : public INoteProperty {
-public:
+struct BendProperty : INoteProperty {
 
     void set_destination_offset(float v) { destination_offset_value = v; }
 

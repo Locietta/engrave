@@ -27,8 +27,8 @@
 #include "textlinebase.h"
 
 namespace mu::engraving {
-class Hairpin;
-class Transaction;
+struct Hairpin;
+struct Transaction;
 
 enum class HairpinType : signed char { INVALID = -1, CRESC_HAIRPIN, DIM_HAIRPIN, CRESC_LINE, DIM_LINE };
 
@@ -36,7 +36,8 @@ enum class HairpinType : signed char { INVALID = -1, CRESC_HAIRPIN, DIM_HAIRPIN,
 //   @@ HairpinSegment
 //---------------------------------------------------------
 
-class HairpinSegment final : public TextLineBaseSegment {
+struct HairpinSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, HairpinSegment)
     DECLARE_CLASSOF(ElementType::HAIRPIN_SEGMENT)
 
@@ -88,7 +89,8 @@ private:
 //   @P veloChange   int
 //---------------------------------------------------------
 
-class Hairpin final : public TextLineBase {
+struct Hairpin final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, Hairpin)
     DECLARE_CLASSOF(ElementType::HAIRPIN)
 

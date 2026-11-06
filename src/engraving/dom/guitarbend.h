@@ -47,7 +47,8 @@ enum class GuitarBendShowHoldLine : unsigned char {
 
 enum class ActionIconType : signed char;
 
-class GuitarBend final : public SLine {
+struct GuitarBend final : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, GuitarBend)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND)
 
@@ -188,9 +189,10 @@ private:
     std::optional<float> target_time_factor_;
 };
 
-class GuitarBendText; // forward decl
+struct GuitarBendText; // forward decl
 
-class GuitarBendSegment final : public LineSegment {
+struct GuitarBendSegment final : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, GuitarBendSegment)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_SEGMENT)
 
@@ -255,7 +257,8 @@ private:
     GuitarBendText *text_ = nullptr;
 };
 
-class GuitarBendHold final : public SLine {
+struct GuitarBendHold final : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, GuitarBendHold)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_HOLD)
 
@@ -284,7 +287,8 @@ protected:
     bool is_in_spanner_map() const override { return false; }
 };
 
-class GuitarBendHoldSegment final : public LineSegment {
+struct GuitarBendHoldSegment final : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, GuitarBendHoldSegment)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_HOLD_SEGMENT)
 
@@ -326,7 +330,8 @@ private:
     GuitarBendSegment *end_bend_seg_ = nullptr;
 };
 
-class GuitarBendText final : public TextBase {
+struct GuitarBendText final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, GuitarBendText)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_TEXT)
 

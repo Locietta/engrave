@@ -10,8 +10,7 @@
 #include "inoteproperty.h"
 
 namespace mu::iex::guitarpro {
-class GPNote {
-public:
+struct GPNote {
     enum class TieType { NONE, START, MEDIATE, END };
     enum class VibratoType { NONE, SLIGHT, WIDE };
     enum class Ornament { NONE, LOWER_MORDENT, UPPER_MORDENT, INVERTED_TURN, TURN };

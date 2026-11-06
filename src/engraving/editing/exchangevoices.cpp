@@ -37,7 +37,8 @@
 using namespace mu::engraving;
 
 namespace {
-class ExchangeVoicesInMeasure : public UndoableCommand {
+struct ExchangeVoicesInMeasure : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ExchangeVoicesInMeasure)
 
 public:

@@ -28,8 +28,7 @@
 #include "../../ifxprocessor.h"
 
 namespace muse::audio::fx {
-class AbstractFxResolver : public IFxResolver::IResolver {
-public:
+struct AbstractFxResolver : IFxResolver::IResolver {
     std::vector<IFxProcessorPtr> resolve_fx_list(const TrackId track_id, const AudioFxChain &fx_chain,
                                                  const OutputSpec &output_spec) override;
     std::vector<IFxProcessorPtr> resolve_master_fx_list(const AudioFxChain &fx_chain, const OutputSpec &output_spec) override;

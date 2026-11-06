@@ -25,14 +25,13 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Page;
-class System;
+struct Page;
+struct System;
 enum class SystemDividerType : unsigned char;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class PageLayout {
-public:
+struct PageLayout {
 
     static void get_next_page(LayoutContext &ctx);
     static void collect_page(LayoutContext &ctx);

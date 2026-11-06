@@ -45,10 +45,9 @@
 
 namespace muse::audio {
 template <typename T>
-class AudioNode;
+struct AudioNode;
 
-class IAudioNode : public std::enable_shared_from_this<IAudioNode> {
-public:
+struct IAudioNode : std::enable_shared_from_this<IAudioNode> {
     virtual ~IAudioNode() = default;
 
     virtual void set_name(const std::string &name) = 0;
@@ -78,7 +77,7 @@ public:
 protected:
 
     template <typename T>
-    friend class AudioNode;
+    friend struct AudioNode;
 
     virtual void on_output_spec_changed(const OutputSpec &spec) = 0;
     virtual void on_mode_changed(const ProcessMode mode) = 0;
@@ -97,8 +96,7 @@ using IAudioNodePtr = std::shared_ptr<IAudioNode>;
 // The tag is primarily used to simplify debugging
 // (for example, to make it easier to understand the call stack).
 template <typename T>
-class AudioNode : public IAudioNode {
-public:
+struct AudioNode : IAudioNode {
 
     void set_name(const std::string &name) override;
     const std::string &name() const override;

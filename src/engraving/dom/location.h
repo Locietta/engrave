@@ -27,7 +27,7 @@
 #include "../types/propertyvalue.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 
 enum class Pid : short;
 
@@ -35,8 +35,7 @@ enum class Pid : short;
 //   Location
 //---------------------------------------------------------
 
-class Location {
-public:
+struct Location {
     constexpr Location(int staff, int voice, int measure, Fraction frac, int grace_index, int note, bool rel)
         : staff_(staff), voice_(voice), measure_(measure), frac_(frac), grace_index_(grace_index), note_(note), rel_(rel) {}
 

@@ -35,13 +35,13 @@
 #include "../compat/midi/midicoreevent.h"
 
 namespace mu::engraving {
-class ChannelListener;
-class Drumset;
-class InstrumentTemplate;
-class MasterScore;
-class Part;
-class StringData;
-class Synthesizer;
+struct ChannelListener;
+struct Drumset;
+struct InstrumentTemplate;
+struct MasterScore;
+struct Part;
+struct StringData;
+struct Synthesizer;
 
 //---------------------------------------------------------
 //   NamedEventList
@@ -76,8 +76,7 @@ struct MidiArticulation {
 //   Channel
 //---------------------------------------------------------
 
-class InstrChannel {
-public:
+struct InstrChannel {
     static const char *default_name;
     static const char *harmony_name;
     static const char *palm_mute_name;
@@ -200,7 +199,8 @@ private:
 //   ChannelListener
 //---------------------------------------------------------
 
-class ChannelListener : public Listener<InstrChannel::Prop> {
+struct ChannelListener : Listener<InstrChannel::Prop> {
+private:
     OBJECT_ALLOCATOR(engraving, ChannelListener)
 public:
     virtual void property_changed(InstrChannel::Prop property) = 0;
@@ -220,8 +220,7 @@ private:
 //   PartChannelSettingsLink
 //---------------------------------------------------------
 
-class PartChannelSettingsLink final : private ChannelListener {
-public:
+struct PartChannelSettingsLink final : private ChannelListener {
     PartChannelSettingsLink() = default;
     PartChannelSettingsLink(InstrChannel *main, InstrChannel *bound, bool excerpt);
     PartChannelSettingsLink(const PartChannelSettingsLink &) = delete;
@@ -264,8 +263,7 @@ struct Trait {
 //   Instrument
 //---------------------------------------------------------
 
-class Instrument {
-public:
+struct Instrument {
     Instrument(String id = String());
     Instrument(const Instrument &);
     ~Instrument();
@@ -463,7 +461,8 @@ private:
 //   InstrumentList
 //---------------------------------------------------------
 
-class InstrumentList : public std::map<const int, Instrument *> {
+struct InstrumentList : std::map<const int, Instrument *> {
+private:
     OBJECT_ALLOCATOR(engraving, InstrumentList)
 
 public:

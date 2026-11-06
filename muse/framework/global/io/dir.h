@@ -29,8 +29,7 @@
 #include "ifilesystem.h"
 
 namespace muse::io {
-class Dir {
-public:
+struct Dir {
     Dir() = default;
     Dir(const PathT &path);
 

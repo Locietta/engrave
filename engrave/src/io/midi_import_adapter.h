@@ -5,7 +5,7 @@
 #include "engraving/engravingerrors.h"
 
 namespace mu::engraving {
-class MasterScore;
+struct MasterScore;
 } // namespace mu::engraving
 
 namespace music {

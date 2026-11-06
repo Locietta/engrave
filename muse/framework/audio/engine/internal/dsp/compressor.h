@@ -28,8 +28,7 @@
 #include "envelopefilterconfig.h"
 
 namespace muse::audio::dsp {
-class Compressor {
-public:
+struct Compressor {
     Compressor(const unsigned int sample_rate);
 
     bool is_active() const;

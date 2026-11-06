@@ -30,8 +30,7 @@
 #include "draw/types/pixmap.h"
 
 namespace mu::engraving {
-class IMimeData {
-public:
+struct IMimeData {
     virtual ~IMimeData() = default;
 
     virtual std::vector<std::string> formats() const = 0;

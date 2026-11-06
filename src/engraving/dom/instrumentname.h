@@ -29,14 +29,15 @@ namespace mu::engraving {
 enum class InstrumentNameType : char { LONG, SHORT };
 enum class InstrumentNameRole : char { STAFF, SHARED_STAFF, PART, GROUP };
 
-class System;
-class SysStaff;
+struct System;
+struct SysStaff;
 
 //---------------------------------------------------------
 //   InstrumentName
 //---------------------------------------------------------
 
-class InstrumentName final : public TextBase {
+struct InstrumentName final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, InstrumentName)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_NAME)
 

@@ -28,8 +28,8 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Note;
-class Factory;
+struct Note;
+struct Factory;
 
 //---------------------------------------------------------
 //   @@ Bend
@@ -43,7 +43,8 @@ class Factory;
 
 enum class BendType : unsigned char { BEND = 0, BEND_RELEASE, BEND_RELEASE_BEND, PREBEND, PREBEND_RELEASE, CUSTOM };
 
-class Bend final : public EngravingItem {
+struct Bend final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Bend)
     DECLARE_CLASSOF(ElementType::BEND)
 
@@ -98,7 +99,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Bend)
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     Bend(DummyParentOr<Note> parent);
 

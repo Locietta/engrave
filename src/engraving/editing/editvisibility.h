@@ -23,12 +23,11 @@
 #pragma once
 
 namespace mu::engraving {
-class EngravingItem;
-class Score;
-class Transaction;
+struct EngravingItem;
+struct Score;
+struct Transaction;
 
-class EditVisibility {
-public:
+struct EditVisibility {
     static void set_selected_elements_visible(Transaction &tx, Score *score);
     static void set_selected_elements_invisible(Transaction &tx, Score *score);
     static void toggle_visible(Transaction &tx, Score *score);

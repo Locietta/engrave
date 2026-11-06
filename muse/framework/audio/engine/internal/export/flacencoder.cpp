@@ -36,8 +36,7 @@
 #include "log.h"
 
 namespace muse::audio::encode {
-class FlacHandler final : public FLAC::Encoder::Stream {
-public:
+struct FlacHandler final : FLAC::Encoder::Stream {
     explicit FlacHandler(io::IODevice &out_dev) : out_dev_{&out_dev} { DO_ASSERT(out_dev_); }
 
 protected:

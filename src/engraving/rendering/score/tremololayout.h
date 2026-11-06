@@ -27,13 +27,12 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class TremoloTwoChord;
-class TremoloSingleChord;
+struct TremoloTwoChord;
+struct TremoloSingleChord;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class TremoloLayout {
-public:
+struct TremoloLayout {
 
     static void layout(TremoloTwoChord *item, const LayoutContext &ctx);
     static void layout(TremoloSingleChord *item, const LayoutContext &ctx);

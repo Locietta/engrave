@@ -41,7 +41,8 @@ enum class TempoTextType : signed char {
 //   @P followText  bool      determine tempo from text
 //-------------------------------------------------------------------
 
-class TempoText final : public TextBase {
+struct TempoText final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, TempoText)
     DECLARE_CLASSOF(ElementType::TEMPO_TEXT)
 

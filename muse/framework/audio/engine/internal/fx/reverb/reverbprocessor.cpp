@@ -40,8 +40,7 @@
 namespace muse::audio::fx {
 float from_decibel(float d_b) { return std::pow(10.f, d_b / 20.f); }
 
-class SamplesFloat {
-public:
+struct SamplesFloat {
     ~SamplesFloat() {
         for (int ch = 0; ch < num_channels; ch++) {
             dealloc(ch);
@@ -118,8 +117,7 @@ private:
     }
 };
 
-class MultiPhaseSinLfo {
-public:
+struct MultiPhaseSinLfo {
     void setup(int num_taps, float freq, float amplitude, double sample_rate) {
         phase = 0.f;
         phase_inc = float(6.28318530717958647692 * freq / sample_rate);

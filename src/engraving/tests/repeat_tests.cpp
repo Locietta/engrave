@@ -34,8 +34,7 @@ using namespace mu::engraving;
 
 static const String repeat_data_dir(u"repeat_data/");
 
-class EngravingRepeatTests : public ::testing::Test {
-public:
+struct EngravingRepeatTests : ::testing::Test {
     void repeat(const char *path, const String &ref);
 };
 

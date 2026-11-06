@@ -26,13 +26,14 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class StaffType;
+struct StaffType;
 
 //---------------------------------------------------------
 //   @@ StaffTypeChange
 //---------------------------------------------------------
 
-class StaffTypeChange final : public EngravingItem {
+struct StaffTypeChange final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, StaffTypeChange)
     DECLARE_CLASSOF(ElementType::STAFFTYPE_CHANGE)
 
@@ -55,7 +56,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     StaffTypeChange(DummyParentOr<MeasureBase> parent);
     StaffTypeChange(const StaffTypeChange &);
 

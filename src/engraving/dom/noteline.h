@@ -25,9 +25,10 @@
 #include "textlinebase.h"
 
 namespace mu::engraving {
-class NoteLine;
+struct NoteLine;
 
-class NoteLineSegment final : public TextLineBaseSegment {
+struct NoteLineSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, NoteLineSegment)
     DECLARE_CLASSOF(ElementType::NOTELINE_SEGMENT)
 
@@ -41,7 +42,8 @@ public:
     EngravingObject *property_delegate(Pid) const override;
 };
 
-class NoteLine final : public TextLineBase {
+struct NoteLine final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, NoteLine)
     DECLARE_CLASSOF(ElementType::NOTELINE)
 

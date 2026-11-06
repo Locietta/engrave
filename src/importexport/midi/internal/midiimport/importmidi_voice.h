@@ -28,12 +28,12 @@
 #include <set>
 
 namespace mu::engraving {
-class TimeSigMap;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
-class MidiChord;
+struct MTrack;
+struct MidiChord;
 
 namespace MidiTuplet {
 struct TupletData;

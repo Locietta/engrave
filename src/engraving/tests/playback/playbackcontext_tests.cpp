@@ -61,7 +61,7 @@ static void expect_level_near(const DynamicAutomationLayers &actual_layers, time
     }
 }
 
-class EngravingPlaybackContextTests : public ::testing::Test {};
+struct EngravingPlaybackContextTests : ::testing::Test {};
 
 //! Checks that hairpins outside/inside repeats don't overlap. See:
 //! https://github.com/musescore/MuseScore/issues/16167

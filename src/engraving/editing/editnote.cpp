@@ -51,7 +51,8 @@ using namespace mu::engraving;
 //   ChangePitch
 //---------------------------------------------------------
 
-class ChangePitch : public UndoableCommand {
+struct ChangePitch : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangePitch)
 
     Note *note = nullptr;
@@ -98,7 +99,8 @@ public:
 //    fret and string numbers for (potentially) all the notes of all the chords of a segment.
 //---------------------------------------------------------
 
-class ChangeFretting : public UndoableCommand {
+struct ChangeFretting : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeFretting)
 
     Note *note = nullptr;

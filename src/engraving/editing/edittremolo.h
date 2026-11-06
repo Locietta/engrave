@@ -27,7 +27,8 @@
 #include "../dom/tremolotwochord.h"
 
 namespace mu::engraving {
-class MoveTremolo : public UndoableCommand {
+struct MoveTremolo : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, MoveTremolo)
 
     Score *score = nullptr;

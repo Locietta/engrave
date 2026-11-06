@@ -33,9 +33,9 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class TextBase;
-class TextBlock;
-class Transaction;
+struct TextBase;
+struct TextBlock;
+struct Transaction;
 
 static constexpr double subscript_size = 0.6;
 static constexpr double subscript_offset = 0.5;    // of x-height
@@ -71,8 +71,7 @@ enum class SelectTextType : char { WORD, ALL };
 //   CharFormat
 //---------------------------------------------------------
 
-class CharFormat {
-public:
+struct CharFormat {
     CharFormat() {}
 
     CharFormat(const CharFormat &cf) { *this = cf; }
@@ -132,8 +131,7 @@ private:
 //    during editing.
 //---------------------------------------------------------
 
-class TextCursor {
-public:
+struct TextCursor {
     enum class MoveOperation : unsigned char { START, UP, START_OF_LINE, LEFT, WORD_LEFT, END, DOWN, END_OF_LINE, NEXT_WORD, RIGHT };
 
     enum class MoveMode : unsigned char { MOVE_ANCHOR, KEEP_ANCHOR };
@@ -232,8 +230,7 @@ private:
 //    contains a styled text
 //---------------------------------------------------------
 
-class TextFragment {
-public:
+struct TextFragment {
 
 public:
     mutable CharFormat format;
@@ -264,8 +261,7 @@ private:
 //    represents a block of formatted text
 //---------------------------------------------------------
 
-class TextBlock {
-public:
+struct TextBlock {
     TextBlock() = default;
 
     bool operator==(const TextBlock &x) const { return fragments_ == x.fragments_; }
@@ -328,7 +324,8 @@ private:
 //   TextBase
 //---------------------------------------------------------
 
-class TextBase : public EngravingItem {
+struct TextBase : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, TextBase)
 
     M_PROPERTY2(bool, is_text_linked_to_master, set_text_linked_to_master, true)
@@ -406,8 +403,8 @@ public:
     virtual bool accept_drop(EditData &) const override;
     virtual EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    friend class TextBlock;
-    friend class TextFragment;
+    friend struct TextBlock;
+    friend struct TextFragment;
 
     static String un_escape(String s);
     static String escape(String s);
@@ -481,7 +478,7 @@ public:
 
     bool has_custom_formatting() const;
 
-    friend class TextCursor;
+    friend struct TextCursor;
     using EngravingObject::undo_change_property;
 
     Color text_color(const rendering::PaintOptions &opt) const;

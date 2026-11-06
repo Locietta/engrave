@@ -42,8 +42,7 @@ namespace mu::engraving {
 
 enum class VelocityEventType : char { DYNAMIC, HAIRPIN, INVALID };
 
-class VelocityEvent {
-public:
+struct VelocityEvent {
     VelocityEvent() {}
 
     VelocityEvent(int val) : value_(val), type_(VelocityEventType::DYNAMIC) {}
@@ -56,7 +55,7 @@ public:
     bool operator!=(const VelocityEvent &event) const { return !(operator==(event)); }
 
 private:
-    friend class VelocityMap;
+    friend struct VelocityMap;
 
     int value_ = 0;
     VelocityEventType type_ = VelocityEventType::INVALID;
@@ -74,7 +73,8 @@ private:
 
 typedef std::vector<std::pair<Fraction, Fraction>> EndPointsVector;
 
-class VelocityMap : public std::multimap<Fraction, VelocityEvent> {
+struct VelocityMap : std::multimap<Fraction, VelocityEvent> {
+private:
     OBJECT_ALLOCATOR(engraving, VelocityMap)
 public:
     VelocityMap() {}

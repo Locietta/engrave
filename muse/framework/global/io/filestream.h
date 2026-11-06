@@ -27,8 +27,7 @@
 #include "path.h"
 
 namespace muse::io {
-class FileStream : public IODevice {
-public:
+struct FileStream : IODevice {
     FileStream() = default;
     explicit FileStream(const PathT &file_path);
     ~FileStream() override;

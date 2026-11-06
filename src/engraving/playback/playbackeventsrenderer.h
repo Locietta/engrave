@@ -27,12 +27,11 @@
 #include "renderingcontext.h"
 
 namespace mu::engraving {
-class Chord;
-class Score;
-class Note;
+struct Chord;
+struct Score;
+struct Note;
 
-class PlaybackEventsRenderer {
-public:
+struct PlaybackEventsRenderer {
     PlaybackEventsRenderer() = default;
 
     void render(const EngravingItem *item, const int tick_position_offset, const muse::mpe::ArticulationsProfilePtr profile,

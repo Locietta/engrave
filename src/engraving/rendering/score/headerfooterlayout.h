@@ -25,19 +25,18 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Page;
-class System;
-class Text;
-class TextBlock;
-class TextFragment;
-class CharFormat;
+struct Page;
+struct System;
+struct Text;
+struct TextBlock;
+struct TextFragment;
+struct CharFormat;
 
 enum class TextStyleType : unsigned char;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class HeaderFooterLayout {
-public:
+struct HeaderFooterLayout {
     static void layout_header_footer(LayoutContext &ctx, Page *page);
 
     /// How much the header extends into the page (i.e., not in the margins)

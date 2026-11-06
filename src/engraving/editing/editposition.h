@@ -25,11 +25,10 @@
 #include <vector>
 
 namespace mu::engraving {
-class EngravingItem;
-class Transaction;
+struct EngravingItem;
+struct Transaction;
 
-class EditPosition {
-public:
+struct EditPosition {
     static void freeze_items_positions(Transaction &tx, const std::vector<EngravingItem *> &items);
     static void freeze_item_position(Transaction &tx, EngravingItem *item);
 };

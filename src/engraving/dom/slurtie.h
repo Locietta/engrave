@@ -61,7 +61,8 @@ struct UP {
 //    calculation.
 //---------------------------------------------------------
 
-class CubicBezier {
+struct CubicBezier {
+private:
     PointF p1;
     PointF p2;
     PointF p3;
@@ -80,13 +81,14 @@ public:
     }
 };
 
-class SlurTie;
+struct SlurTie;
 
 //---------------------------------------------------------
 //   SlurTieSegment
 //---------------------------------------------------------
 
-class SlurTieSegment : public SpannerSegment {
+struct SlurTieSegment : SpannerSegment {
+private:
     OBJECT_ALLOCATOR(engraving, SlurTieSegment)
 
 public:
@@ -138,7 +140,8 @@ protected:
 //   @P maskSlurTie    enum (AutoOnOff.AUTO, AutoOnOff.ON, AutoOnOff.OFF)
 //-------------------------------------------------------------------
 
-class SlurTie : public Spanner {
+struct SlurTie : Spanner {
+private:
     OBJECT_ALLOCATOR(engraving, SlurTie)
 
 public:

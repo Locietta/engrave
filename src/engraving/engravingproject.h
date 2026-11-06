@@ -46,15 +46,14 @@ struct ReadInOutData;
 } // namespace mu::engraving::rw
 
 namespace mu::engraving::write {
-class WriteContext;
+struct WriteContext;
 } // namespace mu::engraving::write
 
 namespace mu::engraving {
-class MasterScore;
-class MStyle;
+struct MasterScore;
+struct MStyle;
 
-class EngravingProject : public std::enable_shared_from_this<EngravingProject> {
-public:
+struct EngravingProject : std::enable_shared_from_this<EngravingProject> {
     ~EngravingProject();
 
     // services must outlive the project.
@@ -80,7 +79,7 @@ public:
     muse::Ret check_corrupted() const;
 
 private:
-    friend class MasterScore;
+    friend struct MasterScore;
 
     explicit EngravingProject(const EngravingServices &services);
 

@@ -28,8 +28,7 @@
 #include "mpe/iarticulationprofilesrepository.h"
 
 namespace muse::mpe {
-class ArticulationProfilesRepositoryMock : public IArticulationProfilesRepository {
-public:
+struct ArticulationProfilesRepositoryMock : IArticulationProfilesRepository {
     MOCK_METHOD(ArticulationsProfilePtr, create_new, (), (const, override));
     MOCK_METHOD(ArticulationsProfilePtr, default_profile, (const ArticulationFamily), (const, override));
     MOCK_METHOD(ArticulationsProfilePtr, load_profile, (const io::PathT &), (const, override));

@@ -24,12 +24,11 @@
 #include "../iscorerenderer.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ScoreRenderer : public IScoreRenderer {
-public:
+struct ScoreRenderer : IScoreRenderer {
 
     // Main interface
     void layout_score(Score *score, const Fraction &st, const Fraction &et) const override;

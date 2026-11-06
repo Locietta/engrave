@@ -27,153 +27,152 @@
 #include "../../dom/property.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class ElementList;
+struct EngravingItem;
+struct ElementList;
 
-class Accidental;
-class ActionIcon;
-class Ambitus;
-class Arpeggio;
-class Articulation;
-class Audio;
+struct Accidental;
+struct ActionIcon;
+struct Ambitus;
+struct Arpeggio;
+struct Articulation;
+struct Audio;
 
-class BagpipeEmbellishment;
-class BarLine;
-class Beam;
-class Bend;
-class Box;
-class HBox;
-class VBox;
-class FBox;
-class TBox;
-class Bracket;
-class Breath;
+struct BagpipeEmbellishment;
+struct BarLine;
+struct Beam;
+struct Bend;
+struct Box;
+struct HBox;
+struct VBox;
+struct FBox;
+struct TBox;
+struct Bracket;
+struct Breath;
 
-class Chord;
-class ChordRest;
-class ChordLine;
-class Clef;
-class Capo;
+struct Chord;
+struct ChordRest;
+struct ChordLine;
+struct Clef;
+struct Capo;
 
-class DurationElement;
-class Dynamic;
-class Expression;
-class Fermata;
-class FiguredBass;
-class FiguredBassItem;
-class Fingering;
-class FretDiagram;
+struct DurationElement;
+struct Dynamic;
+struct Expression;
+struct Fermata;
+struct FiguredBass;
+struct FiguredBassItem;
+struct Fingering;
+struct FretDiagram;
 
-class Glissando;
-class GradualTempoChange;
-class Groups;
-class GuitarBend;
-class GuitarBendSegment;
+struct Glissando;
+struct GradualTempoChange;
+struct Groups;
+struct GuitarBend;
+struct GuitarBendSegment;
 
-class Hairpin;
-class HammerOnPullOff;
-class HammerOnPullOffSegment;
-class HammerOnPullOffText;
-class Harmony;
-class HarmonicMark;
-class HarpPedalDiagram;
-class Hook;
+struct Hairpin;
+struct HammerOnPullOff;
+struct HammerOnPullOffSegment;
+struct HammerOnPullOffText;
+struct Harmony;
+struct HarmonicMark;
+struct HarpPedalDiagram;
+struct Hook;
 
-class Image;
-class Instrument;
-class InstrChannel;
-class InstrumentChange;
-class InstrumentLabel;
+struct Image;
+struct Instrument;
+struct InstrChannel;
+struct InstrumentChange;
+struct InstrumentLabel;
 
-class Jump;
+struct Jump;
 
-class KeySig;
+struct KeySig;
 
-class LayoutBreak;
-class LedgerLine;
-class LetRing;
-class Location;
-class Lyrics;
+struct LayoutBreak;
+struct LedgerLine;
+struct LetRing;
+struct Location;
+struct Lyrics;
 
-class Marker;
-class MeasureNumber;
-class MeasureRepeat;
+struct Marker;
+struct MeasureNumber;
+struct MeasureRepeat;
 struct MidiArticulation;
-class MMRest;
-class MMRestRange;
+struct MMRest;
+struct MMRestRange;
 
 struct NamedEventList;
-class Note;
-class NoteEvent;
-class NoteDot;
-class NoteHead;
-class NoteLine;
-class Ornament;
-class Ottava;
+struct Note;
+struct NoteEvent;
+struct NoteDot;
+struct NoteHead;
+struct NoteLine;
+struct Ornament;
+struct Ottava;
 
-class Page;
-class PalmMute;
-class Part;
-class Pedal;
-class PickScrape;
-class PlayTechAnnotation;
+struct Page;
+struct PalmMute;
+struct Part;
+struct Pedal;
+struct PickScrape;
+struct PlayTechAnnotation;
 
-class Rasgueado;
-class RehearsalMark;
-class Rest;
+struct Rasgueado;
+struct RehearsalMark;
+struct Rest;
 
-class Segment;
-class Slur;
-class SlurTie;
-class SlurTieSegment;
-class SLine;
-class Spanner;
-class Spacer;
-class Staff;
-class StaffLabel;
-class StaffState;
-class StaffText;
-class StaveSharingLabel;
-class StaffTextBase;
-class StaffType;
-class StaffTypeChange;
-class Stem;
-class StemSlash;
-class Sticking;
-class StringData;
-class Symbol;
-class BSymbol;
-class FSymbol;
-class StringTunings;
-class System;
-class SystemDivider;
-class SystemText;
-class SoundFlag;
+struct Segment;
+struct Slur;
+struct SlurTie;
+struct SlurTieSegment;
+struct SLine;
+struct Spanner;
+struct Spacer;
+struct Staff;
+struct StaffLabel;
+struct StaffState;
+struct StaffText;
+struct StaveSharingLabel;
+struct StaffTextBase;
+struct StaffType;
+struct StaffTypeChange;
+struct Stem;
+struct StemSlash;
+struct Sticking;
+struct StringData;
+struct Symbol;
+struct BSymbol;
+struct FSymbol;
+struct StringTunings;
+struct System;
+struct SystemDivider;
+struct SystemText;
+struct SoundFlag;
 
-class Tapping;
-class TappingHalfSlur;
-class TempoText;
-class Text;
-class TextBase;
-class TextLine;
-class TextLineBase;
-class Tie;
-class TimeSig;
-class TremoloSingleChord;
-class TremoloTwoChord;
-class TremoloBar;
-class Trill;
-class Tuplet;
+struct Tapping;
+struct TappingHalfSlur;
+struct TempoText;
+struct Text;
+struct TextBase;
+struct TextLine;
+struct TextLineBase;
+struct Tie;
+struct TimeSig;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
+struct TremoloBar;
+struct Trill;
+struct Tuplet;
 
-class Vibrato;
-class Volta;
+struct Vibrato;
+struct Volta;
 
-class WhammyBar;
+struct WhammyBar;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class TWrite {
-public:
+struct TWrite {
     TWrite() = default;
 
     static void write_item(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx);

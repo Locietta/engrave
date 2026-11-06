@@ -55,8 +55,7 @@ inline T check_valid(T v, T def = T()) {
 }
 
 template <typename T>
-class NumberT {
-public:
+struct NumberT {
 
     using value_type = T;
 

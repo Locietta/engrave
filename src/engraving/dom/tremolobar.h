@@ -36,7 +36,8 @@ namespace mu::engraving {
 
 enum class TremoloBarType : unsigned char { DIP = 0, DIVE, RELEASE_UP, INVERTED_DIP, RETURN, RELEASE_DOWN, CUSTOM };
 
-class TremoloBar final : public EngravingItem {
+struct TremoloBar final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, TremoloBar)
     DECLARE_CLASSOF(ElementType::TREMOLOBAR)
 
@@ -73,7 +74,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     TremoloBar(DummyParentOr<EngravingItem> parent);
 
     TremoloBarType parse_tremolo_bar_type_from_curve(const PitchValues &curve) const;

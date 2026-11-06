@@ -24,15 +24,14 @@
 #include "draw/painter.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class Page;
+struct EngravingItem;
+struct Page;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class PaintDebugger;
+struct PaintDebugger;
 
-class DebugPaint {
-public:
+struct DebugPaint {
     static void paint_element_debug(muse::draw::Painter &painter, const EngravingItem *item);
     static void paint_page_debug(muse::draw::Painter &painter, const Page *page, const std::vector<EngravingItem *> &items);
 };

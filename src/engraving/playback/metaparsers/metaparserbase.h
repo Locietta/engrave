@@ -29,11 +29,10 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 
 template <class T>
-class MetaParserBase {
-public:
+struct MetaParserBase {
     static void parse(const EngravingItem *item, const RenderingContext &context, muse::mpe::ArticulationMap &result) {
         IF_ASSERT_FAILED(item) { return; }
 

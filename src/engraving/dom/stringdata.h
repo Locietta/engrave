@@ -30,10 +30,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Chord;
-class Note;
+struct Chord;
+struct Note;
 
-class Staff;
+struct Staff;
 
 //---------------------------------------------------------
 //   StringData
@@ -51,8 +51,7 @@ struct InstrString {
     bool operator==(const InstrString &d) const { return d.pitch == pitch && d.open == open; }
 };
 
-class StringData {
-public:
+struct StringData {
     StringData() {}
 
     StringData(int num_frets, int num_strings, int strings[], bool use_flats = false);

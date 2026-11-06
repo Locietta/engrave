@@ -26,8 +26,7 @@
 #include <deque>
 
 namespace muse::audio::engine {
-class SampleRateConvertor {
-public:
+struct SampleRateConvertor {
     enum Method { SINC, FIR };
 
     explicit SampleRateConvertor(const std::vector<float> &data, unsigned int channels_count, unsigned int sample_rate_in,

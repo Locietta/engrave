@@ -31,12 +31,11 @@
 struct LameHandler;
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-class Mp3Encoder : public AbstractAudioEncoder {
-public:
+struct Mp3Encoder : AbstractAudioEncoder {
     Mp3Encoder(const SoundTrackFormat &, io::IODevice &);
 
     ~Mp3Encoder() noexcept override;

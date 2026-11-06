@@ -27,8 +27,7 @@
 #include "dom/box.h"
 
 namespace mu::engraving::rendering::score {
-class BoxLayout {
-public:
+struct BoxLayout {
     static void layout_box(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx); // factory
 
     static void layout_h_box(const HBox *item, HBox::LayoutData *ldata, const LayoutContext &ctx);

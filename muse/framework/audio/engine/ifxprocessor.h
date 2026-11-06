@@ -27,8 +27,7 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio {
-class IFxProcessor {
-public:
+struct IFxProcessor {
     virtual ~IFxProcessor() = default;
 
     virtual AudioFxType type() const = 0;

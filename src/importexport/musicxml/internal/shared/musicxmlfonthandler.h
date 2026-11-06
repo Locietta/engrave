@@ -30,8 +30,7 @@ namespace mu::iex::musicxml {
 //   MScoreTextToMXML
 //---------------------------------------------------------
 
-class MScoreTextToMusicXml {
-public:
+struct MScoreTextToMusicXml {
     MScoreTextToMusicXml(const muse::String &tag, const muse::String &attr, const engraving::CharFormat &def_fmt, const muse::String &mtf);
     static muse::String to_plain_text(const muse::String &text);
     static muse::String to_plain_text_plus_symbols(const std::list<engraving::TextFragment> &list);

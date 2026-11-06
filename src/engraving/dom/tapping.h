@@ -28,10 +28,11 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class TappingHalfSlur;
-class TappingText;
+struct TappingHalfSlur;
+struct TappingText;
 
-class Tapping : public Articulation {
+struct Tapping : Articulation {
+private:
     OBJECT_ALLOCATOR(engraving, Tapping)
     DECLARE_CLASSOF(ElementType::TAPPING)
 
@@ -73,7 +74,7 @@ public:
     TranslatableString subtype_user_name() const override;
 
 protected:
-    friend class mu::engraving::Factory;
+    friend struct mu::engraving::Factory;
     Tapping(DummyParentOr<ChordRest> parent);
 
 private:
@@ -83,7 +84,8 @@ private:
     TappingHalfSlur *half_slur_below_ = nullptr;
 };
 
-class TappingHalfSlurSegment : public SlurSegment {
+struct TappingHalfSlurSegment : SlurSegment {
+private:
     OBJECT_ALLOCATOR(engraving, TappingHalfSlurSegment)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR_SEGMENT)
 
@@ -96,7 +98,8 @@ public:
     TappingHalfSlur *tapping_half_slur() const { return to_tapping_half_slur(spanner()); }
 };
 
-class TappingHalfSlur : public Slur {
+struct TappingHalfSlur : Slur {
+private:
     OBJECT_ALLOCATOR(engraving, TappingHalfSlur)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR)
 
@@ -121,7 +124,8 @@ private:
     bool is_half_slur_above_ = true;
 };
 
-class TappingText final : public TextBase {
+struct TappingText final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, TappingText)
     DECLARE_CLASSOF(ElementType::TAPPING_TEXT)
 

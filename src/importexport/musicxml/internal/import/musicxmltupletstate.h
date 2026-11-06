@@ -26,7 +26,7 @@
 #include "engraving/types/fraction.h"
 
 namespace mu::engraving {
-class TDuration;
+struct TDuration;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
@@ -34,8 +34,7 @@ enum class MusicXmlStartStop : char;
 enum class MusicXmlTupletFlag : char { NONE = 0, STOP_PREVIOUS = 1, START_NEW = 2, ADD_CHORD = 4, STOP_CURRENT = 8 };
 typedef muse::Flags<MusicXmlTupletFlag> MusicXmlTupletFlags;
 
-class MusicXmlTupletState {
-public:
+struct MusicXmlTupletState {
     MusicXmlTupletFlags determine_tuplet_action(const engraving::Fraction note_duration, const engraving::Fraction time_mod,
                                                 const MusicXmlStartStop tuplet_start_stop, const engraving::TDuration normal_type,
                                                 engraving::Fraction &missing_previous_duration,

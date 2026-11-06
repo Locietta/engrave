@@ -39,8 +39,7 @@ struct ShapedGlyph {
     uint32_t cluster = 0;
 };
 
-class IFontFace {
-public:
+struct IFontFace {
 
     virtual ~IFontFace() = default;
 

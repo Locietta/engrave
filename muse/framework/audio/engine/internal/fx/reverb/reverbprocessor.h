@@ -31,8 +31,7 @@
 #include "../../../ifxprocessor.h"
 
 namespace muse::audio::fx {
-class ReverbProcessor : public IFxProcessor {
-public:
+struct ReverbProcessor : IFxProcessor {
     ReverbProcessor(const audio::AudioFxParams &params);
     ~ReverbProcessor() override;
 

@@ -35,25 +35,25 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class EID;
-class EngravingItem;
-class EngravingObject;
-class Fermata;
-class Hairpin;
-class GraceNotesGroup;
-class Instrument;
-class Measure;
-class Note;
-class Part;
-class Ottava;
-class Score;
-class Slur;
-class Staff;
-class Volta;
-class TremoloTwoChord;
-class Tuplet;
+struct Chord;
+struct ChordRest;
+struct EID;
+struct EngravingItem;
+struct EngravingObject;
+struct Fermata;
+struct Hairpin;
+struct GraceNotesGroup;
+struct Instrument;
+struct Measure;
+struct Note;
+struct Part;
+struct Ottava;
+struct Score;
+struct Slur;
+struct Staff;
+struct Volta;
+struct TremoloTwoChord;
+struct Tuplet;
 } // namespace mu::engraving
 
 namespace mu::iex::mnxio {
@@ -62,8 +62,7 @@ struct MnxChordTargetPosition {
     std::optional<unsigned> grace_index;
 };
 
-class MnxExporter {
-public:
+struct MnxExporter {
     MnxExporter(engraving::Score *s, bool export_beams = true, bool export_rest_positions = false)
         : score_(s), export_beams_(export_beams), export_rest_positions_(export_rest_positions) {}
 

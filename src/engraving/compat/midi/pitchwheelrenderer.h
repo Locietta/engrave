@@ -32,8 +32,7 @@
 #include "event.h"
 
 namespace mu::engraving {
-class PitchWheelRenderer {
-public:
+struct PitchWheelRenderer {
     struct PitchWheelFunction {
         int32_t m_start_tick = 0;
         int32_t m_end_tick = 0;

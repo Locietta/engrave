@@ -31,14 +31,15 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Spanner;
+struct Spanner;
 
 //---------------------------------------------------------
 //   @@ SpannerSegment
 //!    parent: the Spanner it belongs to; placed on a System during layout
 //---------------------------------------------------------
 
-class SpannerSegment : public EngravingItem {
+struct SpannerSegment : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, SpannerSegment)
 
 public:
@@ -183,7 +184,8 @@ private:
 //    @P tick2          int               tick end position
 //----------------------------------------------------------------------------------
 
-class Spanner : public EngravingItem {
+struct Spanner : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Spanner)
 public:
     enum class Anchor : unsigned char { SEGMENT, MEASURE, CHORDREST, NOTE };
@@ -327,7 +329,7 @@ protected:
 private:
     bool can_be_cross_staff() const;
 
-    friend class SpannerSegment;
+    friend struct SpannerSegment;
 
     EngravingItem *start_element_ = nullptr;
     EngravingItem *end_element_ = nullptr;

@@ -27,8 +27,7 @@
 #include "types/string.h"
 
 namespace muse {
-class Version {
-public:
+struct Version {
     Version() = default;
     Version(int major, int minor = 0, int patch = 0, const String &suffix = String(), int suffix_version = 0);
     Version(const String &version_str);

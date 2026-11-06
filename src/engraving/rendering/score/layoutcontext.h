@@ -58,40 +58,39 @@
 #endif
 
 namespace mu::engraving {
-class DummyParent;
-class EngravingItem;
-class MeasureBase;
-class Part;
-class Page;
-class Score;
-class Spanner;
-class SpannerMap;
-class System;
-class RangeLocks;
-class Staff;
-class Measure;
-class ChordRest;
-class Segment;
-class BracketItem;
+struct DummyParent;
+struct EngravingItem;
+struct MeasureBase;
+struct Part;
+struct Page;
+struct Score;
+struct Spanner;
+struct SpannerMap;
+struct System;
+struct RangeLocks;
+struct Staff;
+struct Measure;
+struct ChordRest;
+struct Segment;
+struct BracketItem;
 struct PaddingTable;
 
-class UndoableCommand;
-class EditData;
+struct UndoableCommand;
+struct EditData;
 
-class Selection;
+struct Selection;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class IGetScoreInternal {
+struct IGetScoreInternal {
 private:
-    friend class LayoutConfiguration;
-    friend class DomAccessor;
+    friend struct LayoutConfiguration;
+    friend struct DomAccessor;
 
     virtual Score *score() = 0;
 };
 
-class LayoutConfiguration {
-public:
+struct LayoutConfiguration {
     LayoutConfiguration(IGetScoreInternal *s);
 
     LayoutMode view_mode() const { return options().mode; }
@@ -155,8 +154,7 @@ private:
     IGetScoreInternal *get_score_ = nullptr;
 };
 
-class DomAccessor {
-public:
+struct DomAccessor {
 
     DomAccessor(IGetScoreInternal *s);
 
@@ -233,8 +231,7 @@ private:
     IGetScoreInternal *get_score_ = nullptr;
 };
 
-class LayoutState {
-public:
+struct LayoutState {
 
     // Const
     bool first_system() const { return first_system_; }
@@ -381,8 +378,7 @@ private:
     double total_brackets_width_ = -1.0;
 };
 
-class LayoutDebug {
-public:
+struct LayoutDebug {
 
     static LayoutDebug *instance();
 
@@ -430,8 +426,7 @@ private:
     std::vector<Call> calls_;
 };
 
-class LayoutContext : public IGetScoreInternal {
-public:
+struct LayoutContext : IGetScoreInternal {
     LayoutContext(Score *s);
     ~LayoutContext();
 

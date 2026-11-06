@@ -24,8 +24,7 @@
 #include "global/types/string.h"
 
 namespace mu::engraving {
-class StaffLabel {
-public:
+struct StaffLabel {
     StaffLabel() = default;
 
     StaffLabel(const muse::String &long_name, const muse::String &short_name) : long_name_(long_name), short_name_(short_name) {}
@@ -47,8 +46,7 @@ private:
     muse::String short_name_;
 };
 
-class InstrumentLabel : public StaffLabel {
-public:
+struct InstrumentLabel : StaffLabel {
     bool operator==(const InstrumentLabel &i) const;
 
     int number() const { return number_; }

@@ -32,8 +32,7 @@
 #include "engraving/dom/masterscore.h"
 
 namespace mu::engraving {
-class ScoreRW {
-public:
+struct ScoreRW {
     ScoreRW() = default;
 
     static void set_root_path(const String &path);
