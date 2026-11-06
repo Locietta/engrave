@@ -88,19 +88,33 @@ TEST(MnxImport, IndependentSemanticOracle) {
     }
 }
 
-// Compare the importer-supported core independently of engraving/layout details.
+// Optional directory for the exported MNX files; the host engine gate validates
+// them against the draft 2020-12 schema, which mnxdom's draft-7 validator only
+// partly enforces.
+std::filesystem::path mnx_out;
+
+// Compare the importer-supported core independently of engraving/layout details:
+// every chord with its pitches and every rest, each with its position and length.
 Json core_content(engrave::Document &doc) {
     const auto dump = music::semantic_dump(engrave::DocumentAccess::master_score(doc));
     Json notes = Json::array();
+    Json rests = Json::array();
     for (size_t staff = 0; staff < dump.at("events").size(); ++staff)
         for (size_t voice = 0; voice < dump.at("events").at(staff).size(); ++voice)
             for (const auto &event : dump.at("events").at(staff).at(voice)) {
+                const Json position = Json::array({staff, voice, event.at("tick"), event.at("ticks")});
+                if (event.at("kind") == "rest") {
+                    rests.push_back(position);
+                    continue;
+                }
                 if (event.at("kind") != "chord") continue;
                 Json pitches = Json::array();
                 for (const auto &note : event.at("notes")) pitches.push_back(note.at("pitch"));
-                notes.push_back(Json::array({staff, voice, event.at("tick"), event.at("ticks"), pitches}));
+                Json chord = position;
+                chord.push_back(pitches);
+                notes.push_back(chord);
             }
-    return Json{{"parts", dump.at("parts").size()}, {"measures", dump.at("measures").size()}, {"notes", notes}};
+    return Json{{"parts", dump.at("parts").size()}, {"measures", dump.at("measures").size()}, {"notes", notes}, {"rests", rests}};
 }
 
 TEST(MnxExport, SchemaAndCoreRoundtrip) {
@@ -119,6 +133,11 @@ TEST(MnxExport, SchemaAndCoreRoundtrip) {
         // Uses mnxdom's embedded schema and the pinned mnx-json-schema validator.
         ASSERT_TRUE(mnx::validation::schemaValidate(document));
         const std::string bytes = document.root()->dump();
+        if (!mnx_out.empty()) {
+            std::ofstream out(mnx_out / (std::string(fixture) + ".mnx"), std::ios::binary);
+            out << bytes;
+            ASSERT_TRUE(out.good());
+        }
         auto imported = engine->open(std::as_bytes(std::span(bytes)), {.format = engrave::Format::MNX});
         ASSERT_TRUE(imported) << imported.error().message;
         EXPECT_EQ(core_content(**imported), before);
@@ -142,7 +161,9 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) {
         std::string_view arg = argv[i];
         if (arg.starts_with("--assets=")) assets = arg.substr(9);
+        if (arg.starts_with("--mnx-out=")) mnx_out = arg.substr(10);
     }
+    if (!mnx_out.empty()) std::filesystem::create_directories(mnx_out);
     auto created = engrave::Engine::create({.resources = assets});
     if (!created) {
         std::fprintf(stderr, "%s\n", created.error().message.c_str());
