@@ -42,7 +42,6 @@
 #include "../dom/system.h"
 #include "../dom/tie.h"
 #include "../dom/utils.h"
-
 #include "log.h"
 
 using namespace muse;

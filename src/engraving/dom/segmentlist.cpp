@@ -21,10 +21,10 @@
  */
 
 #include "segmentlist.h"
-#include "segment.h"
-#include "score.h"
 
 #include "log.h"
+#include "score.h"
+#include "segment.h"
 
 using namespace mu;
 

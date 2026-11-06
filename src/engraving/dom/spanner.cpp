@@ -21,14 +21,12 @@
  */
 #include "spanner.h"
 
-#include "translation.h"
-
 #include "../editing/navigation.h"
-
 #include "anchors.h"
 #include "chord.h"
 #include "chordrest.h"
 #include "location.h"
+#include "log.h"
 #include "lyrics.h"
 #include "measure.h"
 #include "note.h"
@@ -37,9 +35,8 @@
 #include "segment.h"
 #include "staff.h"
 #include "system.h"
+#include "translation.h"
 #include "types/typesconv.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

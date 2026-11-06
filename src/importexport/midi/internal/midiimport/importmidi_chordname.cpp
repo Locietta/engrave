@@ -20,22 +20,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_chordname.h"
-#include "importmidi_inner.h"
-#include "importmidi_chord.h"
-#include "importmidi_fraction.h"
-#include "importmidi_operations.h"
-#include "../midishared/midifile.h"
 
 #include <string>
 #include <vector>
 
-#include "global/types/string.h"
-
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/staff.h"
-#include "engraving/dom/measure.h"
-#include "engraving/dom/harmony.h"
+#include "../midishared/midifile.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/harmony.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/staff.h"
+#include "global/types/string.h"
+#include "importmidi_chord.h"
+#include "importmidi_fraction.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
 
 // From XF Format Specifications V 2.01 (January 13, 1999, YAMAHA CORPORATION)
 

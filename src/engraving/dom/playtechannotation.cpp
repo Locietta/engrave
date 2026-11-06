@@ -22,11 +22,9 @@
 
 #include "playtechannotation.h"
 
-#include "segment.h"
-
-#include "types/typesconv.h"
-
 #include "log.h"
+#include "segment.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

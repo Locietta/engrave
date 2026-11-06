@@ -12,11 +12,10 @@
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/pid_support.h"
-#include "engrave/src/api/value_codec.h"
 #include "engrave/src/api/state.h"
+#include "engrave/src/api/value_codec.h"
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
-
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/excerpt.h"

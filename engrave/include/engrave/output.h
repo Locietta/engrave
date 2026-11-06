@@ -9,21 +9,21 @@
 #include <string_view>
 #include <vector>
 
-#include <engrave/handle.h>
 #include <engrave/export_warning.h>
+#include <engrave/handle.h>
 
 namespace engrave {
 
 // Score file formats. Capabilities lists which of them the engine reads and
 // which it writes.
 enum struct Format {
-    MSCZ,      // MuseScore archive
-    MSCX,      // uncompressed MuseScore XML
+    MSCZ,       // MuseScore archive
+    MSCX,       // uncompressed MuseScore XML
     MUSIC_XML,  // uncompressed MusicXML
-    MXL,       // compressed MusicXML
-    MIDI,      // Standard MIDI File, including karaoke (.kar)
+    MXL,        // compressed MusicXML
+    MIDI,       // Standard MIDI File, including karaoke (.kar)
     GUITAR_PRO, // Guitar Pro 1-7 and Power Tab
-    MNX,       // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
+    MNX,        // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
 };
 
 std::string_view to_string(Format format) noexcept;

@@ -1,9 +1,9 @@
 #ifndef MUSE_GLOBAL_NUMBER_T_H
 #define MUSE_GLOBAL_NUMBER_T_H
 
-#include <limits>
 #include <cassert>
 #include <cmath>
+#include <limits>
 
 #include "global/logstream.h"
 

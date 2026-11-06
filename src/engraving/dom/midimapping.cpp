@@ -22,11 +22,10 @@
 
 #include "excerpt.h"
 #include "instrument.h"
+#include "log.h"
 #include "masterscore.h"
 #include "part.h"
 #include "score.h"
-
-#include "log.h"
 
 using namespace mu;
 

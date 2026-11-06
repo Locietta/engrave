@@ -28,9 +28,8 @@
 #include "../../dom/measure.h"
 #include "../../dom/mscore.h"
 #include "../../types/types.h"
-
-#include "pitchwheelrenderer.h"
 #include "pausemap.h"
+#include "pitchwheelrenderer.h"
 #include "velocitymap.h"
 
 namespace mu::engraving {

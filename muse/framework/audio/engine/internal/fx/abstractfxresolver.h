@@ -24,8 +24,8 @@
 
 #include <map>
 
-#include "../../ifxresolver.h"
 #include "../../ifxprocessor.h"
+#include "../../ifxresolver.h"
 
 namespace muse::audio::fx {
 struct AbstractFxResolver : IFxResolver::IResolver {

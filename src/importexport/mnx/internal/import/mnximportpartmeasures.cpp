@@ -19,14 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include <algorithm>
 #include <optional>
 #include <stack>
 #include <vector>
-
-#include "mnximporter.h"
-#include "internal/shared/mnxtypesconv.h"
 
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/arpeggio.h"
@@ -64,6 +60,9 @@
 #include "engraving/dom/volta.h"
 #include "engraving/editing/editmeasurerepeat.h"
 #include "engraving/editing/transaction/transaction.h"
+#include "internal/shared/mnxtypesconv.h"
+#include "log.h"
+#include "mnximporter.h"
 
 #ifdef MNXDOM_SYSTEM
 #include <mnxdom/mnxdom.h>

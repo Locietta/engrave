@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/excerpt.h"
 #include "../dom/masterscore.h"
 #include "../dom/part.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct AddExcerpt : UndoableCommand {

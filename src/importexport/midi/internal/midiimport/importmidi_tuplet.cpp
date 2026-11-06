@@ -27,15 +27,14 @@
 #include <set>
 #include <vector>
 
+#include "engraving/dom/sig.h"
+#include "importmidi_chord.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
+#include "importmidi_quant.h"
 #include "importmidi_tuplet_detect.h"
 #include "importmidi_tuplet_filter.h"
 #include "importmidi_tuplet_voice.h"
-#include "importmidi_chord.h"
-#include "importmidi_quant.h"
-#include "importmidi_inner.h"
-#include "importmidi_operations.h"
-#include "engraving/dom/sig.h"
-
 #include "log.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {

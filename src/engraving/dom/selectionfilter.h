@@ -24,8 +24,8 @@
 
 #include <variant>
 
-#include "mscore.h"
 #include "chord.h"
+#include "mscore.h"
 
 namespace mu::engraving {
 static constexpr size_t num_voices_selection_filter_types = 4;

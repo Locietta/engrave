@@ -24,15 +24,13 @@
 
 #include <vector>
 
-#include "global/containers.h"
-
+#include "../compat/midi/midicoreevent.h"
 #include "clef.h"
+#include "global/containers.h"
 #include "interval.h"
 #include "notifier.h"
 #include "stafflabel.h"
 #include "stringdata.h"
-
-#include "../compat/midi/midicoreevent.h"
 
 namespace mu::engraving {
 struct ChannelListener;

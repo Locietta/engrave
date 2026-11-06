@@ -23,18 +23,15 @@
 #include "stafftype.h"
 
 #include "draw/fontmetrics.h"
-#include "translation.h"
-
 #include "iengravingconfiguration.h"
-
-#include "style/defaultstyle.h"
-#include "style/style.h"
-#include "style/textstyle.h"
-#include "types/typesconv.h"
-
 #include "mscore.h"
 #include "score.h"
 #include "staff.h"
+#include "style/defaultstyle.h"
+#include "style/style.h"
+#include "style/textstyle.h"
+#include "translation.h"
+#include "types/typesconv.h"
 
 using namespace muse::draw;
 using namespace muse::io;

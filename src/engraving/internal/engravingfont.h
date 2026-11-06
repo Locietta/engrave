@@ -24,17 +24,14 @@
 #include <memory>
 #include <unordered_map>
 
-#include "iengravingfont.h"
 #include "draw/ifontprovider.h"
 #include "draw/types/geometry.h"
+#include "iengravingfont.h"
 #include "iengravingfontsprovider.h"
-
+#include "infrastructure/shape.h"
+#include "infrastructure/smufl.h"
 #include "io/iodevice.h"
 #include "io/path.h"
-
-#include "infrastructure/smufl.h"
-#include "infrastructure/shape.h"
-
 #include "style/styledef.h"
 #include "types/symid.h"
 

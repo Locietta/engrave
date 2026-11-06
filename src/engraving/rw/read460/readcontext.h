@@ -24,15 +24,12 @@
 
 #include <vector>
 
-#include "iengravingfontsprovider.h"
-
 #include "../types/types.h"
-
+#include "connectorinforeader.h"
 #include "dom/connector.h"
 #include "dom/interval.h"
 #include "dom/location.h"
-
-#include "connectorinforeader.h"
+#include "iengravingfontsprovider.h"
 
 namespace mu::engraving {
 struct Beam;

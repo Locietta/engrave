@@ -10,8 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "engrave/src/api/handles.h"
 #include "engrave/tests/harness/harness.h"
-
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/dynamic.h"
@@ -30,8 +30,6 @@
 #include "engraving/dom/textbase.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
-
-#include "engrave/src/api/handles.h"
 
 namespace engrave::harness { namespace {
 

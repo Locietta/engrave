@@ -24,8 +24,8 @@
 
 #include <string>
 
-#include "global/types/string.h"
 #include "global/logstream.h"
+#include "global/types/string.h"
 
 namespace muse::io {
 struct PathT;

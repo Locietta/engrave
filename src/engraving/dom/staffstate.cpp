@@ -23,11 +23,9 @@
 #include "staffstate.h"
 
 #include "draw/types/pen.h"
-
+#include "log.h"
 #include "part.h"
 #include "score.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::draw;

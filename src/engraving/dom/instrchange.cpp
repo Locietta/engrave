@@ -22,23 +22,20 @@
 
 #include "instrchange.h"
 
-#include "translation.h"
-
 #include "../editing/editclef.h"
 #include "../editing/editinstrumentchange.h"
 #include "../editing/editkeysig.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
-
 #include "keysig.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "part.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
-
-#include "log.h"
+#include "translation.h"
 
 using namespace mu;
 

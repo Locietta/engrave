@@ -21,19 +21,18 @@
  */
 
 #include "mnxexporter.h"
-#include "internal/shared/mnxtypesconv.h"
 
 #include <stdexcept>
-
-#include "global/iapplication.h"
-#include "global/io/path.h"
-#include "global/log.h"
-#include "global/appinfo.h"
-#include "global/translation.h"
 
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/score.h"
+#include "global/appinfo.h"
+#include "global/iapplication.h"
+#include "global/io/path.h"
+#include "global/log.h"
+#include "global/translation.h"
+#include "internal/shared/mnxtypesconv.h"
 
 using namespace mu::engraving;
 

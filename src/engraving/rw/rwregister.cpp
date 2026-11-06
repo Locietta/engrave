@@ -21,11 +21,9 @@
  */
 #include "rwregister.h"
 
-#include "types/constants.h"
-
 #include "read460/read460.h"
 #include "read500/read500.h"
-
+#include "types/constants.h"
 #include "write/writer.h"
 
 using namespace mu::engraving;

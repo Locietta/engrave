@@ -22,14 +22,11 @@
 
 #include "measurerepeat.h"
 
-#include "translation.h"
-
-#include "style/style.h"
-
+#include "log.h"
 #include "measure.h"
 #include "staff.h"
-
-#include "log.h"
+#include "style/style.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace mu::engraving;

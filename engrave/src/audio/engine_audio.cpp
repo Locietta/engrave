@@ -19,48 +19,42 @@
 
 #include <fluidsynth.h>
 
-#include "audio/engine/internal/offlinecancellation.h"
-#include "audio/engine/internal/offlinetiming.h"
-#include "audio_output.h"
-#include "global/defer.h"
-#include "global/io/streamfile.h"
-
 #include "audio/common/audioutils.h"
 #include "audio/common/soundfonttypes.h"
 #include "audio/engine/audioservices.h"
 #include "audio/engine/iaudioengineconfiguration.h"
-#include "audio/engine/isynthresolver.h"
-#include "audio/engine/internal/export/soundtrackwriter.h"
-#include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/audiofactory.h"
-#include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
-#include "audio/engine/internal/synthesizers/fluidsynth/fluidsynth.h"
+#include "audio/engine/internal/export/soundtrackwriter.h"
 #include "audio/engine/internal/nodes/automationcontrolnode.h"
 #include "audio/engine/internal/nodes/signalnode.h"
 #include "audio/engine/internal/nodes/trackchain.h"
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinerendersession.h"
+#include "audio/engine/internal/offlinetiming.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsynth.h"
 #include "audio/engine/isoundfontrepository.h"
-
+#include "audio/engine/isynthresolver.h"
+#include "audio_output.h"
+#include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/playbackmodel.h"
-
-#include "score_audio.h"
-#include "engrave/src/score/score_excerpts.h"
-
+#include "global/defer.h"
 #include "global/io/ifilesystem.h"
 #include "global/io/iodevice.h"
 #include "global/io/ioretcodes.h"
 #include "global/io/path.h"
+#include "global/io/streamfile.h"
 #include "global/types/ret.h"
 #include "global/types/string.h"
 #include "global/types/uri.h"
-
-#include "midi/imidioutport.h"
-
 #include "log.h"
+#include "midi/imidioutport.h"
+#include "score_audio.h"
 
 using namespace muse;
 using namespace muse::audio;

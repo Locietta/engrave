@@ -22,9 +22,9 @@
 #ifndef MU_ENGRAVING_LYRICSLAYOUT_DEV_H
 #define MU_ENGRAVING_LYRICSLAYOUT_DEV_H
 
-#include "layoutcontext.h"
-
 #include <optional>
+
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct Score;

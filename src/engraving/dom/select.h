@@ -22,11 +22,10 @@
 
 #pragma once
 
+#include "../types/types.h"
 #include "durationtype.h"
 #include "mscore.h"
 #include "pitchspelling.h"
-#include "../types/types.h"
-
 #include "selectionfilter.h"
 
 namespace mu::engraving {

@@ -20,15 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_tuplet_filter.h"
-#include "importmidi_tuplet.h"
-#include "importmidi_tuplet_voice.h"
-#include "importmidi_chord.h"
-#include "importmidi_quant.h"
-#include "importmidi_inner.h"
-#include "engraving/dom/mscore.h"
 
 #include <algorithm>
 #include <set>
+
+#include "engraving/dom/mscore.h"
+#include "importmidi_chord.h"
+#include "importmidi_inner.h"
+#include "importmidi_quant.h"
+#include "importmidi_tuplet.h"
+#include "importmidi_tuplet_voice.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {
 bool is_more_tuplet_voices_allowed(int voices_in_use, int available_voices) {

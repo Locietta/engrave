@@ -24,13 +24,8 @@
 
 #include <climits>
 
-#include "translation.h"
-
 #include "../editing/editspanner.h"
 #include "../editing/navigation.h"
-#include "types/typesconv.h"
-#include "rendering/score/tlayout.h"
-
 #include "accidental.h"
 #include "barline.h"
 #include "beam.h"
@@ -43,11 +38,13 @@
 #include "hook.h"
 #include "instrchange.h"
 #include "keysig.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
 #include "ornament.h"
 #include "part.h"
+#include "rendering/score/tlayout.h"
 #include "rest.h"
 #include "score.h"
 #include "staff.h"
@@ -55,10 +52,10 @@
 #include "system.h"
 #include "systemlockindicator.h"
 #include "timesig.h"
+#include "translation.h"
 #include "tuplet.h"
+#include "types/typesconv.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

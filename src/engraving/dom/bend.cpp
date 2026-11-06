@@ -22,9 +22,8 @@
 
 #include "bend.h"
 
-#include "note.h"
-
 #include "log.h"
+#include "note.h"
 
 using namespace mu;
 using namespace muse::draw;

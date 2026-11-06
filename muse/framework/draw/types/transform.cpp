@@ -22,9 +22,8 @@
 
 #include "transform.h"
 
-#include "painterpath.h"
-
 #include "log.h"
+#include "painterpath.h"
 
 using namespace muse;
 using namespace muse::draw;

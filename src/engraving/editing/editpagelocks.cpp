@@ -21,10 +21,6 @@
  */
 
 #include "editpagelocks.h"
-#include "editsystemlocks.h"
-
-#include "transaction/transaction.h"
-#include "transaction/undoablecommand.h"
 
 #include "../dom/measure.h"
 #include "../dom/measurebase.h"
@@ -33,6 +29,9 @@
 #include "../dom/rangelock.h"
 #include "../dom/score.h"
 #include "../dom/system.h"
+#include "editsystemlocks.h"
+#include "transaction/transaction.h"
+#include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;
 

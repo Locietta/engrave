@@ -17,24 +17,24 @@
 
 #include <pugixml.hpp>
 
-#include <engrave/testing/write470.h>
 #include "engrave/src/api/handles.h"
 #include "engraving/automation/automationdata.h"
-#include "engraving/dom/chordlist.h"
 #include "engraving/dom/chord.h"
-#include "engraving/dom/measure.h"
-#include "engraving/dom/location.h"
+#include "engraving/dom/chordlist.h"
 #include "engraving/dom/excerpt.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/part.h"
 #include "engraving/dom/instrument.h"
+#include "engraving/dom/location.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
-#include "engraving/dom/tie.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/tie.h"
 #include "engraving/infrastructure/mscwriter.h"
 #include "engraving/style/style.h"
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
+#include <engrave/testing/write470.h>
 
 namespace engrave::testing {
 namespace {

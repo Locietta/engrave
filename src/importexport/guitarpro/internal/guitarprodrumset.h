@@ -23,9 +23,9 @@
 #ifndef MU_IMPORTEXPORT_GUITARPRODRUMSET_H
 #define MU_IMPORTEXPORT_GUITARPRODRUMSET_H
 
-#include <unordered_map>
-#include <string_view>
 #include <cstdint>
+#include <string_view>
+#include <unordered_map>
 
 namespace mu::engraving {
 struct Drumset;

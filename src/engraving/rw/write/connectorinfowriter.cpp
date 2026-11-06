@@ -22,16 +22,13 @@
 #include "connectorinfowriter.h"
 
 #include "../../dom/engravingitem.h"
-#include "../../dom/spanner.h"
-#include "../../dom/measurebase.h"
 #include "../../dom/measure.h"
+#include "../../dom/measurebase.h"
 #include "../../dom/score.h"
-
+#include "../../dom/spanner.h"
 #include "../xmlwriter.h"
-
-#include "twrite.h"
-
 #include "log.h"
+#include "twrite.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::write;

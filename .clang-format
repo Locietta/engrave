@@ -55,7 +55,47 @@ BreakConstructorInitializersBeforeComma: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 ColumnLimit: 140
-SortIncludes: Never
+# Include settings for Liminal code style:
+# Grouping order:
+# 1. Own interface header of the current .cpp file
+# 2. Standard C/C++ library headers (<vector>, <string>, <cstdint>, etc.)
+# 3. Third-party and OS/system headers (<nlohmann/json.hpp>, <asio/...>, <cairo.h>, <fluidsynth.h>, <windows.h>, <gtest/...>, etc.)
+#    Note: From the host's perspective, <engrave/...> is a third-party dependency.
+# 4. Project headers ("dom/note.h", "engraving/...", "global/...", "registry.h", etc.)
+
+MainIncludeChar: Any
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+
+IncludeCategories:
+  # Category 2: Standard C++ and C library headers
+  - Regex: '^<(algorithm|any|array|atomic|barrier|bit|bitset|charconv|chrono|codecvt|compare|complex|concepts|condition_variable|coroutine|deque|exception|execution|expected|filesystem|flat_map|flat_set|format|forward_list|fstream|functional|future|generator|hazard_pointer|initializer_list|inplace_vector|iomanip|ios|iosfwd|iostream|istream|iterator|latch|limits|linalg|list|locale|map|mdspan|memory|memory_resource|mutex|new|numbers|numeric|optional|ostream|print|queue|random|ranges|ratio|rcu|regex|scoped_allocator|semaphore|set|shared_mutex|source_location|span|spanstream|sstream|stack|stacktrace|stdexcept|stdfloat|stop_token|streambuf|string|string_view|strstream|syncstream|system_error|text_encoding|thread|tuple|type_traits|typeindex|typeinfo|unordered_map|unordered_set|utility|valarray|variant|vector|version|cassert|cctype|cerrno|cfenv|cfloat|cinttypes|ciso646|climits|clocale|cmath|csetjmp|csignal|cstdalign|cstdarg|cstdbool|cstddef|cstdint|cstdio|cstdlib|cstring|ctgmath|ctime|cuchar|cwchar|cwctype|assert\.h|complex\.h|ctype\.h|errno\.h|fenv\.h|float\.h|inttypes\.h|iso646\.h|limits\.h|locale\.h|math\.h|setjmp\.h|signal\.h|stdalign\.h|stdarg\.h|stdbool\.h|stddef\.h|stdint\.h|stdio\.h|stdlib\.h|string\.h|tgmath\.h|time\.h|uchar\.h|wchar\.h|wctype\.h)>'
+    Priority: 2
+    SortPriority: 20
+
+  # Engine public headers are project headers in this repository.
+  - Regex: '^<(engrave|engraving|global|draw|audio|mpe|modularity)/'
+    Priority: 4
+    SortPriority: 40
+  # Windows SDK dependency order, kept within the third-party block.
+  - Regex: '^<(winsock2|ws2tcpip)\.h>'
+    Priority: 3
+    SortPriority: 30
+  - Regex: '^<windows\.h>'
+    Priority: 3
+    SortPriority: 31
+  # Category 3: Third-party and OS/system libraries (Windows SDK, POSIX, Asio, JSON, Cairo, FluidSynth, GTest, FreeType, etc.)
+  # In host, <engrave/...> is an external submodule/library, so it matches Category 3.
+  - Regex: '^(<.*>|"(pugixml|fluidsynth|gtest)/|"(pugixml\.hpp|fluidsynth\.h|picojson\.h|mnxdom\.h)"|"([^"]*/)?thirdparty/)'
+    Priority: 3
+    SortPriority: 32
+
+  # Category 4: Project headers (quoted paths like "dom/note.h", "engraving/...", "global/types/string.h")
+  - Regex: '^".*"'
+    Priority: 4
+    SortPriority: 40
+
 SortUsingDeclarations: false
 SeparateDefinitionBlocks: Always
 CompactNamespaces: true

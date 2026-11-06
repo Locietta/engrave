@@ -21,19 +21,17 @@
  */
 #include "autoplace.h"
 
-#include "dom/harmony.h"
-#include "style/style.h"
-
 #include "dom/chordrest.h"
+#include "dom/harmony.h"
 #include "dom/lyrics.h"
+#include "dom/measure.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/spanner.h"
 #include "dom/staff.h"
 #include "dom/system.h"
-#include "dom/measure.h"
-
 #include "log.h"
+#include "style/style.h"
 
 using namespace muse;
 using namespace mu::engraving;

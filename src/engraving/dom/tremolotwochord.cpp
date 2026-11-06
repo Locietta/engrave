@@ -22,20 +22,15 @@
 
 #include "tremolotwochord.h"
 
-#include "draw/types/transform.h"
-
-#include "types/typesconv.h"
-
-#include "style/style.h"
-
-#include "rendering/score/beamtremololayout.h"
-
 #include "chord.h"
-#include "stem.h"
-#include "system.h"
-#include "stafftype.h"
-
+#include "draw/types/transform.h"
 #include "log.h"
+#include "rendering/score/beamtremololayout.h"
+#include "stafftype.h"
+#include "stem.h"
+#include "style/style.h"
+#include "system.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace muse::draw;

@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include "types.h"
-
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/tremolobar.h"
+#include "types.h"
 
 namespace mu::engraving {
 struct TConv {

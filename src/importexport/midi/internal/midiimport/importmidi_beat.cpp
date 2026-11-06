@@ -21,20 +21,21 @@
  */
 #include "importmidi_beat.h"
 
-#include <functional>
 #include <cmath>
+#include <functional>
 #include <vector>
 
+#include "thirdparty/beatroot/BeatTracker.h"
+
+#include "engraving/dom/mscore.h"
+#include "engraving/dom/sig.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
-#include "importmidi_quant.h"
 #include "importmidi_meter.h"
-#include "importmidi_tempo.h"
 #include "importmidi_operations.h"
-#include "thirdparty/beatroot/BeatTracker.h"
-#include "engraving/dom/mscore.h"
-#include "engraving/dom/sig.h"
+#include "importmidi_quant.h"
+#include "importmidi_tempo.h"
 
 namespace mu::iex::midi { namespace MidiBeat {
 int beats_in_bar(const ReducedFraction &bar_fraction) {

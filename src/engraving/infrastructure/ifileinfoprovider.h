@@ -24,8 +24,8 @@
 
 #include <memory>
 
-#include "types/datetime.h"
 #include "io/path.h"
+#include "types/datetime.h"
 
 namespace mu::engraving {
 struct IFileInfoProvider {

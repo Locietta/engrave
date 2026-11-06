@@ -22,12 +22,10 @@
 
 #include "xmlwriter.h"
 
-#include "types/typesconv.h"
-
 #include "dom/engravingitem.h"
 #include "dom/property.h"
-
 #include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

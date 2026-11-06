@@ -21,12 +21,10 @@
  */
 #include "writescorehook.h"
 
-#include "rw/xmlwriter.h"
-
-#include "dom/masterscore.h"
 #include "dom/excerpt.h"
-
+#include "dom/masterscore.h"
 #include "rw/write/writer.h"
+#include "rw/xmlwriter.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::compat;

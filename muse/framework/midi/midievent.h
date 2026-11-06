@@ -22,11 +22,11 @@
 #ifndef MUSE_MIDI_MIDIEVENT_H
 #define MUSE_MIDI_MIDIEVENT_H
 
+#include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <array>
 #include <set>
-#include <cassert>
 #include <string>
 
 #include "containers.h"

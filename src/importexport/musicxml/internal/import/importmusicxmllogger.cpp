@@ -23,7 +23,6 @@
 #include "importmusicxmllogger.h"
 
 #include "global/serialization/xmlstreamreader.h"
-
 #include "log.h"
 
 using namespace muse;

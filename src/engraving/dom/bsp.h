@@ -24,9 +24,9 @@
 
 #include <vector>
 
+#include "../types/types.h"
 #include "global/allocator.h"
 #include "types/string.h"
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct BspTreeVisitor;

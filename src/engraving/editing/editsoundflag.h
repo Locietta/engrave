@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/soundflag.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct ChangeSoundFlag : UndoableCommand {

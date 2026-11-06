@@ -25,15 +25,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "global/allocator.h"
-
+#include "../infrastructure/eid.h"
+#include "../infrastructure/rtti.h" // IWYU pragma: export
 #include "../style/styledef.h"
-
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
-
-#include "../infrastructure/rtti.h" // IWYU pragma: export
-#include "../infrastructure/eid.h"
+#include "global/allocator.h"
 
 namespace mu::engraving {
 struct Accidental;

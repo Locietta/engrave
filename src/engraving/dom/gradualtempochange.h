@@ -25,8 +25,8 @@
 
 #include <optional>
 
-#include "textlinebase.h"
 #include "../types/types.h"
+#include "textlinebase.h"
 
 namespace mu::engraving {
 struct GradualTempoChangeSegment;

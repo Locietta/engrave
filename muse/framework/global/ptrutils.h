@@ -22,9 +22,10 @@
 #ifndef MUSE_GLOBAL_PTRUTILS_H
 #define MUSE_GLOBAL_PTRUTILS_H
 
-#include "stringutils.h"
 #include <cassert>
 #include <sstream>
+
+#include "stringutils.h"
 
 namespace muse::ptr {
 template <typename T, typename E>

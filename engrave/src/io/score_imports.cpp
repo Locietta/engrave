@@ -3,12 +3,12 @@
 #include <cstddef>
 #include <stdexcept>
 
-#include "global/io/byteview.h"
-#include "global/io/file.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/engravingerrors.h"
+#include "global/io/byteview.h"
+#include "global/io/file.h"
 
 namespace mu::iex::guitarpro {
 // The public importgtp.h declaration is stale; this is the signature implemented

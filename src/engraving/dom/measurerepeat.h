@@ -24,7 +24,6 @@
 #define MU_ENGRAVING_MEASUREREPEAT_H
 
 #include "rest.h"
-
 #include "utils.h"
 
 namespace mu::engraving {

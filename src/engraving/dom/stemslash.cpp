@@ -23,7 +23,6 @@
 #include "stemslash.h"
 
 #include "chord.h"
-
 #include "log.h"
 
 using namespace mu;

@@ -27,12 +27,10 @@
 #include <optional>
 #include <vector>
 
-#include "global/io/path.h"
-
-#include "midi/imidioutport.h"
-
 #include "../abstractsynthesizer.h"
 #include "fluidsequencer.h"
+#include "global/io/path.h"
+#include "midi/imidioutport.h"
 
 namespace muse::audio::synth {
 // Release cached fonts after the engine's synthesizers have been destroyed.

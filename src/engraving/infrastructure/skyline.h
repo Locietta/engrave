@@ -24,8 +24,8 @@
 #define MU_ENGRAVING_SKYLINE_H
 
 #include <cfloat>
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "draw/types/geometry.h"
 #include "shape.h"

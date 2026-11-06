@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 #include <chrono>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 
 namespace muse::audio {
 struct OfflineTiming {

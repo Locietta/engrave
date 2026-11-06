@@ -22,9 +22,6 @@
 
 #include "regroup.h"
 
-#include "editspanner.h"
-#include "transaction/transaction.h"
-
 #include "../dom/chord.h"
 #include "../dom/factory.h"
 #include "../dom/input.h"
@@ -39,8 +36,9 @@
 #include "../dom/staff.h"
 #include "../dom/tie.h"
 #include "../dom/utils.h"
-
+#include "editspanner.h"
 #include "log.h"
+#include "transaction/transaction.h"
 
 using namespace mu::engraving;
 

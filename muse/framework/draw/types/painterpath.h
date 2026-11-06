@@ -25,10 +25,9 @@
 
 #include <cmath>
 
-#include "global/realfn.h"
-
-#include "geometry.h"
 #include "bezier.h"
+#include "geometry.h"
+#include "global/realfn.h"
 
 namespace muse::draw {
 struct PainterPath {

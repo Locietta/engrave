@@ -21,10 +21,9 @@
  */
 #pragma once
 
+#include "../../dom/property.h"
 #include "../xmlwriter.h"
 #include "writecontext.h"
-
-#include "../../dom/property.h"
 
 namespace mu::engraving {
 struct EngravingItem;

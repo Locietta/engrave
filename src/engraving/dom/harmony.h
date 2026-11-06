@@ -24,14 +24,12 @@
 #include <vector>
 
 #include "chordlist.h"
-#include "parenthesis.h"
 #include "draw/types/font.h"
-
-#include "textbase.h"
-#include "score.h"
-
+#include "parenthesis.h"
 #include "pitchspelling.h"
 #include "realizedharmony.h"
+#include "score.h"
+#include "textbase.h"
 
 namespace mu::engraving {
 struct ChordDescription;

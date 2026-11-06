@@ -26,8 +26,8 @@
 #include <map>
 #include <vector>
 
-#include "midiinstrumenteffects.h"
 #include "midicoreevent.h"
+#include "midiinstrumenteffects.h"
 
 namespace mu::engraving {
 struct Note;

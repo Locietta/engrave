@@ -19,15 +19,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "systemlayout.h"
+
 #include <cfloat>
 #include <unordered_set>
 
-#include "systemlayout.h"
-
-#include "realfn.h"
-
-#include "style/defaultstyle.h"
-
+#include "alignmentlayout.h"
+#include "autoplace.h"
+#include "beamlayout.h"
+#include "beamtremololayout.h"
+#include "boxlayout.h"
+#include "chordlayout.h"
+#include "defer.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
 #include "dom/box.h"
@@ -48,8 +51,8 @@
 #include "dom/ornament.h"
 #include "dom/page.h"
 #include "dom/pagelockindicator.h"
-#include "dom/part.h"
 #include "dom/parenthesis.h"
+#include "dom/part.h"
 #include "dom/pedal.h"
 #include "dom/playcounttext.h"
 #include "dom/rest.h"
@@ -67,30 +70,23 @@
 #include "dom/tuplet.h"
 #include "dom/volta.h"
 #include "dom/whammybar.h"
-
-#include "tlayout.h"
-#include "alignmentlayout.h"
-#include "autoplace.h"
-#include "beamlayout.h"
-#include "beamtremololayout.h"
-#include "boxlayout.h"
-#include "chordlayout.h"
+#include "dynamicslayout.h"
 #include "guitarbendlayout.h"
 #include "guitardivelayout.h"
 #include "harmonylayout.h"
+#include "horizontalspacing.h"
+#include "log.h"
 #include "lyricslayout.h"
 #include "measurelayout.h"
 #include "mmrestlayout.h"
-#include "tupletlayout.h"
+#include "realfn.h"
 #include "restlayout.h"
 #include "slurtielayout.h"
-#include "horizontalspacing.h"
-#include "dynamicslayout.h"
 #include "stavesharinglayout.h"
+#include "style/defaultstyle.h"
 #include "systemheaderlayout.h"
-
-#include "defer.h"
-#include "log.h"
+#include "tlayout.h"
+#include "tupletlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

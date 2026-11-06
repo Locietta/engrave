@@ -21,12 +21,11 @@
  */
 #include "linkedobjects.h"
 
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "score.h"
 #include "staff.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

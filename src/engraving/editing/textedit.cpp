@@ -22,23 +22,19 @@
 
 #include "textedit.h"
 
-#include "navigation.h"
-#include "transaction/transaction.h"
-#include "transaction/undostack.h"
-
-#include "iengravingfont.h"
-#include "types/symnames.h"
-
 #include "../dom/fret.h"
 #include "../dom/lyrics.h"
 #include "../dom/masterscore.h"
 #include "../dom/score.h"
 #include "../dom/symbol.h"
 #include "../dom/utils.h"
-
 #include "../rendering/iscorerenderer.h"
-
+#include "iengravingfont.h"
 #include "log.h"
+#include "navigation.h"
+#include "transaction/transaction.h"
+#include "transaction/undostack.h"
+#include "types/symnames.h"
 
 using namespace mu::engraving;
 

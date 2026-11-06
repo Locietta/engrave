@@ -22,30 +22,26 @@
 
 #include "part.h"
 
-#include "containers.h"
-
-#include "iengravingconfiguration.h"
-
-#include "style/style.h"
-#include "rw/xmlwriter.h"
-
 #include "chordrest.h"
+#include "containers.h"
 #include "factory.h"
 #include "fret.h"
 #include "harppedaldiagram.h"
-#include "instrtemplate.h"
+#include "iengravingconfiguration.h"
 #include "instrchange.h"
+#include "instrtemplate.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
+#include "rw/xmlwriter.h"
 #include "score.h"
 #include "sharedpart.h"
 #include "staff.h"
-#include "system.h"
 #include "stringtunings.h"
+#include "style/style.h"
+#include "system.h"
 #include "textbase.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

@@ -22,11 +22,10 @@
 
 #include "measurenumberbase.h"
 
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "staff.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

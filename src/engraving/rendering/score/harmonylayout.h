@@ -24,8 +24,8 @@
 #include <stack>
 #include <vector>
 
-#include "layoutcontext.h"
 #include "dom/harmony.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct Segment;

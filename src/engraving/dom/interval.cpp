@@ -21,6 +21,7 @@
  */
 
 #include "interval.h"
+
 #include "../types/types.h"
 
 namespace mu::engraving {

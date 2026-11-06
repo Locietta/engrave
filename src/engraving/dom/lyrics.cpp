@@ -22,19 +22,16 @@
 
 #include "lyrics.h"
 
-#include "types/translatablestring.h"
-
 #include "../editing/navigation.h"
 #include "../editing/textedit.h"
-
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "text.h"
+#include "types/translatablestring.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

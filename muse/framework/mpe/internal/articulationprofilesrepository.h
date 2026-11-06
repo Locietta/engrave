@@ -24,9 +24,8 @@
 #define MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H
 
 #include "io/ifilesystem.h"
-#include "serialization/json.h"
-
 #include "mpe/iarticulationprofilesrepository.h"
+#include "serialization/json.h"
 
 namespace muse::mpe {
 struct ArticulationProfilesRepository : IArticulationProfilesRepository {

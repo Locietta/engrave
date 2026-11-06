@@ -32,7 +32,6 @@
 #include "../dom/staff.h"
 #include "../dom/utils.h"
 #include "../rw/xmlreader.h"
-
 #include "clonevoice.h"
 #include "noteinput.h"
 #include "paste.h"

@@ -23,9 +23,9 @@
 #define MUSE_GLOBAL_STRINGUTILS_H
 
 #include <locale>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "types/string.h"
 

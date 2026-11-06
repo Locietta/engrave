@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "types/string.h"
 #include "engraving/engravingerrors.h"
+#include "types/string.h"
 
 namespace mu::iex::musicxml {
 struct MusicXmlValidation {

@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "draw/types/font.h"
-
-#include "engravingitem.h"
 #include "../types/types.h"
+#include "draw/types/font.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Note;

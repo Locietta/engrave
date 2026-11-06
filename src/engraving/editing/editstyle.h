@@ -22,11 +22,9 @@
 
 #pragma once
 
-#include "global/io/iodevice.h"
-
-#include "transaction/undoablecommand.h"
-
 #include "../dom/score.h"
+#include "global/io/iodevice.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Transaction;

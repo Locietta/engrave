@@ -23,11 +23,9 @@
 #define MUSE_DRAW_FONTMETRICS_H
 
 #include "global/types/string.h"
-
+#include "ifontprovider.h"
 #include "types/font.h"
 #include "types/geometry.h"
-
-#include "ifontprovider.h"
 
 namespace muse::draw {
 struct FontMetrics {

@@ -14,6 +14,8 @@
 // the undo history, and an MSCZ save followed by a reopen; H7 runs its removal as an
 // edit batch (api::BatchGuard).  H6 (copy and paste) is deferred; the report says why.
 
+#include "engrave/src/api/handles.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -32,27 +34,20 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include <engrave/engrave.h>
-
 #include "engrave/src/api/batch.h"
-#include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/noqt_runtime.h"
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/score_excerpts.h"
-
-#include "global/io/buffer.h"
-#include "global/serialization/zipreader.h"
-
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"
+#include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/measurebase.h"
-#include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/part.h"
@@ -64,6 +59,9 @@
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "global/io/buffer.h"
+#include "global/serialization/zipreader.h"
+#include <engrave/engrave.h>
 
 namespace {
 

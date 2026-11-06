@@ -21,6 +21,7 @@
  */
 
 #include "bezier.h"
+
 #include "global/realfn.h"
 
 using namespace muse;

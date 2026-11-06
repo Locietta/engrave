@@ -24,8 +24,8 @@
 
 #include <vector>
 
-#include "instrument.h"
 #include "../types/types.h"
+#include "instrument.h"
 
 namespace mu::engraving {
 struct Staff;

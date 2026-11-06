@@ -22,9 +22,8 @@
 
 #include "arpeggiorenderer.h"
 
-#include "dom/chord.h"
 #include "dom/arpeggio.h"
-
+#include "dom/chord.h"
 #include "noterenderer.h"
 
 using namespace mu::engraving;

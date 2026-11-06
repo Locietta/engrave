@@ -21,8 +21,8 @@
  */
 #include "types/bytearray.h"
 
-#include <cstring>
 #include <cassert>
+#include <cstring>
 
 using namespace muse;
 

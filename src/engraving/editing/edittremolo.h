@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/tremolotwochord.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct MoveTremolo : UndoableCommand {

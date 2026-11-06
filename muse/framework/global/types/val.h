@@ -22,16 +22,16 @@
 #ifndef MUSE_GLOBAL_VAL_H
 #define MUSE_GLOBAL_VAL_H
 
-#include <string>
-#include <string_view>
-#include <variant>
-#include <type_traits>
-#include <vector>
 #include <map>
 #include <optional>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <variant>
+#include <vector>
 
-#include "number.h"
 #include "io/path.h"
+#include "number.h"
 
 namespace muse {
 struct Val;

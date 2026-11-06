@@ -24,7 +24,6 @@
 #define MUSE_MPE_IARTICULATIONPROFILESREPOSITORY_H
 
 #include "io/path.h"
-
 #include "mpetypes.h"
 
 namespace muse::mpe {

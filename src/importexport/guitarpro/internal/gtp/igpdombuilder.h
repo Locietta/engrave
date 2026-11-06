@@ -24,8 +24,8 @@
 
 #include <memory>
 
-#include "serialization/xmldom.h"
 #include "gpdommodel.h"
+#include "serialization/xmldom.h"
 
 namespace mu::iex::guitarpro {
 struct IGPDomBuilder {

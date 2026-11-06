@@ -31,7 +31,6 @@
 #include "dom/score.h"
 #include "dom/sig.h"
 #include "dom/tempotimeline.h"
-
 #include "log.h"
 
 using namespace mu;

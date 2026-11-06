@@ -20,11 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_fraction.h"
-#include "engraving/dom/mscore.h"
-
-#include <limits>
 
 #include <cassert>
+#include <limits>
+
+#include "engraving/dom/mscore.h"
 #ifndef Q_ASSERT
 #define Q_ASSERT(condition) assert(condition)
 #endif

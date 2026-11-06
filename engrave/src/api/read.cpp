@@ -4,9 +4,6 @@
 // staves, the measures, the signatures - from the A2 score code in
 // engrave/src/score/, so that a read says what the host's own tools said.
 
-#include <engrave/document.h>
-#include <engrave/query.h>
-
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -27,8 +24,6 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/api/value_codec.h"
 #include "engrave/src/score/score_metadata.h"
-
-#include "engraving/engravingproject.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
@@ -49,8 +44,11 @@
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/engravingproject.h"
 #include "engraving/types/constants.h"
 #include "engraving/types/typesconv.h"
+#include <engrave/document.h>
+#include <engrave/query.h>
 
 namespace engrave {
 namespace {

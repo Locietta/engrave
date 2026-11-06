@@ -24,13 +24,11 @@
 
 #include <variant>
 
-#include "draw/fontmetrics.h"
-
 #include "../iengravingfontsprovider.h"
-
+#include "../types/types.h"
+#include "draw/fontmetrics.h"
 #include "engravingitem.h"
 #include "property.h"
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct TextBase;

@@ -27,7 +27,6 @@
 #include "editing/editpagelocks.h"
 #include "editing/editsystemlocks.h"
 #include "editing/transaction/transaction.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

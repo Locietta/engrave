@@ -20,12 +20,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "fontfaceft.h"
-#include "fontfaceutils.h"
 
 #include <cmath>
 #include <unordered_map>
 
 #include <ft2build.h>
+
+#include "fontfaceutils.h"
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_BBOX_H
@@ -33,7 +34,6 @@
 #include <hb-ft.h>
 
 #include "global/types/bytearray.h"
-
 #include "log.h"
 
 using namespace muse::draw;

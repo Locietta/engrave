@@ -24,22 +24,21 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <set>
 #include <deque>
+#include <set>
 #include <vector>
 
-#include "engraving/dom/sig.h"
-#include "importmidi_fraction.h"
 #include "engraving/dom/mscore.h"
-#include "importmidi_chord.h"
-#include "importmidi_meter.h"
-#include "importmidi_tuplet.h"
-#include "importmidi_inner.h"
+#include "engraving/dom/sig.h"
 #include "importmidi_beat.h"
-#include "importmidi_voice.h"
-#include "importmidi_tempo.h"
+#include "importmidi_chord.h"
+#include "importmidi_fraction.h"
+#include "importmidi_inner.h"
+#include "importmidi_meter.h"
 #include "importmidi_operations.h"
-
+#include "importmidi_tempo.h"
+#include "importmidi_tuplet.h"
+#include "importmidi_voice.h"
 #include "log.h"
 
 using namespace mu::engraving;

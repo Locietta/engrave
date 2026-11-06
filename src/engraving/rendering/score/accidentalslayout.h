@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include "vectorview.h"
-
 #include "shape.h"
+#include "vectorview.h"
 
 namespace mu::engraving {
 struct Accidental;

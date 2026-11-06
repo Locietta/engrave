@@ -23,9 +23,9 @@
 #ifndef MU_ENGRAVING_STAFFSTATE_H
 #define MU_ENGRAVING_STAFFSTATE_H
 
+#include "draw/types/painterpath.h"
 #include "engravingitem.h"
 #include "instrument.h"
-#include "draw/types/painterpath.h"
 
 namespace mu::engraving {
 struct Transaction;

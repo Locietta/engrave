@@ -22,10 +22,9 @@
 
 #pragma once
 
+#include "benddatacontextsplitchord.h"
 #include <engraving/types/pitchvalue.h>
 #include <engraving/types/types.h>
-
-#include "benddatacontextsplitchord.h"
 
 namespace mu::engraving {
 struct Note;

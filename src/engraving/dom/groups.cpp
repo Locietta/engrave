@@ -26,12 +26,11 @@
 
 #include "chordrest.h"
 #include "durationtype.h"
+#include "log.h"
 #include "measure.h"
 #include "staff.h"
 #include "timesig.h"
 #include "tuplet.h"
-
-#include "log.h"
 
 using namespace mu;
 

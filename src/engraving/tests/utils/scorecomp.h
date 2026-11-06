@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "global/io/ifilesystem.h"
-
 #include "engraving/dom/score.h"
+#include "global/io/ifilesystem.h"
 
 namespace mu::engraving {
 struct ScoreComp {

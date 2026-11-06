@@ -22,6 +22,8 @@
 
 #include "exportmidi.h"
 
+#include "engraving/compat/midi/compatmidirender.h"
+#include "engraving/compat/midi/event.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/key.h"
 #include "engraving/dom/lyrics.h"
@@ -34,13 +36,8 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/synthesizerstate.h"
 #include "engraving/dom/tempotimeline.h"
-
-#include "engraving/compat/midi/event.h"
-#include "engraving/compat/midi/compatmidirender.h"
-
-#include "log.h"
-
 #include "io/file.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

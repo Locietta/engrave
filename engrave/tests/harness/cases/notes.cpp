@@ -8,19 +8,17 @@
 #include <utility>
 #include <vector>
 
+#include "engrave/src/api/handles.h"
 #include "engrave/tests/harness/harness.h"
-
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
-#include "engraving/dom/measure.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
-
-#include "engrave/src/api/handles.h"
 
 namespace engrave::harness { namespace {
 

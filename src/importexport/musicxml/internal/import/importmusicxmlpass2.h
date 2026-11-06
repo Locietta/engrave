@@ -24,9 +24,9 @@
 
 #include <array>
 
-#include "importmusicxmlpass1.h"
 #include "../shared/musicxmlsupport.h"
 #include "../shared/musicxmltypes.h"
+#include "importmusicxmlpass1.h"
 #include "musicxmltupletstate.h"
 
 namespace mu::engraving {

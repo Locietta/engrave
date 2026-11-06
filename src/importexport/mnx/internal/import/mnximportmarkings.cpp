@@ -22,20 +22,19 @@
 
 #include <algorithm>
 
-#include "engraving/dom/measure.h"
-#include "internal/shared/mnxtypesconv.h"
-#include "mnximporter.h"
-
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/tremolosinglechord.h"
 #include "engraving/types/symid.h"
+#include "internal/shared/mnxtypesconv.h"
 #include "log.h"
+#include "mnximporter.h"
 
 #ifdef MNXDOM_SYSTEM
 #include <mnxdom/mnxdom.h>

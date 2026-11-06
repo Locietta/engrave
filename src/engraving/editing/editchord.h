@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/chord.h"
 #include "../dom/parenthesis.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Chord;

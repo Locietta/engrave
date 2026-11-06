@@ -23,7 +23,6 @@
 #pragma once
 
 #include "ifileinfoprovider.h"
-
 #include "io/ifilesystem.h"
 
 namespace mu::engraving {

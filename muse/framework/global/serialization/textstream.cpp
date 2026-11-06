@@ -26,10 +26,9 @@
 
 #include "global/io/iodevice.h"
 #include "global/io/writebudget.h"
+#include "global/log.h"
 #include "global/types/bytearray.h"
 #include "global/types/string.h"
-
-#include "global/log.h"
 
 using namespace muse;
 

@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "global/types/ret.h"
-
 #include "../infrastructure/mscreader.h"
+#include "global/types/ret.h"
 
 namespace mu::engraving::compat {
 struct ReadStyleHook;

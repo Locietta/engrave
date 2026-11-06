@@ -25,9 +25,8 @@
 #include <memory>
 #include <string>
 
-#include "global/io/path.h"
 #include "global/io/iodevice.h"
-
+#include "global/io/path.h"
 #include "iengravingfont.h"
 
 namespace mu::engraving {

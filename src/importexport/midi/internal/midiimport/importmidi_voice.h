@@ -22,10 +22,10 @@
 #ifndef IMPORTMIDI_VOICE_H
 #define IMPORTMIDI_VOICE_H
 
-#include "importmidi_operation.h"
-
 #include <map>
 #include <set>
+
+#include "importmidi_operation.h"
 
 namespace mu::engraving {
 struct TimeSigMap;

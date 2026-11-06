@@ -22,17 +22,13 @@
 
 #include "drumset.h"
 
-#include "translation.h"
-
-#include "types/typesconv.h"
-#include "types/symnames.h"
-
-#include "rw/xmlwriter.h"
-#include "rw/xmlreader.h"
-
 #include "articulation.h"
-
 #include "log.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
+#include "translation.h"
+#include "types/symnames.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

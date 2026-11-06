@@ -25,8 +25,8 @@
 
 #include "global/io/path.h"
 #include "types/font.h"
-#include "types/geometry.h"
 #include "types/fontstypes.h"
+#include "types/geometry.h"
 
 namespace muse::draw {
 struct IFontsEngine {

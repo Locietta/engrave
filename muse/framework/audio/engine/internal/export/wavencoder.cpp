@@ -25,11 +25,9 @@
 #include <limits>
 
 #include "../dsp/audiomathutils.h"
-
+#include "audio/common/audioerrors.h"
 #include "global/io/iodevice.h"
 #include "global/types/bytearray.h"
-#include "audio/common/audioerrors.h"
-
 #include "log.h"
 
 namespace muse::audio::encode {

@@ -25,7 +25,6 @@
 #include <memory>
 
 #include "iaudiofactory.h"
-
 #include "nodes/trackchain.h"
 
 namespace muse::audio {

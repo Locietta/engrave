@@ -20,15 +20,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "slurtielayout.h"
 #include "tappinglayout.h"
-#include "tlayout.h"
-#include "textlayout.h"
 
 #include "dom/chord.h"
 #include "dom/slur.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "slurtielayout.h"
+#include "textlayout.h"
+#include "tlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

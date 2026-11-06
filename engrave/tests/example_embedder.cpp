@@ -7,12 +7,12 @@
 // each of them to MSCZ, MusicXML, MXL and MIDI; every export is opened again.
 // Exits non-zero on the first failure.
 
-#include <engrave/engine.h>
-#include <engrave/engrave.h>
-
 #include <cstdio>
 #include <filesystem>
 #include <string>
+
+#include <engrave/engine.h>
+#include <engrave/engrave.h>
 
 namespace {
 

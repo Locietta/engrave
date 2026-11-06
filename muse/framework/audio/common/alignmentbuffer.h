@@ -21,8 +21,8 @@
  */
 #pragma once
 
-#include <vector>
 #include <cassert>
+#include <vector>
 
 namespace muse::audio {
 //! NOTE This is a ring buffer, not thread-safe.

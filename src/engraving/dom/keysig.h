@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "key.h"
 #include "engravingitem.h"
+#include "key.h"
 
 namespace mu::engraving {
 struct Factory;

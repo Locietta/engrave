@@ -22,9 +22,9 @@
 #ifndef IMPORTMIDI_OPERATION_H
 #define IMPORTMIDI_OPERATION_H
 
-#include "importmidi_fraction.h"
-
 #include <set>
+
+#include "importmidi_fraction.h"
 
 namespace mu::iex::midi {
 // all enums below should have default indexes like 0, 1, 2...

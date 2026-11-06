@@ -4,8 +4,8 @@
 
 #include <cstddef>
 #include <optional>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace mu::engraving {

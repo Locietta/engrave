@@ -23,12 +23,11 @@
 
 #include <cstdlib>
 
-#include "global/settings.h"
-#include "draw/types/color.h"
 #include "dom/mscore.h"
-#include "translation.h"
-
+#include "draw/types/color.h"
+#include "global/settings.h"
 #include "log.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace muse;

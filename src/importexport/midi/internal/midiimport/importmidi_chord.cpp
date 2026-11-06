@@ -28,14 +28,12 @@
 #include <utility>
 #include <vector>
 
+#include "engraving/dom/sig.h"
 #include "global/containers.h"
-
-#include "importmidi_inner.h"
 #include "importmidi_chord.h"
+#include "importmidi_inner.h"
 #include "importmidi_operations.h"
 #include "importmidi_quant.h"
-#include "engraving/dom/sig.h"
-
 #include "log.h"
 
 namespace mu::iex::midi { namespace MChord {

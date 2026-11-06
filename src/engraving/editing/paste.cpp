@@ -22,20 +22,6 @@
 
 #include "paste.h"
 
-#include "draw/iimageprovider.h"
-#include "io/buffer.h"
-
-#include "imimedata.h"
-
-#include "editmeasures.h"
-#include "editparentheses.h"
-#include "editstaff.h"
-#include "noteinput.h"
-#include "transaction/transaction.h"
-#include "transpose.h"
-
-#include "rw/rwregister.h"
-
 #include "../dom/articulation.h"
 #include "../dom/beam.h"
 #include "../dom/breath.h"
@@ -57,11 +43,20 @@
 #include "../dom/staff.h"
 #include "../dom/tie.h"
 #include "../dom/timesig.h"
-#include "../dom/tuplet.h"
 #include "../dom/tremolosinglechord.h"
+#include "../dom/tuplet.h"
 #include "../dom/utils.h"
-
+#include "draw/iimageprovider.h"
+#include "editmeasures.h"
+#include "editparentheses.h"
+#include "editstaff.h"
+#include "imimedata.h"
+#include "io/buffer.h"
 #include "log.h"
+#include "noteinput.h"
+#include "rw/rwregister.h"
+#include "transaction/transaction.h"
+#include "transpose.h"
 
 using namespace mu;
 using namespace muse::io;

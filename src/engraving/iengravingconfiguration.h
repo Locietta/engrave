@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "types/string.h"
-#include "io/path.h"
 #include "engraving/types/types.h"
+#include "io/path.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct IEngravingConfiguration {

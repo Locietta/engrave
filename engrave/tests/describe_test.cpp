@@ -14,8 +14,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <format>
+#include <fstream>
 #include <map>
 #include <set>
 #include <string>
@@ -24,8 +24,11 @@
 
 #include <gtest/gtest.h>
 
-#include <engrave/engrave.h>
-
+#include "engrave/src/api/pid_support.h"
+#include "engrave/src/api/sniff.h"
+#include "engrave/src/api/state.h"
+#include "engrave/src/api/value_codec.h"
+#include "engrave/src/runtime/noqt_runtime.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -38,12 +41,7 @@
 #include "engraving/types/groupnode.h"
 #include "engraving/types/pitchvalue.h"
 #include "engraving/types/typesconv.h"
-
-#include "engrave/src/api/pid_support.h"
-#include "engrave/src/api/sniff.h"
-#include "engrave/src/api/value_codec.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include <engrave/engrave.h>
 
 namespace {
 

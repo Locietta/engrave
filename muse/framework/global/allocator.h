@@ -23,9 +23,9 @@
 #define MUSE_GLOBAL_ALLOCATOR_H
 
 #include <cstdint>
-#include <vector>
 #include <list>
 #include <string>
+#include <vector>
 
 namespace muse {
 #define OBJECT_ALLOCATOR(Module, ClassName)                                                                                        \

@@ -22,22 +22,20 @@
 
 #include "articulation.h"
 
-#include "style/style.h"
-#include "types/symnames.h"
-#include "types/typesconv.h"
-#include "types/translatablestring.h"
-
 #include "beam.h"
 #include "chord.h"
 #include "chordrest.h"
+#include "log.h"
 #include "measure.h"
+#include "note.h"
 #include "page.h"
 #include "staff.h"
 #include "stafftype.h"
+#include "style/style.h"
 #include "system.h"
-#include "note.h"
-
-#include "log.h"
+#include "types/symnames.h"
+#include "types/translatablestring.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

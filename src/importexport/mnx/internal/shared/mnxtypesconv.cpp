@@ -19,7 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
+#include "mnxtypesconv.h"
+
 #include <algorithm>
 #include <unordered_map>
 
@@ -35,8 +36,7 @@
 #include "engraving/editing/transpose.h"
 #include "engraving/types/typesconv.h"
 #include "framework/global/containers.h"
-
-#include "mnxtypesconv.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

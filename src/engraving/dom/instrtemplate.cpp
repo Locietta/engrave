@@ -20,28 +20,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <limits>
 #include "instrtemplate.h"
 
-#include "io/file.h"
-#include "containers.h"
-#include "translation.h"
-
-#include "rw/xmlreader.h"
-#include "rw/xmlwriter.h"
-#include "rw/write/twrite.h"
-#include "rw/read460/tread.h"
-#include "types/typesconv.h"
+#include <limits>
 
 #include "bracket.h"
+#include "containers.h"
 #include "drumset.h"
+#include "io/file.h"
+#include "log.h"
+#include "rw/read460/tread.h"
+#include "rw/write/twrite.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
 #include "scoreorder.h"
 #include "stafftype.h"
 #include "stringdata.h"
 #include "stringutils.h"
+#include "translation.h"
+#include "types/typesconv.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::io;

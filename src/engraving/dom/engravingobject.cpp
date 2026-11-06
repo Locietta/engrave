@@ -24,23 +24,20 @@
 
 #include <algorithm>
 
-#include "global/containers.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editproperty.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transaction/undostack.h"
-#include "style/textstyle.h"
-#include "types/typesconv.h"
-
 #include "bracketitem.h"
 #include "dummyparent.h"
+#include "global/containers.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "masterscore.h"
 #include "score.h"
 #include "staff.h"
-
-#include "log.h"
+#include "style/textstyle.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

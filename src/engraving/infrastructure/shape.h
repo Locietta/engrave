@@ -28,7 +28,6 @@
 
 #include "draw/types/geometry.h"
 #include "draw/types/transform.h"
-
 #include "engraving/types/types.h"
 
 namespace muse::draw {

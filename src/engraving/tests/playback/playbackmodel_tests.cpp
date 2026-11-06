@@ -20,22 +20,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <cmath>
 #include <memory>
 
-#include "mpe/tests/utils/articulationutils.h"
-#include "mpe/tests/mocks/articulationprofilesrepositorymock.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "engraving/dom/part.h"
-#include "engraving/dom/measure.h"
 #include "engraving/dom/chord.h"
-
+#include "engraving/dom/measure.h"
+#include "engraving/dom/part.h"
 #include "engraving/editing/transaction/undoablecommand.h"
-
 #include "engraving/playback/playbackmodel.h"
-
+#include "mpe/tests/mocks/articulationprofilesrepositorymock.h"
+#include "mpe/tests/utils/articulationutils.h"
 #include "utils/scorerw.h"
 
 using ::testing::NiceMock;

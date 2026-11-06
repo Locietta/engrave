@@ -21,27 +21,22 @@
  */
 #include "connectorinforeader.h"
 
-#include "../../infrastructure/rtti.h"
-
-#include "../../dom/factory.h"
-#include "../../dom/score.h"
-#include "../../dom/engravingitem.h"
-#include "../../dom/spanner.h"
+#include "../../dom/chord.h"
 #include "../../dom/chordrest.h"
+#include "../../dom/engravingitem.h"
+#include "../../dom/factory.h"
 #include "../../dom/measure.h"
 #include "../../dom/note.h"
 #include "../../dom/noteline.h"
-#include "../../dom/tie.h"
-#include "../../dom/chord.h"
+#include "../../dom/score.h"
+#include "../../dom/spanner.h"
 #include "../../dom/staff.h"
-
+#include "../../dom/tie.h"
+#include "../../infrastructure/rtti.h"
 #include "../types/typesconv.h"
-
 #include "../xmlreader.h"
-
-#include "tread.h"
-
 #include "log.h"
+#include "tread.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::read460;

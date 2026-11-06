@@ -21,10 +21,10 @@
  */
 #pragma once
 
-#include "automationtypes.h"
-
 #include <memory>
 #include <string>
+
+#include "automationtypes.h"
 
 namespace mu::engraving {
 struct AutomationData {

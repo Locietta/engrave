@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/spanner.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Score;

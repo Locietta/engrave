@@ -22,9 +22,8 @@
 
 #include "deadslapped.h"
 
-#include "rest.h"
-
 #include "log.h"
+#include "rest.h"
 
 using namespace mu;
 using namespace mu::engraving;

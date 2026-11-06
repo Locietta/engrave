@@ -20,17 +20,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "containers.h"
+#include "staff.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "types/typesconv.h"
-
+#include "../editing/editcapo.h"
+#include "../editing/editstaffbrackets.h"
+#include "../editing/transpose.h"
 #include "barline.h"
 #include "clef.h"
 #include "cleflist.h"
+#include "containers.h"
 #include "excerpt.h"
 #include "factory.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "instrtemplate.h"
 #include "linkedobjects.h"
 #include "masterscore.h"
@@ -41,14 +42,10 @@
 #include "part.h"
 #include "score.h"
 #include "segment.h"
-#include "staff.h"
 #include "stafftype.h"
 #include "timesig.h"
+#include "types/typesconv.h"
 #include "utils.h"
-
-#include "../editing/editstaffbrackets.h"
-#include "../editing/editcapo.h"
-#include "../editing/transpose.h"
 
 // #define DEBUG_CLEFS
 

@@ -25,21 +25,18 @@
 #include <cmath>
 #include <set>
 
-#include "containers.h"
-#include "translation.h"
-
-#include "iengravingconfiguration.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editmeasurerepeat.h"
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
-
 #include "articulation.h"
 #include "chord.h"
+#include "containers.h"
 #include "deadslapped.h"
 #include "factory.h"
+#include "iengravingconfiguration.h"
+#include "log.h"
 #include "measure.h"
 #include "measurerepeat.h"
 #include "note.h"
@@ -47,8 +44,7 @@
 #include "segment.h"
 #include "staff.h"
 #include "stafftype.h"
-
-#include "log.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace mu::engraving;

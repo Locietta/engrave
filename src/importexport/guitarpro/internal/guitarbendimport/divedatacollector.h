@@ -22,7 +22,6 @@
 #pragma once
 
 #include "guitarbendimporttypes.h"
-
 #include <engraving/types/pitchvalue.h>
 
 namespace mu::engraving {

@@ -19,17 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "benddatacollectorsplitchord.h"
 
+#include "../bendinfoconverter.h"
+#include "bendchorddurationsplitter.h"
+#include "log.h"
 #include <engraving/dom/chord.h>
 #include <engraving/dom/note.h>
 #include <engraving/dom/score.h>
 #include <engraving/dom/tie.h>
 #include <engraving/dom/tuplet.h>
-
-#include "../bendinfoconverter.h"
-#include "bendchorddurationsplitter.h"
 
 using namespace mu::engraving;
 

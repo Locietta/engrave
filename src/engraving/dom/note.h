@@ -23,7 +23,6 @@
 #pragma once
 
 #include "containers.h"
-
 #include "engravingitem.h"
 #include "interval.h"
 #include "noteevent.h"

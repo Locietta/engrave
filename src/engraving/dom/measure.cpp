@@ -27,18 +27,17 @@
 
 #include "measure.h"
 
-#include "../editing/editstaffbrackets.h"
 #include "../editing/editclef.h"
 #include "../editing/editkeysig.h"
-#include "../editing/editmeasures.h"
 #include "../editing/editmeasurerepeat.h"
+#include "../editing/editmeasures.h"
 #include "../editing/editstaff.h"
+#include "../editing/editstaffbrackets.h"
 #include "../editing/editsystemlocks.h"
 #include "../editing/edittimesig.h"
 #include "../editing/inserttime.h"
 #include "../editing/navigation.h"
 #include "../editing/transaction/transaction.h"
-
 #include "accidental.h"
 #include "actionicon.h"
 #include "anchors.h"
@@ -54,6 +53,7 @@
 #include "key.h"
 #include "keysig.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "marker.h"
 #include "masterscore.h"
 #include "measure.h"
@@ -85,8 +85,6 @@
 #include "tuplet.h"
 #include "tupletmap.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

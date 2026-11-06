@@ -24,12 +24,12 @@
 #include <algorithm>
 #include <deque>
 
-#include "importmidi_fraction.h"
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/mscore.h"
-#include "importmidi_tuplet.h"
 #include "importmidi_chord.h"
+#include "importmidi_fraction.h"
 #include "importmidi_inner.h"
+#include "importmidi_tuplet.h"
 
 namespace mu::iex::midi { namespace Meter {
 bool is_simple(const ReducedFraction &bar_fraction) // 2/2, 3/4, 4/4, ...

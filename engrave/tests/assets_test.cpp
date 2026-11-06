@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#include "engrave/src/runtime/engine_context.h"
-#include "global/io/ifilesystem.h"
-#include "engrave/src/runtime/runtime_assets.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/audio/engine_audio.h"
-#include <engrave/engine.h>
+#include <ft2build.h>
+
 #include "draw/internal/ifontsengine.h"
 #include "draw/types/font.h"
-#include <ft2build.h>
+#include "engrave/src/api/state.h"
+#include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/runtime_assets.h"
+#include "global/io/ifilesystem.h"
+#include <engrave/engine.h>
 #include FT_FREETYPE_H
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <thread>
+
+#include <nlohmann/json.hpp>
 
 namespace {
 void expect(bool value, const char *message) {

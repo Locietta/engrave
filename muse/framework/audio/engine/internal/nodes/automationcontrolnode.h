@@ -24,10 +24,9 @@
 
 #include <optional>
 
-#include "audionode.h"
-
-#include "audio/engine/iplayhead.h"
 #include "audio/engine/internal/dsp/smoothlinearvalue.h"
+#include "audio/engine/iplayhead.h"
+#include "audionode.h"
 
 namespace muse::audio {
 struct AutomationControlTag {

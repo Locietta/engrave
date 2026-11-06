@@ -30,9 +30,8 @@
 #include "lame.h"
 #endif
 
-#include "global/io/iodevice.h"
 #include "audio/common/audioerrors.h"
-
+#include "global/io/iodevice.h"
 #include "log.h"
 
 using namespace muse::audio;

@@ -20,18 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-
 #include "readcontext.h"
 
+#include <climits>
+
+#include "connectorinforeader.h"
 #include "dom/linkedobjects.h"
 #include "dom/masterscore.h"
 #include "dom/measure.h"
 #include "dom/score.h"
 #include "dom/trill.h"
-
-#include "connectorinforeader.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

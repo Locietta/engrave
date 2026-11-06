@@ -9,13 +9,12 @@
 #include <thread>
 #include <vector>
 
-#include <engrave/document.h>
-#include <engrave/engine.h>
-
 #include "engrave/src/api/batch.h"
 #include "engrave/src/audio/score_audio.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/noqt_runtime.h"
+#include <engrave/document.h>
+#include <engrave/engine.h>
 
 namespace mu::engraving {
 struct MasterScore;

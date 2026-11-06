@@ -20,7 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
+#include "parenthesislayout.h"
+
 #include "dom/chord.h"
 #include "dom/harmony.h"
 #include "dom/ledgerline.h"
@@ -33,7 +34,7 @@
 #include "dom/staff.h"
 #include "dom/timesig.h"
 #include "horizontalspacing.h"
-#include "parenthesislayout.h"
+#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

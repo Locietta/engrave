@@ -21,8 +21,8 @@
  */
 #include "singlerenderer.h"
 
-#include "singlelayout.h"
 #include "singledraw.h"
+#include "singlelayout.h"
 
 using namespace mu::engraving::rendering::single;
 

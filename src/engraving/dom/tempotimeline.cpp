@@ -27,10 +27,9 @@
 #include <iterator>
 
 #include "automation/tempovalues.h"
-#include "types/constants.h"
-
-#include "global/realfn.h"
 #include "global/log.h"
+#include "global/realfn.h"
+#include "types/constants.h"
 
 using namespace mu::engraving;
 

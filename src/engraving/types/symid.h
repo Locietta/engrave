@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <vector>
+
 namespace mu::engraving {
 enum class SmuflAnchorId : unsigned char {
     STEM_DOWN_NW,

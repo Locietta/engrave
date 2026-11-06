@@ -24,12 +24,11 @@
 
 #include <vector>
 
-#include "layoutcontext.h"
-
 #include "dom/chord.h"
-#include "dom/rest.h"
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
+#include "dom/rest.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct MStyle;

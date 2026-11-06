@@ -20,20 +20,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "stringtunings.h"
 
-#include "types/typesconv.h"
-#include "utils.h"
-
+#include "../editing/editpart.h"
+#include "containers.h"
+#include "log.h"
 #include "part.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
-#include "../editing/editpart.h"
-
-#include "containers.h"
 #include "translation.h"
+#include "types/typesconv.h"
+#include "utils.h"
 
 using namespace mu;
 using namespace mu::engraving;

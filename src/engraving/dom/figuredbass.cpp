@@ -22,22 +22,19 @@
 
 #include "figuredbass.h"
 
-#include "io/file.h"
-
-#include "rendering/iscorerenderer.h"
-#include "rw/xmlreader.h"
-#include "style/textstyle.h"
-
 #include "chord.h"
 #include "factory.h"
+#include "io/file.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
+#include "rendering/iscorerenderer.h"
 #include "rest.h"
+#include "rw/xmlreader.h"
 #include "score.h"
 #include "segment.h"
-
-#include "log.h"
+#include "style/textstyle.h"
 
 using namespace mu;
 using namespace muse::io;

@@ -23,8 +23,8 @@
 #ifndef MU_ENGRAVING_DURATION_H
 #define MU_ENGRAVING_DURATION_H
 
-#include "engravingitem.h"
 #include "durationtype.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Beam;

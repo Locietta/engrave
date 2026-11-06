@@ -22,9 +22,9 @@
 #pragma once
 
 #include <map>
-#include <variant>
 #include <stack>
 #include <unordered_map>
+#include <variant>
 
 #include "engraving/types/propertyvalue.h"
 #include "engraving/types/types.h"

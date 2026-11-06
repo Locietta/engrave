@@ -19,28 +19,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "tdraw.h"
 
 #include "defer.h"
-
-#include "draw/fontmetrics.h"
-#include "draw/svgrenderer.h"
-
-#include "iengravingconfiguration.h"        // IWYU pragma: keep
-#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
-
-#include "rendering/paintoptions.h"
-#include "style/style.h"
-#include "style/defaultstyle.h"
-
 #include "dom/accidental.h"
 #include "dom/actionicon.h"
 #include "dom/ambitus.h"
+#include "dom/anchors.h"
 #include "dom/arpeggio.h"
-#include "dom/chordbracket.h"
 #include "dom/articulation.h"
-
 #include "dom/bagpembell.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
@@ -48,79 +35,65 @@
 #include "dom/box.h"
 #include "dom/bracket.h"
 #include "dom/breath.h"
-
+#include "dom/capo.h"
 #include "dom/chord.h"
+#include "dom/chordbracket.h"
 #include "dom/chordline.h"
 #include "dom/clef.h"
-#include "dom/capo.h"
-
 #include "dom/deadslapped.h"
 #include "dom/dynamic.h"
-
 #include "dom/expression.h"
-
 #include "dom/fermata.h"
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
-
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
 #include "dom/guitarbend.h"
-
 #include "dom/hairpin.h"
 #include "dom/hammeronpulloff.h"
-#include "dom/harppedaldiagram.h"
 #include "dom/harmonicmark.h"
 #include "dom/harmony.h"
+#include "dom/harppedaldiagram.h"
 #include "dom/hook.h"
-
 #include "dom/image.h"
 #include "dom/instrchange.h"
 #include "dom/instrumentname.h"
-
 #include "dom/jump.h"
-
 #include "dom/keysig.h"
-
 #include "dom/laissezvib.h"
 #include "dom/lasso.h"
 #include "dom/layoutbreak.h"
 #include "dom/ledgerline.h"
 #include "dom/letring.h"
 #include "dom/lyrics.h"
-
 #include "dom/marker.h"
 #include "dom/measurenumber.h"
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
 #include "dom/mmrestrange.h"
-
 #include "dom/note.h"
 #include "dom/notedot.h"
 #include "dom/noteline.h"
-
 #include "dom/ornament.h"
 #include "dom/ottava.h"
-
 #include "dom/page.h"
 #include "dom/pagelockindicator.h"
-#include "dom/parenthesis.h"
-#include "dom/partialtie.h"
 #include "dom/palmmute.h"
+#include "dom/parenthesis.h"
 #include "dom/part.h"
+#include "dom/partialtie.h"
 #include "dom/pedal.h"
 #include "dom/pickscrape.h"
 #include "dom/playcounttext.h"
 #include "dom/playtechannotation.h"
-
 #include "dom/rasgueado.h"
 #include "dom/rehearsalmark.h"
 #include "dom/rest.h"
-
 #include "dom/score.h"
 #include "dom/shadownote.h"
 #include "dom/slur.h"
+#include "dom/soundflag.h"
 #include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/stafflines.h"
@@ -138,8 +111,6 @@
 #include "dom/systemdivider.h"
 #include "dom/systemlockindicator.h"
 #include "dom/systemtext.h"
-#include "dom/soundflag.h"
-
 #include "dom/tabdurationsymbol.h"
 #include "dom/tapping.h"
 #include "dom/tempotext.h"
@@ -149,30 +120,32 @@
 #include "dom/textlinebase.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
-#include "dom/anchors.h"
+#include "dom/tremolobar.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-#include "dom/tremolobar.h"
 #include "dom/trill.h"
 #include "dom/tripletfeel.h"
 #include "dom/tuplet.h"
-
 #include "dom/vibrato.h"
 #include "dom/volta.h"
-
 #include "dom/whammybar.h"
-
+#include "draw/fontmetrics.h"
+#include "draw/svgrenderer.h"
 #include "editing/navigation.h"
-
+#include "iengravingconfiguration.h"        // IWYU pragma: keep
+#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
 #include "infrastructure/rtti.h"
-
+#include "log.h"
+#include "rendering/paintoptions.h"
 #include "stemlayout.h"
+#include "style/defaultstyle.h"
+#include "style/style.h"
 
 // dev
-#include "dom/system.h"
+#include "dom/chord.h"
 #include "dom/measure.h"
 #include "dom/segment.h"
-#include "dom/chord.h"
+#include "dom/system.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rtti;

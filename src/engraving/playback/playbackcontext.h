@@ -23,12 +23,10 @@
 #pragma once
 #include <functional>
 
-#include "mpe/mpetypes.h"
-#include "mpe/events.h"
-
-#include "engraving/automation/automationtypes.h"
-
 #include "../types/types.h"
+#include "engraving/automation/automationtypes.h"
+#include "mpe/events.h"
+#include "mpe/mpetypes.h"
 
 namespace mu::engraving {
 struct Segment;

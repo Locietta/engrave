@@ -20,18 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "tremolorenderer.h"
 
 #include "dom/chord.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-
+#include "log.h"
+#include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/expressionutils.h"
 #include "playback/utils/repeatutils.h"
-
-#include "noterenderer.h"
 
 using namespace mu::engraving;
 using namespace muse;

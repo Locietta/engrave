@@ -22,17 +22,14 @@
 
 #include "slurtie.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
 #include "../editing/elementeditdata.h"
 #include "../rendering/iscorerenderer.h"
-
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "log.h"
 #include "note.h"
 #include "page.h"
 #include "score.h"
 #include "system.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::draw;

@@ -24,14 +24,13 @@
 
 #include "chord.h"
 #include "chordrest.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
+#include "rest.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
-#include "rest.h"
-
-#include "log.h"
 
 using namespace mu;
 

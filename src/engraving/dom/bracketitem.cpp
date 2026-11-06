@@ -22,11 +22,10 @@
 
 #include "bracketitem.h"
 
+#include "../editing/editstaffbrackets.h"
 #include "property.h"
 #include "score.h"
 #include "staff.h"
-
-#include "../editing/editstaffbrackets.h"
 
 using namespace mu;
 

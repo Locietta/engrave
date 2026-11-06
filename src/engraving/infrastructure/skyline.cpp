@@ -22,15 +22,13 @@
 
 #include "skyline.h"
 
-#include "realfn.h"
-#include "draw/painter.h"
-
 #include "../dom/arpeggio.h"
 #include "../dom/beam.h"
 #include "../dom/chord.h"
 #include "../dom/stem.h"
 #include "../dom/tremolotwochord.h"
-
+#include "draw/painter.h"
+#include "realfn.h"
 #include "shape.h"
 
 using namespace mu;

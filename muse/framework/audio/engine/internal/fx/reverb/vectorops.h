@@ -23,9 +23,8 @@
 #ifndef MUSE_AUDIO_VECTOROPS_H
 #define MUSE_AUDIO_VECTOROPS_H
 
-#include <stdlib.h>
-
 #include <cstdint>
+#include <stdlib.h>
 
 //
 // This header is provided for convenience, to easily wrap vector operations around

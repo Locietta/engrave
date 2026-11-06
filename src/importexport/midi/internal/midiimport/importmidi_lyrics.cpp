@@ -20,19 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_lyrics.h"
-#include "importmidi_inner.h"
-#include "importmidi_fraction.h"
-#include "importmidi_chord.h"
-#include "importmidi_operations.h"
-#include "../midishared/midifile.h"
-
-#include "engraving/dom/factory.h"
-#include "engraving/dom/box.h"
-#include "engraving/dom/engravingitem.h"
-#include "engraving/dom/measurebase.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/staff.h"
-#include "engraving/dom/text.h"
 
 #include <algorithm>
 #include <cstring>
@@ -40,7 +27,19 @@
 #include <string>
 #include <vector>
 
+#include "../midishared/midifile.h"
+#include "engraving/dom/box.h"
+#include "engraving/dom/engravingitem.h"
+#include "engraving/dom/factory.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measurebase.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/text.h"
 #include "global/types/string.h"
+#include "importmidi_chord.h"
+#include "importmidi_fraction.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
 
 using namespace mu::engraving;
 

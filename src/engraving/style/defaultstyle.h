@@ -23,7 +23,6 @@
 #define MU_ENGRAVING_DEFAULTSTYLE_H
 
 #include "global/io/path.h"
-
 #include "style.h"
 
 namespace mu::engraving {

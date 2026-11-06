@@ -32,9 +32,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <engrave/engrave.h>
-
 #include "engrave/src/api/batch.h"
+#include <engrave/engrave.h>
 
 namespace mu::engraving {
 struct EngravingObject;

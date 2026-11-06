@@ -1,8 +1,8 @@
 #ifndef MU_IMPORTEXPORT_GPDRUMSETRESOLVER_H
 #define MU_IMPORTEXPORT_GPDRUMSETRESOLVER_H
 
-#include <map>
 #include <list>
+#include <map>
 
 #include "types/string.h"
 

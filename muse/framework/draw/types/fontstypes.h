@@ -24,10 +24,10 @@
 
 #include <string>
 
-#include "global/types/bytearray.h"
-#include "global/stringutils.h"
 #include "font.h"
 #include "geometry.h"
+#include "global/stringutils.h"
+#include "global/types/bytearray.h"
 
 namespace muse::draw {
 using glyph_idx_t = uint32_t;

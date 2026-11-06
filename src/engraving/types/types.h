@@ -26,21 +26,20 @@
 #include <tuple>
 #include <unordered_set>
 
-#include "global/types/id.h"
-#include "global/types/string.h"
-#include "global/types/translatablestring.h"
-#include "global/types/flags.h"
-
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
 #include "draw/types/painterpath.h"
+#include "global/types/flags.h"
+#include "global/types/id.h"
+#include "global/types/string.h"
+#include "global/types/translatablestring.h"
 
 // IWYU pragma: begin_exports
 #include "bps.h"
-#include "spatium.h"
 #include "fraction.h"
 #include "groupnode.h"
 #include "pitchvalue.h"
+#include "spatium.h"
 #include "symid.h"
 // IWYU pragma: end_exports
 

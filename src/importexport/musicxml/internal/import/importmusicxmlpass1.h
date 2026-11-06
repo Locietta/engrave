@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include "global/serialization/xmlstreamreader.h"
-#include "musicxmltupletstate.h"
-#include "musicxmlpart.h"
 #include "engraving/engravingerrors.h"
+#include "global/serialization/xmlstreamreader.h"
+#include "musicxmlpart.h"
+#include "musicxmltupletstate.h"
 
 namespace mu::engraving {
 struct Fraction;

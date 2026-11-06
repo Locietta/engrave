@@ -19,10 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "mnxexporter.h"
-#include "internal/shared/mnxtypesconv.h"
-#include "log.h"
-
 #include <algorithm>
 #include <optional>
 #include <string>
@@ -40,13 +36,11 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/ottava.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
-#include "engraving/dom/ottava.h"
-#include "engraving/dom/segment.h"
-#include "engraving/dom/score.h"
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
@@ -54,6 +48,9 @@
 #include "engraving/dom/volta.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/types/symnames.h"
+#include "internal/shared/mnxtypesconv.h"
+#include "log.h"
+#include "mnxexporter.h"
 
 using namespace mu::engraving;
 

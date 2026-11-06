@@ -22,8 +22,8 @@
 #ifndef IMPORTMIDI_TUPLET_DETECT_H
 #define IMPORTMIDI_TUPLET_DETECT_H
 
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace mu::iex::midi {
 struct ReducedFraction;

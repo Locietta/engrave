@@ -38,44 +38,42 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-#include <engrave/engrave.h>
-
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engrave/src/score/write470.h"
-#include <engrave/testing/write470.h>
-
-#include "engraving/dom/dynamic.h"
-#include "engraving/dom/segment.h"
-#include "serialization/xmlstreamreader.h"
-#include "importexport/musicxml/imusicxmlconfiguration.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
-#include "global/io/buffer.h"
-#include "engraving/rw/xmlwriter.h"
-#include "engraving/rw/write/twrite.h"
-#include "engraving/rw/write/writecontext.h"
+#include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
+#include "engraving/dom/note.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/segment.h"
+#include "engraving/dom/staff.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
-#include "engraving/dom/timesig.h"
 #include "engraving/dom/tie.h"
-#include "engraving/dom/note.h"
-#include "engraving/dom/part.h"
-#include "engraving/dom/staff.h"
-#include "engraving/infrastructure/eidregister.h"
+#include "engraving/dom/timesig.h"
 #include "engraving/editing/transaction/undostack.h"
+#include "engraving/infrastructure/eidregister.h"
+#include "engraving/rw/write/twrite.h"
+#include "engraving/rw/write/writecontext.h"
+#include "engraving/rw/xmlwriter.h"
 #include "engraving/types/constants.h"
+#include "global/io/buffer.h"
+#include "importexport/musicxml/imusicxmlconfiguration.h"
+#include "serialization/xmlstreamreader.h"
+#include <engrave/engrave.h>
+#include <engrave/testing/write470.h>
 
 namespace {
 

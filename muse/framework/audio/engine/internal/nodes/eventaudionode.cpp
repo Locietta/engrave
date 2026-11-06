@@ -21,8 +21,8 @@
  */
 
 #include "eventaudionode.h"
-#include "../offlinetiming.h"
 
+#include "../offlinetiming.h"
 #include "log.h"
 
 using namespace muse;

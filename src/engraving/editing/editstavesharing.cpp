@@ -28,7 +28,6 @@
 #include "dom/score.h"
 #include "dom/sharedpart.h"
 #include "dom/staff.h"
-
 #include "transaction/transaction.h"
 #include "transaction/undoablecommand.h"
 

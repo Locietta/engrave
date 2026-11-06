@@ -21,11 +21,11 @@
  */
 #pragma once
 
-#include "types/string.h"
-#include "types/ret.h"
-#include "io/path.h"
 #include "io/iodevice.h"
+#include "io/path.h"
 #include "mscio.h"
+#include "types/ret.h"
+#include "types/string.h"
 
 namespace muse {
 struct ZipWriter;

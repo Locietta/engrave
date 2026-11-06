@@ -22,10 +22,9 @@
 #ifndef MUSE_DRAW_PEN_H
 #define MUSE_DRAW_PEN_H
 
-#include "global/realfn.h"
-
 #include "color.h"
 #include "drawtypes.h"
+#include "global/realfn.h"
 
 namespace muse::draw {
 struct Pen {

@@ -8,8 +8,6 @@
 // work: the render goes to one temporary file in the engine's cache directory,
 // which is then read back in chunks and removed.
 
-#include <engrave/document.h>
-
 #include <cmath>
 #include <filesystem>
 #include <format>
@@ -20,6 +18,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <engrave/document.h>
 
 #ifdef _WIN32
 #include <process.h>
@@ -32,7 +32,6 @@
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/audio/score_audio.h"
 #include "engrave/src/runtime/noqt_runtime.h"
-
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/score.h"

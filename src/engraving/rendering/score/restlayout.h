@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "dom/mmrest.h"
 #include "dom/rest.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct MMRest;

@@ -9,6 +9,10 @@
 #include <utility>
 #include <variant>
 
+#include "engrave/src/api/handles.h"
+#include "engrave/src/api/state.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
@@ -16,11 +20,6 @@
 #include "engraving/editing/transaction/undoablecommand.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/engravingproject.h"
-
-#include "engrave/src/api/handles.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/runtime/noqt_runtime.h"
-#include "engrave/src/score/score_semantic.h"
 
 namespace engrave {
 

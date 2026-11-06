@@ -24,15 +24,14 @@
 #include <variant>
 #include <vector>
 
-#include "realfn.h"
+#include "automationpoint.h"
 #include "global/types/number.h"
+#include "mpetypes.h"
+#include "playbacksetupdata.h"
+#include "realfn.h"
 #include "types/flags.h"
 #include "types/number.h"
 #include "types/sharedmap.h"
-
-#include "automationpoint.h"
-#include "mpetypes.h"
-#include "playbacksetupdata.h"
 
 namespace muse::mpe {
 struct ArrangementContext {

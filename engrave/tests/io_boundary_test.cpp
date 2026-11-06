@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#include <gtest/gtest.h>
 #include <array>
+
+#include <gtest/gtest.h>
+
 #include "io/byteview.h"
 
 TEST(ByteView, BorrowsBytesAndPreservesSeekBounds) {
@@ -37,8 +39,9 @@ int main(int argc, char **argv) {
     return RUN_ALL_TESTS();
 }
 
-#include "io/streamfile.h"
 #include <chrono>
+
+#include "io/streamfile.h"
 
 TEST(StreamingFile, UnicodePathAndHeaderSeek) {
     const auto path =

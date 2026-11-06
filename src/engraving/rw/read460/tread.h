@@ -21,12 +21,10 @@
  */
 #pragma once
 
-#include "global/types/string.h"
-
-#include "../xmlreader.h"
-#include "readcontext.h"
-
 #include "../../dom/property.h"
+#include "../xmlreader.h"
+#include "global/types/string.h"
+#include "readcontext.h"
 
 namespace mu::engraving {
 struct XmlReader;

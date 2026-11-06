@@ -19,12 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <cfloat>
-
 #include "measurelayout.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include <cfloat>
 
+#include "arpeggiolayout.h"
+#include "beamlayout.h"
+#include "chordbracketlayout.h"
+#include "chordlayout.h"
 #include "dom/ambitus.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
@@ -38,10 +40,10 @@
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
 #include "dom/mmrestrange.h"
-#include "dom/part.h"
 #include "dom/parenthesis.h"
-#include "dom/spacer.h"
+#include "dom/part.h"
 #include "dom/score.h"
+#include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/stafflines.h"
 #include "dom/system.h"
@@ -50,16 +52,11 @@
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "dom/utils.h"
-
 #include "editing/editkeysig.h"
-#include "types/typesconv.h"
-
-#include "arpeggiolayout.h"
-#include "beamlayout.h"
-#include "chordbracketlayout.h"
-#include "chordlayout.h"
 #include "horizontalspacing.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "layoutcontext.h"
+#include "log.h"
 #include "mmrestlayout.h"
 #include "modifydom.h"
 #include "parenthesislayout.h"
@@ -68,8 +65,7 @@
 #include "slurtielayout.h"
 #include "tlayout.h"
 #include "tremololayout.h"
-
-#include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rtti;

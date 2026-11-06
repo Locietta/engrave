@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "playbackcontext.h"
 
 #include <cmath>
@@ -36,15 +35,13 @@
 #include "dom/soundflag.h"
 #include "dom/staff.h"
 #include "dom/stafftext.h"
-
 #include "engraving/automation/automationdata.h"
-
-#include "utils/arrangementutils.h"
-#include "utils/expressionutils.h"
-#include "types/constants.h"
-
 #include "global/containers.h"
 #include "global/realfn.h"
+#include "log.h"
+#include "types/constants.h"
+#include "utils/arrangementutils.h"
+#include "utils/expressionutils.h"
 
 using namespace mu::engraving;
 using namespace muse;

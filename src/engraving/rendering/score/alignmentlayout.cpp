@@ -24,8 +24,6 @@
 
 #include <set>
 
-#include "systemlayout.h"
-
 #include "dom/dynamic.h"
 #include "dom/expression.h"
 #include "dom/fret.h"
@@ -35,6 +33,7 @@
 #include "dom/system.h"
 #include "dom/tapping.h"
 #include "dom/text.h"
+#include "systemlayout.h"
 
 namespace mu::engraving::rendering::score {
 void AlignmentLayout::align_items_group(const std::vector<EngravingItem *> &elements, const System *system) {

@@ -20,14 +20,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "boxlayout.h"
+
 #include "dom/fret.h"
 #include "dom/harmony.h"
 #include "dom/system.h"
 #include "dom/text.h"
 #include "draw/fontmetrics.h"
-
+#include "log.h"
 #include "tlayout.h"
 
 using namespace mu::engraving;

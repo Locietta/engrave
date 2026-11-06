@@ -23,33 +23,25 @@
 #include <cmath>
 #include <stack>
 
-#include "draw/fontmetrics.h"
-
-#include "iengravingfont.h"
-
-#include "rendering/score/textlayout.h"
-#include "rendering/iscorerenderer.h"
-
-#include "style/textstyle.h"
-
-#include "rw/xmlreader.h"
-#include "rw/xmlwriter.h"
-
-#include "types/symnames.h"
-#include "types/typesconv.h"
-
+#include "../editing/textedit.h"
 #include "anchors.h"
 #include "box.h"
+#include "draw/fontmetrics.h"
 #include "harppedaldiagram.h"
+#include "iengravingfont.h"
 #include "instrumentname.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "page.h"
+#include "rendering/iscorerenderer.h"
+#include "rendering/score/textlayout.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
 #include "score.h"
-
-#include "../editing/textedit.h"
-
-#include "log.h"
+#include "style/textstyle.h"
+#include "types/symnames.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace muse::draw;

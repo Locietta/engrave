@@ -23,11 +23,10 @@
 #pragma once
 
 #include <memory>
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "audio/common/audiotypes.h"
-
 #include "log.h"
 
 // #define AUDIONODE_LOGGING_ENABLED

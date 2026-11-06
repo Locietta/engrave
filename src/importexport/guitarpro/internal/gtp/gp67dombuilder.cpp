@@ -2,9 +2,8 @@
 
 #include <set>
 
-#include "global/log.h"
-
 #include "engraving/types/constants.h"
+#include "global/log.h"
 
 using namespace muse;
 

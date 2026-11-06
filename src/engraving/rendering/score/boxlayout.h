@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "dom/box.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
 struct BoxLayout {

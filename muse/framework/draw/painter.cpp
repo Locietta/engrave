@@ -21,10 +21,9 @@
  */
 #include "painter.h"
 
+#include "log.h"
 #include "types/brush.h"
 #include "types/painterpath.h"
-
-#include "log.h"
 
 using namespace muse;
 using namespace muse::draw;

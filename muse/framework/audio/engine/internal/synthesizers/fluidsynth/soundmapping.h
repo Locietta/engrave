@@ -24,10 +24,10 @@
 #define MUSE_AUDIO_SOUNDMAPPING_H
 
 #include <functional>
-#include "mpe/events.h"
-#include "midi/miditypes.h"
 
 #include "log.h"
+#include "midi/miditypes.h"
+#include "mpe/events.h"
 
 namespace muse::audio::synth {
 struct SoundMappingKey {

@@ -23,13 +23,12 @@
 #pragma once
 
 #include <functional>
-#include "offlinecancellation.h"
 #include <map>
 #include <set>
 
-#include "mpe/events.h"
-
 #include "audio/common/audiotypes.h"
+#include "mpe/events.h"
+#include "offlinecancellation.h"
 
 namespace muse::audio::engine {
 template <class... Types>

@@ -22,7 +22,6 @@
 #include "audioengineconfiguration.h"
 
 #include "audio/common/soundfonttypes.h"
-
 #include "log.h"
 
 using namespace muse;

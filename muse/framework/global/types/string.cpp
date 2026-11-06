@@ -35,7 +35,6 @@
 #include <utf8.h>
 
 #include "bytearray.h"
-
 #include "log.h"
 
 using namespace muse;

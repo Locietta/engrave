@@ -22,7 +22,6 @@
 #include "compressor.h"
 
 #include "audiomathutils.h"
-
 #include "log.h"
 
 using namespace muse::audio;

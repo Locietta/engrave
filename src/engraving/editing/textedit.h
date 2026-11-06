@@ -22,10 +22,9 @@
 
 #pragma once
 
+#include "../dom/textbase.h"
 #include "elementeditdata.h"
 #include "transaction/undoablecommand.h"
-
-#include "../dom/textbase.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

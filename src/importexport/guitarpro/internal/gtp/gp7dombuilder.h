@@ -1,8 +1,8 @@
 #ifndef MU_IMPORTEXPORT_GP7DOMBUILDER_H
 #define MU_IMPORTEXPORT_GP7DOMBUILDER_H
 
-#include "gpdommodel.h"
 #include "gp67dombuilder.h"
+#include "gpdommodel.h"
 
 namespace mu::iex::guitarpro {
 struct GP7DomBuilder : GP67DomBuilder {

@@ -19,18 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
-#include <cfloat>
-
 #include "chordlayout.h"
 
-#include "containers.h"
+#include <cfloat>
 
+#include "accidentalslayout.h"
+#include "arpeggiolayout.h"
+#include "autoplace.h"
+#include "beamlayout.h"
+#include "beamtremololayout.h"
+#include "containers.h"
 #include "dom/accidental.h"
 #include "dom/arpeggio.h"
-#include "dom/chordbracket.h"
 #include "dom/beam.h"
 #include "dom/chord.h"
+#include "dom/chordbracket.h"
 #include "dom/factory.h"
 #include "dom/fingering.h"
 #include "dom/glissando.h"
@@ -58,13 +61,8 @@
 #include "dom/utils.h"
 #include "editing/editchord.h"
 #include "editing/navigation.h"
-
-#include "accidentalslayout.h"
-#include "arpeggiolayout.h"
-#include "autoplace.h"
-#include "beamlayout.h"
-#include "beamtremololayout.h"
 #include "horizontalspacing.h"
+#include "log.h"
 #include "parenthesislayout.h"
 #include "restlayout.h"
 #include "slurtielayout.h"

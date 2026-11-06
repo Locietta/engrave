@@ -23,7 +23,6 @@
 #include "capo.h"
 
 #include "score.h"
-
 #include "translation.h"
 
 using namespace mu::engraving;

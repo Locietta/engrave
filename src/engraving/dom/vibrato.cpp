@@ -23,15 +23,12 @@
 
 #include <cmath>
 
-#include "types/typesconv.h"
-
 #include "iengravingfont.h"
-
+#include "log.h"
 #include "score.h"
 #include "system.h"
 #include "trill.h"
-
-#include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

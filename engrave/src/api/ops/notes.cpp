@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "engrave/src/api/batch.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
@@ -24,8 +25,6 @@
 #include "engraving/editing/noteinput.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transpose.h"
-
-#include "engrave/src/api/batch.h"
 
 namespace engrave::api {
 namespace {

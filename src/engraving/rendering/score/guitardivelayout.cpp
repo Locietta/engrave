@@ -27,7 +27,6 @@
 #include "dom/stafftype.h"
 #include "dom/system.h"
 #include "dom/whammybar.h"
-
 #include "horizontalspacing.h"
 #include "textlayout.h"
 #include "tlayout.h"

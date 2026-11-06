@@ -1,11 +1,13 @@
-#include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
 #include "engrave/src/score/score_positions.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/measure.h"
+
 #include <iostream>
 #include <stdexcept>
+
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
+#include "engraving/engravingproject.h"
 
 namespace {
 void expect(bool value, const char *message) {

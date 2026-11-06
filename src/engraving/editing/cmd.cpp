@@ -28,13 +28,6 @@
 #include <assert.h>
 #include <set>
 
-#include "translation.h"
-
-#include "infrastructure/messagebox.h"
-#include "style/style.h"
-
-#include "rw/xmlreader.h"
-
 #include "../dom/accidental.h"
 #include "../dom/articulation.h"
 #include "../dom/barline.h"
@@ -83,21 +76,23 @@
 #include "../dom/tremolotwochord.h"
 #include "../dom/tuplet.h"
 #include "../dom/utils.h"
-
 #include "editchord.h"
 #include "editnote.h"
-#include "noteinput.h"
 #include "editpagelocks.h"
 #include "editproperty.h"
 #include "editspanner.h"
 #include "editstaff.h"
 #include "editsystemlocks.h"
+#include "infrastructure/messagebox.h"
+#include "log.h"
 #include "navigation.h"
+#include "noteinput.h"
+#include "rw/xmlreader.h"
+#include "style/style.h"
 #include "transaction/transaction.h"
 #include "transaction/undostack.h"
+#include "translation.h"
 #include "transpose.h"
-
-#include "log.h"
 
 using namespace muse::io;
 using namespace mu::engraving;

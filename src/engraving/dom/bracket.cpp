@@ -22,17 +22,15 @@
 
 #include "bracket.h"
 
-#include "types/typesconv.h"
-
 #include "bracketitem.h"
 #include "instrumentname.h"
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "staff.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

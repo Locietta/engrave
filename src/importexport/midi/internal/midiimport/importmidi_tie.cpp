@@ -22,16 +22,16 @@
 
 #include "importmidi_tie.h"
 
-#include "engraving/dom/engravingitem.h"
-#include "engraving/dom/segment.h"
-#include "engraving/dom/chordrest.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/chordrest.h"
+#include "engraving/dom/engravingitem.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/segment.h"
 
 #ifndef NDEBUG
-#include "engraving/dom/staff.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/staff.h"
 #endif
 
 #include "log.h"

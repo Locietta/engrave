@@ -24,9 +24,8 @@
 #include <algorithm>
 #include <variant>
 
-#include "global/types/secs.h"
 #include "global/types/number.h"
-
+#include "global/types/secs.h"
 #include "mpe/automationpoint.h"
 
 namespace muse::audio {

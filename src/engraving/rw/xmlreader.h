@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include "serialization/xmlstreamreader.h"
-
+#include "../types/types.h"
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
-
-#include "../types/types.h"
+#include "serialization/xmlstreamreader.h"
 
 namespace mu::engraving {
 struct XmlReader : muse::XmlStreamReader {

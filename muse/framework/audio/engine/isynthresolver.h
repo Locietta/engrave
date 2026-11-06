@@ -25,7 +25,6 @@
 #include <memory>
 
 #include "audio/common/audiotypes.h"
-
 #include "isynthesizer.h"
 
 namespace muse::audio::synth {

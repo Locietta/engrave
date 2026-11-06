@@ -20,11 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
-
 #include <memory>
 
-#include "global/io/buffer.h"
+#include <gtest/gtest.h>
 
 #include "engraving/compat/scoreaccess.h"
 #include "engraving/dom/factory.h"
@@ -38,10 +36,11 @@
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engraving/infrastructure/mscreader.h"
-#include "engraving/tests/utils/scorerw.h"
 #include "engraving/infrastructure/mscwriter.h"
 #include "engraving/rw/mscloader.h"
 #include "engraving/rw/mscsaver.h"
+#include "engraving/tests/utils/scorerw.h"
+#include "global/io/buffer.h"
 
 using namespace mu::engraving;
 using namespace muse;

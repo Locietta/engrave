@@ -21,12 +21,12 @@
  */
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-#include "global/logstream.h"
 #include "global/io/path.h"
+#include "global/logstream.h"
 #include "val.h"
 
 namespace muse {

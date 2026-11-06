@@ -21,18 +21,16 @@
  */
 #include "tremololayout.h"
 
-#include "global/types/number.h"
-
-#include "dom/chord.h"
-#include "dom/stem.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tremolosinglechord.h"
-#include "dom/note.h"
-#include "dom/staff.h"
-#include "dom/measure.h"
-
 #include "beamtremololayout.h"
 #include "chordlayout.h"
+#include "dom/chord.h"
+#include "dom/measure.h"
+#include "dom/note.h"
+#include "dom/staff.h"
+#include "dom/stem.h"
+#include "dom/tremolosinglechord.h"
+#include "dom/tremolotwochord.h"
+#include "global/types/number.h"
 #include "stemlayout.h"
 
 using namespace mu::engraving;

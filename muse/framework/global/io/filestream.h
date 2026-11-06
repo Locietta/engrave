@@ -22,7 +22,6 @@
 #pragma once
 
 #include "ifilesystem.h"
-
 #include "iodevice.h"
 #include "path.h"
 

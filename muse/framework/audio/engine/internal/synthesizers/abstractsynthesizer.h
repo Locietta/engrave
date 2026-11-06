@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include "mpe/events.h"
-
 #include "../../iaudioengineconfiguration.h"
-
-#include "audio/common/audiotypes.h"
 #include "../../isynthesizer.h"
+#include "audio/common/audiotypes.h"
+#include "mpe/events.h"
 
 namespace muse::audio::synth {
 struct AbstractSynthesizer : ISynthesizer {

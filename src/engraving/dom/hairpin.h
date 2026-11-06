@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../types/types.h"
-
 #include "textlinebase.h"
 
 namespace mu::engraving {

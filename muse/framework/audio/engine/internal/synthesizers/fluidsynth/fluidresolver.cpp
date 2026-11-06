@@ -23,7 +23,6 @@
 #include "fluidresolver.h"
 
 #include "audio/engine/internal/codecs/vorbisdecoder.h"
-
 #include "log.h"
 
 using namespace muse::audio;

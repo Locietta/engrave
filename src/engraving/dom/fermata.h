@@ -24,7 +24,6 @@
 #define MU_ENGRAVING_FERMATA_H
 
 #include "../types/types.h"
-
 #include "engravingitem.h"
 
 namespace mu::engraving {

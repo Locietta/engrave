@@ -21,9 +21,9 @@
  */
 #include "diveinfoconverter.h"
 
-#include <engraving/dom/note.h>
-
 #include <cmath>
+
+#include <engraving/dom/note.h>
 
 using namespace mu::engraving;
 

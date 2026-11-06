@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/instrchange.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 /// change instrument in an InstrumentChange element

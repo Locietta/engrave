@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include "global/types/flags.h"
-
 #include "engraving/types/fraction.h"
+#include "global/types/flags.h"
 
 namespace mu::engraving {
 struct TDuration;

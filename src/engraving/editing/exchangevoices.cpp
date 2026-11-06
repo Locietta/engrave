@@ -20,7 +20,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "exchangevoices.h"
 
 #include "../dom/excerpt.h"
@@ -30,8 +29,8 @@
 #include "../dom/segment.h"
 #include "../dom/staff.h"
 #include "../types/types.h"
-
 #include "clonevoice.h"
+#include "log.h"
 #include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;

@@ -19,12 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "musicxmltupletstate.h"
 
 #include "engraving/dom/tuplet.h"
-
 #include "internal/shared/musicxmltypes.h"
+#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::iex::musicxml;

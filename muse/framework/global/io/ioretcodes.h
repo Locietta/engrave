@@ -22,8 +22,8 @@
 #ifndef MUSE_IO_IORETCODES_H
 #define MUSE_IO_IORETCODES_H
 
-#include "global/types/ret.h"
 #include "global/translation.h"
+#include "global/types/ret.h"
 
 namespace muse::io {
 enum class Err {

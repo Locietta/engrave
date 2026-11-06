@@ -22,9 +22,9 @@
 #ifndef MUSE_IO_FILEINFO_H
 #define MUSE_IO_FILEINFO_H
 
+#include "dir.h"
 #include "global/types/string.h"
 #include "ifilesystem.h"
-#include "dir.h"
 
 namespace muse::io {
 struct FileInfo {

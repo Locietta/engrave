@@ -24,7 +24,6 @@
 #include <cstring>
 
 #include "ioretcodes.h"
-
 #include "log.h"
 
 using namespace muse;

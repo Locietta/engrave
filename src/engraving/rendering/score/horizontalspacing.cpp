@@ -19,13 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
+#include "horizontalspacing.h"
+
 #include <cfloat>
 
-#include "horizontalspacing.h"
 #include "chordbracketlayout.h"
-#include "parenthesislayout.h"
-
 #include "dom/barline.h"
 #include "dom/beam.h"
 #include "dom/chord.h"
@@ -37,12 +35,14 @@
 #include "dom/note.h"
 #include "dom/rest.h"
 #include "dom/score.h"
-#include "dom/stemslash.h"
 #include "dom/staff.h"
 #include "dom/stem.h"
+#include "dom/stemslash.h"
 #include "dom/system.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
+#include "log.h"
+#include "parenthesislayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

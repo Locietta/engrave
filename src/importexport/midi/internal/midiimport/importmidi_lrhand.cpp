@@ -25,9 +25,9 @@
 #include <limits>
 #include <vector>
 
-#include "importmidi_inner.h"
-#include "importmidi_fraction.h"
 #include "importmidi_chord.h"
+#include "importmidi_fraction.h"
+#include "importmidi_inner.h"
 #include "importmidi_operations.h"
 
 namespace mu::iex::midi { namespace LRHand {

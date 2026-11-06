@@ -24,17 +24,14 @@
 
 #include <functional>
 
-#include "style/style.h"
-
 #include "../editing/edittimesig.h"
 #include "../editing/transaction/transaction.h"
-
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
-
-#include "log.h"
+#include "style/style.h"
 
 using namespace mu;
 using namespace mu::engraving;

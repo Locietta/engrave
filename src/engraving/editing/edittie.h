@@ -26,7 +26,6 @@
 
 #include "global/allocator.h"
 #include "global/types/string.h"
-
 #include "transaction/undoablecommand.h"
 
 namespace mu::engraving {

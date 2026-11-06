@@ -22,22 +22,17 @@
 
 #pragma once
 
-#include "draw/types/color.h"
-#include "draw/types/geometry.h"
-
-#include "../rendering/paintoptions.h"
-
+#include "../editing/editdata.h"
 #include "../infrastructure/ld_access.h"
 #include "../infrastructure/shape.h"
 #include "../infrastructure/skyline.h"
-
+#include "../rendering/paintoptions.h"
 #include "../types/fraction.h"
 #include "../types/symid.h"
 #include "../types/types.h"
-
+#include "draw/types/color.h"
+#include "draw/types/geometry.h"
 #include "engravingobject.h"
-
-#include "../editing/editdata.h"
 
 namespace muse::draw {
 struct Painter;

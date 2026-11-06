@@ -23,7 +23,6 @@
 #include "editposition.h"
 
 #include "../dom/engravingitem.h"
-
 #include "../rendering/iscorerenderer.h"
 
 using namespace mu::engraving;

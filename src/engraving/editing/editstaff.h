@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/measure.h"
 #include "../dom/score.h"
 #include "../dom/staff.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct InsertStaff : UndoableCommand {

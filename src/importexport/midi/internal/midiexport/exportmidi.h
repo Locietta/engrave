@@ -23,11 +23,10 @@
 #ifndef EXPORTMIDI_H
 #define EXPORTMIDI_H
 
-#include "io/path.h"
-
 #include "../midishared/midifile.h"
-#include "engraving/compat/midi/pausemap.h"
 #include "engraving/compat/midi/compatmidirenderinternal.h"
+#include "engraving/compat/midi/pausemap.h"
+#include "io/path.h"
 
 namespace mu::engraving {
 struct Score;

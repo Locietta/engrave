@@ -22,10 +22,9 @@
 
 #include "synthesizerstate.h"
 
-#include "rw/xmlwriter.h"
-#include "rw/xmlreader.h"
-
 #include "log.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
 
 using namespace mu;
 

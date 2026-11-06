@@ -19,17 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "segmentlayout.h"
 
-#include "dom/part.h"
+#include "chordlayout.h"
 #include "dom/drumset.h"
 #include "dom/parenthesis.h"
+#include "dom/part.h"
 #include "dom/staff.h"
-
-#include "tlayout.h"
-#include "chordlayout.h"
 #include "horizontalspacing.h"
+#include "log.h"
+#include "tlayout.h"
 
 using namespace mu::engraving::rendering::score;
 

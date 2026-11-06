@@ -21,26 +21,23 @@
  */
 #include "scorerenderer.h"
 
+#include "chordlayout.h"
 #include "dom/arpeggio.h"
 #include "dom/beam.h"
-#include "dom/textlinebase.h"
-#include "dom/harmony.h"
 #include "dom/chord.h"
-
-#include "tdraw.h"
-#include "tlayout.h"
-#include "textlayout.h"
-#include "chordlayout.h"
+#include "dom/harmony.h"
+#include "dom/textlinebase.h"
+#include "headerfooterlayout.h"
+#include "horizontalspacing.h"
 #include "layoutcontext.h"
+#include "log.h"
+#include "paint.h"
 #include "scorelayout.h"
 #include "scorepageviewlayout.h"
-#include "horizontalspacing.h"
 #include "slurtielayout.h"
-#include "headerfooterlayout.h"
-
-#include "paint.h"
-
-#include "log.h"
+#include "tdraw.h"
+#include "textlayout.h"
+#include "tlayout.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

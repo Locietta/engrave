@@ -26,9 +26,8 @@
 #include <string>
 #include <vector>
 
-#include "global/types/uri.h"
 #include "global/io/path.h"
-
+#include "global/types/uri.h"
 #include "midi/miditypes.h"
 
 namespace muse::audio::synth {

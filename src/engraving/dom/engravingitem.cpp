@@ -29,33 +29,21 @@
 
 #include <cmath>
 
-#include "containers.h"
-#include "io/buffer.h"
-#include "translation.h"
-
-#include "iengravingconfiguration.h"
-#include "iengravingcontextconfiguration.h"
-#include "iengravingfont.h"
-
-#include "rw/rwregister.h"
-
-#include "types/typesconv.h"
-
-#include "rendering/iscorerenderer.h"
-#include "rendering/score/autoplace.h"
-#include "rendering/score/chordlayout.h"
-#include "rendering/score/tlayout.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editdata.h"
 #include "../editing/editproperty.h"
 #include "../editing/elementeditdata.h"
 #include "../editing/navigation.h"
-
 #include "chord.h"
+#include "containers.h"
 #include "dummyparent.h"
 #include "factory.h"
+#include "iengravingconfiguration.h"
+#include "iengravingcontextconfiguration.h"
+#include "iengravingfont.h"
+#include "io/buffer.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "mscore.h"
@@ -63,7 +51,12 @@
 #include "page.h"
 #include "parenthesis.h"
 #include "part.h"
+#include "rendering/iscorerenderer.h"
+#include "rendering/score/autoplace.h"
+#include "rendering/score/chordlayout.h"
+#include "rendering/score/tlayout.h"
 #include "rootitem.h"
+#include "rw/rwregister.h"
 #include "score.h"
 #include "segment.h"
 #include "shape.h"
@@ -72,8 +65,8 @@
 #include "stafflines.h"
 #include "stafftype.h"
 #include "system.h"
-
-#include "log.h"
+#include "translation.h"
+#include "types/typesconv.h"
 #define LOG_PROP() \
     if (0) LOGD()
 

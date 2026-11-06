@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include <engraving/types/pitchvalue.h>
-#include <engraving/types/types.h>
-
 #include "guitarbendimporttypes.h"
 #include "splitchord/benddatacollectorsplitchord.h"
+#include <engraving/types/pitchvalue.h>
+#include <engraving/types/types.h>
 
 namespace mu::engraving {
 struct Note;

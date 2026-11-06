@@ -21,14 +21,12 @@
  */
 #pragma once
 
+#include "../../dom/repeatlist.h"
+#include "../../dom/score.h"
+#include "../../dom/tempotimeline.h"
+#include "../../types/constants.h"
 #include "global/realfn.h"
 #include "mpe/mpetypes.h"
-
-#include "../../dom/score.h"
-#include "../../dom/repeatlist.h"
-#include "../../dom/tempotimeline.h"
-
-#include "../../types/constants.h"
 
 namespace mu::engraving {
 inline muse::mpe::timestamp_t timestamp_from_ticks(const Score *score, const int tick) {

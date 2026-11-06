@@ -23,8 +23,8 @@
 #ifndef MU_ENGRAVING_PLAYINGTECHNIQUEANNOTATION_H
 #define MU_ENGRAVING_PLAYINGTECHNIQUEANNOTATION_H
 
-#include "stafftextbase.h"
 #include "../types/types.h"
+#include "stafftextbase.h"
 
 namespace mu::engraving {
 struct PlayTechAnnotation final : StaffTextBase {

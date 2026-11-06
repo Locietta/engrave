@@ -24,10 +24,9 @@
 
 #include <array>
 
-#include "engravingitem.h"
-#include "draw/types/painterpath.h"
-
 #include "../types/types.h"
+#include "draw/types/painterpath.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Factory;

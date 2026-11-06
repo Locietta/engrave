@@ -26,9 +26,8 @@
 #include <unordered_map>
 
 #include "containers.h"
-#include "types/string.h"
-
 #include "mpe/mpetypes.h"
+#include "types/string.h"
 
 namespace muse::mpe {
 static const std::unordered_map<ArticulationFamily, std::string> articulation_family_names{

@@ -23,7 +23,6 @@
 #include "glissandosrenderer.h"
 
 #include "dom/glissando.h"
-
 #include "playback/renderingcontext.h"
 #include "playback/utils/expressionutils.h"
 

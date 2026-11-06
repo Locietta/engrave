@@ -22,10 +22,9 @@
 
 #include "systemdivider.h"
 
-#include "types/symnames.h"
-
 #include "score.h"
 #include "system.h"
+#include "types/symnames.h"
 
 using namespace mu;
 using namespace mu::engraving;

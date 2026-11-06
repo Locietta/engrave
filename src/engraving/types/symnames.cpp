@@ -22,9 +22,8 @@
 #include "symnames.h"
 
 #include "containers.h"
-#include "translation.h"
-
 #include "log.h"
+#include "translation.h"
 
 using namespace muse;
 using namespace mu;

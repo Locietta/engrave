@@ -33,7 +33,6 @@
 
 #include "articulation.h"
 #include "chordrest.h"
-
 #include "draw/types/color.h"
 
 namespace mu::engraving {

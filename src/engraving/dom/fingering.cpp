@@ -22,8 +22,6 @@
 
 #include "fingering.h"
 
-#include "translation.h"
-
 #include "beam.h"
 #include "chord.h"
 #include "measure.h"
@@ -33,6 +31,7 @@
 #include "staff.h"
 #include "stem.h"
 #include "system.h"
+#include "translation.h"
 
 using namespace mu;
 

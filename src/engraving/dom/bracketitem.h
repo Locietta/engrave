@@ -23,10 +23,9 @@
 #ifndef MU_ENGRAVING_BRACKET_ITEM_H
 #define MU_ENGRAVING_BRACKET_ITEM_H
 
+#include "../types/types.h"
 #include "engravingitem.h"
 #include "stafflabel.h"
-
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct Factory;

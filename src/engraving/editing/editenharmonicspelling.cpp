@@ -20,13 +20,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "editenharmonicspelling.h"
 
 #include <algorithm>
 #include <vector>
-
-#include "transpose.h"
 
 #include "../dom/chord.h"
 #include "../dom/key.h"
@@ -37,6 +34,8 @@
 #include "../dom/segment.h"
 #include "../dom/select.h"
 #include "../dom/staff.h"
+#include "log.h"
+#include "transpose.h"
 
 using namespace mu::engraving;
 

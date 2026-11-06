@@ -22,24 +22,19 @@
 #ifndef MU_IMPORTEXPORT_IMPORTPTB_H
 #define MU_IMPORTEXPORT_IMPORTPTB_H
 
-#include "io/file.h"
-
-#include "engraving/types/fraction.h"
-#include "engraving/dom/score.h"
-#include "engraving/dom/mscore.h"
-#include "engraving/dom/fret.h"
-#include "engraving/dom/chordrest.h"
-#include "engraving/dom/slur.h"
-#include "engraving/dom/clef.h"
-#include "engraving/dom/keysig.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/clef.h"
-#include "engraving/dom/keysig.h"
-#include "engraving/dom/hairpin.h"
-#include "engraving/dom/ottava.h"
 #include "engraving/dom/drumset.h"
-
+#include "engraving/dom/fret.h"
+#include "engraving/dom/hairpin.h"
+#include "engraving/dom/keysig.h"
+#include "engraving/dom/mscore.h"
+#include "engraving/dom/ottava.h"
+#include "engraving/dom/score.h"
+#include "engraving/dom/slur.h"
 #include "engraving/engravingerrors.h"
+#include "engraving/types/fraction.h"
+#include "io/file.h"
 
 namespace mu::engraving {
 struct PalmMute;

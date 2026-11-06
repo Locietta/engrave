@@ -21,10 +21,9 @@
  */
 #include "translation.h"
 
+#include "log.h"
 #include "types/bytearray.h"
 #include "types/string.h"
-
-#include "log.h"
 
 using namespace muse;
 

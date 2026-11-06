@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "layoutcontext.h"
 #include "dom/textbase.h"
 #include "draw/types/font.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
 struct TextLayout {

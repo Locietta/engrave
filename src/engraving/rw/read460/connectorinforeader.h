@@ -21,8 +21,8 @@
  */
 #pragma once
 
-#include "../xmlreader.h"
 #include "../../dom/connector.h"
+#include "../xmlreader.h"
 
 //---------------------------------------------------------
 //   @@ ConnectorInfoReader

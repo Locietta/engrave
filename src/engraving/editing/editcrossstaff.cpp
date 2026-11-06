@@ -20,16 +20,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "editcrossstaff.h"
-
-#include "editchord.h"
 
 #include "../dom/chordrest.h"
 #include "../dom/part.h"
 #include "../dom/score.h"
 #include "../dom/staff.h"
 #include "../dom/stafftype.h"
+#include "editchord.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

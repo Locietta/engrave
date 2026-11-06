@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Dev tool: print the format-independent semantic dump of a score file (roadmap-engrave A0).
-#include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
-#include "engrave/src/score/score_excerpts.h"
-#include "engrave/src/score/score_semantic.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
+
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/score/score_excerpts.h"
+#include "engrave/src/score/score_semantic.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/engravingproject.h"
 
 int main(int argc, char **argv) {
     try {

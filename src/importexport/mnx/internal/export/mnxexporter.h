@@ -30,9 +30,8 @@
 #else
 #include "mnxdom.h"
 #endif
-#include "types/ret.h"
-
 #include "engraving/types/types.h"
+#include "types/ret.h"
 
 namespace mu::engraving {
 struct Chord;

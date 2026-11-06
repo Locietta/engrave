@@ -24,9 +24,9 @@
 
 #include <set>
 
+#include "../types/types.h"
 #include "durationelement.h"
 #include "property.h"
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct Text;

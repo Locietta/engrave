@@ -22,22 +22,19 @@
 
 #include "chordline.h"
 
-#include <functional>
 #include <cmath>
+#include <functional>
 #include <stdexcept>
-#include "../style/style.h"
-#include "../types/constants.h"
-
-#include "types/translatablestring.h"
 
 #include "../editing/elementeditdata.h"
+#include "../style/style.h"
+#include "../types/constants.h"
 #include "../types/typesconv.h"
-
 #include "chord.h"
-#include "score.h"
-#include "note.h"
-
 #include "log.h"
+#include "note.h"
+#include "score.h"
+#include "types/translatablestring.h"
 
 using namespace mu;
 using namespace muse::draw;

@@ -23,12 +23,11 @@
 #include "key.h"
 
 #include "accidental.h"
+#include "log.h"
 #include "part.h"
 #include "pitchspelling.h"
 #include "score.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 

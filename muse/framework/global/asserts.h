@@ -24,6 +24,7 @@ SOFTWARE.
 #pragma once
 #include <cassert>
 #include <string_view>
+
 #include "logstream.h"
 
 namespace muse::diagnostics {

@@ -23,7 +23,6 @@
 
 #include "global/io/iodevice.h"
 #include "global/types/bytearray.h"
-
 #include "internal/zipcontainer.h"
 
 using namespace muse;

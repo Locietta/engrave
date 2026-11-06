@@ -26,8 +26,8 @@
 #include <string_view>
 #include <variant>
 
-#include "global/types/string.h"
 #include "global/io/iodevice.h"
+#include "global/types/string.h"
 
 namespace muse {
 struct TextStream;

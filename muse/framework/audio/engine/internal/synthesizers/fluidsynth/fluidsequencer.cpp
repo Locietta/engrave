@@ -21,12 +21,11 @@
  */
 
 #include "fluidsequencer.h"
-#include "audio/engine/internal/offlinecancellation.h"
 
 #include <set>
 
+#include "audio/engine/internal/offlinecancellation.h"
 #include "global/interpolation.h"
-
 #include "log.h"
 
 using namespace muse;

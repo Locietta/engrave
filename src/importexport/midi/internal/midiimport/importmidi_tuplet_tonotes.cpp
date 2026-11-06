@@ -21,18 +21,17 @@
  */
 #include "importmidi_tuplet_tonotes.h"
 
-#include "importmidi_tuplet.h"
+#include "engraving/dom/chordrest.h"
+#include "engraving/dom/durationelement.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/mscore.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/tuplet.h"
+#include "engraving/types/fraction.h"
 #include "importmidi_fraction.h"
 #include "importmidi_inner.h"
-#include "engraving/dom/staff.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/types/fraction.h"
-#include "engraving/dom/durationelement.h"
-#include "engraving/dom/measure.h"
-#include "engraving/dom/tuplet.h"
-#include "engraving/dom/mscore.h"
-#include "engraving/dom/chordrest.h"
-
+#include "importmidi_tuplet.h"
 #include "log.h"
 
 using namespace mu::engraving;

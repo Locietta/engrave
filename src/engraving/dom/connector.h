@@ -25,10 +25,9 @@
 
 #include <climits>
 
-#include "global/allocator.h"
-
-#include "location.h"
 #include "../types/types.h"
+#include "global/allocator.h"
+#include "location.h"
 
 namespace mu::engraving {
 struct EngravingItem;

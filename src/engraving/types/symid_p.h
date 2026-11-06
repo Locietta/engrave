@@ -21,7 +21,7 @@
  */
 
 // No guard
-#include <vector>
+// Standard headers belong in symid.h, outside the enclosing namespace.
 
 //---------------------------------------------------------
 //   SymId

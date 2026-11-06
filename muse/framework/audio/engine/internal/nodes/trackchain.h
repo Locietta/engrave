@@ -22,10 +22,9 @@
 #pragma once
 
 #include "audionode.h"
-
 #include "audiosourcenode.h"
-#include "fxchain.h"
 #include "automationcontrolnode.h"
+#include "fxchain.h"
 #include "signalnode.h"
 
 namespace muse::audio {

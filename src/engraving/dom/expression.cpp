@@ -24,8 +24,8 @@
 #include "chord.h"
 #include "dynamic.h"
 #include "note.h"
-#include "segment.h"
 #include "score.h"
+#include "segment.h"
 #include "stafftext.h"
 
 namespace mu::engraving {

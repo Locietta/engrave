@@ -19,26 +19,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "global/appinfo.h"
-#include "log.h"
 #include "writer.h"
 
+#include "../inoutdata.h"
 #include "../types/types.h"
-
-#include "dom/score.h"
+#include "../xmlwriter.h"
+#include "dom/excerpt.h"
 #include "dom/masterscore.h"
 #include "dom/part.h"
-#include "dom/excerpt.h"
-#include "dom/staff.h"
+#include "dom/score.h"
 #include "dom/segment.h"
-
+#include "dom/staff.h"
+#include "global/appinfo.h"
 #include "global/io/buffer.h"
-
-#include "../xmlwriter.h"
-#include "../inoutdata.h"
-
-#include "twrite.h"
+#include "log.h"
 #include "staffwrite.h"
+#include "twrite.h"
 
 using namespace muse;
 using namespace mu::engraving;

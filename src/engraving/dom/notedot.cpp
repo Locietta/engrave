@@ -22,12 +22,10 @@
 
 #include "notedot.h"
 
-#include "style/style.h"
-
+#include "log.h"
 #include "note.h"
 #include "rest.h"
-
-#include "log.h"
+#include "style/style.h"
 
 using namespace mu;
 

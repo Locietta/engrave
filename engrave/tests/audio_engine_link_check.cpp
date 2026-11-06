@@ -7,13 +7,12 @@
 #include <iostream>
 #include <memory>
 
-#include "engrave/src/audio/engine_audio.h"
-
 #include "audio/engine/audioservices.h"
 #include "audio/engine/iaudioengineconfiguration.h"
-#include "audio/engine/isynthresolver.h"
-#include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/audiofactory.h"
+#include "audio/engine/internal/offlinerendersession.h"
+#include "audio/engine/isynthresolver.h"
+#include "engrave/src/audio/engine_audio.h"
 
 int main() {
     muse::audio::engine::AudioServices setup(nullptr);

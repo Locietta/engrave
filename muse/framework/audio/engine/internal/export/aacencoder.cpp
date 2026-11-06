@@ -20,20 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../offlinecancellation.h"
 #include "aacencoder.h"
 
 #include <algorithm>
 #include <vector>
 
-#include "aacenc_lib.h"
-#include "FDK_audio.h"
-
-#include "global/io/iodevice.h"
-#include "audio/common/audioerrors.h"
-
 #include "../dsp/audiomathutils.h"
-
+#include "../offlinecancellation.h"
+#include "FDK_audio.h"
+#include "aacenc_lib.h"
+#include "audio/common/audioerrors.h"
+#include "global/io/iodevice.h"
 #include "log.h"
 
 using namespace muse::audio;

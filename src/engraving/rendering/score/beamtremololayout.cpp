@@ -25,8 +25,8 @@
 #include <array>
 
 #include "../dom/beam.h"
-#include "../dom/chordrest.h"
 #include "../dom/chord.h"
+#include "../dom/chordrest.h"
 #include "../dom/measure.h"
 #include "../dom/note.h"
 #include "../dom/score.h"
@@ -35,12 +35,10 @@
 #include "../dom/stemslash.h"
 #include "../dom/system.h"
 #include "../dom/tremolotwochord.h"
-
-#include "tlayout.h"
 #include "chordlayout.h"
-#include "stemlayout.h"
-
 #include "log.h"
+#include "stemlayout.h"
+#include "tlayout.h"
 
 using namespace mu;
 using namespace mu::engraving;

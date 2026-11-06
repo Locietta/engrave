@@ -22,12 +22,10 @@
 
 #include "jump.h"
 
-#include "types/typesconv.h"
-
+#include "log.h"
 #include "measure.h"
 #include "score.h"
-
-#include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

@@ -4,15 +4,9 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include "engrave/src/audio/engine_audio.h"
-#include "noqt_filesystem.h"
-#include "noqt_runtime.h"
-#include "runtime_assets.h"
-
 #include "draw/fontmetrics.h"
 #include "draw/internal/ifontsdatabase.h"
-#include "mpe/internal/articulationprofilesrepository.h"
-
+#include "engrave/src/audio/engine_audio.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
 #include "engraving/dom/instrtemplate.h"
@@ -26,6 +20,10 @@
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/style/defaultstyle.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
+#include "mpe/internal/articulationprofilesrepository.h"
+#include "noqt_filesystem.h"
+#include "noqt_runtime.h"
+#include "runtime_assets.h"
 
 namespace music {
 using namespace muse;

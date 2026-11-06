@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include "../iwriter.h"
-
-#include "writecontext.h"
 #include "../compat/writescorehook.h"
+#include "../iwriter.h"
+#include "writecontext.h"
 
 namespace mu::engraving::write {
 struct Writer : rw::IWriter {

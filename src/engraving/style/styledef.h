@@ -25,10 +25,9 @@
 #include <vector>
 
 #include "../dom/mscore.h"
-#include "global/types/string.h"
-
-#include "../types/propertyvalue.h"
 #include "../dom/property.h"
+#include "../types/propertyvalue.h"
+#include "global/types/string.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

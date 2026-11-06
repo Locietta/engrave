@@ -20,13 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "lyrics.h"
-
 #include "../editing/navigation.h"
-
 #include "chord.h"
 #include "chordrest.h"
 #include "factory.h"
+#include "lyrics.h"
 #include "measure.h"
 #include "note.h"
 #include "score.h"

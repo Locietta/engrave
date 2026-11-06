@@ -21,11 +21,9 @@
  */
 #include "readchordlisthook.h"
 
-#include "style/style.h"
-
 #include "dom/score.h"
-
 #include "log.h"
+#include "style/style.h"
 
 using namespace mu::engraving::compat;
 using namespace mu::engraving;

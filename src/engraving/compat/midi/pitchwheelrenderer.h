@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "../../types/types.h"
-
 #include "event.h"
 
 namespace mu::engraving {

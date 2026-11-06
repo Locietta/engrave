@@ -23,28 +23,21 @@
 
 #include <memory>
 
-#include "global/io/buffer.h"
-#include "global/types/retval.h"
-
-#include "../engravingerrors.h"
-
-#include "../types/types.h"
-
-#include "../dom/masterscore.h"
 #include "../dom/excerpt.h"
 #include "../dom/imageStore.h"
-
-#include "engraving/automation/automationdata.h"
-#include "engraving/automation/internal/automationrw.h"
-
+#include "../dom/masterscore.h"
+#include "../engravingerrors.h"
+#include "../types/types.h"
 #include "compat/compatutils.h"
 #include "compat/readstyle.h"
-
+#include "engraving/automation/automationdata.h"
+#include "engraving/automation/internal/automationrw.h"
+#include "global/io/buffer.h"
+#include "global/types/retval.h"
+#include "inoutdata.h"
+#include "log.h"
 #include "rwregister.h"
 #include "xmlreader.h"
-#include "inoutdata.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse;

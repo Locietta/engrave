@@ -23,7 +23,6 @@
 #pragma once
 
 #include "rest.h"
-
 #include "utils.h"
 
 namespace mu::engraving {

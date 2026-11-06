@@ -21,6 +21,7 @@
  */
 
 #include "guitarprodrumset.h"
+
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/types/typesconv.h"

@@ -24,8 +24,8 @@
 
 #include <climits>
 
-#include "layoutcontext.h"
 #include "dom/arpeggio.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
 struct ArpeggioLayout {

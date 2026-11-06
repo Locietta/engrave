@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "audioservices.h"
-#include "internal/synthesizers/fluidsynth/fluidresolver.h"
+
 #include "internal/fx/musefxresolver.h"
+#include "internal/synthesizers/fluidsynth/fluidresolver.h"
 using namespace muse::audio;
 using namespace muse::audio::engine;
 

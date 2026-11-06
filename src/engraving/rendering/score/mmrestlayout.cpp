@@ -19,7 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "mmrestlayout.h"
 
 #include "dom/barline.h"
@@ -32,9 +31,8 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
-
 #include "editing/editmeasures.h"
-
+#include "log.h"
 #include "measurelayout.h"
 #include "tlayout.h"
 

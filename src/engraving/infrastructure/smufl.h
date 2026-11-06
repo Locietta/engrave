@@ -24,9 +24,8 @@
 #include <array>
 #include <map>
 
-#include "types/string.h"
-
 #include "../types/symid.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct Smufl {

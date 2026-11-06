@@ -1,18 +1,18 @@
 // SetProperty, ResetProperty and SetStyle: the engine's own undoable property
 // and style changes.
 
+#include "engraving/dom/property.h"
+
 #include <format>
 #include <string>
-
-#include "engraving/dom/engravingobject.h"
-#include "engraving/dom/property.h"
-#include "engraving/dom/score.h"
-#include "engraving/style/style.h"
-#include "engraving/style/styledef.h"
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/value_codec.h"
+#include "engraving/dom/engravingobject.h"
+#include "engraving/dom/score.h"
+#include "engraving/style/style.h"
+#include "engraving/style/styledef.h"
 
 namespace engrave::api {
 namespace {

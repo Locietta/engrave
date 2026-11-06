@@ -23,8 +23,8 @@
 #ifndef MU_ENGRAVING_NOTEEVENT_H
 #define MU_ENGRAVING_NOTEEVENT_H
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "global/allocator.h"
 

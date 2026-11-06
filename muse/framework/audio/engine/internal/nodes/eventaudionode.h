@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include "audiosourcenode.h"
-
-#include "mpe/events.h"
-
-#include "audio/common/audiotypes.h"
 #include "../iaudiofactory.h"
+#include "audio/common/audiotypes.h"
+#include "audiosourcenode.h"
+#include "mpe/events.h"
 
 namespace muse::audio::engine {
 struct EventAudioNode : AudioSourceNode {

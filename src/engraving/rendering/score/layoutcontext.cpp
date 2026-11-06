@@ -19,18 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "layoutcontext.h"
 
+#include "dom/score.h"
+#include "dom/spanner.h"
 #include "editing/addremoveelement.h"
 #include "editing/editpagelocks.h"
 #include "editing/editsystemlocks.h"
 #include "editing/transaction/transaction.h"
+#include "log.h"
 #include "style/defaultstyle.h"
-
-#include "dom/score.h"
-#include "dom/spanner.h"
-
 #include "tlayout.h"
 
 using namespace mu::engraving;

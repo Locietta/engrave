@@ -21,8 +21,10 @@
  */
 #include "pagelayout.h"
 
-#include "realfn.h"
-
+#include "arpeggiolayout.h"
+#include "beamlayout.h"
+#include "chordbracketlayout.h"
+#include "chordlayout.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
 #include "dom/box.h"
@@ -47,22 +49,17 @@
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
-
-#include "arpeggiolayout.h"
-#include "beamlayout.h"
-#include "chordlayout.h"
-#include "chordbracketlayout.h"
 #include "headerfooterlayout.h"
+#include "log.h"
 #include "masklayout.h"
 #include "measurelayout.h"
+#include "realfn.h"
 #include "slurtielayout.h"
+#include "systemheaderlayout.h"
 #include "systemlayout.h"
 #include "tlayout.h"
 #include "tupletlayout.h"
 #include "verticalgapdata.h"
-#include "systemheaderlayout.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

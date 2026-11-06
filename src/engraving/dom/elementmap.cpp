@@ -23,7 +23,6 @@
 #include "elementmap.h"
 
 #include "containers.h"
-
 #include "tupletmap.h"
 
 namespace mu::engraving {

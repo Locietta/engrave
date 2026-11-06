@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "scorecomp.h"
 
 #include <algorithm>
@@ -30,7 +29,7 @@
 
 #include "global/io/buffer.h"
 #include "global/serialization/textstream.h"
-
+#include "log.h"
 #include "scorerw.h"
 
 using namespace mu::engraving;

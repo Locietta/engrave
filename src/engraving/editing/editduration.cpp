@@ -24,8 +24,6 @@
 
 #include <algorithm>
 
-#include "rw/xmlreader.h"
-
 #include "../dom/chord.h"
 #include "../dom/chordrest.h"
 #include "../dom/durationtype.h"
@@ -39,13 +37,12 @@
 #include "../dom/select.h"
 #include "../dom/tie.h"
 #include "../dom/utils.h"
-
+#include "log.h"
 #include "navigation.h"
 #include "noteinput.h"
 #include "paste.h"
+#include "rw/xmlreader.h"
 #include "transaction/transaction.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

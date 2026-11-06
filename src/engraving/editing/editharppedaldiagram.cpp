@@ -24,11 +24,10 @@
 
 #include <vector>
 
-#include "navigation.h"
-
 #include "../dom/harppedaldiagram.h"
 #include "../dom/part.h"
 #include "../dom/score.h"
+#include "navigation.h"
 
 using namespace mu::engraving;
 

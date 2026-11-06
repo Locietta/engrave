@@ -26,30 +26,27 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "engraving/dom/score.h"
-#include "engraving/dom/repeatlist.h"
-#include "engraving/dom/segment.h"
-#include "engraving/dom/measure.h"
-#include "engraving/dom/dynamic.h"
-#include "engraving/dom/measurerepeat.h"
-#include "engraving/dom/part.h"
-#include "engraving/dom/staff.h"
-#include "engraving/dom/hairpin.h"
-#include "engraving/dom/breath.h"
-#include "engraving/dom/fermata.h"
-#include "engraving/dom/tempotext.h"
-#include "engraving/dom/gradualtempochange.h"
-#include "engraving/dom/volta.h"
-
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/dynamicvalues.h"
 #include "engraving/automation/tempovalues.h"
-
+#include "engraving/dom/breath.h"
+#include "engraving/dom/dynamic.h"
+#include "engraving/dom/fermata.h"
+#include "engraving/dom/gradualtempochange.h"
+#include "engraving/dom/hairpin.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/measurerepeat.h"
+#include "engraving/dom/part.h"
+#include "engraving/dom/repeatlist.h"
+#include "engraving/dom/score.h"
+#include "engraving/dom/segment.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/tempotext.h"
+#include "engraving/dom/volta.h"
 #include "engraving/types/constants.h"
-
 #include "global/containers.h"
-#include "global/realfn.h"
 #include "global/log.h"
+#include "global/realfn.h"
 
 using namespace mu::engraving;
 

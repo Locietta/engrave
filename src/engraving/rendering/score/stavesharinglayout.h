@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "dom/sharedpart.h"
 #include "dom/stavesharinglabel.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
 struct StaveSharingLayout {

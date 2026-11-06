@@ -24,13 +24,12 @@
  File handling: loading and saving.
  */
 
-#include "style/style.h"
 #include "../editing/editexcerpt.h"
 #include "../editing/transaction/transaction.h"
-
 #include "barline.h"
 #include "engravingitem.h"
 #include "excerpt.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "measurebase.h"
@@ -38,8 +37,7 @@
 #include "repeatlist.h"
 #include "score.h"
 #include "segment.h"
-
-#include "log.h"
+#include "style/style.h"
 
 namespace mu::engraving {
 static void remove_repeat_markings(Score *score) {

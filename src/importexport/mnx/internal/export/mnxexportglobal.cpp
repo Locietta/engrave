@@ -19,10 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "mnxexporter.h"
-
-#include <optional>
 #include <cmath>
+#include <optional>
 
 #include "engraving/dom/barline.h"
 #include "engraving/dom/engravingitem.h"
@@ -37,8 +35,9 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/timesig.h"
-#include "log.h"
 #include "internal/shared/mnxtypesconv.h"
+#include "log.h"
+#include "mnxexporter.h"
 
 using namespace mu::engraving;
 

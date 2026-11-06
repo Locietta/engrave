@@ -20,16 +20,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "harmonylayout.h"
-
-#include "draw/fontmetrics.h"
 
 #include "dom/factory.h"
 #include "dom/fret.h"
 #include "dom/harmony.h"
 #include "dom/staff.h"
-
+#include "draw/fontmetrics.h"
+#include "log.h"
 #include "parenthesislayout.h"
 #include "textlayout.h"
 #include "tlayout.h"

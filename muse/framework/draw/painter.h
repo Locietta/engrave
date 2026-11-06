@@ -25,15 +25,13 @@
 #include <stack>
 
 #include "global/types/string.h"
-
+#include "ipaintprovider.h"
 #include "types/color.h"
-#include "types/geometry.h"
 #include "types/drawtypes.h"
 #include "types/font.h"
+#include "types/geometry.h"
 #include "types/pen.h"
 #include "types/pixmap.h"
-
-#include "ipaintprovider.h"
 
 struct QPaintDevice;
 

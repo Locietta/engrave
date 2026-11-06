@@ -20,11 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "measure.h"
-#include "measurebase.h"
 #include "rangelock.h"
 
 #include "log.h"
+#include "measure.h"
+#include "measurebase.h"
 
 namespace mu::engraving {
 bool RangeLock::contains(const MeasureBase *mb) const { return start_mb_->is_before_or_equal(mb) && mb->is_before_or_equal(end_mb_); }

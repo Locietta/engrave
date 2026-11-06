@@ -22,12 +22,10 @@
 
 #pragma once
 
-#include "engravingitem.h"
-
-#include "draw/types/font.h"
-#include "global/types/translatablestring.h"
-
 #include "../types/types.h"
+#include "draw/types/font.h"
+#include "engravingitem.h"
+#include "global/types/translatablestring.h"
 
 namespace mu::engraving {
 //! Dummy element, used for drag&drop

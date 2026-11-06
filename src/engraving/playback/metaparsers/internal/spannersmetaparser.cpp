@@ -24,12 +24,11 @@
 
 #include "dom/glissando.h"
 #include "dom/note.h"
+#include "dom/pedal.h"
 #include "dom/spanner.h"
 #include "dom/trill.h"
-#include "dom/pedal.h"
-
-#include "playback/utils/pitchutils.h"
 #include "playback/filters/spannerfilter.h"
+#include "playback/utils/pitchutils.h"
 
 using namespace mu::engraving;
 using namespace muse;

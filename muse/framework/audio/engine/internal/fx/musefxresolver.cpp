@@ -22,9 +22,8 @@
 
 #include "musefxresolver.h"
 
-#include "reverb/reverbprocessor.h"
-
 #include "audio/common/audioutils.h"
+#include "reverb/reverbprocessor.h"
 
 using namespace muse::audio;
 using namespace muse::audio::fx;

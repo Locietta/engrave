@@ -22,13 +22,13 @@
 #include "tie.h"
 
 #include "../rendering/iscorerenderer.h"
-
 #include "accidental.h"
 #include "barline.h"
 #include "chord.h"
 #include "factory.h"
 #include "hook.h"
 #include "ledgerline.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "notedot.h"
@@ -43,8 +43,6 @@
 #include "tiejumppointlist.h"
 #include "utils.h"
 #include "volta.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::draw;

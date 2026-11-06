@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "engraving/dom/measurenumber.h"
 #include "engraving/dom/mmrestrange.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
 struct MeasureNumberLayout {

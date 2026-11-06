@@ -33,26 +33,16 @@
 // TODO LVI 2011-10-30: determine how to report export errors.
 // Currently all output (both debug and error reports) are done using LOGD.
 
-#include <cassert>
 #include "exportmusicxml.h"
 
+#include <cassert>
 #include <math.h>
 #include <set>
 
+#include "../shared/musicxmlfonthandler.h"
+#include "../shared/musicxmlsupport.h"
+#include "../shared/musicxmltypes.h"
 #include "containers.h"
-#include "realfn.h"
-#include "io/iodevice.h"
-#include "io/buffer.h"
-#include "io/file.h"
-#include "io/fileinfo.h"
-#include "global/serialization/xmlstreamreader.h"
-#include "global/serialization/zipwriter.h"
-
-#include "engraving/style/style.h"
-#include "engraving/rw/xmlwriter.h"
-#include "engraving/types/typesconv.h"
-#include "engraving/types/symnames.h"
-
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
@@ -78,9 +68,9 @@
 #include "engraving/dom/hammeronpulloff.h"
 #include "engraving/dom/harmonicmark.h"
 #include "engraving/dom/harmony.h"
+#include "engraving/dom/harppedaldiagram.h"
 #include "engraving/dom/image.h"
 #include "engraving/dom/imageStore.h"
-#include "engraving/dom/harppedaldiagram.h"
 #include "engraving/dom/instrchange.h"
 #include "engraving/dom/jump.h"
 #include "engraving/dom/key.h"
@@ -128,17 +118,22 @@
 #include "engraving/dom/utils.h"
 #include "engraving/dom/volta.h"
 #include "engraving/dom/whammybar.h"
-
-#include "../shared/musicxmlfonthandler.h"
-#include "../shared/musicxmlsupport.h"
-#include "../shared/musicxmltypes.h"
-
-#include "imusicxmlconfiguration.h"
+#include "engraving/iengravingconfiguration.h"
+#include "engraving/rw/xmlwriter.h"
+#include "engraving/style/style.h"
+#include "engraving/types/symnames.h"
+#include "engraving/types/typesconv.h"
 #include "global/appinfo.h"
 #include "global/realfn.h"
-#include "engraving/iengravingconfiguration.h"
-
+#include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/zipwriter.h"
+#include "imusicxmlconfiguration.h"
+#include "io/buffer.h"
+#include "io/file.h"
+#include "io/fileinfo.h"
+#include "io/iodevice.h"
 #include "log.h"
+#include "realfn.h"
 
 using namespace mu;
 using namespace muse;

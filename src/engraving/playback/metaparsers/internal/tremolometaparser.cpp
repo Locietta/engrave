@@ -22,12 +22,11 @@
 
 #include "tremolometaparser.h"
 
+#include "../../renderingcontext.h"
+#include "dom/chord.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-#include "dom/chord.h"
-
 #include "mpe/mpetypes.h"
-#include "../../renderingcontext.h"
 
 using namespace mu::engraving;
 using namespace muse;

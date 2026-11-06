@@ -22,8 +22,6 @@
 
 #include <gtest/gtest.h>
 
-#include "io/fileinfo.h"
-
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
@@ -44,14 +42,13 @@
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stem.h"
-
 #include "engraving/editing/editmeasurerepeat.h"
 #include "engraving/editing/editvisibility.h"
 #include "engraving/editing/editvoice.h"
 #include "engraving/editing/transaction/transaction.h"
-
-#include "utils/scorerw.h"
+#include "io/fileinfo.h"
 #include "utils/scorecomp.h"
+#include "utils/scorerw.h"
 #include "utils/testutils.h"
 
 using namespace mu::engraving;

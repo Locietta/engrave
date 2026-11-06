@@ -22,8 +22,8 @@
 #ifndef MUSE_AUDIO_SAMPLERATECONVERTOR_H
 #define MUSE_AUDIO_SAMPLERATECONVERTOR_H
 
-#include <vector>
 #include <deque>
+#include <vector>
 
 namespace muse::audio::engine {
 struct SampleRateConvertor {

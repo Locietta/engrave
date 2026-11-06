@@ -28,7 +28,6 @@
 */
 
 #include "measurebase.h"
-
 #include "segmentlist.h"
 
 namespace mu::engraving::read400 {

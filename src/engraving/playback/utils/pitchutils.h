@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "mpe/mpetypes.h"
-
 #include "engraving/dom/pitchspelling.h"
+#include "mpe/mpetypes.h"
 
 namespace mu::engraving {
 inline muse::mpe::PitchClass pitch_class_from_tpc(const int tpc) {

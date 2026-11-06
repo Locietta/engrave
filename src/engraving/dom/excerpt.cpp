@@ -22,25 +22,23 @@
 
 #include "excerpt.h"
 
-#include "containers.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editexcerpt.h"
-#include "../editing/transpose.h"
 #include "../editing/transaction/transaction.h"
-#include "style/style.h"
-
+#include "../editing/transpose.h"
 #include "barline.h"
 #include "beam.h"
 #include "box.h"
 #include "capo.h"
 #include "chord.h"
+#include "containers.h"
 #include "factory.h"
 #include "fret.h"
 #include "guitarbend.h"
 #include "harmony.h"
 #include "layoutbreak.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "lyrics.h"
 #include "masterscore.h"
 #include "measure.h"
@@ -54,6 +52,7 @@
 #include "segment.h"
 #include "staff.h"
 #include "stafftype.h"
+#include "style/style.h"
 #include "system.h"
 #include "text.h"
 #include "textline.h"
@@ -63,8 +62,6 @@
 #include "tuplet.h"
 #include "tupletmap.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

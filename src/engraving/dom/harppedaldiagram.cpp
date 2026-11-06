@@ -22,16 +22,13 @@
 
 #include "harppedaldiagram.h"
 
-#include "translation.h"
-#include "types/typesconv.h"
-
 #include "../editing/editharppedaldiagram.h"
-
+#include "log.h"
 #include "part.h"
 #include "score.h"
 #include "segment.h"
-
-#include "log.h"
+#include "translation.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

@@ -7,8 +7,8 @@
 #include <string_view>
 #include <vector>
 
+#include "engrave/src/api/handles.h"
 #include "engrave/tests/harness/harness.h"
-
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/instrument.h"
@@ -16,8 +16,6 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
-
-#include "engrave/src/api/handles.h"
 
 namespace engrave::harness { namespace {
 

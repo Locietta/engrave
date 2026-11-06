@@ -22,7 +22,6 @@
 #include "passlayoutindependentitems.h"
 
 #include "dom/score.h"
-
 #include "tlayout.h"
 
 using namespace mu::engraving;

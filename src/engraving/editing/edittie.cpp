@@ -33,12 +33,10 @@
 #include "../dom/tie.h"
 #include "../dom/tiejumppointlist.h"
 #include "../dom/utils.h"
-
 #include "editchord.h"
+#include "log.h"
 #include "noteinput.h"
 #include "transaction/transaction.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

@@ -14,8 +14,6 @@
 // printed and midiEventsTruncated marks a longer stream. The probe prints one
 // JSON object on stdout; engine and engraving logs go to stderr.
 
-#include "engrave/src/audio/engine_audio.h"
-
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -30,12 +28,13 @@
 
 #include <nlohmann/json.hpp>
 
-#include "engraving/dom/masterscore.h"
-#include "engraving/engravingproject.h"
-#include "global/types/uri.h"
+#include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/noqt_runtime.h"
 #include "engrave/src/score/score_excerpts.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/engravingproject.h"
+#include "global/types/uri.h"
 
 #ifdef _WIN32
 #include <windows.h>

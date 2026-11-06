@@ -20,14 +20,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "tiejumppointlist.h"
 
 #include "../editing/edittie.h"
-
 #include "barline.h"
 #include "chord.h"
 #include "factory.h"
+#include "log.h"
 #include "marker.h"
 #include "measure.h"
 #include "note.h"

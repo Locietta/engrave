@@ -21,18 +21,15 @@
  */
 #include "scoreorder.h"
 
-#include "rw/xmlreader.h"
-#include "rw/xmlwriter.h"
-
+#include "../editing/editstaffbrackets.h"
 #include "dom/bracketitem.h"
 #include "dom/instrtemplate.h"
 #include "dom/part.h"
 #include "dom/score.h"
 #include "dom/staff.h"
-
-#include "../editing/editstaffbrackets.h"
-
 #include "log.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
 
 using namespace mu;
 

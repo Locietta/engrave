@@ -23,11 +23,10 @@
 #include "stafftypechange.h"
 
 #include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "score.h"
 #include "measure.h"
-#include "system.h"
+#include "score.h"
 #include "staff.h"
+#include "system.h"
 
 using namespace mu::engraving;
 

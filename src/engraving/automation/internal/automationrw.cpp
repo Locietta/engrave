@@ -23,10 +23,9 @@
 #include "automationrw.h"
 
 #include "engraving/automation/automationdata.h"
-
-#include "global/serialization/json.h"
 #include "global/containers.h"
 #include "global/log.h"
+#include "global/serialization/json.h"
 
 using namespace mu::engraving;
 

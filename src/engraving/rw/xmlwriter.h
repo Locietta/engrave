@@ -21,10 +21,9 @@
  */
 #pragma once
 
+#include "../dom/property.h"
 #include "io/iodevice.h"
 #include "serialization/xmlstreamwriter.h"
-
-#include "../dom/property.h"
 
 namespace mu::engraving {
 struct EngravingObject;

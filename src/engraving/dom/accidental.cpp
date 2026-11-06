@@ -22,16 +22,13 @@
 
 #include "accidental.h"
 
-#include "types/symnames.h"
-#include "types/translatablestring.h"
-
+#include "../editing/editnote.h"
 #include "actionicon.h"
+#include "log.h"
 #include "note.h"
 #include "score.h"
-
-#include "../editing/editnote.h"
-
-#include "log.h"
+#include "types/symnames.h"
+#include "types/translatablestring.h"
 
 using namespace mu;
 using namespace mu::engraving;

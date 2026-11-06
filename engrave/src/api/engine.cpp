@@ -9,18 +9,17 @@
 
 #include <nlohmann/json.hpp>
 
+#include "engrave/src/api/handles.h"
+#include "engrave/src/api/mnx.h"
+#include "engrave/src/api/sniff.h"
+#include "engrave/src/api/state.h"
+#include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/runtime/version.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/text.h"
 #include "engraving/engravingproject.h"
-
-#include "engrave/src/api/mnx.h"
-#include "engrave/src/api/handles.h"
-#include "engrave/src/api/sniff.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/audio/engine_audio.h"
-#include "engrave/src/runtime/runtime_assets.h"
 
 namespace engrave {
 namespace {

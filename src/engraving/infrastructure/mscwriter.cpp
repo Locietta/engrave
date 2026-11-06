@@ -21,20 +21,19 @@
  */
 #include "mscwriter.h"
 
-#include <vector>
 #include <exception>
+#include <vector>
 
 #include "containers.h"
 #include "io/buffer.h"
-#include "io/writebudget.h"
+#include "io/dir.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
-#include "io/dir.h"
+#include "io/writebudget.h"
+#include "log.h"
+#include "serialization/textstream.h"
 #include "serialization/xmlstreamwriter.h"
 #include "serialization/zipwriter.h"
-#include "serialization/textstream.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse;

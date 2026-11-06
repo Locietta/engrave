@@ -24,9 +24,8 @@
 
 #include <vector>
 
-#include "draw/types/geometry.h"
-
 #include "../types/types.h"
+#include "draw/types/geometry.h"
 
 namespace mu::engraving {
 struct ChordRest;

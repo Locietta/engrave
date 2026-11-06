@@ -24,11 +24,10 @@
 
 #include "drumset.h"
 #include "instrtemplate.h"
+#include "log.h"
 #include "masterscore.h"
 #include "stringdata.h"
 #include "textbase.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

@@ -1,11 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "engrave/src/api/state.h"
 #include <engrave/audio.h>
 #include <engrave/error.h>
 #include <engrave/output.h>
-
-#include "engrave/src/api/state.h"
 
 namespace engrave {
 

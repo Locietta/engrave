@@ -23,9 +23,8 @@
 #ifndef MUSE_AUDIO_FLUIDSOUNDFONTPARSER_H
 #define MUSE_AUDIO_FLUIDSOUNDFONTPARSER_H
 
-#include "global/types/retval.h"
-
 #include "audio/common/soundfonttypes.h"
+#include "global/types/retval.h"
 
 namespace muse::audio::synth {
 struct FluidSoundFontParser {

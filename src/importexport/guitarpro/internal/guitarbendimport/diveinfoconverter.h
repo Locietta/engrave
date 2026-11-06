@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include <engraving/types/pitchvalue.h>
-
 #include "guitarbendimporttypes.h"
+#include <engraving/types/pitchvalue.h>
 
 namespace mu::engraving {
 struct Note;

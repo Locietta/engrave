@@ -24,10 +24,7 @@
 
 #include <gtest/gtest.h>
 
-#include <engrave/engrave.h>
-
 #include "engrave/src/api/state.h"
-
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/masterscore.h"
@@ -35,6 +32,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include <engrave/engrave.h>
 
 namespace {
 

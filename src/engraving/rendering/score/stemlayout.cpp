@@ -21,6 +21,7 @@
  */
 
 #include "stemlayout.h"
+
 #include "dom/chord.h"
 #include "dom/hook.h"
 #include "dom/note.h"

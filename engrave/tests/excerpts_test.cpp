@@ -1,27 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
-#include "engrave/src/score/score_excerpts.h"
-#include "engrave/src/score/score_metadata.h"
-#include "engrave/src/render/score_render.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/chord.h"
-#include "engraving/dom/chordline.h"
-#include "engraving/dom/measure.h"
-#include "engraving/playback/metaparsers/chordarticulationsparser.h"
-#include "engraving/playback/playbackcontext.h"
-#include "engraving/playback/renderingcontext.h"
-#include "engraving/dom/part.h"
-#include "engraving/dom/text.h"
-#include "global/io/buffer.h"
-#include "importexport/musicxml/internal/export/exportmusicxml.h"
-#include "importexport/midi/internal/midiexport/exportmidi.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+
+#include "engrave/src/render/score_render.h"
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/score/score_excerpts.h"
+#include "engrave/src/score/score_metadata.h"
+#include "engraving/dom/chord.h"
+#include "engraving/dom/chordline.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/part.h"
+#include "engraving/dom/text.h"
+#include "engraving/engravingproject.h"
+#include "engraving/playback/metaparsers/chordarticulationsparser.h"
+#include "engraving/playback/playbackcontext.h"
+#include "engraving/playback/renderingcontext.h"
+#include "global/io/buffer.h"
+#include "importexport/midi/internal/midiexport/exportmidi.h"
+#include "importexport/musicxml/internal/export/exportmusicxml.h"
 
 namespace {
 void expect(bool value, const char *message) {

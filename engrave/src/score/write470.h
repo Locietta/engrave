@@ -2,9 +2,9 @@
 
 #include <string>
 
+#include "engrave/src/runtime/noqt_runtime.h"
 #include <engrave/error.h>
 #include <engrave/output.h>
-#include "engrave/src/runtime/noqt_runtime.h"
 
 namespace mu::engraving {
 struct Score;

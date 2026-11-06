@@ -20,11 +20,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "importmidi_clef.h"
+
 #include <algorithm>
 #include <cmath>
 #include <set>
 
-#include "importmidi_clef.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/clef.h"
@@ -41,7 +42,6 @@
 #include "importmidi_meter.h"
 #include "importmidi_operations.h"
 #include "importmidi_tie.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

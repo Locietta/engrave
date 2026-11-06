@@ -22,6 +22,7 @@
 
 #include "editkeysig.h"
 
+#include "addremoveelement.h"
 #include "dom/factory.h"
 #include "dom/instrument.h"
 #include "dom/keysig.h"
@@ -30,12 +31,9 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
-
-#include "addremoveelement.h"
+#include "log.h"
 #include "transaction/transaction.h"
 #include "transpose.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

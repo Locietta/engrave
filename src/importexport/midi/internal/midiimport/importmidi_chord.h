@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "importexport/midi/internal/midishared/generalmidi.h"
-
 #include "importmidi_fraction.h"
 #include "importmidi_tuplet.h"
 

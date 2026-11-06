@@ -20,13 +20,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_swing.h"
-#include "engraving/dom/masterscore.h"
+
 #include "engraving/dom/chordrest.h"
-#include "engraving/dom/stafftext.h"
 #include "engraving/dom/engravingitem.h"
-#include "engraving/dom/segment.h"
+#include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stafftext.h"
 #include "engraving/dom/tuplet.h"
 #include "importmidi_fraction.h"
 

@@ -9,12 +9,12 @@
 
 #include "gpbar.h"
 #include "gpbeat.h"
-#include "gpvoice.h"
 #include "gpmasterbar.h"
 #include "gpmastertracks.h"
 #include "gpnote.h"
 #include "gpscore.h"
 #include "gptrack.h"
+#include "gpvoice.h"
 #include "inoteproperty.h"
 
 namespace mu::iex::guitarpro {

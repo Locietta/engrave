@@ -20,17 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "restlayout.h"
 
 #include "beamlayout.h"
 #include "chordlayout.h"
-#include "tlayout.h"
-
 #include "dom/beam.h"
 #include "dom/measure.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "log.h"
+#include "tlayout.h"
 
 using namespace muse;
 using namespace mu::engraving;

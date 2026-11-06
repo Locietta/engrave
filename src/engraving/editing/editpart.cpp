@@ -20,27 +20,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "editpart.h"
-#include "editscoreproperties.h"
-#include "editstaff.h"
-#include "transaction/transaction.h"
-#include "transpose.h"
 
 #include "../dom/excerpt.h"
 #include "../dom/factory.h"
 #include "../dom/instrchange.h"
 #include "../dom/instrtemplate.h"
-#include "../dom/scoreorder.h"
 #include "../dom/masterscore.h"
 #include "../dom/mscore.h"
 #include "../dom/part.h"
 #include "../dom/score.h"
+#include "../dom/scoreorder.h"
 #include "../dom/segment.h"
 #include "../dom/staff.h"
 #include "../dom/stafftype.h"
 #include "../dom/stringtunings.h"
 #include "../dom/utils.h"
+#include "editscoreproperties.h"
+#include "editstaff.h"
+#include "log.h"
+#include "transaction/transaction.h"
+#include "transpose.h"
 
 using namespace mu::engraving;
 

@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include <map>
 #include <cassert>
+#include <map>
 
-#include "global/allocator.h"
 #include "../types/types.h"
+#include "global/allocator.h"
 
 namespace mu::engraving {
 int ticks_beat(int n);

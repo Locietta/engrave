@@ -22,19 +22,18 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <map>
 #include <functional>
+#include <map>
+#include <unordered_map>
 
-#include "types/id.h"
+#include "../dom/score.h"
+#include "../types/types.h"
 #include "mpe/events.h"
 #include "mpe/iarticulationprofilesrepository.h"
-
-#include "../types/types.h"
-#include "../dom/score.h"
+#include "playbackcontext.h"
 #include "playbackeventsrenderer.h"
 #include "playbacksetupdataresolver.h"
-#include "playbackcontext.h"
+#include "types/id.h"
 
 namespace mu::engraving {
 struct Score;

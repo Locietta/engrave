@@ -21,11 +21,8 @@
  */
 
 #include "editvoice.h"
-#include "editchord.h"
 
 #include <vector>
-
-#include "global/containers.h"
 
 #include "../dom/articulation.h"
 #include "../dom/chord.h"
@@ -45,6 +42,8 @@
 #include "../dom/staff.h"
 #include "../dom/tie.h"
 #include "../dom/tuplet.h"
+#include "editchord.h"
+#include "global/containers.h"
 
 using namespace mu;
 using namespace mu::engraving;

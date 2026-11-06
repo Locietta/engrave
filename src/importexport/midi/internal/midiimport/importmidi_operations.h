@@ -26,12 +26,11 @@
 #include <string>
 #include <vector>
 
+#include "../midishared/midifile.h"
 #include "global/types/bytearray.h"
 #include "global/types/string.h"
-
 #include "importmidi_inner.h"
 #include "importmidi_operation.h"
-#include "../midishared/midifile.h"
 
 namespace mu::engraving {
 struct InstrumentTemplate;

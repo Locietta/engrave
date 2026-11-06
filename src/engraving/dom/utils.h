@@ -23,10 +23,8 @@
 #pragma once
 
 #include "../types/types.h"
-
-#include "interval.h"
-
 #include "draw/types/geometry.h"
+#include "interval.h"
 
 namespace mu::engraving {
 struct Chord;

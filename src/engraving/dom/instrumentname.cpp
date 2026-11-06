@@ -22,14 +22,13 @@
 
 #include "instrumentname.h"
 
+#include "log.h"
 #include "measure.h"
 #include "part.h"
 #include "score.h"
 #include "staff.h"
 #include "style/style.h"
 #include "system.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

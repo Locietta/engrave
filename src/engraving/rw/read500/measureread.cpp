@@ -21,8 +21,6 @@
  */
 #include "measureread.h"
 
-#include "translation.h"
-
 #include "../dom/ambitus.h"
 #include "../dom/anchors.h"
 #include "../dom/barline.h"
@@ -34,6 +32,8 @@
 #include "../dom/factory.h"
 #include "../dom/fermata.h"
 #include "../dom/fret.h"
+#include "../dom/harmony.h"
+#include "../dom/image.h"
 #include "../dom/keysig.h"
 #include "../dom/location.h"
 #include "../dom/measure.h"
@@ -49,18 +49,14 @@
 #include "../dom/stafftext.h"
 #include "../dom/system.h"
 #include "../dom/systemdivider.h"
-#include "../dom/timesig.h"
-#include "../dom/tuplet.h"
-#include "../dom/harmony.h"
-#include "../dom/fret.h"
-#include "../dom/tremolobar.h"
 #include "../dom/tempotext.h"
-#include "../dom/image.h"
-
+#include "../dom/timesig.h"
+#include "../dom/tremolobar.h"
+#include "../dom/tuplet.h"
 #include "../types/typesconv.h"
-#include "tread.h"
-
 #include "log.h"
+#include "translation.h"
+#include "tread.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::read500;

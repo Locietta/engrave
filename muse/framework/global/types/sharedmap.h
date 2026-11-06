@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <memory>
 #include <map>
+#include <memory>
 #include <variant>
 
 namespace muse {

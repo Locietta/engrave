@@ -22,6 +22,7 @@
 
 #include "playbackmodel.h"
 
+#include "defer.h"
 #include "dom/fret.h"
 #include "dom/harmony.h"
 #include "dom/instrument.h"
@@ -29,15 +30,12 @@
 #include "dom/measure.h"
 #include "dom/measurerepeat.h"
 #include "dom/part.h"
-#include "dom/staff.h"
 #include "dom/repeatlist.h"
 #include "dom/segment.h"
+#include "dom/staff.h"
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
-
 #include "editing/transaction/undoablecommand.h"
-
-#include "defer.h"
 #include "log.h"
 
 using namespace mu;

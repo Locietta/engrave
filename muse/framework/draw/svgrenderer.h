@@ -23,9 +23,8 @@
 #define MUSE_DRAW_SVGRENDERER_H
 
 #include "global/types/bytearray.h"
-
-#include "types/geometry.h"
 #include "painter.h"
+#include "types/geometry.h"
 
 struct QSvgRenderer;
 

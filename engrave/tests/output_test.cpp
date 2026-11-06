@@ -14,11 +14,6 @@
 //     scripts/test_a4_output.py compares the same files with describe_pdf.
 // The audio tests are in audio_test.cpp; the Engine is shared.
 
-#include "output_fixture.h"
-#include "digest.h"
-
-#include <engrave/engrave.h>
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -34,6 +29,10 @@
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
+
+#include "digest.h"
+#include "output_fixture.h"
+#include <engrave/engrave.h>
 
 #ifdef _WIN32
 #include <process.h>

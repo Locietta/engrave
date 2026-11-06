@@ -1,7 +1,7 @@
 #include "color.h"
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 namespace muse {
 static constexpr int from_hex(char c);
