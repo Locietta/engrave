@@ -25,9 +25,10 @@
 #include <algorithm>
 #include <vector>
 
+#include "FLAC++/encoder.h"
+
 #include "../dsp/audiomathutils.h"
 #include "../offlinecancellation.h"
-#include "FLAC++/encoder.h"
 #include "audio/common/audioerrors.h"
 #include "global/io/iodevice.h"
 #include "log.h"

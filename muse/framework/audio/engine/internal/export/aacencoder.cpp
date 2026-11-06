@@ -25,10 +25,11 @@
 #include <algorithm>
 #include <vector>
 
-#include "../dsp/audiomathutils.h"
-#include "../offlinecancellation.h"
 #include "FDK_audio.h"
 #include "aacenc_lib.h"
+
+#include "../dsp/audiomathutils.h"
+#include "../offlinecancellation.h"
 #include "audio/common/audioerrors.h"
 #include "global/io/iodevice.h"
 #include "log.h"

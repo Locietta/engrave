@@ -87,7 +87,7 @@ IncludeCategories:
     SortPriority: 31
   # Category 3: Third-party and OS/system libraries (Windows SDK, POSIX, Asio, JSON, Cairo, FluidSynth, GTest, FreeType, etc.)
   # In host, <engrave/...> is an external submodule/library, so it matches Category 3.
-  - Regex: '^(<.*>|"(pugixml|fluidsynth|gtest)/|"(pugixml\.hpp|fluidsynth\.h|picojson\.h|mnxdom\.h)"|"([^"]*/)?thirdparty/)'
+  - Regex: '^(<.*>|"(pugixml|gtest|FLAC[+][+])/|"(pugixml\.hpp|FDK_audio\.h|aacenc_lib\.h|picojson\.h|mnxdom\.h)"|"([^"]*/)?thirdparty/)'
     Priority: 3
     SortPriority: 32
 
