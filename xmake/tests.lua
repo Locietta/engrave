@@ -190,8 +190,8 @@ target("engrave_handles_test")
     end
 target_end()
 
--- Guitar Pro and PowerTab import of upstream's test data: every score file of the
--- importer's data directory must either open to a score or return an Error.
+-- MNX import of upstream's examples against their MSCX references, and MNX
+-- export of reference scores: schema validation plus re-import of the core content.
 target("engrave_mnx_import_test")
     set_kind("binary")
     set_default(false)
