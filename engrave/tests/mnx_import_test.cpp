@@ -9,6 +9,8 @@
 
 #include "engrave/src/api/state.h"
 #include "engrave/src/score/score_semantic.h"
+#include "engraving/dom/masterscore.h"
+#include "importexport/mnx/internal/export/mnxexporter.h"
 #include <engrave/engrave.h>
 
 namespace {
@@ -83,6 +85,43 @@ TEST(MnxImport, IndependentSemanticOracle) {
         EXPECT_EQ(dump[i]["tick"], i * 960);
         EXPECT_EQ(dump[i]["ticks"], 960);
         EXPECT_EQ(dump[i]["notes"][0]["pitch"], i == 0 ? 60 : 62);
+    }
+}
+
+// Compare the importer-supported core independently of engraving/layout details.
+Json core_content(engrave::Document &doc) {
+    const auto dump = music::semantic_dump(engrave::DocumentAccess::master_score(doc));
+    Json notes = Json::array();
+    for (size_t staff = 0; staff < dump.at("events").size(); ++staff)
+        for (size_t voice = 0; voice < dump.at("events").at(staff).size(); ++voice)
+            for (const auto &event : dump.at("events").at(staff).at(voice)) {
+                if (event.at("kind") != "chord") continue;
+                Json pitches = Json::array();
+                for (const auto &note : event.at("notes")) pitches.push_back(note.at("pitch"));
+                notes.push_back(Json::array({staff, voice, event.at("tick"), event.at("ticks"), pitches}));
+            }
+    return Json{{"parts", dump.at("parts").size()}, {"measures", dump.at("measures").size()}, {"notes", notes}};
+}
+
+TEST(MnxExport, SchemaAndCoreRoundtrip) {
+    const auto references = data.parent_path() / "mscx_reference_examples";
+    for (const char *fixture : {"hello-world", "two-bar-c-major-scale", "three-note-chord-and-half-rest", "dotted-notes", "grand-staff",
+                                "parts", "multiple-voices", "tuplets"}) {
+        SCOPED_TRACE(fixture);
+        auto opened = engine->open(references / (std::string(fixture) + "_ref.mscx"));
+        ASSERT_TRUE(opened) << opened.error().message;
+        const auto before = core_content(**opened);
+        ASSERT_FALSE(before.at("notes").empty());
+        mu::iex::mnxio::MnxExporter exporter(engrave::DocumentAccess::master_score(**opened));
+        const auto result = exporter.export_mnx();
+        ASSERT_TRUE(result) << result.to_string();
+        const auto &document = exporter.mnx_document();
+        // Uses mnxdom's embedded schema and the pinned mnx-json-schema validator.
+        ASSERT_TRUE(mnx::validation::schemaValidate(document));
+        const std::string bytes = document.root()->dump();
+        auto imported = engine->open(std::as_bytes(std::span(bytes)), {.format = engrave::Format::MNX});
+        ASSERT_TRUE(imported) << imported.error().message;
+        EXPECT_EQ(core_content(**imported), before);
     }
 }
 
