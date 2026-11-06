@@ -34,9 +34,9 @@
 
 namespace muse {
 template <typename T>
-inline bool isEqual(T a1, T a2) {
+inline bool geometry_is_equal(T a1, T a2) {
     if constexpr (std::is_same<T, double>::value) {
-        return RealIsEqual(a1, a2);
+        return real_is_equal(a1, a2);
     } else {
         return a1 == a2;
     }
@@ -52,13 +52,13 @@ public:
 
     inline PointX(T x, T y) : x_(x), y_(y) {}
 
-    inline bool isNull() const { return x_.is_zero() && y_.is_zero(); }
+    inline bool is_null() const { return x_.is_zero() && y_.is_zero(); }
 
-    inline void setX(T x) { x_ = x; }
+    inline void set_x(T x) { x_ = x; }
 
-    inline void setY(T y) { y_ = y; }
+    inline void set_y(T y) { y_ = y; }
 
-    inline void setXY(T x, T y) {
+    inline void set_xy(T x, T y) {
         x_ = x;
         y_ = y;
     }
@@ -68,9 +68,9 @@ public:
     inline T y() const { return y_; }
 
     //! NOTE I don't like this methods, but now it a lot of using
-    inline number_t<T> &rx() { return x_; }
+    inline NumberT<T> &rx() { return x_; }
 
-    inline number_t<T> &ry() { return y_; }
+    inline NumberT<T> &ry() { return y_; }
 
     inline bool operator==(const PointX<T> &p) const { return p.x_ == x_ && p.y_ == y_; }
 
@@ -106,14 +106,14 @@ public:
         return *this;
     }
 
-    inline T manhattanLength() const { return std::abs(x_) + std::abs(y_); }
+    inline T manhattan_length() const { return std::abs(x_) + std::abs(y_); }
 
-    static inline double dotProduct(const PointX<T> &p1, const PointX<T> &p2) { return p1.x_ * p2.x_ + p1.y_ * p2.y_; }
+    static inline double dot_product(const PointX<T> &p1, const PointX<T> &p2) { return p1.x_ * p2.x_ + p1.y_ * p2.y_; }
 
     inline void normalize() {
         // Need some extra precision if the length is very small.
         double len = double(x_) * double(x_) + double(y_) * double(y_);
-        if (RealIsNull(len - 1.0f) || RealIsNull(len)) {
+        if (real_is_null(len - 1.0f) || real_is_null(len)) {
             return;
         }
 
@@ -134,8 +134,8 @@ private:
     //! NOTE We should not swap fields
     //! We should not add new fields
     //! If we really need to do this, then we need to change the implementation of QPainterProvider
-    number_t<T> x_;
-    number_t<T> y_;
+    NumberT<T> x_;
+    NumberT<T> y_;
 };
 
 template <typename T>
@@ -185,7 +185,7 @@ public:
 
     inline LineX(T x1, T y1, T x2, T y2) : p1_(PointX<T>(x1, y1)), p2_(PointX<T>(x2, y2)) {}
 
-    inline bool isNull() const { return p1_.isNull() && p2_.isNull(); }
+    inline bool is_null() const { return p1_.is_null() && p2_.is_null(); }
 
     inline const PointX<T> &p1() const { return p1_; }
 
@@ -199,20 +199,20 @@ public:
 
     inline double y2() const { return p2_.y(); }
 
-    inline void setP1(const PointX<T> &p) { p1_ = p; }
+    inline void set_p1(const PointX<T> &p) { p1_ = p; }
 
-    inline void setP2(const PointX<T> &p) { p2_ = p; }
+    inline void set_p2(const PointX<T> &p) { p2_ = p; }
 
-    inline void setLine(T aX1, T aY1, T aX2, T aY2) {
-        p1_ = PointX<T>(aX1, aY1);
-        p2_ = PointX<T>(aX2, aY2);
+    inline void set_line(T a_x1, T a_y1, T a_x2, T a_y2) {
+        p1_ = PointX<T>(a_x1, a_y1);
+        p2_ = PointX<T>(a_x2, a_y2);
     }
 
     inline bool operator==(const LineX<T> &l) const { return p1_ == l.p1_ && p2_ == l.p2_; }
 
     inline bool operator!=(const LineX<T> &l) const { return !this->operator==(l); }
 
-    inline PointX<T> pointAt(T t) const { return PointX<T>(p1_.x() + (p2_.x() - p1_.x()) * t, p1_.y() + (p2_.y() - p1_.y()) * t); }
+    inline PointX<T> point_at(T t) const { return PointX<T>(p1_.x() + (p2_.x() - p1_.x()) * t, p1_.y() + (p2_.y() - p1_.y()) * t); }
 
     inline void translate(const PointX<T> &point) {
         p1_ += point;
@@ -240,15 +240,15 @@ public:
 
     inline SizeX(T w, T h) : w_(w), h_(h) {}
 
-    inline bool isNull() const { return w_.is_zero() && h_.is_zero(); }
+    inline bool is_null() const { return w_.is_zero() && h_.is_zero(); }
 
     inline T width() const { return w_; }
 
     inline T height() const { return h_; }
 
-    inline void setWidth(T w) { w_ = w; }
+    inline void set_width(T w) { w_ = w; }
 
-    inline void setHeight(T h) { h_ = h; }
+    inline void set_height(T h) { h_ = h; }
 
     inline bool operator==(const SizeX<T> &s) const { return s.w_ == w_ && s.h_ == h_; }
 
@@ -258,8 +258,8 @@ public:
 
 
 private:
-    number_t<T> w_;
-    number_t<T> h_;
+    NumberT<T> w_;
+    NumberT<T> h_;
 };
 
 template <typename T>
@@ -274,7 +274,7 @@ inline SizeX<T> operator*(double c, const SizeX<T> &s) {
 
 template <typename T>
 inline SizeX<T> operator/(const SizeX<T> &s, T c) {
-    assert(!isEqual(c, T()));
+    assert(!geometry_is_equal(c, T()));
     return SizeX<T>(s.width() / c, s.height() / c);
 }
 
@@ -298,17 +298,17 @@ public:
 
     inline RectX(T x, T y, T w, T h) : x_(x), y_(y), w_(w), h_(h) {}
 
-    inline RectX(const PointX<T> &topLeft, const PointX<T> &bottomRight)
-        : x_(topLeft.x()), y_(topLeft.y()), w_(bottomRight.x() - topLeft.x()), h_(bottomRight.y() - topLeft.y()) {}
+    inline RectX(const PointX<T> &top_left, const PointX<T> &bottom_right)
+        : x_(top_left.x()), y_(top_left.y()), w_(bottom_right.x() - top_left.x()), h_(bottom_right.y() - top_left.y()) {}
 
-    inline RectX(const PointX<T> &atopLeft, const SizeX<T> &asize)
-        : x_(atopLeft.x()), y_(atopLeft.y()), w_(asize.width()), h_(asize.height()) {}
+    inline RectX(const PointX<T> &atop_left, const SizeX<T> &asize)
+        : x_(atop_left.x()), y_(atop_left.y()), w_(asize.width()), h_(asize.height()) {}
 
-    inline bool isNull() const { return w_.is_zero() && h_.is_zero(); }
+    inline bool is_null() const { return w_.is_zero() && h_.is_zero(); }
 
-    inline bool isEmpty() const { return w_ <= T() || h_ <= T(); }
+    inline bool is_empty() const { return w_ <= T() || h_ <= T(); }
 
-    inline bool isValid() const { return w_ > T() && h_ > T(); }
+    inline bool is_valid() const { return w_ > T() && h_ > T(); }
 
     inline T x() const { return x_; }
 
@@ -328,99 +328,99 @@ public:
 
     inline T bottom() const noexcept { return y_ + h_; }
 
-    inline PointX<T> topLeft() const { return PointX<T>(x_, y_); }
+    inline PointX<T> top_left() const { return PointX<T>(x_, y_); }
 
-    inline PointX<T> bottomRight() const { return PointX<T>(x_ + w_, y_ + h_); }
+    inline PointX<T> bottom_right() const { return PointX<T>(x_ + w_, y_ + h_); }
 
-    inline PointX<T> topRight() const { return PointX<T>(x_ + w_, y_); }
+    inline PointX<T> top_right() const { return PointX<T>(x_ + w_, y_); }
 
-    inline PointX<T> bottomLeft() const { return PointX<T>(x_, y_ + h_); }
+    inline PointX<T> bottom_left() const { return PointX<T>(x_, y_ + h_); }
 
-    inline PointX<T> center() const { return PointX<T>(x_ + w_ / number_t<T>::cast(2), y_ + h_ / number_t<T>::cast(2)); }
+    inline PointX<T> center() const { return PointX<T>(x_ + w_ / NumberT<T>::cast(2), y_ + h_ / NumberT<T>::cast(2)); }
 
-    inline void setCoords(T xp1, T yp1, T xp2, T yp2) {
+    inline void set_coords(T xp1, T yp1, T xp2, T yp2) {
         x_ = xp1;
         y_ = yp1;
         w_ = xp2 - xp1;
         h_ = yp2 - yp1;
     }
 
-    inline void setRect(double ax, double ay, double aaw, double aah) {
+    inline void set_rect(double ax, double ay, double aaw, double aah) {
         x_ = ax;
         y_ = ay;
         w_ = aaw;
         h_ = aah;
     }
 
-    inline void setHeight(T h) { h_ = h; }
+    inline void set_height(T h) { h_ = h; }
 
-    inline void setWidth(T w) { w_ = w; }
+    inline void set_width(T w) { w_ = w; }
 
-    inline void setSize(const SizeX<T> &s) {
+    inline void set_size(const SizeX<T> &s) {
         w_ = s.width();
         h_ = s.height();
     }
 
-    inline void setLeft(T pos) {
+    inline void set_left(T pos) {
         T diff = pos - x_;
         x_ += diff;
         w_ -= diff;
     }
 
-    inline void setRight(T pos) { w_ = pos - x_; }
+    inline void set_right(T pos) { w_ = pos - x_; }
 
-    inline void setTop(T pos) {
+    inline void set_top(T pos) {
         T diff = pos - y_;
         y_ += diff;
         h_ -= diff;
     }
 
-    inline void setBottom(T pos) { h_ = pos - y_; }
+    inline void set_bottom(T pos) { h_ = pos - y_; }
 
-    inline void setX(T x) { x_ = x; }
+    inline void set_x(T x) { x_ = x; }
 
-    inline void setY(T y) { y_ = y; }
+    inline void set_y(T y) { y_ = y; }
 
-    inline void setTopLeft(const PointX<T> &p) {
-        setLeft(p.x());
-        setTop(p.y());
+    inline void set_top_left(const PointX<T> &p) {
+        set_left(p.x());
+        set_top(p.y());
     }
 
-    inline void setTopRight(const PointX<T> &p) {
-        setRight(p.x());
-        setTop(p.y());
+    inline void set_top_right(const PointX<T> &p) {
+        set_right(p.x());
+        set_top(p.y());
     }
 
-    inline void setBottomLeft(const PointX<T> &p) {
-        setLeft(p.x());
-        setBottom(p.y());
+    inline void set_bottom_left(const PointX<T> &p) {
+        set_left(p.x());
+        set_bottom(p.y());
     }
 
-    inline void setBottomRight(const PointX<T> &p) {
-        setRight(p.x());
-        setBottom(p.y());
+    inline void set_bottom_right(const PointX<T> &p) {
+        set_right(p.x());
+        set_bottom(p.y());
     }
 
     inline bool operator==(const RectX<T> &r) const { return r.x_ == x_ && r.y_ == y_ && r.w_ == w_ && r.h_ == h_; }
 
     inline bool operator!=(const RectX<T> &r) const { return !this->operator==(r); }
 
-    inline void moveTo(double ax, double ay) {
+    inline void move_to(double ax, double ay) {
         x_ = ax;
         y_ = ay;
     }
 
-    inline void moveTo(const PointX<T> &p) {
+    inline void move_to(const PointX<T> &p) {
         x_ = p.x();
         y_ = p.y();
     }
 
-    inline void moveCenter(const PointX<T> &p) {
-        x_ = p.x() - w_ / number_t<T>::cast(2);
-        y_ = p.y() - h_ / number_t<T>::cast(2);
+    inline void move_center(const PointX<T> &p) {
+        x_ = p.x() - w_ / NumberT<T>::cast(2);
+        y_ = p.y() - h_ / NumberT<T>::cast(2);
     }
 
-    inline void moveTop(double pos) { y_ = pos; }
+    inline void move_top(double pos) { y_ = pos; }
 
     inline void translate(T dx, T dy) {
         x_ += dx;
@@ -464,7 +464,7 @@ public:
     bool contains(const PointX<T> &p) const;
     bool contains(const RectX<T> &r) const;
 
-    T distanceTo(const PointX<T> &p) const;
+    T distance_to(const PointX<T> &p) const;
 
     bool intersects(const RectX<T> &r) const;
 
@@ -495,10 +495,10 @@ public:
 
 
 private:
-    number_t<T> x_;
-    number_t<T> y_;
-    number_t<T> w_;
-    number_t<T> h_;
+    NumberT<T> x_;
+    NumberT<T> y_;
+    NumberT<T> w_;
+    NumberT<T> h_;
 };
 
 template <typename T>
@@ -521,7 +521,7 @@ public:
 
     inline Rect(int x, int y, int w, int h) : RectX<int>(x, y, w, h) {}
 
-    inline RectF toRectF() const { return RectF(x(), y(), width(), height()); }
+    inline RectF to_rect_f() const { return RectF(x(), y(), width(), height()); }
 };
 
 // ====================================
@@ -543,7 +543,7 @@ public:
     }
 
     inline void translate(const PointX<T> &offset) {
-        if (offset.isNull()) {
+        if (offset.is_null()) {
             return;
         }
         PointX<T> *p = this->data();
@@ -562,7 +562,7 @@ public:
         return copy;
     }
 
-    RectX<T> boundingRect() const {
+    RectX<T> bounding_rect() const {
         const PointX<T> *pd = this->data();
         const PointX<T> *pe = pd + this->size();
         if (pd == pe) {
@@ -595,11 +595,11 @@ using Polygon = PolygonX<int>;
 // Implementation ==========================================
 template <typename T>
 RectX<T> RectX<T>::united(const RectX<T> &r) const {
-    if (isNull()) {
+    if (is_null()) {
         return r;
     }
 
-    if (r.isNull()) {
+    if (r.is_null()) {
         return *this;
     }
 
@@ -637,8 +637,8 @@ RectX<T> RectX<T>::united(const RectX<T> &r) const {
 
 template <typename T>
 RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
-    number_t<T> l1 = x_;
-    number_t<T> r1 = x_;
+    NumberT<T> l1 = x_;
+    NumberT<T> r1 = x_;
     if (w_.is_negative()) {
         l1 += w_;
     } else {
@@ -647,8 +647,8 @@ RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
     if (l1 == r1) { // null rect
         return RectX<T>();
     }
-    number_t<T> l2 = r.x_;
-    number_t<T> r2 = r.x_;
+    NumberT<T> l2 = r.x_;
+    NumberT<T> r2 = r.x_;
     if (r.w_.is_negative()) {
         l2 += r.w_;
     } else {
@@ -660,8 +660,8 @@ RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
     if (l1 >= r2 || l2 >= r1) {
         return RectX<T>();
     }
-    number_t<T> t1 = y_;
-    number_t<T> b1 = y_;
+    NumberT<T> t1 = y_;
+    NumberT<T> b1 = y_;
     if (h_.is_negative()) {
         t1 += h_;
     } else {
@@ -670,8 +670,8 @@ RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
     if (t1 == b1) { // null rect
         return RectX<T>();
     }
-    number_t<T> t2 = r.y_;
-    number_t<T> b2 = r.y_;
+    NumberT<T> t2 = r.y_;
+    NumberT<T> b2 = r.y_;
     if (r.h_.is_negative()) {
         t2 += r.h_;
     } else {
@@ -693,8 +693,8 @@ RectX<T> RectX<T>::intersected(const RectX<T> &r) const {
 
 template <typename T>
 bool RectX<T>::intersects(const RectX<T> &r) const {
-    number_t<T> l1 = x_;
-    number_t<T> r1 = x_;
+    NumberT<T> l1 = x_;
+    NumberT<T> r1 = x_;
     if (w_.is_negative()) {
         l1 += w_;
     } else {
@@ -703,8 +703,8 @@ bool RectX<T>::intersects(const RectX<T> &r) const {
     if (l1 == r1) { // null rect
         return false;
     }
-    number_t<T> l2 = r.x_;
-    number_t<T> r2 = r.x_;
+    NumberT<T> l2 = r.x_;
+    NumberT<T> r2 = r.x_;
     if (r.w_.is_negative()) {
         l2 += r.w_;
     } else {
@@ -716,8 +716,8 @@ bool RectX<T>::intersects(const RectX<T> &r) const {
     if (l1 >= r2 || l2 >= r1) {
         return false;
     }
-    number_t<T> t1 = y_;
-    number_t<T> b1 = y_;
+    NumberT<T> t1 = y_;
+    NumberT<T> b1 = y_;
     if (h_.is_negative()) {
         t1 += h_;
     } else {
@@ -726,8 +726,8 @@ bool RectX<T>::intersects(const RectX<T> &r) const {
     if (t1 == b1) { // null rect
         return false;
     }
-    number_t<T> t2 = r.y_;
-    number_t<T> b2 = r.y_;
+    NumberT<T> t2 = r.y_;
+    NumberT<T> b2 = r.y_;
     if (r.h_.is_negative()) {
         t2 += r.h_;
     } else {
@@ -744,8 +744,8 @@ bool RectX<T>::intersects(const RectX<T> &r) const {
 
 template <typename T>
 bool RectX<T>::contains(const PointX<T> &p) const {
-    number_t<T> l = x_;
-    number_t<T> r = x_;
+    NumberT<T> l = x_;
+    NumberT<T> r = x_;
     if (w_.is_negative()) {
         l += w_;
     } else {
@@ -757,8 +757,8 @@ bool RectX<T>::contains(const PointX<T> &p) const {
     if (p.x() < l || p.x() > r) {
         return false;
     }
-    number_t<T> t = y_;
-    number_t<T> b = y_;
+    NumberT<T> t = y_;
+    NumberT<T> b = y_;
     if (h_.is_negative()) {
         t += h_;
     } else {
@@ -775,8 +775,8 @@ bool RectX<T>::contains(const PointX<T> &p) const {
 
 template <typename T>
 bool RectX<T>::contains(const RectX<T> &r) const {
-    number_t<T> l1 = x_;
-    number_t<T> r1 = x_;
+    NumberT<T> l1 = x_;
+    NumberT<T> r1 = x_;
     if (w_.is_negative()) {
         l1 += w_;
     } else {
@@ -785,8 +785,8 @@ bool RectX<T>::contains(const RectX<T> &r) const {
     if (l1 == r1) { // null rect
         return false;
     }
-    number_t<T> l2 = r.x_;
-    number_t<T> r2 = r.x_;
+    NumberT<T> l2 = r.x_;
+    NumberT<T> r2 = r.x_;
     if (r.w_.is_negative()) {
         l2 += r.w_;
     } else {
@@ -798,8 +798,8 @@ bool RectX<T>::contains(const RectX<T> &r) const {
     if (l2 < l1 || r2 > r1) {
         return false;
     }
-    number_t<T> t1 = y_;
-    number_t<T> b1 = y_;
+    NumberT<T> t1 = y_;
+    NumberT<T> b1 = y_;
     if (h_.is_negative()) {
         t1 += h_;
     } else {
@@ -808,8 +808,8 @@ bool RectX<T>::contains(const RectX<T> &r) const {
     if (t1 == b1) { // null rect
         return false;
     }
-    number_t<T> t2 = r.y_;
-    number_t<T> b2 = r.y_;
+    NumberT<T> t2 = r.y_;
+    NumberT<T> b2 = r.y_;
     if (r.h_.is_negative()) {
         t2 += r.h_;
     } else {
@@ -825,9 +825,9 @@ bool RectX<T>::contains(const RectX<T> &r) const {
 }
 
 template <typename T>
-T RectX<T>::distanceTo(const PointX<T> &p) const {
-    number_t<T> dx = std::max({bottomLeft().x() - p.x(), 0.0, p.x() - bottomRight().x()});
-    number_t<T> dy = std::max({bottomLeft().y() - p.y(), 0.0, p.y() - topLeft().y()});
+T RectX<T>::distance_to(const PointX<T> &p) const {
+    NumberT<T> dx = std::max({bottom_left().x() - p.x(), 0.0, p.x() - bottom_right().x()});
+    NumberT<T> dy = std::max({bottom_left().y() - p.y(), 0.0, p.y() - top_left().y()});
     return std::sqrt(dx * dx + dy * dy);
 }
 

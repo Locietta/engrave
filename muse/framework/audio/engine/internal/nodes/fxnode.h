@@ -36,23 +36,23 @@ namespace muse::audio::engine {
 class FxNode : public AudioNode<FxTag> {
 public:
 
-    explicit FxNode(IFxProcessorPtr fxProcessor, PlayheadPositionPtr playheadPosition = nullptr);
+    explicit FxNode(IFxProcessorPtr fx_processor, PlayheadPositionPtr playhead_position = nullptr);
 
-    void setPlayheadPosition(PlayheadPositionPtr playheadPosition);
+    void set_playhead_position(PlayheadPositionPtr playhead_position);
 
     const AudioFxParams &params() const;
 
-    bool shouldProcessDuringSilence() const;
+    bool should_process_during_silence() const;
 
 protected:
 
-    void onModeChanged(const ProcessMode mode) override;
-    void onOutputSpecChanged(const OutputSpec &spec) override;
+    void on_mode_changed(const ProcessMode mode) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
 
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    IFxProcessorPtr fxProcessor_;
-    PlayheadPositionPtr playheadPosition_;
+    IFxProcessorPtr fx_processor_;
+    PlayheadPositionPtr playhead_position_;
 };
 
 using FxNodePtr = std::shared_ptr<FxNode>;

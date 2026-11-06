@@ -39,17 +39,17 @@ public:
 
     int denominator() const { return denominator_; }
 
-    static ReducedFraction fromTicks(int ticks);
+    static ReducedFraction from_ticks(int ticks);
     ReducedFraction reduced() const;
 
-    ReducedFraction absValue() const { return ReducedFraction(std::abs(numerator_), std::abs(denominator_)); }
+    ReducedFraction abs_value() const { return ReducedFraction(std::abs(numerator_), std::abs(denominator_)); }
 
-    double toDouble() const { return numerator_ * 1.0 / denominator_; }
+    double to_double() const { return numerator_ * 1.0 / denominator_; }
 
     int ticks() const;
     void reduce();
 
-    bool isIdenticalTo(const ReducedFraction &f) const { return f.numerator_ == numerator_ && f.denominator_ == denominator_; }
+    bool is_identical_to(const ReducedFraction &f) const { return f.numerator_ == numerator_ && f.denominator_ == denominator_; }
 
     ReducedFraction &operator+=(const ReducedFraction &);
     ReducedFraction &operator-=(const ReducedFraction &);
@@ -78,13 +78,13 @@ public:
     bool operator!=(const ReducedFraction &) const;
 
 private:
-    void preventOverflow();
+    void prevent_overflow();
 
     int numerator_;
     int denominator_;
 };
 
-ReducedFraction toMuseScoreTicks(int tick, int oldDivision, bool isDivisionInTps);
+ReducedFraction to_muse_score_ticks(int tick, int old_division, bool is_division_in_tps);
 } // namespace mu::iex::midi
 
 #endif // IMPORTMIDI_FRACTION_H

@@ -35,7 +35,7 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void Paint::paintScore(Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
+void Paint::paint_score(Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
     TRACEFUNC;
     if (!score) {
         return;
@@ -48,135 +48,136 @@ void Paint::paintScore(Painter *painter, Score *score, const IScoreRenderer::Sco
 
     //! NOTE This is DPI of paint device,  ex screen, image, printer and etc.
     //! Should be set, but if not set, we will use our default DPI.
-    const int DEVICE_DPI = opt.deviceDpi > 0 ? opt.deviceDpi : mu::engraving::DPI;
+    const int device_dpi = opt.device_dpi > 0 ? opt.device_dpi : mu::engraving::dpi;
 
     //! NOTE Depending on the view mode,
     //! if the view mode is PAGE, then this is one page size (ex A4),
     //! if someone a continuous mode, then this is the size of the entire score.
-    SizeF pageSize = pageSizeInch(score);
+    SizeF page_size = page_size_inch(score);
 
     // Setup Painter
-    painter->setAntialiasing(true);
+    painter->set_antialiasing(true);
 
     //! NOTE To draw on the screen, no need to adjust the viewport,
     //! to draw on others (pdf, png, printer), we need to set the viewport
-    if (opt.isSetViewport) {
-        painter->setViewport(RectF(0.0, 0.0, std::lrint(pageSize.width() * DEVICE_DPI), std::lrint(pageSize.height() * DEVICE_DPI)));
-        painter->setWindow(RectF(0.0, 0.0, std::lrint(pageSize.width() * engraving::DPI), std::lrint(pageSize.height() * engraving::DPI)));
+    if (opt.is_set_viewport) {
+        painter->set_viewport(RectF(0.0, 0.0, std::lrint(page_size.width() * device_dpi), std::lrint(page_size.height() * device_dpi)));
+        painter->set_window(
+            RectF(0.0, 0.0, std::lrint(page_size.width() * engraving::dpi), std::lrint(page_size.height() * engraving::dpi)));
     }
 
     // Setup score draw system
-    mu::engraving::MScore::pdfPrinting = opt.isPrinting;
+    mu::engraving::MScore::pdf_printing = opt.is_printing;
 
-    const bool wasPrinting = score->printing();
-    score->setPrinting(opt.isPrinting);
+    const bool was_printing = score->printing();
+    score->set_printing(opt.is_printing);
 
     // Setup page counts
-    int fromPage = opt.fromPage >= 0 ? opt.fromPage : 0;
-    int toPage = (opt.toPage >= 0 && opt.toPage < int(pages.size())) ? opt.toPage : (int(pages.size()) - 1);
+    int from_page = opt.from_page >= 0 ? opt.from_page : 0;
+    int to_page = (opt.to_page >= 0 && opt.to_page < int(pages.size())) ? opt.to_page : (int(pages.size()) - 1);
 
-    for (int copy = 0; copy < opt.copyCount; ++copy) {
-        bool firstPage = true;
-        for (int pi = fromPage; pi <= toPage; ++pi) {
+    for (int copy = 0; copy < opt.copy_count; ++copy) {
+        bool first_page = true;
+        for (int pi = from_page; pi <= to_page; ++pi) {
             Page *page = pages.at(pi);
 
-            PointF pagePos = page->pos();
-            RectF pageRect = page->ldata()->bbox();
+            PointF page_pos = page->pos();
+            RectF page_rect = page->ldata()->bbox();
 
             //! NOTE Trim page margins, if need
-            if (opt.trimMarginPixelSize >= 0) {
-                double trimMargin = static_cast<double>(opt.trimMarginPixelSize);
-                pageRect = page->tbbox().adjusted(-trimMargin, -trimMargin, trimMargin, trimMargin);
+            if (opt.trim_margin_pixel_size >= 0) {
+                double trim_margin = static_cast<double>(opt.trim_margin_pixel_size);
+                page_rect = page->tbbox().adjusted(-trim_margin, -trim_margin, trim_margin, trim_margin);
             }
 
             //! NOTE Check draw rect, usually for optimisation drawing on screen (draw only what we see)
-            RectF drawRect;
-            RectF pageAbsRect = pageRect.translated(pagePos);
-            if (opt.frameRect.isValid()) {
-                if (pageAbsRect.right() < opt.frameRect.left()) {
+            RectF draw_rect;
+            RectF page_abs_rect = page_rect.translated(page_pos);
+            if (opt.frame_rect.is_valid()) {
+                if (page_abs_rect.right() < opt.frame_rect.left()) {
                     continue;
                 }
 
-                if (pageAbsRect.left() > opt.frameRect.right()) {
+                if (page_abs_rect.left() > opt.frame_rect.right()) {
                     break;
                 }
 
-                drawRect = opt.frameRect;
+                draw_rect = opt.frame_rect;
             } else {
-                drawRect = pageAbsRect;
+                draw_rect = page_abs_rect;
             }
 
             //! NOTE Notify about new page (usually for paged paint device, ex pdf, printer)
-            if (!firstPage) {
-                if (opt.onNewPage) {
-                    opt.onNewPage();
+            if (!first_page) {
+                if (opt.on_new_page) {
+                    opt.on_new_page();
                 }
             }
-            firstPage = false;
+            first_page = false;
 
-            painter->beginObject("page_" + std::to_string(pi));
+            painter->begin_object("page_" + std::to_string(pi));
 
-            if (opt.isPrinting && painter->hasClipping()) {
+            if (opt.is_printing && painter->has_clipping()) {
                 // prevent elements from being drawn off the edge of the page (e.g. too many staves),
                 // for now only in "Publish" mode (opt.isPrinting == true)
-                painter->setClipRect(pageAbsRect.intersected(drawRect));
+                painter->set_clip_rect(page_abs_rect.intersected(draw_rect));
             }
 
-            if (opt.isMultiPage) {
-                painter->translate(pagePos);
-            } else if (opt.trimMarginPixelSize >= 0) {
-                painter->translate(-pageRect.topLeft());
+            if (opt.is_multi_page) {
+                painter->translate(page_pos);
+            } else if (opt.trim_margin_pixel_size >= 0) {
+                painter->translate(-page_rect.top_left());
             }
 
             // Draw page sheet
-            if (opt.onPaintPageSheet) {
-                opt.onPaintPageSheet(painter, page, pageRect);
-            } else if (opt.printPageBackground) {
-                painter->fillRect(pageRect, Color::WHITE);
+            if (opt.on_paint_page_sheet) {
+                opt.on_paint_page_sheet(painter, page, page_rect);
+            } else if (opt.print_page_background) {
+                painter->fill_rect(page_rect, Color::white);
             }
 
             // Draw page elements
-            bool disableClipping = false;
+            bool disable_clipping = false;
 
-            if (!painter->hasClipping()) {
-                painter->setClipping(true);
-                painter->setClipRect(pageRect);
-                disableClipping = true;
+            if (!painter->has_clipping()) {
+                painter->set_clipping(true);
+                painter->set_clip_rect(page_rect);
+                disable_clipping = true;
             }
 
-            std::vector<EngravingItem *> elements = page->items(drawRect.translated(-pagePos));
-            paintItems(*painter, elements, opt);
+            std::vector<EngravingItem *> elements = page->items(draw_rect.translated(-page_pos));
+            paint_items(*painter, elements, opt);
 
-            if (disableClipping) {
-                painter->setClipping(false);
+            if (disable_clipping) {
+                painter->set_clipping(false);
             }
 
-            if (!opt.isPrinting) {
-                DebugPaint::paintPageDebug(*painter, page, elements);
+            if (!opt.is_printing) {
+                DebugPaint::paint_page_debug(*painter, page, elements);
             }
 
-            painter->endObject(); // page
+            painter->end_object(); // page
 
-            if (opt.isMultiPage) {
-                painter->translate(-pagePos);
-            } else if (opt.trimMarginPixelSize >= 0) {
-                painter->translate(pageRect.topLeft());
+            if (opt.is_multi_page) {
+                painter->translate(-page_pos);
+            } else if (opt.trim_margin_pixel_size >= 0) {
+                painter->translate(page_rect.top_left());
             }
 
-            if ((copy + 1) < opt.copyCount) {
+            if ((copy + 1) < opt.copy_count) {
                 //! NOTE Notify about new page (usually for paged paint device, ex pdf, printer)
                 //! for next copy
-                if (opt.onNewPage) {
-                    opt.onNewPage();
+                if (opt.on_new_page) {
+                    opt.on_new_page();
                 }
             }
         }
     }
 
-    score->setPrinting(wasPrinting);
+    score->set_printing(was_printing);
 }
 
-SizeF Paint::pageSizeInch(const Score *score) {
+SizeF Paint::page_size_inch(const Score *score) {
     if (!score) {
         return SizeF();
     }
@@ -185,59 +186,59 @@ SizeF Paint::pageSizeInch(const Score *score) {
     //! then the page sizes will differ from the standard sizes (in PAGE view mode)
     if (score->npages() > 0) {
         const Page *page = score->pages().front();
-        return SizeF(page->ldata()->bbox().width() / mu::engraving::DPI, page->ldata()->bbox().height() / mu::engraving::DPI);
+        return SizeF(page->ldata()->bbox().width() / mu::engraving::dpi, page->ldata()->bbox().height() / mu::engraving::dpi);
     }
 
-    return SizeF(score->style().styleD(Sid::pageWidth), score->style().styleD(Sid::pageHeight));
+    return SizeF(score->style().style_d(Sid::PAGE_WIDTH), score->style().style_d(Sid::PAGE_HEIGHT));
 }
 
-SizeF Paint::pageSizeInch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
+SizeF Paint::page_size_inch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
     if (!score) {
         return SizeF();
     }
 
-    int pageNo = opt.fromPage >= 0 ? opt.fromPage : 0;
-    if (pageNo >= int(score->npages())) {
+    int page_no = opt.from_page >= 0 ? opt.from_page : 0;
+    if (page_no >= int(score->npages())) {
         return SizeF();
     }
 
-    const Page *page = score->pages().at(pageNo);
+    const Page *page = score->pages().at(page_no);
 
-    RectF pageRect = page->ldata()->bbox();
+    RectF page_rect = page->ldata()->bbox();
 
     //! NOTE Trim page margins, if need
-    if (opt.trimMarginPixelSize >= 0) {
-        double trimMargin = static_cast<double>(opt.trimMarginPixelSize);
-        pageRect = page->tbbox().adjusted(-trimMargin, -trimMargin, trimMargin, trimMargin);
+    if (opt.trim_margin_pixel_size >= 0) {
+        double trim_margin = static_cast<double>(opt.trim_margin_pixel_size);
+        page_rect = page->tbbox().adjusted(-trim_margin, -trim_margin, trim_margin, trim_margin);
     }
 
-    return pageRect.size() / mu::engraving::DPI;
+    return page_rect.size() / mu::engraving::dpi;
 }
 
-void Paint::paintItem(Painter &painter, const EngravingItem *item, const PaintOptions &opt) {
+void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintOptions &opt) {
     TRACEFUNC;
-    if (item->ldata()->isSkipDraw()) {
+    if (item->ldata()->is_skip_draw()) {
         return;
     }
-    item->itemDiscovered = false;
-    PointF itemPosition(item->pagePos());
+    item->item_discovered = false;
+    PointF item_position(item->page_pos());
 
-    painter.translate(itemPosition);
-    TDraw::drawItem(item, &painter, opt);
-    painter.translate(-itemPosition);
+    painter.translate(item_position);
+    TDraw::draw_item(item, &painter, opt);
+    painter.translate(-item_position);
 }
 
-void Paint::paintItems(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
+void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
     TRACEFUNC;
-    std::vector<EngravingItem *> sortedItems(items.begin(), items.end());
+    std::vector<EngravingItem *> sorted_items(items.begin(), items.end());
 
-    std::sort(sortedItems.begin(), sortedItems.end(), mu::engraving::elementLessThan);
+    std::sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);
 
-    for (const EngravingItem *item : sortedItems) {
-        if (!item->isInteractionAvailable()) {
+    for (const EngravingItem *item : sorted_items) {
+        if (!item->is_interaction_available()) {
             continue;
         }
 
-        paintItem(painter, item, opt);
+        paint_item(painter, item, opt);
     }
 }

@@ -33,16 +33,16 @@ struct XmlDomImplData;
 // Opaque, backend-agnostic handle storage (two machine words)
 using xml_handle_slot = std::uintptr_t;
 
-struct xml_handle {
+struct XmlHandle {
     xml_handle_slot slot0 = 0;
     xml_handle_slot slot1 = 0;
 
     explicit operator bool() const noexcept { return !(slot0 == 0 && slot1 == 0); }
 };
 
-static_assert(std::is_trivially_copyable_v<xml_handle>, "Xml handle struct must be trivially copyable");
-using xml_node_handle = xml_handle;
-using xml_attr_handle = xml_handle;
+static_assert(std::is_trivially_copyable_v<XmlHandle>, "Xml handle struct must be trivially copyable");
+using xml_node_handle = XmlHandle;
+using xml_attr_handle = XmlHandle;
 
 class XmlDomElement;
 class XmlDomAttribute;
@@ -52,19 +52,19 @@ public:
 
     XmlDomNode() = default;
 
-    bool isNull() const;
-    String nodeName() const;
+    bool is_null() const;
+    String node_name() const;
 
-    bool hasChildNodes() const;
-    XmlDomNode firstChild() const;
-    XmlDomElement firstChildElement(const char *name) const;
-    XmlDomNode nextSibling() const;
-    XmlDomNode previousSibling() const;
+    bool has_child_nodes() const;
+    XmlDomNode first_child() const;
+    XmlDomElement first_child_element(const char *name) const;
+    XmlDomNode next_sibling() const;
+    XmlDomNode previous_sibling() const;
     XmlDomNode parent() const;
 
-    XmlDomElement nextSiblingElement(const char *name = nullptr) const;
-    XmlDomElement previousSiblingElement(const char *name = nullptr) const;
-    XmlDomElement toElement() const;
+    XmlDomElement next_sibling_element(const char *name = nullptr) const;
+    XmlDomElement previous_sibling_element(const char *name = nullptr) const;
+    XmlDomElement to_element() const;
 
 protected:
     friend class XmlDomDocument;
@@ -81,7 +81,7 @@ public:
 
     String text() const;
 
-    XmlDomAttribute firstAttribute() const;
+    XmlDomAttribute first_attribute() const;
     XmlDomAttribute attribute(const char *name) const;
 
 private:
@@ -95,12 +95,12 @@ private:
 class XmlDomAttribute {
 public:
 
-    bool isNull() const;
-    String attributeName() const;
+    bool is_null() const;
+    String attribute_name() const;
 
     String value() const;
 
-    XmlDomAttribute nextAttribute() const;
+    XmlDomAttribute next_attribute() const;
 
 private:
     friend class XmlDomElement;
@@ -115,12 +115,12 @@ class XmlDomDocument {
 public:
     XmlDomDocument();
 
-    void setContent(const ByteArray &data);
+    void set_content(const ByteArray &data);
 
-    XmlDomElement rootElement() const;
+    XmlDomElement root_element() const;
 
-    bool hasError() const;
-    String errorString() const;
+    bool has_error() const;
+    String error_string() const;
 
 private:
     std::shared_ptr<XmlDomImplData> xml_ = nullptr;

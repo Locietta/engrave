@@ -225,11 +225,11 @@ enum class ElementType : unsigned char {
     MAXTYPE
 };
 
-constexpr size_t TOT_ELEMENT_TYPES = static_cast<size_t>(ElementType::MAXTYPE);
+constexpr size_t tot_element_types = static_cast<size_t>(ElementType::MAXTYPE);
 
 // Items must be added here to enable autoplace
 // Add new types to the appropriate group below as needed
-constexpr bool autoplaceAppliesToType(ElementType type) {
+constexpr bool autoplace_applies_to_type(ElementType type) {
     switch (type) {
         // Ties, slurs and lines with their segments
         case ElementType::SLUR:
@@ -324,7 +324,7 @@ constexpr bool autoplaceAppliesToType(ElementType type) {
     }
 }
 
-const static std::unordered_set<ElementType> TEXTBASE_TYPES{
+const static std::unordered_set<ElementType> textbase_types{
     ElementType::TEXT,
     ElementType::LYRICS,
     ElementType::DYNAMIC,
@@ -790,16 +790,16 @@ struct OrnamentInterval {
 
     inline bool operator!=(const OrnamentInterval &interval) const { return !operator==(interval); }
 
-    static bool isPerfectStep(IntervalStep step) {
-        static const std::unordered_set<IntervalStep> perfectSteps{IntervalStep::UNISON, IntervalStep::FOURTH, IntervalStep::FIFTH,
-                                                                   IntervalStep::OCTAVE};
-        return muse::contains(perfectSteps, step);
+    static bool is_perfect_step(IntervalStep step) {
+        static const std::unordered_set<IntervalStep> perfect_steps{IntervalStep::UNISON, IntervalStep::FOURTH, IntervalStep::FIFTH,
+                                                                    IntervalStep::OCTAVE};
+        return muse::contains(perfect_steps, step);
     }
 
-    bool isPerfect() const { return isPerfectStep(step); }
+    bool is_perfect() const { return is_perfect_step(step); }
 };
 
-static const OrnamentInterval DEFAULT_ORNAMENT_INTERVAL = OrnamentInterval(IntervalStep::SECOND, IntervalType::AUTO);
+static const OrnamentInterval default_ornament_interval = OrnamentInterval(IntervalStep::SECOND, IntervalType::AUTO);
 
 enum class OrnamentShowAccidental : unsigned char {
     DEFAULT,
@@ -943,7 +943,7 @@ enum class TextStyleType : unsigned char {
 //   FontStyle
 //---------------------------------------------------------
 
-enum class FontStyle : signed char { Undefined = -1, Normal = 0, Bold = 1 << 0, Italic = 1 << 1, Underline = 1 << 2, Strike = 1 << 3 };
+enum class FontStyle : signed char { UNDEFINED = -1, NORMAL = 0, BOLD = 1 << 0, ITALIC = 1 << 1, UNDERLINE = 1 << 2, STRIKE = 1 << 3 };
 
 constexpr FontStyle operator+(FontStyle a1, FontStyle a2) { return static_cast<FontStyle>(static_cast<char>(a1) | static_cast<char>(a2)); }
 
@@ -954,47 +954,47 @@ constexpr FontStyle operator-(FontStyle a1, FontStyle a2) { return static_cast<F
 constexpr bool operator&(FontStyle a1, FontStyle a2) { return static_cast<bool>(static_cast<char>(a1) & static_cast<char>(a2)); }
 
 enum class PlayingTechniqueType : signed char {
-    Undefined = -1,
-    Natural,
-    Pizzicato,
-    Open,
-    Mute,
-    Tremolo,
-    Detache,
-    Martele,
-    ColLegno,
-    SulPonticello,
-    SulTasto,
-    Vibrato,
-    Legato,
-    Distortion,
-    Overdrive,
-    Harmonics,
-    JazzTone,
+    UNDEFINED = -1,
+    NATURAL,
+    PIZZICATO,
+    OPEN,
+    MUTE,
+    TREMOLO,
+    DETACHE,
+    MARTELE,
+    COL_LEGNO,
+    SUL_PONTICELLO,
+    SUL_TASTO,
+    VIBRATO,
+    LEGATO,
+    DISTORTION,
+    OVERDRIVE,
+    HARMONICS,
+    JAZZ_TONE,
     // Handbells
-    HandbellsSwing,
-    HandbellsSwingUp,
-    HandbellsSwingDown,
-    HandbellsEcho1,
-    HandbellsEcho2,
-    HandbellsDamp,
-    HandbellsLV,
-    HandbellsR,
+    HANDBELLS_SWING,
+    HANDBELLS_SWING_UP,
+    HANDBELLS_SWING_DOWN,
+    HANDBELLS_ECHO1,
+    HANDBELLS_ECHO2,
+    HANDBELLS_DAMP,
+    HANDBELLS_LV,
+    HANDBELLS_R,
 };
 
 enum class GradualTempoChangeType : signed char {
-    Undefined = -1,
-    Accelerando,
-    Allargando,
-    Calando,
-    Lentando,
-    Morendo,
-    Precipitando,
-    Rallentando,
-    Ritardando,
-    Smorzando,
-    Sostenuto,
-    Stringendo
+    UNDEFINED = -1,
+    ACCELERANDO,
+    ALLARGANDO,
+    CALANDO,
+    LENTANDO,
+    MORENDO,
+    PRECIPITANDO,
+    RALLENTANDO,
+    RITARDANDO,
+    SMORZANDO,
+    SOSTENUTO,
+    STRINGENDO
 };
 
 // P_TYPE::CHANGE_METHOD
@@ -1040,11 +1040,11 @@ enum class CourtesyBarlineMode : char {
     DOUBLE_BEFORE_COURTESY = 2,
 };
 
-enum class FermataType : signed char { Undefined = -1, VeryShort, Short, ShortHenze, Normal, Long, LongHenze, VeryLong };
+enum class FermataType : signed char { UNDEFINED = -1, VERY_SHORT, SHORT, SHORT_HENZE, NORMAL, LONG, LONG_HENZE, VERY_LONG };
 
 enum class ChordLineType : unsigned char { NOTYPE, FALL, DOIT, PLOP, SCOOP };
 
-enum class SlurStyleType : signed char { Undefined = -1, Solid, Dotted, Dashed, WideDashed };
+enum class SlurStyleType : signed char { UNDEFINED = -1, SOLID, DOTTED, DASHED, WIDE_DASHED };
 
 enum class TappingHand {
     INVALID = -1,
@@ -1069,18 +1069,18 @@ enum class LHTappingShowItems : unsigned char {
 };
 
 struct InstrumentTrackId {
-    muse::ID partId = 0;
-    String instrumentId;
+    muse::ID part_id = 0;
+    String instrument_id;
 
-    bool operator==(const InstrumentTrackId &other) const { return partId == other.partId && instrumentId == other.instrumentId; }
+    bool operator==(const InstrumentTrackId &other) const { return part_id == other.part_id && instrument_id == other.instrument_id; }
 
     bool operator!=(const InstrumentTrackId &other) const { return !operator==(other); }
 
     bool operator<(const InstrumentTrackId &other) const noexcept {
-        return std::tie(partId, instrumentId) < std::tie(other.partId, other.instrumentId);
+        return std::tie(part_id, instrument_id) < std::tie(other.part_id, other.instrument_id);
     }
 
-    bool isValid() const { return partId.isValid() && !instrumentId.empty(); }
+    bool is_valid() const { return part_id.is_valid() && !instrument_id.empty(); }
 };
 
 // Tremolo subtypes:
@@ -1101,12 +1101,12 @@ enum class TremoloType : signed char {
     C256 // two note tremolo (change)
 };
 
-inline bool isTremoloTwoChord(TremoloType type) { return type >= TremoloType::C8; }
+inline bool is_tremolo_two_chord(TremoloType type) { return type >= TremoloType::C8; }
 
 // only applicable to minim two-note tremolo in non-TAB staves
 enum class TremoloStyle : signed char { DEFAULT = 0, TRADITIONAL, TRADITIONAL_ALTERNATE };
 
-enum class TremoloChordType : unsigned char { TremoloNone, TremoloSingle, TremoloFirstChord, TremoloSecondChord };
+enum class TremoloChordType : unsigned char { TREMOLO_NONE, TREMOLO_SINGLE, TREMOLO_FIRST_CHORD, TREMOLO_SECOND_CHORD };
 
 enum class BracketType : signed char { NORMAL, BRACE, SQUARE, LINE, GROUP, NO_BRACKET = -1 };
 
@@ -1150,7 +1150,7 @@ enum class MarkerType : unsigned char {
 };
 
 enum class StaffGroup : unsigned char { STANDARD, PERCUSSION, TAB };
-constexpr int STAFF_GROUP_MAX = int(StaffGroup::TAB) + 1; // out of enum to avoid compiler complains about not handled switch cases
+constexpr int staff_group_max = int(StaffGroup::TAB) + 1; // out of enum to avoid compiler complains about not handled switch cases
 
 // keep in sync with the _presets initialization in StaffType::initStaffTypes() and _defaultPreset for legacy scores
 enum class StaffTypes : signed char {
@@ -1291,10 +1291,10 @@ static inline Key operator-=(Key &a, const Key &b) { return a = Key(static_cast<
 enum class PreferSharpFlat : char { NONE, SHARPS, FLATS, AUTO };
 
 struct SwingParameters {
-    int swingUnit = 0;
-    int swingRatio = 0;
+    int swing_unit = 0;
+    int swing_ratio = 0;
 
-    bool isOn() const { return swingUnit != 0; }
+    bool is_on() const { return swing_unit != 0; }
 };
 
 struct CapoParams {
@@ -1303,28 +1303,28 @@ struct CapoParams {
         STANDARD_ONLY = 1,
         TAB_ONLY = 2,
     };
-    std::unordered_set<string_idx_t> ignoredStrings;
-    int fretPosition = 0;
-    TransposeMode transposeMode = TransposeMode::PLAYBACK_ONLY;
+    std::unordered_set<string_idx_t> ignored_strings;
+    int fret_position = 0;
+    TransposeMode transpose_mode = TransposeMode::PLAYBACK_ONLY;
     bool active = false;
 };
 
 struct PartAudioSettingsCompat {
-    InstrumentTrackId instrumentId;
+    InstrumentTrackId instrument_id;
     bool mute = false;
     bool solo = false;
     int velocity = 127;
 };
 
 struct SettingsCompat {
-    std::map<muse::ID /*partid*/, PartAudioSettingsCompat> audioSettings;
+    std::map<muse::ID /*partid*/, PartAudioSettingsCompat> audio_settings;
 };
 
 struct MeasureBeat {
-    int measureIndex = 0;
-    int maxMeasureIndex = 0;
+    int measure_index = 0;
+    int max_measure_index = 0;
     float beat = 0.f;
-    int maxBeatIndex = 0;
+    int max_beat_index = 0;
 };
 
 //---------------------------------------------------------
@@ -1335,10 +1335,10 @@ struct MeasureBeat {
 //---------------------------------------------------------
 
 enum class UpdateMode : unsigned char {
-    DoNothing,
-    Update,    // do screen refresh of RectF "refresh"
-    UpdateAll, // do complete screen refresh
-    Layout,    // do partial layout for tick range
+    DO_NOTHING,
+    UPDATE,     // do screen refresh of RectF "refresh"
+    UPDATE_ALL, // do complete screen refresh
+    LAYOUT,     // do partial layout for tick range
 };
 
 //---------------------------------------------------------
@@ -1353,7 +1353,7 @@ enum class LayoutFlag : unsigned char {
 
 typedef muse::Flags<LayoutFlag> LayoutFlags;
 
-enum class LoopBoundaryType : signed char { Unknown = -1, LoopIn = 0, LoopOut = 1 };
+enum class LoopBoundaryType : signed char { UNKNOWN = -1, LOOP_IN = 0, LOOP_OUT = 1 };
 
 enum class ActionIconType : signed char {
     UNDEFINED = -1,
@@ -1411,8 +1411,8 @@ enum class TupletBracketType : unsigned char { AUTO_BRACKET, SHOW_BRACKET, SHOW_
 template <>
 struct std::hash<mu::engraving::InstrumentTrackId> {
     std::size_t operator()(const mu::engraving::InstrumentTrackId &s) const noexcept {
-        std::size_t h1 = std::hash<int>{}(static_cast<int>(s.partId.toUint64()));
-        std::size_t h2 = std::hash<muse::String>{}(s.instrumentId);
+        std::size_t h1 = std::hash<int>{}(static_cast<int>(s.part_id.to_uint64()));
+        std::size_t h2 = std::hash<muse::String>{}(s.instrument_id);
         return h1 ^ (h2 << 1);
     }
 };

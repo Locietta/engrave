@@ -48,23 +48,23 @@ public:
 
     const PitchValues &points() const { return points_; }
 
-    void setPoints(const PitchValues &p) { points_ = p; }
+    void set_points(const PitchValues &p) { points_ = p; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    double userMag() const { return userMag_; }
+    double user_mag() const { return user_mag_; }
 
-    void setUserMag(double m) { userMag_ = m; }
+    void set_user_mag(double m) { user_mag_ = m; }
 
-    void setLineWidth(Spatium v) { lw_ = v; }
+    void set_line_width(Spatium v) { lw_ = v; }
 
-    Spatium lineWidth() const { return lw_; }
+    Spatium line_width() const { return lw_; }
 
     bool play() const { return play_; }
 
-    void setPlay(bool val) { play_ = val; }
+    void set_play(bool val) { play_ = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         PolygonF polygon;
@@ -76,11 +76,11 @@ private:
     friend class Factory;
     TremoloBar(DummyParentOr<EngravingItem> parent);
 
-    TremoloBarType parseTremoloBarTypeFromCurve(const PitchValues &curve) const;
-    void updatePointsByTremoloBarType(const TremoloBarType type);
+    TremoloBarType parse_tremolo_bar_type_from_curve(const PitchValues &curve) const;
+    void update_points_by_tremolo_bar_type(const TremoloBarType type);
 
     Spatium lw_;
-    double userMag_ = 1.0; // allowed 0.1 - 10.0
+    double user_mag_ = 1.0; // allowed 0.1 - 10.0
     bool play_ = true;
 
     PitchValues points_;

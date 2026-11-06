@@ -31,18 +31,18 @@ using namespace muse::io;
 struct ZipReader::Impl {
     ZipContainer *zip = nullptr;
     IODevice *device = nullptr;
-    bool isSelfDevice = false;
+    bool is_self_device = false;
 };
 
-bool ZipReader::startsWithEntry(const ByteArray &data, std::span<const uint8_t> name) {
-    return ZipContainer::startsWithEntry(data.constData(), data.size(), name);
+bool ZipReader::starts_with_entry(const ByteArray &data, std::span<const uint8_t> name) {
+    return ZipContainer::starts_with_entry(data.const_data(), data.size(), name);
 }
 
-ZipReader::ZipReader(const io::path_t &filePath) : filePath_(filePath) {
+ZipReader::ZipReader(const io::PathT &file_path) : file_path_(file_path) {
     impl_ = new Impl();
-    impl_->device = new File(filePath);
-    impl_->isSelfDevice = true;
-    if (impl_->device->open(IODevice::ReadOnly)) {}
+    impl_->device = new File(file_path);
+    impl_->is_self_device = true;
+    if (impl_->device->open(IODevice::READ_ONLY)) {}
     impl_->zip = new ZipContainer(impl_->device);
 }
 
@@ -55,15 +55,15 @@ ZipReader::ZipReader(IODevice *device) {
 ZipReader::~ZipReader() {
     close();
     delete impl_->zip;
-    if (impl_->isSelfDevice) {
+    if (impl_->is_self_device) {
         delete impl_->device;
     }
     delete impl_;
 }
 
 bool ZipReader::exists() const {
-    if (!filePath_.empty()) {
-        return File::exists(filePath_);
+    if (!file_path_.empty()) {
+        return File::exists(file_path_);
     }
 
     return true;
@@ -71,18 +71,18 @@ bool ZipReader::exists() const {
 
 void ZipReader::close() { impl_->zip->close(); }
 
-bool ZipReader::hasError() const { return impl_->zip->status() != ZipContainer::NoError; }
+bool ZipReader::has_error() const { return impl_->zip->status() != ZipContainer::NO_ERROR; }
 
-std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const {
+std::vector<ZipReader::FileInfo> ZipReader::file_info_list() const {
     std::vector<FileInfo> ret;
-    std::vector<ZipContainer::FileInfo> fis = impl_->zip->fileInfoList();
+    std::vector<ZipContainer::FileInfo> fis = impl_->zip->file_info_list();
     ret.reserve(fis.size());
     for (const ZipContainer::FileInfo &qfi : fis) {
         FileInfo fi;
-        fi.filePath = qfi.filePath;
-        fi.isDir = qfi.isDir;
-        fi.isFile = qfi.isFile;
-        fi.isSymLink = qfi.isSymLink;
+        fi.file_path = qfi.file_path;
+        fi.is_dir = qfi.is_dir;
+        fi.is_file = qfi.is_file;
+        fi.is_sym_link = qfi.is_sym_link;
         fi.size = qfi.size;
 
         ret.push_back(std::move(fi));
@@ -91,32 +91,32 @@ std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const {
     return ret;
 }
 
-bool ZipReader::fileExists(const std::string &fileName) const { return impl_->zip->fileExists(fileName); }
+bool ZipReader::file_exists(const std::string &file_name) const { return impl_->zip->file_exists(file_name); }
 
-ByteArray ZipReader::fileData(const std::string &fileName) const { return impl_->zip->fileData(fileName); }
+ByteArray ZipReader::file_data(const std::string &file_name) const { return impl_->zip->file_data(file_name); }
 
 // ===========================
 // ZipUnpack
 // ===========================
 
-Ret ZipUnpack::unpack(const io::path_t &zipPath, const io::path_t &dirPath) {
-    Ret ret = io::Dir::mkpath(dirPath);
+Ret ZipUnpack::unpack(const io::PathT &zip_path, const io::PathT &dir_path) {
+    Ret ret = io::Dir::mkpath(dir_path);
     if (!ret) {
         return ret;
     }
 
-    ZipReader zip(zipPath);
-    for (const ZipReader::FileInfo &fi : zip.fileInfoList()) {
-        const io::path_t filePath = dirPath + "/" + fi.filePath;
+    ZipReader zip(zip_path);
+    for (const ZipReader::FileInfo &fi : zip.file_info_list()) {
+        const io::PathT file_path = dir_path + "/" + fi.file_path;
 
-        if (fi.isDir) {
-            ret = io::Dir::mkpath(filePath);
-        } else if (fi.isFile) {
-            ret = io::Dir::mkpath(io::dirpath(filePath));
+        if (fi.is_dir) {
+            ret = io::Dir::mkpath(file_path);
+        } else if (fi.is_file) {
+            ret = io::Dir::mkpath(io::dirpath(file_path));
 
             if (ret) {
-                const ByteArray data = zip.fileData(fi.filePath.toStdString());
-                ret = io::File::writeFile(filePath, data);
+                const ByteArray data = zip.file_data(fi.file_path.to_std_string());
+                ret = io::File::write_file(file_path, data);
             }
         }
 

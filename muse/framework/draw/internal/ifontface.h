@@ -44,28 +44,28 @@ public:
 
     virtual ~IFontFace() = default;
 
-    virtual bool load(const FaceKey &key, const FontData &fontData, bool isSymbolMode) = 0;
+    virtual bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) = 0;
 
     virtual const FaceKey &key() const = 0;
-    virtual bool isSymbolMode() const = 0;
+    virtual bool is_symbol_mode() const = 0;
 
     virtual f26dot6_t leading() const = 0;
     virtual f26dot6_t ascent() const = 0;
     virtual f26dot6_t descent() const = 0;
-    virtual f26dot6_t xHeight() const = 0;
-    virtual f26dot6_t capHeight() const = 0;
+    virtual f26dot6_t x_height() const = 0;
+    virtual f26dot6_t cap_height() const = 0;
 
-    virtual f26dot6_t underlinePos() const = 0;
-    virtual f26dot6_t lineWidth() const = 0;
+    virtual f26dot6_t underline_pos() const = 0;
+    virtual f26dot6_t line_width() const = 0;
 
     virtual std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const = 0;
-    virtual glyph_idx_t glyphIndex(char32_t ucs4) const = 0;
-    virtual glyph_idx_t glyphIndex(const std::string &glyphName) const = 0;
-    virtual char32_t findCharCode(glyph_idx_t idx) const = 0; // for tests
+    virtual glyph_idx_t glyph_index(char32_t ucs4) const = 0;
+    virtual glyph_idx_t glyph_index(const std::string &glyph_name) const = 0;
+    virtual char32_t find_char_code(glyph_idx_t idx) const = 0; // for tests
 
-    virtual FBBox glyphBbox(glyph_idx_t idx) const = 0;
-    virtual f26dot6_t glyphAdvance(glyph_idx_t idx) const = 0;
+    virtual FBBox glyph_bbox(glyph_idx_t idx) const = 0;
+    virtual f26dot6_t glyph_advance(glyph_idx_t idx) const = 0;
 
-    virtual const GlyphImage &glyphImage(glyph_idx_t idx) const = 0;
+    virtual const GlyphImage &glyph_image(glyph_idx_t idx) const = 0;
 };
 } // namespace muse::draw

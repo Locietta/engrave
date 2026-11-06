@@ -60,59 +60,59 @@ inline T value(const std::vector<T> &vec, size_t idx) {
 
 template <typename T>
 inline bool remove(std::vector<T> &vec, const T &v) {
-    size_t origSize = vec.size();
+    size_t orig_size = vec.size();
     vec.erase(std::remove(vec.begin(), vec.end(), v), vec.end());
-    return origSize != vec.size();
+    return orig_size != vec.size();
 }
 
 template <typename T, typename Predicate>
 inline bool remove_if(std::vector<T> &vec, Predicate p) {
-    size_t origSize = vec.size();
+    size_t orig_size = vec.size();
     vec.erase(std::remove_if(vec.begin(), vec.end(), p), vec.end());
-    return origSize != vec.size();
+    return orig_size != vec.size();
 }
 
 template <typename T>
-inline void removeFirst(std::vector<T> &vec) {
+inline void remove_first(std::vector<T> &vec) {
     vec.erase(vec.begin());
 }
 
 template <typename T>
-inline T takeAt(std::vector<T> &vec, size_t idx) {
+inline T take_at(std::vector<T> &vec, size_t idx) {
     T v = value(vec, idx);
     vec.erase(vec.begin() + idx);
     return v;
 }
 
 template <typename T>
-inline T takeFirst(std::vector<T> &vec) {
-    return takeAt(vec, 0);
+inline T take_first(std::vector<T> &vec) {
+    return take_at(vec, 0);
 }
 
 template <typename T>
-inline T takeLast(std::vector<T> &vec) {
-    return takeAt(vec, vec.size() - 1);
+inline T take_last(std::vector<T> &vec) {
+    return take_at(vec, vec.size() - 1);
 }
 
 template <typename T>
-inline void swapItemsAt(std::vector<T> &vec, size_t idx1, size_t idx2) {
+inline void swap_items_at(std::vector<T> &vec, size_t idx1, size_t idx2) {
     T v1 = vec[idx1];
     vec[idx1] = vec[idx2];
     vec[idx2] = v1;
 }
 
 template <typename T>
-inline bool moveItem(std::vector<T> &vec, size_t oldIdx, size_t newIdx) {
-    if (oldIdx == muse::nidx || oldIdx == newIdx) {
+inline bool move_item(std::vector<T> &vec, size_t old_idx, size_t new_idx) {
+    if (old_idx == muse::nidx || old_idx == new_idx) {
         return false;
     }
 
-    newIdx = std::min(vec.size() - 1, newIdx);
+    new_idx = std::min(vec.size() - 1, new_idx);
 
-    if (oldIdx > newIdx) {
-        std::rotate(vec.rend() - oldIdx - 1, vec.rend() - oldIdx, vec.rend() - newIdx);
+    if (old_idx > new_idx) {
+        std::rotate(vec.rend() - old_idx - 1, vec.rend() - old_idx, vec.rend() - new_idx);
     } else {
-        std::rotate(vec.begin() + oldIdx, vec.begin() + oldIdx + 1, vec.begin() + newIdx + 1);
+        std::rotate(vec.begin() + old_idx, vec.begin() + old_idx + 1, vec.begin() + new_idx + 1);
     }
 
     return true;
@@ -173,14 +173,14 @@ inline bool remove(std::list<T> &l, const T &v) {
 }
 
 template <typename T>
-inline T takeFirst(std::list<T> &l) {
+inline T take_first(std::list<T> &l) {
     T v = l.front();
     l.pop_front();
     return v;
 }
 
 template <typename T>
-inline T takeLast(std::list<T> &l) {
+inline T take_last(std::list<T> &l) {
     T v = l.back();
     l.pop_back();
     return v;
@@ -223,7 +223,7 @@ inline bool contains(const std::array<T, size> &s, const T &v) {
 // ===========================
 
 template <typename Container, typename T>
-inline size_t indexOf(const Container &c, const T &v) {
+inline size_t index_of(const Container &c, const T &v) {
     auto it = std::find(c.cbegin(), c.cend(), v);
     if (it != c.cend()) {
         return std::distance(c.cbegin(), it);
@@ -332,7 +332,7 @@ inline auto take(Map &m, const K &k) -> typename Map::mapped_type {
 }
 
 template <typename K, typename V>
-inline std::set<K> uniqueKeys(const std::multimap<K, V> &mm) {
+inline std::set<K> unique_keys(const std::multimap<K, V> &mm) {
     std::set<K> keys;
     for (auto it = mm.begin(); it != mm.end(); ++it) {
         keys.insert(it->first);
@@ -351,7 +351,7 @@ inline auto values(const std::multimap<K, V> &mm, const K &key) -> std::vector<t
 }
 
 template <typename Container>
-inline typename Container::const_iterator findLessOrEqual(const Container &c, const typename Container::key_type &k) {
+inline typename Container::const_iterator find_less_or_equal(const Container &c, const typename Container::key_type &k) {
     if (c.empty()) {
         return c.cend();
     }
@@ -365,7 +365,7 @@ inline typename Container::const_iterator findLessOrEqual(const Container &c, co
 }
 
 template <typename Container>
-inline typename Container::iterator findLessOrEqual(Container &c, const typename Container::key_type &k) {
+inline typename Container::iterator find_less_or_equal(Container &c, const typename Container::key_type &k) {
     if (c.empty()) {
         return c.end();
     }
@@ -379,7 +379,7 @@ inline typename Container::iterator findLessOrEqual(Container &c, const typename
 }
 
 template <typename Container>
-inline typename Container::const_iterator findLess(const Container &c, const typename Container::key_type &k) {
+inline typename Container::const_iterator find_less(const Container &c, const typename Container::key_type &k) {
     if (c.empty()) {
         return c.cend();
     }
@@ -393,7 +393,7 @@ inline typename Container::const_iterator findLess(const Container &c, const typ
 }
 
 template <typename Container>
-inline typename Container::iterator findLess(Container &c, const typename Container::key_type &k) {
+inline typename Container::iterator find_less(Container &c, const typename Container::key_type &k) {
     if (c.empty()) {
         return c.end();
     }
@@ -407,7 +407,7 @@ inline typename Container::iterator findLess(Container &c, const typename Contai
 }
 
 template <typename ForwardIterator>
-inline void DeleteAll(ForwardIterator begin, ForwardIterator end) {
+inline void delete_all(ForwardIterator begin, ForwardIterator end) {
     while (begin != end) {
         delete *begin;
         ++begin;
@@ -415,8 +415,8 @@ inline void DeleteAll(ForwardIterator begin, ForwardIterator end) {
 }
 
 template <typename Container>
-inline void DeleteAll(const Container &c) {
-    DeleteAll(c.begin(), c.end());
+inline void delete_all(const Container &c) {
+    delete_all(c.begin(), c.end());
 }
 } // namespace muse
 

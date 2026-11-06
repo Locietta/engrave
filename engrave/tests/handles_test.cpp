@@ -111,10 +111,10 @@ std::string text_of(const std::vector<std::byte> &bytes) { return {reinterpret_c
 
 const char *class_name(IdClass value) {
     switch (value) {
-        case IdClass::persisted: return "persisted";
-        case IdClass::layout: return "layout";
-        case IdClass::address: return "address";
-        case IdClass::session: return "session";
+        case IdClass::PERSISTED: return "persisted";
+        case IdClass::LAYOUT: return "layout";
+        case IdClass::ADDRESS: return "address";
+        case IdClass::SESSION: return "session";
     }
     return "unknown";
 }
@@ -132,43 +132,43 @@ ElementId engine_id(const EngravingObject &object) { return engrave::from_engine
 
 std::string id_text(const EngravingObject &object) { return engrave::to_string(engine_id(object)); }
 
-std::string object_name(const EngravingObject &object) { return std::string(object.typeName()); }
+std::string object_name(const EngravingObject &object) { return std::string(object.type_name()); }
 
 /// Where an element is, for the inventory's evidence.
 std::string detail(const EngravingObject &object) {
-    if (!object.isEngravingItem()) return object_name(object);
+    if (!object.is_engraving_item()) return object_name(object);
     const auto &item = static_cast<const EngravingItem &>(object);
     return std::format("tick={} track={} parent={}", item.tick().ticks(), static_cast<long long>(item.track()),
-                       item.parent() ? item.parent()->typeName() : "null");
+                       item.parent() ? item.parent()->type_name() : "null");
 }
 
 // --- score elements -------------------------------------------------------
 
 Note *first_note(Score &score) {
     Note *found = nullptr;
-    score.scanElements([&found](EngravingItem *item) {
-        if (!found && item->isNote()) found = mu::engraving::toNote(item);
+    score.scan_elements([&found](EngravingItem *item) {
+        if (!found && item->is_note()) found = mu::engraving::to_note(item);
     });
     return found;
 }
 
 Segment *first_segment(Score &score, SegmentType kind) {
     for (MeasureBase *mb = score.first(); mb; mb = mb->next()) {
-        if (!mb->isMeasure()) continue;
-        if (mu::engraving::toMeasure(mb)->isMMRest()) continue;
-        if (Segment *segment = mu::engraving::toMeasure(mb)->first(kind)) return segment;
+        if (!mb->is_measure()) continue;
+        if (mu::engraving::to_measure(mb)->is_mm_rest()) continue;
+        if (Segment *segment = mu::engraving::to_measure(mb)->first(kind)) return segment;
     }
     return nullptr;
 }
 
 mu::engraving::ChordRest *first_chord_rest(Score &score) {
     for (MeasureBase *mb = score.first(); mb; mb = mb->next()) {
-        if (!mb->isMeasure()) continue;
-        if (mu::engraving::toMeasure(mb)->isMMRest()) continue;
-        for (Segment *segment = mu::engraving::toMeasure(mb)->first(SegmentType::ChordRest); segment; segment = segment->next()) {
-            for (mu::engraving::track_idx_t track = 0; track < score.nstaves() * mu::engraving::VOICES; ++track) {
+        if (!mb->is_measure()) continue;
+        if (mu::engraving::to_measure(mb)->is_mm_rest()) continue;
+        for (Segment *segment = mu::engraving::to_measure(mb)->first(SegmentType::CHORD_REST); segment; segment = segment->next()) {
+            for (mu::engraving::track_idx_t track = 0; track < score.nstaves() * mu::engraving::voices; ++track) {
                 EngravingItem *element = segment->element(track);
-                if (element && element->isChordRest()) return mu::engraving::toChordRest(element);
+                if (element && element->is_chord_rest()) return mu::engraving::to_chord_rest(element);
             }
         }
     }
@@ -189,12 +189,12 @@ EngravingObject *first_live(MasterScore &master, ElementType type) {
 class Command {
 public:
     explicit Command(MasterScore &score) : score_(score) {
-        mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
-        score_.startCmd(muse::TranslatableString::untranslatable("engrave handles test"));
+        mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
+        score_.start_cmd(muse::TranslatableString::untranslatable("engrave handles test"));
     }
 
     ~Command() {
-        if (open_) score_.endCmd(true, true);
+        if (open_) score_.end_cmd(true, true);
     }
 
     Command(const Command &) = delete;
@@ -203,14 +203,14 @@ public:
     /// Commits, and then does what a batch does: give the elements the commands made
     /// their ids again, and drop the history so that a removal destroys its elements.
     void commit(bool drop_history) {
-        score_.endCmd(false, true);
+        score_.end_cmd(false, true);
         open_ = false;
         engrave::assign_missing_ids(score_);
-        if (drop_history) score_.undoStack()->clearHistory();
+        if (drop_history) score_.undo_stack()->clear_history();
     }
 
     void rollback() {
-        score_.endCmd(true, true);
+        score_.end_cmd(true, true);
         open_ = false;
     }
 
@@ -250,14 +250,14 @@ std::map<std::string, std::string> unzip_entries(std::string_view zip_bytes) {
     std::map<std::string, std::string> entries;
     muse::ByteArray bytes(zip_bytes.data(), zip_bytes.size());
     muse::io::Buffer buffer(&bytes);
-    if (!buffer.open(muse::io::IODevice::ReadOnly)) return entries;
+    if (!buffer.open(muse::io::IODevice::READ_ONLY)) return entries;
     muse::ZipReader zip(&buffer);
-    if (zip.hasError()) return entries;
-    for (const auto &info : zip.fileInfoList()) {
-        if (!info.isFile) continue;
-        const std::string name = info.filePath.toStdString();
-        const muse::ByteArray data = zip.fileData(name);
-        entries[name] = std::string(data.constChar(), data.size());
+    if (zip.has_error()) return entries;
+    for (const auto &info : zip.file_info_list()) {
+        if (!info.is_file) continue;
+        const std::string name = info.file_path.to_std_string();
+        const muse::ByteArray data = zip.file_data(name);
+        entries[name] = std::string(data.const_char(), data.size());
     }
     return entries;
 }
@@ -312,19 +312,19 @@ std::string payload(const EngravingObject &object) {
     if (object.type() == ElementType::MEASURE) {
         return std::format("ticks={}", static_cast<const Measure &>(object).ticks().ticks());
     }
-    if (object.isChordRest()) {
+    if (object.is_chord_rest()) {
         const auto &element = static_cast<const mu::engraving::ChordRest &>(object);
-        return std::format("ticks={}", element.durationType().ticks().ticks());
+        return std::format("ticks={}", element.duration_type().ticks().ticks());
     }
-    if (object.isTextBase()) {
-        return "text=" + static_cast<const mu::engraving::TextBase &>(object).plainText().toStdString();
+    if (object.is_text_base()) {
+        return "text=" + static_cast<const mu::engraving::TextBase &>(object).plain_text().to_std_string();
     }
     return {};
 }
 
 std::string describe(const engrave::LiveId &entry) {
     const EngravingObject &object = *entry.object;
-    return std::format("{} score={} tick={} track={} {}", object.typeName(), entry.placement.score, entry.placement.tick,
+    return std::format("{} score={} tick={} track={} {}", object.type_name(), entry.placement.score, entry.placement.tick,
                        entry.placement.track, payload(object));
 }
 
@@ -375,35 +375,35 @@ void expect_inv(engrave::Document &document) {
     // The register is a bijection: an entry's element reports that id, and the id of a
     // persisted element names an element of the document.
     std::set<std::string> registered;
-    for (const auto &[eid, object] : master.eidRegister()->entries()) {
-        const std::string text = eid.toStdString();
-        ASSERT_TRUE(eid.isValid()) << "an invalid id is registered";
+    for (const auto &[eid, object] : master.eid_register()->entries()) {
+        const std::string text = eid.to_std_string();
+        ASSERT_TRUE(eid.is_valid()) << "an invalid id is registered";
         EXPECT_EQ(object->eid(), eid) << text << ": the reverse entry disagrees";
         EXPECT_TRUE(registered.insert(text).second) << text << " is registered twice";
-        if (engrave::id_class(*object) != IdClass::persisted) continue; // an id that layout
+        if (engrave::id_class(*object) != IdClass::PERSISTED) continue; // an id that layout
         // or a read may drop is not handed out, so it is the engine's own entry.
         EXPECT_TRUE(objects.contains(object) || engrave::in_score(master, object))
-            << text << " (" << object->typeName() << ") left the document";
+            << text << " (" << object->type_name() << ") left the document";
     }
 
     // Every element that should have an id has one, and the register maps it back to it.
     for (const engrave::LiveId &entry : engrave::live_ids(master)) {
         EXPECT_TRUE(registered.contains(engrave::to_string(entry.id)))
             << object_name(*entry.object) << " " << engrave::to_string(entry.id) << " is not registered";
-        EXPECT_EQ(master.eidRegister()->itemFromEID(engrave::to_engine(entry.id)), entry.object)
+        EXPECT_EQ(master.eid_register()->item_from_eid(engrave::to_engine(entry.id)), entry.object)
             << engrave::to_string(entry.id) << " names another element";
     }
     for (EngravingObject *object : engrave::document_objects(master)) {
         if (!engrave::takes_id(*object)) continue;
-        EXPECT_TRUE(object->eid().isValid()) << object_name(*object) << " has no id";
+        EXPECT_TRUE(object->eid().is_valid()) << object_name(*object) << " has no id";
     }
-    EXPECT_LE(registered.size(), master.eidRegister()->size());
+    EXPECT_LE(registered.size(), master.eid_register()->size());
 }
 
 // --- H1 -------------------------------------------------------------------
 
 struct Evidence {
-    IdClass declared = IdClass::persisted;
+    IdClass declared = IdClass::PERSISTED;
     int assigned = 0;   // instances the walk gives an id
     int kept = 0;       // of those, how many kept that id through a reload
     int others = 0;     // other instances (not generated)
@@ -416,10 +416,10 @@ struct Evidence {
 
 int class_strength(IdClass value) {
     switch (value) {
-        case IdClass::persisted: return 3;
-        case IdClass::session: return 2;
-        case IdClass::address: return 1;
-        case IdClass::layout: return 0;
+        case IdClass::PERSISTED: return 3;
+        case IdClass::SESSION: return 2;
+        case IdClass::ADDRESS: return 1;
+        case IdClass::LAYOUT: return 0;
     }
     return -1;
 }
@@ -449,11 +449,11 @@ void inventory_evidence(engrave::Document &document, const std::string &source, 
         }
         if (engrave::takes_id(*object)) {
             ++row.assigned;
-            EXPECT_TRUE(object->eid().isValid()) << object_name(*object) << " has no id";
+            EXPECT_TRUE(object->eid().is_valid()) << object_name(*object) << " has no id";
             probed.emplace(engine_id(*object), Probed{object_name(*object), true, detail(*object)});
-        } else if (!object->isEngravingItem() || !static_cast<const EngravingItem &>(*object).generated()) {
+        } else if (!object->is_engraving_item() || !static_cast<const EngravingItem &>(*object).generated()) {
             ++row.others;
-            if (!object->eid().isValid()) object->assignNewEID();
+            if (!object->eid().is_valid()) object->assign_new_eid();
             probed.emplace(engine_id(*object), Probed{object_name(*object), false, detail(*object)});
         }
     }
@@ -462,7 +462,7 @@ void inventory_evidence(engrave::Document &document, const std::string &source, 
     if (!reloaded) return;
     std::map<ElementId, std::string> after;
     for (EngravingObject *object : engrave::document_objects(master_of(*reloaded))) {
-        if (object->eid().isValid()) after.emplace(engine_id(*object), object_name(*object));
+        if (object->eid().is_valid()) after.emplace(engine_id(*object), object_name(*object));
     }
     for (const auto &[id, entry] : probed) {
         const auto found = after.find(id);
@@ -535,8 +535,8 @@ std::unique_ptr<engrave::Document> created_types_document(std::set<std::string> 
     // The first note of the first chord, for AddTie.
     {
         const auto found = engrave::resolve(master_of(doc), *first);
-        if (found && found->object && found->object->isChord()) {
-            const auto &notes = mu::engraving::toChord(found->object)->notes();
+        if (found && found->object && found->object->is_chord()) {
+            const auto &notes = mu::engraving::to_chord(found->object)->notes();
             if (!notes.empty()) note = engrave::from_engine(notes.front()->eid());
         }
     }
@@ -596,14 +596,14 @@ TEST(Handles, H1Inventory) {
     std::map<std::string, std::string> observed;
     for (const auto &[type, row] : evidence) {
         if (type == "Segment") {
-            observed[type] = class_name(IdClass::address);
+            observed[type] = class_name(IdClass::ADDRESS);
         } else if (row.assigned > 0) {
             // The walk hands this type out, so every id it gave must survive a save.
             if (row.kept != row.assigned) {
                 ADD_FAILURE() << type << ": only " << row.kept << " of " << row.assigned << " ids survived a save";
                 continue;
             }
-            observed[type] = class_name(IdClass::persisted);
+            observed[type] = class_name(IdClass::PERSISTED);
         } else {
             // The walk hands nothing out for this type, so only its declared class is left
             // to pin: an element layout builds, one an address reaches, or one whose id
@@ -663,10 +663,10 @@ void expect_first_ids(engrave::Document &document) {
     for (EngravingObject *object : engrave::document_objects(master)) {
         if (!engrave::takes_id(*object)) continue;
         const mu::engraving::EID eid = object->eid();
-        ASSERT_TRUE(eid.isValid()) << object_name(*object) << " has no id";
+        ASSERT_TRUE(eid.is_valid()) << object_name(*object) << " has no id";
         // The public text form is the engine's, byte for byte.
-        EXPECT_EQ(engrave::to_string(engrave::from_engine(eid)), eid.toStdString());
-        const auto [entry, inserted] = by_text.emplace(eid.toStdString(), object_name(*object));
+        EXPECT_EQ(engrave::to_string(engrave::from_engine(eid)), eid.to_std_string());
+        const auto [entry, inserted] = by_text.emplace(eid.to_std_string(), object_name(*object));
         EXPECT_TRUE(inserted) << "id " << entry->first << " names both " << entry->second << " and " << object_name(*object);
         ++exposed;
     }
@@ -759,10 +759,10 @@ TEST(Handles, H5aLinksAcrossExcerpts) {
         for (const engrave::LiveId &entry : engrave::live_ids(master)) {
             if (master_note || entry.object->type() != ElementType::NOTE) continue;
             if (entry.object->score() != &master) continue; // the master's own note, not a clone
-            for (EngravingObject *linked : entry.object->linkList()) {
-                if (!linked->isNote() || linked->score() == &master) continue;
-                master_note = mu::engraving::toNote(entry.object);
-                excerpt_note = mu::engraving::toNote(linked);
+            for (EngravingObject *linked : entry.object->link_list()) {
+                if (!linked->is_note() || linked->score() == &master) continue;
+                master_note = mu::engraving::to_note(entry.object);
+                excerpt_note = mu::engraving::to_note(linked);
                 break;
             }
         }
@@ -778,7 +778,7 @@ TEST(Handles, H5aLinksAcrossExcerpts) {
         // A property set on the master propagates to the excerpt clone.
         const muse::draw::Color red(255, 0, 0);
         commit(master, [&](MasterScore &) {
-            master_note->undoChangeProperty(mu::engraving::Pid::COLOR, red, mu::engraving::PropertyFlags::NOSTYLE);
+            master_note->undo_change_property(mu::engraving::Pid::COLOR, red, mu::engraving::PropertyFlags::NOSTYLE);
         });
         EXPECT_EQ(excerpt_note->color(), red) << "the property did not reach the linked element";
         EXPECT_TRUE(live(master, master_id)) << "a property edit lost the element's id";
@@ -789,7 +789,7 @@ TEST(Handles, H5aLinksAcrossExcerpts) {
         // element (layout reads its first note).
         commit(master, [&](MasterScore &) {
             master.select(master_note);
-            master.cmdDeleteSelection();
+            master.cmd_delete_selection();
         });
         EXPECT_FALSE(live(master, master_id)) << "the removed element still resolves";
         EXPECT_FALSE(live(master, excerpt_id)) << "the linked clone survived the removal";
@@ -810,24 +810,24 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
     std::set<std::string> seen;
     for (const engrave::LiveId &entry : engrave::live_ids(master)) seen.insert(engrave::to_string(entry.id));
 
-    const mu::engraving::InstrumentIndex index = mu::engraving::searchTemplateIndexForId(muse::String(u"piano"));
-    ASSERT_NE(index.instrTemplate, nullptr);
+    const mu::engraving::InstrumentIndex index = mu::engraving::search_template_index_for_id(muse::String(u"piano"));
+    ASSERT_NE(index.instr_template, nullptr);
     for (int round = 0; round < 3; ++round) {
-        master.appendPart(index.instrTemplate);
-        master.undoStack()->clearHistory();
+        master.append_part(index.instr_template);
+        master.undo_stack()->clear_history();
         ASSERT_GT(master.parts().size(), 1u);
         Part *part = master.parts().back();
         engrave::assign_missing_ids(master);
         const ElementId part_id = engine_id(*part);
         EXPECT_TRUE(seen.insert(engrave::to_string(part_id)).second) << "a new part inherited an id";
         for (Staff *staff : part->staves()) {
-            if (!staff->eid().isValid()) continue;
+            if (!staff->eid().is_valid()) continue;
             EXPECT_TRUE(seen.insert(id_text(*staff)).second) << "a new staff inherited an id";
         }
         expect_inv(*document);
 
-        master.cmdRemovePart(part);
-        master.undoStack()->clearHistory();
+        master.cmd_remove_part(part);
+        master.undo_stack()->clear_history();
         engrave::assign_missing_ids(master);
         expect_inv(*document);
         EXPECT_FALSE(live(master, part_id)) << "the removed part still resolves";
@@ -838,11 +838,11 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
     ASSERT_FALSE(master.excerpts().empty());
     engrave::assign_missing_ids(master);
     mu::engraving::Excerpt *excerpt = master.excerpts().front();
-    const ElementId excerpt_id = engine_id(*excerpt->excerptScore());
+    const ElementId excerpt_id = engine_id(*excerpt->excerpt_score());
     expect_inv(*document);
-    master.removeExcerpt(excerpt);
+    master.remove_excerpt(excerpt);
     delete excerpt;
-    master.undoStack()->clearHistory();
+    master.undo_stack()->clear_history();
     engrave::assign_missing_ids(master);
     expect_inv(*document);
     EXPECT_FALSE(live(master, excerpt_id)) << "the removed excerpt still resolves";
@@ -881,7 +881,7 @@ TEST(Handles, H7RemovedElementsGoStale) {
     const ElementId id = engine_id(*first_live(master, ElementType::NOTE));
     const auto remove = [&master, id](bool roll_back) {
         return engrave::api::Step([&master, id, roll_back](engrave::api::EditContext &) -> engrave::Result<void> {
-            master.deleteItem(mu::engraving::toEngravingItem(engrave::resolve(master, id)->object));
+            master.delete_item(mu::engraving::to_engraving_item(engrave::resolve(master, id)->object));
             // Inside the batch the element is out of the score but not yet destroyed.
             const auto during = engrave::resolve(master, id);
             EXPECT_FALSE(during) << "a removed element resolves inside its own batch";
@@ -921,7 +921,7 @@ TEST(Handles, H8ReplacedElementsLoseTheirId) {
 
     // A ChangeElement swaps the element for a new one: the old id goes, and a new one
     // takes its place at the same position.
-    EngravingItem *clef = mu::engraving::toEngravingItem(first_live(master, ElementType::CLEF));
+    EngravingItem *clef = mu::engraving::to_engraving_item(first_live(master, ElementType::CLEF));
     ASSERT_NE(clef, nullptr);
     Measure *measure = master.tick2measure(clef->tick());
     ASSERT_NE(measure, nullptr);
@@ -933,9 +933,9 @@ TEST(Handles, H8ReplacedElementsLoseTheirId) {
     const ElementId clef_id = engine_id(*clef);
     const auto before = engrave::live_ids(master);
     commit(master, [&](MasterScore &) {
-        auto *replacement = mu::engraving::Factory::createClef(clef_segment);
-        replacement->setClefType(mu::engraving::ClefType::F);
-        replacement->setTrack(clef->track());
+        auto *replacement = mu::engraving::Factory::create_clef(clef_segment);
+        replacement->set_clef_type(mu::engraving::ClefType::F);
+        replacement->set_track(clef->track());
         master.undo(new mu::engraving::ChangeElement(clef, replacement));
     });
     const engrave::IdDiff diff = engrave::diff_ids(before, engrave::live_ids(master));
@@ -950,11 +950,11 @@ TEST(Handles, H8ReplacedElementsLoseTheirId) {
     // A duration change keeps a chord whose new length fits where it is (the length is
     // a property then) and rebuilds it otherwise; either way the diff and the resolver
     // agree on whether the old id still names the chord.
-    mu::engraving::ChordRest *chord_rest = mu::engraving::toChordRest(first_live(master, ElementType::CHORD));
+    mu::engraving::ChordRest *chord_rest = mu::engraving::to_chord_rest(first_live(master, ElementType::CHORD));
     ASSERT_NE(chord_rest, nullptr) << "the walk hands out no chord";
     const ElementId chord_id = engine_id(*chord_rest);
     const auto before_change = engrave::live_ids(master);
-    commit(master, [&](MasterScore &) { master.changeCRlen(chord_rest, mu::engraving::Fraction(1, 2)); });
+    commit(master, [&](MasterScore &) { master.change_c_rlen(chord_rest, mu::engraving::Fraction(1, 2)); });
     const engrave::IdDiff change = engrave::diff_ids(before_change, engrave::live_ids(master));
     const bool dropped = std::ranges::contains(change.replaced, chord_id) || std::ranges::contains(change.removed, chord_id);
     EXPECT_NE(live(master, chord_id), dropped) << "the diff and the resolver disagree about the chord";
@@ -1058,7 +1058,7 @@ bool warned_about(engrave::Document &document, std::string_view text) {
 bool reader_sees_duplicate(const std::string &text) {
     auto document = open_text(text);
     if (!document) return false;
-    return master_of(*document).eidRegister()->repairs().duplicate > 0;
+    return master_of(*document).eid_register()->repairs().duplicate > 0;
 }
 
 void expect_repaired(const std::string &text) {
@@ -1067,7 +1067,7 @@ void expect_repaired(const std::string &text) {
     MasterScore &master = master_of(*document);
     // If the reader keeps both elements it repairs the duplicate; if it rebuilds one of
     // them, there is nothing left to repair and the register is consistent either way.
-    const bool repaired = master.eidRegister()->repairs().any();
+    const bool repaired = master.eid_register()->repairs().any();
     if (repaired) EXPECT_TRUE(warned_about(*document, "shared an id"));
     EXPECT_FALSE(engrave::live_ids(master).empty());
     expect_inv(*document);
@@ -1190,7 +1190,7 @@ TEST(Handles, H10MalformedIdsInTheInput) {
         auto document = open_text(text);
         ASSERT_TRUE(document);
         MasterScore &master = master_of(*document);
-        EXPECT_EQ(master.eidRegister()->repairs().malformed, 1u);
+        EXPECT_EQ(master.eid_register()->repairs().malformed, 1u);
         EXPECT_TRUE(warned_about(*document, "malformed"));
         EXPECT_FALSE(engrave::live_ids(master).empty());
         expect_inv(*document);
@@ -1207,7 +1207,7 @@ TEST(Handles, H10MalformedIdsInTheInput) {
     const std::string colliding = with_eid(with_eid(source, victim, "AAAAAAAAAAP_AAAAAAAAAAP"), victim + 1, "AAAAAAAAAAf_AAAAAAAAAAf");
     auto document = open_text(colliding);
     ASSERT_TRUE(document);
-    EXPECT_EQ(master_of(*document).eidRegister()->repairs().duplicate, 1u);
+    EXPECT_EQ(master_of(*document).eid_register()->repairs().duplicate, 1u);
     expect_inv(*document);
 }
 
@@ -1261,12 +1261,12 @@ TEST(Handles, H11StaleHandles) {
 
     // Generated and layout elements never carry an id, so no caller can hold one.
     for (EngravingObject *object : engrave::document_objects(master)) {
-        if (engrave::id_class(*object) == IdClass::persisted) continue;
-        if (engrave::id_class(*object) == IdClass::session) continue; // the file stores one
-        EXPECT_FALSE(object->eid().isValid()) << object_name(*object) << " has an id";
+        if (engrave::id_class(*object) == IdClass::PERSISTED) continue;
+        if (engrave::id_class(*object) == IdClass::SESSION) continue; // the file stores one
+        EXPECT_FALSE(object->eid().is_valid()) << object_name(*object) << " has an id";
     }
     for (EngravingObject *object : engrave::document_objects(master)) {
-        if (!object->isEngravingItem() || !static_cast<EngravingItem &>(*object).generated()) continue;
+        if (!object->is_engraving_item() || !static_cast<EngravingItem &>(*object).generated()) continue;
         EXPECT_FALSE(engrave::takes_id(*object)) << object_name(*object) << " is handed out";
     }
     expect_inv(*same);
@@ -1279,7 +1279,7 @@ TEST(Handles, H12Addresses) {
     ASSERT_TRUE(document);
     MasterScore &master = master_of(*document);
 
-    Segment *segment = first_segment(master, SegmentType::ChordRest);
+    Segment *segment = first_segment(master, SegmentType::CHORD_REST);
     ASSERT_NE(segment, nullptr);
     const auto address = engrave::address_of(*segment);
     ASSERT_TRUE(address) << "a chord-rest segment has no address";
@@ -1292,20 +1292,20 @@ TEST(Handles, H12Addresses) {
     Note *note = first_note(master);
     ASSERT_NE(note, nullptr);
     commit(master, [&](MasterScore &) {
-        note->undoChangeProperty(mu::engraving::Pid::COLOR, muse::draw::Color(0, 0, 255), mu::engraving::PropertyFlags::NOSTYLE);
+        note->undo_change_property(mu::engraving::Pid::COLOR, muse::draw::Color(0, 0, 255), mu::engraving::PropertyFlags::NOSTYLE);
     });
     const auto second = engrave::resolve(master, *address);
     ASSERT_TRUE(second) << second.error().message;
     EXPECT_EQ(second->object, segment);
 
     // The address fails once its measure is gone.
-    Measure *measure = segment->measure()->nextMeasure();
+    Measure *measure = segment->measure()->next_measure();
     if (!measure) measure = segment->measure();
-    Segment *doomed = measure->first(SegmentType::ChordRest);
+    Segment *doomed = measure->first(SegmentType::CHORD_REST);
     ASSERT_NE(doomed, nullptr);
     const auto doomed_address = engrave::address_of(*doomed);
     ASSERT_TRUE(doomed_address);
-    commit(master, [&](MasterScore &) { master.deleteMeasures(measure, measure); });
+    commit(master, [&](MasterScore &) { master.delete_measures(measure, measure); });
     const auto gone = engrave::resolve(master, *doomed_address);
     EXPECT_FALSE(gone) << "an address of a removed measure still resolves";
     expect_inv(*document);
@@ -1348,7 +1348,7 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
     auto document = open_path(*fixture);
     ASSERT_TRUE(document);
     MasterScore &master = master_of(*document);
-    Segment *segment = first_segment(master, SegmentType::ChordRest);
+    Segment *segment = first_segment(master, SegmentType::CHORD_REST);
     ASSERT_NE(segment, nullptr);
     const auto resolved_address = engrave::address_of(*segment);
     ASSERT_TRUE(resolved_address);
@@ -1373,9 +1373,9 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
     }
     // Equivalent large fractions must still resolve a nonzero position in a
     // later measure, without overflowing the measure-relative lookup.
-    Measure *later_measure = segment->measure()->nextMeasure();
+    Measure *later_measure = segment->measure()->next_measure();
     ASSERT_NE(later_measure, nullptr);
-    Segment *later_segment = later_measure->first(SegmentType::ChordRest);
+    Segment *later_segment = later_measure->first(SegmentType::CHORD_REST);
     ASSERT_NE(later_segment, nullptr);
     const auto later_address = engrave::address_of(*later_segment);
     ASSERT_TRUE(later_address);
@@ -1393,18 +1393,18 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
     // absolute position is 2/1, not the wrapped numerator -4.
     const auto old_measure_tick = later_measure->tick();
     const auto old_relative_tick = later_segment->rtick();
-    later_measure->setTick(mu::engraving::Fraction(static_cast<int>(high), static_cast<int>(high - 1)));
-    later_segment->setRtick(mu::engraving::Fraction(static_cast<int>(high - 2), static_cast<int>(high - 1)));
+    later_measure->set_tick(mu::engraving::Fraction(static_cast<int>(high), static_cast<int>(high - 1)));
+    later_segment->set_rtick(mu::engraving::Fraction(static_cast<int>(high - 2), static_cast<int>(high - 1)));
     const auto wide_address = engrave::address_of(*later_segment);
     equivalent.tick = {2, 1};
     const auto wide_position = engrave::resolve(master, engrave::Address{equivalent});
     equivalent.tick = {-4, high - 1};
     const auto wrapped_position = engrave::resolve(master, engrave::Address{equivalent});
-    later_measure->setTick(mu::engraving::Fraction(1, static_cast<int>(high - 1)));
-    later_segment->setRtick(mu::engraving::Fraction(1, static_cast<int>(high)));
+    later_measure->set_tick(mu::engraving::Fraction(1, static_cast<int>(high - 1)));
+    later_segment->set_rtick(mu::engraving::Fraction(1, static_cast<int>(high)));
     const auto unrepresentable_address = engrave::address_of(*later_segment);
-    later_measure->setTick(old_measure_tick);
-    later_segment->setRtick(old_relative_tick);
+    later_measure->set_tick(old_measure_tick);
+    later_segment->set_rtick(old_relative_tick);
     ASSERT_TRUE(wide_address);
     const auto written_tick = std::get<engrave::SegmentAddress>(*wide_address).tick;
     EXPECT_EQ(written_tick.num, 2);

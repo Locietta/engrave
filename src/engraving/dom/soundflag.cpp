@@ -35,93 +35,93 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 SoundFlag::SoundFlag(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::SOUND_FLAG, parent) {
-    String fontFamily = configuration()->iconsFontFamily();
-    iconFontValid_ = !fontFamily.empty();
-    iconFont_ = Font(fontFamily, Font::Type::Icon);
-    iconFont_.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
+    String font_family = configuration()->icons_font_family();
+    icon_font_valid_ = !font_family.empty();
+    icon_font_ = Font(font_family, Font::Type::ICON);
+    icon_font_.set_point_size_f(::mu::engraving::ui_icons_default_font_size);
 
     //! draw on top of all elements
-    setZ(INT_MAX);
+    set_z(INT_MAX);
 }
 
 SoundFlag *SoundFlag::clone() const { return new SoundFlag(*this); }
 
-void SoundFlag::setSelected(bool f) {
-    EngravingItem *parent = ownershipParentItem();
+void SoundFlag::set_selected(bool f) {
+    EngravingItem *parent = ownership_parent_item();
     if (parent) {
-        parent->setSelected(f);
+        parent->set_selected(f);
     }
 
-    EngravingItem::setSelected(f);
+    EngravingItem::set_selected(f);
 }
 
-PropertyValue SoundFlag::getProperty(Pid id) const {
+PropertyValue SoundFlag::get_property(Pid id) const {
     switch (id) {
         case Pid::PLAY: return play_;
         case Pid::VISIBLE:
         case Pid::AUTOPLACE:
         case Pid::SMALL: return PropertyValue();
-        case Pid::APPLY_TO_ALL_STAVES: return applyToAllStaves_;
-        default: return EngravingItem::getProperty(id);
+        case Pid::APPLY_TO_ALL_STAVES: return apply_to_all_staves_;
+        default: return EngravingItem::get_property(id);
     }
 }
 
-bool SoundFlag::setProperty(Pid id, const PropertyValue &value) {
+bool SoundFlag::set_property(Pid id, const PropertyValue &value) {
     switch (id) {
-        case Pid::PLAY: play_ = value.toBool(); return true;
+        case Pid::PLAY: play_ = value.to_bool(); return true;
         case Pid::VISIBLE:
         case Pid::AUTOPLACE:
         case Pid::SMALL: return false;
-        case Pid::APPLY_TO_ALL_STAVES: applyToAllStaves_ = value.toBool(); return true;
-        default: return EngravingItem::setProperty(id, value);
+        case Pid::APPLY_TO_ALL_STAVES: apply_to_all_staves_ = value.to_bool(); return true;
+        default: return EngravingItem::set_property(id, value);
     }
 }
 
-PropertyValue SoundFlag::propertyDefault(Pid id) const {
+PropertyValue SoundFlag::property_default(Pid id) const {
     switch (id) {
         case Pid::PLAY: return true;
         case Pid::VISIBLE:
         case Pid::AUTOPLACE:
         case Pid::SMALL: return PropertyValue();
         case Pid::APPLY_TO_ALL_STAVES: return true;
-        default: return EngravingItem::propertyDefault(id);
+        default: return EngravingItem::property_default(id);
     }
 }
 
-const SoundFlag::PresetCodes &SoundFlag::soundPresets() const { return soundPresets_; }
+const SoundFlag::PresetCodes &SoundFlag::sound_presets() const { return sound_presets_; }
 
-void SoundFlag::setSoundPresets(const PresetCodes &soundPresets) { soundPresets_ = soundPresets; }
+void SoundFlag::set_sound_presets(const PresetCodes &sound_presets) { sound_presets_ = sound_presets; }
 
-const SoundFlag::PlayingTechniqueCode &SoundFlag::playingTechnique() const { return playingTechnique_; }
+const SoundFlag::PlayingTechniqueCode &SoundFlag::playing_technique() const { return playing_technique_; }
 
-void SoundFlag::setPlayingTechnique(const PlayingTechniqueCode &technique) { playingTechnique_ = technique; }
+void SoundFlag::set_playing_technique(const PlayingTechniqueCode &technique) { playing_technique_ = technique; }
 
 bool SoundFlag::play() const { return play_; }
 
-void mu::engraving::SoundFlag::setPlay(bool play) { play_ = play; }
+void mu::engraving::SoundFlag::set_play(bool play) { play_ = play; }
 
-bool SoundFlag::applyToAllStaves() const { return applyToAllStaves_; }
+bool SoundFlag::apply_to_all_staves() const { return apply_to_all_staves_; }
 
-void SoundFlag::setApplyToAllStaves(bool apply) { applyToAllStaves_ = apply; }
+void SoundFlag::set_apply_to_all_staves(bool apply) { apply_to_all_staves_ = apply; }
 
 void SoundFlag::clear() {
-    if (soundPresets_.empty() && playingTechnique_.empty()) {
+    if (sound_presets_.empty() && playing_technique_.empty()) {
         return;
     }
 
-    soundPresets_.clear();
-    playingTechnique_.clear();
+    sound_presets_.clear();
+    playing_technique_.clear();
 
-    triggerLayout();
+    trigger_layout();
 }
 
-bool SoundFlag::shouldHide() const {
-    if (!iconFontValid_) {
+bool SoundFlag::should_hide() const {
+    if (!icon_font_valid_) {
         return true;
     }
 
     if (const Score *score = this->score()) {
-        if (!score->showSoundFlags()) {
+        if (!score->show_sound_flags()) {
             return true;
         }
 
@@ -130,7 +130,7 @@ bool SoundFlag::shouldHide() const {
         }
     }
 
-    if (!soundPresets_.empty() || !playingTechnique_.empty()) {
+    if (!sound_presets_.empty() || !playing_technique_.empty()) {
         return false;
     }
 
@@ -138,21 +138,21 @@ bool SoundFlag::shouldHide() const {
         return false;
     }
 
-    const EngravingItem *parent = ownershipParentItem();
-    if (parent && parent->selected() && score()->selection().isSingle()) {
+    const EngravingItem *parent = ownership_parent_item();
+    if (parent && parent->selected() && score()->selection().is_single()) {
         return false;
     }
 
     return true;
 }
 
-void SoundFlag::undoChangeSoundFlag(const PresetCodes &presets, const PlayingTechniqueCode &technique) {
-    if (soundPresets_ == presets && playingTechnique_ == technique) {
+void SoundFlag::undo_change_sound_flag(const PresetCodes &presets, const PlayingTechniqueCode &technique) {
+    if (sound_presets_ == presets && playing_technique_ == technique) {
         return;
     }
 
     score()->undo(new ChangeSoundFlag(this, presets, technique));
-    triggerLayout();
+    trigger_layout();
 
     const LinkedObjects *links = this->links();
     if (!links) {
@@ -160,27 +160,27 @@ void SoundFlag::undoChangeSoundFlag(const PresetCodes &presets, const PlayingTec
     }
 
     for (EngravingObject *obj : *links) {
-        if (obj->isSoundFlag()) {
-            SoundFlag *linkedSoundFlag = toSoundFlag(obj);
-            score()->undo(new ChangeSoundFlag(linkedSoundFlag, presets, technique));
-            linkedSoundFlag->triggerLayout();
+        if (obj->is_sound_flag()) {
+            SoundFlag *linked_sound_flag = to_sound_flag(obj);
+            score()->undo(new ChangeSoundFlag(linked_sound_flag, presets, technique));
+            linked_sound_flag->trigger_layout();
         }
     }
 }
 
-char16_t SoundFlag::iconCode() const { return 0xEF4E; }
+char16_t SoundFlag::icon_code() const { return 0xEF4E; }
 
-Font SoundFlag::iconFont() const {
-    Font font = iconFont_;
-    font.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE * magS());
+Font SoundFlag::icon_font() const {
+    Font font = icon_font_;
+    font.set_point_size_f(::mu::engraving::ui_icons_default_font_size * mag_s());
     return font;
 }
 
-Color SoundFlag::iconBackgroundColor() const {
-    Color color = curColor(true, {});
+Color SoundFlag::icon_background_color() const {
+    Color color = cur_color(true, {});
     if (!selected()) {
         color = Color("#CFD5DD");
-        color.setAlpha(128);
+        color.set_alpha(128);
     }
 
     return color;

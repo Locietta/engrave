@@ -28,7 +28,7 @@ class Transaction;
 
 class EditStretch {
 public:
-    static void addStretch(Transaction &tx, Score *score, double val);
-    static void resetUserStretch(Transaction &tx, Score *score);
+    static void add_stretch(Transaction &tx, Score *score, double val);
+    static void reset_user_stretch(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

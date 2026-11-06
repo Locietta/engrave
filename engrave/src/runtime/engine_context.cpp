@@ -35,96 +35,96 @@ using namespace mu::engraving;
 namespace {
 // The built-in text, music and tablature faces and their defaults (upstream's
 // EngravingModule::onInit).
-void register_builtin_fonts(IFontsDatabase &fdb, EngravingFontsProvider &engravingFonts) {
+void register_builtin_fonts(IFontsDatabase &fdb, EngravingFontsProvider &engraving_fonts) {
     // Text
-    fdb.addFont(FontDataKey(u"Edwin", false, false), ":/fonts/edwin/Edwin-Roman.otf");
-    fdb.addFont(FontDataKey(u"Edwin", false, true), ":/fonts/edwin/Edwin-Italic.otf");
-    fdb.addFont(FontDataKey(u"Edwin", true, false), ":/fonts/edwin/Edwin-Bold.otf");
-    fdb.addFont(FontDataKey(u"Edwin", true, true), ":/fonts/edwin/Edwin-BdIta.otf");
+    fdb.add_font(FontDataKey(u"Edwin", false, false), ":/fonts/edwin/Edwin-Roman.otf");
+    fdb.add_font(FontDataKey(u"Edwin", false, true), ":/fonts/edwin/Edwin-Italic.otf");
+    fdb.add_font(FontDataKey(u"Edwin", true, false), ":/fonts/edwin/Edwin-Bold.otf");
+    fdb.add_font(FontDataKey(u"Edwin", true, true), ":/fonts/edwin/Edwin-BdIta.otf");
 
     // MusicSymbol[Text]
-    auto addMusicFont = [&](const std::string &name, const FontDataKey &fontDataKey, const io::path_t &filePath) {
-        fdb.addFont(FontDataKey(fontDataKey), filePath);
-        engravingFonts.addInternalFont(name, fontDataKey.family().id().toStdString(), filePath);
+    auto add_music_font = [&](const std::string &name, const FontDataKey &font_data_key, const io::PathT &file_path) {
+        fdb.add_font(FontDataKey(font_data_key), file_path);
+        engraving_fonts.add_internal_font(name, font_data_key.family().id().to_std_string(), file_path);
     };
 
-    addMusicFont("Bravura", FontDataKey(u"Bravura"), ":/fonts/bravura/Bravura.otf");
-    fdb.addFont(FontDataKey(u"Bravura Text"), ":/fonts/bravura/BravuraText.otf");
-    addMusicFont("Leland", FontDataKey(u"Leland"), ":/fonts/leland/Leland.otf");
-    fdb.addFont(FontDataKey(u"Leland Text"), ":/fonts/leland/LelandText.otf");
-    addMusicFont("Emmentaler", FontDataKey(u"MScore"), ":/fonts/mscore/MScore.otf");
-    fdb.addFont(FontDataKey(u"MScore Text"), ":/fonts/mscore/MScoreText.otf");
-    addMusicFont("Gonville", FontDataKey(u"Gootville"), ":/fonts/gootville/Gootville.otf");
-    fdb.addFont(FontDataKey(u"Gootville Text"), ":/fonts/gootville/GootvilleText.otf");
-    addMusicFont("MuseJazz", FontDataKey(u"MuseJazz"), ":/fonts/musejazz/MuseJazz.otf");
-    fdb.addFont(FontDataKey(u"MuseJazz Text"), ":/fonts/musejazz/MuseJazzText.otf");
-    addMusicFont("Petaluma", FontDataKey(u"Petaluma"), ":/fonts/petaluma/Petaluma.otf");
-    fdb.addFont(FontDataKey(u"Petaluma Text"), ":/fonts/petaluma/PetalumaText.otf");
-    addMusicFont("Finale Maestro", FontDataKey(u"Finale Maestro"), ":/fonts/finalemaestro/FinaleMaestro.otf");
-    fdb.addFont(FontDataKey(u"Finale Maestro Text"), ":/fonts/finalemaestro/FinaleMaestroText.otf");
-    addMusicFont("Finale Broadway", FontDataKey(u"Finale Broadway"), ":/fonts/finalebroadway/FinaleBroadway.otf");
-    fdb.addFont(FontDataKey(u"Finale Broadway Text"), ":/fonts/finalebroadway/FinaleBroadwayText.otf");
+    add_music_font("Bravura", FontDataKey(u"Bravura"), ":/fonts/bravura/Bravura.otf");
+    fdb.add_font(FontDataKey(u"Bravura Text"), ":/fonts/bravura/BravuraText.otf");
+    add_music_font("Leland", FontDataKey(u"Leland"), ":/fonts/leland/Leland.otf");
+    fdb.add_font(FontDataKey(u"Leland Text"), ":/fonts/leland/LelandText.otf");
+    add_music_font("Emmentaler", FontDataKey(u"MScore"), ":/fonts/mscore/MScore.otf");
+    fdb.add_font(FontDataKey(u"MScore Text"), ":/fonts/mscore/MScoreText.otf");
+    add_music_font("Gonville", FontDataKey(u"Gootville"), ":/fonts/gootville/Gootville.otf");
+    fdb.add_font(FontDataKey(u"Gootville Text"), ":/fonts/gootville/GootvilleText.otf");
+    add_music_font("MuseJazz", FontDataKey(u"MuseJazz"), ":/fonts/musejazz/MuseJazz.otf");
+    fdb.add_font(FontDataKey(u"MuseJazz Text"), ":/fonts/musejazz/MuseJazzText.otf");
+    add_music_font("Petaluma", FontDataKey(u"Petaluma"), ":/fonts/petaluma/Petaluma.otf");
+    fdb.add_font(FontDataKey(u"Petaluma Text"), ":/fonts/petaluma/PetalumaText.otf");
+    add_music_font("Finale Maestro", FontDataKey(u"Finale Maestro"), ":/fonts/finalemaestro/FinaleMaestro.otf");
+    fdb.add_font(FontDataKey(u"Finale Maestro Text"), ":/fonts/finalemaestro/FinaleMaestroText.otf");
+    add_music_font("Finale Broadway", FontDataKey(u"Finale Broadway"), ":/fonts/finalebroadway/FinaleBroadway.otf");
+    fdb.add_font(FontDataKey(u"Finale Broadway Text"), ":/fonts/finalebroadway/FinaleBroadwayText.otf");
 
     // Tabulature
-    fdb.addFont(FontDataKey(u"FreeSerif"), ":/fonts/FreeSerif.ttf");
-    fdb.addFont(FontDataKey(u"FreeSerif", true, false), ":/fonts/FreeSerifBold.ttf");
-    fdb.addFont(FontDataKey(u"FreeSerif", false, true), ":/fonts/FreeSerifItalic.ttf");
-    fdb.addFont(FontDataKey(u"FreeSerif", true, true), ":/fonts/FreeSerifBoldItalic.ttf");
-    fdb.addFont(FontDataKey(u"FreeSans"), ":/fonts/FreeSans.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabRenaiss"), ":/fonts/MuseScoreTabRenaiss.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabPhalese"), ":/fonts/MuseScoreTabPhalese.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabBonneuilDeVisee"), ":/fonts/MuseScoreTabBonneuilDeVisee.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabBonneuilGaultier"), ":/fonts/MuseScoreTabBonneuilGaultier.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabDowland"), ":/fonts/MuseScoreTabDowland.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabLuteDidactic"), ":/fonts/MuseScoreTabLuteDidactic.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabModern"), ":/fonts/MuseScoreTabModern.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabItalian"), ":/fonts/MuseScoreTabItalian.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabFrench"), ":/fonts/MuseScoreTabFrench.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabFrenchBaroqueHeadless"), ":/fonts/MuseScoreTabFrenchBaroqueHeadless.ttf");
-    fdb.addFont(FontDataKey(u"MuseScoreTabFrenchBaroque"), ":/fonts/MuseScoreTabFrenchBaroque.ttf");
+    fdb.add_font(FontDataKey(u"FreeSerif"), ":/fonts/FreeSerif.ttf");
+    fdb.add_font(FontDataKey(u"FreeSerif", true, false), ":/fonts/FreeSerifBold.ttf");
+    fdb.add_font(FontDataKey(u"FreeSerif", false, true), ":/fonts/FreeSerifItalic.ttf");
+    fdb.add_font(FontDataKey(u"FreeSerif", true, true), ":/fonts/FreeSerifBoldItalic.ttf");
+    fdb.add_font(FontDataKey(u"FreeSans"), ":/fonts/FreeSans.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabRenaiss"), ":/fonts/MuseScoreTabRenaiss.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabPhalese"), ":/fonts/MuseScoreTabPhalese.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabBonneuilDeVisee"), ":/fonts/MuseScoreTabBonneuilDeVisee.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabBonneuilGaultier"), ":/fonts/MuseScoreTabBonneuilGaultier.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabDowland"), ":/fonts/MuseScoreTabDowland.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabLuteDidactic"), ":/fonts/MuseScoreTabLuteDidactic.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabModern"), ":/fonts/MuseScoreTabModern.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabItalian"), ":/fonts/MuseScoreTabItalian.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabFrench"), ":/fonts/MuseScoreTabFrench.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabFrenchBaroqueHeadless"), ":/fonts/MuseScoreTabFrenchBaroqueHeadless.ttf");
+    fdb.add_font(FontDataKey(u"MuseScoreTabFrenchBaroque"), ":/fonts/MuseScoreTabFrenchBaroque.ttf");
 
     // Figured Bass
-    fdb.addFont(FontDataKey(u"MscoreBC"), ":/fonts/mscore-BC.ttf");
+    fdb.add_font(FontDataKey(u"MscoreBC"), ":/fonts/mscore-BC.ttf");
 
     // Roman Numeral Analysis
-    fdb.addFont(FontDataKey(u"Campania"), ":/fonts/campania/Campania.otf");
+    fdb.add_font(FontDataKey(u"Campania"), ":/fonts/campania/Campania.otf");
 
     // Defaults
-    fdb.setDefaultFont(Font::Type::Unknown, FontDataKey(u"Edwin"));
-    fdb.setDefaultFont(Font::Type::Text, FontDataKey(u"Edwin"));
-    fdb.setDefaultFont(Font::Type::Tablature, FontDataKey(u"FreeSerif"));
-    fdb.setDefaultFont(Font::Type::MusicSymbolText, FontDataKey(u"Bravura Text"));
-    fdb.setDefaultFont(Font::Type::MusicSymbol, FontDataKey(u"Bravura"));
-    engravingFonts.setFallbackFont("Bravura");
+    fdb.set_default_font(Font::Type::UNKNOWN, FontDataKey(u"Edwin"));
+    fdb.set_default_font(Font::Type::TEXT, FontDataKey(u"Edwin"));
+    fdb.set_default_font(Font::Type::TABLATURE, FontDataKey(u"FreeSerif"));
+    fdb.set_default_font(Font::Type::MUSIC_SYMBOL_TEXT, FontDataKey(u"Bravura Text"));
+    fdb.set_default_font(Font::Type::MUSIC_SYMBOL, FontDataKey(u"Bravura"));
+    engraving_fonts.set_fallback_font("Bravura");
 
-    fdb.insertSubstitution(u"Leland Text", u"Bravura Text");
-    fdb.insertSubstitution(u"Bravura Text", u"Leland Text");
-    fdb.insertSubstitution(u"MScore Text", u"Leland Text");
-    fdb.insertSubstitution(u"Gootville Text", u"Leland Text");
-    fdb.insertSubstitution(u"MuseJazz Text", u"Leland Text");
-    fdb.insertSubstitution(u"Petaluma Text", u"MuseJazz Text");
-    fdb.insertSubstitution(u"Finale Maestro Text", u"Leland Text");
-    fdb.insertSubstitution(u"Finale Broadway Text", u"MuseJazz Text");
-    fdb.insertSubstitution(u"ScoreFont", u"Leland Text"); // alias for current Musical Text Font
+    fdb.insert_substitution(u"Leland Text", u"Bravura Text");
+    fdb.insert_substitution(u"Bravura Text", u"Leland Text");
+    fdb.insert_substitution(u"MScore Text", u"Leland Text");
+    fdb.insert_substitution(u"Gootville Text", u"Leland Text");
+    fdb.insert_substitution(u"MuseJazz Text", u"Leland Text");
+    fdb.insert_substitution(u"Petaluma Text", u"MuseJazz Text");
+    fdb.insert_substitution(u"Finale Maestro Text", u"Leland Text");
+    fdb.insert_substitution(u"Finale Broadway Text", u"MuseJazz Text");
+    fdb.insert_substitution(u"ScoreFont", u"Leland Text"); // alias for current Musical Text Font
 
     // Symbols
     Smufl::init();
 
     // A painter may name one of these families without requesting the font
     // first; unloaded faces would be missing from the database and drawn wrong.
-    engravingFonts.loadAllFonts();
+    engraving_fonts.load_all_fonts();
 }
 } // namespace
 
 struct EngineContext::Impl {
-    std::unique_ptr<NativeFileSystem> fileSystem;
+    std::unique_ptr<NativeFileSystem> file_system;
     std::unique_ptr<RuntimeAssets> assets;
-    std::shared_ptr<EngravingFontsProvider> engravingFonts;
+    std::shared_ptr<EngravingFontsProvider> engraving_fonts;
     std::shared_ptr<EngravingConfiguration> configuration;
     std::shared_ptr<rendering::score::ScoreRenderer> renderer;
-    std::unique_ptr<mpe::ArticulationProfilesRepository> articulationProfiles;
-    std::unique_ptr<mu::iex::musicxml::MusicXmlConfiguration> musicXml;
-    std::shared_ptr<EngravingContextConfiguration> contextConfiguration;
+    std::unique_ptr<mpe::ArticulationProfilesRepository> articulation_profiles;
+    std::unique_ptr<mu::iex::musicxml::MusicXmlConfiguration> music_xml;
+    std::shared_ptr<EngravingContextConfiguration> context_configuration;
     EngravingServices engraving;
 
     std::unique_ptr<EngineAudio> audio;
@@ -136,21 +136,21 @@ void EngineContext::Impl::teardown() noexcept {
     try {
         audio.reset();
         engraving = EngravingServices();
-        contextConfiguration.reset();
-        musicXml.reset();
-        articulationProfiles.reset();
+        context_configuration.reset();
+        music_xml.reset();
+        articulation_profiles.reset();
         renderer.reset();
         configuration.reset();
-        if (engravingFonts) engravingFonts->deinit();
-        engravingFonts.reset();
+        if (engraving_fonts) engraving_fonts->deinit();
+        engraving_fonts.reset();
         if (assets) {
-            FontMetrics::setProvider(nullptr);
+            FontMetrics::set_provider(nullptr);
             assets->shutdown();
             assets.reset();
         }
-        if (fileSystem) {
-            io::setFileSystem(nullptr);
-            fileSystem.reset();
+        if (file_system) {
+            io::set_file_system(nullptr);
+            file_system.reset();
         }
     } catch (const std::exception &error) {
         std::fprintf(stderr, "engrave: engine teardown failed: %s\n", error.what());
@@ -162,43 +162,43 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
     initialize_native_runtime(assets);
     Impl &d = *impl_;
     try {
-        d.fileSystem = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
-        io::setFileSystem(d.fileSystem.get());
+        d.file_system = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
+        io::set_file_system(d.file_system.get());
 
         d.assets = std::make_unique<RuntimeAssets>(std::filesystem::u8path(cache_root));
-        FontMetrics::setProvider(&d.assets->fontProvider());
+        FontMetrics::set_provider(&d.assets->font_provider());
 
-        d.engravingFonts = std::make_shared<EngravingFontsProvider>(d.assets->fontProvider());
+        d.engraving_fonts = std::make_shared<EngravingFontsProvider>(d.assets->font_provider());
         d.configuration = std::make_shared<EngravingConfiguration>();
         d.renderer = std::make_shared<rendering::score::ScoreRenderer>();
-        d.articulationProfiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.fileSystem);
-        d.audio = std::make_unique<EngineAudio>(*d.articulationProfiles);
-        d.musicXml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
-        d.contextConfiguration = std::make_shared<EngravingContextConfiguration>();
+        d.articulation_profiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.file_system);
+        d.audio = std::make_unique<EngineAudio>(*d.articulation_profiles);
+        d.music_xml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
+        d.context_configuration = std::make_shared<EngravingContextConfiguration>();
         d.engraving.configuration = d.configuration;
-        d.engraving.engravingFonts = d.engravingFonts;
-        d.engraving.contextConfiguration = d.contextConfiguration;
+        d.engraving.engraving_fonts = d.engraving_fonts;
+        d.engraving.context_configuration = d.context_configuration;
         d.engraving.renderer = d.renderer;
 
-        register_builtin_fonts(d.assets->fontsDatabase(), *d.engravingFonts);
+        register_builtin_fonts(d.assets->fonts_database(), *d.engraving_fonts);
 
         d.configuration->init();
-        DefaultStyle::instance()->init(d.configuration->defaultStyleFilePath(), d.configuration->partStyleFilePath(),
-                                       d.configuration->defaultPageSize());
-        StaffType::initStaffTypes(d.configuration->defaultColor());
+        DefaultStyle::instance()->init(d.configuration->default_style_file_path(), d.configuration->part_style_file_path(),
+                                       d.configuration->default_page_size());
+        StaffType::init_staff_types(d.configuration->default_color());
 
-        MScore::warnPitchRange = true;
-        MScore::warnGuitarBends = true;
-        MScore::pedalEventsMinTicks = 1;
-        Drumset::initDrumset();
-        FiguredBass::readConfigFile(String());
-        MScore::setNudgeStep(0.1);    // cursor key (default 0.1)
-        MScore::setNudgeStep10(1.0);  // Ctrl + cursor key (default 1.0)
-        MScore::setNudgeStep50(0.01); // Alt  + cursor key (default 0.01)
+        MScore::warn_pitch_range = true;
+        MScore::warn_guitar_bends = true;
+        MScore::pedal_events_min_ticks = 1;
+        Drumset::init_drumset();
+        FiguredBass::read_config_file(String());
+        MScore::set_nudge_step(0.1);    // cursor key (default 0.1)
+        MScore::set_nudge_step10(1.0);  // Ctrl + cursor key (default 1.0)
+        MScore::set_nudge_step50(0.01); // Alt  + cursor key (default 0.01)
 
-        d.musicXml->init();
+        d.music_xml->init();
 
-        loadInstrumentTemplates(":/engraving/instruments/instruments.xml");
+        load_instrument_templates(":/engraving/instruments/instruments.xml");
     } catch (...) {
         d.teardown();
         throw;
@@ -207,17 +207,17 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
 EngineContext::~EngineContext() { impl_->teardown(); }
 
-io::IFileSystem &EngineContext::fileSystem() const { return *impl_->fileSystem; }
+io::IFileSystem &EngineContext::file_system() const { return *impl_->file_system; }
 
 EngineAudio &EngineContext::audio() const { return *impl_->audio; }
 
 RuntimeAssets &EngineContext::assets() const { return *impl_->assets; }
 
-IFontsDatabase &EngineContext::fontsDatabase() const { return impl_->assets->fontsDatabase(); }
+IFontsDatabase &EngineContext::fonts_database() const { return impl_->assets->fonts_database(); }
 
 EngravingServices &EngineContext::engraving() const { return impl_->engraving; }
 
-const mpe::IArticulationProfilesRepository &EngineContext::articulationProfiles() const { return *impl_->articulationProfiles; }
+const mpe::IArticulationProfilesRepository &EngineContext::articulation_profiles() const { return *impl_->articulation_profiles; }
 
-const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::musicXml() const { return *impl_->musicXml; }
+const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::music_xml() const { return *impl_->music_xml; }
 } // namespace music

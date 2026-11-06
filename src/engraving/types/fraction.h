@@ -56,9 +56,9 @@ public:
     /// Use this when you need to initialize a Fraction to an arbitrary high value
     static constexpr Fraction max() { return Fraction(std::numeric_limits<int>::max(), 1); }
 
-    constexpr void setNumerator(int v) { numerator_ = v; }
+    constexpr void set_numerator(int v) { numerator_ = v; }
 
-    constexpr void setDenominator(int v) {
+    constexpr void set_denominator(int v) {
         if (v < 0) {
             numerator_ = -numerator_;
             denominator_ = -v;
@@ -77,21 +77,21 @@ public:
         }
     }
 
-    constexpr bool isZero() const { return numerator_ == 0; }
+    constexpr bool is_zero() const { return numerator_ == 0; }
 
-    constexpr bool isNotZero() const { return numerator_ != 0; }
+    constexpr bool is_not_zero() const { return numerator_ != 0; }
 
     constexpr bool negative() const { return numerator_ < 0; }
 
     constexpr bool positive() const { return numerator_ >= 0; }
 
-    constexpr bool isValid() const { return denominator_ != 0; }
+    constexpr bool is_valid() const { return denominator_ != 0; }
 
     // check if two fractions are identical (numerator & denominator)
     // == operator checks for equal value:
     constexpr bool identical(const Fraction &v) const { return (numerator_ == v.numerator_) && (denominator_ == v.denominator_); }
 
-    Fraction absValue() const { return Fraction(static_cast<int>(std::abs(numerator_)), static_cast<int>(denominator_)); }
+    Fraction abs_value() const { return Fraction(static_cast<int>(std::abs(numerator_)), static_cast<int>(denominator_)); }
 
     constexpr Fraction inverse() const { return Fraction(static_cast<int>(denominator_), static_cast<int>(numerator_)); }
 
@@ -217,34 +217,34 @@ public:
         // result: rounded (Constants::division * 4 * numerator_ * 1.0 / denominator_) value
         const int sgn = (numerator_ < 0) ? -1 : 1;
         const auto result =
-            sgn * (static_cast<int_least64_t>(sgn * numerator_) * Constants::DIVISION * 4 + (denominator_ / 2)) / denominator_;
+            sgn * (static_cast<int_least64_t>(sgn * numerator_) * Constants::division * 4 + (denominator_ / 2)) / denominator_;
         return static_cast<int>(result);
     }
 
-    static constexpr Fraction fromTicks(int ticks) {
+    static constexpr Fraction from_ticks(int ticks) {
         if (ticks == -1) {
             return Fraction(-1, 1); // HACK
         }
-        return Fraction(ticks, Constants::DIVISION * 4).reduced();
+        return Fraction(ticks, Constants::division * 4).reduced();
     }
 
     // A very small fraction, corresponds to 1 MIDI tick
-    static constexpr Fraction eps() { return Fraction(1, Constants::DIVISION * 4); }
+    static constexpr Fraction eps() { return Fraction(1, Constants::division * 4); }
 
-    muse::String toString() const { return muse::String(u"%1/%2").arg(numerator_, denominator_); }
+    muse::String to_string() const { return muse::String(u"%1/%2").arg(numerator_, denominator_); }
 
-    static Fraction fromString(const muse::String &str, bool *ok = nullptr) {
-        const size_t i = str.indexOf(u'/');
+    static Fraction from_string(const muse::String &str, bool *ok = nullptr) {
+        const size_t i = str.index_of(u'/');
         if (i == muse::nidx) {
-            return Fraction(str.toInt(ok), 1);
+            return Fraction(str.to_int(ok), 1);
         }
 
-        int numerator = str.left(i).toInt(ok);
+        int numerator = str.left(i).to_int(ok);
         if (ok && !*ok) {
             return Fraction();
         }
 
-        int denominator = str.mid(i + 1).toInt(ok);
+        int denominator = str.mid(i + 1).to_int(ok);
         if (ok && !*ok) {
             return Fraction();
         }
@@ -252,7 +252,7 @@ public:
         return Fraction(numerator, denominator);
     }
 
-    constexpr double toDouble() const { return static_cast<double>(numerator_) / static_cast<double>(denominator_); }
+    constexpr double to_double() const { return static_cast<double>(numerator_) / static_cast<double>(denominator_); }
 };
 
 constexpr Fraction operator*(const Fraction &f, int v) { return Fraction(f) *= v; }

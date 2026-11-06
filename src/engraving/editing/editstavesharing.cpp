@@ -42,34 +42,34 @@ namespace {
 class ConnectSharedPart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ConnectSharedPart)
 
-    SharedPart *sharedPart = nullptr;
-    Part *originPart = nullptr;
+    SharedPart *shared_part = nullptr;
+    Part *origin_part = nullptr;
 
 public:
-    ConnectSharedPart(SharedPart *s, Part *o) : sharedPart(s), originPart(o) {}
+    ConnectSharedPart(SharedPart *s, Part *o) : shared_part(s), origin_part(o) {}
 
-    void undo() override { sharedPart->removeOriginPart(originPart); }
+    void undo() override { shared_part->remove_origin_part(origin_part); }
 
-    void redo() override { sharedPart->addOriginPart(originPart); }
+    void redo() override { shared_part->add_origin_part(origin_part); }
 
-    UNDO_TYPE(CommandType::ConnectSharedPart)
+    UNDO_TYPE(CommandType::CONNECT_SHARED_PART)
     UNDO_NAME("Connect shared part")
 };
 
 class DisconnectSharedPart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, DisconnectSharedPart)
 
-    SharedPart *sharedPart = nullptr;
-    Part *originPart = nullptr;
+    SharedPart *shared_part = nullptr;
+    Part *origin_part = nullptr;
 
 public:
-    DisconnectSharedPart(SharedPart *s, Part *o) : sharedPart(s), originPart(o) {}
+    DisconnectSharedPart(SharedPart *s, Part *o) : shared_part(s), origin_part(o) {}
 
-    void undo() override { sharedPart->addOriginPart(originPart); }
+    void undo() override { shared_part->add_origin_part(origin_part); }
 
-    void redo() override { sharedPart->removeOriginPart(originPart); }
+    void redo() override { shared_part->remove_origin_part(origin_part); }
 
-    UNDO_TYPE(CommandType::DisconnectSharedPart)
+    UNDO_TYPE(CommandType::DISCONNECT_SHARED_PART)
     UNDO_NAME("Disconnect shared part")
 };
 } // namespace
@@ -78,183 +78,183 @@ public:
 // EditStaveSharing
 //-------------------------------------------------------------------
 
-void EditStaveSharing::toggleStaveSharing(Transaction &tx, Score *score, bool on) {
-    score->undoChangeStyleVal(Sid::enableStaveSharing, on);
+void EditStaveSharing::toggle_stave_sharing(Transaction &tx, Score *score, bool on) {
+    score->undo_change_style_val(Sid::ENABLE_STAVE_SHARING, on);
 
-    if (on && score->sharedParts().empty()) {
-        cmdCreateSharedStaves(tx, score);
+    if (on && score->shared_parts().empty()) {
+        cmd_create_shared_staves(tx, score);
     }
 
-    score->setBracketsAndBarlines();
+    score->set_brackets_and_barlines();
 
     score->update();
 }
 
-void EditStaveSharing::cmdRemoveSharedStaves(Score *score) {
+void EditStaveSharing::cmd_remove_shared_staves(Score *score) {
     std::vector<Part *> parts = score->parts(); // COPY because we're about to remove elements
 
     for (Part *part : parts) {
-        if (part->isSharedPart()) {
-            score->cmdRemovePart(part);
+        if (part->is_shared_part()) {
+            score->cmd_remove_part(part);
         }
     }
 }
 
-void EditStaveSharing::cmdCreateSharedStaves(Transaction &tx, Score *score) {
-    StaveSharingGroups staveSharingGroups = computeGroups(score);
+void EditStaveSharing::cmd_create_shared_staves(Transaction &tx, Score *score) {
+    StaveSharingGroups stave_sharing_groups = compute_groups(score);
 
-    createSharedParts(tx, staveSharingGroups, score);
+    create_shared_parts(tx, stave_sharing_groups, score);
 }
 
-StaveSharingGroups EditStaveSharing::computeGroups(Score *score) {
+StaveSharingGroups EditStaveSharing::compute_groups(Score *score) {
     const std::vector<Part *> &parts = score->parts();
 
-    StaveSharingGroups staveSharingGroups;
+    StaveSharingGroups stave_sharing_groups;
 
-    auto excludePart = [](Part *part) {
-        if (part->nstaves() > 1 || part->isSharedPart()) {
+    auto exclude_part = [](Part *part) {
+        if (part->nstaves() > 1 || part->is_shared_part()) {
             return true;
         }
 
-        Staff *firstStaff = part->staves().front();
-        const StaffType *staffType = firstStaff->staffType();
-        if (staffType->group() != StaffGroup::STANDARD) {
+        Staff *first_staff = part->staves().front();
+        const StaffType *staff_type = first_staff->staff_type();
+        if (staff_type->group() != StaffGroup::STANDARD) {
             return true;
         }
 
         return false;
     };
 
-    for (size_t partIdx = 0; partIdx < parts.size();) {
-        Part *part = parts[partIdx];
-        if (excludePart(part)) {
-            ++partIdx;
+    for (size_t part_idx = 0; part_idx < parts.size();) {
+        Part *part = parts[part_idx];
+        if (exclude_part(part)) {
+            ++part_idx;
             continue;
         }
 
         Instrument *instr = part->instrument();
-        String instrGroup = instr->group();
-        if (instrGroup != "woodwinds" && instrGroup != "brass") { // TODO: styles
-            ++partIdx;
+        String instr_group = instr->group();
+        if (instr_group != "woodwinds" && instr_group != "brass") { // TODO: styles
+            ++part_idx;
             continue;
         }
 
-        StaveSharingGroup staveSharingGroup;
+        StaveSharingGroup stave_sharing_group;
 
-        size_t nextPartIdx = partIdx;
-        while (nextPartIdx < parts.size()) {
-            Part *nextPart = parts[nextPartIdx];
-            if (excludePart(nextPart)) {
+        size_t next_part_idx = part_idx;
+        while (next_part_idx < parts.size()) {
+            Part *next_part = parts[next_part_idx];
+            if (exclude_part(next_part)) {
                 break;
             }
-            Instrument *nextInstr = nextPart->instrument();
-            if (nextPart != part && nextInstr->id() != instr->id()) {
+            Instrument *next_instr = next_part->instrument();
+            if (next_part != part && next_instr->id() != instr->id()) {
                 break;
             }
 
-            staveSharingGroup.push_back(nextPart);
-            ++nextPartIdx;
+            stave_sharing_group.push_back(next_part);
+            ++next_part_idx;
         }
 
-        if (staveSharingGroup.size() > 1) {
-            staveSharingGroups.push_back(staveSharingGroup);
+        if (stave_sharing_group.size() > 1) {
+            stave_sharing_groups.push_back(stave_sharing_group);
         }
 
-        partIdx = nextPartIdx;
+        part_idx = next_part_idx;
     }
 
-    return staveSharingGroups;
+    return stave_sharing_groups;
 }
 
-void EditStaveSharing::createSharedParts(Transaction &tx, const StaveSharingGroups &groups, Score *score) {
+void EditStaveSharing::create_shared_parts(Transaction &tx, const StaveSharingGroups &groups, Score *score) {
     for (const StaveSharingGroup &group : groups) {
-        SharedPart *sharedPart = nullptr;
+        SharedPart *shared_part = nullptr;
         for (Part *part : group) {
-            if (part->sharedPart() && !sharedPart) {
-                sharedPart = part->sharedPart();
+            if (part->shared_part() && !shared_part) {
+                shared_part = part->shared_part();
                 break;
             }
         }
 
-        Part *firstPart = group.front();
-        const Instrument *instr = firstPart->instrument();
+        Part *first_part = group.front();
+        const Instrument *instr = first_part->instrument();
 
-        if (!sharedPart) {
-            size_t idx = muse::indexOf(score->parts(), firstPart);
-            sharedPart = createSharedPart(score, idx, instr);
+        if (!shared_part) {
+            size_t idx = muse::index_of(score->parts(), first_part);
+            shared_part = create_shared_part(score, idx, instr);
         }
 
-        for (Part *originPart : group) {
-            SharedPart *existingSharedPart = originPart->sharedPart();
-            if (existingSharedPart && existingSharedPart != sharedPart) {
-                disconnectSharedPart(tx, existingSharedPart, originPart);
-                connectSharedPart(tx, sharedPart, originPart);
-            } else if (!existingSharedPart) {
-                connectSharedPart(tx, sharedPart, originPart);
+        for (Part *origin_part : group) {
+            SharedPart *existing_shared_part = origin_part->shared_part();
+            if (existing_shared_part && existing_shared_part != shared_part) {
+                disconnect_shared_part(tx, existing_shared_part, origin_part);
+                connect_shared_part(tx, shared_part, origin_part);
+            } else if (!existing_shared_part) {
+                connect_shared_part(tx, shared_part, origin_part);
             }
         }
     }
 }
 
-SharedPart *EditStaveSharing::createSharedPart(Score *score, size_t idx, const Instrument *instr) {
-    SharedPart *sharedPart = new SharedPart(score);
-    score->undoInsertPart(sharedPart, idx);
+SharedPart *EditStaveSharing::create_shared_part(Score *score, size_t idx, const Instrument *instr) {
+    SharedPart *shared_part = new SharedPart(score);
+    score->undo_insert_part(shared_part, idx);
 
     Instrument *instrument = new Instrument(*instr);
-    InstrumentLabel &label = instrument->instrumentLabel();
-    label.setAllowGroupName(false);
-    label.setNumber(0);
-    label.setShowNumberLong(false);
-    label.setShowNumberShort(false);
+    InstrumentLabel &label = instrument->instrument_label();
+    label.set_allow_group_name(false);
+    label.set_number(0);
+    label.set_show_number_long(false);
+    label.set_show_number_short(false);
 
-    sharedPart->setInstrument(instrument);
+    shared_part->set_instrument(instrument);
 
-    return sharedPart;
+    return shared_part;
 }
 
-void EditStaveSharing::addStaffToSharedPart(SharedPart *sharedPart, const Part *originPart, const KeyList &keyList,
-                                            const StaffType *staffType) {
-    Staff *staff = Factory::createStaff(sharedPart);
-    staff->setStaffType(Fraction(0, 1), *staffType);
-    staff->setPart(sharedPart);
+void EditStaveSharing::add_staff_to_shared_part(SharedPart *shared_part, const Part *origin_part, const KeyList &key_list,
+                                                const StaffType *staff_type) {
+    Staff *staff = Factory::create_staff(shared_part);
+    staff->set_staff_type(Fraction(0, 1), *staff_type);
+    staff->set_part(shared_part);
 
-    Score *score = sharedPart->score();
-    staff->setScore(score);
+    Score *score = shared_part->score();
+    staff->set_score(score);
 
-    staff_idx_t relStaffIdx = sharedPart->nstaves();
-    staff->setDefaultClefType(originPart->instrument()->clefType(0));
+    staff_idx_t rel_staff_idx = shared_part->nstaves();
+    staff->set_default_clef_type(origin_part->instrument()->clef_type(0));
 
-    score->undoInsertStaff(staff, relStaffIdx);
+    score->undo_insert_staff(staff, rel_staff_idx);
 
-    staff_idx_t absStaffIdx = track2staff(sharedPart->trackRange().startTrack) + relStaffIdx;
-    score->adjustKeySigs(absStaffIdx, absStaffIdx + 1, keyList);
+    staff_idx_t abs_staff_idx = track2staff(shared_part->track_range().start_track) + rel_staff_idx;
+    score->adjust_key_sigs(abs_staff_idx, abs_staff_idx + 1, key_list);
 }
 
-void EditStaveSharing::connectSharedPart(Transaction &tx, SharedPart *sharedPart, Part *originPart) {
-    Score *score = originPart->score();
-    tx.push(new ConnectSharedPart(sharedPart, originPart));
-    addStaffToSharedPart(sharedPart, originPart, score->keyList(), originPart->staff(0)->staffType());
+void EditStaveSharing::connect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part) {
+    Score *score = origin_part->score();
+    tx.push(new ConnectSharedPart(shared_part, origin_part));
+    add_staff_to_shared_part(shared_part, origin_part, score->key_list(), origin_part->staff(0)->staff_type());
 }
 
-void EditStaveSharing::disconnectSharedPart(Transaction &tx, SharedPart *sharedPart, Part *originPart) {
-    Score *score = originPart->score();
-    tx.push(new DisconnectSharedPart(sharedPart, originPart));
-    score->undoRemoveStaff(sharedPart->staves().back());
+void EditStaveSharing::disconnect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part) {
+    Score *score = origin_part->score();
+    tx.push(new DisconnectSharedPart(shared_part, origin_part));
+    score->undo_remove_staff(shared_part->staves().back());
 }
 
-void EditStaveSharing::handleRemovePart(Transaction &tx, Part *part) {
+void EditStaveSharing::handle_remove_part(Transaction &tx, Part *part) {
     Score *score = part->score();
 
-    if (SharedPart *sharedPart = part->sharedPart()) {
-        disconnectSharedPart(tx, sharedPart, part);
-        if (sharedPart->originParts().empty()) {
-            score->cmdRemovePart(sharedPart);
+    if (SharedPart *shared_part = part->shared_part()) {
+        disconnect_shared_part(tx, shared_part, part);
+        if (shared_part->origin_parts().empty()) {
+            score->cmd_remove_part(shared_part);
         }
-    } else if (part->isSharedPart()) {
-        sharedPart = toSharedPart(part);
-        std::vector<Part *> originParts = sharedPart->originParts();
-        for (Part *originPart : originParts) {
-            tx.push(new DisconnectSharedPart(sharedPart, originPart));
+    } else if (part->is_shared_part()) {
+        shared_part = to_shared_part(part);
+        std::vector<Part *> origin_parts = shared_part->origin_parts();
+        for (Part *origin_part : origin_parts) {
+            tx.push(new DisconnectSharedPart(shared_part, origin_part));
         }
     }
 }

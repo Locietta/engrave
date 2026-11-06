@@ -28,29 +28,29 @@ namespace mu::engraving::rendering::score {
 class ScoreHorizontalViewLayout {
 public:
 
-    static void layoutHorizontalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void layout_horizontal_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
 
 private:
-    static void layoutLinear(LayoutContext &ctx, bool layoutAll);
-    static void layoutLinear(LayoutContext &ctx);
-    static void resetSystems(LayoutContext &ctx, bool layoutAll);
-    static void collectLinearSystem(LayoutContext &ctx);
-    static void layoutSystemLockIndicators(System *system);
+    static void layout_linear(LayoutContext &ctx, bool layout_all);
+    static void layout_linear(LayoutContext &ctx);
+    static void reset_systems(LayoutContext &ctx, bool layout_all);
+    static void collect_linear_system(LayoutContext &ctx);
+    static void layout_system_lock_indicators(System *system);
 
     //! puts segments on the positions according to their length
-    static void layoutSegmentsWithDuration(Measure *m, const std::vector<int> &visibleParts);
+    static void layout_segments_with_duration(Measure *m, const std::vector<int> &visible_parts);
 
     /*! \brief callulate width of segment and additional spacing of segment depends on duration of segment
      *  \return pair of {spacing, width}
      */
-    static std::pair<double, double> computeCellWidth(const Segment *s, const std::vector<int> &visibleParts);
+    static std::pair<double, double> compute_cell_width(const Segment *s, const std::vector<int> &visible_parts);
 
     /*! \brief get among all ChordRests of segment the ChordRest with minimum ticks,
     * take into account visibleParts
     */
-    static ChordRest *chordRestWithMinDuration(const Segment *seg, const std::vector<int> &visibleParts);
+    static ChordRest *chord_rest_with_min_duration(const Segment *seg, const std::vector<int> &visible_parts);
 
-    static Fraction calculateQuantumCell(const Measure *m, const std::vector<int> &visibleParts);
+    static Fraction calculate_quantum_cell(const Measure *m, const std::vector<int> &visible_parts);
 };
 } // namespace mu::engraving::rendering::score
 

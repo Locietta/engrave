@@ -29,22 +29,22 @@
 
 namespace mu::engraving::rendering::score {
 class ArpeggioLayout {
-    static constexpr int ARBITRARY_ARPEGGIO_LENGTH = INT_MAX;
+    static constexpr int arbitrary_arpeggio_length = INT_MAX;
 public:
 
-    static void layoutArpeggio2(Arpeggio *item, LayoutContext &ctx);
+    static void layout_arpeggio2(Arpeggio *item, LayoutContext &ctx);
 
-    static double insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *_chord);
-    static double insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *_chord,
-                                const std::vector<Accidental *> &accidentals);
-    static double insetTop(const Arpeggio *item, const Chord *c);
-    static double insetBottom(const Arpeggio *item, const Chord *c);
-    static double insetWidth(const Arpeggio *item);
-    static void clearAccidentals(Arpeggio *item, LayoutContext &ctx);
+    static double inset_distance(const Arpeggio *item, const LayoutContext &ctx, double mag, const Chord *chord);
+    static double inset_distance(const Arpeggio *item, const LayoutContext &ctx, double mag, const Chord *chord,
+                                 const std::vector<Accidental *> &accidentals);
+    static double inset_top(const Arpeggio *item, const Chord *c);
+    static double inset_bottom(const Arpeggio *item, const Chord *c);
+    static double inset_width(const Arpeggio *item);
+    static void clear_accidentals(Arpeggio *item, LayoutContext &ctx);
 
-    static double computeHeight(const Arpeggio *item);
-    static double calcTop(const Arpeggio *item, const LayoutConfiguration &conf);
-    static double calcBottom(const Arpeggio *item, double arpeggioHeight, const LayoutConfiguration &conf);
+    static double compute_height(const Arpeggio *item);
+    static double calc_top(const Arpeggio *item, const LayoutConfiguration &conf);
+    static double calc_bottom(const Arpeggio *item, double arpeggio_height, const LayoutConfiguration &conf);
 };
 } // namespace mu::engraving::rendering::score
 

@@ -33,12 +33,15 @@
 #include "bytearray.h"
 #include "global/logstream.h"
 
+// Protect Char::NULL from the C null-pointer macro.
+#undef NULL
+
 namespace muse {
-enum CaseSensitivity { CaseInsensitive = 0, CaseSensitive = 1 };
+enum CaseSensitivity { CASE_INSENSITIVE = 0, CASE_SENSITIVE = 1 };
 
 enum SplitBehavior {
-    KeepEmptyParts = 0,
-    SkipEmptyParts = 1,
+    KEEP_EMPTY_PARTS = 0,
+    SKIP_EMPTY_PARTS = 1,
 };
 
 // ============================
@@ -54,12 +57,12 @@ public:
 
     constexpr char16_t unicode() const noexcept { return char16_t(ch_); }
 
-    inline char toLower() const { return toLower(ch_); }
+    inline char to_lower() const { return to_lower(ch_); }
 
-    inline char toUpper() const { return toUpper(ch_); }
+    inline char to_upper() const { return to_upper(ch_); }
 
-    static char toLower(char ch);
-    static char toUpper(char ch);
+    static char to_lower(char ch);
+    static char to_upper(char ch);
 
 private:
     char ch_ = 0;
@@ -72,21 +75,21 @@ class Char {
 public:
 
     enum SpecialCharacter {
-        Null = 0x0000,
-        Tabulation = 0x0009,
-        LineFeed = 0x000a,
-        FormFeed = 0x000c,
-        CarriageReturn = 0x000d,
-        Space = 0x0020,
-        Nbsp = 0x00a0,
-        SoftHyphen = 0x00ad,
-        ReplacementCharacter = 0xfffd,
-        ObjectReplacementCharacter = 0xfffc,
-        ByteOrderMark = 0xfeff,
-        ByteOrderSwapped = 0xfffe,
-        ParagraphSeparator = 0x2029,
-        LineSeparator = 0x2028,
-        LastValidCodePoint = 0x10ffff
+        NULL = 0x0000,
+        TABULATION = 0x0009,
+        LINE_FEED = 0x000a,
+        FORM_FEED = 0x000c,
+        CARRIAGE_RETURN = 0x000d,
+        SPACE = 0x0020,
+        NBSP = 0x00a0,
+        SOFT_HYPHEN = 0x00ad,
+        REPLACEMENT_CHARACTER = 0xfffd,
+        OBJECT_REPLACEMENT_CHARACTER = 0xfffc,
+        BYTE_ORDER_MARK = 0xfeff,
+        BYTE_ORDER_SWAPPED = 0xfffe,
+        PARAGRAPH_SEPARATOR = 0x2029,
+        LINE_SEPARATOR = 0x2028,
+        LAST_VALID_CODE_POINT = 0x10ffff
     };
 
     constexpr Char() = default;
@@ -125,68 +128,68 @@ public:
 
     constexpr char16_t unicode() const { return ch_; }
 
-    inline bool isNull() const { return ch_ == 0; }
+    inline bool is_null() const { return ch_ == 0; }
 
-    constexpr bool isAscii() const { return isAscii(ch_); }
+    constexpr bool is_ascii() const { return is_ascii(ch_); }
 
-    static constexpr bool isAscii(char16_t c) { return c <= 0x7f; }
+    static constexpr bool is_ascii(char16_t c) { return c <= 0x7f; }
 
-    inline char toAscii(bool *ok = nullptr) const { return toAscii(ch_, ok); }
+    inline char to_ascii(bool *ok = nullptr) const { return to_ascii(ch_, ok); }
 
-    static char toAscii(char16_t c, bool *ok = nullptr);
+    static char to_ascii(char16_t c, bool *ok = nullptr);
 
-    static inline Char fromAscii(char c) { return static_cast<char16_t>(c); }
+    static inline Char from_ascii(char c) { return static_cast<char16_t>(c); }
 
-    inline bool isLetter() const { return isLetter(ch_); }
+    inline bool is_letter() const { return is_letter(ch_); }
 
-    static bool isLetter(char16_t c);
+    static bool is_letter(char16_t c);
 
-    inline bool isSpace() const { return isSpace(ch_); }
+    inline bool is_space() const { return is_space(ch_); }
 
-    static bool isSpace(char16_t c);
+    static bool is_space(char16_t c);
 
-    inline bool isDigit() const { return isDigit(ch_); }
+    inline bool is_digit() const { return is_digit(ch_); }
 
-    static bool isDigit(char16_t c);
-    int digitValue() const;
+    static bool is_digit(char16_t c);
+    int digit_value() const;
 
-    inline bool isPunct() const { return isPunct(ch_); }
+    inline bool is_punct() const { return is_punct(ch_); }
 
-    static bool isPunct(char16_t c);
+    static bool is_punct(char16_t c);
 
-    inline bool isLower() const { return toLower() == ch_; }
+    inline bool is_lower() const { return to_lower() == ch_; }
 
-    inline Char toLower() const { return toLower(ch_); }
+    inline Char to_lower() const { return to_lower(ch_); }
 
-    static char16_t toLower(char16_t ch);
+    static char16_t to_lower(char16_t ch);
 
-    inline bool isUpper() const { return toUpper() == ch_; }
+    inline bool is_upper() const { return to_upper() == ch_; }
 
-    inline Char toUpper() const { return toUpper(ch_); }
+    inline Char to_upper() const { return to_upper(ch_); }
 
-    static char16_t toUpper(char16_t ch);
+    static char16_t to_upper(char16_t ch);
 
-    inline bool isHighSurrogate() const { return isHighSurrogate(ch_); }
+    inline bool is_high_surrogate() const { return is_high_surrogate(ch_); }
 
-    inline bool isLowSurrogate() const { return isLowSurrogate(ch_); }
+    inline bool is_low_surrogate() const { return is_low_surrogate(ch_); }
 
-    inline bool isSurrogate() const { return isSurrogate(ch_); }
+    inline bool is_surrogate() const { return is_surrogate(ch_); }
 
-    static constexpr char32_t surrogateToUcs4(char16_t high, char16_t low) { return (char32_t(high) << 10) + low - 0x35fdc00; }
+    static constexpr char32_t surrogate_to_ucs4(char16_t high, char16_t low) { return (char32_t(high) << 10) + low - 0x35fdc00; }
 
-    static constexpr char32_t surrogateToUcs4(Char high, Char low) { return surrogateToUcs4(high.ch_, low.ch_); }
+    static constexpr char32_t surrogate_to_ucs4(Char high, Char low) { return surrogate_to_ucs4(high.ch_, low.ch_); }
 
-    static constexpr bool isHighSurrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xd800; }
+    static constexpr bool is_high_surrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xd800; }
 
-    static constexpr bool isLowSurrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xdc00; }
+    static constexpr bool is_low_surrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xdc00; }
 
-    static constexpr bool isSurrogate(char32_t ucs4) { return ucs4 - 0xd800u < 2048u; }
+    static constexpr bool is_surrogate(char32_t ucs4) { return ucs4 - 0xd800u < 2048u; }
 
-    static constexpr char16_t highSurrogate(char32_t ucs4) { return char16_t((ucs4 >> 10) + 0xd7c0); }
+    static constexpr char16_t high_surrogate(char32_t ucs4) { return char16_t((ucs4 >> 10) + 0xd7c0); }
 
-    static constexpr char16_t lowSurrogate(char32_t ucs4) { return char16_t(ucs4 % 0x400 + 0xdc00); }
+    static constexpr char16_t low_surrogate(char32_t ucs4) { return char16_t(ucs4 % 0x400 + 0xdc00); }
 
-    static constexpr bool requiresSurrogates(char32_t ucs4) { return ucs4 >= 0x10000; }
+    static constexpr bool requires_surrogates(char32_t ucs4) { return ucs4 >= 0x10000; }
 
 private:
     char16_t ch_ = 0;
@@ -198,20 +201,20 @@ private:
 class UtfCodec {
 public:
     enum class Encoding {
-        Unknown,
+        UNKNOWN,
         UTF_8,
         UTF_16LE,
         UTF_16BE,
     };
 
-    static Encoding xmlEncoding(const ByteArray &data);
+    static Encoding xml_encoding(const ByteArray &data);
 
     static void utf8to16(std::string_view src, std::u16string &dst);
     static void utf16to8(std::u16string_view src, std::string &dst);
     static void utf8to32(std::string_view src, std::u32string &dst);
     static void utf32to8(std::u32string_view src, std::string &dst);
-    static void replaceInvalid(std::string_view src, std::string &dst);
-    static bool isValidUtf8(const std::string_view &src);
+    static void replace_invalid(std::string_view src, std::string &dst);
+    static bool is_valid_utf8(const std::string_view &src);
 };
 
 // ============================
@@ -231,17 +234,17 @@ public:
     String &operator=(const char16_t *str);
     void reserve(size_t i);
 
-    inline bool operator==(const String &s) const { return constStr() == s.constStr(); }
+    inline bool operator==(const String &s) const { return const_str() == s.const_str(); }
 
     inline bool operator!=(const String &s) const { return !operator==(s); }
 
-    bool isEqualIgnoreCase(const String &s) const;
+    bool is_equal_ignore_case(const String &s) const;
 
     bool operator==(const AsciiStringView &s) const;
 
     inline bool operator!=(const AsciiStringView &s) const { return !operator==(s); }
 
-    inline bool operator==(const char16_t *s) const { return constStr() == s; }
+    inline bool operator==(const char16_t *s) const { return const_str() == s; }
 
     inline bool operator!=(const char16_t *s) const { return !operator==(s); }
 
@@ -249,13 +252,13 @@ public:
 
     inline bool operator!=(const char *s) const { return !operator==(s); }
 
-    inline bool operator<(const String &s) const { return constStr() < s.constStr(); }
+    inline bool operator<(const String &s) const { return const_str() < s.const_str(); }
 
-    inline bool operator>(const String &s) const { return constStr() > s.constStr(); }
+    inline bool operator>(const String &s) const { return const_str() > s.const_str(); }
 
-    inline bool operator<=(const String &s) const { return constStr() <= s.constStr(); }
+    inline bool operator<=(const String &s) const { return const_str() <= s.const_str(); }
 
-    inline bool operator>=(const String &s) const { return constStr() >= s.constStr(); }
+    inline bool operator>=(const String &s) const { return const_str() >= s.const_str(); }
 
     inline String &operator+=(const String &s) { return append(s); }
 
@@ -289,32 +292,32 @@ public:
     String &prepend(Char ch);
     String &prepend(const String &s);
 
-    static String fromUtf16LE(const ByteArray &data);
-    static String fromUtf16BE(const ByteArray &data);
+    static String from_utf16_le(const ByteArray &data);
+    static String from_utf16_be(const ByteArray &data);
 
-    static String fromUtf8(const char *str);
-    static String fromUtf8(std::string_view);
-    static String fromUtf8(const ByteArray &data);
-    ByteArray toUtf8() const;
+    static String from_utf8(const char *str);
+    static String from_utf8(std::string_view);
+    static String from_utf8(const ByteArray &data);
+    ByteArray to_utf8() const;
 
-    static String fromAscii(const char *str, size_t size = muse::nidx);
-    ByteArray toAscii(bool *ok = nullptr) const;
+    static String from_ascii(const char *str, size_t size = muse::nidx);
+    ByteArray to_ascii(bool *ok = nullptr) const;
 
-    static String fromStdString(const std::string &str);
-    std::string toStdString() const;
-    std::u16string toStdU16String() const;
+    static String from_std_string(const std::string &str);
+    std::string to_std_string() const;
+    std::u16string to_std_u16_string() const;
 
-    static String fromUcs4(const char32_t *str, size_t size = muse::nidx);
-    static String fromUcs4(char32_t chr);
-    std::u32string toStdU32String() const;
+    static String from_ucs4(const char32_t *str, size_t size = muse::nidx);
+    static String from_ucs4(char32_t chr);
+    std::u32string to_std_u32_string() const;
 
-    std::wstring toStdWString() const;
-    static const String fromStdWString(const std::wstring &str);
+    std::wstring to_std_w_string() const;
+    static const String from_std_w_string(const std::wstring &str);
 
     size_t size() const;
     bool empty() const;
 
-    inline bool isEmpty() const { return empty(); }
+    inline bool is_empty() const { return empty(); }
 
     void clear();
     Char at(size_t i) const;
@@ -324,26 +327,26 @@ public:
     Char back() const { return at(size() - 1); }
 
     bool contains(const Char &ch) const;
-    bool contains(const String &str, CaseSensitivity cs = CaseSensitive) const;
+    bool contains(const String &str, CaseSensitivity cs = CASE_SENSITIVE) const;
     bool contains(const std::wregex &re) const;
     int count(const Char &ch) const;
     int count(const String &str) const;
-    size_t indexOf(const Char &ch, size_t from = 0) const;
-    size_t indexOf(const String &str, size_t from = 0) const;
-    size_t indexOf(const char16_t *str, size_t from = 0) const;
-    size_t lastIndexOf(const Char &ch, size_t from = muse::nidx) const;
+    size_t index_of(const Char &ch, size_t from = 0) const;
+    size_t index_of(const String &str, size_t from = 0) const;
+    size_t index_of(const char16_t *str, size_t from = 0) const;
+    size_t last_index_of(const Char &ch, size_t from = muse::nidx) const;
 
     //! NOTE Now implemented only compare with ASCII
-    bool startsWith(const String &str, CaseSensitivity cs = CaseSensitive) const;
-    bool startsWith(char16_t ch, CaseSensitivity cs = CaseSensitive) const;
-    bool endsWith(const String &str, CaseSensitivity cs = CaseSensitive) const;
-    bool endsWith(char16_t ch, CaseSensitivity cs = CaseSensitive) const;
+    bool starts_with(const String &str, CaseSensitivity cs = CASE_SENSITIVE) const;
+    bool starts_with(char16_t ch, CaseSensitivity cs = CASE_SENSITIVE) const;
+    bool ends_with(const String &str, CaseSensitivity cs = CASE_SENSITIVE) const;
+    bool ends_with(char16_t ch, CaseSensitivity cs = CASE_SENSITIVE) const;
 
-    StringList split(const Char &ch, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList split(const String &str, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList split(const std::regex &re, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList search(const std::regex &re, std::initializer_list<int> matches, SplitBehavior behavior = KeepEmptyParts) const;
-    StringList search(const std::wregex &re, std::initializer_list<int> matches, SplitBehavior behavior = KeepEmptyParts) const;
+    StringList split(const Char &ch, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
+    StringList split(const String &str, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
+    StringList split(const std::regex &re, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
+    StringList search(const std::regex &re, std::initializer_list<int> matches, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
+    StringList search(const std::wregex &re, std::initializer_list<int> matches, SplitBehavior behavior = KEEP_EMPTY_PARTS) const;
     String &replace(const String &before, const String &after);
     String &replace(char16_t before, char16_t after);
     String &replace(const std::regex &re, const String &after);
@@ -398,32 +401,32 @@ public:
 
     String trimmed() const;
     String simplified() const;
-    String toXmlEscaped() const;
-    static String toXmlEscaped(const String &str);
-    static String toXmlEscaped(char16_t c);
-    static String decodeXmlEntities(const String &src);
+    String to_xml_escaped() const;
+    static String to_xml_escaped(const String &str);
+    static String to_xml_escaped(char16_t c);
+    static String decode_xml_entities(const String &src);
 
-    String toLower() const;
-    String toUpper() const;
+    String to_lower() const;
+    String to_upper() const;
 
-    int toInt(bool *ok = nullptr, int base = 10) const;
-    unsigned int toUInt(bool *ok = nullptr, int base = 10) const;
-    float toFloat(bool *ok = nullptr) const;
-    double toDouble(bool *ok = nullptr) const;
+    int to_int(bool *ok = nullptr, int base = 10) const;
+    unsigned int to_u_int(bool *ok = nullptr, int base = 10) const;
+    float to_float(bool *ok = nullptr) const;
+    double to_double(bool *ok = nullptr) const;
 
     static String number(int n, int base = 10);
     static String number(int64_t n);
     static String number(size_t n);
     static String number(double n, int prec = 6);
 
-    inline size_t hash() const { return std::hash<std::u16string>{}(constStr()); }
+    inline size_t hash() const { return std::hash<std::u16string>{}(const_str()); }
 
 private:
     struct Mutator;
-    const std::u16string &constStr() const;
-    Mutator mutStr(bool do_detach = true);
+    const std::u16string &const_str() const;
+    Mutator mut_str(bool do_detach = true);
     void detach();
-    void doArgs(std::u16string &out, const std::vector<std::u16string_view> &args) const;
+    void do_args(std::u16string &out, const std::vector<std::u16string_view> &args) const;
 
     std::shared_ptr<std::u16string> data_;
 
@@ -452,7 +455,7 @@ public:
 
     StringList &append(const StringList &l);
 
-    size_t indexOf(const String &s) const { return muse::indexOf(*this, s); }
+    size_t index_of(const String &s) const { return muse::index_of(*this, s); }
 
     bool contains(const String &s) const { return muse::contains(*this, s); }
 
@@ -462,10 +465,10 @@ public:
     void insert(size_t idx, const String &str);
     void insert(const_iterator it, const String &str);
     void replace(size_t idx, const String &str);
-    bool removeAll(const String &str);
-    void removeAt(size_t i);
+    bool remove_all(const String &str);
+    void remove_at(size_t i);
 
-    std::vector<std::string> toStdStringList() const;
+    std::vector<std::string> to_std_string_list() const;
 };
 
 // ============================
@@ -513,10 +516,10 @@ public:
     bool empty() const;
     AsciiChar at(size_t i) const;
     bool contains(char ch) const;
-    size_t indexOf(char ch) const;
+    size_t index_of(char ch) const;
 
-    int toInt(bool *ok = nullptr, int base = 10) const;
-    double toDouble(bool *ok = nullptr) const;
+    int to_int(bool *ok = nullptr, int base = 10) const;
+    double to_double(bool *ok = nullptr) const;
 
 private:
     size_t size_ = 0;
@@ -556,7 +559,7 @@ struct std::hash<muse::String> {
 };
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::String &str) {
-    s << str.toUtf8().constChar();
+    s << str.to_utf8().const_char();
     return s;
 }
 
@@ -573,7 +576,7 @@ inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::Asc
 }
 
 #ifndef muPrintable
-#define muPrintable(string) string.toUtf8().constChar()
+#define muPrintable(string) string.to_utf8().const_char()
 #endif
 
 #endif // MUSE_GLOBAL_STRING_H

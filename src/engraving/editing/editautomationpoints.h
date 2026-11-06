@@ -41,11 +41,11 @@ public:
     EditAutomationPoints(Score *score, ScoreAutomationController *controller, const AutomationCurveKey &key,
                          const AutomationPointEdits &edits);
 
-    UNDO_TYPE(CommandType::EditAutomationPoints)
+    UNDO_TYPE(CommandType::EDIT_AUTOMATION_POINTS)
     UNDO_NAME("EditAutomationPoints")
     UNDO_CHANGED_OBJECTS({score_})
 
-    std::optional<ChangedRange> changedRange() const override;
+    std::optional<ChangedRange> changed_range() const override;
 
 private:
     void flip() override;
@@ -53,7 +53,7 @@ private:
     Score *score_ = nullptr;
     ScoreAutomationController *controller_ = nullptr;
     AutomationCurveKey key_;
-    std::map<utick_t, std::optional<AutomationPoint>> pointStates_; // tick -> point to write next, or nullopt to erase
-    std::optional<ChangedRange> changedRange_;
+    std::map<utick_t, std::optional<AutomationPoint>> point_states_; // tick -> point to write next, or nullopt to erase
+    std::optional<ChangedRange> changed_range_;
 };
 } // namespace mu::engraving

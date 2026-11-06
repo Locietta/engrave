@@ -42,12 +42,12 @@ public:
 
 protected:
 
-    bool doOpen(OpenMode m) override;
-    ByteArray doReadAll() override;
-    size_t dataSize() const override;
-    const uint8_t *rawData() const override;
-    bool resizeData(size_t size) override;
-    size_t writeData(const uint8_t *data, size_t len) override;
+    bool do_open(OpenMode m) override;
+    ByteArray do_read_all() override;
+    size_t data_size() const override;
+    const uint8_t *raw_data() const override;
+    bool resize_data(size_t size) override;
+    size_t write_data(const uint8_t *data, size_t len) override;
 
 private:
 

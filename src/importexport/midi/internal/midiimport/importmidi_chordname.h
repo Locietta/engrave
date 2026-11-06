@@ -29,8 +29,8 @@ namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiChordName {
-void findChordNames(const std::multimap<int, MTrack> &tracks);
-void setChordNames(std::vector<MTrack> &tracks);
+void find_chord_names(const std::multimap<int, MTrack> &tracks);
+void set_chord_names(std::vector<MTrack> &tracks);
 } // namespace MidiChordName
 } // namespace mu::iex::midi
 

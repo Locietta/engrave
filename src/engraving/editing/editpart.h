@@ -35,15 +35,15 @@ class InsertPart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertPart)
 
     Part *part_ = nullptr;
-    size_t targetPartIdx_ = 0;
+    size_t target_part_idx_ = 0;
 
 public:
-    InsertPart(Part *p, size_t targetPartIdx);
+    InsertPart(Part *p, size_t target_part_idx);
     void undo() override;
     void redo() override;
     void cleanup(bool) override;
 
-    UNDO_TYPE(CommandType::InsertPart)
+    UNDO_TYPE(CommandType::INSERT_PART)
     UNDO_NAME("InsertPart")
     UNDO_CHANGED_OBJECTS({part_})
 };
@@ -52,15 +52,15 @@ class RemovePart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemovePart)
 
     Part *part_ = nullptr;
-    size_t partIdx_ = muse::nidx;
+    size_t part_idx_ = muse::nidx;
 
 public:
-    RemovePart(Part *, size_t partIdx);
+    RemovePart(Part *, size_t part_idx);
     void undo() override;
     void redo() override;
     void cleanup(bool) override;
 
-    UNDO_TYPE(CommandType::RemovePart)
+    UNDO_TYPE(CommandType::REMOVE_PART)
     UNDO_NAME("RemovePart")
     UNDO_CHANGED_OBJECTS({part_})
 };
@@ -76,7 +76,7 @@ public:
     void undo() override;
     void redo() override;
 
-    UNDO_TYPE(CommandType::SetSoloist)
+    UNDO_TYPE(CommandType::SET_SOLOIST)
     UNDO_NAME("SetSoloist")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -93,7 +93,7 @@ public:
     ChangePart(Part *, Instrument *);
     void cleanup(bool) override;
 
-    UNDO_TYPE(CommandType::ChangePart)
+    UNDO_TYPE(CommandType::CHANGE_PART)
     UNDO_NAME("ChangePart")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -103,14 +103,14 @@ class ChangeInstrumentLong : public UndoableCommand {
 
     Part *part = nullptr;
     Fraction tick;
-    String longName;
+    String long_name;
 
     void flip() override;
 
 public:
     ChangeInstrumentLong(const Fraction &, Part *, const String &);
 
-    UNDO_TYPE(CommandType::ChangeInstrumentLong)
+    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT_LONG)
     UNDO_NAME("ChangeInstrumentLong")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -120,14 +120,14 @@ class ChangeInstrumentShort : public UndoableCommand {
 
     Part *part = nullptr;
     Fraction tick;
-    String shortName;
+    String short_name;
 
     void flip() override;
 
 public:
     ChangeInstrumentShort(const Fraction &, Part *, const String &);
 
-    UNDO_TYPE(CommandType::ChangeInstrumentShort)
+    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT_SHORT)
     UNDO_NAME("ChangeInstrumentShort")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -137,16 +137,16 @@ class ChangeInstrumentGroupOptions : public UndoableCommand {
 
     Part *part = nullptr;
     Fraction tick;
-    bool useCustom;
-    String longName;
-    String shortName;
+    bool use_custom;
+    String long_name;
+    String short_name;
 
     void flip() override;
 
 public:
     ChangeInstrumentGroupOptions(const Fraction &, Part *, bool, const String &, const String &);
 
-    UNDO_TYPE(CommandType::ChangeInstrumentGroupOptions)
+    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT_GROUP_OPTIONS)
     UNDO_NAME("ChangeInstrumentGroupOptions")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -163,7 +163,7 @@ class ChangeInstrumentNumber : public UndoableCommand {
 public:
     ChangeInstrumentNumber(const Fraction &, Part *, int v);
 
-    UNDO_TYPE(CommandType::ChangeInstrumentNumber)
+    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT_NUMBER)
     UNDO_NAME("ChangeInstrumentNumber")
     UNDO_CHANGED_OBJECTS({part})
 };
@@ -180,19 +180,20 @@ class ChangeDrumset : public UndoableCommand {
 public:
     ChangeDrumset(Instrument *i, const Drumset &d, Part *p) : instrument(i), drumset(d), part(p) {}
 
-    UNDO_TYPE(CommandType::ChangeDrumset)
+    UNDO_TYPE(CommandType::CHANGE_DRUMSET)
     UNDO_NAME("ChangeDrumset")
 };
 
 class ChangeStringData : public UndoableCommand {
     Instrument *instrument_ = nullptr;
-    StringTunings *stringTunings_ = nullptr;
-    StringData stringData_;
+    StringTunings *string_tunings_ = nullptr;
+    StringData string_data_;
 
 public:
-    ChangeStringData(StringTunings *stringTunings, const StringData &stringData) : stringTunings_(stringTunings), stringData_(stringData) {}
+    ChangeStringData(StringTunings *string_tunings, const StringData &string_data)
+        : string_tunings_(string_tunings), string_data_(string_data) {}
 
-    ChangeStringData(Instrument *instrument, const StringData &stringData) : instrument_(instrument), stringData_(stringData) {}
+    ChangeStringData(Instrument *instrument, const StringData &string_data) : instrument_(instrument), string_data_(string_data) {}
 
     void flip() override;
     UNDO_NAME("ChangeStringData")
@@ -235,42 +236,43 @@ enum class StaffTypes : signed char;
 
 class EditPart {
 public:
-    static void replacePartInstrument(Score *score, Part *part, const Instrument &newInstrument, const StaffType *newStaffType = nullptr);
+    static void replace_part_instrument(Score *score, Part *part, const Instrument &new_instrument,
+                                        const StaffType *new_staff_type = nullptr);
 
-    static bool replaceInstrumentAtTick(Score *score, Part *part, const Fraction &tick, const Instrument &newInstrument);
+    static bool replace_instrument_at_tick(Score *score, Part *part, const Fraction &tick, const Instrument &new_instrument);
 
-    static void setPartVisible(Score *score, Part *part, bool visible);
-    static void setStaffVisible(Score *score, Staff *staff, bool visible);
-    static void setPartSharpFlat(Score *score, Part *part, PreferSharpFlat sharpFlat);
-    static void setInstrumentName(Score *score, Part *part, const Fraction &tick, const String &name);
-    static void setInstrumentAbbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature);
-    static void setInstrumentGroupNameOptions(Score *score, Part *part, const Fraction &tick, bool useCustom, const String &longName,
-                                              const String &shortName);
-    static void setInstrumentCustomGroupAbbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature);
-    static void setStaffType(Score *score, Staff *staff, StaffTypes typeId);
+    static void set_part_visible(Score *score, Part *part, bool visible);
+    static void set_staff_visible(Score *score, Staff *staff, bool visible);
+    static void set_part_sharp_flat(Score *score, Part *part, PreferSharpFlat sharp_flat);
+    static void set_instrument_name(Score *score, Part *part, const Fraction &tick, const String &name);
+    static void set_instrument_abbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature);
+    static void set_instrument_group_name_options(Score *score, Part *part, const Fraction &tick, bool use_custom, const String &long_name,
+                                                  const String &short_name);
+    static void set_instrument_custom_group_abbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature);
+    static void set_staff_type(Score *score, Staff *staff, StaffTypes type_id);
 
-    static void removeParts(Score *score, const std::vector<Part *> &parts);
-    static void removeStaves(Score *score, const std::vector<Staff *> &staves);
-    static void moveParts(Score *score, const std::vector<Part *> &sourceParts, Part *destinationPart, bool insertAfter);
-    static void moveStaves(Score *score, const std::vector<Staff *> &sourceStaves, Staff *destinationStaff, bool insertAfter);
+    static void remove_parts(Score *score, const std::vector<Part *> &parts);
+    static void remove_staves(Score *score, const std::vector<Staff *> &staves);
+    static void move_parts(Score *score, const std::vector<Part *> &source_parts, Part *destination_part, bool insert_after);
+    static void move_staves(Score *score, const std::vector<Staff *> &source_staves, Staff *destination_staff, bool insert_after);
 
-    static void addSystemObjects(Score *score, const std::vector<Staff *> &staves);
-    static void removeSystemObjects(Score *score, const std::vector<Staff *> &staves);
-    static void moveSystemObjects(Score *score, Staff *sourceStaff, Staff *destinationStaff);
+    static void add_system_objects(Score *score, const std::vector<Staff *> &staves);
+    static void remove_system_objects(Score *score, const std::vector<Staff *> &staves);
+    static void move_system_objects(Score *score, Staff *source_staff, Staff *destination_staff);
 
-    static Staff *appendStaff(Score *score, Part *destinationPart);
-    static Staff *appendLinkedStaff(Score *score, Staff *sourceStaff, Part *destinationPart);
+    static Staff *append_staff(Score *score, Part *destination_part);
+    static Staff *append_linked_staff(Score *score, Staff *source_staff, Part *destination_part);
 
-    static bool setVoiceVisible(Score *score, Staff *staff, int voiceIndex, bool visible);
+    static bool set_voice_visible(Score *score, Staff *staff, int voice_index, bool visible);
 
-    static void replaceDrumset(Score *score, Part *part, const Fraction &tick, const Drumset &newDrumset);
+    static void replace_drumset(Score *score, Part *part, const Fraction &tick, const Drumset &new_drumset);
 
-    static void insertPart(Score *score, const InstrumentTemplate *templ, size_t index);
-    static void replacePart(Score *score, Part *oldPart, const InstrumentTemplate *templ);
+    static void insert_part(Score *score, const InstrumentTemplate *templ, size_t index);
+    static void replace_part(Score *score, Part *old_part, const InstrumentTemplate *templ);
 
-    static void setScoreOrder(Score *score, const ScoreOrder &order);
+    static void set_score_order(Score *score, const ScoreOrder &order);
 
 private:
-    static void doAppendStaff(Score *score, Staff *staff, Part *destinationPart, bool createRests = true);
+    static void do_append_staff(Score *score, Staff *staff, Part *destination_part, bool create_rests = true);
 };
 } // namespace mu::engraving

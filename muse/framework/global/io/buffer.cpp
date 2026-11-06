@@ -69,31 +69,31 @@ Buffer::Buffer(ByteArray &&ba) {
 
 const ByteArray &Buffer::data() const { return *ref_; }
 
-ByteArray Buffer::doReadAll() {
-    IF_ASSERT_FAILED(isOpenModeReadable()) { return ByteArray(); }
+ByteArray Buffer::do_read_all() {
+    IF_ASSERT_FAILED(is_open_mode_readable()) { return ByteArray(); }
 
     if (pos() != 0) {
-        return IODevice::doReadAll();
+        return IODevice::do_read_all();
     }
 
     seek(size());
     return data();
 }
 
-bool Buffer::doOpen(OpenMode) { return true; }
+bool Buffer::do_open(OpenMode) { return true; }
 
-size_t Buffer::dataSize() const { return ref_->size(); }
+size_t Buffer::data_size() const { return ref_->size(); }
 
-const uint8_t *Buffer::rawData() const { return ref_->constData(); }
+const uint8_t *Buffer::raw_data() const { return ref_->const_data(); }
 
-bool Buffer::resizeData(size_t size) {
-    if (activeWriteBudget && size > ref_->size() && !activeWriteBudget->charge(size - ref_->size())) return false;
+bool Buffer::resize_data(size_t size) {
+    if (active_write_budget && size > ref_->size() && !active_write_budget->charge(size - ref_->size())) return false;
     ref_->resize(size);
     return true;
 }
 
-size_t Buffer::writeData(const uint8_t *data, size_t len) {
-    if (activeWriteBudget && !activeWriteBudget->poll()) return 0;
+size_t Buffer::write_data(const uint8_t *data, size_t len) {
+    if (active_write_budget && !active_write_budget->poll()) return 0;
     std::memcpy(ref_->data() + pos(), data, len);
     return len;
 }

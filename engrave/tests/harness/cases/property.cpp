@@ -24,13 +24,13 @@ std::string expect_property(Document &document, const ElementId &id, std::string
     // The change reached every linked copy the engine propagates it to.
     const mu::engraving::Pid pid = api::pid_of(name);
     EngravingObject &target = element(document, id);
-    if (!target.isEngravingItem()) return {};
+    if (!target.is_engraving_item()) return {};
     const auto &item = static_cast<const mu::engraving::EngravingItem &>(target);
-    for (const EngravingObject *linked : target.linkListForPropertyPropagation()) {
-        if (linked == &target || !linked->isEngravingItem()) continue;
+    for (const EngravingObject *linked : target.link_list_for_property_propagation()) {
+        if (linked == &target || !linked->is_engraving_item()) continue;
         const auto &copy = static_cast<const mu::engraving::EngravingItem &>(*linked);
-        if (item.propertyPropagation(&copy, pid) == mu::engraving::PropertyPropagation::PROPAGATE &&
-            copy.getProperty(pid) != item.getProperty(pid)) {
+        if (item.property_propagation(&copy, pid) == mu::engraving::PropertyPropagation::PROPAGATE &&
+            copy.get_property(pid) != item.get_property(pid)) {
             return std::format("a linked copy kept its old {}", name);
         }
     }
@@ -40,7 +40,7 @@ std::string expect_property(Document &document, const ElementId &id, std::string
 std::string expect_default(Document &document, const ElementId &id, std::string_view name) {
     const mu::engraving::Pid pid = api::pid_of(name);
     const EngravingObject &target = element(document, id);
-    if (target.getProperty(pid) != target.propertyDefault(pid)) return std::format("{} is not back at its default", name);
+    if (target.get_property(pid) != target.property_default(pid)) return std::format("{} is not back at its default", name);
     return {};
 }
 
@@ -80,16 +80,16 @@ OpCase style_case(std::string name, std::string fixture, std::optional<std::size
             },
         .expect = [excerpt_index, style, value](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
             mu::engraving::Score *score = &master_of(document);
-            if (excerpt_index) score = master_of(document).excerpts()[*excerpt_index]->excerptScore();
-            const mu::engraving::Sid sid = mu::engraving::MStyle::styleIdx(muse::String::fromStdString(style));
-            if (api::to_value(mu::engraving::MStyle::valueType(sid), score->style().styleV(sid)) != value)
+            if (excerpt_index) score = master_of(document).excerpts()[*excerpt_index]->excerpt_score();
+            const mu::engraving::Sid sid = mu::engraving::MStyle::style_idx(muse::String::from_std_string(style));
+            if (api::to_value(mu::engraving::MStyle::value_type(sid), score->style().style_v(sid)) != value)
                 return style + " did not take the value";
             return {};
         },
     };
 }
 
-bool hidden(const EngravingObject &object) { return !object.getProperty(mu::engraving::Pid::VISIBLE).toBool(); }
+bool hidden(const EngravingObject &object) { return !object.get_property(mu::engraving::Pid::VISIBLE).to_bool(); }
 
 const bool registered = register_cases({
     property_case("SetProperty note color", "chordline_path.mscx", "Note", "color", Color{255, 0, 0}),

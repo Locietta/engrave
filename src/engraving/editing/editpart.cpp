@@ -48,17 +48,17 @@ using namespace mu::engraving;
 //   InsertPart
 //---------------------------------------------------------
 
-InsertPart::InsertPart(Part *p, size_t targetPartIdx) {
+InsertPart::InsertPart(Part *p, size_t target_part_idx) {
     part_ = p;
-    targetPartIdx_ = targetPartIdx;
+    target_part_idx_ = target_part_idx;
 }
 
-void InsertPart::undo() { part_->score()->removePart(part_); }
+void InsertPart::undo() { part_->score()->remove_part(part_); }
 
-void InsertPart::redo() { part_->score()->insertPart(part_, targetPartIdx_); }
+void InsertPart::redo() { part_->score()->insert_part(part_, target_part_idx_); }
 
-void InsertPart::cleanup(bool wasDone) {
-    if (!wasDone) {
+void InsertPart::cleanup(bool was_done) {
+    if (!was_done) {
         delete part_;
         part_ = nullptr;
     }
@@ -68,21 +68,21 @@ void InsertPart::cleanup(bool wasDone) {
 //   RemovePart
 //---------------------------------------------------------
 
-RemovePart::RemovePart(Part *p, size_t partIdx) {
+RemovePart::RemovePart(Part *p, size_t part_idx) {
     part_ = p;
-    partIdx_ = partIdx;
+    part_idx_ = part_idx;
 
-    if (partIdx_ == muse::nidx) {
-        partIdx_ = muse::indexOf(part_->score()->parts(), part_);
+    if (part_idx_ == muse::nidx) {
+        part_idx_ = muse::index_of(part_->score()->parts(), part_);
     }
 }
 
-void RemovePart::undo() { part_->score()->insertPart(part_, partIdx_); }
+void RemovePart::undo() { part_->score()->insert_part(part_, part_idx_); }
 
-void RemovePart::redo() { part_->score()->removePart(part_); }
+void RemovePart::redo() { part_->score()->remove_part(part_); }
 
-void RemovePart::cleanup(bool wasDone) {
-    if (wasDone) {
+void RemovePart::cleanup(bool was_done) {
+    if (was_done) {
         delete part_;
         part_ = nullptr;
     }
@@ -97,33 +97,33 @@ SetSoloist::SetSoloist(Part *p, bool b) {
     soloist = b;
 }
 
-void SetSoloist::undo() { part->setSoloist(!soloist); }
+void SetSoloist::undo() { part->set_soloist(!soloist); }
 
-void SetSoloist::redo() { part->setSoloist(soloist); }
+void SetSoloist::redo() { part->set_soloist(soloist); }
 
 //---------------------------------------------------------
 //   ChangePart
 //---------------------------------------------------------
 
-ChangePart::ChangePart(Part *_part, Instrument *i) {
+ChangePart::ChangePart(Part *input_part, Instrument *i) {
     instrument = i;
-    part = _part;
+    part = input_part;
 }
 
 void ChangePart::flip() {
     Instrument *oi = part->instrument(); //tick?
-    part->setInstrument(instrument);
+    part->set_instrument(instrument);
 
-    part->updateHarmonyChannels(false);
+    part->update_harmony_channels(false);
 
     Score *score = part->score();
-    score->masterScore()->rebuildMidiMapping();
-    score->setInstrumentsChanged(true);
+    score->master_score()->rebuild_midi_mapping();
+    score->set_instruments_changed(true);
 
     // check if notes need to be updated
     // true if changing into or away from TAB or from one TAB type to another
 
-    score->setLayoutAll();
+    score->set_layout_all();
 
     instrument = oi;
 }
@@ -137,61 +137,63 @@ void ChangePart::cleanup(bool) {
 //   ChangeInstrumentLong
 //---------------------------------------------------------
 
-ChangeInstrumentLong::ChangeInstrumentLong(const Fraction &_tick, Part *p, const String &t) : part(p), tick(_tick), longName(t) {}
+ChangeInstrumentLong::ChangeInstrumentLong(const Fraction &input_tick, Part *p, const String &t)
+    : part(p), tick(input_tick), long_name(t) {}
 
 void ChangeInstrumentLong::flip() {
-    String s = part->longName(tick);
-    part->setLongName(longName, tick);
-    longName = s;
-    part->score()->setLayoutAll();
+    String s = part->long_name(tick);
+    part->set_long_name(long_name, tick);
+    long_name = s;
+    part->score()->set_layout_all();
 }
 
 //---------------------------------------------------------
 //   ChangeInstrumentShort
 //---------------------------------------------------------
 
-ChangeInstrumentShort::ChangeInstrumentShort(const Fraction &_tick, Part *p, const String &t) : part(p), tick(_tick), shortName(t) {}
+ChangeInstrumentShort::ChangeInstrumentShort(const Fraction &input_tick, Part *p, const String &t)
+    : part(p), tick(input_tick), short_name(t) {}
 
 void ChangeInstrumentShort::flip() {
-    String s = part->shortName(tick);
-    part->setShortName(shortName, tick);
-    shortName = s;
-    part->score()->setLayoutAll();
+    String s = part->short_name(tick);
+    part->set_short_name(short_name, tick);
+    short_name = s;
+    part->score()->set_layout_all();
 }
 
 //---------------------------------------------------------
 //   ChangeInstrumentLong
 //---------------------------------------------------------
 
-ChangeInstrumentGroupOptions::ChangeInstrumentGroupOptions(const Fraction &_tick, Part *p, bool useCustom, const String &longName,
-                                                           const String &shortName)
-    : part(p), tick(_tick), useCustom(useCustom), longName(longName), shortName(shortName) {}
+ChangeInstrumentGroupOptions::ChangeInstrumentGroupOptions(const Fraction &input_tick, Part *p, bool use_custom, const String &long_name,
+                                                           const String &short_name)
+    : part(p), tick(input_tick), use_custom(use_custom), long_name(long_name), short_name(short_name) {}
 
 void ChangeInstrumentGroupOptions::flip() {
-    InstrumentLabel &label = part->instrument(tick)->instrumentLabel();
+    InstrumentLabel &label = part->instrument(tick)->instrument_label();
 
-    bool curUseCustom = label.useCustomGroupName();
-    const String &curLong = label.customNameLongGroup();
-    const String &curShort = label.customNameShortGroup();
+    bool cur_use_custom = label.use_custom_group_name();
+    const String &cur_long = label.custom_name_long_group();
+    const String &cur_short = label.custom_name_short_group();
 
-    label.setUseCustomGroupName(useCustom);
-    label.setCustomNameLongGroup(longName);
-    label.setCustomNameShortGroup(shortName);
+    label.set_use_custom_group_name(use_custom);
+    label.set_custom_name_long_group(long_name);
+    label.set_custom_name_short_group(short_name);
 
-    useCustom = curUseCustom;
-    longName = curLong;
-    shortName = curShort;
+    use_custom = cur_use_custom;
+    long_name = cur_long;
+    short_name = cur_short;
 
-    part->score()->setLayoutAll();
+    part->score()->set_layout_all();
 }
 
-ChangeInstrumentNumber::ChangeInstrumentNumber(const Fraction &_tick, Part *p, int v) : part(p), tick(_tick), number(v) {}
+ChangeInstrumentNumber::ChangeInstrumentNumber(const Fraction &input_tick, Part *p, int v) : part(p), tick(input_tick), number(v) {}
 
 void ChangeInstrumentNumber::flip() {
     int v = part->number(tick);
-    part->setNumber(number, tick);
+    part->set_number(number, tick);
     number = v;
-    part->score()->setLayoutAll();
+    part->score()->set_layout_all();
 }
 
 //---------------------------------------------------------
@@ -200,11 +202,11 @@ void ChangeInstrumentNumber::flip() {
 
 void ChangeDrumset::flip() {
     Drumset d = instrument->drumset() ? *instrument->drumset() : Drumset();
-    instrument->setDrumset(&drumset);
+    instrument->set_drumset(&drumset);
     drumset = d;
 
     if (part->staves().size() > 0) {
-        part->score()->setLayout(Fraction(0, 1), part->score()->endTick(), part->staves().front()->idx(), part->staves().back()->idx());
+        part->score()->set_layout(Fraction(0, 1), part->score()->end_tick(), part->staves().front()->idx(), part->staves().back()->idx());
     }
 }
 
@@ -213,17 +215,17 @@ void ChangeDrumset::flip() {
 //---------------------------------------------------------
 
 void ChangeStringData::flip() {
-    const StringData *stringData = stringTunings_ ? stringTunings_->stringData() : instrument_->stringData();
-    int frets = stringData->frets();
-    std::vector<instrString> stringList = stringData->stringList();
+    const StringData *string_data = string_tunings_ ? string_tunings_->string_data() : instrument_->string_data();
+    int frets = string_data->frets();
+    std::vector<InstrString> string_list = string_data->string_list();
 
-    if (stringTunings_) {
-        stringTunings_->setStringData(stringData_);
+    if (string_tunings_) {
+        string_tunings_->set_string_data(string_data_);
     } else {
-        instrument_->setStringData(stringData_);
+        instrument_->set_string_data(string_data_);
     }
 
-    stringData_.set(StringData(frets, stringList));
+    string_data_.set(StringData(frets, string_list));
 }
 
 //---------------------------------------------------------
@@ -236,9 +238,9 @@ void ChangePatch::flip() {
     op.bank = channel->bank();
     op.synti = channel->synti();
 
-    channel->setProgram(patch.prog);
-    channel->setBank(patch.bank);
-    channel->setSynti(patch.synti);
+    channel->set_program(patch.prog);
+    channel->set_bank(patch.bank);
+    channel->set_synti(patch.synti);
 
     patch = op;
 
@@ -266,7 +268,7 @@ void ChangePatch::flip() {
     //    event.setController(CTRL_PROGRAM);
     //    event.setValue(channel->program());
     //
-    score->setInstrumentsChanged(true);
+    score->set_instruments_changed(true);
     //
     //    MScore::seq->sendEvent(event);
 }
@@ -276,9 +278,9 @@ void ChangePatch::flip() {
 //---------------------------------------------------------
 
 void SetUserBankController::flip() {
-    bool oldVal = channel->userBankController();
-    channel->setUserBankController(val);
-    val = oldVal;
+    bool old_val = channel->user_bank_controller();
+    channel->set_user_bank_controller(val);
+    val = old_val;
 }
 
 //---------------------------------------------------------
@@ -286,101 +288,101 @@ void SetUserBankController::flip() {
 //   Helper function to find InstrumentChange element at a given tick
 //---------------------------------------------------------
 
-static InstrumentChange *findInstrumentChange(Score *score, const Part *part, const Fraction &tick) {
-    const Segment *segment = score->tick2segment(tick, true, SegmentType::ChordRest);
+static InstrumentChange *find_instrument_change(Score *score, const Part *part, const Fraction &tick) {
+    const Segment *segment = score->tick2segment(tick, true, SegmentType::CHORD_REST);
     if (!segment) {
         return nullptr;
     }
 
-    const TrackRange trackRange = part->trackRange();
-    EngravingItem *item = segment->findAnnotation(ElementType::INSTRUMENT_CHANGE, trackRange.startTrack, trackRange.endTrack - 1);
-    return item ? toInstrumentChange(item) : nullptr;
+    const TrackRange track_range = part->track_range();
+    EngravingItem *item = segment->find_annotation(ElementType::INSTRUMENT_CHANGE, track_range.start_track, track_range.end_track - 1);
+    return item ? to_instrument_change(item) : nullptr;
 }
 
-void EditPart::replacePartInstrument(Score *score, Part *part, const Instrument &newInstrument, const StaffType *newStaffType) {
+void EditPart::replace_part_instrument(Score *score, Part *part, const Instrument &new_instrument, const StaffType *new_staff_type) {
     if (!score || !part) {
         return;
     }
 
-    score->undo(new ChangePart(part, new Instrument(newInstrument)));
+    score->undo(new ChangePart(part, new Instrument(new_instrument)));
 
     // Update clefs and staff type for all staves in the part
-    for (staff_idx_t staffIdx = 0; staffIdx < part->nstaves(); ++staffIdx) {
-        Staff *staff = part->staves().at(staffIdx);
+    for (staff_idx_t staff_idx = 0; staff_idx < part->nstaves(); ++staff_idx) {
+        Staff *staff = part->staves().at(staff_idx);
         if (!staff) {
             continue;
         }
 
         // Get current staff properties
         bool visible = staff->visible();
-        ClefTypeList currentClefType = staff->defaultClefType();
-        Spatium userDist = staff->userDist();
+        ClefTypeList current_clef_type = staff->default_clef_type();
+        Spatium user_dist = staff->user_dist();
         bool cutaway = staff->cutaway();
-        bool hideSystemBarLine = staff->hideSystemBarLine();
-        AutoOnOff mergeMatchingRests = staff->mergeMatchingRests();
-        bool reflectTransposition = staff->reflectTranspositionInLinkedTab();
+        bool hide_system_bar_line = staff->hide_system_bar_line();
+        AutoOnOff merge_matching_rests = staff->merge_matching_rests();
+        bool reflect_transposition = staff->reflect_transposition_in_linked_tab();
 
         // Get new clef type from the new instrument
-        ClefTypeList newClefType = newInstrument.clefType(staffIdx);
+        ClefTypeList new_clef_type = new_instrument.clef_type(staff_idx);
 
         // Only update staff if clef type changes
-        if (currentClefType != newClefType) {
-            score->undo(new ChangeStaff(staff, visible, newClefType, userDist, cutaway, hideSystemBarLine, mergeMatchingRests,
-                                        reflectTransposition));
+        if (current_clef_type != new_clef_type) {
+            score->undo(new ChangeStaff(staff, visible, new_clef_type, user_dist, cutaway, hide_system_bar_line, merge_matching_rests,
+                                        reflect_transposition));
         }
 
         // Apply new staff type if provided
-        if (newStaffType) {
-            score->undo(new ChangeStaffType(staff, *newStaffType));
+        if (new_staff_type) {
+            score->undo(new ChangeStaffType(staff, *new_staff_type));
         }
     }
 }
 
-bool EditPart::replaceInstrumentAtTick(Score *score, Part *part, const Fraction &tick, const Instrument &newInstrument) {
+bool EditPart::replace_instrument_at_tick(Score *score, Part *part, const Fraction &tick, const Instrument &new_instrument) {
     if (!score || !part) {
         return false;
     }
 
-    InstrumentChange *instrumentChange = findInstrumentChange(score, part, tick);
-    if (!instrumentChange) {
+    InstrumentChange *instrument_change = find_instrument_change(score, part, tick);
+    if (!instrument_change) {
         return false;
     }
 
-    instrumentChange->setInit(true);
-    instrumentChange->setupInstrument(&newInstrument);
+    instrument_change->set_init(true);
+    instrument_change->setup_instrument(&new_instrument);
     return true;
 }
 
-void EditPart::setPartVisible(Score *score, Part *part, bool visible) {
+void EditPart::set_part_visible(Score *score, Part *part, bool visible) {
     if (!score || !part) {
         return;
     }
 
-    part->undoChangeProperty(Pid::VISIBLE, visible);
+    part->undo_change_property(Pid::VISIBLE, visible);
 }
 
-void EditPart::setStaffVisible(Score *score, Staff *staff, bool visible) {
+void EditPart::set_staff_visible(Score *score, Staff *staff, bool visible) {
     if (!score || !staff) {
         return;
     }
 
-    staff->undoChangeProperty(Pid::VISIBLE, visible);
+    staff->undo_change_property(Pid::VISIBLE, visible);
 }
 
-void EditPart::setPartSharpFlat(Score *score, Part *part, PreferSharpFlat sharpFlat) {
+void EditPart::set_part_sharp_flat(Score *score, Part *part, PreferSharpFlat sharp_flat) {
     if (!score || !part) {
         return;
     }
 
-    Interval oldTransposition = part->staff(0)->transpose(Fraction(0, 1));
+    Interval old_transposition = part->staff(0)->transpose(Fraction(0, 1));
 
-    part->undoChangeProperty(Pid::PREFER_SHARP_FLAT, int(sharpFlat));
+    part->undo_change_property(Pid::PREFER_SHARP_FLAT, int(sharp_flat));
 
-    Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
-    Transpose::transpositionChanged(tx, score, part, oldTransposition);
+    Transaction &tx = score->transaction_manager()->current_or_dummy_transaction();
+    Transpose::transposition_changed(tx, score, part, old_transposition);
 }
 
-void EditPart::setInstrumentName(Score *score, Part *part, const Fraction &tick, const String &name) {
+void EditPart::set_instrument_name(Score *score, Part *part, const Fraction &tick, const String &name) {
     if (!score || !part) {
         return;
     }
@@ -388,7 +390,7 @@ void EditPart::setInstrumentName(Score *score, Part *part, const Fraction &tick,
     score->undo(new ChangeInstrumentLong(tick, part, name));
 }
 
-void EditPart::setInstrumentAbbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature) {
+void EditPart::set_instrument_abbreviature(Score *score, Part *part, const Fraction &tick, const String &abbreviature) {
     if (!score || !part) {
         return;
     }
@@ -396,284 +398,284 @@ void EditPart::setInstrumentAbbreviature(Score *score, Part *part, const Fractio
     score->undo(new ChangeInstrumentShort(tick, part, abbreviature));
 }
 
-void EditPart::setInstrumentGroupNameOptions(Score *score, Part *part, const Fraction &tick, bool useCustom, const String &longName,
-                                             const String &shortName) {
+void EditPart::set_instrument_group_name_options(Score *score, Part *part, const Fraction &tick, bool use_custom, const String &long_name,
+                                                 const String &short_name) {
     if (!score || !part) {
         return;
     }
 
-    score->undo(new ChangeInstrumentGroupOptions(tick, part, useCustom, longName, shortName));
+    score->undo(new ChangeInstrumentGroupOptions(tick, part, use_custom, long_name, short_name));
 }
 
-void EditPart::setStaffType(Score *score, Staff *staff, StaffTypes typeId) {
+void EditPart::set_staff_type(Score *score, Staff *staff, StaffTypes type_id) {
     if (!score || !staff) {
         return;
     }
 
-    const StaffType *staffType = StaffType::preset(typeId);
-    if (!staffType) {
+    const StaffType *staff_type = StaffType::preset(type_id);
+    if (!staff_type) {
         return;
     }
 
-    score->undo(new ChangeStaffType(staff, *staffType));
+    score->undo(new ChangeStaffType(staff, *staff_type));
 }
 
-void EditPart::removeParts(Score *score, const std::vector<Part *> &parts) {
+void EditPart::remove_parts(Score *score, const std::vector<Part *> &parts) {
     if (!score || parts.empty()) {
         return;
     }
 
     for (Part *part : parts) {
-        score->cmdRemovePart(part);
+        score->cmd_remove_part(part);
     }
 
-    score->setBracketsAndBarlines();
+    score->set_brackets_and_barlines();
 }
 
-void EditPart::removeStaves(Score *score, const std::vector<Staff *> &staves) {
+void EditPart::remove_staves(Score *score, const std::vector<Staff *> &staves) {
     if (!score || staves.empty()) {
         return;
     }
 
     for (Staff *staff : staves) {
-        score->cmdRemoveStaff(staff->idx());
+        score->cmd_remove_staff(staff->idx());
     }
 
-    score->setBracketsAndBarlines();
+    score->set_brackets_and_barlines();
 }
 
-void EditPart::moveParts(Score *score, const std::vector<Part *> &sourceParts, Part *destinationPart, bool insertAfter) {
-    if (!score || sourceParts.empty() || !destinationPart) {
+void EditPart::move_parts(Score *score, const std::vector<Part *> &source_parts, Part *destination_part, bool insert_after) {
+    if (!score || source_parts.empty() || !destination_part) {
         return;
     }
 
     // Build new part order: remove source parts, then insert at destination
-    std::vector<Part *> allParts(score->parts().begin(), score->parts().end());
+    std::vector<Part *> all_parts(score->parts().begin(), score->parts().end());
 
     // Remove source parts from the list
-    for (Part *srcPart : sourceParts) {
-        allParts.erase(std::remove(allParts.begin(), allParts.end(), srcPart), allParts.end());
+    for (Part *src_part : source_parts) {
+        all_parts.erase(std::remove(all_parts.begin(), all_parts.end(), src_part), all_parts.end());
     }
 
     // Find destination index
-    auto dstIt = std::find(allParts.begin(), allParts.end(), destinationPart);
-    if (dstIt == allParts.end()) {
+    auto dst_it = std::find(all_parts.begin(), all_parts.end(), destination_part);
+    if (dst_it == all_parts.end()) {
         return;
     }
 
-    size_t dstIndex = std::distance(allParts.begin(), dstIt);
-    if (insertAfter) {
-        dstIndex++;
+    size_t dst_index = std::distance(all_parts.begin(), dst_it);
+    if (insert_after) {
+        dst_index++;
     }
 
     // Insert source parts at destination
-    for (size_t i = 0; i < sourceParts.size(); ++i) {
-        allParts.insert(allParts.begin() + dstIndex + i, sourceParts[i]);
+    for (size_t i = 0; i < source_parts.size(); ++i) {
+        all_parts.insert(all_parts.begin() + dst_index + i, source_parts[i]);
     }
 
     // Build staff index mapping from the new part order
-    std::vector<staff_idx_t> staffMapping;
-    staffMapping.reserve(score->nstaves());
-    for (Part *part : allParts) {
+    std::vector<staff_idx_t> staff_mapping;
+    staff_mapping.reserve(score->nstaves());
+    for (Part *part : all_parts) {
         for (Staff *staff : part->staves()) {
-            staffMapping.push_back(staff->idx());
+            staff_mapping.push_back(staff->idx());
         }
     }
 
-    score->undo(new SortStaves(score, staffMapping));
-    score->setBracketsAndBarlines();
+    score->undo(new SortStaves(score, staff_mapping));
+    score->set_brackets_and_barlines();
 }
 
-void EditPart::moveStaves(Score *score, const std::vector<Staff *> &sourceStaves, Staff *destinationStaff, bool insertAfter) {
-    if (!score || sourceStaves.empty() || !destinationStaff) {
+void EditPart::move_staves(Score *score, const std::vector<Staff *> &source_staves, Staff *destination_staff, bool insert_after) {
+    if (!score || source_staves.empty() || !destination_staff) {
         return;
     }
 
     // Build new staff order: remove source staves, then insert at destination
-    std::vector<Staff *> allStaves(score->staves().begin(), score->staves().end());
+    std::vector<Staff *> all_staves(score->staves().begin(), score->staves().end());
 
     // Remove source staves from the list
-    for (Staff *srcStaff : sourceStaves) {
-        allStaves.erase(std::remove(allStaves.begin(), allStaves.end(), srcStaff), allStaves.end());
+    for (Staff *src_staff : source_staves) {
+        all_staves.erase(std::remove(all_staves.begin(), all_staves.end(), src_staff), all_staves.end());
     }
 
     // Find destination index
-    auto dstIt = std::find(allStaves.begin(), allStaves.end(), destinationStaff);
-    if (dstIt == allStaves.end()) {
+    auto dst_it = std::find(all_staves.begin(), all_staves.end(), destination_staff);
+    if (dst_it == all_staves.end()) {
         return;
     }
 
-    size_t dstIndex = std::distance(allStaves.begin(), dstIt);
-    if (insertAfter) {
-        dstIndex++;
+    size_t dst_index = std::distance(all_staves.begin(), dst_it);
+    if (insert_after) {
+        dst_index++;
     }
 
     // Insert source staves at destination
-    for (size_t i = 0; i < sourceStaves.size(); ++i) {
-        allStaves.insert(allStaves.begin() + dstIndex + i, sourceStaves[i]);
+    for (size_t i = 0; i < source_staves.size(); ++i) {
+        all_staves.insert(all_staves.begin() + dst_index + i, source_staves[i]);
     }
 
     // Build index mapping
-    std::vector<staff_idx_t> sortedIndexes;
-    sortedIndexes.reserve(allStaves.size());
-    for (const Staff *staff : allStaves) {
-        sortedIndexes.push_back(staff->idx());
+    std::vector<staff_idx_t> sorted_indexes;
+    sorted_indexes.reserve(all_staves.size());
+    for (const Staff *staff : all_staves) {
+        sorted_indexes.push_back(staff->idx());
     }
 
-    score->undo(new SortStaves(score, sortedIndexes));
-    score->setBracketsAndBarlines();
+    score->undo(new SortStaves(score, sorted_indexes));
+    score->set_brackets_and_barlines();
 }
 
-void EditPart::addSystemObjects(Score *score, const std::vector<Staff *> &staves) {
+void EditPart::add_system_objects(Score *score, const std::vector<Staff *> &staves) {
     if (!score || staves.empty()) {
         return;
     }
 
-    std::vector<EngravingItem *> topSystemObjects = collectSystemObjects(score);
+    std::vector<EngravingItem *> top_system_objects = collect_system_objects(score);
 
     for (Staff *staff : staves) {
-        if (staff->isSystemObjectStaff()) {
+        if (staff->is_system_object_staff()) {
             continue;
         }
 
         score->undo(new AddSystemObjectStaff(staff));
 
-        const staff_idx_t staffIdx = staff->idx();
-        for (EngravingItem *obj : topSystemObjects) {
-            if (obj->isTimeSig()) {
-                obj->triggerLayout();
+        const staff_idx_t staff_idx = staff->idx();
+        for (EngravingItem *obj : top_system_objects) {
+            if (obj->is_time_sig()) {
+                obj->trigger_layout();
                 continue;
             }
-            EngravingItem *copy = obj->linkedClone();
-            copy->setStaffIdx(staffIdx);
-            score->undoAddElement(copy, false /*addToLinkedStaves*/);
+            EngravingItem *copy = obj->linked_clone();
+            copy->set_staff_idx(staff_idx);
+            score->undo_add_element(copy, false /*addToLinkedStaves*/);
         }
     }
 }
 
-void EditPart::removeSystemObjects(Score *score, const std::vector<Staff *> &staves) {
+void EditPart::remove_system_objects(Score *score, const std::vector<Staff *> &staves) {
     if (!score || staves.empty()) {
         return;
     }
 
-    std::vector<EngravingItem *> systemObjects = collectSystemObjects(score, staves);
+    std::vector<EngravingItem *> system_objects = collect_system_objects(score, staves);
 
     for (Staff *staff : staves) {
-        if (staff->isSystemObjectStaff()) {
+        if (staff->is_system_object_staff()) {
             score->undo(new RemoveSystemObjectStaff(staff));
-            if (staff->hasSystemObjectsBelowBottomStaff()) {
-                score->undoChangeStyleVal(Sid::systemObjectsBelowBottomStaff, false);
+            if (staff->has_system_objects_below_bottom_staff()) {
+                score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
             }
         }
     }
 
-    for (EngravingItem *obj : systemObjects) {
-        if (obj->isTimeSig()) {
-            obj->triggerLayout();
+    for (EngravingItem *obj : system_objects) {
+        if (obj->is_time_sig()) {
+            obj->trigger_layout();
             continue;
         }
-        obj->undoUnlink();
-        score->undoRemoveElement(obj, false /*removeLinked*/);
+        obj->undo_unlink();
+        score->undo_remove_element(obj, false /*removeLinked*/);
     }
 }
 
-void EditPart::moveSystemObjects(Score *score, Staff *sourceStaff, Staff *destinationStaff) {
-    if (!score || !sourceStaff || !destinationStaff) {
+void EditPart::move_system_objects(Score *score, Staff *source_staff, Staff *destination_staff) {
+    if (!score || !source_staff || !destination_staff) {
         return;
     }
 
-    if (!sourceStaff->isSystemObjectStaff()) {
+    if (!source_staff->is_system_object_staff()) {
         return;
     }
 
-    const std::vector<EngravingItem *> systemObjects = collectSystemObjects(score, {sourceStaff, destinationStaff});
-    const staff_idx_t dstStaffIdx = destinationStaff->idx();
+    const std::vector<EngravingItem *> system_objects = collect_system_objects(score, {source_staff, destination_staff});
+    const staff_idx_t dst_staff_idx = destination_staff->idx();
 
-    score->undo(new RemoveSystemObjectStaff(sourceStaff));
-    if (!destinationStaff->isSystemObjectStaff() && dstStaffIdx != 0) {
-        score->undo(new AddSystemObjectStaff(destinationStaff));
+    score->undo(new RemoveSystemObjectStaff(source_staff));
+    if (!destination_staff->is_system_object_staff() && dst_staff_idx != 0) {
+        score->undo(new AddSystemObjectStaff(destination_staff));
     } else {
-        score->undoChangeStyleVal(Sid::systemObjectsBelowBottomStaff, false);
+        score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
     }
 
-    AutoOnOff showMeasNumOnSrcStaff = sourceStaff->getProperty(Pid::SHOW_MEASURE_NUMBERS).value<AutoOnOff>();
-    if (showMeasNumOnSrcStaff != AutoOnOff::AUTO) {
-        destinationStaff->undoChangeProperty(Pid::SHOW_MEASURE_NUMBERS, showMeasNumOnSrcStaff);
-        sourceStaff->undoResetProperty(Pid::SHOW_MEASURE_NUMBERS);
+    AutoOnOff show_meas_num_on_src_staff = source_staff->get_property(Pid::SHOW_MEASURE_NUMBERS).value<AutoOnOff>();
+    if (show_meas_num_on_src_staff != AutoOnOff::AUTO) {
+        destination_staff->undo_change_property(Pid::SHOW_MEASURE_NUMBERS, show_meas_num_on_src_staff);
+        source_staff->undo_reset_property(Pid::SHOW_MEASURE_NUMBERS);
     }
 
     // Remove items from destination first
-    for (EngravingItem *item : systemObjects) {
-        if (item->isTimeSig()) {
-            item->triggerLayout();
+    for (EngravingItem *item : system_objects) {
+        if (item->is_time_sig()) {
+            item->trigger_layout();
             continue;
         }
 
-        if (item->staff() == sourceStaff) {
+        if (item->staff() == source_staff) {
             continue;
         }
-        item->undoUnlink();
-        score->undoRemoveElement(item, false /*removeLinked*/);
+        item->undo_unlink();
+        score->undo_remove_element(item, false /*removeLinked*/);
     }
 
     // Move items from source to destination
-    for (EngravingItem *item : systemObjects) {
-        if (item->isTimeSig()) {
+    for (EngravingItem *item : system_objects) {
+        if (item->is_time_sig()) {
             continue;
         }
 
-        if (item->staff() == sourceStaff) {
-            item->undoChangeProperty(Pid::TRACK, staff2track(dstStaffIdx, item->voice()));
+        if (item->staff() == source_staff) {
+            item->undo_change_property(Pid::TRACK, staff2track(dst_staff_idx, item->voice()));
         }
     }
 }
 
-void EditPart::doAppendStaff(Score *score, Staff *staff, Part *destinationPart, bool createRests) {
-    if (!score || !staff || !destinationPart) {
+void EditPart::do_append_staff(Score *score, Staff *staff, Part *destination_part, bool create_rests) {
+    if (!score || !staff || !destination_part) {
         return;
     }
 
-    staff_idx_t staffLocalIndex = destinationPart->nstaves();
-    KeyList keyList = *destinationPart->staff(staffLocalIndex - 1)->keyList();
+    staff_idx_t staff_local_index = destination_part->nstaves();
+    KeyList key_list = *destination_part->staff(staff_local_index - 1)->key_list();
 
-    staff->setScore(score);
-    staff->setPart(destinationPart);
+    staff->set_score(score);
+    staff->set_part(destination_part);
 
-    score->undoInsertStaff(staff, staffLocalIndex, createRests);
+    score->undo_insert_staff(staff, staff_local_index, create_rests);
 
-    staff_idx_t staffGlobalIndex = staff->idx();
-    score->adjustKeySigs(staffGlobalIndex, staffGlobalIndex + 1, keyList);
+    staff_idx_t staff_global_index = staff->idx();
+    score->adjust_key_sigs(staff_global_index, staff_global_index + 1, key_list);
 
-    score->updateBracesAndBarlines(destinationPart, staffLocalIndex);
+    score->update_braces_and_barlines(destination_part, staff_local_index);
 
-    destinationPart->instrument()->setClefType(staffLocalIndex, staff->defaultClefType());
+    destination_part->instrument()->set_clef_type(staff_local_index, staff->default_clef_type());
 }
 
-Staff *EditPart::appendStaff(Score *score, Part *destinationPart) {
-    if (!score || !destinationPart) {
+Staff *EditPart::append_staff(Score *score, Part *destination_part) {
+    if (!score || !destination_part) {
         return nullptr;
     }
 
-    Staff *staff = Factory::createStaff(destinationPart);
-    doAppendStaff(score, staff, destinationPart);
+    Staff *staff = Factory::create_staff(destination_part);
+    do_append_staff(score, staff, destination_part);
     return staff;
 }
 
-Staff *EditPart::appendLinkedStaff(Score *score, Staff *sourceStaff, Part *destinationPart) {
-    if (!score || !sourceStaff || !destinationPart) {
+Staff *EditPart::append_linked_staff(Score *score, Staff *source_staff, Part *destination_part) {
+    if (!score || !source_staff || !destination_part) {
         return nullptr;
     }
 
-    Staff *staff = Factory::createStaff(destinationPart);
-    doAppendStaff(score, staff, destinationPart, false);
+    Staff *staff = Factory::create_staff(destination_part);
+    do_append_staff(score, staff, destination_part, false);
 
-    staff->setLinks(nullptr);
-    Excerpt::cloneStaff(sourceStaff, staff);
+    staff->set_links(nullptr);
+    Excerpt::clone_staff(source_staff, staff);
 
     return staff;
 }
 
-bool EditPart::setVoiceVisible(Score *score, Staff *staff, int voiceIndex, bool visible) {
+bool EditPart::set_voice_visible(Score *score, Staff *staff, int voice_index, bool visible) {
     if (!score || !staff) {
         return false;
     }
@@ -682,60 +684,60 @@ bool EditPart::setVoiceVisible(Score *score, Staff *staff, int voiceIndex, bool 
         return false;
     }
 
-    if (!visible && !staff->canDisableVoice()) {
+    if (!visible && !staff->can_disable_voice()) {
         return false;
     }
 
-    score->excerpt()->setVoiceVisible(staff, voiceIndex, visible);
+    score->excerpt()->set_voice_visible(staff, voice_index, visible);
     return true;
 }
 
-void EditPart::insertPart(Score *score, const InstrumentTemplate *templ, size_t index) {
+void EditPart::insert_part(Score *score, const InstrumentTemplate *templ, size_t index) {
     if (!score || !templ) {
         return;
     }
 
     Part *part = new Part(score);
-    part->initFromInstrTemplate(templ);
+    part->init_from_instr_template(templ);
 
-    for (staff_idx_t i = 0; i < templ->staffCount; ++i) {
-        Staff *staff = Factory::createStaff(part);
-        StaffType *stt = staff->staffType(Fraction(0, 1));
-        score->undoInsertStaff(staff, i);
+    for (staff_idx_t i = 0; i < templ->staff_count; ++i) {
+        Staff *staff = Factory::create_staff(part);
+        StaffType *stt = staff->staff_type(Fraction(0, 1));
+        score->undo_insert_staff(staff, i);
         staff->init(templ, stt, int(i));
     }
 
-    score->undoInsertPart(part, index);
-    score->masterScore()->rebuildMidiMapping();
+    score->undo_insert_part(part, index);
+    score->master_score()->rebuild_midi_mapping();
 }
 
-void EditPart::replacePart(Score *score, Part *oldPart, const InstrumentTemplate *templ) {
-    if (!score || !oldPart || !templ) {
+void EditPart::replace_part(Score *score, Part *old_part, const InstrumentTemplate *templ) {
+    if (!score || !old_part || !templ) {
         return;
     }
 
-    size_t partIndex = muse::indexOf(score->parts(), oldPart);
-    score->cmdRemovePart(oldPart);
-    insertPart(score, templ, partIndex);
+    size_t part_index = muse::index_of(score->parts(), old_part);
+    score->cmd_remove_part(old_part);
+    insert_part(score, templ, part_index);
 }
 
-void EditPart::replaceDrumset(Score *score, Part *part, const Fraction &tick, const Drumset &newDrumset) {
+void EditPart::replace_drumset(Score *score, Part *part, const Fraction &tick, const Drumset &new_drumset) {
     if (!score || !part) {
         return;
     }
 
     Instrument *instrument = part->instrument(tick);
     if (instrument) {
-        score->undo(new ChangeDrumset(instrument, newDrumset, part));
+        score->undo(new ChangeDrumset(instrument, new_drumset, part));
     }
 }
 
-void EditPart::setScoreOrder(Score *score, const ScoreOrder &order) {
+void EditPart::set_score_order(Score *score, const ScoreOrder &order) {
     if (!score) {
         return;
     }
 
     score->undo(new ChangeScoreOrder(score, order));
-    ScoreOrder mutableOrder = order;
-    mutableOrder.setBracketsAndBarlines(score);
+    ScoreOrder mutable_order = order;
+    mutable_order.set_brackets_and_barlines(score);
 }

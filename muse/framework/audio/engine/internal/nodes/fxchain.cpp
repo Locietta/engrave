@@ -29,37 +29,37 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void FxChain::setFxList(const std::vector<IFxProcessorPtr> &fxList) {
+void FxChain::set_fx_list(const std::vector<IFxProcessorPtr> &fx_list) {
     clear();
 
-    for (auto it = fxList.rbegin(); it != fxList.rend(); ++it) {
+    for (auto it = fx_list.rbegin(); it != fx_list.rend(); ++it) {
         FxNodePtr node = std::make_shared<FxNode>(*it);
-        doAdd(node);
+        do_add(node);
     }
 
     rebuild();
-    updateShouldProcessDuringSilence();
+    update_should_process_during_silence();
 
     if (!name().empty() && !nodes_.empty()) {
         LOGD() << name() << ": " << nodes_.front()->dump();
     }
 }
 
-void FxChain::setFxChainSpec(const AudioFxChain &fxChainSpec) {
-    if (fxChainSpec_ == fxChainSpec) {
+void FxChain::set_fx_chain_spec(const AudioFxChain &fx_chain_spec) {
+    if (fx_chain_spec_ == fx_chain_spec) {
         return;
     }
 
-    auto findFxNode = [this](const std::pair<AudioFxChainOrder, AudioFxParams> &params) -> FxNodePtr {
+    auto find_fx_node = [this](const std::pair<AudioFxChainOrder, AudioFxParams> &params) -> FxNodePtr {
         for (auto &node : nodes_) {
             FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
             IF_ASSERT_FAILED(fx) { continue; }
 
-            if (fx->params().chainOrder != params.first) {
+            if (fx->params().chain_order != params.first) {
                 continue;
             }
 
-            if (fx->params().resourceMeta == params.second.resourceMeta) {
+            if (fx->params().resource_meta == params.second.resource_meta) {
                 return fx;
             }
         }
@@ -67,27 +67,27 @@ void FxChain::setFxChainSpec(const AudioFxChain &fxChainSpec) {
         return nullptr;
     };
 
-    fxChainSpec_ = fxChainSpec;
-    for (auto it = fxChainSpec_.begin(); it != fxChainSpec_.end();) {
-        if (FxNodePtr fx = findFxNode(*it)) {
-            fx->setBypassed(!it->second.active);
+    fx_chain_spec_ = fx_chain_spec;
+    for (auto it = fx_chain_spec_.begin(); it != fx_chain_spec_.end();) {
+        if (FxNodePtr fx = find_fx_node(*it)) {
+            fx->set_bypassed(!it->second.active);
             ++it;
         } else {
-            it = fxChainSpec_.erase(it);
+            it = fx_chain_spec_.erase(it);
         }
     }
 
-    updateShouldProcessDuringSilence();
+    update_should_process_during_silence();
 }
 
-const AudioFxChain &FxChain::fxChainSpec() const { return fxChainSpec_; }
+const AudioFxChain &FxChain::fx_chain_spec() const { return fx_chain_spec_; }
 
-void FxChain::setPlayheadPosition(PlayheadPositionPtr playheadPosition) {
+void FxChain::set_playhead_position(PlayheadPositionPtr playhead_position) {
     for (auto &node : nodes_) {
         FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
         IF_ASSERT_FAILED(fx) { continue; }
 
-        fx->setPlayheadPosition(playheadPosition);
+        fx->set_playhead_position(playhead_position);
     }
 }
 
@@ -95,32 +95,32 @@ void FxChain::rebuild() {
     for (size_t i = 1; i < nodes_.size(); ++i) {
         IAudioNodePtr &prev = nodes_.at(i - 1);
         IAudioNodePtr &curr = nodes_.at(i);
-        curr->disconnectAll();
+        curr->disconnect_all();
         curr->connect(prev); // prev->input = curr
     }
 }
 
-void FxChain::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
+void FxChain::do_self_process(float *buffer, samples_t samples_per_channel) {
     if (!nodes_.empty()) {
-        nodes_.front()->process(buffer, samplesPerChannel);
+        nodes_.front()->process(buffer, samples_per_channel);
     }
 }
 
-void FxChain::updateShouldProcessDuringSilence() {
-    bool shouldProcessDuringSilence = false;
+void FxChain::update_should_process_during_silence() {
+    bool should_process_during_silence = false;
     for (const auto &node : nodes_) {
         FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
         IF_ASSERT_FAILED(fx) { continue; }
 
-        if (fx->shouldProcessDuringSilence()) {
-            shouldProcessDuringSilence = true;
+        if (fx->should_process_during_silence()) {
+            should_process_during_silence = true;
             break;
         }
     }
 
-    if (shouldProcessDuringSilence_ != shouldProcessDuringSilence) {
-        shouldProcessDuringSilence_ = shouldProcessDuringSilence;
+    if (should_process_during_silence_ != should_process_during_silence) {
+        should_process_during_silence_ = should_process_during_silence;
     }
 }
 
-bool FxChain::shouldProcessDuringSilence() const { return shouldProcessDuringSilence_; }
+bool FxChain::should_process_during_silence() const { return should_process_during_silence_; }

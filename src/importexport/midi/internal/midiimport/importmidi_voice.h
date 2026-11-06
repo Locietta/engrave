@@ -40,18 +40,19 @@ struct TupletData;
 } // namespace MidiTuplet
 
 namespace MidiVoice {
-size_t toIntVoiceCount(MidiOperations::VoiceCount value);
-int voiceLimit();
-bool separateVoices(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+size_t to_int_voice_count(MidiOperations::VoiceCount value);
+int voice_limit();
+bool separate_voices(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
 
-bool splitChordToVoice(std::multimap<ReducedFraction, MidiChord>::iterator &chordIt, const std::set<int> &notesToMove, int newVoice,
-                       std::multimap<ReducedFraction, MidiChord> &chords, std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets,
-                       std::multimap<ReducedFraction, std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator> &insertedTuplets,
-                       const ReducedFraction &maxChordLength, bool allowParallelTuplets = false);
+bool split_chord_to_voice(
+    std::multimap<ReducedFraction, MidiChord>::iterator &chord_it, const std::set<int> &notes_to_move, int new_voice,
+    std::multimap<ReducedFraction, MidiChord> &chords, std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets,
+    std::multimap<ReducedFraction, std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator> &inserted_tuplets,
+    const ReducedFraction &max_chord_length, bool allow_parallel_tuplets = false);
 
 #ifndef NDEBUG
 
-bool areVoicesSame(const std::multimap<ReducedFraction, MidiChord> &chords);
+bool are_voices_same(const std::multimap<ReducedFraction, MidiChord> &chords);
 
 #endif
 } // namespace MidiVoice

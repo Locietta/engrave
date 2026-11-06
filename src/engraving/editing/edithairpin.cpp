@@ -35,17 +35,17 @@
 
 using namespace mu::engraving;
 
-std::vector<Hairpin *> EditHairpin::addHairpins(Transaction &tx, Score *score, HairpinType type) {
+std::vector<Hairpin *> EditHairpin::add_hairpins(Transaction &tx, Score *score, HairpinType type) {
     std::vector<Hairpin *> hairpins;
 
     // add hairpin on each staff if possible
     const Selection &selection = score->selection();
-    if (selection.isRange() && selection.staffStart() != selection.staffEnd() - 1) {
-        for (staff_idx_t staffIdx = selection.staffStart(); staffIdx < selection.staffEnd(); ++staffIdx) {
-            ChordRest *cr1 = selection.firstChordRest(staffIdx * VOICES);
-            ChordRest *cr2 = selection.lastChordRest(staffIdx * VOICES);
-            Hairpin *h = cr1 ? addHairpin(tx, score, type, cr1, cr2) :
-                               addHairpin(tx, score, type, selection.tickStart(), selection.tickEnd(), staff2track(staffIdx));
+    if (selection.is_range() && selection.staff_start() != selection.staff_end() - 1) {
+        for (staff_idx_t staff_idx = selection.staff_start(); staff_idx < selection.staff_end(); ++staff_idx) {
+            ChordRest *cr1 = selection.first_chord_rest(staff_idx * ::mu::engraving::voices);
+            ChordRest *cr2 = selection.last_chord_rest(staff_idx * ::mu::engraving::voices);
+            Hairpin *h = cr1 ? add_hairpin(tx, score, type, cr1, cr2) :
+                               add_hairpin(tx, score, type, selection.tick_start(), selection.tick_end(), staff2track(staff_idx));
             if (h) {
                 hairpins.push_back(h);
             }
@@ -55,165 +55,166 @@ std::vector<Hairpin *> EditHairpin::addHairpins(Transaction &tx, Score *score, H
         // find start & end elements elements
         ChordRest *cr1 = nullptr;
         ChordRest *cr2 = nullptr;
-        score->getSelectedStartEndChordRests(cr1, cr2);
-        Hairpin *h = addHairpin(tx, score, type, cr1, cr2);
+        score->get_selected_start_end_chord_rests(cr1, cr2);
+        Hairpin *h = add_hairpin(tx, score, type, cr1, cr2);
         if (h) {
             hairpins.push_back(h);
         }
     }
 
     for (Hairpin *hairpin : hairpins) {
-        hairpin->setInitialTrackAndVoiceAssignment(hairpin->track(), /*curVoiceOnlyOverride*/ false);
+        hairpin->set_initial_track_and_voice_assignment(hairpin->track(), /*curVoiceOnlyOverride*/ false);
     }
 
     return hairpins;
 }
 
-Hairpin *EditHairpin::addHairpin(Transaction &tx, Score *score, HairpinType type, ChordRest *cr1, ChordRest *cr2) {
+Hairpin *EditHairpin::add_hairpin(Transaction &tx, Score *score, HairpinType type, ChordRest *cr1, ChordRest *cr2) {
     if (!cr1) {
         return nullptr;
     }
 
-    Hairpin *hairpin = Factory::createHairpin(score->dummy());
-    hairpin->setHairpinType(type);
+    Hairpin *hairpin = Factory::create_hairpin(score->dummy());
+    hairpin->set_hairpin_type(type);
     if (type == HairpinType::CRESC_LINE) {
-        hairpin->setBeginText(u"cresc.");
-        hairpin->setContinueText(u"(cresc.)");
+        hairpin->set_begin_text(u"cresc.");
+        hairpin->set_continue_text(u"(cresc.)");
     } else if (type == HairpinType::DIM_LINE) {
-        hairpin->setBeginText(u"dim.");
-        hairpin->setContinueText(u"(dim.)");
+        hairpin->set_begin_text(u"dim.");
+        hairpin->set_continue_text(u"(dim.)");
     }
 
-    addHairpin(tx, score, hairpin, cr1, cr2);
+    add_hairpin(tx, score, hairpin, cr1, cr2);
 
     return hairpin;
 }
 
-Hairpin *EditHairpin::addHairpin(Transaction &, Score *score, HairpinType type, Fraction sTick, Fraction eTick, track_idx_t track) {
-    Hairpin *hairpin = Factory::createHairpin(score->dummy());
-    hairpin->setHairpinType(type);
+Hairpin *EditHairpin::add_hairpin(Transaction &, Score *score, HairpinType type, Fraction s_tick, Fraction e_tick, track_idx_t track) {
+    Hairpin *hairpin = Factory::create_hairpin(score->dummy());
+    hairpin->set_hairpin_type(type);
     if (type == HairpinType::CRESC_LINE) {
-        hairpin->setBeginText(u"cresc.");
-        hairpin->setContinueText(u"(cresc.)");
+        hairpin->set_begin_text(u"cresc.");
+        hairpin->set_continue_text(u"(cresc.)");
     } else if (type == HairpinType::DIM_LINE) {
-        hairpin->setBeginText(u"dim.");
-        hairpin->setContinueText(u"(dim.)");
+        hairpin->set_begin_text(u"dim.");
+        hairpin->set_continue_text(u"(dim.)");
     }
 
-    hairpin->setTrack(track);
-    hairpin->setTick(sTick);
-    hairpin->setTick2(eTick);
+    hairpin->set_track(track);
+    hairpin->set_tick(s_tick);
+    hairpin->set_tick2(e_tick);
 
-    score->undoAddElement(hairpin);
+    score->undo_add_element(hairpin);
 
     return hairpin;
 }
 
-void EditHairpin::addHairpin(Transaction &, Score *score, Hairpin *hairpin, ChordRest *cr1, ChordRest *cr2) {
+void EditHairpin::add_hairpin(Transaction &, Score *score, Hairpin *hairpin, ChordRest *cr1, ChordRest *cr2) {
     track_idx_t track = cr1->track();
-    Fraction startTick = cr1->tick();
+    Fraction start_tick = cr1->tick();
 
-    Fraction endTick = startTick;
-    if (score->selection().isRange()) {
-        endTick = score->selection().tickEnd();
+    Fraction end_tick = start_tick;
+    if (score->selection().is_range()) {
+        end_tick = score->selection().tick_end();
     } else {
         if (cr2 && cr2 != cr1) {
-            endTick = cr2->endTick();
+            end_tick = cr2->end_tick();
         } else {
-            endTick = cr1->isChord() ? toChord(cr1)->endTickIncludingTied() : cr1->endTick();
+            end_tick = cr1->is_chord() ? to_chord(cr1)->end_tick_including_tied() : cr1->end_tick();
         }
-        const Segment *startSegment = cr2 ? cr2->segment() : cr1->segment();
-        for (const Segment *segment = startSegment; segment && segment->tick() < endTick; segment = segment->next1(SegmentType::Duration)) {
-            if (segment == startSegment) {
+        const Segment *start_segment = cr2 ? cr2->segment() : cr1->segment();
+        for (const Segment *segment = start_segment; segment && segment->tick() < end_tick;
+             segment = segment->next1(SegmentType::DURATION)) {
+            if (segment == start_segment) {
                 continue;
             }
-            if (segment->findAnnotation(ElementType::DYNAMIC, track, track)) {
-                endTick = segment->tick();
+            if (segment->find_annotation(ElementType::DYNAMIC, track, track)) {
+                end_tick = segment->tick();
                 break;
             }
         }
     }
 
-    hairpin->setTrack(track);
-    hairpin->setTrack2(track);
-    hairpin->setTick(startTick);
-    hairpin->setTick2(endTick);
+    hairpin->set_track(track);
+    hairpin->set_track2(track);
+    hairpin->set_tick(start_tick);
+    hairpin->set_tick2(end_tick);
 
-    score->undoAddElement(hairpin);
+    score->undo_add_element(hairpin);
 }
 
-void EditHairpin::addHairpinToDynamic(Transaction &, Score *score, Hairpin *hairpin, Dynamic *dynamic) {
+void EditHairpin::add_hairpin_to_dynamic(Transaction &, Score *score, Hairpin *hairpin, Dynamic *dynamic) {
     track_idx_t track = dynamic->track();
-    hairpin->setTrack(track);
-    hairpin->setTrack2(track);
+    hairpin->set_track(track);
+    hairpin->set_track2(track);
 
-    hairpin->setTick(dynamic->tick());
+    hairpin->set_tick(dynamic->tick());
 
-    Segment *dynamicSegment = dynamic->segment();
+    Segment *dynamic_segment = dynamic->segment();
 
-    Chord *startChord = nullptr;
-    for (Segment *segment = dynamicSegment; segment; segment = segment->prev(SegmentType::ChordRest)) {
+    Chord *start_chord = nullptr;
+    for (Segment *segment = dynamic_segment; segment; segment = segment->prev(SegmentType::CHORD_REST)) {
         EngravingItem *element = segment->element(track);
-        if (element && element->isChord()) {
-            startChord = toChord(element);
+        if (element && element->is_chord()) {
+            start_chord = to_chord(element);
             break;
         }
     }
 
-    Fraction endTick = startChord ? startChord->endTickIncludingTied() : dynamic->segment()->measure()->endTick();
+    Fraction end_tick = start_chord ? start_chord->end_tick_including_tied() : dynamic->segment()->measure()->end_tick();
 
-    for (Segment *segment = dynamicSegment; segment && segment->tick() < endTick; segment = segment->next1(SegmentType::Duration)) {
-        if (segment == dynamicSegment) {
+    for (Segment *segment = dynamic_segment; segment && segment->tick() < end_tick; segment = segment->next1(SegmentType::DURATION)) {
+        if (segment == dynamic_segment) {
             continue;
         }
-        if (segment->findAnnotation(ElementType::DYNAMIC, track, track)) {
-            endTick = segment->tick();
+        if (segment->find_annotation(ElementType::DYNAMIC, track, track)) {
+            end_tick = segment->tick();
             break;
         }
     }
 
-    hairpin->setTick2(endTick);
+    hairpin->set_tick2(end_tick);
 
-    hairpin->setVoiceAssignment(dynamic->voiceAssignment());
+    hairpin->set_voice_assignment(dynamic->voice_assignment());
 
-    score->undoAddElement(hairpin);
+    score->undo_add_element(hairpin);
 }
 
-Hairpin *EditHairpin::addHairpinToDynamicOnGripDrag(Transaction &, Score *score, Dynamic *dynamic, bool isLeftGrip,
-                                                    const muse::PointF &pos) {
+Hairpin *EditHairpin::add_hairpin_to_dynamic_on_grip_drag(Transaction &, Score *score, Dynamic *dynamic, bool is_left_grip,
+                                                          const muse::PointF &pos) {
     const track_idx_t track = dynamic->track();
-    staff_idx_t staffIndex = dynamic->staffIdx();
+    staff_idx_t staff_index = dynamic->staff_idx();
     Segment *seg = nullptr;
-    constexpr double spacingFactor = 0.5;
+    constexpr double spacing_factor = 0.5;
 
     // Ensure time tick segments are created
-    EditTimeTickAnchors::updateAnchors(dynamic);
+    EditTimeTickAnchors::update_anchors(dynamic);
 
     // Find segment of type ChordRest or TimeTick near cursor postion
-    score->dragPosition(pos, &staffIndex, &seg, spacingFactor, /*allowTimeAnchor*/ true);
+    score->drag_position(pos, &staff_index, &seg, spacing_factor, /*allowTimeAnchor*/ true);
 
-    const bool hasValidTick = seg && (isLeftGrip ? seg->tick() < dynamic->tick() : seg->tick() > dynamic->tick());
-    if (!hasValidTick) {
+    const bool has_valid_tick = seg && (is_left_grip ? seg->tick() < dynamic->tick() : seg->tick() > dynamic->tick());
+    if (!has_valid_tick) {
         return nullptr;
     }
 
-    Hairpin *hairpin = Factory::createHairpin(score->dummy());
-    hairpin->setHairpinType(isLeftGrip ? HairpinType::DIM_HAIRPIN : HairpinType::CRESC_HAIRPIN);
+    Hairpin *hairpin = Factory::create_hairpin(score->dummy());
+    hairpin->set_hairpin_type(is_left_grip ? HairpinType::DIM_HAIRPIN : HairpinType::CRESC_HAIRPIN);
 
-    hairpin->setTrack(track);
-    hairpin->setTrack2(track);
+    hairpin->set_track(track);
+    hairpin->set_track2(track);
 
-    if (isLeftGrip) {
-        hairpin->setTick(seg->tick());
-        hairpin->setTick2(dynamic->tick());
+    if (is_left_grip) {
+        hairpin->set_tick(seg->tick());
+        hairpin->set_tick2(dynamic->tick());
     } else {
-        hairpin->setTick(dynamic->tick());
-        hairpin->setTick2(seg->tick());
+        hairpin->set_tick(dynamic->tick());
+        hairpin->set_tick2(seg->tick());
     }
 
-    hairpin->setVoiceAssignment(dynamic->voiceAssignment());
+    hairpin->set_voice_assignment(dynamic->voice_assignment());
 
-    score->undoAddElement(hairpin);
+    score->undo_add_element(hairpin);
 
     return hairpin;
 }

@@ -37,8 +37,8 @@ public:
     ByteArray(size_t size);
 
     //! NOTE Not coped!!!
-    static ByteArray fromRawData(const uint8_t *data, size_t size);
-    static ByteArray fromRawData(const char *data, size_t size);
+    static ByteArray from_raw_data(const uint8_t *data, size_t size);
+    static ByteArray from_raw_data(const char *data, size_t size);
 
     bool operator==(const ByteArray &other) const;
 
@@ -46,9 +46,9 @@ public:
 
     uint8_t *data();
     std::vector<uint8_t> &vdata();
-    const uint8_t *constData() const;
-    const char *constChar() const; // data as char*
-    const std::vector<uint8_t> &constVData() const;
+    const uint8_t *const_data() const;
+    const char *const_char() const; // data as char*
+    const std::vector<uint8_t> &const_v_data() const;
     size_t size() const;
     bool empty() const;
 

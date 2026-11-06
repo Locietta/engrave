@@ -55,37 +55,37 @@ public:
 
     Symbol *clone() const override { return new Symbol(*this); }
 
-    void setSym(SymId s, const std::shared_ptr<IEngravingFont> &sf = nullptr);
+    void set_sym(SymId s, const std::shared_ptr<IEngravingFont> &sf = nullptr);
 
     SymId sym() const { return sym_; }
 
-    const std::shared_ptr<IEngravingFont> &scoreFont() const { return scoreFont_; }
+    const std::shared_ptr<IEngravingFont> &score_font() const { return score_font_; }
 
-    double symbolsSize() const { return symbolsSize_; }
+    double symbols_size() const { return symbols_size_; }
 
-    double symAngle() const { return symAngle_; }
+    double sym_angle() const { return sym_angle_; }
 
-    AsciiStringView symName() const;
+    AsciiStringView sym_name() const;
 
     int subtype() const override { return int(sym_); }
 
-    muse::TranslatableString subtypeUserName() const override;
+    muse::TranslatableString subtype_user_name() const override;
 
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue &) override;
-    virtual PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid, const PropertyValue &) override;
+    virtual PropertyValue property_default(Pid) const override;
 
-    double baseLine() const override { return 0.0; }
+    double base_line() const override { return 0.0; }
 
-    virtual Segment *segment() const { return (Segment *) ownershipParent(); }
+    virtual Segment *segment() const { return (Segment *) ownership_parent(); }
 
     void reset() override;
 
 protected:
-    SymId sym_ = SymId::noSym;
-    std::shared_ptr<IEngravingFont> scoreFont_ = nullptr;
-    double symbolsSize_ = 1.0;
-    double symAngle_ = 0.0;
+    SymId sym_ = SymId::NO_SYM;
+    std::shared_ptr<IEngravingFont> score_font_ = nullptr;
+    double symbols_size_ = 1.0;
+    double sym_angle_ = 0.0;
 };
 
 //---------------------------------------------------------
@@ -103,19 +103,19 @@ public:
 
     FSymbol *clone() const override { return new FSymbol(*this); }
 
-    String toString() const;
+    String to_string() const;
 
-    double baseLine() const override { return 0.0; }
+    double base_line() const override { return 0.0; }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
     const muse::draw::Font &font() const { return font_; }
 
     char32_t code() const { return code_; }
 
-    void setFont(const muse::draw::Font &f);
+    void set_font(const muse::draw::Font &f);
 
-    void setCode(char32_t val) { code_ = val; }
+    void set_code(char32_t val) { code_ = val; }
 
 private:
     muse::draw::Font font_;

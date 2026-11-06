@@ -19,10 +19,10 @@ namespace engrave {
 Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &selection) {
     const Result<mu::engraving::Score *> selected = select_score(master, selection);
     if (!selected) return std::unexpected(selected.error());
-    if ((*selected)->isMaster()) return -1;
+    if ((*selected)->is_master()) return -1;
     const std::vector<mu::engraving::Excerpt *> &excerpts = master.excerpts();
     for (std::size_t index = 0; index < excerpts.size(); ++index) {
-        if (excerpts[index] && excerpts[index]->excerptScore() == *selected) return static_cast<int>(index);
+        if (excerpts[index] && excerpts[index]->excerpt_score() == *selected) return static_cast<int>(index);
     }
     return std::unexpected(Error{ErrorCode::STALE_HANDLE, "the selected excerpt is not part of the document"});
 }
@@ -37,21 +37,21 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
     impl->diagnostics = std::move(diagnostics);
     // Every path that produces a document (open, create, and later a restore) hands
     // out ids here, so that an element always has one before a caller can name it.
-    assign_missing_ids(*impl->project->masterScore());
+    assign_missing_ids(*impl->project->master_score());
     ++engine.live_documents;
     return std::unique_ptr<Document>(new Document(std::move(impl)));
 }
 
 void Document::Impl::refresh_fonts() {
     if (font_generation == engine->font_generation) return;
-    for (auto *score : project->masterScore()->scoreList()) {
+    for (auto *score : project->master_score()->score_list()) {
         // Rebuild text blocks as well as geometry: justified text can retain
         // font-dependent fragment splits from an earlier layout.
-        score->scanElements([](mu::engraving::EngravingItem *item) {
-            if (item->isTextBase()) mu::engraving::toTextBase(item)->mutldata()->layoutInvalid = true;
+        score->scan_elements([](mu::engraving::EngravingItem *item) {
+            if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
         });
-        score->setLayoutAll();
-        score->doLayout();
+        score->set_layout_all();
+        score->do_layout();
         score->update();
     }
     font_generation = engine->font_generation;
@@ -59,7 +59,7 @@ void Document::Impl::refresh_fonts() {
 
 Document::Document(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 
-mu::engraving::MasterScore *DocumentAccess::master_score(Document &document) { return document.impl_->project->masterScore(); }
+mu::engraving::MasterScore *DocumentAccess::master_score(Document &document) { return document.impl_->project->master_score(); }
 
 music::ScoreProject &DocumentAccess::project(Document &document) { return document.impl_->project; }
 
@@ -122,12 +122,12 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (options.format == Format::MIDI && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
         return std::unexpected(Error{ErrorCode::UNSUPPORTED, "bounded MIDI capture is not supported by the playback-event builder"});
     }
-    const auto excerpt = excerpt_id_of(*impl_->project->masterScore(), options.score);
+    const auto excerpt = excerpt_id_of(*impl_->project->master_score(), options.score);
     if (!excerpt) return std::unexpected(excerpt.error());
-    const auto selected = select_score(*impl_->project->masterScore(), options.score);
+    const auto selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
     if ((*selected)->npages() == 0 && (*selected)->nmeasures() > 0) {
-        (*selected)->doLayout();
+        (*selected)->do_layout();
         (*selected)->update();
     }
     music::ExportOptions backend;
@@ -152,7 +152,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     muse::io::WriteBudgetScope scope(budget);
     const auto stopped = [&]() -> std::unexpected<Error> {
         if (budget.callback_error) std::rethrow_exception(budget.callback_error);
-        if (budget.failure == muse::io::WriteBudget::Failure::Cancelled)
+        if (budget.failure == muse::io::WriteBudget::Failure::CANCELLED)
             return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
         return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "score capture byte limit exceeded"});
     };
@@ -160,15 +160,15 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
         if (options.native_version == "4.70") {
             auto result = write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
             if (!budget.poll()) return stopped();
-            if (result && !budget.outputSize(result->bytes.size())) return stopped();
+            if (result && !budget.output_size(result->bytes.size())) return stopped();
             return result;
         }
         const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
-        if (!budget.poll() || !budget.outputSize(data.size())) return stopped();
+        if (!budget.poll() || !budget.output_size(data.size())) return stopped();
         const auto *bytes = reinterpret_cast<const std::byte *>(data.data());
         return ExportOutput{std::vector<std::byte>(bytes, bytes + data.size()), {}};
     } catch (...) {
-        if (budget.failure != muse::io::WriteBudget::Failure::None) return stopped();
+        if (budget.failure != muse::io::WriteBudget::Failure::NONE) return stopped();
         throw;
     }
 }

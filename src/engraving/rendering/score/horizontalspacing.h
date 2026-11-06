@@ -44,119 +44,119 @@ namespace mu::engraving::rendering::score {
 class HorizontalSpacing {
 public:
 
-    static double computeSpacingForFullSystem(System *system, double stretchReduction = 1.0, double squeezeFactor = 1.0,
-                                              bool overrideMinMeasureWidth = false);
-    static double updateSpacingForLastAddedMeasure(System *system, bool startOfContinuousLayoutRegion = false);
-    static void squeezeSystemToFit(System *system, double &curSysWidth, double targetSysWidth);
-    static void justifySystem(System *system, double curSysWidth, double targetSystemWidth);
+    static double compute_spacing_for_full_system(System *system, double stretch_reduction = 1.0, double squeeze_factor = 1.0,
+                                                  bool override_min_measure_width = false);
+    static double update_spacing_for_last_added_measure(System *system, bool start_of_continuous_layout_region = false);
+    static void squeeze_system_to_fit(System *system, double &cur_sys_width, double target_sys_width);
+    static void justify_system(System *system, double cur_sys_width, double target_system_width);
 
-    static double minHorizontalDistance(const Shape &f, const Shape &s, double spatium, double squeezeFactor = 1.0);
+    static double min_horizontal_distance(const Shape &f, const Shape &s, double spatium, double squeeze_factor = 1.0);
     //! NOTE Temporary solution
-    static double shapeSpatium(const Shape &s);
+    static double shape_spatium(const Shape &s);
 
-    static double minHorizontalDistance(const Segment *f, const Segment *ns, double squeezeFactor);
-    static double minLeft(const Segment *seg, const Shape &ls);
+    static double min_horizontal_distance(const Segment *f, const Segment *ns, double squeeze_factor);
+    static double min_left(const Segment *seg, const Shape &ls);
 
-    static double computePadding(const EngravingItem *item1, const EngravingItem *item2);
-    static KerningType computeKerning(const EngravingItem *item1, const EngravingItem *item2);
-    static double computeVerticalClearance(const EngravingItem *item1, const EngravingItem *item2, double spatium);
+    static double compute_padding(const EngravingItem *item1, const EngravingItem *item2);
+    static KerningType compute_kerning(const EngravingItem *item1, const EngravingItem *item2);
+    static double compute_vertical_clearance(const EngravingItem *item1, const EngravingItem *item2, double spatium);
 
 private:
     struct HorizontalSpacingContext {
         System *system = nullptr;
         double spatium = 0.0;
-        double xCur = 0.0;
-        double xLeftBarrier = 0.0;
-        bool systemIsFull = false;
-        Measure *startMeas = nullptr;
-        double stretchReduction = 1.0;
-        double squeezeFactor = 1.0;
-        double spacingDensity = 1.0;
-        bool overrideMinMeasureWidth = false;
+        double x_cur = 0.0;
+        double x_left_barrier = 0.0;
+        bool system_is_full = false;
+        Measure *start_meas = nullptr;
+        double stretch_reduction = 1.0;
+        double squeeze_factor = 1.0;
+        double spacing_density = 1.0;
+        bool override_min_measure_width = false;
     };
 
     struct SegmentPosition {
         Segment *segment;
-        double xPosInSystemCoords;
-        bool ignoreForSpacing;
+        double x_pos_in_system_coords;
+        bool ignore_for_spacing;
 
-        SegmentPosition(Segment *s, double x, bool ignoreForSpacing = false)
-            : segment(s), xPosInSystemCoords(x), ignoreForSpacing(ignoreForSpacing) {}
+        SegmentPosition(Segment *s, double x, bool ignore_for_spacing = false)
+            : segment(s), x_pos_in_system_coords(x), ignore_for_spacing(ignore_for_spacing) {}
     };
 
     struct Spring {
-        double springConst = 0.0;
+        double spring_const = 0.0;
         double width = 0.0;
-        double preTension = 0.0;
+        double pre_tension = 0.0;
         Segment *segment = nullptr;
 
-        Spring(double sc, double w, double pt, Segment *s) : springConst(sc), width(w), preTension(pt), segment(s) {}
+        Spring(double sc, double w, double pt, Segment *s) : spring_const(sc), width(w), pre_tension(pt), segment(s) {}
     };
 
     struct CrossBeamSpacing {
-        bool upDown = false;
-        bool downUp = false;
-        bool canBeAdjusted = true;
-        bool hasOpposingBeamlets = false;
-        bool preventCrossStaffKerning = false;
-        bool ensureMinStemDistance = false;
+        bool up_down = false;
+        bool down_up = false;
+        bool can_be_adjusted = true;
+        bool has_opposing_beamlets = false;
+        bool prevent_cross_staff_kerning = false;
+        bool ensure_min_stem_distance = false;
     };
 
-    static void spaceMeasureGroup(const std::vector<Measure *> &measureGroup, HorizontalSpacingContext &ctx);
-    static double getFirstSegmentXPos(Segment *segment, HorizontalSpacingContext &ctx);
-    static std::vector<SegmentPosition> spaceSegments(const std::vector<Segment *> &segList, int startSegIdx,
-                                                      HorizontalSpacingContext &ctx);
-    static bool ignoreSegmentForSpacing(const Segment *segment);
-    static bool ignoreAllSegmentsForSpacing(const std::vector<SegmentPosition> &segmentPositions);
-    static void spaceAgainstPreviousSegments(Segment *segment, std::vector<SegmentPosition> &prevSegPositions,
-                                             HorizontalSpacingContext &ctx);
-    static bool stopCheckingPreviousSegments(const SegmentPosition &prev, const SegmentPosition &curSegPos);
-    static void checkLyricsAgainstLeftMargin(Segment *segment, double &x, HorizontalSpacingContext &ctx);
-    static void checkLyricsAgainstRightMargin(std::vector<SegmentPosition> &segPositions, const HorizontalSpacingContext &ctx);
-    static double spaceLyricsAgainstBarlines(Segment *firstSeg, Segment *secondSeg, const HorizontalSpacingContext &ctx);
-    static void checkLargeTimeSigAgainstRightMargin(std::vector<SegmentPosition> &segPositions);
-    static void moveRightAlignedSegments(std::vector<SegmentPosition> &placedSegments, const HorizontalSpacingContext &ctx);
-    static void checkCollisionsWithCrossStaffStems(const Segment *thisSeg, const Segment *nextSeg, staff_idx_t staffIdx,
-                                                   double &curMinDist);
+    static void space_measure_group(const std::vector<Measure *> &measure_group, HorizontalSpacingContext &ctx);
+    static double get_first_segment_x_pos(Segment *segment, HorizontalSpacingContext &ctx);
+    static std::vector<SegmentPosition> space_segments(const std::vector<Segment *> &seg_list, int start_seg_idx,
+                                                       HorizontalSpacingContext &ctx);
+    static bool ignore_segment_for_spacing(const Segment *segment);
+    static bool ignore_all_segments_for_spacing(const std::vector<SegmentPosition> &segment_positions);
+    static void space_against_previous_segments(Segment *segment, std::vector<SegmentPosition> &prev_seg_positions,
+                                                HorizontalSpacingContext &ctx);
+    static bool stop_checking_previous_segments(const SegmentPosition &prev, const SegmentPosition &cur_seg_pos);
+    static void check_lyrics_against_left_margin(Segment *segment, double &x, HorizontalSpacingContext &ctx);
+    static void check_lyrics_against_right_margin(std::vector<SegmentPosition> &seg_positions, const HorizontalSpacingContext &ctx);
+    static double space_lyrics_against_barlines(Segment *first_seg, Segment *second_seg, const HorizontalSpacingContext &ctx);
+    static void check_large_time_sig_against_right_margin(std::vector<SegmentPosition> &seg_positions);
+    static void move_right_aligned_segments(std::vector<SegmentPosition> &placed_segments, const HorizontalSpacingContext &ctx);
+    static void check_collisions_with_cross_staff_stems(const Segment *this_seg, const Segment *next_seg, staff_idx_t staff_idx,
+                                                        double &cur_min_dist);
 
-    static double chordRestSegmentNaturalWidth(Segment *segment, HorizontalSpacingContext &ctx);
-    static double computeSegmentDurationStretch(const Segment *curSeg, const Segment *prevSeg);
-    static double durationStretchForMMRests(const Segment *segment);
-    static double durationStretchForTicks(double slope, const Fraction &ticks);
-    static bool needsCueSizeSpacing(const Segment *segment);
-    static bool needsHeaderSpacingExceptions(const Segment *seg, const Segment *nextSeg);
+    static double chord_rest_segment_natural_width(Segment *segment, HorizontalSpacingContext &ctx);
+    static double compute_segment_duration_stretch(const Segment *cur_seg, const Segment *prev_seg);
+    static double duration_stretch_for_mm_rests(const Segment *segment);
+    static double duration_stretch_for_ticks(double slope, const Fraction &ticks);
+    static bool needs_cue_size_spacing(const Segment *segment);
+    static bool needs_header_spacing_exceptions(const Segment *seg, const Segment *next_seg);
 
-    static void applyCrossBeamSpacingCorrection(Segment *thisSeg, Segment *nextSeg, double &width);
-    static CrossBeamSpacing computeCrossBeamSpacing(Segment *thisSeg, Segment *nextSeg);
-    static double minStemDistOnNonAdjacentCross(const Segment *thisSeg, const Segment *nextSeg);
+    static void apply_cross_beam_spacing_correction(Segment *this_seg, Segment *next_seg, double &width);
+    static CrossBeamSpacing compute_cross_beam_spacing(Segment *this_seg, Segment *next_seg);
+    static double min_stem_dist_on_non_adjacent_cross(const Segment *this_seg, const Segment *next_seg);
 
-    static void enforceMinimumMeasureWidths(const std::vector<Measure *> measureGroup);
-    static double computeMinMeasureWidth(Measure *m);
-    static void stretchMeasureToTargetWidth(Measure *m, double targetWidth);
+    static void enforce_minimum_measure_widths(const std::vector<Measure *> measure_group);
+    static double compute_min_measure_width(Measure *m);
+    static void stretch_measure_to_target_width(Measure *m, double target_width);
 
-    static void stretchSegmentsToWidth(std::vector<Spring> &springs, double width);
+    static void stretch_segments_to_width(std::vector<Spring> &springs, double width);
 
-    static void setPositionsAndWidths(const std::vector<SegmentPosition> &segmentPositions);
+    static void set_positions_and_widths(const std::vector<SegmentPosition> &segment_positions);
 
-    static bool isSpecialNotePaddingType(ElementType type);
-    static void computeNotePadding(const Note *note, const EngravingItem *item2, double &padding, double scaling);
-    static void computeLedgerRestPadding(const Rest *rest2, double &padding);
-    static bool isSpecialLyricsPaddingType(ElementType type);
-    static void computeLyricsPadding(const Lyrics *lyrics1, const EngravingItem *item2, double &padding);
-    static void computeChordBracketPadding(const EngravingItem *item1, const ChordBracket *chordBracket, double &padding);
+    static bool is_special_note_padding_type(ElementType type);
+    static void compute_note_padding(const Note *note, const EngravingItem *item2, double &padding, double scaling);
+    static void compute_ledger_rest_padding(const Rest *rest2, double &padding);
+    static bool is_special_lyrics_padding_type(ElementType type);
+    static void compute_lyrics_padding(const Lyrics *lyrics1, const EngravingItem *item2, double &padding);
+    static void compute_chord_bracket_padding(const EngravingItem *item1, const ChordBracket *chord_bracket, double &padding);
 
-    static bool isSameVoiceKerningLimited(const EngravingItem *item);
-    static bool isNeverKernable(const EngravingItem *item);
-    static bool isAlwaysKernable(const EngravingItem *item);
-    static bool ignoreItems(const EngravingItem *item1, const EngravingItem *item2);
+    static bool is_same_voice_kerning_limited(const EngravingItem *item);
+    static bool is_never_kernable(const EngravingItem *item);
+    static bool is_always_kernable(const EngravingItem *item);
+    static bool ignore_items(const EngravingItem *item1, const EngravingItem *item2);
 
-    static KerningType doComputeKerningType(const EngravingItem *item1, const EngravingItem *item2);
-    static KerningType computeNoteKerningType(const Note *note, const EngravingItem *item2);
-    static KerningType computeStemSlashKerningType(const StemSlash *stemSlash, const EngravingItem *item2);
-    static KerningType computeLyricsKerningType(const Lyrics *lyrics1, const EngravingItem *item2);
-    static KerningType computeArticulationAndFermataKerning(const EngravingItem *item1, const EngravingItem *item2);
+    static KerningType do_compute_kerning_type(const EngravingItem *item1, const EngravingItem *item2);
+    static KerningType compute_note_kerning_type(const Note *note, const EngravingItem *item2);
+    static KerningType compute_stem_slash_kerning_type(const StemSlash *stem_slash, const EngravingItem *item2);
+    static KerningType compute_lyrics_kerning_type(const Lyrics *lyrics1, const EngravingItem *item2);
+    static KerningType compute_articulation_and_fermata_kerning(const EngravingItem *item1, const EngravingItem *item2);
 
-    static void computeHangingLineWidth(const Segment *firstSeg, const Segment *nextSeg, double &width, bool systemHeaderGap,
-                                        bool systemEnd);
+    static void compute_hanging_line_width(const Segment *first_seg, const Segment *next_seg, double &width, bool system_header_gap,
+                                           bool system_end);
 };
 } // namespace mu::engraving::rendering::score

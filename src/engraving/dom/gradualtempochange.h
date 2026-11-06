@@ -42,39 +42,39 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    GradualTempoChangeType tempoChangeType() const;
-    ChangeMethod easingMethod() const;
-    void setTempoChangeType(const GradualTempoChangeType type);
+    GradualTempoChangeType tempo_change_type() const;
+    ChangeMethod easing_method() const;
+    void set_tempo_change_type(const GradualTempoChangeType type);
 
-    double tempoChangeFactor() const;
+    double tempo_change_factor() const;
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &val) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    Sid getPropertyStyle(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &val) override;
+    PropertyValue property_default(Pid property_id) const override;
+    Sid get_property_style(Pid id) const override;
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    bool snapToItemAfter() const { return snapToItemAfter_; }
+    bool snap_to_item_after() const { return snap_to_item_after_; }
 
-    void setSnapToItemAfter(bool v) { snapToItemAfter_ = v; }
+    void set_snap_to_item_after(bool v) { snap_to_item_after_ = v; }
 
-    bool adjustForRehearsalMark(bool start) const;
-    PointF linePos(Grip grip, System **system) const override;
+    bool adjust_for_rehearsal_mark(bool start) const;
+    PointF line_pos(Grip grip, System **system) const override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
 private:
-    GradualTempoChangeType tempoChangeType_ = GradualTempoChangeType::Undefined;
-    ChangeMethod tempoEasingMethod_ = ChangeMethod::NORMAL;
-    std::optional<float> tempoChangeFactor_;
+    GradualTempoChangeType tempo_change_type_ = GradualTempoChangeType::UNDEFINED;
+    ChangeMethod tempo_easing_method_ = ChangeMethod::NORMAL;
+    std::optional<float> tempo_change_factor_;
 
-    bool snapToItemAfter_ = true;
+    bool snap_to_item_after_ = true;
 
-    bool alignRightOfRehearsalMark_ = true;
+    bool align_right_of_rehearsal_mark_ = true;
 
     friend class GradualTempoChangeSegment;
 };
@@ -88,10 +88,10 @@ public:
 
     GradualTempoChangeSegment *clone() const override;
 
-    GradualTempoChange *tempoChange() const;
+    GradualTempoChange *tempo_change() const;
 
-    GradualTempoChangeSegment *findElementToSnapBefore() const;
-    TempoText *findElementToSnapAfter() const;
+    GradualTempoChangeSegment *find_element_to_snap_before() const;
+    TempoText *find_element_to_snap_after() const;
 
     friend class GradualTempoChange;
 };

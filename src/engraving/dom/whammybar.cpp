@@ -30,45 +30,45 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle whammyBarStyle{
-    {Sid::whammyBarFontFace, Pid::BEGIN_FONT_FACE},
-    {Sid::whammyBarFontFace, Pid::CONTINUE_FONT_FACE},
-    {Sid::whammyBarFontFace, Pid::END_FONT_FACE},
-    {Sid::whammyBarFontSize, Pid::BEGIN_FONT_SIZE},
-    {Sid::whammyBarFontSize, Pid::CONTINUE_FONT_SIZE},
-    {Sid::whammyBarFontSize, Pid::END_FONT_SIZE},
-    {Sid::whammyBarFontStyle, Pid::BEGIN_FONT_STYLE},
-    {Sid::whammyBarFontStyle, Pid::CONTINUE_FONT_STYLE},
-    {Sid::whammyBarFontStyle, Pid::END_FONT_STYLE},
-    {Sid::whammyBarTextAlign, Pid::BEGIN_TEXT_ALIGN},
-    {Sid::whammyBarTextAlign, Pid::CONTINUE_TEXT_ALIGN},
-    {Sid::whammyBarTextAlign, Pid::END_TEXT_ALIGN},
-    {Sid::whammyBarPosition, Pid::BEGIN_TEXT_POSITION},
-    {Sid::whammyBarPosition, Pid::CONTINUE_TEXT_POSITION},
-    {Sid::whammyBarPosition, Pid::END_TEXT_POSITION},
-    {Sid::whammyBarHookHeight, Pid::BEGIN_HOOK_HEIGHT},
-    {Sid::whammyBarHookHeight, Pid::END_HOOK_HEIGHT},
-    {Sid::whammyBarLineStyle, Pid::LINE_STYLE},
-    {Sid::whammyBarDashLineLen, Pid::DASH_LINE_LEN},
-    {Sid::whammyBarDashGapLen, Pid::DASH_GAP_LEN},
-    {Sid::whammyBarFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
-    {Sid::whammyBarEndHookType, Pid::END_HOOK_TYPE},
-    {Sid::whammyBarLineWidth, Pid::LINE_WIDTH},
-    {Sid::whammyBarText, Pid::BEGIN_TEXT},
-    {Sid::whammyBarPlacement, Pid::PLACEMENT},
+static const ElementStyle whammy_bar_style{
+    {Sid::WHAMMY_BAR_FONT_FACE, Pid::BEGIN_FONT_FACE},
+    {Sid::WHAMMY_BAR_FONT_FACE, Pid::CONTINUE_FONT_FACE},
+    {Sid::WHAMMY_BAR_FONT_FACE, Pid::END_FONT_FACE},
+    {Sid::WHAMMY_BAR_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+    {Sid::WHAMMY_BAR_FONT_SIZE, Pid::CONTINUE_FONT_SIZE},
+    {Sid::WHAMMY_BAR_FONT_SIZE, Pid::END_FONT_SIZE},
+    {Sid::WHAMMY_BAR_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+    {Sid::WHAMMY_BAR_FONT_STYLE, Pid::CONTINUE_FONT_STYLE},
+    {Sid::WHAMMY_BAR_FONT_STYLE, Pid::END_FONT_STYLE},
+    {Sid::WHAMMY_BAR_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::WHAMMY_BAR_TEXT_ALIGN, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::WHAMMY_BAR_TEXT_ALIGN, Pid::END_TEXT_ALIGN},
+    {Sid::WHAMMY_BAR_POSITION, Pid::BEGIN_TEXT_POSITION},
+    {Sid::WHAMMY_BAR_POSITION, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::WHAMMY_BAR_POSITION, Pid::END_TEXT_POSITION},
+    {Sid::WHAMMY_BAR_HOOK_HEIGHT, Pid::BEGIN_HOOK_HEIGHT},
+    {Sid::WHAMMY_BAR_HOOK_HEIGHT, Pid::END_HOOK_HEIGHT},
+    {Sid::WHAMMY_BAR_LINE_STYLE, Pid::LINE_STYLE},
+    {Sid::WHAMMY_BAR_DASH_LINE_LEN, Pid::DASH_LINE_LEN},
+    {Sid::WHAMMY_BAR_DASH_GAP_LEN, Pid::DASH_GAP_LEN},
+    {Sid::WHAMMY_BAR_FONT_SPATIUM_DEPENDENT, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
+    {Sid::WHAMMY_BAR_END_HOOK_TYPE, Pid::END_HOOK_TYPE},
+    {Sid::WHAMMY_BAR_LINE_WIDTH, Pid::LINE_WIDTH},
+    {Sid::WHAMMY_BAR_TEXT, Pid::BEGIN_TEXT},
+    {Sid::WHAMMY_BAR_PLACEMENT, Pid::PLACEMENT},
 
-    {Sid::whammyBarMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::whammyBarMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::whammyBarMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::WHAMMY_BAR_MUSICAL_SYMBOL_SIZE, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::WHAMMY_BAR_MUSICAL_SYMBOL_SIZE, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::WHAMMY_BAR_MUSICAL_SYMBOL_SIZE, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
 };
 
 WhammyBarSegment::WhammyBarSegment(WhammyBar *sp)
     : TextLineBaseSegment(ElementType::WHAMMY_BAR_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
+    end_text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------
@@ -76,29 +76,29 @@ WhammyBarSegment::WhammyBarSegment(WhammyBar *sp)
 //---------------------------------------------------------
 
 WhammyBar::WhammyBar(DummyParentOr<EngravingItem> parent) : ChordTextLineBase(ElementType::WHAMMY_BAR, parent) {
-    initElementStyle(&whammyBarStyle);
-    resetProperty(Pid::LINE_VISIBLE);
+    init_element_style(&::mu::engraving::whammy_bar_style);
+    reset_property(Pid::LINE_VISIBLE);
 
-    resetProperty(Pid::BEGIN_TEXT_PLACE);
-    resetProperty(Pid::BEGIN_TEXT);
-    resetProperty(Pid::CONTINUE_TEXT_PLACE);
-    resetProperty(Pid::CONTINUE_TEXT);
-    resetProperty(Pid::END_TEXT_PLACE);
-    resetProperty(Pid::END_TEXT);
+    reset_property(Pid::BEGIN_TEXT_PLACE);
+    reset_property(Pid::BEGIN_TEXT);
+    reset_property(Pid::CONTINUE_TEXT_PLACE);
+    reset_property(Pid::CONTINUE_TEXT);
+    reset_property(Pid::END_TEXT_PLACE);
+    reset_property(Pid::END_TEXT);
 }
 
-static const ElementStyle whammyBarSegmentStyle{
-    {Sid::letRingMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle whammy_bar_segment_style{
+    {Sid::LET_RING_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment *WhammyBar::createLineSegment() {
+LineSegment *WhammyBar::create_line_segment() {
     WhammyBarSegment *wb = new WhammyBarSegment(this);
-    wb->setTrack(track());
-    wb->initElementStyle(&whammyBarSegmentStyle);
+    wb->set_track(track());
+    wb->init_element_style(&::mu::engraving::whammy_bar_segment_style);
     return wb;
 }
 
@@ -106,21 +106,21 @@ LineSegment *WhammyBar::createLineSegment() {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue WhammyBar::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::LINE_WIDTH: return style().styleV(Sid::whammyBarLineWidth);
+PropertyValue WhammyBar::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::LINE_WIDTH: return style().style_v(Sid::WHAMMY_BAR_LINE_WIDTH);
 
-        case Pid::LINE_STYLE: return style().styleV(Sid::whammyBarLineStyle);
+        case Pid::LINE_STYLE: return style().style_v(Sid::WHAMMY_BAR_LINE_STYLE);
 
         case Pid::LINE_VISIBLE: return true;
 
         case Pid::CONTINUE_TEXT_OFFSET:
-        case Pid::END_TEXT_OFFSET: return PropertyValue::fromValue(PointF(0, 0));
+        case Pid::END_TEXT_OFFSET: return PropertyValue::from_value(PointF(0, 0));
 
-        case Pid::BEGIN_FONT_STYLE: return style().styleV(Sid::whammyBarFontStyle);
+        case Pid::BEGIN_FONT_STYLE: return style().style_v(Sid::WHAMMY_BAR_FONT_STYLE);
 
         case Pid::BEGIN_TEXT:
-        case Pid::CONTINUE_TEXT: return style().styleV(Sid::whammyBarText).value<String>(); // TODO: fix the style
+        case Pid::CONTINUE_TEXT: return style().style_v(Sid::WHAMMY_BAR_TEXT).value<String>(); // TODO: fix the style
 
         case Pid::END_TEXT: return "";
 
@@ -141,7 +141,7 @@ PropertyValue WhammyBar::propertyDefault(Pid propertyId) const {
         case Pid::END_LINE_ARROW_HEIGHT:
         case Pid::END_LINE_ARROW_WIDTH: return 0.0;
 
-        default: return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::property_default(property_id);
     }
 }
 
@@ -149,25 +149,25 @@ PropertyValue WhammyBar::propertyDefault(Pid propertyId) const {
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid WhammyBar::getPropertyStyle(Pid id) const {
+Sid WhammyBar::get_property_style(Pid id) const {
     switch (id) {
-        case Pid::PLACEMENT: return Sid::whammyBarPlacement;
-        case Pid::BEGIN_FONT_FACE: return Sid::whammyBarFontFace;
+        case Pid::PLACEMENT: return Sid::WHAMMY_BAR_PLACEMENT;
+        case Pid::BEGIN_FONT_FACE: return Sid::WHAMMY_BAR_FONT_FACE;
         case Pid::BEGIN_FONT_SIZE:
         case Pid::CONTINUE_FONT_SIZE:
-        case Pid::END_FONT_SIZE: return Sid::whammyBarFontSize;
+        case Pid::END_FONT_SIZE: return Sid::WHAMMY_BAR_FONT_SIZE;
         case Pid::BEGIN_FONT_STYLE:
         case Pid::CONTINUE_FONT_STYLE:
-        case Pid::END_FONT_STYLE: return Sid::whammyBarFontStyle;
+        case Pid::END_FONT_STYLE: return Sid::WHAMMY_BAR_FONT_STYLE;
         case Pid::BEGIN_TEXT_ALIGN:
         case Pid::CONTINUE_TEXT_ALIGN:
-        case Pid::END_TEXT_ALIGN: return Sid::whammyBarTextAlign;
+        case Pid::END_TEXT_ALIGN: return Sid::WHAMMY_BAR_TEXT_ALIGN;
         case Pid::BEGIN_HOOK_HEIGHT:
-        case Pid::END_HOOK_HEIGHT: return Sid::whammyBarHookHeight;
+        case Pid::END_HOOK_HEIGHT: return Sid::WHAMMY_BAR_HOOK_HEIGHT;
         default: break;
     }
-    return TextLineBase::getPropertyStyle(id);
+    return TextLineBase::get_property_style(id);
 }
 
-Sid WhammyBar::defaultPosSid() const { return placeAbove() ? Sid::whammyBarPosAbove : Sid::whammyBarPosBelow; }
+Sid WhammyBar::default_pos_sid() const { return place_above() ? Sid::WHAMMY_BAR_POS_ABOVE : Sid::WHAMMY_BAR_POS_BELOW; }
 } // namespace mu::engraving

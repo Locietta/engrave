@@ -50,77 +50,77 @@ public:
 
     TempoText *clone() const override { return new TempoText(*this); }
 
-    Segment *segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return to_segment(ownership_parent()); }
 
-    Measure *measure() const { return toMeasure(ownershipParent()->ownershipParent()); }
+    Measure *measure() const { return to_measure(ownership_parent()->ownership_parent()); }
 
-    TempoTextType tempoTextType() const { return tempoTextType_; }
+    TempoTextType tempo_text_type() const { return tempo_text_type_; }
 
-    void setTempoTextType(TempoTextType);
+    void set_tempo_text_type(TempoTextType);
 
     BeatsPerSecond tempo() const;
-    double tempoBpm() const;
-    void setTempo(BeatsPerSecond v);
+    double tempo_bpm() const;
+    void set_tempo(BeatsPerSecond v);
 
-    bool isRelative() const { return isRelative_; }
+    bool is_relative() const { return is_relative_; }
 
-    void setRelative(double v) {
-        isRelative_ = true;
+    void set_relative(double v) {
+        is_relative_ = true;
         relative_ = v;
     }
 
-    double relativeValue() const { return relative_; }
+    double relative_value() const { return relative_; }
 
-    bool isNormal() const { return tempoTextType_ == TempoTextType::NORMAL; }
+    bool is_normal() const { return tempo_text_type_ == TempoTextType::NORMAL; }
 
-    void setNormal() { setTempoTextType(TempoTextType::NORMAL); }
+    void set_normal() { set_tempo_text_type(TempoTextType::NORMAL); }
 
-    bool isATempo() const { return tempoTextType_ == TempoTextType::A_TEMPO; }
+    bool is_a_tempo() const { return tempo_text_type_ == TempoTextType::A_TEMPO; }
 
-    void setATempo() { setTempoTextType(TempoTextType::A_TEMPO); }
+    void set_a_tempo() { set_tempo_text_type(TempoTextType::A_TEMPO); }
 
-    bool isTempoPrimo() const { return tempoTextType_ == TempoTextType::TEMPO_PRIMO; }
+    bool is_tempo_primo() const { return tempo_text_type_ == TempoTextType::TEMPO_PRIMO; }
 
-    void setTempoPrimo() { setTempoTextType(TempoTextType::TEMPO_PRIMO); }
+    void set_tempo_primo() { set_tempo_text_type(TempoTextType::TEMPO_PRIMO); }
 
-    bool playTempoText() const { return playTempoText_; }
+    bool play_tempo_text() const { return play_tempo_text_; }
 
-    void setPlayTempoText(bool v) { playTempoText_ = v; }
+    void set_play_tempo_text(bool v) { play_tempo_text_ = v; }
 
-    bool followText() const { return followText_; }
+    bool follow_text() const { return follow_text_; }
 
-    void setFollowText(bool v) { followText_ = v; }
+    void set_follow_text(bool v) { follow_text_ = v; }
 
-    void updateTempo();
+    void update_tempo();
 
     TDuration duration() const;
 
-    static int findTempoDuration(const String &s, int &len, TDuration &dur);
-    static String duration2tempoTextString(const TDuration dur);
-    static String duration2userName(const TDuration t);
+    static int find_tempo_duration(const String &s, int &len, TDuration &dur);
+    static String duration2tempo_text_string(const TDuration dur);
+    static String duration2user_name(const TDuration t);
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 
-    String tempoInfo() const;
+    String tempo_info() const;
 
-    static constexpr double DEFAULT_SYM_SIZE_RATIO = 5.0 / 3.0;
+    static constexpr double default_sym_size_ratio = 5.0 / 3.0;
 
 protected:
-    void commitText() override;
+    void commit_text() override;
 
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
-    TempoTextType tempoTextType_;
-    BeatsPerSecond tempo_;    // beats per second
-    bool followText_ = false; // parse text to determine tempo
-    bool playTempoText_ = true;
+    TempoTextType tempo_text_type_;
+    BeatsPerSecond tempo_;     // beats per second
+    bool follow_text_ = false; // parse text to determine tempo
+    bool play_tempo_text_ = true;
     double relative_ = 0.0;
-    bool isRelative_ = false;
-    bool alignRightOfRehearsalMark_ = true;
+    bool is_relative_ = false;
+    bool align_right_of_rehearsal_mark_ = true;
 };
 } // namespace mu::engraving
 #endif

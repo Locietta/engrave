@@ -31,11 +31,11 @@ public:
     struct FontFamily {
         FontFamily() = default;
 
-        FontFamily(const String &id) : id_(id.toLower()) {}
+        FontFamily(const String &id) : id_(id.to_lower()) {}
 
         FontFamily(const char16_t *id) : FontFamily(String(id)) {}
 
-        FontFamily(const std::string &id) : FontFamily(String::fromStdString(id)) {}
+        FontFamily(const std::string &id) : FontFamily(String::from_std_string(id)) {}
 
         inline bool valid() const { return !id_.empty(); }
 
@@ -49,78 +49,78 @@ public:
         String id_;
     };
 
-    enum class Type { Undefined = 0, Unknown, Icon, Text, MusicSymbolText, MusicSymbol, Tablature, Harmony };
+    enum class Type { UNDEFINED = 0, UNKNOWN, ICON, TEXT, MUSIC_SYMBOL_TEXT, MUSIC_SYMBOL, TABLATURE, HARMONY };
 
     Font() = default;
     Font(const FontFamily &family, Type type);
 
     enum class Style {
         //Undefined   = -1,
-        Normal = 0,
-        Bold = 1 << 0,
-        Italic = 1 << 1,
-        Underline = 1 << 2,
-        Strike = 1 << 3
+        NORMAL = 0,
+        BOLD = 1 << 0,
+        ITALIC = 1 << 1,
+        UNDERLINE = 1 << 2,
+        STRIKE = 1 << 3
     };
 
-    enum class Hinting { PreferDefaultHinting = 0, PreferNoHinting = 1, PreferVerticalHinting = 2, PreferFullHinting = 3 };
+    enum class Hinting { PREFER_DEFAULT_HINTING = 0, PREFER_NO_HINTING = 1, PREFER_VERTICAL_HINTING = 2, PREFER_FULL_HINTING = 3 };
 
     enum Weight {
-        Thin = 0,        // 100
-        ExtraLight = 12, // 200
-        Light = 25,      // 300
-        Normal = 50,     // 400
-        Medium = 57,     // 500
-        DemiBold = 63,   // 600
-        Bold = 75,       // 700
-        ExtraBold = 81,  // 800
-        Black = 87       // 900
+        THIN = 0,         // 100
+        EXTRA_LIGHT = 12, // 200
+        LIGHT = 25,       // 300
+        NORMAL = 50,      // 400
+        MEDIUM = 57,      // 500
+        DEMI_BOLD = 63,   // 600
+        BOLD = 75,        // 700
+        EXTRA_BOLD = 81,  // 800
+        BLACK = 87        // 900
     };
 
-    void setFamily(const FontFamily &family, Type type);
+    void set_family(const FontFamily &family, Type type);
     FontFamily family() const;
     Type type() const;
 
-    double pointSizeF() const;
-    void setPointSizeF(double s);
+    double point_size_f() const;
+    void set_point_size_f(double s);
 
-    int pixelSize() const;
-    void setPixelSize(int s);
+    int pixel_size() const;
+    void set_pixel_size(int s);
 
     Weight weight() const;
-    void setWeight(Weight w);
+    void set_weight(Weight w);
 
     bool bold() const;
-    void setBold(bool arg);
+    void set_bold(bool arg);
     bool italic() const;
-    void setItalic(bool arg);
+    void set_italic(bool arg);
     bool underline() const;
-    void setUnderline(bool arg);
+    void set_underline(bool arg);
     bool strike() const;
-    void setStrike(bool arg);
+    void set_strike(bool arg);
 
-    void setNoFontMerging(bool arg);
-    bool noFontMerging() const;
+    void set_no_font_merging(bool arg);
+    bool no_font_merging() const;
 
     Hinting hinting() const;
-    void setHinting(Hinting hinting);
+    void set_hinting(Hinting hinting);
 
     bool operator==(const Font &other) const;
 
     bool operator!=(const Font &other) const { return !this->operator==(other); }
 
-    static bool g_disableFontMerging;
+    static bool g_disable_font_merging;
 
 private:
 
     FontFamily family_;
-    Type type_ = Type::Undefined;
-    double pointSizeF_ = -1.0;
-    int pixelSize_ = -1;
-    Weight weight_ = Weight::Normal;
-    muse::Flags<Style> style_{Style::Normal};
-    bool noFontMerging_ = false;
-    Hinting hinting_ = Hinting::PreferDefaultHinting;
+    Type type_ = Type::UNDEFINED;
+    double point_size_f_ = -1.0;
+    int pixel_size_ = -1;
+    Weight weight_ = Weight::NORMAL;
+    muse::Flags<Style> style_{Style::NORMAL};
+    bool no_font_merging_ = false;
+    Hinting hinting_ = Hinting::PREFER_DEFAULT_HINTING;
 };
 } // namespace muse::draw
 

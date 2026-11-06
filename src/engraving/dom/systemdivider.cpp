@@ -35,74 +35,74 @@ namespace mu::engraving {
 //   SystemDivider
 //---------------------------------------------------------
 
-static const ElementStyle dividerStyle{{Sid::dividerLeftSize, Pid::SYMBOLS_SIZE}, // left or right is decided later
-                                       {Sid::musicalSymbolFont, Pid::SCORE_FONT}};
+static const ElementStyle divider_style{{Sid::DIVIDER_LEFT_SIZE, Pid::SYMBOLS_SIZE}, // left or right is decided later
+                                        {Sid::MUSICAL_SYMBOL_FONT, Pid::SCORE_FONT}};
 
 SystemDivider::SystemDivider(DummyParentOr<System> parent)
     : Symbol(ElementType::SYSTEM_DIVIDER, parent, ElementFlag::SYSTEM | ElementFlag::MOVABLE) {
     // default value, but not valid until setDividerType()
-    dividerType_ = SystemDividerType::LEFT;
-    sym_ = SymId::systemDivider;
+    divider_type_ = SystemDividerType::LEFT;
+    sym_ = SymId::SYSTEM_DIVIDER;
 }
 
 //---------------------------------------------------------
 //   SystemDivider
 //---------------------------------------------------------
 
-SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { dividerType_ = sd.dividerType_; }
+SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { divider_type_ = sd.divider_type_; }
 
 //---------------------------------------------------------
 //   setDividerType
 //---------------------------------------------------------
 
-void SystemDivider::setDividerType(SystemDividerType v) {
-    dividerType_ = v;
+void SystemDivider::set_divider_type(SystemDividerType v) {
+    divider_type_ = v;
 
     if (v == SystemDividerType::LEFT) {
-        setSym(SymNames::symIdByName(style().styleSt(Sid::dividerLeftSym)));
+        set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_LEFT_SYM)));
     } else {
-        setSym(SymNames::symIdByName(style().styleSt(Sid::dividerRightSym)));
+        set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_RIGHT_SYM)));
     }
 
-    initElementStyle(&dividerStyle);
+    init_element_style(&::mu::engraving::divider_style);
 }
 
-void SystemDivider::styleChanged() {
-    if (dividerType_ == SystemDividerType::LEFT) {
-        setSym(SymNames::symIdByName(style().styleSt(Sid::dividerLeftSym)));
+void SystemDivider::style_changed() {
+    if (divider_type_ == SystemDividerType::LEFT) {
+        set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_LEFT_SYM)));
     } else {
-        setSym(SymNames::symIdByName(style().styleSt(Sid::dividerRightSym)));
+        set_sym(SymNames::sym_id_by_name(style().style_st(Sid::DIVIDER_RIGHT_SYM)));
     }
 
-    if (isStyled(Pid::SYMBOLS_SIZE)) {
-        symbolsSize_ = style().styleD(getPropertyStyle(Pid::SYMBOLS_SIZE));
+    if (is_styled(Pid::SYMBOLS_SIZE)) {
+        symbols_size_ = style().style_d(get_property_style(Pid::SYMBOLS_SIZE));
     }
 
-    Symbol::styleChanged();
+    Symbol::style_changed();
 }
 
-Sid SystemDivider::getPropertyStyle(Pid id) const {
+Sid SystemDivider::get_property_style(Pid id) const {
     if (id == Pid::SYMBOLS_SIZE) {
-        return dividerType_ == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize;
+        return divider_type_ == SystemDividerType::LEFT ? Sid::DIVIDER_LEFT_SIZE : Sid::DIVIDER_RIGHT_SIZE;
     }
 
-    return Symbol::getPropertyStyle(id);
+    return Symbol::get_property_style(id);
 }
 
 void SystemDivider::reset() {
     Symbol::reset();
-    setGenerated(true);
+    set_generated(true);
 }
 
 //---------------------------------------------------------
 //   drag
 //---------------------------------------------------------
 
-PropertyValue SystemDivider::propertyDefault(Pid id) const {
+PropertyValue SystemDivider::property_default(Pid id) const {
     switch (id) {
         case Pid::SYMBOLS_SIZE:
-            return style().styleD(dividerType_ == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize);
-        default: return Symbol::propertyDefault(id);
+            return style().style_d(divider_type_ == SystemDividerType::LEFT ? Sid::DIVIDER_LEFT_SIZE : Sid::DIVIDER_RIGHT_SIZE);
+        default: return Symbol::property_default(id);
     }
 }
 } // namespace mu::engraving

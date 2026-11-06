@@ -30,9 +30,9 @@ public:
     SineSource();
     ~SineSource() = default;
 
-    unsigned int audioChannelsCount() const override;
+    unsigned int audio_channels_count() const override;
 
-    samples_t process(float *buffer, samples_t samplesPerChannel) override;
+    samples_t process(float *buffer, samples_t samples_per_channel) override;
 
 private:
     float frequency_ = 1000.f;

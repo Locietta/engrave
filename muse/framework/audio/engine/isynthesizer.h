@@ -34,33 +34,33 @@ public:
 
     virtual std::string name() const = 0;
     virtual AudioSourceType type() const = 0;
-    virtual bool isValid() const = 0;
+    virtual bool is_valid() const = 0;
 
-    virtual void setMode(const ProcessMode mode) = 0;
+    virtual void set_mode(const ProcessMode mode) = 0;
     virtual ProcessMode mode() const = 0;
 
-    virtual void setOutputSpec(const OutputSpec &spec) = 0;
+    virtual void set_output_spec(const OutputSpec &spec) = 0;
 
-    virtual void setup(const mpe::PlaybackData &playbackData) = 0;
-    virtual const mpe::PlaybackData &playbackData() const = 0;
+    virtual void setup(const mpe::PlaybackData &playback_data) = 0;
+    virtual const mpe::PlaybackData &playback_data() const = 0;
 
     virtual const audio::AudioInputParams &params() const = 0;
 
-    virtual TimePosition playbackPosition() const = 0;
-    virtual void setPlaybackPosition(const TimePosition &position) = 0;
+    virtual TimePosition playback_position() const = 0;
+    virtual void set_playback_position(const TimePosition &position) = 0;
 
-    virtual void prepareToPlay() = 0;
-    virtual bool readyToPlay() const = 0;
+    virtual void prepare_to_play() = 0;
+    virtual bool ready_to_play() const = 0;
 
-    virtual void flushSound() = 0;
+    virtual void flush_sound() = 0;
 
-    virtual bool hasPendingChunks() const = 0;
-    virtual void processInput() = 0;
-    virtual InputProcessingProgress inputProcessingProgress() const = 0;
+    virtual bool has_pending_chunks() const = 0;
+    virtual void process_input() = 0;
+    virtual InputProcessingProgress input_processing_progress() const = 0;
 
-    virtual void clearCache() = 0;
+    virtual void clear_cache() = 0;
 
-    virtual samples_t process(float *buffer, samples_t samplesPerChannel) = 0;
+    virtual samples_t process(float *buffer, samples_t samples_per_channel) = 0;
 };
 
 using ISynthesizerPtr = std::shared_ptr<ISynthesizer>;

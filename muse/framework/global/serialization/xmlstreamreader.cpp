@@ -35,142 +35,143 @@ struct XmlStreamReader::Xml {
     pugi::xml_document doc;
     pugi::xml_node node{};
     pugi::xml_parse_result result{};
-    String customErr;
+    String custom_err;
 };
 
 XmlStreamReader::XmlStreamReader() { xml_ = new Xml(); }
 
 XmlStreamReader::XmlStreamReader(IODevice *device) {
     xml_ = new Xml();
-    ByteArray data = device->readAll();
-    setData(data);
+    ByteArray data = device->read_all();
+    set_data(data);
 }
 
 XmlStreamReader::XmlStreamReader(const ByteArray &data) {
     xml_ = new Xml();
-    setData(data);
+    set_data(data);
 }
 
 XmlStreamReader::~XmlStreamReader() { delete xml_; }
 
-void XmlStreamReader::setData(const ByteArray &data_) {
+void XmlStreamReader::set_data(const ByteArray &input_data) {
     TRACEFUNC;
 
     xml_->doc.reset();
-    xml_->customErr.clear();
-    token_ = TokenType::Invalid;
+    xml_->custom_err.clear();
+    token_ = TokenType::INVALID;
 
-    if (data_.size() < 4) {
+    if (input_data.size() < 4) {
         xml_->result = pugi::xml_parse_result{}; // zero it
         xml_->result.status = pugi::status_no_document_element;
-        xml_->customErr = String(u"empty document");
-        LOGE() << xml_->customErr;
+        xml_->custom_err = String(u"empty document");
+        LOGE() << xml_->custom_err;
         return;
     }
 
-    UtfCodec::Encoding enc = UtfCodec::xmlEncoding(data_);
-    if (enc == UtfCodec::Encoding::Unknown) {
+    UtfCodec::Encoding enc = UtfCodec::xml_encoding(input_data);
+    if (enc == UtfCodec::Encoding::UNKNOWN) {
         xml_->result = pugi::xml_parse_result{};
         xml_->result.status = pugi::status_internal_error;
-        xml_->customErr = String(u"unknown encoding");
-        LOGE() << xml_->customErr;
+        xml_->custom_err = String(u"unknown encoding");
+        LOGE() << xml_->custom_err;
         return;
     }
 
-    ByteArray data = data_; // no copy, implicit sharing
+    ByteArray data = input_data; // no copy, implicit sharing
     if (enc == UtfCodec::Encoding::UTF_16LE) {
-        String u16 = String::fromUtf16LE(data_);
-        data = u16.toUtf8();
+        String u16 = String::from_utf16_le(input_data);
+        data = u16.to_utf8();
     } else if (enc == UtfCodec::Encoding::UTF_16BE) {
-        String u16 = String::fromUtf16BE(data_);
-        data = u16.toUtf8();
+        String u16 = String::from_utf16_be(input_data);
+        data = u16.to_utf8();
     }
 
     // pugi needs explicit flags to surface declaration/doctype/comments as nodes
     unsigned flags = pugi::parse_default | pugi::parse_declaration | pugi::parse_doctype | pugi::parse_comments;
-    xml_->result = xml_->doc.load_buffer(data.constData(), data.size(), flags);
+    xml_->result = xml_->doc.load_buffer(data.const_data(), data.size(), flags);
 
     if (xml_->result.status == pugi::status_ok) {
-        token_ = TokenType::NoToken;
+        token_ = TokenType::NO_TOKEN;
     } else {
-        LOGE() << String::fromUtf8(xml_->result.description());
+        LOGE() << String::from_utf8(xml_->result.description());
     }
 }
 
-bool XmlStreamReader::readNextStartElement() {
-    while (readNext() != Invalid) {
-        if (isEndElement()) {
+bool XmlStreamReader::read_next_start_element() {
+    while (read_next() != INVALID) {
+        if (is_end_element()) {
             return false;
-        } else if (isStartElement()) {
+        } else if (is_start_element()) {
             return true;
         }
     }
     return false;
 }
 
-bool XmlStreamReader::atEnd() const { return token_ == TokenType::EndDocument || token_ == TokenType::Invalid; }
+bool XmlStreamReader::at_end() const { return token_ == TokenType::END_DOCUMENT || token_ == TokenType::INVALID; }
 
-static XmlStreamReader::TokenType resolveToken(pugi::xml_node n, bool isStartElement) {
+static XmlStreamReader::TokenType resolve_token(pugi::xml_node n, bool is_start_element) {
     switch (n.type()) {
-        case pugi::node_element: return isStartElement ? XmlStreamReader::TokenType::StartElement : XmlStreamReader::TokenType::EndElement;
+        case pugi::node_element:
+            return is_start_element ? XmlStreamReader::TokenType::START_ELEMENT : XmlStreamReader::TokenType::END_ELEMENT;
 
         case pugi::node_pcdata:
-        case pugi::node_cdata: return XmlStreamReader::TokenType::Characters;
+        case pugi::node_cdata: return XmlStreamReader::TokenType::CHARACTERS;
 
-        case pugi::node_comment: return XmlStreamReader::TokenType::Comment;
+        case pugi::node_comment: return XmlStreamReader::TokenType::COMMENT;
 
         case pugi::node_declaration: // <?xml ... ?>
-            return XmlStreamReader::TokenType::StartDocument;
+            return XmlStreamReader::TokenType::START_DOCUMENT;
 
         case pugi::node_document: // the document node
-            return XmlStreamReader::TokenType::EndDocument;
+            return XmlStreamReader::TokenType::END_DOCUMENT;
 
         case pugi::node_doctype: // <!DOCTYPE ...>
             return XmlStreamReader::TokenType::DTD;
 
         default: // includes node_pi, node_null, etc.
-            return XmlStreamReader::TokenType::Unknown;
+            return XmlStreamReader::TokenType::UNKNOWN;
     }
 }
 
-static std::pair<pugi::xml_node, XmlStreamReader::TokenType> resolveNode(pugi::xml_node currentNode,
-                                                                         XmlStreamReader::TokenType currentToken) {
-    if (currentToken == XmlStreamReader::TokenType::StartElement) {
-        pugi::xml_node child = currentNode.first_child();
+static std::pair<pugi::xml_node, XmlStreamReader::TokenType> resolve_node(pugi::xml_node current_node,
+                                                                          XmlStreamReader::TokenType current_token) {
+    if (current_token == XmlStreamReader::TokenType::START_ELEMENT) {
+        pugi::xml_node child = current_node.first_child();
         if (child) {
-            return {child, resolveToken(child, /*isStartElement=*/true)};
+            return {child, resolve_token(child, /*isStartElement=*/true)};
         }
 
-        pugi::xml_node sibling = currentNode.next_sibling();
+        pugi::xml_node sibling = current_node.next_sibling();
         if (!sibling || sibling.type() == pugi::node_element || sibling.type() == pugi::node_pcdata || sibling.type() == pugi::node_cdata ||
             sibling.type() == pugi::node_comment) {
             // Mirror tiny: close the element before stepping to "content" siblings
-            return {currentNode, XmlStreamReader::TokenType::EndElement};
+            return {current_node, XmlStreamReader::TokenType::END_ELEMENT};
         }
         // else: fall through to handle non-content siblings (doctype, declaration, etc.)
     }
 
-    pugi::xml_node sibling = currentNode.next_sibling();
+    pugi::xml_node sibling = current_node.next_sibling();
     if (sibling) {
-        return {sibling, resolveToken(sibling, /*isStartElement=*/true)};
+        return {sibling, resolve_token(sibling, /*isStartElement=*/true)};
     }
 
-    pugi::xml_node parent = currentNode.parent();
+    pugi::xml_node parent = current_node.parent();
     if (parent) {
-        return {parent, resolveToken(parent, /*isStartElement=*/false)};
+        return {parent, resolve_token(parent, /*isStartElement=*/false)};
     }
 
-    return {pugi::xml_node(), XmlStreamReader::TokenType::EndDocument};
+    return {pugi::xml_node(), XmlStreamReader::TokenType::END_DOCUMENT};
 }
 
-XmlStreamReader::TokenType XmlStreamReader::readNext() {
-    if (token_ == TokenType::Invalid) {
+XmlStreamReader::TokenType XmlStreamReader::read_next() {
+    if (token_ == TokenType::INVALID) {
         return token_;
     }
 
-    if (xml_->result.status != pugi::status_ok || token_ == TokenType::EndDocument) {
+    if (xml_->result.status != pugi::status_ok || token_ == TokenType::END_DOCUMENT) {
         xml_->node = pugi::xml_node();
-        token_ = TokenType::Invalid;
+        token_ = TokenType::INVALID;
         return token_;
     }
 
@@ -178,41 +179,41 @@ XmlStreamReader::TokenType XmlStreamReader::readNext() {
         xml_->node = xml_->doc.first_child();
         if (!xml_->node) {
             // Empty doc — treat as end
-            token_ = TokenType::EndDocument;
+            token_ = TokenType::END_DOCUMENT;
             return token_;
         }
         token_ =
-            (xml_->node.type() == pugi::node_declaration) ? TokenType::StartDocument : resolveToken(xml_->node, /*isStartElement=*/true);
+            (xml_->node.type() == pugi::node_declaration) ? TokenType::START_DOCUMENT : resolve_token(xml_->node, /*isStartElement=*/true);
         return token_;
     }
 
-    std::pair<pugi::xml_node, XmlStreamReader::TokenType> p = resolveNode(xml_->node, token_);
+    std::pair<pugi::xml_node, XmlStreamReader::TokenType> p = resolve_node(xml_->node, token_);
 
     xml_->node = p.first;
     token_ = p.second;
 
     if (token_ == TokenType::DTD) {
-        tryParseEntity(xml_);
+        try_parse_entity(xml_);
     }
 
     return token_;
 }
 
-void XmlStreamReader::tryParseEntity(Xml *xml) {
-    const char *nodeValue = xml->node.value();
+void XmlStreamReader::try_parse_entity(Xml *xml) {
+    const char *node_value = xml->node.value();
 
-    if (!nodeValue || *nodeValue == '\0') {
+    if (!node_value || *node_value == '\0') {
         return;
     }
 
-    const char *scanPos = nodeValue;
+    const char *scan_pos = node_value;
     while (true) {
-        const char *entityPos = std::strstr(scanPos, "ENTITY");
-        if (!entityPos) {
+        const char *entity_pos = std::strstr(scan_pos, "ENTITY");
+        if (!entity_pos) {
             break;
         }
 
-        const char *cur = entityPos + 6; // after "ENTITY"
+        const char *cur = entity_pos + 6; // after "ENTITY"
 
         // Skip whitespace
         while (*cur == ' ' || *cur == '\t' || *cur == '\r' || *cur == '\n') {
@@ -228,17 +229,17 @@ void XmlStreamReader::tryParseEntity(Xml *xml) {
         }
 
         // Name token: up to whitespace / quote / '>'
-        const char *nameBegin = cur;
+        const char *name_begin = cur;
         while (*cur && *cur != ' ' && *cur != '\t' && *cur != '\r' && *cur != '\n' && *cur != '"' && *cur != '\'' && *cur != '>') {
             ++cur;
         }
-        const char *nameEnd = cur;
+        const char *name_end = cur;
 
         // Handle a leading '%' glued to the name (parameter entity without a space)
-        if (nameBegin < nameEnd && *nameBegin == '%') {
-            ++nameBegin;
-            while (nameBegin < nameEnd && (*nameBegin == ' ' || *nameBegin == '\t' || *nameBegin == '\r' || *nameBegin == '\n')) {
-                ++nameBegin;
+        if (name_begin < name_end && *name_begin == '%') {
+            ++name_begin;
+            while (name_begin < name_end && (*name_begin == ' ' || *name_begin == '\t' || *name_begin == '\r' || *name_begin == '\n')) {
+                ++name_begin;
             }
         }
 
@@ -247,44 +248,44 @@ void XmlStreamReader::tryParseEntity(Xml *xml) {
             ++cur;
         }
         if (*cur != '"' && *cur != '\'') {
-            scanPos = entityPos + 6;
+            scan_pos = entity_pos + 6;
             continue;
         }
 
         // Capture quoted value
-        const char quoteChar = *cur++;
-        const char *valueBegin = cur;
-        while (*cur && *cur != quoteChar) {
+        const char quote_char = *cur++;
+        const char *value_begin = cur;
+        while (*cur && *cur != quote_char) {
             ++cur;
         }
-        if (*cur != quoteChar) {
-            scanPos = entityPos + 6;
+        if (*cur != quote_char) {
+            scan_pos = entity_pos + 6;
             continue;
         }
-        const char *valueEnd = cur;
+        const char *value_end = cur;
         ++cur; // past closing quote
 
         // Build name/value:
         // - DO NOT remove "SYSTEM"/"PUBLIC" from the name
         // - Trim whitespace
-        std::string nameToken(nameBegin, static_cast<size_t>(nameEnd - nameBegin));
-        String name = String::fromUtf8(nameToken.c_str()).trimmed();
+        std::string name_token(name_begin, static_cast<size_t>(name_end - name_begin));
+        String name = String::from_utf8(name_token.c_str()).trimmed();
 
-        std::string valueToken(valueBegin, static_cast<size_t>(valueEnd - valueBegin));
-        String value = String::fromUtf8(valueToken.c_str());
+        std::string value_token(value_begin, static_cast<size_t>(value_end - value_begin));
+        String value = String::from_utf8(value_token.c_str());
 
         if (!name.empty()) {
             entities_[u'&' + name + u';'] = value;
         } else {
-            LOGW() << "Ignoring malformed ENTITY: " << nodeValue;
+            LOGW() << "Ignoring malformed ENTITY: " << node_value;
         }
 
-        scanPos = cur; // continue scanning for more ENTITY decls
+        scan_pos = cur; // continue scanning for more ENTITY decls
     }
 }
 
 // emulate tinyxml2::XMLNode::Value
-String XmlStreamReader::nodeValue(Xml *xml) const {
+String XmlStreamReader::node_value(Xml *xml) const {
     const pugi::xml_node n = xml->node;
 
     const char *raw = "";
@@ -304,7 +305,7 @@ String XmlStreamReader::nodeValue(Xml *xml) const {
         default: break;
     }
 
-    String str = String::fromUtf8(raw);
+    String str = String::from_utf8(raw);
     if (!entities_.empty()) {
         for (const auto &p : entities_) {
             str.replace(p.first, p.second);
@@ -313,32 +314,32 @@ String XmlStreamReader::nodeValue(Xml *xml) const {
     return str;
 }
 
-XmlStreamReader::TokenType XmlStreamReader::tokenType() const { return token_; }
+XmlStreamReader::TokenType XmlStreamReader::token_type() const { return token_; }
 
-AsciiStringView XmlStreamReader::tokenString() const {
+AsciiStringView XmlStreamReader::token_string() const {
     switch (token_) {
-        case TokenType::NoToken: return "NoToken";
-        case TokenType::Invalid: return "Invalid";
-        case TokenType::StartDocument: return "StartDocument";
-        case TokenType::EndDocument: return "EndDocument";
-        case TokenType::StartElement: return "StartElement";
-        case TokenType::EndElement: return "EndElement";
-        case TokenType::Characters: return "Characters";
-        case TokenType::Comment: return "Comment";
+        case TokenType::NO_TOKEN: return "NoToken";
+        case TokenType::INVALID: return "Invalid";
+        case TokenType::START_DOCUMENT: return "StartDocument";
+        case TokenType::END_DOCUMENT: return "EndDocument";
+        case TokenType::START_ELEMENT: return "StartElement";
+        case TokenType::END_ELEMENT: return "EndElement";
+        case TokenType::CHARACTERS: return "Characters";
+        case TokenType::COMMENT: return "Comment";
         case TokenType::DTD: return "DTD";
-        case TokenType::Unknown: return "Unknown";
+        case TokenType::UNKNOWN: return "Unknown";
     }
     return AsciiStringView();
 }
 
-bool XmlStreamReader::isWhitespace() const { return false; }
+bool XmlStreamReader::is_whitespace() const { return false; }
 
-void XmlStreamReader::skipCurrentElement() {
+void XmlStreamReader::skip_current_element() {
     int depth = 1;
-    while (depth && readNext() != Invalid) {
-        if (isEndElement()) {
+    while (depth && read_next() != INVALID) {
+        if (is_end_element()) {
             --depth;
-        } else if (isStartElement()) {
+        } else if (is_start_element()) {
             ++depth;
         }
     }
@@ -348,8 +349,8 @@ AsciiStringView XmlStreamReader::name() const {
     return (xml_->node && xml_->node.type() == pugi::node_element) ? AsciiStringView(xml_->node.name()) : AsciiStringView();
 }
 
-bool XmlStreamReader::hasAttribute(const char *name) const {
-    if (token_ != TokenType::StartElement) {
+bool XmlStreamReader::has_attribute(const char *name) const {
+    if (token_ != TokenType::START_ELEMENT) {
         return false;
     }
 
@@ -361,7 +362,7 @@ bool XmlStreamReader::hasAttribute(const char *name) const {
 }
 
 String XmlStreamReader::attribute(const char *name) const {
-    if (token_ != TokenType::StartElement) {
+    if (token_ != TokenType::START_ELEMENT) {
         return String();
     }
 
@@ -374,13 +375,13 @@ String XmlStreamReader::attribute(const char *name) const {
         return String();
     }
 
-    return String::fromUtf8(attr.value());
+    return String::from_utf8(attr.value());
 }
 
-String XmlStreamReader::attribute(const char *name, const String &def) const { return hasAttribute(name) ? attribute(name) : def; }
+String XmlStreamReader::attribute(const char *name, const String &def) const { return has_attribute(name) ? attribute(name) : def; }
 
-AsciiStringView XmlStreamReader::asciiAttribute(const char *name) const {
-    if (token_ != TokenType::StartElement) {
+AsciiStringView XmlStreamReader::ascii_attribute(const char *name) const {
+    if (token_ != TokenType::START_ELEMENT) {
         return AsciiStringView();
     }
 
@@ -392,21 +393,21 @@ AsciiStringView XmlStreamReader::asciiAttribute(const char *name) const {
     return attr ? AsciiStringView(attr.value()) : AsciiStringView();
 }
 
-AsciiStringView XmlStreamReader::asciiAttribute(const char *name, const AsciiStringView &def) const {
-    return hasAttribute(name) ? asciiAttribute(name) : def;
+AsciiStringView XmlStreamReader::ascii_attribute(const char *name, const AsciiStringView &def) const {
+    return has_attribute(name) ? ascii_attribute(name) : def;
 }
 
-int XmlStreamReader::intAttribute(const char *name) const { return asciiAttribute(name).toInt(); }
+int XmlStreamReader::int_attribute(const char *name) const { return ascii_attribute(name).to_int(); }
 
-int XmlStreamReader::intAttribute(const char *name, int def) const { return hasAttribute(name) ? intAttribute(name) : def; }
+int XmlStreamReader::int_attribute(const char *name, int def) const { return has_attribute(name) ? int_attribute(name) : def; }
 
-double XmlStreamReader::doubleAttribute(const char *name) const { return asciiAttribute(name).toDouble(); }
+double XmlStreamReader::double_attribute(const char *name) const { return ascii_attribute(name).to_double(); }
 
-double XmlStreamReader::doubleAttribute(const char *name, double def) const { return hasAttribute(name) ? doubleAttribute(name) : def; }
+double XmlStreamReader::double_attribute(const char *name, double def) const { return has_attribute(name) ? double_attribute(name) : def; }
 
 std::vector<XmlStreamReader::Attribute> XmlStreamReader::attributes() const {
     std::vector<Attribute> attrs;
-    if (token_ != TokenType::StartElement) {
+    if (token_ != TokenType::START_ELEMENT) {
         return attrs;
     }
 
@@ -417,16 +418,16 @@ std::vector<XmlStreamReader::Attribute> XmlStreamReader::attributes() const {
     for (pugi::xml_attribute xa = xml_->node.first_attribute(); xa; xa = xa.next_attribute()) {
         Attribute a;
         a.name = xa.name();
-        a.value = String::fromUtf8(xa.value());
+        a.value = String::from_utf8(xa.value());
         attrs.push_back(std::move(a));
     }
 
     return attrs;
 }
 
-bool XmlStreamReader::noChildren() const { return xml_->node ? !xml_->node.first_child() && !xml_->node.last_child() : false; }
+bool XmlStreamReader::no_children() const { return xml_->node ? !xml_->node.first_child() && !xml_->node.last_child() : false; }
 
-String XmlStreamReader::readBody() const {
+String XmlStreamReader::read_body() const {
     if (!xml_->node) {
         return String();
     }
@@ -440,20 +441,20 @@ String XmlStreamReader::readBody() const {
         }
     }
 
-    return String::fromStdString(oss.str());
+    return String::from_std_string(oss.str());
 }
 
 String XmlStreamReader::text() const {
     if (xml_->node) {
         pugi::xml_node_type t = xml_->node.type();
         if (t == pugi::node_pcdata || t == pugi::node_cdata || t == pugi::node_comment) {
-            return nodeValue(xml_);
+            return node_value(xml_);
         }
     }
     return String();
 }
 
-AsciiStringView XmlStreamReader::asciiText() const {
+AsciiStringView XmlStreamReader::ascii_text() const {
     if (xml_->node) {
         pugi::xml_node_type t = xml_->node.type();
         if (t == pugi::node_pcdata || t == pugi::node_cdata || t == pugi::node_comment) {
@@ -463,15 +464,15 @@ AsciiStringView XmlStreamReader::asciiText() const {
     return AsciiStringView();
 }
 
-String XmlStreamReader::readText() {
-    if (isStartElement()) {
+String XmlStreamReader::read_text() {
+    if (is_start_element()) {
         String result;
         while (1) {
-            switch (readNext()) {
-                case Characters: result = nodeValue(xml_); break;
-                case EndElement: return result;
-                case Comment: break;
-                case StartElement: break;
+            switch (read_next()) {
+                case CHARACTERS: result = node_value(xml_); break;
+                case END_ELEMENT: return result;
+                case COMMENT: break;
+                case START_ELEMENT: break;
                 default: break;
             }
         }
@@ -479,15 +480,15 @@ String XmlStreamReader::readText() {
     return String();
 }
 
-AsciiStringView XmlStreamReader::readAsciiText() {
-    if (isStartElement()) {
+AsciiStringView XmlStreamReader::read_ascii_text() {
+    if (is_start_element()) {
         AsciiStringView result;
         while (1) {
-            switch (readNext()) {
-                case Characters: result = AsciiStringView(xml_->node.value()); break;
-                case EndElement: return result;
-                case Comment: break;
-                case StartElement: break;
+            switch (read_next()) {
+                case CHARACTERS: result = AsciiStringView(xml_->node.value()); break;
+                case END_ELEMENT: return result;
+                case COMMENT: break;
+                case START_ELEMENT: break;
                 default: break;
             }
         }
@@ -495,17 +496,17 @@ AsciiStringView XmlStreamReader::readAsciiText() {
     return AsciiStringView();
 }
 
-int XmlStreamReader::readInt(bool *ok, int base) {
-    AsciiStringView s = readAsciiText();
-    return s.toInt(ok, base);
+int XmlStreamReader::read_int(bool *ok, int base) {
+    AsciiStringView s = read_ascii_text();
+    return s.to_int(ok, base);
 }
 
-double XmlStreamReader::readDouble(bool *ok) {
-    AsciiStringView s = readAsciiText();
-    return s.toDouble(ok);
+double XmlStreamReader::read_double(bool *ok) {
+    AsciiStringView s = read_ascii_text();
+    return s.to_double(ok);
 }
 
-int64_t XmlStreamReader::byteOffset() const {
+int64_t XmlStreamReader::byte_offset() const {
     if (!xml_->node) {
         return 0;
     }
@@ -515,24 +516,24 @@ int64_t XmlStreamReader::byteOffset() const {
 }
 
 XmlStreamReader::Error XmlStreamReader::error() const {
-    if (!xml_->customErr.isEmpty()) {
-        return CustomError;
+    if (!xml_->custom_err.is_empty()) {
+        return CUSTOM_ERROR;
     }
 
     if (xml_->result.status == pugi::status_ok) {
-        return NoError;
+        return NO_ERROR;
     }
 
-    return NotWellFormedError;
+    return NOT_WELL_FORMED_ERROR;
 }
 
-bool XmlStreamReader::isError() const { return error() != NoError; }
+bool XmlStreamReader::is_error() const { return error() != NO_ERROR; }
 
-String XmlStreamReader::errorString() const {
-    if (!xml_->customErr.empty()) {
-        return xml_->customErr;
+String XmlStreamReader::error_string() const {
+    if (!xml_->custom_err.empty()) {
+        return xml_->custom_err;
     }
-    return String::fromUtf8(xml_->result.description());
+    return String::from_utf8(xml_->result.description());
 }
 
-void XmlStreamReader::raiseError(const String &message) { xml_->customErr = message; }
+void XmlStreamReader::raise_error(const String &message) { xml_->custom_err = message; }

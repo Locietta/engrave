@@ -37,21 +37,21 @@ class ChangeKeySig : public UndoableCommand {
 
     KeySig *keysig = nullptr;
     KeySigEvent ks;
-    bool showCourtesy = false;
-    bool evtInStaff = false;
+    bool show_courtesy = false;
+    bool evt_in_staff = false;
 
     void flip() override;
 
 public:
-    ChangeKeySig(KeySig *k, KeySigEvent newKeySig, bool sc, bool addEvtToStaff = true);
+    ChangeKeySig(KeySig *k, KeySigEvent new_key_sig, bool sc, bool add_evt_to_staff = true);
 
-    UNDO_TYPE(CommandType::ChangeKeySig)
+    UNDO_TYPE(CommandType::CHANGE_KEY_SIG)
     UNDO_NAME("ChangeKeySig")
     UNDO_CHANGED_OBJECTS({keysig})
 };
 
 class EditKeySig {
 public:
-    static void undoChangeKeySig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key);
+    static void undo_change_key_sig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key);
 };
 } // namespace mu::engraving

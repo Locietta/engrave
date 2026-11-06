@@ -9,7 +9,7 @@
 namespace music::test {
 namespace {
 
-constexpr std::uint32_t kRound[64] = {
+constexpr std::uint32_t k_round[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be,
     0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa,
     0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85,
@@ -47,7 +47,7 @@ std::string sha256_hex(std::span<const std::byte> data) {
         for (int word = 0; word < 64; ++word) {
             const std::uint32_t s1 = rotr(a[4], 6) ^ rotr(a[4], 11) ^ rotr(a[4], 25);
             const std::uint32_t choose = (a[4] & a[5]) ^ (~a[4] & a[6]);
-            const std::uint32_t t1 = a[7] + s1 + choose + kRound[word] + schedule[word];
+            const std::uint32_t t1 = a[7] + s1 + choose + ::music::test::k_round[word] + schedule[word];
             const std::uint32_t s0 = rotr(a[0], 2) ^ rotr(a[0], 13) ^ rotr(a[0], 22);
             const std::uint32_t majority = (a[0] & a[1]) ^ (a[0] & a[2]) ^ (a[1] & a[2]);
             const std::uint32_t t2 = s0 + majority;

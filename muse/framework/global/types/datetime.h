@@ -26,8 +26,8 @@
 
 namespace muse {
 enum class DateFormat {
-    ISODate, // ISO 8601
-    LocaleShortFormat
+    ISO_DATE, // ISO 8601
+    LOCALE_SHORT_FORMAT
 };
 
 class Date {
@@ -35,7 +35,7 @@ public:
     Date() = default;
     Date(int y, int m, int d);
 
-    bool isNull() const;
+    bool is_null() const;
 
     int year() const;
     int month() const;
@@ -45,12 +45,12 @@ public:
 
     inline bool operator!=(const Date &d) const { return !this->operator==(d); }
 
-    int64_t daysTo(const Date &d) const;
+    int64_t days_to(const Date &d) const;
 
-    static Date currentDate();
+    static Date current_date();
 
-    String toString(DateFormat format = DateFormat::ISODate) const;
-    static Date fromStringISOFormat(const String &str);
+    String to_string(DateFormat format = DateFormat::ISO_DATE) const;
+    static Date from_string_iso_format(const String &str);
 
 
 private:
@@ -73,10 +73,10 @@ public:
 
     inline bool operator!=(const Time &t) const { return !this->operator==(t); }
 
-    static Time currentTime();
+    static Time current_time();
 
-    String toString(DateFormat format = DateFormat::ISODate) const;
-    static Time fromStringISOFormat(const String &str);
+    String to_string(DateFormat format = DateFormat::ISO_DATE) const;
+    static Time from_string_iso_format(const String &str);
 
 
 private:
@@ -97,10 +97,10 @@ public:
 
     inline bool operator!=(const DateTime &dt) const { return !this->operator==(dt); }
 
-    static DateTime currentDateTime();
+    static DateTime current_date_time();
 
-    String toString(DateFormat format = DateFormat::ISODate) const;
-    static DateTime fromStringISOFormat(const String &str);
+    String to_string(DateFormat format = DateFormat::ISO_DATE) const;
+    static DateTime from_string_iso_format(const String &str);
 
 
 private:

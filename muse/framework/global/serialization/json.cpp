@@ -26,7 +26,12 @@
 
 #define PICOJSON_USE_LOCALE 1
 #define PICOJSON_ASSERT assert
+#pragma push_macro("NULL")
+#ifndef NULL
+#define NULL 0
+#endif
 #include "picojson.h"
+#pragma pop_macro("NULL")
 
 #include "log.h"
 
@@ -52,7 +57,7 @@ JsonValue::JsonValue(int v) : data_(std::make_shared<JsonData>()) {
 
 JsonValue::JsonValue(double v) : data_(std::make_shared<JsonData>()) { val_mut(data_).set<double>(v); }
 
-JsonValue::JsonValue(const String &v) : data_(std::make_shared<JsonData>()) { val_mut(data_).set<std::string>(v.toStdString()); }
+JsonValue::JsonValue(const String &v) : data_(std::make_shared<JsonData>()) { val_mut(data_).set<std::string>(v.to_std_string()); }
 
 JsonValue::JsonValue(const std::string &v) : data_(std::make_shared<JsonData>()) { val_mut(data_).set<std::string>(v); }
 
@@ -88,16 +93,16 @@ void JsonValue::detach() {
     data_ = std::make_shared<JsonData>(*data_);
 }
 
-bool JsonValue::isNull() const { return val_const(data_).is<picojson::null>(); }
+bool JsonValue::is_null() const { return val_const(data_).is<picojson::null>(); }
 
-void JsonValue::setNull() {
+void JsonValue::set_null() {
     detach();
     val_mut(data_) = picojson::value();
 }
 
-bool JsonValue::isBool() const { return val_const(data_).is<bool>(); }
+bool JsonValue::is_bool() const { return val_const(data_).is<bool>(); }
 
-bool JsonValue::toBool() const { return val_const(data_).evaluate_as_boolean(); }
+bool JsonValue::to_bool() const { return val_const(data_).evaluate_as_boolean(); }
 
 JsonValue &JsonValue::operator=(bool v) {
     detach();
@@ -105,17 +110,17 @@ JsonValue &JsonValue::operator=(bool v) {
     return *this;
 }
 
-bool JsonValue::isNumber() const { return val_const(data_).is<double>(); }
+bool JsonValue::is_number() const { return val_const(data_).is<double>(); }
 
-int JsonValue::toInt() const {
-    if (!isNumber()) {
+int JsonValue::to_int() const {
+    if (!is_number()) {
         return 0;
     }
     return static_cast<int>(std::round(val_const(data_).get<double>()));
 }
 
-double JsonValue::toDouble() const {
-    if (!isNumber()) {
+double JsonValue::to_double() const {
+    if (!is_number()) {
         return 0.0;
     }
     return val_const(data_).get<double>();
@@ -134,18 +139,18 @@ JsonValue &JsonValue::operator=(double v) {
     return *this;
 }
 
-bool JsonValue::isString() const { return val_const(data_).is<std::string>(); }
+bool JsonValue::is_string() const { return val_const(data_).is<std::string>(); }
 
-String JsonValue::toString() const {
-    if (!isString()) {
+String JsonValue::to_string() const {
+    if (!is_string()) {
         static String dummy;
         return dummy;
     }
-    return String::fromStdString(val_const(data_).get<std::string>());
+    return String::from_std_string(val_const(data_).get<std::string>());
 }
 
-const std::string &JsonValue::toStdString() const {
-    if (!isString()) {
+const std::string &JsonValue::to_std_string() const {
+    if (!is_string()) {
         static std::string dummy;
         return dummy;
     }
@@ -154,7 +159,7 @@ const std::string &JsonValue::toStdString() const {
 
 JsonValue &JsonValue::operator=(const String &str) {
     detach();
-    val_mut(data_).set<std::string>(str.toStdString());
+    val_mut(data_).set<std::string>(str.to_std_string());
     return *this;
 }
 
@@ -170,9 +175,9 @@ JsonValue &JsonValue::operator=(const char *str) {
     return *this;
 }
 
-bool JsonValue::isArray() const { return val_const(data_).is<picojson::array>(); }
+bool JsonValue::is_array() const { return val_const(data_).is<picojson::array>(); }
 
-JsonArray JsonValue::toArray() const { return JsonArray(data_); }
+JsonArray JsonValue::to_array() const { return JsonArray(data_); }
 
 JsonValue &JsonValue::operator=(const JsonArray &arr) {
     detach();
@@ -180,9 +185,9 @@ JsonValue &JsonValue::operator=(const JsonArray &arr) {
     return *this;
 }
 
-bool JsonValue::isObject() const { return val_const(data_).is<picojson::object>(); }
+bool JsonValue::is_object() const { return val_const(data_).is<picojson::object>(); }
 
-JsonObject JsonValue::toObject() const { return JsonObject(data_); }
+JsonObject JsonValue::to_object() const { return JsonObject(data_); }
 
 JsonValue &JsonValue::operator=(const JsonObject &obj) {
     detach();
@@ -190,32 +195,32 @@ JsonValue &JsonValue::operator=(const JsonObject &obj) {
     return *this;
 }
 
-Val JsonValue::toVal() const {
-    if (isNull()) {
+Val JsonValue::to_val() const {
+    if (is_null()) {
         return Val();
     }
-    if (isBool()) {
-        return Val(toBool());
+    if (is_bool()) {
+        return Val(to_bool());
     }
-    if (isNumber()) {
-        return Val(toDouble());
+    if (is_number()) {
+        return Val(to_double());
     }
-    if (isString()) {
-        return Val(toStdString());
+    if (is_string()) {
+        return Val(to_std_string());
     }
-    if (isArray()) {
+    if (is_array()) {
         muse::ValList list;
-        const JsonArray array = toArray();
+        const JsonArray array = to_array();
         for (size_t i = 0; i < array.size(); ++i) {
-            list.emplace_back(array[i].toVal());
+            list.emplace_back(array[i].to_val());
         }
         return Val(list);
     }
-    if (isObject()) {
+    if (is_object()) {
         muse::ValMap map;
-        const JsonObject object = toObject();
+        const JsonObject object = to_object();
         for (const auto &key : object.keys()) {
-            map[key] = object[key].toVal();
+            map[key] = object[key].to_val();
         }
         return muse::Val(map);
     }
@@ -223,30 +228,30 @@ Val JsonValue::toVal() const {
     return muse::Val();
 }
 
-JsonValue JsonValue::fromVal(const Val &val) {
+JsonValue JsonValue::from_val(const Val &val) {
     switch (val.type()) {
-        case Val::Type::Undefined: return JsonValue();
-        case Val::Type::Bool: return JsonValue(val.toBool());
-        case Val::Type::Int: return JsonValue(val.toInt());
-        case Val::Type::Int64: return JsonValue(val.toString()); // as string
-        case Val::Type::Double: return JsonValue(val.toDouble());
-        case Val::Type::String: return JsonValue(val.toString());
-        case Val::Type::List: {
+        case Val::Type::UNDEFINED: return JsonValue();
+        case Val::Type::BOOL: return JsonValue(val.to_bool());
+        case Val::Type::INT: return JsonValue(val.to_int());
+        case Val::Type::INT64: return JsonValue(val.to_string()); // as string
+        case Val::Type::DOUBLE: return JsonValue(val.to_double());
+        case Val::Type::STRING: return JsonValue(val.to_string());
+        case Val::Type::LIST: {
             JsonArray array;
-            for (const auto &item : val.toList()) {
-                array.append(fromVal(item));
+            for (const auto &item : val.to_list()) {
+                array.append(from_val(item));
             }
             return array;
         }
-        case Val::Type::Map: {
+        case Val::Type::MAP: {
             JsonObject object;
-            for (const auto &[key, value] : val.toMap()) {
-                object[key] = fromVal(value);
+            for (const auto &[key, value] : val.to_map()) {
+                object[key] = from_val(value);
             }
             return object;
         }
         default: {
-            NOT_SUPPORTED << "data type: " << (int) val.type();
+            MUSE_NOT_SUPPORTED << "data type: " << (int) val.type();
         }
     }
 
@@ -414,7 +419,7 @@ JsonArray &JsonArray::set(size_t i, double v) {
 
 JsonArray &JsonArray::set(size_t i, const String &str) {
     detach();
-    array_mut(data_)[i] = picojson::value(str.toStdString());
+    array_mut(data_)[i] = picojson::value(str.to_std_string());
     return *this;
 }
 
@@ -468,7 +473,7 @@ JsonArray &JsonArray::append(double v) {
 
 JsonArray &JsonArray::append(const String &str) {
     detach();
-    array_mut(data_).push_back(picojson::value(str.toStdString()));
+    array_mut(data_).push_back(picojson::value(str.to_std_string()));
     return *this;
 }
 
@@ -532,10 +537,10 @@ void JsonObject::detach() {
     data_ = std::make_shared<JsonData>(*data_);
 }
 
-bool JsonObject::isValid() const { return val_const(data_).is<picojson::object>(); }
+bool JsonObject::is_valid() const { return val_const(data_).is<picojson::object>(); }
 
 bool JsonObject::empty() const {
-    if (!isValid()) {
+    if (!is_valid()) {
         return true;
     }
 
@@ -543,7 +548,7 @@ bool JsonObject::empty() const {
 }
 
 size_t JsonObject::size() const {
-    if (!isValid()) {
+    if (!is_valid()) {
         return 0;
     }
 
@@ -551,7 +556,7 @@ size_t JsonObject::size() const {
 }
 
 bool JsonObject::contains(const std::string &key) const {
-    if (!isValid()) {
+    if (!is_valid()) {
         return false;
     }
 
@@ -560,7 +565,7 @@ bool JsonObject::contains(const std::string &key) const {
 }
 
 JsonValue JsonObject::value(const std::string &key, JsonValue def) const {
-    if (!isValid()) {
+    if (!is_valid()) {
         return def;
     }
 
@@ -606,7 +611,7 @@ JsonObject &JsonObject::set(const std::string &key, const char *str) {
 
 JsonObject &JsonObject::set(const std::string &key, const String &str) {
     detach();
-    object_mut(data_).insert_or_assign(key, picojson::value(str.toStdString()));
+    object_mut(data_).insert_or_assign(key, picojson::value(str.to_std_string()));
     return *this;
 }
 
@@ -650,28 +655,28 @@ JsonDocument::JsonDocument(JsonObject o) : data_(o.data_) {}
 
 JsonDocument::JsonDocument(JsonArray a) : data_(a.data_) {}
 
-ByteArray JsonDocument::toJson(Format format) const {
-    std::string json = data_->val.serialize(format == Format::Indented);
+ByteArray JsonDocument::to_json(Format format) const {
+    std::string json = data_->val.serialize(format == Format::INDENTED);
     return ByteArray(json.c_str(), json.size());
 }
 
-JsonDocument JsonDocument::fromJson(const ByteArray &ba, std::string *err) {
+JsonDocument JsonDocument::from_json(const ByteArray &ba, std::string *err) {
     std::shared_ptr<JsonData> d = std::make_shared<JsonData>();
 
-    std::string_view json(ba.constChar(), ba.size());
+    std::string_view json(ba.const_char(), ba.size());
 
-    const char *currentLoc = setlocale(LC_NUMERIC, "C");
+    const char *current_loc = setlocale(LC_NUMERIC, "C");
     picojson::parse(d->val, json.begin(), json.end(), err);
-    setlocale(LC_NUMERIC, currentLoc);
+    setlocale(LC_NUMERIC, current_loc);
 
     JsonDocument doc(d);
     return doc;
 }
 
-bool JsonDocument::isObject() const { return data_->val.is<picojson::object>(); }
+bool JsonDocument::is_object() const { return data_->val.is<picojson::object>(); }
 
-bool JsonDocument::isArray() const { return data_->val.is<picojson::array>(); }
+bool JsonDocument::is_array() const { return data_->val.is<picojson::array>(); }
 
-JsonObject JsonDocument::rootObject() const { return JsonObject(data_); }
+JsonObject JsonDocument::root_object() const { return JsonObject(data_); }
 
-JsonArray JsonDocument::rootArray() const { return JsonArray(data_); }
+JsonArray JsonDocument::root_array() const { return JsonArray(data_); }

@@ -37,15 +37,15 @@ std::unexpected<Error> invalid(std::string message) { return std::unexpected(Err
 Result<Part *> part_at(EditContext &context, const Target &target) {
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
-    if (!(*object)->isPart()) return invalid(std::format("{} is not a part", (*object)->typeName()));
-    return mu::engraving::toPart(*object);
+    if (!(*object)->is_part()) return invalid(std::format("{} is not a part", (*object)->type_name()));
+    return mu::engraving::to_part(*object);
 }
 
 Result<Staff *> staff_at(EditContext &context, const Target &target) {
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
-    if (!(*object)->isStaff()) return invalid(std::format("{} is not a staff", (*object)->typeName()));
-    return mu::engraving::toStaff(*object);
+    if (!(*object)->is_staff()) return invalid(std::format("{} is not a staff", (*object)->type_name()));
+    return mu::engraving::to_staff(*object);
 }
 
 // The part of a score that carries this id: an excerpt's copy of a master part.
@@ -64,7 +64,7 @@ struct Excerpts {
 
     Excerpts(MasterScore &master, const ID &id) {
         for (Excerpt *excerpt : master.excerpts()) {
-            (excerpt->initialPartId() == id ? initial : guests).push_back(excerpt);
+            (excerpt->initial_part_id() == id ? initial : guests).push_back(excerpt);
         }
     }
 };
@@ -72,15 +72,16 @@ struct Excerpts {
 } // namespace
 
 Result<Step> prepare(EditContext &context, const AddPart &op) {
-    const mu::engraving::InstrumentIndex found = mu::engraving::searchTemplateIndexForId(muse::String::fromStdString(op.instrument_id));
-    if (!found.instrTemplate) return invalid(std::format("no instrument '{}'", op.instrument_id));
+    const mu::engraving::InstrumentIndex found =
+        mu::engraving::search_template_index_for_id(muse::String::from_std_string(op.instrument_id));
+    if (!found.instr_template) return invalid(std::format("no instrument '{}'", op.instrument_id));
     std::optional<Target> before;
     if (op.before) {
         auto target = context.target(*op.before);
         if (!target) return std::unexpected(target.error());
         before = *target;
     }
-    const mu::engraving::InstrumentTemplate *templ = found.instrTemplate;
+    const mu::engraving::InstrumentTemplate *templ = found.instr_template;
     return [templ, before](EditContext &context) -> Result<void> {
         MasterScore &master = context.master();
         std::size_t at = master.parts().size();
@@ -91,15 +92,15 @@ Result<Step> prepare(EditContext &context, const AddPart &op) {
             at = static_cast<std::size_t>(std::ranges::find(master.parts(), *part) - master.parts().begin());
         }
         Part *part = new Part(&master);
-        part->initFromInstrTemplate(templ);
-        master.undoInsertPart(part, at);
+        part->init_from_instr_template(templ);
+        master.undo_insert_part(part, at);
         context.created(part);
         // The staves follow their part: the engine's own helper inserts them first,
         // when the part is not in the score yet, which lands them at the end.
-        for (std::size_t i = 0; i < templ->staffCount; ++i) {
-            Staff *staff = mu::engraving::Factory::createStaff(part);
-            mu::engraving::StaffType *type = staff->staffType(mu::engraving::Fraction(0, 1));
-            master.undoInsertStaff(staff, i);
+        for (std::size_t i = 0; i < templ->staff_count; ++i) {
+            Staff *staff = mu::engraving::Factory::create_staff(part);
+            mu::engraving::StaffType *type = staff->staff_type(mu::engraving::Fraction(0, 1));
+            master.undo_insert_staff(staff, i);
             staff->init(templ, type, i);
             context.created(staff);
         }
@@ -118,20 +119,20 @@ Result<Step> prepare(EditContext &context, const RemovePart &op) {
         // An excerpt's own part is a projection of a part of the master score. The editor's
         // parts panel removes them together, never one alone: an excerpt whose part was
         // removed on its own does not get its music back on undo.
-        if (!score->isMaster()) return invalid("a part of an excerpt goes with its part of the master score");
+        if (!score->is_master()) return invalid("a part of an excerpt goes with its part of the master score");
         // A score with no part has no staves and no instruments, and the writer and the
         // reader do not keep it: the reopened score differs. So the last part stays.
         if (score->parts().size() <= 1) return invalid("a score keeps at least one part");
         MasterScore &master = context.master();
         const ID id = part->id();
         const Excerpts excerpts(master, id);
-        mu::engraving::EditPart::removeParts(&master, {part});
+        mu::engraving::EditPart::remove_parts(&master, {part});
         for (Excerpt *excerpt : excerpts.initial) master.undo(new mu::engraving::RemoveExcerpt(excerpt));
         for (Excerpt *excerpt : excerpts.guests) {
-            Score *excerptScore = excerpt->excerptScore();
-            Part *copy = copy_of(*excerptScore, id);
+            Score *excerpt_score = excerpt->excerpt_score();
+            Part *copy = copy_of(*excerpt_score, id);
             if (!copy) continue;
-            mu::engraving::EditPart::removeParts(excerptScore, {copy});
+            mu::engraving::EditPart::remove_parts(excerpt_score, {copy});
             if (excerpt->parts().empty()) master.undo(new mu::engraving::RemoveExcerpt(excerpt));
         }
         return {};
@@ -146,17 +147,17 @@ Result<Step> prepare(EditContext &context, const AddStaff &op) {
         if (!found) return std::unexpected(found.error());
         Part *part = *found;
         Score *score = part->score();
-        if (score->isMaster()) {
+        if (score->is_master()) {
             // The linked staff an excerpt gets does not survive a save and a reopen: the
             // excerpt's part is written with one staff more than the file's part holds, and
             // the read-back differs. The editor adds the staff to every excerpt in turn;
             // until that round trip is fixed, a part an excerpt shows is refused.
             for (Excerpt *excerpt : context.master().excerpts()) {
-                if (copy_of(*excerpt->excerptScore(), part->id()))
+                if (copy_of(*excerpt->excerpt_score(), part->id()))
                     return invalid("an excerpt shows this part: a staff added to it does not survive a save");
             }
         }
-        Staff *staff = mu::engraving::EditPart::appendStaff(score, part);
+        Staff *staff = mu::engraving::EditPart::append_staff(score, part);
         if (!staff) return invalid("the engine added no staff");
         context.created(staff);
         return {};
@@ -173,12 +174,12 @@ Result<Step> prepare(EditContext &context, const RemoveStaff &op) {
         Score *score = staff->score();
         if (staff->part()->nstaves() <= 1) return invalid("an instrument's last staff goes with the instrument");
         const ID id = staff->id();
-        mu::engraving::EditPart::removeStaves(score, {staff});
-        if (!score->isMaster()) return {};
+        mu::engraving::EditPart::remove_staves(score, {staff});
+        if (!score->is_master()) return {};
         // The excerpts link to this staff: the copies go with it.
         for (Excerpt *excerpt : context.master().excerpts()) {
-            if (Staff *copy = excerpt->excerptScore()->staffById(id))
-                mu::engraving::EditPart::removeStaves(excerpt->excerptScore(), {copy});
+            if (Staff *copy = excerpt->excerpt_score()->staff_by_id(id))
+                mu::engraving::EditPart::remove_staves(excerpt->excerpt_score(), {copy});
         }
         return {};
     };
@@ -207,9 +208,9 @@ Result<Step> prepare(EditContext &context, const GenerateExcerpts &op) {
             if (!found) return std::unexpected(found.error());
             Part *part = *found;
             if (part->score() != &master) return invalid("an excerpt is generated from a part of the master score");
-            Excerpt *excerpt = Excerpt::createExcerptsFromParts({part}, &master).front();
-            master.initAndAddExcerpt(excerpt, false);
-            context.created(excerpt->excerptScore());
+            Excerpt *excerpt = Excerpt::create_excerpts_from_parts({part}, &master).front();
+            master.init_and_add_excerpt(excerpt, false);
+            context.created(excerpt->excerpt_score());
         }
         return {};
     };

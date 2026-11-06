@@ -34,22 +34,22 @@ namespace mu::engraving {
 
 class StaffTypeList {
 public:
-    StaffType &staffType(const Fraction &);
-    const StaffType &staffType(const Fraction &f) const;
-    StaffType *setStaffType(const Fraction &, const StaffType &);
-    bool removeStaffType(const Fraction &);
-    bool isStaffTypeStartFrom(const Fraction &) const;
-    void moveStaffType(const Fraction &from, const Fraction &to);
+    StaffType &staff_type(const Fraction &);
+    const StaffType &staff_type(const Fraction &f) const;
+    StaffType *set_staff_type(const Fraction &, const StaffType &);
+    bool remove_staff_type(const Fraction &);
+    bool is_staff_type_start_from(const Fraction &) const;
+    void move_staff_type(const Fraction &from, const Fraction &to);
 
-    bool uniqueStaffType() const { return staffTypeChanges_.empty(); }
+    bool unique_staff_type() const { return staff_type_changes_.empty(); }
 
-    std::pair<int, int> staffTypeRange(const Fraction &) const;
+    std::pair<int, int> staff_type_range(const Fraction &) const;
 
-    const std::map<int, StaffType> &staffTypeChanges() const { return staffTypeChanges_; }
+    const std::map<int, StaffType> &staff_type_changes() const { return staff_type_changes_; }
 
 private:
-    StaffType firstStaffType_; // staff type at tick 0
-    std::map<int, StaffType> staffTypeChanges_;
+    StaffType first_staff_type_; // staff type at tick 0
+    std::map<int, StaffType> staff_type_changes_;
 };
 } // namespace mu::engraving
 

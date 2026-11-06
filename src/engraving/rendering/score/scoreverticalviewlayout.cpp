@@ -41,8 +41,8 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void ScoreVerticalViewLayout::layoutVerticalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
-    ctx.mutState().setEndTick(etick);
+void ScoreVerticalViewLayout::layout_vertical_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
+    ctx.mut_state().set_end_tick(etick);
 
     //---------------------------------------------------
     //    initialize layout context lc
@@ -53,12 +53,12 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score *score, LayoutContext &ct
         m = score->first();
     }
     // start layout one measure earlier to handle clefs and cautionary elements
-    if (m->prevMeasureMM()) {
-        m = m->prevMeasureMM();
+    if (m->prev_measure_mm()) {
+        m = m->prev_measure_mm();
     } else if (m->prev()) {
         m = m->prev();
     }
-    while (!m->isMeasure() && m->prev()) {
+    while (!m->is_measure() && m->prev()) {
         m = m->prev();
     }
 
@@ -66,50 +66,50 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score *score, LayoutContext &ct
     // m->system() will return a nullptr. We need to find the multi measure
     // rest which replaces the measure range
 
-    if (!m->system() && m->isMeasure() && toMeasure(m)->hasMMRest()) {
+    if (!m->system() && m->is_measure() && to_measure(m)->has_mm_rest()) {
         LOGD("  don’t start with mmrest");
-        m = toMeasure(m)->mmRest();
+        m = to_measure(m)->mm_rest();
     }
 
-    if (!ctx.state().isLayoutAll() && m->system()) {
+    if (!ctx.state().is_layout_all() && m->system()) {
         System *system = m->system();
-        system_idx_t systemIndex = muse::indexOf(score->systems(), system);
-        ctx.mutState().setPage(system->page());
-        ctx.mutState().setPageIdx(score->pageIdx(ctx.state().page()));
-        if (ctx.state().pageIdx() == muse::nidx) {
-            ctx.mutState().setPageIdx(0);
+        system_idx_t system_index = muse::index_of(score->systems(), system);
+        ctx.mut_state().set_page(system->page());
+        ctx.mut_state().set_page_idx(score->page_idx(ctx.state().page()));
+        if (ctx.state().page_idx() == muse::nidx) {
+            ctx.mut_state().set_page_idx(0);
         }
-        ctx.mutState().setCurSystem(system);
-        ctx.mutState().setSystemList(muse::mid(score->systems(), systemIndex));
+        ctx.mut_state().set_cur_system(system);
+        ctx.mut_state().set_system_list(muse::mid(score->systems(), system_index));
 
-        if (systemIndex == 0) {
-            ctx.mutState().setNextMeasure(ctx.conf().isShowVBox() ? score->first() : score->firstMeasure());
+        if (system_index == 0) {
+            ctx.mut_state().set_next_measure(ctx.conf().is_show_v_box() ? score->first() : score->first_measure());
         } else {
-            System *prevSystem = score->systems()[systemIndex - 1];
-            ctx.mutState().setNextMeasure(prevSystem->measures().back()->next());
+            System *prev_system = score->systems()[system_index - 1];
+            ctx.mut_state().set_next_measure(prev_system->measures().back()->next());
         }
 
-        score->systems().erase(score->systems().begin() + systemIndex, score->systems().end());
-        if (!ctx.state().nextMeasure()->prevMeasure()) {
-            ctx.mutState().setMeasureNumber(0);
-            ctx.mutState().setTick(Fraction(0, 1));
+        score->systems().erase(score->systems().begin() + system_index, score->systems().end());
+        if (!ctx.state().next_measure()->prev_measure()) {
+            ctx.mut_state().set_measure_number(0);
+            ctx.mut_state().set_tick(Fraction(0, 1));
         } else {
-            const MeasureBase *mb = ctx.state().nextMeasure()->prev();
+            const MeasureBase *mb = ctx.state().next_measure()->prev();
             if (mb) {
-                mb = mb->mbWithPrecedingSectionBreak();
+                mb = mb->mb_with_preceding_section_break();
             }
 
-            const LayoutBreak *layoutBreak = mb->sectionBreakElement();
+            const LayoutBreak *layout_break = mb->section_break_element();
             // TODO: also use mb in else clause here?
             // probably not, only actual measures have meaningful numbers
-            if (layoutBreak && layoutBreak->startWithMeasureOne()) {
-                ctx.mutState().setMeasureNumber(0);
+            if (layout_break && layout_break->start_with_measure_one()) {
+                ctx.mut_state().set_measure_number(0);
             } else {
-                ctx.mutState().setMeasureNumber(
-                    ctx.state().nextMeasure()->prevMeasure()->measureNumber()                      // will be adjusted later with respect
-                    + (ctx.state().nextMeasure()->prevMeasure()->excludeFromNumbering() ? 0 : 1)); // to the user-defined offset.
+                ctx.mut_state().set_measure_number(
+                    ctx.state().next_measure()->prev_measure()->measure_number() // will be adjusted later with respect
+                    + (ctx.state().next_measure()->prev_measure()->exclude_from_numbering() ? 0 : 1)); // to the user-defined offset.
             }
-            ctx.mutState().setTick(ctx.state().nextMeasure()->tick());
+            ctx.mut_state().set_tick(ctx.state().next_measure()->tick());
         }
     } else {
         for (System *s : score->systems()) {
@@ -117,50 +117,50 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score *score, LayoutContext &ct
                 if (b->selected()) {
                     bool selected = b->selected();
                     score->selection().remove(b);
-                    BracketItem *item = b->bracketItem();
-                    item->setSelected(selected);
-                    score->setSelectionChanged(true);
+                    BracketItem *item = b->bracket_item();
+                    item->set_selected(selected);
+                    score->set_selection_changed(true);
                 }
             }
             // no need to clear the page placement: the systems are deleted below,
             // and ~System unlinks itself from its page
         }
         for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
-            mb->setSystem(nullptr);
-            if (mb->isMeasure() && toMeasure(mb)->mmRest()) {
-                toMeasure(mb)->mmRest()->setSystem(nullptr);
+            mb->set_system(nullptr);
+            if (mb->is_measure() && to_measure(mb)->mm_rest()) {
+                to_measure(mb)->mm_rest()->set_system(nullptr);
             }
         }
-        muse::DeleteAll(score->systems());
+        muse::delete_all(score->systems());
         score->systems().clear();
 
-        muse::DeleteAll(score->pages());
+        muse::delete_all(score->pages());
         score->pages().clear();
 
-        ctx.mutState().setNextMeasure(ctx.conf().isShowVBox() ? score->first() : score->firstMeasure());
+        ctx.mut_state().set_next_measure(ctx.conf().is_show_v_box() ? score->first() : score->first_measure());
     }
 
-    ctx.mutState().setPrevMeasure(nullptr);
+    ctx.mut_state().set_prev_measure(nullptr);
 
-    PassResetLayoutData resetPass;
-    resetPass.run(score, ctx);
+    PassResetLayoutData reset_pass;
+    reset_pass.run(score, ctx);
 
-    MeasureLayout::getNextMeasure(ctx);
-    ctx.mutState().setCurSystem(SystemLayout::collectSystem(ctx));
+    MeasureLayout::get_next_measure(ctx);
+    ctx.mut_state().set_cur_system(SystemLayout::collect_system(ctx));
 
-    if (ctx.state().isLayoutAll()) {
-        PassLayoutIndependentItems independentPass;
-        independentPass.run(score, ctx);
+    if (ctx.state().is_layout_all()) {
+        PassLayoutIndependentItems independent_pass;
+        independent_pass.run(score, ctx);
     }
 
-    doLayout(ctx);
+    do_layout(ctx);
 }
 
-void ScoreVerticalViewLayout::doLayout(LayoutContext &ctx) {
+void ScoreVerticalViewLayout::do_layout(LayoutContext &ctx) {
     const MeasureBase *lmb = nullptr;
     do {
-        PageLayout::getNextPage(ctx);
-        PageLayout::collectPage(ctx);
+        PageLayout::get_next_page(ctx);
+        PageLayout::collect_page(ctx);
 
         if (ctx.state().page() && !ctx.state().page()->systems().empty()) {
             lmb = ctx.state().page()->systems().back()->measures().back();
@@ -177,26 +177,26 @@ void ScoreVerticalViewLayout::doLayout(LayoutContext &ctx) {
         //    c) this page ends with the same measure as the previous layout
         //    pageOldMeasure will be last measure from previous layout if range was completed on or before this page
         //    it will be nullptr if this page was never laid out or if we collected a system for next page
-    } while (ctx.state().curSystem() && !(ctx.state().rangeDone() && lmb == ctx.state().pageOldMeasure()));
+    } while (ctx.state().cur_system() && !(ctx.state().range_done() && lmb == ctx.state().page_old_measure()));
     // && page->system(0)->measures().back()->tick() > endTick // FIXME: perhaps the first measure was meant? Or last system?
 
-    SystemLayout::centerPendingSystems(ctx);
+    SystemLayout::center_pending_systems(ctx);
 
-    if (!ctx.state().curSystem()) {
+    if (!ctx.state().cur_system()) {
         // The end of the score. The remaining systems are not needed...
-        muse::DeleteAll(ctx.mutState().systemList());
-        ctx.mutState().systemList().clear();
+        muse::delete_all(ctx.mut_state().system_list());
+        ctx.mut_state().system_list().clear();
         // ...and the remaining pages too
-        while (ctx.dom().npages() > ctx.state().pageIdx()) {
-            Page *p = ctx.mutDom().pages().back();
-            ctx.mutDom().pages().pop_back();
+        while (ctx.dom().npages() > ctx.state().page_idx()) {
+            Page *p = ctx.mut_dom().pages().back();
+            ctx.mut_dom().pages().pop_back();
             delete p;
         }
     } else {
-        Page *p = ctx.mutState().curSystem()->page();
+        Page *p = ctx.mut_state().cur_system()->page();
         if (p && (p != ctx.state().page())) {
-            p->invalidateBspTree();
+            p->invalidate_bsp_tree();
         }
     }
-    ctx.mutDom().systems().insert(ctx.mutDom().systems().end(), ctx.state().systemList().begin(), ctx.state().systemList().end());
+    ctx.mut_dom().systems().insert(ctx.mut_dom().systems().end(), ctx.state().system_list().begin(), ctx.state().system_list().end());
 }

@@ -32,9 +32,9 @@ namespace mu::engraving {
 //   measureNumberStyle
 //---------------------------------------------------------
 
-static const ElementStyle measureNumberStyle{{Sid::measureNumberVPlacement, Pid::PLACEMENT},
-                                             {Sid::measureNumberMinDistance, Pid::MIN_DISTANCE},
-                                             {Sid::measureNumberTextStyle, Pid::TEXT_STYLE}};
+static const ElementStyle measure_number_style{{Sid::MEASURE_NUMBER_V_PLACEMENT, Pid::PLACEMENT},
+                                               {Sid::MEASURE_NUMBER_MIN_DISTANCE, Pid::MIN_DISTANCE},
+                                               {Sid::MEASURE_NUMBER_TEXT_STYLE, Pid::TEXT_STYLE}};
 
 //---------------------------------------------------------
 //   MeasureNumber
@@ -42,7 +42,7 @@ static const ElementStyle measureNumberStyle{{Sid::measureNumberVPlacement, Pid:
 
 MeasureNumber::MeasureNumber(DummyParentOr<Measure> parent, TextStyleType tid)
     : MeasureNumberBase(ElementType::MEASURE_NUMBER, parent, tid) {
-    initElementStyle(&measureNumberStyle);
+    init_element_style(&::mu::engraving::measure_number_style);
 }
 
 //---------------------------------------------------------
@@ -50,10 +50,12 @@ MeasureNumber::MeasureNumber(DummyParentOr<Measure> parent, TextStyleType tid)
 //     Copy constructor
 //---------------------------------------------------------
 
-MeasureNumber::MeasureNumber(const MeasureNumber &other) : MeasureNumberBase(other) { initElementStyle(&measureNumberStyle); }
+MeasureNumber::MeasureNumber(const MeasureNumber &other) : MeasureNumberBase(other) {
+    init_element_style(&::mu::engraving::measure_number_style);
+}
 
-bool MeasureNumber::isSystemObjectBelowBottomStaff() const {
-    return style().styleV(Sid::measureNumberPlacementMode).value<MeasureNumberPlacement>() == MeasureNumberPlacement::BELOW_SYSTEM ||
-           EngravingItem::isSystemObjectBelowBottomStaff();
+bool MeasureNumber::is_system_object_below_bottom_staff() const {
+    return style().style_v(Sid::MEASURE_NUMBER_PLACEMENT_MODE).value<MeasureNumberPlacement>() == MeasureNumberPlacement::BELOW_SYSTEM ||
+           EngravingItem::is_system_object_below_bottom_staff();
 }
 } // namespace mu::engraving

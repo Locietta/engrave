@@ -43,33 +43,33 @@ class DurationElement : public EngravingItem {
 public:
     ~DurationElement();
 
-    virtual Measure *measure() const { return (Measure *) (ownershipParent()); }
+    virtual Measure *measure() const { return (Measure *) (ownership_parent()); }
 
-    void readAddTuplet(Tuplet *t);
+    void read_add_tuplet(Tuplet *t);
 
-    void setTuplet(Tuplet *t);
+    void set_tuplet(Tuplet *t);
 
     Tuplet *tuplet() const { return tuplet_; }
 
-    Tuplet *topTuplet() const;
+    Tuplet *top_tuplet() const;
 
     virtual Beam *beam() const { return nullptr; }
 
-    Fraction actualTicksAt(const Fraction &tick) const;
-    Fraction actualTicks() const;
+    Fraction actual_ticks_at(const Fraction &tick) const;
+    Fraction actual_ticks() const;
 
-    Fraction endTick() const { return tick() + actualTicks(); }
+    Fraction end_tick() const { return tick() + actual_ticks(); }
 
     // Length expressed as a fraction of a whole note
     virtual Fraction ticks() const { return duration_; }
 
-    Fraction globalTicks() const;
-    float timeStretchFactor() const;
+    Fraction global_ticks() const;
+    float time_stretch_factor() const;
 
-    void setTicks(const Fraction &f) { duration_ = f; }
+    void set_ticks(const Fraction &f) { duration_ = f; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
 
 protected:
     DurationElement(const ElementType &type, EngravingObject *parent = nullptr,

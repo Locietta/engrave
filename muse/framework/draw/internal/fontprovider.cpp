@@ -28,47 +28,47 @@
 using namespace muse;
 using namespace muse::draw;
 
-int FontProvider::addSymbolFont(const muse::String &family, const io::path_t &path) {
-    return database_.addFont(FontDataKey(Font::FontFamily(family)), path);
+int FontProvider::add_symbol_font(const muse::String &family, const io::PathT &path) {
+    return database_.add_font(FontDataKey(Font::FontFamily(family)), path);
 }
 
-int FontProvider::addSymbolFont(const muse::String &family, std::shared_ptr<io::IODevice> device) {
-    return database_.addFont(FontDataKey(Font::FontFamily(family)), std::move(device));
+int FontProvider::add_symbol_font(const muse::String &family, std::shared_ptr<io::IODevice> device) {
+    return database_.add_font(FontDataKey(Font::FontFamily(family)), std::move(device));
 }
 
-double FontProvider::lineSpacing(const muse::draw::Font &f) const { return engine_.lineSpacing(f); }
+double FontProvider::line_spacing(const muse::draw::Font &f) const { return engine_.line_spacing(f); }
 
-double FontProvider::xHeight(const muse::draw::Font &f) const { return engine_.xHeight(f); }
+double FontProvider::x_height(const muse::draw::Font &f) const { return engine_.x_height(f); }
 
 double FontProvider::height(const muse::draw::Font &f) const { return engine_.height(f); }
 
 double FontProvider::ascent(const muse::draw::Font &f) const { return engine_.ascent(f); }
 
-double FontProvider::capHeight(const muse::draw::Font &f) const { return engine_.capHeight(f); }
+double FontProvider::cap_height(const muse::draw::Font &f) const { return engine_.cap_height(f); }
 
 double FontProvider::descent(const muse::draw::Font &f) const { return engine_.descent(f); }
 
-double FontProvider::underlinePos(const muse::draw::Font &f) const { return engine_.underlinePos(f); }
+double FontProvider::underline_pos(const muse::draw::Font &f) const { return engine_.underline_pos(f); }
 
-double FontProvider::lineWidth(const muse::draw::Font &f) const { return engine_.lineWidth(f); }
+double FontProvider::line_width(const muse::draw::Font &f) const { return engine_.line_width(f); }
 
-double FontProvider::strikeOutPos(const muse::draw::Font &f) const { return engine_.strikeOutPos(f); }
+double FontProvider::strike_out_pos(const muse::draw::Font &f) const { return engine_.strike_out_pos(f); }
 
-bool FontProvider::inFont(const muse::draw::Font &f, char32_t ucs4) const { return engine_.inFont(f, ucs4); }
+bool FontProvider::in_font(const muse::draw::Font &f, char32_t ucs4) const { return engine_.in_font(f, ucs4); }
 
 // Text
-double FontProvider::horizontalAdvance(const muse::draw::Font &f, const muse::String &string) const {
-    return engine_.horizontalAdvance(f, string.toStdU32String());
+double FontProvider::horizontal_advance(const muse::draw::Font &f, const muse::String &string) const {
+    return engine_.horizontal_advance(f, string.to_std_u32_string());
 }
 
-double FontProvider::horizontalAdvance(const muse::draw::Font &f, char32_t ucs4) const { return engine_.horizontalAdvance(f, ucs4); }
+double FontProvider::horizontal_advance(const muse::draw::Font &f, char32_t ucs4) const { return engine_.horizontal_advance(f, ucs4); }
 
-RectF FontProvider::boundingRect(const muse::draw::Font &f, const muse::String &string) const {
-    return engine_.boundingRect(f, string.toStdU32String());
+RectF FontProvider::bounding_rect(const muse::draw::Font &f, const muse::String &string) const {
+    return engine_.bounding_rect(f, string.to_std_u32_string());
 }
 
-RectF FontProvider::boundingRect(const muse::draw::Font &f, char32_t ucs4) const { return engine_.boundingRect(f, ucs4); }
+RectF FontProvider::bounding_rect(const muse::draw::Font &f, char32_t ucs4) const { return engine_.bounding_rect(f, ucs4); }
 
-RectF FontProvider::tightBoundingRect(const muse::draw::Font &f, const muse::String &string) const {
-    return engine_.tightBoundingRect(f, string.toStdU32String());
+RectF FontProvider::tight_bounding_rect(const muse::draw::Font &f, const muse::String &string) const {
+    return engine_.tight_bounding_rect(f, string.to_std_u32_string());
 }

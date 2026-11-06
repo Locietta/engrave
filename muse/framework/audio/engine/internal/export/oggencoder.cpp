@@ -39,13 +39,13 @@
 using namespace muse::audio;
 using namespace muse::audio::encode;
 
-OggEncoder::OggEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice) : AbstractAudioEncoder(format), dstDevice_{&dstDevice} {
-    DO_ASSERT(dstDevice_);
+OggEncoder::OggEncoder(const SoundTrackFormat &format, io::IODevice &dst_device) : AbstractAudioEncoder(format), dst_device_{&dst_device} {
+    DO_ASSERT(dst_device_);
 }
 
 OggEncoder::~OggEncoder() noexcept {
-    if (opusEncoder_) {
-        ope_encoder_destroy(opusEncoder_);
+    if (opus_encoder_) {
+        ope_encoder_destroy(opus_encoder_);
     }
 }
 
@@ -57,12 +57,12 @@ bool OggEncoder::begin(const samples_t) {
 
     int error = 0;
 
-    const OpusEncCallbacks callbacks{[](void *userData, const unsigned char *ptr, opus_int32 len) -> int {
-                                         auto *dstDevice = static_cast<io::IODevice *>(userData);
-                                         IF_ASSERT_FAILED(dstDevice) { return 1; }
+    const OpusEncCallbacks callbacks{[](void *user_data, const unsigned char *ptr, opus_int32 len) -> int {
+                                         auto *dst_device = static_cast<io::IODevice *>(user_data);
+                                         IF_ASSERT_FAILED(dst_device) { return 1; }
 
-                                         const auto numBytesToWrite = static_cast<std::size_t>(len);
-                                         if (dstDevice->write(ptr, numBytesToWrite) != numBytesToWrite) {
+                                         const auto num_bytes_to_write = static_cast<std::size_t>(len);
+                                         if (dst_device->write(ptr, num_bytes_to_write) != num_bytes_to_write) {
                                              return 1;
                                          }
 
@@ -70,43 +70,43 @@ bool OggEncoder::begin(const samples_t) {
                                      },
                                      [](void *) -> int { return 0; }};
 
-    opusEncoder_ = ope_encoder_create_callbacks(&callbacks, dstDevice_, comments, format_.outputSpec.sampleRate,
-                                                format_.outputSpec.audioChannelCount, 0, &error);
+    opus_encoder_ = ope_encoder_create_callbacks(&callbacks, dst_device_, comments, format_.output_spec.sample_rate,
+                                                 format_.output_spec.audio_channel_count, 0, &error);
     ope_comments_destroy(comments);
 
-    if (error != OPE_OK || !opusEncoder_) {
-        if (opusEncoder_) {
-            ope_encoder_destroy(opusEncoder_);
-            opusEncoder_ = nullptr;
+    if (error != OPE_OK || !opus_encoder_) {
+        if (opus_encoder_) {
+            ope_encoder_destroy(opus_encoder_);
+            opus_encoder_ = nullptr;
         }
         return false;
     }
 
-    ope_encoder_ctl(opusEncoder_, OPUS_SET_BITRATE(format_.bitRate * 1000));
+    ope_encoder_ctl(opus_encoder_, OPUS_SET_BITRATE(format_.bit_rate * 1000));
     // libopusenc otherwise draws the Ogg stream serial from the process-global rand(),
     // which makes identical exports differ by page headers. A single-stream file only
     // needs a serial that is constant within the file.
-    ope_encoder_ctl(opusEncoder_, OPE_SET_SERIALNO(0x4D757365));
+    ope_encoder_ctl(opus_encoder_, OPE_SET_SERIALNO(0x4D757365));
 
     return true;
 }
 
-size_t OggEncoder::encode(const samples_t samplesPerChannel, const float *input) {
-    IF_ASSERT_FAILED(opusEncoder_) { return 0; }
+size_t OggEncoder::encode(const samples_t samples_per_channel, const float *input) {
+    IF_ASSERT_FAILED(opus_encoder_) { return 0; }
 
-    if (samplesPerChannel == 0) {
+    if (samples_per_channel == 0) {
         return 0;
     }
 
-    const int n = static_cast<int>(std::min(samplesPerChannel, static_cast<samples_t>(INT_MAX)));
-    const int code = ope_encoder_write_float(opusEncoder_, input, n);
+    const int n = static_cast<int>(std::min(samples_per_channel, static_cast<samples_t>(INT_MAX)));
+    const int code = ope_encoder_write_float(opus_encoder_, input, n);
 
     return code == OPE_OK ? static_cast<size_t>(n) : 0;
 }
 
 muse::Ret OggEncoder::end() {
-    IF_ASSERT_FAILED(opusEncoder_) { return make_ret(Err::ErrorEncode, "Opus encoder is not initialized"); }
+    IF_ASSERT_FAILED(opus_encoder_) { return make_ret(Err::ERROR_ENCODE, "Opus encoder is not initialized"); }
 
-    const int code = ope_encoder_drain(opusEncoder_);
-    return code == OPE_OK ? muse::make_ok() : make_ret(Err::ErrorEncode, "Opus finalization failed: " + std::to_string(code));
+    const int code = ope_encoder_drain(opus_encoder_);
+    return code == OPE_OK ? muse::make_ok() : make_ret(Err::ERROR_ENCODE, "Opus finalization failed: " + std::to_string(code));
 }

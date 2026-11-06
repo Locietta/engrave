@@ -49,14 +49,14 @@ class IWriter {
 public:
     virtual ~IWriter() = default;
 
-    virtual bool writeScore(Score *score, muse::io::IODevice *device, WriteInOutData *out = nullptr) = 0;
+    virtual bool write_score(Score *score, muse::io::IODevice *device, WriteInOutData *out = nullptr) = 0;
 
-    virtual muse::ByteArray writeStaffSelection(Score *score, const SelectionFilter &filter, staff_idx_t staffStart, staff_idx_t staffEnd,
-                                                const Fraction &tickStart, const Fraction &tickEnd, Segment *startSegment,
-                                                Segment *endSegment) = 0;
+    virtual muse::ByteArray write_staff_selection(Score *score, const SelectionFilter &filter, staff_idx_t staff_start,
+                                                  staff_idx_t staff_end, const Fraction &tick_start, const Fraction &tick_end,
+                                                  Segment *start_segment, Segment *end_segment) = 0;
 
-    virtual muse::ByteArray writeSymbolListSelection(track_idx_t fromTrack, track_idx_t toTrack,
-                                                     const std::vector<SelectedSymbol> &symbols) = 0;
+    virtual muse::ByteArray write_symbol_list_selection(track_idx_t from_track, track_idx_t to_track,
+                                                        const std::vector<SelectedSymbol> &symbols) = 0;
 
     using Supported = std::variant<std::monostate>;
 
@@ -71,17 +71,17 @@ public:
     }
 
     template <typename T>
-    void writeItem(const T item, XmlWriter &xml) {
+    void write_item(const T item, XmlWriter &xml) {
 #ifndef NDEBUG
         check_supported_static(item);
 #endif
-        doWriteItem(static_cast<const EngravingItem *>(item), xml);
+        do_write_item(static_cast<const EngravingItem *>(item), xml);
     }
 
 private:
-    virtual void doWriteItem(const EngravingItem *item, XmlWriter &xml) = 0;
-    virtual void writeSegments(XmlWriter &xml, write::WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool,
-                               bool) = 0;
+    virtual void do_write_item(const EngravingItem *item, XmlWriter &xml) = 0;
+    virtual void write_segments(XmlWriter &xml, write::WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg,
+                                bool, bool) = 0;
 };
 
 using IWriterPtr = std::shared_ptr<IWriter>;

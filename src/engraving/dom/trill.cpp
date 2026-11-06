@@ -44,8 +44,8 @@ using namespace mu::engraving;
 //   trillStyle
 //---------------------------------------------------------
 
-static const ElementStyle trillStyle{
-    {Sid::trillPlacement, Pid::PLACEMENT},
+static const ElementStyle trill_style{
+    {Sid::TRILL_PLACEMENT, Pid::PLACEMENT},
 };
 
 TrillSegment::TrillSegment(Trill *sp) : LineSegment(ElementType::TRILL_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {}
@@ -57,7 +57,7 @@ TrillSegment::TrillSegment(Trill *sp) : LineSegment(ElementType::TRILL_SEGMENT, 
 void TrillSegment::remove(EngravingItem *e) {
     if (trill()->accidental() == e) {
         // accidental is part of trill
-        trill()->setAccidental(nullptr);
+        trill()->set_accidental(nullptr);
         e->removed();
     }
 }
@@ -66,12 +66,12 @@ void TrillSegment::remove(EngravingItem *e) {
 //   symbolLine
 //---------------------------------------------------------
 
-void TrillSegment::symbolLine(SymId start, SymId fill) {
+void TrillSegment::symbol_line(SymId start, SymId fill) {
     double x1 = 0.0;
     double x2 = pos2().x();
     double w = x2 - x1;
-    double mag = magS();
-    IEngravingFontPtr f = score()->engravingFont();
+    double mag = mag_s();
+    IEngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -85,12 +85,12 @@ void TrillSegment::symbolLine(SymId start, SymId fill) {
     setbbox(r);
 }
 
-void TrillSegment::symbolLine(SymId start, SymId fill, SymId end) {
+void TrillSegment::symbol_line(SymId start, SymId fill, SymId end) {
     double x1 = 0.0;
     double x2 = pos2().x();
     double w = x2 - x1;
-    double mag = magS();
-    IEngravingFontPtr f = score()->engravingFont();
+    double mag = mag_s();
+    IEngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -110,16 +110,16 @@ void TrillSegment::symbolLine(SymId start, SymId fill, SymId end) {
 //   scanElements
 //---------------------------------------------------------
 
-void TrillSegment::scanElements(std::function<void(EngravingItem *)> func) {
+void TrillSegment::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
-    if (isSingleType() || isBeginType()) {
+    if (is_single_type() || is_begin_type()) {
         Accidental *a = trill()->accidental();
         if (a) {
             func(a);
         }
-        Chord *cueNoteChord = trill()->cueNoteChord();
-        if (cueNoteChord) {
-            cueNoteChord->scanElements(func);
+        Chord *cue_note_chord = trill()->cue_note_chord();
+        if (cue_note_chord) {
+            cue_note_chord->scan_elements(func);
         }
     }
 }
@@ -128,11 +128,11 @@ void TrillSegment::scanElements(std::function<void(EngravingItem *)> func) {
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject *TrillSegment::propertyDelegate(Pid pid) const {
+EngravingObject *TrillSegment::property_delegate(Pid pid) const {
     if (pid == Pid::TRILL_TYPE || pid == Pid::ORNAMENT_STYLE || pid == Pid::PLACEMENT) {
         return spanner();
     }
-    return LineSegment::propertyDelegate(pid);
+    return LineSegment::property_delegate(pid);
 }
 
 //---------------------------------------------------------
@@ -140,28 +140,28 @@ EngravingObject *TrillSegment::propertyDelegate(Pid pid) const {
 //---------------------------------------------------------
 
 Trill::Trill(DummyParentOr<EngravingItem> parent) : SLine(ElementType::TRILL, parent) {
-    trillType_ = TrillType::TRILL_LINE;
+    trill_type_ = TrillType::TRILL_LINE;
     ornament_ = nullptr;
     accidental_ = nullptr;
-    cueNoteChord_ = nullptr;
-    ornamentStyle_ = OrnamentStyle::DEFAULT;
-    initElementStyle(&trillStyle);
+    cue_note_chord_ = nullptr;
+    ornament_style_ = OrnamentStyle::DEFAULT;
+    init_element_style(&::trill_style);
 }
 
 Trill::Trill(const Trill &t) : SLine(t) {
-    trillType_ = t.trillType_;
+    trill_type_ = t.trill_type_;
     ornament_ = t.ornament_ ? t.ornament_->clone() : nullptr;
-    ornamentStyle_ = t.ornamentStyle_;
-    initElementStyle(&trillStyle);
+    ornament_style_ = t.ornament_style_;
+    init_element_style(&::trill_style);
 }
 
-EngravingItem *Trill::linkedClone() {
-    Trill *linkedTrill = clone();
-    Ornament *linkedOrnament = toOrnament(ornament_->linkedClone());
-    linkedTrill->setOrnament(linkedOrnament);
-    linkedTrill->setAutoplace(true);
-    score()->undo(new Link(linkedTrill, this));
-    return linkedTrill;
+EngravingItem *Trill::linked_clone() {
+    Trill *linked_trill = clone();
+    Ornament *linked_ornament = to_ornament(ornament_->linked_clone());
+    linked_trill->set_ornament(linked_ornament);
+    linked_trill->set_autoplace(true);
+    score()->undo(new Link(linked_trill, this));
+    return linked_trill;
 }
 
 //---------------------------------------------------------
@@ -175,48 +175,48 @@ void Trill::remove(EngravingItem *e) {
     }
 }
 
-void Trill::setTrack(track_idx_t n) {
-    EngravingItem::setTrack(n);
+void Trill::set_track(track_idx_t n) {
+    EngravingItem::set_track(n);
 
-    for (SpannerSegment *ss : spannerSegments()) {
-        ss->setTrack(n);
+    for (SpannerSegment *ss : spanner_segments()) {
+        ss->set_track(n);
     }
 
     if (ornament_) {
-        ornament_->setTrack(n);
+        ornament_->set_track(n);
     }
 }
 
-void Trill::setScore(Score *s) {
-    Spanner::setScore(s);
+void Trill::set_score(Score *s) {
+    Spanner::set_score(s);
     if (ornament_) {
-        ornament_->setScore(s);
+        ornament_->set_score(s);
     }
 }
 
-void Trill::computeStartElement() {
-    Spanner::computeStartElement();
-    if (startElement() && startElement()->isChord() && ornament_) {
-        ornament_->setOwnershipParent(startElement());
+void Trill::compute_start_element() {
+    Spanner::compute_start_element();
+    if (start_element() && start_element()->is_chord() && ornament_) {
+        ornament_->set_ownership_parent(start_element());
 
-        Chord *cueChord = ornament_->cueNoteChord();
-        if (cueChord) {
-            cueChord->setOwnershipParent(toChord(startElement())->segment());
+        Chord *cue_chord = ornament_->cue_note_chord();
+        if (cue_chord) {
+            cue_chord->set_ownership_parent(to_chord(start_element())->segment());
         }
     }
 }
 
-PointF Trill::trillLinePos(const SLine *line, Grip grip, System **system) {
+PointF Trill::trill_line_pos(const SLine *line, Grip grip, System **system) {
     if (!line) {
         return PointF();
     }
 
     bool start = grip == Grip::START;
-    bool mmRest = line->style().styleB(Sid::createMultiMeasureRests);
-    double graceOffset = 0.0;
-    double clefOffset = 0.0;
+    bool mm_rest = line->style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
+    double grace_offset = 0.0;
+    double clef_offset = 0.0;
 
-    Segment *segment = start ? line->startSegment() : line->endSegment();
+    Segment *segment = start ? line->start_segment() : line->end_segment();
     if (!segment) {
         return PointF();
     }
@@ -227,75 +227,76 @@ PointF Trill::trillLinePos(const SLine *line, Grip grip, System **system) {
         return PointF(x, 0.0);
     }
 
-    Segment *clefSeg = segment->isClefType() ? segment : nullptr;
-    Fraction curTick = segment->tick();
+    Segment *clef_seg = segment->is_clef_type() ? segment : nullptr;
+    Fraction cur_tick = segment->tick();
     while (true) {
-        Segment *prevSeg = mmRest ? segment->prev1MM() : segment->prev1();
-        if (prevSeg && prevSeg->tick() == curTick) {
-            clefSeg = prevSeg->isClefType() ? prevSeg : clefSeg;
-            segment = prevSeg;
+        Segment *prev_seg = mm_rest ? segment->prev1_mm() : segment->prev1();
+        if (prev_seg && prev_seg->tick() == cur_tick) {
+            clef_seg = prev_seg->is_clef_type() ? prev_seg : clef_seg;
+            segment = prev_seg;
         } else {
             break;
         }
     }
 
     // Stop line before clefs
-    if (clefSeg) {
-        EngravingItem *clefItem = clefSeg->element(line->track2());
-        if (clefItem && clefItem->isClef()) {
-            Clef *clef = toClef(clefItem);
-            SymId clefSym = ClefInfo::symId(clef->clefType());
-            Shape clefShape = line->symShapeWithCutouts(clefSym).translated(clef->pos());
-            clefOffset = segment->pageX() - clef->pageX() + clefShape.leftMostEdgeAtTop();
+    if (clef_seg) {
+        EngravingItem *clef_item = clef_seg->element(line->track2());
+        if (clef_item && clef_item->is_clef()) {
+            Clef *clef = to_clef(clef_item);
+            SymId clef_sym = ClefInfo::sym_id(clef->clef_type());
+            Shape clef_shape = line->sym_shape_with_cutouts(clef_sym).translated(clef->pos());
+            clef_offset = segment->page_x() - clef->page_x() + clef_shape.left_most_edge_at_top();
         }
     }
 
     // Stop line before grace notes
-    if (const EngravingItem *preAppendedItem = segment->preAppendedItem(line->track2());
-        preAppendedItem && preAppendedItem->isGraceNotesGroup()) {
+    if (const EngravingItem *pre_appended_item = segment->pre_appended_item(line->track2());
+        pre_appended_item && pre_appended_item->is_grace_notes_group()) {
         // get x position of leftmost grace note
-        const Chord *leftMostGraceChord = nullptr;
-        const GraceNotesGroup *graceGroup = toGraceNotesGroup(preAppendedItem);
-        for (const Chord *graceChord : *graceGroup) {
-            leftMostGraceChord = leftMostGraceChord && leftMostGraceChord->x() < graceChord->x() ? leftMostGraceChord : graceChord;
+        const Chord *left_most_grace_chord = nullptr;
+        const GraceNotesGroup *grace_group = to_grace_notes_group(pre_appended_item);
+        for (const Chord *grace_chord : *grace_group) {
+            left_most_grace_chord =
+                left_most_grace_chord && left_most_grace_chord->x() < grace_chord->x() ? left_most_grace_chord : grace_chord;
         }
-        if (leftMostGraceChord) {
-            graceOffset = segment->pageX() - leftMostGraceChord->pageX();
+        if (left_most_grace_chord) {
+            grace_offset = segment->page_x() - left_most_grace_chord->page_x();
         }
     }
 
-    double offset = std::max(graceOffset, clefOffset);
+    double offset = std::max(grace_offset, clef_offset);
 
     *system = segment->measure()->system();
     double x = segment->x() + segment->measure()->x() - line->spatium() - offset;
     return PointF(x, 0.0);
 }
 
-PointF Trill::linePos(Grip grip, System **system) const { return trillLinePos(this, grip, system); }
+PointF Trill::line_pos(Grip grip, System **system) const { return trill_line_pos(this, grip, system); }
 
-void Trill::setTrillType(TrillType tt) {
-    trillType_ = tt;
+void Trill::set_trill_type(TrillType tt) {
+    trill_type_ = tt;
     if (!ornament_) {
         // ornament parent will be explicitely set at layout stage
-        ornament_ = Factory::createOrnament(score()->dummy());
+        ornament_ = Factory::create_ornament(score()->dummy());
     }
-    ornament_->setTrack(track());
-    ornament_->setSymId(Ornament::fromTrillType(tt));
+    ornament_->set_track(track());
+    ornament_->set_sym_id(Ornament::from_trill_type(tt));
 }
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-static const ElementStyle trillSegmentStyle{
-    {Sid::trillMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle trill_segment_style{
+    {Sid::TRILL_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
-LineSegment *Trill::createLineSegment() {
+LineSegment *Trill::create_line_segment() {
     TrillSegment *seg = new TrillSegment(this);
-    seg->setTrack(track());
-    seg->setColor(lineColor());
-    seg->initElementStyle(&trillSegmentStyle);
+    seg->set_track(track());
+    seg->set_color(line_color());
+    seg->init_element_style(&::trill_segment_style);
     return seg;
 }
 
@@ -303,36 +304,36 @@ LineSegment *Trill::createLineSegment() {
 //   trillTypeName
 //---------------------------------------------------------
 
-String Trill::trillTypeUserName() const { return TConv::translatedUserName(trillType()); }
+String Trill::trill_type_user_name() const { return TConv::translated_user_name(trill_type()); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Trill::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::TRILL_TYPE: return int(trillType());
-        case Pid::ORNAMENT_STYLE: return ornamentStyle();
+PropertyValue Trill::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::TRILL_TYPE: return int(trill_type());
+        case Pid::ORNAMENT_STYLE: return ornament_style();
         default: break;
     }
-    return SLine::getProperty(propertyId);
+    return SLine::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool Trill::setProperty(Pid propertyId, const PropertyValue &val) {
-    switch (propertyId) {
-        case Pid::TRILL_TYPE: setTrillType(TrillType(val.toInt())); break;
-        case Pid::ORNAMENT_STYLE: setOrnamentStyle(val.value<OrnamentStyle>()); break;
+bool Trill::set_property(Pid property_id, const PropertyValue &val) {
+    switch (property_id) {
+        case Pid::TRILL_TYPE: set_trill_type(TrillType(val.to_int())); break;
+        case Pid::ORNAMENT_STYLE: set_ornament_style(val.value<OrnamentStyle>()); break;
         case Pid::COLOR:
-            setColor(val.value<Color>());
-            setLineColor(val.value<Color>());
+            set_color(val.value<Color>());
+            set_line_color(val.value<Color>());
             break;
-        default: return SLine::setProperty(propertyId, val);
+        default: return SLine::set_property(property_id, val);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -340,13 +341,13 @@ bool Trill::setProperty(Pid propertyId, const PropertyValue &val) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Trill::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Trill::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::TRILL_TYPE: return static_cast<int>(TrillType::TRILL_LINE);
         case Pid::ORNAMENT_STYLE: return OrnamentStyle::DEFAULT;
-        case Pid::PLACEMENT: return style().styleV(Sid::trillPlacement);
+        case Pid::PLACEMENT: return style().style_v(Sid::TRILL_PLACEMENT);
 
-        default: return SLine::propertyDefault(propertyId);
+        default: return SLine::property_default(property_id);
     }
 }
 
@@ -354,14 +355,14 @@ PropertyValue Trill::propertyDefault(Pid propertyId) const {
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Trill::subtypeUserName() const { return TConv::userName(trillType()); }
+muse::TranslatableString Trill::subtype_user_name() const { return TConv::user_name(trill_type()); }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-Sid Trill::defaultPosSid() const { return placeAbove() ? Sid::trillPosAbove : Sid::trillPosBelow; }
+Sid Trill::default_pos_sid() const { return place_above() ? Sid::TRILL_POS_ABOVE : Sid::TRILL_POS_BELOW; }
 
-void Trill::doComputeEndElement() {
-    setEndElement(score()->findChordRestEndingBeforeTickInStaffAndVoice(tick2(), track2staff(track2()), voice()));
+void Trill::do_compute_end_element() {
+    set_end_element(score()->find_chord_rest_ending_before_tick_in_staff_and_voice(tick2(), track2staff(track2()), voice()));
 }

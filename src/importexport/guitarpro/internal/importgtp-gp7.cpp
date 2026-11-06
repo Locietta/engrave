@@ -42,9 +42,9 @@ using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
 namespace {
-constexpr uint64_t GP7_MAX_ENTRY_BYTES = 64ull * 1024 * 1024;
-constexpr uint64_t GP7_MAX_TOTAL_BYTES = 128ull * 1024 * 1024;
-constexpr size_t GP7_MAX_ENTRIES = 4096;
+constexpr uint64_t g_p7_max_entry_bytes = 64ull * 1024 * 1024;
+constexpr uint64_t g_p7_max_total_bytes = 128ull * 1024 * 1024;
+constexpr size_t g_p7_max_entries = 4096;
 } // namespace
 
 //---------------------------------------------------------
@@ -53,79 +53,79 @@ constexpr size_t GP7_MAX_ENTRIES = 4096;
 
 bool GuitarPro7::read(IODevice *io) {
     f = io;
-    previousTempo = -1;
-    gpifRead_ = false;
+    previous_tempo = -1;
+    gpif_read_ = false;
 
     ZipReader zip(io);
-    const auto entries = zip.fileInfoList();
-    if (zip.hasError() || entries.empty() || entries.size() > GP7_MAX_ENTRIES) {
+    const auto entries = zip.file_info_list();
+    if (zip.has_error() || entries.empty() || entries.size() > ::mu::iex::guitarpro::g_p7_max_entries) {
         LOGE() << "Invalid or oversized Guitar Pro 7 archive";
         return false;
     }
 
     uint64_t total = 0;
     for (const auto &entry : entries) {
-        if (entry.size > GP7_MAX_ENTRY_BYTES || total > GP7_MAX_TOTAL_BYTES - entry.size) {
+        if (entry.size > ::mu::iex::guitarpro::g_p7_max_entry_bytes || total > ::mu::iex::guitarpro::g_p7_max_total_bytes - entry.size) {
             LOGE() << "Guitar Pro 7 archive declares an unsafe uncompressed size";
             return false;
         }
         total += entry.size;
     }
 
-    if (!zip.fileExists("Content/score.gpif")) {
+    if (!zip.file_exists("Content/score.gpif")) {
         LOGE() << "Guitar Pro 7 archive has no Content/score.gpif";
         return false;
     }
 
-    ByteArray fileData = zip.fileData("Content/score.gpif");
-    if (zip.hasError() || fileData.empty() || fileData.size() > GP7_MAX_ENTRY_BYTES) {
+    ByteArray file_data = zip.file_data("Content/score.gpif");
+    if (zip.has_error() || file_data.empty() || file_data.size() > ::mu::iex::guitarpro::g_p7_max_entry_bytes) {
         LOGE() << "Invalid Content/score.gpif in Guitar Pro 7 archive";
         return false;
     }
 
-    ByteArray partsData;
-    if (zip.fileExists("Content/PartConfiguration")) {
-        partsData = zip.fileData("Content/PartConfiguration");
-        if (partsData.size() > GP7_MAX_ENTRY_BYTES) {
+    ByteArray parts_data;
+    if (zip.file_exists("Content/PartConfiguration")) {
+        parts_data = zip.file_data("Content/PartConfiguration");
+        if (parts_data.size() > ::mu::iex::guitarpro::g_p7_max_entry_bytes) {
             LOGE() << "Oversized Content/PartConfiguration in Guitar Pro 7 archive";
             return false;
         }
     }
     zip.close();
 
-    properties_ = readProperties(&partsData);
+    properties_ = read_properties(&parts_data);
 
-    readGpif(&fileData);
-    return gpifRead_;
+    read_gpif(&file_data);
+    return gpif_read_;
 }
 
 //---------------------------------------------------------
 //   readProperties
 //---------------------------------------------------------
 
-GuitarPro::GPProperties GuitarPro7::readProperties(ByteArray *data) {
+GuitarPro::GPProperties GuitarPro7::read_properties(ByteArray *data) {
     GPProperties properties;
-    size_t partsInfoSize = data->size();
-    const size_t numInstrOffset = 8;
-    if (partsInfoSize <= numInstrOffset) {
+    size_t parts_info_size = data->size();
+    const size_t num_instr_offset = 8;
+    if (parts_info_size <= num_instr_offset) {
         LOGE() << "failed to read gp properties";
         return properties;
     }
 
-    size_t numberOfInstruments = static_cast<size_t>(data->at(numInstrOffset));
-    if (partsInfoSize <= numInstrOffset + numberOfInstruments) {
+    size_t number_of_instruments = static_cast<size_t>(data->at(num_instr_offset));
+    if (parts_info_size <= num_instr_offset + number_of_instruments) {
         LOGE() << "failed to read gp properties";
         return properties;
     }
 
-    std::vector<TabImportOption> partsImportOpts = properties.partsImportOptions;
+    std::vector<TabImportOption> parts_import_opts = properties.parts_import_options;
 
-    for (size_t i = numInstrOffset + 1; i <= numInstrOffset + numberOfInstruments; i++) {
-        partsImportOpts.push_back(static_cast<TabImportOption>(data->at(static_cast<int>(i))));
+    for (size_t i = num_instr_offset + 1; i <= num_instr_offset + number_of_instruments; i++) {
+        parts_import_opts.push_back(static_cast<TabImportOption>(data->at(static_cast<int>(i))));
     }
 
     return properties;
 }
 
-std::unique_ptr<IGPDomBuilder> GuitarPro7::createGPDomBuilder() const { return std::make_unique<GP7DomBuilder>(); }
+std::unique_ptr<IGPDomBuilder> GuitarPro7::create_gp_dom_builder() const { return std::make_unique<GP7DomBuilder>(); }
 } // namespace mu::iex::guitarpro

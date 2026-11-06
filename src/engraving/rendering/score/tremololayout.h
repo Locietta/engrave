@@ -38,13 +38,13 @@ public:
     static void layout(TremoloTwoChord *item, const LayoutContext &ctx);
     static void layout(TremoloSingleChord *item, const LayoutContext &ctx);
 
-    static std::pair<double, double> extendedStemLenWithTwoNoteTremolo(TremoloTwoChord *tremolo, double stemLen1, double stemLen2);
+    static std::pair<double, double> extended_stem_len_with_two_note_tremolo(TremoloTwoChord *tremolo, double stem_len1, double stem_len2);
 
-    static void createBeamSegments(TremoloTwoChord *item, const LayoutContext &ctx);
+    static void create_beam_segments(TremoloTwoChord *item, const LayoutContext &ctx);
 private:
-    static void layoutOneNoteTremolo(TremoloSingleChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
-    static void layoutTwoNotesTremolo(TremoloTwoChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
-    static void calcIsUp(TremoloTwoChord *item);
+    static void layout_one_note_tremolo(TremoloSingleChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
+    static void layout_two_notes_tremolo(TremoloTwoChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
+    static void calc_is_up(TremoloTwoChord *item);
 };
 } // namespace mu::engraving::rendering::score
 

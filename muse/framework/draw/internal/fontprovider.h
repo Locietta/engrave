@@ -34,29 +34,29 @@ class FontProvider : public IFontProvider {
 public:
     FontProvider(IFontsDatabase &database, IFontsEngine &engine) : database_(database), engine_(engine) {}
 
-    int addSymbolFont(const String &family, const io::path_t &path) override;
-    int addSymbolFont(const String &family, std::shared_ptr<io::IODevice> device) override;
+    int add_symbol_font(const String &family, const io::PathT &path) override;
+    int add_symbol_font(const String &family, std::shared_ptr<io::IODevice> device) override;
 
-    double lineSpacing(const Font &f) const override;
-    double xHeight(const Font &f) const override;
+    double line_spacing(const Font &f) const override;
+    double x_height(const Font &f) const override;
     double height(const Font &f) const override;
-    double capHeight(const Font &f) const override;
+    double cap_height(const Font &f) const override;
     double ascent(const Font &f) const override;
     double descent(const Font &f) const override;
 
-    double underlinePos(const Font &f) const override;
-    double lineWidth(const Font &f) const override;
-    double strikeOutPos(const Font &f) const override;
+    double underline_pos(const Font &f) const override;
+    double line_width(const Font &f) const override;
+    double strike_out_pos(const Font &f) const override;
 
-    bool inFont(const Font &f, char32_t ucs4) const override;
+    bool in_font(const Font &f, char32_t ucs4) const override;
 
     // Text
-    double horizontalAdvance(const Font &f, const String &string) const override;
-    double horizontalAdvance(const Font &f, char32_t ucs4) const override;
+    double horizontal_advance(const Font &f, const String &string) const override;
+    double horizontal_advance(const Font &f, char32_t ucs4) const override;
 
-    RectF boundingRect(const Font &f, const String &string) const override;
-    RectF boundingRect(const Font &f, char32_t ucs4) const override;
+    RectF bounding_rect(const Font &f, const String &string) const override;
+    RectF bounding_rect(const Font &f, char32_t ucs4) const override;
 
-    RectF tightBoundingRect(const Font &f, const String &string) const override;
+    RectF tight_bounding_rect(const Font &f, const String &string) const override;
 };
 } // namespace muse::draw

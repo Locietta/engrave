@@ -37,8 +37,8 @@ template <typename T>
 struct Item {
     T type;
     AsciiStringView xml;
-    TranslatableString userName;
-    TranslatableString capitalizedUserName;
+    TranslatableString user_name;
+    TranslatableString capitalized_user_name;
 
     // NOTE Ideally we would write `TranslatableString userName = {};` and omit these constructors
     // But that causes internal compiler errors with certain versions of GCC/MinGW
@@ -48,15 +48,15 @@ struct Item {
 
     Item(T type, AsciiStringView xml) : type(type), xml(xml) {}
 
-    Item(T type, AsciiStringView xml, const TranslatableString &capitalizedUserName)
-        : type(type), xml(xml), capitalizedUserName(capitalizedUserName) {}
+    Item(T type, AsciiStringView xml, const TranslatableString &capitalized_user_name)
+        : type(type), xml(xml), capitalized_user_name(capitalized_user_name) {}
 
-    Item(T type, AsciiStringView xml, const TranslatableString &userName, const TranslatableString &capitalizedUserName)
-        : type(type), xml(xml), userName(userName), capitalizedUserName(capitalizedUserName) {}
+    Item(T type, AsciiStringView xml, const TranslatableString &user_name, const TranslatableString &capitalized_user_name)
+        : type(type), xml(xml), user_name(user_name), capitalized_user_name(capitalized_user_name) {}
 };
 
 template <typename T, typename C>
-static const Item<T> &findItemByType(const C &cont, const T &type) {
+static const Item<T> &find_item_by_type(const C &cont, const T &type) {
     const auto it = std::find_if(cont.cbegin(), cont.cend(), [&](const Item<T> &item) { return item.type == type; });
 
     IF_ASSERT_FAILED(it != cont.cend()) {
@@ -68,37 +68,37 @@ static const Item<T> &findItemByType(const C &cont, const T &type) {
 }
 
 template <typename T, typename C>
-static const TranslatableString &findUserNameByType(const C &cont, const T &type) {
-    const Item<T> &item = findItemByType(cont, type);
+static const TranslatableString &find_user_name_by_type(const C &cont, const T &type) {
+    const Item<T> &item = find_item_by_type(cont, type);
 
-    return item.userName;
+    return item.user_name;
 }
 
 template <typename T, typename C>
-static const TranslatableString &findCapitalizedUserNameByType(const C &cont, const T &type) {
-    const Item<T> &item = findItemByType(cont, type);
+static const TranslatableString &find_capitalized_user_name_by_type(const C &cont, const T &type) {
+    const Item<T> &item = find_item_by_type(cont, type);
 
-    return item.capitalizedUserName;
+    return item.capitalized_user_name;
 }
 
 template <typename T, typename C>
-static AsciiStringView findXmlTagByType(const C &cont, const T &v) {
-    const Item<T> &item = findItemByType(cont, v);
+static AsciiStringView find_xml_tag_by_type(const C &cont, const T &v) {
+    const Item<T> &item = find_item_by_type(cont, v);
 
     return item.xml;
 }
 
 template <typename T, typename C>
-static T findTypeByXmlTag(const C &cont, const String &tag, T def) {
-    muse::ByteArray ba = tag.toAscii();
-    auto it = std::find_if(cont.cbegin(), cont.cend(), [ba](const Item<T> &i) { return i.xml == ba.constChar(); });
+static T find_type_by_xml_tag(const C &cont, const String &tag, T def) {
+    muse::ByteArray ba = tag.to_ascii();
+    auto it = std::find_if(cont.cbegin(), cont.cend(), [ba](const Item<T> &i) { return i.xml == ba.const_char(); });
 
     IF_ASSERT_FAILED(it != cont.cend()) { return def; }
     return it->type;
 }
 
 template <typename T, typename C>
-static T findTypeByXmlTag(const C &cont, const AsciiStringView &tag, T def, bool silent = false) {
+static T find_type_by_xml_tag(const C &cont, const AsciiStringView &tag, T def, bool silent = false) {
     auto it = std::find_if(cont.cbegin(), cont.cend(), [tag](const Item<T> &i) { return i.xml == tag; });
 
     if (it == cont.cend()) {
@@ -113,7 +113,7 @@ static T findTypeByXmlTag(const C &cont, const AsciiStringView &tag, T def, bool
 }
 
 // ==========================================================
-String TConv::toXml(const std::vector<int> &v) {
+String TConv::to_xml(const std::vector<int> &v) {
     StringList sl;
     for (int i : v) {
         sl << String::number(i);
@@ -121,12 +121,12 @@ String TConv::toXml(const std::vector<int> &v) {
     return sl.join(u",");
 }
 
-std::vector<int> TConv::fromXml(const String &tag, const std::vector<int> &def) {
+std::vector<int> TConv::from_xml(const String &tag, const std::vector<int> &def) {
     std::vector<int> list;
-    StringList sl = tag.split(u',', muse::SkipEmptyParts);
+    StringList sl = tag.split(u',', muse::SKIP_EMPTY_PARTS);
     for (const String &s : sl) {
         bool ok = false;
-        int i = s.simplified().toInt(&ok);
+        int i = s.simplified().to_int(&ok);
         if (!ok) {
             return def;
         }
@@ -135,35 +135,35 @@ std::vector<int> TConv::fromXml(const String &tag, const std::vector<int> &def) 
     return list;
 }
 
-String TConv::toXml(const std::vector<string_idx_t> &v) {
-    std::vector<int> _v;
-    _v.reserve(v.size());
+String TConv::to_xml(const std::vector<string_idx_t> &v) {
+    std::vector<int> v_value;
+    v_value.reserve(v.size());
     for (string_idx_t string : v) {
-        _v.push_back(static_cast<int>(string));
+        v_value.push_back(static_cast<int>(string));
     }
 
-    return toXml(_v);
+    return to_xml(v_value);
 }
 
-std::vector<string_idx_t> TConv::fromXml(const String &tag, const std::vector<string_idx_t> &def) {
-    std::vector<int> _def;
-    _def.reserve(def.size());
+std::vector<string_idx_t> TConv::from_xml(const String &tag, const std::vector<string_idx_t> &def) {
+    std::vector<int> def_value;
+    def_value.reserve(def.size());
     for (string_idx_t string : def) {
-        _def.push_back(static_cast<int>(string));
+        def_value.push_back(static_cast<int>(string));
     }
 
     std::vector<string_idx_t> v;
-    std::vector<int> _v = fromXml(tag, _def);
-    v.reserve(_v.size());
+    std::vector<int> v_value = from_xml(tag, def_value);
+    v.reserve(v_value.size());
 
-    for (int string : _v) {
+    for (int string : v_value) {
         v.push_back(static_cast<string_idx_t>(string));
     }
 
     return v;
 }
 
-static const std::array ELEMENT_TYPES{
+static const std::array element_types{
     Item{ElementType::INVALID, "invalid", TranslatableString("engraving", "invalid", nullptr, 1),
          TranslatableString("engraving", "Invalid", nullptr, 1)},
     Item{ElementType::BRACKET_ITEM, "BracketItem", TranslatableString("engraving", "bracket(s)", nullptr, 1),
@@ -482,48 +482,48 @@ static const std::array ELEMENT_TYPES{
     Item{ElementType::DUMMY, "Dummy", TranslatableString::untranslatable("dummy"), TranslatableString::untranslatable("Dummy")},
 };
 
-static_assert(ELEMENT_TYPES.size() == TOT_ELEMENT_TYPES, "please update ELEMENT_TYPES");
+static_assert(::element_types.size() == ::mu::engraving::tot_element_types, "please update ELEMENT_TYPES");
 
-const TranslatableString &TConv::userName(ElementType v) { return findUserNameByType(ELEMENT_TYPES, v); }
+const TranslatableString &TConv::user_name(ElementType v) { return find_user_name_by_type(::element_types, v); }
 
-const TranslatableString &TConv::capitalizedUserName(ElementType v) { return findCapitalizedUserNameByType(ELEMENT_TYPES, v); }
+const TranslatableString &TConv::capitalized_user_name(ElementType v) { return find_capitalized_user_name_by_type(::element_types, v); }
 
-AsciiStringView TConv::toXml(ElementType v) { return findXmlTagByType<ElementType>(ELEMENT_TYPES, v); }
+AsciiStringView TConv::to_xml(ElementType v) { return find_xml_tag_by_type<ElementType>(::element_types, v); }
 
-ElementType TConv::fromXml(const AsciiStringView &tag, ElementType def, bool silent) {
-    return findTypeByXmlTag<ElementType>(ELEMENT_TYPES, tag, def, silent);
+ElementType TConv::from_xml(const AsciiStringView &tag, ElementType def, bool silent) {
+    return find_type_by_xml_tag<ElementType>(::element_types, tag, def, silent);
 }
 
-static const std::vector<Item<AlignH>> ALIGN_H = {
+static const std::vector<Item<AlignH>> align_h = {
     {AlignH::LEFT, "left"},
     {AlignH::RIGHT, "right"},
     {AlignH::HCENTER, "center"},
     {AlignH::JUSTIFY, "justify"},
 };
 
-static const std::vector<Item<AlignV>> ALIGN_V = {
+static const std::vector<Item<AlignV>> align_v = {
     {AlignV::TOP, "top"},
     {AlignV::VCENTER, "center"},
     {AlignV::BOTTOM, "bottom"},
     {AlignV::BASELINE, "baseline"},
 };
 
-AlignH TConv::fromXml(const AsciiStringView &tag, AlignH def) { return findTypeByXmlTag<AlignH>(ALIGN_H, tag, def); }
+AlignH TConv::from_xml(const AsciiStringView &tag, AlignH def) { return find_type_by_xml_tag<AlignH>(::align_h, tag, def); }
 
-AlignV TConv::fromXml(const AsciiStringView &tag, AlignV def) { return findTypeByXmlTag<AlignV>(ALIGN_V, tag, def); }
+AlignV TConv::from_xml(const AsciiStringView &tag, AlignV def) { return find_type_by_xml_tag<AlignV>(::align_v, tag, def); }
 
-String TConv::toXml(AlignH v) { return String::fromAscii(findXmlTagByType<AlignH>(ALIGN_H, v).ascii()); }
+String TConv::to_xml(AlignH v) { return String::from_ascii(find_xml_tag_by_type<AlignH>(::align_h, v).ascii()); }
 
-String TConv::toXml(AlignV v) { return String::fromAscii(findXmlTagByType<AlignV>(ALIGN_V, v).ascii()); }
+String TConv::to_xml(AlignV v) { return String::from_ascii(find_xml_tag_by_type<AlignV>(::align_v, v).ascii()); }
 
-String TConv::toXml(Align v) {
+String TConv::to_xml(Align v) {
     StringList sl;
-    sl << toXml(v.horizontal);
-    sl << toXml(v.vertical);
+    sl << to_xml(v.horizontal);
+    sl << to_xml(v.vertical);
     return sl.join(u",");
 }
 
-Align TConv::fromXml(const String &str, Align def) {
+Align TConv::from_xml(const String &str, Align def) {
     StringList sl = str.split(',');
     if (sl.size() != 2) {
         LOGD() << "bad align value: " << str;
@@ -531,29 +531,29 @@ Align TConv::fromXml(const String &str, Align def) {
     }
 
     Align a;
-    a.horizontal = findTypeByXmlTag<AlignH>(ALIGN_H, sl.at(0), def.horizontal);
-    a.vertical = findTypeByXmlTag<AlignV>(ALIGN_V, sl.at(1), def.vertical);
+    a.horizontal = find_type_by_xml_tag<AlignH>(::align_h, sl.at(0), def.horizontal);
+    a.vertical = find_type_by_xml_tag<AlignV>(::align_v, sl.at(1), def.vertical);
     return a;
 }
 
-static const std::vector<Item<IntervalStep>> INTERVAL_STEP = {{IntervalStep::UNISON, "unison"},   {IntervalStep::SECOND, "second"},
+static const std::vector<Item<IntervalStep>> interval_step = {{IntervalStep::UNISON, "unison"},   {IntervalStep::SECOND, "second"},
                                                               {IntervalStep::THIRD, "third"},     {IntervalStep::FOURTH, "fourth"},
                                                               {IntervalStep::FIFTH, "fifth"},     {IntervalStep::SIXTH, "sixth"},
                                                               {IntervalStep::SEVENTH, "seventh"}, {IntervalStep::OCTAVE, "octave"}};
 
-static const std::vector<Item<IntervalType>> INTERVAL_TYPE = {
+static const std::vector<Item<IntervalType>> interval_type = {
     {IntervalType::AUTO, "auto"},       {IntervalType::MINOR, "minor"},           {IntervalType::MAJOR, "major"},
     {IntervalType::PERFECT, "perfect"}, {IntervalType::DIMINISHED, "diminished"}, {IntervalType::AUGMENTED, "augmented"},
 };
 
-String TConv::toXml(OrnamentInterval interval) {
+String TConv::to_xml(OrnamentInterval interval) {
     StringList sl;
-    sl << String::fromAscii(findXmlTagByType<IntervalStep>(INTERVAL_STEP, interval.step).ascii());
-    sl << String::fromAscii(findXmlTagByType<IntervalType>(INTERVAL_TYPE, interval.type).ascii());
+    sl << String::from_ascii(find_xml_tag_by_type<IntervalStep>(::interval_step, interval.step).ascii());
+    sl << String::from_ascii(find_xml_tag_by_type<IntervalType>(::interval_type, interval.type).ascii());
     return sl.join(u",");
 }
 
-OrnamentInterval TConv::fromXml(const String &str, OrnamentInterval def) {
+OrnamentInterval TConv::from_xml(const String &str, OrnamentInterval def) {
     StringList sl = str.split(',');
     if (sl.size() != 2) {
         LOGD() << "bad ornament interval value: " << str;
@@ -561,251 +561,279 @@ OrnamentInterval TConv::fromXml(const String &str, OrnamentInterval def) {
     }
 
     OrnamentInterval interval;
-    interval.step = findTypeByXmlTag<IntervalStep>(INTERVAL_STEP, sl.at(0), def.step);
-    interval.type = findTypeByXmlTag<IntervalType>(INTERVAL_TYPE, sl.at(1), def.type);
+    interval.step = find_type_by_xml_tag<IntervalStep>(::interval_step, sl.at(0), def.step);
+    interval.type = find_type_by_xml_tag<IntervalType>(::interval_type, sl.at(1), def.type);
     return interval;
 }
 
-IntervalStep TConv::fromXml(const AsciiStringView &tag, IntervalStep def) {
-    return findTypeByXmlTag<IntervalStep>(INTERVAL_STEP, tag, def);
+IntervalStep TConv::from_xml(const AsciiStringView &tag, IntervalStep def) {
+    return find_type_by_xml_tag<IntervalStep>(::interval_step, tag, def);
 }
 
-IntervalType TConv::fromXml(const AsciiStringView &tag, IntervalType def) {
-    return findTypeByXmlTag<IntervalType>(INTERVAL_TYPE, tag, def);
+IntervalType TConv::from_xml(const AsciiStringView &tag, IntervalType def) {
+    return find_type_by_xml_tag<IntervalType>(::interval_type, tag, def);
 }
 
-static const std::vector<Item<TiePlacement>> TIE_PLACEMENT = {
+static const std::vector<Item<TiePlacement>> tie_placement_constant = {
     {TiePlacement::AUTO, "auto"},
     {TiePlacement::INSIDE, "inside"},
     {TiePlacement::OUTSIDE, "outside"},
 };
 
-AsciiStringView TConv::toXml(TiePlacement tiePlacement) { return findXmlTagByType<TiePlacement>(TIE_PLACEMENT, tiePlacement); }
-
-TiePlacement TConv::fromXml(const AsciiStringView &str, TiePlacement def) {
-    return findTypeByXmlTag<TiePlacement>(TIE_PLACEMENT, str, def);
+AsciiStringView TConv::to_xml(TiePlacement input_tie_placement) {
+    return find_xml_tag_by_type<TiePlacement>(::tie_placement_constant, input_tie_placement);
 }
 
-static const std::vector<Item<TieDotsPlacement>> TIE_DOTS_PLACEMENT = {
+TiePlacement TConv::from_xml(const AsciiStringView &str, TiePlacement def) {
+    return find_type_by_xml_tag<TiePlacement>(::tie_placement_constant, str, def);
+}
+
+static const std::vector<Item<TieDotsPlacement>> tie_dots_placement = {
     {TieDotsPlacement::AUTO, "auto"},
     {TieDotsPlacement::BEFORE_DOTS, "before"},
     {TieDotsPlacement::AFTER_DOTS, "after"},
 };
 
-AsciiStringView TConv::toXml(TieDotsPlacement placement) { return findXmlTagByType<TieDotsPlacement>(TIE_DOTS_PLACEMENT, placement); }
-
-TieDotsPlacement TConv::fromXml(const AsciiStringView &str, TieDotsPlacement def) {
-    return findTypeByXmlTag<TieDotsPlacement>(TIE_DOTS_PLACEMENT, str, def);
+AsciiStringView TConv::to_xml(TieDotsPlacement placement) {
+    return find_xml_tag_by_type<TieDotsPlacement>(::tie_dots_placement, placement);
 }
 
-static const std::vector<Item<TimeSigPlacement>> TIMESIG_PLACEMENT = {{TimeSigPlacement::NORMAL, "normal"},
+TieDotsPlacement TConv::from_xml(const AsciiStringView &str, TieDotsPlacement def) {
+    return find_type_by_xml_tag<TieDotsPlacement>(::tie_dots_placement, str, def);
+}
+
+static const std::vector<Item<TimeSigPlacement>> timesig_placement = {{TimeSigPlacement::NORMAL, "normal"},
                                                                       {TimeSigPlacement::ABOVE_STAVES, "aboveStaves"},
                                                                       {TimeSigPlacement::ACROSS_STAVES, "acrossStaves"}};
-static const std::vector<Item<TimeSigStyle>> TIMESIG_STYLE = {
+static const std::vector<Item<TimeSigStyle>> timesig_style = {
     {TimeSigStyle::NORMAL, "normal"}, {TimeSigStyle::NARROW, "narrow"}, {TimeSigStyle::LARGE, "large"}};
-static const std::vector<Item<TimeSigVSMargin>> TIMESIG_MARGIN = {
+static const std::vector<Item<TimeSigVSMargin>> timesig_margin = {
     {TimeSigVSMargin::HANG_INTO_MARGIN, "hangIntoMargin"},
     {TimeSigVSMargin::RIGHT_ALIGN_TO_BARLINE, "rightAlignToBarline"},
     {TimeSigVSMargin::CREATE_SPACE, "createSpace"},
 };
 
-AsciiStringView TConv::toXml(TimeSigPlacement timeSigPos) { return findXmlTagByType<TimeSigPlacement>(TIMESIG_PLACEMENT, timeSigPos); }
-
-TimeSigPlacement TConv::fromXml(const AsciiStringView &str, TimeSigPlacement def) {
-    return findTypeByXmlTag<TimeSigPlacement>(TIMESIG_PLACEMENT, str, def);
+AsciiStringView TConv::to_xml(TimeSigPlacement time_sig_pos) {
+    return find_xml_tag_by_type<TimeSigPlacement>(::timesig_placement, time_sig_pos);
 }
 
-AsciiStringView TConv::toXml(TimeSigStyle timeSigStyle) { return findXmlTagByType<TimeSigStyle>(TIMESIG_STYLE, timeSigStyle); }
-
-TimeSigStyle TConv::fromXml(const AsciiStringView &str, TimeSigStyle def) {
-    return findTypeByXmlTag<TimeSigStyle>(TIMESIG_STYLE, str, def);
+TimeSigPlacement TConv::from_xml(const AsciiStringView &str, TimeSigPlacement def) {
+    return find_type_by_xml_tag<TimeSigPlacement>(::timesig_placement, str, def);
 }
 
-AsciiStringView TConv::toXml(TimeSigVSMargin timeSigVSMargin) { return findXmlTagByType<TimeSigVSMargin>(TIMESIG_MARGIN, timeSigVSMargin); }
+AsciiStringView TConv::to_xml(TimeSigStyle time_sig_style) { return find_xml_tag_by_type<TimeSigStyle>(::timesig_style, time_sig_style); }
 
-TimeSigVSMargin TConv::fromXml(const AsciiStringView &str, TimeSigVSMargin def) {
-    return findTypeByXmlTag<TimeSigVSMargin>(TIMESIG_MARGIN, str, def);
+TimeSigStyle TConv::from_xml(const AsciiStringView &str, TimeSigStyle def) {
+    return find_type_by_xml_tag<TimeSigStyle>(::timesig_style, str, def);
 }
 
-static const std::vector<Item<NoteSpellingType>> NOTE_SPELLING_TYPE = {
+AsciiStringView TConv::to_xml(TimeSigVSMargin time_sig_vs_margin) {
+    return find_xml_tag_by_type<TimeSigVSMargin>(::timesig_margin, time_sig_vs_margin);
+}
+
+TimeSigVSMargin TConv::from_xml(const AsciiStringView &str, TimeSigVSMargin def) {
+    return find_type_by_xml_tag<TimeSigVSMargin>(::timesig_margin, str, def);
+}
+
+static const std::vector<Item<NoteSpellingType>> note_spelling_type_constant = {
     {NoteSpellingType::STANDARD, "standard"},   {NoteSpellingType::GERMAN, "german"}, {NoteSpellingType::GERMAN_PURE, "germanPure"},
     {NoteSpellingType::SOLFEGGIO, "solfeggio"}, {NoteSpellingType::FRENCH, "french"},
 };
 
-AsciiStringView TConv::toXml(NoteSpellingType noteSpellingType) {
-    return findXmlTagByType<NoteSpellingType>(NOTE_SPELLING_TYPE, noteSpellingType);
+AsciiStringView TConv::to_xml(NoteSpellingType input_note_spelling_type) {
+    return find_xml_tag_by_type<NoteSpellingType>(::note_spelling_type_constant, input_note_spelling_type);
 }
 
-NoteSpellingType TConv::fromXml(const AsciiStringView &str, NoteSpellingType def) {
-    return findTypeByXmlTag<NoteSpellingType>(NOTE_SPELLING_TYPE, str, def);
+NoteSpellingType TConv::from_xml(const AsciiStringView &str, NoteSpellingType def) {
+    return find_type_by_xml_tag<NoteSpellingType>(::note_spelling_type_constant, str, def);
 }
 
-static const std::vector<Item<ChordStylePreset>> CHORD_STYLE_PRESET = {
+static const std::vector<Item<ChordStylePreset>> chord_style_preset_constant = {
     {ChordStylePreset::STANDARD, "std"},
     {ChordStylePreset::JAZZ, "jazz"},
     {ChordStylePreset::LEGACY, "legacy"},
     {ChordStylePreset::CUSTOM, "custom"},
 };
 
-AsciiStringView TConv::toXml(ChordStylePreset chordStylePreset) {
-    return findXmlTagByType<ChordStylePreset>(CHORD_STYLE_PRESET, chordStylePreset);
+AsciiStringView TConv::to_xml(ChordStylePreset input_chord_style_preset) {
+    return find_xml_tag_by_type<ChordStylePreset>(::chord_style_preset_constant, input_chord_style_preset);
 }
 
-ChordStylePreset TConv::fromXml(const AsciiStringView &str, ChordStylePreset def) {
-    return findTypeByXmlTag<ChordStylePreset>(CHORD_STYLE_PRESET, str, def);
+ChordStylePreset TConv::from_xml(const AsciiStringView &str, ChordStylePreset def) {
+    return find_type_by_xml_tag<ChordStylePreset>(::chord_style_preset_constant, str, def);
 }
 
-std::vector<Item<TappingHand>> TAPPING_HAND{
+std::vector<Item<TappingHand>> tapping_hand_value{
     {TappingHand::INVALID, "invalid"},
     {TappingHand::LEFT, "left"},
     {TappingHand::RIGHT, "right"},
 };
 
-AsciiStringView TConv::toXml(TappingHand tappingHand) { return findXmlTagByType<TappingHand>(TAPPING_HAND, tappingHand); }
+AsciiStringView TConv::to_xml(TappingHand input_tapping_hand) {
+    return find_xml_tag_by_type<TappingHand>(tapping_hand_value, input_tapping_hand);
+}
 
-TappingHand TConv::fromXml(const AsciiStringView &str, TappingHand def) { return findTypeByXmlTag<TappingHand>(TAPPING_HAND, str, def); }
+TappingHand TConv::from_xml(const AsciiStringView &str, TappingHand def) {
+    return find_type_by_xml_tag<TappingHand>(tapping_hand_value, str, def);
+}
 
-std::vector<Item<LHTappingSymbol>> LH_TAPPING_SYMBOL{
+std::vector<Item<LHTappingSymbol>> lh_tapping_symbol{
     {LHTappingSymbol::DOT, "dot"},
     {LHTappingSymbol::CIRCLED_T, "circledT"},
 };
 
-AsciiStringView TConv::toXml(LHTappingSymbol lh) { return findXmlTagByType<LHTappingSymbol>(LH_TAPPING_SYMBOL, lh); }
+AsciiStringView TConv::to_xml(LHTappingSymbol lh) { return find_xml_tag_by_type<LHTappingSymbol>(lh_tapping_symbol, lh); }
 
-LHTappingSymbol TConv::fromXml(const AsciiStringView &str, LHTappingSymbol def) {
-    return findTypeByXmlTag<LHTappingSymbol>(LH_TAPPING_SYMBOL, str, def);
+LHTappingSymbol TConv::from_xml(const AsciiStringView &str, LHTappingSymbol def) {
+    return find_type_by_xml_tag<LHTappingSymbol>(lh_tapping_symbol, str, def);
 }
 
-std::vector<Item<RHTappingSymbol>> RH_TAPPING_SYMBOL{
+std::vector<Item<RHTappingSymbol>> rh_tapping_symbol{
     {RHTappingSymbol::T, "T"},
     {RHTappingSymbol::PLUS, "plus"},
 };
 
-AsciiStringView TConv::toXml(RHTappingSymbol rh) { return findXmlTagByType<RHTappingSymbol>(RH_TAPPING_SYMBOL, rh); }
+AsciiStringView TConv::to_xml(RHTappingSymbol rh) { return find_xml_tag_by_type<RHTappingSymbol>(rh_tapping_symbol, rh); }
 
-RHTappingSymbol TConv::fromXml(const AsciiStringView &str, RHTappingSymbol def) {
-    return findTypeByXmlTag<RHTappingSymbol>(RH_TAPPING_SYMBOL, str, def);
+RHTappingSymbol TConv::from_xml(const AsciiStringView &str, RHTappingSymbol def) {
+    return find_type_by_xml_tag<RHTappingSymbol>(rh_tapping_symbol, str, def);
 }
 
-std::vector<Item<ParenthesesMode>> PARENTHESES_MODE{
+std::vector<Item<ParenthesesMode>> parentheses_mode{
     {ParenthesesMode::NONE, "none"}, {ParenthesesMode::BOTH, "both"}, {ParenthesesMode::LEFT, "left"}, {ParenthesesMode::RIGHT, "right"}};
 
-AsciiStringView TConv::toXml(ParenthesesMode pm) { return findXmlTagByType<ParenthesesMode>(PARENTHESES_MODE, pm); }
+AsciiStringView TConv::to_xml(ParenthesesMode pm) { return find_xml_tag_by_type<ParenthesesMode>(parentheses_mode, pm); }
 
-ParenthesesMode TConv::fromXml(const AsciiStringView &str, ParenthesesMode def) {
-    return findTypeByXmlTag<ParenthesesMode>(PARENTHESES_MODE, str, def);
+ParenthesesMode TConv::from_xml(const AsciiStringView &str, ParenthesesMode def) {
+    return find_type_by_xml_tag<ParenthesesMode>(parentheses_mode, str, def);
 }
 
-static const std::vector<Item<RepeatPlayCountPreset>> REPEAT_COUNT_PRESET = {
+static const std::vector<Item<RepeatPlayCountPreset>> repeat_count_preset = {
     {RepeatPlayCountPreset::X_N, "xn", muse::TranslatableString("engraving", "x%1")},
     {RepeatPlayCountPreset::N_X, "nx", muse::TranslatableString("engraving", "%1x")},
     {RepeatPlayCountPreset::PLAY_N_TIMES, "playntimes", muse::TranslatableString("engraving", "Play %1 times")},
     {RepeatPlayCountPreset::N_REPEATS, "nrepeats", muse::TranslatableString("engraving", "%1 repeats")},
 };
 
-const muse::TranslatableString &TConv::userName(RepeatPlayCountPreset v) { return findCapitalizedUserNameByType(REPEAT_COUNT_PRESET, v); }
-
-String TConv::translatedUserName(RepeatPlayCountPreset v) { return findCapitalizedUserNameByType(REPEAT_COUNT_PRESET, v).translated(); }
-
-AsciiStringView TConv::toXml(RepeatPlayCountPreset repeatPreset) {
-    return findXmlTagByType<RepeatPlayCountPreset>(REPEAT_COUNT_PRESET, repeatPreset);
+const muse::TranslatableString &TConv::user_name(RepeatPlayCountPreset v) {
+    return find_capitalized_user_name_by_type(::repeat_count_preset, v);
 }
 
-RepeatPlayCountPreset TConv::fromXml(const AsciiStringView &str, RepeatPlayCountPreset def) {
-    return findTypeByXmlTag<RepeatPlayCountPreset>(REPEAT_COUNT_PRESET, str, def);
+String TConv::translated_user_name(RepeatPlayCountPreset v) {
+    return find_capitalized_user_name_by_type(::repeat_count_preset, v).translated();
 }
 
-static const std::vector<Item<AutoCustomHide>> AUTO_CUSTOM_HIDE = {
+AsciiStringView TConv::to_xml(RepeatPlayCountPreset repeat_preset) {
+    return find_xml_tag_by_type<RepeatPlayCountPreset>(::repeat_count_preset, repeat_preset);
+}
+
+RepeatPlayCountPreset TConv::from_xml(const AsciiStringView &str, RepeatPlayCountPreset def) {
+    return find_type_by_xml_tag<RepeatPlayCountPreset>(::repeat_count_preset, str, def);
+}
+
+static const std::vector<Item<AutoCustomHide>> auto_custom_hide_constant = {
     {AutoCustomHide::AUTO, "auto"},
     {AutoCustomHide::CUSTOM, "custom"},
     {AutoCustomHide::HIDE, "hide"},
 };
 
-AsciiStringView TConv::toXml(AutoCustomHide autoCustomHide) { return findXmlTagByType<AutoCustomHide>(AUTO_CUSTOM_HIDE, autoCustomHide); }
-
-AutoCustomHide TConv::fromXml(const AsciiStringView &str, AutoCustomHide def) {
-    return findTypeByXmlTag<AutoCustomHide>(AUTO_CUSTOM_HIDE, str, def);
+AsciiStringView TConv::to_xml(AutoCustomHide input_auto_custom_hide) {
+    return find_xml_tag_by_type<AutoCustomHide>(::auto_custom_hide_constant, input_auto_custom_hide);
 }
 
-static const std::vector<Item<VoiceAssignment>> VOICE_ASSIGNMENT = {{VoiceAssignment::ALL_VOICE_IN_INSTRUMENT, "allInInstrument"},
+AutoCustomHide TConv::from_xml(const AsciiStringView &str, AutoCustomHide def) {
+    return find_type_by_xml_tag<AutoCustomHide>(::auto_custom_hide_constant, str, def);
+}
+
+static const std::vector<Item<VoiceAssignment>> voice_assignment = {{VoiceAssignment::ALL_VOICE_IN_INSTRUMENT, "allInInstrument"},
                                                                     {VoiceAssignment::ALL_VOICE_IN_STAFF, "allInStaff"},
                                                                     {VoiceAssignment::CURRENT_VOICE_ONLY, "currentVoiceOnly"}};
 
-AsciiStringView TConv::toXml(VoiceAssignment voiceAppl) { return findXmlTagByType<VoiceAssignment>(VOICE_ASSIGNMENT, voiceAppl); }
+AsciiStringView TConv::to_xml(VoiceAssignment voice_appl) { return find_xml_tag_by_type<VoiceAssignment>(::voice_assignment, voice_appl); }
 
-VoiceAssignment TConv::fromXml(const AsciiStringView &str, VoiceAssignment def) {
-    return findTypeByXmlTag<VoiceAssignment>(VOICE_ASSIGNMENT, str, def);
+VoiceAssignment TConv::from_xml(const AsciiStringView &str, VoiceAssignment def) {
+    return find_type_by_xml_tag<VoiceAssignment>(::voice_assignment, str, def);
 }
 
-static const std::vector<Item<AutoOnOff>> AUTO_ON_OFF = {
+static const std::vector<Item<AutoOnOff>> auto_on_off_constant = {
     {AutoOnOff::AUTO, "auto"},
     {AutoOnOff::ON, "on"},
     {AutoOnOff::OFF, "off"},
 };
 
-AsciiStringView TConv::toXml(AutoOnOff autoOnOff) { return findXmlTagByType<AutoOnOff>(AUTO_ON_OFF, autoOnOff); }
+AsciiStringView TConv::to_xml(AutoOnOff input_auto_on_off) {
+    return find_xml_tag_by_type<AutoOnOff>(::auto_on_off_constant, input_auto_on_off);
+}
 
-AutoOnOff TConv::fromXml(const AsciiStringView &str, AutoOnOff def) { return findTypeByXmlTag<AutoOnOff>(AUTO_ON_OFF, str, def); }
+AutoOnOff TConv::from_xml(const AsciiStringView &str, AutoOnOff def) {
+    return find_type_by_xml_tag<AutoOnOff>(::auto_on_off_constant, str, def);
+}
 
-static const std::vector<Item<CapoParams::TransposeMode>> CAPO_TRANSPOSE_MODE = {
+static const std::vector<Item<CapoParams::TransposeMode>> capo_transpose_mode = {
     {CapoParams::TransposeMode::PLAYBACK_ONLY, "playback"},
     {CapoParams::TransposeMode::STANDARD_ONLY, "standard"},
     {CapoParams::TransposeMode::TAB_ONLY, "tab"},
 };
 
-AsciiStringView TConv::toXml(CapoParams::TransposeMode mode) {
-    return findXmlTagByType<CapoParams::TransposeMode>(CAPO_TRANSPOSE_MODE, mode);
+AsciiStringView TConv::to_xml(CapoParams::TransposeMode mode) {
+    return find_xml_tag_by_type<CapoParams::TransposeMode>(::capo_transpose_mode, mode);
 }
 
-CapoParams::TransposeMode TConv::fromXml(const AsciiStringView &str, CapoParams::TransposeMode def) {
-    return findTypeByXmlTag<CapoParams::TransposeMode>(CAPO_TRANSPOSE_MODE, str, def);
+CapoParams::TransposeMode TConv::from_xml(const AsciiStringView &str, CapoParams::TransposeMode def) {
+    return find_type_by_xml_tag<CapoParams::TransposeMode>(::capo_transpose_mode, str, def);
 }
 
-static const std::vector<Item<PartialSpannerDirection>> PARTIAL_SPANNER_DIRECTION = {{PartialSpannerDirection::NONE, "none"},
+static const std::vector<Item<PartialSpannerDirection>> partial_spanner_direction = {{PartialSpannerDirection::NONE, "none"},
                                                                                      {PartialSpannerDirection::OUTGOING, "outgoing"},
                                                                                      {PartialSpannerDirection::INCOMING, "incoming"},
                                                                                      {PartialSpannerDirection::BOTH, "both"}};
 
-AsciiStringView TConv::toXml(PartialSpannerDirection v) { return findXmlTagByType<PartialSpannerDirection>(PARTIAL_SPANNER_DIRECTION, v); }
-
-PartialSpannerDirection TConv::fromXml(const AsciiStringView &str, PartialSpannerDirection def) {
-    return findTypeByXmlTag<PartialSpannerDirection>(PARTIAL_SPANNER_DIRECTION, str, def);
+AsciiStringView TConv::to_xml(PartialSpannerDirection v) {
+    return find_xml_tag_by_type<PartialSpannerDirection>(::partial_spanner_direction, v);
 }
 
-String TConv::translatedUserName(SymId v) { return SymNames::translatedUserNameForSymId(v); }
+PartialSpannerDirection TConv::from_xml(const AsciiStringView &str, PartialSpannerDirection def) {
+    return find_type_by_xml_tag<PartialSpannerDirection>(::partial_spanner_direction, str, def);
+}
 
-AsciiStringView TConv::toXml(SymId v) { return SymNames::nameForSymId(v); }
+String TConv::translated_user_name(SymId v) { return SymNames::translated_user_name_for_sym_id(v); }
 
-SymId TConv::fromXml(const AsciiStringView &tag, SymId def) { return SymNames::symIdByName(tag, def); }
+AsciiStringView TConv::to_xml(SymId v) { return SymNames::name_for_sym_id(v); }
 
-static const std::array<Item<Orientation>, 2> ORIENTATION = {{
+SymId TConv::from_xml(const AsciiStringView &tag, SymId def) { return SymNames::sym_id_by_name(tag, def); }
+
+static const std::array<Item<Orientation>, 2> orientation = {{
     {Orientation::VERTICAL, "vertical", muse::TranslatableString("engraving", "Vertical")},
     {Orientation::HORIZONTAL, "horizontal", muse::TranslatableString("engraving", "Horizontal")},
 }};
 
-String TConv::translatedUserName(Orientation v) { return findCapitalizedUserNameByType(ORIENTATION, v).translated(); }
+String TConv::translated_user_name(Orientation v) { return find_capitalized_user_name_by_type(::orientation, v).translated(); }
 
-AsciiStringView TConv::toXml(Orientation v) { return findXmlTagByType<Orientation>(ORIENTATION, v); }
+AsciiStringView TConv::to_xml(Orientation v) { return find_xml_tag_by_type<Orientation>(::orientation, v); }
 
-Orientation TConv::fromXml(const AsciiStringView &tag, Orientation def) { return findTypeByXmlTag<Orientation>(ORIENTATION, tag, def); }
+Orientation TConv::from_xml(const AsciiStringView &tag, Orientation def) {
+    return find_type_by_xml_tag<Orientation>(::orientation, tag, def);
+}
 
-static const std::array<Item<SharedLabelOrientation>, 3> SHARED_LABEL_ORIENTATION = {{
+static const std::array<Item<SharedLabelOrientation>, 3> shared_label_orientation = {{
     {SharedLabelOrientation::VERTICAL, "vertical", muse::TranslatableString("engraving", "Vertical")},
     {SharedLabelOrientation::HORIZONTAL, "horizontal", muse::TranslatableString("engraving", "Horizontal")},
     {SharedLabelOrientation::VOICE, "voice", muse::TranslatableString("engraving", "Voice")},
 }};
 
-String TConv::translatedUserName(SharedLabelOrientation v) {
-    return findCapitalizedUserNameByType(SHARED_LABEL_ORIENTATION, v).translated();
+String TConv::translated_user_name(SharedLabelOrientation v) {
+    return find_capitalized_user_name_by_type(::shared_label_orientation, v).translated();
 }
 
-AsciiStringView TConv::toXml(SharedLabelOrientation v) { return findXmlTagByType<SharedLabelOrientation>(SHARED_LABEL_ORIENTATION, v); }
-
-SharedLabelOrientation TConv::fromXml(const AsciiStringView &tag, SharedLabelOrientation def) {
-    return findTypeByXmlTag<SharedLabelOrientation>(SHARED_LABEL_ORIENTATION, tag, def);
+AsciiStringView TConv::to_xml(SharedLabelOrientation v) {
+    return find_xml_tag_by_type<SharedLabelOrientation>(::shared_label_orientation, v);
 }
 
-static const std::array<Item<NoteHeadType>, 5> NOTEHEAD_TYPES = {{
+SharedLabelOrientation TConv::from_xml(const AsciiStringView &tag, SharedLabelOrientation def) {
+    return find_type_by_xml_tag<SharedLabelOrientation>(::shared_label_orientation, tag, def);
+}
+
+static const std::array<Item<NoteHeadType>, 5> notehead_types = {{
     {NoteHeadType::HEAD_AUTO, "auto", muse::TranslatableString("engraving", "Auto")},
     {NoteHeadType::HEAD_WHOLE, "whole", muse::TranslatableString("engraving/noteheadtype", "Whole")},
     {NoteHeadType::HEAD_HALF, "half", muse::TranslatableString("engraving/noteheadtype", "Half")},
@@ -813,16 +841,16 @@ static const std::array<Item<NoteHeadType>, 5> NOTEHEAD_TYPES = {{
     {NoteHeadType::HEAD_BREVIS, "breve", muse::TranslatableString("engraving/noteheadtype", "Breve")},
 }};
 
-String TConv::translatedUserName(NoteHeadType v) { return findCapitalizedUserNameByType(NOTEHEAD_TYPES, v).translated(); }
+String TConv::translated_user_name(NoteHeadType v) { return find_capitalized_user_name_by_type(::notehead_types, v).translated(); }
 
-AsciiStringView TConv::toXml(NoteHeadType v) { return findXmlTagByType<NoteHeadType>(NOTEHEAD_TYPES, v); }
+AsciiStringView TConv::to_xml(NoteHeadType v) { return find_xml_tag_by_type<NoteHeadType>(::notehead_types, v); }
 
-NoteHeadType TConv::fromXml(const AsciiStringView &tag, NoteHeadType def) {
-    return findTypeByXmlTag<NoteHeadType>(NOTEHEAD_TYPES, tag, def);
+NoteHeadType TConv::from_xml(const AsciiStringView &tag, NoteHeadType def) {
+    return find_type_by_xml_tag<NoteHeadType>(::notehead_types, tag, def);
 }
 
 /* *INDENT-OFF* */
-static const std::vector<Item<NoteHeadScheme>> NOTEHEAD_SCHEMES = {
+static const std::vector<Item<NoteHeadScheme>> notehead_schemes = {
     {NoteHeadScheme::HEAD_AUTO, "auto", muse::TranslatableString("engraving", "Auto")},
     {NoteHeadScheme::HEAD_NORMAL, "normal", muse::TranslatableString("engraving/noteheadscheme", "Normal")},
     {NoteHeadScheme::HEAD_PITCHNAME, "name-pitch", muse::TranslatableString("engraving/noteheadscheme", "Pitch names")},
@@ -842,33 +870,33 @@ static const std::vector<Item<NoteHeadScheme>> NOTEHEAD_SCHEMES = {
     {NoteHeadScheme::HEAD_SHAPE_NOTE_7_WALKER, "shape-7-walker", muse::TranslatableString("engraving/noteheadscheme", "7-shape (Walker)")}};
 /* *INDENT-ON* */
 
-String TConv::translatedUserName(NoteHeadScheme v) { return findCapitalizedUserNameByType(NOTEHEAD_SCHEMES, v).translated(); }
+String TConv::translated_user_name(NoteHeadScheme v) { return find_capitalized_user_name_by_type(::notehead_schemes, v).translated(); }
 
-AsciiStringView TConv::toXml(NoteHeadScheme v) { return findXmlTagByType<NoteHeadScheme>(NOTEHEAD_SCHEMES, v); }
+AsciiStringView TConv::to_xml(NoteHeadScheme v) { return find_xml_tag_by_type<NoteHeadScheme>(::notehead_schemes, v); }
 
-NoteHeadScheme TConv::fromXml(const AsciiStringView &tag, NoteHeadScheme def) {
-    return findTypeByXmlTag<NoteHeadScheme>(NOTEHEAD_SCHEMES, tag, def);
+NoteHeadScheme TConv::from_xml(const AsciiStringView &tag, NoteHeadScheme def) {
+    return find_type_by_xml_tag<NoteHeadScheme>(::notehead_schemes, tag, def);
 }
 
-static const std::vector<Item<InstrumentLabelVisibility>> INSTRUMENT_LABEL_VISIBILITIES = {
+static const std::vector<Item<InstrumentLabelVisibility>> instrument_label_visibilities = {
     {InstrumentLabelVisibility::AUTO, "auto", muse::TranslatableString("engraving", "Auto")},
     {InstrumentLabelVisibility::LONG, "long", muse::TranslatableString("engraving", "Long")},
     {InstrumentLabelVisibility::SHORT, "short", muse::TranslatableString("engraving", "Short")},
     {InstrumentLabelVisibility::HIDE, "hide", muse::TranslatableString("engraving", "Hide")}};
 
-String TConv::translatedUserName(InstrumentLabelVisibility v) {
-    return findCapitalizedUserNameByType(INSTRUMENT_LABEL_VISIBILITIES, v).translated();
+String TConv::translated_user_name(InstrumentLabelVisibility v) {
+    return find_capitalized_user_name_by_type(::instrument_label_visibilities, v).translated();
 }
 
-AsciiStringView TConv::toXml(InstrumentLabelVisibility v) {
-    return findXmlTagByType<InstrumentLabelVisibility>(INSTRUMENT_LABEL_VISIBILITIES, v);
+AsciiStringView TConv::to_xml(InstrumentLabelVisibility v) {
+    return find_xml_tag_by_type<InstrumentLabelVisibility>(::instrument_label_visibilities, v);
 }
 
-InstrumentLabelVisibility TConv::fromXml(const AsciiStringView &tag, InstrumentLabelVisibility def) {
-    return findTypeByXmlTag<InstrumentLabelVisibility>(INSTRUMENT_LABEL_VISIBILITIES, tag, def);
+InstrumentLabelVisibility TConv::from_xml(const AsciiStringView &tag, InstrumentLabelVisibility def) {
+    return find_type_by_xml_tag<InstrumentLabelVisibility>(::instrument_label_visibilities, tag, def);
 }
 
-static const std::vector<Item<NoteHeadGroup>> NOTEHEAD_GROUPS = {
+static const std::vector<Item<NoteHeadGroup>> notehead_groups = {
     {NoteHeadGroup::HEAD_NORMAL, "normal", muse::TranslatableString("engraving/noteheadgroup", "Normal")},
     {NoteHeadGroup::HEAD_CROSS, "cross", muse::TranslatableString("engraving/noteheadgroup", "Cross")},
     {NoteHeadGroup::HEAD_PLUS, "plus", muse::TranslatableString("engraving/noteheadgroup", "Plus")},
@@ -959,22 +987,23 @@ static const std::vector<Item<NoteHeadGroup>> NOTEHEAD_GROUPS = {
 
     {NoteHeadGroup::HEAD_CUSTOM, "custom", muse::TranslatableString("engraving", "Custom")}};
 
-const muse::TranslatableString &TConv::userName(NoteHeadGroup v) { return findCapitalizedUserNameByType(NOTEHEAD_GROUPS, v); }
+const muse::TranslatableString &TConv::user_name(NoteHeadGroup v) { return find_capitalized_user_name_by_type(::notehead_groups, v); }
 
-String TConv::translatedUserName(NoteHeadGroup v) { return findCapitalizedUserNameByType(NOTEHEAD_GROUPS, v).translated(); }
+String TConv::translated_user_name(NoteHeadGroup v) { return find_capitalized_user_name_by_type(::notehead_groups, v).translated(); }
 
-AsciiStringView TConv::toXml(NoteHeadGroup v) { return findXmlTagByType<NoteHeadGroup>(NOTEHEAD_GROUPS, v); }
+AsciiStringView TConv::to_xml(NoteHeadGroup v) { return find_xml_tag_by_type<NoteHeadGroup>(::notehead_groups, v); }
 
-NoteHeadGroup TConv::fromXml(const AsciiStringView &tag, NoteHeadGroup def) {
-    auto it = std::find_if(NOTEHEAD_GROUPS.cbegin(), NOTEHEAD_GROUPS.cend(), [tag](const Item<NoteHeadGroup> &i) { return i.xml == tag; });
+NoteHeadGroup TConv::from_xml(const AsciiStringView &tag, NoteHeadGroup def) {
+    auto it =
+        std::find_if(::notehead_groups.cbegin(), ::notehead_groups.cend(), [tag](const Item<NoteHeadGroup> &i) { return i.xml == tag; });
 
-    if (it != NOTEHEAD_GROUPS.cend()) {
+    if (it != ::notehead_groups.cend()) {
         return it->type;
     }
 
     // compatibility
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<NoteHeadGroup>(v);
     }
@@ -983,7 +1012,7 @@ NoteHeadGroup TConv::fromXml(const AsciiStringView &tag, NoteHeadGroup def) {
 }
 
 // table must be in sync with enum ClefType in types.h
-static const std::vector<Item<ClefType>> CLEF_TYPES = {
+static const std::vector<Item<ClefType>> clef_types = {
     {ClefType::G, "G", muse::TranslatableString("engraving/cleftype", "Treble clef")},
     {ClefType::G15_MB, "G15mb", muse::TranslatableString("engraving/cleftype", "Treble clef 15ma bassa")},
     {ClefType::G8_VB, "G8vb", muse::TranslatableString("engraving/cleftype", "Treble clef 8va bassa")},
@@ -1026,22 +1055,22 @@ static const std::vector<Item<ClefType>> CLEF_TYPES = {
     {ClefType::G8_VB_C, "G8vbc", muse::TranslatableString("engraving/cleftype", "G clef ottava bassa with C clef")},
 };
 
-const muse::TranslatableString &TConv::userName(ClefType v) { return findCapitalizedUserNameByType(CLEF_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(ClefType v) { return find_capitalized_user_name_by_type(::clef_types, v); }
 
-String TConv::translatedUserName(ClefType v) { return findCapitalizedUserNameByType(CLEF_TYPES, v).translated(); }
+String TConv::translated_user_name(ClefType v) { return find_capitalized_user_name_by_type(::clef_types, v).translated(); }
 
-AsciiStringView TConv::toXml(ClefType v) { return findXmlTagByType<ClefType>(CLEF_TYPES, v); }
+AsciiStringView TConv::to_xml(ClefType v) { return find_xml_tag_by_type<ClefType>(::clef_types, v); }
 
-ClefType TConv::fromXml(const AsciiStringView &tag, ClefType def) {
-    auto it = std::find_if(CLEF_TYPES.cbegin(), CLEF_TYPES.cend(), [tag](const Item<ClefType> &i) { return i.xml == tag; });
+ClefType TConv::from_xml(const AsciiStringView &tag, ClefType def) {
+    auto it = std::find_if(::clef_types.cbegin(), ::clef_types.cend(), [tag](const Item<ClefType> &i) { return i.xml == tag; });
 
-    if (it != CLEF_TYPES.cend()) {
+    if (it != ::clef_types.cend()) {
         return it->type;
     }
 
     // compatibility
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<ClefType>(v);
     }
@@ -1052,68 +1081,68 @@ ClefType TConv::fromXml(const AsciiStringView &tag, ClefType def) {
 struct DynamicItem {
     DynamicType type;
     AsciiStringView xml;
-    SymId symId;
-    muse::TranslatableString userName;
+    SymId sym_id;
+    muse::TranslatableString user_name;
 };
 
-static const std::vector<DynamicItem> DYNAMIC_TYPES = {
-    {DynamicType::OTHER, "other-dynamics", SymId::noSym, muse::TranslatableString("engraving/dynamictype", "Other dynamic")},
-    {DynamicType::PPPPPP, "pppppp", SymId::dynamicPPPPPP, muse::TranslatableString("engraving/dynamictype", "pppppp")},
-    {DynamicType::PPPPP, "ppppp", SymId::dynamicPPPPP, muse::TranslatableString("engraving/dynamictype", "ppppp")},
-    {DynamicType::PPPP, "pppp", SymId::dynamicPPPP, muse::TranslatableString("engraving/dynamictype", "pppp")},
-    {DynamicType::PPP, "ppp", SymId::dynamicPPP, muse::TranslatableString("engraving/dynamictype", "ppp (piano pianissimo)")},
-    {DynamicType::PP, "pp", SymId::dynamicPP, muse::TranslatableString("engraving/dynamictype", "pp (pianissimo)")},
-    {DynamicType::P, "p", SymId::dynamicPiano, muse::TranslatableString("engraving/dynamictype", "p (piano)")},
+static const std::vector<DynamicItem> dynamic_types = {
+    {DynamicType::OTHER, "other-dynamics", SymId::NO_SYM, muse::TranslatableString("engraving/dynamictype", "Other dynamic")},
+    {DynamicType::PPPPPP, "pppppp", SymId::DYNAMIC_PPPPPP, muse::TranslatableString("engraving/dynamictype", "pppppp")},
+    {DynamicType::PPPPP, "ppppp", SymId::DYNAMIC_PPPPP, muse::TranslatableString("engraving/dynamictype", "ppppp")},
+    {DynamicType::PPPP, "pppp", SymId::DYNAMIC_PPPP, muse::TranslatableString("engraving/dynamictype", "pppp")},
+    {DynamicType::PPP, "ppp", SymId::DYNAMIC_PPP, muse::TranslatableString("engraving/dynamictype", "ppp (piano pianissimo)")},
+    {DynamicType::PP, "pp", SymId::DYNAMIC_PP, muse::TranslatableString("engraving/dynamictype", "pp (pianissimo)")},
+    {DynamicType::P, "p", SymId::DYNAMIC_PIANO, muse::TranslatableString("engraving/dynamictype", "p (piano)")},
 
-    {DynamicType::MP, "mp", SymId::dynamicMP, muse::TranslatableString("engraving/dynamictype", "mp (mezzo piano)")},
-    {DynamicType::MF, "mf", SymId::dynamicMF, muse::TranslatableString("engraving/dynamictype", "mf (mezzo forte)")},
+    {DynamicType::MP, "mp", SymId::DYNAMIC_MP, muse::TranslatableString("engraving/dynamictype", "mp (mezzo piano)")},
+    {DynamicType::MF, "mf", SymId::DYNAMIC_MF, muse::TranslatableString("engraving/dynamictype", "mf (mezzo forte)")},
 
-    {DynamicType::F, "f", SymId::dynamicForte, muse::TranslatableString("engraving/dynamictype", "f (forte)")},
-    {DynamicType::FF, "ff", SymId::dynamicFF, muse::TranslatableString("engraving/dynamictype", "ff (fortissimo)")},
-    {DynamicType::FFF, "fff", SymId::dynamicFFF, muse::TranslatableString("engraving/dynamictype", "fff (forte fortissimo)")},
-    {DynamicType::FFFF, "ffff", SymId::dynamicFFFF, muse::TranslatableString("engraving/dynamictype", "ffff")},
-    {DynamicType::FFFFF, "fffff", SymId::dynamicFFFFF, muse::TranslatableString("engraving/dynamictype", "fffff")},
-    {DynamicType::FFFFFF, "ffffff", SymId::dynamicFFFFFF, muse::TranslatableString("engraving/dynamictype", "ffffff")},
+    {DynamicType::F, "f", SymId::DYNAMIC_FORTE, muse::TranslatableString("engraving/dynamictype", "f (forte)")},
+    {DynamicType::FF, "ff", SymId::DYNAMIC_FF, muse::TranslatableString("engraving/dynamictype", "ff (fortissimo)")},
+    {DynamicType::FFF, "fff", SymId::DYNAMIC_FFF, muse::TranslatableString("engraving/dynamictype", "fff (forte fortissimo)")},
+    {DynamicType::FFFF, "ffff", SymId::DYNAMIC_FFFF, muse::TranslatableString("engraving/dynamictype", "ffff")},
+    {DynamicType::FFFFF, "fffff", SymId::DYNAMIC_FFFFF, muse::TranslatableString("engraving/dynamictype", "fffff")},
+    {DynamicType::FFFFFF, "ffffff", SymId::DYNAMIC_FFFFFF, muse::TranslatableString("engraving/dynamictype", "ffffff")},
 
-    {DynamicType::FP, "fp", SymId::dynamicFortePiano, muse::TranslatableString("engraving/dynamictype", "fp (forte piano)")},
-    {DynamicType::PF, "pf", SymId::noSym, muse::TranslatableString("engraving/dynamictype", "pf (poco forte)")},
+    {DynamicType::FP, "fp", SymId::DYNAMIC_FORTE_PIANO, muse::TranslatableString("engraving/dynamictype", "fp (forte piano)")},
+    {DynamicType::PF, "pf", SymId::NO_SYM, muse::TranslatableString("engraving/dynamictype", "pf (poco forte)")},
 
-    {DynamicType::SF, "sf", SymId::dynamicSforzando1, muse::TranslatableString("engraving/dynamictype", "sf (sforzando)")},
-    {DynamicType::SFZ, "sfz", SymId::dynamicSforzato, muse::TranslatableString("engraving/dynamictype", "sfz (sforzato)")},
-    {DynamicType::SFF, "sff", SymId::noSym, muse::TranslatableString("engraving/dynamictype", "sff (sforzando)")},
-    {DynamicType::SFFZ, "sffz", SymId::dynamicSforzatoFF, muse::TranslatableString("engraving/dynamictype", "sffz (sforzato)")},
-    {DynamicType::SFFF, "sfff", SymId::noSym, muse::TranslatableString("engraving/dynamictype", "sfff (sforzando)")},
-    {DynamicType::SFFFZ, "sfffz", SymId::noSym, muse::TranslatableString("engraving/dynamictype", "sfffz (sforzato)")},
-    {DynamicType::SFP, "sfp", SymId::dynamicSforzandoPiano, muse::TranslatableString("engraving/dynamictype", "sfp (sforzando piano)")},
-    {DynamicType::SFPP, "sfpp", SymId::dynamicSforzandoPianissimo,
+    {DynamicType::SF, "sf", SymId::DYNAMIC_SFORZANDO1, muse::TranslatableString("engraving/dynamictype", "sf (sforzando)")},
+    {DynamicType::SFZ, "sfz", SymId::DYNAMIC_SFORZATO, muse::TranslatableString("engraving/dynamictype", "sfz (sforzato)")},
+    {DynamicType::SFF, "sff", SymId::NO_SYM, muse::TranslatableString("engraving/dynamictype", "sff (sforzando)")},
+    {DynamicType::SFFZ, "sffz", SymId::DYNAMIC_SFORZATO_FF, muse::TranslatableString("engraving/dynamictype", "sffz (sforzato)")},
+    {DynamicType::SFFF, "sfff", SymId::NO_SYM, muse::TranslatableString("engraving/dynamictype", "sfff (sforzando)")},
+    {DynamicType::SFFFZ, "sfffz", SymId::NO_SYM, muse::TranslatableString("engraving/dynamictype", "sfffz (sforzato)")},
+    {DynamicType::SFP, "sfp", SymId::DYNAMIC_SFORZANDO_PIANO, muse::TranslatableString("engraving/dynamictype", "sfp (sforzando piano)")},
+    {DynamicType::SFPP, "sfpp", SymId::DYNAMIC_SFORZANDO_PIANISSIMO,
      muse::TranslatableString("engraving/dynamictype", "sfpp (sforzando pianissimo)")},
 
-    {DynamicType::RFZ, "rfz", SymId::dynamicRinforzando2, muse::TranslatableString("engraving/dynamictype", "rfz (rinforzando)")},
-    {DynamicType::RF, "rf", SymId::dynamicRinforzando1, muse::TranslatableString("engraving/dynamictype", "rf (rinforzando)")},
-    {DynamicType::FZ, "fz", SymId::dynamicForzando, muse::TranslatableString("engraving/dynamictype", "fz (forzando)")},
-    {DynamicType::M, "m", SymId::dynamicMezzo, muse::TranslatableString("engraving/dynamictype", "m (mezzo)")},
-    {DynamicType::R, "r", SymId::dynamicRinforzando, muse::TranslatableString("engraving/dynamictype", "r (rinforzando)")},
-    {DynamicType::S, "s", SymId::dynamicSforzando, muse::TranslatableString("engraving/dynamictype", "s (sforzando)")},
-    {DynamicType::Z, "z", SymId::dynamicZ, muse::TranslatableString("engraving/dynamictype", "z (forzando)")},
-    {DynamicType::N, "n", SymId::dynamicNiente, muse::TranslatableString("engraving/dynamictype", "n (niente)")},
+    {DynamicType::RFZ, "rfz", SymId::DYNAMIC_RINFORZANDO2, muse::TranslatableString("engraving/dynamictype", "rfz (rinforzando)")},
+    {DynamicType::RF, "rf", SymId::DYNAMIC_RINFORZANDO1, muse::TranslatableString("engraving/dynamictype", "rf (rinforzando)")},
+    {DynamicType::FZ, "fz", SymId::DYNAMIC_FORZANDO, muse::TranslatableString("engraving/dynamictype", "fz (forzando)")},
+    {DynamicType::M, "m", SymId::DYNAMIC_MEZZO, muse::TranslatableString("engraving/dynamictype", "m (mezzo)")},
+    {DynamicType::R, "r", SymId::DYNAMIC_RINFORZANDO, muse::TranslatableString("engraving/dynamictype", "r (rinforzando)")},
+    {DynamicType::S, "s", SymId::DYNAMIC_SFORZANDO, muse::TranslatableString("engraving/dynamictype", "s (sforzando)")},
+    {DynamicType::Z, "z", SymId::DYNAMIC_Z, muse::TranslatableString("engraving/dynamictype", "z (forzando)")},
+    {DynamicType::N, "n", SymId::DYNAMIC_NIENTE, muse::TranslatableString("engraving/dynamictype", "n (niente)")},
 };
 
-SymId TConv::symId(DynamicType v) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [v](const DynamicItem &i) { return i.type == v; });
+SymId TConv::sym_id(DynamicType v) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [v](const DynamicItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != DYNAMIC_TYPES.cend()) { return SymId::noSym; }
-    return it->symId;
+    IF_ASSERT_FAILED(it != ::dynamic_types.cend()) { return SymId::NO_SYM; }
+    return it->sym_id;
 }
 
-DynamicType TConv::dynamicType(SymId v) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [v](const DynamicItem &i) { return i.symId == v; });
+DynamicType TConv::dynamic_type(SymId v) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [v](const DynamicItem &i) { return i.sym_id == v; });
 
-    IF_ASSERT_FAILED(it != DYNAMIC_TYPES.cend()) { return DynamicType::OTHER; }
+    IF_ASSERT_FAILED(it != ::dynamic_types.cend()) { return DynamicType::OTHER; }
     return it->type;
 }
 
-DynamicType TConv::dynamicType(const AsciiStringView &tag) {
-    static const std::map<AsciiStringView, DynamicType> DYNAMIC_STR_MAP = {
+DynamicType TConv::dynamic_type(const AsciiStringView &tag) {
+    static const std::map<AsciiStringView, DynamicType> dynamic_str_map = {
         {"<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</"
          "sym><sym>dynamicPiano</sym>",
          DynamicType::PPPPPP},
@@ -1159,120 +1188,120 @@ DynamicType TConv::dynamicType(const AsciiStringView &tag) {
         {"<sym>dynamicZ</sym>", DynamicType::Z},
         {"<sym>dynamicNiente</sym>", DynamicType::N}};
 
-    auto search = DYNAMIC_STR_MAP.find(tag);
-    if (search != DYNAMIC_STR_MAP.cend()) {
+    auto search = dynamic_str_map.find(tag);
+    if (search != dynamic_str_map.cend()) {
         return search->second;
     }
 
     return DynamicType::OTHER;
 }
 
-bool TConv::dynamicValid(const AsciiStringView &tag) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [tag](const DynamicItem &i) { return i.xml == tag; });
+bool TConv::dynamic_valid(const AsciiStringView &tag) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [tag](const DynamicItem &i) { return i.xml == tag; });
 
-    if (it != DYNAMIC_TYPES.cend()) {
+    if (it != ::dynamic_types.cend()) {
         return true;
     }
     return false;
 }
 
-const muse::TranslatableString &TConv::userName(DynamicType v) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [v](const DynamicItem &i) { return i.type == v; });
+const muse::TranslatableString &TConv::user_name(DynamicType v) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [v](const DynamicItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != DYNAMIC_TYPES.cend()) {
+    IF_ASSERT_FAILED(it != ::dynamic_types.cend()) {
         static TranslatableString dummy;
         return dummy;
     }
-    return it->userName;
+    return it->user_name;
 }
 
-String TConv::translatedUserName(DynamicType v) { return userName(v).translated(); }
+String TConv::translated_user_name(DynamicType v) { return user_name(v).translated(); }
 
-AsciiStringView TConv::toXml(DynamicType v) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [v](const DynamicItem &i) { return i.type == v; });
+AsciiStringView TConv::to_xml(DynamicType v) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [v](const DynamicItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != DYNAMIC_TYPES.cend()) {
+    IF_ASSERT_FAILED(it != ::dynamic_types.cend()) {
         static AsciiStringView dummy;
         return dummy;
     }
     return it->xml;
 }
 
-DynamicType TConv::fromXml(const AsciiStringView &tag, DynamicType def) {
-    auto it = std::find_if(DYNAMIC_TYPES.cbegin(), DYNAMIC_TYPES.cend(), [tag](const DynamicItem &i) { return i.xml == tag; });
+DynamicType TConv::from_xml(const AsciiStringView &tag, DynamicType def) {
+    auto it = std::find_if(::dynamic_types.cbegin(), ::dynamic_types.cend(), [tag](const DynamicItem &i) { return i.xml == tag; });
 
-    IF_ASSERT_FAILED(it != DYNAMIC_TYPES.cend()) { return def; }
+    IF_ASSERT_FAILED(it != ::dynamic_types.cend()) { return def; }
     return it->type;
 }
 
-static const std::vector<Item<DynamicSpeed>> DYNAMIC_SPEEDS = {
+static const std::vector<Item<DynamicSpeed>> dynamic_speeds = {
     {DynamicSpeed::NORMAL, "normal"},
     {DynamicSpeed::SLOW, "slow"},
     {DynamicSpeed::FAST, "fast"},
 };
 
-String TConv::translatedUserName(DynamicSpeed v) { return findCapitalizedUserNameByType(DYNAMIC_SPEEDS, v).translated(); }
+String TConv::translated_user_name(DynamicSpeed v) { return find_capitalized_user_name_by_type(::dynamic_speeds, v).translated(); }
 
-AsciiStringView TConv::toXml(DynamicSpeed v) { return findXmlTagByType<DynamicSpeed>(DYNAMIC_SPEEDS, v); }
+AsciiStringView TConv::to_xml(DynamicSpeed v) { return find_xml_tag_by_type<DynamicSpeed>(::dynamic_speeds, v); }
 
-DynamicSpeed TConv::fromXml(const AsciiStringView &tag, DynamicSpeed def) {
-    return findTypeByXmlTag<DynamicSpeed>(DYNAMIC_SPEEDS, tag, def);
+DynamicSpeed TConv::from_xml(const AsciiStringView &tag, DynamicSpeed def) {
+    return find_type_by_xml_tag<DynamicSpeed>(::dynamic_speeds, tag, def);
 }
 
-static const std::vector<Item<HookType>> HOOK_TYPES = {
+static const std::vector<Item<HookType>> hook_types = {
     {HookType::NONE, "hook_none"},
     {HookType::HOOK_90, "hook_90"},
     {HookType::HOOK_45, "hook_45"},
     {HookType::HOOK_90T, "hook_90t"},
 };
 
-String TConv::translatedUserName(HookType v) { return findCapitalizedUserNameByType(HOOK_TYPES, v).translated(); }
+String TConv::translated_user_name(HookType v) { return find_capitalized_user_name_by_type(::hook_types, v).translated(); }
 
-String TConv::toXml(HookType v) { return String::number(static_cast<int>(v)); }
+String TConv::to_xml(HookType v) { return String::number(static_cast<int>(v)); }
 
-HookType TConv::fromXml(const AsciiStringView &tag, HookType def) {
+HookType TConv::from_xml(const AsciiStringView &tag, HookType def) {
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     return ok ? HookType(v) : def;
 }
 
-static const std::vector<Item<LineType>> LINE_TYPES = {
+static const std::vector<Item<LineType>> line_types = {
     {LineType::SOLID, "solid"}, {LineType::DASHED, "dashed"}, {LineType::DOTTED, "dotted"}};
 
-AsciiStringView TConv::toXml(LineType v) { return findXmlTagByType(LINE_TYPES, v); }
+AsciiStringView TConv::to_xml(LineType v) { return find_xml_tag_by_type(::line_types, v); }
 
-LineType TConv::fromXml(const AsciiStringView &tag, LineType def) {
+LineType TConv::from_xml(const AsciiStringView &tag, LineType def) {
     // Pre-4.0 files
     bool ok = false;
-    if (int v = tag.toInt(&ok); ok) {
-        PenStyle penStyle = static_cast<PenStyle>(v);
-        switch (penStyle) {
-            case PenStyle::NoPen: return def;
-            case PenStyle::SolidLine: return LineType::SOLID;
-            case PenStyle::DashLine:
-            case PenStyle::DashDotLine:
-            case PenStyle::CustomDashLine: return LineType::DASHED;
-            case PenStyle::DotLine:
-            case PenStyle::DashDotDotLine: return LineType::DOTTED;
+    if (int v = tag.to_int(&ok); ok) {
+        PenStyle pen_style = static_cast<PenStyle>(v);
+        switch (pen_style) {
+            case PenStyle::NO_PEN: return def;
+            case PenStyle::SOLID_LINE: return LineType::SOLID;
+            case PenStyle::DASH_LINE:
+            case PenStyle::DASH_DOT_LINE:
+            case PenStyle::CUSTOM_DASH_LINE: return LineType::DASHED;
+            case PenStyle::DOT_LINE:
+            case PenStyle::DASH_DOT_DOT_LINE: return LineType::DOTTED;
         }
     }
 
-    return findTypeByXmlTag(LINE_TYPES, tag, def);
+    return find_type_by_xml_tag(::line_types, tag, def);
 }
 
-static const std::vector<Item<KeyMode>> KEY_MODES = {
+static const std::vector<Item<KeyMode>> key_modes = {
     {KeyMode::UNKNOWN, "unknown"}, {KeyMode::NONE, "none"},         {KeyMode::MAJOR, "major"},     {KeyMode::MINOR, "minor"},
     {KeyMode::DORIAN, "dorian"},   {KeyMode::PHRYGIAN, "phrygian"}, {KeyMode::LYDIAN, "lydian"},   {KeyMode::MIXOLYDIAN, "mixolydian"},
     {KeyMode::AEOLIAN, "aeolian"}, {KeyMode::IONIAN, "ionian"},     {KeyMode::LOCRIAN, "locrian"},
 };
 
-String TConv::translatedUserName(KeyMode v) { return findCapitalizedUserNameByType(KEY_MODES, v).translated(); }
+String TConv::translated_user_name(KeyMode v) { return find_capitalized_user_name_by_type(::key_modes, v).translated(); }
 
-AsciiStringView TConv::toXml(KeyMode v) { return findXmlTagByType<KeyMode>(KEY_MODES, v); }
+AsciiStringView TConv::to_xml(KeyMode v) { return find_xml_tag_by_type<KeyMode>(::key_modes, v); }
 
-KeyMode TConv::fromXml(const AsciiStringView &tag, KeyMode def) { return findTypeByXmlTag<KeyMode>(KEY_MODES, tag, def); }
+KeyMode TConv::from_xml(const AsciiStringView &tag, KeyMode def) { return find_type_by_xml_tag<KeyMode>(::key_modes, tag, def); }
 
-static const std::vector<Item<TextStyleType>> TEXTSTYLE_TYPES = {
+static const std::vector<Item<TextStyleType>> textstyle_types = {
     {TextStyleType::DEFAULT, "default", muse::TranslatableString("engraving", "Default")},
     {TextStyleType::TITLE, "title", muse::TranslatableString("engraving", "Title")},
     {TextStyleType::SUBTITLE, "subtitle", muse::TranslatableString("engraving", "Subtitle")},
@@ -1358,22 +1387,23 @@ static const std::vector<Item<TextStyleType>> TEXTSTYLE_TYPES = {
     {TextStyleType::USER12, "user_12", muse::TranslatableString("engraving", "User-12")},
 };
 
-const muse::TranslatableString &TConv::userName(TextStyleType v) { return findCapitalizedUserNameByType(TEXTSTYLE_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(TextStyleType v) { return find_capitalized_user_name_by_type(::textstyle_types, v); }
 
-String TConv::translatedUserName(TextStyleType v) { return findCapitalizedUserNameByType(TEXTSTYLE_TYPES, v).translated(); }
+String TConv::translated_user_name(TextStyleType v) { return find_capitalized_user_name_by_type(::textstyle_types, v).translated(); }
 
-AsciiStringView TConv::toXml(TextStyleType v) { return findXmlTagByType<TextStyleType>(TEXTSTYLE_TYPES, v); }
+AsciiStringView TConv::to_xml(TextStyleType v) { return find_xml_tag_by_type<TextStyleType>(::textstyle_types, v); }
 
-TextStyleType TConv::fromXml(const AsciiStringView &tag, TextStyleType def) {
-    auto it = std::find_if(TEXTSTYLE_TYPES.cbegin(), TEXTSTYLE_TYPES.cend(), [tag](const Item<TextStyleType> &i) { return i.xml == tag; });
+TextStyleType TConv::from_xml(const AsciiStringView &tag, TextStyleType def) {
+    auto it =
+        std::find_if(::textstyle_types.cbegin(), ::textstyle_types.cend(), [tag](const Item<TextStyleType> &i) { return i.xml == tag; });
 
-    if (it != TEXTSTYLE_TYPES.cend()) {
+    if (it != ::textstyle_types.cend()) {
         return it->type;
     }
 
     // compatibility
 
-    static const std::map<AsciiStringView, TextStyleType> OLD_TST_TAGS = {{"Default", TextStyleType::DEFAULT},
+    static const std::map<AsciiStringView, TextStyleType> old_tst_tags = {{"Default", TextStyleType::DEFAULT},
                                                                           {"Title", TextStyleType::TITLE},
                                                                           {"Subtitle", TextStyleType::SUBTITLE},
                                                                           {"Composer", TextStyleType::COMPOSER},
@@ -1445,8 +1475,8 @@ TextStyleType TConv::fromXml(const AsciiStringView &tag, TextStyleType def) {
                                                                           {"12", TextStyleType::DYNAMICS},
                                                                           {"26", TextStyleType::STAFF}};
 
-    auto old = OLD_TST_TAGS.find(tag);
-    if (old != OLD_TST_TAGS.cend()) {
+    auto old = old_tst_tags.find(tag);
+    if (old != old_tst_tags.cend()) {
         return old->second;
     }
 
@@ -1455,12 +1485,12 @@ TextStyleType TConv::fromXml(const AsciiStringView &tag, TextStyleType def) {
     return def;
 }
 
-static const std::vector<Item<ChangeMethod>> CHANGE_METHODS = {
+static const std::vector<Item<ChangeMethod>> change_methods = {
     {ChangeMethod::NORMAL, "normal"},           {ChangeMethod::EASE_IN, "ease-in"},         {ChangeMethod::EASE_OUT, "ease-out"},
     {ChangeMethod::EASE_IN_OUT, "ease-in-out"}, {ChangeMethod::EXPONENTIAL, "exponential"},
 };
 
-static double easingFactor(const double x, const ChangeMethod method) {
+static double easing_factor(const double x, const ChangeMethod method) {
     switch (method) {
         case ChangeMethod::NORMAL: return x;
         case ChangeMethod::EASE_IN: return 1 - std::sqrt(1 - std::pow(x, 2));
@@ -1472,7 +1502,7 @@ static double easingFactor(const double x, const ChangeMethod method) {
                 return (std::sqrt(1.0 - std::pow(-2 * x + 2, 2)) + 1) / 2;
             }
         case ChangeMethod::EXPONENTIAL:
-            if (muse::RealIsEqual(x, 1.0)) {
+            if (muse::real_is_equal(x, 1.0)) {
                 return x;
             } else {
                 return 1.0 - std::pow(2, -10 * x);
@@ -1483,49 +1513,50 @@ static double easingFactor(const double x, const ChangeMethod method) {
 }
 
 template <typename T>
-static std::map<int /*tickPosition*/, T> buildEasedValueCurve(const int ticksDuration, const int stepsCount, const T amplitude,
-                                                              const ChangeMethod method) {
-    if (stepsCount <= 0) {
+static std::map<int /*tickPosition*/, T> build_eased_value_curve(const int ticks_duration, const int steps_count, const T amplitude,
+                                                                 const ChangeMethod method) {
+    if (steps_count <= 0) {
         return {};
     }
 
     std::map<int, T> result;
 
-    double durationStep = static_cast<double>(ticksDuration) / static_cast<double>(stepsCount);
+    double duration_step = static_cast<double>(ticks_duration) / static_cast<double>(steps_count);
 
-    for (int i = 0; i <= stepsCount; ++i) {
-        result.emplace(i * durationStep, easingFactor(static_cast<double>(i) / static_cast<double>(stepsCount), method) * amplitude);
+    for (int i = 0; i <= steps_count; ++i) {
+        result.emplace(i * duration_step, easing_factor(static_cast<double>(i) / static_cast<double>(steps_count), method) * amplitude);
     }
 
     return result;
 }
 
-std::map<int, int> TConv::easingValueCurve(const int ticksDuration, const int stepsCount, const int amplitude, const ChangeMethod method) {
-    return buildEasedValueCurve(ticksDuration, stepsCount, amplitude, method);
+std::map<int, int> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const int amplitude,
+                                             const ChangeMethod method) {
+    return build_eased_value_curve(ticks_duration, steps_count, amplitude, method);
 }
 
-std::map<int, double> TConv::easingValueCurve(const int ticksDuration, const int stepsCount, const double amplitude,
-                                              const ChangeMethod method) {
-    return buildEasedValueCurve(ticksDuration, stepsCount, amplitude, method);
+std::map<int, double> TConv::easing_value_curve(const int ticks_duration, const int steps_count, const double amplitude,
+                                                const ChangeMethod method) {
+    return build_eased_value_curve(ticks_duration, steps_count, amplitude, method);
 }
 
-AsciiStringView TConv::toXml(ChangeMethod v) { return findXmlTagByType<ChangeMethod>(CHANGE_METHODS, v); }
+AsciiStringView TConv::to_xml(ChangeMethod v) { return find_xml_tag_by_type<ChangeMethod>(::change_methods, v); }
 
-ChangeMethod TConv::fromXml(const AsciiStringView &tag, ChangeMethod def) {
-    return findTypeByXmlTag<ChangeMethod>(CHANGE_METHODS, tag, def);
+ChangeMethod TConv::from_xml(const AsciiStringView &tag, ChangeMethod def) {
+    return find_type_by_xml_tag<ChangeMethod>(::change_methods, tag, def);
 }
 
-String TConv::toXml(const PitchValue &v) {
+String TConv::to_xml(const PitchValue &v) {
     return String(u"point time=\"%1\" pitch=\"%2\" vibrato=\"%3\"").arg(v.time).arg(v.pitch).arg(v.vibrato);
 }
 
 struct AccidentalUnicodeItem {
     AccidentalVal accidental;
     const char *name = nullptr;
-    const char *fullName = nullptr;
+    const char *full_name = nullptr;
 };
 
-static const std::vector<AccidentalUnicodeItem> ACCIDENTALS_NAMES = {
+static const std::vector<AccidentalUnicodeItem> accidentals_names = {
     {AccidentalVal::SHARP3,
      //: Visible text in the UI. Please preserve the accidental symbol in the translation
      QT_TRANSLATE_NOOP("engraving", "triple ♯"),
@@ -1562,26 +1593,26 @@ static const std::vector<AccidentalUnicodeItem> ACCIDENTALS_NAMES = {
      //: Accessible text for screen readers. Please avoid using accidental symbols in the translation
      QT_TRANSLATE_NOOP("engraving", "triple flat")}};
 
-const char *TConv::userName(AccidentalVal accidental, bool full) {
-    auto it = std::find_if(ACCIDENTALS_NAMES.cbegin(), ACCIDENTALS_NAMES.cend(),
+const char *TConv::user_name(AccidentalVal accidental, bool full) {
+    auto it = std::find_if(::accidentals_names.cbegin(), ::accidentals_names.cend(),
                            [accidental](const AccidentalUnicodeItem &i) { return i.accidental == accidental; });
 
-    if (it != ACCIDENTALS_NAMES.cend()) {
-        return full ? it->fullName : it->name;
+    if (it != ::accidentals_names.cend()) {
+        return full ? it->full_name : it->name;
     }
 
     return "";
 }
 
-String TConv::toXml(AccidentalRole v) { return String::number(static_cast<int>(v)); }
+String TConv::to_xml(AccidentalRole v) { return String::number(static_cast<int>(v)); }
 
-AccidentalRole TConv::fromXml(const AsciiStringView &tag, AccidentalRole def) {
+AccidentalRole TConv::from_xml(const AsciiStringView &tag, AccidentalRole def) {
     bool ok = false;
-    int r = tag.toInt(&ok);
+    int r = tag.to_int(&ok);
     return ok ? static_cast<AccidentalRole>(r) : def;
 }
 
-static const std::vector<Item<GuitarBendType>> GUITAR_BEND_TYPES = {
+static const std::vector<Item<GuitarBendType>> guitar_bend_types = {
     {GuitarBendType::BEND, "bend"},
     {GuitarBendType::PRE_BEND, "pre-bend"},
     {GuitarBendType::GRACE_NOTE_BEND, "grace-note-bend"},
@@ -1592,30 +1623,32 @@ static const std::vector<Item<GuitarBendType>> GUITAR_BEND_TYPES = {
     {GuitarBendType::SCOOP, "scoop"},
 };
 
-AsciiStringView TConv::toXml(GuitarBendType v) { return findXmlTagByType(GUITAR_BEND_TYPES, v); }
+AsciiStringView TConv::to_xml(GuitarBendType v) { return find_xml_tag_by_type(::guitar_bend_types, v); }
 
-GuitarBendType TConv::fromXml(const AsciiStringView &tag, GuitarBendType def) { return findTypeByXmlTag(GUITAR_BEND_TYPES, tag, def); }
+GuitarBendType TConv::from_xml(const AsciiStringView &tag, GuitarBendType def) {
+    return find_type_by_xml_tag(::guitar_bend_types, tag, def);
+}
 
-static const std::vector<Item<NoteCaseType>> NOTE_CASE_TYPES = {
+static const std::vector<Item<NoteCaseType>> note_case_types = {
     {NoteCaseType::AUTO, "auto"},
     {NoteCaseType::CAPITAL, "capital"},
     {NoteCaseType::LOWER, "lower"},
     {NoteCaseType::UPPER, "upper"},
 };
 
-AsciiStringView TConv::toXml(NoteCaseType v) { return findXmlTagByType(NOTE_CASE_TYPES, v); }
+AsciiStringView TConv::to_xml(NoteCaseType v) { return find_xml_tag_by_type(::note_case_types, v); }
 
-NoteCaseType TConv::fromXml(const AsciiStringView &tag, NoteCaseType def) { return findTypeByXmlTag(NOTE_CASE_TYPES, tag, def); }
+NoteCaseType TConv::from_xml(const AsciiStringView &tag, NoteCaseType def) { return find_type_by_xml_tag(::note_case_types, tag, def); }
 
-String TConv::toXml(BeatsPerSecond v, int precision) { return String::number(v.val, precision); }
+String TConv::to_xml(BeatsPerSecond v, int precision) { return String::number(v.val, precision); }
 
-BeatsPerSecond TConv::fromXml(const AsciiStringView &tag, BeatsPerSecond def) {
+BeatsPerSecond TConv::from_xml(const AsciiStringView &tag, BeatsPerSecond def) {
     bool ok = false;
-    double v = tag.toDouble(&ok);
+    double v = tag.to_double(&ok);
     return ok ? BeatsPerSecond(v) : def;
 }
 
-static const std::vector<Item<DurationType>> DURATION_TYPES = {
+static const std::vector<Item<DurationType>> duration_types = {
     {DurationType::V_QUARTER, "quarter", muse::TranslatableString("engraving", "Quarter")},
     {DurationType::V_EIGHTH, "eighth", muse::TranslatableString("engraving", "Eighth")},
     {DurationType::V_1024TH, "1024th", muse::TranslatableString("engraving", "1024th")},
@@ -1634,134 +1667,143 @@ static const std::vector<Item<DurationType>> DURATION_TYPES = {
     {DurationType::V_INVALID, "", muse::TranslatableString("engraving", "Invalid")},
 };
 
-String TConv::translatedUserName(DurationType v) { return findCapitalizedUserNameByType(DURATION_TYPES, v).translated(); }
+String TConv::translated_user_name(DurationType v) { return find_capitalized_user_name_by_type(::duration_types, v).translated(); }
 
-AsciiStringView TConv::toXml(DurationType v) { return findXmlTagByType<DurationType>(DURATION_TYPES, v); }
+AsciiStringView TConv::to_xml(DurationType v) { return find_xml_tag_by_type<DurationType>(::duration_types, v); }
 
-DurationType TConv::fromXml(const AsciiStringView &tag, DurationType def) {
-    return findTypeByXmlTag<DurationType>(DURATION_TYPES, tag, def);
+DurationType TConv::from_xml(const AsciiStringView &tag, DurationType def) {
+    return find_type_by_xml_tag<DurationType>(::duration_types, tag, def);
 }
 
-static const std::vector<Item<PlayingTechniqueType>> PLAY_TECH_TYPES = {
-    {PlayingTechniqueType::Undefined, "undefined", muse::TranslatableString::untranslatable("Undefined")},
-    {PlayingTechniqueType::Natural, "natural", muse::TranslatableString("engraving/playtechtype", "Normal")},
-    {PlayingTechniqueType::Pizzicato, "pizzicato", muse::TranslatableString("engraving/playtechtype", "Pizzicato")},
+static const std::vector<Item<PlayingTechniqueType>> play_tech_types = {
+    {PlayingTechniqueType::UNDEFINED, "undefined", muse::TranslatableString::untranslatable("Undefined")},
+    {PlayingTechniqueType::NATURAL, "natural", muse::TranslatableString("engraving/playtechtype", "Normal")},
+    {PlayingTechniqueType::PIZZICATO, "pizzicato", muse::TranslatableString("engraving/playtechtype", "Pizzicato")},
     //: For brass and plucked string instruments: staff text that prescribes to play without mute, see https://en.wikipedia.org/wiki/Mute_(music)
-    {PlayingTechniqueType::Open, "open", muse::TranslatableString("engraving/playtechtype", "Open")},
+    {PlayingTechniqueType::OPEN, "open", muse::TranslatableString("engraving/playtechtype", "Open")},
     //: For brass and plucked string instruments: staff text that prescribes to use mute while playing, see https://en.wikipedia.org/wiki/Mute_(music)
-    {PlayingTechniqueType::Mute, "mute", muse::TranslatableString("engraving/playtechtype", "Mute")},
-    {PlayingTechniqueType::Tremolo, "tremolo", muse::TranslatableString("engraving/playtechtype", "Tremolo")},
-    {PlayingTechniqueType::Detache, "detache", muse::TranslatableString("engraving/playtechtype", "Détaché")},
-    {PlayingTechniqueType::Martele, "martele", muse::TranslatableString("engraving/playtechtype", "Martelé")},
-    {PlayingTechniqueType::ColLegno, "col_legno", muse::TranslatableString("engraving/playtechtype", "Col legno")},
-    {PlayingTechniqueType::SulPonticello, "sul_ponticello", muse::TranslatableString("engraving/playtechtype", "Sul ponticello")},
-    {PlayingTechniqueType::SulTasto, "sul_tasto", muse::TranslatableString("engraving/playtechtype", "Sul tasto")},
-    {PlayingTechniqueType::Vibrato, "vibrato", muse::TranslatableString("engraving/playtechtype", "Vibrato")},
-    {PlayingTechniqueType::Legato, "legato", muse::TranslatableString("engraving/playtechtype", "Legato")},
-    {PlayingTechniqueType::Distortion, "distortion", muse::TranslatableString("engraving/playtechtype", "Distortion")},
-    {PlayingTechniqueType::Overdrive, "overdrive", muse::TranslatableString("engraving/playtechtype", "Overdrive")},
-    {PlayingTechniqueType::Harmonics, "harmonics", muse::TranslatableString("engraving/playtechtype", "Harmonics")},
-    {PlayingTechniqueType::JazzTone, "jazz_tone", muse::TranslatableString("engraving/playtechtype", "Jazz tone")},
+    {PlayingTechniqueType::MUTE, "mute", muse::TranslatableString("engraving/playtechtype", "Mute")},
+    {PlayingTechniqueType::TREMOLO, "tremolo", muse::TranslatableString("engraving/playtechtype", "Tremolo")},
+    {PlayingTechniqueType::DETACHE, "detache", muse::TranslatableString("engraving/playtechtype", "Détaché")},
+    {PlayingTechniqueType::MARTELE, "martele", muse::TranslatableString("engraving/playtechtype", "Martelé")},
+    {PlayingTechniqueType::COL_LEGNO, "col_legno", muse::TranslatableString("engraving/playtechtype", "Col legno")},
+    {PlayingTechniqueType::SUL_PONTICELLO, "sul_ponticello", muse::TranslatableString("engraving/playtechtype", "Sul ponticello")},
+    {PlayingTechniqueType::SUL_TASTO, "sul_tasto", muse::TranslatableString("engraving/playtechtype", "Sul tasto")},
+    {PlayingTechniqueType::VIBRATO, "vibrato", muse::TranslatableString("engraving/playtechtype", "Vibrato")},
+    {PlayingTechniqueType::LEGATO, "legato", muse::TranslatableString("engraving/playtechtype", "Legato")},
+    {PlayingTechniqueType::DISTORTION, "distortion", muse::TranslatableString("engraving/playtechtype", "Distortion")},
+    {PlayingTechniqueType::OVERDRIVE, "overdrive", muse::TranslatableString("engraving/playtechtype", "Overdrive")},
+    {PlayingTechniqueType::HARMONICS, "harmonics", muse::TranslatableString("engraving/playtechtype", "Harmonics")},
+    {PlayingTechniqueType::JAZZ_TONE, "jazz_tone", muse::TranslatableString("engraving/playtechtype", "Jazz tone")},
     // Handbells
-    {PlayingTechniqueType::HandbellsSwing, "handbells_swing", muse::TranslatableString("engraving/playtechtype", "Swing")},
-    {PlayingTechniqueType::HandbellsSwingUp, "handbells_swing_up", muse::TranslatableString("engraving/playtechtype", "Swing up")},
-    {PlayingTechniqueType::HandbellsSwingDown, "handbells_swing_down", muse::TranslatableString("engraving/playtechtype", "Swing down")},
-    {PlayingTechniqueType::HandbellsEcho1, "handbells_echo_1", muse::TranslatableString("engraving/playtechtype", "Echo")},
-    {PlayingTechniqueType::HandbellsEcho2, "handbells_echo_2", muse::TranslatableString("engraving/playtechtype", "Echo")},
-    {PlayingTechniqueType::HandbellsDamp, "handbells_damp", muse::TranslatableString("engraving/playtechtype", "Damp")},
-    {PlayingTechniqueType::HandbellsLV, "handbells_lv", muse::TranslatableString("engraving/playtechtype", "Let vibrate")},
-    {PlayingTechniqueType::HandbellsR, "handbells_r", muse::TranslatableString("engraving/playtechtype", "Ring")},
+    {PlayingTechniqueType::HANDBELLS_SWING, "handbells_swing", muse::TranslatableString("engraving/playtechtype", "Swing")},
+    {PlayingTechniqueType::HANDBELLS_SWING_UP, "handbells_swing_up", muse::TranslatableString("engraving/playtechtype", "Swing up")},
+    {PlayingTechniqueType::HANDBELLS_SWING_DOWN, "handbells_swing_down", muse::TranslatableString("engraving/playtechtype", "Swing down")},
+    {PlayingTechniqueType::HANDBELLS_ECHO1, "handbells_echo_1", muse::TranslatableString("engraving/playtechtype", "Echo")},
+    {PlayingTechniqueType::HANDBELLS_ECHO2, "handbells_echo_2", muse::TranslatableString("engraving/playtechtype", "Echo")},
+    {PlayingTechniqueType::HANDBELLS_DAMP, "handbells_damp", muse::TranslatableString("engraving/playtechtype", "Damp")},
+    {PlayingTechniqueType::HANDBELLS_LV, "handbells_lv", muse::TranslatableString("engraving/playtechtype", "Let vibrate")},
+    {PlayingTechniqueType::HANDBELLS_R, "handbells_r", muse::TranslatableString("engraving/playtechtype", "Ring")},
 };
 
-const muse::TranslatableString &TConv::userName(PlayingTechniqueType v) { return findCapitalizedUserNameByType(PLAY_TECH_TYPES, v); }
-
-AsciiStringView TConv::toXml(PlayingTechniqueType v) { return findXmlTagByType<PlayingTechniqueType>(PLAY_TECH_TYPES, v); }
-
-PlayingTechniqueType TConv::fromXml(const AsciiStringView &tag, PlayingTechniqueType def) {
-    return findTypeByXmlTag<PlayingTechniqueType>(PLAY_TECH_TYPES, tag, def);
+const muse::TranslatableString &TConv::user_name(PlayingTechniqueType v) {
+    return find_capitalized_user_name_by_type(::play_tech_types, v);
 }
 
-static const std::vector<Item<GradualTempoChangeType>> TEMPO_CHANGE_TYPES = {
-    {GradualTempoChangeType::Undefined, "undefined"},
-    {GradualTempoChangeType::Accelerando, "accelerando", muse::TranslatableString("engraving/gradualtempochangetype", "accel.")},
-    {GradualTempoChangeType::Allargando, "allargando", muse::TranslatableString("engraving/gradualtempochangetype", "allarg.")},
-    {GradualTempoChangeType::Calando, "calando", muse::TranslatableString("engraving/gradualtempochangetype", "calando")},
-    {GradualTempoChangeType::Lentando, "lentando", muse::TranslatableString("engraving/gradualtempochangetype", "lentando")},
-    {GradualTempoChangeType::Morendo, "morendo", muse::TranslatableString("engraving/gradualtempochangetype", "morendo")},
-    {GradualTempoChangeType::Precipitando, "precipitando", muse::TranslatableString("engraving/gradualtempochangetype", "precipitando")},
-    {GradualTempoChangeType::Rallentando, "rallentando", muse::TranslatableString("engraving/gradualtempochangetype", "rall.")},
-    {GradualTempoChangeType::Ritardando, "ritardando", muse::TranslatableString("engraving/gradualtempochangetype", "rit.")},
-    {GradualTempoChangeType::Smorzando, "smorzando", muse::TranslatableString("engraving/gradualtempochangetype", "smorz.")},
-    {GradualTempoChangeType::Sostenuto, "sostenuto", muse::TranslatableString("engraving/gradualtempochangetype", "sost.")},
-    {GradualTempoChangeType::Stringendo, "stringendo", muse::TranslatableString("engraving/gradualtempochangetype", "string.")}};
+AsciiStringView TConv::to_xml(PlayingTechniqueType v) { return find_xml_tag_by_type<PlayingTechniqueType>(::play_tech_types, v); }
 
-const muse::TranslatableString &TConv::userName(GradualTempoChangeType v) { return findCapitalizedUserNameByType(TEMPO_CHANGE_TYPES, v); }
-
-AsciiStringView TConv::toXml(GradualTempoChangeType v) { return findXmlTagByType<GradualTempoChangeType>(TEMPO_CHANGE_TYPES, v); }
-
-GradualTempoChangeType TConv::fromXml(const AsciiStringView &tag, GradualTempoChangeType def) {
-    return findTypeByXmlTag<GradualTempoChangeType>(TEMPO_CHANGE_TYPES, tag, def);
+PlayingTechniqueType TConv::from_xml(const AsciiStringView &tag, PlayingTechniqueType def) {
+    return find_type_by_xml_tag<PlayingTechniqueType>(::play_tech_types, tag, def);
 }
 
-static const std::vector<Item<OrnamentStyle>> ORNAMENTSTYLE_TYPES = {{OrnamentStyle::BAROQUE, "baroque"},
+static const std::vector<Item<GradualTempoChangeType>> tempo_change_types = {
+    {GradualTempoChangeType::UNDEFINED, "undefined"},
+    {GradualTempoChangeType::ACCELERANDO, "accelerando", muse::TranslatableString("engraving/gradualtempochangetype", "accel.")},
+    {GradualTempoChangeType::ALLARGANDO, "allargando", muse::TranslatableString("engraving/gradualtempochangetype", "allarg.")},
+    {GradualTempoChangeType::CALANDO, "calando", muse::TranslatableString("engraving/gradualtempochangetype", "calando")},
+    {GradualTempoChangeType::LENTANDO, "lentando", muse::TranslatableString("engraving/gradualtempochangetype", "lentando")},
+    {GradualTempoChangeType::MORENDO, "morendo", muse::TranslatableString("engraving/gradualtempochangetype", "morendo")},
+    {GradualTempoChangeType::PRECIPITANDO, "precipitando", muse::TranslatableString("engraving/gradualtempochangetype", "precipitando")},
+    {GradualTempoChangeType::RALLENTANDO, "rallentando", muse::TranslatableString("engraving/gradualtempochangetype", "rall.")},
+    {GradualTempoChangeType::RITARDANDO, "ritardando", muse::TranslatableString("engraving/gradualtempochangetype", "rit.")},
+    {GradualTempoChangeType::SMORZANDO, "smorzando", muse::TranslatableString("engraving/gradualtempochangetype", "smorz.")},
+    {GradualTempoChangeType::SOSTENUTO, "sostenuto", muse::TranslatableString("engraving/gradualtempochangetype", "sost.")},
+    {GradualTempoChangeType::STRINGENDO, "stringendo", muse::TranslatableString("engraving/gradualtempochangetype", "string.")}};
+
+const muse::TranslatableString &TConv::user_name(GradualTempoChangeType v) {
+    return find_capitalized_user_name_by_type(::tempo_change_types, v);
+}
+
+AsciiStringView TConv::to_xml(GradualTempoChangeType v) { return find_xml_tag_by_type<GradualTempoChangeType>(::tempo_change_types, v); }
+
+GradualTempoChangeType TConv::from_xml(const AsciiStringView &tag, GradualTempoChangeType def) {
+    return find_type_by_xml_tag<GradualTempoChangeType>(::tempo_change_types, tag, def);
+}
+
+static const std::vector<Item<OrnamentStyle>> ornamentstyle_types = {{OrnamentStyle::BAROQUE, "baroque"},
                                                                      {OrnamentStyle::DEFAULT, "default"}};
 
-AsciiStringView TConv::toXml(OrnamentStyle v) { return findXmlTagByType<OrnamentStyle>(ORNAMENTSTYLE_TYPES, v); }
+AsciiStringView TConv::to_xml(OrnamentStyle v) { return find_xml_tag_by_type<OrnamentStyle>(::ornamentstyle_types, v); }
 
-OrnamentStyle TConv::fromXml(const AsciiStringView &tag, OrnamentStyle def) {
-    return findTypeByXmlTag<OrnamentStyle>(ORNAMENTSTYLE_TYPES, tag, def);
+OrnamentStyle TConv::from_xml(const AsciiStringView &tag, OrnamentStyle def) {
+    return find_type_by_xml_tag<OrnamentStyle>(::ornamentstyle_types, tag, def);
 }
 
-static const std::vector<Item<PlacementV>> PLACEMENTV_TYPES = {{PlacementV::ABOVE, "above"}, {PlacementV::BELOW, "below"}};
+static const std::vector<Item<PlacementV>> placementv_types = {{PlacementV::ABOVE, "above"}, {PlacementV::BELOW, "below"}};
 
-AsciiStringView TConv::toXml(PlacementV v) { return findXmlTagByType<PlacementV>(PLACEMENTV_TYPES, v); }
+AsciiStringView TConv::to_xml(PlacementV v) { return find_xml_tag_by_type<PlacementV>(::placementv_types, v); }
 
-PlacementV TConv::fromXml(const AsciiStringView &tag, PlacementV def) { return findTypeByXmlTag<PlacementV>(PLACEMENTV_TYPES, tag, def); }
+PlacementV TConv::from_xml(const AsciiStringView &tag, PlacementV def) {
+    return find_type_by_xml_tag<PlacementV>(::placementv_types, tag, def);
+}
 
-static const std::vector<Item<PlacementH>> PLACEMENTH_TYPES = {
+static const std::vector<Item<PlacementH>> placementh_types = {
     {PlacementH::LEFT, "left"}, {PlacementH::RIGHT, "center"}, {PlacementH::CENTER, "right"}};
 
-AsciiStringView TConv::toXml(PlacementH v) { return findXmlTagByType<PlacementH>(PLACEMENTH_TYPES, v); }
+AsciiStringView TConv::to_xml(PlacementH v) { return find_xml_tag_by_type<PlacementH>(::placementh_types, v); }
 
-PlacementH TConv::fromXml(const AsciiStringView &tag, PlacementH def) { return findTypeByXmlTag<PlacementH>(PLACEMENTH_TYPES, tag, def); }
+PlacementH TConv::from_xml(const AsciiStringView &tag, PlacementH def) {
+    return find_type_by_xml_tag<PlacementH>(::placementh_types, tag, def);
+}
 
-static const std::vector<Item<TextPlace>> TEXTPLACE_TYPES = {
+static const std::vector<Item<TextPlace>> textplace_types = {
     {TextPlace::AUTO, "auto"}, {TextPlace::ABOVE, "above"}, {TextPlace::BELOW, "below"}, {TextPlace::LEFT, "left"}};
 
-AsciiStringView TConv::toXml(TextPlace v) { return findXmlTagByType<TextPlace>(TEXTPLACE_TYPES, v); }
+AsciiStringView TConv::to_xml(TextPlace v) { return find_xml_tag_by_type<TextPlace>(::textplace_types, v); }
 
-TextPlace TConv::fromXml(const AsciiStringView &tag, TextPlace def) {
-    auto it = std::find_if(TEXTPLACE_TYPES.cbegin(), TEXTPLACE_TYPES.cend(), [tag](const Item<TextPlace> &i) { return i.xml == tag; });
+TextPlace TConv::from_xml(const AsciiStringView &tag, TextPlace def) {
+    auto it = std::find_if(::textplace_types.cbegin(), ::textplace_types.cend(), [tag](const Item<TextPlace> &i) { return i.xml == tag; });
 
-    if (it != TEXTPLACE_TYPES.cend()) {
+    if (it != ::textplace_types.cend()) {
         return it->type;
     }
 
     // compatibility
-    static const std::vector<Item<TextPlace>> OLD_TEXTPLACE_TYPES = {
+    static const std::vector<Item<TextPlace>> old_textplace_types = {
         {TextPlace::AUTO, "0"}, {TextPlace::ABOVE, "1"}, {TextPlace::BELOW, "2"}, {TextPlace::LEFT, "3"}};
 
     auto oldit =
-        std::find_if(OLD_TEXTPLACE_TYPES.cbegin(), OLD_TEXTPLACE_TYPES.cend(), [tag](const Item<TextPlace> &i) { return i.xml == tag; });
+        std::find_if(old_textplace_types.cbegin(), old_textplace_types.cend(), [tag](const Item<TextPlace> &i) { return i.xml == tag; });
 
-    IF_ASSERT_FAILED(oldit != OLD_TEXTPLACE_TYPES.cend()) { return def; }
+    IF_ASSERT_FAILED(oldit != old_textplace_types.cend()) { return def; }
     return oldit->type;
 }
 
-static const std::array<Item<DirectionV>, 3> DIRECTIONV_TYPES = {{
+static const std::array<Item<DirectionV>, 3> directionv_types = {{
     {DirectionV::AUTO, "auto", muse::TranslatableString("engraving", "Auto")},
     {DirectionV::UP, "up", muse::TranslatableString("engraving", "Up")},
     {DirectionV::DOWN, "down", muse::TranslatableString("engraving", "Down")},
 }};
 
-String TConv::translatedUserName(DirectionV v) { return findCapitalizedUserNameByType(DIRECTIONV_TYPES, v).translated(); }
+String TConv::translated_user_name(DirectionV v) { return find_capitalized_user_name_by_type(::directionv_types, v).translated(); }
 
-AsciiStringView TConv::toXml(DirectionV v) { return findXmlTagByType<DirectionV>(DIRECTIONV_TYPES, v); }
+AsciiStringView TConv::to_xml(DirectionV v) { return find_xml_tag_by_type<DirectionV>(::directionv_types, v); }
 
-DirectionV TConv::fromXml(const AsciiStringView &tag, DirectionV def) {
-    auto it = std::find_if(DIRECTIONV_TYPES.cbegin(), DIRECTIONV_TYPES.cend(), [tag](const Item<DirectionV> &i) { return i.xml == tag; });
+DirectionV TConv::from_xml(const AsciiStringView &tag, DirectionV def) {
+    auto it =
+        std::find_if(::directionv_types.cbegin(), ::directionv_types.cend(), [tag](const Item<DirectionV> &i) { return i.xml == tag; });
 
-    if (it != DIRECTIONV_TYPES.cend()) {
+    if (it != ::directionv_types.cend()) {
         return it->type;
     }
 
@@ -1775,26 +1817,27 @@ DirectionV TConv::fromXml(const AsciiStringView &tag, DirectionV def) {
     return def;
 }
 
-static const std::vector<Item<DirectionH>> DIRECTIONH_TYPES = {
+static const std::vector<Item<DirectionH>> directionh_types = {
     {DirectionH::AUTO, "auto", muse::TranslatableString("engraving", "Auto")},
     {DirectionH::RIGHT, "right", muse::TranslatableString("engraving", "Right")},
     {DirectionH::LEFT, "left", muse::TranslatableString("engraving", "Left")},
 };
 
-String TConv::translatedUserName(DirectionH v) { return findCapitalizedUserNameByType(DIRECTIONH_TYPES, v).translated(); }
+String TConv::translated_user_name(DirectionH v) { return find_capitalized_user_name_by_type(::directionh_types, v).translated(); }
 
-AsciiStringView TConv::toXml(DirectionH v) { return findXmlTagByType<DirectionH>(DIRECTIONH_TYPES, v); }
+AsciiStringView TConv::to_xml(DirectionH v) { return find_xml_tag_by_type<DirectionH>(::directionh_types, v); }
 
-DirectionH TConv::fromXml(const AsciiStringView &tag, DirectionH def) {
-    auto it = std::find_if(DIRECTIONH_TYPES.cbegin(), DIRECTIONH_TYPES.cend(), [tag](const Item<DirectionH> &i) { return i.xml == tag; });
+DirectionH TConv::from_xml(const AsciiStringView &tag, DirectionH def) {
+    auto it =
+        std::find_if(::directionh_types.cbegin(), ::directionh_types.cend(), [tag](const Item<DirectionH> &i) { return i.xml == tag; });
 
-    if (it != DIRECTIONH_TYPES.cend()) {
+    if (it != ::directionh_types.cend()) {
         return it->type;
     }
 
     // compatibility
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<DirectionH>(v);
     }
@@ -1802,42 +1845,42 @@ DirectionH TConv::fromXml(const AsciiStringView &tag, DirectionH def) {
     return def;
 }
 
-static const std::vector<Item<LayoutBreakType>> LAYOUTBREAK_TYPES = {
+static const std::vector<Item<LayoutBreakType>> layoutbreak_types = {
     {LayoutBreakType::LINE, "line", muse::TranslatableString("engraving/layoutbreaktype", "System break")},
     {LayoutBreakType::PAGE, "page", muse::TranslatableString("engraving/layoutbreaktype", "Page break")},
     {LayoutBreakType::SECTION, "section", muse::TranslatableString("engraving/layoutbreaktype", "Section break")},
     {LayoutBreakType::NOBREAK, "nobreak", muse::TranslatableString("engraving/layoutbreaktype", "Keep measures on the same system")}};
 
-const muse::TranslatableString &TConv::userName(LayoutBreakType v) { return findCapitalizedUserNameByType(LAYOUTBREAK_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(LayoutBreakType v) { return find_capitalized_user_name_by_type(::layoutbreak_types, v); }
 
-AsciiStringView TConv::toXml(LayoutBreakType v) { return findXmlTagByType<LayoutBreakType>(LAYOUTBREAK_TYPES, v); }
+AsciiStringView TConv::to_xml(LayoutBreakType v) { return find_xml_tag_by_type<LayoutBreakType>(::layoutbreak_types, v); }
 
-LayoutBreakType TConv::fromXml(const AsciiStringView &tag, LayoutBreakType def) {
-    return findTypeByXmlTag<LayoutBreakType>(LAYOUTBREAK_TYPES, tag, def);
+LayoutBreakType TConv::from_xml(const AsciiStringView &tag, LayoutBreakType def) {
+    return find_type_by_xml_tag<LayoutBreakType>(::layoutbreak_types, tag, def);
 }
 
-static const std::vector<Item<VeloType>> VELO_TYPES = {{VeloType::OFFSET_VAL, "offset"}, {VeloType::USER_VAL, "user"}};
+static const std::vector<Item<VeloType>> velo_types = {{VeloType::OFFSET_VAL, "offset"}, {VeloType::USER_VAL, "user"}};
 
-AsciiStringView TConv::toXml(VeloType v) { return findXmlTagByType<VeloType>(VELO_TYPES, v); }
+AsciiStringView TConv::to_xml(VeloType v) { return find_xml_tag_by_type<VeloType>(::velo_types, v); }
 
-VeloType TConv::fromXml(const AsciiStringView &tag, VeloType def) { return findTypeByXmlTag<VeloType>(VELO_TYPES, tag, def); }
+VeloType TConv::from_xml(const AsciiStringView &tag, VeloType def) { return find_type_by_xml_tag<VeloType>(::velo_types, tag, def); }
 
-static const std::vector<Item<BeamMode>> BEAMMODE_TYPES = {
+static const std::vector<Item<BeamMode>> beammode_types = {
     {BeamMode::AUTO, "auto"}, {BeamMode::BEGIN, "begin"},     {BeamMode::MID, "mid"},         {BeamMode::END, "end"},
     {BeamMode::NONE, "no"},   {BeamMode::BEGIN16, "begin16"}, {BeamMode::BEGIN32, "begin32"}, {BeamMode::INVALID, "invalid"}};
 
-AsciiStringView TConv::toXml(BeamMode v) { return findXmlTagByType<BeamMode>(BEAMMODE_TYPES, v); }
+AsciiStringView TConv::to_xml(BeamMode v) { return find_xml_tag_by_type<BeamMode>(::beammode_types, v); }
 
-BeamMode TConv::fromXml(const AsciiStringView &tag, BeamMode def) {
-    auto it = std::find_if(BEAMMODE_TYPES.cbegin(), BEAMMODE_TYPES.cend(), [tag](const Item<BeamMode> &i) { return i.xml == tag; });
+BeamMode TConv::from_xml(const AsciiStringView &tag, BeamMode def) {
+    auto it = std::find_if(::beammode_types.cbegin(), ::beammode_types.cend(), [tag](const Item<BeamMode> &i) { return i.xml == tag; });
 
-    if (it != BEAMMODE_TYPES.cend()) {
+    if (it != ::beammode_types.cend()) {
         return it->type;
     }
 
     // compatibility
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<BeamMode>(v);
     }
@@ -1845,19 +1888,19 @@ BeamMode TConv::fromXml(const AsciiStringView &tag, BeamMode def) {
     return def;
 }
 
-static const std::vector<Item<GlissandoStyle>> GLISSANDOSTYLE_TYPES = {{GlissandoStyle::BLACK_KEYS, "blackkeys"},
+static const std::vector<Item<GlissandoStyle>> glissandostyle_types = {{GlissandoStyle::BLACK_KEYS, "blackkeys"},
                                                                        {GlissandoStyle::WHITE_KEYS, "whitekeys"},
                                                                        {GlissandoStyle::DIATONIC, "diatonic"},
                                                                        {GlissandoStyle::PORTAMENTO, "portamento"},
                                                                        {GlissandoStyle::CHROMATIC, "chromatic"}};
 
-AsciiStringView TConv::toXml(GlissandoStyle v) { return findXmlTagByType<GlissandoStyle>(GLISSANDOSTYLE_TYPES, v); }
+AsciiStringView TConv::to_xml(GlissandoStyle v) { return find_xml_tag_by_type<GlissandoStyle>(::glissandostyle_types, v); }
 
-GlissandoStyle TConv::fromXml(const AsciiStringView &tag, GlissandoStyle def) {
-    auto it = std::find_if(GLISSANDOSTYLE_TYPES.cbegin(), GLISSANDOSTYLE_TYPES.cend(),
+GlissandoStyle TConv::from_xml(const AsciiStringView &tag, GlissandoStyle def) {
+    auto it = std::find_if(::glissandostyle_types.cbegin(), ::glissandostyle_types.cend(),
                            [tag](const Item<GlissandoStyle> &i) { return i.xml == tag; });
 
-    if (it != GLISSANDOSTYLE_TYPES.cend()) {
+    if (it != ::glissandostyle_types.cend()) {
         return it->type;
     }
 
@@ -1869,7 +1912,7 @@ GlissandoStyle TConv::fromXml(const AsciiStringView &tag, GlissandoStyle def) {
     return def;
 }
 
-static const std::vector<Item<BarLineType>> BARLINE_TYPES = {{BarLineType::NORMAL, "normal"},
+static const std::vector<Item<BarLineType>> barline_types = {{BarLineType::NORMAL, "normal"},
                                                              {BarLineType::DOUBLE, "double"},
                                                              {BarLineType::START_REPEAT, "start-repeat"},
                                                              {BarLineType::END_REPEAT, "end-repeat"},
@@ -1881,18 +1924,18 @@ static const std::vector<Item<BarLineType>> BARLINE_TYPES = {{BarLineType::NORMA
                                                              {BarLineType::HEAVY, "heavy"},
                                                              {BarLineType::DOUBLE_HEAVY, "double-heavy"}};
 
-AsciiStringView TConv::toXml(BarLineType v) { return findXmlTagByType<BarLineType>(BARLINE_TYPES, v); }
+AsciiStringView TConv::to_xml(BarLineType v) { return find_xml_tag_by_type<BarLineType>(::barline_types, v); }
 
-BarLineType TConv::fromXml(const AsciiStringView &tag, BarLineType def) {
-    auto it = std::find_if(BARLINE_TYPES.cbegin(), BARLINE_TYPES.cend(), [tag](const Item<BarLineType> &i) { return i.xml == tag; });
+BarLineType TConv::from_xml(const AsciiStringView &tag, BarLineType def) {
+    auto it = std::find_if(::barline_types.cbegin(), ::barline_types.cend(), [tag](const Item<BarLineType> &i) { return i.xml == tag; });
 
-    if (it != BARLINE_TYPES.cend()) {
+    if (it != ::barline_types.cend()) {
         return it->type;
     }
 
     // compatibility
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<BarLineType>(v);
     }
@@ -1900,7 +1943,7 @@ BarLineType TConv::fromXml(const AsciiStringView &tag, BarLineType def) {
     return def;
 }
 
-static const std::array<Item<TremoloType>, 14> TREMOLO_TYPES = {
+static const std::array<Item<TremoloType>, 14> tremolo_types = {
     {{TremoloType::INVALID_TREMOLO, ""},
      {TremoloType::R8, "r8", muse::TranslatableString("engraving/tremolotype", "Eighth through stem")},
      {TremoloType::R16, "r16", muse::TranslatableString("engraving/tremolotype", "16th through stem")},
@@ -1916,13 +1959,15 @@ static const std::array<Item<TremoloType>, 14> TREMOLO_TYPES = {
      {TremoloType::C128, "c128", muse::TranslatableString("engraving/tremolotype", "128th between notes")},
      {TremoloType::C256, "c256", muse::TranslatableString("engraving/tremolotype", "256th between notes")}}};
 
-const muse::TranslatableString &TConv::userName(TremoloType v) { return findCapitalizedUserNameByType(TREMOLO_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(TremoloType v) { return find_capitalized_user_name_by_type(::tremolo_types, v); }
 
-AsciiStringView TConv::toXml(TremoloType v) { return findXmlTagByType<TremoloType>(TREMOLO_TYPES, v); }
+AsciiStringView TConv::to_xml(TremoloType v) { return find_xml_tag_by_type<TremoloType>(::tremolo_types, v); }
 
-TremoloType TConv::fromXml(const AsciiStringView &tag, TremoloType def) { return findTypeByXmlTag<TremoloType>(TREMOLO_TYPES, tag, def); }
+TremoloType TConv::from_xml(const AsciiStringView &tag, TremoloType def) {
+    return find_type_by_xml_tag<TremoloType>(::tremolo_types, tag, def);
+}
 
-static const std::vector<Item<TremoloBarType>> TREMOLOBAR_TYPES = {{{TremoloBarType::DIP, "dip"},
+static const std::vector<Item<TremoloBarType>> tremolobar_types = {{{TremoloBarType::DIP, "dip"},
                                                                     {TremoloBarType::DIVE, "dive"},
                                                                     {TremoloBarType::RELEASE_UP, "release (up)"},
                                                                     {TremoloBarType::INVERTED_DIP, "inverted dip"},
@@ -1930,13 +1975,13 @@ static const std::vector<Item<TremoloBarType>> TREMOLOBAR_TYPES = {{{TremoloBarT
                                                                     {TremoloBarType::RELEASE_DOWN, "release (down)"},
                                                                     {TremoloBarType::CUSTOM, "custom"}}};
 
-AsciiStringView TConv::toXml(TremoloBarType v) { return findXmlTagByType<TremoloBarType>(TREMOLOBAR_TYPES, v); }
+AsciiStringView TConv::to_xml(TremoloBarType v) { return find_xml_tag_by_type<TremoloBarType>(::tremolobar_types, v); }
 
-TremoloBarType TConv::fromXml(const AsciiStringView &tag, TremoloBarType def) {
-    return findTypeByXmlTag<TremoloBarType>(TREMOLOBAR_TYPES, tag, def);
+TremoloBarType TConv::from_xml(const AsciiStringView &tag, TremoloBarType def) {
+    return find_type_by_xml_tag<TremoloBarType>(::tremolobar_types, tag, def);
 }
 
-static const std::vector<Item<BracketType>> BRACKET_TYPES = {
+static const std::vector<Item<BracketType>> bracket_types = {
     {BracketType::NORMAL, "Normal", muse::TranslatableString("engraving/brackettype", "Normal")},
     {BracketType::BRACE, "Brace", muse::TranslatableString("engraving/brackettype", "Brace")},
     {BracketType::SQUARE, "Square", muse::TranslatableString("engraving/brackettype", "Square")},
@@ -1944,16 +1989,16 @@ static const std::vector<Item<BracketType>> BRACKET_TYPES = {
     {BracketType::GROUP, "Group", muse::TranslatableString("engraving/brackettype", "Group")},
     {BracketType::NO_BRACKET, "NoBracket", muse::TranslatableString("engraving/brackettype", "No bracket")}};
 
-const muse::TranslatableString &TConv::userName(BracketType v) { return findCapitalizedUserNameByType(BRACKET_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(BracketType v) { return find_capitalized_user_name_by_type(::bracket_types, v); }
 
-String TConv::translatedUserName(BracketType v) { return findCapitalizedUserNameByType(BRACKET_TYPES, v).translated(); }
+String TConv::translated_user_name(BracketType v) { return find_capitalized_user_name_by_type(::bracket_types, v).translated(); }
 
-AsciiStringView TConv::toXml(BracketType v) { return findXmlTagByType<BracketType>(BRACKET_TYPES, v); }
+AsciiStringView TConv::to_xml(BracketType v) { return find_xml_tag_by_type<BracketType>(::bracket_types, v); }
 
-BracketType TConv::fromXml(const AsciiStringView &tag, BracketType def) {
-    auto it = std::find_if(BRACKET_TYPES.cbegin(), BRACKET_TYPES.cend(), [tag](const Item<BracketType> &i) { return i.xml == tag; });
+BracketType TConv::from_xml(const AsciiStringView &tag, BracketType def) {
+    auto it = std::find_if(::bracket_types.cbegin(), ::bracket_types.cend(), [tag](const Item<BracketType> &i) { return i.xml == tag; });
 
-    if (it != BRACKET_TYPES.cend()) {
+    if (it != ::bracket_types.cend()) {
         return it->type;
     }
 
@@ -1966,7 +2011,7 @@ BracketType TConv::fromXml(const AsciiStringView &tag, BracketType def) {
 }
 
 //! TODO Add xml names
-static const std::array<Item<ArpeggioType>, 6> ARPEGGIO_TYPES = {
+static const std::array<Item<ArpeggioType>, 6> arpeggio_types = {
     {{ArpeggioType::NORMAL, "0", muse::TranslatableString("engraving", "Arpeggio")},
      {ArpeggioType::UP, "1", muse::TranslatableString("engraving", "Up arpeggio")},
      {ArpeggioType::DOWN, "2", muse::TranslatableString("engraving", "Down arpeggio")},
@@ -1974,12 +2019,12 @@ static const std::array<Item<ArpeggioType>, 6> ARPEGGIO_TYPES = {
      {ArpeggioType::UP_STRAIGHT, "4", muse::TranslatableString("engraving", "Up arpeggio straight")},
      {ArpeggioType::DOWN_STRAIGHT, "5", muse::TranslatableString("engraving", "Down arpeggio straight")}}};
 
-const muse::TranslatableString &TConv::userName(ArpeggioType v) { return findCapitalizedUserNameByType(ARPEGGIO_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(ArpeggioType v) { return find_capitalized_user_name_by_type(::arpeggio_types, v); }
 
-AsciiStringView TConv::toXml(ArpeggioType v) { return findXmlTagByType<ArpeggioType>(ARPEGGIO_TYPES, v); }
+AsciiStringView TConv::to_xml(ArpeggioType v) { return find_xml_tag_by_type<ArpeggioType>(::arpeggio_types, v); }
 
-ArpeggioType TConv::fromXml(const AsciiStringView &tag, ArpeggioType def) {
-    return findTypeByXmlTag<ArpeggioType>(ARPEGGIO_TYPES, tag, def);
+ArpeggioType TConv::from_xml(const AsciiStringView &tag, ArpeggioType def) {
+    return find_type_by_xml_tag<ArpeggioType>(::arpeggio_types, tag, def);
 }
 
 struct EmbelItem {
@@ -1988,7 +2033,7 @@ struct EmbelItem {
 };
 
 // TODO: Can't use .arg, because Palettes use these strings and doesn't support TranslatableString
-static const std::vector<EmbelItem> EMBELLISHMENT_TYPES = {
+static const std::vector<EmbelItem> embellishment_types = {
     // Single Grace notes
     {muse::TranslatableString("engraving/bagpipeembellishment", "Single grace low G"), "LG"},
     {muse::TranslatableString("engraving/bagpipeembellishment", "Single grace low A"), "LA"},
@@ -2270,24 +2315,26 @@ static const std::vector<EmbelItem> EMBELLISHMENT_TYPES = {
     {muse::TranslatableString("engraving/bagpipeembellishment", "Thumb triple strike on high G"), "HA HG F HG F HG F"},
 };
 
-const muse::TranslatableString &TConv::userName(EmbellishmentType v) { return EMBELLISHMENT_TYPES.at(static_cast<size_t>(v)).name; }
+const muse::TranslatableString &TConv::user_name(EmbellishmentType v) { return ::embellishment_types.at(static_cast<size_t>(v)).name; }
 
-String TConv::translatedUserName(EmbellishmentType v) { return EMBELLISHMENT_TYPES.at(static_cast<size_t>(v)).name.translated(); }
+String TConv::translated_user_name(EmbellishmentType v) { return ::embellishment_types.at(static_cast<size_t>(v)).name.translated(); }
 
-String TConv::toXml(EmbellishmentType v) { return String::number(static_cast<size_t>(v)); }
+String TConv::to_xml(EmbellishmentType v) { return String::number(static_cast<size_t>(v)); }
 
-EmbellishmentType TConv::fromXml(const AsciiStringView &tag, EmbellishmentType def) {
+EmbellishmentType TConv::from_xml(const AsciiStringView &tag, EmbellishmentType def) {
     bool ok = false;
-    int v = tag.toInt(&ok);
+    int v = tag.to_int(&ok);
     if (ok) {
         return static_cast<EmbellishmentType>(v);
     }
     return def;
 }
 
-StringList TConv::embellishmentNotes(EmbellishmentType v) { return String::fromAscii(EMBELLISHMENT_TYPES.at(v).notes.ascii()).split(u' '); }
+StringList TConv::embellishment_notes(EmbellishmentType v) {
+    return String::from_ascii(::embellishment_types.at(v).notes.ascii()).split(u' ');
+}
 
-size_t TConv::embellishmentsCount() { return EMBELLISHMENT_TYPES.size(); }
+size_t TConv::embellishments_count() { return ::embellishment_types.size(); }
 
 struct ChordLineNameType {
     ChordLineType type;
@@ -2298,7 +2345,7 @@ struct ChordLineNameType {
 };
 
 //! TODO Add xml names
-static const std::array<Item<ChordLineNameType>, 15> CHORDLINE_TYPES = {
+static const std::array<Item<ChordLineNameType>, 15> chordline_types = {
     {{{ChordLineType::NOTYPE, false, false}, "0"},
      {{ChordLineType::FALL, false, false}, "1", muse::TranslatableString("engraving", "Fall")},
      {{ChordLineType::DOIT, false, false}, "2", muse::TranslatableString("engraving", "Doit")},
@@ -2315,23 +2362,23 @@ static const std::array<Item<ChordLineNameType>, 15> CHORDLINE_TYPES = {
      {{ChordLineType::PLOP, true, true}, "3", muse::TranslatableString("engraving", "Slide in above (rough)")},
      {{ChordLineType::SCOOP, true, true}, "4", muse::TranslatableString("engraving", "Slide in below (rough)")}}};
 
-const muse::TranslatableString &TConv::userName(ChordLineType v, bool straight, bool wavy) {
-    return findCapitalizedUserNameByType(CHORDLINE_TYPES, ChordLineNameType{v, straight, wavy});
+const muse::TranslatableString &TConv::user_name(ChordLineType v, bool straight, bool wavy) {
+    return find_capitalized_user_name_by_type(::chordline_types, ChordLineNameType{v, straight, wavy});
 }
 
-AsciiStringView TConv::toXml(ChordLineType v) { return findXmlTagByType<ChordLineNameType>(CHORDLINE_TYPES, {v, false, false}); }
+AsciiStringView TConv::to_xml(ChordLineType v) { return find_xml_tag_by_type<ChordLineNameType>(::chordline_types, {v, false, false}); }
 
-ChordLineType TConv::fromXml(const AsciiStringView &tag, ChordLineType def) {
-    return findTypeByXmlTag<ChordLineNameType>(CHORDLINE_TYPES, tag, {def, false, false}).type;
+ChordLineType TConv::from_xml(const AsciiStringView &tag, ChordLineType def) {
+    return find_type_by_xml_tag<ChordLineNameType>(::chordline_types, tag, {def, false, false}).type;
 }
 
 struct DrumPitchItem {
     DrumNum num = DrumNum(0);
-    String userName;
+    String user_name;
 };
 
 // TODO: Can't use TranslatableString, because Drumset uses these strings and doesn't support TranslatableString
-static const std::vector<DrumPitchItem> DRUMPITCHS = {
+static const std::vector<DrumPitchItem> drumpitchs = {
     {DrumNum(27), QT_TRANSLATE_NOOP_U16("engraving/drumset", "High Q")},
     {DrumNum(28), QT_TRANSLATE_NOOP_U16("engraving/drumset", "Slap")},
     {DrumNum(29), QT_TRANSLATE_NOOP_U16("engraving/drumset", "Scratch Push")},
@@ -2409,30 +2456,30 @@ static const std::vector<DrumPitchItem> DRUMPITCHS = {
     {DrumNum(102), QT_TRANSLATE_NOOP_U16("engraving/drumset", "Cowbell High")},
 };
 
-const String &TConv::userName(DrumNum v) {
-    auto it = std::find_if(DRUMPITCHS.cbegin(), DRUMPITCHS.cend(), [v](const DrumPitchItem &i) { return i.num == v; });
+const String &TConv::user_name(DrumNum v) {
+    auto it = std::find_if(::drumpitchs.cbegin(), ::drumpitchs.cend(), [v](const DrumPitchItem &i) { return i.num == v; });
 
-    IF_ASSERT_FAILED(it != DRUMPITCHS.cend()) {
+    IF_ASSERT_FAILED(it != ::drumpitchs.cend()) {
         static const String dummy;
         return dummy;
     }
-    return it->userName;
+    return it->user_name;
 }
 
 //! TODO Add xml names
-static const std::array<Item<GlissandoType>, 2> GLISSANDO_TYPES = {
+static const std::array<Item<GlissandoType>, 2> glissando_types = {
     {{GlissandoType::STRAIGHT, "0", muse::TranslatableString("engraving", "Straight glissando")},
      {GlissandoType::WAVY, "1", muse::TranslatableString("engraving", "Wavy glissando")}}};
 
-const muse::TranslatableString &TConv::userName(GlissandoType v) { return findCapitalizedUserNameByType(GLISSANDO_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(GlissandoType v) { return find_capitalized_user_name_by_type(::glissando_types, v); }
 
-AsciiStringView TConv::toXml(GlissandoType v) { return findXmlTagByType<GlissandoType>(GLISSANDO_TYPES, v); }
+AsciiStringView TConv::to_xml(GlissandoType v) { return find_xml_tag_by_type<GlissandoType>(::glissando_types, v); }
 
-GlissandoType TConv::fromXml(const AsciiStringView &tag, GlissandoType def) {
-    return findTypeByXmlTag<GlissandoType>(GLISSANDO_TYPES, tag, def);
+GlissandoType TConv::from_xml(const AsciiStringView &tag, GlissandoType def) {
+    return find_type_by_xml_tag<GlissandoType>(::glissando_types, tag, def);
 }
 
-static const std::vector<Item<JumpType>> JUMP_TYPES = {
+static const std::vector<Item<JumpType>> jump_types = {
     {JumpType::DC, "dc", muse::TranslatableString("engraving", "Da Capo")},
     {JumpType::DC_AL_FINE, "dcalfine", muse::TranslatableString("engraving", "Da Capo al Fine")},
     {JumpType::DC_AL_CODA, "dcalcoda", muse::TranslatableString("engraving", "Da Capo al Coda")},
@@ -2449,11 +2496,11 @@ static const std::vector<Item<JumpType>> JUMP_TYPES = {
 
     {JumpType::USER, "user", muse::TranslatableString("engraving", "Custom")}};
 
-const muse::TranslatableString &TConv::userName(JumpType v) { return findCapitalizedUserNameByType(JUMP_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(JumpType v) { return find_capitalized_user_name_by_type(::jump_types, v); }
 
-String TConv::translatedUserName(JumpType v) { return findCapitalizedUserNameByType(JUMP_TYPES, v).translated(); }
+String TConv::translated_user_name(JumpType v) { return find_capitalized_user_name_by_type(::jump_types, v).translated(); }
 
-static const std::array<Item<MarkerType>, 11> MARKER_TYPES = {
+static const std::array<Item<MarkerType>, 11> marker_types = {
     {{MarkerType::SEGNO, "segno", muse::TranslatableString("engraving", "Segno")},
      {MarkerType::VARSEGNO, "varsegno", muse::TranslatableString("engraving", "Segno variation")},
      {MarkerType::CODA, "codab", muse::TranslatableString("engraving", "Coda")},
@@ -2466,16 +2513,16 @@ static const std::array<Item<MarkerType>, 11> MARKER_TYPES = {
      {MarkerType::DA_DBLCODA, "dadblcoda", muse::TranslatableString("engraving", "Da Doppia Coda")},
      {MarkerType::USER, "user", muse::TranslatableString("engraving", "Custom")}}};
 
-const muse::TranslatableString &TConv::userName(MarkerType v) { return findCapitalizedUserNameByType(MARKER_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(MarkerType v) { return find_capitalized_user_name_by_type(::marker_types, v); }
 
-String TConv::translatedUserName(MarkerType v) { return findCapitalizedUserNameByType(MARKER_TYPES, v).translated(); }
+String TConv::translated_user_name(MarkerType v) { return find_capitalized_user_name_by_type(::marker_types, v).translated(); }
 
-AsciiStringView TConv::toXml(MarkerType v) { return findXmlTagByType<MarkerType>(MARKER_TYPES, v); }
+AsciiStringView TConv::to_xml(MarkerType v) { return find_xml_tag_by_type<MarkerType>(::marker_types, v); }
 
-MarkerType TConv::fromXml(const AsciiStringView &tag, MarkerType def) {
-    auto it = std::find_if(MARKER_TYPES.cbegin(), MARKER_TYPES.cend(), [tag](const Item<MarkerType> &i) { return i.xml == tag; });
+MarkerType TConv::from_xml(const AsciiStringView &tag, MarkerType def) {
+    auto it = std::find_if(::marker_types.cbegin(), ::marker_types.cend(), [tag](const Item<MarkerType> &i) { return i.xml == tag; });
 
-    if (it != MARKER_TYPES.cend()) {
+    if (it != ::marker_types.cend()) {
         return it->type;
     }
 
@@ -2488,19 +2535,21 @@ MarkerType TConv::fromXml(const AsciiStringView &tag, MarkerType def) {
     return def;
 }
 
-static const std::array<Item<StaffGroup>, 3> STAFFGROUP_TYPES = {{
+static const std::array<Item<StaffGroup>, 3> staffgroup_types = {{
     {StaffGroup::STANDARD, "pitched", muse::TranslatableString("engraving/staffgroup", "Standard")},
     {StaffGroup::PERCUSSION, "percussion", muse::TranslatableString("engraving/staffgroup", "Percussion")},
     {StaffGroup::TAB, "tablature", muse::TranslatableString("engraving/staffgroup", "Tablature")},
 }};
 
-String TConv::translatedUserName(StaffGroup v) { return findCapitalizedUserNameByType(STAFFGROUP_TYPES, v).translated(); }
+String TConv::translated_user_name(StaffGroup v) { return find_capitalized_user_name_by_type(::staffgroup_types, v).translated(); }
 
-AsciiStringView TConv::toXml(StaffGroup v) { return findXmlTagByType<StaffGroup>(STAFFGROUP_TYPES, v); }
+AsciiStringView TConv::to_xml(StaffGroup v) { return find_xml_tag_by_type<StaffGroup>(::staffgroup_types, v); }
 
-StaffGroup TConv::fromXml(const AsciiStringView &tag, StaffGroup def) { return findTypeByXmlTag<StaffGroup>(STAFFGROUP_TYPES, tag, def); }
+StaffGroup TConv::from_xml(const AsciiStringView &tag, StaffGroup def) {
+    return find_type_by_xml_tag<StaffGroup>(::staffgroup_types, tag, def);
+}
 
-static const std::array<Item<StaffTypes>, 27> STAFFTYPES_ITEMS = {{
+static const std::array<Item<StaffTypes>, 27> stafftypes_items = {{
     {StaffTypes::STANDARD, "stdNormal", muse::TranslatableString("engraving/stafftypes", "Standard")},
     {StaffTypes::PERC_1LINE, "perc1Line", muse::TranslatableString("engraving/stafftypes", "Perc. 1 line")},
     {StaffTypes::PERC_2LINE, "perc2Line", muse::TranslatableString("engraving/stafftypes", "Perc. 2 lines")},
@@ -2530,30 +2579,32 @@ static const std::array<Item<StaffTypes>, 27> STAFFTYPES_ITEMS = {{
     {StaffTypes::TAB_10SIMPLE, "tab10StrSimple", muse::TranslatableString("engraving/stafftypes", "Tab. 10-str. simple")},
 }};
 
-const TranslatableString &TConv::userName(StaffTypes v) { return findCapitalizedUserNameByType(STAFFTYPES_ITEMS, v); }
+const TranslatableString &TConv::user_name(StaffTypes v) { return find_capitalized_user_name_by_type(::stafftypes_items, v); }
 
-String TConv::translatedUserName(StaffTypes v) { return findCapitalizedUserNameByType(STAFFTYPES_ITEMS, v).translated(); }
+String TConv::translated_user_name(StaffTypes v) { return find_capitalized_user_name_by_type(::stafftypes_items, v).translated(); }
 
-AsciiStringView TConv::toXml(StaffTypes v) { return findXmlTagByType<StaffTypes>(STAFFTYPES_ITEMS, v); }
+AsciiStringView TConv::to_xml(StaffTypes v) { return find_xml_tag_by_type<StaffTypes>(::stafftypes_items, v); }
 
-StaffTypes TConv::fromXml(const AsciiStringView &tag, StaffTypes def) { return findTypeByXmlTag<StaffTypes>(STAFFTYPES_ITEMS, tag, def); }
+StaffTypes TConv::from_xml(const AsciiStringView &tag, StaffTypes def) {
+    return find_type_by_xml_tag<StaffTypes>(::stafftypes_items, tag, def);
+}
 
-const std::array<Item<TrillType>, 4> TRILL_TYPES = {
+const std::array<Item<TrillType>, 4> trill_types = {
     {{TrillType::TRILL_LINE, "trill", muse::TranslatableString("engraving/trilltype", "Trill line")},
      {TrillType::UPPRALL_LINE, "upprall", muse::TranslatableString("engraving/trilltype", "Upprall line")},
      {TrillType::DOWNPRALL_LINE, "downprall", muse::TranslatableString("engraving/trilltype", "Downprall line")},
      {TrillType::PRALLPRALL_LINE, "prallprall", muse::TranslatableString("engraving/trilltype", "Prallprall line")}}};
 
-const muse::TranslatableString &TConv::userName(TrillType v) { return findCapitalizedUserNameByType(TRILL_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(TrillType v) { return find_capitalized_user_name_by_type(::trill_types, v); }
 
-String TConv::translatedUserName(TrillType v) { return findCapitalizedUserNameByType(TRILL_TYPES, v).translated(); }
+String TConv::translated_user_name(TrillType v) { return find_capitalized_user_name_by_type(::trill_types, v).translated(); }
 
-AsciiStringView TConv::toXml(TrillType v) { return findXmlTagByType<TrillType>(TRILL_TYPES, v); }
+AsciiStringView TConv::to_xml(TrillType v) { return find_xml_tag_by_type<TrillType>(::trill_types, v); }
 
-TrillType TConv::fromXml(const AsciiStringView &tag, TrillType def) {
-    auto it = std::find_if(TRILL_TYPES.cbegin(), TRILL_TYPES.cend(), [tag](const Item<TrillType> &i) { return i.xml == tag; });
+TrillType TConv::from_xml(const AsciiStringView &tag, TrillType def) {
+    auto it = std::find_if(::trill_types.cbegin(), ::trill_types.cend(), [tag](const Item<TrillType> &i) { return i.xml == tag; });
 
-    if (it != TRILL_TYPES.cend()) {
+    if (it != ::trill_types.cend()) {
         return it->type;
     }
 
@@ -2568,7 +2619,7 @@ TrillType TConv::fromXml(const AsciiStringView &tag, TrillType def) {
     return def;
 }
 
-const std::array<Item<VibratoType>, 5> VIBRATO_TYPES = {
+const std::array<Item<VibratoType>, 5> vibrato_types = {
     {{VibratoType::NONE, "none", muse::TranslatableString("engraving/vibratotype", "None")},
      {VibratoType::GUITAR_VIBRATO, "guitarVibrato", muse::TranslatableString("engraving/vibratotype", "Guitar vibrato")},
      {VibratoType::GUITAR_VIBRATO_WIDE, "guitarVibratoWide", muse::TranslatableString("engraving/vibratotype", "Guitar vibrato wide")},
@@ -2576,13 +2627,15 @@ const std::array<Item<VibratoType>, 5> VIBRATO_TYPES = {
      {VibratoType::VIBRATO_SAWTOOTH_WIDE, "vibratoSawtoothWide",
       muse::TranslatableString("engraving/vibratotype", "Tremolo sawtooth wide")}}};
 
-const muse::TranslatableString &TConv::userName(VibratoType v) { return findCapitalizedUserNameByType(VIBRATO_TYPES, v); }
+const muse::TranslatableString &TConv::user_name(VibratoType v) { return find_capitalized_user_name_by_type(::vibrato_types, v); }
 
-String TConv::translatedUserName(VibratoType v) { return findCapitalizedUserNameByType(VIBRATO_TYPES, v).translated(); }
+String TConv::translated_user_name(VibratoType v) { return find_capitalized_user_name_by_type(::vibrato_types, v).translated(); }
 
-AsciiStringView TConv::toXml(VibratoType v) { return findXmlTagByType<VibratoType>(VIBRATO_TYPES, v); }
+AsciiStringView TConv::to_xml(VibratoType v) { return find_xml_tag_by_type<VibratoType>(::vibrato_types, v); }
 
-VibratoType TConv::fromXml(const AsciiStringView &tag, VibratoType def) { return findTypeByXmlTag<VibratoType>(VIBRATO_TYPES, tag, def); }
+VibratoType TConv::from_xml(const AsciiStringView &tag, VibratoType def) {
+    return find_type_by_xml_tag<VibratoType>(::vibrato_types, tag, def);
+}
 
 // Note about "engraving/sym": they need to be in this context because PaletteCell::translationContext expects them there
 struct ArticulationTextTypeItem {
@@ -2592,7 +2645,7 @@ struct ArticulationTextTypeItem {
     muse::TranslatableString name;
 };
 
-const std::array<ArticulationTextTypeItem, 9> ARTICULATIONTEXT_TYPES = {{
+const std::array<ArticulationTextTypeItem, 9> articulationtext_types = {{
     // Guitar
     {ArticulationTextType::SLAP, "Slap", String(u"S"), muse::TranslatableString("engraving/sym", "Slap")},
     {ArticulationTextType::POP, "Pop", String(u"P"), muse::TranslatableString("engraving/sym", "Pop")},
@@ -2605,11 +2658,11 @@ const std::array<ArticulationTextTypeItem, 9> ARTICULATIONTEXT_TYPES = {{
     {ArticulationTextType::VIB, "VIB", String(u"vib."), muse::TranslatableString("engraving/sym", "Vibrato")},
 }};
 
-const muse::TranslatableString &TConv::userName(ArticulationTextType v) {
-    auto it = std::find_if(ARTICULATIONTEXT_TYPES.cbegin(), ARTICULATIONTEXT_TYPES.cend(),
+const muse::TranslatableString &TConv::user_name(ArticulationTextType v) {
+    auto it = std::find_if(::articulationtext_types.cbegin(), ::articulationtext_types.cend(),
                            [v](const ArticulationTextTypeItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != ARTICULATIONTEXT_TYPES.cend()) {
+    IF_ASSERT_FAILED(it != ::articulationtext_types.cend()) {
         static muse::TranslatableString dummy;
         return dummy;
     }
@@ -2617,32 +2670,32 @@ const muse::TranslatableString &TConv::userName(ArticulationTextType v) {
 }
 
 String TConv::text(ArticulationTextType v) {
-    auto it = std::find_if(ARTICULATIONTEXT_TYPES.cbegin(), ARTICULATIONTEXT_TYPES.cend(),
+    auto it = std::find_if(::articulationtext_types.cbegin(), ::articulationtext_types.cend(),
                            [v](const ArticulationTextTypeItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != ARTICULATIONTEXT_TYPES.cend()) {
+    IF_ASSERT_FAILED(it != ::articulationtext_types.cend()) {
         static String dummy;
         return dummy;
     }
     return it->text;
 }
 
-AsciiStringView TConv::toXml(ArticulationTextType v) {
-    auto it = std::find_if(ARTICULATIONTEXT_TYPES.cbegin(), ARTICULATIONTEXT_TYPES.cend(),
+AsciiStringView TConv::to_xml(ArticulationTextType v) {
+    auto it = std::find_if(::articulationtext_types.cbegin(), ::articulationtext_types.cend(),
                            [v](const ArticulationTextTypeItem &i) { return i.type == v; });
 
-    IF_ASSERT_FAILED(it != ARTICULATIONTEXT_TYPES.cend()) {
+    IF_ASSERT_FAILED(it != ::articulationtext_types.cend()) {
         static AsciiStringView dummy;
         return dummy;
     }
     return it->xml;
 }
 
-ArticulationTextType TConv::fromXml(const AsciiStringView &tag, ArticulationTextType def) {
-    auto it = std::find_if(ARTICULATIONTEXT_TYPES.cbegin(), ARTICULATIONTEXT_TYPES.cend(),
+ArticulationTextType TConv::from_xml(const AsciiStringView &tag, ArticulationTextType def) {
+    auto it = std::find_if(::articulationtext_types.cbegin(), ::articulationtext_types.cend(),
                            [tag](const ArticulationTextTypeItem &i) { return i.xml == tag; });
 
-    if (it != ARTICULATIONTEXT_TYPES.cend()) {
+    if (it != ::articulationtext_types.cend()) {
         return it->type;
     }
 
@@ -2650,30 +2703,32 @@ ArticulationTextType TConv::fromXml(const AsciiStringView &tag, ArticulationText
     return def;
 }
 
-const std::array<Item<LyricsSyllabic>, 4> LYRICSSYLLABIC_TYPES = {{{LyricsSyllabic::SINGLE, "single"},
+const std::array<Item<LyricsSyllabic>, 4> lyricssyllabic_types = {{{LyricsSyllabic::SINGLE, "single"},
                                                                    {LyricsSyllabic::BEGIN, "begin"},
                                                                    {LyricsSyllabic::END, "end"},
                                                                    {LyricsSyllabic::MIDDLE, "middle"}}};
 
-AsciiStringView TConv::toXml(LyricsSyllabic v) { return findXmlTagByType<LyricsSyllabic>(LYRICSSYLLABIC_TYPES, v); }
+AsciiStringView TConv::to_xml(LyricsSyllabic v) { return find_xml_tag_by_type<LyricsSyllabic>(::lyricssyllabic_types, v); }
 
-LyricsSyllabic TConv::fromXml(const AsciiStringView &tag, LyricsSyllabic def) {
-    return findTypeByXmlTag<LyricsSyllabic>(LYRICSSYLLABIC_TYPES, tag, def);
+LyricsSyllabic TConv::from_xml(const AsciiStringView &tag, LyricsSyllabic def) {
+    return find_type_by_xml_tag<LyricsSyllabic>(::lyricssyllabic_types, tag, def);
 }
 
-const std::array<Item<LyricsDashSystemStart>, 3> LYRICS_DASH_SYSTEM_START_TYPES = {{
+const std::array<Item<LyricsDashSystemStart>, 3> lyrics_dash_system_start_types = {{
     {LyricsDashSystemStart::STANDARD, "standard"},
     {LyricsDashSystemStart::UNDER_HEADER, "underHeader"},
     {LyricsDashSystemStart::UNDER_FIRST_NOTE, "underFirstNote"},
 }};
 
-AsciiStringView TConv::toXml(LyricsDashSystemStart v) { return findXmlTagByType<LyricsDashSystemStart>(LYRICS_DASH_SYSTEM_START_TYPES, v); }
-
-LyricsDashSystemStart TConv::fromXml(const AsciiStringView &tag, LyricsDashSystemStart def) {
-    return findTypeByXmlTag<LyricsDashSystemStart>(LYRICS_DASH_SYSTEM_START_TYPES, tag, def);
+AsciiStringView TConv::to_xml(LyricsDashSystemStart v) {
+    return find_xml_tag_by_type<LyricsDashSystemStart>(::lyrics_dash_system_start_types, v);
 }
 
-const std::array<const muse::TranslatableString, 17> KEY_NAMES = {
+LyricsDashSystemStart TConv::from_xml(const AsciiStringView &tag, LyricsDashSystemStart def) {
+    return find_type_by_xml_tag<LyricsDashSystemStart>(::lyrics_dash_system_start_types, tag, def);
+}
+
+const std::array<const muse::TranslatableString, 17> key_names = {
     {muse::TranslatableString("engraving", "C♭ major / A♭ minor"), muse::TranslatableString("engraving", "G♭ major / E♭ minor"),
      muse::TranslatableString("engraving", "D♭ major / B♭ minor"), muse::TranslatableString("engraving", "A♭ major / F minor"),
      muse::TranslatableString("engraving", "E♭ major / C minor"), muse::TranslatableString("engraving", "B♭ major / G minor"),
@@ -2684,56 +2739,56 @@ const std::array<const muse::TranslatableString, 17> KEY_NAMES = {
      muse::TranslatableString("engraving", "C♯ major / A♯ minor"), muse::TranslatableString("engraving", "Open / Atonal"),
      muse::TranslatableString("engraving", "Custom")}};
 
-const muse::TranslatableString &TConv::userName(Key v, bool isAtonal, bool isCustom) {
-    if (isAtonal) {
-        return KEY_NAMES[15];
-    } else if (isCustom) {
-        return KEY_NAMES[16];
+const muse::TranslatableString &TConv::user_name(Key v, bool is_atonal, bool is_custom) {
+    if (is_atonal) {
+        return ::key_names[15];
+    } else if (is_custom) {
+        return ::key_names[16];
     }
 
-    int keyInt = static_cast<int>(v);
-    return KEY_NAMES[keyInt + 7];
+    int key_int = static_cast<int>(v);
+    return ::key_names[key_int + 7];
 }
 
-String TConv::translatedUserName(Key v, bool isAtonal, bool isCustom) { return userName(v, isAtonal, isCustom).translated(); }
+String TConv::translated_user_name(Key v, bool is_atonal, bool is_custom) { return user_name(v, is_atonal, is_custom).translated(); }
 
-const std::array<Item<MeasureNumberPlacement>, 4> MEASURE_NUMBER_MODES = {{
+const std::array<Item<MeasureNumberPlacement>, 4> measure_number_modes = {{
     {MeasureNumberPlacement::ABOVE_SYSTEM, "above-system"},
     {MeasureNumberPlacement::BELOW_SYSTEM, "below-system"},
     {MeasureNumberPlacement::ON_SYSTEM_OBJECT_STAVES, "on-so-staves"},
     {MeasureNumberPlacement::ON_ALL_STAVES, "on-all-staves"},
 }};
 
-AsciiStringView TConv::toXml(MeasureNumberPlacement v) { return findXmlTagByType<MeasureNumberPlacement>(MEASURE_NUMBER_MODES, v); }
+AsciiStringView TConv::to_xml(MeasureNumberPlacement v) { return find_xml_tag_by_type<MeasureNumberPlacement>(::measure_number_modes, v); }
 
-MeasureNumberPlacement TConv::fromXml(const AsciiStringView &tag, MeasureNumberPlacement def) {
-    return findTypeByXmlTag<MeasureNumberPlacement>(MEASURE_NUMBER_MODES, tag, def);
+MeasureNumberPlacement TConv::from_xml(const AsciiStringView &tag, MeasureNumberPlacement def) {
+    return find_type_by_xml_tag<MeasureNumberPlacement>(::measure_number_modes, tag, def);
 }
 
-const std::array<Item<InstrumentNamesAlign>, 4> INSTR_LABELS_ALIGN = {{{InstrumentNamesAlign::RIGHT_RIGHT, "right-right"},
+const std::array<Item<InstrumentNamesAlign>, 4> instr_labels_align = {{{InstrumentNamesAlign::RIGHT_RIGHT, "right-right"},
                                                                        {InstrumentNamesAlign::CENTER_RIGHT, "center-right"},
                                                                        {InstrumentNamesAlign::CENTER_CENTER, "center-center"},
                                                                        {InstrumentNamesAlign::LEFT_RIGHT, "left-right"}}};
 
-mu::engraving::AsciiStringView mu::engraving::TConv::toXml(InstrumentNamesAlign v) {
-    return findXmlTagByType<InstrumentNamesAlign>(INSTR_LABELS_ALIGN, v);
+mu::engraving::AsciiStringView mu::engraving::TConv::to_xml(InstrumentNamesAlign v) {
+    return find_xml_tag_by_type<InstrumentNamesAlign>(::instr_labels_align, v);
 }
 
-InstrumentNamesAlign TConv::fromXml(const AsciiStringView &str, InstrumentNamesAlign def) {
-    return findTypeByXmlTag<InstrumentNamesAlign>(INSTR_LABELS_ALIGN, str, def);
+InstrumentNamesAlign TConv::from_xml(const AsciiStringView &str, InstrumentNamesAlign def) {
+    return find_type_by_xml_tag<InstrumentNamesAlign>(::instr_labels_align, str, def);
 }
 
-const std::array<Item<InstrumentNamesFormat>, 4> INSTR_NAMES_FORMAT = {{{InstrumentNamesFormat::NAME_IN_TRANSP_NUM, "name-in-transp-num"},
+const std::array<Item<InstrumentNamesFormat>, 4> instr_names_format = {{{InstrumentNamesFormat::NAME_IN_TRANSP_NUM, "name-in-transp-num"},
                                                                         {InstrumentNamesFormat::NAME_NUM_IN_TRANSP, "name-num-in-transp"},
                                                                         {InstrumentNamesFormat::TRANSP_NAME_NUM, "transp-name-num"},
                                                                         {InstrumentNamesFormat::CUSTOM, "custom"}}};
 
-mu::engraving::AsciiStringView mu::engraving::TConv::toXml(InstrumentNamesFormat v) {
-    return findXmlTagByType<InstrumentNamesFormat>(INSTR_NAMES_FORMAT, v);
+mu::engraving::AsciiStringView mu::engraving::TConv::to_xml(InstrumentNamesFormat v) {
+    return find_xml_tag_by_type<InstrumentNamesFormat>(::instr_names_format, v);
 }
 
-InstrumentNamesFormat TConv::fromXml(const AsciiStringView &str, InstrumentNamesFormat def) {
-    return findTypeByXmlTag<InstrumentNamesFormat>(INSTR_NAMES_FORMAT, str, def);
+InstrumentNamesFormat TConv::from_xml(const AsciiStringView &str, InstrumentNamesFormat def) {
+    return find_type_by_xml_tag<InstrumentNamesFormat>(::instr_names_format, str, def);
 }
 
 struct ActionIconTypeItem {
@@ -2750,7 +2805,7 @@ struct ActionIconTypeItem {
 // * Use it in ActionIcon(Item) to get titles and icons.
 // * Implement and register it outside the engraving module.
 
-const std::vector<ActionIconTypeItem> ACTIONICON_TYPES = {{
+const std::vector<ActionIconTypeItem> actionicon_types = {{
     {ActionIconType::UNDEFINED, "undefined", TranslatableString("action", "Undefined"), 0x0000},
 
     {ActionIconType::ACCIACCATURA, "acciaccatura", TranslatableString("action", "Add grace note: acciaccatura"), 0xF427},
@@ -2799,7 +2854,7 @@ const std::vector<ActionIconTypeItem> ACTIONICON_TYPES = {{
     {ActionIconType::PAGE_LOCK, "toggle-page-lock", TranslatableString("action", "Lock/unlock selected page(s)"), 0xF4C3},
 }};
 
-static const ActionIconTypeItem &findItemByType(const std::vector<ActionIconTypeItem> &cont, const ActionIconType &type) {
+static const ActionIconTypeItem &find_item_by_type(const std::vector<ActionIconTypeItem> &cont, const ActionIconType &type) {
     const auto it = std::find_if(cont.cbegin(), cont.cend(), [&](const ActionIconTypeItem &item) { return item.type == type; });
 
     IF_ASSERT_FAILED(it != cont.cend()) {
@@ -2810,16 +2865,17 @@ static const ActionIconTypeItem &findItemByType(const std::vector<ActionIconType
     return *it;
 }
 
-const TranslatableString &TConv::userName(ActionIconType v) { return findItemByType(ACTIONICON_TYPES, v).name; }
+const TranslatableString &TConv::user_name(ActionIconType v) { return find_item_by_type(::actionicon_types, v).name; }
 
-char16_t TConv::iconCode(ActionIconType v) { return findItemByType(ACTIONICON_TYPES, v).icon; }
+char16_t TConv::icon_code(ActionIconType v) { return find_item_by_type(::actionicon_types, v).icon; }
 
-AsciiStringView TConv::toXml(ActionIconType v) { return findItemByType(ACTIONICON_TYPES, v).xml; }
+AsciiStringView TConv::to_xml(ActionIconType v) { return find_item_by_type(::actionicon_types, v).xml; }
 
-ActionIconType TConv::fromXml(const AsciiStringView &tag, ActionIconType def) {
-    auto it = std::find_if(ACTIONICON_TYPES.cbegin(), ACTIONICON_TYPES.cend(), [tag](const ActionIconTypeItem &i) { return i.xml == tag; });
+ActionIconType TConv::from_xml(const AsciiStringView &tag, ActionIconType def) {
+    auto it =
+        std::find_if(::actionicon_types.cbegin(), ::actionicon_types.cend(), [tag](const ActionIconTypeItem &i) { return i.xml == tag; });
 
-    if (it == ACTIONICON_TYPES.cend()) {
+    if (it == ::actionicon_types.cend()) {
         LOGE() << "not found type for tag: " << tag;
         return def;
     }

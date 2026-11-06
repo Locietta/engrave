@@ -35,35 +35,36 @@ class PlaybackEventsRenderer {
 public:
     PlaybackEventsRenderer() = default;
 
-    void render(const EngravingItem *item, const int tickPositionOffset, const muse::mpe::ArticulationsProfilePtr profile,
-                const PlaybackContextPtr playbackCtx, muse::mpe::PlaybackEventsMap &result) const;
+    void render(const EngravingItem *item, const int tick_position_offset, const muse::mpe::ArticulationsProfilePtr profile,
+                const PlaybackContextPtr playback_ctx, muse::mpe::PlaybackEventsMap &result) const;
 
-    void render(const EngravingItem *item, const muse::mpe::timestamp_t actualTimestamp, const muse::mpe::duration_t actualDuration,
-                const muse::mpe::dynamic_level_t actualDynamicLevel, const PlaybackContextPtr playbackCtx,
+    void render(const EngravingItem *item, const muse::mpe::timestamp_t actual_timestamp, const muse::mpe::duration_t actual_duration,
+                const muse::mpe::dynamic_level_t actual_dynamic_level, const PlaybackContextPtr playback_ctx,
                 const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
 
-    void renderChordSymbol(const Harmony *chordSymbol, const int ticksPositionOffset, const muse::mpe::ArticulationsProfilePtr profile,
-                           const PlaybackContextPtr playbackCtx, muse::mpe::PlaybackEventsMap &result) const;
-    void renderChordSymbol(const Harmony *chordSymbol, const muse::mpe::timestamp_t actualTimestamp,
-                           const muse::mpe::duration_t actualDuration, const muse::mpe::dynamic_level_t actualDynamicLevel,
-                           const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
+    void render_chord_symbol(const Harmony *chord_symbol, const int ticks_position_offset, const muse::mpe::ArticulationsProfilePtr profile,
+                             const PlaybackContextPtr playback_ctx, muse::mpe::PlaybackEventsMap &result) const;
+    void render_chord_symbol(const Harmony *chord_symbol, const muse::mpe::timestamp_t actual_timestamp,
+                             const muse::mpe::duration_t actual_duration, const muse::mpe::dynamic_level_t actual_dynamic_level,
+                             const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
 
-    void renderMetronome(const Score *score, const Measure *measure, const int ticksPositionOffset,
-                         const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
+    void render_metronome(const Score *score, const Measure *measure, const int ticks_position_offset,
+                          const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
 
-    void renderMetronome(const Score *score, const int tick, const muse::mpe::timestamp_t actualTimestamp,
-                         const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
+    void render_metronome(const Score *score, const int tick, const muse::mpe::timestamp_t actual_timestamp,
+                          const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result) const;
 
-    void renderCountIn(const Score *score, const int tick, const muse::mpe::timestamp_t actualTimestamp,
-                       const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result,
-                       muse::mpe::duration_t &countInDuration) const;
+    void render_count_in(const Score *score, const int tick, const muse::mpe::timestamp_t actual_timestamp,
+                         const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result,
+                         muse::mpe::duration_t &count_in_duration) const;
 
 private:
-    void renderNoteEvents(const Chord *chord, const int tickPositionOffset, const muse::mpe::ArticulationsProfilePtr profile,
-                          const PlaybackContextPtr playbackCtx, muse::mpe::PlaybackEventsMap &result) const;
+    void render_note_events(const Chord *chord, const int tick_position_offset, const muse::mpe::ArticulationsProfilePtr profile,
+                            const PlaybackContextPtr playback_ctx, muse::mpe::PlaybackEventsMap &result) const;
 
-    void renderFixedNoteEvent(const Note *note, const muse::mpe::timestamp_t actualTimestamp, const muse::mpe::duration_t actualDuration,
-                              const muse::mpe::dynamic_level_t actualDynamicLevel, const PlaybackContextPtr playbackCtx,
-                              const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventList &result) const;
+    void render_fixed_note_event(const Note *note, const muse::mpe::timestamp_t actual_timestamp,
+                                 const muse::mpe::duration_t actual_duration, const muse::mpe::dynamic_level_t actual_dynamic_level,
+                                 const PlaybackContextPtr playback_ctx, const muse::mpe::ArticulationsProfilePtr profile,
+                                 muse::mpe::PlaybackEventList &result) const;
 };
 } // namespace mu::engraving

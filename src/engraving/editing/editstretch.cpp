@@ -29,44 +29,44 @@
 
 using namespace mu::engraving;
 
-void EditStretch::addStretch(Transaction &, Score *score, double val) {
-    if (!score->selection().isRange()) {
+void EditStretch::add_stretch(Transaction &, Score *score, double val) {
+    if (!score->selection().is_range()) {
         return;
     }
 
-    Fraction startTick = score->selection().tickStart();
-    Fraction endTick = score->selection().tickEnd();
-    for (Measure *m = score->firstMeasureMM(); m; m = m->nextMeasureMM()) {
-        if (m->tick() < startTick) {
+    Fraction start_tick = score->selection().tick_start();
+    Fraction end_tick = score->selection().tick_end();
+    for (Measure *m = score->first_measure_mm(); m; m = m->next_measure_mm()) {
+        if (m->tick() < start_tick) {
             continue;
         }
-        if (m->tick() >= endTick) {
+        if (m->tick() >= end_tick) {
             break;
         }
-        double stretch = m->userStretch();
+        double stretch = m->user_stretch();
         stretch += val;
         if (stretch < 0) {
             stretch = 0;
         }
-        m->undoChangeProperty(Pid::USER_STRETCH, stretch);
+        m->undo_change_property(Pid::USER_STRETCH, stretch);
     }
 }
 
-void EditStretch::resetUserStretch(Transaction &, Score *score) {
+void EditStretch::reset_user_stretch(Transaction &, Score *score) {
     Measure *m1 = nullptr;
     Measure *m2 = nullptr;
     // retrieve span of selection
-    Segment *s1 = score->selection().startSegment();
-    Segment *s2 = score->selection().endSegment();
+    Segment *s1 = score->selection().start_segment();
+    Segment *s2 = score->selection().end_segment();
     // if either segment is not returned by the selection
     // (for instance, no selection) fall back to first/last measure
     if (!s1) {
-        m1 = score->firstMeasureMM();
+        m1 = score->first_measure_mm();
     } else {
         m1 = s1->measure();
     }
     if (!s2) {
-        m2 = score->lastMeasureMM();
+        m2 = score->last_measure_mm();
     } else {
         m2 = s2->measure();
     }
@@ -74,8 +74,8 @@ void EditStretch::resetUserStretch(Transaction &, Score *score) {
         return;
     }
 
-    for (Measure *m = m1; m; m = m->nextMeasureMM()) {
-        m->undoChangeProperty(Pid::USER_STRETCH, 1.0);
+    for (Measure *m = m1; m; m = m->next_measure_mm()) {
+        m->undo_change_property(Pid::USER_STRETCH, 1.0);
         if (m == m2) {
             break;
         }

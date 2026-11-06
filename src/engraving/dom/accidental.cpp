@@ -43,194 +43,194 @@ namespace mu::engraving {
 
 struct Acc {
     AccidentalVal offset; // semitone offset
-    double centOffset;
+    double cent_offset;
     SymId sym;
 
-    Acc(AccidentalVal o, double o2, SymId s) : offset(o), centOffset(o2), sym(s) {}
+    Acc(AccidentalVal o, double o2, SymId s) : offset(o), cent_offset(o2), sym(s) {}
 };
 
 // NOTE: keep this in sync with AccidentalType enum in types.h, watch out for isMicrotonal()
-static const Acc ACC_LIST[] = {
-    Acc(AccidentalVal::NATURAL, 0, SymId::noSym),                // NONE
-    Acc(AccidentalVal::FLAT, 0, SymId::accidentalFlat),          // FLAT
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNatural),    // NATURAL
-    Acc(AccidentalVal::SHARP, 0, SymId::accidentalSharp),        // SHARP
-    Acc(AccidentalVal::SHARP2, 0, SymId::accidentalDoubleSharp), // SHARP2
-    Acc(AccidentalVal::FLAT2, 0, SymId::accidentalDoubleFlat),   // FLAT2
-    Acc(AccidentalVal::SHARP3, 0, SymId::accidentalTripleSharp), // SHARP3
-    Acc(AccidentalVal::FLAT3, 0, SymId::accidentalTripleFlat),   // FLAT3
-    Acc(AccidentalVal::FLAT, 0, SymId::accidentalNaturalFlat),   // NATURAL_FLAT
-    Acc(AccidentalVal::SHARP, 0, SymId::accidentalNaturalSharp), // NATURAL_SHARP
-    Acc(AccidentalVal::SHARP2, 0, SymId::accidentalSharpSharp),  // SHARP_SHARP
+static const Acc acc_list[] = {
+    Acc(AccidentalVal::NATURAL, 0, SymId::NO_SYM),                 // NONE
+    Acc(AccidentalVal::FLAT, 0, SymId::ACCIDENTAL_FLAT),           // FLAT
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL),     // NATURAL
+    Acc(AccidentalVal::SHARP, 0, SymId::ACCIDENTAL_SHARP),         // SHARP
+    Acc(AccidentalVal::SHARP2, 0, SymId::ACCIDENTAL_DOUBLE_SHARP), // SHARP2
+    Acc(AccidentalVal::FLAT2, 0, SymId::ACCIDENTAL_DOUBLE_FLAT),   // FLAT2
+    Acc(AccidentalVal::SHARP3, 0, SymId::ACCIDENTAL_TRIPLE_SHARP), // SHARP3
+    Acc(AccidentalVal::FLAT3, 0, SymId::ACCIDENTAL_TRIPLE_FLAT),   // FLAT3
+    Acc(AccidentalVal::FLAT, 0, SymId::ACCIDENTAL_NATURAL_FLAT),   // NATURAL_FLAT
+    Acc(AccidentalVal::SHARP, 0, SymId::ACCIDENTAL_NATURAL_SHARP), // NATURAL_SHARP
+    Acc(AccidentalVal::SHARP2, 0, SymId::ACCIDENTAL_SHARP_SHARP),  // SHARP_SHARP
 
     // Gould arrow quartertone
-    Acc(AccidentalVal::NATURAL, -50, SymId::accidentalQuarterToneFlatArrowUp),          // FLAT_ARROW_UP
-    Acc(AccidentalVal::NATURAL, -150, SymId::accidentalThreeQuarterTonesFlatArrowDown), // FLAT_ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, 50, SymId::accidentalQuarterToneSharpNaturalArrowUp),   // NATURAL_ARROW_UP
-    Acc(AccidentalVal::NATURAL, -50, SymId::accidentalQuarterToneFlatNaturalArrowDown), // NATURAL_ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, 150, SymId::accidentalThreeQuarterTonesSharpArrowUp),   // SHARP_ARROW_UP
-    Acc(AccidentalVal::NATURAL, 50, SymId::accidentalQuarterToneSharpArrowDown),        // SHARP_ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, 250, SymId::accidentalFiveQuarterTonesSharpArrowUp),    // SHARP2_ARROW_UP
-    Acc(AccidentalVal::NATURAL, 150, SymId::accidentalThreeQuarterTonesSharpArrowDown), // SHARP2_ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, -150, SymId::accidentalThreeQuarterTonesFlatArrowUp),   // FLAT2_ARROW_UP
-    Acc(AccidentalVal::NATURAL, -250, SymId::accidentalFiveQuarterTonesFlatArrowDown),  // FLAT2_ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, -50, SymId::accidentalArrowDown),                       // ARROW_DOWN
-    Acc(AccidentalVal::NATURAL, 50, SymId::accidentalArrowUp),                          // ARROW_UP
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACCIDENTAL_QUARTER_TONE_FLAT_ARROW_UP),           // FLAT_ARROW_UP
+    Acc(AccidentalVal::NATURAL, -150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_DOWN), // FLAT_ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACCIDENTAL_QUARTER_TONE_SHARP_NATURAL_ARROW_UP),   // NATURAL_ARROW_UP
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACCIDENTAL_QUARTER_TONE_FLAT_NATURAL_ARROW_DOWN), // NATURAL_ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, 150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_UP),   // SHARP_ARROW_UP
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACCIDENTAL_QUARTER_TONE_SHARP_ARROW_DOWN),         // SHARP_ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, 250, SymId::ACCIDENTAL_FIVE_QUARTER_TONES_SHARP_ARROW_UP),    // SHARP2_ARROW_UP
+    Acc(AccidentalVal::NATURAL, 150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_ARROW_DOWN), // SHARP2_ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, -150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ARROW_UP),   // FLAT2_ARROW_UP
+    Acc(AccidentalVal::NATURAL, -250, SymId::ACCIDENTAL_FIVE_QUARTER_TONES_FLAT_ARROW_DOWN),  // FLAT2_ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACCIDENTAL_ARROW_DOWN),                           // ARROW_DOWN
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACCIDENTAL_ARROW_UP),                              // ARROW_UP
 
     // Stein-Zimmermann
-    Acc(AccidentalVal::NATURAL, -50, SymId::accidentalQuarterToneFlatStein),             // MIRRORED_FLAT
-    Acc(AccidentalVal::NATURAL, -150, SymId::accidentalThreeQuarterTonesFlatZimmermann), // MIRRORED_FLAT2
-    Acc(AccidentalVal::NATURAL, 50, SymId::accidentalQuarterToneSharpStein),             // SHARP_SLASH
-    Acc(AccidentalVal::NATURAL, 150, SymId::accidentalThreeQuarterTonesSharpStein),      // SHARP_SLASH4
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACCIDENTAL_QUARTER_TONE_FLAT_STEIN),              // MIRRORED_FLAT
+    Acc(AccidentalVal::NATURAL, -150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_FLAT_ZIMMERMANN), // MIRRORED_FLAT2
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACCIDENTAL_QUARTER_TONE_SHARP_STEIN),              // SHARP_SLASH
+    Acc(AccidentalVal::NATURAL, 150, SymId::ACCIDENTAL_THREE_QUARTER_TONES_SHARP_STEIN),      // SHARP_SLASH4
 
     // Arel-Ezgi-Uzdilek (AEU)
-    Acc(AccidentalVal::NATURAL, -89, SymId::accidentalBuyukMucennebFlat), // FLAT_SLASH2
-    Acc(AccidentalVal::NATURAL, -44, SymId::accidentalBakiyeFlat),        // FLAT_SLASH
-    Acc(AccidentalVal::NATURAL, 56, SymId::accidentalKucukMucennebSharp), // SHARP_SLASH3
-    Acc(AccidentalVal::NATURAL, 89, SymId::accidentalBuyukMucennebSharp), // SHARP_SLASH2
+    Acc(AccidentalVal::NATURAL, -89, SymId::ACCIDENTAL_BUYUK_MUCENNEB_FLAT), // FLAT_SLASH2
+    Acc(AccidentalVal::NATURAL, -44, SymId::ACCIDENTAL_BAKIYE_FLAT),         // FLAT_SLASH
+    Acc(AccidentalVal::NATURAL, 56, SymId::ACCIDENTAL_KUCUK_MUCENNEB_SHARP), // SHARP_SLASH3
+    Acc(AccidentalVal::NATURAL, 89, SymId::ACCIDENTAL_BUYUK_MUCENNEB_SHARP), // SHARP_SLASH2
 
     // Extended Helmholtz-Ellis accidentals (just intonation)
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatOneArrowDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatOneArrowDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalOneArrowDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpOneArrowDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpOneArrowDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatOneArrowUp),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_ONE_ARROW_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_ONE_ARROW_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_ONE_ARROW_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_ONE_ARROW_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_ONE_ARROW_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_ONE_ARROW_UP),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatOneArrowUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalOneArrowUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpOneArrowUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpOneArrowUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatTwoArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatTwoArrowsDown),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_ONE_ARROW_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_ONE_ARROW_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_ONE_ARROW_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_ONE_ARROW_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_TWO_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_TWO_ARROWS_DOWN),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalTwoArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpTwoArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpTwoArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatTwoArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatTwoArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalTwoArrowsUp),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_TWO_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_TWO_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_TWO_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_TWO_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_TWO_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_TWO_ARROWS_UP),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpTwoArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpTwoArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatThreeArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatThreeArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalThreeArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpThreeArrowsDown),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_TWO_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_TWO_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_THREE_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_THREE_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_THREE_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_THREE_ARROWS_DOWN),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpThreeArrowsDown),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatThreeArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatThreeArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalThreeArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpThreeArrowsUp),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpThreeArrowsUp),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_THREE_ARROWS_DOWN),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_THREE_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_THREE_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_THREE_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_THREE_ARROWS_UP),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_THREE_ARROWS_UP),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalLowerOneSeptimalComma),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalRaiseOneSeptimalComma),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalLowerTwoSeptimalCommas),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalRaiseTwoSeptimalCommas),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalLowerOneUndecimalQuartertone),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalRaiseOneUndecimalQuartertone),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_LOWER_ONE_SEPTIMAL_COMMA),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_RAISE_ONE_SEPTIMAL_COMMA),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_LOWER_TWO_SEPTIMAL_COMMAS),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_RAISE_TWO_SEPTIMAL_COMMAS),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_LOWER_ONE_UNDECIMAL_QUARTERTONE),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_RAISE_ONE_UNDECIMAL_QUARTERTONE),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalLowerOneTridecimalQuartertone),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalRaiseOneTridecimalQuartertone),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_LOWER_ONE_TRIDECIMAL_QUARTERTONE),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_RAISE_ONE_TRIDECIMAL_QUARTERTONE),
 
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleFlatEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalFlatEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalNaturalEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalSharpEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalDoubleSharpEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalQuarterFlatEqualTempered),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalQuarterSharpEqualTempered),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_FLAT_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_FLAT_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_NATURAL_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_SHARP_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_DOUBLE_SHARP_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_QUARTER_FLAT_EQUAL_TEMPERED),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_QUARTER_SHARP_EQUAL_TEMPERED),
 
-    Acc(AccidentalVal::NATURAL, -6.8, SymId::accidentalCombiningLower17Schisma),
-    Acc(AccidentalVal::NATURAL, 6.8, SymId::accidentalCombiningRaise17Schisma),
-    Acc(AccidentalVal::NATURAL, -3.4, SymId::accidentalCombiningLower19Schisma),
-    Acc(AccidentalVal::NATURAL, 3.4, SymId::accidentalCombiningRaise19Schisma),
-    Acc(AccidentalVal::NATURAL, -16.5, SymId::accidentalCombiningLower23Limit29LimitComma),
-    Acc(AccidentalVal::NATURAL, 16.5, SymId::accidentalCombiningRaise23Limit29LimitComma),
-    Acc(AccidentalVal::NATURAL, -1.7, SymId::accidentalCombiningLower31Schisma),
-    Acc(AccidentalVal::NATURAL, 1.7, SymId::accidentalCombiningRaise31Schisma),
-    Acc(AccidentalVal::NATURAL, -10.9, SymId::accidentalCombiningLower53LimitComma),
-    Acc(AccidentalVal::NATURAL, 10.9, SymId::accidentalCombiningRaise53LimitComma),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalEnharmonicAlmostEqualTo),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalEnharmonicEquals),
-    Acc(AccidentalVal::NATURAL, 0, SymId::accidentalEnharmonicTilde),
+    Acc(AccidentalVal::NATURAL, -6.8, SymId::ACCIDENTAL_COMBINING_LOWER17_SCHISMA),
+    Acc(AccidentalVal::NATURAL, 6.8, SymId::ACCIDENTAL_COMBINING_RAISE17_SCHISMA),
+    Acc(AccidentalVal::NATURAL, -3.4, SymId::ACCIDENTAL_COMBINING_LOWER19_SCHISMA),
+    Acc(AccidentalVal::NATURAL, 3.4, SymId::ACCIDENTAL_COMBINING_RAISE19_SCHISMA),
+    Acc(AccidentalVal::NATURAL, -16.5, SymId::ACCIDENTAL_COMBINING_LOWER23_LIMIT29_LIMIT_COMMA),
+    Acc(AccidentalVal::NATURAL, 16.5, SymId::ACCIDENTAL_COMBINING_RAISE23_LIMIT29_LIMIT_COMMA),
+    Acc(AccidentalVal::NATURAL, -1.7, SymId::ACCIDENTAL_COMBINING_LOWER31_SCHISMA),
+    Acc(AccidentalVal::NATURAL, 1.7, SymId::ACCIDENTAL_COMBINING_RAISE31_SCHISMA),
+    Acc(AccidentalVal::NATURAL, -10.9, SymId::ACCIDENTAL_COMBINING_LOWER53_LIMIT_COMMA),
+    Acc(AccidentalVal::NATURAL, 10.9, SymId::ACCIDENTAL_COMBINING_RAISE53_LIMIT_COMMA),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_ENHARMONIC_ALMOST_EQUAL_TO),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_ENHARMONIC_EQUALS),
+    Acc(AccidentalVal::NATURAL, 0, SymId::ACCIDENTAL_ENHARMONIC_TILDE),
 
     // Persian
-    Acc(AccidentalVal::NATURAL, 33, SymId::accidentalSori),   // SORI
-    Acc(AccidentalVal::NATURAL, -67, SymId::accidentalKoron), // KORON
+    Acc(AccidentalVal::NATURAL, 33, SymId::ACCIDENTAL_SORI),   // SORI
+    Acc(AccidentalVal::NATURAL, -67, SymId::ACCIDENTAL_KORON), // KORON
 
     // Wyschnegradsky
-    Acc(AccidentalVal::NATURAL, -167, SymId::accidentalWyschnegradsky10TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 167, SymId::accidentalWyschnegradsky10TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -183, SymId::accidentalWyschnegradsky11TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 183, SymId::accidentalWyschnegradsky11TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -17, SymId::accidentalWyschnegradsky1TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 17, SymId::accidentalWyschnegradsky1TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -33, SymId::accidentalWyschnegradsky2TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 33, SymId::accidentalWyschnegradsky2TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -50, SymId::accidentalWyschnegradsky3TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 50, SymId::accidentalWyschnegradsky3TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -67, SymId::accidentalWyschnegradsky4TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 67, SymId::accidentalWyschnegradsky4TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -83, SymId::accidentalWyschnegradsky5TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 83, SymId::accidentalWyschnegradsky5TwelfthsSharp),
-    Acc(AccidentalVal::FLAT, 0, SymId::accidentalWyschnegradsky6TwelfthsFlat),
-    Acc(AccidentalVal::SHARP, 0, SymId::accidentalWyschnegradsky6TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -117, SymId::accidentalWyschnegradsky7TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 117, SymId::accidentalWyschnegradsky7TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -133, SymId::accidentalWyschnegradsky8TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 133, SymId::accidentalWyschnegradsky8TwelfthsSharp),
-    Acc(AccidentalVal::NATURAL, -150, SymId::accidentalWyschnegradsky9TwelfthsFlat),
-    Acc(AccidentalVal::NATURAL, 150, SymId::accidentalWyschnegradsky9TwelfthsSharp),
+    Acc(AccidentalVal::NATURAL, -167, SymId::ACCIDENTAL_WYSCHNEGRADSKY10_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 167, SymId::ACCIDENTAL_WYSCHNEGRADSKY10_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -183, SymId::ACCIDENTAL_WYSCHNEGRADSKY11_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 183, SymId::ACCIDENTAL_WYSCHNEGRADSKY11_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -17, SymId::ACCIDENTAL_WYSCHNEGRADSKY1_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 17, SymId::ACCIDENTAL_WYSCHNEGRADSKY1_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -33, SymId::ACCIDENTAL_WYSCHNEGRADSKY2_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 33, SymId::ACCIDENTAL_WYSCHNEGRADSKY2_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACCIDENTAL_WYSCHNEGRADSKY3_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACCIDENTAL_WYSCHNEGRADSKY3_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -67, SymId::ACCIDENTAL_WYSCHNEGRADSKY4_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 67, SymId::ACCIDENTAL_WYSCHNEGRADSKY4_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -83, SymId::ACCIDENTAL_WYSCHNEGRADSKY5_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 83, SymId::ACCIDENTAL_WYSCHNEGRADSKY5_TWELFTHS_SHARP),
+    Acc(AccidentalVal::FLAT, 0, SymId::ACCIDENTAL_WYSCHNEGRADSKY6_TWELFTHS_FLAT),
+    Acc(AccidentalVal::SHARP, 0, SymId::ACCIDENTAL_WYSCHNEGRADSKY6_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -117, SymId::ACCIDENTAL_WYSCHNEGRADSKY7_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 117, SymId::ACCIDENTAL_WYSCHNEGRADSKY7_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -133, SymId::ACCIDENTAL_WYSCHNEGRADSKY8_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 133, SymId::ACCIDENTAL_WYSCHNEGRADSKY8_TWELFTHS_SHARP),
+    Acc(AccidentalVal::NATURAL, -150, SymId::ACCIDENTAL_WYSCHNEGRADSKY9_TWELFTHS_FLAT),
+    Acc(AccidentalVal::NATURAL, 150, SymId::ACCIDENTAL_WYSCHNEGRADSKY9_TWELFTHS_SHARP),
 
     // the most important (Spartan) Sagittal accidentals
-    Acc(AccidentalVal::NATURAL, -17, SymId::accSagittal5v7KleismaDown),
-    Acc(AccidentalVal::NATURAL, 17, SymId::accSagittal5v7KleismaUp),
-    Acc(AccidentalVal::NATURAL, -17, SymId::accSagittal5CommaDown),
-    Acc(AccidentalVal::NATURAL, 17, SymId::accSagittal5CommaUp),
-    Acc(AccidentalVal::NATURAL, -33, SymId::accSagittal7CommaDown),
-    Acc(AccidentalVal::NATURAL, 33, SymId::accSagittal7CommaUp),
-    Acc(AccidentalVal::NATURAL, -33, SymId::accSagittal25SmallDiesisDown),
-    Acc(AccidentalVal::NATURAL, 33, SymId::accSagittal25SmallDiesisUp),
-    Acc(AccidentalVal::NATURAL, -50, SymId::accSagittal35MediumDiesisDown),
-    Acc(AccidentalVal::NATURAL, 50, SymId::accSagittal35MediumDiesisUp),
-    Acc(AccidentalVal::NATURAL, -50, SymId::accSagittal11MediumDiesisDown),
-    Acc(AccidentalVal::NATURAL, 50, SymId::accSagittal11MediumDiesisUp),
-    Acc(AccidentalVal::NATURAL, -50, SymId::accSagittal11LargeDiesisDown),
-    Acc(AccidentalVal::NATURAL, 50, SymId::accSagittal11LargeDiesisUp),
-    Acc(AccidentalVal::NATURAL, -50, SymId::accSagittal35LargeDiesisDown),
-    Acc(AccidentalVal::NATURAL, 50, SymId::accSagittal35LargeDiesisUp),
-    Acc(AccidentalVal::NATURAL, -67, SymId::accSagittalFlat25SUp),
-    Acc(AccidentalVal::NATURAL, 67, SymId::accSagittalSharp25SDown),
-    Acc(AccidentalVal::NATURAL, -67, SymId::accSagittalFlat7CUp),
-    Acc(AccidentalVal::NATURAL, 67, SymId::accSagittalSharp7CDown),
-    Acc(AccidentalVal::NATURAL, -83, SymId::accSagittalFlat5CUp),
-    Acc(AccidentalVal::NATURAL, 83, SymId::accSagittalSharp5CDown),
-    Acc(AccidentalVal::NATURAL, -83, SymId::accSagittalFlat5v7kUp),
-    Acc(AccidentalVal::NATURAL, 83, SymId::accSagittalSharp5v7kDown),
-    Acc(AccidentalVal::NATURAL, -100, SymId::accSagittalFlat),
-    Acc(AccidentalVal::NATURAL, 100, SymId::accSagittalSharp),
+    Acc(AccidentalVal::NATURAL, -17, SymId::ACC_SAGITTAL5V7_KLEISMA_DOWN),
+    Acc(AccidentalVal::NATURAL, 17, SymId::ACC_SAGITTAL5V7_KLEISMA_UP),
+    Acc(AccidentalVal::NATURAL, -17, SymId::ACC_SAGITTAL5_COMMA_DOWN),
+    Acc(AccidentalVal::NATURAL, 17, SymId::ACC_SAGITTAL5_COMMA_UP),
+    Acc(AccidentalVal::NATURAL, -33, SymId::ACC_SAGITTAL7_COMMA_DOWN),
+    Acc(AccidentalVal::NATURAL, 33, SymId::ACC_SAGITTAL7_COMMA_UP),
+    Acc(AccidentalVal::NATURAL, -33, SymId::ACC_SAGITTAL25_SMALL_DIESIS_DOWN),
+    Acc(AccidentalVal::NATURAL, 33, SymId::ACC_SAGITTAL25_SMALL_DIESIS_UP),
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACC_SAGITTAL35_MEDIUM_DIESIS_DOWN),
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACC_SAGITTAL35_MEDIUM_DIESIS_UP),
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACC_SAGITTAL11_MEDIUM_DIESIS_DOWN),
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACC_SAGITTAL11_MEDIUM_DIESIS_UP),
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACC_SAGITTAL11_LARGE_DIESIS_DOWN),
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACC_SAGITTAL11_LARGE_DIESIS_UP),
+    Acc(AccidentalVal::NATURAL, -50, SymId::ACC_SAGITTAL35_LARGE_DIESIS_DOWN),
+    Acc(AccidentalVal::NATURAL, 50, SymId::ACC_SAGITTAL35_LARGE_DIESIS_UP),
+    Acc(AccidentalVal::NATURAL, -67, SymId::ACC_SAGITTAL_FLAT25_S_UP),
+    Acc(AccidentalVal::NATURAL, 67, SymId::ACC_SAGITTAL_SHARP25_S_DOWN),
+    Acc(AccidentalVal::NATURAL, -67, SymId::ACC_SAGITTAL_FLAT7_C_UP),
+    Acc(AccidentalVal::NATURAL, 67, SymId::ACC_SAGITTAL_SHARP7_C_DOWN),
+    Acc(AccidentalVal::NATURAL, -83, SymId::ACC_SAGITTAL_FLAT5_C_UP),
+    Acc(AccidentalVal::NATURAL, 83, SymId::ACC_SAGITTAL_SHARP5_C_DOWN),
+    Acc(AccidentalVal::NATURAL, -83, SymId::ACC_SAGITTAL_FLAT5V7K_UP),
+    Acc(AccidentalVal::NATURAL, 83, SymId::ACC_SAGITTAL_SHARP5V7K_DOWN),
+    Acc(AccidentalVal::NATURAL, -100, SymId::ACC_SAGITTAL_FLAT),
+    Acc(AccidentalVal::NATURAL, 100, SymId::ACC_SAGITTAL_SHARP),
 
     // Turkish folk music accidentals
-    Acc(AccidentalVal::NATURAL, -22.2, SymId::accidental1CommaFlat),
-    Acc(AccidentalVal::NATURAL, 22.2, SymId::accidental1CommaSharp),
-    Acc(AccidentalVal::NATURAL, -44.4, SymId::accidental2CommaFlat),
-    Acc(AccidentalVal::NATURAL, 44.4, SymId::accidental2CommaSharp),
-    Acc(AccidentalVal::NATURAL, -66.7, SymId::accidental3CommaFlat),
-    Acc(AccidentalVal::NATURAL, 66.7, SymId::accidental3CommaSharp),
-    Acc(AccidentalVal::NATURAL, -88.9, SymId::accidental4CommaFlat),
+    Acc(AccidentalVal::NATURAL, -22.2, SymId::ACCIDENTAL1_COMMA_FLAT),
+    Acc(AccidentalVal::NATURAL, 22.2, SymId::ACCIDENTAL1_COMMA_SHARP),
+    Acc(AccidentalVal::NATURAL, -44.4, SymId::ACCIDENTAL2_COMMA_FLAT),
+    Acc(AccidentalVal::NATURAL, 44.4, SymId::ACCIDENTAL2_COMMA_SHARP),
+    Acc(AccidentalVal::NATURAL, -66.7, SymId::ACCIDENTAL3_COMMA_FLAT),
+    Acc(AccidentalVal::NATURAL, 66.7, SymId::ACCIDENTAL3_COMMA_SHARP),
+    Acc(AccidentalVal::NATURAL, -88.9, SymId::ACCIDENTAL4_COMMA_FLAT),
     //Acc(AccidentalVal::NATURAL,  88.9, SymId::accidentalSharp),
-    Acc(AccidentalVal::NATURAL, 111.1, SymId::accidental5CommaSharp),
+    Acc(AccidentalVal::NATURAL, 111.1, SymId::ACCIDENTAL5_COMMA_SHARP),
 };
 
 //---------------------------------------------------------
 //   sym2accidentalVal
 //---------------------------------------------------------
 
-AccidentalVal sym2accidentalVal(SymId id) {
-    for (const Acc &a : ACC_LIST) {
+AccidentalVal sym2accidental_val(SymId id) {
+    for (const Acc &a : ::mu::engraving::acc_list) {
         if (a.sym == id) {
             return a.offset;
         }
@@ -245,25 +245,25 @@ AccidentalVal sym2accidentalVal(SymId id) {
 Accidental::Accidental(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::ACCIDENTAL, parent, ElementFlag::MOVABLE) {}
 
 Note *Accidental::note() const {
-    EngravingObject *owner = ownershipParent();
-    return owner && owner->isNote() ? toNote(owner) : nullptr;
+    EngravingObject *owner = ownership_parent();
+    return owner && owner->is_note() ? to_note(owner) : nullptr;
 }
 
 //---------------------------------------------------------
 //   subTypeUserName
 //---------------------------------------------------------
 
-TranslatableString Accidental::subtypeUserName() const { return SymNames::userNameForSymId(symId()); }
+TranslatableString Accidental::subtype_user_name() const { return SymNames::user_name_for_sym_id(sym_id()); }
 
 //---------------------------------------------------------
 //   symbol
 //---------------------------------------------------------
 
-SymId Accidental::symId() const { return ACC_LIST[int(accidentalType())].sym; }
+SymId Accidental::sym_id() const { return ::mu::engraving::acc_list[int(accidental_type())].sym; }
 
-bool Accidental::parentNoteHasParentheses() const {
-    const EngravingObject *owner = ownershipParent();
-    return owner && owner->isNote() && toNote(owner)->parenthesisInfo();
+bool Accidental::parent_note_has_parentheses() const {
+    const EngravingObject *owner = ownership_parent();
+    return owner && owner->is_note() && to_note(owner)->parenthesis_info();
 }
 
 //---------------------------------------------------------
@@ -271,29 +271,29 @@ bool Accidental::parentNoteHasParentheses() const {
 //    returns the resulting pitch offset
 //---------------------------------------------------------
 
-AccidentalVal Accidental::subtype2value(AccidentalType st) { return ACC_LIST[int(st)].offset; }
+AccidentalVal Accidental::subtype2value(AccidentalType st) { return ::mu::engraving::acc_list[int(st)].offset; }
 
 //---------------------------------------------------------
 //   subtype2name
 //---------------------------------------------------------
 
-AsciiStringView Accidental::subtype2name(AccidentalType st) { return SymNames::nameForSymId(ACC_LIST[int(st)].sym); }
+AsciiStringView Accidental::subtype2name(AccidentalType st) { return SymNames::name_for_sym_id(::mu::engraving::acc_list[int(st)].sym); }
 
 //---------------------------------------------------------
 //   subtype2symbol
 //---------------------------------------------------------
 
-SymId Accidental::subtype2symbol(AccidentalType st) { return ACC_LIST[int(st)].sym; }
+SymId Accidental::subtype2symbol(AccidentalType st) { return ::mu::engraving::acc_list[int(st)].sym; }
 
 //---------------------------------------------------------
 //   subtype2centoffset
 //---------------------------------------------------------
 
-double Accidental::subtype2centOffset(AccidentalType st) { return ACC_LIST[int(st)].centOffset; }
+double Accidental::subtype2cent_offset(AccidentalType st) { return ::mu::engraving::acc_list[int(st)].cent_offset; }
 
-AccidentalType Accidental::centOffset2Subtype(double centOffset) {
+AccidentalType Accidental::cent_offset2_subtype(double cent_offset) {
     for (int i = 0; i < static_cast<int>(AccidentalType::END); ++i) {
-        if (muse::RealIsEqual(ACC_LIST[i].centOffset, centOffset)) {
+        if (muse::real_is_equal(::mu::engraving::acc_list[i].cent_offset, cent_offset)) {
             return static_cast<AccidentalType>(i);
         }
     }
@@ -301,22 +301,22 @@ AccidentalType Accidental::centOffset2Subtype(double centOffset) {
     return AccidentalType::NONE;
 }
 
-AccidentalType Accidental::value2MicrotonalSubtype(AccidentalVal val, int quarterOff) {
-    if (quarterOff == 0) {
+AccidentalType Accidental::value2_microtonal_subtype(AccidentalVal val, int quarter_off) {
+    if (quarter_off == 0) {
         return value2subtype(val);
     }
 
-    if (quarterOff < -1 || quarterOff > 1) {
+    if (quarter_off < -1 || quarter_off > 1) {
         // TODO: more general implementation
         return value2subtype(val);
     }
 
     switch (val) {
-        case AccidentalVal::NATURAL: return quarterOff == 1 ? AccidentalType::SHARP_ARROW_DOWN : AccidentalType::FLAT_ARROW_UP;
-        case AccidentalVal::FLAT: return quarterOff == 1 ? AccidentalType::FLAT_ARROW_UP : AccidentalType::FLAT_ARROW_DOWN;
-        case AccidentalVal::SHARP: return quarterOff == 1 ? AccidentalType::SHARP_ARROW_UP : AccidentalType::SHARP_ARROW_DOWN;
-        case AccidentalVal::FLAT2: return quarterOff == 1 ? AccidentalType::FLAT2_ARROW_UP : AccidentalType::FLAT2_ARROW_DOWN;
-        case AccidentalVal::SHARP2: return quarterOff == 1 ? AccidentalType::SHARP2_ARROW_UP : AccidentalType::SHARP2_ARROW_DOWN;
+        case AccidentalVal::NATURAL: return quarter_off == 1 ? AccidentalType::SHARP_ARROW_DOWN : AccidentalType::FLAT_ARROW_UP;
+        case AccidentalVal::FLAT: return quarter_off == 1 ? AccidentalType::FLAT_ARROW_UP : AccidentalType::FLAT_ARROW_DOWN;
+        case AccidentalVal::SHARP: return quarter_off == 1 ? AccidentalType::SHARP_ARROW_UP : AccidentalType::SHARP_ARROW_DOWN;
+        case AccidentalVal::FLAT2: return quarter_off == 1 ? AccidentalType::FLAT2_ARROW_UP : AccidentalType::FLAT2_ARROW_DOWN;
+        case AccidentalVal::SHARP2: return quarter_off == 1 ? AccidentalType::SHARP2_ARROW_UP : AccidentalType::SHARP2_ARROW_DOWN;
         default: return value2subtype(val);
     }
 }
@@ -331,13 +331,13 @@ int Accidental::line() const {
 //---------------------------------------------------------
 
 AccidentalType Accidental::name2subtype(const AsciiStringView &tag) {
-    SymId symId = SymNames::symIdByName(tag);
-    if (symId == SymId::noSym) {
+    SymId sym_id = SymNames::sym_id_by_name(tag);
+    if (sym_id == SymId::NO_SYM) {
         // LOGD("no symbol found");
     } else {
         int i = 0;
-        for (const Acc &acc : ACC_LIST) {
-            if (acc.sym == symId) {
+        for (const Acc &acc : ::mu::engraving::acc_list) {
+            if (acc.sym == sym_id) {
                 return AccidentalType(i);
             }
             ++i;
@@ -350,21 +350,21 @@ AccidentalType Accidental::name2subtype(const AsciiStringView &tag) {
 //   setSubtype
 //---------------------------------------------------------
 
-void Accidental::setSubtype(const AsciiStringView &tag) { setAccidentalType(name2subtype(tag)); }
+void Accidental::set_subtype(const AsciiStringView &tag) { set_accidental_type(name2subtype(tag)); }
 
-void Accidental::setAccidentalType(AccidentalType t) {
-    accidentalType_ = t;
+void Accidental::set_accidental_type(AccidentalType t) {
+    accidental_type_ = t;
     if (note()) {
-        note()->setCentOffset(Accidental::subtype2centOffset(t));
+        note()->set_cent_offset(Accidental::subtype2cent_offset(t));
     }
 }
 
-void Accidental::computeMag() {
-    double m = layoutParent() ? layoutParent()->mag() : 1.0;
-    if (isSmall()) {
-        m *= style().styleD(Sid::smallNoteMag);
+void Accidental::compute_mag() {
+    double m = layout_parent() ? layout_parent()->mag() : 1.0;
+    if (is_small()) {
+        m *= style().style_d(Sid::SMALL_NOTE_MAG);
     }
-    mutldata()->setMag(m);
+    mutldata()->set_mag(m);
 }
 
 //---------------------------------------------------------
@@ -389,15 +389,15 @@ AccidentalType Accidental::value2subtype(AccidentalVal v) {
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Accidental::acceptDrop(EditData &data) const {
-    const EngravingItem *e = data.dropElement;
+bool Accidental::accept_drop(EditData &data) const {
+    const EngravingItem *e = data.drop_element;
 
-    if (e->isAccidental()) {
+    if (e->is_accidental()) {
         return note();
     }
 
-    if (e->isActionIcon()) {
-        ActionIconType type = toActionIcon(e)->actionType();
+    if (e->is_action_icon()) {
+        ActionIconType type = to_action_icon(e)->action_type();
         return type == ActionIconType::PARENTHESES || type == ActionIconType::BRACKETS;
     }
 
@@ -409,16 +409,16 @@ bool Accidental::acceptDrop(EditData &data) const {
 //---------------------------------------------------------
 
 EngravingItem *Accidental::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.dropElement;
+    EngravingItem *e = data.drop_element;
     switch (e->type()) {
-        case ElementType::ACCIDENTAL: EditNote::changeAccidental(score(), note(), toAccidental(e)->accidentalType()); break;
+        case ElementType::ACCIDENTAL: EditNote::change_accidental(score(), note(), to_accidental(e)->accidental_type()); break;
         case ElementType::ACTION_ICON:
-            switch (toActionIcon(e)->actionType()) {
+            switch (to_action_icon(e)->action_type()) {
                 case ActionIconType::PARENTHESES:
-                    undoChangeProperty(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::PARENTHESIS), PropertyFlags::NOSTYLE);
+                    undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::PARENTHESIS), PropertyFlags::NOSTYLE);
                     break;
                 case ActionIconType::BRACKETS:
-                    undoChangeProperty(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACKET), PropertyFlags::NOSTYLE);
+                    undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACKET), PropertyFlags::NOSTYLE);
                     break;
                 default: LOGD("unknown icon type"); break;
             }
@@ -433,14 +433,14 @@ EngravingItem *Accidental::drop(Transaction &, EditData &data) {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Accidental::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::ACCIDENTAL_TYPE: return int(accidentalType_);
-        case Pid::SMALL: return isSmall_;
+PropertyValue Accidental::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::ACCIDENTAL_TYPE: return int(accidental_type_);
+        case Pid::SMALL: return is_small_;
         case Pid::ACCIDENTAL_BRACKET: return int(bracket());
         case Pid::ACCIDENTAL_ROLE: return role();
-        case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: return stackingOrderOffset();
-        default: return EngravingItem::getProperty(propertyId);
+        case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: return stacking_order_offset();
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
@@ -448,14 +448,14 @@ PropertyValue Accidental::getProperty(Pid propertyId) const {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Accidental::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Accidental::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::ACCIDENTAL_TYPE: return int(AccidentalType::NONE);
         case Pid::SMALL: return false;
         case Pid::ACCIDENTAL_BRACKET: return int(AccidentalBracket::NONE);
         case Pid::ACCIDENTAL_ROLE: return AccidentalRole::AUTO;
         case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: return 0;
-        default: return EngravingItem::propertyDefault(propertyId);
+        default: return EngravingItem::property_default(property_id);
     }
 }
 
@@ -463,16 +463,16 @@ PropertyValue Accidental::propertyDefault(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Accidental::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::ACCIDENTAL_TYPE: setAccidentalType(AccidentalType(v.toInt())); break;
-        case Pid::SMALL: isSmall_ = v.toBool(); break;
-        case Pid::ACCIDENTAL_BRACKET: bracket_ = AccidentalBracket(v.toInt()); break;
+bool Accidental::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::ACCIDENTAL_TYPE: set_accidental_type(AccidentalType(v.to_int())); break;
+        case Pid::SMALL: is_small_ = v.to_bool(); break;
+        case Pid::ACCIDENTAL_BRACKET: bracket_ = AccidentalBracket(v.to_int()); break;
         case Pid::ACCIDENTAL_ROLE: role_ = v.value<AccidentalRole>(); break;
-        case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: setStackingOrderOffset(v.toInt()); break;
-        default: return EngravingItem::setProperty(propertyId, v);
+        case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: set_stacking_order_offset(v.to_int()); break;
+        default: return EngravingItem::set_property(property_id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 

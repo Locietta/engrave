@@ -31,34 +31,34 @@
 namespace muse::mpe {
 class ArticulationProfilesRepository : public IArticulationProfilesRepository {
 public:
-    explicit ArticulationProfilesRepository(io::IFileSystem &fileSystem) : fileSystem_(fileSystem) {}
+    explicit ArticulationProfilesRepository(io::IFileSystem &file_system) : file_system_(file_system) {}
 
-    ArticulationsProfilePtr createNew() const override;
-    ArticulationsProfilePtr defaultProfile(const ArticulationFamily family) const override;
-    ArticulationsProfilePtr loadProfile(const io::path_t &path) const override;
-    void saveProfile(const io::path_t &path, const ArticulationsProfilePtr profilePtr) override;
+    ArticulationsProfilePtr create_new() const override;
+    ArticulationsProfilePtr default_profile(const ArticulationFamily family) const override;
+    ArticulationsProfilePtr load_profile(const io::PathT &path) const override;
+    void save_profile(const io::PathT &path, const ArticulationsProfilePtr profile_ptr) override;
 
 private:
-    io::IFileSystem *fileSystem() const { return &fileSystem_; }
+    io::IFileSystem *file_system() const { return &file_system_; }
 
-    std::vector<ArticulationFamily> supportedFamiliesFromJson(const JsonArray &array) const;
-    JsonArray supportedFamiliesToJson(const std::vector<ArticulationFamily> &families) const;
+    std::vector<ArticulationFamily> supported_families_from_json(const JsonArray &array) const;
+    JsonArray supported_families_to_json(const std::vector<ArticulationFamily> &families) const;
 
-    ArticulationPattern patternsScopeFromJson(const JsonArray &array) const;
-    JsonArray patternsScopeToJson(const ArticulationPattern &scope) const;
+    ArticulationPattern patterns_scope_from_json(const JsonArray &array) const;
+    JsonArray patterns_scope_to_json(const ArticulationPattern &scope) const;
 
-    ArrangementPattern arrangementPatternFromJson(const JsonObject &obj) const;
-    JsonObject arrangementPatternToJson(const ArrangementPattern &pattern) const;
+    ArrangementPattern arrangement_pattern_from_json(const JsonObject &obj) const;
+    JsonObject arrangement_pattern_to_json(const ArrangementPattern &pattern) const;
 
-    PitchPattern pitchPatternFromJson(const JsonObject &obj) const;
-    JsonObject pitchPatternToJson(const PitchPattern &pattern) const;
+    PitchPattern pitch_pattern_from_json(const JsonObject &obj) const;
+    JsonObject pitch_pattern_to_json(const PitchPattern &pattern) const;
 
-    ExpressionPattern expressionPatternFromJson(const JsonObject &obj) const;
-    JsonObject expressionPatternToJson(const ExpressionPattern &pattern) const;
+    ExpressionPattern expression_pattern_from_json(const JsonObject &obj) const;
+    JsonObject expression_pattern_to_json(const ExpressionPattern &pattern) const;
 
-    mutable std::unordered_map<ArticulationFamily, ArticulationsProfilePtr> defaultProfiles_;
+    mutable std::unordered_map<ArticulationFamily, ArticulationsProfilePtr> default_profiles_;
 
-    io::IFileSystem &fileSystem_;
+    io::IFileSystem &file_system_;
 };
 } // namespace muse::mpe
 

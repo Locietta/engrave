@@ -57,7 +57,7 @@ using engrave::Value;
 using engrave::ValueKind;
 using mu::engraving::ElementType;
 using mu::engraving::EngravingObject;
-using mu::engraving::P_TYPE;
+using mu::engraving::PType;
 using mu::engraving::Pid;
 using mu::engraving::PropertyValue;
 
@@ -104,23 +104,23 @@ struct Corpus {
         }
         const auto scan = [this](mu::engraving::EngravingItem *item) {
             add(item);
-            item->scanElements([this](mu::engraving::EngravingItem *child) { add(child); });
+            item->scan_elements([this](mu::engraving::EngravingItem *child) { add(child); });
         };
         for (mu::engraving::MeasureBase *base = score->first(); base; base = base->next()) {
             add(base);
-            if (!base->isMeasure()) continue;
-            auto *measure = mu::engraving::toMeasure(base);
+            if (!base->is_measure()) continue;
+            auto *measure = mu::engraving::to_measure(base);
             add(measure);
             for (mu::engraving::Segment *segment = measure->first(); segment; segment = segment->next()) {
                 add(segment);
-                for (mu::engraving::track_idx_t track = 0; track < score->nstaves() * mu::engraving::VOICES; ++track)
+                for (mu::engraving::track_idx_t track = 0; track < score->nstaves() * mu::engraving::voices; ++track)
                     if (mu::engraving::EngravingItem *item = segment->element(track)) scan(item);
                 for (mu::engraving::EngravingItem *item : segment->annotations()) scan(item);
             }
         }
         // The engine's own walk reaches the system-level items (pages, systems,
         // instrument names, brackets) that the measure walk above does not.
-        score->scanElements([this](mu::engraving::EngravingItem *item) { add(item); });
+        score->scan_elements([this](mu::engraving::EngravingItem *item) { add(item); });
     }
 
     void load(const std::filesystem::path &file) {
@@ -136,69 +136,69 @@ struct Corpus {
             unreadable.push_back(file);
             return;
         }
-        mu::engraving::MasterScore *master = projects.back()->masterScore();
+        mu::engraving::MasterScore *master = projects.back()->master_score();
         add_score(master);
-        for (mu::engraving::Excerpt *excerpt : master->excerpts()) add_score(excerpt->excerptScore());
+        for (mu::engraving::Excerpt *excerpt : master->excerpts()) add_score(excerpt->excerpt_score());
     }
 };
 
-bool is_enum_without_tokens(P_TYPE type) {
-    for (const P_TYPE declared : {P_TYPE::SYMID, P_TYPE::ALIGN, P_TYPE::ORNAMENT_INTERVAL, P_TYPE::ACCIDENTAL_ROLE, P_TYPE::HOOK_TYPE})
+bool is_enum_without_tokens(PType type) {
+    for (const PType declared : {PType::SYMID, PType::ALIGN, PType::ORNAMENT_INTERVAL, PType::ACCIDENTAL_ROLE, PType::HOOK_TYPE})
         if (declared == type) return true;
     return false;
 }
 
-std::vector<P_TYPE> all_types() {
-    std::vector<P_TYPE> types;
-    for (int type = 0; type <= int(P_TYPE::GROUPS); ++type) types.push_back(P_TYPE(type));
+std::vector<PType> all_types() {
+    std::vector<PType> types;
+    for (int type = 0; type <= int(PType::GROUPS); ++type) types.push_back(PType(type));
     return types;
 }
 
 // A value of each kind, and an enum token for each enum type.
-Value sample(P_TYPE type) {
+Value sample(PType type) {
     switch (engrave::api::kind_of(type)) {
-        case ValueKind::Bool: return true;
-        case ValueKind::Int: return std::int64_t(42);
-        case ValueKind::Real: return 1.5;
-        case ValueKind::String: return std::string("text");
-        case ValueKind::Point: return Point{1.5, -2.5};
-        case ValueKind::Size: return Size{3.5, 4.5};
-        case ValueKind::Color: return engrave::Color{1, 2, 3, 4};
-        case ValueKind::Fraction: return engrave::Fraction{3, 4};
-        case ValueKind::IntList: return std::vector<std::int64_t>{1, 2, 3};
-        case ValueKind::Enum: {
+        case ValueKind::BOOL: return true;
+        case ValueKind::INT: return std::int64_t(42);
+        case ValueKind::REAL: return 1.5;
+        case ValueKind::STRING: return std::string("text");
+        case ValueKind::POINT: return Point{1.5, -2.5};
+        case ValueKind::SIZE: return Size{3.5, 4.5};
+        case ValueKind::COLOR: return engrave::Color{1, 2, 3, 4};
+        case ValueKind::FRACTION: return engrave::Fraction{3, 4};
+        case ValueKind::INT_LIST: return std::vector<std::int64_t>{1, 2, 3};
+        case ValueKind::ENUM: {
             const auto tokens = engrave::api::enum_tokens(type);
             if (!tokens.empty()) return Enum{std::string(tokens.front())};
             switch (type) {
-                case P_TYPE::SYMID: return Enum{"noteheadBlack"};
-                case P_TYPE::ALIGN: return Enum{"left,top"};
-                case P_TYPE::ORNAMENT_INTERVAL: return Enum{"second,auto"};
-                case P_TYPE::ACCIDENTAL_ROLE: return Enum{"0"};
-                case P_TYPE::HOOK_TYPE: return Enum{"0"};
+                case PType::SYMID: return Enum{"noteheadBlack"};
+                case PType::ALIGN: return Enum{"left,top"};
+                case PType::ORNAMENT_INTERVAL: return Enum{"second,auto"};
+                case PType::ACCIDENTAL_ROLE: return Enum{"0"};
+                case PType::HOOK_TYPE: return Enum{"0"};
                 default: return Enum{"unspecified"};
             }
         }
-        case ValueKind::Opaque: return Opaque{"read-only"};
+        case ValueKind::OPAQUE: return Opaque{"read-only"};
     }
     return {};
 }
 
 // A property value each Opaque kind maps from.
-PropertyValue opaque_sample(P_TYPE type) {
+PropertyValue opaque_sample(PType type) {
     switch (type) {
-        case P_TYPE::DRAW_PATH: return PropertyValue(muse::draw::PainterPath());
-        case P_TYPE::GROUPS: return PropertyValue(mu::engraving::GroupNodes());
-        case P_TYPE::PITCH_VALUES: return PropertyValue(mu::engraving::PitchValues());
-        case P_TYPE::DURATION_TYPE_WITH_DOTS: return PropertyValue(mu::engraving::DurationTypeWithDots());
+        case PType::DRAW_PATH: return PropertyValue(muse::draw::PainterPath());
+        case PType::GROUPS: return PropertyValue(mu::engraving::GroupNodes());
+        case PType::PITCH_VALUES: return PropertyValue(mu::engraving::PitchValues());
+        case PType::DURATION_TYPE_WITH_DOTS: return PropertyValue(mu::engraving::DurationTypeWithDots());
         default: return PropertyValue();
     }
 }
 
 ElementType element_type(std::string_view name) {
-    return mu::engraving::TConv::fromXml(muse::AsciiStringView(name.data(), name.size()), ElementType::INVALID);
+    return mu::engraving::TConv::from_xml(muse::AsciiStringView(name.data(), name.size()), ElementType::INVALID);
 }
 
-P_TYPE value_type(std::string_view name) { return mu::engraving::propertyType(engrave::api::pid_of(name)); }
+PType value_type(std::string_view name) { return mu::engraving::property_type(engrave::api::pid_of(name)); }
 
 bool contains(const std::vector<std::string> &list, std::string_view text) { return std::ranges::find(list, text) != list.end(); }
 
@@ -206,12 +206,12 @@ bool contains(const std::vector<std::string> &list, std::string_view text) { ret
 
 TEST(ValueCodec, RoundTripsEveryType) {
     int opaque = 0;
-    for (const P_TYPE type : all_types()) {
-        if (type == P_TYPE::UNDEFINED) {
+    for (const PType type : all_types()) {
+        if (type == PType::UNDEFINED) {
             EXPECT_TRUE(std::holds_alternative<std::monostate>(engrave::api::to_value(type, PropertyValue())));
             continue;
         }
-        if (engrave::api::kind_of(type) == ValueKind::Opaque) {
+        if (engrave::api::kind_of(type) == ValueKind::OPAQUE) {
             EXPECT_TRUE(std::holds_alternative<Opaque>(engrave::api::to_value(type, opaque_sample(type)))) << int(type);
             ++opaque;
             continue;
@@ -226,8 +226,8 @@ TEST(ValueCodec, RoundTripsEveryType) {
 
 TEST(ValueCodec, RoundTripsEveryEnumToken) {
     int tokens = 0;
-    for (const P_TYPE type : all_types()) {
-        if (engrave::api::kind_of(type) != ValueKind::Enum) continue;
+    for (const PType type : all_types()) {
+        if (engrave::api::kind_of(type) != ValueKind::ENUM) continue;
         const auto listed = engrave::api::enum_tokens(type);
         EXPECT_TRUE(!listed.empty() || is_enum_without_tokens(type)) << int(type) << " lists no tokens";
         for (const std::string_view token : listed) {
@@ -241,44 +241,44 @@ TEST(ValueCodec, RoundTripsEveryEnumToken) {
 }
 
 TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
-    const auto unknown = engrave::api::from_value(P_TYPE::ALIGN_H, Enum{"no-such-token"});
+    const auto unknown = engrave::api::from_value(PType::ALIGN_H, Enum{"no-such-token"});
     ASSERT_FALSE(unknown);
     EXPECT_EQ(unknown.error().code, ErrorCode::INVALID_ARGUMENT);
 
-    const auto wrong_kind = engrave::api::from_value(P_TYPE::BOOL, std::int64_t(1));
+    const auto wrong_kind = engrave::api::from_value(PType::BOOL, std::int64_t(1));
     ASSERT_FALSE(wrong_kind);
     EXPECT_EQ(wrong_kind.error().code, ErrorCode::INVALID_ARGUMENT);
 
-    const auto wrong_size = engrave::api::from_value(P_TYPE::SIZE, Point{1, 2});
+    const auto wrong_size = engrave::api::from_value(PType::SIZE, Point{1, 2});
     ASSERT_FALSE(wrong_size);
     EXPECT_EQ(wrong_size.error().code, ErrorCode::INVALID_ARGUMENT);
 
     // A caller's integer has to fit what the engine stores; the probe of finding 3 of
     // the A4 validation set an int style to 4294967297 and got 1 back.
     for (const std::int64_t too_big : {std::int64_t{4294967297LL}, std::int64_t{1} << 32, std::int64_t{-4294967295LL}}) {
-        const auto overflow = engrave::api::from_value(P_TYPE::INT, too_big);
+        const auto overflow = engrave::api::from_value(PType::INT, too_big);
         ASSERT_FALSE(overflow) << too_big;
         EXPECT_EQ(overflow.error().code, ErrorCode::INVALID_ARGUMENT) << too_big;
-        const auto fraction = engrave::api::from_value(P_TYPE::FRACTION, engrave::Fraction{too_big, 1});
+        const auto fraction = engrave::api::from_value(PType::FRACTION, engrave::Fraction{too_big, 1});
         ASSERT_FALSE(fraction) << too_big;
         EXPECT_EQ(fraction.error().code, ErrorCode::INVALID_ARGUMENT) << too_big;
     }
     for (const std::int64_t negative : {std::int64_t{-1}, std::int64_t{-4294967295LL}}) {
-        const auto size = engrave::api::from_value(P_TYPE::SIZE_T, negative);
+        const auto size = engrave::api::from_value(PType::SIZE_T, negative);
         ASSERT_FALSE(size) << negative;
         EXPECT_EQ(size.error().code, ErrorCode::INVALID_ARGUMENT) << negative;
     }
-    const auto negative_size = engrave::api::from_value(P_TYPE::SIZE_T, std::int64_t{-1});
+    const auto negative_size = engrave::api::from_value(PType::SIZE_T, std::int64_t{-1});
     ASSERT_FALSE(negative_size);
     EXPECT_EQ(negative_size.error().code, ErrorCode::INVALID_ARGUMENT);
-    const auto list = engrave::api::from_value(P_TYPE::INT_VEC, std::vector<std::int64_t>{1, 4294967297LL, 3});
+    const auto list = engrave::api::from_value(PType::INT_VEC, std::vector<std::int64_t>{1, 4294967297LL, 3});
     ASSERT_FALSE(list);
     EXPECT_EQ(list.error().code, ErrorCode::INVALID_ARGUMENT);
-    const auto fraction = engrave::api::from_value(P_TYPE::FRACTION, engrave::Fraction{1, 4294967297LL});
+    const auto fraction = engrave::api::from_value(PType::FRACTION, engrave::Fraction{1, 4294967297LL});
     ASSERT_FALSE(fraction);
     EXPECT_EQ(fraction.error().code, ErrorCode::INVALID_ARGUMENT);
 
-    for (const P_TYPE type : {P_TYPE::DRAW_PATH, P_TYPE::GROUPS, P_TYPE::PITCH_VALUES, P_TYPE::DURATION_TYPE_WITH_DOTS}) {
+    for (const PType type : {PType::DRAW_PATH, PType::GROUPS, PType::PITCH_VALUES, PType::DURATION_TYPE_WITH_DOTS}) {
         const auto read_only = engrave::api::from_value(type, Opaque{"draw_path"});
         ASSERT_FALSE(read_only);
         EXPECT_EQ(read_only.error().code, ErrorCode::UNSUPPORTED) << int(type);
@@ -298,7 +298,7 @@ TEST(Describe, ListsEveryImplementedTypeWithSortedProps) {
         for (const auto &prop : type.props) {
             EXPECT_NE(engrave::api::pid_of(prop.name), Pid::END) << type.type << " / " << prop.name;
             EXPECT_FALSE(prop.group.empty()) << prop.name;
-            if (prop.kind == ValueKind::Enum)
+            if (prop.kind == ValueKind::ENUM)
                 EXPECT_TRUE(!prop.enum_tokens.empty() || is_enum_without_tokens(value_type(prop.name))) << type.type << " / " << prop.name;
         }
     }
@@ -317,18 +317,18 @@ TEST(Describe, NotesTheKindsAndUnits) {
     };
     const auto *pitch = find("pitch");
     ASSERT_TRUE(pitch);
-    EXPECT_EQ(pitch->kind, ValueKind::Int);
+    EXPECT_EQ(pitch->kind, ValueKind::INT);
     EXPECT_FALSE(pitch->settable) << "pitch goes through the engine's pitch edit";
     EXPECT_EQ(pitch->group, "none");
     const auto *min_distance = find("minDistance");
     ASSERT_TRUE(min_distance);
-    EXPECT_EQ(min_distance->kind, ValueKind::Real);
-    EXPECT_EQ(min_distance->unit, Unit::Spatium);
+    EXPECT_EQ(min_distance->kind, ValueKind::REAL);
+    EXPECT_EQ(min_distance->unit, Unit::SPATIUM);
     EXPECT_EQ(min_distance->group, "position");
     const auto *color = find("color");
     ASSERT_TRUE(color);
-    EXPECT_EQ(color->kind, ValueKind::Color);
-    EXPECT_EQ(color->unit, Unit::None);
+    EXPECT_EQ(color->kind, ValueKind::COLOR);
+    EXPECT_EQ(color->unit, Unit::NONE);
     const auto *autoplace = find("autoplace");
     ASSERT_TRUE(autoplace);
     EXPECT_TRUE(autoplace->settable);
@@ -352,8 +352,8 @@ TEST(Describe, StylesCoverEveryStyleId) {
         EXPECT_FALSE(style.name.empty());
         if (std::holds_alternative<std::monostate>(style.default_value)) continue;
         ++with_value;
-        EXPECT_EQ(style.kind, engrave::api::kind_of(mu::engraving::StyleDef::styleValues[i].valueType())) << style.name;
-        EXPECT_EQ(style.unit, engrave::api::unit_of(mu::engraving::StyleDef::styleValues[i].valueType())) << style.name;
+        EXPECT_EQ(style.kind, engrave::api::kind_of(mu::engraving::StyleDef::style_values[i].value_type())) << style.name;
+        EXPECT_EQ(style.unit, engrave::api::unit_of(mu::engraving::StyleDef::style_values[i].value_type())) << style.name;
     }
     EXPECT_GT(with_value, 200) << "styles with a default value";
     EXPECT_TRUE(names.contains("spatium"));
@@ -382,12 +382,12 @@ TEST(Corpus, EveryPropertyOfEveryCorpusTypeReads) {
         for (const auto &prop : type.props) {
             const Pid pid = engrave::api::pid_of(prop.name);
             ASSERT_NE(pid, Pid::END) << type.type << " / " << prop.name;
-            const PropertyValue value = instance->second->getProperty(pid);
-            if (!value.isValid()) {
+            const PropertyValue value = instance->second->get_property(pid);
+            if (!value.is_valid()) {
                 without_value.push_back(type.type + " / " + prop.name);
                 continue;
             }
-            const Value mapped = engrave::api::to_value(mu::engraving::propertyType(pid), value);
+            const Value mapped = engrave::api::to_value(mu::engraving::property_type(pid), value);
             EXPECT_FALSE(std::holds_alternative<std::monostate>(mapped)) << type.type << " / " << prop.name;
             if (const auto *token = std::get_if<Enum>(&mapped); token && !prop.enum_tokens.empty()) {
                 EXPECT_TRUE(contains(prop.enum_tokens, token->token))

@@ -28,42 +28,42 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void ControlNode::setVolume(float value) {
+void ControlNode::set_volume(float value) {
     volume_ = value;
-    updateChannelGains();
+    update_channel_gains();
 }
 
 float ControlNode::volume() const { return volume_; }
 
-void ControlNode::setPan(float pan) {
+void ControlNode::set_pan(float pan) {
     pan_ = pan;
-    updateChannelGains();
+    update_channel_gains();
 }
 
 float ControlNode::pan() const { return pan_; }
 
-void ControlNode::setMuted(bool muted) { setEnabled(!muted); }
+void ControlNode::set_muted(bool muted) { set_enabled(!muted); }
 
 bool ControlNode::muted() const { return !enabled(); }
 
-void ControlNode::onOutputSpecChanged(const OutputSpec &) { updateChannelGains(); }
+void ControlNode::on_output_spec_changed(const OutputSpec &) { update_channel_gains(); }
 
-void ControlNode::updateChannelGains() {
-    const audioch_t channelsCount = outputSpec_.audioChannelCount;
-    channelGains_.resize(channelsCount);
-    for (audioch_t audioChNum = 0; audioChNum < channelsCount; ++audioChNum) {
-        channelGains_[audioChNum] = dsp::balanceGain(pan_, audioChNum) * volume_;
+void ControlNode::update_channel_gains() {
+    const audioch_t channels_count = output_spec_.audio_channel_count;
+    channel_gains_.resize(channels_count);
+    for (audioch_t audio_ch_num = 0; audio_ch_num < channels_count; ++audio_ch_num) {
+        channel_gains_[audio_ch_num] = dsp::balance_gain(pan_, audio_ch_num) * volume_;
     }
 }
 
-void ControlNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    const audioch_t channelsCount = outputSpec_.audioChannelCount;
+void ControlNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+    const audioch_t channels_count = output_spec_.audio_channel_count;
 
-    for (size_t s = 0; s < samplesPerChannel; ++s) {
-        const size_t frameOffset = s * channelsCount;
-        for (size_t ch = 0; ch < channelsCount; ++ch) {
-            const size_t idx = frameOffset + ch;
-            buffer[idx] = buffer[idx] * channelGains_[ch];
+    for (size_t s = 0; s < samples_per_channel; ++s) {
+        const size_t frame_offset = s * channels_count;
+        for (size_t ch = 0; ch < channels_count; ++ch) {
+            const size_t idx = frame_offset + ch;
+            buffer[idx] = buffer[idx] * channel_gains_[ch];
         }
     }
 }

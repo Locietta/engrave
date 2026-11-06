@@ -30,96 +30,105 @@ using namespace mu::iex::musicxml;
 
 static const std::string module_name("iex_musicxml");
 
-static const Settings::Key MUSICXML_IMPORT_BREAKS_KEY(module_name, "import/musicXml/importBreaks");
-static const Settings::Key MUSICXML_IMPORT_LAYOUT_KEY(module_name, "import/musicXml/importLayout");
-static const Settings::Key MUSICXML_EXPORT_LAYOUT_KEY(module_name, "export/musicXml/exportLayout");
-static const Settings::Key MUSICXML_EXPORT_MU3_COMPAT_KEY(module_name, "export/musicXml/exportMu3Compat");
-static const Settings::Key MUSICXML_EXPORT_BREAKS_TYPE_KEY(module_name, "export/musicXml/exportBreaks");
-static const Settings::Key MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY(module_name, "export/musicXml/exportInvisibleElements");
-static const Settings::Key MIGRATION_APPLY_EDWIN_FOR_XML(module_name, "import/compatibility/apply_edwin_for_xml");
-static const Settings::Key MIGRATION_NOT_ASK_AGAIN_KEY(module_name, "import/compatibility/do_not_ask_me_again");
-static const Settings::Key MUSICXML_IMPORT_INFER_TEXT_TYPE(module_name, "import/musicXml/importInferTextType");
+static const Settings::Key musicxml_import_breaks_key(module_name, "import/musicXml/importBreaks");
+static const Settings::Key musicxml_import_layout_key(module_name, "import/musicXml/importLayout");
+static const Settings::Key musicxml_export_layout_key(module_name, "export/musicXml/exportLayout");
+static const Settings::Key musicxml_export_m_u3_compat_key(module_name, "export/musicXml/exportMu3Compat");
+static const Settings::Key musicxml_export_breaks_type_key(module_name, "export/musicXml/exportBreaks");
+static const Settings::Key musicxml_export_invisible_elements_key(module_name, "export/musicXml/exportInvisibleElements");
+static const Settings::Key migration_apply_edwin_for_xml(module_name, "import/compatibility/apply_edwin_for_xml");
+static const Settings::Key migration_not_ask_again_key(module_name, "import/compatibility/do_not_ask_me_again");
+static const Settings::Key musicxml_import_infer_text_type(module_name, "import/musicXml/importInferTextType");
 
 void MusicXmlConfiguration::init() {
-    settings()->setDefaultValue(MUSICXML_IMPORT_BREAKS_KEY, Val(true));
+    settings()->set_default_value(::musicxml_import_breaks_key, Val(true));
 
-    settings()->setDefaultValue(MUSICXML_IMPORT_LAYOUT_KEY, Val(true));
+    settings()->set_default_value(::musicxml_import_layout_key, Val(true));
 
-    settings()->setDefaultValue(MUSICXML_EXPORT_LAYOUT_KEY, Val(true));
-    settings()->setDefaultValue(MUSICXML_EXPORT_MU3_COMPAT_KEY, Val(false));
-    settings()->setDescription(MUSICXML_EXPORT_MU3_COMPAT_KEY,
-                               //: Means that less information will be included in exported MusicXML files,
-                               //: to prevent errors when importing them into MuseScore 3
-                               muse::trc("iex_musicxml", "Limit MusicXML export for compatibility with MuseScore 3"));
-    settings()->setCanBeManuallyEdited(MUSICXML_EXPORT_MU3_COMPAT_KEY, true);
-    settings()->setDefaultValue(MUSICXML_EXPORT_BREAKS_TYPE_KEY, Val(MusicXmlExportBreaksType::All));
-    settings()->setDefaultValue(MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY, Val(false));
-    settings()->setDescription(MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY, muse::trc("iex_musicxml", "Export invisible elements to MusicXML"));
-    settings()->setCanBeManuallyEdited(MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY, true);
+    settings()->set_default_value(::musicxml_export_layout_key, Val(true));
+    settings()->set_default_value(::musicxml_export_m_u3_compat_key, Val(false));
+    settings()->set_description(::musicxml_export_m_u3_compat_key,
+                                //: Means that less information will be included in exported MusicXML files,
+                                //: to prevent errors when importing them into MuseScore 3
+                                muse::trc("iex_musicxml", "Limit MusicXML export for compatibility with MuseScore 3"));
+    settings()->set_can_be_manually_edited(::musicxml_export_m_u3_compat_key, true);
+    settings()->set_default_value(::musicxml_export_breaks_type_key, Val(MusicXmlExportBreaksType::ALL));
+    settings()->set_default_value(::musicxml_export_invisible_elements_key, Val(false));
+    settings()->set_description(::musicxml_export_invisible_elements_key,
+                                muse::trc("iex_musicxml", "Export invisible elements to MusicXML"));
+    settings()->set_can_be_manually_edited(::musicxml_export_invisible_elements_key, true);
 
-    settings()->setDefaultValue(MIGRATION_APPLY_EDWIN_FOR_XML, Val(false));
+    settings()->set_default_value(::migration_apply_edwin_for_xml, Val(false));
 
-    settings()->setDefaultValue(MIGRATION_NOT_ASK_AGAIN_KEY, Val(false));
+    settings()->set_default_value(::migration_not_ask_again_key, Val(false));
 
-    settings()->setDefaultValue(MUSICXML_IMPORT_INFER_TEXT_TYPE, Val(false));
+    settings()->set_default_value(::musicxml_import_infer_text_type, Val(false));
 }
 
-bool MusicXmlConfiguration::importBreaks() const { return settings()->value(MUSICXML_IMPORT_BREAKS_KEY).toBool(); }
+bool MusicXmlConfiguration::import_breaks() const { return settings()->value(::musicxml_import_breaks_key).to_bool(); }
 
-void MusicXmlConfiguration::setImportBreaks(bool value) { settings()->setSharedValue(MUSICXML_IMPORT_BREAKS_KEY, Val(value)); }
+void MusicXmlConfiguration::set_import_breaks(bool value) { settings()->set_shared_value(::musicxml_import_breaks_key, Val(value)); }
 
-bool MusicXmlConfiguration::importLayout() const { return settings()->value(MUSICXML_IMPORT_LAYOUT_KEY).toBool(); }
+bool MusicXmlConfiguration::import_layout() const { return settings()->value(::musicxml_import_layout_key).to_bool(); }
 
-void MusicXmlConfiguration::setImportLayout(bool value) { settings()->setSharedValue(MUSICXML_IMPORT_LAYOUT_KEY, Val(value)); }
+void MusicXmlConfiguration::set_import_layout(bool value) { settings()->set_shared_value(::musicxml_import_layout_key, Val(value)); }
 
-bool MusicXmlConfiguration::exportLayout() const { return settings()->value(MUSICXML_EXPORT_LAYOUT_KEY).toBool(); }
+bool MusicXmlConfiguration::export_layout() const { return settings()->value(::musicxml_export_layout_key).to_bool(); }
 
-void MusicXmlConfiguration::setExportLayout(bool value) { settings()->setSharedValue(MUSICXML_EXPORT_LAYOUT_KEY, Val(value)); }
+void MusicXmlConfiguration::set_export_layout(bool value) { settings()->set_shared_value(::musicxml_export_layout_key, Val(value)); }
 
-bool MusicXmlConfiguration::exportMu3Compat() const { return settings()->value(MUSICXML_EXPORT_MU3_COMPAT_KEY).toBool(); }
+bool MusicXmlConfiguration::export_mu3_compat() const { return settings()->value(::musicxml_export_m_u3_compat_key).to_bool(); }
 
-void MusicXmlConfiguration::setExportMu3Compat(bool value) { settings()->setSharedValue(MUSICXML_EXPORT_MU3_COMPAT_KEY, Val(value)); }
-
-MusicXmlConfiguration::MusicXmlExportBreaksType MusicXmlConfiguration::exportBreaksType() const {
-    return settings()->value(MUSICXML_EXPORT_BREAKS_TYPE_KEY).toEnum<MusicXmlExportBreaksType>();
+void MusicXmlConfiguration::set_export_mu3_compat(bool value) {
+    settings()->set_shared_value(::musicxml_export_m_u3_compat_key, Val(value));
 }
 
-void MusicXmlConfiguration::setExportBreaksType(MusicXmlExportBreaksType breaksType) {
-    settings()->setSharedValue(MUSICXML_EXPORT_BREAKS_TYPE_KEY, Val(breaksType));
+MusicXmlConfiguration::MusicXmlExportBreaksType MusicXmlConfiguration::export_breaks_type() const {
+    return settings()->value(::musicxml_export_breaks_type_key).to_enum<MusicXmlExportBreaksType>();
 }
 
-bool MusicXmlConfiguration::exportInvisibleElements() const { return settings()->value(MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY).toBool(); }
-
-void MusicXmlConfiguration::setExportInvisibleElements(bool value) {
-    settings()->setSharedValue(MUSICXML_EXPORT_INVISIBLE_ELEMENTS_KEY, Val(value));
+void MusicXmlConfiguration::set_export_breaks_type(MusicXmlExportBreaksType breaks_type) {
+    settings()->set_shared_value(::musicxml_export_breaks_type_key, Val(breaks_type));
 }
 
-bool MusicXmlConfiguration::needUseDefaultFont() const {
-    if (needUseDefaultFontOverride_.has_value()) {
-        return needUseDefaultFontOverride_.value();
+bool MusicXmlConfiguration::export_invisible_elements() const {
+    return settings()->value(::musicxml_export_invisible_elements_key).to_bool();
+}
+
+void MusicXmlConfiguration::set_export_invisible_elements(bool value) {
+    settings()->set_shared_value(::musicxml_export_invisible_elements_key, Val(value));
+}
+
+bool MusicXmlConfiguration::need_use_default_font() const {
+    if (need_use_default_font_override_.has_value()) {
+        return need_use_default_font_override_.value();
     }
 
-    return settings()->value(MIGRATION_APPLY_EDWIN_FOR_XML).toBool();
+    return settings()->value(::migration_apply_edwin_for_xml).to_bool();
 }
 
-void MusicXmlConfiguration::setNeedUseDefaultFont(bool value) { settings()->setSharedValue(MIGRATION_APPLY_EDWIN_FOR_XML, Val(value)); }
-
-void MusicXmlConfiguration::setNeedUseDefaultFontOverride(std::optional<bool> value) { needUseDefaultFontOverride_ = value; }
-
-bool MusicXmlConfiguration::needAskAboutApplyingNewStyle() const { return !settings()->value(MIGRATION_NOT_ASK_AGAIN_KEY).toBool(); }
-
-void MusicXmlConfiguration::setNeedAskAboutApplyingNewStyle(bool value) {
-    settings()->setSharedValue(MIGRATION_NOT_ASK_AGAIN_KEY, Val(!value));
+void MusicXmlConfiguration::set_need_use_default_font(bool value) {
+    settings()->set_shared_value(::migration_apply_edwin_for_xml, Val(value));
 }
 
-bool MusicXmlConfiguration::inferTextType() const {
-    if (inferTextTypeOverride_.has_value()) {
-        return inferTextTypeOverride_.value();
+void MusicXmlConfiguration::set_need_use_default_font_override(std::optional<bool> value) { need_use_default_font_override_ = value; }
+
+bool MusicXmlConfiguration::need_ask_about_applying_new_style() const {
+    return !settings()->value(::migration_not_ask_again_key).to_bool();
+}
+
+void MusicXmlConfiguration::set_need_ask_about_applying_new_style(bool value) {
+    settings()->set_shared_value(::migration_not_ask_again_key, Val(!value));
+}
+
+bool MusicXmlConfiguration::infer_text_type() const {
+    if (infer_text_type_override_.has_value()) {
+        return infer_text_type_override_.value();
     }
 
-    return settings()->value(MUSICXML_IMPORT_INFER_TEXT_TYPE).toBool();
+    return settings()->value(::musicxml_import_infer_text_type).to_bool();
 }
 
-void MusicXmlConfiguration::setInferTextType(bool value) { settings()->setSharedValue(MUSICXML_IMPORT_INFER_TEXT_TYPE, Val(value)); }
+void MusicXmlConfiguration::set_infer_text_type(bool value) { settings()->set_shared_value(::musicxml_import_infer_text_type, Val(value)); }
 
-void MusicXmlConfiguration::setInferTextTypeOverride(std::optional<bool> value) { inferTextTypeOverride_ = value; }
+void MusicXmlConfiguration::set_infer_text_type_override(std::optional<bool> value) { infer_text_type_override_ = value; }

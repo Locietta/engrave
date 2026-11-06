@@ -33,9 +33,9 @@ namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiDrum {
-void splitDrumVoices(std::multimap<int, MTrack> &tracks);
-void splitDrumTracks(std::multimap<int, MTrack> &tracks);
-void setStaffBracketForDrums(std::vector<MTrack> &tracks);
+void split_drum_voices(std::multimap<int, MTrack> &tracks);
+void split_drum_tracks(std::multimap<int, MTrack> &tracks);
+void set_staff_bracket_for_drums(std::vector<MTrack> &tracks);
 } // namespace MidiDrum
 } // namespace mu::iex::midi
 

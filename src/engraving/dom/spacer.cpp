@@ -39,30 +39,30 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 Spacer::Spacer(DummyParentOr<Measure> parent) : EngravingItem(ElementType::SPACER, parent) {
-    spacerType_ = SpacerType::UP;
+    spacer_type_ = SpacerType::UP;
     gap_ = 0.0_sp;
     z_ = -10; // Ensure behind notation
 }
 
 Spacer::Spacer(const Spacer &s) : EngravingItem(s) {
     gap_ = s.gap_;
-    spacerType_ = s.spacerType_;
+    spacer_type_ = s.spacer_type_;
 }
 
 //---------------------------------------------------------
 //   setGap
 //---------------------------------------------------------
 
-void Spacer::setGap(Spatium sp) { gap_ = sp; }
+void Spacer::set_gap(Spatium sp) { gap_ = sp; }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Spacer::getProperty(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Spacer::get_property(Pid property_id) const {
+    switch (property_id) {
         case Pid::SPACE: return gap();
-        default: return EngravingItem::getProperty(propertyId);
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
@@ -70,17 +70,17 @@ PropertyValue Spacer::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Spacer::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::SPACE: setGap(v.value<Spatium>()); break;
+bool Spacer::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::SPACE: set_gap(v.value<Spatium>()); break;
         default:
-            if (!EngravingItem::setProperty(propertyId, v)) {
+            if (!EngravingItem::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
-    setGenerated(false);
+    trigger_layout();
+    set_generated(false);
     return true;
 }
 
@@ -88,10 +88,10 @@ bool Spacer::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Spacer::propertyDefault(Pid id) const {
+PropertyValue Spacer::property_default(Pid id) const {
     switch (id) {
         case Pid::SPACE: return 0.0_sp;
-        default: return EngravingItem::propertyDefault(id);
+        default: return EngravingItem::property_default(id);
     }
 }
 
@@ -99,63 +99,63 @@ PropertyValue Spacer::propertyDefault(Pid id) const {
 //   triggerLayout
 //---------------------------------------------------------
 
-void Spacer::triggerLayout() const {
-    if (!ownershipParent()) {
+void Spacer::trigger_layout() const {
+    if (!ownership_parent()) {
         return;
     }
 
     Measure *m = measure();
     if (!m) {
-        EngravingItem::triggerLayout();
+        EngravingItem::trigger_layout();
         return;
     }
 
     Score *s = score();
     System *system = m->system();
     if (!s || !system || s->nstaves() == 0) {
-        m->triggerLayout();
+        m->trigger_layout();
         return;
     }
 
     // Most spacer edits can stay local to the measure and are much cheaper.
     // Escalate only for down/fixed spacers on the last non-vbox system of the page,
     // where edits can repaginate and affect page-end spacing.
-    if (spacerType() == SpacerType::UP) {
-        m->triggerLayout();
+    if (spacer_type() == SpacerType::UP) {
+        m->trigger_layout();
         return;
     }
 
-    System *nextSystem = m->nextNonVBoxSystem();
-    if (nextSystem && nextSystem->page() == system->page()) {
-        m->triggerLayout();
+    System *next_system = m->next_non_v_box_system();
+    if (next_system && next_system->page() == system->page()) {
+        m->trigger_layout();
         return;
     }
 
     // For the last notation system on a page, include the next system boundary
     // so page-end spacing can be recomputed without relaying out the whole score.
-    Measure *firstMeasure = system->firstMeasure();
-    if (!firstMeasure) {
-        m->triggerLayout();
+    Measure *first_measure = system->first_measure();
+    if (!first_measure) {
+        m->trigger_layout();
         return;
     }
 
-    Fraction startTick = firstMeasure->tick();
-    Fraction endTick = s->endTick();
-    if (nextSystem) {
-        if (Measure *nextFirstMeasure = nextSystem->firstMeasure()) {
-            endTick = nextFirstMeasure->tick();
+    Fraction start_tick = first_measure->tick();
+    Fraction end_tick = s->end_tick();
+    if (next_system) {
+        if (Measure *next_first_measure = next_system->first_measure()) {
+            end_tick = next_first_measure->tick();
         }
     }
 
-    s->setLayout(startTick, endTick, 0, s->nstaves() - 1, this);
+    s->set_layout(start_tick, end_tick, 0, s->nstaves() - 1, this);
 }
 
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Spacer::subtypeUserName() const {
-    switch (spacerType_) {
+muse::TranslatableString Spacer::subtype_user_name() const {
+    switch (spacer_type_) {
         case SpacerType::UP: return TranslatableString("engraving/spacertype", "Staff spacer up");
         case SpacerType::DOWN: return TranslatableString("engraving/spacertype", "Staff spacer down");
         case SpacerType::FIXED: return TranslatableString("engraving/spacertype", "Staff spacer fixed down");

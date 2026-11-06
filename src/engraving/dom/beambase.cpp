@@ -26,86 +26,86 @@ using namespace mu::engraving;
 BeamBase::BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags) : EngravingItem(type, parent, flags) {}
 
 BeamBase::BeamBase(const BeamBase &b) : EngravingItem(b) {
-    beamSegments_.reserve(b.beamSegments_.size());
-    for (const BeamSegment *bs : b.beamSegments_) {
-        beamSegments_.push_back(new BeamSegment(*bs));
+    beam_segments_.reserve(b.beam_segments_.size());
+    for (const BeamSegment *bs : b.beam_segments_) {
+        beam_segments_.push_back(new BeamSegment(*bs));
     }
-    _crossStaffMove = b._crossStaffMove;
+    cross_staff_move_value = b.cross_staff_move_value;
     direction_ = b.direction_;
     up_ = b.up_;
-    userModified_[0] = b.userModified_[0];
-    userModified_[1] = b.userModified_[1];
+    user_modified_[0] = b.user_modified_[0];
+    user_modified_[1] = b.user_modified_[1];
 }
 
-void BeamBase::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
+void BeamBase::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::BEAM_CROSS_STAFF_MOVE) {
-        if (!acceptCrossStaffMove(v.toInt())) {
+        if (!accept_cross_staff_move(v.to_int())) {
             return;
         }
-        undoResetProperty(Pid::USER_MODIFIED);
-        undoResetProperty(Pid::BEAM_POS);
+        undo_reset_property(Pid::USER_MODIFIED);
+        undo_reset_property(Pid::BEAM_POS);
     }
-    EngravingItem::undoChangeProperty(id, v, ps);
+    EngravingItem::undo_change_property(id, v, ps);
 }
 
-PropertyValue BeamBase::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::BEAM_CROSS_STAFF_MOVE: return crossStaffMove();
+PropertyValue BeamBase::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::BEAM_CROSS_STAFF_MOVE: return cross_staff_move();
         case Pid::STEM_DIRECTION: return direction();
-        case Pid::USER_MODIFIED: return userModified();
-        default: return EngravingItem::getProperty(propertyId);
+        case Pid::USER_MODIFIED: return user_modified();
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
-bool BeamBase::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::BEAM_CROSS_STAFF_MOVE: setCrossStaffMove(v.toInt()); break;
-        case Pid::STEM_DIRECTION: setDirection(v.value<DirectionV>()); break;
-        case Pid::USER_MODIFIED: setUserModified(v.toBool()); break;
+bool BeamBase::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::BEAM_CROSS_STAFF_MOVE: set_cross_staff_move(v.to_int()); break;
+        case Pid::STEM_DIRECTION: set_direction(v.value<DirectionV>()); break;
+        case Pid::USER_MODIFIED: set_user_modified(v.to_bool()); break;
         default:
-            if (!EngravingItem::setProperty(propertyId, v)) {
+            if (!EngravingItem::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
 
-    triggerLayout();
-    setGenerated(false);
+    trigger_layout();
+    set_generated(false);
     return true;
 }
 
-PropertyValue BeamBase::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue BeamBase::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::BEAM_CROSS_STAFF_MOVE: return 0;
         case Pid::STEM_DIRECTION: return DirectionV::AUTO;
         case Pid::USER_MODIFIED: return false;
-        default: return EngravingItem::propertyDefault(propertyId);
+        default: return EngravingItem::property_default(property_id);
     }
 }
 
-int BeamBase::crossStaffIdx() const { return defaultCrossStaffIdx() + _crossStaffMove; }
+int BeamBase::cross_staff_idx() const { return default_cross_staff_idx() + cross_staff_move_value; }
 
-int BeamBase::defaultCrossStaffIdx() const {
-    double average = 0.5 * (static_cast<double>(minCRMove()) + static_cast<double>(maxCRMove()));
+int BeamBase::default_cross_staff_idx() const {
+    double average = 0.5 * (static_cast<double>(min_cr_move()) + static_cast<double>(max_cr_move()));
     return std::ceil(average);
 }
 
-bool BeamBase::acceptCrossStaffMove(int move) const {
-    int newCrossStaffIdx = defaultCrossStaffIdx() + move;
-    return newCrossStaffIdx >= minCRMove() && newCrossStaffIdx <= maxCRMove() + 1;
+bool BeamBase::accept_cross_staff_move(int move) const {
+    int new_cross_staff_idx = default_cross_staff_idx() + move;
+    return new_cross_staff_idx >= min_cr_move() && new_cross_staff_idx <= max_cr_move() + 1;
 }
 
-bool BeamBase::userModified() const {
-    int idx = directionIdx();
-    return userModified_[idx];
+bool BeamBase::user_modified() const {
+    int idx = direction_idx();
+    return user_modified_[idx];
 }
 
-void BeamBase::setUserModified(bool val) {
-    int idx = directionIdx();
-    userModified_[idx] = val;
+void BeamBase::set_user_modified(bool val) {
+    int idx = direction_idx();
+    user_modified_[idx] = val;
 }
 
-void BeamBase::clearBeamSegments() {
-    muse::DeleteAll(beamSegments_);
-    beamSegments_.clear();
+void BeamBase::clear_beam_segments() {
+    muse::delete_all(beam_segments_);
+    beam_segments_.clear();
 }

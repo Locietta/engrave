@@ -33,7 +33,7 @@ class LinkedObjects : public std::list<EngravingObject *> {
 public:
     bool contains(const EngravingObject *o) const;
 
-    EngravingObject *mainElement();
+    EngravingObject *main_element();
 };
 } // namespace mu::engraving
 

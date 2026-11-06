@@ -29,24 +29,24 @@ class Equaliser : public IFxProcessor {
 public:
     Equaliser();
 
-    void setOutputSpec(const OutputSpec &spec) override;
+    void set_output_spec(const OutputSpec &spec) override;
 
     bool active() const override;
-    void setActive(bool active) override;
+    void set_active(bool active) override;
 
-    void setFrequency(float value);
-    void setGain(float value);
-    void setQ(float value);
+    void set_frequency(float value);
+    void set_gain(float value);
+    void set_q(float value);
 
-    void setMode(const ProcessMode mode) override;
-    bool shouldProcessDuringSilence() const override;
+    void set_mode(const ProcessMode mode) override;
+    bool should_process_during_silence() const override;
 
-    void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
+    void process(float *buffer, samples_t sample_count, samples_t playback_position_samples = 0) override;
 
 private:
     void calculate();
 
-    OutputSpec outputSpec_;
+    OutputSpec output_spec_;
     bool active_ = true;
 
     float gain_ = 0, frequency_ = 1000.f, q_ = 1.f;

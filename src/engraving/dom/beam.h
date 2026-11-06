@@ -59,7 +59,7 @@ public:
     Fraction rtick() const override;
     Fraction ticks() const;
 
-    void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
+    void spatium_changed(double /*oldValue*/, double /*newValue*/) override;
 
     void reset() override;
 
@@ -67,8 +67,8 @@ public:
     //! which drop it through ChordRest::removeDeleteBeam() once it runs empty.
     //! The system it is drawn on is that of its first chord/rest.
     System *system() const;
-    EngravingItem *layoutParent() const override;
-    EngravingItem *accessibleParentItem() const override;
+    EngravingItem *layout_parent() const override;
+    EngravingItem *accessible_parent_item() const override;
 
     const std::vector<ChordRest *> &elements() const { return elements_; }
 
@@ -85,109 +85,109 @@ public:
 
     void move(const PointF &) override;
 
-    void setDirection(DirectionV d) override;
+    void set_direction(DirectionV d) override;
 
-    void calcBeamBreaks(const ChordRest *chord, const ChordRest *prevChord, int level, bool &isBroken32, bool &isBroken64) const;
+    void calc_beam_breaks(const ChordRest *chord, const ChordRest *prev_chord, int level, bool &is_broken32, bool &is_broken64) const;
 
     //!Note Unfortunately we have no FEATHERED_BEAM_MODE for now int BeamMode enum, so we'll handle this locally
-    void setAsFeathered(const bool slower);
-    bool acceptDrop(EditData &) const override;
+    void set_as_feathered(const bool slower);
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    double growLeft() const { return growLeft_; }
+    double grow_left() const { return grow_left_; }
 
-    double growRight() const { return growRight_; }
+    double grow_right() const { return grow_right_; }
 
-    void setGrowLeft(double val) { growLeft_ = val; }
+    void set_grow_left(double val) { grow_left_ = val; }
 
-    void setGrowRight(double val) { growRight_ = val; }
+    void set_grow_right(double val) { grow_right_ = val; }
 
-    PairF beamPos() const;
-    void setBeamPos(const PairF &bp);
+    PairF beam_pos() const;
+    void set_beam_pos(const PairF &bp);
 
-    double beamDist() const { return beamDist_; }
+    double beam_dist() const { return beam_dist_; }
 
-    void setBeamDist(double d) { beamDist_ = d; }
+    void set_beam_dist(double d) { beam_dist_ = d; }
 
-    double beamWidth() const { return beamWidth_; }
+    double beam_width() const { return beam_width_; }
 
-    void setBeamWidth(double w) { beamWidth_ = w; }
+    void set_beam_width(double w) { beam_width_ = w; }
 
-    int beamSpacing() const { return beamSpacing_; }
+    int beam_spacing() const { return beam_spacing_; }
 
-    void setBeamSpacing(int val) { beamSpacing_ = val; }
+    void set_beam_spacing(int val) { beam_spacing_ = val; }
 
-    bool noSlope() const { return noSlope_; }
+    bool no_slope() const { return no_slope_; }
 
-    void setNoSlope(bool b);
+    void set_no_slope(bool b);
 
     double slope() const { return slope_; }
 
-    void computeAndSetSlope();
+    void compute_and_set_slope();
 
-    void setSlope(double val) { slope_ = val; }
+    void set_slope(double val) { slope_ = val; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    void setIsGrace(bool val) { isGrace_ = val; }
+    void set_is_grace(bool val) { is_grace_ = val; }
 
-    bool isGrace() const { return isGrace_; }
+    bool is_grace() const { return is_grace_; }
 
     bool cross() const { return cross_; }
 
-    void setCross(bool val) { cross_ = val; }
+    void set_cross(bool val) { cross_ = val; }
 
-    bool fullCross() const { return fullCross_; }
+    bool full_cross() const { return full_cross_; }
 
-    void setFullCross(bool v) { fullCross_ = v; }
+    void set_full_cross(bool v) { full_cross_ = v; }
 
-    int minCRMove() const override { return minCRMove_; }
+    int min_cr_move() const override { return min_cr_move_; }
 
-    void setMinMove(int val) { minCRMove_ = val; }
+    void set_min_move(int val) { min_cr_move_ = val; }
 
-    int maxCRMove() const override { return maxCRMove_; }
+    int max_cr_move() const override { return max_cr_move_; }
 
-    void setMaxMove(int val) { maxCRMove_ = val; }
+    void set_max_move(int val) { max_cr_move_ = val; }
 
-    void addSkyline(Skyline &);
+    void add_skyline(Skyline &);
 
-    void triggerLayout() const override;
+    void trigger_layout() const override;
 
-    static ActionIconType actionIconTypeForBeamMode(BeamMode);
+    static ActionIconType action_icon_type_for_beam_mode(BeamMode);
 
-    bool isMovable() const override;
+    bool is_movable() const override;
 
-    bool hasAllRests();
+    bool has_all_rests();
 
-    const std::vector<TremAnchor> &tremAnchors() const { return tremAnchors_; }
+    const std::vector<TremAnchor> &trem_anchors() const { return trem_anchors_; }
 
-    std::vector<TremAnchor> &tremAnchors() { return tremAnchors_; }
+    std::vector<TremAnchor> &trem_anchors() { return trem_anchors_; }
 
-    const std::vector<BeamFragment *> &beamFragments() const { return fragments_; }
+    const std::vector<BeamFragment *> &beam_fragments() const { return fragments_; }
 
-    std::vector<BeamFragment *> &beamFragments() { return fragments_; }
+    std::vector<BeamFragment *> &beam_fragments() { return fragments_; }
 
-    void addBeamFragment(BeamFragment *f) { fragments_.push_back(f); }
+    void add_beam_fragment(BeamFragment *f) { fragments_.push_back(f); }
 
-    void clearBeamSegments() override;
+    void clear_beam_segments() override;
 
     const StaffType *tab() const { return tab_; }
 
-    void setTab(const StaffType *t) { tab_ = t; }
+    void set_tab(const StaffType *t) { tab_ = t; }
 
-    bool isBesideTabStaff() const { return isBesideTabStaff_; }
+    bool is_beside_tab_staff() const { return is_beside_tab_staff_; }
 
-    void setIsBesideTabStaff(bool val) { isBesideTabStaff_ = val; }
+    void set_is_beside_tab_staff(bool val) { is_beside_tab_staff_ = val; }
 
-    const std::vector<NotePosition> &notePositions() const { return notePositions_; }
+    const std::vector<NotePosition> &note_positions() const { return note_positions_; }
 
-    std::vector<NotePosition> &notePositions() { return notePositions_; }
+    std::vector<NotePosition> &note_positions() { return note_positions_; }
 
-    const Chord *findChordWithCustomStemDirection() const;
+    const Chord *find_chord_with_custom_stem_direction() const;
 
-    const BeamSegment *topLevelSegmentForElement(const ChordRest *element) const;
+    const BeamSegment *top_level_segment_for_element(const ChordRest *element) const;
 
 private:
 
@@ -196,37 +196,37 @@ private:
     Beam(Score *parent);
     Beam(const Beam &);
 
-    static constexpr std::array MAX_SLOPES = {0, 1, 2, 3, 4, 5, 6, 7};
+    static constexpr std::array max_slopes = {0, 1, 2, 3, 4, 5, 6, 7};
 
-    void addChordRest(ChordRest *a);
-    void removeChordRest(ChordRest *a);
+    void add_chord_rest(ChordRest *a);
+    void remove_chord_rest(ChordRest *a);
 
     std::vector<ChordRest *> elements_; // must be sorted by tick
 
-    bool isGrace_ = false;
+    bool is_grace_ = false;
     bool cross_ = false;
-    bool fullCross_ = false;
+    bool full_cross_ = false;
 
-    double growLeft_ = 1.0; // define "feather" beams
-    double growRight_ = 1.0;
-    double beamDist_ = 0.0;
-    int beamSpacing_ = 3;    // how far apart beams are spaced in quarter spaces
-    double beamWidth_ = 0.0; // how wide each beam is
+    double grow_left_ = 1.0; // define "feather" beams
+    double grow_right_ = 1.0;
+    double beam_dist_ = 0.0;
+    int beam_spacing_ = 3;    // how far apart beams are spaced in quarter spaces
+    double beam_width_ = 0.0; // how wide each beam is
 
     // for tabs
-    bool isBesideTabStaff_ = false;
+    bool is_beside_tab_staff_ = false;
     const StaffType *tab_ = nullptr;
 
     std::vector<BeamFragment *> fragments_; // beam splits across systems
 
-    int minCRMove_ = 0; // set in layout1()
-    int maxCRMove_ = 0;
-    int crossBeamPos_ = 0;
+    int min_cr_move_ = 0; // set in layout1()
+    int max_cr_move_ = 0;
+    int cross_beam_pos_ = 0;
 
-    bool noSlope_ = false;
+    bool no_slope_ = false;
     real_t slope_ = 0.0;
 
-    std::vector<NotePosition> notePositions_;
-    std::vector<TremAnchor> tremAnchors_;
+    std::vector<NotePosition> note_positions_;
+    std::vector<TremAnchor> trem_anchors_;
 };
 } // namespace mu::engraving

@@ -42,9 +42,9 @@ class LyricsLayout {
         std::vector<Lyrics *> lyrics_;
         std::vector<LyricsLineSegment *> lines_;
     public:
-        void addLyrics(Lyrics *l) { lyrics_.push_back(l); }
+        void add_lyrics(Lyrics *l) { lyrics_.push_back(l); }
 
-        void addLine(LyricsLineSegment *lls) { lines_.push_back(lls); }
+        void add_line(LyricsLineSegment *lls) { lines_.push_back(lls); }
 
         const std::vector<Lyrics *> &lyrics() const { return lyrics_; }
 
@@ -60,34 +60,35 @@ public:
     static void layout(LyricsLine *item);
     static void layout(LyricsLineSegment *item, LayoutContext &ctx);
 
-    static void computeVerticalPositions(System *system, LayoutContext &ctx);
+    static void compute_vertical_positions(System *system, LayoutContext &ctx);
 
 private:
-    static void createOrRemoveLyricsLine(Lyrics *item, LayoutContext &ctx);
+    static void create_or_remove_lyrics_line(Lyrics *item, LayoutContext &ctx);
 
-    static void layoutMelismaLine(LyricsLineSegment *item);
-    static void layoutDashes(LyricsLineSegment *item);
+    static void layout_melisma_line(LyricsLineSegment *item);
+    static void layout_dashes(LyricsLineSegment *item);
 
-    static Lyrics *findNextLyrics(const ChordRest *endChordRest, int verseNumber, std::optional<PlacementV> placement = std::nullopt);
+    static Lyrics *find_next_lyrics(const ChordRest *end_chord_rest, int verse_number, std::optional<PlacementV> placement = std::nullopt);
 
-    static void computeVerticalPositions(staff_idx_t staffIdx, System *system, LayoutContext &ctx);
-    static void collectLyricsVerses(staff_idx_t staffIdx, System *system, LyricsVersesMap &lyricsVersesAbove,
-                                    LyricsVersesMap &lyricsVersesBelow);
+    static void compute_vertical_positions(staff_idx_t staff_idx, System *system, LayoutContext &ctx);
+    static void collect_lyrics_verses(staff_idx_t staff_idx, System *system, LyricsVersesMap &lyrics_verses_above,
+                                      LyricsVersesMap &lyrics_verses_below);
 
-    static void setDefaultPositions(staff_idx_t staffIdx, const LyricsVersesMap &lyricsVersesAbove,
-                                    const LyricsVersesMap &lyricsVersesBelow, LayoutContext &ctx);
+    static void set_default_positions(staff_idx_t staff_idx, const LyricsVersesMap &lyrics_verses_above,
+                                      const LyricsVersesMap &lyrics_verses_below, LayoutContext &ctx);
 
-    static void checkCollisionsWithStaffElements(System *system, staff_idx_t staffIdx, LayoutContext &ctx,
-                                                 const LyricsVersesMap &lyricsVersesAbove, const LyricsVersesMap &lyricsVersesBelow);
-    static SkylineLine createSkylineForVerse(int verse, bool north, const LyricsVersesMap &lyricsVerses, System *system);
-    static void moveThisVerseAndOuterOnes(int verse, int lastVerse, bool above, double diff, const LyricsVersesMap &lyricsVerses);
+    static void check_collisions_with_staff_elements(System *system, staff_idx_t staff_idx, LayoutContext &ctx,
+                                                     const LyricsVersesMap &lyrics_verses_above,
+                                                     const LyricsVersesMap &lyrics_verses_below);
+    static SkylineLine create_skyline_for_verse(int verse, bool north, const LyricsVersesMap &lyrics_verses, System *system);
+    static void move_this_verse_and_outer_ones(int verse, int last_verse, bool above, double diff, const LyricsVersesMap &lyrics_verses);
 
-    static void addToSkyline(System *system, staff_idx_t staffIdx, LayoutContext &ctx, const LyricsVersesMap &lyricsVersesAbove,
-                             const LyricsVersesMap &lyricsVersesBelow);
+    static void add_to_skyline(System *system, staff_idx_t staff_idx, LayoutContext &ctx, const LyricsVersesMap &lyrics_verses_above,
+                               const LyricsVersesMap &lyrics_verses_below);
 
-    static double lyricsLineStartX(const LyricsLineSegment *item);
-    static double lyricsLineEndX(const LyricsLineSegment *item, const Lyrics *endLyrics = nullptr);
-    static void adjustLyricsLineYOffset(LyricsLineSegment *item, const Lyrics *endLyrics = nullptr);
+    static double lyrics_line_start_x(const LyricsLineSegment *item);
+    static double lyrics_line_end_x(const LyricsLineSegment *item, const Lyrics *end_lyrics = nullptr);
+    static void adjust_lyrics_line_y_offset(LyricsLineSegment *item, const Lyrics *end_lyrics = nullptr);
 };
 } // namespace mu::engraving::rendering::score
 #endif // MU_ENGRAVING_LYRICSLAYOUT_DEV_H

@@ -34,30 +34,31 @@ using namespace mu::engraving;
 // DPI, page dimensions in inches, staff sizes in mm.
 //--------------------------------------------------------
 void AutoSpatium::update(Score *score) {
-    static constexpr double breathingSpace = 2.5; // allow breathing space between staves
-    static constexpr double minStaffHeight = 2.0; // never make staff smaller than 2.0 mm
-    static constexpr double maxStaffHeight = 7.0; // never make staff bigger than 7.0 mm (default value)
+    static constexpr double breathing_space = 2.5;  // allow breathing space between staves
+    static constexpr double min_staff_height = 2.0; // never make staff smaller than 2.0 mm
+    static constexpr double max_staff_height = 7.0; // never make staff bigger than 7.0 mm (default value)
 
     const MStyle &style = score->style();
-    double availableHeight =
-        (style.styleD(Sid::pageHeight) - style.styleD(Sid::pageOddTopMargin) - style.styleD(Sid::pageOddBottomMargin)) *
-        DPI; // convert from inches to DPI
-    double titleHeight = (!score->measures()->empty() && score->measures()->first()->isVBox()) ? score->measures()->first()->height() : 0.0;
-    availableHeight -= titleHeight;
-    double totalNeededSpaces = 4 * score->nstaves() * breathingSpace;
-    double targetSpatium = availableHeight / totalNeededSpaces;
+    double available_height =
+        (style.style_d(Sid::PAGE_HEIGHT) - style.style_d(Sid::PAGE_ODD_TOP_MARGIN) - style.style_d(Sid::PAGE_ODD_BOTTOM_MARGIN)) *
+        ::mu::engraving::dpi; // convert from inches to DPI
+    double title_height =
+        (!score->measures()->empty() && score->measures()->first()->is_v_box()) ? score->measures()->first()->height() : 0.0;
+    available_height -= title_height;
+    double total_needed_spaces = 4 * score->nstaves() * breathing_space;
+    double target_spatium = available_height / total_needed_spaces;
 
-    double resultingStaffHeight = 4 * targetSpatium / DPI * INCH; // conversion from DPI to mm
-    resultingStaffHeight = round(resultingStaffHeight * 10) / 10; // round to nearest 0.1 mm
-    if (resultingStaffHeight > maxStaffHeight) {
+    double resulting_staff_height = 4 * target_spatium / ::mu::engraving::dpi * ::mu::engraving::inch; // conversion from DPI to mm
+    resulting_staff_height = round(resulting_staff_height * 10) / 10;                                  // round to nearest 0.1 mm
+    if (resulting_staff_height > max_staff_height) {
         return;
     }
-    if (resultingStaffHeight < minStaffHeight) {
-        resultingStaffHeight = minStaffHeight;
+    if (resulting_staff_height < min_staff_height) {
+        resulting_staff_height = min_staff_height;
     }
 
-    targetSpatium = (resultingStaffHeight / 4) * DPI / INCH;
+    target_spatium = (resulting_staff_height / 4) * ::mu::engraving::dpi / ::mu::engraving::inch;
 
-    score->style().setSpatium(targetSpatium);
-    score->updatePaddingTables();
+    score->style().set_spatium(target_spatium);
+    score->update_padding_tables();
 }

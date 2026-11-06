@@ -30,7 +30,7 @@ using namespace muse;
 
 struct ZipWriter::Impl {
     ZipContainer *zip = nullptr;
-    bool isClosed = false;
+    bool is_closed = false;
 };
 
 ZipWriter::ZipWriter(io::IODevice *device) {
@@ -48,7 +48,7 @@ ZipWriter::~ZipWriter() {
 void ZipWriter::flush() {}
 
 void ZipWriter::close() {
-    if (impl_->isClosed) {
+    if (impl_->is_closed) {
         return;
     }
 
@@ -58,12 +58,12 @@ void ZipWriter::close() {
         device_->close();
     }
 
-    impl_->isClosed = true;
+    impl_->is_closed = true;
 }
 
-bool ZipWriter::hasError() const { return impl_->zip->status() != ZipContainer::NoError; }
+bool ZipWriter::has_error() const { return impl_->zip->status() != ZipContainer::NO_ERROR; }
 
-void ZipWriter::addFile(const std::string &fileName, const ByteArray &data) {
-    impl_->zip->addFile(fileName, data);
+void ZipWriter::add_file(const std::string &file_name, const ByteArray &data) {
+    impl_->zip->add_file(file_name, data);
     flush();
 }

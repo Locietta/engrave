@@ -42,22 +42,22 @@ public:
 
     StaffLines *clone() const override { return new StaffLines(*this); }
 
-    PointF pagePos() const override;   ///< position in page coordinates
-    PointF canvasPos() const override; ///< position in page coordinates
+    PointF page_pos() const override;   ///< position in page coordinates
+    PointF canvas_pos() const override; ///< position in page coordinates
 
     const std::vector<LineF> &lines() const { return lines_; }
 
-    void setLines(const std::vector<LineF> &l) { lines_ = l; }
+    void set_lines(const std::vector<LineF> &l) { lines_ = l; }
 
-    Measure *measure() const { return (Measure *) ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownership_parent(); }
 
     double y1() const;
 
     double lw() const { return lw_; }
 
-    void setLw(double w) { lw_ = w; }
+    void set_lw(double w) { lw_ = w; }
 
-    bool collectForDrawing() const override;
+    bool collect_for_drawing() const override;
 
 private:
     friend class Factory;

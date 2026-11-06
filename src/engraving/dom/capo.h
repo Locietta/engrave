@@ -30,27 +30,27 @@ class Capo final : public StaffTextBase {
     DECLARE_CLASSOF(ElementType::CAPO)
 
 public:
-    Capo(DummyParentOr<Segment> parent, TextStyleType textStyleType = TextStyleType::STAFF);
+    Capo(DummyParentOr<Segment> parent, TextStyleType text_style_type = TextStyleType::STAFF);
 
     Capo *clone() const override;
 
-    PropertyValue getProperty(Pid id) const override;
-    PropertyValue propertyDefault(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &val) override;
-    void setXmlText(const String &text) override;
+    PropertyValue get_property(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &val) override;
+    void set_xml_text(const String &text) override;
 
     const CapoParams &params() const;
-    void setParams(const CapoParams &params);
+    void set_params(const CapoParams &params);
 
-    bool shouldAutomaticallyGenerateText() const;
-    String generateText(size_t stringCount) const;
+    bool should_automatically_generate_text() const;
+    String generate_text(size_t string_count) const;
 
     void added() override;
     void removed() override;
 
 private:
     CapoParams params_;
-    bool shouldAutomaticallyGenerateText_ = true;
-    String customText_;
+    bool should_automatically_generate_text_ = true;
+    String custom_text_;
 };
 } // namespace mu::engraving

@@ -33,24 +33,24 @@ namespace muse::draw {
 class FontRenderCache {
 public:
     void init();
-    void setCacheDirPath(const io::path_t &path, const std::string &revision = std::string());
+    void set_cache_dir_path(const io::PathT &path, const std::string &revision = std::string());
 
-    void store(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image);
-    GlyphImage load(const FaceKey &face, glyph_idx_t glyphIdx) const;
+    void store(const FaceKey &face, glyph_idx_t glyph_idx, const GlyphImage &image);
+    GlyphImage load(const FaceKey &face, glyph_idx_t glyph_idx) const;
 
 private:
-    io::path_t revisionFilePath() const;
-    io::path_t makeFilePath(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image) const;
-    void updateCacheRevision();
+    io::PathT revision_file_path() const;
+    io::PathT make_file_path(const FaceKey &face, glyph_idx_t glyph_idx, const GlyphImage &image) const;
+    void update_cache_revision();
 
     using GlyphImages = std::unordered_map<glyph_idx_t, GlyphImage>;
 
     mutable std::map<FaceKey, GlyphImages> cache_;
-    io::path_t cacheDirPath_;
-    std::string cacheRevision_;
+    io::PathT cache_dir_path_;
+    std::string cache_revision_;
 
     struct CacheInfo {
-        io::path_t filePath;
+        io::PathT file_path;
         uint32_t width = 0;
         uint32_t height = 0;
         RectF rect;
@@ -59,9 +59,9 @@ private:
 
     using CacheInfoMap = std::map<std::string, CacheInfo>;
 
-    void loadCachedInfo(CacheInfoMap &map, const io::path_t &dir) const;
+    void load_cached_info(CacheInfoMap &map, const io::PathT &dir) const;
 
-    mutable bool cacheInfoLoaded_ = false;
-    mutable CacheInfoMap cacheInfoMap_;
+    mutable bool cache_info_loaded_ = false;
+    mutable CacheInfoMap cache_info_map_;
 };
 } // namespace muse::draw

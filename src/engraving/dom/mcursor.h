@@ -41,24 +41,24 @@ enum class Key : signed char;
 class MCursor {
 public:
     MCursor(MasterScore *s = 0);
-    void createScore(const EngravingServices &services, const String &s);
+    void create_score(const EngravingServices &services, const String &s);
 
-    void addPart(const String &instrument);
-    Chord *addChord(int pitch, const TDuration &duration);
-    void addKeySig(Key);
-    TimeSig *addTimeSig(const Fraction &);
+    void add_part(const String &instrument);
+    Chord *add_chord(int pitch, const TDuration &duration);
+    void add_key_sig(Key);
+    TimeSig *add_time_sig(const Fraction &);
 
     void move(int track, const Fraction &tick);
 
     MasterScore *score() const { return score_; }
 
-    void setScore(MasterScore *s) { score_ = s; }
+    void set_score(MasterScore *s) { score_ = s; }
 
-    void setTimeSig(Fraction f) { sig_ = f; }
+    void set_time_sig(Fraction f) { sig_ = f; }
 
 private:
 
-    void createMeasures();
+    void create_measures();
 
     MasterScore *score_ = nullptr;
     Fraction tick_;

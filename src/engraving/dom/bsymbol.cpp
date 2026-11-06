@@ -50,7 +50,7 @@ BSymbol::BSymbol(const BSymbol &s) : EngravingItem(s) {
     align_ = s.align_;
     for (EngravingItem *e : s.leafs_) {
         EngravingItem *ee = e->clone();
-        ee->setOwnershipParent(this);
+        ee->set_ownership_parent(this);
         leafs_.push_back(ee);
     }
 }
@@ -60,14 +60,14 @@ BSymbol::BSymbol(const BSymbol &s) : EngravingItem(s) {
 //---------------------------------------------------------
 
 void BSymbol::add(EngravingItem *e) {
-    if (e->isSymbol() || e->isImage()) {
-        e->setOwnershipParent(this);
-        e->setTrack(track());
+    if (e->is_symbol() || e->is_image()) {
+        e->set_ownership_parent(this);
+        e->set_track(track());
         leafs_.push_back(e);
-        toBSymbol(e)->setZ(z() - 1); // draw on top of parent
+        to_b_symbol(e)->set_z(z() - 1); // draw on top of parent
         e->added();
     } else {
-        LOGD("BSymbol::add: unsupported type %s", e->typeName());
+        LOGD("BSymbol::add: unsupported type %s", e->type_name());
     }
 }
 
@@ -75,10 +75,10 @@ void BSymbol::add(EngravingItem *e) {
 //   scanElements
 //---------------------------------------------------------
 
-void BSymbol::scanElements(std::function<void(EngravingItem *)> func) {
+void BSymbol::scan_elements(std::function<void(EngravingItem *)> func) {
     func(this);
     for (EngravingItem *e : leafs_) {
-        e->scanElements(func);
+        e->scan_elements(func);
     }
 }
 
@@ -87,14 +87,14 @@ void BSymbol::scanElements(std::function<void(EngravingItem *)> func) {
 //---------------------------------------------------------
 
 void BSymbol::remove(EngravingItem *e) {
-    if (e->isSymbol() || e->isImage()) {
+    if (e->is_symbol() || e->is_image()) {
         if (muse::remove(leafs_, e)) {
             e->removed();
         } else {
-            LOGD("BSymbol::remove: element <%s> not found", e->typeName());
+            LOGD("BSymbol::remove: element <%s> not found", e->type_name());
         }
     } else {
-        LOGD("BSymbol::remove: unsupported type %s", e->typeName());
+        LOGD("BSymbol::remove: unsupported type %s", e->type_name());
     }
 }
 
@@ -102,23 +102,23 @@ void BSymbol::remove(EngravingItem *e) {
 //   acceptDrop
 //---------------------------------------------------------
 
-bool BSymbol::acceptDrop(EditData &data) const { return data.dropElement->isSymbol() || data.dropElement->isImage(); }
+bool BSymbol::accept_drop(EditData &data) const { return data.drop_element->is_symbol() || data.drop_element->is_image(); }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
 EngravingItem *BSymbol::drop(Transaction &, EditData &data) {
-    EngravingItem *el = data.dropElement;
-    if (el->isSymbol() || el->isImage()) {
-        el->setOwnershipParent(this);
-        PointF p = data.pos - pageBoundingRect().topLeft() - data.dragOffset;
+    EngravingItem *el = data.drop_element;
+    if (el->is_symbol() || el->is_image()) {
+        el->set_ownership_parent(this);
+        PointF p = data.pos - page_bounding_rect().top_left() - data.drag_offset;
         if (p == PointF()) {
             // offset position so newly added child is visible
             p = PointF(width(), height());
         }
-        el->setOffset(p);
-        score()->undoAddElement(el);
+        el->set_offset(p);
+        score()->undo_add_element(el);
         return el;
     } else {
         delete el;
@@ -130,17 +130,17 @@ EngravingItem *BSymbol::drop(Transaction &, EditData &data) {
 //   pagePos
 //---------------------------------------------------------
 
-PointF BSymbol::pagePos() const {
-    if (ownershipParent() && (ownershipParent()->isSegment())) {
+PointF BSymbol::page_pos() const {
+    if (ownership_parent() && (ownership_parent()->is_segment())) {
         PointF p(pos());
         System *system = segment()->measure()->system();
         if (system) {
-            p.ry() += system->staff(staffIdx())->y() + system->y();
+            p.ry() += system->staff(staff_idx())->y() + system->y();
         }
-        p.rx() = pageX();
+        p.rx() = page_x();
         return p;
     } else {
-        return EngravingItem::pagePos();
+        return EngravingItem::page_pos();
     }
 }
 
@@ -148,24 +148,24 @@ PointF BSymbol::pagePos() const {
 //   canvasPos
 //---------------------------------------------------------
 
-PointF BSymbol::canvasPos() const {
-    if (ownershipParent() && (ownershipParent()->isSegment())) {
+PointF BSymbol::canvas_pos() const {
+    if (ownership_parent() && (ownership_parent()->is_segment())) {
         PointF p(pos());
-        Segment *s = toSegment(ownershipParent());
+        Segment *s = to_segment(ownership_parent());
 
         System *system = s->measure()->system();
         if (system) {
-            staff_idx_t si = staffIdx();
+            staff_idx_t si = staff_idx();
             p.ry() += system->staff(si)->y() + system->y();
             Page *page = system->page();
             if (page) {
                 p.ry() += page->y();
             }
         }
-        p.rx() = canvasX();
+        p.rx() = canvas_x();
         return p;
     } else {
-        return EngravingItem::canvasPos();
+        return EngravingItem::canvas_pos();
     }
 }
 } // namespace mu::engraving

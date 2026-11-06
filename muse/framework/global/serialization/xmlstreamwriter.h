@@ -46,15 +46,15 @@ public:
     using Attribute = std::pair<std::string_view, Value>;
     using Attributes = std::vector<Attribute>;
 
-    void setDevice(io::IODevice *dev);
+    void set_device(io::IODevice *dev);
     void flush();
 
-    void startDocument();
-    void writeDoctype(const String &type);
+    void start_document();
+    void write_doctype(const String &type);
 
-    void startElement(const std::string_view &name, const Attributes &attrs = {});
-    void startElement(const String &name, const Attributes &attrs = {});
-    void endElement();
+    void start_element(const std::string_view &name, const Attributes &attrs = {});
+    void start_element(const String &name, const Attributes &attrs = {});
+    void end_element();
 
     void element(const std::string_view &name, const Attributes &attrs = {});               // <element attr="value" />
     void element(const std::string_view &name, const Value &body);                          // <element>body</element>
@@ -62,17 +62,17 @@ public:
 
     void comment(const String &text);
 
-    static std::string escapeCodePoint(char32_t);
-    static std::string escapeString(std::string_view);
+    static std::string escape_code_point(char32_t);
+    static std::string escape_string(std::string_view);
 
 protected:
-    void startElementRaw(const String &name);
-    void elementRaw(const String &nameWithAttributes, const Value &body);
-    void elementStringRaw(const String &nameWithAttributes, const String &body);
+    void start_element_raw(const String &name);
+    void element_raw(const String &name_with_attributes, const Value &body);
+    void element_string_raw(const String &name_with_attributes, const String &body);
 
 private:
 
-    void writeValue(const Value &v);
+    void write_value(const Value &v);
 
     struct Impl;
     Impl *impl_ = nullptr;

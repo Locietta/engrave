@@ -38,18 +38,18 @@
  */
 
 namespace muse::audio::fx::simd {
-struct float_x4 {
+struct FloatX4 {
     float32x4_t s;
 
-    __finl float_x4() {}
+    __finl FloatX4() {}
 
     /// enables math like: float_x4 a = 0.5f * float_x4{1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float val) { s = vdupq_n_f32(val); }
+    __finl FloatX4(float val) { s = vdupq_n_f32(val); }
 
-    __finl float_x4(const float32x4_t &val) : s(val) {}
+    __finl FloatX4(const float32x4_t &val) : s(val) {}
 
     /// enables assignments like: float_x4 a = {1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float v0, float v1, float v2, float v3) {
+    __finl FloatX4(float v0, float v1, float v2, float v3) {
 #if _MSC_VER // aggregate initializer won't work unless we have {.n128_f32 = ..} in c++20
         s.n128_f32[0] = v0;
         s.n128_f32[1] = v1;
@@ -98,11 +98,11 @@ public:
 #endif
 };
 
-__finl float_x4 __vecc operator+(float_x4 a, float_x4 b) { return vaddq_f32(a.s, b.s); }
+__finl FloatX4 __vecc operator+(FloatX4 a, FloatX4 b) { return vaddq_f32(a.s, b.s); }
 
-__finl float_x4 __vecc operator-(float_x4 a, float_x4 b) { return vsubq_f32(a.s, b.s); }
+__finl FloatX4 __vecc operator-(FloatX4 a, FloatX4 b) { return vsubq_f32(a.s, b.s); }
 
-__finl float_x4 __vecc operator*(float_x4 a, float_x4 b) { return vmulq_f32(a.s, b.s); }
+__finl FloatX4 __vecc operator*(FloatX4 a, FloatX4 b) { return vmulq_f32(a.s, b.s); }
 } // namespace muse::audio::fx::simd
 
 #endif // MUSE_AUDIO_SIMDTYPES_NEON_H

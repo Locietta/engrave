@@ -28,23 +28,23 @@ class StaffLabel {
 public:
     StaffLabel() = default;
 
-    StaffLabel(const muse::String &longName, const muse::String &shortName) : longName_(longName), shortName_(shortName) {}
+    StaffLabel(const muse::String &long_name, const muse::String &short_name) : long_name_(long_name), short_name_(short_name) {}
 
-    bool operator==(const StaffLabel &i) const { return longName_ == i.longName_ && shortName_ == i.shortName_; }
+    bool operator==(const StaffLabel &i) const { return long_name_ == i.long_name_ && short_name_ == i.short_name_; }
 
-    const muse::String &longName() const { return longName_; }
+    const muse::String &long_name() const { return long_name_; }
 
-    const muse::String &shortName() const { return shortName_; }
+    const muse::String &short_name() const { return short_name_; }
 
-    void setLongName(const muse::String &s) { longName_ = s; }
+    void set_long_name(const muse::String &s) { long_name_ = s; }
 
-    void setShortName(const muse::String &s) { shortName_ = s; }
+    void set_short_name(const muse::String &s) { short_name_ = s; }
 
-    bool empty() const { return longName_.empty() && shortName_.empty(); }
+    bool empty() const { return long_name_.empty() && short_name_.empty(); }
 
 private:
-    muse::String longName_;
-    muse::String shortName_;
+    muse::String long_name_;
+    muse::String short_name_;
 };
 
 class InstrumentLabel : public StaffLabel {
@@ -53,108 +53,108 @@ public:
 
     int number() const { return number_; }
 
-    void setNumber(int v) { number_ = v; }
+    void set_number(int v) { number_ = v; }
 
     const muse::String &transposition() const { return transposition_; }
 
-    void setTransposition(const muse::String &s) { transposition_ = s; }
+    void set_transposition(const muse::String &s) { transposition_ = s; }
 
-    bool showNumberLong() const { return showNumberLong_; }
+    bool show_number_long() const { return show_number_long_; }
 
-    void setShowNumberLong(bool v) { showNumberLong_ = v; }
+    void set_show_number_long(bool v) { show_number_long_ = v; }
 
-    bool showNumberShort() const { return showNumberShort_; }
+    bool show_number_short() const { return show_number_short_; }
 
-    void setShowNumberShort(bool v) { showNumberShort_ = v; }
+    void set_show_number_short(bool v) { show_number_short_ = v; }
 
-    bool showTranspositionLong() const { return showTranspositionLong_; }
+    bool show_transposition_long() const { return show_transposition_long_; }
 
-    void setShowTranspositionLong(bool v) { showTranspositionLong_ = v; }
+    void set_show_transposition_long(bool v) { show_transposition_long_ = v; }
 
-    bool showTranspositionShort() const { return showTranspositionShort_; }
+    bool show_transposition_short() const { return show_transposition_short_; }
 
-    void setShowTranspositionShort(bool v) { showTranspositionShort_ = v; }
+    void set_show_transposition_short(bool v) { show_transposition_short_ = v; }
 
-    bool useCustomName() const { return useCustomName_; }
+    bool use_custom_name() const { return use_custom_name_; }
 
-    void setUseCustomName(bool v) { useCustomName_ = v; }
+    void set_use_custom_name(bool v) { use_custom_name_ = v; }
 
-    muse::String customNameLong() const { return customNameLong_; }
+    muse::String custom_name_long() const { return custom_name_long_; }
 
-    void setCustomNameLong(const muse::String &v) { customNameLong_ = v; }
+    void set_custom_name_long(const muse::String &v) { custom_name_long_ = v; }
 
-    muse::String customNameShort() const { return customNameShort_; }
+    muse::String custom_name_short() const { return custom_name_short_; }
 
-    void setCustomNameShort(const muse::String &v) { customNameShort_ = v; }
+    void set_custom_name_short(const muse::String &v) { custom_name_short_ = v; }
 
-    bool allowGroupName() const { return allowGroupName_; }
+    bool allow_group_name() const { return allow_group_name_; }
 
-    void setAllowGroupName(bool v) { allowGroupName_ = v; }
+    void set_allow_group_name(bool v) { allow_group_name_ = v; }
 
-    muse::String customNameLongGroup() const { return customNameLongGroup_; }
+    muse::String custom_name_long_group() const { return custom_name_long_group_; }
 
-    void setCustomNameLongGroup(const muse::String &v) { customNameLongGroup_ = v; }
+    void set_custom_name_long_group(const muse::String &v) { custom_name_long_group_ = v; }
 
-    muse::String customNameShortGroup() const { return customNameShortGroup_; }
+    muse::String custom_name_short_group() const { return custom_name_short_group_; }
 
-    void setCustomNameShortGroup(const muse::String &v) { customNameShortGroup_ = v; }
+    void set_custom_name_short_group(const muse::String &v) { custom_name_short_group_ = v; }
 
-    bool useCustomGroupName() const { return useCustomGroupName_; }
+    bool use_custom_group_name() const { return use_custom_group_name_; }
 
-    void setUseCustomGroupName(bool v) { useCustomGroupName_ = v; }
+    void set_use_custom_group_name(bool v) { use_custom_group_name_ = v; }
 
-    muse::String customNameLongIndividual() const { return customNameLongIndividual_; }
+    muse::String custom_name_long_individual() const { return custom_name_long_individual_; }
 
-    void setCustomNameLongIndividual(const muse::String &v) { customNameLongIndividual_ = v; }
+    void set_custom_name_long_individual(const muse::String &v) { custom_name_long_individual_ = v; }
 
-    muse::String customNameShortIndividual() const { return customNameShortIndividual_; }
+    muse::String custom_name_short_individual() const { return custom_name_short_individual_; }
 
-    void setCustomNameShortIndividual(const muse::String &v) { customNameShortIndividual_ = v; }
+    void set_custom_name_short_individual(const muse::String &v) { custom_name_short_individual_ = v; }
 
-    bool useCustomIndividualName() const { return useCustomIndividualName_; }
+    bool use_custom_individual_name() const { return use_custom_individual_name_; }
 
-    void setUseCustomIndividualName(bool v) { useCustomIndividualName_ = v; }
+    void set_use_custom_individual_name(bool v) { use_custom_individual_name_ = v; }
 
     bool empty() const;
 
 private:
     int number_ = 0;
-    bool showNumberLong_ = true;
-    bool showNumberShort_ = true;
+    bool show_number_long_ = true;
+    bool show_number_short_ = true;
 
     muse::String transposition_;
-    bool showTranspositionLong_ = true;
-    bool showTranspositionShort_ = true;
+    bool show_transposition_long_ = true;
+    bool show_transposition_short_ = true;
 
-    bool useCustomName_ = false;
-    muse::String customNameLong_;
-    muse::String customNameShort_;
+    bool use_custom_name_ = false;
+    muse::String custom_name_long_;
+    muse::String custom_name_short_;
 
-    bool allowGroupName_ = true;
+    bool allow_group_name_ = true;
 
-    muse::String customNameLongGroup_;
-    muse::String customNameShortGroup_;
-    bool useCustomGroupName_ = false;
+    muse::String custom_name_long_group_;
+    muse::String custom_name_short_group_;
+    bool use_custom_group_name_ = false;
 
-    muse::String customNameLongIndividual_;
-    muse::String customNameShortIndividual_;
-    bool useCustomIndividualName_ = false;
+    muse::String custom_name_long_individual_;
+    muse::String custom_name_short_individual_;
+    bool use_custom_individual_name_ = false;
 };
 
 inline bool InstrumentLabel::operator==(const InstrumentLabel &i) const {
     return StaffLabel::operator==(i) && number_ == i.number_ && transposition_ == i.transposition_ &&
-           showNumberLong_ == i.showNumberLong_ && showNumberShort_ == i.showNumberShort_ && useCustomName_ == i.useCustomName_ &&
-           customNameLong_ == i.customNameLong_ && customNameShort_ == i.customNameShort_ &&
-           showTranspositionLong_ == i.showTranspositionLong_ && showTranspositionShort_ == i.showTranspositionShort_ &&
-           allowGroupName_ == i.allowGroupName_ && customNameLongGroup_ == i.customNameLongGroup_ &&
-           customNameShortGroup_ == i.customNameShortGroup_ && useCustomGroupName_ == i.useCustomGroupName_ &&
-           customNameLongIndividual_ == i.customNameLongIndividual_ && customNameShortIndividual_ == i.customNameShortIndividual_ &&
-           useCustomIndividualName_ == i.useCustomIndividualName_;
+           show_number_long_ == i.show_number_long_ && show_number_short_ == i.show_number_short_ &&
+           use_custom_name_ == i.use_custom_name_ && custom_name_long_ == i.custom_name_long_ &&
+           custom_name_short_ == i.custom_name_short_ && show_transposition_long_ == i.show_transposition_long_ &&
+           show_transposition_short_ == i.show_transposition_short_ && allow_group_name_ == i.allow_group_name_ &&
+           custom_name_long_group_ == i.custom_name_long_group_ && custom_name_short_group_ == i.custom_name_short_group_ &&
+           use_custom_group_name_ == i.use_custom_group_name_ && custom_name_long_individual_ == i.custom_name_long_individual_ &&
+           custom_name_short_individual_ == i.custom_name_short_individual_ && use_custom_individual_name_ == i.use_custom_individual_name_;
 }
 
 inline bool InstrumentLabel::empty() const {
-    static const InstrumentLabel EMPTY_LABEL = InstrumentLabel();
+    static const InstrumentLabel empty_label = InstrumentLabel();
 
-    return *this == EMPTY_LABEL;
+    return *this == empty_label;
 }
 } // namespace mu::engraving

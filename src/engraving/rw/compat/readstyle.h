@@ -35,21 +35,21 @@ class MStyle;
 namespace mu::engraving::compat {
 class ReadStyleHook {
 public:
-    ReadStyleHook(Score *score, const muse::ByteArray &scoreData, const muse::String &completeBaseName);
+    ReadStyleHook(Score *score, const muse::ByteArray &score_data, const muse::String &complete_base_name);
 
-    void setupDefaultStyle();
+    void setup_default_style();
 
-    void readStyleTag(XmlReader &e);
+    void read_style_tag(XmlReader &e);
 
-    static int styleDefaultByMscVersion(const int mscVer);
-    static void setupDefaultStyle(Score *score);
-    static void readStyleTag(Score *score, XmlReader &e);
-    static bool readStyleProperties(MStyle *style, XmlReader &e);
+    static int style_default_by_msc_version(const int msc_ver);
+    static void setup_default_style(Score *score);
+    static void read_style_tag(Score *score, XmlReader &e);
+    static bool read_style_properties(MStyle *style, XmlReader &e);
 
 private:
     Score *score_ = nullptr;
-    const muse::ByteArray &scoreData_;
-    const muse::String &completeBaseName_;
+    const muse::ByteArray &score_data_;
+    const muse::String &complete_base_name_;
 };
 } // namespace mu::engraving::compat
 

@@ -39,8 +39,8 @@ public:
     AbstractAudioEncoder &operator=(const AbstractAudioEncoder &) = delete;
     AbstractAudioEncoder &operator=(AbstractAudioEncoder &&) = delete;
 
-    virtual bool begin(samples_t totalSamplesNumber) = 0;
-    virtual size_t encode(samples_t samplesPerChannel, const float *input) = 0;
+    virtual bool begin(samples_t total_samples_number) = 0;
+    virtual size_t encode(samples_t samples_per_channel, const float *input) = 0;
     // Finalization may successfully produce zero bytes; report status instead.
     virtual Ret end() = 0;
 

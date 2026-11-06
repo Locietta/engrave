@@ -36,26 +36,26 @@ class ScoreRW {
 public:
     ScoreRW() = default;
 
-    static void setRootPath(const String &path);
-    static String rootPath();
+    static void set_root_path(const String &path);
+    static String root_path();
 
     // The engine services the test scores are built with; the test environment
     // sets them for the lifetime of its engine context.
-    static void setServices(const EngravingServices *services);
+    static void set_services(const EngravingServices *services);
     static const EngravingServices &services();
 
-    using ImportFunc = std::function<Err(MasterScore *score, const muse::io::path_t &path)>;
-    using ExportFunc = std::function<Err(Score *score, const muse::io::path_t &path)>;
+    using ImportFunc = std::function<Err(MasterScore *score, const muse::io::PathT &path)>;
+    using ExportFunc = std::function<Err(Score *score, const muse::io::PathT &path)>;
 
-    static MasterScore *readScore(const String &path, bool isAbsolutePath = false, ImportFunc importFunc = nullptr);
-    static bool saveScore(Score *score, const String &name);
-    static bool saveScore(Score *score, const String &name, ExportFunc exportFunc);
-    static muse::ByteArray writeElement(const EngravingItem *element);
-    static EngravingItem *writeReadElement(EngravingItem *element);
-    static bool saveMimeData(muse::ByteArray mimeData, const String &saveName);
+    static MasterScore *read_score(const String &path, bool is_absolute_path = false, ImportFunc import_func = nullptr);
+    static bool save_score(Score *score, const String &name);
+    static bool save_score(Score *score, const String &name, ExportFunc export_func);
+    static muse::ByteArray write_element(const EngravingItem *element);
+    static EngravingItem *write_read_element(EngravingItem *element);
+    static bool save_mime_data(muse::ByteArray mime_data, const String &save_name);
 
 private:
-    static String rootPath_;
+    static String root_path_;
     static const EngravingServices *services_;
 };
 } // namespace mu::engraving

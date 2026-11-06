@@ -34,32 +34,32 @@ public:
     const char *context = nullptr;
     String str;
     const char *disambiguation = nullptr;
-    int defaultN = -1;
+    int default_n = -1;
 
     TranslatableString() = default;
 
     TranslatableString(const char *context, const char *str, const char *disambiguation = nullptr, int n = -1)
-        : context(context), str(String::fromUtf8(str)), disambiguation(disambiguation), defaultN(n) {}
+        : context(context), str(String::from_utf8(str)), disambiguation(disambiguation), default_n(n) {}
 
     TranslatableString(const char *context, const String &str, const char *disambiguation = nullptr, int n = -1)
-        : context(context), str(str), disambiguation(disambiguation), defaultN(n) {}
+        : context(context), str(str), disambiguation(disambiguation), default_n(n) {}
 
     static TranslatableString untranslatable(const char *str) { return TranslatableString(nullptr, str); }
 
     static TranslatableString untranslatable(const String &str) { return TranslatableString(nullptr, str); }
 
-    inline bool isEmpty() const { return str.empty(); }
+    inline bool is_empty() const { return str.empty(); }
 
-    inline bool isTranslatable() const { return context && context[0]; }
+    inline bool is_translatable() const { return context && context[0]; }
 
-    inline String translated() const { return translated(defaultN); }
+    inline String translated() const { return translated(default_n); }
 
     inline String translated(int n) const {
-        if (isEmpty()) {
+        if (is_empty()) {
             return {};
         }
 
-        String res = isTranslatable() ? mtrc(context, str, disambiguation, n) : str;
+        String res = is_translatable() ? mtrc(context, str, disambiguation, n) : str;
 
         for (const auto &arg : args) {
             arg->apply(res);
@@ -75,7 +75,7 @@ public:
         return (context == other.context || (context && other.context && strcmp(context, other.context) == 0)) && str == other.str &&
                (disambiguation == other.disambiguation ||
                 (disambiguation && other.disambiguation && strcmp(disambiguation, other.disambiguation) == 0)) &&
-               defaultN == other.defaultN && args == other.args;
+               default_n == other.default_n && args == other.args;
     }
 
     bool operator!=(const TranslatableString &other) const { return !operator==(other); }
@@ -100,11 +100,11 @@ struct TranslatableString::Arg : public TranslatableString::IArg {
     Arg(const Args &...args) : args(args...) {}
 
     void apply(String &res) const override {
-        res = std::apply([&](const Args &...args) { return res.arg(makeArg(args)...); }, args);
+        res = std::apply([&](const Args &...args) { return res.arg(make_arg(args)...); }, args);
     }
 
     template <typename T>
-    static inline auto makeArg(const T &t) {
+    static inline auto make_arg(const T &t) {
         if constexpr (std::is_same_v<T, TranslatableString>) {
             return t.translated();
         } else {

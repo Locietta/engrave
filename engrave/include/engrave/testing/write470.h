@@ -6,8 +6,8 @@ namespace engrave::testing {
 // Diagnostic seam only: query on the capture callback's owner thread. Does not
 // call client code or change conversion. Zero outside the indicated phase.
 struct Write470Progress {
-    enum class Stage { None, Converting, Serializing };
-    Stage stage = Stage::None;
+    enum class Stage { NONE, CONVERTING, SERIALIZING };
+    Stage stage = Stage::NONE;
     std::uint64_t units = 0;
     std::uint64_t working_bytes = 0;
 };

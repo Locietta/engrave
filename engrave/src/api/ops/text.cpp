@@ -63,7 +63,7 @@ Result<SegmentAddress> chord_rest_address(const Address &address) {
     if (at->kind != "ChordRest") {
         return invalid(std::format("text attaches to a ChordRest segment, not to a '{}' one", at->kind));
     }
-    if (at->staff < 0 || at->voice < 0 || static_cast<std::size_t>(at->voice) >= mu::engraving::VOICES) {
+    if (at->staff < 0 || at->voice < 0 || static_cast<std::size_t>(at->voice) >= mu::engraving::voices) {
         return invalid(std::format("a staff has no voice {}", at->voice));
     }
     return *at;
@@ -95,7 +95,7 @@ std::string add_text_style_names() {
     std::string names;
     for (const TextStyleType style : add_text_styles) {
         names += names.empty() ? "" : ", ";
-        names += mu::engraving::TConv::toXml(style).ascii();
+        names += mu::engraving::TConv::to_xml(style).ascii();
     }
     return names;
 }
@@ -103,7 +103,7 @@ std::string add_text_style_names() {
 // The style an AddText names: the engine's own style name, as a saved score writes
 // it ("staff", "tempo", "lyrics_odd").
 Result<TextStyleType> add_text_style(const std::string &name) {
-    const TextStyleType style = mu::engraving::TConv::fromXml(muse::AsciiStringView(name), TextStyleType::TEXT_TYPES);
+    const TextStyleType style = mu::engraving::TConv::from_xml(muse::AsciiStringView(name), TextStyleType::TEXT_TYPES);
     if (std::ranges::find(add_text_styles, style) == std::end(add_text_styles)) {
         return invalid(std::format("AddText writes the text styles {}; not '{}'", add_text_style_names(), name));
     }
@@ -156,8 +156,8 @@ std::string add_pairs_text() {
 }
 
 Result<void> check_pair(const EngravingObject &anchor, std::string_view child) {
-    if (add_pair(anchor.typeName(), child)) return {};
-    return invalid(std::format("Add creates {}; not a {} on a {}", add_pairs_text(), child, anchor.typeName()));
+    if (add_pair(anchor.type_name(), child)) return {};
+    return invalid(std::format("Add creates {}; not a {} on a {}", add_pairs_text(), child, anchor.type_name()));
 }
 
 // The track the new item belongs to. A segment address names it, since a segment
@@ -167,9 +167,9 @@ Result<mu::engraving::track_idx_t> anchor_track(const EngravingObject &anchor, c
         const auto *address = std::get_if<Address>(&ref);
         const auto *at = address ? std::get_if<SegmentAddress>(address) : nullptr;
         if (!at) return invalid("an item added to a segment is named by a segment address");
-        return address_track(*at, *mu::engraving::toSegment(&anchor)->score());
+        return address_track(*at, *mu::engraving::to_segment(&anchor)->score());
     }
-    if (!anchor.isEngravingItem()) return invalid(std::format("{} is not an element to add to", anchor.typeName()));
+    if (!anchor.is_engraving_item()) return invalid(std::format("{} is not an element to add to", anchor.type_name()));
     return static_cast<const EngravingItem &>(anchor).track();
 }
 
@@ -193,7 +193,7 @@ Result<std::vector<Setting>> settings(const std::vector<std::pair<std::string, V
         if (!*listed) {
             return invalid(std::format("'{}' of a {} is changed by structural operations only", name_of(pid), type));
         }
-        auto checked = from_value(mu::engraving::propertyType(pid), value);
+        auto checked = from_value(mu::engraving::property_type(pid), value);
         if (!checked) return std::unexpected(checked.error());
         settings.push_back({pid, *checked});
     }
@@ -206,9 +206,9 @@ Result<std::vector<Setting>> settings(const std::vector<std::pair<std::string, V
 // style. The item is not in the score yet, so this needs no command of its own: the
 // AddElement that follows owns it.
 void set_setting(EngravingItem &item, const Setting &setting) {
-    const PropertyFlags flags = item.propertyFlags(setting.pid);
-    item.setProperty(setting.pid, setting.value);
-    item.setPropertyFlags(setting.pid, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
+    const PropertyFlags flags = item.property_flags(setting.pid);
+    item.set_property(setting.pid, setting.value);
+    item.set_property_flags(setting.pid, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
 }
 
 // The tempo text Score::addText's TEMPO branch makes (editing/edit.cpp:978-1003): a
@@ -217,12 +217,12 @@ void set_setting(EngravingItem &item, const Setting &setting) {
 // property change, and a change made before the AddElement would outlive the element
 // a fault at that add deletes.
 mu::engraving::TempoText *add_tempo_text(Score &score, Segment &segment, const std::string &text) {
-    mu::engraving::TempoText *tempo = mu::engraving::Factory::createTempoText(&segment);
-    tempo->setTrack(0);
-    tempo->setFollowText(true);
-    tempo->setXmlText(muse::String::fromUtf8(text));
-    score.undoAddElement(tempo);
-    tempo->updateTempo();
+    mu::engraving::TempoText *tempo = mu::engraving::Factory::create_tempo_text(&segment);
+    tempo->set_track(0);
+    tempo->set_follow_text(true);
+    tempo->set_xml_text(muse::String::from_utf8(text));
+    score.undo_add_element(tempo);
+    tempo->update_tempo();
     return tempo;
 }
 
@@ -238,18 +238,18 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
     if (op.text.empty()) return invalid("a text has at least one character");
     auto target = context.target(op.at);
     if (!target) return std::unexpected(target.error());
-    if (auto track = address_track(*at, *mu::engraving::toSegment(target->object)->score()); !track) {
+    if (auto track = address_track(*at, *mu::engraving::to_segment(target->object)->score()); !track) {
         return std::unexpected(track.error());
     }
     return [target = *target, at = *at, style = *style, text = op.text, name = op.style](EditContext &context) -> Result<void> {
         auto object = context.object(target);
         if (!object) return std::unexpected(object.error());
-        Segment *segment = mu::engraving::toSegment(*object);
+        Segment *segment = mu::engraving::to_segment(*object);
         Score *score = segment->score();
         auto track = address_track(at, *score);
         if (!track) return std::unexpected(track.error());
         EngravingItem *anchor = segment->element(*track);
-        if (!anchor || !anchor->isChordRest()) {
+        if (!anchor || !anchor->is_chord_rest()) {
             return invalid(std::format("there is no chord or rest at staff {} voice {} to write on", at.staff, at.voice));
         }
         // Score::addText for every style but the tempo. Its tempo branch derives the
@@ -262,16 +262,16 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
             // addText's lyrics branch (editing/edit.cpp:880-910) writes under a note or
             // a rest, not under the chord.
             EngravingItem *destination = anchor;
-            if (style == TextStyleType::LYRICS_ODD && anchor->isChord()) {
-                Chord *chord = mu::engraving::toChord(anchor);
+            if (style == TextStyleType::LYRICS_ODD && anchor->is_chord()) {
+                Chord *chord = mu::engraving::to_chord(anchor);
                 if (chord->notes().empty()) return rejected("the chord has no note to write the lyrics under");
                 destination = chord->notes().front();
             }
-            added = score->addText(style, destination);
+            added = score->add_text(style, destination);
             if (!added) return rejected(std::format("the engine did not add a '{}' text here", name));
             // addText creates the item but writes no text; the engine's text edit changes
             // it as a property, which also reaches its linked copies (editing/textedit.cpp:237).
-            added->undoChangeProperty(Pid::TEXT, PropertyValue(muse::String::fromUtf8(text)));
+            added->undo_change_property(Pid::TEXT, PropertyValue(muse::String::from_utf8(text)));
         }
         context.created(added);
         return {};
@@ -279,9 +279,9 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
 }
 
 Result<Step> prepare(EditContext &context, const Add &op) {
-    const ElementType type = mu::engraving::TConv::fromXml(muse::AsciiStringView(op.type), ElementType::INVALID);
+    const ElementType type = mu::engraving::TConv::from_xml(muse::AsciiStringView(op.type), ElementType::INVALID);
     if (type == ElementType::INVALID) return invalid(std::format("no element type '{}'", op.type));
-    const std::string name = mu::engraving::TConv::toXml(type).ascii();
+    const std::string name = mu::engraving::TConv::to_xml(type).ascii();
     if (!addable(name)) return invalid(std::format("Add creates {}; not a {}", add_pairs_text(), name));
     auto props = settings(op.props, name);
     if (!props) return std::unexpected(props.error());
@@ -299,14 +299,14 @@ Result<Step> prepare(EditContext &context, const Add &op) {
         if (auto pair = check_pair(**object, name); !pair) return std::unexpected(pair.error());
         auto track = anchor_track(**object, anchor.ref);
         if (!track) return std::unexpected(track.error());
-        if (!(*object)->isEngravingItem()) return invalid("an item is added to an element");
-        std::unique_ptr<EngravingItem> created(mu::engraving::Factory::createItem(type, mu::engraving::toEngravingItem(*object)));
+        if (!(*object)->is_engraving_item()) return invalid("an item is added to an element");
+        std::unique_ptr<EngravingItem> created(mu::engraving::Factory::create_item(type, mu::engraving::to_engraving_item(*object)));
         if (!created) return invalid(std::format("the engine does not create a {}", name));
-        created->setTrack(*track);
+        created->set_track(*track);
         for (const Setting &setting : props) set_setting(*created, setting);
         Score *score = created->score();
         EngravingItem *added = created.release();
-        score->undoAddElement(added);
+        score->undo_add_element(added);
         context.created(added);
         return {};
     };

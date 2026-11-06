@@ -56,10 +56,10 @@ public:
 
     //! A page is owned by its score. This overload hides EngravingItem::setOwnershipParent,
     //! so that no other parent can be set by accident.
-    void setOwnershipParent(Score *score);
+    void set_ownership_parent(Score *score);
 
-    EngravingItem *layoutParent() const override;
-    EngravingItem *accessibleParentItem() const override;
+    EngravingItem *layout_parent() const override;
+    EngravingItem *accessible_parent_item() const override;
 
     const std::vector<System *> &systems() const { return systems_; }
 
@@ -69,62 +69,62 @@ public:
 
     const System *system(size_t idx) const { return systems_.at(idx); }
 
-    MeasureBase *firstMeasureBase() const;
-    MeasureBase *lastMeasureBase() const;
+    MeasureBase *first_measure_base() const;
+    MeasureBase *last_measure_base() const;
 
-    void appendSystem(System *s);
+    void append_system(System *s);
 
-    page_idx_t pageNumber() const { return pageNumber_; }
+    page_idx_t page_number() const { return page_number_; }
 
-    void setPageNumber(page_idx_t n) { pageNumber_ = n; }
+    void set_page_number(page_idx_t n) { page_number_ = n; }
 
-    int getDisplayPageNumber() const;
-    bool isOdd() const;
+    int get_display_page_number() const;
+    bool is_odd() const;
     double tm() const; // margins in pixel
     double bm() const;
     double lm() const;
     double rm() const;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
-    EngravingItemList accessibleChildren() const override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    EngravingItemList accessible_children() const override;
 
     std::vector<EngravingItem *> items(const RectF &r);
     std::vector<EngravingItem *> items(const PointF &p);
 
-    void invalidateBspTree() { bspTreeValid_ = false; }
+    void invalidate_bsp_tree() { bsp_tree_valid_ = false; }
 
-    PointF pagePos() const override { return PointF(); } ///< position in page coordinates
+    PointF page_pos() const override { return PointF(); } ///< position in page coordinates
 
     std::vector<EngravingItem *> elements() const; ///< list of visible elements
     RectF tbbox() const;                           // tight bounding box, excluding white space
-    Fraction endTick() const;
-    Measure *firstMeasure() const;
+    Fraction end_tick() const;
+    Measure *first_measure() const;
 
-    Text *headerText(int index) const { return headerTexts_.at(index); }
+    Text *header_text(int index) const { return header_texts_.at(index); }
 
-    Text *footerText(int index) const { return footerTexts_.at(index); }
+    Text *footer_text(int index) const { return footer_texts_.at(index); }
 
-    void setHeaderText(int index, Text *t) { headerTexts_.at(index) = t; }
+    void set_header_text(int index, Text *t) { header_texts_.at(index) = t; }
 
-    void setFooterText(int index, Text *t) { footerTexts_.at(index) = t; }
+    void set_footer_text(int index, Text *t) { footer_texts_.at(index) = t; }
 
-    bool isLocked() const;
-    const RangeLock *pageLock() const;
+    bool is_locked() const;
+    const RangeLock *page_lock() const;
 
 
 private:
     friend class Factory;
     Page(Score *parent);
 
-    void doRebuildBspTree();
+    void do_rebuild_bsp_tree();
 
     std::vector<System *> systems_;
-    page_idx_t pageNumber_ = 0;
+    page_idx_t page_number_ = 0;
 
-    std::array<Text *, MAX_HEADERS> headerTexts_{};
-    std::array<Text *, MAX_FOOTERS> footerTexts_{};
+    std::array<Text *, ::mu::engraving::max_headers> header_texts_{};
+    std::array<Text *, ::mu::engraving::max_footers> footer_texts_{};
 
-    BspTree bspTree;
-    bool bspTreeValid_ = false;
+    BspTree bsp_tree;
+    bool bsp_tree_valid_ = false;
 };
 } // namespace mu::engraving

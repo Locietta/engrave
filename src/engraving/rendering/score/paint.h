@@ -36,11 +36,11 @@ class Score;
 namespace mu::engraving::rendering::score {
 class Paint {
 public:
-    static void paintScore(muse::draw::Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt);
-    static void paintItem(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt);
-    static void paintItems(muse::draw::Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt);
+    static void paint_score(muse::draw::Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt);
+    static void paint_item(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt);
+    static void paint_items(muse::draw::Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt);
 
-    static SizeF pageSizeInch(const Score *score);
-    static SizeF pageSizeInch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt);
+    static SizeF page_size_inch(const Score *score);
+    static SizeF page_size_inch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt);
 };
 } // namespace mu::engraving::rendering::score

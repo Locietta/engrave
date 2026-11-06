@@ -76,29 +76,29 @@ public:
     }
 
     bool remove(const T &v) {
-        auto originalEnd = end_;
+        auto original_end = end_;
         end_ = std::remove(begin_, end_, v);
-        return end_ != originalEnd;
+        return end_ != original_end;
     }
 
     template <typename Predicate>
     bool remove_if(Predicate &&pred) {
-        auto originalEnd = end_;
+        auto original_end = end_;
         end_ = std::remove_if(begin_, end_, std::forward<Predicate>(pred));
-        return end_ != originalEnd;
+        return end_ != original_end;
     }
 
     bool reverse_remove(const T &v) {
-        auto originalBegin = begin_;
+        auto original_begin = begin_;
         begin_ = std::remove(rbegin(), rend(), v).base();
-        return begin_ != originalBegin;
+        return begin_ != original_begin;
     }
 
     template <typename Predicate>
     bool reverse_remove_if(Predicate &&pred) {
-        auto originalBegin = begin_;
+        auto original_begin = begin_;
         begin_ = std::remove_if(rbegin(), rend(), std::forward<Predicate>(pred)).base();
-        return begin_ != originalBegin;
+        return begin_ != original_begin;
     }
 
 private:

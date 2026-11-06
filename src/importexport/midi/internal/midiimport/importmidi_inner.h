@@ -72,11 +72,11 @@ struct MidiTimeSig;
 namespace Meter {
 // max level for tuplets: duration cannot go over the tuplet boundary
 // this level should be greater than any other level
-inline constexpr int TUPLET_BOUNDARY_LEVEL = 10;
+inline constexpr int tuplet_boundary_level = 10;
 
 struct MaxLevel {
     int level = 0;                 // 0 - the biggest, whole bar level; other: -1, -2, ...
-    int levelCount = 0;            // number of positions with 'level' value
+    int level_count = 0;           // number of positions with 'level' value
     ReducedFraction pos = {-1, 1}; // first position with value 'level'; -1 - undefined pos
 };
 
@@ -86,18 +86,18 @@ struct DivLengthInfo {
 };
 
 struct DivisionInfo {
-    ReducedFraction onTime; // division start tick (tick is counted from the beginning of bar)
-    ReducedFraction len;    // length of this whole division
-    bool isTuplet = false;
-    std::vector<DivLengthInfo> divLengths; // lengths of 'len' subdivisions
+    ReducedFraction on_time; // division start tick (tick is counted from the beginning of bar)
+    ReducedFraction len;     // length of this whole division
+    bool is_tuplet = false;
+    std::vector<DivLengthInfo> div_lengths; // lengths of 'len' subdivisions
 };
 
 enum class DurationType : char;
 
-ReducedFraction userTimeSigToFraction(MidiOperations::TimeSigNumerator timeSigNumerator,
-                                      MidiOperations::TimeSigDenominator timeSigDenominator);
-MidiOperations::TimeSigNumerator fractionNumeratorToUserValue(int n);
-MidiOperations::TimeSigDenominator fractionDenominatorToUserValue(int z);
+ReducedFraction user_time_sig_to_fraction(MidiOperations::TimeSigNumerator time_sig_numerator,
+                                          MidiOperations::TimeSigDenominator time_sig_denominator);
+MidiOperations::TimeSigNumerator fraction_numerator_to_user_value(int n);
+MidiOperations::TimeSigDenominator fraction_denominator_to_user_value(int z);
 } // namespace Meter
 
 class MidiTrack;
@@ -110,72 +110,72 @@ public: // chords store tuplet iterators, so we need to copy class explicitly
     MTrack(const MTrack &other);
     MTrack &operator=(MTrack other);
 
-    GM1Program program = GM1Program::AcousticGrandPiano;
+    GM1Program program = GM1Program::ACOUSTIC_GRAND_PIANO;
     engraving::Staff *staff = nullptr;
     const MidiTrack *mtrack = nullptr;
     muse::String name;
-    bool hasKey = false;
-    int indexOfOperation = 0;
+    bool has_key = false;
+    int index_of_operation = 0;
     int division = 0;
-    bool isDivisionInTps = false; // ticks per second
-    bool hadInitialNotes = false;
+    bool is_division_in_tps = false; // ticks per second
+    bool had_initial_notes = false;
 
     std::multimap<ReducedFraction, int> volumes;
     std::multimap<ReducedFraction, MidiChord> chords;
     std::multimap<ReducedFraction, MidiTuplet::TupletData> tuplets; // <tupletOnTime, ...>
 
-    void createNotes(const ReducedFraction &lastTick);
-    void processPendingNotes(std::vector<MidiChord> &midiChords, int voice, const ReducedFraction &startChordTickFrac,
-                             const ReducedFraction &nextChordTick);
-    void processMeta(int tick, const MidiEvent &mm);
-    void fillGapWithRests(engraving::Score *score, int voice, const ReducedFraction &startChordTickFrac, const ReducedFraction &restLength,
-                          engraving::track_idx_t track);
-    std::vector<std::pair<ReducedFraction, engraving::TDuration>> toDurationList(const engraving::Measure *measure, int voice,
-                                                                                 const ReducedFraction &startTick,
-                                                                                 const ReducedFraction &len,
-                                                                                 Meter::DurationType durationType);
-    void createKeys(engraving::Key defaultKey, const engraving::KeyList &allKeyList);
-    void updateTupletsFromChords();
+    void create_notes(const ReducedFraction &last_tick);
+    void process_pending_notes(std::vector<MidiChord> &midi_chords, int voice, const ReducedFraction &start_chord_tick_frac,
+                               const ReducedFraction &next_chord_tick);
+    void process_meta(int tick, const MidiEvent &mm);
+    void fill_gap_with_rests(engraving::Score *score, int voice, const ReducedFraction &start_chord_tick_frac,
+                             const ReducedFraction &rest_length, engraving::track_idx_t track);
+    std::vector<std::pair<ReducedFraction, engraving::TDuration>> to_duration_list(const engraving::Measure *measure, int voice,
+                                                                                   const ReducedFraction &start_tick,
+                                                                                   const ReducedFraction &len,
+                                                                                   Meter::DurationType duration_type);
+    void create_keys(engraving::Key default_key, const engraving::KeyList &all_key_list);
+    void update_tuplets_from_chords();
 
 private:
-    void updateTuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator &);
+    void update_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator &);
 };
 
 namespace MidiTuplet {
 struct TupletInfo {
     int id;
-    ReducedFraction onTime = {-1, 1}; // invalid
+    ReducedFraction on_time = {-1, 1}; // invalid
     ReducedFraction len = {-1, 1};
-    int tupletNumber = -1;
+    int tuplet_number = -1;
     // <chord onTime, chord iterator>
     std::map<ReducedFraction, std::multimap<ReducedFraction, MidiChord>::iterator> chords;
-    ReducedFraction tupletSumError;
-    ReducedFraction regularSumError;
-    ReducedFraction sumLengthOfRests;
-    int firstChordIndex = -1;
-    std::map<ReducedFraction, int> staccatoChords; // <onTime, note index>
+    ReducedFraction tuplet_sum_error;
+    ReducedFraction regular_sum_error;
+    ReducedFraction sum_length_of_rests;
+    int first_chord_index = -1;
+    std::map<ReducedFraction, int> staccato_chords; // <onTime, note index>
 };
 
-bool haveIntersection(const std::pair<ReducedFraction, ReducedFraction> &interval1,
-                      const std::pair<ReducedFraction, ReducedFraction> &interval2, bool strictComparison = true);
-bool haveIntersection(const std::pair<ReducedFraction, ReducedFraction> &interval,
-                      const std::vector<std::pair<ReducedFraction, ReducedFraction>> &intervals, bool strictComparison = true);
+bool have_intersection(const std::pair<ReducedFraction, ReducedFraction> &interval1,
+                       const std::pair<ReducedFraction, ReducedFraction> &interval2, bool strict_comparison = true);
+bool have_intersection(const std::pair<ReducedFraction, ReducedFraction> &interval,
+                       const std::vector<std::pair<ReducedFraction, ReducedFraction>> &intervals, bool strict_comparison = true);
 } // namespace MidiTuplet
 
 namespace MidiCharset {
 // Decodes a NUL-terminated MIDI meta-event payload.  The requested charset comes
 // from the optional MIDI-import operations XML; without one it is UTF-8.
 // See importmidi_inner.cpp for the Qt-free fallback policy.
-muse::String convertToCharset(const std::string &text);
-std::string defaultCharset();
-std::string fromUchar(const unsigned char *text);
+muse::String convert_to_charset(const std::string &text);
+std::string default_charset();
+std::string from_uchar(const unsigned char *text);
 } // namespace MidiCharset
 
 namespace MidiBar {
-ReducedFraction findBarStart(const ReducedFraction &time, const engraving::TimeSigMap *sigmap);
+ReducedFraction find_bar_start(const ReducedFraction &time, const engraving::TimeSigMap *sigmap);
 } // namespace MidiBar
 
 namespace MidiDuration {
-double durationCount(const std::vector<std::pair<ReducedFraction, engraving::TDuration>> &durations);
+double duration_count(const std::vector<std::pair<ReducedFraction, engraving::TDuration>> &durations);
 } // namespace MidiDuration
 } // namespace mu::iex::midi

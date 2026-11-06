@@ -31,10 +31,10 @@ namespace mu::engraving::compat {
 class ScoreAccess {
 public:
 
-    static MasterScore *createMasterScore(const EngravingServices &services);
-    static MasterScore *createMasterScoreWithBaseStyle(const EngravingServices &services);
-    static MasterScore *createMasterScoreWithDefaultStyle(const EngravingServices &services);
-    static MasterScore *createMasterScore(const EngravingServices &services, const MStyle &style);
+    static MasterScore *create_master_score(const EngravingServices &services);
+    static MasterScore *create_master_score_with_base_style(const EngravingServices &services);
+    static MasterScore *create_master_score_with_default_style(const EngravingServices &services);
+    static MasterScore *create_master_score(const EngravingServices &services, const MStyle &style);
 };
 } // namespace mu::engraving::compat
 

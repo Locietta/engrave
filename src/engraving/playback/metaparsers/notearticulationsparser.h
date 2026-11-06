@@ -30,24 +30,24 @@ class Note;
 
 class NoteArticulationsParser : public MetaParserBase<NoteArticulationsParser> {
 public:
-    static void buildNoteArticulationMap(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void build_note_articulation_map(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
-    static void parsePlayingTechnique(const RenderingContext &ctx, const track_idx_t trackIdx, muse::mpe::ArticulationMap &result,
-                                      bool sustainAllowed = true);
-    static void parseGhostNote(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseNoteHead(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseSymbols(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseLaissezVibrer(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseSpanners(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_playing_technique(const RenderingContext &ctx, const track_idx_t track_idx, muse::mpe::ArticulationMap &result,
+                                        bool sustain_allowed = true);
+    static void parse_ghost_note(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_note_head(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_symbols(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_laissez_vibrer(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_spanners(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void do_parse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 private:
-    static muse::mpe::ArticulationType articulationTypeByNoteheadGroup(const NoteHeadGroup noteheadGroup);
-    static void appendArticulations(const muse::mpe::ArticulationTypeSet &types, const RenderingContext &ctx,
-                                    muse::mpe::ArticulationMap &result);
+    static muse::mpe::ArticulationType articulation_type_by_notehead_group(const NoteHeadGroup notehead_group);
+    static void append_articulations(const muse::mpe::ArticulationTypeSet &types, const RenderingContext &ctx,
+                                     muse::mpe::ArticulationMap &result);
 };
 } // namespace mu::engraving

@@ -33,185 +33,185 @@
 
 using namespace mu::engraving::rendering::score;
 
-void SegmentLayout::layoutMeasureIndependentElements(const Segment &segment, track_idx_t track, const LayoutContext &ctx) {
-    LAYOUT_CALL() << segment.typeName() << "(" << segment.eid() << ")";
+void SegmentLayout::layout_measure_independent_elements(const Segment &segment, track_idx_t track, const LayoutContext &ctx) {
+    LAYOUT_CALL() << segment.type_name() << "(" << segment.eid() << ")";
 
-    if (segment.isJustType(SegmentType::KeySig)) {
-        KeySig *ks = toKeySig(segment.element(track));
+    if (segment.is_just_type(SegmentType::KEY_SIG)) {
+        KeySig *ks = to_key_sig(segment.element(track));
         if (ks) {
-            TLayout::layoutKeySig(ks, ks->mutldata(), ctx.conf()); // LD_INDEPENDENT
+            TLayout::layout_key_sig(ks, ks->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
-    } else if (segment.isJustType(SegmentType::Clef)) {
+    } else if (segment.is_just_type(SegmentType::CLEF)) {
         Clef *cl = item_cast<Clef *>(segment.element(track));
         if (cl) {
-            cl->setSmall(true);
-            TLayout::layoutClef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
+            cl->set_small(true);
+            TLayout::layout_clef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
-    } else if (segment.isType(SegmentType::HeaderClef)) {
+    } else if (segment.is_type(SegmentType::HEADER_CLEF)) {
         Clef *cl = item_cast<Clef *>(segment.element(track));
         if (cl) {
-            TLayout::layoutClef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
+            TLayout::layout_clef(cl, cl->mutldata(), ctx.conf()); // LD_INDEPENDENT
         }
-    } else if (segment.isType(SegmentType::TimeSig)) {
+    } else if (segment.is_type(SegmentType::TIME_SIG)) {
         TimeSig *ts = item_cast<TimeSig *>(segment.element(track));
         if (ts) {
-            TLayout::layoutTimeSig(ts, ts->mutldata(), ctx); // LD_INDEPENDENT
+            TLayout::layout_time_sig(ts, ts->mutldata(), ctx); // LD_INDEPENDENT
         }
-    } else if (segment.isType(SegmentType::Ambitus)) {
+    } else if (segment.is_type(SegmentType::AMBITUS)) {
         Ambitus *am = item_cast<Ambitus *>(segment.element(track));
         if (am) {
-            TLayout::layoutAmbitus(am, am->mutldata(), ctx); // LD_INDEPENDENT
+            TLayout::layout_ambitus(am, am->mutldata(), ctx); // LD_INDEPENDENT
         }
-    } else if (segment.isType(SegmentType::BarLine)) {
-        BarLine *bl = toBarLine(segment.element(track));
+    } else if (segment.is_type(SegmentType::BAR_LINE)) {
+        BarLine *bl = to_bar_line(segment.element(track));
         if (bl) {
             // check conditions (see TLayout::layoutBarLine)
             {
                 for (const EngravingItem *e : *bl->el()) {
-                    if (e->isType(ElementType::ARTICULATION)) {
-                        LD_CONDITION(item_cast<const Articulation *>(e)->ldata()->symId.has_value());
+                    if (e->is_type(ElementType::ARTICULATION)) {
+                        LD_CONDITION(item_cast<const Articulation *>(e)->ldata()->sym_id.has_value());
                     }
                 }
             }
-            TLayout::layoutBarLine(bl, bl->mutldata(), ctx);
+            TLayout::layout_bar_line(bl, bl->mutldata(), ctx);
         }
     }
 }
 
-void SegmentLayout::setChordMag(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
-                                const LayoutConfiguration &conf) {
-    LAYOUT_CALL() << LAYOUT_ITEM_INFO(staff) << " " << segment.typeName() << "(" << segment.eid() << ")";
+void SegmentLayout::set_chord_mag(const Staff *staff, const Segment &segment, track_idx_t start_track, track_idx_t end_track,
+                                  const LayoutConfiguration &conf) {
+    LAYOUT_CALL() << LAYOUT_ITEM_INFO(staff) << " " << segment.type_name() << "(" << segment.eid() << ")";
 
-    IF_ASSERT_FAILED(segment.isJustType(SegmentType::ChordRest)) { return; }
+    IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
-    const double staffMag = staff->staffMag(&segment);
-    const double smallNoteMag = conf.styleD(Sid::smallNoteMag);
-    const double graceNoteMag = conf.styleD(Sid::graceNoteMag);
+    const double staff_mag = staff->staff_mag(&segment);
+    const double small_note_mag = conf.style_d(Sid::SMALL_NOTE_MAG);
+    const double grace_note_mag = conf.style_d(Sid::GRACE_NOTE_MAG);
 
-    for (track_idx_t t = startTrack; t < endTrack; ++t) {
+    for (track_idx_t t = start_track; t < end_track; ++t) {
         ChordRest *cr = segment.cr(t);
         if (!cr) {
             continue;
         }
 
-        double m = staffMag;
-        if (cr->isSmall()) {
-            m *= smallNoteMag;
+        double m = staff_mag;
+        if (cr->is_small()) {
+            m *= small_note_mag;
         }
 
-        if (cr->isChord()) {
-            double graceMag = m * graceNoteMag;
-            Chord *chord = toChord(cr);
-            for (Chord *c : chord->graceNotes()) {
-                c->mutldata()->setMag(graceMag);
+        if (cr->is_chord()) {
+            double grace_mag = m * grace_note_mag;
+            Chord *chord = to_chord(cr);
+            for (Chord *c : chord->grace_notes()) {
+                c->mutldata()->set_mag(grace_mag);
             }
         }
-        cr->mutldata()->setMag(m);
+        cr->mutldata()->set_mag(m);
     }
 }
 
-void SegmentLayout::checkStaffMoveValidity(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack) {
-    LAYOUT_CALL() << segment.typeName() << "(" << segment.eid() << ")";
+void SegmentLayout::check_staff_move_validity(const Segment &segment, track_idx_t start_track, track_idx_t end_track) {
+    LAYOUT_CALL() << segment.type_name() << "(" << segment.eid() << ")";
 
-    IF_ASSERT_FAILED(segment.isJustType(SegmentType::ChordRest)) { return; }
+    IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
-    for (track_idx_t t = startTrack; t < endTrack; ++t) {
-        ChordRest *cr = toChordRest(segment.element(t));
+    for (track_idx_t t = start_track; t < end_track; ++t) {
+        ChordRest *cr = to_chord_rest(segment.element(t));
         if (cr) {
             // Check if requested cross-staff is possible
-            if (cr->staffMove() || cr->storedStaffMove()) {
-                cr->checkStaffMoveValidity();
+            if (cr->staff_move() || cr->stored_staff_move()) {
+                cr->check_staff_move_validity();
             }
         }
     }
 }
 
-void SegmentLayout::layoutChordDrumset(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
-                                       const LayoutConfiguration &conf) {
-    LAYOUT_CALL() << LAYOUT_ITEM_INFO(staff) << " " << segment.typeName() << "(" << segment.eid() << ")";
+void SegmentLayout::layout_chord_drumset(const Staff *staff, const Segment &segment, track_idx_t start_track, track_idx_t end_track,
+                                         const LayoutConfiguration &conf) {
+    LAYOUT_CALL() << LAYOUT_ITEM_INFO(staff) << " " << segment.type_name() << "(" << segment.eid() << ")";
 
-    IF_ASSERT_FAILED(segment.isJustType(SegmentType::ChordRest)) { return; }
+    IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
-    const Instrument *ins = staff->originPart(segment.tick())->instrument(segment.tick());
-    if (!ins->useDrumset()) {
+    const Instrument *ins = staff->origin_part(segment.tick())->instrument(segment.tick());
+    if (!ins->use_drumset()) {
         return;
     }
 
     const Drumset *drumset = ins->drumset();
     IF_ASSERT_FAILED(drumset) { return; }
 
-    const StaffType *st = staff->staffTypeForElement(&segment);
+    const StaffType *st = staff->staff_type_for_element(&segment);
 
-    auto layoutDrumset = [](Chord *c, const Drumset *drumset, const StaffType *st, double spatium) {
+    auto layout_drumset = [](Chord *c, const Drumset *drumset, const StaffType *st, double spatium) {
         for (Note *note : c->notes()) {
             int pitch = note->pitch();
-            if (!drumset->isValid(pitch)) {
+            if (!drumset->is_valid(pitch)) {
                 // LOGD("unmapped drum note %d", pitch);
             } else if (!note->fixed()) {
-                note->undoChangeProperty(Pid::HEAD_GROUP, drumset->noteHead(pitch));
+                note->undo_change_property(Pid::HEAD_GROUP, drumset->note_head(pitch));
                 int line = drumset->line(pitch);
-                note->setLine(line);
+                note->set_line(line);
 
-                int off = st->stepOffset();
-                double ld = st->lineDistance().val();
-                note->mutldata()->setPosY((line + off * 2.0) * spatium * .5 * ld);
+                int off = st->step_offset();
+                double ld = st->line_distance().val();
+                note->mutldata()->set_pos_y((line + off * 2.0) * spatium * .5 * ld);
             }
         }
     };
 
     double spatium = conf.spatium();
-    for (track_idx_t t = startTrack; t < endTrack; ++t) {
+    for (track_idx_t t = start_track; t < end_track; ++t) {
         Chord *chord = item_cast<Chord *>(segment.element(t), CastMode::MAYBE_BAD); // maybe Rest
         if (!chord) {
             continue;
         }
 
-        for (Chord *c : chord->graceNotes()) {
-            layoutDrumset(c, drumset, st, spatium);
+        for (Chord *c : chord->grace_notes()) {
+            layout_drumset(c, drumset, st, spatium);
         }
 
-        layoutDrumset(chord, drumset, st, spatium);
+        layout_drumset(chord, drumset, st, spatium);
     }
 }
 
-void SegmentLayout::computeChordsUp(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx) {
-    IF_ASSERT_FAILED(segment.isJustType(SegmentType::ChordRest)) { return; }
+void SegmentLayout::compute_chords_up(const Segment &segment, track_idx_t start_track, track_idx_t end_track, const LayoutContext &ctx) {
+    IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
-    for (track_idx_t t = startTrack; t < endTrack; ++t) {
+    for (track_idx_t t = start_track; t < end_track; ++t) {
         ChordRest *cr = segment.cr(t);
         if (!cr) {
             continue;
         }
 
-        if (cr->isChord()) {
-            Chord *chord = toChord(cr);
+        if (cr->is_chord()) {
+            Chord *chord = to_chord(cr);
 
-            for (Chord *c : chord->graceNotes()) {
-                ChordLayout::computeUp(c, ctx);
+            for (Chord *c : chord->grace_notes()) {
+                ChordLayout::compute_up(c, ctx);
             }
 
-            ChordLayout::computeUp(chord, ctx);
+            ChordLayout::compute_up(chord, ctx);
         }
     }
 }
 
-void SegmentLayout::layoutChordsStem(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx) {
-    IF_ASSERT_FAILED(segment.isJustType(SegmentType::ChordRest)) { return; }
+void SegmentLayout::layout_chords_stem(const Segment &segment, track_idx_t start_track, track_idx_t end_track, const LayoutContext &ctx) {
+    IF_ASSERT_FAILED(segment.is_just_type(SegmentType::CHORD_REST)) { return; }
 
-    for (track_idx_t t = startTrack; t < endTrack; ++t) {
+    for (track_idx_t t = start_track; t < end_track; ++t) {
         ChordRest *cr = segment.cr(t);
         if (!cr) {
             continue;
         }
 
-        if (cr->isChord()) {
-            Chord *chord = toChord(cr);
+        if (cr->is_chord()) {
+            Chord *chord = to_chord(cr);
 
-            for (Chord *c : chord->graceNotes()) {
-                ChordLayout::layoutStem(c, ctx);
+            for (Chord *c : chord->grace_notes()) {
+                ChordLayout::layout_stem(c, ctx);
             }
 
-            ChordLayout::layoutStem(chord, ctx);
+            ChordLayout::layout_stem(chord, ctx);
             // stem direction can change later during beam processing
         }
     }

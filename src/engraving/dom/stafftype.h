@@ -41,28 +41,28 @@ class Staff;
 //   TablatureFont
 //---------------------------------------------------------
 
-constexpr int NUM_OF_DIGITFRETS = 100;       // the max fret number which can be rendered with numbers
-constexpr int NUM_OF_LETTERFRETS = 17;       // the max fret number which can be rendered with letters
-constexpr int NUM_OF_BASSSTRING_SLASHES = 5; // the max number of slashes supported for French bass strings notation
+constexpr int num_of_digitfrets = 100;       // the max fret number which can be rendered with numbers
+constexpr int num_of_letterfrets = 17;       // the max fret number which can be rendered with letters
+constexpr int num_of_bassstring_slashes = 5; // the max number of slashes supported for French bass strings notation
                                              // (currently, only 3 slashes are used at most; another two are
                                              // foreseen for future customizability)
 
 // default values for 'grid'-like beaming to use with value symbols in stemless TAB
-constexpr Spatium GRID_BEAM_DEF_WIDTH = 0.25_sp; // all values in sp
-constexpr Spatium GRID_STEM_DEF_HEIGHT = 1.75_sp;
-constexpr Spatium GRID_STEM_DEF_WIDTH = 0.125_sp;
+constexpr Spatium grid_beam_def_width = 0.25_sp; // all values in sp
+constexpr Spatium grid_stem_def_height = 1.75_sp;
+constexpr Spatium grid_stem_def_width = 0.125_sp;
 
 struct TablatureFretFont {
     TablatureFretFont();
 
-    String family;                                           // the family of the physical font to use
-    String displayName;                                      // the name to display to the user
-    double defSize = 9.0;                                    // the default size of the font
-    double defYOffset = 0.0;                                 // the default Y displacement
-    Char xChar = u'X';                                       // the char to use for 'x'
-    std::array<String, NUM_OF_BASSSTRING_SLASHES> slashChar; // the char used to draw one or more '/' symbols
-    std::array<String, NUM_OF_DIGITFRETS> displayDigit;      // the string to draw for digit frets
-    std::array<Char, NUM_OF_LETTERFRETS> displayLetter;      // the char to use for letter frets
+    String family;                                                             // the family of the physical font to use
+    String display_name;                                                       // the name to display to the user
+    double def_size = 9.0;                                                     // the default size of the font
+    double def_y_offset = 0.0;                                                 // the default Y displacement
+    Char x_char = u'X';                                                        // the char to use for 'x'
+    std::array<String, ::mu::engraving::num_of_bassstring_slashes> slash_char; // the char used to draw one or more '/' symbols
+    std::array<String, ::mu::engraving::num_of_digitfrets> display_digit;      // the string to draw for digit frets
+    std::array<Char, ::mu::engraving::num_of_letterfrets> display_letter;      // the char to use for letter frets
 };
 
 enum class TabVal : char {
@@ -98,17 +98,17 @@ enum class TablatureSymbolRepeat : char {
 struct TablatureDurationFont {
     TablatureDurationFont();
 
-    String family;                                 // the family of the physical font to use
-    String displayName;                            // the name to display to the user
-    double defSize = 15.0;                         // the default size of the font
-    double defYOffset = 0.0;                       // the default Y displacement
-    Spatium gridBeamWidth = GRID_BEAM_DEF_WIDTH;   // the width of the 'grid'-style beam (in sp)
-    Spatium gridStemHeight = GRID_STEM_DEF_HEIGHT; // the height of the 'grid'-style stem (in sp)
-    Spatium gridStemWidth = GRID_STEM_DEF_WIDTH;   // the width of the 'grid'-style stem (in sp)
+    String family;                                                    // the family of the physical font to use
+    String display_name;                                              // the name to display to the user
+    double def_size = 15.0;                                           // the default size of the font
+    double def_y_offset = 0.0;                                        // the default Y displacement
+    Spatium grid_beam_width = ::mu::engraving::grid_beam_def_width;   // the width of the 'grid'-style beam (in sp)
+    Spatium grid_stem_height = ::mu::engraving::grid_stem_def_height; // the height of the 'grid'-style stem (in sp)
+    Spatium grid_stem_width = ::mu::engraving::grid_stem_def_width;   // the width of the 'grid'-style stem (in sp)
     // the note value with no beaming in 'grid'-style beaming
-    DurationType zeroBeamLevel = DurationType::V_QUARTER;
-    Char displayDot = u'l';                 // the char to use to draw a dot
-    Char displayValue[int(TabVal::NUM_OF)]; // the char to use to draw a duration value
+    DurationType zero_beam_level = DurationType::V_QUARTER;
+    Char display_dot = u'l';                 // the char to use to draw a dot
+    Char display_value[int(TabVal::NUM_OF)]; // the char to use to draw a duration value
 };
 
 enum class ShowTiedFret : unsigned char {
@@ -129,18 +129,19 @@ enum class ParenthesizeTiedFret : unsigned char {
 
 class StaffType {
     // The default color of a new staff type, set by initStaffTypes().
-    static Color s_defaultColor;
+    static Color s_default_color;
 
 public:
     StaffType();
 
-    StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff, double lineDist, bool genClef, bool showBarLines, bool stemless,
-              bool genTimeSig, bool genKeySig, bool showLedgerLiness, bool invisible, const Color &color);
+    StaffType(StaffGroup sg, StaffTypes staff_type, int lines, int stp_off, double line_dist, bool gen_clef, bool show_bar_lines,
+              bool stemless, bool gen_time_sig, bool gen_key_sig, bool show_ledger_liness, bool invisible, const Color &color);
 
-    StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff, double lineDist, bool genClef, bool showBarLines, bool stemless,
-              bool genTimesig, bool invisible, const Color &color, const String &durFontName, double genDur, bool fretFontUseTextStyle,
-              const String &fretFontName, TablatureSymbolRepeat symRepeat, bool linesThrough, TablatureMinimStyle minimStyle, bool onLines,
-              bool showRests, bool stemsDown, bool stemThrough, bool upsideDown, bool showTabFingering, bool useNumbers, bool showBackTied);
+    StaffType(StaffGroup sg, StaffTypes staff_type, int lines, int stp_off, double line_dist, bool gen_clef, bool show_bar_lines,
+              bool stemless, bool gen_timesig, bool invisible, const Color &color, const String &dur_font_name, double gen_dur,
+              bool fret_font_use_text_style, const String &fret_font_name, TablatureSymbolRepeat sym_repeat, bool lines_through,
+              TablatureMinimStyle minim_style, bool on_lines, bool show_rests, bool stems_down, bool stem_through, bool upside_down,
+              bool show_tab_fingering, bool use_numbers, bool show_back_tied);
 
     virtual ~StaffType() = default;
 
@@ -152,238 +153,238 @@ public:
 
     StaffGroup group() const { return group_; }
 
-    void setGroup(StaffGroup g) { group_ = g; }
+    void set_group(StaffGroup g) { group_ = g; }
 
     StaffTypes type() const;
 
-    void setType(StaffTypes type) { staffType_ = type; }
+    void set_type(StaffTypes type) { staff_type_ = type; }
 
-    String staffTypeName() const;
-    String xmlName() const;
-    String translatedGroupName() const;
+    String staff_type_name() const;
+    String xml_name() const;
+    String translated_group_name() const;
 
-    const StaffLabel &staffLabel() const { return staffLabel_; }
+    const StaffLabel &staff_label() const { return staff_label_; }
 
-    StaffLabel &staffLabel() { return staffLabel_; }
+    StaffLabel &staff_label() { return staff_label_; }
 
-    const String &longName() const { return staffLabel_.longName(); }
+    const String &long_name() const { return staff_label_.long_name(); }
 
-    const String &shortName() const { return staffLabel_.shortName(); }
+    const String &short_name() const { return staff_label_.short_name(); }
 
-    void setLongName(const String &s) { staffLabel_.setLongName(s); }
+    void set_long_name(const String &s) { staff_label_.set_long_name(s); }
 
-    void setShortName(const String &s) { staffLabel_.setShortName(s); }
+    void set_short_name(const String &s) { staff_label_.set_short_name(s); }
 
-    void setLines(int val) { lines_ = val; }
+    void set_lines(int val) { lines_ = val; }
 
     int lines() const { return lines_; }
 
-    int middleLine() const;
-    int bottomLine() const;
+    int middle_line() const;
+    int bottom_line() const;
 
-    void setStepOffset(int v) { stepOffset_ = v; }
+    void set_step_offset(int v) { step_offset_ = v; }
 
-    int stepOffset() const { return stepOffset_; }
+    int step_offset() const { return step_offset_; }
 
-    void setLineDistance(const Spatium &val) { lineDistance_ = val; }
+    void set_line_distance(const Spatium &val) { line_distance_ = val; }
 
-    Spatium lineDistance() const { return lineDistance_; }
+    Spatium line_distance() const { return line_distance_; }
 
-    void setGenClef(bool val) { genClef_ = val; }
+    void set_gen_clef(bool val) { gen_clef_ = val; }
 
-    bool genClef() const { return genClef_; }
+    bool gen_clef() const { return gen_clef_; }
 
-    void setShowBarlines(bool val) { showBarlines_ = val; }
+    void set_show_barlines(bool val) { show_barlines_ = val; }
 
-    bool showBarlines() const { return showBarlines_; }
+    bool show_barlines() const { return show_barlines_; }
 
-    double userMag() const { return userMag_; }
+    double user_mag() const { return user_mag_; }
 
-    bool isSmall() const { return small_; }
+    bool is_small() const { return small_; }
 
     bool invisible() const { return invisible_; }
 
     const Color &color() const { return color_; }
 
-    void setUserMag(double val) { userMag_ = val; }
+    void set_user_mag(double val) { user_mag_ = val; }
 
-    void setSmall(bool val) { small_ = val; }
+    void set_small(bool val) { small_ = val; }
 
-    void setInvisible(bool val) { invisible_ = val; }
+    void set_invisible(bool val) { invisible_ = val; }
 
-    void setColor(const Color &val) { color_ = val; }
+    void set_color(const Color &val) { color_ = val; }
 
     Spatium yoffset() const { return yoffset_; }
 
-    void setYoffset(Spatium val) { yoffset_ = val; }
+    void set_yoffset(Spatium val) { yoffset_ = val; }
 
     double spatium() const;
 
-    void setStemless(bool val) { stemless_ = val; }
+    void set_stemless(bool val) { stemless_ = val; }
 
     bool stemless() const { return stemless_; }
 
-    bool genTimesig() const { return genTimesig_; }
+    bool gen_timesig() const { return gen_timesig_; }
 
-    void setGenTimesig(bool val) { genTimesig_ = val; }
+    void set_gen_timesig(bool val) { gen_timesig_ = val; }
 
     // static function to deal with presets
-    static const StaffType *getDefaultPreset(StaffGroup grp);
+    static const StaffType *get_default_preset(StaffGroup grp);
     static const StaffType *preset(StaffTypes idx);
-    static const StaffType *presetFromXmlName(const String &xmlName);
+    static const StaffType *preset_from_xml_name(const String &xml_name);
 
-    void setGenKeysig(bool val) { genKeysig_ = val; }
+    void set_gen_keysig(bool val) { gen_keysig_ = val; }
 
-    bool genKeysig() const { return genKeysig_; }
+    bool gen_keysig() const { return gen_keysig_; }
 
-    void setShowLedgerLines(bool val) { showLedgerLines_ = val; }
+    void set_show_ledger_lines(bool val) { show_ledger_lines_ = val; }
 
-    bool showLedgerLines() const { return showLedgerLines_; }
+    bool show_ledger_lines() const { return show_ledger_lines_; }
 
-    void setNoteHeadScheme(NoteHeadScheme s) { noteHeadScheme_ = s; }
+    void set_note_head_scheme(NoteHeadScheme s) { note_head_scheme_ = s; }
 
-    NoteHeadScheme noteHeadScheme() const { return noteHeadScheme_; }
+    NoteHeadScheme note_head_scheme() const { return note_head_scheme_; }
 
-    void setInstrumentLabelVisibility(InstrumentLabelVisibility v) { instrumentLabelVisibility_ = v; }
+    void set_instrument_label_visibility(InstrumentLabelVisibility v) { instrument_label_visibility_ = v; }
 
-    InstrumentLabelVisibility instrumentLabelVisibility() const { return instrumentLabelVisibility_; }
+    InstrumentLabelVisibility instrument_label_visibility() const { return instrument_label_visibility_; }
 
-    String fretString(int fret, int string, bool deadNote) const; // returns a string with the text for fret
-    String durationString(DurationType type, int dots) const;
+    String fret_string(int fret, int string, bool dead_note) const; // returns a string with the text for fret
+    String duration_string(DurationType type, int dots) const;
 
     // functions to cope with historic TAB's peculiarities, like upside-down, bass string notations
-    int physStringToVisual(int strg) const;                    // return the string in visual order from physical string
-    int visualStringToPhys(int line) const;                    // return the string in physical order from visual string
-    Spatium physStringToYOffset(int strg) const;               // return the string Y offset (in sp, chord-relative)
-    String tabBassStringPrefix(int strg, bool *hasFret) const; // return a string with the prefix, if any, identifying a bass string
-    int numOfTabLedgerLines(int string) const;
+    int phys_string_to_visual(int strg) const;                     // return the string in visual order from physical string
+    int visual_string_to_phys(int line) const;                     // return the string in physical order from visual string
+    Spatium phys_string_to_y_offset(int strg) const;               // return the string Y offset (in sp, chord-relative)
+    String tab_bass_string_prefix(int strg, bool *has_fret) const; // return a string with the prefix, if any, identifying a bass string
+    int num_of_tab_ledger_lines(int string) const;
 
     // properties getters (some getters require updated metrics)
-    double durationBoxH() const;
-    double durationBoxY() const;
+    double duration_box_h() const;
+    double duration_box_y() const;
 
-    const muse::draw::Font &durationFont() const { return durationFont_; }
+    const muse::draw::Font &duration_font() const { return duration_font_; }
 
-    const TablatureDurationFont &tabDurationFont() const { return durationFonts_[durationFontIdx_]; }
+    const TablatureDurationFont &tab_duration_font() const { return duration_fonts_[duration_font_idx_]; }
 
-    const String &durationFontName() const { return durationFonts_[durationFontIdx_].displayName; }
+    const String &duration_font_name() const { return duration_fonts_[duration_font_idx_].display_name; }
 
-    double durationFontSize() const { return durationFontSize_; }
+    double duration_font_size() const { return duration_font_size_; }
 
-    double durationFontUserY() const { return durationFontUserY_; }
+    double duration_font_user_y() const { return duration_font_user_y_; }
 
-    double durationFontYOffset() const;
+    double duration_font_y_offset() const;
 
-    double durationGridYOffset() const { return durationGridYOffset_; }
+    double duration_grid_y_offset() const { return duration_grid_y_offset_; }
 
-    double fretBoxH() const { return fretBoxH_; }
+    double fret_box_h() const { return fret_box_h_; }
 
-    double deadFretBoxH() const { return deadFretBoxH_; }
+    double dead_fret_box_h() const { return dead_fret_box_h_; }
 
-    double fretBoxY() const;
-    double deadFretBoxY() const;
+    double fret_box_y() const;
+    double dead_fret_box_y() const;
 
     // 2 methods to return the size of a box masking lines under a fret mark
-    double fretMaskH() const;
-    double fretMaskY() const;
+    double fret_mask_h() const;
+    double fret_mask_y() const;
 
-    const muse::draw::Font &fretFont() const { return fretFont_; }
+    const muse::draw::Font &fret_font() const { return fret_font_; }
 
-    const String fretFontName() const { return fretFontInfo_.displayName; }
+    const String fret_font_name() const { return fret_font_info_.display_name; }
 
-    double fretFontSize() const { return fretFontSize_; }
+    double fret_font_size() const { return fret_font_size_; }
 
-    double fretFontUserY() const { return fretFontUserY_; }
+    double fret_font_user_y() const { return fret_font_user_y_; }
 
-    double fretFontYOffset() const;
+    double fret_font_y_offset() const;
 
-    bool genDurations() const { return genDurations_; }
+    bool gen_durations() const { return gen_durations_; }
 
-    bool linesThrough() const { return linesThrough_; }
+    bool lines_through() const { return lines_through_; }
 
-    TablatureMinimStyle minimStyle() const { return minimStyle_; }
+    TablatureMinimStyle minim_style() const { return minim_style_; }
 
-    TablatureSymbolRepeat symRepeat() const { return symRepeat_; }
+    TablatureSymbolRepeat sym_repeat() const { return sym_repeat_; }
 
-    bool onLines() const { return onLines_; }
+    bool on_lines() const { return on_lines_; }
 
-    bool showRests() const { return showRests_; }
+    bool show_rests() const { return show_rests_; }
 
-    bool stemsDown() const { return stemsDown_; }
+    bool stems_down() const { return stems_down_; }
 
-    bool stemThrough() const { return stemsThrough_; }
+    bool stem_through() const { return stems_through_; }
 
-    bool upsideDown() const { return upsideDown_; }
+    bool upside_down() const { return upside_down_; }
 
-    bool showTabFingering() const { return showTabFingering_; }
+    bool show_tab_fingering() const { return show_tab_fingering_; }
 
-    bool useNumbers() const { return useNumbers_; }
+    bool use_numbers() const { return use_numbers_; }
 
-    bool showBackTied() const { return showBackTied_; }
+    bool show_back_tied() const { return show_back_tied_; }
 
-    bool fretUseTextStyle() const { return fretUseTextStyle_; }
+    bool fret_use_text_style() const { return fret_use_text_style_; }
 
-    TextStyleType fretTextStyle() const { return fretTextStyle_; }
+    TextStyleType fret_text_style() const { return fret_text_style_; }
 
-    size_t fretPresetIdx() const { return fretPresetIdx_; }
+    size_t fret_preset_idx() const { return fret_preset_idx_; }
 
     // properties setters (setting some props invalidates metrics)
-    void setDurationFontName(const String &);
-    void setDurationFontSize(double);
+    void set_duration_font_name(const String &);
+    void set_duration_font_size(double);
 
-    void setDurationFontUserY(double val) { durationFontUserY_ = val; }
+    void set_duration_font_user_y(double val) { duration_font_user_y_ = val; }
 
-    void setFretFontSize(double);
+    void set_fret_font_size(double);
 
-    void setFretFontUserY(double val) { fretFontUserY_ = val; }
+    void set_fret_font_user_y(double val) { fret_font_user_y_ = val; }
 
-    void setGenDurations(bool val) { genDurations_ = val; }
+    void set_gen_durations(bool val) { gen_durations_ = val; }
 
-    void setLinesThrough(bool val) { linesThrough_ = val; }
+    void set_lines_through(bool val) { lines_through_ = val; }
 
-    void setMinimStyle(TablatureMinimStyle val) { minimStyle_ = val; }
+    void set_minim_style(TablatureMinimStyle val) { minim_style_ = val; }
 
-    void setSymbolRepeat(TablatureSymbolRepeat val) { symRepeat_ = val; }
+    void set_symbol_repeat(TablatureSymbolRepeat val) { sym_repeat_ = val; }
 
-    void setOnLines(bool);
+    void set_on_lines(bool);
 
-    void setShowRests(bool val) { showRests_ = val; }
+    void set_show_rests(bool val) { show_rests_ = val; }
 
-    void setStemsDown(bool val) { stemsDown_ = val; }
+    void set_stems_down(bool val) { stems_down_ = val; }
 
-    void setStemsThrough(bool val) { stemsThrough_ = val; }
+    void set_stems_through(bool val) { stems_through_ = val; }
 
-    void setUpsideDown(bool val) { upsideDown_ = val; }
+    void set_upside_down(bool val) { upside_down_ = val; }
 
-    void setShowTabFingering(bool val) { showTabFingering_ = val; }
+    void set_show_tab_fingering(bool val) { show_tab_fingering_ = val; }
 
-    void setUseNumbers(bool val);
+    void set_use_numbers(bool val);
 
-    void setShowBackTied(bool val) { showBackTied_ = val; }
+    void set_show_back_tied(bool val) { show_back_tied_ = val; }
 
-    void setScore(Score *score);
+    void set_score(Score *score);
 
-    void setFretUseTextStyle(bool val) { fretUseTextStyle_ = val; }
+    void set_fret_use_text_style(bool val) { fret_use_text_style_ = val; }
 
-    void setFretTextStyle(const TextStyleType &val);
-    void setFretPresetIdx(size_t idx);
-    void setFretPreset(const String &str);
+    void set_fret_text_style(const TextStyleType &val);
+    void set_fret_preset_idx(size_t idx);
+    void set_fret_preset(const String &str);
 
-    bool isTabStaff() const { return group_ == StaffGroup::TAB; }
+    bool is_tab_staff() const { return group_ == StaffGroup::TAB; }
 
-    bool isDrumStaff() const { return group_ == StaffGroup::PERCUSSION; }
+    bool is_drum_staff() const { return group_ == StaffGroup::PERCUSSION; }
 
-    bool isSimpleTabStaff() const;
-    bool isCommonTabStaff() const;
-    bool isHiddenElementOnTab(Sid commonTabStyle, Sid simpleTabStyle) const;
+    bool is_simple_tab_staff() const;
+    bool is_common_tab_staff() const;
+    bool is_hidden_element_on_tab(Sid common_tab_style, Sid simple_tab_style) const;
 
-    void styleChanged();
+    void style_changed();
 
     // static functions for font config files
-    static std::vector<String> tabFontNames(bool bDuration);
-    static bool tabFontData(bool bDuration, size_t nIdx, double &pSize, double &pYOff);
+    static std::vector<String> tab_font_names(bool b_duration);
+    static bool tab_font_data(bool b_duration, size_t n_idx, double &p_size, double &p_y_off);
 
-    static void initStaffTypes(const Color &defaultColor);
+    static void init_staff_types(const Color &default_color);
 
     static const std::vector<StaffType> &presets() { return presets_; }
 
@@ -393,92 +394,92 @@ private:
 
     Score *score_ = nullptr;
 
-    double defaultSpatium() const;
-    void setDurationMetrics();
-    void setFretMetrics();
+    double default_spatium() const;
+    void set_duration_metrics();
+    void set_fret_metrics();
 
-    static void initTabFonts();
+    static void init_tab_fonts();
 
     StaffGroup group_ = StaffGroup::STANDARD;
 
-    StaffTypes staffType_ = StaffTypes::STANDARD;
+    StaffTypes staff_type_ = StaffTypes::STANDARD;
 
-    StaffLabel staffLabel_;
+    StaffLabel staff_label_;
 
-    double userMag_ = 1.0; // allowed 0.1 - 10.0
+    double user_mag_ = 1.0; // allowed 0.1 - 10.0
     Spatium yoffset_;
     bool small_ = false;
     bool invisible_ = false;
     Color color_;
 
     int lines_ = 5;
-    int stepOffset_ = 0;
-    Spatium lineDistance_ = 1_sp;
+    int step_offset_ = 0;
+    Spatium line_distance_ = 1_sp;
 
-    bool showBarlines_ = true;
-    bool showLedgerLines_ = true;
+    bool show_barlines_ = true;
+    bool show_ledger_lines_ = true;
     bool stemless_ = false; // do not show stems
 
-    bool genClef_ = true;    // create clef at beginning of system
-    bool genTimesig_ = true; // whether time signature is shown or not
-    bool genKeysig_ = true;  // create key signature at beginning of system
+    bool gen_clef_ = true;    // create clef at beginning of system
+    bool gen_timesig_ = true; // whether time signature is shown or not
+    bool gen_keysig_ = true;  // create key signature at beginning of system
 
     // Standard: configurable properties
-    NoteHeadScheme noteHeadScheme_ = NoteHeadScheme::HEAD_NORMAL;
-    InstrumentLabelVisibility instrumentLabelVisibility_ = InstrumentLabelVisibility::AUTO;
+    NoteHeadScheme note_head_scheme_ = NoteHeadScheme::HEAD_NORMAL;
+    InstrumentLabelVisibility instrument_label_visibility_ = InstrumentLabelVisibility::AUTO;
 
     // TAB: configurable propertiesm
-    double durationFontSize_ = 15.0; // the size (in points) for the duration symbol font
-    double durationFontUserY_ = 0.0; // the vertical offset (spatium units) for the duration symb. font
+    double duration_font_size_ = 15.0;  // the size (in points) for the duration symbol font
+    double duration_font_user_y_ = 0.0; // the vertical offset (spatium units) for the duration symb. font
     // user configurable
-    double fretFontSize_ = 10.0; // the size (in points) for the fret marks font
-    double fretFontUserY_ = 0.0; // additional vert. offset of fret marks with respect to
+    double fret_font_size_ = 10.0;  // the size (in points) for the fret marks font
+    double fret_font_user_y_ = 0.0; // additional vert. offset of fret marks with respect to
     // the string line (spatium unit); user configurable
-    bool genDurations_ = false;                                  // whether duration symbols are drawn or not
-    bool linesThrough_ = false;                                  // whether lines for strings and stems may pass through fret marks or not
-    TablatureMinimStyle minimStyle_ = TablatureMinimStyle::NONE; // how to draw minim stems (stem-and-beam durations only)
-    TablatureSymbolRepeat symRepeat_ = TablatureSymbolRepeat::NEVER; // if and when to repeat the same duration symbol
-    bool onLines_ = true;                                            // whether fret marks are drawn on the string lines or between them
-    bool showRests_ = false;                                         // whether to draw rests or not
-    bool stemsDown_ = true;                                          // stems are drawn downward (stem-and-beam durations only)
-    bool stemsThrough_ = true;      // stems are drawn through the staff rather than beside it (stem-and-beam durations only)
-    bool upsideDown_ = false;       // whether lines are drawn with highest string at top (false) or at bottom (true)
-    bool showTabFingering_ = false; // Allow fingering in tablature staff (true) or not (false)
-    bool useNumbers_ = true;        // true: use numbers ('0' - ...) for frets | false: use letters ('a' - ...)
-    bool showBackTied_ = true;      // whether back-tied notes are shown or not
+    bool gen_durations_ = false;                                  // whether duration symbols are drawn or not
+    bool lines_through_ = false;                                  // whether lines for strings and stems may pass through fret marks or not
+    TablatureMinimStyle minim_style_ = TablatureMinimStyle::NONE; // how to draw minim stems (stem-and-beam durations only)
+    TablatureSymbolRepeat sym_repeat_ = TablatureSymbolRepeat::NEVER; // if and when to repeat the same duration symbol
+    bool on_lines_ = true;                                            // whether fret marks are drawn on the string lines or between them
+    bool show_rests_ = false;                                         // whether to draw rests or not
+    bool stems_down_ = true;                                          // stems are drawn downward (stem-and-beam durations only)
+    bool stems_through_ = true;       // stems are drawn through the staff rather than beside it (stem-and-beam durations only)
+    bool upside_down_ = false;        // whether lines are drawn with highest string at top (false) or at bottom (true)
+    bool show_tab_fingering_ = false; // Allow fingering in tablature staff (true) or not (false)
+    bool use_numbers_ = true;         // true: use numbers ('0' - ...) for frets | false: use letters ('a' - ...)
+    bool show_back_tied_ = true;      // whether back-tied notes are shown or not
 
     // TAB: internally managed variables
     // Note: values in RASTER UNITS are independent from score scaling and
     //    must be multiplied by magS() to be used in contexts using sp units
-    double durationBoxH_ = 0.0;
-    double durationBoxY_ = 0.0;     // the height and the y rect.coord. (relative to staff top line)
-                                    // of a box bounding all duration symbols (raster units) internally computed:
-                                    // depends upon _onString and the metrics of the duration font
-    muse::draw::Font durationFont_; // font used to draw dur. symbols; cached for efficiency
-    size_t durationFontIdx_ = 0;    // the index of current dur. font in dur. font array
-    double durationYOffset_ = 0.0;  // the vertical offset to draw duration symbols with respect to the
+    double duration_box_h_ = 0.0;
+    double duration_box_y_ = 0.0;    // the height and the y rect.coord. (relative to staff top line)
+                                     // of a box bounding all duration symbols (raster units) internally computed:
+                                     // depends upon _onString and the metrics of the duration font
+    muse::draw::Font duration_font_; // font used to draw dur. symbols; cached for efficiency
+    size_t duration_font_idx_ = 0;   // the index of current dur. font in dur. font array
+    double duration_y_offset_ = 0.0; // the vertical offset to draw duration symbols with respect to the
     // string lines (raster units); internally computed: depends upon _onString and duration font
-    double durationGridYOffset_ = 0.0; // the vertical offset to draw the bottom of duration grid with respect to the
+    double duration_grid_y_offset_ = 0.0; // the vertical offset to draw the bottom of duration grid with respect to the
     // string lines (raster units); internally computed: depends upon _onstring and duration font
-    double fretBoxH_ = 0.0;
-    double fretBoxY_ = 0.0; // the height and the y rect.coord. (relative to staff line)
-    double deadFretBoxH_ = 0.0;
-    double deadFretBoxY_ = 0.0;
+    double fret_box_h_ = 0.0;
+    double fret_box_y_ = 0.0; // the height and the y rect.coord. (relative to staff line)
+    double dead_fret_box_h_ = 0.0;
+    double dead_fret_box_y_ = 0.0;
     // of a box bounding all fret characters (raster units) internally computed:
     // depends upon _onString, _useNumbers and the metrics of the fret font
-    bool fretUseTextStyle_ = false;
-    TextStyleType fretTextStyle_ = TextStyleType::TAB_FRET_NUMBER;
-    muse::draw::Font fretFont_; // font used to draw fret marks; cached for efficiency
-    TablatureFretFont fretFontInfo_;
-    size_t fretPresetIdx_ = 0; // the index of current fret font in fret font array
-    double fretYOffset_ = 0.0; // the vertical offset to draw fret marks with respect to the string lines;
-    double deadFretYOffset_ = 0.0;
+    bool fret_use_text_style_ = false;
+    TextStyleType fret_text_style_ = TextStyleType::TAB_FRET_NUMBER;
+    muse::draw::Font fret_font_; // font used to draw fret marks; cached for efficiency
+    TablatureFretFont fret_font_info_;
+    size_t fret_preset_idx_ = 0; // the index of current fret font in fret font array
+    double fret_y_offset_ = 0.0; // the vertical offset to draw fret marks with respect to the string lines;
+    double dead_fret_y_offset_ = 0.0;
     // (raster units); internally computed: depends upon _onString, _useNumbers
     // and the metrics of the fret font
 
     // the array of configured fonts
-    static std::vector<TablatureFretFont> fretFonts_;
-    static std::vector<TablatureDurationFont> durationFonts_;
+    static std::vector<TablatureFretFont> fret_fonts_;
+    static std::vector<TablatureDurationFont> duration_fonts_;
     static std::vector<StaffType> presets_;
 };
 } // namespace mu::engraving

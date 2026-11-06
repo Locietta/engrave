@@ -32,224 +32,227 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-static void fillBendDataForNote(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord,
-                                bool isBendSingle);
+static void fill_bend_data_for_note(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord,
+                                    bool is_bend_single);
 
-static void fillSlightBendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord);
-static void fillPrebendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord);
-static void fillNormalBendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo);
+static void fill_slight_bend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord);
+static void fill_prebend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord);
+static void fill_normal_bend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info);
 
 BendDataCollector::BendDataCollector(mu::engraving::Score *score) : score_(score) {}
 
-void BendDataCollector::storeBendData(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues) {
+void BendDataCollector::store_bend_data(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values) {
 #ifdef SPLIT_CHORD_DURATIONS
     {
-        if (!bendDataCollectorSplitChord_) {
-            bendDataCollectorSplitChord_ = std::make_unique<BendDataCollectorSplitChord>();
+        if (!bend_data_collector_split_chord_) {
+            bend_data_collector_split_chord_ = std::make_unique<BendDataCollectorSplitChord>();
         }
 
-        bendDataCollectorSplitChord_->storeBendData(note, pitchValues);
+        bend_data_collector_split_chord_->store_bend_data(note, pitch_values);
     }
 #else
-    if (!pitchValues.empty()) {
-        bendInfoForNote_[note->track()][note->tick()][note] = BendInfoConverter::fillBendInfo(note, pitchValues);
+    if (!pitch_values.empty()) {
+        bend_info_for_note_[note->track()][note->tick()][note] = BendInfoConverter::fill_bend_info(note, pitch_values);
     }
 #endif
 }
 
-BendDataContext BendDataCollector::collectBendDataContext() {
-    BendDataContext bendDataCtx;
+BendDataContext BendDataCollector::collect_bend_data_context() {
+    BendDataContext bend_data_ctx;
 
 #ifdef SPLIT_CHORD_DURATIONS
-    bendDataCtx.splitChordCtx = std::make_unique<BendDataContextSplitChord>(bendDataCollectorSplitChord_->collectBendDataContext());
+    bend_data_ctx.split_chord_ctx =
+        std::make_unique<BendDataContextSplitChord>(bend_data_collector_split_chord_->collect_bend_data_context());
 #else
-    regroupBendDataByTiedChords();
-    fillBendDataContext(bendDataCtx);
+    regroup_bend_data_by_tied_chords();
+    fill_bend_data_context(bend_data_ctx);
 #endif
 
-    return bendDataCtx;
+    return bend_data_ctx;
 }
 
-static void fillBendDataForNote(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord,
-                                bool isBendSingle) {
-    const Note *note = importedInfo.note;
+static void fill_bend_data_for_note(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord,
+                                    bool is_bend_single) {
+    const Note *note = imported_info.note;
     if (!note) {
         return;
     }
 
-    if (importedInfo.type == BendType::SLIGHT_BEND && isBendSingle) {
+    if (imported_info.type == BendType::SLIGHT_BEND && is_bend_single) {
         // even though it's slight bend (1/4), we import it as normal bend, if it's followed by other bend (or hold)
-        fillSlightBendData(bendDataCtx, importedInfo, noteIndexInChord);
+        fill_slight_bend_data(bend_data_ctx, imported_info, note_index_in_chord);
         return;
     }
 
-    if (importedInfo.type == BendType::PREBEND) {
-        fillPrebendData(bendDataCtx, importedInfo, noteIndexInChord);
+    if (imported_info.type == BendType::PREBEND) {
+        fill_prebend_data(bend_data_ctx, imported_info, note_index_in_chord);
     }
 
-    fillNormalBendData(bendDataCtx, importedInfo);
+    fill_normal_bend_data(bend_data_ctx, imported_info);
 }
 
-void fillSlightBendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord) {
-    const Note *note = importedInfo.note;
+void fill_slight_bend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord) {
+    const Note *note = imported_info.note;
     const Chord *chord = note->chord();
     Fraction tick = chord->tick();
 
-    segment_data_map_t &slightBendChordData = bendDataCtx.slightBendData[note->track()][tick];
-    SegmentData slightSegmentData;
-    slightSegmentData.quarterTones = 1;
+    segment_data_map_t &slight_bend_chord_data = bend_data_ctx.slight_bend_data[note->track()][tick];
+    SegmentData slight_segment_data;
+    slight_segment_data.quarter_tones = 1;
 
-    const auto &seg = importedInfo.segments.front();
+    const auto &seg = imported_info.segments.front();
 
-    const int distanceToBendStart = importedInfo.timeOffsetFromStart;
-    const int bendLength = seg.middleTime - seg.startTime;
-    const int currentSegmentLength = seg.endTime - seg.startTime + distanceToBendStart;
+    const int distance_to_bend_start = imported_info.time_offset_from_start;
+    const int bend_length = seg.middle_time - seg.start_time;
+    const int current_segment_length = seg.end_time - seg.start_time + distance_to_bend_start;
 
-    slightSegmentData.startFactor = (double) distanceToBendStart / currentSegmentLength;
-    slightSegmentData.endFactor = (double) (distanceToBendStart + bendLength) / currentSegmentLength;
+    slight_segment_data.start_factor = (double) distance_to_bend_start / current_segment_length;
+    slight_segment_data.end_factor = (double) (distance_to_bend_start + bend_length) / current_segment_length;
 
-    slightBendChordData[noteIndexInChord] = std::move(slightSegmentData);
+    slight_bend_chord_data[note_index_in_chord] = std::move(slight_segment_data);
 }
 
-static void fillPrebendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo, int noteIndexInChord) {
-    const Note *note = importedInfo.note;
+static void fill_prebend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info, int note_index_in_chord) {
+    const Note *note = imported_info.note;
     Fraction tick = note->tick();
-    segment_data_map_t &prebendChordData = bendDataCtx.prebendData[note->track()][tick];
+    segment_data_map_t &prebend_chord_data = bend_data_ctx.prebend_data[note->track()][tick];
 
-    SegmentData prebendNoteData;
-    prebendNoteData.quarterTones = importedInfo.pitchOffsetFromStart / GP_PITCH_PER_QUARTERTONE;
+    SegmentData prebend_note_data;
+    prebend_note_data.quarter_tones = imported_info.pitch_offset_from_start / ::mu::iex::guitarpro::gp_pitch_per_quartertone;
 
-    prebendChordData[noteIndexInChord] = std::move(prebendNoteData);
+    prebend_chord_data[note_index_in_chord] = std::move(prebend_note_data);
 }
 
-static void fillNormalBendData(BendDataContext &bendDataCtx, const ImportedBendInfo &importedInfo) {
-    if (importedInfo.segments.empty()) {
+static void fill_normal_bend_data(BendDataContext &bend_data_ctx, const ImportedBendInfo &imported_info) {
+    if (imported_info.segments.empty()) {
         return;
     }
 
-    const Note *note = importedInfo.note;
+    const Note *note = imported_info.note;
     const Chord *chord = note->chord();
     track_idx_t track = chord->track();
     Fraction tick = chord->tick();
 
-    for (size_t i = 0; i < importedInfo.segments.size(); i++) {
-        const auto &seg = importedInfo.segments[i];
-        const int offsetFromStart = (i == 0) ? importedInfo.timeOffsetFromStart : 0;
+    for (size_t i = 0; i < imported_info.segments.size(); i++) {
+        const auto &seg = imported_info.segments[i];
+        const int offset_from_start = (i == 0) ? imported_info.time_offset_from_start : 0;
 
         SegmentData data;
-        data.quarterTones = seg.endPitch / GP_PITCH_PER_QUARTERTONE;
+        data.quarter_tones = seg.end_pitch / ::mu::iex::guitarpro::gp_pitch_per_quartertone;
 
-        const int distanceToBendStart = offsetFromStart;
-        const int bendLength = seg.middleTime - seg.startTime;
-        const int currentSegmentLength = seg.endTime - seg.startTime + offsetFromStart;
+        const int distance_to_bend_start = offset_from_start;
+        const int bend_length = seg.middle_time - seg.start_time;
+        const int current_segment_length = seg.end_time - seg.start_time + offset_from_start;
 
-        data.startFactor = (double) distanceToBendStart / currentSegmentLength;
-        data.endFactor = (double) (distanceToBendStart + bendLength) / currentSegmentLength;
-        size_t noteIdx = muse::indexOf(note->chord()->notes(), note);
+        data.start_factor = (double) distance_to_bend_start / current_segment_length;
+        data.end_factor = (double) (distance_to_bend_start + bend_length) / current_segment_length;
+        size_t note_idx = muse::index_of(note->chord()->notes(), note);
 
-        if (importedInfo.connectionType == ConnectionToNextNoteType::MAIN_NOTE_CONNECTS) {
-            bendDataCtx.tiedNotesBendsData[track][tick][noteIdx] = std::move(data);
-        } else if (importedInfo.connectionType == ConnectionToNextNoteType::LAST_GRACE_CONNECTS && i == importedInfo.segments.size() - 1) {
-            LastGraceNoteData lastNoteData;
-            lastNoteData.shouldMoveTie = true;
-            lastNoteData.endFactor = data.endFactor;
-            bendDataCtx.graceAfterBendData[track][tick][noteIdx].lastNoteData = lastNoteData;
+        if (imported_info.connection_type == ConnectionToNextNoteType::MAIN_NOTE_CONNECTS) {
+            bend_data_ctx.tied_notes_bends_data[track][tick][note_idx] = std::move(data);
+        } else if (imported_info.connection_type == ConnectionToNextNoteType::LAST_GRACE_CONNECTS &&
+                   i == imported_info.segments.size() - 1) {
+            LastGraceNoteData last_note_data;
+            last_note_data.should_move_tie = true;
+            last_note_data.end_factor = data.end_factor;
+            bend_data_ctx.grace_after_bend_data[track][tick][note_idx].last_note_data = last_note_data;
         } else {
-            bendDataCtx.graceAfterBendData[track][tick][noteIdx].data.push_back(std::move(data));
+            bend_data_ctx.grace_after_bend_data[track][tick][note_idx].data.push_back(std::move(data));
         }
     }
 }
 
-void BendDataCollector::regroupBendDataByTiedChords() {
-    for (auto &[track, trackInfo] : bendInfoForNote_) {
-        for (auto &[mainTick, tickInfo] : trackInfo) {
-            const Chord *mainChord = utils::getLocatedChord(score_, mainTick, track);
-            auto &chunk = regroupedDataByTiedChords_[track][mainTick];
+void BendDataCollector::regroup_bend_data_by_tied_chords() {
+    for (auto &[track, track_info] : bend_info_for_note_) {
+        for (auto &[main_tick, tick_info] : track_info) {
+            const Chord *main_chord = utils::get_located_chord(score_, main_tick, track);
+            auto &chunk = regrouped_data_by_tied_chords_[track][main_tick];
             {
-                auto &infoForFirstChord = chunk[mainTick];
-                infoForFirstChord.chord = mainChord;
+                auto &info_for_first_chord = chunk[main_tick];
+                info_for_first_chord.chord = main_chord;
 
-                for (const auto &[note, info] : tickInfo) {
-                    infoForFirstChord.dataByNote[note] = std::move(tickInfo[note]);
+                for (const auto &[note, info] : tick_info) {
+                    info_for_first_chord.data_by_note[note] = std::move(tick_info[note]);
                 }
             }
 
             // filling the tied notes
-            for (const auto &[note, info] : tickInfo) {
-                const Note *currentNote = note;
-                const Tie *tieFor = currentNote->tieFor();
-                while (tieFor) {
-                    currentNote = tieFor->endNote();
+            for (const auto &[note, info] : tick_info) {
+                const Note *current_note = note;
+                const Tie *tie_for = current_note->tie_for();
+                while (tie_for) {
+                    current_note = tie_for->end_note();
 
-                    IF_ASSERT_FAILED(currentNote) {
+                    IF_ASSERT_FAILED(current_note) {
                         LOGE() << "invalid tie encountered while importing guitar bend";
                         break;
                     }
 
-                    if (muse::contains(trackInfo, currentNote->tick()) && muse::contains(trackInfo.at(currentNote->tick()), currentNote)) {
-                        auto &noteInfo = trackInfo.at(currentNote->tick()).at(currentNote);
-                        if (noteInfo.type == BendType::PREBEND) {
-                            noteInfo.type = BendType::HOLD;
+                    if (muse::contains(track_info, current_note->tick()) &&
+                        muse::contains(track_info.at(current_note->tick()), current_note)) {
+                        auto &note_info = track_info.at(current_note->tick()).at(current_note);
+                        if (note_info.type == BendType::PREBEND) {
+                            note_info.type = BendType::HOLD;
                             // rewriting first note's info about should it connect to next or not
-                            auto &firstChordData = regroupedDataByTiedChords_[track][mainTick].begin()->second;
-                            size_t noteIndex = std::min(muse::indexOf(currentNote->chord()->notes(), currentNote),
-                                                        firstChordData.chord->notes().size() - 1);
-                            firstChordData.dataByNote[firstChordData.chord->notes()[noteIndex]].connectionType =
+                            auto &first_chord_data = regrouped_data_by_tied_chords_[track][main_tick].begin()->second;
+                            size_t note_index = std::min(muse::index_of(current_note->chord()->notes(), current_note),
+                                                         first_chord_data.chord->notes().size() - 1);
+                            first_chord_data.data_by_note[first_chord_data.chord->notes()[note_index]].connection_type =
                                 ConnectionToNextNoteType::MAIN_NOTE_CONNECTS;
                         } else {
                             break;
                         }
                     }
 
-                    const Chord *currentChord = currentNote->chord();
-                    auto &infoForCurrentChord = chunk[currentChord->tick()];
+                    const Chord *current_chord = current_note->chord();
+                    auto &info_for_current_chord = chunk[current_chord->tick()];
 
-                    infoForCurrentChord.chord = currentChord;
-                    infoForCurrentChord.dataByNote[currentNote] = std::move(tickInfo[currentNote]);
+                    info_for_current_chord.chord = current_chord;
+                    info_for_current_chord.data_by_note[current_note] = std::move(tick_info[current_note]);
 
-                    tieFor = currentNote->tieFor();
+                    tie_for = current_note->tie_for();
                 }
             }
         }
     }
 
-    bendInfoForNote_.clear();
+    bend_info_for_note_.clear();
 }
 
-void BendDataCollector::fillBendDataContext(BendDataContext &bendDataCtx) {
-    for (auto &[track, trackInfo] : regroupedDataByTiedChords_) {
-        for (auto &[tick, chunk] : trackInfo) {
-            size_t tiedBendNotesAmount = chunk.size();
+void BendDataCollector::fill_bend_data_context(BendDataContext &bend_data_ctx) {
+    for (auto &[track, track_info] : regrouped_data_by_tied_chords_) {
+        for (auto &[tick, chunk] : track_info) {
+            size_t tied_bend_notes_amount = chunk.size();
 
-            auto &firstChordData = chunk.begin()->second;
-            const Chord *firstChord = firstChordData.chord;
+            auto &first_chord_data = chunk.begin()->second;
+            const Chord *first_chord = first_chord_data.chord;
 
-            for (size_t noteIdx = 0; noteIdx < firstChord->notes().size(); noteIdx++) {
-                const Note *mainNote = firstChord->notes()[noteIdx];
-                if (muse::contains(firstChordData.dataByNote, mainNote)) {
-                    auto &dataForFirstNote = firstChordData.dataByNote.at(mainNote);
-                    if (tiedBendNotesAmount >= dataForFirstNote.segments.size() && tiedBendNotesAmount > 1) {
-                        moveSegmentsToTiedNotes(chunk, dataForFirstNote, noteIdx);
-                    } else if (mainNote->tieFor()) {
+            for (size_t note_idx = 0; note_idx < first_chord->notes().size(); note_idx++) {
+                const Note *main_note = first_chord->notes()[note_idx];
+                if (muse::contains(first_chord_data.data_by_note, main_note)) {
+                    auto &data_for_first_note = first_chord_data.data_by_note.at(main_note);
+                    if (tied_bend_notes_amount >= data_for_first_note.segments.size() && tied_bend_notes_amount > 1) {
+                        move_segments_to_tied_notes(chunk, data_for_first_note, note_idx);
+                    } else if (main_note->tie_for()) {
                         // last grace note should connect to next tied note instead of original note of chord
-                        auto &lastChordData = chunk.rbegin()->second;
-                        size_t noteIndex =
-                            std::min(muse::indexOf(mainNote->chord()->notes(), mainNote), lastChordData.chord->notes().size() - 1);
-                        lastChordData.dataByNote[lastChordData.chord->notes()[noteIndex]].connectionType =
-                            (dataForFirstNote.segments.size() > 1 ? ConnectionToNextNoteType::LAST_GRACE_CONNECTS :
-                                                                    ConnectionToNextNoteType::MAIN_NOTE_CONNECTS);
+                        auto &last_chord_data = chunk.rbegin()->second;
+                        size_t note_index =
+                            std::min(muse::index_of(main_note->chord()->notes(), main_note), last_chord_data.chord->notes().size() - 1);
+                        last_chord_data.data_by_note[last_chord_data.chord->notes()[note_index]].connection_type =
+                            (data_for_first_note.segments.size() > 1 ? ConnectionToNextNoteType::LAST_GRACE_CONNECTS :
+                                                                       ConnectionToNextNoteType::MAIN_NOTE_CONNECTS);
                     }
                 }
             }
 
-            size_t chunkSize = chunk.size();
-            for (auto &[chunkTick, chordInfo] : chunk) {
-                const auto &notesVec = chordInfo.chord->notes();
-                const auto &notesData = chordInfo.dataByNote;
-                for (size_t i = 0; i < notesVec.size(); ++i) {
-                    Note *n = notesVec[i];
-                    if (auto it = notesData.find(n); it != notesData.end()) {
-                        fillBendDataForNote(bendDataCtx, it->second, static_cast<int>(i), chunkSize == 1);
+            size_t chunk_size = chunk.size();
+            for (auto &[chunk_tick, chord_info] : chunk) {
+                const auto &notes_vec = chord_info.chord->notes();
+                const auto &notes_data = chord_info.data_by_note;
+                for (size_t i = 0; i < notes_vec.size(); ++i) {
+                    Note *n = notes_vec[i];
+                    if (auto it = notes_data.find(n); it != notes_data.end()) {
+                        fill_bend_data_for_note(bend_data_ctx, it->second, static_cast<int>(i), chunk_size == 1);
                     }
                 }
             }
@@ -257,46 +260,46 @@ void BendDataCollector::fillBendDataContext(BendDataContext &bendDataCtx) {
     }
 }
 
-void BendDataCollector::moveSegmentsToTiedNotes(tied_chords_bend_data_chunk_t &dataChunk, ImportedBendInfo &dataForFirstNote,
-                                                size_t noteIdx) {
-    dataForFirstNote.connectionType = ConnectionToNextNoteType::MAIN_NOTE_CONNECTS;
-    const size_t segmentsSize = dataForFirstNote.segments.size();
-    size_t newSegmentsSize = segmentsSize;
-    const Note *note = dataForFirstNote.note;
-    size_t diff = dataChunk.size() - segmentsSize;
+void BendDataCollector::move_segments_to_tied_notes(tied_chords_bend_data_chunk_t &data_chunk, ImportedBendInfo &data_for_first_note,
+                                                    size_t note_idx) {
+    data_for_first_note.connection_type = ConnectionToNextNoteType::MAIN_NOTE_CONNECTS;
+    const size_t segments_size = data_for_first_note.segments.size();
+    size_t new_segments_size = segments_size;
+    const Note *note = data_for_first_note.note;
+    size_t diff = data_chunk.size() - segments_size;
 
-    IF_ASSERT_FAILED(dataChunk.size() >= segmentsSize) { return; }
+    IF_ASSERT_FAILED(data_chunk.size() >= segments_size) { return; }
 
-    auto dataChunkIt = dataChunk.begin();
+    auto data_chunk_it = data_chunk.begin();
 
-    for (size_t i = 1; newSegmentsSize > 1; i++, newSegmentsSize--) {
-        const bool chordExists = i < dataChunk.size();
-        dataChunkIt = std::next(dataChunkIt);
-        auto &nextChordData = dataChunkIt->second;
+    for (size_t i = 1; new_segments_size > 1; i++, new_segments_size--) {
+        const bool chord_exists = i < data_chunk.size();
+        data_chunk_it = std::next(data_chunk_it);
+        auto &next_chord_data = data_chunk_it->second;
 
-        if (!chordExists || noteIdx >= nextChordData.chord->notes().size()) {
+        if (!chord_exists || note_idx >= next_chord_data.chord->notes().size()) {
             LOGE() << "bend import error: bends data for tied notes is wrong for track " << note->track() << ", tick "
                    << note->tick().ticks();
             return;
         }
 
-        const Note *nextNote = nextChordData.chord->notes()[noteIdx];
-        auto &dataForNextNote = nextChordData.dataByNote[nextNote];
-        dataForNextNote.note = nextNote;
-        dataForNextNote.segments.push_back(std::move(dataForFirstNote.segments[i]));
-        dataForNextNote.connectionType = ConnectionToNextNoteType::MAIN_NOTE_CONNECTS;
+        const Note *next_note = next_chord_data.chord->notes()[note_idx];
+        auto &data_for_next_note = next_chord_data.data_by_note[next_note];
+        data_for_next_note.note = next_note;
+        data_for_next_note.segments.push_back(std::move(data_for_first_note.segments[i]));
+        data_for_next_note.connection_type = ConnectionToNextNoteType::MAIN_NOTE_CONNECTS;
     }
 
-    if (newSegmentsSize < segmentsSize) {
-        dataForFirstNote.segments.resize(newSegmentsSize);
+    if (new_segments_size < segments_size) {
+        data_for_first_note.segments.resize(new_segments_size);
     }
 
     // in that case last note should be grace-after
     if (diff == 0) {
-        auto &nextChordData = dataChunk.rbegin()->second;
-        for (const Note *lastChordNote : nextChordData.chord->notes()) {
-            if (muse::contains(nextChordData.dataByNote, lastChordNote)) {
-                nextChordData.dataByNote[lastChordNote].connectionType = ConnectionToNextNoteType::NONE;
+        auto &next_chord_data = data_chunk.rbegin()->second;
+        for (const Note *last_chord_note : next_chord_data.chord->notes()) {
+            if (muse::contains(next_chord_data.data_by_note, last_chord_note)) {
+                next_chord_data.data_by_note[last_chord_note].connection_type = ConnectionToNextNoteType::NONE;
             }
         }
     }

@@ -33,8 +33,8 @@ namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiKey {
-void assignKeyListToStaff(const engraving::KeyList &kl, engraving::Staff *staff);
-void recognizeMainKeySig(std::vector<MTrack> &tracks);
+void assign_key_list_to_staff(const engraving::KeyList &kl, engraving::Staff *staff);
+void recognize_main_key_sig(std::vector<MTrack> &tracks);
 } // namespace MidiKey
 } // namespace mu::iex::midi
 

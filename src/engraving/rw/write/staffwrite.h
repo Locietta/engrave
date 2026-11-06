@@ -33,7 +33,7 @@ namespace mu::engraving::write {
 class StaffWrite {
 public:
 
-    static void writeStaff(const Staff *staff, XmlWriter &xml, WriteContext &ctx, MeasureBase *measureStart, MeasureBase *measureEnd,
-                           staff_idx_t staffStart, staff_idx_t staffIdx);
+    static void write_staff(const Staff *staff, XmlWriter &xml, WriteContext &ctx, MeasureBase *measure_start, MeasureBase *measure_end,
+                            staff_idx_t staff_start, staff_idx_t staff_idx);
 };
 } // namespace mu::engraving::write

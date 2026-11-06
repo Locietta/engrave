@@ -26,176 +26,176 @@
 
 using namespace mu::engraving;
 
-static const AutomationCurve EMPTY_CURVE;
+static const AutomationCurve empty_curve;
 
-static void diffPoints(const AutomationCurveKey &key, const AutomationCurve &oldCurve, const AutomationCurve &newCurve,
-                       AutomationChanges &changes) {
-    auto oldIt = oldCurve.begin();
-    auto newIt = newCurve.begin();
+static void diff_points(const AutomationCurveKey &key, const AutomationCurve &old_curve, const AutomationCurve &new_curve,
+                        AutomationChanges &changes) {
+    auto old_it = old_curve.begin();
+    auto new_it = new_curve.begin();
 
     bool changed = false;
-    utick_t firstTick = 0;
-    utick_t lastTick = 0;
+    utick_t first_tick = 0;
+    utick_t last_tick = 0;
 
     // An ArrivalFromPrevious point can be bit-identical yet resolve differently if its predecessor's
     // outValue changed; only meaningful when that predecessor is the same point in both curves
-    std::optional<real_t> prevOldOut;
-    std::optional<real_t> prevNewOut;
-    bool predecessorAligned = true;
+    std::optional<real_t> prev_old_out;
+    std::optional<real_t> prev_new_out;
+    bool predecessor_aligned = true;
 
-    while (oldIt != oldCurve.end() && newIt != newCurve.end()) {
+    while (old_it != old_curve.end() && new_it != new_curve.end()) {
         utick_t tick;
         bool differs;
 
-        if (oldIt->first < newIt->first) {
-            tick = oldIt->first; // point removed
+        if (old_it->first < new_it->first) {
+            tick = old_it->first; // point removed
             differs = true;
-            prevOldOut = oldIt->second.value.outValue;
-            predecessorAligned = false;
-            ++oldIt;
-        } else if (newIt->first < oldIt->first) {
-            tick = newIt->first; // point added
+            prev_old_out = old_it->second.value.out_value;
+            predecessor_aligned = false;
+            ++old_it;
+        } else if (new_it->first < old_it->first) {
+            tick = new_it->first; // point added
             differs = true;
-            prevNewOut = newIt->second.value.outValue;
-            predecessorAligned = false;
-            ++newIt;
+            prev_new_out = new_it->second.value.out_value;
+            predecessor_aligned = false;
+            ++new_it;
         } else {
-            tick = oldIt->first;
-            differs = oldIt->second != newIt->second // point changed
-                      || (predecessorAligned &&
-                          resolveInValue(oldIt->second.value, prevOldOut) != resolveInValue(newIt->second.value, prevNewOut));
-            prevOldOut = oldIt->second.value.outValue;
-            prevNewOut = newIt->second.value.outValue;
-            predecessorAligned = true;
-            ++oldIt;
-            ++newIt;
+            tick = old_it->first;
+            differs = old_it->second != new_it->second // point changed
+                      || (predecessor_aligned &&
+                          resolve_in_value(old_it->second.value, prev_old_out) != resolve_in_value(new_it->second.value, prev_new_out));
+            prev_old_out = old_it->second.value.out_value;
+            prev_new_out = new_it->second.value.out_value;
+            predecessor_aligned = true;
+            ++old_it;
+            ++new_it;
         }
 
         if (differs) {
             if (!changed) {
-                firstTick = tick;
+                first_tick = tick;
             }
-            lastTick = tick;
+            last_tick = tick;
             changed = true;
         }
     }
 
-    if (oldIt != oldCurve.end() || newIt != newCurve.end()) {
-        const bool oldHasTail = oldIt != oldCurve.end();
-        const utick_t tailFirstTick = oldHasTail ? oldIt->first : newIt->first;
-        const utick_t tailLastTick = oldHasTail ? oldCurve.rbegin()->first : newCurve.rbegin()->first;
+    if (old_it != old_curve.end() || new_it != new_curve.end()) {
+        const bool old_has_tail = old_it != old_curve.end();
+        const utick_t tail_first_tick = old_has_tail ? old_it->first : new_it->first;
+        const utick_t tail_last_tick = old_has_tail ? old_curve.rbegin()->first : new_curve.rbegin()->first;
 
         if (!changed) {
-            firstTick = tailFirstTick;
+            first_tick = tail_first_tick;
         }
-        lastTick = tailLastTick;
+        last_tick = tail_last_tick;
         changed = true;
     }
 
     if (changed) {
-        changes.extend(key, firstTick, lastTick);
+        changes.extend(key, first_tick, last_tick);
     }
 }
 
-const AutomationCurveMap &AutomationData::curves() const { return curveMap_; }
+const AutomationCurveMap &AutomationData::curves() const { return curve_map_; }
 
 const AutomationCurve &AutomationData::curve(const AutomationCurveKey &key) const {
-    auto curveIt = curveMap_.find(key);
-    if (curveIt == curveMap_.end()) {
-        return EMPTY_CURVE;
+    auto curve_it = curve_map_.find(key);
+    if (curve_it == curve_map_.end()) {
+        return ::empty_curve;
     }
 
-    return curveIt->second;
+    return curve_it->second;
 }
 
-bool AutomationData::isEmpty() const { return curveMap_.empty(); }
+bool AutomationData::is_empty() const { return curve_map_.empty(); }
 
-void AutomationData::setCurves(const AutomationCurveMap &curves) {
+void AutomationData::set_curves(const AutomationCurveMap &curves) {
     TRACEFUNC;
 
-    if (curveMap_.empty() && !curves.empty()) {
-        curveMap_ = curves;
+    if (curve_map_.empty() && !curves.empty()) {
+        curve_map_ = curves;
         return;
     }
 
-    size_t overlapCount = 0;
+    size_t overlap_count = 0;
     AutomationChanges changes;
 
-    for (const auto &[key, newCurve] : curves) {
-        const auto oldIt = curveMap_.find(key);
-        const bool existed = oldIt != curveMap_.end();
+    for (const auto &[key, new_curve] : curves) {
+        const auto old_it = curve_map_.find(key);
+        const bool existed = old_it != curve_map_.end();
         if (existed) {
-            ++overlapCount;
+            ++overlap_count;
         }
 
-        const AutomationCurve &oldCurve = existed ? oldIt->second : EMPTY_CURVE;
-        diffPoints(key, oldCurve, newCurve, changes);
+        const AutomationCurve &old_curve = existed ? old_it->second : ::empty_curve;
+        diff_points(key, old_curve, new_curve, changes);
     }
 
-    for (const auto &[key, oldCurve] : curveMap_) {
+    for (const auto &[key, old_curve] : curve_map_) {
         if (!curves.contains(key)) {
-            diffPoints(key, oldCurve, EMPTY_CURVE, changes);
+            diff_points(key, old_curve, ::empty_curve, changes);
         }
     }
 
     // Every key was touched by this change
-    const size_t allKeysCount = curves.size() + curveMap_.size() - overlapCount;
-    if (changes.affectedKeys.size() == allKeysCount) {
-        changes.isFullReset = true;
+    const size_t all_keys_count = curves.size() + curve_map_.size() - overlap_count;
+    if (changes.affected_keys.size() == all_keys_count) {
+        changes.is_full_reset = true;
     }
 
-    curveMap_ = curves;
+    curve_map_ = curves;
 }
 
-void AutomationData::replaceCurves(const AutomationCurveMap &curves) {
+void AutomationData::replace_curves(const AutomationCurveMap &curves) {
     TRACEFUNC;
 
-    if (curveMap_.empty() && !curves.empty()) {
-        curveMap_ = curves;
+    if (curve_map_.empty() && !curves.empty()) {
+        curve_map_ = curves;
         return;
     }
 
-    const size_t oldSize = curveMap_.size();
-    size_t overlapCount = 0;
+    const size_t old_size = curve_map_.size();
+    size_t overlap_count = 0;
     AutomationChanges changes;
 
-    for (const auto &[key, newCurve] : curves) {
-        const auto oldIt = curveMap_.find(key);
-        const bool existed = oldIt != curveMap_.end();
+    for (const auto &[key, new_curve] : curves) {
+        const auto old_it = curve_map_.find(key);
+        const bool existed = old_it != curve_map_.end();
         if (existed) {
-            ++overlapCount;
+            ++overlap_count;
         }
 
-        const AutomationCurve &oldCurve = existed ? oldIt->second : EMPTY_CURVE;
-        diffPoints(key, oldCurve, newCurve, changes);
+        const AutomationCurve &old_curve = existed ? old_it->second : ::empty_curve;
+        diff_points(key, old_curve, new_curve, changes);
 
-        if (newCurve.empty()) {
+        if (new_curve.empty()) {
             if (existed) {
-                curveMap_.erase(oldIt);
+                curve_map_.erase(old_it);
             }
         } else if (existed) {
-            oldIt->second = newCurve;
+            old_it->second = new_curve;
         } else {
-            curveMap_.emplace(key, newCurve);
+            curve_map_.emplace(key, new_curve);
         }
     }
 
     // Every key was touched by this change
-    const size_t allKeysCount = oldSize + curves.size() - overlapCount;
-    if (allKeysCount > 0 && changes.affectedKeys.size() == allKeysCount) {
-        changes.isFullReset = true;
+    const size_t all_keys_count = old_size + curves.size() - overlap_count;
+    if (all_keys_count > 0 && changes.affected_keys.size() == all_keys_count) {
+        changes.is_full_reset = true;
     }
 }
 
-void AutomationData::editPoints(const AutomationCurveKey &key, const AutomationPointEdits &edits) {
+void AutomationData::edit_points(const AutomationCurveKey &key, const AutomationPointEdits &edits) {
     TRACEFUNC;
 
     if (edits.empty()) {
         return;
     }
 
-    const auto curveIt = curveMap_.try_emplace(key).first;
-    AutomationCurve &curve = curveIt->second;
+    const auto curve_it = curve_map_.try_emplace(key).first;
+    AutomationCurve &curve = curve_it->second;
     AutomationChanges changes;
     bool changed = false;
 
@@ -210,71 +210,71 @@ void AutomationData::editPoints(const AutomationCurveKey &key, const AutomationP
             continue;
         }
 
-        utick_t rangeFrom = edit.tick;
-        utick_t rangeTo = edit.tick;
+        utick_t range_from = edit.tick;
+        utick_t range_to = edit.tick;
         bool moved = false;
 
         const auto *move = std::get_if<AutomationPointEdit::MovePoint>(&edit.change);
         if (move && move->from != edit.tick) {
             curve.erase(move->from);
-            rangeFrom = std::min(rangeFrom, move->from);
-            rangeTo = std::max(rangeTo, move->from);
+            range_from = std::min(range_from, move->from);
+            range_to = std::max(range_to, move->from);
             moved = true;
         }
 
         const AutomationPoint &point = move ? move->point : std::get<AutomationPointEdit::SetPoint>(edit.change).point;
 
-        auto pointIt = curve.lower_bound(edit.tick);
-        const bool exists = pointIt != curve.end() && pointIt->first == edit.tick;
+        auto point_it = curve.lower_bound(edit.tick);
+        const bool exists = point_it != curve.end() && point_it->first == edit.tick;
 
-        if (exists && pointIt->second == point) {
+        if (exists && point_it->second == point) {
             if (moved) {
-                changes.extend(rangeFrom, rangeTo);
+                changes.extend(range_from, range_to);
                 changed = true;
             }
             continue;
         }
 
         if (exists) {
-            pointIt->second = point;
+            point_it->second = point;
         } else {
-            curve.emplace_hint(pointIt, edit.tick, point);
+            curve.emplace_hint(point_it, edit.tick, point);
         }
 
-        changes.extend(rangeFrom, rangeTo);
+        changes.extend(range_from, range_to);
         changed = true;
     }
 
     if (curve.empty()) {
-        curveMap_.erase(curveIt);
+        curve_map_.erase(curve_it);
     }
 
     if (changed) {
-        changes.affectedKeys.insert(key);
+        changes.affected_keys.insert(key);
     }
 }
 
 std::string AutomationData::dump() const {
-    auto typeName = [](AutomationType type) -> const char * {
+    auto type_name = [](AutomationType type) -> const char * {
         switch (type) {
-            case AutomationType::Dynamics: return "Dynamics";
-            case AutomationType::Tempo: return "Tempo";
-            case AutomationType::Volume: return "Volume";
-            case AutomationType::Pan: return "Pan";
-            case AutomationType::Unknown: break;
+            case AutomationType::DYNAMICS: return "Dynamics";
+            case AutomationType::TEMPO: return "Tempo";
+            case AutomationType::VOLUME: return "Volume";
+            case AutomationType::PAN: return "Pan";
+            case AutomationType::UNKNOWN: break;
         }
         return "Unknown";
     };
 
-    auto scopeStr = [](const AutomationCurveKey &key) -> std::string {
-        if (const std::optional<InstrumentTrackId> trackId = key.trackId()) {
-            return "instrument = " + trackId->partId.toStdString() + "/" + trackId->instrumentId.toStdString();
+    auto scope_str = [](const AutomationCurveKey &key) -> std::string {
+        if (const std::optional<InstrumentTrackId> track_id = key.track_id()) {
+            return "instrument = " + track_id->part_id.to_std_string() + "/" + track_id->instrument_id.to_std_string();
         }
 
-        if (const std::optional<muse::ID> staffId = key.staffId()) {
-            std::string scope = "staff = " + staffId->toStdString();
-            if (const std::optional<size_t> voiceIdx = key.voiceIdx()) {
-                scope += ", voice = " + std::to_string(*voiceIdx);
+        if (const std::optional<muse::ID> staff_id = key.staff_id()) {
+            std::string scope = "staff = " + staff_id->to_std_string();
+            if (const std::optional<size_t> voice_idx = key.voice_idx()) {
+                scope += ", voice = " + std::to_string(*voice_idx);
             }
             return scope;
         }
@@ -282,32 +282,32 @@ std::string AutomationData::dump() const {
         return "global";
     };
 
-    auto inValueStr = [](const AutomationPoint::InValue &inValue) -> std::string {
-        if (std::holds_alternative<AutomationPoint::ArrivalFromPrevious>(inValue)) {
+    auto in_value_str = [](const AutomationPoint::InValue &in_value) -> std::string {
+        if (std::holds_alternative<AutomationPoint::ArrivalFromPrevious>(in_value)) {
             return "in = <from previous>";
         }
 
-        const AutomationPoint::ExplicitArrival &arrival = std::get<AutomationPoint::ExplicitArrival>(inValue);
+        const AutomationPoint::ExplicitArrival &arrival = std::get<AutomationPoint::ExplicitArrival>(in_value);
         std::string result = "in = " + std::to_string(arrival.value.raw());
-        if (!arrival.ease.isNone()) {
+        if (!arrival.ease.is_none()) {
             result += " (ease t = " + std::to_string(arrival.ease.t.raw()) + ", value = " + std::to_string(arrival.ease.value.raw()) + ")";
         }
         return result;
     };
 
-    std::string result = "AutomationData: " + std::to_string(curveMap_.size()) + " curves";
+    std::string result = "AutomationData: " + std::to_string(curve_map_.size()) + " curves";
 
-    for (const auto &[key, curve] : curveMap_) {
-        result += "\n[" + std::string(typeName(key.type)) + " " + scopeStr(key) + "] " + std::to_string(curve.size()) + " points";
+    for (const auto &[key, curve] : curve_map_) {
+        result += "\n[" + std::string(type_name(key.type)) + " " + scope_str(key) + "] " + std::to_string(curve.size()) + " points";
 
         for (const auto &[tick, point] : curve) {
-            result += "\n    tick = " + std::to_string(tick) + ", " + inValueStr(point.value.inValue) +
-                      ", out = " + std::to_string(point.value.outValue.raw());
+            result += "\n    tick = " + std::to_string(tick) + ", " + in_value_str(point.value.in_value) +
+                      ", out = " + std::to_string(point.value.out_value.raw());
             if (point.generated) {
                 result += ", [generated]";
             }
-            if (point.itemId.has_value()) {
-                result += ", itemId = " + point.itemId->toStdString();
+            if (point.item_id.has_value()) {
+                result += ", itemId = " + point.item_id->to_std_string();
             }
         }
     }

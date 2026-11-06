@@ -28,20 +28,20 @@
 
 using namespace mu::engraving;
 
-void EditAccidentalBrackets::addBracket(Transaction &, Score *score) {
+void EditAccidentalBrackets::add_bracket(Transaction &, Score *score) {
     for (EngravingItem *el : score->selection().elements()) {
-        if (el->isAccidental()) {
-            Accidental *acc = toAccidental(el);
-            acc->undoChangeProperty(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACKET));
+        if (el->is_accidental()) {
+            Accidental *acc = to_accidental(el);
+            acc->undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACKET));
         }
     }
 }
 
-void EditAccidentalBrackets::addBraces(Transaction &, Score *score) {
+void EditAccidentalBrackets::add_braces(Transaction &, Score *score) {
     for (EngravingItem *el : score->selection().elements()) {
-        if (el->isAccidental()) {
-            Accidental *acc = toAccidental(el);
-            acc->undoChangeProperty(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACE));
+        if (el->is_accidental()) {
+            Accidental *acc = to_accidental(el);
+            acc->undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACE));
         }
     }
 }

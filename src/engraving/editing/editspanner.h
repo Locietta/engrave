@@ -33,24 +33,24 @@ class Transaction;
 
 class EditSpanner {
 public:
-    static void addSpanner(Transaction &tx, Score *score, Spanner *spanner, const PointF &pos, bool systemStavesOnly = false);
-    static void addSpanner(Transaction &tx, Score *score, Spanner *spanner, staff_idx_t staffIdx, Segment *startSegment,
-                           Segment *endSegment, bool ctrlModifier = false);
+    static void add_spanner(Transaction &tx, Score *score, Spanner *spanner, const PointF &pos, bool system_staves_only = false);
+    static void add_spanner(Transaction &tx, Score *score, Spanner *spanner, staff_idx_t staff_idx, Segment *start_segment,
+                            Segment *end_segment, bool ctrl_modifier = false);
 };
 
 class ChangeSpannerElements : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeSpannerElements)
 
     Spanner *spanner = nullptr;
-    EngravingItem *startElement = nullptr;
-    EngravingItem *endElement = nullptr;
+    EngravingItem *start_element = nullptr;
+    EngravingItem *end_element = nullptr;
 
     void flip() override;
 
 public:
-    ChangeSpannerElements(Spanner *s, EngravingItem *se, EngravingItem *ee) : spanner(s), startElement(se), endElement(ee) {}
+    ChangeSpannerElements(Spanner *s, EngravingItem *se, EngravingItem *ee) : spanner(s), start_element(se), end_element(ee) {}
 
-    UNDO_TYPE(CommandType::ChangeSpannerElements)
+    UNDO_TYPE(CommandType::CHANGE_SPANNER_ELEMENTS)
     UNDO_NAME("ChangeSpannerElements")
     UNDO_CHANGED_OBJECTS({spanner})
 };
@@ -67,7 +67,7 @@ class ChangeStartEndSpanner : public UndoableCommand {
 public:
     ChangeStartEndSpanner(Spanner *sp, EngravingItem *s, EngravingItem *e) : spanner(sp), start(s), end(e) {}
 
-    UNDO_TYPE(CommandType::ChangeStartEndSpanner)
+    UNDO_TYPE(CommandType::CHANGE_START_END_SPANNER)
     UNDO_NAME("ChangeStartEndSpanner")
     UNDO_CHANGED_OBJECTS({spanner})
 };

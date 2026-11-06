@@ -37,12 +37,12 @@ public:
 
     ~OggEncoder() noexcept override;
 
-    bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float *input) override;
+    bool begin(samples_t total_samples_number) override;
+    size_t encode(samples_t samples_per_channel, const float *input) override;
     Ret end() override;
 
 private:
-    OggOpusEnc *opusEncoder_ = nullptr;
-    io::IODevice *dstDevice_ = nullptr;
+    OggOpusEnc *opus_encoder_ = nullptr;
+    io::IODevice *dst_device_ = nullptr;
 };
 } // namespace muse::audio::encode

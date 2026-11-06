@@ -39,8 +39,8 @@ public:
 
 private:
     Score *score_ = nullptr;
-    bool chordListTag_ = false;
-    muse::String oldChordDescriptionFile_;
+    bool chord_list_tag_ = false;
+    muse::String old_chord_description_file_;
 };
 } // namespace mu::engraving::compat
 

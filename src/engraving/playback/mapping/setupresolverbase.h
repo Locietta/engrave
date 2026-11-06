@@ -39,11 +39,11 @@ public:
             return false;
         }
 
-        result = T::doResolve(instrument);
-        result.supportsSingleNoteDynamics = instrument->singleNoteDynamics();
-        result.musicXmlSoundId = std::make_optional(instrument->musicXmlId().toStdString());
+        result = T::do_resolve(instrument);
+        result.supports_single_note_dynamics = instrument->single_note_dynamics();
+        result.music_xml_sound_id = std::make_optional(instrument->music_xml_id().to_std_string());
 
-        return result.isValid();
+        return result.is_valid();
     }
 };
 } // namespace mu::engraving

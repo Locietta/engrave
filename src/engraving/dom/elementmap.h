@@ -39,7 +39,7 @@ class ElementMap : public std::unordered_map<EngravingItem *, EngravingItem *> {
 public:
     ElementMap() {}
 
-    EngravingItem *findNew(EngravingItem *o) const;
+    EngravingItem *find_new(EngravingItem *o) const;
     void add(EngravingItem *o, EngravingItem *n);
 };
 } // namespace mu::engraving

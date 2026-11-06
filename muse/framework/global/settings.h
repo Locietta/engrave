@@ -40,13 +40,13 @@ public:
     static Settings *instance();
 
     struct Key {
-        std::string moduleName;
+        std::string module_name;
         std::string key;
 
         Key() = default;
-        Key(std::string moduleName, std::string key);
+        Key(std::string module_name, std::string key);
 
-        bool isNull() const;
+        bool is_null() const;
         bool operator==(const Key &k) const;
         bool operator<(const Key &k) const;
     };
@@ -54,14 +54,14 @@ public:
     struct Item {
         Key key;
         Val value;
-        Val defaultValue;
+        Val default_value;
         std::string description;
 
-        bool canBeManuallyEdited = false;
-        Val minValue;
-        Val maxValue;
+        bool can_be_manually_edited = false;
+        Val min_value;
+        Val max_value;
 
-        bool isNull() const { return key.isNull(); }
+        bool is_null() const { return key.is_null(); }
     };
 
     using Items = std::map<Key, Item>;
@@ -71,45 +71,45 @@ public:
     void reload();
     void load();
 
-    void reset(bool keepDefaultSettings = false, bool notifyAboutChanges = true, bool notifyOtherInstances = true);
+    void reset(bool keep_default_settings = false, bool notify_about_changes = true, bool notify_other_instances = true);
 
     const Val &value(const Key &key) const;
-    const Val &defaultValue(const Key &key) const;
+    const Val &default_value(const Key &key) const;
 
     //! NOTE Will be write to global config and sync between all instances
-    void setSharedValue(const Key &key, const Val &value);
+    void set_shared_value(const Key &key, const Val &value);
 
     //! NOTE Will be write to global config and NOT sync between instances
-    void setLocalValue(const Key &key, const Val &value);
+    void set_local_value(const Key &key, const Val &value);
 
-    void setDefaultValue(const Key &key, const Val &value);
+    void set_default_value(const Key &key, const Val &value);
 
-    void setDescription(const Key &key, const std::string &value);
+    void set_description(const Key &key, const std::string &value);
 
-    void setCanBeManuallyEdited(const Settings::Key &key, bool canBeManuallyEdited, const Val &minValue = Val(),
-                                const Val &maxValue = Val());
+    void set_can_be_manually_edited(const Settings::Key &key, bool can_be_manually_edited, const Val &min_value = Val(),
+                                    const Val &max_value = Val());
 
-    void beginTransaction(bool notifyToOtherInstances = true);
-    void commitTransaction(bool notifyToOtherInstances = true);
-    void rollbackTransaction(bool notifyToOtherInstances = true);
+    void begin_transaction(bool notify_to_other_instances = true);
+    void commit_transaction(bool notify_to_other_instances = true);
+    void rollback_transaction(bool notify_to_other_instances = true);
 
-    io::path_t filePath() const;
+    io::PathT file_path() const;
 
 private:
     Settings();
     ~Settings();
 
-    Item &findItem(const Key &key) const;
+    Item &find_item(const Key &key) const;
 
-    void insertNewItem(const Key &key, const Val &value);
+    void insert_new_item(const Key &key, const Val &value);
 
-    Items readItems() const;
-    void writeValue(const Key &key, const Val &value);
+    Items read_items() const;
+    void write_value(const Key &key, const Val &value);
 
     QSettings *settings_ = nullptr;
     mutable Items items_;
-    mutable Items localSettings_;
-    mutable bool isTransactionStarted_ = false;
+    mutable Items local_settings_;
+    mutable bool is_transaction_started_ = false;
 };
 
 inline Settings *settings() { return Settings::instance(); }

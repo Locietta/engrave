@@ -56,7 +56,7 @@ DurationElement::DurationElement(const DurationElement &e, bool link) : Engravin
 
 DurationElement::~DurationElement() {
     if (tuplet_) {
-        setTuplet(nullptr);
+        set_tuplet(nullptr);
     }
 }
 
@@ -64,7 +64,7 @@ DurationElement::~DurationElement() {
 //   topTuplet
 //---------------------------------------------------------
 
-Tuplet *DurationElement::topTuplet() const {
+Tuplet *DurationElement::top_tuplet() const {
     Tuplet *t = tuplet();
     if (t) {
         while (t->tuplet()) {
@@ -78,7 +78,7 @@ Tuplet *DurationElement::topTuplet() const {
 //   globalTicks
 //---------------------------------------------------------
 
-Fraction DurationElement::globalTicks() const {
+Fraction DurationElement::global_ticks() const {
     Fraction f(duration_);
     for (Tuplet *t = tuplet(); t; t = t->tuplet()) {
         f /= t->ratio();
@@ -86,44 +86,44 @@ Fraction DurationElement::globalTicks() const {
     return f;
 }
 
-float DurationElement::timeStretchFactor() const {
-    int nominalDuration = duration_.ticks();
-    int actualDuration = actualTicks().ticks();
+float DurationElement::time_stretch_factor() const {
+    int nominal_duration = duration_.ticks();
+    int actual_duration = actual_ticks().ticks();
 
-    return actualDuration / static_cast<float>(nominalDuration);
+    return actual_duration / static_cast<float>(nominal_duration);
 }
 
 //---------------------------------------------------------
 //   actualTicks
 //---------------------------------------------------------
 
-Fraction DurationElement::actualTicksAt(const Fraction &tick) const {
+Fraction DurationElement::actual_ticks_at(const Fraction &tick) const {
     // Use when tick() is unreliable, for example when pasting
-    return globalTicks() / staff()->timeStretch(tick);
+    return global_ticks() / staff()->time_stretch(tick);
 }
 
-Fraction DurationElement::actualTicks() const { return actualTicksAt(tick()); }
+Fraction DurationElement::actual_ticks() const { return actual_ticks_at(tick()); }
 
 //---------------------------------------------------------
 //   readAddTuplet
 //---------------------------------------------------------
 
-void DurationElement::readAddTuplet(Tuplet *t) {
-    setTuplet(t);
-    if (!score()->undoStack()->hasActiveTransaction()) { // HACK, also added in Undo::AddElement()
+void DurationElement::read_add_tuplet(Tuplet *t) {
+    set_tuplet(t);
+    if (!score()->undo_stack()->has_active_transaction()) { // HACK, also added in Undo::AddElement()
         t->add(this);
     }
 }
 
-void DurationElement::setTuplet(Tuplet *t) {
+void DurationElement::set_tuplet(Tuplet *t) {
     if (tuplet_) {
-        tuplet_->removeDurationElement(this);
+        tuplet_->remove_duration_element(this);
     }
 
     tuplet_ = t;
 
     if (tuplet_) {
-        tuplet_->addDurationElement(this);
+        tuplet_->add_duration_element(this);
     }
 }
 
@@ -131,10 +131,10 @@ void DurationElement::setTuplet(Tuplet *t) {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue DurationElement::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::DURATION: return PropertyValue::fromValue(duration_);
-        default: return EngravingItem::getProperty(propertyId);
+PropertyValue DurationElement::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::DURATION: return PropertyValue::from_value(duration_);
+        default: return EngravingItem::get_property(property_id);
     }
 }
 
@@ -142,14 +142,14 @@ PropertyValue DurationElement::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool DurationElement::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
+bool DurationElement::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
         case Pid::DURATION: {
             Fraction f(v.value<Fraction>());
-            setTicks(f);
-            triggerLayout();
+            set_ticks(f);
+            trigger_layout();
         } break;
-        default: return EngravingItem::setProperty(propertyId, v);
+        default: return EngravingItem::set_property(property_id, v);
     }
     return true;
 }

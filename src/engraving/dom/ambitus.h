@@ -42,88 +42,88 @@ class Ambitus final : public EngravingItem {
 public:
     ~Ambitus();
 
-    static constexpr NoteHeadGroup NOTEHEADGROUP_DEFAULT = NoteHeadGroup::HEAD_NORMAL;
-    static constexpr NoteHeadType NOTEHEADTYPE_DEFAULT = NoteHeadType::HEAD_AUTO;
-    static constexpr DirectionH DIRECTION_DEFAULT = DirectionH::AUTO;
-    static constexpr bool HASLINE_DEFAULT = true;
-    static constexpr Spatium LINEWIDTH_DEFAULT = 0.12_sp;
-    static constexpr Spatium LINEOFFSET_DEFAULT = 0.8_sp; // the distance between notehead and line
+    static constexpr NoteHeadGroup noteheadgroup_default = NoteHeadGroup::HEAD_NORMAL;
+    static constexpr NoteHeadType noteheadtype_default = NoteHeadType::HEAD_AUTO;
+    static constexpr DirectionH direction_default = DirectionH::AUTO;
+    static constexpr bool hasline_default = true;
+    static constexpr Spatium linewidth_default = 0.12_sp;
+    static constexpr Spatium lineoffset_default = 0.8_sp; // the distance between notehead and line
 
     Ambitus *clone() const override { return new Ambitus(*this); }
 
     double mag() const override;
 
-    void initFrom(Ambitus *a);
+    void init_from(Ambitus *a);
 
     // getters and setters
-    NoteHeadGroup noteHeadGroup() const { return noteHeadGroup_; }
+    NoteHeadGroup note_head_group() const { return note_head_group_; }
 
-    NoteHeadType noteHeadType() const { return noteHeadType_; }
+    NoteHeadType note_head_type() const { return note_head_type_; }
 
     DirectionH direction() const { return direction_; }
 
-    bool hasLine() const { return hasLine_; }
+    bool has_line() const { return has_line_; }
 
-    Spatium lineWidth() const { return lineWidth_; }
+    Spatium line_width() const { return line_width_; }
 
-    int topOctave() const { return (topPitch_ / PITCH_DELTA_OCTAVE) - 1; }
+    int top_octave() const { return (top_pitch_ / ::mu::engraving::pitch_delta_octave) - 1; }
 
-    int bottomOctave() const { return (bottomPitch_ / PITCH_DELTA_OCTAVE) - 1; }
+    int bottom_octave() const { return (bottom_pitch_ / ::mu::engraving::pitch_delta_octave) - 1; }
 
-    int topPitch() const { return topPitch_; }
+    int top_pitch() const { return top_pitch_; }
 
-    int bottomPitch() const { return bottomPitch_; }
+    int bottom_pitch() const { return bottom_pitch_; }
 
-    int topTpc() const { return topTpc_; }
+    int top_tpc() const { return top_tpc_; }
 
-    int bottomTpc() const { return bottomTpc_; }
+    int bottom_tpc() const { return bottom_tpc_; }
 
-    Accidental *topAccidental() const { return topAccidental_; }
+    Accidental *top_accidental() const { return top_accidental_; }
 
-    Accidental *bottomAccidental() const { return bottomAccidental_; }
+    Accidental *bottom_accidental() const { return bottom_accidental_; }
 
-    void setNoteHeadGroup(NoteHeadGroup val) { noteHeadGroup_ = val; }
+    void set_note_head_group(NoteHeadGroup val) { note_head_group_ = val; }
 
-    void setNoteHeadType(NoteHeadType val) { noteHeadType_ = val; }
+    void set_note_head_type(NoteHeadType val) { note_head_type_ = val; }
 
-    void setDirection(DirectionH val) { direction_ = val; }
+    void set_direction(DirectionH val) { direction_ = val; }
 
-    void setHasLine(bool val) { hasLine_ = val; }
+    void set_has_line(bool val) { has_line_ = val; }
 
-    void setLineWidth(Spatium val) { lineWidth_ = val; }
+    void set_line_width(Spatium val) { line_width_ = val; }
 
-    void setTopPitch(int val, bool applyLogic = true);
-    void setBottomPitch(int val, bool applyLogic = true);
-    void setTopTpc(int val, bool applyLogic = true);
-    void setBottomTpc(int val, bool applyLogic = true);
+    void set_top_pitch(int val, bool apply_logic = true);
+    void set_bottom_pitch(int val, bool apply_logic = true);
+    void set_top_tpc(int val, bool apply_logic = true);
+    void set_bottom_tpc(int val, bool apply_logic = true);
 
     // some utility functions
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    SymId noteHead() const;
-    double headWidth() const;
+    SymId note_head() const;
+    double head_width() const;
 
     // re-implemented virtual functions
-    void scanElements(std::function<void(EngravingItem *)> func) override;
-    void setTrack(track_idx_t val) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void set_track(track_idx_t val) override;
 
     void remove(EngravingItem *) override;
 
     // properties
-    PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    static AccidentalType accidentalType(int tpc, Key key);
-    static int staffLine(int tpc, int pitch, ClefType clf);
+    static AccidentalType accidental_type(int tpc, Key key);
+    static int staff_line(int tpc, int pitch, ClefType clf);
 
     struct LayoutData : public EngravingItem::LayoutData {
-        PointF topPos;    // position of top note symbol
-        PointF bottomPos; // position of bottom note symbol
-        LineF line;       // the drawn line
+        PointF top_pos;    // position of top note symbol
+        PointF bottom_pos; // position of bottom note symbol
+        LineF line;        // the drawn line
     };
     DECLARE_LAYOUTDATA_METHODS(Ambitus)
 
@@ -136,22 +136,22 @@ private:
     void normalize();
 
     struct Ranges {
-        int topTpc = Tpc::TPC_INVALID;
-        int bottomTpc = Tpc::TPC_INVALID;
-        int topPitch = INVALID_PITCH;
-        int bottomPitch = MAX_PITCH + 1;
+        int top_tpc = Tpc::TPC_INVALID;
+        int bottom_tpc = Tpc::TPC_INVALID;
+        int top_pitch = ::mu::engraving::invalid_pitch;
+        int bottom_pitch = ::mu::engraving::max_pitch + 1;
     };
 
-    Ranges estimateRanges() const; // scan staff up to next section break and update range pitches
+    Ranges estimate_ranges() const; // scan staff up to next section break and update range pitches
 
-    NoteHeadGroup noteHeadGroup_ = NOTEHEADGROUP_DEFAULT;
-    NoteHeadType noteHeadType_ = NOTEHEADTYPE_DEFAULT;
-    DirectionH direction_ = DIRECTION_DEFAULT;
-    bool hasLine_ = HASLINE_DEFAULT;
-    Spatium lineWidth_;
-    Accidental *topAccidental_ = nullptr;
-    Accidental *bottomAccidental_ = nullptr;
-    int topPitch_ = INVALID_PITCH, bottomPitch_ = INVALID_PITCH;
-    int topTpc_ = Tpc::TPC_INVALID, bottomTpc_ = Tpc::TPC_INVALID;
+    NoteHeadGroup note_head_group_ = ::mu::engraving::Ambitus::noteheadgroup_default;
+    NoteHeadType note_head_type_ = ::mu::engraving::Ambitus::noteheadtype_default;
+    DirectionH direction_ = ::mu::engraving::Ambitus::direction_default;
+    bool has_line_ = ::mu::engraving::Ambitus::hasline_default;
+    Spatium line_width_;
+    Accidental *top_accidental_ = nullptr;
+    Accidental *bottom_accidental_ = nullptr;
+    int top_pitch_ = ::mu::engraving::invalid_pitch, bottom_pitch_ = ::mu::engraving::invalid_pitch;
+    int top_tpc_ = Tpc::TPC_INVALID, bottom_tpc_ = Tpc::TPC_INVALID;
 };
 } // namespace mu::engraving

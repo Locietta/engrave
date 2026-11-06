@@ -39,15 +39,15 @@ class StemSlash final : public EngravingItem {
 
 public:
 
-    double mag() const override { return layoutParent()->mag(); }
+    double mag() const override { return layout_parent()->mag(); }
 
     StemSlash *clone() const override { return new StemSlash(*this); }
 
-    Chord *chord() const { return (Chord *) ownershipParent(); }
+    Chord *chord() const { return (Chord *) ownership_parent(); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;
-        double stemWidth = 0.0;
+        double stem_width = 0.0;
     };
     DECLARE_LAYOUTDATA_METHODS(StemSlash)
 

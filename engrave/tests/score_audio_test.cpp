@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
         expect(!defaults.is_neutral(), "MSCZ audiosettings.json was not read");
         expect(defaults.master.volume_db == 0.0 && defaults.master.balance == 0.0, "Unexpected fixture master defaults");
         auto mix_project = music::load_native_score(context, mix_bytes, "mscz");
-        const auto mix_tracks = music::score_audio_track_info(mix_project->masterScore());
+        const auto mix_tracks = music::score_audio_track_info(mix_project->master_score());
         expect(mix_tracks.size() == 3, "Mix fixture must expose three tracks");
         std::size_t muted_tracks = 0;
         for (const auto &track : mix_tracks) {
@@ -74,12 +74,12 @@ int main(int argc, char **argv) {
             muse::ByteArray zip_bytes;
             {
                 muse::io::Buffer buf(&zip_bytes);
-                expect(buf.open(muse::io::IODevice::WriteOnly), "Cannot open zip buffer");
+                expect(buf.open(muse::io::IODevice::WRITE_ONLY), "Cannot open zip buffer");
                 muse::ZipWriter writer(&buf);
-                writer.addFile("audiosettings.json", muse::ByteArray(nested.data(), nested.size()));
+                writer.add_file("audiosettings.json", muse::ByteArray(nested.data(), nested.size()));
                 writer.close();
             }
-            std::string nested_archive(reinterpret_cast<const char *>(zip_bytes.constData()), zip_bytes.size());
+            std::string nested_archive(reinterpret_cast<const char *>(zip_bytes.const_data()), zip_bytes.size());
             const auto nested_defaults = music::score_audio_mix_defaults(nested_archive);
             expect(nested_defaults.is_neutral(), "Deeply nested hostile document must yield neutral defaults");
 
@@ -88,11 +88,11 @@ int main(int argc, char **argv) {
                 std::string huge(1024 * 1024 + 16, ' ');
                 muse::ByteArray huge_zip;
                 muse::io::Buffer huge_buf(&huge_zip);
-                expect(huge_buf.open(muse::io::IODevice::WriteOnly), "Cannot open huge zip buffer");
+                expect(huge_buf.open(muse::io::IODevice::WRITE_ONLY), "Cannot open huge zip buffer");
                 muse::ZipWriter huge_writer(&huge_buf);
-                huge_writer.addFile("audiosettings.json", muse::ByteArray(huge.data(), huge.size()));
+                huge_writer.add_file("audiosettings.json", muse::ByteArray(huge.data(), huge.size()));
                 huge_writer.close();
-                std::string huge_archive(reinterpret_cast<const char *>(huge_zip.constData()), huge_zip.size());
+                std::string huge_archive(reinterpret_cast<const char *>(huge_zip.const_data()), huge_zip.size());
                 const auto huge_defaults = music::score_audio_mix_defaults(huge_archive);
                 expect(huge_defaults.is_neutral(), "Oversized audiosettings entry must yield neutral defaults");
             }
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
         // Every InstrumentTrackId is listed once, in deterministic score order.
         auto project = music::load_native_score(context, fixture, "musicxml");
-        auto *score = project->masterScore();
+        auto *score = project->master_score();
         const auto info = music::score_audio_track_info(score);
         expect(info.size() == 2, "Two parts must expose one track each");
         expect(info[0].part_id != info[1].part_id, "Distinct parts share descriptor identity");
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
         expect(bool(stream), "Missing pinned instrument-change fixture");
         const std::string bytes{std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
         auto changed = music::load_native_score(context, bytes, "mscx");
-        const auto changed_tracks = music::score_audio_track_info(changed->masterScore());
+        const auto changed_tracks = music::score_audio_track_info(changed->master_score());
         expect(changed_tracks.size() == 3, "Flute part with an Oboe change plus the Oboe part must expose three instrument tracks");
         expect(changed_tracks[0].part_id == changed_tracks[1].part_id, "Instrument tracks lost their part identity");
         expect(changed_tracks[0].instrument_id != changed_tracks[1].instrument_id,

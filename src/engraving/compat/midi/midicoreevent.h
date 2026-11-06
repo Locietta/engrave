@@ -30,13 +30,13 @@
 namespace mu::engraving {
 struct PitchWheelSpecs {
     //! @note amplitude of the pitch wheel in semitones
-    uint16_t mAmplitude{12};
+    uint16_t m_amplitude{12};
 
     //! @note absolute limit of the  wheel pitch value (thus,  pitch shift can be set using values from {-mLimit, mLimit} interval
-    uint16_t mLimit{8192};
+    uint16_t m_limit{8192};
 
     //! @note step of pith wheel in ticks
-    uint16_t mStep{10};
+    uint16_t m_step{10};
 };
 
 //---------------------------------------------------------
@@ -159,68 +159,68 @@ enum CntrType {
 class MidiCoreEvent {
     OBJECT_ALLOCATOR(engraving, MidiCoreEvent)
 protected:
-    uint8_t _type = 0;
-    uint8_t _channel = 0;
-    uint8_t _a = 0;
-    uint8_t _b = 0;
+    uint8_t type_value = 0;
+    uint8_t channel_value = 0;
+    uint8_t a_value = 0;
+    uint8_t b_value = 0;
 
 public:
     MidiCoreEvent() {}
 
-    MidiCoreEvent(uint8_t t, uint8_t c, uint8_t a, uint8_t b) : _type(t), _channel(c), _a(a), _b(b) {}
+    MidiCoreEvent(uint8_t t, uint8_t c, uint8_t a, uint8_t b) : type_value(t), channel_value(c), a_value(a), b_value(b) {}
 
     void set(uint8_t t, uint8_t c, uint8_t a, uint8_t b) {
-        _type = t;
-        _channel = c;
-        _a = a;
-        _b = b;
+        type_value = t;
+        channel_value = c;
+        a_value = a;
+        b_value = b;
     }
 
-    uint8_t type() const { return _type; }
+    uint8_t type() const { return type_value; }
 
-    void setType(uint8_t t) { _type = t; }
+    void set_type(uint8_t t) { type_value = t; }
 
-    uint8_t channel() const { return _channel; }
+    uint8_t channel() const { return channel_value; }
 
-    void setChannel(uint8_t c) { _channel = c; }
+    void set_channel(uint8_t c) { channel_value = c; }
 
-    uint8_t dataA() const { return _a; }
+    uint8_t data_a() const { return a_value; }
 
-    uint8_t pitch() const { return _a; }
+    uint8_t pitch() const { return a_value; }
 
-    uint8_t controller() const { return _a; }
+    uint8_t controller() const { return a_value; }
 
-    void setDataA(int v) { _a = static_cast<uint8_t>(v); }
+    void set_data_a(int v) { a_value = static_cast<uint8_t>(v); }
 
-    void setPitch(int v) { _a = static_cast<uint8_t>(v); }
+    void set_pitch(int v) { a_value = static_cast<uint8_t>(v); }
 
-    void setController(int v) { _a = static_cast<uint8_t>(v); }
+    void set_controller(int v) { a_value = static_cast<uint8_t>(v); }
 
-    uint8_t dataB() const { return _b; }
+    uint8_t data_b() const { return b_value; }
 
-    uint8_t velo() const { return _b; }
+    uint8_t velo() const { return b_value; }
 
-    uint8_t value() const { return _b; }
+    uint8_t value() const { return b_value; }
 
-    void setDataB(int v) { _b = static_cast<uint8_t>(v); }
+    void set_data_b(int v) { b_value = static_cast<uint8_t>(v); }
 
-    void setVelo(int v) { _b = static_cast<uint8_t>(v); }
+    void set_velo(int v) { b_value = static_cast<uint8_t>(v); }
 
-    void setValue(int v) { _b = static_cast<uint8_t>(v); }
+    void set_value(int v) { b_value = static_cast<uint8_t>(v); }
 
-    void setData(int a, int b) {
-        _a = static_cast<uint8_t>(a);
-        _b = static_cast<uint8_t>(b);
+    void set_data(int a, int b) {
+        a_value = static_cast<uint8_t>(a);
+        b_value = static_cast<uint8_t>(b);
     }
 
-    void setData(int t, int a, int b) {
-        _type = static_cast<uint8_t>(t);
-        _a = static_cast<uint8_t>(a);
-        _b = static_cast<uint8_t>(b);
+    void set_data(int t, int a, int b) {
+        type_value = static_cast<uint8_t>(t);
+        a_value = static_cast<uint8_t>(a);
+        b_value = static_cast<uint8_t>(b);
     }
 
-    bool isChannelEvent() const {
-        switch (_type) {
+    bool is_channel_event() const {
+        switch (type_value) {
             case ME_NOTEOFF:
             case ME_NOTEON:
             case ME_POLYAFTER:
@@ -236,9 +236,11 @@ public:
         return false;
     }
 
-    bool operator==(const MidiCoreEvent &e) const { return e._type == _type && e._channel == _channel && e._a == _a && e._b == _b; }
+    bool operator==(const MidiCoreEvent &e) const {
+        return e.type_value == type_value && e.channel_value == channel_value && e.a_value == a_value && e.b_value == b_value;
+    }
 
-    uint32_t toPackage() const {
+    uint32_t to_package() const {
         union {
             unsigned char data_as_bytes[4];
             uint32_t data_as_uint32 = 0;

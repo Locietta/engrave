@@ -29,59 +29,59 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-void DiveDataCollector::collectDiveData(const Chord *chord, const PitchValues &pitchValues) {
-    if (pitchValues.size() < 2) {
+void DiveDataCollector::collect_dive_data(const Chord *chord, const PitchValues &pitch_values) {
+    if (pitch_values.size() < 2) {
         return;
     }
 
     const track_idx_t track = chord->track();
     const Fraction tick = chord->tick();
 
-    bool hasPrecedingWhammy = false;
-    if (auto it = lastWhammyByTrack_.find(track); it != lastWhammyByTrack_.end()) {
+    bool has_preceding_whammy = false;
+    if (auto it = last_whammy_by_track_.find(track); it != last_whammy_by_track_.end()) {
         const auto &prev = it->second;
-        hasPrecedingWhammy = (prev.destPitch == pitchValues.front().pitch) && (prev.endTick == tick);
+        has_preceding_whammy = (prev.dest_pitch == pitch_values.front().pitch) && (prev.end_tick == tick);
     }
-    lastWhammyByTrack_[track] = {pitchValues.back().pitch, tick + chord->actualTicks()};
+    last_whammy_by_track_[track] = {pitch_values.back().pitch, tick + chord->actual_ticks()};
 
     for (const Note *note : chord->notes()) {
-        if (note->displayFret() == Note::DisplayFretOption::Hide) {
+        if (note->display_fret() == Note::DisplayFretOption::HIDE) {
             continue;
         }
-        const bool isContinuedWhammy = hasPrecedingWhammy && pitchValues.front().pitch != 0 && note->tieBack();
-        ImportedDiveInfo info = DiveInfoConverter::fillDiveInfo(note, pitchValues, isContinuedWhammy);
+        const bool is_continued_whammy = has_preceding_whammy && pitch_values.front().pitch != 0 && note->tie_back();
+        ImportedDiveInfo info = DiveInfoConverter::fill_dive_info(note, pitch_values, is_continued_whammy);
         if (info.type == DiveType::NONE || !info.note) {
             continue;
         }
 
-        const size_t noteIdx = muse::indexOf(chord->notes(), note);
+        const size_t note_idx = muse::index_of(chord->notes(), note);
 
-        const bool isCompoundPreDive = (info.type == DiveType::PRE_DIVE);
+        const bool is_compound_pre_dive = (info.type == DiveType::PRE_DIVE);
 
-        if (isCompoundPreDive) {
-            ctx_.preDiveData[track][tick][noteIdx].quarterTones = info.quarterTones;
-            if (info.graceDiveSegments.empty()) {
+        if (is_compound_pre_dive) {
+            ctx_.pre_dive_data[track][tick][note_idx].quarter_tones = info.quarter_tones;
+            if (info.grace_dive_segments.empty()) {
                 continue;
             }
             // Compound PRE_DIVE: route grace segments through the same path as DIVE
         }
 
-        if (info.graceDiveSegments.size() == 1 && note->tieFor()) {
-            ctx_.tiedNotesDivesData[track][tick][noteIdx] = std::move(info.graceDiveSegments.front());
+        if (info.grace_dive_segments.size() == 1 && note->tie_for()) {
+            ctx_.tied_notes_dives_data[track][tick][note_idx] = std::move(info.grace_dive_segments.front());
             continue;
         }
 
-        GraceNotesImportInfo &graceInfo = ctx_.graceAfterDiveData[track][tick][noteIdx];
+        GraceNotesImportInfo &grace_info = ctx_.grace_after_dive_data[track][tick][note_idx];
 
-        if (note->tieFor() && !info.graceDiveSegments.empty()) {
-            graceInfo.lastNoteData.shouldMoveTie = true;
-            graceInfo.lastNoteData.endFactor = info.graceDiveSegments.back().endFactor;
-            if (info.graceDiveSegments.size() > 1) {
-                info.graceDiveSegments.pop_back();
+        if (note->tie_for() && !info.grace_dive_segments.empty()) {
+            grace_info.last_note_data.should_move_tie = true;
+            grace_info.last_note_data.end_factor = info.grace_dive_segments.back().end_factor;
+            if (info.grace_dive_segments.size() > 1) {
+                info.grace_dive_segments.pop_back();
             }
         }
 
-        graceInfo.data = std::move(info.graceDiveSegments);
+        grace_info.data = std::move(info.grace_dive_segments);
     }
 }
 } // namespace mu::iex::guitarpro

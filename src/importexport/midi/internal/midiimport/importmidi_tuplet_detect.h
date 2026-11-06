@@ -32,10 +32,11 @@ class MidiChord;
 namespace MidiTuplet {
 struct TupletInfo;
 
-std::vector<TupletInfo> detectTuplets(const std::multimap<ReducedFraction, MidiChord>::iterator &startBarChordIt,
-                                      const std::multimap<ReducedFraction, MidiChord>::iterator &endBarChordIt,
-                                      const ReducedFraction &startBarTick, const ReducedFraction &barFraction,
-                                      std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basicQuant, int barIndex);
+std::vector<TupletInfo> detect_tuplets(const std::multimap<ReducedFraction, MidiChord>::iterator &start_bar_chord_it,
+                                       const std::multimap<ReducedFraction, MidiChord>::iterator &end_bar_chord_it,
+                                       const ReducedFraction &start_bar_tick, const ReducedFraction &bar_fraction,
+                                       std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
+                                       int bar_index);
 } // namespace MidiTuplet
 } // namespace mu::iex::midi
 

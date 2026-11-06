@@ -41,7 +41,7 @@ public:
 
     LetRingSegment *clone() const override { return new LetRingSegment(*this); }
 
-    LetRing *letRing() const { return (LetRing *) spanner(); }
+    LetRing *let_ring() const { return (LetRing *) spanner(); }
 
     friend class LetRing;
 };
@@ -61,13 +61,13 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    Sid getPropertyStyle(Pid) const override;
+    PropertyValue property_default(Pid property_id) const override;
+    Sid get_property_style(Pid) const override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 };
 } // namespace mu::engraving
 #endif

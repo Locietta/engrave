@@ -35,23 +35,23 @@ public:
 
     ~SampleDelay() {}
 
-    void allocateForMaxDelaySamples(int maxDelaySamples) {
+    void allocate_for_max_delay_samples(int max_delay_samples) {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
-            buffer_[ch].setSize(maxDelaySamples);
+            buffer_[ch].set_size(max_delay_samples);
         }
     }
 
-    void setDelaySamples(int samples) {
-        if (delaySamples_ == samples) {
+    void set_delay_samples(int samples) {
+        if (delay_samples_ == samples) {
             return;
         }
 
-        delaySamples_ = samples;
-        allocateForMaxDelaySamples(samples);
+        delay_samples_ = samples;
+        allocate_for_max_delay_samples(samples);
         reset();
     }
 
-    int getDelaySamples() const { return delaySamples_; }
+    int get_delay_samples() const { return delay_samples_; }
 
     void reset() {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
@@ -59,27 +59,27 @@ public:
         }
     }
 
-    SampleT processSample(const SampleT &sample, int ch) {
-        if (delaySamples_ == 0) {
+    SampleT process_sample(const SampleT &sample, int ch) {
+        if (delay_samples_ == 0) {
             return sample;
         }
 
-        auto s = buffer_[ch].read(-delaySamples_);
-        buffer_[ch].writeOffset0(sample);
+        auto s = buffer_[ch].read(-delay_samples_);
+        buffer_[ch].write_offset0(sample);
         buffer_[ch].advance(1);
         return s;
     }
 
-    void processBlock(SampleT **smp, int numCh, int numSamples) {
-        assert(numCh <= maxNumChannels);
-        if (delaySamples_ == 0) {
+    void process_block(SampleT **smp, int num_ch, int num_samples) {
+        assert(num_ch <= maxNumChannels);
+        if (delay_samples_ == 0) {
             return;
         }
 
-        for (auto ch = 0; ch < numCh; ++ch) {
-            for (auto i = 0; i < numSamples; ++i) {
-                auto s = buffer_[ch].read(-delaySamples_);
-                buffer_[ch].writeOffset0(smp[ch][i]);
+        for (auto ch = 0; ch < num_ch; ++ch) {
+            for (auto i = 0; i < num_samples; ++i) {
+                auto s = buffer_[ch].read(-delay_samples_);
+                buffer_[ch].write_offset0(smp[ch][i]);
                 smp[ch][i] = s;
                 buffer_[ch].advance(1);
             }
@@ -88,7 +88,7 @@ public:
 
 private:
     CircularSampleBuffer<SampleT> buffer_[maxNumChannels];
-    int delaySamples_ = 0;
+    int delay_samples_ = 0;
 };
 } // namespace muse::audio::fx
 

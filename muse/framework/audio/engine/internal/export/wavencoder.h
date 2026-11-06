@@ -33,16 +33,16 @@ class WavEncoder : public AbstractAudioEncoder {
 public:
     WavEncoder(const SoundTrackFormat &, io::IODevice &);
 
-    bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float *input) override;
+    bool begin(samples_t total_samples_number) override;
+    size_t encode(samples_t samples_per_channel, const float *input) override;
     Ret end() override;
 
 private:
-    bool writePlaceholderHeader();
-    bool patchHeaderSizes();
+    bool write_placeholder_header();
+    bool patch_header_sizes();
 
-    muse::io::IODevice *dstDevice_ = nullptr;
-    bool headerWritten_ = false;
-    size_t pcmStartPos_ = 0;
+    muse::io::IODevice *dst_device_ = nullptr;
+    bool header_written_ = false;
+    size_t pcm_start_pos_ = 0;
 };
 } // namespace muse::audio::encode

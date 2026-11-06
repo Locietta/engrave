@@ -37,27 +37,27 @@
 #include "engraving/dom/sig.h"
 
 namespace mu::iex::midi { namespace MidiBeat {
-int beatsInBar(const ReducedFraction &barFraction) {
-    const auto beatLen = Meter::beatLength(barFraction);
-    const auto div = barFraction / beatLen;
+int beats_in_bar(const ReducedFraction &bar_fraction) {
+    const auto beat_len = Meter::beat_length(bar_fraction);
+    const auto div = bar_fraction / beat_len;
     return div.numerator() / div.denominator();
 }
 
-double findChordSalience1(const std::pair<const ReducedFraction, MidiChord> &chord, double ticksPerSec) {
+double find_chord_salience1(const std::pair<const ReducedFraction, MidiChord> &chord, double ticks_per_sec) {
     ReducedFraction duration(0, 1);
     int pitch = std::numeric_limits<int>::max();
     int velocity = 0;
 
     for (const MidiNote &note : chord.second.notes) {
-        if (note.offTime - chord.first > duration) {
-            duration = note.offTime - chord.first;
+        if (note.off_time - chord.first > duration) {
+            duration = note.off_time - chord.first;
         }
         if (note.pitch < pitch) {
             pitch = note.pitch;
         }
         velocity += note.velo;
     }
-    const double durationInSeconds = duration.ticks() / ticksPerSec;
+    const double duration_in_seconds = duration.ticks() / ticks_per_sec;
 
     const double c4 = 84;
     const int pmin = 48;
@@ -73,10 +73,10 @@ double findChordSalience1(const std::pair<const ReducedFraction, MidiChord> &cho
         velocity = 1;
     }
 
-    return durationInSeconds * (c4 - pitch) * log(velocity);
+    return duration_in_seconds * (c4 - pitch) * log(velocity);
 }
 
-double findChordSalience2(const std::pair<const ReducedFraction, MidiChord> &chord, double) {
+double find_chord_salience2(const std::pair<const ReducedFraction, MidiChord> &chord, double) {
     int velocity = 0;
     for (const MidiNote &note : chord.second.notes) {
         velocity += note.velo;
@@ -88,60 +88,61 @@ double findChordSalience2(const std::pair<const ReducedFraction, MidiChord> &cho
     return velocity;
 }
 
-::EventList prepareChordEvents(const std::multimap<ReducedFraction, MidiChord> &chords,
-                               const std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)> &findChordSalience,
-                               double ticksPerSec) {
+::EventList
+prepare_chord_events(const std::multimap<ReducedFraction, MidiChord> &chords,
+                     const std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)> &find_chord_salience,
+                     double ticks_per_sec) {
     ::EventList events;
-    double minSalience = std::numeric_limits<double>::max();
+    double min_salience = std::numeric_limits<double>::max();
     for (const auto &chord : chords) {
         ::Event e;
-        e.time = chord.first.ticks() / ticksPerSec;
-        e.salience = findChordSalience(chord, ticksPerSec);
-        if (e.salience < minSalience) {
-            minSalience = e.salience;
+        e.time = chord.first.ticks() / ticks_per_sec;
+        e.salience = find_chord_salience(chord, ticks_per_sec);
+        if (e.salience < min_salience) {
+            min_salience = e.salience;
         }
         events.push_back(e);
     }
     // all saliences should be non-negative
-    if (minSalience < 0) {
+    if (min_salience < 0) {
         for (auto &e : events) {
-            e.salience -= minSalience;
+            e.salience -= min_salience;
         }
     }
 
     return events;
 }
 
-ReducedFraction findLastChordTick(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    ReducedFraction lastOffTime(0, 1);
+ReducedFraction find_last_chord_tick(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    ReducedFraction last_off_time(0, 1);
     for (const auto &chord : chords) {
         for (const auto &note : chord.second.notes) {
-            if (note.offTime > lastOffTime) {
-                lastOffTime = note.offTime;
+            if (note.off_time > last_off_time) {
+                last_off_time = note.off_time;
             }
         }
     }
-    return lastOffTime;
+    return last_off_time;
 }
 
 // first beat time can be larger than first chord onTime
 // so insert additional beats at the beginning to cover all chords
 
-void addFirstBeats(std::set<ReducedFraction> &beatSet, const ReducedFraction &firstTick, int beatsInBar, int &addedBeatCount) {
-    if (beatSet.empty()) {
+void add_first_beats(std::set<ReducedFraction> &beat_set, const ReducedFraction &first_tick, int beats_in_bar, int &added_beat_count) {
+    if (beat_set.empty()) {
         return;
     }
 
-    addedBeatCount = 0;
-    auto firstBeat = *beatSet.begin();
-    if (firstTick < firstBeat) {
-        if (beatSet.size() > 1) {
-            const auto beatLen = *std::next(beatSet.begin()) - firstBeat;
+    added_beat_count = 0;
+    auto first_beat = *beat_set.begin();
+    if (first_tick < first_beat) {
+        if (beat_set.size() > 1) {
+            const auto beat_len = *std::next(beat_set.begin()) - first_beat;
             do {
-                firstBeat -= beatLen;
-                beatSet.insert(firstBeat);
-                ++addedBeatCount;
-            } while (firstBeat > firstTick || addedBeatCount % beatsInBar);
+                first_beat -= beat_len;
+                beat_set.insert(first_beat);
+                ++added_beat_count;
+            } while (first_beat > first_tick || added_beat_count % beats_in_bar);
         }
     }
 }
@@ -149,105 +150,105 @@ void addFirstBeats(std::set<ReducedFraction> &beatSet, const ReducedFraction &fi
 // last beat time can be smaller than the last chord onTime
 // so insert additional beats at the end to cover all chords
 
-void addLastBeats(std::set<ReducedFraction> &beatSet, const ReducedFraction &lastTick, int beatsInBar, int &addedBeatCount) {
-    if (beatSet.empty()) {
+void add_last_beats(std::set<ReducedFraction> &beat_set, const ReducedFraction &last_tick, int beats_in_bar, int &added_beat_count) {
+    if (beat_set.empty()) {
         return;
     }
 
-    addedBeatCount = 0;
+    added_beat_count = 0;
     // theoretically it's possible that every chord have off time
     // at the end of the piece - so check all chords for max off time
-    auto lastBeat = *(std::prev(beatSet.end()));
-    if (lastTick > lastBeat) {
-        if (beatSet.size() > 1) {
-            const auto beatLen = lastBeat - *std::prev(beatSet.end(), 2);
+    auto last_beat = *(std::prev(beat_set.end()));
+    if (last_tick > last_beat) {
+        if (beat_set.size() > 1) {
+            const auto beat_len = last_beat - *std::prev(beat_set.end(), 2);
             do {
-                lastBeat += beatLen;
-                beatSet.insert(lastBeat);
-                ++addedBeatCount;
-            } while (lastBeat < lastTick || addedBeatCount % beatsInBar);
+                last_beat += beat_len;
+                beat_set.insert(last_beat);
+                ++added_beat_count;
+            } while (last_beat < last_tick || added_beat_count % beats_in_bar);
         }
     }
 }
 
-MidiOperations::HumanBeatData prepareHumanBeatData(const std::vector<double> &beatTimes,
-                                                   const std::multimap<ReducedFraction, MidiChord> &chords, double ticksPerSec,
-                                                   int beatsInBar) {
-    MidiOperations::HumanBeatData beatData;
+MidiOperations::HumanBeatData prepare_human_beat_data(const std::vector<double> &beat_times,
+                                                      const std::multimap<ReducedFraction, MidiChord> &chords, double ticks_per_sec,
+                                                      int beats_in_bar) {
+    MidiOperations::HumanBeatData beat_data;
     if (chords.empty()) {
-        return beatData;
+        return beat_data;
     }
 
-    for (const auto &beatTime : beatTimes) {
-        beatData.beatSet.insert(MidiTempo::time2Tick(beatTime, ticksPerSec));
+    for (const auto &beat_time : beat_times) {
+        beat_data.beat_set.insert(MidiTempo::time2_tick(beat_time, ticks_per_sec));
     }
 
-    beatData.firstChordTick = chords.begin()->first;
-    beatData.lastChordTick = findLastChordTick(chords);
+    beat_data.first_chord_tick = chords.begin()->first;
+    beat_data.last_chord_tick = find_last_chord_tick(chords);
 
-    addFirstBeats(beatData.beatSet, beatData.firstChordTick, beatsInBar, beatData.addedFirstBeats);
-    addLastBeats(beatData.beatSet, beatData.lastChordTick, beatsInBar, beatData.addedLastBeats);
+    add_first_beats(beat_data.beat_set, beat_data.first_chord_tick, beats_in_bar, beat_data.added_first_beats);
+    add_last_beats(beat_data.beat_set, beat_data.last_chord_tick, beats_in_bar, beat_data.added_last_beats);
 
-    return beatData;
+    return beat_data;
 }
 
-double findMatchRank(const std::set<ReducedFraction> &beatSet, const ::EventList &events, const std::vector<int> &levels, int beatsInBar,
-                     double ticksPerSec) {
+double find_match_rank(const std::set<ReducedFraction> &beat_set, const ::EventList &events, const std::vector<int> &levels,
+                       int beats_in_bar, double ticks_per_sec) {
     std::map<ReducedFraction, double> saliences;
     for (const auto &e : events) {
-        saliences.insert({MidiTempo::time2Tick(e.time, ticksPerSec), e.salience});
+        saliences.insert({MidiTempo::time2_tick(e.time, ticks_per_sec), e.salience});
     }
-    std::vector<ReducedFraction> beatsOfBar;
-    double matchFrac = 0;
-    int matchCount = 0;
-    int beatCount = 0;
+    std::vector<ReducedFraction> beats_of_bar;
+    double match_frac = 0;
+    int match_count = 0;
+    int beat_count = 0;
 
-    for (const auto &beat : beatSet) {
-        beatsOfBar.push_back(beat);
-        ++beatCount;
-        if (beatCount == beatsInBar) {
-            beatCount = 0;
-            int relationCount = 0;
-            int relationMatches = 0;
-            for (size_t i = 0; i != beatsOfBar.size() - 1; ++i) {
-                const auto s1 = saliences.find(beatsOfBar[i]);
-                for (size_t j = i + 1; j != beatsOfBar.size(); ++j) {
-                    ++relationCount; // before s1 search check
+    for (const auto &beat : beat_set) {
+        beats_of_bar.push_back(beat);
+        ++beat_count;
+        if (beat_count == beats_in_bar) {
+            beat_count = 0;
+            int relation_count = 0;
+            int relation_matches = 0;
+            for (size_t i = 0; i != beats_of_bar.size() - 1; ++i) {
+                const auto s1 = saliences.find(beats_of_bar[i]);
+                for (size_t j = i + 1; j != beats_of_bar.size(); ++j) {
+                    ++relation_count; // before s1 search check
                     if (s1 == saliences.end()) {
                         continue;
                     }
-                    const auto s2 = saliences.find(beatsOfBar[j]);
+                    const auto s2 = saliences.find(beats_of_bar[j]);
                     if (s2 == saliences.end()) {
                         continue;
                     }
                     if ((s1->second < s2->second) == (levels[i] < levels[j])) {
-                        ++relationMatches;
+                        ++relation_matches;
                     }
                 }
             }
-            if (relationCount) {
-                matchFrac += relationMatches * 1.0 / relationCount;
-                ++matchCount;
+            if (relation_count) {
+                match_frac += relation_matches * 1.0 / relation_count;
+                ++match_count;
             }
-            beatsOfBar.clear();
+            beats_of_bar.clear();
         }
     }
-    if (matchCount) {
-        matchFrac /= matchCount;
+    if (match_count) {
+        match_frac /= match_count;
     }
 
-    return matchFrac;
+    return match_frac;
 }
 
-void removeEvery2ndBeat(std::set<ReducedFraction> &beatSet) {
-    auto it = beatSet.begin();
-    while (it != beatSet.end() && std::next(it) != beatSet.end()) {
-        it = beatSet.erase(std::next(it));
+void remove_every2nd_beat(std::set<ReducedFraction> &beat_set) {
+    auto it = beat_set.begin();
+    while (it != beat_set.end() && std::next(it) != beat_set.end()) {
+        it = beat_set.erase(std::next(it));
     }
-    if (it == beatSet.end()) {
+    if (it == beat_set.end()) {
         // insert additional beat at the end to cover all chords
-        const auto beatLen = *std::prev(it) - *std::prev(it, 2);
-        beatSet.insert(*std::prev(it) + beatLen);
+        const auto beat_len = *std::prev(it) - *std::prev(it, 2);
+        beat_set.insert(*std::prev(it) + beat_len);
     }
 }
 
@@ -255,197 +256,198 @@ void removeEvery2ndBeat(std::set<ReducedFraction> &beatSet) {
 // because it reduces itself only if numerator or denominator
 // is greater than some big number (see ReducedFraction class definition)
 
-std::vector<ReducedFraction> findTimeSignatures(const ReducedFraction &timeSigFromMidiFile) {
+std::vector<ReducedFraction> find_time_signatures(const ReducedFraction &time_sig_from_midi_file) {
     std::vector<ReducedFraction> fractions{ReducedFraction(4, 4), ReducedFraction(3, 4)};
     bool match = false;
     for (const ReducedFraction &f : fractions) {
-        if (f.isIdenticalTo(timeSigFromMidiFile)) {
+        if (f.is_identical_to(time_sig_from_midi_file)) {
             match = true;
             break;
         }
     }
     if (!match) { // some special time sig in MIDI file - use only it
         fractions.clear();
-        fractions.push_back(timeSigFromMidiFile);
+        fractions.push_back(time_sig_from_midi_file);
     }
     return fractions;
 }
 
-void setTimeSig(engraving::TimeSigMap *sigmap, const ReducedFraction &timeSig) {
+void set_time_sig(engraving::TimeSigMap *sigmap, const ReducedFraction &time_sig) {
     sigmap->clear();
-    sigmap->add(0, timeSig.fraction());
+    sigmap->add(0, time_sig.fraction());
 }
 
-void findBeatLocations(const std::multimap<ReducedFraction, MidiChord> &allChords, engraving::TimeSigMap *sigmap, double ticksPerSec) {
-    const size_t MIN_BEAT_COUNT = 8;
-    const auto barFractions = findTimeSignatures(ReducedFraction(sigmap->timesig(0).timesig()));
-    const std::vector<std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)>> salienceFuncs = {
-        findChordSalience1, findChordSalience2};
+void find_beat_locations(const std::multimap<ReducedFraction, MidiChord> &all_chords, engraving::TimeSigMap *sigmap, double ticks_per_sec) {
+    const size_t min_beat_count = 8;
+    const auto bar_fractions = find_time_signatures(ReducedFraction(sigmap->timesig(0).timesig()));
+    const std::vector<std::function<double(const std::pair<const ReducedFraction, MidiChord> &, double)>> salience_funcs = {
+        find_chord_salience1, find_chord_salience2};
 
     // <match rank, beat data, comparator>
-    std::map<double, MidiOperations::HumanBeatData, std::greater<double>> beatResults;
+    std::map<double, MidiOperations::HumanBeatData, std::greater<double>> beat_results;
 
-    for (const auto &func : salienceFuncs) {
-        const auto events = prepareChordEvents(allChords, func, ticksPerSec);
-        const auto beatTimes = BeatTracker::beatTrack(events);
-        if (beatTimes.size() <= MIN_BEAT_COUNT) {
+    for (const auto &func : salience_funcs) {
+        const auto events = prepare_chord_events(all_chords, func, ticks_per_sec);
+        const auto beat_times = BeatTracker::beatTrack(events);
+        if (beat_times.size() <= min_beat_count) {
             continue;
         }
 
-        for (const ReducedFraction &barFraction : barFractions) {
-            const auto beatLen = Meter::beatLength(barFraction);
-            const auto div = barFraction / beatLen;
-            const int beatsInBar = div.numerator() / div.denominator();
+        for (const ReducedFraction &bar_fraction : bar_fractions) {
+            const auto beat_len = Meter::beat_length(bar_fraction);
+            const auto div = bar_fraction / beat_len;
+            const int beats_in_bar = div.numerator() / div.denominator();
 
-            const std::vector<Meter::DivisionInfo> divsInfo = {Meter::metricDivisionsOfBar(barFraction)};
-            const auto levels = Meter::metricLevelsOfBar(barFraction, divsInfo, beatLen);
+            const std::vector<Meter::DivisionInfo> divs_info = {Meter::metric_divisions_of_bar(bar_fraction)};
+            const auto levels = Meter::metric_levels_of_bar(bar_fraction, divs_info, beat_len);
 
-            Q_ASSERT_X((int) levels.size() == beatsInBar, "MidiBeat::findBeatLocations", "Wrong count of bar levels");
+            Q_ASSERT_X((int) levels.size() == beats_in_bar, "MidiBeat::findBeatLocations", "Wrong count of bar levels");
 
             // beat set - first case
-            MidiOperations::HumanBeatData beatData = prepareHumanBeatData(beatTimes, allChords, ticksPerSec, beatsInBar);
-            beatData.timeSig = barFraction;
-            const double matchRank = findMatchRank(beatData.beatSet, events, levels, beatsInBar, ticksPerSec);
-            beatResults.insert({matchRank, beatData});
+            MidiOperations::HumanBeatData beat_data = prepare_human_beat_data(beat_times, all_chords, ticks_per_sec, beats_in_bar);
+            beat_data.time_sig = bar_fraction;
+            const double match_rank = find_match_rank(beat_data.beat_set, events, levels, beats_in_bar, ticks_per_sec);
+            beat_results.insert({match_rank, beat_data});
         }
     }
 
-    auto *data = midiImportOperations.data();
-    if (!beatResults.empty()) {
-        const MidiOperations::HumanBeatData &beatData = beatResults.begin()->second;
-        setTimeSig(sigmap, beatData.timeSig);
-        data->humanBeatData = beatData;
-        data->trackOpers.measureCount2xLess.setDefaultValue(beatData.measureCount2xLess);
-        data->trackOpers.timeSigNumerator.setDefaultValue(Meter::fractionNumeratorToUserValue(beatData.timeSig.numerator()));
-        data->trackOpers.timeSigDenominator.setDefaultValue(Meter::fractionDenominatorToUserValue(beatData.timeSig.denominator()));
+    auto *data = midi_import_operations.data();
+    if (!beat_results.empty()) {
+        const MidiOperations::HumanBeatData &beat_data = beat_results.begin()->second;
+        set_time_sig(sigmap, beat_data.time_sig);
+        data->human_beat_data = beat_data;
+        data->track_opers.measure_count2x_less.set_default_value(beat_data.measure_count2x_less);
+        data->track_opers.time_sig_numerator.set_default_value(Meter::fraction_numerator_to_user_value(beat_data.time_sig.numerator()));
+        data->track_opers.time_sig_denominator.set_default_value(
+            Meter::fraction_denominator_to_user_value(beat_data.time_sig.denominator()));
     } else {
-        const auto currentTimeSig = ReducedFraction(sigmap->timesig(0).timesig());
-        data->trackOpers.timeSigNumerator.setDefaultValue(Meter::fractionNumeratorToUserValue(currentTimeSig.numerator()));
-        data->trackOpers.timeSigDenominator.setDefaultValue(Meter::fractionDenominatorToUserValue(currentTimeSig.denominator()));
+        const auto current_time_sig = ReducedFraction(sigmap->timesig(0).timesig());
+        data->track_opers.time_sig_numerator.set_default_value(Meter::fraction_numerator_to_user_value(current_time_sig.numerator()));
+        data->track_opers.time_sig_denominator.set_default_value(Meter::fraction_denominator_to_user_value(current_time_sig.denominator()));
     }
 }
 
-void scaleOffTimes(std::vector<MidiNote> &notes, const std::set<ReducedFraction> &beats,
-                   const std::set<ReducedFraction>::const_iterator &onTimeBeatEndIt, const ReducedFraction &newOnTimeBeatStart,
-                   const ReducedFraction &newBeatLen) {
+void scale_off_times(std::vector<MidiNote> &notes, const std::set<ReducedFraction> &beats,
+                     const std::set<ReducedFraction>::const_iterator &on_time_beat_end_it, const ReducedFraction &new_on_time_beat_start,
+                     const ReducedFraction &new_beat_len) {
     for (auto &note : notes) {
-        int beatCount = 0; // beat count between note on time and off time
+        int beat_count = 0; // beat count between note on time and off time
 
-        Q_ASSERT_X(onTimeBeatEndIt != beats.begin(), "MidiBeat::scaleOffTimes", "End beat iterator cannot be the first beat iterator");
+        Q_ASSERT_X(on_time_beat_end_it != beats.begin(), "MidiBeat::scaleOffTimes", "End beat iterator cannot be the first beat iterator");
 
-        auto bStart = *std::prev(onTimeBeatEndIt);
-        for (auto bit = onTimeBeatEndIt; bit != beats.end(); ++bit) {
-            const auto &bEnd = *bit;
+        auto b_start = *std::prev(on_time_beat_end_it);
+        for (auto bit = on_time_beat_end_it; bit != beats.end(); ++bit) {
+            const auto &b_end = *bit;
 
-            Q_ASSERT_X(bEnd > bStart, "MidiBeat::scaleOffTimes", "Beat end <= beat start for note off time that is incorrect");
+            Q_ASSERT_X(b_end > b_start, "MidiBeat::scaleOffTimes", "Beat end <= beat start for note off time that is incorrect");
 
-            if (note.offTime >= bStart && note.offTime < bEnd) {
-                const auto scale = newBeatLen / (bEnd - bStart);
-                auto newOffTimeInBeat = (note.offTime - bStart) * scale;
-                newOffTimeInBeat = Quantize::quantizeValue(newOffTimeInBeat, MChord::minAllowedDuration());
-                const auto desiredBeatStart = newOnTimeBeatStart + newBeatLen * beatCount;
-                note.offTime = desiredBeatStart + newOffTimeInBeat;
+            if (note.off_time >= b_start && note.off_time < b_end) {
+                const auto scale = new_beat_len / (b_end - b_start);
+                auto new_off_time_in_beat = (note.off_time - b_start) * scale;
+                new_off_time_in_beat = Quantize::quantize_value(new_off_time_in_beat, MChord::min_allowed_duration());
+                const auto desired_beat_start = new_on_time_beat_start + new_beat_len * beat_count;
+                note.off_time = desired_beat_start + new_off_time_in_beat;
                 break;
             }
 
-            bStart = bEnd;
-            ++beatCount;
+            b_start = b_end;
+            ++beat_count;
         }
     }
 }
 
-void adjustChordsToBeats(std::multimap<int, MTrack> &tracks) {
-    const auto &opers = midiImportOperations;
-    std::set<ReducedFraction> beats = opers.data()->humanBeatData.beatSet; // copy
+void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks) {
+    const auto &opers = midi_import_operations;
+    std::set<ReducedFraction> beats = opers.data()->human_beat_data.beat_set; // copy
     if (beats.empty()) {
         return;
     }
 
-    if (opers.data()->trackOpers.isHumanPerformance.value()) {
-        if (opers.data()->trackOpers.measureCount2xLess.value()) {
-            removeEvery2ndBeat(beats);
+    if (opers.data()->track_opers.is_human_performance.value()) {
+        if (opers.data()->track_opers.measure_count2x_less.value()) {
+            remove_every2nd_beat(beats);
         }
 
         Q_ASSERT_X(beats.size() > 1, "MidiBeat::adjustChordsToBeats", "Human beat count < 2");
 
-        const auto newBeatLen = ReducedFraction::fromTicks(engraving::Constants::DIVISION);
+        const auto new_beat_len = ReducedFraction::from_ticks(engraving::Constants::division);
 
-        for (auto trackIt = tracks.begin(); trackIt != tracks.end(); ++trackIt) {
-            auto &chords = trackIt->second.chords;
+        for (auto track_it = tracks.begin(); track_it != tracks.end(); ++track_it) {
+            auto &chords = track_it->second.chords;
             if (chords.empty()) {
                 continue;
             }
             // do chord alignment according to recognized beats
-            std::multimap<ReducedFraction, MidiChord> newChords;
-            auto chordIt = chords.begin();
+            std::multimap<ReducedFraction, MidiChord> new_chords;
+            auto chord_it = chords.begin();
             auto it = beats.begin();
-            auto beatStart = *it;
-            auto newBeatStart = ReducedFraction(0, 1);
+            auto beat_start = *it;
+            auto new_beat_start = ReducedFraction(0, 1);
 
             for (++it; it != beats.end(); ++it) {
-                const auto &beatEnd = *it;
+                const auto &beat_end = *it;
 
-                Q_ASSERT_X(beatEnd > beatStart, "MidiBeat::adjustChordsToBeats", "Beat end <= beat start that is incorrect");
+                Q_ASSERT_X(beat_end > beat_start, "MidiBeat::adjustChordsToBeats", "Beat end <= beat start that is incorrect");
 
-                const auto scale = newBeatLen / (beatEnd - beatStart);
+                const auto scale = new_beat_len / (beat_end - beat_start);
 
-                for (; chordIt != chords.end() && chordIt->first < beatEnd; ++chordIt) {
-                    auto newOnTimeInBeat = (chordIt->first - beatStart) * scale;
+                for (; chord_it != chords.end() && chord_it->first < beat_end; ++chord_it) {
+                    auto new_on_time_in_beat = (chord_it->first - beat_start) * scale;
                     // quantize to prevent ReducedFraction overflow
-                    newOnTimeInBeat = Quantize::quantizeValue(newOnTimeInBeat, MChord::minAllowedDuration());
-                    scaleOffTimes(chordIt->second.notes, beats, it, newBeatStart, newBeatLen);
-                    const auto newOnTime = newBeatStart + newOnTimeInBeat;
-                    for (auto &note : chordIt->second.notes) {
-                        if (note.offTime - newOnTime < MChord::minAllowedDuration()) {
-                            note.offTime = newOnTime + MChord::minAllowedDuration();
+                    new_on_time_in_beat = Quantize::quantize_value(new_on_time_in_beat, MChord::min_allowed_duration());
+                    scale_off_times(chord_it->second.notes, beats, it, new_beat_start, new_beat_len);
+                    const auto new_on_time = new_beat_start + new_on_time_in_beat;
+                    for (auto &note : chord_it->second.notes) {
+                        if (note.off_time - new_on_time < MChord::min_allowed_duration()) {
+                            note.off_time = new_on_time + MChord::min_allowed_duration();
                         }
                     }
-                    newChords.insert({newOnTime, chordIt->second});
+                    new_chords.insert({new_on_time, chord_it->second});
                 }
 
-                if (chordIt == chords.end()) {
+                if (chord_it == chords.end()) {
                     break;
                 }
 
-                beatStart = beatEnd;
-                newBeatStart += newBeatLen;
+                beat_start = beat_end;
+                new_beat_start += new_beat_len;
             }
 
-            std::swap(chords, newChords);
+            std::swap(chords, new_chords);
 #ifndef NDEBUG
-            Q_ASSERT_X(MChord::areNotesLongEnough(chords), "MidiBeat::adjustChordsToBeats", "There are too short notes");
+            Q_ASSERT_X(MChord::are_notes_long_enough(chords), "MidiBeat::adjustChordsToBeats", "There are too short notes");
 #endif
         }
     }
 }
 
-void updateFirstLastBeats(MidiOperations::HumanBeatData &beatData, const ReducedFraction &timeSig) {
-    for (int i = 0; i != beatData.addedFirstBeats; ++i) {
-        Q_ASSERT_X(!beatData.beatSet.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after first beats deletion");
+void update_first_last_beats(MidiOperations::HumanBeatData &beat_data, const ReducedFraction &time_sig) {
+    for (int i = 0; i != beat_data.added_first_beats; ++i) {
+        Q_ASSERT_X(!beat_data.beat_set.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after first beats deletion");
 
-        beatData.beatSet.erase(beatData.beatSet.begin());
+        beat_data.beat_set.erase(beat_data.beat_set.begin());
     }
-    for (int i = 0; i != beatData.addedLastBeats; ++i) {
-        Q_ASSERT_X(!beatData.beatSet.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after last beats deletion");
+    for (int i = 0; i != beat_data.added_last_beats; ++i) {
+        Q_ASSERT_X(!beat_data.beat_set.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after last beats deletion");
 
-        beatData.beatSet.erase(std::prev(beatData.beatSet.end()));
+        beat_data.beat_set.erase(std::prev(beat_data.beat_set.end()));
     }
 
-    const int beatsInBar = MidiBeat::beatsInBar(timeSig);
+    const int beats_in_bar = MidiBeat::beats_in_bar(time_sig);
 
-    MidiBeat::addFirstBeats(beatData.beatSet, beatData.firstChordTick, beatsInBar, beatData.addedFirstBeats);
-    MidiBeat::addLastBeats(beatData.beatSet, beatData.lastChordTick, beatsInBar, beatData.addedLastBeats);
+    MidiBeat::add_first_beats(beat_data.beat_set, beat_data.first_chord_tick, beats_in_bar, beat_data.added_first_beats);
+    MidiBeat::add_last_beats(beat_data.beat_set, beat_data.last_chord_tick, beats_in_bar, beat_data.added_last_beats);
 }
 
-void setTimeSignature(engraving::TimeSigMap *sigmap) {
-    auto *data = midiImportOperations.data();
-    const std::set<ReducedFraction> &beats = data->humanBeatData.beatSet;
+void set_time_signature(engraving::TimeSigMap *sigmap) {
+    auto *data = midi_import_operations.data();
+    const std::set<ReducedFraction> &beats = data->human_beat_data.beat_set;
     if (beats.empty()) {
         return; // don't set time sig for non-human performed MIDI files
     }
-    const auto timeSig =
-        Meter::userTimeSigToFraction(data->trackOpers.timeSigNumerator.value(), data->trackOpers.timeSigDenominator.value());
-    setTimeSig(sigmap, timeSig);
-    updateFirstLastBeats(data->humanBeatData, timeSig);
+    const auto time_sig =
+        Meter::user_time_sig_to_fraction(data->track_opers.time_sig_numerator.value(), data->track_opers.time_sig_denominator.value());
+    set_time_sig(sigmap, time_sig);
+    update_first_last_beats(data->human_beat_data, time_sig);
 }
 }} // namespace mu::iex::midi::MidiBeat

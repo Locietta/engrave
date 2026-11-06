@@ -27,9 +27,9 @@
 
 namespace mu::iex::guitarpro {
 struct BendDataContextSplitChord {
-    std::unordered_map<mu::engraving::track_idx_t, std::map<int, BendChordData>> bendDataByEndTick;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<int, std::vector<mu::engraving::Fraction>>> bendChordDurations;
-    std::unordered_map<mu::engraving::track_idx_t, std::set<mu::engraving::Fraction>> reduntantChordTicks;
-    std::unordered_map<mu::engraving::track_idx_t, std::set<mu::engraving::Fraction>> chordTicksForTieBack;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<int, BendChordData>> bend_data_by_end_tick;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<int, std::vector<mu::engraving::Fraction>>> bend_chord_durations;
+    std::unordered_map<mu::engraving::track_idx_t, std::set<mu::engraving::Fraction>> reduntant_chord_ticks;
+    std::unordered_map<mu::engraving::track_idx_t, std::set<mu::engraving::Fraction>> chord_ticks_for_tie_back;
 };
 } // namespace mu::iex::guitarpro

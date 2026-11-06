@@ -17,24 +17,24 @@ bool ends_with(std::string_view text, std::string_view suffix) {
 }
 
 std::optional<Format> sniff_zip(const std::string &data) {
-    muse::ByteArray bytes = muse::ByteArray::fromRawData(data.data(), data.size());
+    muse::ByteArray bytes = muse::ByteArray::from_raw_data(data.data(), data.size());
     muse::io::Buffer buffer(&bytes);
-    buffer.open(muse::io::IODevice::ReadOnly);
+    buffer.open(muse::io::IODevice::READ_ONLY);
     muse::ZipReader zip(&buffer);
-    if (zip.hasError()) return std::nullopt;
-    if (zip.fileExists("META-INF/container.xml")) {
-        muse::XmlStreamReader xml(zip.fileData("META-INF/container.xml"));
+    if (zip.has_error()) return std::nullopt;
+    if (zip.file_exists("META-INF/container.xml")) {
+        muse::XmlStreamReader xml(zip.file_data("META-INF/container.xml"));
         bool musicxml = false;
-        while (!xml.atEnd()) {
-            xml.readNext();
-            if (!xml.isStartElement() || xml.name() != "rootfile") continue;
-            const std::string path = xml.attribute("full-path").toStdString();
+        while (!xml.at_end()) {
+            xml.read_next();
+            if (!xml.is_start_element() || xml.name() != "rootfile") continue;
+            const std::string path = xml.attribute("full-path").to_std_string();
             if (ends_with(path, ".mscx")) return Format::MSCZ;
             musicxml = musicxml || ends_with(path, ".musicxml") || (ends_with(path, ".xml") && !path.starts_with("META-INF/"));
         }
         if (musicxml) return Format::MXL;
     }
-    if (zip.fileExists("Content/score.gpif")) return Format::GUITAR_PRO;
+    if (zip.file_exists("Content/score.gpif")) return Format::GUITAR_PRO;
     return std::nullopt;
 }
 
@@ -43,10 +43,10 @@ std::optional<Format> sniff_xml(const std::string &data) {
     if (text.starts_with("\xEF\xBB\xBF")) text.remove_prefix(3);
     const auto first = text.find_first_not_of(" \t\r\n");
     if (first == std::string_view::npos || text[first] != '<') return std::nullopt;
-    muse::XmlStreamReader xml(muse::ByteArray::fromRawData(data.data(), data.size()));
-    while (!xml.atEnd()) {
-        xml.readNext();
-        if (xml.isStartElement()) {
+    muse::XmlStreamReader xml(muse::ByteArray::from_raw_data(data.data(), data.size()));
+    while (!xml.at_end()) {
+        xml.read_next();
+        if (xml.is_start_element()) {
             if (xml.name() == "museScore") return Format::MSCX;
             if (xml.name() == "score-partwise" || xml.name() == "score-timewise") return Format::MUSIC_XML;
             return std::nullopt;

@@ -28,10 +28,10 @@
 
 namespace mu::engraving {
 //! NOTE The main format is MuseScore, is a zip archive with a specific structure
-static const std::string MSCZ = "mscz";
+static const std::string mscz = "mscz";
 
 //! NOTE This is the automatically generated backup file.
-static const std::string MSCZ_BACKUP = "mscz~";
+static const std::string mscz_backup = "mscz~";
 
 //! NOTE Before MuseScore 4, MuseScore could save data in one xml file (excluding binary) with `.mscx` extension.
 //! Starting from MuseScore 4, only the score domain model store to the `.mscx` file,
@@ -40,48 +40,49 @@ static const std::string MSCZ_BACKUP = "mscz~";
 //! as a zip container will be created (i.e. an unpacked zip container)
 //! We can select `.mscx` to open, in this case it is now expected that it is in a folder
 //! in which there are also other data, structured as in a zip container.
-static const std::string MSCX = "mscx";
+static const std::string mscx = "mscx";
 
 //! NOTE For testing purposes and some workflows of work with score, there is a need to store all data in one text file.
 //! Therefore, a new file type has been introduced for this.
 //! This is a XML file that stores all files from the ZIP container by concatenation (excluding binaries)
-static const std::string MSCS = "mscs";
+static const std::string mscs = "mscs";
 
-inline bool isMuseScoreFile(const std::string &suffix) {
-    return suffix == MSCZ || suffix == MSCX || suffix == MSCS || suffix == MSCZ_BACKUP;
+inline bool is_muse_score_file(const std::string &suffix) {
+    return suffix == ::mu::engraving::mscz || suffix == ::mu::engraving::mscx || suffix == ::mu::engraving::mscs ||
+           suffix == ::mu::engraving::mscz_backup;
 }
 
-enum class MscIoMode : unsigned char { Unknown = 0, Zip, Dir, XmlFile };
+enum class MscIoMode : unsigned char { UNKNOWN = 0, ZIP, DIR, XML_FILE };
 
-inline MscIoMode mscIoModeBySuffix(const std::string &suffix) {
-    if (suffix == MSCZ || suffix == MSCZ_BACKUP) {
-        return MscIoMode::Zip;
-    } else if (suffix == MSCX) {
-        return MscIoMode::Dir;
-    } else if (suffix == MSCS) {
-        return MscIoMode::XmlFile;
+inline MscIoMode msc_io_mode_by_suffix(const std::string &suffix) {
+    if (suffix == ::mu::engraving::mscz || suffix == ::mu::engraving::mscz_backup) {
+        return MscIoMode::ZIP;
+    } else if (suffix == ::mu::engraving::mscx) {
+        return MscIoMode::DIR;
+    } else if (suffix == ::mu::engraving::mscs) {
+        return MscIoMode::XML_FILE;
     }
-    return MscIoMode::Unknown;
+    return MscIoMode::UNKNOWN;
 }
 
-inline muse::io::path_t containerPath(const muse::io::path_t &path) {
-    if (muse::io::suffix(path) == MSCX) {
-        return muse::io::absoluteDirpath(path);
+inline muse::io::PathT container_path(const muse::io::PathT &path) {
+    if (muse::io::suffix(path) == ::mu::engraving::mscx) {
+        return muse::io::absolute_dirpath(path);
     }
 
     return path;
 }
 
-inline muse::io::path_t mainFilePath(const muse::io::path_t &path) {
-    if (isMuseScoreFile(muse::io::suffix(path))) {
+inline muse::io::PathT main_file_path(const muse::io::PathT &path) {
+    if (is_muse_score_file(muse::io::suffix(path))) {
         return path;
     }
 
-    return path.appendingComponent(muse::io::filename(path)).appendingSuffix(MSCX);
+    return path.appending_component(muse::io::filename(path)).appending_suffix(::mu::engraving::mscx);
 }
 
-inline muse::io::path_t mainFileName(const muse::io::path_t &path) {
-    return muse::io::filename(path, !isMuseScoreFile(muse::io::suffix(path))).appendingSuffix(MSCX);
+inline muse::io::PathT main_file_name(const muse::io::PathT &path) {
+    return muse::io::filename(path, !is_muse_score_file(muse::io::suffix(path))).appending_suffix(::mu::engraving::mscx);
 }
 } // namespace mu::engraving
 

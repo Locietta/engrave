@@ -49,14 +49,14 @@ std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::u
 
 music::EngineAudioFormat engine_format(AudioFormat format) {
     switch (format) {
-        case AudioFormat::WAV: return music::EngineAudioFormat::Wav;
-        case AudioFormat::FLAC: return music::EngineAudioFormat::Flac;
+        case AudioFormat::WAV: return music::EngineAudioFormat::WAV;
+        case AudioFormat::FLAC: return music::EngineAudioFormat::FLAC;
         case AudioFormat::OGG:
-        case AudioFormat::OPUS: return music::EngineAudioFormat::Ogg;
-        case AudioFormat::MP3: return music::EngineAudioFormat::Mp3;
-        case AudioFormat::AAC: return music::EngineAudioFormat::Aac;
+        case AudioFormat::OPUS: return music::EngineAudioFormat::OGG;
+        case AudioFormat::MP3: return music::EngineAudioFormat::MP3;
+        case AudioFormat::AAC: return music::EngineAudioFormat::AAC;
     }
-    return music::EngineAudioFormat::Wav;
+    return music::EngineAudioFormat::WAV;
 }
 
 const char *file_extension(AudioFormat format) {
@@ -71,7 +71,9 @@ const char *file_extension(AudioFormat format) {
     return ".audio";
 }
 
-bool is_lossy(AudioFormat format) { return format == AudioFormat::OGG || format == AudioFormat::OPUS || format == AudioFormat::MP3 || format == AudioFormat::AAC; }
+bool is_lossy(AudioFormat format) {
+    return format == AudioFormat::OGG || format == AudioFormat::OPUS || format == AudioFormat::MP3 || format == AudioFormat::AAC;
+}
 
 AudioMix to_mix(const music::AudioOutputParams &output) { return {output.volume_db, output.balance, output.muted, output.solo}; }
 
@@ -132,8 +134,8 @@ Result<MixContext> resolve_mix(const music::ScoreAudioMixDefaults &audio_default
 
 std::string excerpt_name_of(const music::ScoreProject &project, int excerpt_id) {
     if (excerpt_id < 0) return {};
-    const auto &excerpts = project->masterScore()->excerpts();
-    if (static_cast<std::size_t>(excerpt_id) < excerpts.size() && excerpts[excerpt_id]) return excerpts[excerpt_id]->name().toStdString();
+    const auto &excerpts = project->master_score()->excerpts();
+    if (static_cast<std::size_t>(excerpt_id) < excerpts.size() && excerpts[excerpt_id]) return excerpts[excerpt_id]->name().to_std_string();
     return {};
 }
 
@@ -142,7 +144,7 @@ std::string excerpt_name_of(const music::ScoreProject &project, int excerpt_id) 
 Result<AudioTracks> Document::audio_tracks(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    MasterScore &master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->master_score();
     const Result<int> excerpt_id = excerpt_id_of(master, selection);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
     const Result<mu::engraving::Score *> selected = select_score(master, selection);
@@ -174,7 +176,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     if (options.cancelled && options.cancelled()) return fail(ErrorCode::CANCELLED, "audio render cancelled");
     EngineState &engine = *impl_->engine;
-    MasterScore &master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->master_score();
     const Result<int> excerpt_id = excerpt_id_of(master, options.score);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
     const Result<mu::engraving::Score *> selected = select_score(master, options.score);
@@ -279,12 +281,12 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     const music::AudioRenderResult rendered = music::export_score_audio(engine.context->audio(), &master, request);
     if (!rendered.ok) {
         switch (rendered.failure) {
-            case music::AudioRenderResult::Failure::Cancelled: return fail(ErrorCode::CANCELLED, rendered.error);
-            case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::RESOURCE_LIMIT, rendered.error);
-            case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::INVALID_ARGUMENT, rendered.error);
-            case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::IO, rendered.error);
-            case music::AudioRenderResult::Failure::EngineFailure:
-            case music::AudioRenderResult::Failure::None: throw std::runtime_error(rendered.error);
+            case music::AudioRenderResult::Failure::CANCELLED: return fail(ErrorCode::CANCELLED, rendered.error);
+            case music::AudioRenderResult::Failure::RESOURCE_LIMIT: return fail(ErrorCode::RESOURCE_LIMIT, rendered.error);
+            case music::AudioRenderResult::Failure::INVALID_SCORE: return fail(ErrorCode::INVALID_ARGUMENT, rendered.error);
+            case music::AudioRenderResult::Failure::IO: return fail(ErrorCode::IO, rendered.error);
+            case music::AudioRenderResult::Failure::ENGINE_FAILURE:
+            case music::AudioRenderResult::Failure::NONE: throw std::runtime_error(rendered.error);
         }
     }
 

@@ -41,54 +41,55 @@
 #include "easeinout.h"
 
 namespace mu::engraving {
-static int slideTicks(const Chord *chord);
-static int graceBendTicks(const Chord *chord);
+static int slide_ticks(const Chord *chord);
+static int grace_bend_ticks(const Chord *chord);
 
-void CompatMidiRender::renderScore(Score *score, EventsHolder &events, const CompatMidiRendererInternal::Context &ctx, bool expandRepeats) {
-    score->masterScore()->setExpandRepeats(expandRepeats);
+void CompatMidiRender::render_score(Score *score, EventsHolder &events, const CompatMidiRendererInternal::Context &ctx,
+                                    bool expand_repeats) {
+    score->master_score()->set_expand_repeats(expand_repeats);
     CompatMidiRendererInternal internal{score};
-    internal.renderScore(events, ctx, expandRepeats);
+    internal.render_score(events, ctx, expand_repeats);
 }
 
-int CompatMidiRender::getControllerForSnd(Score *score, int globalSndController) {
-    const int DEFAULT_CC = CTRL_BREATH;
+int CompatMidiRender::get_controller_for_snd(Score *score, int global_snd_controller) {
+    const int default_cc = CTRL_BREATH;
 
-    SynthesizerState s = score->synthesizerState();
+    SynthesizerState s = score->synthesizer_state();
     int method = s.method();
-    int controller = s.ccToUse();
+    int controller = s.cc_to_use();
 
     if (method == -1) {
-        controller = (globalSndController == -1) ? DEFAULT_CC : globalSndController;
+        controller = (global_snd_controller == -1) ? default_cc : global_snd_controller;
     }
 
     return controller;
 }
 
-void CompatMidiRender::createPlayEvents(const Score *score, Measure const *start, Measure const *const end,
-                                        const CompatMidiRendererInternal::Context &context) {
+void CompatMidiRender::create_play_events(const Score *score, Measure const *start, Measure const *const end,
+                                          const CompatMidiRendererInternal::Context &context) {
     if (!start) {
-        start = score->firstMeasure();
+        start = score->first_measure();
     }
 
-    track_idx_t etrack = score->nstaves() * VOICES;
+    track_idx_t etrack = score->nstaves() * ::mu::engraving::voices;
     for (track_idx_t track = 0; track < etrack; ++track) {
-        bool rangeEnded = false;
-        Chord *prevChord = nullptr;
-        for (Measure const *m = start; m; m = m->nextMeasure()) {
-            constexpr SegmentType st = SegmentType::ChordRest;
+        bool range_ended = false;
+        Chord *prev_chord = nullptr;
+        for (Measure const *m = start; m; m = m->next_measure()) {
+            constexpr SegmentType st = SegmentType::CHORD_REST;
 
             if (m == end) {
-                rangeEnded = true;
+                range_ended = true;
             }
-            if (rangeEnded) {
+            if (range_ended) {
                 // The range has ended, but we should collect events
                 // for tied notes. So we'll check if this is the case.
                 const Segment *seg = m->first(st);
                 const EngravingItem *e = seg->element(track);
                 bool tie = false;
-                if (e && e->isChord()) {
-                    for (const mu::engraving::Note *n : toChord(e)->notes()) {
-                        if (n->tieBack()) {
+                if (e && e->is_chord()) {
+                    for (const mu::engraving::Note *n : to_chord(e)->notes()) {
+                        if (n->tie_back()) {
                             tie = true;
                             break;
                         }
@@ -100,7 +101,7 @@ void CompatMidiRender::createPlayEvents(const Score *score, Measure const *start
             }
 
             // skip linked staves, except primary
-            if (!m->score()->staff(track / VOICES)->isPrimaryStaff()) {
+            if (!m->score()->staff(track / ::mu::engraving::voices)->is_primary_staff()) {
                 continue;
             }
             for (Segment *seg = m->first(st); seg; seg = seg->next(st)) {
@@ -109,45 +110,45 @@ void CompatMidiRender::createPlayEvents(const Score *score, Measure const *start
                     continue;
                 }
 
-                if (!item->isChord()) {
-                    prevChord = nullptr;
+                if (!item->is_chord()) {
+                    prev_chord = nullptr;
                     continue;
                 }
 
-                Chord *chord = toChord(item);
-                Chord *nextChord = nullptr;
+                Chord *chord = to_chord(item);
+                Chord *next_chord = nullptr;
                 ChordRestNavigateOptions options;
-                options.skipGrace = true;
-                if (ChordRest *chr = Navigation::nextChordRest(chord, options); chr && chr->isChord()) {
-                    nextChord = toChord(chr);
+                options.skip_grace = true;
+                if (ChordRest *chr = Navigation::next_chord_rest(chord, options); chr && chr->is_chord()) {
+                    next_chord = to_chord(chr);
                 }
 
-                if (!nextChord) {
+                if (!next_chord) {
                     // check if next chord is in next measure
-                    Measure *nextMeasure = m->nextMeasure();
-                    if (nextMeasure) {
-                        nextChord = CompatMidiRender::getChordFromSegment(nextMeasure->first(st), track);
+                    Measure *next_measure = m->next_measure();
+                    if (next_measure) {
+                        next_chord = CompatMidiRender::get_chord_from_segment(next_measure->first(st), track);
                     }
                 }
 
-                CompatMidiRender::createPlayEvents(score, context, chord, prevChord, nextChord);
-                prevChord = chord;
+                CompatMidiRender::create_play_events(score, context, chord, prev_chord, next_chord);
+                prev_chord = chord;
             }
         }
     }
 }
 
-void CompatMidiRender::createPlayEvents(const Score *score, const CompatMidiRendererInternal::Context &context, Chord *chord,
-                                        Chord *prevChord, Chord *nextChord) {
-    int gateTime = 100;
+void CompatMidiRender::create_play_events(const Score *score, const CompatMidiRendererInternal::Context &context, Chord *chord,
+                                          Chord *prev_chord, Chord *next_chord) {
+    int gate_time = 100;
 
     Fraction tick = chord->tick();
     Slur *slur = 0;
-    for (auto sp : score->spannerMap().map()) {
-        if (!sp.second->isSlur() || sp.second->staffIdx() != chord->staffIdx()) {
+    for (auto sp : score->spanner_map().map()) {
+        if (!sp.second->is_slur() || sp.second->staff_idx() != chord->staff_idx()) {
             continue;
         }
-        Slur *s = toSlur(sp.second);
+        Slur *s = to_slur(sp.second);
         if (tick >= s->tick() && tick < s->tick2()) {
             slur = s;
             break;
@@ -156,27 +157,27 @@ void CompatMidiRender::createPlayEvents(const Score *score, const CompatMidiRend
     // gateTime is 100% for slurred notes
     if (!slur) {
         Instrument *instr = chord->part()->instrument(tick);
-        instr->updateGateTime(&gateTime, String());
+        instr->update_gate_time(&gate_time, String());
     }
 
     int ontime = 0;
     int trailtime = 0;
 
-    CompatMidiRender::createGraceNotesPlayEvents(
+    CompatMidiRender::create_grace_notes_play_events(
         score, tick, chord, ontime, trailtime); // ontime and trailtime are modified by this call depending on grace notes before and after
-    trailtime = CompatMidiRender::adjustTrailtime(trailtime, chord, nextChord);
+    trailtime = CompatMidiRender::adjust_trailtime(trailtime, chord, next_chord);
 
     SwingParameters st = chord->staff()->swing(tick);
     // Check if swing needs to be applied
-    if (st.swingUnit && !chord->tuplet()) {
-        Swing::swingAdjustParams(chord, st, ontime, gateTime);
+    if (st.swing_unit && !chord->tuplet()) {
+        Swing::swing_adjust_params(chord, st, ontime, gate_time);
     }
     //
     //    render normal (and articulated) chords
     //
-    std::vector<NoteEventList> el = CompatMidiRender::renderChord(context, chord, prevChord, gateTime, ontime, trailtime);
-    if (chord->playEventType() == PlayEventType::Auto) {
-        chord->setNoteEventLists(el);
+    std::vector<NoteEventList> el = CompatMidiRender::render_chord(context, chord, prev_chord, gate_time, ontime, trailtime);
+    if (chord->play_event_type() == PlayEventType::AUTO) {
+        chord->set_note_event_lists(el);
     }
     // don't change event list if type is PlayEventType::User
 }
@@ -188,8 +189,8 @@ void CompatMidiRender::createPlayEvents(const Score *score, const CompatMidiRend
 //    trailtime signifies how much gap to leave after the note to allow for graceNotesAfter to be rendered
 //---------------------------------------------------------
 
-std::vector<NoteEventList> CompatMidiRender::renderChord(const CompatMidiRendererInternal::Context &context, Chord *chord, Chord *prevChord,
-                                                         int gateTime, int ontime, int trailtime) {
+std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRendererInternal::Context &context, Chord *chord,
+                                                          Chord *prev_chord, int gate_time, int ontime, int trailtime) {
     const std::vector<mu::engraving::Note *> &notes = chord->notes();
     if (notes.empty()) {
         return std::vector<NoteEventList>();
@@ -200,61 +201,61 @@ std::vector<NoteEventList> CompatMidiRender::renderChord(const CompatMidiRendere
     bool arpeggio = false;
 
     /// when note has glissando or slide from note, tremolo should be shortened
-    int baseLength = NoteEvent::NOTE_LENGTH - ontime - trailtime;
-    double tremoloLength = (double) baseLength / NoteEvent::NOTE_LENGTH;
+    int base_length = NoteEvent::note_length - ontime - trailtime;
+    double tremolo_length = (double) base_length / NoteEvent::note_length;
 
-    bool glissandoStart =
-        std::any_of(notes.begin(), notes.end(), [](mu::engraving::Note *note) { return CompatMidiRender::noteIsGlissandoStart(note); });
+    bool glissando_start =
+        std::any_of(notes.begin(), notes.end(), [](mu::engraving::Note *note) { return CompatMidiRender::note_is_glissando_start(note); });
 
-    if (glissandoStart) {
-        tremoloLength = 0.5 * baseLength / NoteEvent::NOTE_LENGTH;
+    if (glissando_start) {
+        tremolo_length = 0.5 * base_length / NoteEvent::note_length;
     } else {
-        bool hasSlideOut = std::any_of(notes.begin(), notes.end(), [](mu::engraving::Note *note) { return note->hasSlideFromNote(); });
+        bool has_slide_out = std::any_of(notes.begin(), notes.end(), [](mu::engraving::Note *note) { return note->has_slide_from_note(); });
 
-        if (hasSlideOut) {
-            tremoloLength = (baseLength - CompatMidiRender::slideLengthChordDependent(chord)) / (double) NoteEvent::NOTE_LENGTH;
+        if (has_slide_out) {
+            tremolo_length = (base_length - CompatMidiRender::slide_length_chord_dependent(chord)) / (double) NoteEvent::note_length;
         }
     }
 
     bool tremolo = false;
 
-    if (chord->arpeggio() && chord->arpeggio()->playArpeggio()) {
-        CompatMidiRender::renderArpeggio(chord, ell, ontime);
+    if (chord->arpeggio() && chord->arpeggio()->play_arpeggio()) {
+        CompatMidiRender::render_arpeggio(chord, ell, ontime);
         arpeggio = true;
     } else {
-        if (chord->tremoloType() != TremoloType::INVALID_TREMOLO) {
-            CompatMidiRender::renderTremolo(chord, ell, ontime, tremoloLength);
+        if (chord->tremolo_type() != TremoloType::INVALID_TREMOLO) {
+            CompatMidiRender::render_tremolo(chord, ell, ontime, tremolo_length);
             tremolo = true;
         }
 
-        CompatMidiRender::renderChordArticulation(context, chord, ell, gateTime, (double) ontime / NoteEvent::NOTE_LENGTH, tremolo);
+        CompatMidiRender::render_chord_articulation(context, chord, ell, gate_time, (double) ontime / NoteEvent::note_length, tremolo);
     }
 
     // Check each note and apply gateTime
-    for (size_t i : getNotesIndexesToRender(chord)) {
+    for (size_t i : get_notes_indexes_to_render(chord)) {
         mu::engraving::Note *note = chord->notes()[i];
         NoteEventList *el = &ell[i];
 
-        CompatMidiRender::createSlideOutNotePlayEvents(note, el, ontime, tremolo);
+        CompatMidiRender::create_slide_out_note_play_events(note, el, ontime, tremolo);
         if (arpeggio) {
             continue; // don't add extra events and apply gateTime to arpeggio
         }
         // If we are here then we still need to render the note.
         // Render its body if necessary and apply gateTime.
-        if (el->empty() && chord->tremoloChordType() != TremoloChordType::TremoloSecondChord) {
+        if (el->empty() && chord->tremolo_chord_type() != TremoloChordType::TREMOLO_SECOND_CHORD) {
             el->push_back(NoteEvent(0, ontime, 1000 - trailtime,
-                                    !note->ghost() ? NoteEvent::DEFAULT_VELOCITY_MULTIPLIER : NoteEvent::GHOST_VELOCITY_MULTIPLIER));
+                                    !note->ghost() ? NoteEvent::default_velocity_multiplier : NoteEvent::ghost_velocity_multiplier));
 
-            Glissando *gl = CompatMidiRender::backGlissando(note);
-            if (gl && CompatMidiRender::isGlissandoValid(gl) && !gl->glissandoShift()) {
-                el->back().setSlide(true);
+            Glissando *gl = CompatMidiRender::back_glissando(note);
+            if (gl && CompatMidiRender::is_glissando_valid(gl) && !gl->glissando_shift()) {
+                el->back().set_slide(true);
             }
         }
 
-        CompatMidiRender::createSlideInNotePlayEvents(note, prevChord, el);
+        CompatMidiRender::create_slide_in_note_play_events(note, prev_chord, el);
 
         for (NoteEvent &e : *el) {
-            e.setLen(e.len() * gateTime / 100);
+            e.set_len(e.len() * gate_time / 100);
         }
 
         std::sort(el->begin(), el->end(), [](const NoteEvent &left, const NoteEvent &right) {
@@ -274,14 +275,14 @@ std::vector<NoteEventList> CompatMidiRender::renderChord(const CompatMidiRendere
 //   renderArpeggio
 //---------------------------------------------------------
 
-void CompatMidiRender::renderArpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime) {
+void CompatMidiRender::render_arpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime) {
     int notes = int(chord->notes().size());
     int l = 64;
-    while (l && (l * notes > chord->upNote()->playTicks())) {
+    while (l && (l * notes > chord->up_note()->play_ticks())) {
         l = 2 * l / 3;
     }
     int start, end, step;
-    bool up = chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN && chord->arpeggio()->arpeggioType() != ArpeggioType::DOWN_STRAIGHT;
+    bool up = chord->arpeggio()->arpeggio_type() != ArpeggioType::DOWN && chord->arpeggio()->arpeggio_type() != ArpeggioType::DOWN_STRAIGHT;
     if (up) {
         start = 0;
         end = notes;
@@ -296,8 +297,8 @@ void CompatMidiRender::renderArpeggio(Chord *chord, std::vector<NoteEventList> &
         NoteEventList *events = &(ell)[i];
         events->clear();
 
-        auto tempoRatio = chord->score()->multipliedTempo(chord->tick()).val / Constants::DEFAULT_TEMPO.val;
-        int ot = (l * j * 1000) / chord->upNote()->playTicks() * tempoRatio * chord->arpeggio()->Stretch();
+        auto tempo_ratio = chord->score()->multiplied_tempo(chord->tick()).val / Constants::default_tempo.val;
+        int ot = (l * j * 1000) / chord->up_note()->play_ticks() * tempo_ratio * chord->arpeggio()->stretch();
         ot = std::clamp(ot + ontime, ot, 1000);
 
         events->push_back(NoteEvent(0, ot, 1000 - ot));
@@ -309,53 +310,54 @@ void CompatMidiRender::renderArpeggio(Chord *chord, std::vector<NoteEventList> &
 //   renderTremolo
 //---------------------------------------------------------
 
-void CompatMidiRender::renderTremolo(Chord *chord, std::vector<NoteEventList> &ell, int &ontime, double tremoloPartOfChord /* = 1.0 */) {
-    if (muse::RealIsNull(tremoloPartOfChord)) {
+void CompatMidiRender::render_tremolo(Chord *chord, std::vector<NoteEventList> &ell, int &ontime,
+                                      double tremolo_part_of_chord /* = 1.0 */) {
+    if (muse::real_is_null(tremolo_part_of_chord)) {
         return;
     }
 
     struct TremoloAdapter {
-        TremoloSingleChord *singleChord = nullptr;
-        TremoloTwoChord *twoChord = nullptr;
+        TremoloSingleChord *single_chord = nullptr;
+        TremoloTwoChord *two_chord = nullptr;
 
-        TremoloAdapter(TremoloSingleChord *s, TremoloTwoChord *t) : singleChord(s), twoChord(t) {}
+        TremoloAdapter(TremoloSingleChord *s, TremoloTwoChord *t) : single_chord(s), two_chord(t) {}
 
-        TremoloType tremoloType() const {
-            return singleChord ? singleChord->tremoloType() : (twoChord ? twoChord->tremoloType() : TremoloType::INVALID_TREMOLO);
+        TremoloType tremolo_type() const {
+            return single_chord ? single_chord->tremolo_type() : (two_chord ? two_chord->tremolo_type() : TremoloType::INVALID_TREMOLO);
         }
 
-        int lines() const { return singleChord ? singleChord->lines() : (twoChord ? twoChord->lines() : 0); }
+        int lines() const { return single_chord ? single_chord->lines() : (two_chord ? two_chord->lines() : 0); }
     };
 
-    TremoloAdapter tremolo = TremoloAdapter(chord->tremoloSingleChord(), chord->tremoloTwoChord());
+    TremoloAdapter tremolo = TremoloAdapter(chord->tremolo_single_chord(), chord->tremolo_two_chord());
 
     Segment *seg = chord->segment();
     //TremoloDispatcher* tremolo = chord->tremoloDispatcher();
     int notes = int(chord->notes().size());
 
     // check if tremolo was rendered before for drum staff
-    const Drumset *ds = CompatMidiRender::getDrumset(chord);
+    const Drumset *ds = CompatMidiRender::get_drumset(chord);
     if (ds) {
         for (mu::engraving::Note *n : chord->notes()) {
-            DrumInstrumentVariant div = ds->findVariant(n->pitch(), chord->articulations(), tremolo.tremoloType());
-            if (div.pitch != INVALID_PITCH && div.tremolo == tremolo.tremoloType()) {
+            DrumInstrumentVariant div = ds->find_variant(n->pitch(), chord->articulations(), tremolo.tremolo_type());
+            if (div.pitch != ::mu::engraving::invalid_pitch && div.tremolo == tremolo.tremolo_type()) {
                 return; // already rendered
             }
         }
     }
 
     // we cannot render buzz roll with MIDI events only
-    if (tremolo.tremoloType() == TremoloType::BUZZ_ROLL) {
+    if (tremolo.tremolo_type() == TremoloType::BUZZ_ROLL) {
         return;
     }
 
     // render tremolo with multiple events
-    if (chord->tremoloChordType() == TremoloChordType::TremoloFirstChord) {
-        int t = Constants::DIVISION / (1 << (tremolo.lines() + chord->durationType().hooks()));
+    if (chord->tremolo_chord_type() == TremoloChordType::TREMOLO_FIRST_CHORD) {
+        int t = Constants::division / (1 << (tremolo.lines() + chord->duration_type().hooks()));
         if (t == 0) { // avoid crash on very short tremolo
             t = 1;
         }
-        SegmentType st = SegmentType::ChordRest;
+        SegmentType st = SegmentType::CHORD_REST;
         Segment *seg2 = seg->next(st);
         track_idx_t track = chord->track();
         while (seg2 && !seg2->element(track)) {
@@ -366,17 +368,17 @@ void CompatMidiRender::renderTremolo(Chord *chord, std::vector<NoteEventList> &e
             return;
         }
 
-        EngravingItem *s2El = seg2->element(track);
-        if (s2El) {
-            if (!s2El->isChord()) {
+        EngravingItem *s2_el = seg2->element(track);
+        if (s2_el) {
+            if (!s2_el->is_chord()) {
                 return;
             }
         } else {
             return;
         }
 
-        Chord *c2 = toChord(s2El);
-        if (c2->isChord()) {
+        Chord *c2 = to_chord(s2_el);
+        if (c2->is_chord()) {
             int notes2 = int(c2->notes().size());
             int tnotes = std::max(notes, notes2);
             int tticks = chord->ticks().ticks() * 2; // use twice the size
@@ -421,29 +423,29 @@ void CompatMidiRender::renderTremolo(Chord *chord, std::vector<NoteEventList> &e
         } else {
             LOGD("Chord::renderTremolo: cannot find 2. chord");
         }
-    } else if (chord->tremoloChordType() == TremoloChordType::TremoloSecondChord) {
+    } else if (chord->tremolo_chord_type() == TremoloChordType::TREMOLO_SECOND_CHORD) {
         for (int k = 0; k < notes; ++k) {
             NoteEventList *events = &(ell)[k];
             events->clear();
         }
-    } else if (chord->tremoloChordType() == TremoloChordType::TremoloSingle) {
-        int t = Constants::DIVISION / (1 << (tremolo.lines() + chord->durationType().hooks()));
+    } else if (chord->tremolo_chord_type() == TremoloChordType::TREMOLO_SINGLE) {
+        int t = Constants::division / (1 << (tremolo.lines() + chord->duration_type().hooks()));
         if (t == 0) { // avoid crash on very short tremolo
             t = 1;
         }
 
-        int tremoloEventsSize = chord->ticks().ticks() / t * tremoloPartOfChord;
+        int tremolo_events_size = chord->ticks().ticks() / t * tremolo_part_of_chord;
 
-        constexpr int fullEventTime = 1000;
-        int tremoloTime = fullEventTime * tremoloPartOfChord;
-        int tremoloEventStep = tremoloTime / tremoloEventsSize;
-        ontime += tremoloTime;
+        constexpr int full_event_time = 1000;
+        int tremolo_time = full_event_time * tremolo_part_of_chord;
+        int tremolo_event_step = tremolo_time / tremolo_events_size;
+        ontime += tremolo_time;
 
         for (int k = 0; k < notes; ++k) {
             NoteEventList *events = &(ell)[k];
             events->clear();
-            for (int i = 0; i < tremoloEventsSize; i++) {
-                events->push_back(NoteEvent(0, tremoloEventStep * i, tremoloEventStep));
+            for (int i = 0; i < tremolo_events_size; i++) {
+                events->push_back(NoteEvent(0, tremolo_event_step * i, tremolo_event_step));
             }
         }
     }
@@ -453,9 +455,9 @@ void CompatMidiRender::renderTremolo(Chord *chord, std::vector<NoteEventList> &e
 //   renderChordArticulation
 //---------------------------------------------------------
 
-void CompatMidiRender::renderChordArticulation(const CompatMidiRendererInternal::Context &context, Chord *chord,
-                                               std::vector<NoteEventList> &ell, int &gateTime, double graceOnBeatProportion,
-                                               bool tremoloBefore /* = false */) {
+void CompatMidiRender::render_chord_articulation(const CompatMidiRendererInternal::Context &context, Chord *chord,
+                                                 std::vector<NoteEventList> &ell, int &gate_time, double grace_on_beat_proportion,
+                                                 bool tremolo_before /* = false */) {
     Segment *seg = chord->segment();
     Instrument *instr = chord->part()->instrument(seg->tick());
 
@@ -464,44 +466,44 @@ void CompatMidiRender::renderChordArticulation(const CompatMidiRendererInternal:
         Note *note = chord->notes()[k];
         Trill *trill;
 
-        if (noteIsGlissandoStart(note)) {
-            CompatMidiRender::renderGlissando(events, note, graceOnBeatProportion, tremoloBefore);
-        } else if (chord->staff()->isPitchedStaff(chord->tick()) && (trill = findFirstTrill(chord)) != nullptr) {
-            CompatMidiRender::renderNoteArticulation(events, note, false, trill->trillType(), trill->ornamentStyle());
+        if (note_is_glissando_start(note)) {
+            CompatMidiRender::render_glissando(events, note, grace_on_beat_proportion, tremolo_before);
+        } else if (chord->staff()->is_pitched_staff(chord->tick()) && (trill = find_first_trill(chord)) != nullptr) {
+            CompatMidiRender::render_note_articulation(events, note, false, trill->trill_type(), trill->ornament_style());
         } else {
             for (Articulation *a : chord->articulations()) {
-                if (!a->playArticulation()) {
+                if (!a->play_articulation()) {
                     continue;
                 }
-                if (!CompatMidiRender::renderNoteArticulation(events, note, false, a->symId(), a->ornamentStyle())) {
-                    CompatMidiRender::updateGateTime(instr, gateTime, a->articulationName(), context);
+                if (!CompatMidiRender::render_note_articulation(events, note, false, a->sym_id(), a->ornament_style())) {
+                    CompatMidiRender::update_gate_time(instr, gate_time, a->articulation_name(), context);
                 }
             }
         }
     }
 }
 
-void CompatMidiRender::updateGateTime(const Instrument *instrument, int &gateTime, const String &articulationName,
-                                      const CompatMidiRendererInternal::Context &context) {
+void CompatMidiRender::update_gate_time(const Instrument *instrument, int &gate_time, const String &articulation_name,
+                                        const CompatMidiRendererInternal::Context &context) {
     using Ctx = CompatMidiRendererInternal::Context;
-    if (context.useDefaultArticulations) {
-        auto it = Ctx::s_builtInArticulationsValues.find(articulationName);
-        if (it != Ctx::s_builtInArticulationsValues.end()) {
-            gateTime = std::min(gateTime, it->second.gateTime);
+    if (context.use_default_articulations) {
+        auto it = Ctx::s_built_in_articulations_values.find(articulation_name);
+        if (it != Ctx::s_built_in_articulations_values.end()) {
+            gate_time = std::min(gate_time, it->second.gate_time);
         } else {
-            instrument->updateGateTime(&gateTime, articulationName);
+            instrument->update_gate_time(&gate_time, articulation_name);
         }
 
         return;
     }
 
-    auto articulationsForInstrumentIt = context.articulationsWithoutValuesByInstrument.find(instrument->id());
-    if (articulationsForInstrumentIt != context.articulationsWithoutValuesByInstrument.end()) {
-        const auto &articulationsForInstrument = articulationsForInstrumentIt->second;
-        if (articulationsForInstrument.find(articulationName) != articulationsForInstrument.end()) {
-            gateTime = std::min(gateTime, Ctx::s_builtInArticulationsValues[articulationName].gateTime);
+    auto articulations_for_instrument_it = context.articulations_without_values_by_instrument.find(instrument->id());
+    if (articulations_for_instrument_it != context.articulations_without_values_by_instrument.end()) {
+        const auto &articulations_for_instrument = articulations_for_instrument_it->second;
+        if (articulations_for_instrument.find(articulation_name) != articulations_for_instrument.end()) {
+            gate_time = std::min(gate_time, Ctx::s_built_in_articulations_values[articulation_name].gate_time);
         } else {
-            instrument->updateGateTime(&gateTime, articulationName);
+            instrument->update_gate_time(&gate_time, articulation_name);
         }
     }
 }
@@ -514,16 +516,16 @@ void CompatMidiRender::updateGateTime(const Instrument *instrument, int &gateTim
 // to effect the on/off time of the main note
 //---------------------------------------------------------
 
-void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Fraction &tick, Chord *chord, int &ontime, int &trailtime) {
-    std::vector<Chord *> gnb = chord->graceNotesBefore(true);
-    std::vector<Chord *> gna = chord->graceNotesAfter(true);
+void CompatMidiRender::create_grace_notes_play_events(const Score *score, const Fraction &tick, Chord *chord, int &ontime, int &trailtime) {
+    std::vector<Chord *> gnb = chord->grace_notes_before(true);
+    std::vector<Chord *> gna = chord->grace_notes_after(true);
     int nb = int(gnb.size());
     int na = int(gna.size());
     if (0 == nb + na) {
         return; // return immediately if no grace notes to deal with
     }
     // return immediately if the chord has a trill or articulation which effectively plays the graces notes.
-    if (CompatMidiRendererInternal::graceNotesMerged(chord)) {
+    if (CompatMidiRendererInternal::grace_notes_merged(chord)) {
         return;
     }
     // if there are graceNotesBefore and also graceNotesAfter, and the before grace notes are
@@ -535,14 +537,14 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
     // exception is if the note is dotted or double-dotted; see below.
     float weighta = float(na) / (nb + na);
 
-    int graceDuration = 0;
-    bool drumset = (CompatMidiRender::getDrumset(chord) != nullptr);
-    const double ticksPerSecond = score->multipliedTempo(tick).val * Constants::DIVISION;
-    const double chordTimeMS = (chord->actualTicks().ticks() / ticksPerSecond) * 1000;
+    int grace_duration = 0;
+    bool drumset = (CompatMidiRender::get_drumset(chord) != nullptr);
+    const double ticks_per_second = score->multiplied_tempo(tick).val * Constants::division;
+    const double chord_time_ms = (chord->actual_ticks().ticks() / ticks_per_second) * 1000;
     if (drumset) {
-        int flamDuration = 15;                             //ms
-        graceDuration = flamDuration / chordTimeMS * 1000; //ratio 1/1000 from the main note length
-        ontime = graceDuration * nb;
+        int flam_duration = 15;                                //ms
+        grace_duration = flam_duration / chord_time_ms * 1000; //ratio 1/1000 from the main note length
+        ontime = grace_duration * nb;
     } else if (nb) {
         //
         //  render grace notes:
@@ -553,20 +555,20 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
         //  - for appoggiaturas, the duration is divided by the number of grace notes
         //  - the grace note duration as notated does not matter
         //
-        Chord *graceChord = gnb[0];
-        const auto &graceNotes = graceChord->notes();
-        bool graceBend = std::any_of(graceNotes.begin(), graceNotes.end(), [](Note *note) { return note->isGraceBendStart(); });
+        Chord *grace_chord = gnb[0];
+        const auto &grace_notes = grace_chord->notes();
+        bool grace_bend = std::any_of(grace_notes.begin(), grace_notes.end(), [](Note *note) { return note->is_grace_bend_start(); });
 
-        if (graceChord->noteType() == NoteType::ACCIACCATURA || graceBend) {
+        if (grace_chord->note_type() == NoteType::ACCIACCATURA || grace_bend) {
             ontime = 0;
-            graceDuration = 0;
+            grace_duration = 0;
             weighta = 1.0;
         } else {
-            const double graceTimeMS = (graceChord->actualTicks().ticks() / ticksPerSecond) * 1000;
+            const double grace_time_ms = (grace_chord->actual_ticks().ticks() / ticks_per_second) * 1000;
 
             // 1000 occurs below as a unit for ontime
-            ontime = std::min(500, static_cast<int>((graceTimeMS / chordTimeMS) * 1000));
-            graceDuration = ontime / nb;
+            ontime = std::min(500, static_cast<int>((grace_time_ms / chord_time_ms) * 1000));
+            grace_duration = ontime / nb;
             weighta = 1.0;
             trailtime += ontime;
         }
@@ -578,20 +580,20 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
         size_t nn = gc->notes().size();
         for (unsigned ii = 0; ii < nn; ++ii) {
             NoteEventList nel;
-            nel.push_back(NoteEvent(0, on, graceDuration));
+            nel.push_back(NoteEvent(0, on, grace_duration));
             el.push_back(nel);
         }
 
-        if (gc->playEventType() == PlayEventType::Auto) {
-            gc->setNoteEventLists(el);
+        if (gc->play_event_type() == PlayEventType::AUTO) {
+            gc->set_note_event_lists(el);
         }
 
-        on += graceDuration;
+        on += grace_duration;
     }
 
-    bool graceBendAfter = std::any_of(gna.begin(), gna.end(), [](const Chord *graceChord) {
-        for (Note *note : graceChord->notes()) {
-            if (note->bendBack()) {
+    bool grace_bend_after = std::any_of(gna.begin(), gna.end(), [](const Chord *grace_chord) {
+        for (Note *note : grace_chord->notes()) {
+            if (note->bend_back()) {
                 return true;
             }
         }
@@ -599,7 +601,7 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
         return false;
     });
 
-    if (!graceBendAfter && na) {
+    if (!grace_bend_after && na) {
         if (chord->dots() == 1) {
             trailtime = floor(667 * weighta);
         } else if (chord->dots() == 2) {
@@ -607,7 +609,7 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
         } else {
             trailtime = floor(500 * weighta);
         }
-        int graceDuration1 = trailtime / na;
+        int grace_duration1 = trailtime / na;
         int on = 1000 - trailtime;
         for (int i = 0; i < na; ++i) {
             std::vector<NoteEventList> el;
@@ -615,14 +617,14 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
             size_t nn = gc->notes().size();
             for (size_t ii = 0; ii < nn; ++ii) {
                 NoteEventList nel;
-                nel.push_back(NoteEvent(0, on, graceDuration1)); // NoteEvent(pitch,ontime,len)
+                nel.push_back(NoteEvent(0, on, grace_duration1)); // NoteEvent(pitch,ontime,len)
                 el.push_back(nel);
             }
 
-            if (gc->playEventType() == PlayEventType::Auto) {
-                gc->setNoteEventLists(el);
+            if (gc->play_event_type() == PlayEventType::AUTO) {
+                gc->set_note_event_lists(el);
             }
-            on += graceDuration1;
+            on += grace_duration1;
         }
     }
 }
@@ -631,14 +633,14 @@ void CompatMidiRender::createGraceNotesPlayEvents(const Score *score, const Frac
 //   renderGlissando
 //---------------------------------------------------------
 
-void CompatMidiRender::renderGlissando(NoteEventList *events, Note *notestart, double graceOnBeatProportion,
-                                       bool tremoloBefore /* = false */) {
+void CompatMidiRender::render_glissando(NoteEventList *events, Note *notestart, double grace_on_beat_proportion,
+                                        bool tremolo_before /* = false */) {
     std::vector<int> empty = {};
     std::vector<int> body;
-    for (Spanner *s : notestart->spannerFor()) {
-        if (s->isGlissando() && s->playSpanner() && Glissando::pitchSteps(s, body)) {
-            CompatMidiRender::renderNoteArticulation(events, notestart, true, Constants::DIVISION, empty, body, false, true, empty, 16, 0,
-                                                     graceOnBeatProportion, tremoloBefore);
+    for (Spanner *s : notestart->spanner_for()) {
+        if (s->is_glissando() && s->play_spanner() && Glissando::pitch_steps(s, body)) {
+            CompatMidiRender::render_note_articulation(events, notestart, true, Constants::division, empty, body, false, true, empty, 16, 0,
+                                                       grace_on_beat_proportion, tremolo_before);
         }
     }
 }
@@ -652,17 +654,17 @@ void CompatMidiRender::renderGlissando(NoteEventList *events, Note *notestart, d
 // sustainp, true means the last note of the body is sustained to fill remaining time slice
 //---------------------------------------------------------
 
-bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, int requestedTicksPerNote,
-                                              const std::vector<int> &prefix, const std::vector<int> &body, bool repeatp, bool sustainp,
-                                              const std::vector<int> &suffix, int fastestFreq /* = 64 */,
-                                              int slowestFreq /* = 8 */, // 64 Hz and 8 Hz
-                                              double graceOnBeatProportion /* = 0 */, bool tremoloBefore /* = false */) {
-    if (!tremoloBefore) {
+bool CompatMidiRender::render_note_articulation(NoteEventList *events, Note *note, bool chromatic, int requested_ticks_per_note,
+                                                const std::vector<int> &prefix, const std::vector<int> &body, bool repeatp, bool sustainp,
+                                                const std::vector<int> &suffix, int fastest_freq /* = 64 */,
+                                                int slowest_freq /* = 8 */, // 64 Hz and 8 Hz
+                                                double grace_on_beat_proportion /* = 0 */, bool tremolo_before /* = false */) {
+    if (!tremolo_before) {
         events->clear();
     }
 
     Chord *chord = note->chord();
-    int maxticks = CompatMidiRender::totalTiedNoteTicks(note);
+    int maxticks = CompatMidiRender::total_tied_note_ticks(note);
     int space = 1000 * maxticks;
     int numrepeat = 1;
     int sustain = 0;
@@ -670,72 +672,72 @@ bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note,
 
     ///@NOTE grace note + glissando combination is treated separetely, in this method grace notes for glissando are not added
     /// graceOnBeatProportion is used for calculating grace note "on beat" offset
-    int gnb = noteIsGlissandoStart(note) ? 0 : int(note->chord()->graceNotesBefore().size());
+    int gnb = note_is_glissando_start(note) ? 0 : int(note->chord()->grace_notes_before().size());
     int p = int(prefix.size());
     int b = int(body.size());
     int s = int(suffix.size());
-    int gna = int(note->chord()->graceNotesAfter().size());
+    int gna = int(note->chord()->grace_notes_after().size());
 
-    int ticksPerNote = 0;
+    int ticks_per_note = 0;
 
     if (gnb + p + b + s + gna <= 0) {
         return false;
     }
 
     Fraction tick = chord->tick();
-    BeatsPerSecond tempo = chord->score()->multipliedTempo(tick);
-    int ticksPerSecond = tempo.val * Constants::DIVISION;
+    BeatsPerSecond tempo = chord->score()->multiplied_tempo(tick);
+    int ticks_per_second = tempo.val * Constants::division;
 
-    int minTicksPerNote = int(ticksPerSecond / fastestFreq);
-    int maxTicksPerNote = (0 == slowestFreq) ? 0 : int(ticksPerSecond / slowestFreq);
+    int min_ticks_per_note = int(ticks_per_second / fastest_freq);
+    int max_ticks_per_note = (0 == slowest_freq) ? 0 : int(ticks_per_second / slowest_freq);
 
     // for fast tempos, we have to slow down the tremblement frequency, i.e., increase the ticks per note
-    if (requestedTicksPerNote >= minTicksPerNote) {
+    if (requested_ticks_per_note >= min_ticks_per_note) {
     } else { // try to divide the requested frequency by a power of 2 if possible, if not, use the maximum frequency, ie., minTicksPerNote
-        ticksPerNote = requestedTicksPerNote;
-        while (ticksPerNote < minTicksPerNote) {
-            ticksPerNote *= 2; // decrease the tremblement frequency
+        ticks_per_note = requested_ticks_per_note;
+        while (ticks_per_note < min_ticks_per_note) {
+            ticks_per_note *= 2; // decrease the tremblement frequency
         }
-        if (ticksPerNote > maxTicksPerNote) {
-            ticksPerNote = minTicksPerNote;
+        if (ticks_per_note > max_ticks_per_note) {
+            ticks_per_note = min_ticks_per_note;
         }
     }
 
-    ticksPerNote = std::max(requestedTicksPerNote, minTicksPerNote);
+    ticks_per_note = std::max(requested_ticks_per_note, min_ticks_per_note);
 
-    if (slowestFreq <= 0) { // no slowest freq given such as something silly like glissando with 4 notes over 8 counts.
-    } else if (ticksPerNote <= maxTicksPerNote) { // in a good range, so we don't need to adjust ticksPerNote
+    if (slowest_freq <= 0) { // no slowest freq given such as something silly like glissando with 4 notes over 8 counts.
+    } else if (ticks_per_note <= max_ticks_per_note) { // in a good range, so we don't need to adjust ticksPerNote
     } else {
         // for slow tempos, such as adagio, we may need to speed up the tremblement frequency, i.e., decrease the ticks per note, to make it sound reasonable.
-        ticksPerNote = requestedTicksPerNote;
-        while (ticksPerNote > maxTicksPerNote) {
-            ticksPerNote /= 2;
+        ticks_per_note = requested_ticks_per_note;
+        while (ticks_per_note > max_ticks_per_note) {
+            ticks_per_note /= 2;
         }
-        if (ticksPerNote < minTicksPerNote) {
-            ticksPerNote = minTicksPerNote;
+        if (ticks_per_note < min_ticks_per_note) {
+            ticks_per_note = min_ticks_per_note;
         }
     }
     // calculate whether to shorten the duration value.
-    if (ticksPerNote * (gnb + p + b + s + gna) <= maxticks) {
+    if (ticks_per_note * (gnb + p + b + s + gna) <= maxticks) {
         // plenty of space to play the notes without changing the requested trill note duration
-    } else if (ticksPerNote == minTicksPerNote) {
+    } else if (ticks_per_note == min_ticks_per_note) {
         return false; // the ornament is impossible to implement respecting the minimum duration and all the notes it contains
     } else {
-        ticksPerNote = maxticks / (gnb + p + b + s + gna); // integer division ignoring remainder
-        if (slowestFreq <= 0) {
-        } else if (ticksPerNote < minTicksPerNote) {
+        ticks_per_note = maxticks / (gnb + p + b + s + gna); // integer division ignoring remainder
+        if (slowest_freq <= 0) {
+        } else if (ticks_per_note < min_ticks_per_note) {
             return false;
         }
     }
 
-    int millespernote = space * ticksPerNote / maxticks; // rescale duration into per mille
+    int millespernote = space * ticks_per_note / maxticks; // rescale duration into per mille
 
     // local function:
     // look ahead in the given vector to see if the current note is the same pitch as the next note or next several notes.
     // If so, increment the duration by the appropriate note duration, and increment the index, j, to the next note index
     // of a different pitch.
     // The total duration of the tied note is returned, and the index is modified.
-    auto tieForward = [millespernote](int &j, const std::vector<int> &vec) {
+    auto tie_forward = [millespernote](int &j, const std::vector<int> &vec) {
         int size = int(vec.size());
         int duration = millespernote;
         while (j < size - 1 && vec[j] == vec[j + 1]) {
@@ -749,14 +751,14 @@ bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note,
     //   append a NoteEvent either by calculating an articulationExcursion or by
     //   the given chromatic relative pitch.
     //   RETURNS the new ontime value.  The caller is expected to assign this value.
-    auto makeEvent = [note, chord, chromatic, events](int pitch, int ontime, int duration,
-                                                      double velocityMultiplier = NoteEvent::DEFAULT_VELOCITY_MULTIPLIER,
-                                                      bool play = true) {
+    auto make_event = [note, chord, chromatic, events](int pitch, int ontime, int duration,
+                                                       double velocity_multiplier = NoteEvent::default_velocity_multiplier,
+                                                       bool play = true) {
         if (note->ghost()) {
-            velocityMultiplier *= NoteEvent::GHOST_VELOCITY_MULTIPLIER;
+            velocity_multiplier *= NoteEvent::ghost_velocity_multiplier;
         }
-        events->push_back(NoteEvent(chromatic ? pitch : chromaticPitchSteps(note, note, pitch), ontime / chord->actualTicks().ticks(),
-                                    duration / chord->actualTicks().ticks(), velocityMultiplier, play));
+        events->push_back(NoteEvent(chromatic ? pitch : chromatic_pitch_steps(note, note, pitch), ontime / chord->actual_ticks().ticks(),
+                                    duration / chord->actual_ticks().ticks(), velocity_multiplier, play));
 
         return ontime + duration;
     };
@@ -772,87 +774,88 @@ bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note,
 
     // render the prefix
     for (int j = 0; j < p; j++) {
-        ontime = makeEvent(prefix[j], ontime, tieForward(j, prefix));
+        ontime = make_event(prefix[j], ontime, tie_forward(j, prefix));
     }
 
     if (b > 0) {
         // Check that we are doing a glissando
-        enum GlissandoState { NOT_FOUND, VALID, INVALID } glissandoState = GlissandoState::NOT_FOUND;
+        enum GlissandoState { NOT_FOUND, VALID, INVALID } glissando_state = GlissandoState::NOT_FOUND;
 
-        std::vector<int> onTimes;
-        for (Spanner *spanner : note->spannerFor()) {
-            if (spanner->isGlissando()) {
-                Glissando *glissando = toGlissando(spanner);
-                if (!isGlissandoValid(glissando)) {
-                    glissandoState = GlissandoState::INVALID;
+        std::vector<int> on_times;
+        for (Spanner *spanner : note->spanner_for()) {
+            if (spanner->is_glissando()) {
+                Glissando *glissando = to_glissando(spanner);
+                if (!is_glissando_valid(glissando)) {
+                    glissando_state = GlissandoState::INVALID;
                     break;
                 }
 
-                EaseInOut easeInOut(static_cast<double>(glissando->easeIn()) / 100.0, static_cast<double>(glissando->easeOut()) / 100.0);
+                EaseInOut ease_in_out(static_cast<double>(glissando->ease_in()) / 100.0,
+                                      static_cast<double>(glissando->ease_out()) / 100.0);
 
                 // shifting glissando sounds to the second half of glissando duration
-                int totalDuration = millespernote * b;
-                constexpr double glissandoPart = 0.33;
+                int total_duration = millespernote * b;
+                constexpr double glissando_part = 0.33;
 
-                int glissandoDuration =
-                    tremoloBefore ? totalDuration * glissandoPart : totalDuration * (1 - graceOnBeatProportion) * glissandoPart;
-                easeInOut.timeList(b - 1, glissandoDuration, &onTimes);
+                int glissando_duration =
+                    tremolo_before ? total_duration * glissando_part : total_duration * (1 - grace_on_beat_proportion) * glissando_part;
+                ease_in_out.time_list(b - 1, glissando_duration, &on_times);
 
-                if (!onTimes.empty()) {
-                    onTimes[0] += graceOnBeatProportion * totalDuration;
+                if (!on_times.empty()) {
+                    on_times[0] += grace_on_beat_proportion * total_duration;
                 }
 
-                if (onTimes.size() > 1) {
-                    int offset = onTimes[1];
-                    for (size_t i = 1; i < onTimes.size(); i++) {
-                        onTimes[i] += totalDuration - glissandoDuration - offset;
+                if (on_times.size() > 1) {
+                    int offset = on_times[1];
+                    for (size_t i = 1; i < on_times.size(); i++) {
+                        on_times[i] += total_duration - glissando_duration - offset;
                     }
                 }
 
-                glissandoState = GlissandoState::VALID;
+                glissando_state = GlissandoState::VALID;
                 break;
             }
         }
-        if (glissandoState == GlissandoState::VALID) {
-            const double defaultVelocityMultiplier = 1.0;
+        if (glissando_state == GlissandoState::VALID) {
+            const double default_velocity_multiplier = 1.0;
 
             // render the body, i.e. the glissando
-            if (onTimes.size() > 1) {
-                makeEvent(body[0], onTimes[0], onTimes[1] - onTimes[0], defaultVelocityMultiplier, !note->tieBack());
+            if (on_times.size() > 1) {
+                make_event(body[0], on_times[0], on_times[1] - on_times[0], default_velocity_multiplier, !note->tie_back());
 
-                Glissando *gl = backGlissando(note);
-                if (gl && isGlissandoValid(gl) && !gl->glissandoShift()) {
-                    events->back().setSlide(true);
+                Glissando *gl = back_glissando(note);
+                if (gl && is_glissando_valid(gl) && !gl->glissando_shift()) {
+                    events->back().set_slide(true);
                 }
             }
 
             for (int j = 1; j < b - 1; j++) {
-                makeEvent(body[j], onTimes[j], onTimes[j + 1] - onTimes[j], defaultVelocityMultiplier);
-                events->back().setSlide(true);
+                make_event(body[j], on_times[j], on_times[j + 1] - on_times[j], default_velocity_multiplier);
+                events->back().set_slide(true);
             }
 
             if (b > 1) {
-                makeEvent(body[b - 1], onTimes[b - 1], (millespernote * b - onTimes[b - 1]) + sustain, defaultVelocityMultiplier);
-                events->back().setSlide(true);
+                make_event(body[b - 1], on_times[b - 1], (millespernote * b - on_times[b - 1]) + sustain, default_velocity_multiplier);
+                events->back().set_slide(true);
             }
-        } else if (glissandoState != GlissandoState::INVALID) {
+        } else if (glissando_state != GlissandoState::INVALID) {
             // render the body, but not the final repetition
             for (int r = 0; r < numrepeat - 1; r++) {
                 for (int j = 0; j < b; j++) {
-                    ontime = makeEvent(body[j], ontime, millespernote);
+                    ontime = make_event(body[j], ontime, millespernote);
                 }
             }
             // render the final repetition of body, but not the final note of the repetition
             for (int j = 0; j < b - 1; j++) {
-                ontime = makeEvent(body[j], ontime, millespernote);
+                ontime = make_event(body[j], ontime, millespernote);
             }
             // render the final note of the final repeat of body
-            ontime = makeEvent(body[b - 1], ontime, millespernote + sustain);
+            ontime = make_event(body[b - 1], ontime, millespernote + sustain);
         }
     }
     // render the suffix
     for (int j = 0; j < s; j++) {
-        ontime = makeEvent(suffix[j], ontime, tieForward(j, suffix));
+        ontime = make_event(suffix[j], ontime, tie_forward(j, suffix));
     }
 
     return true;
@@ -862,16 +865,16 @@ bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note,
 //   renderNoteArticulation
 //---------------------------------------------------------
 
-bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, SymId articulationType,
-                                              OrnamentStyle ornamentStyle) {
-    if (!note->staff()->isPitchedStaff(note->tick())) { // not enough info in tab staff
+bool CompatMidiRender::render_note_articulation(NoteEventList *events, Note *note, bool chromatic, SymId articulation_type,
+                                                OrnamentStyle ornament_style) {
+    if (!note->staff()->is_pitched_staff(note->tick())) { // not enough info in tab staff
         return false;
     }
 
     std::vector<int> emptypattern = {};
     for (auto &oe : excursions) {
-        if (oe.atype == articulationType && (0 == oe.ostyles.size() || oe.ostyles.end() != oe.ostyles.find(ornamentStyle))) {
-            return renderNoteArticulation(events, note, chromatic, oe.duration, oe.prefix, oe.body, oe.repeatp, oe.sustainp, oe.suffix);
+        if (oe.atype == articulation_type && (0 == oe.ostyles.size() || oe.ostyles.end() != oe.ostyles.find(ornament_style))) {
+            return render_note_articulation(events, note, chromatic, oe.duration, oe.prefix, oe.body, oe.repeatp, oe.sustainp, oe.suffix);
         }
     }
     return false;
@@ -881,91 +884,91 @@ bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note,
 //   renderNoteArticulation
 //---------------------------------------------------------
 
-bool CompatMidiRender::renderNoteArticulation(NoteEventList *events, Note *note, bool chromatic, TrillType trillType,
-                                              OrnamentStyle ornamentStyle) {
-    std::map<TrillType, SymId> articulationMap = {{TrillType::TRILL_LINE, SymId::ornamentTrill},
-                                                  {TrillType::UPPRALL_LINE, SymId::ornamentUpPrall},
-                                                  {TrillType::DOWNPRALL_LINE, SymId::ornamentPrecompMordentUpperPrefix},
-                                                  {TrillType::PRALLPRALL_LINE, SymId::ornamentTrill}};
-    auto it = articulationMap.find(trillType);
-    if (it == articulationMap.cend()) {
+bool CompatMidiRender::render_note_articulation(NoteEventList *events, Note *note, bool chromatic, TrillType trill_type,
+                                                OrnamentStyle ornament_style) {
+    std::map<TrillType, SymId> articulation_map = {{TrillType::TRILL_LINE, SymId::ORNAMENT_TRILL},
+                                                   {TrillType::UPPRALL_LINE, SymId::ORNAMENT_UP_PRALL},
+                                                   {TrillType::DOWNPRALL_LINE, SymId::ORNAMENT_PRECOMP_MORDENT_UPPER_PREFIX},
+                                                   {TrillType::PRALLPRALL_LINE, SymId::ORNAMENT_TRILL}};
+    auto it = articulation_map.find(trill_type);
+    if (it == articulation_map.cend()) {
         return false;
     } else {
-        return CompatMidiRender::renderNoteArticulation(events, note, chromatic, it->second, ornamentStyle);
+        return CompatMidiRender::render_note_articulation(events, note, chromatic, it->second, ornament_style);
     }
 }
 
-void CompatMidiRender::createSlideInNotePlayEvents(Note *note, Chord *prevChord, NoteEventList *el) {
-    if (!note->hasSlideToNote()) {
+void CompatMidiRender::create_slide_in_note_play_events(Note *note, Chord *prev_chord, NoteEventList *el) {
+    if (!note->has_slide_to_note()) {
         return;
     }
 
-    int slideNotes = 0;
-    bool upSlide = note->slideToType() == Note::SlideType::UpToNote;
-    if (upSlide) {
-        slideNotes = std::clamp(note->fret() - 1, 0, NoteEvent::SLIDE_AMOUNT);
+    int slide_notes = 0;
+    bool up_slide = note->slide_to_type() == Note::SlideType::UP_TO_NOTE;
+    if (up_slide) {
+        slide_notes = std::clamp(note->fret() - 1, 0, NoteEvent::slide_amount);
     } else {
-        slideNotes = NoteEvent::SLIDE_AMOUNT;
+        slide_notes = NoteEvent::slide_amount;
     }
 
-    if (slideNotes == 0) {
+    if (slide_notes == 0) {
         return;
     }
 
-    int totalSlideDuration = 0;
-    double currentTicks = note->chord()->ticks().ticks();
-    if (prevChord) {
+    int total_slide_duration = 0;
+    double current_ticks = note->chord()->ticks().ticks();
+    if (prev_chord) {
         /// event length is about current chord's events, but we adjust previous
-        totalSlideDuration = (double) slideLengthChordDependent(prevChord) / currentTicks * prevChord->ticks().ticks();
+        total_slide_duration = (double) slide_length_chord_dependent(prev_chord) / current_ticks * prev_chord->ticks().ticks();
     } else {
-        totalSlideDuration = (double) NoteEvent::NOTE_LENGTH * SLIDE_DURATION / currentTicks;
+        total_slide_duration = (double) NoteEvent::note_length * ::mu::engraving::slide_duration / current_ticks;
     }
 
-    const int slideDuration = totalSlideDuration / slideNotes;
+    const int slide_duration = total_slide_duration / slide_notes;
 
-    int slideOn = 0;
-    int pitchOffset = upSlide ? -1 : 1;
-    int pitch = pitchOffset * slideNotes;
-    for (int i = 0; i < slideNotes; ++i) {
-        NoteEvent event{pitch, 0, slideDuration, 1.0, true, totalSlideDuration - slideOn};
-        event.setSlide(true);
+    int slide_on = 0;
+    int pitch_offset = up_slide ? -1 : 1;
+    int pitch = pitch_offset * slide_notes;
+    for (int i = 0; i < slide_notes; ++i) {
+        NoteEvent event{pitch, 0, slide_duration, 1.0, true, total_slide_duration - slide_on};
+        event.set_slide(true);
         el->push_back(std::move(event));
-        slideOn += slideDuration;
-        pitch -= pitchOffset;
+        slide_on += slide_duration;
+        pitch -= pitch_offset;
     }
 }
 
-void CompatMidiRender::createSlideOutNotePlayEvents(Note *note, NoteEventList *el, int onTime, bool hasTremolo) {
-    if (!note->hasSlideFromNote()) {
+void CompatMidiRender::create_slide_out_note_play_events(Note *note, NoteEventList *el, int on_time, bool has_tremolo) {
+    if (!note->has_slide_from_note()) {
         return;
     }
 
-    const int slideNotes = NoteEvent::SLIDE_AMOUNT;
-    const int totalSlideDuration = slideLengthChordDependent(note->chord());
-    const int slideDuration = totalSlideDuration / slideNotes;
+    const int slide_notes = NoteEvent::slide_amount;
+    const int total_slide_duration = slide_length_chord_dependent(note->chord());
+    const int slide_duration = total_slide_duration / slide_notes;
 
-    int slideOn = NoteEvent::NOTE_LENGTH - totalSlideDuration;
-    double velocity = !note->ghost() ? NoteEvent::DEFAULT_VELOCITY_MULTIPLIER : NoteEvent::GHOST_VELOCITY_MULTIPLIER;
-    if (!hasTremolo) {
-        el->push_back(NoteEvent(0, onTime, slideOn - onTime, velocity, !note->tieBack()));
+    int slide_on = NoteEvent::note_length - total_slide_duration;
+    double velocity = !note->ghost() ? NoteEvent::default_velocity_multiplier : NoteEvent::ghost_velocity_multiplier;
+    if (!has_tremolo) {
+        el->push_back(NoteEvent(0, on_time, slide_on - on_time, velocity, !note->tie_back()));
     }
 
     int pitch = 0;
-    int pitchOffset = note->slideFromType() == Note::SlideType::UpFromNote ? 1 : -1;
-    for (int i = 0; i < slideNotes; ++i) {
-        pitch += pitchOffset;
-        NoteEvent event{pitch, slideOn, slideDuration, velocity};
-        event.setSlide(true);
+    int pitch_offset = note->slide_from_type() == Note::SlideType::UP_FROM_NOTE ? 1 : -1;
+    for (int i = 0; i < slide_notes; ++i) {
+        pitch += pitch_offset;
+        NoteEvent event{pitch, slide_on, slide_duration, velocity};
+        event.set_slide(true);
         el->push_back(std::move(event));
-        slideOn += slideDuration;
+        slide_on += slide_duration;
     }
 }
 
-Chord *CompatMidiRender::getChordFromSegment(Segment *segment, track_idx_t track) {
+Chord *CompatMidiRender::get_chord_from_segment(Segment *segment, track_idx_t track) {
     if (segment) {
         EngravingItem *item = segment->element(track);
-        if (item && item->isChord()) {
-            return toChord(item);
+        if (item && item->is_chord()) {
+            return to_chord(item);
         }
     }
 
@@ -978,17 +981,17 @@ Chord *CompatMidiRender::getChordFromSegment(Segment *segment, track_idx_t track
 //  which overlaps this chord and is of type ElementType::TRILL
 //---------------------------------------------------------
 
-Trill *CompatMidiRender::findFirstTrill(Chord *chord) {
-    auto spanners = chord->score()->spannerMap().findOverlapping(1 + chord->tick().ticks(), chord->endTick().ticks() - 1);
+Trill *CompatMidiRender::find_first_trill(Chord *chord) {
+    auto spanners = chord->score()->spanner_map().find_overlapping(1 + chord->tick().ticks(), chord->end_tick().ticks() - 1);
     for (auto i : spanners) {
-        if (!i.value->isTrill()) {
+        if (!i.value->is_trill()) {
             continue;
         }
         if (i.value->track() != chord->track()) {
             continue;
         }
-        Trill *trill = toTrill(i.value);
-        if (!trill->playSpanner()) {
+        Trill *trill = to_trill(i.value);
+        if (!trill->play_spanner()) {
             continue;
         }
         return trill;
@@ -996,45 +999,45 @@ Trill *CompatMidiRender::findFirstTrill(Chord *chord) {
     return nullptr;
 }
 
-int CompatMidiRender::adjustTrailtime(int trailtime, Chord *currentChord, Chord *nextChord) {
-    if (!nextChord) {
+int CompatMidiRender::adjust_trailtime(int trailtime, Chord *current_chord, Chord *next_chord) {
+    if (!next_chord) {
         return trailtime;
     }
 
-    const std::vector<Chord *> &graceBeforeChords = nextChord->graceNotesBefore();
-    std::vector<Chord *> graceNotesBeforeBar;
+    const std::vector<Chord *> &grace_before_chords = next_chord->grace_notes_before();
+    std::vector<Chord *> grace_notes_before_bar;
 
-    bool hasGraceBend = std::any_of(graceBeforeChords.begin(), graceBeforeChords.end(), [](Chord *ch) {
-        return std::any_of(ch->notes().begin(), ch->notes().end(), [](Note *n) { return n->isGraceBendStart(); });
+    bool has_grace_bend = std::any_of(grace_before_chords.begin(), grace_before_chords.end(), [](Chord *ch) {
+        return std::any_of(ch->notes().begin(), ch->notes().end(), [](Note *n) { return n->is_grace_bend_start(); });
     });
 
-    if (!hasGraceBend) {
-        std::copy_if(graceBeforeChords.begin(), graceBeforeChords.end(), std::back_inserter(graceNotesBeforeBar),
-                     [](Chord *ch) { return ch->noteType() == NoteType::ACCIACCATURA; });
+    if (!has_grace_bend) {
+        std::copy_if(grace_before_chords.begin(), grace_before_chords.end(), std::back_inserter(grace_notes_before_bar),
+                     [](Chord *ch) { return ch->note_type() == NoteType::ACCIACCATURA; });
     }
 
-    const int currentTicks = currentChord->ticks().ticks();
-    IF_ASSERT_FAILED(currentTicks > 0) { return trailtime; }
+    const int current_ticks = current_chord->ticks().ticks();
+    IF_ASSERT_FAILED(current_ticks > 0) { return trailtime; }
 
-    int reducedTicks = 0;
+    int reduced_ticks = 0;
 
-    const auto &notes = nextChord->notes();
-    if (hasGraceBend) {
-        reducedTicks = graceBendTicks(currentChord);
-    } else if (!graceNotesBeforeBar.empty()) {
-        reducedTicks = std::min(graceNotesBeforeBar[0]->ticks().ticks(), currentTicks / 2);
+    const auto &notes = next_chord->notes();
+    if (has_grace_bend) {
+        reduced_ticks = grace_bend_ticks(current_chord);
+    } else if (!grace_notes_before_bar.empty()) {
+        reduced_ticks = std::min(grace_notes_before_bar[0]->ticks().ticks(), current_ticks / 2);
     } else {
-        bool anySlidesIn = std::any_of(notes.begin(), notes.end(), [](const Note *note) {
-            return note->slideToType() == Note::SlideType::DownToNote ||
-                   (note->slideToType() == Note::SlideType::UpToNote && note->fret() > 1);
+        bool any_slides_in = std::any_of(notes.begin(), notes.end(), [](const Note *note) {
+            return note->slide_to_type() == Note::SlideType::DOWN_TO_NOTE ||
+                   (note->slide_to_type() == Note::SlideType::UP_TO_NOTE && note->fret() > 1);
         });
 
-        if (anySlidesIn) {
-            reducedTicks = slideTicks(currentChord);
+        if (any_slides_in) {
+            reduced_ticks = slide_ticks(current_chord);
         }
     }
 
-    trailtime += reducedTicks / (double) currentTicks * NoteEvent::NOTE_LENGTH;
+    trailtime += reduced_ticks / (double) current_ticks * NoteEvent::note_length;
     return trailtime;
 }
 
@@ -1042,48 +1045,48 @@ int CompatMidiRender::adjustTrailtime(int trailtime, Chord *currentChord, Chord 
 //   noteIsGlissandoStart
 //---------------------------------------------------------
 
-bool CompatMidiRender::noteIsGlissandoStart(mu::engraving::Note *note) {
-    for (Spanner *spanner : note->spannerFor()) {
-        if (spanner->isGlissando() && spanner->endElement() && spanner->endElement()->isNote()) {
+bool CompatMidiRender::note_is_glissando_start(mu::engraving::Note *note) {
+    for (Spanner *spanner : note->spanner_for()) {
+        if (spanner->is_glissando() && spanner->end_element() && spanner->end_element()->is_note()) {
             return true;
         }
     }
     return false;
 }
 
-int CompatMidiRender::slideLengthChordDependent(Chord *chord) {
-    const int currentTicks = chord->ticks().ticks();
-    if (currentTicks <= SLIDE_DURATION) {
-        return NoteEvent::NOTE_LENGTH / 2;
+int CompatMidiRender::slide_length_chord_dependent(Chord *chord) {
+    const int current_ticks = chord->ticks().ticks();
+    if (current_ticks <= ::mu::engraving::slide_duration) {
+        return NoteEvent::note_length / 2;
     }
 
-    return (double) NoteEvent::NOTE_LENGTH * SLIDE_DURATION / currentTicks;
+    return (double) NoteEvent::note_length * ::mu::engraving::slide_duration / current_ticks;
 }
 
-std::set<size_t> CompatMidiRender::getNotesIndexesToRender(Chord *chord) {
-    std::set<size_t> notesIndexesToRender;
+std::set<size_t> CompatMidiRender::get_notes_indexes_to_render(Chord *chord) {
+    std::set<size_t> notes_indexes_to_render;
 
     auto &notes = chord->notes();
     /// not adding sounds for the same pitches in chord (for example, on different strings)
-    std::map<int, int> longestPlayTicksForPitch;
+    std::map<int, int> longest_play_ticks_for_pitch;
 
     for (Note *note : notes) {
         int pitch = note->pitch();
-        auto &pitchLength = longestPlayTicksForPitch[pitch];
-        pitchLength = std::max(pitchLength, note->playTicks());
+        auto &pitch_length = longest_play_ticks_for_pitch[pitch];
+        pitch_length = std::max(pitch_length, note->play_ticks());
     }
 
-    auto noteShouldBeRendered = [](Note *n) {
-        while (n->tieBackNonPartial() && n != n->tieBack()->startNote()) {
-            n = n->tieBack()->startNote();
-            if (findFirstTrill(n->chord())) {
+    auto note_should_be_rendered = [](Note *n) {
+        while (n->tie_back_non_partial() && n != n->tie_back()->start_note()) {
+            n = n->tie_back()->start_note();
+            if (find_first_trill(n->chord())) {
                 // The previous tied note probably has events for this note too.
                 // That is, we don't need to render this note separately.
                 return false;
             }
 
             for (Articulation *a : n->chord()->articulations()) {
-                if (a->isOrnament()) {
+                if (a->is_ornament()) {
                     return false;
                 }
             }
@@ -1094,22 +1097,22 @@ std::set<size_t> CompatMidiRender::getNotesIndexesToRender(Chord *chord) {
 
     for (size_t i = 0; i < notes.size(); i++) {
         Note *n = notes[i];
-        if (noteShouldBeRendered(n) && longestPlayTicksForPitch[n->pitch()] == n->playTicks()) {
-            notesIndexesToRender.insert(i);
+        if (note_should_be_rendered(n) && longest_play_ticks_for_pitch[n->pitch()] == n->play_ticks()) {
+            notes_indexes_to_render.insert(i);
         }
     }
 
-    return notesIndexesToRender;
+    return notes_indexes_to_render;
 }
 
 //---------------------------------------------------------
 //   backGlissando
 //---------------------------------------------------------
 
-Glissando *CompatMidiRender::backGlissando(Note *note) {
-    for (Spanner *spanner : note->spannerBack()) {
-        if (spanner->isGlissando() && spanner->startElement() && spanner->startElement()->isNote()) {
-            return toGlissando(spanner);
+Glissando *CompatMidiRender::back_glissando(Note *note) {
+    for (Spanner *spanner : note->spanner_back()) {
+        if (spanner->is_glissando() && spanner->start_element() && spanner->start_element()->is_note()) {
+            return to_glissando(spanner);
         }
     }
     return nullptr;
@@ -1121,18 +1124,18 @@ Glissando *CompatMidiRender::backGlissando(Note *note) {
 //   checking if glissando can be played
 //---------------------------------------------------------
 
-bool CompatMidiRender::isGlissandoValid(Glissando *glissando) {
-    EngravingItem *startItem = glissando->startElement();
-    EngravingItem *endItem = glissando->endElement();
-    if (!startItem || !endItem || !startItem->isNote() || !endItem->isNote()) {
+bool CompatMidiRender::is_glissando_valid(Glissando *glissando) {
+    EngravingItem *start_item = glissando->start_element();
+    EngravingItem *end_item = glissando->end_element();
+    if (!start_item || !end_item || !start_item->is_note() || !end_item->is_note()) {
         return false;
     }
 
-    return toNote(startItem)->string() == toNote(endItem)->string();
+    return to_note(start_item)->string() == to_note(end_item)->string();
 }
 
-const Drumset *CompatMidiRender::getDrumset(const Chord *chord) {
-    if (chord->staff() && chord->staff()->isDrumStaff(chord->tick())) {
+const Drumset *CompatMidiRender::get_drumset(const Chord *chord) {
+    if (chord->staff() && chord->staff()->is_drum_staff(chord->tick())) {
         const Drumset *ds = chord->staff()->part()->instrument(chord->tick())->drumset();
         return ds;
     }
@@ -1145,34 +1148,34 @@ const Drumset *CompatMidiRender::getDrumset(const Chord *chord) {
 //      the chain of zero or more notes tied to it to the right.
 //---------------------------------------------------------
 
-int CompatMidiRender::totalTiedNoteTicks(Note *note) {
-    Fraction total = note->chord()->actualTicks();
-    while (note->tieFor() && note->tieFor()->endNote() && (note->chord()->tick() < note->tieFor()->endNote()->chord()->tick())) {
-        note = note->tieFor()->endNote();
-        total += note->chord()->actualTicks();
+int CompatMidiRender::total_tied_note_ticks(Note *note) {
+    Fraction total = note->chord()->actual_ticks();
+    while (note->tie_for() && note->tie_for()->end_note() && (note->chord()->tick() < note->tie_for()->end_note()->chord()->tick())) {
+        note = note->tie_for()->end_note();
+        total += note->chord()->actual_ticks();
     }
     return total.ticks();
 }
 
-static int slideTicks(const Chord *chord) {
-    const int currentTicks = chord->ticks().ticks();
-    if (currentTicks <= SLIDE_DURATION) {
-        return currentTicks / 2;
+static int slide_ticks(const Chord *chord) {
+    const int current_ticks = chord->ticks().ticks();
+    if (current_ticks <= ::mu::engraving::slide_duration) {
+        return current_ticks / 2;
     }
 
-    return SLIDE_DURATION;
+    return ::mu::engraving::slide_duration;
 }
 
-static int graceBendTicks(const Chord *chord) {
-    const int currentTicks = chord->ticks().ticks();
-    if (currentTicks / 2 <= GRACE_BEND_DURATION) {
-        return currentTicks / 2;
+static int grace_bend_ticks(const Chord *chord) {
+    const int current_ticks = chord->ticks().ticks();
+    if (current_ticks / 2 <= ::mu::engraving::grace_bend_duration_ticks) {
+        return current_ticks / 2;
     }
 
-    return GRACE_BEND_DURATION;
+    return ::mu::engraving::grace_bend_duration_ticks;
 }
 
 int CompatMidiRender::tick(const CompatMidiRendererInternal::Context &ctx, int tick) {
-    return ctx.applyCaesuras ? ctx.pauseMap->tickWithPauses(tick) : tick;
+    return ctx.apply_caesuras ? ctx.pause_map->tick_with_pauses(tick) : tick;
 }
 } // namespace mu::engraving

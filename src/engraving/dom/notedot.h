@@ -44,11 +44,11 @@ public:
 
     double mag() const override;
 
-    Note *note() const { return ownershipParent()->isNote() ? toNote(ownershipParent()) : 0; }
+    Note *note() const { return ownership_parent()->is_note() ? to_note(ownership_parent()) : 0; }
 
-    Rest *rest() const { return ownershipParent()->isRest() ? toRest(ownershipParent()) : 0; }
+    Rest *rest() const { return ownership_parent()->is_rest() ? to_rest(ownership_parent()) : 0; }
 
-    EngravingItem *elementBase() const override;
+    EngravingItem *element_base() const override;
 
 private:
     friend class Factory;

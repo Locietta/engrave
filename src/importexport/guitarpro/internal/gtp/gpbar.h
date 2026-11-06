@@ -6,41 +6,41 @@
 namespace mu::iex::guitarpro {
 class GPBar {
 public:
-    enum class ClefType { G2, F4, C3, C4, Neutral };
-    enum class OttaviaType { ma15, va8, Regular, vb8, mb15 };
-    enum class SimileMark { None, Simple, FirstOfDouble, SecondOfDouble };
+    enum class ClefType { G2, F4, C3, C4, NEUTRAL };
+    enum class OttaviaType { MA15, VA8, REGULAR, VB8, MB15 };
+    enum class SimileMark { NONE, SIMPLE, FIRST_OF_DOUBLE, SECOND_OF_DOUBLE };
 
     struct Clef {
         ClefType type{ClefType::G2};
-        OttaviaType ottavia{OttaviaType::Regular};
+        OttaviaType ottavia{OttaviaType::REGULAR};
 
         bool operator==(const GPBar::Clef &c) const { return type == c.type && ottavia == c.ottavia; }
     };
 
     ~GPBar() = default;
 
-    void addGPVoice(std::unique_ptr<GPVoice> &&v) { _voices.push_back(std::move(v)); }
+    void add_gp_voice(std::unique_ptr<GPVoice> &&v) { voices_value.push_back(std::move(v)); }
 
-    void setClefType(GPBar::ClefType clef) { _clef.type = clef; }
+    void set_clef_type(GPBar::ClefType clef) { clef_value.type = clef; }
 
-    void setOttaviaType(GPBar::OttaviaType ottavia) { _clef.ottavia = ottavia; }
+    void set_ottavia_type(GPBar::OttaviaType ottavia) { clef_value.ottavia = ottavia; }
 
-    GPBar::Clef clef() const { return _clef; }
+    GPBar::Clef clef() const { return clef_value; }
 
-    void setSimileMark(SimileMark s) { _simileMark = s; }
+    void set_simile_mark(SimileMark s) { simile_mark_value = s; }
 
-    SimileMark simileMark() const { return _simileMark; }
+    SimileMark simile_mark() const { return simile_mark_value; }
 
-    void setId(int id) { _id = id; }
+    void set_id(int id) { id_value = id; }
 
-    const std::vector<std::unique_ptr<GPVoice>> &voices() const { return _voices; }
+    const std::vector<std::unique_ptr<GPVoice>> &voices() const { return voices_value; }
 
 private:
 
-    int _id{-1};
-    std::vector<std::unique_ptr<GPVoice>> _voices;
-    Clef _clef;
-    SimileMark _simileMark;
+    int id_value{-1};
+    std::vector<std::unique_ptr<GPVoice>> voices_value;
+    Clef clef_value;
+    SimileMark simile_mark_value;
 };
 } // namespace mu::iex::guitarpro
 

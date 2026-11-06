@@ -35,22 +35,22 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 void SynthesizerState::write(XmlWriter &xml, bool force /* = false */) const {
-    if (isDefault() && !force) {
+    if (is_default() && !force) {
         return;
     }
 
-    xml.startElement("Synthesizer");
+    xml.start_element("Synthesizer");
     for (const SynthesizerGroup &g : *this) {
-        if (!g.name().isEmpty()) {
-            muse::ByteArray ba = g.name().toAscii();
-            xml.startElement(ba.constChar());
+        if (!g.name().is_empty()) {
+            muse::ByteArray ba = g.name().to_ascii();
+            xml.start_element(ba.const_char());
             for (const IdValue &v : g) {
                 xml.tag("val", {{"id", v.id}}, v.data);
             }
-            xml.endElement();
+            xml.end_element();
         }
     }
-    xml.endElement();
+    xml.end_element();
 }
 
 //---------------------------------------------------------
@@ -58,26 +58,26 @@ void SynthesizerState::write(XmlWriter &xml, bool force /* = false */) const {
 //---------------------------------------------------------
 
 void SynthesizerState::read(XmlReader &e) {
-    std::list<SynthesizerGroup> tempGroups;
-    while (e.readNextStartElement()) {
+    std::list<SynthesizerGroup> temp_groups;
+    while (e.read_next_start_element()) {
         SynthesizerGroup group;
-        group.setName(String::fromAscii(e.name().ascii()));
+        group.set_name(String::from_ascii(e.name().ascii()));
 
-        while (e.readNextStartElement()) {
+        while (e.read_next_start_element()) {
             if (e.name() == "val") {
-                int id = e.intAttribute("id");
-                group.push_back(IdValue(id, e.readText()));
+                int id = e.int_attribute("id");
+                group.push_back(IdValue(id, e.read_text()));
             } else {
                 e.unknown();
             }
         }
-        tempGroups.push_back(group);
+        temp_groups.push_back(group);
     }
 
-    if (!tempGroups.empty()) {
+    if (!temp_groups.empty()) {
         // Replace any previously set state if we have read a new state
-        swap(tempGroups);
-        setIsDefault(false);
+        swap(temp_groups);
+        set_is_default(false);
     }
 }
 
@@ -102,7 +102,7 @@ SynthesizerGroup SynthesizerState::group(const String &name) const {
 ///  default font only
 //---------------------------------------------------------
 
-bool SynthesizerState::isDefaultSynthSoundfont() {
+bool SynthesizerState::is_default_synth_soundfont() {
     SynthesizerGroup fluid = group(u"Fluid");
     if (fluid.size() == 1) {
         if (fluid.front().data == u"MS Basic.sf3") {
@@ -116,22 +116,22 @@ bool SynthesizerState::isDefaultSynthSoundfont() {
 //   ccToUse
 //---------------------------------------------------------
 
-int SynthesizerState::ccToUse() const {
+int SynthesizerState::cc_to_use() const {
     SynthesizerGroup g = group(u"master");
 
     int method = 1;
     int cc = -1;
 
-    for (const IdValue &idVal : g) {
-        if (idVal.id == 4) {
-            method = idVal.data.toInt();
-        } else if (idVal.id == 5) {
-            switch (idVal.data.toInt()) {
+    for (const IdValue &id_val : g) {
+        if (id_val.id == 4) {
+            method = id_val.data.to_int();
+        } else if (id_val.id == 5) {
+            switch (id_val.data.to_int()) {
                 case 0: cc = 1; break;
                 case 1: cc = 2; break;
                 case 2: cc = 4; break;
                 case 3: cc = 11; break;
-                default: LOGW("Unrecognised CCToUse index from synthesizer: %d", idVal.data.toInt());
+                default: LOGW("Unrecognised CCToUse index from synthesizer: %d", id_val.data.to_int());
             }
         }
     }
@@ -152,9 +152,9 @@ int SynthesizerState::method() const {
 
     int method = -1;
 
-    for (const IdValue &idVal : g) {
-        if (idVal.id == 4) {
-            method = idVal.data.toInt();
+    for (const IdValue &id_val : g) {
+        if (id_val.id == 4) {
+            method = id_val.data.to_int();
             break;
         }
     }

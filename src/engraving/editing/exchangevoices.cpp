@@ -41,64 +41,64 @@ class ExchangeVoicesInMeasure : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ExchangeVoicesInMeasure)
 
 public:
-    ExchangeVoicesInMeasure(Measure *measure, track_idx_t srcTrack, track_idx_t dstTrack, staff_idx_t staff)
-        : measure_(measure), srcTrack_(srcTrack), dstTrack_(dstTrack), staff_(staff) {}
+    ExchangeVoicesInMeasure(Measure *measure, track_idx_t src_track, track_idx_t dst_track, staff_idx_t staff)
+        : measure_(measure), src_track_(src_track), dst_track_(dst_track), staff_(staff) {}
 
-    void undo() override { doExchange(dstTrack_, srcTrack_); }
+    void undo() override { do_exchange(dst_track_, src_track_); }
 
-    void redo() override { doExchange(srcTrack_, dstTrack_); }
+    void redo() override { do_exchange(src_track_, dst_track_); }
 
-    UNDO_TYPE(CommandType::ExchangeVoice)
+    UNDO_TYPE(CommandType::EXCHANGE_VOICE)
     UNDO_NAME("ExchangeVoice")
     UNDO_CHANGED_OBJECTS({measure_})
 
 private:
-    void doExchange(track_idx_t srcTrack, track_idx_t dstTrack);
+    void do_exchange(track_idx_t src_track, track_idx_t dst_track);
 
     Measure *measure_ = nullptr;
-    track_idx_t srcTrack_ = muse::nidx;
-    track_idx_t dstTrack_ = muse::nidx;
+    track_idx_t src_track_ = muse::nidx;
+    track_idx_t dst_track_ = muse::nidx;
     staff_idx_t staff_ = muse::nidx;
 };
 
-void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTrack) {
-    for (Segment *s = measure_->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-        s->swapElements(srcTrack, dstTrack);
+void ExchangeVoicesInMeasure::do_exchange(track_idx_t src_track, track_idx_t dst_track) {
+    for (Segment *s = measure_->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+        s->swap_elements(src_track, dst_track);
     }
 
     Fraction start = measure_->tick();
     Fraction end = start + measure_->ticks();
-    auto spanners = measure_->score()->spannerMap().findOverlapping(start.ticks(), end.ticks() - 1);
+    auto spanners = measure_->score()->spanner_map().find_overlapping(start.ticks(), end.ticks() - 1);
     for (auto i = spanners.begin(); i < spanners.end(); i++) {
         Spanner *sp = i->value;
-        Fraction spStart = sp->tick();
-        Fraction spEnd = spStart + sp->ticks();
-        LOGD("Start %d End %d Diff %d \n Measure Start %d End %d", spStart.ticks(), spEnd.ticks(), (spEnd - spStart).ticks(), start.ticks(),
-             end.ticks());
-        if (sp->isSlur() && (spStart >= start || spEnd < end)) {
-            if (sp->track() == srcTrack && spStart >= start) {
-                sp->setTrack(dstTrack);
-            } else if (sp->track() == dstTrack && spStart >= start) {
-                sp->setTrack(srcTrack);
+        Fraction sp_start = sp->tick();
+        Fraction sp_end = sp_start + sp->ticks();
+        LOGD("Start %d End %d Diff %d \n Measure Start %d End %d", sp_start.ticks(), sp_end.ticks(), (sp_end - sp_start).ticks(),
+             start.ticks(), end.ticks());
+        if (sp->is_slur() && (sp_start >= start || sp_end < end)) {
+            if (sp->track() == src_track && sp_start >= start) {
+                sp->set_track(dst_track);
+            } else if (sp->track() == dst_track && sp_start >= start) {
+                sp->set_track(src_track);
             }
-            if (sp->track2() == srcTrack && spEnd < end) {
-                sp->setTrack2(dstTrack);
-            } else if (sp->track2() == dstTrack && spEnd < end) {
-                sp->setTrack2(srcTrack);
+            if (sp->track2() == src_track && sp_end < end) {
+                sp->set_track2(dst_track);
+            } else if (sp->track2() == dst_track && sp_end < end) {
+                sp->set_track2(src_track);
             }
         }
     }
-    measure_->checkMultiVoices(staff_); // probably true, but check for invisible notes & rests
+    measure_->check_multi_voices(staff_); // probably true, but check for invisible notes & rests
 }
 } // namespace
 
-void ExchangeVoices::exchangeVoicesInSelection(Score *score, voice_idx_t srcVoice, voice_idx_t dstVoice) {
-    if (!score->selection().isRange()) {
-        MScore::setError(MsError::NO_STAFF_SELECTED);
+void ExchangeVoices::exchange_voices_in_selection(Score *score, voice_idx_t src_voice, voice_idx_t dst_voice) {
+    if (!score->selection().is_range()) {
+        MScore::set_error(MsError::NO_STAFF_SELECTED);
         return;
     }
-    Fraction t1 = score->selection().tickStart();
-    Fraction t2 = score->selection().tickEnd();
+    Fraction t1 = score->selection().tick_start();
+    Fraction t2 = score->selection().tick_end();
 
     Measure *m1 = score->tick2measure(t1);
     Measure *m2 = score->tick2measure(t2);
@@ -108,119 +108,123 @@ void ExchangeVoices::exchangeVoicesInSelection(Score *score, voice_idx_t srcVoic
     }
 
     if (t2 > m2->tick()) {
-        m2 = m2->nextMeasure();
+        m2 = m2->next_measure();
     }
 
     for (;;) {
-        exchangeVoices(score, m1, srcVoice, dstVoice, score->selection().staffStart(), score->selection().staffEnd());
-        m1 = m1->nextMeasure();
+        exchange_voices(score, m1, src_voice, dst_voice, score->selection().staff_start(), score->selection().staff_end());
+        m1 = m1->next_measure();
         if ((m1 == 0) || (m2 && (m1->tick() == m2->tick()))) {
             break;
         }
     }
 }
 
-void ExchangeVoices::exchangeVoices(Score *score, Measure *measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
-                                    staff_idx_t dstStaff) {
+void ExchangeVoices::exchange_voices(Score *score, Measure *measure, voice_idx_t src_voice, voice_idx_t dst_voice, staff_idx_t src_staff,
+                                     staff_idx_t dst_staff) {
     Fraction tick = measure->tick();
 
-    for (staff_idx_t staffIdx = srcStaff; staffIdx < dstStaff; ++staffIdx) {
-        track_idx_t srcStaffTrack = staffIdx * VOICES;
-        track_idx_t srcTrack = srcStaffTrack + srcVoice;
-        track_idx_t dstTrack = srcStaffTrack + dstVoice;
-        int trackDiff = static_cast<int>(dstVoice - srcVoice);
+    for (staff_idx_t staff_idx = src_staff; staff_idx < dst_staff; ++staff_idx) {
+        track_idx_t src_staff_track = staff_idx * ::mu::engraving::voices;
+        track_idx_t src_track = src_staff_track + src_voice;
+        track_idx_t dst_track = src_staff_track + dst_voice;
+        int track_diff = static_cast<int>(dst_voice - src_voice);
 
         //handle score and complete measures first
-        score->undo(new ExchangeVoicesInMeasure(measure, srcTrack, dstTrack, staffIdx));
+        score->undo(new ExchangeVoicesInMeasure(measure, src_track, dst_track, staff_idx));
 
-        for (Staff *st : score->staff(staffIdx)->staffList()) {
-            track_idx_t staffTrack = st->idx() * VOICES;
+        for (Staff *st : score->staff(staff_idx)->staff_list()) {
+            track_idx_t staff_track = st->idx() * ::mu::engraving::voices;
             Measure *measure2 = st->score()->tick2measure(tick);
             Excerpt *ex = st->score()->excerpt();
 
             if (ex) {
-                const TracksMap &tracks = ex->tracksMapping();
-                std::vector<track_idx_t> srcTrackList = muse::values(tracks, srcTrack);
-                std::vector<track_idx_t> dstTrackList = muse::values(tracks, dstTrack);
+                const TracksMap &tracks = ex->tracks_mapping();
+                std::vector<track_idx_t> src_track_list = muse::values(tracks, src_track);
+                std::vector<track_idx_t> dst_track_list = muse::values(tracks, dst_track);
 
-                for (track_idx_t srcTrack2 : srcTrackList) {
+                for (track_idx_t src_track2 : src_track_list) {
                     // don't care about other linked staves
-                    if (!(staffTrack <= srcTrack2) || !(srcTrack2 < staffTrack + VOICES)) {
+                    if (!(staff_track <= src_track2) || !(src_track2 < staff_track + ::mu::engraving::voices)) {
                         continue;
                     }
 
-                    track_idx_t tempTrack = srcTrack;
-                    std::vector<track_idx_t> testTracks = muse::values(tracks, tempTrack + trackDiff);
-                    bool hasVoice = false;
-                    for (track_idx_t testTrack : testTracks) {
-                        if (staffTrack <= testTrack && testTrack < staffTrack + VOICES && muse::contains(dstTrackList, testTrack)) {
-                            hasVoice = true;
+                    track_idx_t temp_track = src_track;
+                    std::vector<track_idx_t> test_tracks = muse::values(tracks, temp_track + track_diff);
+                    bool has_voice = false;
+                    for (track_idx_t test_track : test_tracks) {
+                        if (staff_track <= test_track && test_track < staff_track + ::mu::engraving::voices &&
+                            muse::contains(dst_track_list, test_track)) {
+                            has_voice = true;
                             // voice is simply exchangeable now (deal directly)
-                            score->undo(new ExchangeVoicesInMeasure(measure2, srcTrack2, testTrack, staffTrack / 4));
+                            score->undo(new ExchangeVoicesInMeasure(measure2, src_track2, test_track, staff_track / 4));
                         }
                     }
 
                     // only source voice is in this staff
-                    if (!hasVoice) {
-                        CloneVoice::cloneVoice(measure->first(), measure2->endTick(), measure2->first(), tempTrack, srcTrack2, false, true);
-                        muse::remove(srcTrackList, srcTrack2);
+                    if (!has_voice) {
+                        CloneVoice::clone_voice(measure->first(), measure2->end_tick(), measure2->first(), temp_track, src_track2, false,
+                                                true);
+                        muse::remove(src_track_list, src_track2);
                     }
                 }
 
-                for (track_idx_t dstTrack2 : dstTrackList) {
+                for (track_idx_t dst_track2 : dst_track_list) {
                     // don't care about other linked staves
-                    if (!(staffTrack <= dstTrack2) || !(dstTrack2 < staffTrack + VOICES)) {
+                    if (!(staff_track <= dst_track2) || !(dst_track2 < staff_track + ::mu::engraving::voices)) {
                         continue;
                     }
 
-                    track_idx_t tempTrack = dstTrack;
-                    std::vector<track_idx_t> testTracks = muse::values(tracks, tempTrack - trackDiff);
-                    bool hasVoice = false;
-                    for (track_idx_t testTrack : testTracks) {
-                        if (staffTrack <= testTrack && testTrack < staffTrack + VOICES && muse::contains(srcTrackList, testTrack)) {
-                            hasVoice = true;
+                    track_idx_t temp_track = dst_track;
+                    std::vector<track_idx_t> test_tracks = muse::values(tracks, temp_track - track_diff);
+                    bool has_voice = false;
+                    for (track_idx_t test_track : test_tracks) {
+                        if (staff_track <= test_track && test_track < staff_track + ::mu::engraving::voices &&
+                            muse::contains(src_track_list, test_track)) {
+                            has_voice = true;
                         }
                     }
 
                     // only destination voice is in this staff
-                    if (!hasVoice) {
-                        CloneVoice::cloneVoice(measure->first(), measure2->endTick(), measure2->first(), tempTrack, dstTrack2, false, true);
-                        muse::remove(dstTrackList, dstTrack2);
+                    if (!has_voice) {
+                        CloneVoice::clone_voice(measure->first(), measure2->end_tick(), measure2->first(), temp_track, dst_track2, false,
+                                                true);
+                        muse::remove(dst_track_list, dst_track2);
                     }
                 }
-            } else if (srcStaffTrack != staffTrack) {
+            } else if (src_staff_track != staff_track) {
                 // linked staff in same score (all voices present can be assumed)
-                score->undo(new ExchangeVoicesInMeasure(measure2, staffTrack + srcVoice, staffTrack + dstVoice, st->idx()));
+                score->undo(new ExchangeVoicesInMeasure(measure2, staff_track + src_voice, staff_track + dst_voice, st->idx()));
             }
         }
     }
 
     // make sure voice 0 is complete
 
-    if (srcVoice == 0 || dstVoice == 0) {
-        for (staff_idx_t staffIdx = srcStaff; staffIdx < dstStaff; ++staffIdx) {
+    if (src_voice == 0 || dst_voice == 0) {
+        for (staff_idx_t staff_idx = src_staff; staff_idx < dst_staff; ++staff_idx) {
             // check for complete timeline of voice 0
             Fraction ctick = measure->tick();
-            track_idx_t track = staffIdx * VOICES;
-            for (Segment *s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-                ChordRest *cr = toChordRest(s->element(track));
+            track_idx_t track = staff_idx * ::mu::engraving::voices;
+            for (Segment *s = measure->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+                ChordRest *cr = to_chord_rest(s->element(track));
                 if (!cr) {
                     continue;
                 }
-                if (cr->isRest()) {
-                    Rest *r = toRest(cr);
-                    if (r->isGap()) {
-                        r->undoChangeProperty(Pid::GAP, false);
+                if (cr->is_rest()) {
+                    Rest *r = to_rest(cr);
+                    if (r->is_gap()) {
+                        r->undo_change_property(Pid::GAP, false);
                     }
                 }
                 if (ctick < s->tick()) {
-                    score->setRest(ctick, track, s->tick() - ctick, false, 0); // fill gap
+                    score->set_rest(ctick, track, s->tick() - ctick, false, 0); // fill gap
                 }
-                ctick = cr->endTick();
+                ctick = cr->end_tick();
             }
-            Fraction etick = measure->endTick();
+            Fraction etick = measure->end_tick();
             if (ctick < etick) {
-                score->setRest(ctick, track, etick - ctick, false, 0); // fill gap
+                score->set_rest(ctick, track, etick - ctick, false, 0); // fill gap
             }
         }
     }

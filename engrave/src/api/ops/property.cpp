@@ -33,9 +33,10 @@ Result<Pid> property_id(const std::string &name) {
 Result<EngravingObject *> settable_object(const EditContext &context, const Target &target, Pid pid) {
     auto object = context.object(target);
     if (!object) return object;
-    const std::optional<bool> listed = settable((*object)->typeName(), pid);
-    if (!listed) return invalid(std::format("a {} has no property '{}'", (*object)->typeName(), name_of(pid)));
-    if (!*listed) return invalid(std::format("'{}' of a {} is changed by structural operations only", name_of(pid), (*object)->typeName()));
+    const std::optional<bool> listed = settable((*object)->type_name(), pid);
+    if (!listed) return invalid(std::format("a {} has no property '{}'", (*object)->type_name(), name_of(pid)));
+    if (!*listed)
+        return invalid(std::format("'{}' of a {} is changed by structural operations only", name_of(pid), (*object)->type_name()));
     return object;
 }
 
@@ -46,14 +47,14 @@ Result<Step> prepare(EditContext &context, const SetProperty &op) {
     if (!target) return std::unexpected(target.error());
     const auto pid = property_id(op.property);
     if (!pid) return std::unexpected(pid.error());
-    auto value = from_value(mu::engraving::propertyType(*pid), op.value);
+    auto value = from_value(mu::engraving::property_type(*pid), op.value);
     if (!value) return std::unexpected(value.error());
     return [target = *target, pid = *pid, value = *value](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());
         // A styled property that is given a value of its own stops following the style.
-        const PropertyFlags flags = (*object)->propertyFlags(pid);
-        (*object)->undoChangeProperty(pid, value, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
+        const PropertyFlags flags = (*object)->property_flags(pid);
+        (*object)->undo_change_property(pid, value, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
         return {};
     };
 }
@@ -66,23 +67,23 @@ Result<Step> prepare(EditContext &context, const ResetProperty &op) {
     return [target = *target, pid = *pid](EditContext &context) -> Result<void> {
         const auto object = settable_object(context, target, pid);
         if (!object) return std::unexpected(object.error());
-        (*object)->undoResetProperty(pid);
+        (*object)->undo_reset_property(pid);
         return {};
     };
 }
 
 Result<Step> prepare(EditContext &context, const SetStyle &op) {
     if (auto score = context.score(op.score); !score) return std::unexpected(score.error());
-    const mu::engraving::Sid sid = mu::engraving::MStyle::styleIdx(muse::String::fromStdString(op.style));
+    const mu::engraving::Sid sid = mu::engraving::MStyle::style_idx(muse::String::from_std_string(op.style));
     if (sid == mu::engraving::Sid::NOSTYLE) return invalid(std::format("no style '{}'", op.style));
-    auto value = from_value(mu::engraving::MStyle::valueType(sid), op.value);
+    auto value = from_value(mu::engraving::MStyle::value_type(sid), op.value);
     if (!value) return std::unexpected(value.error());
     // The score is looked up again when the step runs: an earlier operation may
     // have removed the excerpt.
     return [selection = op.score, sid, value = *value](EditContext &context) -> Result<void> {
         auto score = context.score(selection);
         if (!score) return std::unexpected(score.error());
-        (*score)->undoChangeStyleVal(sid, value);
+        (*score)->undo_change_style_val(sid, value);
         return {};
     };
 }

@@ -32,7 +32,7 @@ class MMRestRange : public MeasureNumberBase {
     DECLARE_CLASSOF(ElementType::MMREST_RANGE)
 
     /// Bracketing: [18-24], (18-24) or 18-24
-    M_PROPERTY(MMRestRangeBracketType, bracketType, setBracketType)
+    M_PROPERTY(MMRestRangeBracketType, bracket_type, set_bracket_type)
 
 public:
     MMRestRange(DummyParentOr<Measure> parent);
@@ -40,9 +40,9 @@ public:
 
     MMRestRange *clone() const override { return new MMRestRange(*this); }
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &val) override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &val) override;
 
-    void setXmlText(const String &) override;
+    void set_xml_text(const String &) override;
 };
 } // namespace mu::engraving

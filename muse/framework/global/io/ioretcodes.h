@@ -27,39 +27,39 @@
 
 namespace muse::io {
 enum class Err {
-    Undefined = int(Ret::Code::Undefined),
-    NoError = int(Ret::Code::Ok),
-    UnknownError = int(Ret::Code::SystemFirst),
+    UNDEFINED = int(Ret::Code::UNDEFINED),
+    NO_ERROR = int(Ret::Code::OK),
+    UNKNOWN_ERROR = int(Ret::Code::SYSTEM_FIRST),
 
-    FSNotExist,
-    FSAlreadyExists,
-    FSRemoveError,
-    FSDirNotEmptyError,
-    FSClearError,
-    FSReadError,
-    FSWriteError,
-    FSMakingError,
-    FSCopyError,
-    FSMoveErrors
+    FS_NOT_EXIST,
+    FS_ALREADY_EXISTS,
+    FS_REMOVE_ERROR,
+    FS_DIR_NOT_EMPTY_ERROR,
+    FS_CLEAR_ERROR,
+    FS_READ_ERROR,
+    FS_WRITE_ERROR,
+    FS_MAKING_ERROR,
+    FS_COPY_ERROR,
+    FS_MOVE_ERRORS
 };
 
 inline Ret make_ret(Err e) {
-    int retCode = static_cast<int>(e);
+    int ret_code = static_cast<int>(e);
 
     switch (e) {
-        case Err::Undefined: return Ret(retCode);
-        case Err::NoError: return Ret(retCode);
-        case Err::UnknownError: return Ret(retCode);
-        case Err::FSNotExist: return Ret(retCode, muse::trc("system", "The file does not exist"));
-        case Err::FSAlreadyExists: return Ret(retCode, muse::trc("system", "The file already exists"));
-        case Err::FSRemoveError: return Ret(retCode, muse::trc("system", "The file could not be removed"));
-        case Err::FSDirNotEmptyError: return Ret(retCode, muse::trc("system", "The directory is not empty"));
-        case Err::FSClearError: return Ret(retCode, muse::trc("system", "The directory could not be cleared"));
-        case Err::FSReadError: return Ret(retCode, muse::trc("system", "An error occurred when reading from the file"));
-        case Err::FSWriteError: return Ret(retCode, muse::trc("system", "An error occurred when writing to the file"));
-        case Err::FSMakingError: return Ret(retCode, muse::trc("system", "An error occurred when making a path"));
-        case Err::FSCopyError: return Ret(retCode, muse::trc("system", "An error occurred when copying the file"));
-        case Err::FSMoveErrors: return Ret(retCode, muse::trc("system", "An error occurred when moving the file"));
+        case Err::UNDEFINED: return Ret(ret_code);
+        case Err::NO_ERROR: return Ret(ret_code);
+        case Err::UNKNOWN_ERROR: return Ret(ret_code);
+        case Err::FS_NOT_EXIST: return Ret(ret_code, muse::trc("system", "The file does not exist"));
+        case Err::FS_ALREADY_EXISTS: return Ret(ret_code, muse::trc("system", "The file already exists"));
+        case Err::FS_REMOVE_ERROR: return Ret(ret_code, muse::trc("system", "The file could not be removed"));
+        case Err::FS_DIR_NOT_EMPTY_ERROR: return Ret(ret_code, muse::trc("system", "The directory is not empty"));
+        case Err::FS_CLEAR_ERROR: return Ret(ret_code, muse::trc("system", "The directory could not be cleared"));
+        case Err::FS_READ_ERROR: return Ret(ret_code, muse::trc("system", "An error occurred when reading from the file"));
+        case Err::FS_WRITE_ERROR: return Ret(ret_code, muse::trc("system", "An error occurred when writing to the file"));
+        case Err::FS_MAKING_ERROR: return Ret(ret_code, muse::trc("system", "An error occurred when making a path"));
+        case Err::FS_COPY_ERROR: return Ret(ret_code, muse::trc("system", "An error occurred when copying the file"));
+        case Err::FS_MOVE_ERRORS: return Ret(ret_code, muse::trc("system", "An error occurred when moving the file"));
     }
 
     return Ret(static_cast<int>(e));

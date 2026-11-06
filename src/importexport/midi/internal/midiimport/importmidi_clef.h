@@ -30,9 +30,9 @@ class InstrumentTemplate;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiClef {
-bool hasGFclefs(const engraving::InstrumentTemplate *templ);
-void createClefs(engraving::Staff *staff, int indexOfOperation, bool isDrumTrack);
-engraving::ClefType clefTypeFromAveragePitch(int averagePitch);
+bool has_g_fclefs(const engraving::InstrumentTemplate *templ);
+void create_clefs(engraving::Staff *staff, int index_of_operation, bool is_drum_track);
+engraving::ClefType clef_type_from_average_pitch(int average_pitch);
 }} // namespace mu::iex::midi::MidiClef
 
 #endif // IMPORTMIDI_CLEF_H

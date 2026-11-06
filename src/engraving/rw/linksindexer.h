@@ -30,25 +30,25 @@ class LinksIndexer {
 public:
 
     inline bool operator==(const LinksIndexer &i) const {
-        return _lastLocalIndex == i._lastLocalIndex && _lastLinkedElementLoc == i._lastLinkedElementLoc;
+        return last_local_index == i.last_local_index && last_linked_element_loc == i.last_linked_element_loc;
     }
 
     inline bool operator!=(const LinksIndexer &i) const { return !this->operator==(i); }
 
-    int assignLocalIndex(const Location &mainElementLocation) {
-        if (_lastLinkedElementLoc == mainElementLocation) {
-            return ++_lastLocalIndex;
+    int assign_local_index(const Location &main_element_location) {
+        if (last_linked_element_loc == main_element_location) {
+            return ++last_local_index;
         }
 
-        _lastLocalIndex = 0;
-        _lastLinkedElementLoc = mainElementLocation;
+        last_local_index = 0;
+        last_linked_element_loc = main_element_location;
 
         return 0;
     }
 
 private:
-    int _lastLocalIndex = -1;
-    Location _lastLinkedElementLoc = Location::absolute();
+    int last_local_index = -1;
+    Location last_linked_element_loc = Location::absolute();
 };
 } // namespace mu::engraving
 

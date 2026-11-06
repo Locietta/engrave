@@ -36,17 +36,17 @@ using namespace mu::engraving;
 //   InsertStaff
 //---------------------------------------------------------
 
-InsertStaff::InsertStaff(Staff *p, staff_idx_t _ridx) {
+InsertStaff::InsertStaff(Staff *p, staff_idx_t input_ridx) {
     staff = p;
-    ridx = _ridx;
+    ridx = input_ridx;
 }
 
-void InsertStaff::undo() { staff->score()->removeStaff(staff); }
+void InsertStaff::undo() { staff->score()->remove_staff(staff); }
 
-void InsertStaff::redo() { staff->score()->insertStaff(staff, ridx); }
+void InsertStaff::redo() { staff->score()->insert_staff(staff, ridx); }
 
-void InsertStaff::cleanup(bool wasDone) {
-    if (!wasDone) {
+void InsertStaff::cleanup(bool was_done) {
+    if (!was_done) {
         delete staff;
         staff = nullptr;
     }
@@ -59,25 +59,25 @@ void InsertStaff::cleanup(bool wasDone) {
 RemoveStaff::RemoveStaff(Staff *p) {
     staff = p;
     ridx = staff->rstaff();
-    wasSystemObjectStaff = staff->isSystemObjectStaff();
+    was_system_object_staff = staff->is_system_object_staff();
 }
 
 void RemoveStaff::undo() {
-    staff->score()->insertStaff(staff, ridx);
-    if (wasSystemObjectStaff) {
-        staff->score()->addSystemObjectStaff(staff);
+    staff->score()->insert_staff(staff, ridx);
+    if (was_system_object_staff) {
+        staff->score()->add_system_object_staff(staff);
     }
 }
 
 void RemoveStaff::redo() {
-    staff->score()->removeStaff(staff);
-    if (wasSystemObjectStaff) {
-        staff->score()->removeSystemObjectStaff(staff);
+    staff->score()->remove_staff(staff);
+    if (was_system_object_staff) {
+        staff->score()->remove_system_object_staff(staff);
     }
 }
 
-void RemoveStaff::cleanup(bool wasDone) {
-    if (wasDone) {
+void RemoveStaff::cleanup(bool was_done) {
+    if (was_done) {
         delete staff;
         staff = nullptr;
     }
@@ -89,9 +89,9 @@ void RemoveStaff::cleanup(bool wasDone) {
 
 AddSystemObjectStaff::AddSystemObjectStaff(Staff *s) : staff(s) {}
 
-void AddSystemObjectStaff::undo() { staff->score()->removeSystemObjectStaff(staff); }
+void AddSystemObjectStaff::undo() { staff->score()->remove_system_object_staff(staff); }
 
-void AddSystemObjectStaff::redo() { staff->score()->addSystemObjectStaff(staff); }
+void AddSystemObjectStaff::redo() { staff->score()->add_system_object_staff(staff); }
 
 //---------------------------------------------------------
 //   RemoveSystemObjectStaff
@@ -99,9 +99,9 @@ void AddSystemObjectStaff::redo() { staff->score()->addSystemObjectStaff(staff);
 
 RemoveSystemObjectStaff::RemoveSystemObjectStaff(Staff *s) : staff(s) {}
 
-void RemoveSystemObjectStaff::undo() { staff->score()->addSystemObjectStaff(staff); }
+void RemoveSystemObjectStaff::undo() { staff->score()->add_system_object_staff(staff); }
 
-void RemoveSystemObjectStaff::redo() { staff->score()->removeSystemObjectStaff(staff); }
+void RemoveSystemObjectStaff::redo() { staff->score()->remove_system_object_staff(staff); }
 
 //---------------------------------------------------------
 //   InsertMStaff
@@ -113,9 +113,9 @@ InsertMStaff::InsertMStaff(Measure *m, MStaff *ms, staff_idx_t i) {
     idx = i;
 }
 
-void InsertMStaff::undo() { measure->removeMStaff(mstaff, idx); }
+void InsertMStaff::undo() { measure->remove_m_staff(mstaff, idx); }
 
-void InsertMStaff::redo() { measure->insertMStaff(mstaff, idx); }
+void InsertMStaff::redo() { measure->insert_m_staff(mstaff, idx); }
 
 //---------------------------------------------------------
 //   RemoveMStaff
@@ -127,37 +127,37 @@ RemoveMStaff::RemoveMStaff(Measure *m, MStaff *ms, int i) {
     idx = i;
 }
 
-void RemoveMStaff::undo() { measure->insertMStaff(mstaff, idx); }
+void RemoveMStaff::undo() { measure->insert_m_staff(mstaff, idx); }
 
-void RemoveMStaff::redo() { measure->removeMStaff(mstaff, idx); }
+void RemoveMStaff::redo() { measure->remove_m_staff(mstaff, idx); }
 
 //---------------------------------------------------------
 //   InsertStaves
 //---------------------------------------------------------
 
-InsertStaves::InsertStaves(Measure *m, staff_idx_t _a, staff_idx_t _b) {
+InsertStaves::InsertStaves(Measure *m, staff_idx_t input_a, staff_idx_t input_b) {
     measure = m;
-    a = _a;
-    b = _b;
+    a = input_a;
+    b = input_b;
 }
 
-void InsertStaves::undo() { measure->removeStaves(a, b); }
+void InsertStaves::undo() { measure->remove_staves(a, b); }
 
-void InsertStaves::redo() { measure->insertStaves(a, b); }
+void InsertStaves::redo() { measure->insert_staves(a, b); }
 
 //---------------------------------------------------------
 //   RemoveStaves
 //---------------------------------------------------------
 
-RemoveStaves::RemoveStaves(Measure *m, staff_idx_t _a, staff_idx_t _b) {
+RemoveStaves::RemoveStaves(Measure *m, staff_idx_t input_a, staff_idx_t input_b) {
     measure = m;
-    a = _a;
-    b = _b;
+    a = input_a;
+    b = input_b;
 }
 
-void RemoveStaves::undo() { measure->insertStaves(a, b); }
+void RemoveStaves::undo() { measure->insert_staves(a, b); }
 
-void RemoveStaves::redo() { measure->removeStaves(a, b); }
+void RemoveStaves::redo() { measure->remove_staves(a, b); }
 
 //---------------------------------------------------------
 //   SortStaves
@@ -167,39 +167,39 @@ SortStaves::SortStaves(Score *s, const std::vector<staff_idx_t> &l) {
     score = s;
 
     for (staff_idx_t i = 0; i < l.size(); i++) {
-        rlist.push_back(muse::indexOf(l, i));
+        rlist.push_back(muse::index_of(l, i));
     }
     list = l;
 }
 
-void SortStaves::redo() { score->sortStaves(list); }
+void SortStaves::redo() { score->sort_staves(list); }
 
-void SortStaves::undo() { score->sortStaves(rlist); }
+void SortStaves::undo() { score->sort_staves(rlist); }
 
 //---------------------------------------------------------
 //   ChangeStaff
 //---------------------------------------------------------
 
-ChangeStaff::ChangeStaff(Staff *_staff) : staff(_staff) {
+ChangeStaff::ChangeStaff(Staff *input_staff) : staff(input_staff) {
     visible = staff->visible();
-    clefType = staff->defaultClefType();
-    userDist = staff->userDist();
+    clef_type_value = staff->default_clef_type();
+    user_dist = staff->user_dist();
     cutaway = staff->cutaway();
-    hideSystemBarLine = staff->hideSystemBarLine();
-    mergeMatchingRests = staff->mergeMatchingRests();
-    reflectTranspositionInLinkedTab = staff->reflectTranspositionInLinkedTab();
+    hide_system_bar_line_value = staff->hide_system_bar_line();
+    merge_matching_rests = staff->merge_matching_rests();
+    reflect_transposition_in_linked_tab_value = staff->reflect_transposition_in_linked_tab();
 }
 
-ChangeStaff::ChangeStaff(Staff *_staff, bool _visible, ClefTypeList _clefType, Spatium _userDist, bool _cutaway, bool _hideSystemBarLine,
-                         AutoOnOff _mergeMatchingRests, bool _reflectTranspositionInLinkedTab) {
-    staff = _staff;
-    visible = _visible;
-    clefType = _clefType;
-    userDist = _userDist;
-    cutaway = _cutaway;
-    hideSystemBarLine = _hideSystemBarLine;
-    mergeMatchingRests = _mergeMatchingRests;
-    reflectTranspositionInLinkedTab = _reflectTranspositionInLinkedTab;
+ChangeStaff::ChangeStaff(Staff *input_staff, bool input_visible, ClefTypeList clef_type, Spatium user_dist, bool input_cutaway,
+                         bool hide_system_bar_line, AutoOnOff merge_matching_rests, bool reflect_transposition_in_linked_tab) {
+    staff = input_staff;
+    visible = input_visible;
+    clef_type_value = clef_type;
+    this->user_dist = user_dist;
+    cutaway = input_cutaway;
+    hide_system_bar_line_value = hide_system_bar_line;
+    this->merge_matching_rests = merge_matching_rests;
+    reflect_transposition_in_linked_tab_value = reflect_transposition_in_linked_tab;
 }
 
 //---------------------------------------------------------
@@ -207,32 +207,32 @@ ChangeStaff::ChangeStaff(Staff *_staff, bool _visible, ClefTypeList _clefType, S
 //---------------------------------------------------------
 
 void ChangeStaff::flip() {
-    bool oldVisible = staff->visible();
-    ClefTypeList oldClefType = staff->defaultClefType();
-    Spatium oldUserDist = staff->userDist();
-    bool oldCutaway = staff->cutaway();
-    bool oldHideSystemBarLine = staff->hideSystemBarLine();
-    AutoOnOff oldMergeMatchingRests = staff->mergeMatchingRests();
-    bool oldReflectTranspositionInLinkedTab = staff->reflectTranspositionInLinkedTab();
+    bool old_visible = staff->visible();
+    ClefTypeList old_clef_type = staff->default_clef_type();
+    Spatium old_user_dist = staff->user_dist();
+    bool old_cutaway = staff->cutaway();
+    bool old_hide_system_bar_line = staff->hide_system_bar_line();
+    AutoOnOff old_merge_matching_rests = staff->merge_matching_rests();
+    bool old_reflect_transposition_in_linked_tab = staff->reflect_transposition_in_linked_tab();
 
-    staff->setVisible(visible);
-    staff->setDefaultClefType(clefType);
-    staff->setUserDist(userDist);
-    staff->setCutaway(cutaway);
-    staff->setHideSystemBarLine(hideSystemBarLine);
-    staff->setMergeMatchingRests(mergeMatchingRests);
-    staff->setReflectTranspositionInLinkedTab(reflectTranspositionInLinkedTab);
+    staff->set_visible(visible);
+    staff->set_default_clef_type(clef_type_value);
+    staff->set_user_dist(user_dist);
+    staff->set_cutaway(cutaway);
+    staff->set_hide_system_bar_line(hide_system_bar_line_value);
+    staff->set_merge_matching_rests(merge_matching_rests);
+    staff->set_reflect_transposition_in_linked_tab(reflect_transposition_in_linked_tab_value);
 
-    visible = oldVisible;
-    clefType = oldClefType;
-    userDist = oldUserDist;
-    cutaway = oldCutaway;
-    hideSystemBarLine = oldHideSystemBarLine;
-    mergeMatchingRests = oldMergeMatchingRests;
-    reflectTranspositionInLinkedTab = oldReflectTranspositionInLinkedTab;
+    visible = old_visible;
+    clef_type_value = old_clef_type;
+    user_dist = old_user_dist;
+    cutaway = old_cutaway;
+    hide_system_bar_line_value = old_hide_system_bar_line;
+    merge_matching_rests = old_merge_matching_rests;
+    reflect_transposition_in_linked_tab_value = old_reflect_transposition_in_linked_tab;
 
-    staff->triggerLayout();
-    staff->masterScore()->rebuildMidiMapping();
+    staff->trigger_layout();
+    staff->master_score()->rebuild_midi_mapping();
 }
 
 //---------------------------------------------------------
@@ -240,28 +240,28 @@ void ChangeStaff::flip() {
 //---------------------------------------------------------
 
 void ChangeStaffType::flip() {
-    StaffType oldStaffType = *staff->staffType(tick);
+    StaffType old_staff_type = *staff->staff_type(tick);
 
-    staff->setStaffType(tick, staffType);
+    staff->set_staff_type(tick, staff_type);
 
-    bool invisibleChanged = oldStaffType.invisible() != staffType.invisible();
-    bool fromTabToStandard = oldStaffType.isTabStaff() && !staffType.isTabStaff();
+    bool invisible_changed = old_staff_type.invisible() != staff_type.invisible();
+    bool from_tab_to_standard = old_staff_type.is_tab_staff() && !staff_type.is_tab_staff();
 
-    staffType = oldStaffType;
+    staff_type = old_staff_type;
 
     Score *score = staff->score();
-    if (invisibleChanged) {
-        staff_idx_t staffIdx = staff->idx();
-        for (Measure *m = score->firstMeasure(); m; m = m->nextMeasure()) {
-            m->staffLines(staffIdx)->setVisible(!staff->isLinesInvisible(tick));
+    if (invisible_changed) {
+        staff_idx_t staff_idx = staff->idx();
+        for (Measure *m = score->first_measure(); m; m = m->next_measure()) {
+            m->staff_lines(staff_idx)->set_visible(!staff->is_lines_invisible(tick));
         }
     }
 
-    if (fromTabToStandard) {
-        GuitarBend::adaptBendsFromTabToStandardStaff(staff);
+    if (from_tab_to_standard) {
+        GuitarBend::adapt_bends_from_tab_to_standard_staff(staff);
     }
 
-    staff->triggerLayout();
+    staff->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -269,13 +269,13 @@ void ChangeStaffType::flip() {
 //---------------------------------------------------------
 
 ChangeMStaffProperties::ChangeMStaffProperties(Measure *m, staff_idx_t i, bool v, bool s)
-    : measure(m), staffIdx(i), visible(v), stemless(s) {}
+    : measure(m), staff_idx(i), visible(v), stemless(s) {}
 
 void ChangeMStaffProperties::flip() {
-    bool v = measure->visible(staffIdx);
-    bool s = measure->stemless(staffIdx);
-    measure->setStaffVisible(staffIdx, visible);
-    measure->setStaffStemless(staffIdx, stemless);
+    bool v = measure->visible(staff_idx);
+    bool s = measure->stemless(staff_idx);
+    measure->set_staff_visible(staff_idx, visible);
+    measure->set_staff_stemless(staff_idx, stemless);
     visible = v;
     stemless = s;
 }
@@ -284,11 +284,11 @@ void ChangeMStaffProperties::flip() {
 //   ChangeMStaffHideIfEmpty
 //---------------------------------------------------------
 
-ChangeMStaffHideIfEmpty::ChangeMStaffHideIfEmpty(Measure *m, staff_idx_t i, AutoOnOff h) : measure(m), staffIdx(i), hideIfEmpty(h) {}
+ChangeMStaffHideIfEmpty::ChangeMStaffHideIfEmpty(Measure *m, staff_idx_t i, AutoOnOff h) : measure(m), staff_idx(i), hide_if_empty(h) {}
 
 void ChangeMStaffHideIfEmpty::flip() {
-    AutoOnOff h = measure->hideStaffIfEmpty(staffIdx);
-    measure->setHideStaffIfEmpty(staffIdx, hideIfEmpty);
-    measure->triggerLayout(staffIdx);
-    hideIfEmpty = h;
+    AutoOnOff h = measure->hide_staff_if_empty(staff_idx);
+    measure->set_hide_staff_if_empty(staff_idx, hide_if_empty);
+    measure->trigger_layout(staff_idx);
+    hide_if_empty = h;
 }

@@ -28,15 +28,15 @@ class IAudioEngineConfiguration {
 public:
     virtual ~IAudioEngineConfiguration() = default;
 
-    virtual void setConfig(const AudioEngineConfig &conf) = 0;
+    virtual void set_config(const AudioEngineConfig &conf) = 0;
 
-    virtual bool autoProcessOnlineSoundsInBackground() const = 0;
+    virtual bool auto_process_online_sounds_in_background() const = 0;
 
-    virtual bool isLazyProcessingOfOnlineSoundsEnabled() const = 0;
-    virtual void setIsLazyProcessingOfOnlineSoundsEnabled(bool enabled) = 0;
+    virtual bool is_lazy_processing_of_online_sounds_enabled() const = 0;
+    virtual void set_is_lazy_processing_of_online_sounds_enabled(bool enabled) = 0;
 
-    virtual bool useSoundFontLowPassFilter() const = 0;
+    virtual bool use_sound_font_low_pass_filter() const = 0;
 
-    virtual AudioInputParams defaultAudioInputParams() const = 0;
+    virtual AudioInputParams default_audio_input_params() const = 0;
 };
 } // namespace muse::audio::engine

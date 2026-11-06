@@ -35,44 +35,44 @@ using namespace mu::engraving;
 //   Page
 //---------------------------------------------------------
 
-Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { bspTreeValid_ = false; }
+Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { bsp_tree_valid_ = false; }
 
-void Page::setOwnershipParent(Score *score) { EngravingItem::setOwnershipParent(score); }
+void Page::set_ownership_parent(Score *score) { EngravingItem::set_ownership_parent(score); }
 
-EngravingItem *Page::layoutParent() const {
+EngravingItem *Page::layout_parent() const {
     // A page is the top of the visual hierarchy: it is not laid out inside anything.
     return nullptr;
 }
 
-EngravingItem *Page::accessibleParentItem() const {
+EngravingItem *Page::accessible_parent_item() const {
     // Above the visual hierarchy sits the root item, which exists only to head the
     // accessibility tree. A page that is not in the score belongs to the dummy's tree,
     // which the base implementation finds.
-    return ownershipParent() ? score()->rootItem() : EngravingItem::accessibleParentItem();
+    return ownership_parent() ? score()->root_item() : EngravingItem::accessible_parent_item();
 }
 
 Page::~Page() {
     for (System *s : systems_) {
         if (s->page() == this) {
-            s->setPage(nullptr);
+            s->set_page(nullptr);
         }
     }
 }
 
-MeasureBase *Page::firstMeasureBase() const {
+MeasureBase *Page::first_measure_base() const {
     if (systems_.empty()) {
         return nullptr;
     }
-    System *firstSys = systems_.front();
-    return firstSys ? firstSys->first() : nullptr;
+    System *first_sys = systems_.front();
+    return first_sys ? first_sys->first() : nullptr;
 }
 
-MeasureBase *Page::lastMeasureBase() const {
+MeasureBase *Page::last_measure_base() const {
     if (systems_.empty()) {
         return nullptr;
     }
-    System *lastSys = systems_.back();
-    return lastSys ? lastSys->last() : nullptr;
+    System *last_sys = systems_.back();
+    return last_sys ? last_sys->last() : nullptr;
 }
 
 //---------------------------------------------------------
@@ -80,32 +80,32 @@ MeasureBase *Page::lastMeasureBase() const {
 //---------------------------------------------------------
 
 std::vector<EngravingItem *> Page::items(const RectF &rect) {
-    if (!bspTreeValid_) {
-        doRebuildBspTree();
+    if (!bsp_tree_valid_) {
+        do_rebuild_bsp_tree();
     }
-    return bspTree.items(rect);
+    return bsp_tree.items(rect);
 }
 
 std::vector<EngravingItem *> Page::items(const PointF &point) {
-    if (!bspTreeValid_) {
-        doRebuildBspTree();
+    if (!bsp_tree_valid_) {
+        do_rebuild_bsp_tree();
     }
-    return bspTree.items(point);
+    return bsp_tree.items(point);
 }
 
 //---------------------------------------------------------
 //   appendSystem
 //---------------------------------------------------------
 
-void Page::appendSystem(System *s) {
-    s->setPage(this);
+void Page::append_system(System *s) {
+    s->set_page(this);
     systems_.push_back(s);
 }
 
-EngravingItemList Page::accessibleChildren() const {
+EngravingItemList Page::accessible_children() const {
     // The systems are owned by the score, but it is the page that places them, so the
     // page is where the accessibility tree finds them.
-    EngravingItemList children = EngravingItem::accessibleChildren();
+    EngravingItemList children = EngravingItem::accessible_children();
     children.insert(children.end(), systems_.begin(), systems_.end());
 
     return children;
@@ -115,23 +115,23 @@ EngravingItemList Page::accessibleChildren() const {
 //   scanElements
 //---------------------------------------------------------
 
-void Page::scanElements(std::function<void(EngravingItem *)> func) {
+void Page::scan_elements(std::function<void(EngravingItem *)> func) {
     for (System *s : systems_) {
         for (MeasureBase *m : s->measures()) {
-            m->scanElements(func);
+            m->scan_elements(func);
         }
-        s->scanElements(func);
+        s->scan_elements(func);
     }
 
     func(this);
 
-    for (int i = 0; i < MAX_HEADERS; i++) {
-        if (Text *t = headerText(i)) {
+    for (int i = 0; i < ::mu::engraving::max_headers; i++) {
+        if (Text *t = header_text(i)) {
             func(t);
         }
     }
-    for (int i = 0; i < MAX_FOOTERS; i++) {
-        if (Text *t = footerText(i)) {
+    for (int i = 0; i < ::mu::engraving::max_footers; i++) {
+        if (Text *t = footer_text(i)) {
             func(t);
         }
     }
@@ -141,18 +141,18 @@ void Page::scanElements(std::function<void(EngravingItem *)> func) {
 //   doRebuildBspTree
 //---------------------------------------------------------
 
-void Page::doRebuildBspTree() {
+void Page::do_rebuild_bsp_tree() {
     int n = 0;
-    auto countElements = [&](EngravingItem *item) {
-        if (item->collectForDrawing()) {
+    auto count_elements = [&](EngravingItem *item) {
+        if (item->collect_for_drawing()) {
             ++n;
         }
     };
 
-    scanElements(countElements);
+    scan_elements(count_elements);
 
     RectF r;
-    if (score()->linearMode()) {
+    if (score()->linear_mode()) {
         double w = 0.0;
         double h = 0.0;
         if (!systems_.empty()) {
@@ -164,47 +164,47 @@ void Page::doRebuildBspTree() {
         }
         r = RectF(0.0, 0.0, w, h);
     } else {
-        r = pageBoundingRect();
+        r = page_bounding_rect();
     }
 
-    bspTree.initialize(r, n);
+    bsp_tree.initialize(r, n);
 
-    auto bspInsert = [&](EngravingItem *item) {
-        if (item->collectForDrawing()) {
-            bspTree.insert(item);
+    auto bsp_insert = [&](EngravingItem *item) {
+        if (item->collect_for_drawing()) {
+            bsp_tree.insert(item);
         }
     };
-    scanElements(bspInsert);
+    scan_elements(bsp_insert);
 
-    bspTreeValid_ = true;
+    bsp_tree_valid_ = true;
 }
 
 //---------------------------------------------------------
 //   getDisplayPageNumber
 //---------------------------------------------------------
 
-int Page::getDisplayPageNumber() const { return static_cast<int>(pageNumber_) + 1 + score()->pageNumberOffset(); }
+int Page::get_display_page_number() const { return static_cast<int>(page_number_) + 1 + score()->page_number_offset(); }
 
 //---------------------------------------------------------
 //   isOdd
 //---------------------------------------------------------
 
-bool Page::isOdd() const { return getDisplayPageNumber() & 1; }
+bool Page::is_odd() const { return get_display_page_number() & 1; }
 
 //---------------------------------------------------------
 //   elements
 //---------------------------------------------------------
 
-std::vector<EngravingItem *> Page::elements() const { return getChildren(false); }
+std::vector<EngravingItem *> Page::elements() const { return get_children(false); }
 
 //---------------------------------------------------------
 //   tm
 //---------------------------------------------------------
 
 double Page::tm() const {
-    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddTopMargin) :
-                                                              style().styleD(Sid::pageEvenTopMargin)) *
-           DPI;
+    return ((!style().style_b(Sid::PAGE_TWOSIDED) || is_odd()) ? style().style_d(Sid::PAGE_ODD_TOP_MARGIN) :
+                                                                 style().style_d(Sid::PAGE_EVEN_TOP_MARGIN)) *
+           ::mu::engraving::dpi;
 }
 
 //---------------------------------------------------------
@@ -212,9 +212,9 @@ double Page::tm() const {
 //---------------------------------------------------------
 
 double Page::bm() const {
-    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddBottomMargin) :
-                                                              style().styleD(Sid::pageEvenBottomMargin)) *
-           DPI;
+    return ((!style().style_b(Sid::PAGE_TWOSIDED) || is_odd()) ? style().style_d(Sid::PAGE_ODD_BOTTOM_MARGIN) :
+                                                                 style().style_d(Sid::PAGE_EVEN_BOTTOM_MARGIN)) *
+           ::mu::engraving::dpi;
 }
 
 //---------------------------------------------------------
@@ -222,16 +222,18 @@ double Page::bm() const {
 //---------------------------------------------------------
 
 double Page::lm() const {
-    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddLeftMargin) :
-                                                              style().styleD(Sid::pageEvenLeftMargin)) *
-           DPI;
+    return ((!style().style_b(Sid::PAGE_TWOSIDED) || is_odd()) ? style().style_d(Sid::PAGE_ODD_LEFT_MARGIN) :
+                                                                 style().style_d(Sid::PAGE_EVEN_LEFT_MARGIN)) *
+           ::mu::engraving::dpi;
 }
 
 //---------------------------------------------------------
 //   rm
 //---------------------------------------------------------
 
-double Page::rm() const { return (style().styleD(Sid::pageWidth) - style().styleD(Sid::pagePrintableWidth)) * DPI - lm(); }
+double Page::rm() const {
+    return (style().style_d(Sid::PAGE_WIDTH) - style().style_d(Sid::PAGE_PRINTABLE_WIDTH)) * ::mu::engraving::dpi - lm();
+}
 
 //---------------------------------------------------------
 //   tbbox
@@ -245,10 +247,10 @@ RectF Page::tbbox() const {
     double y2 = 0.0;
     const std::vector<EngravingItem *> el = elements();
     for (EngravingItem *e : el) {
-        if (e == this || !e->isPrintable()) {
+        if (e == this || !e->is_printable()) {
             continue;
         }
-        RectF ebbox = e->pageBoundingRect();
+        RectF ebbox = e->page_bounding_rect();
         if (ebbox.left() < x1) {
             x1 = ebbox.left();
         }
@@ -265,7 +267,7 @@ RectF Page::tbbox() const {
     if (x1 < x2 && y1 < y2) {
         return RectF(x1, y1, x2 - x1, y2 - y1);
     } else {
-        return pageBoundingRect();
+        return page_bounding_rect();
     }
 }
 
@@ -273,11 +275,11 @@ RectF Page::tbbox() const {
 //   endTick
 //---------------------------------------------------------
 
-Fraction Page::endTick() const { return systems_.empty() ? Fraction(-1, 1) : systems_.back()->measures().back()->endTick(); }
+Fraction Page::end_tick() const { return systems_.empty() ? Fraction(-1, 1) : systems_.back()->measures().back()->end_tick(); }
 
-Measure *Page::firstMeasure() const {
+Measure *Page::first_measure() const {
     for (System *s : systems_) {
-        if (Measure *m = s->firstMeasure()) {
+        if (Measure *m = s->first_measure()) {
             return m;
         }
     }
@@ -285,12 +287,12 @@ Measure *Page::firstMeasure() const {
     return nullptr;
 }
 
-bool Page::isLocked() const {
-    MeasureBase *firstMeasure = firstMeasureBase();
-    return firstMeasure ? firstMeasure->isStartOfPageLock() : false;
+bool Page::is_locked() const {
+    MeasureBase *first_measure = first_measure_base();
+    return first_measure ? first_measure->is_start_of_page_lock() : false;
 }
 
-const RangeLock *Page::pageLock() const {
-    MeasureBase *firstMeasure = firstMeasureBase();
-    return firstMeasure ? firstMeasure->pageLock() : nullptr;
+const RangeLock *Page::page_lock() const {
+    MeasureBase *first_measure = first_measure_base();
+    return first_measure ? first_measure->page_lock() : nullptr;
 }

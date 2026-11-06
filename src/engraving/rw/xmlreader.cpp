@@ -30,21 +30,21 @@ using namespace muse::draw;
 namespace mu::engraving {
 XmlReader::~XmlReader() {}
 
-PointF XmlReader::readPoint() {
-    assert(tokenType() == XmlStreamReader::StartElement);
+PointF XmlReader::read_point() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
 #ifndef NDEBUG
-    if (!hasAttribute("x")) {
+    if (!has_attribute("x")) {
         LOGD("XmlReader::readPoint: x attribute missing: %s", name().ascii());
         unknown();
     }
-    if (!hasAttribute("y")) {
+    if (!has_attribute("y")) {
         LOGD("XmlReader::readPoint: y attribute missing: %s", name().ascii());
         unknown();
     }
 #endif
-    double x = doubleAttribute("x", 0.0);
-    double y = doubleAttribute("y", 0.0);
-    readNext();
+    double x = double_attribute("x", 0.0);
+    double y = double_attribute("y", 0.0);
+    read_next();
     return PointF(x, y);
 }
 
@@ -52,14 +52,14 @@ PointF XmlReader::readPoint() {
 //   readColor
 //---------------------------------------------------------
 
-Color XmlReader::readColor() {
-    assert(tokenType() == XmlStreamReader::StartElement);
+Color XmlReader::read_color() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
     Color c;
-    c.setRed(intAttribute("r"));
-    c.setGreen(intAttribute("g"));
-    c.setBlue(intAttribute("b"));
-    c.setAlpha(intAttribute("a", 255));
-    skipCurrentElement();
+    c.set_red(int_attribute("r"));
+    c.set_green(int_attribute("g"));
+    c.set_blue(int_attribute("b"));
+    c.set_alpha(int_attribute("a", 255));
+    skip_current_element();
     return c;
 }
 
@@ -67,21 +67,21 @@ Color XmlReader::readColor() {
 //   readSize
 //---------------------------------------------------------
 
-SizeF XmlReader::readSize() {
-    assert(tokenType() == XmlStreamReader::StartElement);
+SizeF XmlReader::read_size() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
     SizeF p;
-    p.setWidth(doubleAttribute("w", 0.0));
-    p.setHeight(doubleAttribute("h", 0.0));
-    skipCurrentElement();
+    p.set_width(double_attribute("w", 0.0));
+    p.set_height(double_attribute("h", 0.0));
+    skip_current_element();
     return p;
 }
 
-ScaleF XmlReader::readScale() {
-    assert(tokenType() == XmlStreamReader::StartElement);
+ScaleF XmlReader::read_scale() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
     ScaleF p;
-    p.setWidth(doubleAttribute("w", 0.0));
-    p.setHeight(doubleAttribute("h", 0.0));
-    skipCurrentElement();
+    p.set_width(double_attribute("w", 0.0));
+    p.set_height(double_attribute("h", 0.0));
+    skip_current_element();
     return p;
 }
 
@@ -89,14 +89,14 @@ ScaleF XmlReader::readScale() {
 //   readRect
 //---------------------------------------------------------
 
-RectF XmlReader::readRect() {
-    assert(tokenType() == XmlStreamReader::StartElement);
+RectF XmlReader::read_rect() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
     RectF p;
-    p.setLeft(doubleAttribute("x", 0.0));
-    p.setTop(doubleAttribute("y", 0.0));
-    p.setWidth(doubleAttribute("w", 0.0));
-    p.setHeight(doubleAttribute("h", 0.0));
-    skipCurrentElement();
+    p.set_left(double_attribute("x", 0.0));
+    p.set_top(double_attribute("y", 0.0));
+    p.set_width(double_attribute("w", 0.0));
+    p.set_height(double_attribute("h", 0.0));
+    skip_current_element();
     return p;
 }
 
@@ -107,19 +107,19 @@ RectF XmlReader::readRect() {
 //    <move>2/4</move>        (new style)
 //---------------------------------------------------------
 
-Fraction XmlReader::readFraction() {
-    assert(tokenType() == XmlStreamReader::StartElement);
-    int z = intAttribute("z", 0);
-    int n = intAttribute("n", 1);
-    AsciiStringView s = readAsciiText();
+Fraction XmlReader::read_fraction() {
+    assert(token_type() == XmlStreamReader::START_ELEMENT);
+    int z = int_attribute("z", 0);
+    int n = int_attribute("n", 1);
+    AsciiStringView s = read_ascii_text();
     if (!s.empty()) {
-        size_t i = s.indexOf('/');
+        size_t i = s.index_of('/');
         if (i == muse::nidx) {
-            return Fraction::fromTicks(s.toInt());
+            return Fraction::from_ticks(s.to_int());
         } else {
-            String str = String::fromAscii(s.ascii());
-            z = str.left(i).toInt();
-            n = str.mid(i + 1).toInt();
+            String str = String::from_ascii(s.ascii());
+            z = str.left(i).to_int();
+            n = str.mid(i + 1).to_int();
         }
     }
     return Fraction(z, n);
@@ -132,18 +132,18 @@ Fraction XmlReader::readFraction() {
 
 void XmlReader::unknown() {
     if (XmlStreamReader::error()) {
-        LOGD("%s ", muPrintable(errorString()));
+        LOGD("%s ", muPrintable(error_string()));
     }
-    if (!docName_.isEmpty()) {
-        LOGD() << "tag in <" << docName_ << "> byte offset " << byteOffset() + byteOffsetAdjustment_ << ": " << name();
+    if (!doc_name_.is_empty()) {
+        LOGD() << "tag in <" << doc_name_ << "> byte offset " << byte_offset() + byte_offset_adjustment_ << ": " << name();
     } else {
-        LOGD() << "byte offset " << byteOffset() + byteOffsetAdjustment_ << ": " << name();
+        LOGD() << "byte offset " << byte_offset() + byte_offset_adjustment_ << ": " << name();
     }
-    skipCurrentElement();
+    skip_current_element();
 }
 
-double XmlReader::readDouble(double min, double max) {
-    double val = readDouble();
+double XmlReader::read_double(double min, double max) {
+    double val = read_double();
     if (val < min) {
         val = min;
     } else if (val > max) {
@@ -156,34 +156,34 @@ double XmlReader::readDouble(double min, double max) {
 //   htmlToString
 //---------------------------------------------------------
 
-void XmlReader::htmlToString(int level, String *s) {
-    bool selfClosing = noChildren();
-    *s += u'<' + String::fromAscii(name().ascii());
+void XmlReader::html_to_string(int level, String *s) {
+    bool self_closing = no_children();
+    *s += u'<' + String::from_ascii(name().ascii());
     for (const Attribute &a : attributes()) {
-        *s += u' ' + String::fromAscii(a.name.ascii()) + u"=\"" + a.value + u'\"';
+        *s += u' ' + String::from_ascii(a.name.ascii()) + u"=\"" + a.value + u'\"';
     }
-    *s += selfClosing ? u"/>" : u">";
+    *s += self_closing ? u"/>" : u">";
     ++level;
     for (;;) {
-        XmlStreamReader::TokenType t = readNext();
+        XmlStreamReader::TokenType t = read_next();
         switch (t) {
-            case XmlStreamReader::StartElement: htmlToString(level, s); break;
-            case XmlStreamReader::EndElement:
-                if (!selfClosing) {
-                    *s += u"</" + String::fromAscii(name().ascii()) + u'>';
+            case XmlStreamReader::START_ELEMENT: html_to_string(level, s); break;
+            case XmlStreamReader::END_ELEMENT:
+                if (!self_closing) {
+                    *s += u"</" + String::from_ascii(name().ascii()) + u'>';
                 }
                 --level;
                 return;
-            case XmlStreamReader::Characters:
-                if (!s->empty() || !isWhitespace()) {
-                    *s += text().toXmlEscaped();
+            case XmlStreamReader::CHARACTERS:
+                if (!s->empty() || !is_whitespace()) {
+                    *s += text().to_xml_escaped();
                 } else {
                     LOGD() << "ignoring whitespace";
                 }
                 break;
-            case XmlStreamReader::Comment: break;
+            case XmlStreamReader::COMMENT: break;
 
-            default: LOGD() << "htmlToString: read token: " << tokenString(); return;
+            default: LOGD() << "htmlToString: read token: " << token_string(); return;
         }
     }
 }
@@ -193,21 +193,21 @@ void XmlReader::htmlToString(int level, String *s) {
 //    read verbatim until end tag of current level is reached
 //-------------------------------------------------------------------
 
-String XmlReader::readXml() {
+String XmlReader::read_xml() {
     String s;
     int level = 1;
-    for (XmlStreamReader::TokenType t = readNext(); t != XmlStreamReader::EndElement; t = readNext()) {
+    for (XmlStreamReader::TokenType t = read_next(); t != XmlStreamReader::END_ELEMENT; t = read_next()) {
         switch (t) {
-            case XmlStreamReader::StartElement: htmlToString(level, &s); break;
-            case XmlStreamReader::EndElement: break;
-            case XmlStreamReader::Characters:
-                if (!isWhitespace()) {
-                    s += text().toXmlEscaped();
+            case XmlStreamReader::START_ELEMENT: html_to_string(level, &s); break;
+            case XmlStreamReader::END_ELEMENT: break;
+            case XmlStreamReader::CHARACTERS:
+                if (!is_whitespace()) {
+                    s += text().to_xml_escaped();
                 }
                 break;
-            case XmlStreamReader::Comment: break;
+            case XmlStreamReader::COMMENT: break;
 
-            default: LOGD() << "read token: " << tokenString(); return s;
+            default: LOGD() << "read token: " << token_string(); return s;
         }
     }
     return s;

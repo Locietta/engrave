@@ -57,21 +57,21 @@ MCursor::MCursor(MasterScore *s) {
 //   createMeasures
 //---------------------------------------------------------
 
-void MCursor::createMeasures() {
+void MCursor::create_measures() {
     Measure *measure;
     for (;;) {
         Fraction tick = Fraction(0, 1);
-        measure = score_->lastMeasure();
+        measure = score_->last_measure();
         if (measure) {
-            tick = measure->endTick();
+            tick = measure->end_tick();
             if (tick > tick_) {
                 break;
             }
         }
-        measure = Factory::createMeasure(score_);
-        measure->setTick(tick);
-        measure->setTimesig(sig_);
-        measure->setTicks(sig_);
+        measure = Factory::create_measure(score_);
+        measure->set_tick(tick);
+        measure->set_timesig(sig_);
+        measure->set_ticks(sig_);
         score_->measures()->append(measure);
     }
 }
@@ -80,22 +80,22 @@ void MCursor::createMeasures() {
 //   addChord
 //---------------------------------------------------------
 
-Chord *MCursor::addChord(int pitch, const TDuration &duration) {
-    createMeasures();
+Chord *MCursor::add_chord(int pitch, const TDuration &duration) {
+    create_measures();
     Measure *measure = score_->tick2measure(tick_);
-    Segment *segment = measure->getSegment(SegmentType::ChordRest, tick_);
-    Chord *chord = toChord(segment->element(track_));
+    Segment *segment = measure->get_segment(SegmentType::CHORD_REST, tick_);
+    Chord *chord = to_chord(segment->element(track_));
     if (chord == 0) {
-        chord = Factory::createChord(segment);
-        chord->setTrack(track_);
-        chord->setDurationType(duration);
-        chord->setTicks(duration.fraction());
+        chord = Factory::create_chord(segment);
+        chord->set_track(track_);
+        chord->set_duration_type(duration);
+        chord->set_ticks(duration.fraction());
         segment->add(chord);
     }
-    Note *note = Factory::createNote(chord);
+    Note *note = Factory::create_note(chord);
     chord->add(note);
-    note->setPitch(pitch);
-    note->setTpcFromPitch();
+    note->set_pitch(pitch);
+    note->set_tpc_from_pitch();
     tick_ += duration.ticks();
     return chord;
 }
@@ -104,15 +104,15 @@ Chord *MCursor::addChord(int pitch, const TDuration &duration) {
 //   addKeySig
 //---------------------------------------------------------
 
-void MCursor::addKeySig(Key key) {
-    createMeasures();
+void MCursor::add_key_sig(Key key) {
+    create_measures();
     Measure *measure = score_->tick2measure(tick_);
-    Segment *segment = measure->getSegment(SegmentType::KeySig, tick_);
+    Segment *segment = measure->get_segment(SegmentType::KEY_SIG, tick_);
     size_t n = score_->nstaves();
     for (staff_idx_t i = 0; i < n; ++i) {
-        KeySig *ks = Factory::createKeySig(segment);
-        ks->setKey(key);
-        ks->setTrack(i * VOICES);
+        KeySig *ks = Factory::create_key_sig(segment);
+        ks->set_key(key);
+        ks->set_track(i * ::mu::engraving::voices);
         segment->add(ks);
     }
 }
@@ -121,15 +121,15 @@ void MCursor::addKeySig(Key key) {
 //   addTimeSig
 //---------------------------------------------------------
 
-TimeSig *MCursor::addTimeSig(const Fraction &f) {
-    createMeasures();
+TimeSig *MCursor::add_time_sig(const Fraction &f) {
+    create_measures();
     Measure *measure = score_->tick2measure(tick_);
-    Segment *segment = measure->getSegment(SegmentType::TimeSig, tick_);
+    Segment *segment = measure->get_segment(SegmentType::TIME_SIG, tick_);
     TimeSig *ts = 0;
     for (size_t i = 0; i < score_->nstaves(); ++i) {
-        ts = Factory::createTimeSig(segment);
-        ts->setSig(f, TimeSigType::NORMAL);
-        ts->setTrack(i * VOICES);
+        ts = Factory::create_time_sig(segment);
+        ts->set_sig(f, TimeSigType::NORMAL);
+        ts->set_track(i * ::mu::engraving::voices);
         segment->add(ts);
     }
     score_->sigmap()->add(tick_.ticks(), SigEvent(f));
@@ -140,11 +140,11 @@ TimeSig *MCursor::addTimeSig(const Fraction &f) {
 //   createScore
 //---------------------------------------------------------
 
-void MCursor::createScore(const EngravingServices &services, const String & /*name*/) {
+void MCursor::create_score(const EngravingServices &services, const String & /*name*/) {
     delete score_;
-    score_ = compat::ScoreAccess::createMasterScoreWithBaseStyle(services);
+    score_ = compat::ScoreAccess::create_master_score_with_base_style(services);
     // TODO: set path/filename
-    NOT_IMPLEMENTED;
+    MUSE_NOT_IMPLEMENTED;
     move(0, Fraction(0, 1));
 }
 
@@ -161,15 +161,15 @@ void MCursor::move(int t, const Fraction &tick) {
 //   addPart
 //---------------------------------------------------------
 
-void MCursor::addPart(const String &instrument) {
+void MCursor::add_part(const String &instrument) {
     Part *part = new Part(score_);
-    Staff *staff = Factory::createStaff(part);
-    const InstrumentTemplate *it = searchTemplate(instrument);
+    Staff *staff = Factory::create_staff(part);
+    const InstrumentTemplate *it = search_template(instrument);
     IF_ASSERT_FAILED(it) { return; }
 
-    part->initFromInstrTemplate(it);
-    score_->appendPart(part);
-    score_->insertStaff(staff, 0);
+    part->init_from_instr_template(it);
+    score_->append_part(part);
+    score_->insert_staff(staff, 0);
     staff->init(it, 0, 0);
 }
 } // namespace mu::engraving

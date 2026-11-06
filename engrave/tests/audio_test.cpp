@@ -146,25 +146,25 @@ using music::test::g_soundfonts;
 TEST(Audio, EditThenRenderInvalidatesPlayback) {
     auto document = detail::open_score("chordline_path.mscx");
     ASSERT_TRUE(document);
-    engrave::RenderOptions renderOptions;
-    renderOptions.format = engrave::RenderFormat::SVG;
-    const auto beforeRender = document->render(renderOptions);
-    ASSERT_TRUE(beforeRender);
-    const auto beforeAudio = detail::render_audio(*document, {});
-    ASSERT_FALSE(beforeAudio.bytes.empty());
+    engrave::RenderOptions render_options;
+    render_options.format = engrave::RenderFormat::SVG;
+    const auto before_render = document->render(render_options);
+    ASSERT_TRUE(before_render);
+    const auto before_audio = detail::render_audio(*document, {});
+    ASSERT_FALSE(before_audio.bytes.empty());
     const auto notes = document->query(engrave::Query{.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(notes);
     ASSERT_FALSE(notes->elements.empty());
     const auto edited = document->edit(engrave::Batch{{engrave::SetPitch{notes->elements.front().id, 85, std::nullopt}}});
     ASSERT_TRUE(edited) << edited.error().message;
-    const auto afterRender = document->render(renderOptions);
-    ASSERT_TRUE(afterRender);
-    EXPECT_NE(beforeRender->pages, afterRender->pages);
-    const auto afterAudio = detail::render_audio(*document, {});
-    ASSERT_FALSE(afterAudio.bytes.empty());
-    EXPECT_NE(beforeAudio.bytes, afterAudio.bytes);
+    const auto after_render = document->render(render_options);
+    ASSERT_TRUE(after_render);
+    EXPECT_NE(before_render->pages, after_render->pages);
+    const auto after_audio = detail::render_audio(*document, {});
+    ASSERT_FALSE(after_audio.bytes.empty());
+    EXPECT_NE(before_audio.bytes, after_audio.bytes);
     const auto repeated = detail::render_audio(*document, {});
-    EXPECT_EQ(afterAudio.bytes, repeated.bytes);
+    EXPECT_EQ(after_audio.bytes, repeated.bytes);
 }
 
 TEST(Audio, EachEncoderWritesItsContainer) {

@@ -40,36 +40,36 @@ namespace mu::engraving {
 
 class EaseInOut final {
 public:
-    EaseInOut() : easeIn_(0.0), easeOut_(1.0) {}
+    EaseInOut() : ease_in_(0.0), ease_out_(1.0) {}
 
-    EaseInOut(double easeIn, double easeOut) : easeIn_(easeIn), easeOut_(easeOut) {}
+    EaseInOut(double ease_in, double ease_out) : ease_in_(ease_in), ease_out_(ease_out) {}
 
-    void SetEases(double easeIn, double easeOut) {
-        easeIn_ = easeIn;
-        easeOut_ = easeOut;
+    void set_eases(double ease_in, double ease_out) {
+        ease_in_ = ease_in;
+        ease_out_ = ease_out;
     }
 
-    double EvalX(const double t) const {
-        double tCompl = 1.0 - t;
-        return (3.0 * easeIn_ * tCompl * tCompl + (3.0 - 3.0 * easeOut_ * tCompl - 2.0 * t) * t) * t;
+    double eval_x(const double t) const {
+        double t_compl = 1.0 - t;
+        return (3.0 * ease_in_ * t_compl * t_compl + (3.0 - 3.0 * ease_out_ * t_compl - 2.0 * t) * t) * t;
     }
 
-    double EvalY(const double t) const { return -(t * t) * (2.0 * t - 3.0); }
+    double eval_y(const double t) const { return -(t * t) * (2.0 * t - 3.0); }
 
-    muse::PointF Eval(const double t) const { return {EvalX(t), EvalY(t)}; }
+    muse::PointF eval(const double t) const { return {eval_x(t), eval_y(t)}; }
 
-    double tFromX(const double x) const;
-    double tFromY(const double y) const;
+    double t_from_x(const double x) const;
+    double t_from_y(const double y) const;
 
-    double YfromX(const double x) const { return EvalY(tFromX(x)); }
+    double yfrom_x(const double x) const { return eval_y(t_from_x(x)); }
 
-    double XfromY(const double y) const { return EvalX(tFromY(y)); }
+    double xfrom_y(const double y) const { return eval_x(t_from_y(y)); }
 
-    void timeList(const int nbNotes, const int duration, std::vector<int> *times) const;
+    void time_list(const int nb_notes, const int duration, std::vector<int> *times) const;
 
 private:
-    double easeIn_ = 0.0;
-    double easeOut_ = 0.0;
+    double ease_in_ = 0.0;
+    double ease_out_ = 0.0;
 };
 } // namespace mu::engraving
 #endif

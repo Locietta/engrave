@@ -28,26 +28,26 @@
 namespace mu::iex::midi {
 class MidiEvent : public engraving::MidiCoreEvent {
 protected:
-    std::vector<uchar> _edata;
-    int _len{0};
-    int _metaType{0};
+    std::vector<uchar> edata_value;
+    int len_value{0};
+    int meta_type_value{0};
 
 public:
     MidiEvent() {}
 
-    MidiEvent(uchar t, uchar c, uchar a, uchar b) : MidiCoreEvent(t, c, a, b), _edata(0), _len(0) {}
+    MidiEvent(uchar t, uchar c, uchar a, uchar b) : MidiCoreEvent(t, c, a, b), edata_value(0), len_value(0) {}
 
-    const uchar *edata() const { return _edata.data(); }
+    const uchar *edata() const { return edata_value.data(); }
 
-    void setEData(std::vector<uchar> &&d) { _edata = d; }
+    void set_e_data(std::vector<uchar> &&d) { edata_value = d; }
 
-    int len() const { return _len; }
+    int len() const { return len_value; }
 
-    void setLen(int l) { _len = l; }
+    void set_len(int l) { len_value = l; }
 
-    int metaType() const { return _metaType; }
+    int meta_type() const { return meta_type_value; }
 
-    void setMetaType(int v) { _metaType = v; }
+    void set_meta_type(int v) { meta_type_value = v; }
 };
 } // namespace mu::iex::midi
 

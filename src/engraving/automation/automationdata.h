@@ -32,22 +32,22 @@ public:
     const AutomationCurveMap &curves() const;
     const AutomationCurve &curve(const AutomationCurveKey &key) const;
 
-    bool isEmpty() const;
+    bool is_empty() const;
 
     //! NOTE: full replacement; any existing key absent from the argument is removed
-    void setCurves(const AutomationCurveMap &curves);
+    void set_curves(const AutomationCurveMap &curves);
 
     //! NOTE: replaces only the given curves, keeping all others; keys absent from the argument are untouched
-    void replaceCurves(const AutomationCurveMap &curves);
+    void replace_curves(const AutomationCurveMap &curves);
 
     //! NOTE: writes, moves, or erases points in one batch, per each edit's SetPoint/MovePoint/ErasePoint
-    void editPoints(const AutomationCurveKey &key, const AutomationPointEdits &edits);
+    void edit_points(const AutomationCurveKey &key, const AutomationPointEdits &edits);
 
     std::string dump() const;
 
 private:
 
-    AutomationCurveMap curveMap_;
+    AutomationCurveMap curve_map_;
 };
 
 using AutomationDataPtr = std::shared_ptr<AutomationData>;

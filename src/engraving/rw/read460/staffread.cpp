@@ -33,94 +33,96 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read460;
 
-void StaffRead::readStaff(Score *score, XmlReader &e, ReadContext &ctx) {
-    int staff = e.intAttribute("id", 1) - 1;
-    int measureIdx = 0;
-    ctx.setCurrentMeasureIndex(0);
-    ctx.setTick(Fraction(0, 1));
-    ctx.setTrack(staff * VOICES);
+void StaffRead::read_staff(Score *score, XmlReader &e, ReadContext &ctx) {
+    int staff = e.int_attribute("id", 1) - 1;
+    int measure_idx = 0;
+    ctx.set_current_measure_index(0);
+    ctx.set_tick(Fraction(0, 1));
+    ctx.set_track(staff * ::mu::engraving::voices);
 
     if (staff == 0) {
-        while (e.readNextStartElement()) {
+        while (e.read_next_start_element()) {
             const AsciiStringView tag(e.name());
 
             if (tag == "Measure") {
-                Measure *measure = Factory::createMeasure(ctx.score());
-                measure->setTick(ctx.tick());
-                ctx.setCurrentMeasureIndex(measureIdx++);
+                Measure *measure = Factory::create_measure(ctx.score());
+                measure->set_tick(ctx.tick());
+                ctx.set_current_measure_index(measure_idx++);
                 //
                 // inherit timesig from previous measure
                 //
-                Measure *m = ctx.lastMeasure(); // measure->prevMeasure();
-                Fraction f(ctx.timeSigForNextMeasure() != Fraction(0, 1) ? ctx.timeSigForNextMeasure() : m ? m->timesig() : Fraction(4, 4));
-                measure->setTicks(f);
-                measure->setTimesig(f);
-                ctx.setTimeSigForNextMeasure(Fraction(0, 1));
+                Measure *m = ctx.last_measure(); // measure->prevMeasure();
+                Fraction f(ctx.time_sig_for_next_measure() != Fraction(0, 1) ? ctx.time_sig_for_next_measure() :
+                           m                                                 ? m->timesig() :
+                                                                               Fraction(4, 4));
+                measure->set_ticks(f);
+                measure->set_timesig(f);
+                ctx.set_time_sig_for_next_measure(Fraction(0, 1));
 
-                MeasureRead::readMeasure(measure, e, ctx, staff);
-                measure->checkMeasure(staff);
-                if (!measure->isMMRest()) {
+                MeasureRead::read_measure(measure, e, ctx, staff);
+                measure->check_measure(staff);
+                if (!measure->is_mm_rest()) {
                     score->measures()->append(measure);
-                    if (m && m->mmRest()) {
-                        m->mmRest()->setNext(measure);
+                    if (m && m->mm_rest()) {
+                        m->mm_rest()->set_next(measure);
                     }
-                    score->checkSpanner(ctx.tick(), ctx.tick() + measure->ticks(), /*removeOrphans*/ false);
-                    ctx.setLastMeasure(measure);
-                    ctx.setTick(measure->tick() + measure->ticks());
+                    score->check_spanner(ctx.tick(), ctx.tick() + measure->ticks(), /*removeOrphans*/ false);
+                    ctx.set_last_measure(measure);
+                    ctx.set_tick(measure->tick() + measure->ticks());
                 } else {
                     // this is a multi measure rest
                     // always preceded by the first measure it replaces
-                    Measure *m1 = ctx.lastMeasure();
+                    Measure *m1 = ctx.last_measure();
 
                     if (m1) {
-                        m1->setMMRest(measure);
-                        measure->setTick(m1->tick());
-                        measure->setPrev(m1->prev());
+                        m1->set_mm_rest(measure);
+                        measure->set_tick(m1->tick());
+                        measure->set_prev(m1->prev());
                     }
                 }
             } else if (tag == "HBox" || tag == "VBox" || tag == "TBox" || tag == "FBox") {
-                MeasureBase *mb = toMeasureBase(Factory::createItemByName(tag, ctx.dummy()));
-                mb->setTick(ctx.tick());
+                MeasureBase *mb = to_measure_base(Factory::create_item_by_name(tag, ctx.dummy()));
+                mb->set_tick(ctx.tick());
                 score->measures()->append(mb);
 
                 // This default value needs initialising after being added to the score, as it depends on whether this is the title frame
-                mb->setSizeIsSpatiumDependent(mb->propertyDefault(Pid::SIZE_SPATIUM_DEPENDENT).toBool());
+                mb->set_size_is_spatium_dependent(mb->property_default(Pid::SIZE_SPATIUM_DEPENDENT).to_bool());
 
-                TRead::readItem(mb, e, ctx);
+                TRead::read_item(mb, e, ctx);
             } else if (tag == "tick") {
-                ctx.setTick(Fraction::fromTicks(ctx.fileDivision(e.readInt())));
+                ctx.set_tick(Fraction::from_ticks(ctx.file_division(e.read_int())));
             } else {
                 e.unknown();
             }
         }
     } else {
-        Measure *measure = score->firstMeasure();
-        while (e.readNextStartElement()) {
+        Measure *measure = score->first_measure();
+        while (e.read_next_start_element()) {
             const AsciiStringView tag(e.name());
 
             if (tag == "Measure") {
                 if (measure == 0) {
                     LOGD("Score::readStaff(): missing measure!");
-                    measure = Factory::createMeasure(ctx.score());
-                    measure->setTick(ctx.tick());
+                    measure = Factory::create_measure(ctx.score());
+                    measure->set_tick(ctx.tick());
                     score->measures()->append(measure);
                 }
-                ctx.setTick(measure->tick());
-                ctx.setCurrentMeasureIndex(measureIdx++);
-                MeasureRead::readMeasure(measure, e, ctx, staff);
-                measure->checkMeasure(staff);
-                if (measure->isMMRest()) {
-                    measure = ctx.lastMeasure()->nextMeasure();
+                ctx.set_tick(measure->tick());
+                ctx.set_current_measure_index(measure_idx++);
+                MeasureRead::read_measure(measure, e, ctx, staff);
+                measure->check_measure(staff);
+                if (measure->is_mm_rest()) {
+                    measure = ctx.last_measure()->next_measure();
                 } else {
-                    ctx.setLastMeasure(measure);
-                    if (measure->mmRest()) {
-                        measure = measure->mmRest();
+                    ctx.set_last_measure(measure);
+                    if (measure->mm_rest()) {
+                        measure = measure->mm_rest();
                     } else {
-                        measure = measure->nextMeasure();
+                        measure = measure->next_measure();
                     }
                 }
             } else if (tag == "tick") {
-                ctx.setTick(Fraction::fromTicks(ctx.fileDivision(e.readInt())));
+                ctx.set_tick(Fraction::from_ticks(ctx.file_division(e.read_int())));
             } else {
                 e.unknown();
             }

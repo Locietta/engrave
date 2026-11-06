@@ -40,7 +40,7 @@ public:
 protected:
     friend class TextLineBaseSegment;
 
-    void doComputeEndElement() override;
+    void do_compute_end_element() override;
 };
 } // namespace mu::engraving
 

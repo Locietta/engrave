@@ -54,20 +54,20 @@ using namespace mu::engraving;
 //    moves selected notes into specified voice if possible
 //---------------------------------------------------------
 
-void EditVoice::changeSelectedElementsVoice(Transaction &, Score *score, voice_idx_t voice) {
-    auto isOperationValid = [](Score *score, track_idx_t origTrack, track_idx_t dstTrack) {
+void EditVoice::change_selected_elements_voice(Transaction &, Score *score, voice_idx_t voice) {
+    auto is_operation_valid = [](Score *score, track_idx_t orig_track, track_idx_t dst_track) {
         Excerpt *excerpt = score->excerpt();
         if (!excerpt) {
             return true;
         }
 
-        const track_idx_t dstTrackMapped = muse::key(excerpt->tracksMapping(), dstTrack, muse::nidx);
-        if (dstTrackMapped == muse::nidx) {
+        const track_idx_t dst_track_mapped = muse::key(excerpt->tracks_mapping(), dst_track, muse::nidx);
+        if (dst_track_mapped == muse::nidx) {
             return false;
         }
 
-        const track_idx_t origTrackMapped = muse::key(excerpt->tracksMapping(), origTrack, muse::nidx);
-        if (origTrackMapped == dstTrack) {
+        const track_idx_t orig_track_mapped = muse::key(excerpt->tracks_mapping(), orig_track, muse::nidx);
+        if (orig_track_mapped == dst_track) {
             return false;
         }
 
@@ -76,26 +76,26 @@ void EditVoice::changeSelectedElementsVoice(Transaction &, Score *score, voice_i
 
     // Track groups of parentheses to recreate in new chord
     struct MovedParenGroup {
-        Chord *dstChord = nullptr;
+        Chord *dst_chord = nullptr;
         bool generated = false;
-        bool leftVisible = true;
-        bool rightVisible = true;
-        PointF leftOffset = PointF();
-        PointF rightOffset = PointF();
+        bool left_visible = true;
+        bool right_visible = true;
+        PointF left_offset = PointF();
+        PointF right_offset = PointF();
         std::vector<Note *> notes;
     };
 
-    std::map<const NoteParenthesisInfo *, MovedParenGroup> movedParenGroups;
+    std::map<const NoteParenthesisInfo *, MovedParenGroup> moved_paren_groups;
 
-    std::vector<EngravingItem *> newElements;
+    std::vector<EngravingItem *> new_elements;
     std::vector<EngravingItem *> oel = score->selection().elements(); // make copy
     for (EngravingItem *e : oel) {
-        if (e->isNote()) {
-            Note *note = toNote(e);
+        if (e->is_note()) {
+            Note *note = to_note(e);
             Chord *chord = note->chord();
 
             // move grace notes with main chord only
-            if (chord->isGrace() || chord->isTrillCueNote()) {
+            if (chord->is_grace() || chord->is_trill_cue_note()) {
                 continue;
             }
 
@@ -103,288 +103,288 @@ void EditVoice::changeSelectedElementsVoice(Transaction &, Score *score, voice_i
                 continue;
             }
 
-            Score *elementScore = score;
-            if (score->excerpt() && !chord->staff()->isVoiceVisible(voice)) {
+            Score *element_score = score;
+            if (score->excerpt() && !chord->staff()->is_voice_visible(voice)) {
                 // We are on a linked stave with the desired voice not visible
                 // Get note in main score to continue
-                note = toNote(note->findLinkedInScore(score->masterScore()));
+                note = to_note(note->find_linked_in_score(score->master_score()));
                 chord = note->chord();
-                elementScore = score->masterScore();
+                element_score = score->master_score();
             }
             Segment *s = chord->segment();
             Measure *m = s->measure();
             size_t notes = chord->notes().size();
-            track_idx_t dstTrack = chord->staffIdx() * VOICES + voice;
-            ChordRest *dstCR = toChordRest(s->element(dstTrack));
-            Chord *dstChord = nullptr;
+            track_idx_t dst_track = chord->staff_idx() * ::mu::engraving::voices + voice;
+            ChordRest *dst_cr = to_chord_rest(s->element(dst_track));
+            Chord *dst_chord = nullptr;
 
-            if (!isOperationValid(elementScore, chord->track(), dstTrack)) {
+            if (!is_operation_valid(element_score, chord->track(), dst_track)) {
                 continue;
             }
 
             // set up destination chord
 
-            if (dstCR && dstCR->globalTicks() == chord->globalTicks()) {
+            if (dst_cr && dst_cr->global_ticks() == chord->global_ticks()) {
                 // existing chord/rest in destination with correct duration
                 //   this case allows for tuplets, unlike the more general case below
-                if (dstCR->isChord()) {
+                if (dst_cr->is_chord()) {
                     // can simply move note in
-                    dstChord = toChord(dstCR);
+                    dst_chord = to_chord(dst_cr);
                 } else {
                     // replace rest with chord, then move note in
-                    dstChord = Factory::createChord(s);
-                    dstChord->setTrack(dstTrack);
-                    dstChord->setDurationType(chord->durationType());
-                    dstChord->setTicks(chord->ticks());
-                    dstChord->setTuplet(dstCR->tuplet());
-                    elementScore->undoRemoveElement(dstCR);
+                    dst_chord = Factory::create_chord(s);
+                    dst_chord->set_track(dst_track);
+                    dst_chord->set_duration_type(chord->duration_type());
+                    dst_chord->set_ticks(chord->ticks());
+                    dst_chord->set_tuplet(dst_cr->tuplet());
+                    element_score->undo_remove_element(dst_cr);
                 }
             } else if (!chord->tuplet()) {
                 // rests or gap in destination
                 //   insert new chord if the rests / gap are long enough
                 //   then move note in
-                bool hasIncompatibleTuplet = false;
-                const Chord *cBefore = nullptr;
-                const Chord *cAfterStart = nullptr;
-                for (const Segment *s2 = m->first(SegmentType::ChordRest); s2; s2 = s2->next(SegmentType::ChordRest)) {
-                    const ChordRest *cr2 = toChordRest(s2->element(dstTrack));
+                bool has_incompatible_tuplet = false;
+                const Chord *c_before = nullptr;
+                const Chord *c_after_start = nullptr;
+                for (const Segment *s2 = m->first(SegmentType::CHORD_REST); s2; s2 = s2->next(SegmentType::CHORD_REST)) {
+                    const ChordRest *cr2 = to_chord_rest(s2->element(dst_track));
                     if (!cr2) {
                         continue;
                     }
-                    if (const Tuplet *topTuplet = cr2->topTuplet()) {
-                        if (topTuplet->tick() < s->tick() && topTuplet->endTick() > s->tick()) {
-                            hasIncompatibleTuplet = true;
+                    if (const Tuplet *top_tuplet = cr2->top_tuplet()) {
+                        if (top_tuplet->tick() < s->tick() && top_tuplet->end_tick() > s->tick()) {
+                            has_incompatible_tuplet = true;
                             break;
                         }
-                        if (topTuplet->tick() < chord->endTick() && topTuplet->endTick() > chord->endTick()) {
-                            hasIncompatibleTuplet = true;
+                        if (top_tuplet->tick() < chord->end_tick() && top_tuplet->end_tick() > chord->end_tick()) {
+                            has_incompatible_tuplet = true;
                             break;
                         }
                     }
-                    if (!cr2->isChord()) {
+                    if (!cr2->is_chord()) {
                         continue;
                     }
                     if (s2->tick() < s->tick()) {
-                        cBefore = toChord(cr2);
+                        c_before = to_chord(cr2);
                     }
                     if (s2->tick() >= s->tick()) {
-                        cAfterStart = toChord(cr2);
+                        c_after_start = to_chord(cr2);
                     }
-                    if (s2->tick() >= chord->endTick()) {
+                    if (s2->tick() >= chord->end_tick()) {
                         break;
                     }
                 }
-                if (hasIncompatibleTuplet) {
+                if (has_incompatible_tuplet) {
                     continue;
                 }
-                if (cBefore && cBefore->endTick() > s->tick()) {
+                if (c_before && c_before->end_tick() > s->tick()) {
                     // previous chord overlaps
                     continue;
                 }
-                if (cAfterStart && cAfterStart->tick() < chord->endTick()) {
+                if (c_after_start && c_after_start->tick() < chord->end_tick()) {
                     // next chord overlaps
                     continue;
                 }
                 // big enough gap found
-                dstChord = Factory::createChord(s);
-                dstChord->setTrack(dstTrack);
-                dstChord->setDurationType(chord->durationType());
-                dstChord->setTicks(chord->ticks());
+                dst_chord = Factory::create_chord(s);
+                dst_chord->set_track(dst_track);
+                dst_chord->set_duration_type(chord->duration_type());
+                dst_chord->set_ticks(chord->ticks());
                 // makeGapVoice will not back-fill an empty voice
-                if (voice && !dstCR) {
-                    elementScore->expandVoice(s, /*m->first(SegmentType::ChordRest,*/ dstTrack);
+                if (voice && !dst_cr) {
+                    element_score->expand_voice(s, /*m->first(SegmentType::ChordRest,*/ dst_track);
                 }
-                elementScore->makeGapVoice(s, dstTrack, chord->ticks(), s->tick());
+                element_score->make_gap_voice(s, dst_track, chord->ticks(), s->tick());
             }
 
-            if (!dstChord) {
+            if (!dst_chord) {
                 continue;
             }
 
             // move note to destination chord
 
             // create & add new note
-            Note *newNote = Factory::copyNote(*note);
-            newNote->setSelected(false);
-            newNote->setOwnershipParent(dstChord);
-            elementScore->undoAddElement(newNote);
-            newElements.push_back(newNote);
+            Note *new_note = Factory::copy_note(*note);
+            new_note->set_selected(false);
+            new_note->set_ownership_parent(dst_chord);
+            element_score->undo_add_element(new_note);
+            new_elements.push_back(new_note);
             // add new chord if one was created
-            if (dstChord != dstCR) {
-                elementScore->undoAddCR(dstChord, m, s->tick());
+            if (dst_chord != dst_cr) {
+                element_score->undo_add_cr(dst_chord, m, s->tick());
             }
-            for (EngravingObject *linked : note->linkList()) {
-                Note *linkedNote = toNote(linked);
-                Note *linkedNewNote = linked == note ? newNote : toNote(newNote->findLinkedInStaff(linkedNote->staff()));
+            for (EngravingObject *linked : note->link_list()) {
+                Note *linked_note = to_note(linked);
+                Note *linked_new_note = linked == note ? new_note : to_note(new_note->find_linked_in_staff(linked_note->staff()));
                 // reconnect the tie to this note, if any
-                Tie *tie = linkedNote->tieBack();
+                Tie *tie = linked_note->tie_back();
                 if (tie) {
-                    Note *startNote = tie->isPartialTie() && !toPartialTie(tie)->isOutgoing() ? nullptr : tie->startNote();
-                    elementScore->undoChangeSpannerElements(tie, startNote, linkedNewNote);
+                    Note *start_note = tie->is_partial_tie() && !to_partial_tie(tie)->is_outgoing() ? nullptr : tie->start_note();
+                    element_score->undo_change_spanner_elements(tie, start_note, linked_new_note);
                 }
                 // reconnect the tie from this note, if any
-                tie = linkedNote->tieFor();
+                tie = linked_note->tie_for();
                 if (tie) {
-                    elementScore->undoChangeSpannerElements(tie, linkedNewNote, tie->endNote());
+                    element_score->undo_change_spanner_elements(tie, linked_new_note, tie->end_note());
                 }
 
                 // Reconnect note anchored spanners
-                for (EngravingItem *item : linkedNote->spannerBack()) {
-                    if (!item || !item->isSpanner()) {
+                for (EngravingItem *item : linked_note->spanner_back()) {
+                    if (!item || !item->is_spanner()) {
                         continue;
                     }
-                    Spanner *spanner = toSpanner(item);
-                    elementScore->undoChangeSpannerElements(spanner, spanner->startElement(), linkedNewNote);
+                    Spanner *spanner = to_spanner(item);
+                    element_score->undo_change_spanner_elements(spanner, spanner->start_element(), linked_new_note);
                 }
 
-                for (EngravingItem *item : linkedNote->spannerFor()) {
-                    if (!item || !item->isSpanner()) {
+                for (EngravingItem *item : linked_note->spanner_for()) {
+                    if (!item || !item->is_spanner()) {
                         continue;
                     }
-                    Spanner *spanner = toSpanner(item);
-                    elementScore->undoChangeSpannerElements(spanner, linkedNewNote, spanner->endElement());
+                    Spanner *spanner = to_spanner(item);
+                    element_score->undo_change_spanner_elements(spanner, linked_new_note, spanner->end_element());
                 }
             }
 
             // Move paren to corresponding group in new chord
-            if (!chord->noteParentheses().empty()) {
-                const NoteParenthesisInfo *noteParenInfo = chord->findNoteParenthesisInfo(note);
-                if (noteParenInfo) {
-                    Parenthesis *leftParen = noteParenInfo->leftParen();
-                    Parenthesis *rightParen = noteParenInfo->rightParen();
-                    DO_ASSERT(leftParen && rightParen);
-                    if (leftParen && rightParen) {
-                        bool generated = leftParen->generated();
-                        MovedParenGroup &movedGroup = movedParenGroups[noteParenInfo];
-                        movedGroup.dstChord = dstChord;
-                        movedGroup.generated = generated;
-                        movedGroup.notes.push_back(newNote);
-                        movedGroup.leftOffset = leftParen->offset();
-                        movedGroup.rightOffset = rightParen->offset();
-                        movedGroup.leftVisible = leftParen->visible();
-                        movedGroup.rightVisible = rightParen->visible();
-                        EditChord::removeChordParentheses(chord, {note}, /*addToLinked*/ true, generated);
+            if (!chord->note_parentheses().empty()) {
+                const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(note);
+                if (note_paren_info) {
+                    Parenthesis *left_paren = note_paren_info->left_paren();
+                    Parenthesis *right_paren = note_paren_info->right_paren();
+                    DO_ASSERT(left_paren && right_paren);
+                    if (left_paren && right_paren) {
+                        bool generated = left_paren->generated();
+                        MovedParenGroup &moved_group = moved_paren_groups[note_paren_info];
+                        moved_group.dst_chord = dst_chord;
+                        moved_group.generated = generated;
+                        moved_group.notes.push_back(new_note);
+                        moved_group.left_offset = left_paren->offset();
+                        moved_group.right_offset = right_paren->offset();
+                        moved_group.left_visible = left_paren->visible();
+                        moved_group.right_visible = right_paren->visible();
+                        EditChord::remove_chord_parentheses(chord, {note}, /*addToLinked*/ true, generated);
                     }
                 }
             }
 
             // remove original note
             if (notes > 1) {
-                elementScore->undoRemoveElement(note);
+                element_score->undo_remove_element(note);
             } else if (notes == 1) {
                 // take care of slurs
-                int currentTick = chord->tick().ticks();
-                for (auto it : elementScore->spannerMap().findOverlapping(currentTick, currentTick + 1)) {
+                int current_tick = chord->tick().ticks();
+                for (auto it : element_score->spanner_map().find_overlapping(current_tick, current_tick + 1)) {
                     Spanner *spanner = it.value;
-                    if (!spanner->isSlur()) {
+                    if (!spanner->is_slur()) {
                         continue;
                     }
-                    Slur *slur = toSlur(spanner);
-                    if (slur->startElement() == chord && slur->endElement() == chord) {
-                        elementScore->undoChangeSpannerElements(slur, dstChord, dstChord);
-                        slur->undoChangeProperty(Pid::VOICE, voice);
-                    } else if (slur->startElement() == chord) {
-                        elementScore->undoChangeSpannerElements(slur, dstChord, slur->endElement());
-                    } else if (slur->endElement() == chord) {
-                        elementScore->undoChangeSpannerElements(slur, slur->startElement(), dstChord);
+                    Slur *slur = to_slur(spanner);
+                    if (slur->start_element() == chord && slur->end_element() == chord) {
+                        element_score->undo_change_spanner_elements(slur, dst_chord, dst_chord);
+                        slur->undo_change_property(Pid::VOICE, voice);
+                    } else if (slur->start_element() == chord) {
+                        element_score->undo_change_spanner_elements(slur, dst_chord, slur->end_element());
+                    } else if (slur->end_element() == chord) {
+                        element_score->undo_change_spanner_elements(slur, slur->start_element(), dst_chord);
                     }
                 }
                 // move articulations
                 for (Articulation *artic : chord->articulations()) {
-                    if (dstChord->hasArticulation(artic)) {
+                    if (dst_chord->has_articulation(artic)) {
                         continue;
                     }
-                    elementScore->undoChangeParent(artic, dstChord, dstChord->staffIdx());
+                    element_score->undo_change_parent(artic, dst_chord, dst_chord->staff_idx());
                 }
                 // create rest to leave behind
-                Rest *r = Factory::createRest(s);
-                r->setTrack(chord->track());
-                r->setDurationType(chord->durationType());
-                r->setTicks(chord->ticks());
-                r->setTuplet(chord->tuplet());
+                Rest *r = Factory::create_rest(s);
+                r->set_track(chord->track());
+                r->set_duration_type(chord->duration_type());
+                r->set_ticks(chord->ticks());
+                r->set_tuplet(chord->tuplet());
                 // if there were grace notes, move them
-                while (!chord->graceNotes().empty()) {
-                    Chord *gc = chord->graceNotes().front();
-                    Chord *ngc = Factory::copyChord(*gc);
-                    elementScore->undoRemoveElement(gc);
-                    ngc->setOwnershipParent(dstChord);
-                    ngc->setTrack(dstChord->track());
-                    elementScore->undoAddElement(ngc);
+                while (!chord->grace_notes().empty()) {
+                    Chord *gc = chord->grace_notes().front();
+                    Chord *ngc = Factory::copy_chord(*gc);
+                    element_score->undo_remove_element(gc);
+                    ngc->set_ownership_parent(dst_chord);
+                    ngc->set_track(dst_chord->track());
+                    element_score->undo_add_element(ngc);
                 }
                 // remove chord, replace with rest
-                elementScore->undoRemoveElement(chord);
-                elementScore->undoAddCR(r, m, s->tick());
+                element_score->undo_remove_element(chord);
+                element_score->undo_add_cr(r, m, s->tick());
             }
 
             // Move lyrics
             for (Lyrics *lyric : chord->lyrics()) {
-                if (!lyric || dstChord->lyrics(lyric->verse(), lyric->placement())) {
+                if (!lyric || dst_chord->lyrics(lyric->verse(), lyric->placement())) {
                     continue;
                 }
 
-                Lyrics *newLyric = Factory::copyLyrics(*lyric);
-                newLyric->setOwnershipParent(dstChord);
-                newLyric->setSelected(false);
-                newLyric->setTrack(dstTrack);
-                elementScore->undoAddElement(newLyric);
-                newElements.push_back(newLyric);
+                Lyrics *new_lyric = Factory::copy_lyrics(*lyric);
+                new_lyric->set_ownership_parent(dst_chord);
+                new_lyric->set_selected(false);
+                new_lyric->set_track(dst_track);
+                element_score->undo_add_element(new_lyric);
+                new_elements.push_back(new_lyric);
 
-                elementScore->undoRemoveElement(lyric);
+                element_score->undo_remove_element(lyric);
             }
-        } else if (e->hasVoiceAssignmentProperties()) {
-            if (e->isSpannerSegment()) {
-                e = toSpannerSegment(e)->spanner();
+        } else if (e->has_voice_assignment_properties()) {
+            if (e->is_spanner_segment()) {
+                e = to_spanner_segment(e)->spanner();
             }
 
-            track_idx_t dstTrack = e->staffIdx() * VOICES + voice;
-            if (!isOperationValid(score, e->track(), dstTrack)) {
+            track_idx_t dst_track = e->staff_idx() * ::mu::engraving::voices + voice;
+            if (!is_operation_valid(score, e->track(), dst_track)) {
                 continue;
             }
 
-            e->undoChangeProperty(Pid::VOICE, voice);
-            e->undoChangeProperty(Pid::VOICE_ASSIGNMENT, VoiceAssignment::CURRENT_VOICE_ONLY);
-            newElements.push_back(e);
+            e->undo_change_property(Pid::VOICE, voice);
+            e->undo_change_property(Pid::VOICE_ASSIGNMENT, VoiceAssignment::CURRENT_VOICE_ONLY);
+            new_elements.push_back(e);
         }
     }
 
     // Recreate parenthesis groups
-    for (auto &pair : movedParenGroups) {
-        MovedParenGroup &movedGroup = pair.second;
-        IF_ASSERT_FAILED(!movedGroup.notes.empty()) { continue; }
-        EditChord::addChordParentheses(movedGroup.dstChord, movedGroup.notes, /*addToLinked*/ true, movedGroup.generated);
+    for (auto &pair : moved_paren_groups) {
+        MovedParenGroup &moved_group = pair.second;
+        IF_ASSERT_FAILED(!moved_group.notes.empty()) { continue; }
+        EditChord::add_chord_parentheses(moved_group.dst_chord, moved_group.notes, /*addToLinked*/ true, moved_group.generated);
 
-        const NoteParenthesisInfo *info = movedGroup.notes.front()->parenthesisInfo();
-        Parenthesis *leftParen = info ? info->leftParen() : nullptr;
-        Parenthesis *rightParen = info ? info->rightParen() : nullptr;
+        const NoteParenthesisInfo *info = moved_group.notes.front()->parenthesis_info();
+        Parenthesis *left_paren = info ? info->left_paren() : nullptr;
+        Parenthesis *right_paren = info ? info->right_paren() : nullptr;
 
-        IF_ASSERT_FAILED(info && leftParen && rightParen) { continue; }
+        IF_ASSERT_FAILED(info && left_paren && right_paren) { continue; }
 
-        leftParen->undoSetVisible(movedGroup.leftVisible);
-        rightParen->undoSetVisible(movedGroup.rightVisible);
-        leftParen->undoChangeProperty(Pid::OFFSET, movedGroup.leftOffset);
-        rightParen->undoChangeProperty(Pid::OFFSET, movedGroup.rightOffset);
+        left_paren->undo_set_visible(moved_group.left_visible);
+        right_paren->undo_set_visible(moved_group.right_visible);
+        left_paren->undo_change_property(Pid::OFFSET, moved_group.left_offset);
+        right_paren->undo_change_property(Pid::OFFSET, moved_group.right_offset);
     }
 
-    if (!newElements.empty()) {
+    if (!new_elements.empty()) {
         score->selection().clear();
-        score->select(newElements, SelectType::ADD, muse::nidx);
+        score->select(new_elements, SelectType::ADD, muse::nidx);
     }
 
-    score->setLayoutAll();
+    score->set_layout_all();
 }
 
-void EditVoice::changeSelectedElementsVoiceAssignment(Transaction &, Score *score, VoiceAssignment voiceAssignment) {
-    std::vector<EngravingItem *> newElements;
+void EditVoice::change_selected_elements_voice_assignment(Transaction &, Score *score, VoiceAssignment voice_assignment) {
+    std::vector<EngravingItem *> new_elements;
 
     for (EngravingItem *e : score->selection().elements()) {
-        if (e->hasVoiceAssignmentProperties()) {
-            e->undoChangeProperty(Pid::VOICE_ASSIGNMENT, voiceAssignment);
-            newElements.push_back(e);
+        if (e->has_voice_assignment_properties()) {
+            e->undo_change_property(Pid::VOICE_ASSIGNMENT, voice_assignment);
+            new_elements.push_back(e);
         }
     }
 
-    if (!newElements.empty()) {
+    if (!new_elements.empty()) {
         score->selection().clear();
-        score->select(newElements, SelectType::ADD, muse::nidx);
+        score->select(new_elements, SelectType::ADD, muse::nidx);
     }
 }

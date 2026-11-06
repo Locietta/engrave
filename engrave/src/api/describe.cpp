@@ -49,7 +49,7 @@ std::string_view group_name(PropertyGroup group) {
 }
 
 template <typename Info>
-void fill_value_shape(Info &info, api::P_TYPE type) {
+void fill_value_shape(Info &info, api::PType type) {
     info.kind = api::kind_of(type);
     info.unit = api::unit_of(type);
     for (const std::string_view token : api::enum_tokens(type)) info.enum_tokens.emplace_back(token);
@@ -62,10 +62,10 @@ TypeInfo type_info(const TypePids &row) {
         const PidEntry &entry = pid_support[i];
         PropInfo prop;
         prop.name = api::name_of(entry.pid);
-        fill_value_shape(prop, mu::engraving::propertyType(entry.pid));
+        fill_value_shape(prop, mu::engraving::property_type(entry.pid));
         prop.settable = entry.settable;
-        prop.link = mu::engraving::propertyLink(entry.pid);
-        prop.group = group_name(mu::engraving::propertyGroup(entry.pid));
+        prop.link = mu::engraving::property_link(entry.pid);
+        prop.group = group_name(mu::engraving::property_group(entry.pid));
         info.props.push_back(std::move(prop));
     }
     std::ranges::sort(info.props, {}, &PropInfo::name);
@@ -76,7 +76,7 @@ TypeInfo type_info(const TypePids &row) {
 std::string_view api::name_of(Pid pid) {
     for (const PidName &row : pid_names)
         if (row.pid == pid) return row.name;
-    return mu::engraving::propertyName(pid);
+    return mu::engraving::property_name(pid);
 }
 
 Pid api::pid_of(std::string_view name) {
@@ -122,12 +122,12 @@ Result<TypeInfo> Engine::describe(std::string_view type) const {
 std::vector<StyleInfo> Engine::describe_styles() const {
     impl_->state.check_thread();
     std::vector<StyleInfo> styles;
-    styles.reserve(StyleDef::styleValues.size());
-    for (const StyleDef::StyleValue &value : StyleDef::styleValues) {
+    styles.reserve(StyleDef::style_values.size());
+    for (const StyleDef::StyleValue &value : StyleDef::style_values) {
         StyleInfo info;
-        info.name = value.xmlName.ascii();
-        fill_value_shape(info, value.valueType());
-        info.default_value = api::to_value(value.valueType(), value.defaultValue);
+        info.name = value.xml_name.ascii();
+        fill_value_shape(info, value.value_type());
+        info.default_value = api::to_value(value.value_type(), value.default_value);
         styles.push_back(std::move(info));
     }
     return styles;

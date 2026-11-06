@@ -34,15 +34,15 @@ public:
 
     virtual bool saved() const = 0;
 
-    virtual muse::io::path_t path() const = 0; //! Absolute path
-    virtual muse::io::path_t fileName(bool includingExtension = true) const = 0;
-    virtual muse::io::path_t absoluteDirPath() const = 0; //! Absolute path of the containing folder
+    virtual muse::io::PathT path() const = 0; //! Absolute path
+    virtual muse::io::PathT file_name(bool including_extension = true) const = 0;
+    virtual muse::io::PathT absolute_dir_path() const = 0; //! Absolute path of the containing folder
 
-    virtual muse::String displayName() const = 0;
+    virtual muse::String display_name() const = 0;
 
-    virtual muse::DateTime birthTime() const = 0;
-    virtual muse::DateTime lastModified() const = 0;
-    virtual bool isNewlyCreated() const = 0;
+    virtual muse::DateTime birth_time() const = 0;
+    virtual muse::DateTime last_modified() const = 0;
+    virtual bool is_newly_created() const = 0;
 };
 
 using IFileInfoProviderPtr = std::shared_ptr<IFileInfoProvider>;

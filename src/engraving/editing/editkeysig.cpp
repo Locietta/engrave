@@ -43,97 +43,97 @@ using namespace mu::engraving;
 //   ChangeKeySig
 //---------------------------------------------------------
 
-ChangeKeySig::ChangeKeySig(KeySig *k, KeySigEvent newKeySig, bool sc, bool addEvtToStaff)
-    : keysig(k), ks(newKeySig), showCourtesy(sc), evtInStaff(addEvtToStaff) {}
+ChangeKeySig::ChangeKeySig(KeySig *k, KeySigEvent new_key_sig, bool sc, bool add_evt_to_staff)
+    : keysig(k), ks(new_key_sig), show_courtesy(sc), evt_in_staff(add_evt_to_staff) {}
 
 void ChangeKeySig::flip() {
     Segment *segment = keysig->segment();
     Fraction tick = segment->tick();
     Staff *staff = keysig->staff();
 
-    const bool curEvtInStaff = (staff->currentKeyTick(tick) == tick);
-    KeySigEvent curKey = keysig->keySigEvent();
-    const bool curShowCourtesy = keysig->showCourtesy();
+    const bool cur_evt_in_staff = (staff->current_key_tick(tick) == tick);
+    KeySigEvent cur_key = keysig->key_sig_event();
+    const bool cur_show_courtesy = keysig->show_courtesy();
 
-    keysig->setKeySigEvent(ks);
-    keysig->setShowCourtesy(showCourtesy);
+    keysig->set_key_sig_event(ks);
+    keysig->set_show_courtesy(show_courtesy);
 
     // Add/remove the corresponding key events, if appropriate.
-    if (evtInStaff) {
-        staff->setKey(tick, ks); // replace
-    } else if (curEvtInStaff) {
-        staff->removeKey(tick); // if nothing to add instead, just remove.
+    if (evt_in_staff) {
+        staff->set_key(tick, ks); // replace
+    } else if (cur_evt_in_staff) {
+        staff->remove_key(tick); // if nothing to add instead, just remove.
     }
     // If no keysig event corresponds to the key signature then this keysig
     // is probably generated. Otherwise it is probably added manually.
     // Set segment flags according to this, layout will change it if needed.
-    segment->setEnabled(evtInStaff);
-    segment->setHeader(!evtInStaff && segment->rtick() == Fraction(0, 1));
+    segment->set_enabled(evt_in_staff);
+    segment->set_header(!evt_in_staff && segment->rtick() == Fraction(0, 1));
 
-    showCourtesy = curShowCourtesy;
-    ks = curKey;
-    evtInStaff = curEvtInStaff;
-    keysig->triggerLayout();
-    keysig->score()->setLayout(keysig->staff()->nextKeyTick(tick), keysig->staffIdx());
+    show_courtesy = cur_show_courtesy;
+    ks = cur_key;
+    evt_in_staff = cur_evt_in_staff;
+    keysig->trigger_layout();
+    keysig->score()->set_layout(keysig->staff()->next_key_tick(tick), keysig->staff_idx());
 }
 
 //---------------------------------------------------------
 //   EditKeySig
 //---------------------------------------------------------
 
-void EditKeySig::undoChangeKeySig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key) {
+void EditKeySig::undo_change_key_sig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key) {
     KeySig *lks = 0;
-    bool needsUpdate = false;
+    bool needs_update = false;
 
-    for (Staff *staff : ostaff->staffList()) {
-        if (staff->isDrumStaff(tick)) {
+    for (Staff *staff : ostaff->staff_list()) {
+        if (staff->is_drum_staff(tick)) {
             continue;
         }
 
-        Score *staffScore = staff->score();
-        Measure *measure = staffScore->tick2measure(tick);
+        Score *staff_score = staff->score();
+        Measure *measure = staff_score->tick2measure(tick);
         if (!measure) {
             LOGW("measure for tick %d not found!", tick.ticks());
             continue;
         }
-        Segment *s = measure->undoGetSegment(SegmentType::KeySig, tick);
+        Segment *s = measure->undo_get_segment(SegmentType::KEY_SIG, tick);
 
-        staff_idx_t staffIdx = staff->idx();
-        track_idx_t track = staffIdx * VOICES;
-        KeySig *ks = toKeySig(s->element(track));
+        staff_idx_t staff_idx = staff->idx();
+        track_idx_t track = staff_idx * ::mu::engraving::voices;
+        KeySig *ks = to_key_sig(s->element(track));
 
         Interval interval = staff->part()->instrument(tick)->transpose();
-        Interval oldStaffInterval = staff->transpose(tick);
+        Interval old_staff_interval = staff->transpose(tick);
         KeySigEvent nkey = key;
-        bool concertPitch = staffScore->style().styleB(Sid::concertPitch);
+        bool concert_pitch = staff_score->style().style_b(Sid::CONCERT_PITCH);
 
-        if (interval.chromatic && !concertPitch && !nkey.isAtonal()) {
+        if (interval.chromatic && !concert_pitch && !nkey.is_atonal()) {
             interval.flip();
-            nkey.setKey(Transpose::transposeKey(key.concertKey(), interval, staff->part()->preferSharpFlat()));
+            nkey.set_key(Transpose::transpose_key(key.concert_key(), interval, staff->part()->prefer_sharp_flat()));
             interval.flip();
         }
 
-        staffScore->updateInstrumentChangeTranspositions(key, staff, tick);
+        staff_score->update_instrument_change_transpositions(key, staff, tick);
         if (ks) {
-            ks->undoChangeProperty(Pid::GENERATED, false);
-            tx.push(new ChangeKeySig(ks, nkey, ks->showCourtesy()));
+            ks->undo_change_property(Pid::GENERATED, false);
+            tx.push(new ChangeKeySig(ks, nkey, ks->show_courtesy()));
         } else {
-            KeySig *nks = Factory::createKeySig(s);
-            nks->setTrack(track);
-            nks->setKeySigEvent(nkey);
-            staffScore->doUndoAddElement(nks);
+            KeySig *nks = Factory::create_key_sig(s);
+            nks->set_track(track);
+            nks->set_key_sig_event(nkey);
+            staff_score->do_undo_add_element(nks);
             if (lks) {
                 tx.push(new Link(lks, nks));
             } else {
                 lks = nks;
             }
         }
-        if (interval != staff->transpose(tick) || interval != oldStaffInterval) {
-            needsUpdate = true;
+        if (interval != staff->transpose(tick) || interval != old_staff_interval) {
+            needs_update = true;
         }
     }
-    if (needsUpdate) {
-        Fraction tickEnd = Fraction::fromTicks(ostaff->keyList()->nextKeyTick(tick.ticks()));
-        Transpose::transpositionChanged(tx, score, ostaff->part(), ostaff->transpose(tick), tick, tickEnd);
+    if (needs_update) {
+        Fraction tick_end = Fraction::from_ticks(ostaff->key_list()->next_key_tick(tick.ticks()));
+        Transpose::transposition_changed(tx, score, ostaff->part(), ostaff->transpose(tick), tick, tick_end);
     }
 }

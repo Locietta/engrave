@@ -26,36 +26,36 @@ using namespace mu::engraving::rw;
 std::unordered_map<muse::String, HarmonyToDiagramReader::FretDiagramInfo> HarmonyToDiagramReader::read(XmlReader &reader) {
     std::unordered_map<String, HarmonyToDiagramReader::FretDiagramInfo> result;
 
-    while (reader.readNextStartElement()) {
+    while (reader.read_next_start_element()) {
         if (reader.name() != "Data") {
             break;
         }
 
-        while (reader.readNextStartElement()) {
+        while (reader.read_next_start_element()) {
             if (reader.name() == "HarmonyToDiagram") {
                 String harmony;
                 String diagram;
                 String pattern;
-                while (reader.readNextStartElement()) {
+                while (reader.read_next_start_element()) {
                     if (reader.name() == "Harmony") {
-                        while (reader.readNextStartElement()) {
+                        while (reader.read_next_start_element()) {
                             if (reader.name() == "name") {
-                                harmony = reader.readText();
+                                harmony = reader.read_text();
                             } else {
                                 reader.unknown();
                             }
                         }
                     } else if (reader.name() == "FretDiagram") {
-                        diagram = reader.readBody();
-                        reader.skipCurrentElement();
+                        diagram = reader.read_body();
+                        reader.skip_current_element();
                     } else if (reader.name() == "pattern") {
-                        pattern = reader.readText();
+                        pattern = reader.read_text();
                     } else {
                         reader.unknown();
                     }
                 }
 
-                if (!harmony.isEmpty() && !diagram.isEmpty()) {
+                if (!harmony.is_empty() && !diagram.is_empty()) {
                     result.insert({std::move(harmony), {std::move(diagram), std::move(pattern)}});
                 }
             } else {

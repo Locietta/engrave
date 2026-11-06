@@ -38,90 +38,90 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void HarmonyLayout::layoutHarmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
-    if (!item->ownershipParent()) {
-        ldata->setPos(0.0, 0.0);
-        const_cast<Harmony *>(item)->setOffset(0.0, 0.0);
+void HarmonyLayout::layout_harmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
+    if (!item->ownership_parent()) {
+        ldata->set_pos(0.0, 0.0);
+        const_cast<Harmony *>(item)->set_offset(0.0, 0.0);
     }
 
     if (!item->cursor()->editing()) {
         render(item, ldata, ctx);
     }
 
-    if (ldata->layoutInvalid) {
-        item->createBlocks(ldata);
+    if (ldata->layout_invalid) {
+        item->create_blocks(ldata);
     }
 
     if (ldata->blocks.empty()) {
         ldata->blocks.push_back(TextBlock());
     }
 
-    PointF positionPoint = calculateBoundingRect(item, ldata, ctx);
+    PointF position_point = calculate_bounding_rect(item, ldata, ctx);
 
-    if (item->isPolychord()) {
-        for (LineF &line : ldata->polychordDividerLines.mut_value()) {
-            line.setP1(PointF(ldata->bbox().left(), line.y1()));
-            line.setP2(PointF(ldata->bbox().right(), line.y2()));
+    if (item->is_polychord()) {
+        for (LineF &line : ldata->polychord_divider_lines.mut_value()) {
+            line.set_p1(PointF(ldata->bbox().left(), line.y1()));
+            line.set_p2(PointF(ldata->bbox().right(), line.y2()));
         }
     }
 
-    if (item->hasFrame()) {
-        item->layoutFrame(ldata);
+    if (item->has_frame()) {
+        item->layout_frame(ldata);
     }
 
-    ldata->setPos(positionPoint);
+    ldata->set_pos(position_point);
 
-    if (!item->cursor()->editing() && !ldata->renderItemList.value().empty()) {
-        ParenthesisLayout::layoutParentheses(item, ctx);
+    if (!item->cursor()->editing() && !ldata->render_item_list.value().empty()) {
+        ParenthesisLayout::layout_parentheses(item, ctx);
     }
 }
 
-PointF HarmonyLayout::calculateBoundingRect(const Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
-    const double ypos = (item->placeBelow() && item->staff()) ? item->staff()->staffHeight(item->tick()) : 0.0;
+PointF HarmonyLayout::calculate_bounding_rect(const Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
+    const double ypos = (item->place_below() && item->staff()) ? item->staff()->staff_height(item->tick()) : 0.0;
     const FretDiagram *fd =
-        (item->ownershipParent() && item->ownershipParent()->isFretDiagram()) ? toFretDiagram(item->ownershipParent()) : nullptr;
-    const bool alignToFretDiagram = fd && fd->visible();
+        (item->ownership_parent() && item->ownership_parent()->is_fret_diagram()) ? to_fret_diagram(item->ownership_parent()) : nullptr;
+    const bool align_to_fret_diagram = fd && fd->visible();
 
-    const double standardNoteWidth = item->symWidth(SymId::noteheadBlack);
+    const double standard_note_width = item->sym_width(SymId::NOTEHEAD_BLACK);
 
-    double newPosX = 0.0;
-    double newPosY = 0.0;
+    double new_pos_x = 0.0;
+    double new_pos_y = 0.0;
 
-    if (item->ldata()->renderItemList().empty()) {
-        TextLayout::layoutBaseTextBase1(item, ldata);
+    if (item->ldata()->render_item_list().empty()) {
+        TextLayout::layout_base_text_base1(item, ldata);
 
-        if (alignToFretDiagram) {
-            newPosY = ldata->pos().y();
+        if (align_to_fret_diagram) {
+            new_pos_y = ldata->pos().y();
         } else {
-            newPosY = ypos - ((item->align() == AlignV::BOTTOM) ? -ldata->bbox().height() : 0.0);
+            new_pos_y = ypos - ((item->align() == AlignV::BOTTOM) ? -ldata->bbox().height() : 0.0);
         }
     } else {
-        layoutModifierParentheses(item, ctx);
+        layout_modifier_parentheses(item, ctx);
         RectF bb;
-        RectF hAlignBox;
-        for (HarmonyRenderItem *renderItem : item->ldata()->renderItemList()) {
-            RectF tsBbox = renderItem->tightBoundingRect().translated(renderItem->x(), renderItem->y());
-            bb.unite(tsBbox);
+        RectF h_align_box;
+        for (HarmonyRenderItem *render_item : item->ldata()->render_item_list()) {
+            RectF ts_bbox = render_item->tight_bounding_rect().translated(render_item->x(), render_item->y());
+            bb.unite(ts_bbox);
 
-            if (renderItem->align()) {
-                hAlignBox.unite(tsBbox);
+            if (render_item->align()) {
+                h_align_box.unite(ts_bbox);
             }
         }
 
         double xx = 0.0;
-        if (alignToFretDiagram) {
-            switch (ctx.conf().styleV(Sid::chordAlignmentToFretboard).value<AlignH>()) {
+        if (align_to_fret_diagram) {
+            switch (ctx.conf().style_v(Sid::CHORD_ALIGNMENT_TO_FRETBOARD).value<AlignH>()) {
                 case AlignH::LEFT:
-                case AlignH::JUSTIFY: xx = -hAlignBox.left(); break;
-                case AlignH::HCENTER: xx = -(hAlignBox.center().x()); break;
-                case AlignH::RIGHT: xx = -hAlignBox.right(); break;
+                case AlignH::JUSTIFY: xx = -h_align_box.left(); break;
+                case AlignH::HCENTER: xx = -(h_align_box.center().x()); break;
+                case AlignH::RIGHT: xx = -h_align_box.right(); break;
             }
         } else {
             switch (item->position()) {
                 case AlignH::LEFT:
-                case AlignH::JUSTIFY: xx = -hAlignBox.left(); break;
-                case AlignH::HCENTER: xx = -(hAlignBox.center().x()); break;
-                case AlignH::RIGHT: xx = -hAlignBox.right(); break;
+                case AlignH::JUSTIFY: xx = -h_align_box.left(); break;
+                case AlignH::HCENTER: xx = -(h_align_box.center().x()); break;
+                case AlignH::RIGHT: xx = -h_align_box.right(); break;
             }
         }
 
@@ -129,183 +129,183 @@ PointF HarmonyLayout::calculateBoundingRect(const Harmony *item, Harmony::Layout
         if (item->align() == AlignV::VCENTER) {
             yy = -bb.y() / 2.0;
         } else if (item->align() == AlignV::BASELINE) {
-            yy = item->baseLine();
+            yy = item->base_line();
         } else if (item->align() == AlignV::BOTTOM) {
             yy = -bb.height() - bb.y();
         }
 
-        if (alignToFretDiagram) {
-            double nutLineWidth = fd->ldata()->nutLineWidth;
-            newPosY = yy - ctx.conf().styleAbsolute(Sid::harmonyFretDist) - nutLineWidth;
+        if (align_to_fret_diagram) {
+            double nut_line_width = fd->ldata()->nut_line_width;
+            new_pos_y = yy - ctx.conf().style_absolute(Sid::HARMONY_FRET_DIST) - nut_line_width;
         } else {
-            newPosY = ypos;
+            new_pos_y = ypos;
         }
 
-        for (HarmonyRenderItem *renderItem : item->ldata()->renderItemList()) {
-            renderItem->setOffset(PointF(xx, yy));
+        for (HarmonyRenderItem *render_item : item->ldata()->render_item_list()) {
+            render_item->set_offset(PointF(xx, yy));
         }
 
-        ldata->polychordDividerOffset = yy;
+        ldata->polychord_divider_offset = yy;
 
-        ldata->setBbox(bb.translated(xx, yy));
-        ldata->harmonyHeight = ldata->bbox().height();
+        ldata->set_bbox(bb.translated(xx, yy));
+        ldata->harmony_height = ldata->bbox().height();
     }
 
-    if (alignToFretDiagram) {
-        switch (ctx.conf().styleV(Sid::chordAlignmentToFretboard).value<AlignH>()) {
+    if (align_to_fret_diagram) {
+        switch (ctx.conf().style_v(Sid::CHORD_ALIGNMENT_TO_FRETBOARD).value<AlignH>()) {
             case AlignH::LEFT:
-            case AlignH::JUSTIFY: newPosX = 0.0; break;
-            case AlignH::HCENTER: newPosX = 0.5 * fd->mainWidth(); break;
-            case AlignH::RIGHT: newPosX = fd->mainWidth(); break;
+            case AlignH::JUSTIFY: new_pos_x = 0.0; break;
+            case AlignH::HCENTER: new_pos_x = 0.5 * fd->main_width(); break;
+            case AlignH::RIGHT: new_pos_x = fd->main_width(); break;
         }
     } else {
         switch (item->position()) {
             case AlignH::LEFT:
-            case AlignH::JUSTIFY: newPosX = 0.0; break;
-            case AlignH::HCENTER: newPosX = standardNoteWidth * 0.5; break;
-            case AlignH::RIGHT: newPosX = standardNoteWidth; break;
+            case AlignH::JUSTIFY: new_pos_x = 0.0; break;
+            case AlignH::HCENTER: new_pos_x = standard_note_width * 0.5; break;
+            case AlignH::RIGHT: new_pos_x = standard_note_width; break;
         }
     }
 
     if (fd && !fd->visible()) {
         // Translate to base position around note
-        newPosX -= fd->pos().x();
+        new_pos_x -= fd->pos().x();
     }
 
-    PointF newPos = PointF(newPosX, newPosY);
+    PointF new_pos = PointF(new_pos_x, new_pos_y);
 
-    if (!alignToFretDiagram) {
-        PointF defaultPos = item->defaultPos();
-        newPos += defaultPos;
+    if (!align_to_fret_diagram) {
+        PointF default_pos = item->default_pos();
+        new_pos += default_pos;
     }
 
-    return newPos;
+    return new_pos;
 }
 
-void HarmonyLayout::layoutModifierParentheses(const Harmony *item, const LayoutContext &ctx) {
+void HarmonyLayout::layout_modifier_parentheses(const Harmony *item, const LayoutContext &ctx) {
     const double spatium = item->spatium();
-    const std::vector<HarmonyRenderItem *> &itemList = item->ldata()->renderItemList();
-    const double smuflParens = ctx.conf().styleB(Sid::harmonyParenUseSmuflSym);
+    const std::vector<HarmonyRenderItem *> &item_list = item->ldata()->render_item_list();
+    const double smufl_parens = ctx.conf().style_b(Sid::HARMONY_PAREN_USE_SMUFL_SYM);
     // Layout parentheses
-    std::vector<ChordSymbolParen *> openingParenStack;
-    double lastTextSegHeight = 0.0;
-    double lastTextSegTop = 0.0;
-    double rootRefHeight = 0.0;
-    double rootCapHeight = 0.0;
-    double parenExtension = 0.1 * spatium * (item->size() / 10.0);
-    for (HarmonyRenderItem *renderItem : itemList) {
-        if (ChordSymbolParen *curParen = dynamic_cast<ChordSymbolParen *>(renderItem)) {
-            if (curParen->parenItem->direction() == DirectionH::LEFT) {
+    std::vector<ChordSymbolParen *> opening_paren_stack;
+    double last_text_seg_height = 0.0;
+    double last_text_seg_top = 0.0;
+    double root_ref_height = 0.0;
+    double root_cap_height = 0.0;
+    double paren_extension = 0.1 * spatium * (item->size() / 10.0);
+    for (HarmonyRenderItem *render_item : item_list) {
+        if (ChordSymbolParen *cur_paren = dynamic_cast<ChordSymbolParen *>(render_item)) {
+            if (cur_paren->paren_item->direction() == DirectionH::LEFT) {
                 // Opening paren
-                openingParenStack.push_back(curParen);
-                if (ctx.conf().styleB(Sid::harmonyParenUseSmuflSym)) {
-                    curParen->parenItem->mutldata()->symId = SymId::csymParensLeftTall;
+                opening_paren_stack.push_back(cur_paren);
+                if (ctx.conf().style_b(Sid::HARMONY_PAREN_USE_SMUFL_SYM)) {
+                    cur_paren->paren_item->mutldata()->sym_id = SymId::CSYM_PARENS_LEFT_TALL;
                 }
             } else {
                 // Closing paren
-                ChordSymbolParen *openingParen = openingParenStack.empty() ? nullptr : openingParenStack.back();
-                if (!openingParen) {
+                ChordSymbolParen *opening_paren = opening_paren_stack.empty() ? nullptr : opening_paren_stack.back();
+                if (!opening_paren) {
                     continue;
                 }
-                openingParenStack.pop_back();
-                curParen->top = openingParen->top;
-                curParen->bottom = openingParen->bottom;
+                opening_paren_stack.pop_back();
+                cur_paren->top = opening_paren->top;
+                cur_paren->bottom = opening_paren->bottom;
 
                 // Layout parenthesis pair
-                double startY = openingParen->top - parenExtension;
-                double height = (openingParen->bottom - openingParen->top) + 2 * parenExtension;
+                double start_y = opening_paren->top - paren_extension;
+                double height = (opening_paren->bottom - opening_paren->top) + 2 * paren_extension;
                 if (std::isinf(height)) {
-                    height = lastTextSegHeight;
+                    height = last_text_seg_height;
                 }
-                if (muse::RealIsEqual(DBL_MAX, startY)) {
-                    startY = lastTextSegTop;
+                if (muse::real_is_equal(DBL_MAX, start_y)) {
+                    start_y = last_text_seg_top;
                 }
 
-                if (smuflParens) {
-                    double symHeight = item->symHeight(SymId::csymParensRightTall);
-                    double scale = height / symHeight;
-                    curParen->parenItem->mutldata()->symId = SymId::csymParensRightTall;
-                    curParen->parenItem->mutldata()->symScale = scale;
-                    openingParen->parenItem->mutldata()->symScale = scale;
+                if (smufl_parens) {
+                    double sym_height = item->sym_height(SymId::CSYM_PARENS_RIGHT_TALL);
+                    double scale = height / sym_height;
+                    cur_paren->paren_item->mutldata()->sym_id = SymId::CSYM_PARENS_RIGHT_TALL;
+                    cur_paren->paren_item->mutldata()->sym_scale = scale;
+                    opening_paren->paren_item->mutldata()->sym_scale = scale;
 
-                    curParen->sety(startY + height);
-                    openingParen->sety(startY + height);
+                    cur_paren->sety(start_y + height);
+                    opening_paren->sety(start_y + height);
 
-                    ParenthesisLayout::createSmuflShape(openingParen->parenItem, openingParen->parenItem->mutldata());
-                    ParenthesisLayout::createSmuflShape(curParen->parenItem, curParen->parenItem->mutldata());
+                    ParenthesisLayout::create_smufl_shape(opening_paren->paren_item, opening_paren->paren_item->mutldata());
+                    ParenthesisLayout::create_smufl_shape(cur_paren->paren_item, cur_paren->paren_item->mutldata());
                 } else {
-                    const double scale = (height - 2 * parenExtension) / rootCapHeight;
-                    const double mag = openingParen->parenItem->ldata()->mag();
-                    static constexpr double HEIGHT_TO_WIDTH_RATIO = 20;
-                    const double midPointThickness = height / HEIGHT_TO_WIDTH_RATIO * mag * 1 / std::sqrt(scale);
-                    const double endPointThickness = 0.03;
+                    const double scale = (height - 2 * paren_extension) / root_cap_height;
+                    const double mag = opening_paren->paren_item->ldata()->mag();
+                    static constexpr double height_to_width_ratio = 20;
+                    const double mid_point_thickness = height / height_to_width_ratio * mag * 1 / std::sqrt(scale);
+                    const double end_point_thickness = 0.03;
                     const double shoulder = 0.2 * height * std::pow(mag, 0.1) * 1 / std::sqrt(scale);
 
-                    openingParen->parenItem->mutldata()->startY = startY;
-                    openingParen->sety(startY);
-                    openingParen->parenItem->mutldata()->height = height;
-                    openingParen->parenItem->mutldata()->midPointThickness.set_value(midPointThickness);
-                    openingParen->parenItem->mutldata()->endPointThickness.set_value(endPointThickness);
-                    openingParen->parenItem->mutldata()->shoulderWidth = shoulder;
+                    opening_paren->paren_item->mutldata()->start_y = start_y;
+                    opening_paren->sety(start_y);
+                    opening_paren->paren_item->mutldata()->height = height;
+                    opening_paren->paren_item->mutldata()->mid_point_thickness.set_value(mid_point_thickness);
+                    opening_paren->paren_item->mutldata()->end_point_thickness.set_value(end_point_thickness);
+                    opening_paren->paren_item->mutldata()->shoulder_width = shoulder;
 
-                    curParen->parenItem->mutldata()->startY = startY;
-                    curParen->sety(startY);
-                    curParen->parenItem->mutldata()->height = height;
-                    curParen->parenItem->mutldata()->midPointThickness.set_value(midPointThickness);
-                    curParen->parenItem->mutldata()->endPointThickness.set_value(endPointThickness);
-                    curParen->parenItem->mutldata()->shoulderWidth = shoulder;
+                    cur_paren->paren_item->mutldata()->start_y = start_y;
+                    cur_paren->sety(start_y);
+                    cur_paren->paren_item->mutldata()->height = height;
+                    cur_paren->paren_item->mutldata()->mid_point_thickness.set_value(mid_point_thickness);
+                    cur_paren->paren_item->mutldata()->end_point_thickness.set_value(end_point_thickness);
+                    cur_paren->paren_item->mutldata()->shoulder_width = shoulder;
 
-                    ParenthesisLayout::createPathAndShape(openingParen->parenItem, openingParen->parenItem->mutldata());
-                    ParenthesisLayout::createPathAndShape(curParen->parenItem, curParen->parenItem->mutldata());
+                    ParenthesisLayout::create_path_and_shape(opening_paren->paren_item, opening_paren->paren_item->mutldata());
+                    ParenthesisLayout::create_path_and_shape(cur_paren->paren_item, cur_paren->paren_item->mutldata());
                 }
 
-                double closingPos = openingParen->closingParenPos;
-                if (muse::RealIsEqual(-DBL_MAX, closingPos)) {
-                    closingPos = openingParen->x() + openingParen->boundingRect().width();
+                double closing_pos = opening_paren->closing_paren_pos;
+                if (muse::real_is_equal(-DBL_MAX, closing_pos)) {
+                    closing_pos = opening_paren->x() + opening_paren->bounding_rect().width();
                 }
-                curParen->setx(closingPos);
+                cur_paren->setx(closing_pos);
 
                 // Outer parens must always be the same length or longer than inner parens
-                for (ChordSymbolParen *outerParen : openingParenStack) {
-                    outerParen->top = std::min(openingParen->top, outerParen->top);
-                    outerParen->bottom = std::max(openingParen->bottom, outerParen->bottom);
-                    outerParen->closingParenPos = std::max(openingParen->closingParenPos, outerParen->closingParenPos);
+                for (ChordSymbolParen *outer_paren : opening_paren_stack) {
+                    outer_paren->top = std::min(opening_paren->top, outer_paren->top);
+                    outer_paren->bottom = std::max(opening_paren->bottom, outer_paren->bottom);
+                    outer_paren->closing_paren_pos = std::max(opening_paren->closing_paren_pos, outer_paren->closing_paren_pos);
                 }
             }
-        } else if (TextSegment *textSeg = dynamic_cast<TextSegment *>(renderItem)) {
+        } else if (TextSegment *text_seg = dynamic_cast<TextSegment *>(render_item)) {
             // Set top paren height
-            lastTextSegHeight = textSeg->height();
-            lastTextSegTop = textSeg->tightBoundingRect().translated(textSeg->pos()).y();
-            if (muse::RealIsNull(rootRefHeight)) {
-                rootRefHeight = textSeg->height();
-                double top = textSeg->tightBoundingRect().translated(textSeg->pos()).y();
-                double bottom = textSeg->pos().y();
-                double height = (bottom - top) + 2 * parenExtension;
+            last_text_seg_height = text_seg->height();
+            last_text_seg_top = text_seg->tight_bounding_rect().translated(text_seg->pos()).y();
+            if (muse::real_is_null(root_ref_height)) {
+                root_ref_height = text_seg->height();
+                double top = text_seg->tight_bounding_rect().translated(text_seg->pos()).y();
+                double bottom = text_seg->pos().y();
+                double height = (bottom - top) + 2 * paren_extension;
 
-                rootRefHeight = height;
-                rootCapHeight = textSeg->capHeight();
+                root_ref_height = height;
+                root_cap_height = text_seg->cap_height();
             }
-            if (!openingParenStack.empty()) {
-                ChordSymbolParen *topParen = openingParenStack.back();
-                if (textSeg->font().type() != Font::Type::MusicSymbolText) {
-                    topParen->top = std::min(topParen->top, textSeg->tightBoundingRect().translated(textSeg->pos()).y());
-                    topParen->bottom = std::max(topParen->bottom, textSeg->pos().y());
+            if (!opening_paren_stack.empty()) {
+                ChordSymbolParen *top_paren = opening_paren_stack.back();
+                if (text_seg->font().type() != Font::Type::MUSIC_SYMBOL_TEXT) {
+                    top_paren->top = std::min(top_paren->top, text_seg->tight_bounding_rect().translated(text_seg->pos()).y());
+                    top_paren->bottom = std::max(top_paren->bottom, text_seg->pos().y());
                 }
-                topParen->closingParenPos = std::max(topParen->closingParenPos, textSeg->x() + textSeg->width());
+                top_paren->closing_paren_pos = std::max(top_paren->closing_paren_pos, text_seg->x() + text_seg->width());
                 continue;
             }
         }
     }
 
-    auto computePadding = [](HarmonyRenderItem *item1, HarmonyRenderItem *item2) {
-        bool item1Paren = item1->type() == HarmonyRenderItemType::PAREN;
-        bool item2Paren = item2->type() == HarmonyRenderItemType::PAREN;
+    auto compute_padding = [](HarmonyRenderItem *item1, HarmonyRenderItem *item2) {
+        bool item1_paren = item1->type() == HarmonyRenderItemType::PAREN;
+        bool item2_paren = item2->type() == HarmonyRenderItemType::PAREN;
 
         double padding = 0.0;
-        if (item1Paren && item2Paren) {
-            padding = std::min(item1->rightPadding(), item2->leftPadding());
+        if (item1_paren && item2_paren) {
+            padding = std::min(item1->right_padding(), item2->left_padding());
         } else {
-            padding = std::max(item1->rightPadding(), item2->leftPadding());
+            padding = std::max(item1->right_padding(), item2->left_padding());
         }
 
         double scaling = (item1->height() + item2->height()) / 2;
@@ -317,34 +317,34 @@ void HarmonyLayout::layoutModifierParentheses(const Harmony *item, const LayoutC
     // Create space in text for parentheses
     // TODO - STACKED C7((#11)#13)
     // C7(#11(#13))
-    double additionalSpace = 0.0;
-    bool prevParen = false;
+    double additional_space = 0.0;
+    bool prev_paren = false;
 
-    for (size_t i = 0; i < itemList.size(); i++) {
-        HarmonyRenderItem *renderItem = itemList.at(i);
-        double padding = i != 0 ? computePadding(itemList.at(i - 1), renderItem) : 0.0;
+    for (size_t i = 0; i < item_list.size(); i++) {
+        HarmonyRenderItem *render_item = item_list.at(i);
+        double padding = i != 0 ? compute_padding(item_list.at(i - 1), render_item) : 0.0;
 
-        if (ChordSymbolParen *paren = dynamic_cast<ChordSymbolParen *>(renderItem)) {
-            if (paren->parenItem->direction() == DirectionH::LEFT) {
-                double heightToRefRatio = std::max(paren->height(), rootRefHeight) / rootRefHeight;
-                bool scaleParenWidth = !smuflParens && !prevParen && !muse::RealIsEqual(heightToRefRatio, 1.0);
-                const double PAREN_PADDING_SCALER = 0.6;
-                double scaledParenWidth = paren->parenItem->width() * PAREN_PADDING_SCALER / heightToRefRatio;
+        if (ChordSymbolParen *paren = dynamic_cast<ChordSymbolParen *>(render_item)) {
+            if (paren->paren_item->direction() == DirectionH::LEFT) {
+                double height_to_ref_ratio = std::max(paren->height(), root_ref_height) / root_ref_height;
+                bool scale_paren_width = !smufl_parens && !prev_paren && !muse::real_is_equal(height_to_ref_ratio, 1.0);
+                const double paren_padding_scaler = 0.6;
+                double scaled_paren_width = paren->paren_item->width() * paren_padding_scaler / height_to_ref_ratio;
 
-                double parenWidth = scaleParenWidth ? scaledParenWidth : paren->parenItem->width();
+                double paren_width = scale_paren_width ? scaled_paren_width : paren->paren_item->width();
 
-                double parenAdjust = additionalSpace + padding + (smuflParens ? 0.0 : parenWidth);
-                paren->movex(parenAdjust);
-                additionalSpace += parenWidth + padding;
-            } else if (paren->parenItem->direction() == DirectionH::RIGHT) {
-                paren->movex(additionalSpace + padding);
-                additionalSpace += paren->parenItem->width() + padding;
+                double paren_adjust = additional_space + padding + (smufl_parens ? 0.0 : paren_width);
+                paren->movex(paren_adjust);
+                additional_space += paren_width + padding;
+            } else if (paren->paren_item->direction() == DirectionH::RIGHT) {
+                paren->movex(additional_space + padding);
+                additional_space += paren->paren_item->width() + padding;
             }
-            prevParen = true;
-        } else if (TextSegment *ts = dynamic_cast<TextSegment *>(renderItem)) {
-            additionalSpace += padding;
-            ts->movex(additionalSpace);
-            prevParen = false;
+            prev_paren = true;
+        } else if (TextSegment *ts = dynamic_cast<TextSegment *>(render_item)) {
+            additional_space += padding;
+            ts->movex(additional_space);
+            prev_paren = false;
         }
     }
 }
@@ -355,67 +355,67 @@ void HarmonyLayout::layoutModifierParentheses(const Harmony *item, const LayoutC
 //---------------------------------------------------------
 
 void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
-    for (const HarmonyRenderItem *renderItem : ldata->renderItemList()) {
-        delete renderItem;
+    for (const HarmonyRenderItem *render_item : ldata->render_item_list()) {
+        delete render_item;
     }
-    ldata->renderItemList.mut_value().clear();
-    if (item->harmonyType() == HarmonyType::ROMAN) {
-        renderRomanNumeral(item, ldata);
+    ldata->render_item_list.mut_value().clear();
+    if (item->harmony_type() == HarmonyType::ROMAN) {
+        render_roman_numeral(item, ldata);
         return;
     }
 
     // Render standard or Nashville chords
 
-    ChordList *chordList = item->score()->chordList();
+    ChordList *chord_list = item->score()->chord_list();
 
-    ldata->fontList.mut_value().clear();
-    for (const ChordFont &cf : chordList->fonts) {
+    ldata->font_list.mut_value().clear();
+    for (const ChordFont &cf : chord_list->fonts) {
         Font ff(item->font());
-        ff.setFamily(item->family(), Font::Type::Harmony);
+        ff.set_family(item->family(), Font::Type::HARMONY);
 
         double mag = item->mag() * cf.mag;
-        ff.setPointSizeF(ff.pointSizeF() * mag);
-        if (cf.musicSymbolText) {
-            ff.setFamily(cf.family, Font::Type::MusicSymbolText);
-        } else if (!(cf.family.isEmpty() || cf.family == "default")) {
-            ff.setFamily(cf.family, Font::Type::Harmony);
+        ff.set_point_size_f(ff.point_size_f() * mag);
+        if (cf.music_symbol_text) {
+            ff.set_family(cf.family, Font::Type::MUSIC_SYMBOL_TEXT);
+        } else if (!(cf.family.is_empty() || cf.family == "default")) {
+            ff.set_family(cf.family, Font::Type::HARMONY);
         }
-        ldata->fontList.mut_value().push_back(ff);
+        ldata->font_list.mut_value().push_back(ff);
     }
-    if (ldata->fontList.mut_value().empty()) {
+    if (ldata->font_list.mut_value().empty()) {
         Font ff(item->font());
-        ff.setFamily(item->family(), Font::Type::Harmony);
+        ff.set_family(item->family(), Font::Type::HARMONY);
 
-        ldata->fontList.mut_value().push_back(ff);
+        ldata->font_list.mut_value().push_back(ff);
     }
 
-    ldata->polychordDividerLines.reset();
-    HarmonyRenderCtx harmonyCtx;
+    ldata->polychord_divider_lines.reset();
+    HarmonyRenderCtx harmony_ctx;
 
     // Map of text segments and their final width
-    std::multimap<double, std::vector<HarmonyRenderItem *>> chordTextSegments;
+    std::multimap<double, std::vector<HarmonyRenderItem *>> chord_text_segments;
 
     for (size_t i = item->chords().size(); i > 0; i--) {
-        harmonyCtx.info = item->chords().at(i - 1);
-        renderSingleHarmony(item, ldata, harmonyCtx, ctx);
+        harmony_ctx.info = item->chords().at(i - 1);
+        render_single_harmony(item, ldata, harmony_ctx, ctx);
 
-        chordTextSegments.emplace(std::pair<double, std::vector<HarmonyRenderItem *>>{harmonyCtx.x(), harmonyCtx.renderItemList});
-        ldata->renderItemList.mut_value().insert(ldata->renderItemList.mut_value().end(), harmonyCtx.renderItemList.begin(),
-                                                 harmonyCtx.renderItemList.end());
+        chord_text_segments.emplace(std::pair<double, std::vector<HarmonyRenderItem *>>{harmony_ctx.x(), harmony_ctx.render_item_list});
+        ldata->render_item_list.mut_value().insert(ldata->render_item_list.mut_value().end(), harmony_ctx.render_item_list.begin(),
+                                                   harmony_ctx.render_item_list.end());
 
         // Measure divider spacing from lowest baseline and highest cap-height in segments
-        double rootBaseline = harmonyCtx.renderItemList.empty() ? -DBL_MAX : harmonyCtx.renderItemList.front()->y();
-        double bottomBaseline = -DBL_MAX;
-        for (const HarmonyRenderItem *renderItem : harmonyCtx.renderItemList) {
-            if (const TextSegment *ts = dynamic_cast<const TextSegment *>(renderItem)) {
-                bottomBaseline = std::max(bottomBaseline, ts->y());
+        double root_baseline = harmony_ctx.render_item_list.empty() ? -DBL_MAX : harmony_ctx.render_item_list.front()->y();
+        double bottom_baseline = -DBL_MAX;
+        for (const HarmonyRenderItem *render_item : harmony_ctx.render_item_list) {
+            if (const TextSegment *ts = dynamic_cast<const TextSegment *>(render_item)) {
+                bottom_baseline = std::max(bottom_baseline, ts->y());
             }
         }
 
-        double diff = rootBaseline - bottomBaseline;
-        if (bottomBaseline > rootBaseline) {
-            for (HarmonyRenderItem *renderItem : harmonyCtx.renderItemList) {
-                if (TextSegment *ts = dynamic_cast<TextSegment *>(renderItem)) {
+        double diff = root_baseline - bottom_baseline;
+        if (bottom_baseline > root_baseline) {
+            for (HarmonyRenderItem *render_item : harmony_ctx.render_item_list) {
+                if (TextSegment *ts = dynamic_cast<TextSegment *>(render_item)) {
                     ts->movey(diff);
                 }
             }
@@ -425,30 +425,30 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
             ldata->baseline = -diff;
         }
 
-        double topCapHeight = DBL_MAX;
-        for (const HarmonyRenderItem *renderItem : harmonyCtx.renderItemList) {
-            if (const TextSegment *ts = dynamic_cast<const TextSegment *>(renderItem)) {
-                topCapHeight = std::min(topCapHeight, ts->y() - ts->capHeight());
+        double top_cap_height = DBL_MAX;
+        for (const HarmonyRenderItem *render_item : harmony_ctx.render_item_list) {
+            if (const TextSegment *ts = dynamic_cast<const TextSegment *>(render_item)) {
+                top_cap_height = std::min(top_cap_height, ts->y() - ts->cap_height());
             }
         }
 
-        harmonyCtx.renderItemList.clear();
+        harmony_ctx.render_item_list.clear();
         if (item->chords().size() == 1 || i == 1) {
             break;
         }
 
-        assert(!muse::RealIsEqual(topCapHeight, DBL_MAX));
+        assert(!muse::real_is_equal(top_cap_height, DBL_MAX));
 
-        harmonyCtx.setx(0);
-        harmonyCtx.sety(topCapHeight);
+        harmony_ctx.setx(0);
+        harmony_ctx.sety(top_cap_height);
 
-        double lineY = harmonyCtx.y() - item->absoluteFromSpatium(ctx.conf().style().styleS(Sid::polychordDividerSpacing)) -
-                       item->absoluteFromSpatium(ctx.conf().style().styleS(Sid::polychordDividerThickness)) / 2;
-        LineF line = LineF(PointF(0.0, lineY), PointF(0.0, lineY));
-        ldata->polychordDividerLines.mut_value().push_back(line);
+        double line_y = harmony_ctx.y() - item->absolute_from_spatium(ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_SPACING)) -
+                        item->absolute_from_spatium(ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_THICKNESS)) / 2;
+        LineF line = LineF(PointF(0.0, line_y), PointF(0.0, line_y));
+        ldata->polychord_divider_lines.mut_value().push_back(line);
 
-        harmonyCtx.movey(item->absoluteFromSpatium(-ctx.conf().style().styleS(Sid::polychordDividerSpacing)) * 2.0);
-        harmonyCtx.movey(item->absoluteFromSpatium(-ctx.conf().style().styleS(Sid::polychordDividerThickness)));
+        harmony_ctx.movey(item->absolute_from_spatium(-ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_SPACING)) * 2.0);
+        harmony_ctx.movey(item->absolute_from_spatium(-ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_THICKNESS)));
     }
 
     // Align polychords
@@ -457,21 +457,21 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
         return;
     }
 
-    double longestLine = 0.0;
+    double longest_line = 0.0;
 
-    for (const auto &[width, _] : chordTextSegments) {
-        if (width > longestLine) {
-            longestLine = width;
+    for (const auto &[width, _] : chord_text_segments) {
+        if (width > longest_line) {
+            longest_line = width;
         }
     }
 
-    for (auto &textSegs : chordTextSegments) {
-        double width = textSegs.first;
-        std::vector<HarmonyRenderItem *> &segs = textSegs.second;
+    for (auto &text_segs : chord_text_segments) {
+        double width = text_segs.first;
+        std::vector<HarmonyRenderItem *> &segs = text_segs.second;
 
-        double diff = longestLine - width;
+        double diff = longest_line - width;
 
-        if (muse::RealIsNull(diff)) {
+        if (muse::real_is_null(diff)) {
             continue;
         }
 
@@ -486,135 +486,137 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
     }
 }
 
-void HarmonyLayout::renderRomanNumeral(Harmony *item, Harmony::LayoutData *ldata) {
-    HarmonyRenderCtx harmonyCtx;
+void HarmonyLayout::render_roman_numeral(Harmony *item, Harmony::LayoutData *ldata) {
+    HarmonyRenderCtx harmony_ctx;
     if (item->chords().empty()) {
         return;
     }
     HarmonyInfo *info = item->chords().front();
 
-    render(item, ldata, info->textName(), harmonyCtx);
-    ldata->renderItemList.mut_value().insert(ldata->renderItemList.mut_value().end(), harmonyCtx.renderItemList.begin(),
-                                             harmonyCtx.renderItemList.end());
+    render(item, ldata, info->text_name(), harmony_ctx);
+    ldata->render_item_list.mut_value().insert(ldata->render_item_list.mut_value().end(), harmony_ctx.render_item_list.begin(),
+                                               harmony_ctx.render_item_list.end());
     ldata->baseline = 0.0;
 }
 
-void HarmonyLayout::doRenderSingleHarmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, int rootTpc, int bassTpc,
-                                          const LayoutContext &ctx) {
-    HarmonyInfo *info = harmonyCtx.info;
-    ChordList *chordList = info->chordList();
-    if (!chordList) {
+void HarmonyLayout::do_render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, int root_tpc,
+                                             int bass_tpc, const LayoutContext &ctx) {
+    HarmonyInfo *info = harmony_ctx.info;
+    ChordList *chord_list = info->chord_list();
+    if (!chord_list) {
         return;
     }
 
     const MStyle &style = ctx.conf().style();
 
-    NoteCaseType rootCase = item->rootRenderCase(info);
-    NoteCaseType bassCase = item->bassRenderCase();
+    NoteCaseType root_case = item->root_render_case(info);
+    NoteCaseType bass_case = item->bass_render_case();
 
-    NoteSpellingType spelling = style.styleV(Sid::chordSymbolSpelling).value<NoteSpellingType>();
+    NoteSpellingType spelling = style.style_v(Sid::CHORD_SYMBOL_SPELLING).value<NoteSpellingType>();
 
-    const ChordDescription *cd = info->getDescription();
-    const bool stackModifiers = style.styleB(Sid::verticallyStackModifiers) && !item->doNotStackModifiers();
+    const ChordDescription *cd = info->get_description();
+    const bool stack_modifiers = style.style_b(Sid::VERTICALLY_STACK_MODIFIERS) && !item->do_not_stack_modifiers();
 
-    if (item->harmonyType() == HarmonyType::STANDARD && tpcIsValid(rootTpc)) {
+    if (item->harmony_type() == HarmonyType::STANDARD && tpc_is_valid(root_tpc)) {
         // render root
-        render(item, ldata, chordList->renderListRoot, harmonyCtx, ctx, rootTpc, spelling, rootCase);
+        render(item, ldata, chord_list->render_list_root, harmony_ctx, ctx, root_tpc, spelling, root_case);
         // render extension
         if (cd) {
-            render(item, ldata, stackModifiers ? cd->renderListStacked : cd->renderList, harmonyCtx, ctx, 0);
+            render(item, ldata, stack_modifiers ? cd->render_list_stacked : cd->render_list, harmony_ctx, ctx, 0);
         }
-    } else if (item->harmonyType() == HarmonyType::NASHVILLE && tpcIsValid(rootTpc)) {
+    } else if (item->harmony_type() == HarmonyType::NASHVILLE && tpc_is_valid(root_tpc)) {
         // render function
-        render(item, ldata, chordList->renderListFunction, harmonyCtx, ctx, rootTpc, spelling, bassCase);
-        double adjust = chordList->nominalAdjust();
-        harmonyCtx.movey(adjust * item->magS() * item->spatium() * .2);
+        render(item, ldata, chord_list->render_list_function, harmony_ctx, ctx, root_tpc, spelling, bass_case);
+        double adjust = chord_list->nominal_adjust();
+        harmony_ctx.movey(adjust * item->mag_s() * item->spatium() * .2);
         // render extension
         if (cd) {
-            render(item, ldata, stackModifiers ? cd->renderListStacked : cd->renderList, harmonyCtx, ctx, 0);
+            render(item, ldata, stack_modifiers ? cd->render_list_stacked : cd->render_list, harmony_ctx, ctx, 0);
         }
     } else {
-        render(item, ldata, info->textName(), harmonyCtx);
+        render(item, ldata, info->text_name(), harmony_ctx);
     }
 
     // render bass
-    if (tpcIsValid(bassTpc)) {
-        const std::vector<RenderActionPtr> &bassNoteChordList =
-            style.styleB(Sid::chordBassNoteStagger) ? chordList->renderListBassOffset : chordList->renderListBass;
+    if (tpc_is_valid(bass_tpc)) {
+        const std::vector<RenderActionPtr> &bass_note_chord_list =
+            style.style_b(Sid::CHORD_BASS_NOTE_STAGGER) ? chord_list->render_list_bass_offset : chord_list->render_list_bass;
 
-        static const std::wregex PATTERN_69 = std::wregex(L"6[,/]?9");
-        const bool is69 = info->textName().contains(PATTERN_69);
-        const bool hasModifierStack = stackModifiers && (info->parsedChord() ? info->parsedChord()->modifierList().size() > 1 : false);
+        static const std::wregex pattern_69 = std::wregex(L"6[,/]?9");
+        const bool is69 = info->text_name().contains(pattern_69);
+        const bool has_modifier_stack =
+            stack_modifiers && (info->parsed_chord() ? info->parsed_chord()->modifier_list().size() > 1 : false);
 
-        if (hasModifierStack || is69) {
-            render(item, ldata, {std::make_shared<RenderActionMove>(0.05, 0.0)}, harmonyCtx, ctx, bassTpc, spelling, bassCase,
-                   item->bassScale());
+        if (has_modifier_stack || is69) {
+            render(item, ldata, {std::make_shared<RenderActionMove>(0.05, 0.0)}, harmony_ctx, ctx, bass_tpc, spelling, bass_case,
+                   item->bass_scale());
         }
-        render(item, ldata, bassNoteChordList, harmonyCtx, ctx, bassTpc, spelling, bassCase, item->bassScale());
+        render(item, ldata, bass_note_chord_list, harmony_ctx, ctx, bass_tpc, spelling, bass_case, item->bass_scale());
     }
 }
 
-void HarmonyLayout::renderSingleHarmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx) {
-    harmonyCtx.hAlign = true;
+void HarmonyLayout::render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx,
+                                          const LayoutContext &ctx) {
+    harmony_ctx.h_align = true;
     const MStyle &style = ctx.conf().style();
-    HarmonyInfo *info = harmonyCtx.info;
+    HarmonyInfo *info = harmony_ctx.info;
 
-    int rootTpc = info->rootTpc();
-    int bassTpc = info->bassTpc();
+    int root_tpc = info->root_tpc();
+    int bass_tpc = info->bass_tpc();
 
-    DisplayCapoChordType displayCapo = style.styleV(Sid::displayCapoChords).value<DisplayCapoChordType>();
+    DisplayCapoChordType display_capo = style.style_v(Sid::DISPLAY_CAPO_CHORDS).value<DisplayCapoChordType>();
 
     // render single if no capo or both
 
-    if (displayCapo == DisplayCapoChordType::BOTH || displayCapo == DisplayCapoChordType::CONCERT) {
-        doRenderSingleHarmony(item, ldata, harmonyCtx, rootTpc, bassTpc, ctx);
+    if (display_capo == DisplayCapoChordType::BOTH || display_capo == DisplayCapoChordType::CONCERT) {
+        do_render_single_harmony(item, ldata, harmony_ctx, root_tpc, bass_tpc, ctx);
     }
 
-    int capo = style.styleI(Sid::capoPosition);
+    int capo = style.style_i(Sid::CAPO_POSITION);
     if (capo == 0) {
         return;
     }
 
-    int capoRootTpc = Tpc::TPC_INVALID;
-    int capoBassTpc = Tpc::TPC_INVALID;
-    if (tpcIsValid(rootTpc) && capo > 0 && capo < 12) {
-        int tpcOffset[] = {0, 5, -2, 3, -4, 1, 6, -1, 4, -3, 2, -5};
-        capoRootTpc = rootTpc + tpcOffset[capo];
-        capoBassTpc = bassTpc;
+    int capo_root_tpc = Tpc::TPC_INVALID;
+    int capo_bass_tpc = Tpc::TPC_INVALID;
+    if (tpc_is_valid(root_tpc) && capo > 0 && capo < 12) {
+        int tpc_offset[] = {0, 5, -2, 3, -4, 1, 6, -1, 4, -3, 2, -5};
+        capo_root_tpc = root_tpc + tpc_offset[capo];
+        capo_bass_tpc = bass_tpc;
 
-        if (tpcIsValid(capoBassTpc)) {
-            capoBassTpc += tpcOffset[capo];
+        if (tpc_is_valid(capo_bass_tpc)) {
+            capo_bass_tpc += tpc_offset[capo];
         }
 
         /*
          * For guitarists, avoid x and bb in Root or Bass,
          * and also avoid E#, B#, Cb and Fb in Root.
          */
-        if (capoRootTpc < 8 || (tpcIsValid(capoBassTpc) && capoBassTpc < 6)) {
-            capoRootTpc += 12;
-            if (tpcIsValid(capoBassTpc)) {
-                capoBassTpc += 12;
+        if (capo_root_tpc < 8 || (tpc_is_valid(capo_bass_tpc) && capo_bass_tpc < 6)) {
+            capo_root_tpc += 12;
+            if (tpc_is_valid(capo_bass_tpc)) {
+                capo_bass_tpc += 12;
             }
-        } else if (capoRootTpc > 24 || (tpcIsValid(capoBassTpc) && capoBassTpc > 26)) {
-            capoRootTpc -= 12;
-            if (tpcIsValid(capoBassTpc)) {
-                capoBassTpc -= 12;
+        } else if (capo_root_tpc > 24 || (tpc_is_valid(capo_bass_tpc) && capo_bass_tpc > 26)) {
+            capo_root_tpc -= 12;
+            if (tpc_is_valid(capo_bass_tpc)) {
+                capo_bass_tpc -= 12;
             }
         }
     }
 
     // Render parens if both
-    if (displayCapo == DisplayCapoChordType::BOTH) {
+    if (display_capo == DisplayCapoChordType::BOTH) {
         RenderActionParenPtr p = std::make_shared<RenderActionParenLeft>();
-        renderActionParen(item, p, harmonyCtx);
+        render_action_paren(item, p, harmony_ctx);
     }
-    if (displayCapo == DisplayCapoChordType::BOTH || displayCapo == DisplayCapoChordType::TRANSPOSED) {
+    if (display_capo == DisplayCapoChordType::BOTH || display_capo == DisplayCapoChordType::TRANSPOSED) {
         // render capo if both or capo
-        doRenderSingleHarmony(item, ldata, harmonyCtx, capoRootTpc, capoBassTpc, ctx);
+        do_render_single_harmony(item, ldata, harmony_ctx, capo_root_tpc, capo_bass_tpc, ctx);
     }
-    if (displayCapo == DisplayCapoChordType::BOTH) {
+    if (display_capo == DisplayCapoChordType::BOTH) {
         RenderActionParenPtr p = std::make_shared<RenderActionParenRight>();
-        renderActionParen(item, p, harmonyCtx);
+        render_action_paren(item, p, harmony_ctx);
     }
 }
 
@@ -622,98 +624,100 @@ void HarmonyLayout::renderSingleHarmony(Harmony *item, Harmony::LayoutData *ldat
 //   render
 //---------------------------------------------------------
 
-void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const String &s, HarmonyRenderCtx &harmonyCtx) {
-    if (s.isEmpty()) {
+void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const String &s, HarmonyRenderCtx &harmony_ctx) {
+    if (s.is_empty()) {
         return;
     }
 
-    Font f = item->harmonyType() != HarmonyType::ROMAN ? ldata->fontList.value().front() : item->font();
-    TextSegment *ts = new TextSegment(s, f, harmonyCtx.x(), harmonyCtx.y(), harmonyCtx.hAlign);
-    harmonyCtx.renderItemList.push_back(ts);
-    harmonyCtx.movex(ts->width());
+    Font f = item->harmony_type() != HarmonyType::ROMAN ? ldata->font_list.value().front() : item->font();
+    TextSegment *ts = new TextSegment(s, f, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.movex(ts->width());
 }
 
-void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, SymId sym, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx) {
-    if (sym == SymId::noSym) {
+void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, SymId sym, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx) {
+    if (sym == SymId::NO_SYM) {
         return;
     }
 
-    Font f = item->harmonyType() != HarmonyType::ROMAN ? ldata->fontList.value().front() : item->font();
-    f.setFamily(ctx.conf().style().styleSt(Sid::musicalTextFont), Font::Type::MusicSymbolText);
+    Font f = item->harmony_type() != HarmonyType::ROMAN ? ldata->font_list.value().front() : item->font();
+    f.set_family(ctx.conf().style().style_st(Sid::MUSICAL_TEXT_FONT), Font::Type::MUSIC_SYMBOL_TEXT);
 
-    String s = ctx.conf().engravingFont()->toString(sym);
+    String s = ctx.conf().engraving_font()->to_string(sym);
 
-    TextSegment *ts = new TextSegment(s, f, harmonyCtx.x(), harmonyCtx.y(), harmonyCtx.hAlign);
-    harmonyCtx.renderItemList.push_back(ts);
-    harmonyCtx.movex(ts->width());
+    TextSegment *ts = new TextSegment(s, f, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.movex(ts->width());
 }
 
-void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const std::vector<RenderActionPtr> &renderList,
-                           HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx, int tpc, NoteSpellingType noteSpelling,
-                           NoteCaseType noteCase, double noteMag) {
-    harmonyCtx.stack = {};
-    harmonyCtx.tpc = tpc;
-    harmonyCtx.noteSpelling = noteSpelling;
-    harmonyCtx.noteCase = noteCase;
-    harmonyCtx.scale = noteMag;
+void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const std::vector<RenderActionPtr> &render_list,
+                           HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx, int tpc, NoteSpellingType note_spelling,
+                           NoteCaseType note_case, double note_mag) {
+    harmony_ctx.stack = {};
+    harmony_ctx.tpc = tpc;
+    harmony_ctx.note_spelling = note_spelling;
+    harmony_ctx.note_case = note_case;
+    harmony_ctx.scale = note_mag;
 
-    for (const RenderActionPtr &a : renderList) {
-        renderAction(item, ldata, a, harmonyCtx, ctx);
+    for (const RenderActionPtr &a : render_list) {
+        render_action(item, ldata, a, harmony_ctx, ctx);
     }
 }
 
-void HarmonyLayout::renderAction(Harmony *item, Harmony::LayoutData *ldata, const RenderActionPtr &a, HarmonyRenderCtx &harmonyCtx,
-                                 const LayoutContext &ctx) {
-    switch (a->actionType()) {
+void HarmonyLayout::render_action(Harmony *item, Harmony::LayoutData *ldata, const RenderActionPtr &a, HarmonyRenderCtx &harmony_ctx,
+                                  const LayoutContext &ctx) {
+    switch (a->action_type()) {
         case RenderAction::RenderActionType::SET:
-            renderActionSet(item, ldata, std::static_pointer_cast<RenderActionSet>(a), harmonyCtx, ctx);
+            render_action_set(item, ldata, std::static_pointer_cast<RenderActionSet>(a), harmony_ctx, ctx);
             break;
-        case RenderAction::RenderActionType::MOVE: renderActionMove(item, std::static_pointer_cast<RenderActionMove>(a), harmonyCtx); break;
+        case RenderAction::RenderActionType::MOVE:
+            render_action_move(item, std::static_pointer_cast<RenderActionMove>(a), harmony_ctx);
+            break;
         case RenderAction::RenderActionType::MOVEXHEIGHT:
-            renderActionMoveXHeight(item, std::static_pointer_cast<RenderActionMoveXHeight>(a), harmonyCtx);
+            render_action_move_x_height(item, std::static_pointer_cast<RenderActionMoveXHeight>(a), harmony_ctx);
             break;
-        case RenderAction::RenderActionType::PUSH: renderActionPush(harmonyCtx); break;
-        case RenderAction::RenderActionType::POP: renderActionPop(std::static_pointer_cast<RenderActionPop>(a), harmonyCtx); break;
-        case RenderAction::RenderActionType::NOTE: renderActionNote(item, ldata, harmonyCtx); break;
-        case RenderAction::RenderActionType::ACCIDENTAL: renderActionAcc(item, ldata, harmonyCtx, ctx); break;
-        case RenderAction::RenderActionType::STOPHALIGN: renderActionAlign(harmonyCtx); break;
-        case RenderAction::RenderActionType::SCALE: renderActionScale(std::static_pointer_cast<RenderActionScale>(a), harmonyCtx); break;
+        case RenderAction::RenderActionType::PUSH: render_action_push(harmony_ctx); break;
+        case RenderAction::RenderActionType::POP: render_action_pop(std::static_pointer_cast<RenderActionPop>(a), harmony_ctx); break;
+        case RenderAction::RenderActionType::NOTE: render_action_note(item, ldata, harmony_ctx); break;
+        case RenderAction::RenderActionType::ACCIDENTAL: render_action_acc(item, ldata, harmony_ctx, ctx); break;
+        case RenderAction::RenderActionType::STOPHALIGN: render_action_align(harmony_ctx); break;
+        case RenderAction::RenderActionType::SCALE: render_action_scale(std::static_pointer_cast<RenderActionScale>(a), harmony_ctx); break;
         case RenderAction::RenderActionType::PAREN:
-            renderActionParen(item, std::static_pointer_cast<RenderActionParen>(a), harmonyCtx);
+            render_action_paren(item, std::static_pointer_cast<RenderActionParen>(a), harmony_ctx);
             break;
-        default: LOGD("unknown render action %d", static_cast<int>(a->actionType()));
+        default: LOGD("unknown render action %d", static_cast<int>(a->action_type()));
     }
 }
 
-void HarmonyLayout::renderActionPush(HarmonyRenderCtx &harmonyCtx) { harmonyCtx.stack.push(harmonyCtx.pos); }
+void HarmonyLayout::render_action_push(HarmonyRenderCtx &harmony_ctx) { harmony_ctx.stack.push(harmony_ctx.pos); }
 
-void HarmonyLayout::renderActionPop(const RenderActionPopPtr &a, HarmonyRenderCtx &harmonyCtx) {
-    if (harmonyCtx.stack.empty()) {
+void HarmonyLayout::render_action_pop(const RenderActionPopPtr &a, HarmonyRenderCtx &harmony_ctx) {
+    if (harmony_ctx.stack.empty()) {
         LOGD("RenderAction::RenderActionType::POP: stack empty");
         return;
     }
 
-    PointF pt = harmonyCtx.stack.top();
-    harmonyCtx.stack.pop();
-    harmonyCtx.pos = PointF(a->popX() ? pt.x() : harmonyCtx.x(), a->popY() ? pt.y() : harmonyCtx.y());
+    PointF pt = harmony_ctx.stack.top();
+    harmony_ctx.stack.pop();
+    harmony_ctx.pos = PointF(a->pop_x() ? pt.x() : harmony_ctx.x(), a->pop_y() ? pt.y() : harmony_ctx.y());
 }
 
-void HarmonyLayout::renderActionNote(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx) {
-    if (!tpcIsValid(harmonyCtx.tpc)) {
+void HarmonyLayout::render_action_note(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx) {
+    if (!tpc_is_valid(harmony_ctx.tpc)) {
         return;
     }
-    const ChordList *chordList = item->score()->chordList();
+    const ChordList *chord_list = item->score()->chord_list();
     const Staff *st = item->staff();
     const Key key = st ? st->key(item->tick()) : Key::INVALID;
 
     String c;
     AccidentalVal acc;
 
-    if (item->harmonyType() == HarmonyType::STANDARD) {
-        tpc2name(harmonyCtx.tpc, harmonyCtx.noteSpelling, harmonyCtx.noteCase, c, acc);
-    } else if (item->harmonyType() == HarmonyType::NASHVILLE) {
-        String accStr;
-        tpc2Function(harmonyCtx.tpc, key, accStr, c);
+    if (item->harmony_type() == HarmonyType::STANDARD) {
+        tpc2name(harmony_ctx.tpc, harmony_ctx.note_spelling, harmony_ctx.note_case, c, acc);
+    } else if (item->harmony_type() == HarmonyType::NASHVILLE) {
+        String acc_str;
+        tpc2_function(harmony_ctx.tpc, key, acc_str, c);
     }
 
     if (c.empty()) {
@@ -721,24 +725,24 @@ void HarmonyLayout::renderActionNote(Harmony *item, Harmony::LayoutData *ldata, 
     }
 
     String lookup = u"note" + c;
-    ChordSymbol cs = chordList->symbol(lookup);
-    if (!cs.isValid()) {
-        cs = chordList->symbol(c);
+    ChordSymbol cs = chord_list->symbol(lookup);
+    if (!cs.is_valid()) {
+        cs = chord_list->symbol(c);
     }
-    String text = cs.isValid() ? cs.value : c;
-    muse::draw::Font font = cs.isValid() ? ldata->fontList.value()[cs.fontIdx] : ldata->fontList.value().front();
-    font.setPointSizeF(font.pointSizeF() * harmonyCtx.scale);
+    String text = cs.is_valid() ? cs.value : c;
+    muse::draw::Font font = cs.is_valid() ? ldata->font_list.value()[cs.font_idx] : ldata->font_list.value().front();
+    font.set_point_size_f(font.point_size_f() * harmony_ctx.scale);
 
-    TextSegment *ts = new TextSegment(text, font, harmonyCtx.x(), harmonyCtx.y(), harmonyCtx.hAlign);
-    harmonyCtx.renderItemList.push_back(ts);
-    harmonyCtx.movex(ts->width());
+    TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.movex(ts->width());
 }
 
-void HarmonyLayout::renderActionAcc(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx) {
-    if (!tpcIsValid(harmonyCtx.tpc)) {
+void HarmonyLayout::render_action_acc(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx) {
+    if (!tpc_is_valid(harmony_ctx.tpc)) {
         return;
     }
-    const ChordList *chordList = item->score()->chordList();
+    const ChordList *chord_list = item->score()->chord_list();
     const Staff *st = item->staff();
     const Key key = st ? st->key(item->tick()) : Key::INVALID;
 
@@ -746,10 +750,10 @@ void HarmonyLayout::renderActionAcc(Harmony *item, Harmony::LayoutData *ldata, H
     String acc;
     String context = u"accidental";
 
-    if (item->harmonyType() == HarmonyType::STANDARD) {
-        tpc2name(harmonyCtx.tpc, harmonyCtx.noteSpelling, harmonyCtx.noteCase, c, acc);
-    } else if (item->harmonyType() == HarmonyType::NASHVILLE) {
-        tpc2Function(harmonyCtx.tpc, key, acc, c);
+    if (item->harmony_type() == HarmonyType::STANDARD) {
+        tpc2name(harmony_ctx.tpc, harmony_ctx.note_spelling, harmony_ctx.note_case, c, acc);
+    } else if (item->harmony_type() == HarmonyType::NASHVILLE) {
+        tpc2_function(harmony_ctx.tpc, key, acc, c);
     }
 
     if (acc.empty()) {
@@ -757,10 +761,10 @@ void HarmonyLayout::renderActionAcc(Harmony *item, Harmony::LayoutData *ldata, H
     }
 
     // Try to find token & execute renderlist
-    ChordToken tok = chordList->token(acc, ChordTokenClass::ACCIDENTAL);
-    if (tok.isValid()) {
-        for (const RenderActionPtr &a : tok.renderList) {
-            renderAction(item, ldata, a, harmonyCtx, ctx);
+    ChordToken tok = chord_list->token(acc, ChordTokenClass::ACCIDENTAL);
+    if (tok.is_valid()) {
+        for (const RenderActionPtr &a : tok.render_list) {
+            render_action(item, ldata, a, harmony_ctx, ctx);
         }
         return;
     }
@@ -769,46 +773,46 @@ void HarmonyLayout::renderActionAcc(Harmony *item, Harmony::LayoutData *ldata, H
 
     // German spelling - use special symbol for accidental in TPC_B_B
     // to allow it to be rendered as either Bb or B
-    if (harmonyCtx.tpc == Tpc::TPC_B_B && harmonyCtx.noteSpelling == NoteSpellingType::GERMAN) {
+    if (harmony_ctx.tpc == Tpc::TPC_B_B && harmony_ctx.note_spelling == NoteSpellingType::GERMAN) {
         context = u"german_B";
     }
     String lookup = context + acc;
-    ChordSymbol cs = chordList->symbol(lookup);
-    if (!cs.isValid()) {
-        cs = chordList->symbol(acc);
+    ChordSymbol cs = chord_list->symbol(lookup);
+    if (!cs.is_valid()) {
+        cs = chord_list->symbol(acc);
     }
-    String text = cs.isValid() ? cs.value : c;
-    muse::draw::Font font = cs.isValid() ? ldata->fontList.value()[cs.fontIdx] : ldata->fontList.value().front();
-    font.setPointSizeF(font.pointSizeF() * harmonyCtx.scale);
+    String text = cs.is_valid() ? cs.value : c;
+    muse::draw::Font font = cs.is_valid() ? ldata->font_list.value()[cs.font_idx] : ldata->font_list.value().front();
+    font.set_point_size_f(font.point_size_f() * harmony_ctx.scale);
 
-    TextSegment *ts = new TextSegment(text, font, harmonyCtx.x(), harmonyCtx.y(), harmonyCtx.hAlign);
-    harmonyCtx.renderItemList.push_back(ts);
-    harmonyCtx.movex(ts->width());
+    TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.movex(ts->width());
 }
 
-void HarmonyLayout::renderActionAlign(HarmonyRenderCtx &harmonyCtx) { harmonyCtx.hAlign = false; }
+void HarmonyLayout::render_action_align(HarmonyRenderCtx &harmony_ctx) { harmony_ctx.h_align = false; }
 
-void HarmonyLayout::renderActionScale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmonyCtx) { harmonyCtx.scale *= a->scale(); }
+void HarmonyLayout::render_action_scale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmony_ctx) { harmony_ctx.scale *= a->scale(); }
 
-void HarmonyLayout::renderActionParen(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmonyCtx) {
-    Parenthesis *p = Factory::createParenthesis(item);
-    p->setDirection(a->direction());
-    p->setColor(item->color());
-    p->setFollowParentColor(true);
-    p->setGenerated(true);
+void HarmonyLayout::render_action_paren(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmony_ctx) {
+    Parenthesis *p = Factory::create_parenthesis(item);
+    p->set_direction(a->direction());
+    p->set_color(item->color());
+    p->set_follow_parent_color(true);
+    p->set_generated(true);
 
-    ChordSymbolParen *parenItem = new ChordSymbolParen(p, harmonyCtx.hAlign, harmonyCtx.x(), harmonyCtx.y());
-    harmonyCtx.renderItemList.push_back(parenItem);
+    ChordSymbolParen *paren_item = new ChordSymbolParen(p, harmony_ctx.h_align, harmony_ctx.x(), harmony_ctx.y());
+    harmony_ctx.render_item_list.push_back(paren_item);
 }
 
-void HarmonyLayout::kernCharacters(const Harmony *item, const String &text, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx) {
-    if (harmonyCtx.renderItemList.empty()) {
+void HarmonyLayout::kern_characters(const Harmony *item, const String &text, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx) {
+    if (harmony_ctx.render_item_list.empty()) {
         return;
     }
     // Character pair and distance to move the second
     // Blank strings will apply the kerning no matter the following character
     // TODO - move this information to the XML file
-    static const std::map<std::pair<String, String>, double> KERNED_CHARACTERS{
+    static const std::map<std::pair<String, String>, double> kerned_characters{
         {{u"A", u"\uE870"}, -0.4},      // dim
         {{u"A", u"\uE871"}, -0.3},      // half-dim
         {{u"\uE873", u"\uE870"}, -0.4}, // triangle - dim
@@ -827,65 +831,65 @@ void HarmonyLayout::kernCharacters(const Harmony *item, const String &text, Harm
         {{u"\u1D12B", u""}, -0.15}, // bb JAZZ
     };
 
-    HarmonyRenderItem *prevSeg = harmonyCtx.renderItemList.back();
-    TextSegment *ts = dynamic_cast<TextSegment *>(prevSeg);
+    HarmonyRenderItem *prev_seg = harmony_ctx.render_item_list.back();
+    TextSegment *ts = dynamic_cast<TextSegment *>(prev_seg);
     if (!ts) {
         return;
     }
 
-    for (auto &kernInfo : KERNED_CHARACTERS) {
-        const std::pair<String, String> kernPair = kernInfo.first;
-        bool endChar = ts->text().endsWith(kernPair.first);
-        bool startChar = text.startsWith(kernPair.second);
+    for (auto &kern_info : kerned_characters) {
+        const std::pair<String, String> kern_pair = kern_info.first;
+        bool end_char = ts->text().ends_with(kern_pair.first);
+        bool start_char = text.starts_with(kern_pair.second);
         // VERY DIRTY HACK ALERT
         // "Match any" should only be applied to the Jazz preset currently.
         // Remove the jazz condition when these kern values are moved to the XML files
-        if (kernPair.second.isEmpty() && ctx.conf().styleV(Sid::chordStyle).value<ChordStylePreset>() != ChordStylePreset::JAZZ) {
+        if (kern_pair.second.is_empty() && ctx.conf().style_v(Sid::CHORD_STYLE).value<ChordStylePreset>() != ChordStylePreset::JAZZ) {
             continue;
         }
-        bool startMatchAny = kernPair.second.isEmpty();
-        if ((endChar && startChar) || (endChar && startMatchAny)) {
+        bool start_match_any = kern_pair.second.is_empty();
+        if ((end_char && start_char) || (end_char && start_match_any)) {
             const FontMetrics fm = FontMetrics(item->font());
-            const double scale = harmonyCtx.scale * item->mag();
-            harmonyCtx.pos = harmonyCtx.pos + PointF(kernInfo.second, 0.0) * FontMetrics::capHeight(item->font()) * scale;
+            const double scale = harmony_ctx.scale * item->mag();
+            harmony_ctx.pos = harmony_ctx.pos + PointF(kern_info.second, 0.0) * FontMetrics::cap_height(item->font()) * scale;
             break;
         }
     }
 }
 
-void HarmonyLayout::renderActionSet(Harmony *item, Harmony::LayoutData *ldata, const RenderActionSetPtr &a, HarmonyRenderCtx &harmonyCtx,
-                                    const LayoutContext &ctx) {
-    const ChordList *chordList = item->score()->chordList();
-    const ChordSymbol cs = chordList->symbol(a->text());
-    const String text = cs.isValid() ? cs.value : a->text();
-    muse::draw::Font font = cs.isValid() ? ldata->fontList.value()[cs.fontIdx] : ldata->fontList.value().front();
-    font.setPointSizeF(font.pointSizeF() * harmonyCtx.scale);
-    if (item->harmonyType() == HarmonyType::NASHVILLE) {
-        double nmag = chordList->nominalMag();
-        font.setPointSizeF(font.pointSizeF() * nmag);
+void HarmonyLayout::render_action_set(Harmony *item, Harmony::LayoutData *ldata, const RenderActionSetPtr &a, HarmonyRenderCtx &harmony_ctx,
+                                      const LayoutContext &ctx) {
+    const ChordList *chord_list = item->score()->chord_list();
+    const ChordSymbol cs = chord_list->symbol(a->text());
+    const String text = cs.is_valid() ? cs.value : a->text();
+    muse::draw::Font font = cs.is_valid() ? ldata->font_list.value()[cs.font_idx] : ldata->font_list.value().front();
+    font.set_point_size_f(font.point_size_f() * harmony_ctx.scale);
+    if (item->harmony_type() == HarmonyType::NASHVILLE) {
+        double nmag = chord_list->nominal_mag();
+        font.set_point_size_f(font.point_size_f() * nmag);
     }
 
-    kernCharacters(item, text, harmonyCtx, ctx);
+    kern_characters(item, text, harmony_ctx, ctx);
 
-    TextSegment *ts = new TextSegment(text, font, harmonyCtx.x(), harmonyCtx.y(), harmonyCtx.hAlign);
-    harmonyCtx.movex(ts->width());
+    TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    harmony_ctx.movex(ts->width());
 
-    if (a->renderText()) {
-        harmonyCtx.renderItemList.push_back(ts);
+    if (a->render_text()) {
+        harmony_ctx.render_item_list.push_back(ts);
         return;
     }
 
     delete ts;
 }
 
-void HarmonyLayout::renderActionMove(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmonyCtx) {
-    const double scale = (a->scaled() ? harmonyCtx.scale : 1.0) * item->mag();
-    harmonyCtx.pos = harmonyCtx.pos + a->vec() * FontMetrics::capHeight(item->font()) * scale;
+void HarmonyLayout::render_action_move(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmony_ctx) {
+    const double scale = (a->scaled() ? harmony_ctx.scale : 1.0) * item->mag();
+    harmony_ctx.pos = harmony_ctx.pos + a->vec() * FontMetrics::cap_height(item->font()) * scale;
 }
 
-void HarmonyLayout::renderActionMoveXHeight(Harmony *item, const RenderActionMoveXHeightPtr &a, HarmonyRenderCtx &harmonyCtx) {
+void HarmonyLayout::render_action_move_x_height(Harmony *item, const RenderActionMoveXHeightPtr &a, HarmonyRenderCtx &harmony_ctx) {
     const int direction = a->up() ? -1 : 1;
-    const double scale = a->scaled() ? harmonyCtx.scale : 1.0;
+    const double scale = a->scaled() ? harmony_ctx.scale : 1.0;
     const FontMetrics fm = FontMetrics(item->font());
-    harmonyCtx.movey(direction * fm.xHeight() * scale);
+    harmony_ctx.movey(direction * fm.x_height() * scale);
 }

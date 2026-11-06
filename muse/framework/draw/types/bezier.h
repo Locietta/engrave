@@ -31,9 +31,9 @@ public:
     Bezier() = default;
     Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
 
-    static Bezier fromPoints(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4);
+    static Bezier from_points(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4);
     static void coefficients(double t, double &a, double &b, double &c, double &d);
-    Bezier bezierOnInterval(double t0, double t1) const;
+    Bezier bezier_on_interval(double t0, double t1) const;
 
     PointF pt1() const { return PointF(x1_, y1_); }
 
@@ -43,10 +43,10 @@ public:
 
     PointF pt4() const { return PointF(x4_, y4_); }
 
-    PointF pointAt(double t) const;
+    PointF point_at(double t) const;
 
 private:
-    void parameterSplitLeft(double t, Bezier *left);
+    void parameter_split_left(double t, Bezier *left);
 
     friend class PainterPath;
 

@@ -28,16 +28,16 @@ class MnxConfiguration : public IMnxConfiguration {
 public:
     void init();
 
-    int mnxIndentSpaces() const override;
-    void setMnxIndentSpaces(int value) override;
+    int mnx_indent_spaces() const override;
+    void set_mnx_indent_spaces(int value) override;
 
-    bool mnxExportBeams() const override;
-    void setMnxExportBeams(bool value) override;
+    bool mnx_export_beams() const override;
+    void set_mnx_export_beams(bool value) override;
 
-    bool mnxExportRestPositions() const override;
-    void setMnxExportRestPositions(bool value) override;
+    bool mnx_export_rest_positions() const override;
+    void set_mnx_export_rest_positions(bool value) override;
 
-    bool mnxRequireExactSchemaValidation() const override;
-    void setMnxRequireExactSchemaValidation(bool value) override;
+    bool mnx_require_exact_schema_validation() const override;
+    void set_mnx_require_exact_schema_validation(bool value) override;
 };
 } // namespace mu::iex::mnxio

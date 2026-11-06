@@ -27,7 +27,7 @@
 #include "engraving/dom/pitchspelling.h"
 
 namespace mu::engraving {
-inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
+inline muse::mpe::PitchClass pitch_class_from_tpc(const int tpc) {
     switch (tpc) {
         // C
         case TPC_D_BB:
@@ -37,7 +37,7 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_E_BBB:
         case TPC_D_B:
         case TPC_C_S:
-        case TPC_B_SS: return muse::mpe::PitchClass::C_sharp;
+        case TPC_B_SS: return muse::mpe::PitchClass::C_SHARP;
 
         // D
         case TPC_F_BBB:
@@ -48,7 +48,7 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_F_BB:
         case TPC_E_B:
         case TPC_D_S:
-        case TPC_C_SSS: return muse::mpe::PitchClass::D_sharp;
+        case TPC_C_SSS: return muse::mpe::PitchClass::D_SHARP;
 
         // E
         case TPC_G_BBB:
@@ -64,7 +64,7 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_A_BBB:
         case TPC_G_B:
         case TPC_F_S:
-        case TPC_E_SS: return muse::mpe::PitchClass::F_sharp;
+        case TPC_E_SS: return muse::mpe::PitchClass::F_SHARP;
 
         // G
         case TPC_A_BB:
@@ -74,7 +74,7 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_B_BBB:
         case TPC_A_B:
         case TPC_G_S:
-        case TPC_F_SSS: return muse::mpe::PitchClass::G_sharp;
+        case TPC_F_SSS: return muse::mpe::PitchClass::G_SHARP;
 
         // A
         case TPC_C_BBB:
@@ -84,7 +84,7 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_C_BB:
         case TPC_B_B:
         case TPC_A_S:
-        case TPC_G_SSS: return muse::mpe::PitchClass::A_sharp;
+        case TPC_G_SSS: return muse::mpe::PitchClass::A_SHARP;
 
         // B
         case TPC_D_BBB:
@@ -92,35 +92,35 @@ inline muse::mpe::PitchClass pitchClassFromTpc(const int tpc) {
         case TPC_B:
         case TPC_A_SS: return muse::mpe::PitchClass::B;
 
-        default: return muse::mpe::PitchClass::Undefined;
+        default: return muse::mpe::PitchClass::UNDEFINED;
     }
 }
 
-inline muse::mpe::octave_t actualOctave(const int nominalOctave, const muse::mpe::PitchClass nominalPitchClass,
-                                        const AccidentalVal accidental) {
-    int shift = static_cast<int>(nominalPitchClass) - static_cast<int>(accidental);
+inline muse::mpe::octave_t actual_octave(const int nominal_octave, const muse::mpe::PitchClass nominal_pitch_class,
+                                         const AccidentalVal accidental) {
+    int shift = static_cast<int>(nominal_pitch_class) - static_cast<int>(accidental);
 
-    constexpr int lowerBound = 0;
-    constexpr int upperBound = muse::mpe::STEPS_PER_OCTAVE - 1;
+    constexpr int lower_bound = 0;
+    constexpr int upper_bound = muse::mpe::steps_per_octave - 1;
 
-    if (shift < lowerBound) {
-        return static_cast<muse::mpe::octave_t>(nominalOctave + 1);
+    if (shift < lower_bound) {
+        return static_cast<muse::mpe::octave_t>(nominal_octave + 1);
     }
 
-    if (shift > upperBound) {
-        return static_cast<muse::mpe::octave_t>(nominalOctave - 1);
+    if (shift > upper_bound) {
+        return static_cast<muse::mpe::octave_t>(nominal_octave - 1);
     }
 
-    return static_cast<muse::mpe::octave_t>(nominalOctave);
+    return static_cast<muse::mpe::octave_t>(nominal_octave);
 }
 
-inline muse::mpe::pitch_level_t notePitchLevel(const int noteTpc, const int noteOctave, const double tuningCents = 0.0) {
-    muse::mpe::PitchClass pitchClass = pitchClassFromTpc(noteTpc);
+inline muse::mpe::pitch_level_t note_pitch_level(const int note_tpc, const int note_octave, const double tuning_cents = 0.0) {
+    muse::mpe::PitchClass pitch_class = pitch_class_from_tpc(note_tpc);
 
-    double tuningFactor = tuningCents / 100.0;
+    double tuning_factor = tuning_cents / 100.0;
 
-    muse::mpe::pitch_level_t result = muse::mpe::pitchLevel(pitchClass, actualOctave(noteOctave, pitchClass, tpc2alter(noteTpc)));
-    result += tuningFactor * muse::mpe::PITCH_LEVEL_STEP;
+    muse::mpe::pitch_level_t result = muse::mpe::pitch_level(pitch_class, actual_octave(note_octave, pitch_class, tpc2alter(note_tpc)));
+    result += tuning_factor * muse::mpe::pitch_level_step;
 
     return result;
 }

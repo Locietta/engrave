@@ -32,140 +32,140 @@ class EngravingItem;
 class EngravingObject;
 
 enum class CommandType : signed char {
-    Unknown = -1,
+    UNKNOWN = -1,
 
     // Parts
-    InsertPart,
-    RemovePart,
-    AddPartToExcerpt,
-    SetSoloist,
-    ChangePart,
-    ConnectSharedPart,
-    DisconnectSharedPart,
+    INSERT_PART,
+    REMOVE_PART,
+    ADD_PART_TO_EXCERPT,
+    SET_SOLOIST,
+    CHANGE_PART,
+    CONNECT_SHARED_PART,
+    DISCONNECT_SHARED_PART,
 
     // Staves
-    InsertStaff,
-    RemoveStaff,
-    AddSystemObjectStaff,
-    RemoveSystemObjectStaff,
-    SortStaves,
-    ChangeStaff,
-    ChangeStaffType,
+    INSERT_STAFF,
+    REMOVE_STAFF,
+    ADD_SYSTEM_OBJECT_STAFF,
+    REMOVE_SYSTEM_OBJECT_STAFF,
+    SORT_STAVES,
+    CHANGE_STAFF,
+    CHANGE_STAFF_TYPE,
 
     // MStaves
-    InsertMStaff,
-    RemoveMStaff,
-    InsertStaves,
-    RemoveStaves,
-    ChangeMStaffProperties,
-    ChangeMStaffHideIfEmpty,
+    INSERT_M_STAFF,
+    REMOVE_M_STAFF,
+    INSERT_STAVES,
+    REMOVE_STAVES,
+    CHANGE_M_STAFF_PROPERTIES,
+    CHANGE_M_STAFF_HIDE_IF_EMPTY,
 
     // Instruments
-    ChangeInstrumentShort,
-    ChangeInstrumentLong,
-    ChangeInstrumentGroupOptions,
-    ChangeInstrumentNumber,
-    ChangeInstrument,
-    ChangeDrumset,
+    CHANGE_INSTRUMENT_SHORT,
+    CHANGE_INSTRUMENT_LONG,
+    CHANGE_INSTRUMENT_GROUP_OPTIONS,
+    CHANGE_INSTRUMENT_NUMBER,
+    CHANGE_INSTRUMENT,
+    CHANGE_DRUMSET,
 
     // Measures
-    RemoveMeasures,
-    InsertMeasures,
-    ChangeMeasureLen,
-    ChangeMMRest,
-    ChangeMeasureRepeatCount,
+    REMOVE_MEASURES,
+    INSERT_MEASURES,
+    CHANGE_MEASURE_LEN,
+    CHANGE_MM_REST,
+    CHANGE_MEASURE_REPEAT_COUNT,
 
     // Elements
-    AddElement,
-    RemoveElement,
-    Unlink,
-    Link,
-    ChangeElement,
-    ChangeParent,
+    ADD_ELEMENT,
+    REMOVE_ELEMENT,
+    UNLINK,
+    LINK,
+    CHANGE_ELEMENT,
+    CHANGE_PARENT,
 
     // Notes
-    ChangePitch,
-    ChangeFretting,
-    ChangeVelocity,
+    CHANGE_PITCH,
+    CHANGE_FRETTING,
+    CHANGE_VELOCITY,
 
     // ChordRest
-    ChangeChordStaffMove,
-    SwapCR,
-    AddNoteParenthesesInfo,
-    RemoveNoteParenthesesInfo,
-    RemoveSingleNoteParentheses,
+    CHANGE_CHORD_STAFF_MOVE,
+    SWAP_CR,
+    ADD_NOTE_PARENTHESES_INFO,
+    REMOVE_NOTE_PARENTHESES_INFO,
+    REMOVE_SINGLE_NOTE_PARENTHESES,
 
     // Brackets
-    RemoveBracket,
-    AddBracket,
+    REMOVE_BRACKET,
+    ADD_BRACKET,
 
     // Fret
-    FretDataChange,
-    FretDot,
-    FretMarker,
-    FretBarre,
-    FretClear,
-    AddFretDiagramToFretBox,
-    RemoveFretDiagramFromFretBox,
+    FRET_DATA_CHANGE,
+    FRET_DOT,
+    FRET_MARKER,
+    FRET_BARRE,
+    FRET_CLEAR,
+    ADD_FRET_DIAGRAM_TO_FRET_BOX,
+    REMOVE_FRET_DIAGRAM_FROM_FRET_BOX,
 
     // Harmony
-    TransposeHarmony,
+    TRANSPOSE_HARMONY,
 
     // KeySig
-    ChangeKeySig,
+    CHANGE_KEY_SIG,
 
     // Clef
-    ChangeClefType,
+    CHANGE_CLEF_TYPE,
 
     // Tremolo
-    MoveTremolo,
+    MOVE_TREMOLO,
 
     // Spanners
-    ChangeSpannerElements,
-    InsertTimeUnmanagedSpanner,
-    ChangeStartEndSpanner,
+    CHANGE_SPANNER_ELEMENTS,
+    INSERT_TIME_UNMANAGED_SPANNER,
+    CHANGE_START_END_SPANNER,
 
     // Ties
-    ChangeTieEndPointActive,
+    CHANGE_TIE_END_POINT_ACTIVE,
 
     // Style
-    ChangeStyle,
-    ChangeStyleValues,
+    CHANGE_STYLE,
+    CHANGE_STYLE_VALUES,
 
     // Property
-    ChangeProperty,
+    CHANGE_PROPERTY,
 
     // Voices
-    ExchangeVoice,
+    EXCHANGE_VOICE,
 
     // Excerpts
-    AddExcerpt,
-    RemoveExcerpt,
-    SwapExcerpt,
-    ChangeExcerptTitle,
+    ADD_EXCERPT,
+    REMOVE_EXCERPT,
+    SWAP_EXCERPT,
+    CHANGE_EXCERPT_TITLE,
 
     // Meta info
-    ChangeMetaInfo,
+    CHANGE_META_INFO,
 
     // Text
-    TextEdit,
+    TEXT_EDIT,
 
     // Automation
-    EditAutomationPoints,
+    EDIT_AUTOMATION_POINTS,
 
     // Other
-    InsertTime,
-    ChangeScoreOrder,
+    INSERT_TIME,
+    CHANGE_SCORE_ORDER,
 };
 
 enum class UndoableCommandFilter : unsigned char {
-    TextEdit,
-    AddElement,
-    AddElementLinked,
-    Link,
-    RemoveElement,
-    RemoveElementLinked,
-    ChangePropertyLinked,
+    TEXT_EDIT,
+    ADD_ELEMENT,
+    ADD_ELEMENT_LINKED,
+    LINK,
+    REMOVE_ELEMENT,
+    REMOVE_ELEMENT_LINKED,
+    CHANGE_PROPERTY_LINKED,
 };
 
 #define UNDO_TYPE(t) \
@@ -173,13 +173,13 @@ enum class UndoableCommandFilter : unsigned char {
 #define UNDO_NAME(a) \
     const char *name() const override { return a; }
 #define UNDO_CHANGED_OBJECTS(...) \
-    std::vector<EngravingObject *> objectItems() const override { return __VA_ARGS__; }
+    std::vector<EngravingObject *> object_items() const override { return __VA_ARGS__; }
 
 struct ChangedRange {
-    Fraction tickFrom;
-    Fraction tickTo;
-    staff_idx_t staffIdxFrom = muse::nidx;
-    staff_idx_t staffIdxTo = muse::nidx;
+    Fraction tick_from;
+    Fraction tick_to;
+    staff_idx_t staff_idx_from = muse::nidx;
+    staff_idx_t staff_idx_to = muse::nidx;
 };
 
 class UndoableCommand {
@@ -191,19 +191,19 @@ public:
 
     virtual void cleanup(bool /*wasDone*/) {}
 
-    virtual std::vector<EngravingObject *> objectItems() const { return {}; }
+    virtual std::vector<EngravingObject *> object_items() const { return {}; }
 
     virtual const char *name() const { return "UndoableCommand"; }
 
-    virtual CommandType type() const { return CommandType::Unknown; }
+    virtual CommandType type() const { return CommandType::UNKNOWN; }
 
-    virtual std::optional<ChangedRange> changedRange() const { return std::nullopt; }
+    virtual std::optional<ChangedRange> changed_range() const { return std::nullopt; }
 
-    virtual bool matchesFilter(UndoableCommandFilter, const EngravingItem * /* target */) const { return false; }
+    virtual bool matches_filter(UndoableCommandFilter, const EngravingItem * /* target */) const { return false; }
 
 protected:
     virtual void flip() {}
 };
 
-std::vector<EngravingObject *> compoundObjects(EngravingObject *object);
+std::vector<EngravingObject *> compound_objects(EngravingObject *object);
 } // namespace mu::engraving

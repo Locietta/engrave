@@ -28,7 +28,7 @@ class SingleRenderer : public ISingleRenderer {
 public:
     SingleRenderer() = default;
 
-    void layoutItem(EngravingItem *item) override;
-    void drawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) override;
+    void layout_item(EngravingItem *item) override;
+    void draw_item(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) override;
 };
 } // namespace mu::engraving::rendering::single

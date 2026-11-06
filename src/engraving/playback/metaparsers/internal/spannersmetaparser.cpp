@@ -34,99 +34,100 @@
 using namespace mu::engraving;
 using namespace muse;
 
-bool SpannersMetaParser::isAbleToParse(const EngravingItem *spannerItem) {
-    static const std::unordered_set<ElementType> SUPPORTED_TYPES{
+bool SpannersMetaParser::is_able_to_parse(const EngravingItem *spanner_item) {
+    static const std::unordered_set<ElementType> supported_types{
         ElementType::SLUR,  ElementType::HAMMER_ON_PULL_OFF, ElementType::PEDAL,       ElementType::LET_RING, ElementType::PALM_MUTE,
         ElementType::TRILL, ElementType::GLISSANDO,          ElementType::GUITAR_BEND, ElementType::VIBRATO,
     };
 
-    return muse::contains(SUPPORTED_TYPES, spannerItem->type());
+    return muse::contains(supported_types, spanner_item->type());
 }
 
-void SpannersMetaParser::doParse(const EngravingItem *item, const RenderingContext &spannerCtx, mpe::ArticulationMap &result) {
-    IF_ASSERT_FAILED(item->isSpanner()) { return; }
+void SpannersMetaParser::do_parse(const EngravingItem *item, const RenderingContext &spanner_ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->is_spanner()) { return; }
 
-    const Spanner *spanner = toSpanner(item);
-    if (!spanner->playSpanner()) {
+    const Spanner *spanner = to_spanner(item);
+    if (!spanner->play_spanner()) {
         return;
     }
 
-    const int overallDurationTicks = SpannerFilter::spannerActualDurationTicks(spanner, spannerCtx.nominalDurationTicks);
+    const int overall_duration_ticks = SpannerFilter::spanner_actual_duration_ticks(spanner, spanner_ctx.nominal_duration_ticks);
 
-    mpe::ArticulationType type = mpe::ArticulationType::Undefined;
-    mpe::pitch_level_t overallPitchRange = 0;
-    mpe::dynamic_level_t overallDynamicRange = 0;
+    mpe::ArticulationType type = mpe::ArticulationType::UNDEFINED;
+    mpe::pitch_level_t overall_pitch_range = 0;
+    mpe::dynamic_level_t overall_dynamic_range = 0;
 
     switch (spanner->type()) {
         case ElementType::SLUR:
-        case ElementType::HAMMER_ON_PULL_OFF: type = mpe::ArticulationType::Legato; break;
+        case ElementType::HAMMER_ON_PULL_OFF: type = mpe::ArticulationType::LEGATO; break;
         case ElementType::PEDAL:
-        case ElementType::LET_RING: type = mpe::ArticulationType::Pedal; break;
-        case ElementType::PALM_MUTE: type = mpe::ArticulationType::PalmMute; break;
-        case ElementType::GUITAR_BEND: type = mpe::ArticulationType::Multibend; break;
-        case ElementType::VIBRATO: type = mpe::ArticulationType::Vibrato; break;
+        case ElementType::LET_RING: type = mpe::ArticulationType::PEDAL; break;
+        case ElementType::PALM_MUTE: type = mpe::ArticulationType::PALM_MUTE; break;
+        case ElementType::GUITAR_BEND: type = mpe::ArticulationType::MULTIBEND; break;
+        case ElementType::VIBRATO: type = mpe::ArticulationType::VIBRATO; break;
         case ElementType::TRILL: {
-            const Trill *trill = toTrill(spanner);
+            const Trill *trill = to_trill(spanner);
 
-            if (trill->trillType() == TrillType::TRILL_LINE) {
-                type = mpe::ArticulationType::Trill;
-            } else if (trill->trillType() == TrillType::UPPRALL_LINE) {
-                type = mpe::ArticulationType::UpPrall;
-            } else if (trill->trillType() == TrillType::DOWNPRALL_LINE) {
-                type = mpe::ArticulationType::PrallDown;
-            } else if (trill->trillType() == TrillType::PRALLPRALL_LINE) {
-                type = mpe::ArticulationType::LinePrall;
+            if (trill->trill_type() == TrillType::TRILL_LINE) {
+                type = mpe::ArticulationType::TRILL;
+            } else if (trill->trill_type() == TrillType::UPPRALL_LINE) {
+                type = mpe::ArticulationType::UP_PRALL;
+            } else if (trill->trill_type() == TrillType::DOWNPRALL_LINE) {
+                type = mpe::ArticulationType::PRALL_DOWN;
+            } else if (trill->trill_type() == TrillType::PRALLPRALL_LINE) {
+                type = mpe::ArticulationType::LINE_PRALL;
             }
             break;
         }
         case ElementType::GLISSANDO: {
-            const Glissando *glissando = toGlissando(spanner);
-            const Note *startNote = toNote(glissando->startElement());
-            const Note *endNote = toNote(glissando->endElement());
+            const Glissando *glissando = to_glissando(spanner);
+            const Note *start_note = to_note(glissando->start_element());
+            const Note *end_note = to_note(glissando->end_element());
 
-            if (!startNote || !endNote) {
+            if (!start_note || !end_note) {
                 break;
             }
 
-            if (glissando->glissandoStyle() == GlissandoStyle::PORTAMENTO) {
-                type = mpe::ArticulationType::ContinuousGlissando;
+            if (glissando->glissando_style() == GlissandoStyle::PORTAMENTO) {
+                type = mpe::ArticulationType::CONTINUOUS_GLISSANDO;
             } else {
-                type = mpe::ArticulationType::DiscreteGlissando;
+                type = mpe::ArticulationType::DISCRETE_GLISSANDO;
             }
 
-            int startNoteTpc = startNote->playingTpc();
-            int endNoteTpc = endNote->playingTpc();
+            int start_note_tpc = start_note->playing_tpc();
+            int end_note_tpc = end_note->playing_tpc();
 
-            mpe::PitchClass startNotePitchClass = pitchClassFromTpc(startNoteTpc);
-            mpe::PitchClass endNotePitchClass = pitchClassFromTpc(endNoteTpc);
+            mpe::PitchClass start_note_pitch_class = pitch_class_from_tpc(start_note_tpc);
+            mpe::PitchClass end_note_pitch_class = pitch_class_from_tpc(end_note_tpc);
 
-            mpe::octave_t startNoteOctave = actualOctave(startNote->playingOctave(), startNotePitchClass, tpc2alter(startNoteTpc));
-            mpe::octave_t endNoteOctave = actualOctave(endNote->playingOctave(), endNotePitchClass, tpc2alter(endNoteTpc));
+            mpe::octave_t start_note_octave =
+                actual_octave(start_note->playing_octave(), start_note_pitch_class, tpc2alter(start_note_tpc));
+            mpe::octave_t end_note_octave = actual_octave(end_note->playing_octave(), end_note_pitch_class, tpc2alter(end_note_tpc));
 
-            overallPitchRange = mpe::pitchLevelDiff(endNotePitchClass, endNoteOctave, startNotePitchClass, startNoteOctave);
+            overall_pitch_range = mpe::pitch_level_diff(end_note_pitch_class, end_note_octave, start_note_pitch_class, start_note_octave);
 
             break;
         }
         default: break;
     }
 
-    if (type == mpe::ArticulationType::Undefined) {
+    if (type == mpe::ArticulationType::UNDEFINED) {
         return;
     }
 
-    const mpe::ArticulationPattern &pattern = spannerCtx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = spanner_ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }
 
-    mpe::ArticulationMeta articulationMeta;
-    articulationMeta.type = type;
-    articulationMeta.pattern = pattern;
-    articulationMeta.timestamp = spannerCtx.nominalTimestamp;
-    articulationMeta.overallPitchChangesRange = overallPitchRange;
-    articulationMeta.overallDynamicChangesRange = overallDynamicRange;
-    articulationMeta.overallDuration = durationFromStartAndTicks(spannerCtx.score, spannerCtx.nominalPositionStartTick,
-                                                                 overallDurationTicks, spannerCtx.positionTickOffset);
+    mpe::ArticulationMeta articulation_meta;
+    articulation_meta.type = type;
+    articulation_meta.pattern = pattern;
+    articulation_meta.timestamp = spanner_ctx.nominal_timestamp;
+    articulation_meta.overall_pitch_changes_range = overall_pitch_range;
+    articulation_meta.overall_dynamic_changes_range = overall_dynamic_range;
+    articulation_meta.overall_duration = duration_from_start_and_ticks(spanner_ctx.score, spanner_ctx.nominal_position_start_tick,
+                                                                       overall_duration_ticks, spanner_ctx.position_tick_offset);
 
-    appendArticulationData(std::move(articulationMeta), result);
+    append_articulation_data(std::move(articulation_meta), result);
 }

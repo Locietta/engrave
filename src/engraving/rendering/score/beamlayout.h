@@ -44,34 +44,34 @@ class BeamLayout {
 public:
 
     static void layout(Beam *item, const LayoutContext &ctx);
-    static void layoutIfNeed(Beam *item, const LayoutContext &ctx);
+    static void layout_if_need(Beam *item, const LayoutContext &ctx);
     static void layout1(Beam *item, LayoutContext &ctx);
 
-    static bool isStartOfNonCrossBeam(ChordRest *cr);
-    static bool isStartOfCrossBeam(ChordRest *cr);
-    static void createBeams(LayoutContext &ctx, Measure *measure);
-    static void restoreBeams(Measure *m, LayoutContext &ctx);
-    static bool measureMayHaveBeamsJoinedIntoNext(const Measure *measure);
-    static void breakCrossMeasureBeams(Measure *measure, LayoutContext &ctx);
-    static void layoutNonCrossBeams(ChordRest *cr, LayoutContext &ctx);
-    static void verticalAdjustBeamedRests(Rest *rest, Beam *beam, LayoutContext &ctx);
-    static void checkCrossPosAndStemConsistency(Beam *beam, LayoutContext &ctx);
+    static bool is_start_of_non_cross_beam(ChordRest *cr);
+    static bool is_start_of_cross_beam(ChordRest *cr);
+    static void create_beams(LayoutContext &ctx, Measure *measure);
+    static void restore_beams(Measure *m, LayoutContext &ctx);
+    static bool measure_may_have_beams_joined_into_next(const Measure *measure);
+    static void break_cross_measure_beams(Measure *measure, LayoutContext &ctx);
+    static void layout_non_cross_beams(ChordRest *cr, LayoutContext &ctx);
+    static void vertical_adjust_beamed_rests(Rest *rest, Beam *beam, LayoutContext &ctx);
+    static void check_cross_pos_and_stem_consistency(Beam *beam, LayoutContext &ctx);
 
-    static PointF chordBeamAnchor(const Beam *item, const ChordRest *chord, ChordBeamAnchorType anchorType);
-    static double chordBeamAnchorY(const Beam *item, const ChordRest *chord);
-    static void setTremAnchors(Beam *item, const LayoutContext &ctx);
+    static PointF chord_beam_anchor(const Beam *item, const ChordRest *chord, ChordBeamAnchorType anchor_type);
+    static double chord_beam_anchor_y(const Beam *item, const ChordRest *chord);
+    static void set_trem_anchors(Beam *item, const LayoutContext &ctx);
 
 private:
-    static void beamGraceNotes(LayoutContext &ctx, Chord *mainNote, bool after);
+    static void beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool after);
 
-    static void layout2(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chordRests, SpannerSegmentType, int frag);
+    static void layout2(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chord_rests, SpannerSegmentType, int frag);
 
-    static void createBeamSegments(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chordRests);
-    static bool calcIsBeamletBefore(const Beam *item, Chord *chord, int i, int level, bool isAfter32Break, bool isAfter64Break);
-    static void createBeamSegment(Beam *item, ChordRest *startChord, ChordRest *endChord, int level, bool shortStems);
-    static void createBeamletSegment(Beam *item, const LayoutContext &ctx, ChordRest *chord, bool isBefore, int level);
+    static void create_beam_segments(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chord_rests);
+    static bool calc_is_beamlet_before(const Beam *item, Chord *chord, int i, int level, bool is_after32_break, bool is_after64_break);
+    static void create_beam_segment(Beam *item, ChordRest *start_chord, ChordRest *end_chord, int level, bool short_stems);
+    static void create_beamlet_segment(Beam *item, const LayoutContext &ctx, ChordRest *chord, bool is_before, int level);
 
-    static bool computeUpForMovedCross(Beam *item);
+    static bool compute_up_for_moved_cross(Beam *item);
 };
 } // namespace mu::engraving::rendering::score
 

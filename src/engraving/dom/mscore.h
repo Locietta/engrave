@@ -27,45 +27,47 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-static constexpr size_t VOICES = 4;
+static constexpr size_t voices = 4;
 
-inline constexpr track_idx_t staff2track(staff_idx_t staffIdx, voice_idx_t voiceIdx = 0) {
-    return staffIdx != muse::nidx ? staffIdx * VOICES + voiceIdx : muse::nidx;
+inline constexpr track_idx_t staff2track(staff_idx_t staff_idx, voice_idx_t voice_idx = 0) {
+    return staff_idx != muse::nidx ? staff_idx * ::mu::engraving::voices + voice_idx : muse::nidx;
 }
 
-inline constexpr staff_idx_t track2staff(track_idx_t track) { return track != muse::nidx ? track / VOICES : muse::nidx; }
+inline constexpr staff_idx_t track2staff(track_idx_t track) { return track != muse::nidx ? track / ::mu::engraving::voices : muse::nidx; }
 
-inline constexpr voice_idx_t track2voice(track_idx_t track) { return track != muse::nidx ? track % VOICES : muse::nidx; }
+inline constexpr voice_idx_t track2voice(track_idx_t track) { return track != muse::nidx ? track % ::mu::engraving::voices : muse::nidx; }
 
-inline constexpr track_idx_t trackZeroVoice(track_idx_t track) { return track != muse::nidx ? (track / VOICES) * VOICES : muse::nidx; }
+inline constexpr track_idx_t track_zero_voice(track_idx_t track) {
+    return track != muse::nidx ? (track / ::mu::engraving::voices) * ::mu::engraving::voices : muse::nidx;
+}
 
-inline constexpr bool isUpVoice(voice_idx_t voiceIdx) { return !(voiceIdx & 1); }
+inline constexpr bool is_up_voice(voice_idx_t voice_idx) { return !(voice_idx & 1); }
 
-inline constexpr bool isDownVoice(voice_idx_t voiceIdx) { return voiceIdx & 1; }
+inline constexpr bool is_down_voice(voice_idx_t voice_idx) { return voice_idx & 1; }
 
-static constexpr int MAX_HEADERS = 3;
-static constexpr int MAX_FOOTERS = 3;
+static constexpr int max_headers = 3;
+static constexpr int max_footers = 3;
 
 // UNIVERSAL UNITS
-static constexpr double INCH = 25.4; // millimitres per inch
-static constexpr double PPI = 72.0;  // typographical points per inch
+static constexpr double inch = 25.4; // millimitres per inch
+static constexpr double ppi = 72.0;  // typographical points per inch
 
 // INTERNAL DRAWING UNITS
-static constexpr double DPI = 1200;
-static constexpr double DPMM = DPI / INCH;
+static constexpr double dpi = 1200;
+static constexpr double dpmm = ::mu::engraving::dpi / ::mu::engraving::inch;
 
-static constexpr double UI_ICONS_DEFAULT_FONT_SIZE = 12.0;
+static constexpr double ui_icons_default_font_size = 12.0;
 
-static constexpr int MAX_STAVES = 4;
+static constexpr int max_staves = 4;
 
-static constexpr char mimeSymbolFormat[] = "application/musescore/symbol";
-static constexpr char mimeSymbolListFormat[] = "application/musescore/symbollist";
-static constexpr char mimeStaffListFormat[] = "application/musescore/stafflist";
+static constexpr char mime_symbol_format[] = "application/musescore/symbol";
+static constexpr char mime_symbol_list_format[] = "application/musescore/symbollist";
+static constexpr char mime_staff_list_format[] = "application/musescore/stafflist";
 
-static constexpr int INVALID_STRING_INDEX = -1; // no ordinal for a physical string (0 = topmost in instrument)
-static constexpr int INVALID_FRET_INDEX = -1;   // no ordinal for a fret
+static constexpr int invalid_string_index = -1; // no ordinal for a physical string (0 = topmost in instrument)
+static constexpr int invalid_fret_index = -1;   // no ordinal for a fret
 
-static constexpr muse::ID INVALID_ID = 0;
+static constexpr muse::ID invalid_id = 0;
 
 //---------------------------------------------------------
 //   TransposeDirection
@@ -150,68 +152,68 @@ struct MScoreError {
 //---------------------------------------------------------
 
 class MScore {
-    static int _hRaster, _vRaster;
-    static bool _verticalOrientation;
+    static int h_raster_value, v_raster_value;
+    static bool vertical_orientation_value;
 
 public:
 
-    static MsError _error;
-    static bool _errorIsWarning;
+    static MsError error;
+    static bool error_is_warning;
 
-    static void registerUiTypes();
+    static void register_ui_types();
 
-    static double hRaster() { return _hRaster; }
+    static double h_raster() { return h_raster_value; }
 
-    static double vRaster() { return _vRaster; }
+    static double v_raster() { return v_raster_value; }
 
-    static void setHRaster(int val) { _hRaster = val; }
+    static void set_h_raster(int val) { h_raster_value = val; }
 
-    static void setVRaster(int val) { _vRaster = val; }
+    static void set_v_raster(int val) { v_raster_value = val; }
 
-    static void setNudgeStep(double val) { nudgeStep = val; }
+    static void set_nudge_step(double val) { nudge_step = val; }
 
-    static void setNudgeStep10(double val) { nudgeStep10 = val; }
+    static void set_nudge_step10(double val) { nudge_step10 = val; }
 
-    static void setNudgeStep50(double val) { nudgeStep50 = val; }
+    static void set_nudge_step50(double val) { nudge_step50 = val; }
 
-    static bool verticalOrientation() { return _verticalOrientation; }
+    static bool vertical_orientation() { return vertical_orientation_value; }
 
-    static void setVerticalOrientation(bool val) { _verticalOrientation = val; }
+    static void set_vertical_orientation(bool val) { vertical_orientation_value = val; }
 
-    static bool warnPitchRange;
-    static bool warnGuitarBends;
-    static int pedalEventsMinTicks;
+    static bool warn_pitch_range;
+    static bool warn_guitar_bends;
+    static int pedal_events_min_ticks;
 
-    static double nudgeStep;
-    static double nudgeStep10;
-    static double nudgeStep50;
+    static double nudge_step;
+    static double nudge_step10;
+    static double nudge_step50;
 
     // #ifndef NDEBUG
-    static bool noHorizontalStretch;
-    static bool noVerticalStretch;
-    static bool useFallbackFont;
+    static bool no_horizontal_stretch;
+    static bool no_vertical_stretch;
+    static bool use_fallback_font;
     // #endif
-    static bool debugMode;
-    static bool testMode;
-    static bool testWriteStyleToScore;
+    static bool debug_mode;
+    static bool test_mode;
+    static bool test_write_style_to_score;
 
-    static bool saveTemplateMode;
-    static bool noGui;
+    static bool save_template_mode;
+    static bool no_gui;
 
-    static bool noImages;
+    static bool no_images;
 
-    static bool pdfPrinting;
-    static bool svgPrinting;
+    static bool pdf_printing;
+    static bool svg_printing;
 
-    static double verticalPageGap;
-    static double horizontalPageGapEven;
-    static double horizontalPageGapOdd;
+    static double vertical_page_gap;
+    static double horizontal_page_gap_even;
+    static double horizontal_page_gap_odd;
 
-    static void setError(MsError e, bool warning = false) {
-        _error = e;
-        _errorIsWarning = warning;
+    static void set_error(MsError e, bool warning = false) {
+        error = e;
+        error_is_warning = warning;
     }
 
-    static std::string errorToString(MsError err);
+    static std::string error_to_string(MsError err);
 };
 } // namespace mu::engraving

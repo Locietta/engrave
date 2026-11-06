@@ -33,35 +33,35 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 ActionIcon::ActionIcon(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::ACTION_ICON, parent) {
-    iconFont_ = Font(configuration()->iconsFontFamily(), Font::Type::Icon);
-    iconFont_.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
+    icon_font_ = Font(configuration()->icons_font_family(), Font::Type::ICON);
+    icon_font_.set_point_size_f(::mu::engraving::ui_icons_default_font_size);
 }
 
 ActionIcon *ActionIcon::clone() const { return new ActionIcon(*this); }
 
-void ActionIcon::setActionType(ActionIconType val) { actionType_ = val; }
+void ActionIcon::set_action_type(ActionIconType val) { action_type_ = val; }
 
-ActionIconType ActionIcon::actionType() const { return actionType_; }
+ActionIconType ActionIcon::action_type() const { return action_type_; }
 
-const muse::TranslatableString &ActionIcon::title() const { return TConv::userName(actionType_); }
+const muse::TranslatableString &ActionIcon::title() const { return TConv::user_name(action_type_); }
 
-char16_t ActionIcon::icon() const { return TConv::iconCode(actionType_); }
+char16_t ActionIcon::icon() const { return TConv::icon_code(action_type_); }
 
-engraving::PropertyValue ActionIcon::getProperty(Pid pid) const {
+engraving::PropertyValue ActionIcon::get_property(Pid pid) const {
     switch (pid) {
-        case Pid::ACTION: return PropertyValue(actionType_);
+        case Pid::ACTION: return PropertyValue(action_type_);
         default: break;
     }
-    return EngravingItem::getProperty(pid);
+    return EngravingItem::get_property(pid);
 }
 
-bool ActionIcon::setProperty(Pid pid, const PropertyValue &v) {
+bool ActionIcon::set_property(Pid pid, const PropertyValue &v) {
     switch (pid) {
         case Pid::ACTION:
-            actionType_ = v.value<ActionIconType>();
-            triggerLayout();
+            action_type_ = v.value<ActionIconType>();
+            trigger_layout();
             break;
-        default: return EngravingItem::setProperty(pid, v);
+        default: return EngravingItem::set_property(pid, v);
     }
     return true;
 }

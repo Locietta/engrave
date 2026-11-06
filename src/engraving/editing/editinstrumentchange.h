@@ -37,9 +37,9 @@ class ChangeInstrument : public UndoableCommand {
     void flip() override;
 
 public:
-    ChangeInstrument(InstrumentChange *_is, Instrument *i) : is(_is), instrument(i) {}
+    ChangeInstrument(InstrumentChange *input_is, Instrument *i) : is(input_is), instrument(i) {}
 
-    UNDO_TYPE(CommandType::ChangeInstrument)
+    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT)
     UNDO_NAME("ChangeInstrument")
     UNDO_CHANGED_OBJECTS({is})
 };

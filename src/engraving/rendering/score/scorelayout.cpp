@@ -42,15 +42,15 @@ using namespace mu::engraving::rendering::score;
 class CmdStateLocker {
     Score *score_ = nullptr;
 public:
-    CmdStateLocker(Score *s) : score_(s) { score_->cmdState().lock(); }
+    CmdStateLocker(Score *s) : score_(s) { score_->cmd_state().lock(); }
 
-    ~CmdStateLocker() { score_->cmdState().unlock(); }
+    ~CmdStateLocker() { score_->cmd_state().unlock(); }
 };
 
-void ScoreLayout::layoutRange(Score *score, const Fraction &st, const Fraction &et) {
+void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction &et) {
     TRACEFUNC;
 
-    CmdStateLocker cmdStateLocker(score);
+    CmdStateLocker cmd_state_locker(score);
     LayoutContext ctx(score);
 
     Fraction stick(st);
@@ -58,34 +58,34 @@ void ScoreLayout::layoutRange(Score *score, const Fraction &st, const Fraction &
     assert(!(stick == Fraction(-1, 1) && etick == Fraction(-1, 1)));
 
     // Check empty score
-    if (!score->last() || (ctx.conf().isLinearMode() && !score->firstMeasure())) {
+    if (!score->last() || (ctx.conf().is_linear_mode() && !score->first_measure())) {
         LOGD() << "empty score";
-        muse::DeleteAll(score->systems());
+        muse::delete_all(score->systems());
         score->systems().clear();
-        muse::DeleteAll(score->pages());
+        muse::delete_all(score->pages());
         score->pages().clear();
-        PageLayout::getNextPage(ctx);
+        PageLayout::get_next_page(ctx);
         return;
     }
 
     // Check range
-    bool isLayoutAll = stick <= Fraction(0, 1) && (etick < Fraction(0, 1) || etick == Fraction::max());
+    bool is_layout_all = stick <= Fraction(0, 1) && (etick < Fraction(0, 1) || etick == Fraction::max());
     if (stick < Fraction(0, 1)) {
         stick = Fraction(0, 1);
     }
     if (etick < Fraction(0, 1) || etick == Fraction::max()) {
-        etick = score->last()->endTick();
+        etick = score->last()->end_tick();
     }
 
-    ctx.mutState().setIsLayoutAll(isLayoutAll);
+    ctx.mut_state().set_is_layout_all(is_layout_all);
 
     // Init context and layout
-    switch (ctx.conf().viewMode()) {
+    switch (ctx.conf().view_mode()) {
         case LayoutMode::PAGE:
-        case LayoutMode::FLOAT: ScorePageViewLayout::layoutPageView(score, ctx, stick, etick); break;
+        case LayoutMode::FLOAT: ScorePageViewLayout::layout_page_view(score, ctx, stick, etick); break;
         case LayoutMode::LINE:
-        case LayoutMode::HORIZONTAL_FIXED: ScoreHorizontalViewLayout::layoutHorizontalView(score, ctx, stick, etick); break;
-        case LayoutMode::SYSTEM: ScoreVerticalViewLayout::layoutVerticalView(score, ctx, stick, etick); break;
+        case LayoutMode::HORIZONTAL_FIXED: ScoreHorizontalViewLayout::layout_horizontal_view(score, ctx, stick, etick); break;
+        case LayoutMode::SYSTEM: ScoreVerticalViewLayout::layout_vertical_view(score, ctx, stick, etick); break;
     }
 
     //LOGDA() << DumpLayoutData::dump(score);

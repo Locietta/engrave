@@ -19,18 +19,18 @@ int main() {
     muse::audio::engine::AudioServices setup(nullptr);
 
     muse::audio::OutputSpec spec;
-    spec.sampleRate = 44100;
-    spec.samplesPerChannel = 4096;
-    spec.audioChannelCount = 2;
+    spec.sample_rate = 44100;
+    spec.samples_per_channel = 4096;
+    spec.audio_channel_count = 2;
 
     muse::audio::AudioEngineConfig config;
-    config.useSoundFontLowPassFilter = true;
+    config.use_sound_font_low_pass_filter = true;
     auto configuration = &setup.configuration();
-    configuration->setConfig(config);
-    setup.synthResolver().init(configuration->defaultAudioInputParams(), spec);
+    configuration->set_config(config);
+    setup.synth_resolver().init(configuration->default_audio_input_params(), spec);
 
     auto factory = &setup.factory();
-    factory->setOutputSpec(spec);
+    factory->set_output_spec(spec);
     muse::audio::engine::OfflineRenderSession session(*factory, spec);
 
     std::cout << "audio engine linked\n";

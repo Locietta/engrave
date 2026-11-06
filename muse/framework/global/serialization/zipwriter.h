@@ -37,9 +37,9 @@ public:
     ~ZipWriter();
 
     void close();
-    bool hasError() const;
+    bool has_error() const;
 
-    void addFile(const std::string &fileName, const ByteArray &data);
+    void add_file(const std::string &file_name, const ByteArray &data);
 
 private:
 

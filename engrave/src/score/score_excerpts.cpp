@@ -37,7 +37,7 @@ void ensure_layout(Score *score) {
     // A score gets pages only from layout, so an empty page list is the
     // reliable "not laid out yet" state in the pinned engine.
     if (score->pages().empty() || !score->pages().front()) {
-        score->doLayout();
+        score->do_layout();
     }
 }
 } // namespace
@@ -54,7 +54,7 @@ bool generate_score_excerpts(MasterScore *score) {
     std::vector<Part *> visible_parts;
     visible_parts.reserve(score->parts().size());
     for (Part *part : score->parts()) {
-        if (part && part->isVisible()) {
+        if (part && part->is_visible()) {
             visible_parts.push_back(part);
         }
     }
@@ -70,8 +70,8 @@ bool generate_score_excerpts(MasterScore *score) {
     // same excerpt/layout construction in a ScoreLoad scope
     // (notation/internal/masternotation.cpp:456, importmusicxml.cpp:223), so the
     // derived excerpt structure is built, not pushed as a user undo step.
-    mu::engraving::ScoreLoad scoreLoad;
-    std::vector<Excerpt *> pending = Excerpt::createExcerptsFromParts(visible_parts, score);
+    mu::engraving::ScoreLoad score_load;
+    std::vector<Excerpt *> pending = Excerpt::create_excerpts_from_parts(visible_parts, score);
     std::size_t added_count = 0;
     try {
         for (; added_count < pending.size(); ++added_count) {
@@ -84,8 +84,8 @@ bool generate_score_excerpts(MasterScore *score) {
             // Sid::createMultiMeasureRests before Excerpt::createExcerpt()
             // lays it out, and marks the excerpt inited. addExcerpt() then
             // performs the single ownership transfer into the document.
-            score->initExcerpt(excerpt);
-            score->addExcerpt(excerpt);
+            score->init_excerpt(excerpt);
+            score->add_excerpt(excerpt);
         }
     } catch (...) {
         // Entries before added_count were transferred to MasterScore, so
@@ -93,7 +93,7 @@ bool generate_score_excerpts(MasterScore *score) {
         // The entry in progress and all later entries are still owned here.
         for (std::size_t i = 0; i < pending.size(); ++i) {
             if (i < added_count) {
-                score->removeExcerpt(pending[i]);
+                score->remove_excerpt(pending[i]);
             }
             delete pending[i];
         }
@@ -119,14 +119,14 @@ std::vector<ExcerptInfo> list_score_excerpts(MasterScore *score) {
 
         ExcerptInfo info;
         info.id = static_cast<int>(i);
-        info.title = excerpt->name().toStdString();
+        info.title = excerpt->name().to_std_string();
         info.part_ids.reserve(excerpt->parts().size());
         for (const Part *part : excerpt->parts()) {
             if (part) {
-                info.part_ids.push_back(part->id().toStdString());
+                info.part_ids.push_back(part->id().to_std_string());
             }
         }
-        const Score *excerpt_score = excerpt->excerptScore();
+        const Score *excerpt_score = excerpt->excerpt_score();
         info.pages = excerpt_score ? excerpt_score->npages() : 0;
         result.push_back(std::move(info));
     }
@@ -154,15 +154,15 @@ Score *select_score(MasterScore *score, int excerpt_id) {
     if (!excerpt) {
         throw std::runtime_error("select_score: null excerpt entry");
     }
-    if (excerpt->masterScore() != score) {
+    if (excerpt->master_score() != score) {
         throw std::runtime_error("select_score: excerpt is not owned by the score");
     }
 
     // The 4.7.5 loaders leave Excerpt::inited() false for excerpts read from a
     // file, so a usable excerpt score is the validation here; requiring
     // inited() would reject every existing loaded excerpt.
-    Score *selected = excerpt->excerptScore();
-    if (!selected || selected->masterScore() != score) {
+    Score *selected = excerpt->excerpt_score();
+    if (!selected || selected->master_score() != score) {
         throw std::runtime_error("select_score: excerpt has no initialized score");
     }
 

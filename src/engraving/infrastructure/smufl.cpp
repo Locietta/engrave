@@ -35,27 +35,27 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-std::array<Smufl::Code, size_t(SymId::lastSym) + 1> Smufl::s_symIdCodes{{}};
+std::array<Smufl::Code, size_t(SymId::LAST_SYM) + 1> Smufl::s_sym_id_codes{{}};
 
-const Smufl::Code Smufl::code(SymId id) { return s_symIdCodes.at(static_cast<size_t>(id)); }
+const Smufl::Code Smufl::code(SymId id) { return s_sym_id_codes.at(static_cast<size_t>(id)); }
 
-char32_t Smufl::smuflCode(SymId id) { return s_symIdCodes.at(static_cast<size_t>(id)).smuflCode; }
+char32_t Smufl::smufl_code(SymId id) { return s_sym_id_codes.at(static_cast<size_t>(id)).smufl_code; }
 
 bool Smufl::init() {
-    bool ok = loadGlyphNamesJson();
+    bool ok = load_glyph_names_json();
 
     return ok;
 }
 
-bool Smufl::loadGlyphNamesJson() {
+bool Smufl::load_glyph_names_json() {
     File file(":/fonts/smufl/glyphnames.json");
-    if (!file.open(IODevice::ReadOnly)) {
+    if (!file.open(IODevice::READ_ONLY)) {
         LOGE() << "could not open glyph names JSON file.";
         return false;
     }
 
     std::string error;
-    JsonObject glyphNamesJson = JsonDocument::fromJson(file.readAll(), &error).rootObject();
+    JsonObject glyph_names_json = JsonDocument::from_json(file.read_all(), &error).root_object();
     file.close();
 
     if (!error.empty()) {
@@ -63,84 +63,85 @@ bool Smufl::loadGlyphNamesJson() {
         return false;
     }
 
-    IF_ASSERT_FAILED(!glyphNamesJson.empty()) {
+    IF_ASSERT_FAILED(!glyph_names_json.empty()) {
         LOGE() << "Could not read glyph names JSON";
         return false;
     }
 
-    for (size_t i = 0; i < s_symIdCodes.size(); ++i) {
+    for (size_t i = 0; i < s_sym_id_codes.size(); ++i) {
         SymId sym = static_cast<SymId>(i);
-        if (sym == SymId::noSym || sym == SymId::lastSym) {
+        if (sym == SymId::NO_SYM || sym == SymId::LAST_SYM) {
             continue;
         }
 
-        std::string name(SymNames::nameForSymId(sym).ascii());
-        JsonObject symObj = glyphNamesJson.value(name).toObject();
-        if (!symObj.isValid()) {
+        std::string name(SymNames::name_for_sym_id(sym).ascii());
+        JsonObject sym_obj = glyph_names_json.value(name).to_object();
+        if (!sym_obj.is_valid()) {
             continue;
         }
 
         bool ok;
-        char32_t code = symObj.value("codepoint").toString().mid(2).toUInt(&ok, 16);
+        char32_t code = sym_obj.value("codepoint").to_string().mid(2).to_u_int(&ok, 16);
         if (ok) {
-            s_symIdCodes[i].smuflCode = code;
-        } else if (MScore::debugMode) {
+            s_sym_id_codes[i].smufl_code = code;
+        } else if (MScore::debug_mode) {
             LOGD() << "could not read codepoint for glyph " << name;
         }
 
-        char32_t alernativeCode = symObj.value("alternateCodepoint").toString().mid(2).toUInt(&ok, 16);
+        char32_t alernative_code = sym_obj.value("alternateCodepoint").to_string().mid(2).to_u_int(&ok, 16);
         if (ok) {
-            s_symIdCodes[i].musicSymBlockCode = alernativeCode;
-        } else if (MScore::debugMode) {
+            s_sym_id_codes[i].music_sym_block_code = alernative_code;
+        } else if (MScore::debug_mode) {
             LOGD() << "could not read alternate codepoint for glyph " << name;
         }
     }
     return true;
 }
 
-const std::map<String, std::vector<SymId>> &Smufl::smuflRanges() {
-    static std::map<String, std::vector<SymId>> ranges = readSmuflRangesJson();
+const std::map<String, std::vector<SymId>> &Smufl::smufl_ranges() {
+    static std::map<String, std::vector<SymId>> ranges = read_smufl_ranges_json();
     return ranges;
 }
 
-std::map<String, std::vector<SymId>> Smufl::readSmuflRangesJson() {
+std::map<String, std::vector<SymId>> Smufl::read_smufl_ranges_json() {
     std::map<String, std::vector<SymId>> ranges;
-    std::vector<SymId> allSymbols;
+    std::vector<SymId> all_symbols;
 
     File fi(":/fonts/smufl/ranges.json");
-    if (!fi.open(IODevice::ReadOnly)) {
-        LOGE() << "failed open: " << fi.filePath();
+    if (!fi.open(IODevice::READ_ONLY)) {
+        LOGE() << "failed open: " << fi.file_path();
         return ranges;
     }
 
     std::string error;
-    JsonObject o = JsonDocument::fromJson(fi.readAll(), &error).rootObject();
+    JsonObject o = JsonDocument::from_json(fi.read_all(), &error).root_object();
     if (!error.empty()) {
-        LOGE() << "failed parse, err: " << error << ", file: " << fi.filePath();
+        LOGE() << "failed parse, err: " << error << ", file: " << fi.file_path();
         return ranges;
     }
 
     for (const std::string &s : o.keys()) {
-        const JsonObject range = o.value(s).toObject();
-        const String desc = range.value("description").toString();
-        const JsonArray glyphs = range.value("glyphs").toArray();
+        const JsonObject range = o.value(s).to_object();
+        const String desc = range.value("description").to_string();
+        const JsonArray glyphs = range.value("glyphs").to_array();
 
         if (glyphs.empty()) {
             continue;
         }
-        std::vector<SymId> rangeSymbols;
+        std::vector<SymId> range_symbols;
         for (size_t i = 0; i < glyphs.size(); ++i) {
-            String symName = glyphs.at(i).toString();
-            SymId symId = SymNames::symIdByName(symName);
-            if (symId != SymId::noSym) {
-                rangeSymbols.push_back(symId);
-                allSymbols.push_back(symId);
+            String sym_name = glyphs.at(i).to_string();
+            SymId sym_id = SymNames::sym_id_by_name(sym_name);
+            if (sym_id != SymId::NO_SYM) {
+                range_symbols.push_back(sym_id);
+                all_symbols.push_back(sym_id);
             }
         }
-        ranges.insert({desc, rangeSymbols});
+        ranges.insert({desc, range_symbols});
     }
 
-    ranges.insert({String::fromAscii(SMUFL_ALL_SYMBOLS), allSymbols}); // TODO: make translatable as well as ranges.json
+    ranges.insert(
+        {String::from_ascii(::mu::engraving::Smufl::smufl_all_symbols), all_symbols}); // TODO: make translatable as well as ranges.json
 
     return ranges;
 }

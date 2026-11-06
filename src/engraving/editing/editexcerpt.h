@@ -33,7 +33,7 @@ class AddExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddExcerpt)
 
     Excerpt *excerpt = nullptr;
-    bool deleteExcerpt = false;
+    bool delete_excerpt = false;
 
 public:
     AddExcerpt(Excerpt *ex);
@@ -42,9 +42,9 @@ public:
     void undo() override;
     void redo() override;
 
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 
-    UNDO_TYPE(CommandType::AddExcerpt)
+    UNDO_TYPE(CommandType::ADD_EXCERPT)
     UNDO_NAME("AddExcerpt")
 };
 
@@ -53,7 +53,7 @@ class RemoveExcerpt : public UndoableCommand {
 
     Excerpt *excerpt = nullptr;
     size_t index = muse::nidx;
-    bool deleteExcerpt = false;
+    bool delete_excerpt = false;
 
 public:
     RemoveExcerpt(Excerpt *ex);
@@ -62,9 +62,9 @@ public:
     void undo() override;
     void redo() override;
 
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 
-    UNDO_TYPE(CommandType::RemoveExcerpt)
+    UNDO_TYPE(CommandType::REMOVE_EXCERPT)
     UNDO_NAME("RemoveExcerpt")
 };
 
@@ -80,7 +80,7 @@ class SwapExcerpt : public UndoableCommand {
 public:
     SwapExcerpt(MasterScore *s, int p1, int p2) : score(s), pos1(p1), pos2(p2) {}
 
-    UNDO_TYPE(CommandType::SwapExcerpt)
+    UNDO_TYPE(CommandType::SWAP_EXCERPT)
     UNDO_NAME("SwapExcerpt")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -96,7 +96,7 @@ class ChangeExcerptTitle : public UndoableCommand {
 public:
     ChangeExcerptTitle(Excerpt *x, const String &t) : excerpt(x), title(t) {}
 
-    UNDO_TYPE(CommandType::ChangeExcerptTitle)
+    UNDO_TYPE(CommandType::CHANGE_EXCERPT_TITLE)
     UNDO_NAME("ChangeExcerptTitle")
 };
 
@@ -105,15 +105,15 @@ class AddPartToExcerpt : public UndoableCommand {
 
     Excerpt *excerpt_ = nullptr;
     Part *part_ = nullptr;
-    size_t targetPartIdx_ = 0;
+    size_t target_part_idx_ = 0;
 
 public:
-    AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx);
+    AddPartToExcerpt(Excerpt *e, Part *p, size_t target_part_idx);
     void undo() override;
     void redo() override;
-    void cleanup(bool wasDone) override;
+    void cleanup(bool was_done) override;
 
-    UNDO_TYPE(CommandType::AddPartToExcerpt)
+    UNDO_TYPE(CommandType::ADD_PART_TO_EXCERPT)
     UNDO_NAME("AddPartToExcerpt")
     UNDO_CHANGED_OBJECTS({part_})
 };

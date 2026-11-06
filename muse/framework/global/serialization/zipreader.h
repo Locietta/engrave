@@ -34,39 +34,39 @@ class ZipReader {
 public:
 
     struct FileInfo {
-        io::path_t filePath;
-        bool isDir = false;
-        bool isFile = false;
-        bool isSymLink = false;
+        io::PathT file_path;
+        bool is_dir = false;
+        bool is_file = false;
+        bool is_sym_link = false;
         uint64_t size = 0;
 
-        bool isValid() const { return isDir || isFile || isSymLink; }
+        bool is_valid() const { return is_dir || is_file || is_sym_link; }
     };
 
-    static bool startsWithEntry(const ByteArray &data, std::span<const uint8_t> name);
+    static bool starts_with_entry(const ByteArray &data, std::span<const uint8_t> name);
 
-    explicit ZipReader(const io::path_t &filePath);
+    explicit ZipReader(const io::PathT &file_path);
     explicit ZipReader(io::IODevice *device);
     ~ZipReader();
 
     bool exists() const;
     void close();
-    bool hasError() const;
+    bool has_error() const;
 
-    std::vector<FileInfo> fileInfoList() const;
-    bool fileExists(const std::string &fileName) const;
-    ByteArray fileData(const std::string &fileName) const;
+    std::vector<FileInfo> file_info_list() const;
+    bool file_exists(const std::string &file_name) const;
+    ByteArray file_data(const std::string &file_name) const;
 
 private:
     struct Impl;
     Impl *impl_ = nullptr;
-    io::path_t filePath_;
+    io::PathT file_path_;
 };
 
 class ZipUnpack {
 public:
 
-    Ret unpack(const io::path_t &zipPath, const io::path_t &dirPath);
+    Ret unpack(const io::PathT &zip_path, const io::PathT &dir_path);
 };
 } // namespace muse
 

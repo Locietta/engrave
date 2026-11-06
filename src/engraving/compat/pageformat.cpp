@@ -43,18 +43,18 @@ namespace mu::engraving::compat {
 //---------------------------------------------------------
 
 void PageFormat::read206(XmlReader &e) {
-    double _oddRightMargin = 0.0;
-    double _evenRightMargin = 0.0;
+    double odd_right_margin = 0.0;
+    double even_right_margin = 0.0;
     AsciiStringView type;
 
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "page-margins") {
-            type = e.asciiAttribute("type", "both");
+            type = e.ascii_attribute("type", "both");
             double lm = 0.0, rm = 0.0, tm = 0.0, bm = 0.0;
-            while (e.readNextStartElement()) {
+            while (e.read_next_start_element()) {
                 const AsciiStringView t(e.name());
-                double val = e.readDouble() * 0.5 / PPI;
+                double val = e.read_double() * 0.5 / ::mu::engraving::ppi;
                 if (t == "left-margin") {
                     lm = val;
                 } else if (t == "right-margin") {
@@ -67,64 +67,64 @@ void PageFormat::read206(XmlReader &e) {
                     e.unknown();
                 }
             }
-            _twosided = type == "odd" || type == "even";
+            twosided_value = type == "odd" || type == "even";
             if (type == "odd" || type == "both") {
-                _oddLeftMargin = lm;
-                _oddRightMargin = rm;
-                _oddTopMargin = tm;
-                _oddBottomMargin = bm;
+                odd_left_margin_value = lm;
+                odd_right_margin = rm;
+                odd_top_margin_value = tm;
+                odd_bottom_margin_value = bm;
             }
             if (type == "even" || type == "both") {
-                _evenLeftMargin = lm;
-                _evenRightMargin = rm;
-                _evenTopMargin = tm;
-                _evenBottomMargin = bm;
+                even_left_margin_value = lm;
+                even_right_margin = rm;
+                even_top_margin_value = tm;
+                even_bottom_margin_value = bm;
             }
         } else if (tag == "page-height") {
-            _size.setHeight(e.readDouble() * 0.5 / PPI);
+            size_value.set_height(e.read_double() * 0.5 / ::mu::engraving::ppi);
         } else if (tag == "page-width") {
-            _size.setWidth(e.readDouble() * .5 / PPI);
+            size_value.set_width(e.read_double() * .5 / ::mu::engraving::ppi);
         } else {
             e.unknown();
         }
     }
-    double w1 = _size.width() - _oddLeftMargin - _oddRightMargin;
-    double w2 = _size.width() - _evenLeftMargin - _evenRightMargin;
-    _printableWidth = std::min(w1, w2); // silently adjust right margins
+    double w1 = size_value.width() - odd_left_margin_value - odd_right_margin;
+    double w2 = size_value.width() - even_left_margin_value - even_right_margin;
+    printable_width_value = std::min(w1, w2); // silently adjust right margins
 }
 
-void initPageFormat(MStyle *style, PageFormat *pf) {
+void init_page_format(MStyle *style, PageFormat *pf) {
     SizeF sz;
-    sz.setWidth(style->value(Sid::pageWidth).toReal());
-    sz.setHeight(style->value(Sid::pageHeight).toReal());
-    pf->setSize(sz);
-    pf->setPrintableWidth(style->value(Sid::pagePrintableWidth).toReal());
-    pf->setEvenLeftMargin(style->value(Sid::pageEvenLeftMargin).toReal());
-    pf->setOddLeftMargin(style->value(Sid::pageOddLeftMargin).toReal());
-    pf->setEvenTopMargin(style->value(Sid::pageEvenTopMargin).toReal());
-    pf->setEvenBottomMargin(style->value(Sid::pageEvenBottomMargin).toReal());
-    pf->setOddTopMargin(style->value(Sid::pageOddTopMargin).toReal());
-    pf->setOddBottomMargin(style->value(Sid::pageOddBottomMargin).toReal());
-    pf->setTwosided(style->value(Sid::pageTwosided).toBool());
+    sz.set_width(style->value(Sid::PAGE_WIDTH).to_real());
+    sz.set_height(style->value(Sid::PAGE_HEIGHT).to_real());
+    pf->set_size(sz);
+    pf->set_printable_width(style->value(Sid::PAGE_PRINTABLE_WIDTH).to_real());
+    pf->set_even_left_margin(style->value(Sid::PAGE_EVEN_LEFT_MARGIN).to_real());
+    pf->set_odd_left_margin(style->value(Sid::PAGE_ODD_LEFT_MARGIN).to_real());
+    pf->set_even_top_margin(style->value(Sid::PAGE_EVEN_TOP_MARGIN).to_real());
+    pf->set_even_bottom_margin(style->value(Sid::PAGE_EVEN_BOTTOM_MARGIN).to_real());
+    pf->set_odd_top_margin(style->value(Sid::PAGE_ODD_TOP_MARGIN).to_real());
+    pf->set_odd_bottom_margin(style->value(Sid::PAGE_ODD_BOTTOM_MARGIN).to_real());
+    pf->set_twosided(style->value(Sid::PAGE_TWOSIDED).to_bool());
 }
 
-void setPageFormat(MStyle *style, const PageFormat &pf) {
-    style->set(Sid::pageWidth, pf.size().width());
-    style->set(Sid::pageHeight, pf.size().height());
-    style->set(Sid::pagePrintableWidth, pf.printableWidth());
-    style->set(Sid::pageEvenLeftMargin, pf.evenLeftMargin());
-    style->set(Sid::pageOddLeftMargin, pf.oddLeftMargin());
-    style->set(Sid::pageEvenTopMargin, pf.evenTopMargin());
-    style->set(Sid::pageEvenBottomMargin, pf.evenBottomMargin());
-    style->set(Sid::pageOddTopMargin, pf.oddTopMargin());
-    style->set(Sid::pageOddBottomMargin, pf.oddBottomMargin());
-    style->set(Sid::pageTwosided, pf.twosided());
+void set_page_format(MStyle *style, const PageFormat &pf) {
+    style->set(Sid::PAGE_WIDTH, pf.size().width());
+    style->set(Sid::PAGE_HEIGHT, pf.size().height());
+    style->set(Sid::PAGE_PRINTABLE_WIDTH, pf.printable_width());
+    style->set(Sid::PAGE_EVEN_LEFT_MARGIN, pf.even_left_margin());
+    style->set(Sid::PAGE_ODD_LEFT_MARGIN, pf.odd_left_margin());
+    style->set(Sid::PAGE_EVEN_TOP_MARGIN, pf.even_top_margin());
+    style->set(Sid::PAGE_EVEN_BOTTOM_MARGIN, pf.even_bottom_margin());
+    style->set(Sid::PAGE_ODD_TOP_MARGIN, pf.odd_top_margin());
+    style->set(Sid::PAGE_ODD_BOTTOM_MARGIN, pf.odd_bottom_margin());
+    style->set(Sid::PAGE_TWOSIDED, pf.twosided());
 }
 
-void readPageFormat206(MStyle *style, XmlReader &e) {
+void read_page_format206(MStyle *style, XmlReader &e) {
     PageFormat pf;
-    initPageFormat(style, &pf);
+    init_page_format(style, &pf);
     pf.read206(e);
-    setPageFormat(style, pf);
+    set_page_format(style, pf);
 }
 } // namespace mu::engraving::compat

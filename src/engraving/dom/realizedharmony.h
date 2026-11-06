@@ -55,13 +55,13 @@ public:
 
     RealizedHarmony(Harmony *h) : harmony_(h), notes_(PitchMap()), dirty_(1) {}
 
-    void setVoicing(Voicing);
-    void setDuration(HDuration);
-    void setLiteral(bool);
+    void set_voicing(Voicing);
+    void set_duration(HDuration);
+    void set_literal(bool);
 
-    void setDirty(bool dirty) { cascadeDirty(dirty); } //set dirty flag and cascade
+    void set_dirty(bool dirty) { cascade_dirty(dirty); } //set dirty flag and cascade
 
-    void setHarmony(Harmony *h) { harmony_ = h; }
+    void set_harmony(Harmony *h) { harmony_ = h; }
 
     Voicing voicing() const { return voicing_; }
 
@@ -74,16 +74,17 @@ public:
     bool valid() const { return !dirty_ && harmony_; }
 
     const PitchMap &notes() const;
-    const PitchMap generateNotes(int rootTpc, int bassTpc, bool literal, Voicing voicing, int transposeOffset) const;
+    const PitchMap generate_notes(int root_tpc, int bass_tpc, bool literal, Voicing voicing, int transpose_offset) const;
 
-    void update(int rootTpc, int bassTpc, int transposeOffset = 0); //updates the notes map
+    void update(int root_tpc, int bass_tpc, int transpose_offset = 0); //updates the notes map
 
-    Fraction getActualDuration(int utick, HDuration durationType = HDuration::INVALID) const;
+    Fraction get_actual_duration(int utick, HDuration duration_type = HDuration::INVALID) const;
 
 private:
-    PitchMap getIntervals(int rootTpc, bool literal = true) const;
-    PitchMap normalizeNoteMap(const PitchMap &intervals, int rootTpc, int rootPitch, size_t max = 128, bool enforceMaxAsGoal = false) const;
-    void cascadeDirty(bool dirty);
+    PitchMap get_intervals(int root_tpc, bool literal = true) const;
+    PitchMap normalize_note_map(const PitchMap &intervals, int root_tpc, int root_pitch, size_t max = 128,
+                                bool enforce_max_as_goal = false) const;
+    void cascade_dirty(bool dirty);
 
     Harmony *harmony_ = nullptr;
 

@@ -33,7 +33,7 @@ using namespace mu::engraving::rw;
 
 IReaderPtr RWRegister::reader(int version) {
     if (version < 0) {
-        version = Constants::MSC_VERSION;
+        version = Constants::msc_version;
     }
 
     if (version < 460) {

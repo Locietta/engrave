@@ -33,66 +33,66 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-void MeasureWrite::writeMeasure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool writeSystemElements,
-                                bool forceTimeSig) {
-    if (MScore::debugMode) {
-        const int mno = measure->measureNumber() + 1;
+void MeasureWrite::write_measure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool write_system_elements,
+                                 bool force_time_sig) {
+    if (MScore::debug_mode) {
+        const int mno = measure->measure_number() + 1;
         xml.comment(String(u"Measure %1").arg(mno));
     }
     if (measure->ticks() != measure->timesig()) {
         // this is an irregular measure
-        xml.startElement(measure, {{"len", measure->ticks().toString()}});
+        xml.start_element(measure, {{"len", measure->ticks().to_string()}});
     } else {
-        xml.startElement(measure);
+        xml.start_element(measure);
     }
 
-    ctx.setCurTick(measure->tick());
-    ctx.setCurTrack(staff * VOICES);
+    ctx.set_cur_tick(measure->tick());
+    ctx.set_cur_track(staff * ::mu::engraving::voices);
 
-    if (measure->mmRestCount() > 0) {
-        xml.tag("multiMeasureRest", measure->mmRestCount());
+    if (measure->mm_rest_count() > 0) {
+        xml.tag("multiMeasureRest", measure->mm_rest_count());
     }
-    if (writeSystemElements) {
-        TWrite::writeItemEid(measure, xml);
+    if (write_system_elements) {
+        TWrite::write_item_eid(measure, xml);
 
-        if (measure->isMMRest()) {
-            Measure *lastMeasure = measure->mmRestLast();
-            EID eidOfLastMeasure = lastMeasure->eid();
-            if (!eidOfLastMeasure.isValid()) {
-                eidOfLastMeasure = lastMeasure->assignNewEID();
+        if (measure->is_mm_rest()) {
+            Measure *last_measure = measure->mm_rest_last();
+            EID eid_of_last_measure = last_measure->eid();
+            if (!eid_of_last_measure.is_valid()) {
+                eid_of_last_measure = last_measure->assign_new_eid();
             }
-            xml.tag("mmRestLast", eidOfLastMeasure.toStdString());
+            xml.tag("mmRestLast", eid_of_last_measure.to_std_string());
         }
 
-        if (measure->repeatStart()) {
+        if (measure->repeat_start()) {
             xml.tag("startRepeat");
         }
-        if (measure->repeatEnd()) {
-            xml.tag("endRepeat", measure->repeatCount());
+        if (measure->repeat_end()) {
+            xml.tag("endRepeat", measure->repeat_count());
         }
-        TWrite::writeProperty(measure, xml, Pid::EXCLUDE_FROM_NUMBERING);
-        TWrite::writeProperty(measure, xml, Pid::BREAK_MMR);
-        TWrite::writeProperty(measure, xml, Pid::USER_STRETCH);
-        TWrite::writeProperty(measure, xml, Pid::MEASURE_NUMBER_OFFSET);
-        TWrite::writeProperty(measure, xml, Pid::MEASURE_NUMBER_MODE);
+        TWrite::write_property(measure, xml, Pid::EXCLUDE_FROM_NUMBERING);
+        TWrite::write_property(measure, xml, Pid::BREAK_MMR);
+        TWrite::write_property(measure, xml, Pid::USER_STRETCH);
+        TWrite::write_property(measure, xml, Pid::MEASURE_NUMBER_OFFSET);
+        TWrite::write_property(measure, xml, Pid::MEASURE_NUMBER_MODE);
     }
     MStaff *mstaff = measure->mstaves()[staff];
-    if (mstaff->measureNumber() && !mstaff->measureNumber()->generated()) {
-        TWrite::write(mstaff->measureNumber(), xml, ctx);
+    if (mstaff->measure_number() && !mstaff->measure_number()->generated()) {
+        TWrite::write(mstaff->measure_number(), xml, ctx);
     }
 
-    if (mstaff->mmRangeText() && !mstaff->mmRangeText()->generated()) {
-        TWrite::write(mstaff->mmRangeText(), xml, ctx);
+    if (mstaff->mm_range_text() && !mstaff->mm_range_text()->generated()) {
+        TWrite::write(mstaff->mm_range_text(), xml, ctx);
     }
 
-    if (mstaff->vspacerUp()) {
-        xml.tag("vspacerUp", mstaff->vspacerUp()->gap().val());
+    if (mstaff->vspacer_up()) {
+        xml.tag("vspacerUp", mstaff->vspacer_up()->gap().val());
     }
-    if (mstaff->vspacerDown()) {
-        if (mstaff->vspacerDown()->spacerType() == SpacerType::FIXED) {
-            xml.tag("vspacerFixed", mstaff->vspacerDown()->gap().val());
+    if (mstaff->vspacer_down()) {
+        if (mstaff->vspacer_down()->spacer_type() == SpacerType::FIXED) {
+            xml.tag("vspacerFixed", mstaff->vspacer_down()->gap().val());
         } else {
-            xml.tag("vspacerDown", mstaff->vspacerDown()->gap().val());
+            xml.tag("vspacerDown", mstaff->vspacer_down()->gap().val());
         }
     }
     if (!mstaff->visible()) {
@@ -101,75 +101,75 @@ void MeasureWrite::writeMeasure(const Measure *measure, XmlWriter &xml, WriteCon
     if (mstaff->stemless()) {
         xml.tag("stemless", mstaff->stemless());
     }
-    if (mstaff->hideIfEmpty() != AutoOnOff::AUTO) {
-        xml.tag("hideIfEmpty", TConv::toXml(mstaff->hideIfEmpty()));
+    if (mstaff->hide_if_empty() != AutoOnOff::AUTO) {
+        xml.tag("hideIfEmpty", TConv::to_xml(mstaff->hide_if_empty()));
     }
-    if (mstaff->measureRepeatCount()) {
-        xml.tag("measureRepeatCount", mstaff->measureRepeatCount());
+    if (mstaff->measure_repeat_count()) {
+        xml.tag("measureRepeatCount", mstaff->measure_repeat_count());
     }
 
-    track_idx_t strack = staff * VOICES;
-    track_idx_t etrack = strack + VOICES;
+    track_idx_t strack = staff * ::mu::engraving::voices;
+    track_idx_t etrack = strack + ::mu::engraving::voices;
     for (const EngravingItem *e : measure->el()) {
         if (e->generated()) {
             continue;
         }
 
-        bool writeSystem = writeSystemElements;
-        if (e->systemFlag()) {
+        bool write_system = write_system_elements;
+        if (e->system_flag()) {
             ElementType et = e->type();
             if ((et == ElementType::REHEARSAL_MARK) || (et == ElementType::SYSTEM_TEXT) || (et == ElementType::TRIPLET_FEEL) ||
                 (et == ElementType::PLAYTECH_ANNOTATION) || (et == ElementType::JUMP) || (et == ElementType::MARKER) ||
-                (et == ElementType::TEMPO_TEXT) || isSystemTextLine(e)) {
-                writeSystem = (e->staffIdx() == staff); // always show these on appropriate staves
+                (et == ElementType::TEMPO_TEXT) || is_system_text_line(e)) {
+                write_system = (e->staff_idx() == staff); // always show these on appropriate staves
             }
         }
 
-        if (e->staffIdx() != staff) {
-            if (!e->systemFlag() || (e->systemFlag() && !writeSystem)) {
+        if (e->staff_idx() != staff) {
+            if (!e->system_flag() || (e->system_flag() && !write_system)) {
                 continue;
             }
         }
 
-        TWrite::writeItem(e, xml, ctx);
+        TWrite::write_item(e, xml, ctx);
     }
     assert(measure->first());
     assert(measure->last());
     if (measure->first() && measure->last()) {
-        TWrite::writeSegments(xml, ctx, strack, etrack, segmentsToWrite(measure), writeSystemElements, forceTimeSig);
+        TWrite::write_segments(xml, ctx, strack, etrack, segments_to_write(measure), write_system_elements, force_time_sig);
     }
 
-    xml.endElement();
+    xml.end_element();
 }
 
-std::vector<Segment *> MeasureWrite::segmentsToWrite(const Measure *measure) {
+std::vector<Segment *> MeasureWrite::segments_to_write(const Measure *measure) {
     /* Layout moves the time signature at the start of an MM rest from its first underlying measure onto the MM rest.
      * During writing, the MM rest is written after that measure, and the reader needs the time signature before the measure's
      * contents to get its length right, so we write the signature in the underlying measure instead of the MM. */
 
-    auto startTimeSigSegment = [](const Measure *mmRest) { return mmRest->findSegmentR(SegmentType::TimeSig, Fraction(0, 1)); };
+    auto start_time_sig_segment = [](const Measure *mm_rest) { return mm_rest->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1)); };
 
-    const Segment *segToSkip = nullptr;
-    Segment *segToInsert = nullptr;
-    if (measure->isMMRest()) {
-        segToSkip = startTimeSigSegment(measure);
-    } else if (measure->mmRest()) {
-        segToInsert = startTimeSigSegment(measure->mmRest());
+    const Segment *seg_to_skip = nullptr;
+    Segment *seg_to_insert = nullptr;
+    if (measure->is_mm_rest()) {
+        seg_to_skip = start_time_sig_segment(measure);
+    } else if (measure->mm_rest()) {
+        seg_to_insert = start_time_sig_segment(measure->mm_rest());
     }
 
     std::vector<Segment *> segments;
     for (Segment *s = measure->first(); s; s = s->next()) {
         // insert it where the measure would place it if it had this segment itself
-        if (segToInsert && (s->rtick().isNotZero() || segToInsert->goesBefore(s))) {
-            segments.push_back(segToInsert);
-            segToInsert = nullptr;
+        if (seg_to_insert && (s->rtick().is_not_zero() || seg_to_insert->goes_before(s))) {
+            segments.push_back(seg_to_insert);
+            seg_to_insert = nullptr;
         }
-        if (s != segToSkip) {
+        if (s != seg_to_skip) {
             segments.push_back(s);
         }
     }
-    if (segToInsert) {
-        segments.push_back(segToInsert);
+    if (seg_to_insert) {
+        segments.push_back(seg_to_insert);
     }
 
     return segments;

@@ -39,15 +39,15 @@ public:
 
     using Scheme = std::string;
 
-    bool isValid() const;
+    bool is_valid() const;
 
     const Scheme &scheme() const;
-    void setScheme(const Scheme &scheme);
+    void set_scheme(const Scheme &scheme);
 
     const std::string &path() const;
-    void setPath(const std::string &path);
-    void addPath(const std::string &path);
-    std::vector<std::string> pathSegments() const;
+    void set_path(const std::string &path);
+    void add_path(const std::string &path);
+    std::vector<std::string> path_segments() const;
 
     inline bool operator==(const Uri &uri) const { return path_ == uri.path_ && scheme_ == uri.scheme_; }
 
@@ -60,10 +60,10 @@ public:
         return path_ < uri.path_;
     }
 
-    std::string toString() const;
+    std::string to_string() const;
 
-    io::path_t toLocalFile() const;
-    static Uri fromLocalFile(const io::path_t &path);
+    io::PathT to_local_file() const;
+    static Uri from_local_file(const io::PathT &path);
 
 private:
 
@@ -81,14 +81,14 @@ public:
     explicit UriQuery(const String &str);
     explicit UriQuery(const Uri &uri);
 
-    bool isValid() const;
+    bool is_valid() const;
     const Uri &uri() const;
-    void setScheme(const Uri::Scheme &scheme);
+    void set_scheme(const Uri::Scheme &scheme);
 
     const Params &params() const;
     Val param(const std::string &key, const Val &def = Val()) const;
 
-    void setParams(const Params &params);
+    void set_params(const Params &params);
 
     UriQuery &set(const ValMap &vals);
     UriQuery &set(const std::string &key, const Val &val);
@@ -116,19 +116,19 @@ public:
 
     UriQuery set(const std::string &key, bool val) const { return set(key, Val(val)); }
 
-    void addParam(const std::string &key, const Val &val);
-    UriQuery addingParam(const std::string &key, const Val &val) const;
+    void add_param(const std::string &key, const Val &val);
+    UriQuery adding_param(const std::string &key, const Val &val) const;
     bool contains(const std::string &key) const;
 
-    std::string toString() const;
+    std::string to_string() const;
 
     bool operator==(const UriQuery &query) const;
     bool operator!=(const UriQuery &query) const;
 
 private:
 
-    void parseParams(const std::string &str, Params &out) const;
-    void extractQuotedStrings(const std::string &str, std::vector<std::string> &out) const;
+    void parse_params(const std::string &str, Params &out) const;
+    void extract_quoted_strings(const std::string &str, std::vector<std::string> &out) const;
 
     Uri uri_;
     Params params_;
@@ -136,16 +136,16 @@ private:
 } // namespace muse
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::Uri &uri) {
-    s << uri.toString();
+    s << uri.to_string();
     return s;
 }
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::UriQuery &q) {
-    s << q.toString();
+    s << q.to_string();
     return s;
 }
 
 template <>
 struct std::hash<muse::Uri> {
-    std::size_t operator()(const muse::Uri &uri) const noexcept { return std::hash<std::string>{}(uri.toString()); }
+    std::size_t operator()(const muse::Uri &uri) const noexcept { return std::hash<std::string>{}(uri.to_string()); }
 };

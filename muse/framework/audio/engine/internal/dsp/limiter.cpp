@@ -26,60 +26,61 @@
 using namespace muse::audio;
 using namespace muse::audio::dsp;
 
-static constexpr volume_db_t THRESHOLD = volume_dbfs_t::make(0.f);
+static constexpr volume_db_t threshold = volume_dbfs_t::make(0.f);
 
-Limiter::Limiter(const unsigned int sampleRate) : filterConfig_(sampleRate, 1.f, THRESHOLD) {}
+Limiter::Limiter(const unsigned int sample_rate) : filter_config_(sample_rate, 1.f, ::threshold) {}
 
-bool Limiter::isActive() const { return isActive_; }
+bool Limiter::is_active() const { return is_active_; }
 
-void Limiter::setIsActive(const bool active) { isActive_ = active; }
+void Limiter::set_is_active(const bool active) { is_active_ = active; }
 
-volume_db_t Limiter::gainSmoothing(const float newGainReduction) const {
+volume_db_t Limiter::gain_smoothing(const float new_gain_reduction) const {
     float coefficient = 0.f;
 
-    if (newGainReduction <= previousGainReduction_) {
-        coefficient = filterConfig_.attackTimeCoefficient();
+    if (new_gain_reduction <= previous_gain_reduction_) {
+        coefficient = filter_config_.attack_time_coefficient();
     } else {
-        coefficient = filterConfig_.releaseTimeCoefficient();
+        coefficient = filter_config_.release_time_coefficient();
     }
 
-    return (coefficient * previousGainReduction_) + ((1 - coefficient) * newGainReduction);
+    return (coefficient * previous_gain_reduction_) + ((1 - coefficient) * new_gain_reduction);
 }
 
-volume_db_t Limiter::computeGain(const volume_db_t &logarithmSample) const {
-    if (logarithmSample < filterConfig_.softThresholdLower()) {
-        return logarithmSample;
+volume_db_t Limiter::compute_gain(const volume_db_t &logarithm_sample) const {
+    if (logarithm_sample < filter_config_.soft_threshold_lower()) {
+        return logarithm_sample;
     }
 
-    if (logarithmSample >= filterConfig_.softThresholdLower() && logarithmSample <= filterConfig_.softThresholdUpper()) {
-        return logarithmSample - (std::pow((logarithmSample - filterConfig_.softThresholdUpper()), 2) / (2 * filterConfig_.kneeWidth()));
+    if (logarithm_sample >= filter_config_.soft_threshold_lower() && logarithm_sample <= filter_config_.soft_threshold_upper()) {
+        return logarithm_sample -
+               (std::pow((logarithm_sample - filter_config_.soft_threshold_upper()), 2) / (2 * filter_config_.knee_width()));
     }
 
-    return filterConfig_.logarithmicThreshold();
+    return filter_config_.logarithmic_threshold();
 }
 
-void Limiter::process(const float &linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel) {
-    volume_db_t rmsDb = muse::linear_to_db(linearRms);
+void Limiter::process(const float &linear_rms, float *buffer, const audioch_t &audio_channels_count, const samples_t samples_per_channel) {
+    volume_db_t rms_db = muse::linear_to_db(linear_rms);
 
-    if (rmsDb <= filterConfig_.minimumOperableLevel()) {
+    if (rms_db <= filter_config_.minimum_operable_level()) {
         return;
     }
 
     // gain computing
-    float computedGain = computeGain(rmsDb) - rmsDb;
+    float computed_gain = compute_gain(rms_db) - rms_db;
 
     // gain smoothing
-    float smoothedGain = gainSmoothing(computedGain);
-    previousGainReduction_ = smoothedGain;
+    float smoothed_gain = gain_smoothing(computed_gain);
+    previous_gain_reduction_ = smoothed_gain;
 
     // gain make-up
-    float makeUpGain = smoothedGain + filterConfig_.makeUpGain();
+    float make_up_gain = smoothed_gain + filter_config_.make_up_gain();
 
     // total linear gain
-    float totalLinearGain = muse::db_to_linear(makeUpGain);
+    float total_linear_gain = muse::db_to_linear(make_up_gain);
 
     // apply linear gain
-    for (audioch_t audioChNum = 0; audioChNum < audioChannelsCount; ++audioChNum) {
-        multiplySamples(buffer, audioChannelsCount, audioChNum, samplesPerChannel, totalLinearGain);
+    for (audioch_t audio_ch_num = 0; audio_ch_num < audio_channels_count; ++audio_ch_num) {
+        multiply_samples(buffer, audio_channels_count, audio_ch_num, samples_per_channel, total_linear_gain);
     }
 }

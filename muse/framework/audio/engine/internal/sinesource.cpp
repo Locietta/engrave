@@ -28,12 +28,12 @@ using namespace muse::audio::engine;
 
 SineSource::SineSource() {}
 
-unsigned int SineSource::audioChannelsCount() const { return 2; }
+unsigned int SineSource::audio_channels_count() const { return 2; }
 
-samples_t SineSource::process(float *buffer, samples_t samplesPerChannel) {
-    auto streams = audioChannelsCount();
-    for (unsigned int i = 0; i < samplesPerChannel; ++i) {
-        phase_ += frequency_ / outputSpec_.sampleRate * 2 * M_PI;
+samples_t SineSource::process(float *buffer, samples_t samples_per_channel) {
+    auto streams = audio_channels_count();
+    for (unsigned int i = 0; i < samples_per_channel; ++i) {
+        phase_ += frequency_ / output_spec_.sample_rate * 2 * M_PI;
         if (phase_ > 2 * M_PI) {
             phase_ -= 2 * float(M_PI);
         }
@@ -43,5 +43,5 @@ samples_t SineSource::process(float *buffer, samples_t samplesPerChannel) {
         }
     }
 
-    return samplesPerChannel;
+    return samples_per_channel;
 }

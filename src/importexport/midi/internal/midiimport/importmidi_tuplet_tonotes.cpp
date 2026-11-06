@@ -38,85 +38,85 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiTuplet {
-void addElementToTuplet(int voice, const ReducedFraction &onTime, const ReducedFraction &len, DurationElement *el,
-                        std::multimap<ReducedFraction, TupletData> &tuplets) {
-    const auto foundTuplets = findTupletsForTimeRange(voice, onTime, len, tuplets, true);
+void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const ReducedFraction &len, DurationElement *el,
+                           std::multimap<ReducedFraction, TupletData> &tuplets) {
+    const auto found_tuplets = find_tuplets_for_time_range(voice, on_time, len, tuplets, true);
 
 #ifndef NDEBUG
-    if (foundTuplets.size() > 1) {
-        LOGD() << "Measure number (from 1):" << el->measure()->measureNumber() + 1 << ", staff index (from 0):" << el->staff()->idx();
+    if (found_tuplets.size() > 1) {
+        LOGD() << "Measure number (from 1):" << el->measure()->measure_number() + 1 << ", staff index (from 0):" << el->staff()->idx();
 
         Q_ASSERT_X(false, "MidiTuplet::addElementToTuplet", "More than one tuplet contains specified duration");
     }
 #endif
 
-    if (!foundTuplets.empty()) {
-        auto &tuplet = const_cast<TupletData &>(foundTuplets.front()->second);
+    if (!found_tuplets.empty()) {
+        auto &tuplet = const_cast<TupletData &>(found_tuplets.front()->second);
         tuplet.elements.push_back(el); // add chord/rest to the tuplet
     }
 }
 
-void createTupletNotes(Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets) {
+void create_tuplet_notes(Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets) {
     Score *score = staff->score();
-    const track_idx_t track = staff->idx() * VOICES;
+    const track_idx_t track = staff->idx() * ::mu::engraving::voices;
 
-    for (const auto &tupletEvent : tuplets) {
-        const auto &tupletData = tupletEvent.second;
-        if (tupletData.elements.empty()) {
+    for (const auto &tuplet_event : tuplets) {
+        const auto &tuplet_data = tuplet_event.second;
+        if (tuplet_data.elements.empty()) {
             continue;
         }
 
-        Measure *measure = score->tick2measure(tupletData.onTime.fraction());
+        Measure *measure = score->tick2measure(tuplet_data.on_time.fraction());
         Tuplet *tuplet = new Tuplet(measure);
-        const auto &tupletRatio = tupletLimits(tupletData.tupletNumber).ratio;
-        tuplet->setRatio(tupletRatio.fraction());
+        const auto &tuplet_ratio = tuplet_limits(tuplet_data.tuplet_number).ratio;
+        tuplet->set_ratio(tuplet_ratio.fraction());
 
-        tuplet->setTicks(tupletData.len.fraction());
-        const TDuration baseLen = tupletData.len.fraction() / Fraction(tupletRatio.denominator(), 1);
-        tuplet->setBaseLen(baseLen);
+        tuplet->set_ticks(tuplet_data.len.fraction());
+        const TDuration base_len = tuplet_data.len.fraction() / Fraction(tuplet_ratio.denominator(), 1);
+        tuplet->set_base_len(base_len);
 
-        tuplet->setTrack(track);
-        tuplet->setTick(tupletData.onTime.fraction());
-        tuplet->setVoice(tupletData.voice);
+        tuplet->set_track(track);
+        tuplet->set_tick(tuplet_data.on_time.fraction());
+        tuplet->set_voice(tuplet_data.voice);
 
-        for (DurationElement *el : tupletData.elements) {
+        for (DurationElement *el : tuplet_data.elements) {
             tuplet->add(el);
-            el->setTuplet(tuplet);
+            el->set_tuplet(tuplet);
         }
     }
 }
 
 #ifndef NDEBUG
 
-static void printInvalidTupletLocation(int measureIndex, staff_idx_t staffIndex) {
-    LOGD() << "Tuplet is invalid; measure number (from 1):" << measureIndex + 1 << ", staff index (from 0):" << staffIndex;
+static void print_invalid_tuplet_location(int measure_index, staff_idx_t staff_index) {
+    LOGD() << "Tuplet is invalid; measure number (from 1):" << measure_index + 1 << ", staff index (from 0):" << staff_index;
 }
 
-bool haveTupletsEnoughElements(const Staff *staff) {
-    const track_idx_t strack = staff->idx() * VOICES;
+bool have_tuplets_enough_elements(const Staff *staff) {
+    const track_idx_t strack = staff->idx() * ::mu::engraving::voices;
 
-    for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        for (Segment *seg = staff->score()->firstSegment(SegmentType::All); seg; seg = seg->next1()) {
-            if (seg->segmentType() == SegmentType::ChordRest) {
-                const ChordRest *cr = toChordRest(seg->element(strack + voice));
+    for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+        for (Segment *seg = staff->score()->first_segment(SegmentType::ALL); seg; seg = seg->next1()) {
+            if (seg->segment_type() == SegmentType::CHORD_REST) {
+                const ChordRest *cr = to_chord_rest(seg->element(strack + voice));
                 if (!cr) {
                     continue;
                 }
                 const Tuplet *tuplet = cr->tuplet();
                 if (tuplet) {
                     if (tuplet->elements().size() <= 1) {
-                        printInvalidTupletLocation(seg->measure()->measureNumber(), staff->idx());
+                        print_invalid_tuplet_location(seg->measure()->measure_number(), staff->idx());
                         return false;
                     }
-                    int chordCount = 0;
+                    int chord_count = 0;
                     for (const auto &e : tuplet->elements()) {
-                        const ChordRest *cr1 = toChordRest(e);
-                        if (cr1 && cr1->isChord()) {
-                            ++chordCount;
+                        const ChordRest *cr1 = to_chord_rest(e);
+                        if (cr1 && cr1->is_chord()) {
+                            ++chord_count;
                         }
                     }
-                    if (chordCount == 0) {
-                        printInvalidTupletLocation(seg->measure()->measureNumber(), staff->idx());
+                    if (chord_count == 0) {
+                        print_invalid_tuplet_location(seg->measure()->measure_number(), staff->idx());
                         return false;
                     }
                 }

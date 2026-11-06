@@ -59,55 +59,57 @@ public:
     TimeSigFrac(const Fraction &f) : TimeSigFrac(f.numerator(), f.denominator()) {}
 
     // isCompound? Note: 3/8, 3/16, ... are NOT considered compound.
-    bool isCompound() const { return numerator() > 3 /*&& denominator() >= 8*/ && numerator() % 3 == 0; }
+    bool is_compound() const { return numerator() > 3 /*&& denominator() >= 8*/ && numerator() % 3 == 0; }
 
     // isBeatedCompound? Note: Conductors will beat the simple unit at slow tempos (<60 compound units per minute)
     // However, the meter is still considered to be compound (at least for our purposes).
-    bool isBeatedCompound(double tempo) const { return tempo2beatsPerMinute(tempo) >= 60.0; }
+    bool is_beated_compound(double tempo) const { return tempo2beats_per_minute(tempo) >= 60.0; }
 
-    int dUnitTicks() const;
+    int d_unit_ticks() const;
 
-    int ticksPerMeasure() const { return numerator() * dUnitTicks(); }
+    int ticks_per_measure() const { return numerator() * d_unit_ticks(); }
 
-    int dUnitsPerBeat() const { return isCompound() ? 3 : 1; }
+    int d_units_per_beat() const { return is_compound() ? 3 : 1; }
 
-    int beatTicks() const { return dUnitTicks() * dUnitsPerBeat(); }
+    int beat_ticks() const { return d_unit_ticks() * d_units_per_beat(); }
 
-    int beatsPerMeasure() const { return numerator() / dUnitsPerBeat(); }
+    int beats_per_measure() const { return numerator() / d_units_per_beat(); }
 
-    int subbeatTicks(int level) const;
-    int maxSubbeatLevel() const;
+    int subbeat_ticks(int level) const;
+    int max_subbeat_level() const;
 
-    bool isTriple() const { return beatsPerMeasure() % 3 == 0; }
+    bool is_triple() const { return beats_per_measure() % 3 == 0; }
 
-    bool isDuple() const {
-        assert(!isTriple());
-        return beatsPerMeasure() % 2 == 0;
+    bool is_duple() const {
+        assert(!is_triple());
+        return beats_per_measure() % 2 == 0;
     } // note: always test isTriple() first
 
     // MuseScore stores tempos in quarter-notes-per-second, so conversions to conventional beats-per-minute format are provided here:
-    double tempo2beatsPerMinute(double tempo) const { return tempo * denominator() * 15.0 / dUnitsPerBeat(); }
+    double tempo2beats_per_minute(double tempo) const { return tempo * denominator() * 15.0 / d_units_per_beat(); }
 
-    double beatsPerMinute2tempo(double bpm) const { return bpm * dUnitsPerBeat() / (15.0 * denominator()); }
+    double beats_per_minute2tempo(double bpm) const { return bpm * d_units_per_beat() / (15.0 * denominator()); }
 
-    BeatType rtick2beatType(int rtick) const;
-    int rtick2subbeatLevel(int rtick) const; // returns negative value if not on a well-defined subbeat
+    BeatType rtick2beat_type(int rtick) const;
+    int rtick2subbeat_level(int rtick) const; // returns negative value if not on a well-defined subbeat
 
-    BeatType strongestBeatInRange(int rtick1, int rtick2, int *dUnitsCrossed = 0, int *subbeatTick = 0,
-                                  bool saveLast = false) const;                           // range is exclusive
-    int strongestSubbeatLevelInRange(int rtick1, int rtick2, int *subbeatTick = 0) const; // range is exclusive
+    BeatType strongest_beat_in_range(int rtick1, int rtick2, int *d_units_crossed = 0, int *subbeat_tick = 0,
+                                     bool save_last = false) const;                            // range is exclusive
+    int strongest_subbeat_level_in_range(int rtick1, int rtick2, int *subbeat_tick = 0) const; // range is exclusive
 
-    int ticksPastDUnit(int rtick) const { return rtick % dUnitTicks(); } // returns 0 if rtick is exactly on a dUnit
+    int ticks_past_d_unit(int rtick) const { return rtick % d_unit_ticks(); } // returns 0 if rtick is exactly on a dUnit
 
-    int ticksToNextDUnit(int rtick) const { return dUnitTicks() - ticksPastDUnit(rtick); } // returns dUnitTicks() if rtick is on a dUnit
+    int ticks_to_next_d_unit(int rtick) const {
+        return d_unit_ticks() - ticks_past_d_unit(rtick);
+    } // returns dUnitTicks() if rtick is on a dUnit
 
-    int ticksPastBeat(int rtick) const { return rtick % beatTicks(); } // returns 0 if rtick is exactly on a beat
+    int ticks_past_beat(int rtick) const { return rtick % beat_ticks(); } // returns 0 if rtick is exactly on a beat
 
-    int ticksToNextBeat(int rtick) const { return beatTicks() - ticksPastBeat(rtick); } // returns beatTicks() if rtick is on a beat
+    int ticks_to_next_beat(int rtick) const { return beat_ticks() - ticks_past_beat(rtick); } // returns beatTicks() if rtick is on a beat
 
-    int ticksPastSubbeat(int rtick, int level) const { return rtick % subbeatTicks(level); }
+    int ticks_past_subbeat(int rtick, int level) const { return rtick % subbeat_ticks(level); }
 
-    int ticksToNextSubbeat(int rtick, int level) const { return subbeatTicks(level) - ticksPastSubbeat(rtick, level); }
+    int ticks_to_next_subbeat(int rtick, int level) const { return subbeat_ticks(level) - ticks_past_subbeat(rtick, level); }
 };
 
 //-------------------------------------------------------------------
@@ -126,21 +128,21 @@ public:
 
     bool operator==(const SigEvent &e) const;
 
-    bool valid() const { return timesig_.isValid(); }
+    bool valid() const { return timesig_.is_valid(); }
 
-    String print() const { return timesig_.toString(); }
+    String print() const { return timesig_.to_string(); }
 
     TimeSigFrac timesig() const { return timesig_; }
 
-    void setTimesig(const TimeSigFrac &f) { timesig_ = f; }
+    void set_timesig(const TimeSigFrac &f) { timesig_ = f; }
 
     TimeSigFrac nominal() const { return nominal_; }
 
-    void setNominal(const TimeSigFrac &f) { nominal_ = f; }
+    void set_nominal(const TimeSigFrac &f) { nominal_ = f; }
 
     int bar() const { return bar_; }
 
-    void setBar(int val) { bar_ = val; }
+    void set_bar(int val) { bar_ = val; }
 
 private:
 
@@ -159,14 +161,14 @@ class TimeSigMap : public std::map<int, SigEvent> {
 public:
     TimeSigMap() {}
 
-    static const TimeSigFrac DEFAULT_TIME_SIGNATURE;
+    static const TimeSigFrac default_time_signature;
 
     void add(int tick, const Fraction &);
     void add(int tick, const SigEvent &ev);
 
     void del(int tick);
 
-    void clearRange(int tick1, int tick2);
+    void clear_range(int tick1, int tick2);
 
     void dump() const;
 
@@ -174,14 +176,14 @@ public:
 
     const SigEvent &timesig(const Fraction &f) const { return timesig(f.ticks()); }
 
-    void tickValues(int t, int *bar, int *beat, int *tick) const;
+    void tick_values(int t, int *bar, int *beat, int *tick) const;
     int bar2tick(int bar, int beat) const;
     String pos(int t) const;
 
     unsigned raster(unsigned tick, int raster) const;
     unsigned raster1(unsigned tick, int raster) const; // round down
     unsigned raster2(unsigned tick, int raster) const; // round up
-    int rasterStep(unsigned tick, int raster) const;
+    int raster_step(unsigned tick, int raster) const;
 
     void normalize();
 };

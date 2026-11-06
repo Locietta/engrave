@@ -48,27 +48,27 @@ public:
 
     Instrument *instrument() const { return instrument_; }
 
-    void setInstrument(Instrument *i) { instrument_ = i; }
+    void set_instrument(Instrument *i) { instrument_ = i; }
 
-    void setInstrument(Instrument &&i) { *instrument_ = i; }
+    void set_instrument(Instrument &&i) { *instrument_ = i; }
 
-    void setInstrument(const Instrument &i);
-    void setupInstrument(const Instrument *instrument, bool updateText = true);
+    void set_instrument(const Instrument &i);
+    void setup_instrument(const Instrument *instrument, bool update_text = true);
 
-    std::vector<KeySig *> keySigs(bool all = false) const;
+    std::vector<KeySig *> key_sigs(bool all = false) const;
     std::vector<Clef *> clefs() const;
 
     bool init() const { return init_; }
 
-    void setInit(bool init) { init_ = init; }
+    void set_init(bool init) { init_ = init; }
 
-    Segment *segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return to_segment(ownership_parent()); }
 
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue property_default(Pid) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 
-    bool placeMultiple() const override { return false; }
+    bool place_multiple() const override { return false; }
 
 private:
 

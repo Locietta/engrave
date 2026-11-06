@@ -28,13 +28,13 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-static void dumpLayoutData(const EngravingObject *obj, std::stringstream &ss) {
+static void dump_layout_data(const EngravingObject *obj, std::stringstream &ss) {
     for (EngravingObject *ch : obj->children()) {
-        if (ch->isEngravingItem()) {
-            toEngravingItem(ch)->ldata()->dump(ss);
+        if (ch->is_engraving_item()) {
+            to_engraving_item(ch)->ldata()->dump(ss);
         }
 
-        dumpLayoutData(ch, ss);
+        dump_layout_data(ch, ss);
     }
 }
 
@@ -42,6 +42,6 @@ std::string DumpLayoutData::dump(const Score *s) {
     std::stringstream ss;
     // Start from the score, which owns the pages, the systems and the measures; the
     // root item only leads to the dummy.
-    dumpLayoutData(s, ss);
+    dump_layout_data(s, ss);
     return ss.str();
 }

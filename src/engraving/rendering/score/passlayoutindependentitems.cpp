@@ -28,10 +28,10 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void PassLayoutIndependentItems::doRun(Score *score, LayoutContext &ctx) {
+void PassLayoutIndependentItems::do_run(Score *score, LayoutContext &ctx) {
     for (EngravingObject *child : score->children()) {
-        if (child->isEngravingItem()) {
-            scan(toEngravingItem(child), ctx);
+        if (child->is_engraving_item()) {
+            scan(to_engraving_item(child), ctx);
         }
     }
 }
@@ -59,11 +59,11 @@ void PassLayoutIndependentItems::scan(EngravingItem *item, LayoutContext &ctx) {
         case ElementType::FSYMBOL:
         case ElementType::SYSTEM_DIVIDER:
         case ElementType::TIMESIG:
-        case ElementType::TREMOLOBAR: TLayout::layoutItem(item, ctx);
+        case ElementType::TREMOLOBAR: TLayout::layout_item(item, ctx);
         default: break;
     }
 
-    for (EngravingItem *ch : item->childrenItems()) {
+    for (EngravingItem *ch : item->children_items()) {
         scan(ch, ctx);
     }
 }

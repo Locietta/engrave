@@ -30,44 +30,44 @@
 #include "volta.h"
 
 namespace mu::engraving {
-bool MScore::debugMode = false;
-bool MScore::testMode = false;
-bool MScore::testWriteStyleToScore = true;
+bool MScore::debug_mode = false;
+bool MScore::test_mode = false;
+bool MScore::test_write_style_to_score = true;
 
-bool MScore::noHorizontalStretch = false;
-bool MScore::noVerticalStretch = false;
-bool MScore::useFallbackFont = true;
+bool MScore::no_horizontal_stretch = false;
+bool MScore::no_vertical_stretch = false;
+bool MScore::use_fallback_font = true;
 
-bool MScore::saveTemplateMode = false;
-bool MScore::noGui = false;
+bool MScore::save_template_mode = false;
+bool MScore::no_gui = false;
 
-int MScore::_vRaster;
-int MScore::_hRaster;
-bool MScore::_verticalOrientation = false;
-double MScore::verticalPageGap = 0.35 * DPMM;
-double MScore::horizontalPageGapEven = 0.07 * DPMM;
-double MScore::horizontalPageGapOdd = 3.5 * DPMM;
+int MScore::v_raster_value;
+int MScore::h_raster_value;
+bool MScore::vertical_orientation_value = false;
+double MScore::vertical_page_gap = 0.35 * ::mu::engraving::dpmm;
+double MScore::horizontal_page_gap_even = 0.07 * ::mu::engraving::dpmm;
+double MScore::horizontal_page_gap_odd = 3.5 * ::mu::engraving::dpmm;
 
-bool MScore::warnPitchRange;
-bool MScore::warnGuitarBends;
-int MScore::pedalEventsMinTicks;
+bool MScore::warn_pitch_range;
+bool MScore::warn_guitar_bends;
+int MScore::pedal_events_min_ticks;
 
-double MScore::nudgeStep;
-double MScore::nudgeStep10;
-double MScore::nudgeStep50;
+double MScore::nudge_step;
+double MScore::nudge_step10;
+double MScore::nudge_step50;
 
-bool MScore::noImages = false;
-bool MScore::pdfPrinting = false;
-bool MScore::svgPrinting = false;
+bool MScore::no_images = false;
+bool MScore::pdf_printing = false;
+bool MScore::svg_printing = false;
 
-extern void initDrumset();
+extern void init_drumset();
 
-MsError MScore::_error{MsError::MS_NO_ERROR};
-bool MScore::_errorIsWarning = false;
+MsError MScore::error{MsError::MS_NO_ERROR};
+bool MScore::error_is_warning = false;
 
-void MScore::registerUiTypes() {}
+void MScore::register_ui_types() {}
 
-std::string MScore::errorToString(MsError err) {
+std::string MScore::error_to_string(MsError err) {
     switch (err) {
         case MsError::MS_NO_ERROR: return "MS_NO_ERROR";
         case MsError::NO_NOTE_SELECTED: return "NO_NOTE_SELECTED";

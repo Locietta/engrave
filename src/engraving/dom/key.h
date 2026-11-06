@@ -38,9 +38,9 @@ enum class AccidentalVal : signed char;
 //---------------------------------------------------------
 
 struct KeySym {
-    SymId sym = SymId::noSym;
-    int line = 0;          // relative line position (first staffline: line == 0, first gap: line == 1, ...)
-    Spatium xPos = 0.0_sp; // x position in staff spatium units
+    SymId sym = SymId::NO_SYM;
+    int line = 0;           // relative line position (first staffline: line == 0, first gap: line == 1, ...)
+    Spatium x_pos = 0.0_sp; // x position in staff spatium units
 };
 
 //---------------------------------------------------------
@@ -50,9 +50,9 @@ struct KeySym {
 
 struct CustDef {
     int degree = 0; // scale degree
-    SymId sym = SymId::noSym;
-    Spatium xAlt = 0.0_sp; // x position alteration in spatium units (default symbol position is based on index)
-    int octAlt = 0;        // octave alteration
+    SymId sym = SymId::NO_SYM;
+    Spatium x_alt = 0.0_sp; // x position alteration in spatium units (default symbol position is based on index)
+    int oct_alt = 0;        // octave alteration
 };
 
 //---------------------------------------------------------
@@ -67,47 +67,47 @@ public:
 
     bool operator!=(const KeySigEvent &e) const { return !(*this == e); }
 
-    void setConcertKey(Key v);
-    void setKey(Key v);
-    void setCustom(bool val);
+    void set_concert_key(Key v);
+    void set_key(Key v);
+    void set_custom(bool val);
     void print() const;
 
-    Key concertKey() const { return concertKey_; }
+    Key concert_key() const { return concert_key_; }
 
     Key key() const { return key_; }
 
     KeyMode mode() const { return mode_; }
 
-    void setMode(KeyMode m) { mode_ = m; }
+    void set_mode(KeyMode m) { mode_ = m; }
 
     bool custom() const { return custom_; }
 
-    bool isValid() const { return key_ != Key::INVALID; }
+    bool is_valid() const { return key_ != Key::INVALID; }
 
-    bool isAtonal() const { return mode_ == KeyMode::NONE; }
+    bool is_atonal() const { return mode_ == KeyMode::NONE; }
 
-    void setForInstrumentChange(bool forInstrumentChange) { forInstrumentChange_ = forInstrumentChange; }
+    void set_for_instrument_change(bool for_instrument_change) { for_instrument_change_ = for_instrument_change; }
 
-    bool forInstrumentChange() const { return forInstrumentChange_; }
+    bool for_instrument_change() const { return for_instrument_change_; }
 
-    void initFromSubtype(int);      // for backward compatibility
-    int degInKey(int degree) const; // return "absolute degree"
-    SymId symInKey(SymId sym, int degree) const;
+    void init_from_subtype(int);      // for backward compatibility
+    int deg_in_key(int degree) const; // return "absolute degree"
+    SymId sym_in_key(SymId sym, int degree) const;
 
-    std::vector<CustDef> &customKeyDefs() { return customKeyDefs_; }
+    std::vector<CustDef> &custom_key_defs() { return custom_key_defs_; }
 
-    const std::vector<CustDef> &customKeyDefs() const { return customKeyDefs_; }
+    const std::vector<CustDef> &custom_key_defs() const { return custom_key_defs_; }
 
 private:
 
-    void enforceLimits(bool transposing = false); // if true, enforce only trnasposing, otherways both
+    void enforce_limits(bool transposing = false); // if true, enforce only trnasposing, otherways both
 
-    Key concertKey_ = Key::INVALID; // -7 -> +7
-    Key key_ = Key::INVALID;        // actual key, depends on staff transposition
+    Key concert_key_ = Key::INVALID; // -7 -> +7
+    Key key_ = Key::INVALID;         // actual key, depends on staff transposition
     KeyMode mode_ = KeyMode::UNKNOWN;
     bool custom_ = false;
-    bool forInstrumentChange_ = false;
-    std::vector<CustDef> customKeyDefs_;
+    bool for_instrument_change_ = false;
+    std::vector<CustDef> custom_key_defs_;
 };
 
 //---------------------------------------------------------
@@ -115,9 +115,9 @@ private:
 ///   Contains a state for every absolute staff line.
 //---------------------------------------------------------
 
-static const int TIE_CONTEXT = 0x10;
-static const int MIN_ACC_STATE = 0;
-static const int MAX_ACC_STATE = 75;
+static const int tie_context_constant = 0x10;
+static const int min_acc_state = 0;
+static const int max_acc_state = 75;
 
 class AccidentalState {
 public:
@@ -125,21 +125,21 @@ public:
 
     void init(Key key);
     void init(const KeySigEvent &);
-    AccidentalVal accidentalVal(int line, bool &error) const;
-    AccidentalVal accidentalVal(int line) const;
-    bool forceRestateAccidental(int line) const;
-    bool tieContext(int line) const;
-    void setAccidentalVal(int line, AccidentalVal val, bool tieContext = false);
-    void setForceRestateAccidental(int line, bool forceRestate);
+    AccidentalVal accidental_val(int line, bool &error) const;
+    AccidentalVal accidental_val(int line) const;
+    bool force_restate_accidental(int line) const;
+    bool tie_context(int line) const;
+    void set_accidental_val(int line, AccidentalVal val, bool input_tie_context = false);
+    void set_force_restate_accidental(int line, bool force_restate);
 
 private:
 
-    uint8_t state_[MAX_ACC_STATE] = {}; // (0 -- 4) | TIE_CONTEXT
-    std::array<bool, MAX_ACC_STATE> forceRestateAccidental_;
+    uint8_t state_[::mu::engraving::max_acc_state] = {}; // (0 -- 4) | TIE_CONTEXT
+    std::array<bool, ::mu::engraving::max_acc_state> force_restate_accidental_;
 };
 
 struct Interval;
 
 enum class PreferSharpFlat : char;
-extern Interval calculateInterval(Key key1, Key key2);
+extern Interval calculate_interval(Key key1, Key key2);
 } // namespace mu::engraving

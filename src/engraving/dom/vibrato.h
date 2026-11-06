@@ -41,16 +41,16 @@ public:
 
     VibratoSegment *clone() const override { return new VibratoSegment(*this); }
 
-    Vibrato *vibrato() const { return toVibrato(spanner()); }
+    Vibrato *vibrato() const { return to_vibrato(spanner()); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 
     const SymIdList &symbols() const { return symbols_; }
 
-    void setSymbols(const SymIdList &s) { symbols_ = s; }
+    void set_symbols(const SymIdList &s) { symbols_ = s; }
 
-    void symbolLine(SymId start, SymId fill);
-    void symbolLine(SymId start, SymId fill, SymId end);
+    void symbol_line(SymId start, SymId fill);
+    void symbol_line(SymId start, SymId fill, SymId end);
 
 private:
     SymIdList symbols_;
@@ -72,30 +72,30 @@ public:
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment *createLineSegment() override;
-    PointF linePos(Grip grip, System **system) const override;
+    LineSegment *create_line_segment() override;
+    PointF line_pos(Grip grip, System **system) const override;
 
-    void setVibratoType(VibratoType tt) { vibratoType_ = tt; }
+    void set_vibrato_type(VibratoType tt) { vibrato_type_ = tt; }
 
-    VibratoType vibratoType() const { return vibratoType_; }
+    VibratoType vibrato_type() const { return vibrato_type_; }
 
-    String vibratoTypeUserName() const;
+    String vibrato_type_user_name() const;
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    int subtype() const override { return int(vibratoType_); }
+    int subtype() const override { return int(vibrato_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
 private:
-    VibratoType vibratoType_ = VibratoType::GUITAR_VIBRATO;
+    VibratoType vibrato_type_ = VibratoType::GUITAR_VIBRATO;
 };
 } // namespace mu::engraving
 

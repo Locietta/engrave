@@ -32,31 +32,31 @@ class PlayCountText final : public TextBase {
 public:
     PlayCountText *clone() const override { return new PlayCountText(*this); }
 
-    Segment *segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return to_segment(ownership_parent()); }
 
     BarLine *barline() const;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
-    String playCountCustomText() const { return playCountCustomText_; }
+    String play_count_custom_text() const { return play_count_custom_text_; }
 
-    void setPlayCountCustomText(const String &v) { playCountCustomText_ = v; }
+    void set_play_count_custom_text(const String &v) { play_count_custom_text_ = v; }
 
-    void setPlayCountTextSetting(const AutoCustomHide &v) { playCountTextSetting_ = v; }
+    void set_play_count_text_setting(const AutoCustomHide &v) { play_count_text_setting_ = v; }
 
-    AutoCustomHide playCountTextSetting() const { return playCountTextSetting_; }
+    AutoCustomHide play_count_text_setting() const { return play_count_text_setting_; }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
 private:
     friend class Factory;
     PlayCountText(DummyParentOr<Segment> parent, TextStyleType tid = TextStyleType::REPEAT_PLAY_COUNT);
 
-    AutoCustomHide playCountTextSetting_ = AutoCustomHide::AUTO;
-    String playCountCustomText_ = u"";
+    AutoCustomHide play_count_text_setting_ = AutoCustomHide::AUTO;
+    String play_count_custom_text_ = u"";
 };
 } // namespace mu::engraving

@@ -34,7 +34,7 @@ public:
 
     Pixmap(Size size) : size_(size) {}
 
-    Pixmap(const ByteArray &data, Size size) : size_(size) { setData(data); }
+    Pixmap(const ByteArray &data, Size size) : size_(size) { set_data(data); }
 
     Pixmap(int w, int h) : size_(Size(w, h)) {}
 
@@ -46,7 +46,7 @@ public:
 
     ByteArray data() const { return data_; }
 
-    bool isNull() const { return data_.empty(); }
+    bool is_null() const { return data_.empty(); }
 
     unsigned int key() const { return key_; }
 
@@ -57,7 +57,7 @@ public:
 
 private:
 
-    inline unsigned int doKey(const uint8_t *p, size_t len) const {
+    inline unsigned int do_key(const uint8_t *p, size_t len) const {
         unsigned int h = 0;
         for (size_t i = 0; i < len; ++i) {
             h = 31 * h + p[i];
@@ -65,9 +65,9 @@ private:
         return h;
     }
 
-    void setData(const ByteArray &data) {
+    void set_data(const ByteArray &data) {
         data_ = data;
-        key_ = doKey(data.constData(), data.size());
+        key_ = do_key(data.const_data(), data.size());
     }
 
     Size size_;

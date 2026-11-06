@@ -59,7 +59,7 @@ class IReader {
 public:
     virtual ~IReader() = default;
 
-    virtual muse::Ret readScoreFile(Score *score, XmlReader &xml, rw::ReadInOutData *out) = 0;
+    virtual muse::Ret read_score_file(Score *score, XmlReader &xml, rw::ReadInOutData *out) = 0;
 
     using Supported =
         std::variant<std::monostate, Accidental *, ChordRest *, Harmony *, Spanner *, StaffTypeChange *, Symbol *, Text *, Tuplet *>;
@@ -75,23 +75,23 @@ public:
     }
 
     template <typename T>
-    void readItem(T item, XmlReader &xml) {
+    void read_item(T item, XmlReader &xml) {
 #ifndef NDEBUG
         check_supported_static(item);
 #endif
-        doReadItem(static_cast<EngravingItem *>(item), xml);
+        do_read_item(static_cast<EngravingItem *>(item), xml);
     }
 
     //! NOTE Needs refactoring - reading should be separated from insertion
     //! (we read the elements into some structure, then inserted them)
-    virtual bool pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fraction scale) = 0;
-    virtual void pasteSymbols(XmlReader &e, ChordRest *dst) = 0;
+    virtual bool paste_staff(XmlReader &e, Segment *dst, staff_idx_t dst_staff, Fraction scale) = 0;
+    virtual void paste_symbols(XmlReader &e, ChordRest *dst) = 0;
 
     // compat
-    virtual void readTremoloCompat(engraving::compat::TremoloCompat *item, XmlReader &xml) = 0;
+    virtual void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml) = 0;
 
 private:
-    virtual void doReadItem(EngravingItem *item, XmlReader &xml) = 0;
+    virtual void do_read_item(EngravingItem *item, XmlReader &xml) = 0;
 };
 
 using IReaderPtr = std::shared_ptr<IReader>;

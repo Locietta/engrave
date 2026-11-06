@@ -35,13 +35,13 @@ class ReducedFraction;
 namespace MidiTuplet {
 struct TupletData;
 
-void addElementToTuplet(int voice, const ReducedFraction &onTime, const ReducedFraction &len, engraving::DurationElement *el,
-                        std::multimap<ReducedFraction, TupletData> &tuplets);
+void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const ReducedFraction &len, engraving::DurationElement *el,
+                           std::multimap<ReducedFraction, TupletData> &tuplets);
 
-void createTupletNotes(engraving::Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets);
+void create_tuplet_notes(engraving::Staff *staff, const std::multimap<ReducedFraction, TupletData> &tuplets);
 
 #ifndef NDEBUG
-bool haveTupletsEnoughElements(const engraving::Staff *staff);
+bool have_tuplets_enough_elements(const engraving::Staff *staff);
 #endif
 } // namespace MidiTuplet
 } // namespace mu::iex::midi

@@ -28,12 +28,12 @@
 namespace mu::engraving {
 class SymbolsMetaParser : public MetaParserBase<SymbolsMetaParser> {
 public:
-    static muse::mpe::ArticulationTypeSet symbolToArticulations(SymId symId, OrnamentStyle ornamentStyle = OrnamentStyle::DEFAULT);
+    static muse::mpe::ArticulationTypeSet symbol_to_articulations(SymId sym_id, OrnamentStyle ornament_style = OrnamentStyle::DEFAULT);
 
 private:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void do_parse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 };
 } // namespace mu::engraving
 

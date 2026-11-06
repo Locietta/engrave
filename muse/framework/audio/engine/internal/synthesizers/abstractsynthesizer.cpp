@@ -30,36 +30,36 @@ using namespace muse::audio::synth;
 AbstractSynthesizer::AbstractSynthesizer(const AudioInputParams &params, const engine::IAudioEngineConfiguration &config)
     : params_(params), config_(config) {}
 
-void AbstractSynthesizer::setMode(const ProcessMode mode) { mode_ = mode; }
+void AbstractSynthesizer::set_mode(const ProcessMode mode) { mode_ = mode; }
 
 ProcessMode AbstractSynthesizer::mode() const { return mode_; }
 
 const AudioInputParams &AbstractSynthesizer::params() const { return params_; }
 
-void AbstractSynthesizer::setup(const mpe::PlaybackData &playbackData) {
+void AbstractSynthesizer::setup(const mpe::PlaybackData &playback_data) {
 
-    setupData_ = playbackData.setupData;
+    setup_data_ = playback_data.setup_data;
 
-    setupSound(playbackData.setupData);
-    setupEvents(playbackData);
+    setup_sound(playback_data.setup_data);
+    setup_events(playback_data);
 }
 
-void AbstractSynthesizer::prepareToPlay() {}
+void AbstractSynthesizer::prepare_to_play() {}
 
-bool AbstractSynthesizer::readyToPlay() const { return true; }
+bool AbstractSynthesizer::ready_to_play() const { return true; }
 
-bool AbstractSynthesizer::hasPendingChunks() const { return hasPendingChunks_; }
+bool AbstractSynthesizer::has_pending_chunks() const { return has_pending_chunks_; }
 
-void AbstractSynthesizer::processInput() {}
+void AbstractSynthesizer::process_input() {}
 
-InputProcessingProgress AbstractSynthesizer::inputProcessingProgress() const { return inputProcessingProgress_; }
+InputProcessingProgress AbstractSynthesizer::input_processing_progress() const { return input_processing_progress_; }
 
-void AbstractSynthesizer::clearCache() {}
+void AbstractSynthesizer::clear_cache() {}
 
-muse::audio::msecs_t AbstractSynthesizer::samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const {
-    return samplesPerChannel * 1000000 / sampleRate;
+muse::audio::msecs_t AbstractSynthesizer::samples_to_msecs(const samples_t samples_per_channel, const samples_t sample_rate) const {
+    return samples_per_channel * 1000000 / sample_rate;
 }
 
-samples_t AbstractSynthesizer::microSecsToSamples(const msecs_t msec, const samples_t sampleRate) const {
-    return (msec.raw() / 1000000.f) * sampleRate;
+samples_t AbstractSynthesizer::micro_secs_to_samples(const msecs_t msec, const samples_t sample_rate) const {
+    return (msec.raw() / 1000000.f) * sample_rate;
 }

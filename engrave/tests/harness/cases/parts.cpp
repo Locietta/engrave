@@ -45,8 +45,8 @@ bool live(Document &document, const ElementId &id) {
 
 const InstrumentTemplate *template_of(std::string_view instrument_id) {
     const mu::engraving::InstrumentIndex found =
-        mu::engraving::searchTemplateIndexForId(muse::String::fromStdString(std::string(instrument_id)));
-    return found.instrTemplate;
+        mu::engraving::search_template_index_for_id(muse::String::from_std_string(std::string(instrument_id)));
+    return found.instr_template;
 }
 
 // What the case saw before the batch: the counts, the operand and where it sat.
@@ -66,7 +66,7 @@ void observe(Document &document, State &state) {
     state.parts = master.parts().size();
     state.staves = master.staves().size();
     state.excerpts = master.excerpts().size();
-    if (!master.excerpts().empty()) state.excerpt_staves = master.excerpts().front()->excerptScore()->staves().size();
+    if (!master.excerpts().empty()) state.excerpt_staves = master.excerpts().front()->excerpt_score()->staves().size();
 }
 
 std::string expect_part_added(Document &document, const State &state, std::string_view instrument, bool before) {
@@ -76,14 +76,14 @@ std::string expect_part_added(Document &document, const State &state, std::strin
     if (!templ) return "the instrument template is gone";
     const std::size_t index = before ? state.index : state.parts;
     const Part *part = master.parts()[index];
-    if (part->nstaves() != templ->staffCount) return "the new part has another number of staves";
+    if (part->nstaves() != templ->staff_count) return "the new part has another number of staves";
     if (part->instrument()->id() != templ->id) return "the new part plays another instrument";
-    if (!part->eid().isValid()) return "the new part has no id";
-    const std::size_t first = master.staffIdx(part);
+    if (!part->eid().is_valid()) return "the new part has no id";
+    const std::size_t first = master.staff_idx(part);
     for (std::size_t i = 0; i < part->nstaves(); ++i) {
         const Staff *staff = part->staves()[i];
         if (staff->idx() != first + i) return "a new staff is not where its part says it is";
-        if (!staff->eid().isValid()) return "a new staff has no id";
+        if (!staff->eid().is_valid()) return "a new staff has no id";
     }
     return {};
 }
@@ -130,8 +130,8 @@ OpCase remove_part(std::string name, std::string fixture, std::size_t index) {
                 shared->index = index;
                 shared->target = nth_id(document, "Part", index);
                 const EngravingObject &object = element(document, shared->target);
-                shared->operand_staves = object.isPart() ? mu::engraving::toPart(&object)->nstaves() : 0;
-                shared->excerpt_part = object.isPart() && !mu::engraving::toPart(&object)->score()->isMaster();
+                shared->operand_staves = object.is_part() ? mu::engraving::to_part(&object)->nstaves() : 0;
+                shared->excerpt_part = object.is_part() && !mu::engraving::to_part(&object)->score()->is_master();
                 return Batch{{RemovePart{shared->target}}};
             },
         .expect = [shared](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
@@ -163,7 +163,7 @@ OpCase add_staff(std::string name, std::string fixture) {
                 observe(document, *shared);
                 shared->target = nth_id(document, "Part", 0);
                 const EngravingObject &object = element(document, shared->target);
-                shared->operand_staves = mu::engraving::toPart(&object)->nstaves();
+                shared->operand_staves = mu::engraving::to_part(&object)->nstaves();
                 return Batch{{AddStaff{shared->target}}};
             },
         .expect = [shared](Document &document, const Fingerprint &, const Fingerprint &) -> std::string {
@@ -173,13 +173,13 @@ OpCase add_staff(std::string name, std::string fixture) {
             if (parts.empty() || parts.front()->nstaves() != shared->operand_staves + 1) return "the part did not get another staff";
             const Staff *staff = parts.front()->staves().back();
             if (staff->idx() != shared->operand_staves) return "the new staff is not the part's last";
-            if (!staff->eid().isValid()) return "the new staff has no id";
+            if (!staff->eid().is_valid()) return "the new staff has no id";
             if (master.excerpts().size() != shared->excerpts) return "an excerpt came or went";
             if (!master.excerpts().empty()) {
-                const Score *excerpt = master.excerpts().front()->excerptScore();
+                const Score *excerpt = master.excerpts().front()->excerpt_score();
                 // The excerpt links a copy of the new staff to the new staff.
                 if (excerpt->staves().size() != shared->excerpt_staves + 1) return "the excerpt did not get a staff";
-                if (!excerpt->staff(shared->excerpt_staves)->isLinked()) return "the excerpt's new staff is not linked";
+                if (!excerpt->staff(shared->excerpt_staves)->is_linked()) return "the excerpt's new staff is not linked";
             }
             return std::string{};
         },
@@ -206,7 +206,7 @@ OpCase remove_staff(std::string name, std::string fixture, std::size_t index) {
             if (live(document, shared->target)) return "the removed staff still resolves";
             if (master.excerpts().size() != shared->excerpts) return "an excerpt came or went";
             if (!master.excerpts().empty()) {
-                const Score *excerpt = master.excerpts().front()->excerptScore();
+                const Score *excerpt = master.excerpts().front()->excerpt_score();
                 if (excerpt->staves().size() != shared->excerpt_staves - 1) return "the excerpt kept the linked staff";
             }
             return std::string{};
@@ -235,9 +235,9 @@ OpCase excerpts(std::string name, std::string fixture, std::size_t parts) {
             MasterScore &master = master_of(document);
             if (master.excerpts().size() != shared->excerpts + shared->made) return "an excerpt is missing";
             for (const Excerpt *excerpt : master.excerpts()) {
-                const Score *score = excerpt->excerptScore();
+                const Score *score = excerpt->excerpt_score();
                 if (!score) return "an excerpt has no score";
-                if (!score->eid().isValid()) return "an excerpt score has no id";
+                if (!score->eid().is_valid()) return "an excerpt score has no id";
                 if (score->parts().empty()) return "an excerpt has no part";
                 if (score->staves().empty()) return "an excerpt has no staff";
                 if (score->parts().front()->nstaves() != score->staves().size()) return "an excerpt's part and staves disagree";

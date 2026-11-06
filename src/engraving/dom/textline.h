@@ -41,11 +41,11 @@ public:
 
     TextLineSegment *clone() const override { return new TextLineSegment(*this); }
 
-    void initStyle();
+    void init_style();
 
-    virtual EngravingObject *propertyDelegate(Pid) const override;
+    virtual EngravingObject *property_delegate(Pid) const override;
 
-    TextLine *textLine() const { return toTextLine(spanner()); }
+    TextLine *text_line() const { return to_text_line(spanner()); }
 };
 
 //---------------------------------------------------------
@@ -62,24 +62,24 @@ public:
 
     ~TextLine() {}
 
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
     TextLine *clone() const override { return new TextLine(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    void initStyle();
+    void init_style();
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    bool allowTimeAnchor() const override;
+    bool allow_time_anchor() const override;
 
-    PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid id, const PropertyValue &) override;
-    PropertyValue getProperty(Pid id) const override;
+    PropertyValue property_default(Pid) const override;
+    bool set_property(Pid id, const PropertyValue &) override;
+    PropertyValue get_property(Pid id) const override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 };
 } // namespace mu::engraving
 #endif

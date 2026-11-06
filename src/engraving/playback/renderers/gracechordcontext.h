@@ -30,9 +30,9 @@ namespace mu::engraving {
 class Chord;
 
 struct GraceChordCtx {
-    RenderingContext principalChordCtx;
-    std::vector<std::pair<const Chord *, RenderingContext>> graceChordCtxList;
+    RenderingContext principal_chord_ctx;
+    std::vector<std::pair<const Chord *, RenderingContext>> grace_chord_ctx_list;
 
-    static GraceChordCtx buildCtx(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx);
+    static GraceChordCtx build_ctx(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx);
 };
 } // namespace mu::engraving

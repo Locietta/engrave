@@ -29,7 +29,7 @@ namespace mu::engraving {
 class ChordFilter : public FilterBase<ChordFilter> {
 protected:
     friend class FilterBase<ChordFilter>;
-    static bool isPlayable(const EngravingItem *item, const RenderingContext &ctx);
+    static bool is_playable(const EngravingItem *item, const RenderingContext &ctx);
 };
 } // namespace mu::engraving
 

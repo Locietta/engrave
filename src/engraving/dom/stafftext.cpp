@@ -30,55 +30,55 @@
 
 using namespace mu::engraving;
 
-static const ElementStyle STAFF_STYLE{
-    {Sid::staffTextPlacement, Pid::PLACEMENT},
-    {Sid::staffTextMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle staff_style{
+    {Sid::STAFF_TEXT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::STAFF_TEXT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 StaffText::StaffText(DummyParentOr<Segment> parent, TextStyleType tid)
     : StaffTextBase(ElementType::STAFF_TEXT, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    initElementStyle(&STAFF_STYLE);
-    resetProperty(Pid::MUSIC_SYMBOL_SIZE);
+    init_element_style(&::staff_style);
+    reset_property(Pid::MUSIC_SYMBOL_SIZE);
 }
 
 StaffText::StaffText(const StaffText &t) : StaffTextBase(t) {
-    if (t.soundFlag_) {
-        setSoundFlag(t.soundFlag_->clone());
+    if (t.sound_flag_) {
+        set_sound_flag(t.sound_flag_->clone());
     }
 }
 
-EngravingItem *StaffText::linkedClone() {
-    StaffText *clone = static_cast<StaffText *>(StaffTextBase::linkedClone());
+EngravingItem *StaffText::linked_clone() {
+    StaffText *clone = static_cast<StaffText *>(StaffTextBase::linked_clone());
 
-    if (clone->soundFlag_ && soundFlag_) {
-        score()->undo(new Link(clone->soundFlag_, soundFlag_));
+    if (clone->sound_flag_ && sound_flag_) {
+        score()->undo(new Link(clone->sound_flag_, sound_flag_));
     }
 
     return clone;
 }
 
-PropertyValue StaffText::propertyDefault(Pid id) const {
+PropertyValue StaffText::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::STAFF;
-        default: return StaffTextBase::propertyDefault(id);
+        default: return StaffTextBase::property_default(id);
     }
 }
 
-void StaffText::scanElements(std::function<void(EngravingItem *)> func) {
-    if (soundFlag_) {
-        soundFlag_->scanElements(func);
+void StaffText::scan_elements(std::function<void(EngravingItem *)> func) {
+    if (sound_flag_) {
+        sound_flag_->scan_elements(func);
     }
 
-    StaffTextBase::scanElements(func);
+    StaffTextBase::scan_elements(func);
 }
 
 void StaffText::add(EngravingItem *e) {
-    e->setOwnershipParent(this);
-    e->setTrack(track());
+    e->set_ownership_parent(this);
+    e->set_track(track());
 
     switch (e->type()) {
         case ElementType::SOUND_FLAG:
-            setSoundFlag(toSoundFlag(e));
+            set_sound_flag(to_sound_flag(e));
             e->added();
             return;
         default: break;
@@ -90,12 +90,12 @@ void StaffText::add(EngravingItem *e) {
 void StaffText::remove(EngravingItem *e) {
     switch (e->type()) {
         case ElementType::SOUND_FLAG: {
-            if (soundFlag() == e) {
-                setSoundFlag(nullptr);
+            if (sound_flag() == e) {
+                set_sound_flag(nullptr);
                 e->removed();
                 return;
             } else {
-                LOGD("StaffText::remove: %s %p there is already another sound flag", e->typeName(), e);
+                LOGD("StaffText::remove: %s %p there is already another sound flag", e->type_name(), e);
             }
             break;
         }
@@ -105,29 +105,29 @@ void StaffText::remove(EngravingItem *e) {
     StaffTextBase::remove(e);
 }
 
-void StaffText::setTrack(track_idx_t idx) {
-    StaffTextBase::setTrack(idx);
+void StaffText::set_track(track_idx_t idx) {
+    StaffTextBase::set_track(idx);
 
-    if (soundFlag_) {
-        soundFlag_->setTrack(idx);
+    if (sound_flag_) {
+        sound_flag_->set_track(idx);
     }
 }
 
-bool StaffText::hasSoundFlag() const { return soundFlag_ != nullptr; }
+bool StaffText::has_sound_flag() const { return sound_flag_ != nullptr; }
 
-SoundFlag *StaffText::soundFlag() const { return soundFlag_; }
+SoundFlag *StaffText::sound_flag() const { return sound_flag_; }
 
-void StaffText::setSoundFlag(SoundFlag *flag) {
-    if (soundFlag_ == flag) {
+void StaffText::set_sound_flag(SoundFlag *flag) {
+    if (sound_flag_ == flag) {
         return;
     }
 
-    soundFlag_ = flag;
+    sound_flag_ = flag;
 
-    if (soundFlag_) {
-        soundFlag_->setOwnershipParent(this);
-        soundFlag_->setTrack(track());
+    if (sound_flag_) {
+        sound_flag_->set_ownership_parent(this);
+        sound_flag_->set_track(track());
     }
 
-    triggerLayout();
+    trigger_layout();
 }

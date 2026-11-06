@@ -32,37 +32,37 @@ using namespace mu::engraving;
 using namespace mu::engraving::compat;
 using namespace mu::engraving::write;
 
-void WriteScoreHook::onWriteStyle302(Score *score, XmlWriter &xml, bool inlineStyle) {
-    bool isWriteStyle = inlineStyle;
+void WriteScoreHook::on_write_style302(Score *score, XmlWriter &xml, bool inline_style) {
+    bool is_write_style = inline_style;
 
     //! NOTE If not the master score, because the Excerpts (parts) have not yet been write to separate files
-    if (!score->isMaster()) {
-        isWriteStyle = true;
+    if (!score->is_master()) {
+        is_write_style = true;
     }
 
     //! NOTE If the test mode, because the tests have not yet been adapted to the new format
-    if (MScore::testMode && MScore::testWriteStyleToScore) {
-        isWriteStyle = true;
+    if (MScore::test_mode && MScore::test_write_style_to_score) {
+        is_write_style = true;
     }
 
-    if (isWriteStyle) {
+    if (is_write_style) {
         score->style().save(xml, true); // save only differences to builtin style (logic from 3.)
     }
 }
 
-void WriteScoreHook::onWriteExcerpts302(Score *score, XmlWriter &xml, WriteContext &ctx) {
-    bool isWriteExcerpts = ctx.inlineExcerpts();
+void WriteScoreHook::on_write_excerpts302(Score *score, XmlWriter &xml, WriteContext &ctx) {
+    bool is_write_excerpts = ctx.inline_excerpts();
 
     //! NOTE If the test mode, because the tests have not yet been adapted to the new format
-    if (MScore::testMode) {
-        isWriteExcerpts = true;
+    if (MScore::test_mode) {
+        is_write_excerpts = true;
     }
 
-    if (isWriteExcerpts && score->isMaster() && !ctx.shouldWriteRange()) {
-        MasterScore *mScore = static_cast<MasterScore *>(score);
-        for (const Excerpt *excerpt : mScore->excerpts()) {
-            if (excerpt->excerptScore() != score) {
-                write::Writer::write(excerpt->excerptScore(), xml, ctx, *this); // recursion write
+    if (is_write_excerpts && score->is_master() && !ctx.should_write_range()) {
+        MasterScore *m_score = static_cast<MasterScore *>(score);
+        for (const Excerpt *excerpt : m_score->excerpts()) {
+            if (excerpt->excerpt_score() != score) {
+                write::Writer::write(excerpt->excerpt_score(), xml, ctx, *this); // recursion write
             }
         }
     }

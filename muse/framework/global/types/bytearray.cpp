@@ -53,14 +53,14 @@ ByteArray::ByteArray(size_t size) {
     data_->operator[](size) = 0;
 }
 
-ByteArray ByteArray::fromRawData(const uint8_t *data, size_t size) {
+ByteArray ByteArray::from_raw_data(const uint8_t *data, size_t size) {
     ByteArray ba;
     ba.raw_.size = size;
     ba.raw_.data = data;
     return ba;
 }
 
-ByteArray ByteArray::fromRawData(const char *data, size_t size) { return fromRawData(reinterpret_cast<const uint8_t *>(data), size); }
+ByteArray ByteArray::from_raw_data(const char *data, size_t size) { return from_raw_data(reinterpret_cast<const uint8_t *>(data), size); }
 
 uint8_t *ByteArray::data() {
     detach();
@@ -72,7 +72,7 @@ std::vector<uint8_t> &ByteArray::vdata() {
     return *data_.get();
 }
 
-const uint8_t *ByteArray::constData() const {
+const uint8_t *ByteArray::const_data() const {
     if (raw_.data) {
         return raw_.data;
     }
@@ -80,9 +80,9 @@ const uint8_t *ByteArray::constData() const {
     return data_->data();
 }
 
-const char *ByteArray::constChar() const { return reinterpret_cast<const char *>(constData()); }
+const char *ByteArray::const_char() const { return reinterpret_cast<const char *>(const_data()); }
 
-const std::vector<uint8_t> &ByteArray::constVData() const { return *data_.get(); }
+const std::vector<uint8_t> &ByteArray::const_v_data() const { return *data_.get(); }
 
 size_t ByteArray::size() const {
     if (raw_.data) {
@@ -116,7 +116,7 @@ bool ByteArray::operator==(const ByteArray &other) const {
     if (size() != other.size()) {
         return false;
     }
-    return std::memcmp(constData(), other.constData(), size()) == 0;
+    return std::memcmp(const_data(), other.const_data(), size()) == 0;
 }
 
 bool ByteArray::empty() const { return size() == 0; }
@@ -173,12 +173,12 @@ void ByteArray::push_back(const uint8_t *b, size_t len) {
     }
 }
 
-void ByteArray::push_back(const ByteArray &ba) { push_back(ba.constData(), ba.size()); }
+void ByteArray::push_back(const ByteArray &ba) { push_back(ba.const_data(), ba.size()); }
 
 uint8_t ByteArray::at(size_t pos) const {
     assert(pos < size());
     if (pos < size()) {
-        return constData()[pos];
+        return const_data()[pos];
     }
     return 0;
 }
@@ -197,6 +197,6 @@ uint8_t &ByteArray::operator[](size_t pos) {
     return dummy;
 }
 
-ByteArray ByteArray::left(size_t len) const { return ByteArray(constData(), len); }
+ByteArray ByteArray::left(size_t len) const { return ByteArray(const_data(), len); }
 
-ByteArray ByteArray::right(size_t len) const { return ByteArray(&(constData()[size() - len]), len); }
+ByteArray ByteArray::right(size_t len) const { return ByteArray(&(const_data()[size() - len]), len); }

@@ -48,7 +48,7 @@ public:
 
         union {
             double offset;
-            int leafIndex;
+            int leaf_index;
         };
 
         Type type;
@@ -56,17 +56,17 @@ public:
 private:
 
     void initialize(const RectF &rect, int depth, int index);
-    void climbTree(BspTreeVisitor *visitor, const PointF &pos, int index = 0);
-    void climbTree(BspTreeVisitor *visitor, const RectF &rect, int index = 0);
+    void climb_tree(BspTreeVisitor *visitor, const PointF &pos, int index = 0);
+    void climb_tree(BspTreeVisitor *visitor, const RectF &rect, int index = 0);
 
-    void nearestNeighbor(const PointF &pos, EngravingItem **bestItem, double &bestDistance, int nodeIndex = 0);
+    void nearest_neighbor(const PointF &pos, EngravingItem **best_item, double &best_distance, int node_index = 0);
 
-    RectF rectForIndex(int index) const;
+    RectF rect_for_index(int index) const;
 
     unsigned int depth_ = 0;
     std::vector<Node> nodes_;
     std::vector<std::vector<EngravingItem *>> leaves_;
-    int leafCnt_ = 0;
+    int leaf_cnt_ = 0;
     RectF rect_;
 
 public:
@@ -81,13 +81,13 @@ public:
     std::vector<EngravingItem *> items(const RectF &rect);
     std::vector<EngravingItem *> items(const PointF &pos);
 
-    EngravingItem *nearestNeighbor(const PointF &pos);
+    EngravingItem *nearest_neighbor(const PointF &pos);
 
-    int leafCount() const { return leafCnt_; }
+    int leaf_count() const { return leaf_cnt_; }
 
-    inline int firstChildIndex(int index) const { return index * 2 + 1; }
+    inline int first_child_index(int index) const { return index * 2 + 1; }
 
-    inline int parentIndex(int index) const { return index > 0 ? ((index & 1) ? ((index - 1) / 2) : ((index - 2) / 2)) : -1; }
+    inline int parent_index(int index) const { return index > 0 ? ((index & 1) ? ((index - 1) / 2) : ((index - 2) / 2)) : -1; }
 
 #ifndef NDEBUG
     String debug(int index) const;

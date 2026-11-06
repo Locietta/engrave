@@ -27,9 +27,9 @@
 namespace mu::engraving {
 class ArpeggioRenderer : public RenderBase<ArpeggioRenderer> {
 public:
-    static const muse::mpe::ArticulationTypeSet &supportedTypes();
+    static const muse::mpe::ArticulationTypeSet &supported_types();
 
-    static void doRender(const EngravingItem *item, const muse::mpe::ArticulationType preferredType, const RenderingContext &ctx,
-                         muse::mpe::PlaybackEventList &result);
+    static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,
+                          muse::mpe::PlaybackEventList &result);
 };
 } // namespace mu::engraving

@@ -52,7 +52,7 @@ void assertionFailure(std::string_view, const char *, int);
             assert(var_name && #cond);                 \
         }                                              \
     }
-#define DO_ASSERT_X(cond, msg) DO_ASSERT_X_IMPL(cond, msg, UNIQUE_VAR_NAME(__do_assert_))
+#define DO_ASSERT_X(cond, msg) DO_ASSERT_X_IMPL(cond, msg, UNIQUE_VAR_NAME(do_assert_))
 
 #define DO_ASSERT(cond) DO_ASSERT_X(cond, #cond)
 #define ASSERT_X(msg) DO_ASSERT_X(false, msg)
@@ -69,7 +69,7 @@ void assertionFailure(std::string_view, const char *, int);
     }                                                \
     if (!(var_name))
 
-#define IF_ASSERT_FAILED_X(cond, msg) IF_ASSERT_FAILED_X_IMPL(cond, msg, UNIQUE_VAR_NAME(__if_assert_failed_))
+#define IF_ASSERT_FAILED_X(cond, msg) IF_ASSERT_FAILED_X_IMPL(cond, msg, UNIQUE_VAR_NAME(if_assert_failed_))
 #define IF_ASSERT_FAILED(cond) IF_ASSERT_FAILED_X(cond, #cond)
 
 #define IF_FAILED_IMPL(cond, var_name)                                  \
@@ -79,6 +79,6 @@ void assertionFailure(std::string_view, const char *, int);
     }                                                                   \
     if (!(var_name))
 
-#define IF_FAILED(cond) IF_FAILED_IMPL(cond, UNIQUE_VAR_NAME(__if_failed_))
+#define IF_FAILED(cond) IF_FAILED_IMPL(cond, UNIQUE_VAR_NAME(if_failed_))
 
 #define UNUSED(x) (void) x;

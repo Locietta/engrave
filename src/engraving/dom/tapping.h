@@ -45,32 +45,32 @@ public:
 
     TappingHand hand() const { return hand_; }
 
-    void setHand(TappingHand h) { hand_ = h; }
+    void set_hand(TappingHand h) { hand_ = h; }
 
     TappingText *text() const { return text_; }
 
-    void setText(TappingText *text) { text_ = text; }
+    void set_text(TappingText *text) { text_ = text; }
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
-    TappingHalfSlur *halfSlurAbove() const { return halfSlurAbove_; }
+    TappingHalfSlur *half_slur_above() const { return half_slur_above_; }
 
-    void setHalfSlurAbove(TappingHalfSlur *s) { halfSlurAbove_ = s; }
+    void set_half_slur_above(TappingHalfSlur *s) { half_slur_above_ = s; }
 
-    TappingHalfSlur *halfSlurBelow() const { return halfSlurBelow_; }
+    TappingHalfSlur *half_slur_below() const { return half_slur_below_; }
 
-    void setHalfSlurBelow(TappingHalfSlur *s) { halfSlurBelow_ = s; }
+    void set_half_slur_below(TappingHalfSlur *s) { half_slur_below_ = s; }
 
-    LHTappingShowItems lhShowItems() const;
+    LHTappingShowItems lh_show_items() const;
 
-    void styleChanged() override;
+    void style_changed() override;
 
     double mag() const override;
 
     int subtype() const override;
 
-    TranslatableString typeUserName() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString type_user_name() const override;
+    TranslatableString subtype_user_name() const override;
 
 protected:
     friend class mu::engraving::Factory;
@@ -79,8 +79,8 @@ protected:
 private:
     TappingHand hand_ = TappingHand::INVALID;
     TappingText *text_ = nullptr;
-    TappingHalfSlur *halfSlurAbove_ = nullptr;
-    TappingHalfSlur *halfSlurBelow_ = nullptr;
+    TappingHalfSlur *half_slur_above_ = nullptr;
+    TappingHalfSlur *half_slur_below_ = nullptr;
 };
 
 class TappingHalfSlurSegment : public SlurSegment {
@@ -93,16 +93,16 @@ public:
 
     TappingHalfSlurSegment *clone() const override { return new TappingHalfSlurSegment(*this); }
 
-    TappingHalfSlur *tappingHalfSlur() const { return toTappingHalfSlur(spanner()); }
+    TappingHalfSlur *tapping_half_slur() const { return to_tapping_half_slur(spanner()); }
 };
 
 class TappingHalfSlur : public Slur {
     OBJECT_ALLOCATOR(engraving, TappingHalfSlur)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR)
 
-    bool isHalfSlurAbove() const { return isHalfSlurAbove_; }
+    bool is_half_slur_above() const { return is_half_slur_above_; }
 
-    void setIsHalfSlurAbove(bool v) { isHalfSlurAbove_ = v; }
+    void set_is_half_slur_above(bool v) { is_half_slur_above_ = v; }
 
 public:
     TappingHalfSlur(EngravingItem *parent);
@@ -110,15 +110,15 @@ public:
 
     TappingHalfSlur *clone() const override { return new TappingHalfSlur(*this); }
 
-    TappingHalfSlurSegment *newSlurTieSegment() override { return new TappingHalfSlurSegment(this); }
+    TappingHalfSlurSegment *new_slur_tie_segment() override { return new TappingHalfSlurSegment(this); }
 
-    Tapping *tapping() const { return toTapping(ownershipParent()); }
+    Tapping *tapping() const { return to_tapping(ownership_parent()); }
 
 protected:
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 
 private:
-    bool isHalfSlurAbove_ = true;
+    bool is_half_slur_above_ = true;
 };
 
 class TappingText final : public TextBase {
@@ -131,10 +131,10 @@ public:
 
     TappingText *clone() const override { return new TappingText(*this); }
 
-    Tapping *tapping() const { return toTapping(ownershipParent()); }
+    Tapping *tapping() const { return to_tapping(ownership_parent()); }
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 };
 } // namespace mu::engraving

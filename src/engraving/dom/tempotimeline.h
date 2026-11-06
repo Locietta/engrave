@@ -42,8 +42,8 @@ struct TempoTimePoint {
 
 class TempoTimeline {
 public:
-    void rebuild(const AutomationCurve &tempoCurve, const PausesMap &pauses);
-    void rebuild(const TempoValues &tempoValues, const PausesMap &pauses);
+    void rebuild(const AutomationCurve &tempo_curve, const PausesMap &pauses);
+    void rebuild(const TempoValues &tempo_values, const PausesMap &pauses);
 
     double utick2utime(int utick) const;
     int utime2utick(double time) const;
@@ -53,17 +53,17 @@ public:
 
     const std::vector<TempoTimePoint> &points() const { return points_; }
 
-    const BeatsPerSecond &tempoMultiplier() const { return tempoMultiplier_; }
+    const BeatsPerSecond &tempo_multiplier() const { return tempo_multiplier_; }
 
-    void setTempoMultiplier(const BeatsPerSecond &bps);
+    void set_tempo_multiplier(const BeatsPerSecond &bps);
 
 private:
     std::vector<TempoTimePoint> points_; // sorted by utick for O(logN) lookup
     PausesMap pauses_;
-    BeatsPerSecond tempoMultiplier_ = 1.0;
+    BeatsPerSecond tempo_multiplier_ = 1.0;
 
-    mutable size_t utick2utimeHint_ = 0; // cached points_ index for utick2utime()
-    mutable size_t utime2utickHint_ = 0; // cached points_ index for utime2utick()
-    mutable size_t tempoHint_ = 0;       // cached points_ index for tempo()
+    mutable size_t utick2utime_hint_ = 0; // cached points_ index for utick2utime()
+    mutable size_t utime2utick_hint_ = 0; // cached points_ index for utime2utick()
+    mutable size_t tempo_hint_ = 0;       // cached points_ index for tempo()
 };
 } // namespace mu::engraving

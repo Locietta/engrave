@@ -53,7 +53,7 @@ const T *checked_cast(const E *source) {
 #endif
 }
 
-inline bool string_is_hex(const std::string &str) { return strings::startsWith(str, "0x"); }
+inline bool string_is_hex(const std::string &str) { return strings::starts_with(str, "0x"); }
 
 inline std::string ptr_to_string(void *p) {
     std::stringstream ss;

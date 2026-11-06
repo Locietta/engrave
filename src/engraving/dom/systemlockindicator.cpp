@@ -32,21 +32,21 @@
 
 namespace mu::engraving {
 SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
-    : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), systemLock_(lock) {}
+    : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), system_lock_(lock) {}
 
-void SystemLockIndicator::setSelected(bool v) {
-    EngravingItem::setSelected(v);
-    renderer()->layoutItem(this);
-    system()->page()->invalidateBspTree();
+void SystemLockIndicator::set_selected(bool v) {
+    EngravingItem::set_selected(v);
+    renderer()->layout_item(this);
+    system()->page()->invalidate_bsp_tree();
 }
 
-String SystemLockIndicator::formatBarsAndBeats() const {
-    const MeasureBase *startMB = systemLock_->startMB();
-    const MeasureBase *endMB = systemLock_->endMB();
-    const Measure *startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
-    const Measure *endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
-    const int startMeasureNum = startMeasure ? startMeasure->measureNumber() : -1;
-    const int endMeasureNum = endMeasure ? endMeasure->measureNumber() : -1;
-    return muse::mtrc("engraving", "Start measure: %1; End measure: %2").arg(startMeasureNum).arg(endMeasureNum);
+String SystemLockIndicator::format_bars_and_beats() const {
+    const MeasureBase *start_mb = system_lock_->start_mb();
+    const MeasureBase *end_mb = system_lock_->end_mb();
+    const Measure *start_measure = start_mb->is_measure() ? to_measure(start_mb) : to_measure(start_mb->prev_measure());
+    const Measure *end_measure = end_mb->is_measure() ? to_measure(end_mb) : to_measure(end_mb->prev_measure());
+    const int start_measure_num = start_measure ? start_measure->measure_number() : -1;
+    const int end_measure_num = end_measure ? end_measure->measure_number() : -1;
+    return muse::mtrc("engraving", "Start measure: %1; End measure: %2").arg(start_measure_num).arg(end_measure_num);
 }
 } // namespace mu::engraving

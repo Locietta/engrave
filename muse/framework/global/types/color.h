@@ -35,7 +35,8 @@ public:
     Color();
     Color(const Color &other);
 
-    constexpr Color(int r, int g, int b, int a = DEFAULT_ALPHA) : rgba_(rgba(r, g, b, a)), isValid_(isRgbaValid(r, g, b, a)) {}
+    constexpr Color(int r, int g, int b, int a = ::muse::Color::default_alpha)
+        : rgba_(rgba(r, g, b, a)), is_valid_(is_rgba_valid(r, g, b, a)) {}
 
     Color(const char *color);
 
@@ -45,74 +46,74 @@ public:
 
     bool operator<(const Color &other) const;
 
-    std::string toString() const;
-    static Color fromString(const std::string &str);
-    static Color fromString(const char *str);
-    static Color fromString(const String &str);
+    std::string to_string() const;
+    static Color from_string(const std::string &str);
+    static Color from_string(const char *str);
+    static Color from_string(const String &str);
 
-    void setNamedColor(const std::string &color);
-    void setNamedColor(const char *color);
-    void setRed(int value);
-    void setGreen(int value);
-    void setBlue(int value);
-    void setAlpha(int value);
+    void set_named_color(const std::string &color);
+    void set_named_color(const char *color);
+    void set_red(int value);
+    void set_green(int value);
+    void set_blue(int value);
+    void set_alpha(int value);
 
-    void applyTint(double tint);
+    void apply_tint(double tint);
 
     Color inverted() const;
 
     bool operator==(const Color &other) const;
     bool operator!=(const Color &other) const;
 
-    bool isValid() const;
+    bool is_valid() const;
 
     int red() const;
     int green() const;
     int blue() const;
     int alpha() const;
 
-    static constexpr int DEFAULT_ALPHA = 255;
+    static constexpr int default_alpha = 255;
 
     static const Color transparent;
-    static const Color BLACK;
-    static const Color WHITE;
-    static const Color RED;
-    static const Color GREEN;
-    static const Color BLUE;
+    static const Color black;
+    static const Color white;
+    static const Color red_color;
+    static const Color green_color;
+    static const Color blue_color;
 
 private:
 
-    void setRgba(int r, int g, int b, int a);
-    void setRgba(Rgba rgb);
+    void set_rgba(int r, int g, int b, int a);
+    void set_rgba(Rgba rgb);
 
-    Rgba rgba_ = rgba(0, 0, 0, DEFAULT_ALPHA);
-    bool isValid_ = false;
+    Rgba rgba_ = rgba(0, 0, 0, ::muse::Color::default_alpha);
+    bool is_valid_ = false;
 };
 
 inline const Color Color::transparent = {255, 255, 255, 0};
-inline const Color Color::BLACK = {0, 0, 0, 255};
-inline const Color Color::WHITE = {255, 255, 255, 255};
-inline const Color Color::RED = {255, 0, 0, 255};
-inline const Color Color::GREEN = {0, 255, 0, 255};
-inline const Color Color::BLUE{0, 0, 255, 255};
+inline const Color Color::black = {0, 0, 0, 255};
+inline const Color Color::white = {255, 255, 255, 255};
+inline const Color Color::red_color = {255, 0, 0, 255};
+inline const Color Color::green_color = {0, 255, 0, 255};
+inline const Color Color::blue_color{0, 0, 255, 255};
 
-inline Color blendColors(const Color &c1, const Color &c2) {
+inline Color blend_colors(const Color &c1, const Color &c2) {
     float alpha1 = c1.alpha() / 255.f;
     float alpha2 = c2.alpha() / 255.f;
 
-    float alphaOut = alpha2 + alpha1 * (1 - alpha2);
+    float alpha_out = alpha2 + alpha1 * (1 - alpha2);
 
-    if (is_zero(alphaOut)) {
+    if (is_zero(alpha_out)) {
         return Color(0, 0, 0, 0);
     }
-    int r = (c2.red() * alpha2 + c1.red() * alpha1 * (1 - alpha2)) / alphaOut;
-    int g = (c2.green() * alpha2 + c1.green() * alpha1 * (1 - alpha2)) / alphaOut;
-    int b = (c2.blue() * alpha2 + c1.blue() * alpha1 * (1 - alpha2)) / alphaOut;
+    int r = (c2.red() * alpha2 + c1.red() * alpha1 * (1 - alpha2)) / alpha_out;
+    int g = (c2.green() * alpha2 + c1.green() * alpha1 * (1 - alpha2)) / alpha_out;
+    int b = (c2.blue() * alpha2 + c1.blue() * alpha1 * (1 - alpha2)) / alpha_out;
 
-    return Color(r, g, b, alphaOut * 255);
+    return Color(r, g, b, alpha_out * 255);
 }
 
-inline Color blendColors(const Color &c1, const Color &c2, float alpha) {
+inline Color blend_colors(const Color &c1, const Color &c2, float alpha) {
     float alpha1 = 1.0;
     float alpha2 = alpha;
 

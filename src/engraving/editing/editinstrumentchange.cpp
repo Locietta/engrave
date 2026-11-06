@@ -38,18 +38,18 @@ using namespace mu::engraving;
 
 void ChangeInstrument::flip() {
     Part *part = is->staff()->part();
-    Fraction tickStart = is->segment()->tick();
+    Fraction tick_start = is->segment()->tick();
     Instrument *oi = is->instrument(); //new Instrument(*is->instrument());
 
     // set instrument in both part and instrument change element
-    is->setInstrument(instrument); //*instrument
-    part->setInstrument(instrument, tickStart);
+    is->set_instrument(instrument); //*instrument
+    part->set_instrument(instrument, tick_start);
 
     // update score
-    is->masterScore()->rebuildMidiMapping();
-    is->masterScore()->updateChannel();
-    is->score()->setInstrumentsChanged(true);
-    is->triggerLayoutAll();
+    is->master_score()->rebuild_midi_mapping();
+    is->master_score()->update_channel();
+    is->score()->set_instruments_changed(true);
+    is->trigger_layout_all();
 
     // remember original instrument
     instrument = oi;

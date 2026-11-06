@@ -46,11 +46,11 @@ using namespace mu::engraving;
 //   undoRemoveTuplet
 //---------------------------------------------------------
 
-static void undoRemoveTuplet(DurationElement *cr) {
+static void undo_remove_tuplet(DurationElement *cr) {
     if (cr->tuplet()) {
         cr->tuplet()->remove(cr);
         if (cr->tuplet()->elements().empty()) {
-            undoRemoveTuplet(cr->tuplet());
+            undo_remove_tuplet(cr->tuplet());
         }
     }
 }
@@ -59,11 +59,11 @@ static void undoRemoveTuplet(DurationElement *cr) {
 //   undoAddTuplet
 //---------------------------------------------------------
 
-static void undoAddTuplet(DurationElement *cr) {
+static void undo_add_tuplet(DurationElement *cr) {
     if (cr->tuplet()) {
         cr->tuplet()->add(cr);
         if (cr->tuplet()->elements().size() == 1) {
-            undoAddTuplet(cr->tuplet());
+            undo_add_tuplet(cr->tuplet());
         }
     }
 }
@@ -73,103 +73,104 @@ static void undoAddTuplet(DurationElement *cr) {
 //---------------------------------------------------------
 
 AddElement::AddElement(EngravingItem *e) {
-    DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to AddElement").arg(String::fromAscii(e->typeName())));
-    DO_ASSERT_X(e->parent()->score() == e->score(), String(u"Item %1 is in a different score to its parent %2")
-                                                        .arg(String::fromAscii(e->typeName()), String::fromAscii(e->parent()->typeName())));
+    DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to AddElement").arg(String::from_ascii(e->type_name())));
+    DO_ASSERT_X(e->parent()->score() == e->score(),
+                String(u"Item %1 is in a different score to its parent %2")
+                    .arg(String::from_ascii(e->type_name()), String::from_ascii(e->parent()->type_name())));
     element = e;
 }
 
-void AddElement::cleanup(bool wasDone) {
-    if (!wasDone) {
+void AddElement::cleanup(bool was_done) {
+    if (!was_done) {
         delete element;
         element = nullptr;
     }
 }
 
-void AddElement::endUndoRedo(bool isUndo) const {
-    if (element->isChordRest()) {
-        if (isUndo) {
-            undoRemoveTuplet(toChordRest(element));
+void AddElement::end_undo_redo(bool is_undo) const {
+    if (element->is_chord_rest()) {
+        if (is_undo) {
+            undo_remove_tuplet(to_chord_rest(element));
         } else {
-            undoAddTuplet(toChordRest(element));
+            undo_add_tuplet(to_chord_rest(element));
         }
-    } else if (element->isClef()) {
-        element->triggerLayout();
-        element->score()->setLayout(element->staff()->nextClefTick(element->tick()), element->staffIdx());
-    } else if (element->isKeySig()) {
-        element->triggerLayout();
-        element->score()->setLayout(element->staff()->nextKeyTick(element->tick()), element->staffIdx());
+    } else if (element->is_clef()) {
+        element->trigger_layout();
+        element->score()->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
+    } else if (element->is_key_sig()) {
+        element->trigger_layout();
+        element->score()->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
     }
 }
 
 void AddElement::undo() {
     Score *score = element->score();
-    EngravingItem::disconnectSharedTree(element);
+    EngravingItem::disconnect_shared_tree(element);
 
-    if (!element->isTuplet()) {
-        score->removeElement(element);
+    if (!element->is_tuplet()) {
+        score->remove_element(element);
     }
 
-    endUndoRedo(true);
+    end_undo_redo(true);
 }
 
 void AddElement::redo() {
     Score *score = element->score();
 
-    if (!element->isTuplet()) {
-        score->addElement(element);
+    if (!element->is_tuplet()) {
+        score->add_element(element);
     }
 
-    endUndoRedo(false);
+    end_undo_redo(false);
 }
 
 const char *AddElement::name() const {
     static char buffer[64];
-    if (element->isTextBase()) {
-        snprintf(buffer, 64, "Add:    %s <%s> %p", element->typeName(), muPrintable(toTextBase(element)->plainText()), element);
-    } else if (element->isSegment()) {
-        snprintf(buffer, 64, "Add:    <%s-%s> %p", element->typeName(), toSegment(element)->subTypeName(), element);
+    if (element->is_text_base()) {
+        snprintf(buffer, 64, "Add:    %s <%s> %p", element->type_name(), muPrintable(to_text_base(element)->plain_text()), element);
+    } else if (element->is_segment()) {
+        snprintf(buffer, 64, "Add:    <%s-%s> %p", element->type_name(), to_segment(element)->sub_type_name(), element);
     } else {
-        snprintf(buffer, 64, "Add:    <%s> %p", element->typeName(), element);
+        snprintf(buffer, 64, "Add:    <%s> %p", element->type_name(), element);
     }
     return buffer;
 }
 
-bool AddElement::matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const {
+bool AddElement::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
     switch (f) {
-        case UndoableCommandFilter::AddElement: return target == element;
-        case UndoableCommandFilter::AddElementLinked: return muse::contains(target->linkList(), static_cast<EngravingObject *>(element));
+        case UndoableCommandFilter::ADD_ELEMENT: return target == element;
+        case UndoableCommandFilter::ADD_ELEMENT_LINKED: return muse::contains(target->link_list(), static_cast<EngravingObject *>(element));
         default: break;
     }
     return false;
 }
 
-std::vector<EngravingObject *> AddElement::objectItems() const { return compoundObjects(element); }
+std::vector<EngravingObject *> AddElement::object_items() const { return compound_objects(element); }
 
 //---------------------------------------------------------
 //   removeNote
 //    Helper function for RemoveElement class
 //---------------------------------------------------------
 
-static void removeNote(const Note *note) {
+static void remove_note(const Note *note) {
     Score *score = note->score();
-    Tie *tieFor = note->tieFor();
-    Tie *tieBack = note->tieBack();
-    if (tieFor && tieFor->endNote()) {
-        score->doUndoRemoveElement(tieFor);
+    Tie *tie_for = note->tie_for();
+    Tie *tie_back = note->tie_back();
+    if (tie_for && tie_for->end_note()) {
+        score->do_undo_remove_element(tie_for);
     }
-    if (tieBack) {
-        if (tieBack->tieJumpPoints() && tieBack->tieJumpPoints()->size() > 1) {
-            Tie::changeTieType(tieBack);
+    if (tie_back) {
+        if (tie_back->tie_jump_points() && tie_back->tie_jump_points()->size() > 1) {
+            Tie::change_tie_type(tie_back);
         } else {
-            score->doUndoRemoveElement(tieBack);
+            score->do_undo_remove_element(tie_back);
         }
     }
-    for (Spanner *s : note->spannerBack()) {
-        score->doUndoRemoveElement(s);
+    for (Spanner *s : note->spanner_back()) {
+        score->do_undo_remove_element(s);
     }
-    for (Spanner *s : note->spannerFor()) {
-        score->doUndoRemoveElement(s);
+    for (Spanner *s : note->spanner_for()) {
+        score->do_undo_remove_element(s);
     }
 }
 
@@ -178,45 +179,45 @@ static void removeNote(const Note *note) {
 //---------------------------------------------------------
 
 RemoveElement::RemoveElement(EngravingItem *e) {
-    DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to RemoveElement").arg(String::fromAscii(e->typeName())));
+    DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to RemoveElement").arg(String::from_ascii(e->type_name())));
     element = e;
 
     Score *score = element->score();
-    if (element->isChordRest()) {
-        ChordRest *cr = toChordRest(element);
+    if (element->is_chord_rest()) {
+        ChordRest *cr = to_chord_rest(element);
         if (cr->tuplet() && cr->tuplet()->elements().size() <= 1) {
-            score->doUndoRemoveElement(cr->tuplet());
+            score->do_undo_remove_element(cr->tuplet());
         }
-        if (e->isChord()) {
-            Chord *chord = toChord(e);
+        if (e->is_chord()) {
+            Chord *chord = to_chord(e);
             // remove tremolo between 2 notes
-            if (chord->tremoloTwoChord()) {
-                TremoloTwoChord *tremolo = chord->tremoloTwoChord();
-                score->doUndoRemoveElement(tremolo);
+            if (chord->tremolo_two_chord()) {
+                TremoloTwoChord *tremolo = chord->tremolo_two_chord();
+                score->do_undo_remove_element(tremolo);
             }
             // Move arpeggio down to next available note
             if (chord->arpeggio()) {
-                chord->arpeggio()->rebaseStartAnchor(AnchorRebaseDirection::DOWN);
+                chord->arpeggio()->rebase_start_anchor(AnchorRebaseDirection::DOWN);
             } else {
                 // If this chord is the end of an arpeggio, move the end of the arpeggio upwards to the next available chord
-                Arpeggio *spanArp = chord->spanArpeggio();
-                if (spanArp && chord->track() == spanArp->endTrack()) {
-                    spanArp->rebaseEndAnchor(AnchorRebaseDirection::UP);
+                Arpeggio *span_arp = chord->span_arpeggio();
+                if (span_arp && chord->track() == span_arp->end_track()) {
+                    span_arp->rebase_end_anchor(AnchorRebaseDirection::UP);
                 }
             }
             for (const Note *note : chord->notes()) {
-                removeNote(note);
+                remove_note(note);
             }
         }
-    } else if (element->isNote()) {
+    } else if (element->is_note()) {
         // Removing an individual note within a chord
-        const Note *note = toNote(element);
-        removeNote(note);
+        const Note *note = to_note(element);
+        remove_note(note);
     }
 }
 
-void RemoveElement::cleanup(bool wasDone) {
-    if (wasDone) {
+void RemoveElement::cleanup(bool was_done) {
+    if (was_done) {
         delete element;
         element = nullptr;
     }
@@ -225,120 +226,121 @@ void RemoveElement::cleanup(bool wasDone) {
 void RemoveElement::undo() {
     Score *score = element->score();
 
-    if (!element->isTuplet()) {
-        score->addElement(element);
+    if (!element->is_tuplet()) {
+        score->add_element(element);
     }
 
-    if (element->isChordRest()) {
-        if (element->isChord()) {
-            Chord *chord = toChord(element);
+    if (element->is_chord_rest()) {
+        if (element->is_chord()) {
+            Chord *chord = to_chord(element);
             for (Note *note : chord->notes()) {
-                note->connectTiedNotes();
+                note->connect_tied_notes();
             }
         }
-        undoAddTuplet(toChordRest(element));
-    } else if (element->isClef()) {
-        score->setLayout(element->staff()->nextClefTick(element->tick()), element->staffIdx());
-    } else if (element->isKeySig()) {
-        score->setLayout(element->staff()->nextKeyTick(element->tick()), element->staffIdx());
+        undo_add_tuplet(to_chord_rest(element));
+    } else if (element->is_clef()) {
+        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
+    } else if (element->is_key_sig()) {
+        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
     }
 }
 
 void RemoveElement::redo() {
     Score *score = element->score();
 
-    EngravingItem::disconnectSharedTree(element);
-    if (!element->isTuplet()) {
-        score->removeElement(element);
+    EngravingItem::disconnect_shared_tree(element);
+    if (!element->is_tuplet()) {
+        score->remove_element(element);
     }
 
-    if (element->isChordRest()) {
-        undoRemoveTuplet(toChordRest(element));
-        if (element->isChord()) {
-            Chord *chord = toChord(element);
+    if (element->is_chord_rest()) {
+        undo_remove_tuplet(to_chord_rest(element));
+        if (element->is_chord()) {
+            Chord *chord = to_chord(element);
             for (Note *note : chord->notes()) {
-                note->disconnectTiedNotes();
+                note->disconnect_tied_notes();
             }
         }
-    } else if (element->isClef()) {
-        score->setLayout(element->staff()->nextClefTick(element->tick()), element->staffIdx());
-    } else if (element->isKeySig()) {
-        score->setLayout(element->staff()->nextKeyTick(element->tick()), element->staffIdx());
+    } else if (element->is_clef()) {
+        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
+    } else if (element->is_key_sig()) {
+        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
     }
 }
 
 const char *RemoveElement::name() const {
     static char buffer[64];
-    if (element->isTextBase()) {
-        snprintf(buffer, 64, "Remove: %s <%s> %p", element->typeName(), muPrintable(toTextBase(element)->plainText()), element);
-    } else if (element->isSegment()) {
-        snprintf(buffer, 64, "Remove: <%s-%s> %p", element->typeName(), toSegment(element)->subTypeName(), element);
+    if (element->is_text_base()) {
+        snprintf(buffer, 64, "Remove: %s <%s> %p", element->type_name(), muPrintable(to_text_base(element)->plain_text()), element);
+    } else if (element->is_segment()) {
+        snprintf(buffer, 64, "Remove: <%s-%s> %p", element->type_name(), to_segment(element)->sub_type_name(), element);
     } else {
-        snprintf(buffer, 64, "Remove: %s %p", element->typeName(), element);
+        snprintf(buffer, 64, "Remove: %s %p", element->type_name(), element);
     }
     return buffer;
 }
 
-bool RemoveElement::matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const {
+bool RemoveElement::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
     switch (f) {
-        case UndoableCommandFilter::RemoveElement: return target == element;
-        case UndoableCommandFilter::RemoveElementLinked: return muse::contains(target->linkList(), static_cast<EngravingObject *>(element));
+        case UndoableCommandFilter::REMOVE_ELEMENT: return target == element;
+        case UndoableCommandFilter::REMOVE_ELEMENT_LINKED:
+            return muse::contains(target->link_list(), static_cast<EngravingObject *>(element));
         default: break;
     }
     return false;
 }
 
-std::vector<EngravingObject *> RemoveElement::objectItems() const { return compoundObjects(element); }
+std::vector<EngravingObject *> RemoveElement::object_items() const { return compound_objects(element); }
 
 //---------------------------------------------------------
 //   ChangeElement
 //---------------------------------------------------------
 
 ChangeElement::ChangeElement(EngravingItem *oe, EngravingItem *ne) {
-    oldElement = oe;
-    newElement = ne;
+    old_element = oe;
+    new_element = ne;
 }
 
 void ChangeElement::flip() {
-    const LinkedObjects *links = oldElement->links();
+    const LinkedObjects *links = old_element->links();
     if (links) {
-        newElement->linkTo(oldElement);
-        oldElement->unlink();
+        new_element->link_to(old_element);
+        old_element->unlink();
     }
 
-    newElement->setTrack(oldElement->track());
-    if (newElement->isSpanner()) {
-        toSpanner(newElement)->setTrack2(toSpanner(oldElement)->track2());
+    new_element->set_track(old_element->track());
+    if (new_element->is_spanner()) {
+        to_spanner(new_element)->set_track2(to_spanner(old_element)->track2());
     }
 
-    Score *score = oldElement->score();
-    if (!score->selection().isRange()) {
-        if (oldElement->selected()) {
-            score->deselect(oldElement);
+    Score *score = old_element->score();
+    if (!score->selection().is_range()) {
+        if (old_element->selected()) {
+            score->deselect(old_element);
         }
-        if (newElement->selected()) {
-            score->select(newElement, SelectType::ADD);
+        if (new_element->selected()) {
+            score->select(new_element, SelectType::ADD);
         }
     }
 
-    if (oldElement->ownershipParent() == nullptr) {
-        newElement->setScore(score);
-        score->removeElement(oldElement);
-        score->addElement(newElement);
+    if (old_element->ownership_parent() == nullptr) {
+        new_element->set_score(score);
+        score->remove_element(old_element);
+        score->add_element(new_element);
     } else {
-        oldElement->ownershipParentItem()->change(oldElement, newElement);
+        old_element->ownership_parent_item()->change(old_element, new_element);
     }
 
-    if (newElement->isKeySig()) {
-        KeySig *ks = toKeySig(newElement);
+    if (new_element->is_key_sig()) {
+        KeySig *ks = to_key_sig(new_element);
         if (!ks->generated()) {
-            ks->staff()->setKey(ks->tick(), ks->keySigEvent());
+            ks->staff()->set_key(ks->tick(), ks->key_sig_event());
         }
     }
 
-    if (newElement->isSpannerSegment()) {
-        SpannerSegment *os = toSpannerSegment(oldElement);
-        SpannerSegment *ns = toSpannerSegment(newElement);
+    if (new_element->is_spanner_segment()) {
+        SpannerSegment *os = to_spanner_segment(old_element);
+        SpannerSegment *ns = to_spanner_segment(new_element);
         if (os->system()) {
             os->system()->remove(os);
         }
@@ -347,9 +349,9 @@ void ChangeElement::flip() {
         }
     }
 
-    std::swap(oldElement, newElement);
-    oldElement->triggerLayout();
-    newElement->triggerLayout();
+    std::swap(old_element, new_element);
+    old_element->trigger_layout();
+    new_element->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -357,16 +359,16 @@ void ChangeElement::flip() {
 //---------------------------------------------------------
 
 void ChangeParent::flip() {
-    EngravingItem *p = element->ownershipParentItem();
-    staff_idx_t si = element->staffIdx();
+    EngravingItem *p = element->ownership_parent_item();
+    staff_idx_t si = element->staff_idx();
     p->remove(element);
-    element->setOwnershipParent(parent);
-    element->setTrack(staffIdx * VOICES + element->voice());
+    element->set_ownership_parent(parent);
+    element->set_track(staff_idx * ::mu::engraving::voices + element->voice());
     parent->add(element);
-    staffIdx = si;
+    staff_idx = si;
     parent = p;
 
-    element->triggerLayout();
+    element->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -374,7 +376,7 @@ void ChangeParent::flip() {
 //---------------------------------------------------------
 
 LinkUnlink::~LinkUnlink() {
-    if (le && mustDelete) {
+    if (le && must_delete) {
         assert(le->size() <= 1);
         delete le;
     }
@@ -382,22 +384,22 @@ LinkUnlink::~LinkUnlink() {
 
 void LinkUnlink::link() {
     if (le->size() == 1) {
-        le->front()->setLinks(le);
+        le->front()->set_links(le);
     }
-    mustDelete = false;
+    must_delete = false;
     le->push_back(e);
-    e->setLinks(le);
+    e->set_links(le);
 }
 
 void LinkUnlink::unlink() {
     assert(le->contains(e));
     le->remove(e);
     if (le->size() == 1) {
-        le->front()->setLinks(nullptr);
-        mustDelete = true;
+        le->front()->set_links(nullptr);
+        must_delete = true;
     }
 
-    e->setLinks(nullptr);
+    e->set_links(nullptr);
 }
 
 //---------------------------------------------------------
@@ -415,8 +417,8 @@ Link::Link(EngravingObject *e1, EngravingObject *e2) {
     e = e1;
 }
 
-bool Link::matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const {
-    if (f == UndoableCommandFilter::Link) {
+bool Link::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
+    if (f == UndoableCommandFilter::LINK) {
         return e == target || le->contains(const_cast<EngravingItem *>(target));
     }
     return false;
@@ -426,22 +428,22 @@ bool Link::matchesFilter(UndoableCommandFilter f, const EngravingItem *target) c
 //   Unlink
 //---------------------------------------------------------
 
-Unlink::Unlink(EngravingObject *_e) {
-    e = _e;
+Unlink::Unlink(EngravingObject *input_e) {
+    e = input_e;
     le = e->links();
     assert(le);
 }
 
 void ChangeSegmentParent::flip() {
     Measure *p = segment->measure();
-    Fraction oldTick = segment->rtick();
+    Fraction old_tick = segment->rtick();
     p->remove(segment);
-    segment->setOwnershipParent(parent);
-    segment->setRtick(tick);
+    segment->set_ownership_parent(parent);
+    segment->set_rtick(tick);
     parent->add(segment);
 
     parent = p;
-    tick = oldTick;
+    tick = old_tick;
 
-    segment->triggerLayout();
+    segment->trigger_layout();
 }

@@ -33,16 +33,17 @@ class InsertRemoveMeasures : public UndoableCommand {
     MeasureBase *fm = nullptr;
     MeasureBase *lm = nullptr;
 
-    static std::vector<Clef *> getCourtesyClefs(Measure *m);
+    static std::vector<Clef *> get_courtesy_clefs(Measure *m);
 
-    bool moveStc = true;
+    bool move_stc_value = true;
 
 protected:
-    void removeMeasures();
-    void insertMeasures();
+    void remove_measures();
+    void insert_measures();
 
 public:
-    InsertRemoveMeasures(MeasureBase *_fm, MeasureBase *_lm, bool _moveStc) : fm(_fm), lm(_lm), moveStc(_moveStc) {}
+    InsertRemoveMeasures(MeasureBase *input_fm, MeasureBase *input_lm, bool input_move_stc)
+        : fm(input_fm), lm(input_lm), move_stc_value(input_move_stc) {}
 
     virtual void undo() override = 0;
     virtual void redo() override = 0;
@@ -52,26 +53,26 @@ public:
 class RemoveMeasures : public InsertRemoveMeasures {
     OBJECT_ALLOCATOR(engraving, RemoveMeasures)
 public:
-    RemoveMeasures(MeasureBase *m1, MeasureBase *m2, bool moveStc = true) : InsertRemoveMeasures(m1, m2, moveStc) {}
+    RemoveMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
 
-    void undo() override { insertMeasures(); }
+    void undo() override { insert_measures(); }
 
-    void redo() override { removeMeasures(); }
+    void redo() override { remove_measures(); }
 
-    UNDO_TYPE(CommandType::RemoveMeasures)
+    UNDO_TYPE(CommandType::REMOVE_MEASURES)
     UNDO_NAME("RemoveMeasures")
 };
 
 class InsertMeasures : public InsertRemoveMeasures {
     OBJECT_ALLOCATOR(engraving, InsertMeasures)
 public:
-    InsertMeasures(MeasureBase *m1, MeasureBase *m2, bool moveStc = true) : InsertRemoveMeasures(m1, m2, moveStc) {}
+    InsertMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
 
-    void redo() override { insertMeasures(); }
+    void redo() override { insert_measures(); }
 
-    void undo() override { removeMeasures(); }
+    void undo() override { remove_measures(); }
 
-    UNDO_TYPE(CommandType::InsertMeasures)
+    UNDO_TYPE(CommandType::INSERT_MEASURES)
     UNDO_NAME("InsertMeasures")
 };
 
@@ -86,7 +87,7 @@ class ChangeMeasureLen : public UndoableCommand {
 public:
     ChangeMeasureLen(Measure *, Fraction);
 
-    UNDO_TYPE(CommandType::ChangeMeasureLen)
+    UNDO_TYPE(CommandType::CHANGE_MEASURE_LEN)
     UNDO_NAME("ChangeMeasureLen")
     UNDO_CHANGED_OBJECTS({measure})
 };
@@ -100,9 +101,9 @@ class ChangeMMRest : public UndoableCommand {
     void flip() override;
 
 public:
-    ChangeMMRest(Measure *_m, Measure *_mmr) : m(_m), mmrest(_mmr) {}
+    ChangeMMRest(Measure *input_m, Measure *mmr) : m(input_m), mmrest(mmr) {}
 
-    UNDO_TYPE(CommandType::ChangeMMRest)
+    UNDO_TYPE(CommandType::CHANGE_MM_REST)
     UNDO_NAME("ChangeMMRest")
     UNDO_CHANGED_OBJECTS({m, mmrest})
 };
@@ -145,14 +146,15 @@ class ChangeMeasureRepeatCount : public UndoableCommand {
 
     Measure *m = nullptr;
     int count = 0;
-    staff_idx_t staffIdx = muse::nidx;
+    staff_idx_t staff_idx_value = muse::nidx;
 
     void flip() override;
 
 public:
-    ChangeMeasureRepeatCount(Measure *_m, int _count, staff_idx_t _staffIdx) : m(_m), count(_count), staffIdx(_staffIdx) {}
+    ChangeMeasureRepeatCount(Measure *input_m, int input_count, staff_idx_t input_staff_idx)
+        : m(input_m), count(input_count), staff_idx_value(input_staff_idx) {}
 
-    UNDO_TYPE(CommandType::ChangeMeasureRepeatCount)
+    UNDO_TYPE(CommandType::CHANGE_MEASURE_REPEAT_COUNT)
     UNDO_NAME("ChangeMeasureRepeatCount")
     UNDO_CHANGED_OBJECTS({m})
 };

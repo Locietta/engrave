@@ -35,7 +35,7 @@ struct Tuplet2 {
     Tuplet *o = nullptr;
     Tuplet *n = nullptr;
 
-    Tuplet2(Tuplet *_o, Tuplet *_n) : o(_o), n(_n) {}
+    Tuplet2(Tuplet *input_o, Tuplet *input_n) : o(input_o), n(input_n) {}
 };
 
 //---------------------------------------------------------
@@ -46,9 +46,9 @@ class TupletMap {
 public:
     TupletMap() {}
 
-    Tuplet *findNew(Tuplet *o);
+    Tuplet *find_new(Tuplet *o);
 
-    void add(Tuplet *_o, Tuplet *_n) { map_.emplace_back(_o, _n); }
+    void add(Tuplet *input_o, Tuplet *input_n) { map_.emplace_back(input_o, input_n); }
 
 private:
     std::vector<Tuplet2> map_;

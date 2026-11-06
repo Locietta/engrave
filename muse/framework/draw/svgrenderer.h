@@ -35,12 +35,12 @@ public:
     SvgRenderer(const ByteArray &data);
     ~SvgRenderer();
 
-    SizeF defaultSize() const;
+    SizeF default_size() const;
 
     void render(Painter *painter, const RectF &rect);
 
 private:
-    QSvgRenderer *qSvgRenderer_ = nullptr;
+    QSvgRenderer *q_svg_renderer_ = nullptr;
 };
 } // namespace muse::draw
 

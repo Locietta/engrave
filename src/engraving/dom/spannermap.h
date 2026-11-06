@@ -43,12 +43,12 @@ public:
 
     SpannerMap();
 
-    const IntervalList &findContained(int start, int stop, bool excludeCollisions = false) const;
-    const IntervalList &findOverlapping(int start, int stop, bool excludeCollisions = false) const;
+    const IntervalList &find_contained(int start, int stop, bool exclude_collisions = false) const;
+    const IntervalList &find_overlapping(int start, int stop, bool exclude_collisions = false) const;
 
     const std::multimap<int, Spanner *> &map() const { return *this; }
 
-    void collectIntervals(IntervalList &regularIntervals, IntervalList &collisionFreeIntervals) const;
+    void collect_intervals(IntervalList &regular_intervals, IntervalList &collision_free_intervals) const;
 
     const_reverse_it crbegin() const { return std::multimap<int, Spanner *>::crbegin(); }
 
@@ -58,8 +58,8 @@ public:
 
     const_it cend() const { return std::multimap<int, Spanner *>::cend(); }
 
-    void addSpanner(Spanner *s);
-    bool removeSpanner(Spanner *s);
+    void add_spanner(Spanner *s);
+    bool remove_spanner(Spanner *s);
 
     void clear() {
         std::multimap<int, Spanner *>::clear();
@@ -70,7 +70,7 @@ public:
 
     void update() const;
 
-    void setDirty() const { dirty_ = true; } // must be called if a spanner changes start/length
+    void set_dirty() const { dirty_ = true; } // must be called if a spanner changes start/length
 #ifndef NDEBUG
     void dump() const;
 #endif
@@ -79,7 +79,7 @@ private:
 
     mutable bool dirty_ = false;
     mutable interval_tree::IntervalTree<Spanner *> tree_;
-    mutable interval_tree::IntervalTree<Spanner *> collisionFreeTree_;
+    mutable interval_tree::IntervalTree<Spanner *> collision_free_tree_;
     mutable std::vector<interval_tree::Interval<Spanner *>> results_;
 };
 } // namespace mu::engraving

@@ -39,7 +39,7 @@ enum class PedalPosition : unsigned char {
 enum HarpStringType : unsigned char { D, C, B, E, F, G, A };
 
 // Number of strings per octave on a harp
-static constexpr int HARP_STRING_NO = 7;
+static constexpr int harp_string_no = 7;
 
 class HarpPedalDiagram final : public TextBase {
     OBJECT_ALLOCATOR(engraving, HarpPedalDiagram)
@@ -51,43 +51,43 @@ public:
 
     HarpPedalDiagram *clone() const override { return new HarpPedalDiagram(*this); }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid id) const override;
 
-    void setIsDiagram(bool diagram);
+    void set_is_diagram(bool diagram);
 
-    bool isDiagram() const { return isDiagram_; }
+    bool is_diagram() const { return is_diagram_; }
 
-    std::array<PedalPosition, HARP_STRING_NO> getPedalState() const { return pedalState_; }
+    std::array<PedalPosition, ::mu::engraving::harp_string_no> get_pedal_state() const { return pedal_state_; }
 
-    void setPedalState(std::array<PedalPosition, HARP_STRING_NO> state);
+    void set_pedal_state(std::array<PedalPosition, ::mu::engraving::harp_string_no> state);
 
-    void setPedal(HarpStringType harpString, PedalPosition pedal);
+    void set_pedal(HarpStringType harp_string, PedalPosition pedal);
 
-    void setPlayableTpcs();
+    void set_playable_tpcs();
 
-    String createDiagramText();
-    void updateDiagramText();
+    String create_diagram_text();
+    void update_diagram_text();
 
-    void undoChangePedalState(std::array<PedalPosition, HARP_STRING_NO> _pedalState);
+    void undo_change_pedal_state(std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state);
 
-    bool isTpcPlayable(int tpc);
+    bool is_tpc_playable(int tpc);
 
-    const std::set<int> &playableTpcs() const { return playableTpcs_; }
+    const std::set<int> &playable_tpcs() const { return playable_tpcs_; }
 
-    bool positionRelativeToNoteheadRest() const override { return true; }
+    bool position_relative_to_notehead_rest() const override { return true; }
 
 private:
 
-    std::array<PedalPosition, HARP_STRING_NO> pedalState_;
+    std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_;
 
-    std::set<int> playableTpcs_;
+    std::set<int> playable_tpcs_;
 
-    bool isDiagram_ = true;
+    bool is_diagram_ = true;
 };
 } // namespace mu::engraving

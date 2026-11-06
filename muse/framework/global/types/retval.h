@@ -36,7 +36,7 @@ struct RetVal {
 
     static RetVal<T> make_ok(const T &v) {
         RetVal<T> rv;
-        rv.ret = muse::make_ret(Ret::Code::Ok);
+        rv.ret = muse::make_ret(Ret::Code::OK);
         rv.val = v;
         return rv;
     }
@@ -65,7 +65,7 @@ struct RetVal2 {
 
     static RetVal2<T1, T2> make_ok(const T1 &v1, const T2 &v2) {
         RetVal2<T1, T2> rv;
-        rv.ret = muse::make_ret(Ret::Code::Ok);
+        rv.ret = muse::make_ret(Ret::Code::OK);
         rv.val1 = v1;
         rv.val2 = v2;
         return rv;

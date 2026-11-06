@@ -47,16 +47,16 @@ public:
 
     const String &text() const { return text_; }
 
-    void setDuration(DurationType type, int dots, const StaffType *tab);
+    void set_duration(DurationType type, int dots, const StaffType *tab);
 
-    bool isRepeat() const { return repeat_; }
+    bool is_repeat() const { return repeat_; }
 
-    void setRepeat(bool val) { repeat_ = val; }
+    void set_repeat(bool val) { repeat_ = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
-        TabBeamGrid beamGrid = TabBeamGrid::NONE; // value for special 'English' grid display
-        double beamLength = 0.0;                  // if beamGrid==MEDIALFINAL, length of the beam toward previous grid element
-        int beamLevel = 0.0;                      // if beamGrid==MEDIALFINAL, the number of beams
+        TabBeamGrid beam_grid = TabBeamGrid::NONE; // value for special 'English' grid display
+        double beam_length = 0.0;                  // if beamGrid==MEDIALFINAL, length of the beam toward previous grid element
+        int beam_level = 0.0;                      // if beamGrid==MEDIALFINAL, the number of beams
     };
     DECLARE_LAYOUTDATA_METHODS(TabDurationSymbol)
 

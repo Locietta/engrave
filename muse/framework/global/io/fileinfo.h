@@ -30,41 +30,41 @@ namespace muse::io {
 class FileInfo {
 public:
     FileInfo() = default;
-    FileInfo(const path_t &filePath);
+    FileInfo(const PathT &file_path);
 
     String path() const;
-    String filePath() const;
-    String canonicalFilePath() const;
-    String absolutePath() const;
-    String absoluteFilePath() const;
+    String file_path() const;
+    String canonical_file_path() const;
+    String absolute_path() const;
+    String absolute_file_path() const;
 
-    String fileName() const;
-    String baseName() const;
-    String completeBaseName() const;
+    String file_name() const;
+    String base_name() const;
+    String complete_base_name() const;
     String suffix() const;
-    static String suffix(const path_t &filePath);
+    static String suffix(const PathT &file_path);
 
-    EntryType entryType() const;
+    EntryType entry_type() const;
 
-    bool isRelative() const;
-    bool isAbsolute() const;
+    bool is_relative() const;
+    bool is_absolute() const;
 
-    bool isSymLink() const;
-    path_t symLinkTarget() const;
+    bool is_sym_link() const;
+    PathT sym_link_target() const;
 
     bool exists() const;
-    static bool exists(const path_t &filePath);
+    static bool exists(const PathT &file_path);
 
-    DateTime birthTime() const;
-    DateTime lastModified() const;
+    DateTime birth_time() const;
+    DateTime last_modified() const;
 
-    path_t dirPath() const;
+    PathT dir_path() const;
     Dir dir() const;
 
 private:
-    static String doSuffix(const String &filePath);
+    static String do_suffix(const String &file_path);
 
-    String filePath_;
+    String file_path_;
 };
 } // namespace muse::io
 

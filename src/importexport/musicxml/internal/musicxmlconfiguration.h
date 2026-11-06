@@ -28,37 +28,37 @@ class MusicXmlConfiguration : public IMusicXmlConfiguration {
 public:
     void init();
 
-    bool importBreaks() const override;
-    void setImportBreaks(bool value) override;
+    bool import_breaks() const override;
+    void set_import_breaks(bool value) override;
 
-    bool importLayout() const override;
-    void setImportLayout(bool value) override;
+    bool import_layout() const override;
+    void set_import_layout(bool value) override;
 
-    bool exportLayout() const override;
-    void setExportLayout(bool value) override;
+    bool export_layout() const override;
+    void set_export_layout(bool value) override;
 
-    bool exportMu3Compat() const override;
-    void setExportMu3Compat(bool value) override;
+    bool export_mu3_compat() const override;
+    void set_export_mu3_compat(bool value) override;
 
-    MusicXmlExportBreaksType exportBreaksType() const override;
-    void setExportBreaksType(MusicXmlExportBreaksType breaksType) override;
+    MusicXmlExportBreaksType export_breaks_type() const override;
+    void set_export_breaks_type(MusicXmlExportBreaksType breaks_type) override;
 
-    bool exportInvisibleElements() const override;
-    void setExportInvisibleElements(bool value) override;
+    bool export_invisible_elements() const override;
+    void set_export_invisible_elements(bool value) override;
 
-    bool needUseDefaultFont() const override;
-    void setNeedUseDefaultFont(bool value) override;
-    void setNeedUseDefaultFontOverride(std::optional<bool> value) override;
+    bool need_use_default_font() const override;
+    void set_need_use_default_font(bool value) override;
+    void set_need_use_default_font_override(std::optional<bool> value) override;
 
-    bool needAskAboutApplyingNewStyle() const override;
-    void setNeedAskAboutApplyingNewStyle(bool value) override;
+    bool need_ask_about_applying_new_style() const override;
+    void set_need_ask_about_applying_new_style(bool value) override;
 
-    bool inferTextType() const override;
-    void setInferTextType(bool value) override;
-    void setInferTextTypeOverride(std::optional<bool> value) override;
+    bool infer_text_type() const override;
+    void set_infer_text_type(bool value) override;
+    void set_infer_text_type_override(std::optional<bool> value) override;
 
 private:
-    std::optional<bool> needUseDefaultFontOverride_;
-    std::optional<bool> inferTextTypeOverride_;
+    std::optional<bool> need_use_default_font_override_;
+    std::optional<bool> infer_text_type_override_;
 };
 } // namespace mu::iex::musicxml

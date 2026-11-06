@@ -42,21 +42,21 @@ FretUndoData::FretUndoData(FretDiagram *fd) {
 
     strings_ = diagram_->strings_;
     frets_ = diagram_->frets_;
-    fretOffset_ = diagram_->fretOffset_;
-    maxFrets_ = diagram_->maxFrets_;
-    showNut_ = diagram_->showNut_;
+    fret_offset_ = diagram_->fret_offset_;
+    max_frets_ = diagram_->max_frets_;
+    show_nut_ = diagram_->show_nut_;
     orientation_ = diagram_->orientation_;
 
-    userMag_ = diagram_->userMag_;
+    user_mag_ = diagram_->user_mag_;
 
-    showFingering_ = diagram_->showFingering_;
+    show_fingering_ = diagram_->show_fingering_;
 }
 
 //---------------------------------------------------------
 //   updateDiagram
 //---------------------------------------------------------
 
-void FretUndoData::updateDiagram() {
+void FretUndoData::update_diagram() {
     if (!diagram_) {
         ASSERT_X("Tried to undo fret diagram change without ever setting diagram!");
         return;
@@ -70,14 +70,14 @@ void FretUndoData::updateDiagram() {
 
     diagram_->strings_ = strings_;
     diagram_->frets_ = frets_;
-    diagram_->fretOffset_ = fretOffset_;
-    diagram_->maxFrets_ = maxFrets_;
-    diagram_->showNut_ = showNut_;
+    diagram_->fret_offset_ = fret_offset_;
+    diagram_->max_frets_ = max_frets_;
+    diagram_->show_nut_ = show_nut_;
     diagram_->orientation_ = orientation_;
 
-    diagram_->userMag_ = userMag_;
+    diagram_->user_mag_ = user_mag_;
 
-    diagram_->showFingering_ = showFingering_;
+    diagram_->show_fingering_ = show_fingering_;
 }
 
 //---------------------------------------------------------
@@ -85,27 +85,27 @@ void FretUndoData::updateDiagram() {
 //---------------------------------------------------------
 
 void FretDataChange::redo() {
-    undoData_ = FretUndoData(diagram_);
+    undo_data_ = FretUndoData(diagram_);
 
-    diagram_->updateDiagram(harmonyName_);
+    diagram_->update_diagram(harmony_name_);
 }
 
-void FretDataChange::undo() { undoData_.updateDiagram(); }
+void FretDataChange::undo() { undo_data_.update_diagram(); }
 
 //---------------------------------------------------------
 //   FretDot
 //---------------------------------------------------------
 
 void FretDot::redo() {
-    undoData = FretUndoData(diagram);
+    undo_data = FretUndoData(diagram);
 
-    diagram->setDot(string, fret, add, dtype);
-    diagram->triggerLayout();
+    diagram->set_dot(string, fret, add, dtype);
+    diagram->trigger_layout();
 }
 
 void FretDot::undo() {
-    undoData.updateDiagram();
-    diagram->triggerLayout();
+    undo_data.update_diagram();
+    diagram->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -113,15 +113,15 @@ void FretDot::undo() {
 //---------------------------------------------------------
 
 void FretMarker::redo() {
-    undoData = FretUndoData(diagram);
+    undo_data = FretUndoData(diagram);
 
-    diagram->setMarker(string, mtype);
-    diagram->triggerLayout();
+    diagram->set_marker(string, mtype);
+    diagram->trigger_layout();
 }
 
 void FretMarker::undo() {
-    undoData.updateDiagram();
-    diagram->triggerLayout();
+    undo_data.update_diagram();
+    diagram->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -129,15 +129,15 @@ void FretMarker::undo() {
 //---------------------------------------------------------
 
 void FretBarre::redo() {
-    undoData = FretUndoData(diagram);
+    undo_data = FretUndoData(diagram);
 
-    diagram->setBarre(string, fret, add);
-    diagram->triggerLayout();
+    diagram->set_barre(string, fret, add);
+    diagram->trigger_layout();
 }
 
 void FretBarre::undo() {
-    undoData.updateDiagram();
-    diagram->triggerLayout();
+    undo_data.update_diagram();
+    diagram->trigger_layout();
 }
 
 //---------------------------------------------------------
@@ -145,49 +145,49 @@ void FretBarre::undo() {
 //---------------------------------------------------------
 
 void FretClear::redo() {
-    undoData = FretUndoData(diagram);
+    undo_data = FretUndoData(diagram);
 
     diagram->clear();
-    diagram->triggerLayout();
+    diagram->trigger_layout();
 }
 
 void FretClear::undo() {
-    undoData.updateDiagram();
-    diagram->triggerLayout();
+    undo_data.update_diagram();
+    diagram->trigger_layout();
 }
 
 //---------------------------------------------------------
 //   AddFretDiagramToFretBox
 //---------------------------------------------------------
 
-AddFretDiagramToFretBox::AddFretDiagramToFretBox(FretDiagram *f, size_t idx) : fretDiagram_(f), idx_(idx) {}
+AddFretDiagramToFretBox::AddFretDiagramToFretBox(FretDiagram *f, size_t idx) : fret_diagram_(f), idx_(idx) {}
 
 void AddFretDiagramToFretBox::redo() {
-    FBox *fbox = toFBox(fretDiagram_->parent());
-    fbox->addAtIdx(fretDiagram_, idx_);
+    FBox *fbox = to_f_box(fret_diagram_->parent());
+    fbox->add_at_idx(fret_diagram_, idx_);
 }
 
 void AddFretDiagramToFretBox::undo() {
-    FBox *fbox = toFBox(fretDiagram_->parent());
-    fbox->remove(fretDiagram_);
+    FBox *fbox = to_f_box(fret_diagram_->parent());
+    fbox->remove(fret_diagram_);
 }
 
 //---------------------------------------------------------
 //   RemoveFretDiagramFromFretBox
 //---------------------------------------------------------
 
-RemoveFretDiagramFromFretBox::RemoveFretDiagramFromFretBox(FretDiagram *f) : fretDiagram_(f) {
-    FBox *fbox = toFBox(f->parent());
+RemoveFretDiagramFromFretBox::RemoveFretDiagramFromFretBox(FretDiagram *f) : fret_diagram_(f) {
+    FBox *fbox = to_f_box(f->parent());
     const ElementList &el = fbox->el();
-    idx_ = muse::indexOf(el, fretDiagram_);
+    idx_ = muse::index_of(el, fret_diagram_);
 }
 
 void RemoveFretDiagramFromFretBox::redo() {
-    FBox *fbox = toFBox(fretDiagram_->parent());
-    fbox->remove(fretDiagram_);
+    FBox *fbox = to_f_box(fret_diagram_->parent());
+    fbox->remove(fret_diagram_);
 }
 
 void RemoveFretDiagramFromFretBox::undo() {
-    FBox *fbox = toFBox(fretDiagram_->parent());
-    fbox->addAtIdx(fretDiagram_, idx_);
+    FBox *fbox = to_f_box(fret_diagram_->parent());
+    fbox->add_at_idx(fret_diagram_, idx_);
 }

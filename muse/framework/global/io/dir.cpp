@@ -24,33 +24,33 @@
 using namespace muse;
 using namespace muse::io;
 
-Dir::Dir(const path_t &path) : path_(path) {}
+Dir::Dir(const PathT &path) : path_(path) {}
 
-path_t Dir::path() const { return path_; }
+PathT Dir::path() const { return path_; }
 
-path_t Dir::absolutePath() const { return fileSystem()->absoluteFilePath(path_); }
+PathT Dir::absolute_path() const { return file_system()->absolute_file_path(path_); }
 
-bool Dir::exists() const { return fileSystem()->exists(path_); }
+bool Dir::exists() const { return file_system()->exists(path_); }
 
-Ret Dir::removeRecursively() { return fileSystem()->remove(path_); }
+Ret Dir::remove_recursively() { return file_system()->remove(path_); }
 
 Ret Dir::mkpath() { return mkpath(path_); }
 
-Ret Dir::mkpath(const path_t &path) { return fileSystem()->makePath(path); }
+Ret Dir::mkpath(const PathT &path) { return file_system()->make_path(path); }
 
-RetVal<io::paths_t> Dir::scanFiles(const io::path_t &rootDir, const std::vector<std::string> &filters, ScanMode mode) {
-    return fileSystem()->scanFiles(rootDir, filters, mode);
+RetVal<io::paths_t> Dir::scan_files(const io::PathT &root_dir, const std::vector<std::string> &filters, ScanMode mode) {
+    return file_system()->scan_files(root_dir, filters, mode);
 }
 
-path_t Dir::fromNativeSeparators(const path_t &pathName) {
+PathT Dir::from_native_separators(const PathT &path_name) {
 #if defined(_WIN32)
-    String path = pathName.toString();
-    size_t i = path.indexOf(u'\\');
+    String path = path_name.to_string();
+    size_t i = path.index_of(u'\\');
     if (i != muse::nidx) {
         String n(path);
-        if (n.startsWith(u"\\\\?\\")) {
+        if (n.starts_with(u"\\\\?\\")) {
             n.remove(0, 4);
-            i = n.indexOf(u'\\');
+            i = n.index_of(u'\\');
             if (i == muse::nidx) {
                 return n;
             }
@@ -65,9 +65,9 @@ path_t Dir::fromNativeSeparators(const path_t &pathName) {
         return n;
     }
 #endif
-    return pathName;
+    return path_name;
 }
 
-path_t Dir::cleanPath(const path_t &path) { return fileSystem()->cleanPath(path); }
+PathT Dir::clean_path(const PathT &path) { return file_system()->clean_path(path); }
 
-path_t Dir::tempPath() { return fileSystem()->temporaryDirectoryPath(); }
+PathT Dir::temp_path() { return file_system()->temporary_directory_path(); }

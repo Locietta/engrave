@@ -79,7 +79,7 @@ private:
     std::unique_ptr<InstrChannel> articulation_;
     signed char port_ = 0;
     signed char channel_ = 0;
-    InstrChannel *masterChannel_ = nullptr;
+    InstrChannel *master_channel_ = nullptr;
     PartChannelSettingsLink link_;
 };
 
@@ -91,157 +91,157 @@ public:
     ~MasterScore();
     MasterScore *clone();
 
-    Score *createScore();
-    Score *createScore(const MStyle &s);
+    Score *create_score();
+    Score *create_score(const MStyle &s);
 
     std::weak_ptr<EngravingProject> project() const { return project_; }
 
-    bool isMaster() const override { return true; }
+    bool is_master() const override { return true; }
 
-    EIDRegister *eidRegister() { return &eidRegister_; }
+    EIDRegister *eid_register() { return &eid_register_; }
 
-    const EIDRegister *eidRegister() const { return &eidRegister_; }
+    const EIDRegister *eid_register() const { return &eid_register_; }
 
-    bool readOnly() const override { return readOnly_; }
+    bool read_only() const override { return read_only_; }
 
-    void setReadOnly(bool ro) { readOnly_ = ro; }
+    void set_read_only(bool ro) { read_only_ = ro; }
 
-    TransactionManager *transactionManager() const { return transactionManager_.get(); }
+    TransactionManager *transaction_manager() const { return transaction_manager_.get(); }
 
-    UndoStack *undoStack() const { return undoStack_; }
+    UndoStack *undo_stack() const { return undo_stack_; }
 
     TimeSigMap *sigmap() const override { return sigmap_; }
 
-    void addChangesListener(IScoreChangesListener *listener);
-    void removeChangesListener(IScoreChangesListener *listener);
-    void notifyChanges(const ScoreChanges &changes);
+    void add_changes_listener(IScoreChangesListener *listener);
+    void remove_changes_listener(IScoreChangesListener *listener);
+    void notify_changes(const ScoreChanges &changes);
 
-    AutomationDataConstPtr automationData() const override;
-    void setAutomationData(AutomationDataPtr data);
-    void editAutomationPoints(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable = true) override;
+    AutomationDataConstPtr automation_data() const override;
+    void set_automation_data(AutomationDataPtr data);
+    void edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable = true) override;
 
     /// Always call this before calling `repeatList()`
     /// No need to set it back after use, because everyone always calls it before using `repeatList()`
-    void setExpandRepeats(bool expandRepeats);
+    void set_expand_repeats(bool expand_repeats);
 
-    bool expandRepeats() const { return expandRepeats_; }
+    bool expand_repeats() const { return expand_repeats_; }
 
-    void updateRepeatListTempo();
-    void updateRepeatList();
+    void update_repeat_list_tempo();
+    void update_repeat_list();
 
-    const RepeatList &repeatList() const;
-    const RepeatList &repeatList(bool expandRepeats, bool updateTies = true) const;
+    const RepeatList &repeat_list() const;
+    const RepeatList &repeat_list(bool expand_repeats, bool update_ties = true) const;
 
-    void invalidateRepeatList();
+    void invalidate_repeat_list();
 
-    const TempoTimeline &tempoTimeline() const;
-    const TempoTimeline &tempoTimeline(bool expandRepeats) const;
-    bool setTempoMultiplier(BeatsPerSecond val);
-    void setTempoTimelineOverride(std::optional<TempoTimeline> timeline);
+    const TempoTimeline &tempo_timeline() const;
+    const TempoTimeline &tempo_timeline(bool expand_repeats) const;
+    bool set_tempo_multiplier(BeatsPerSecond val);
+    void set_tempo_timeline_override(std::optional<TempoTimeline> timeline);
 
     std::vector<Excerpt *> &excerpts() { return excerpts_; }
 
     const std::vector<Excerpt *> &excerpts() const { return excerpts_; }
 
-    void setUpdateAll() override;
+    void set_update_all() override;
 
-    void setLayoutAll(staff_idx_t staff = muse::nidx, const EngravingItem *e = nullptr);
-    void setLayout(const Fraction &tick, staff_idx_t staff, const EngravingItem *e = nullptr);
-    void setLayout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e = nullptr);
+    void set_layout_all(staff_idx_t staff = muse::nidx, const EngravingItem *e = nullptr);
+    void set_layout(const Fraction &tick, staff_idx_t staff, const EngravingItem *e = nullptr);
+    void set_layout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e = nullptr);
 
-    CmdState &cmdState() override { return cmdState_; }
+    CmdState &cmd_state() override { return cmd_state_; }
 
-    const CmdState &cmdState() const override { return cmdState_; }
+    const CmdState &cmd_state() const override { return cmd_state_; }
 
-    void addLayoutFlags(LayoutFlags val) override { cmdState_.layoutFlags |= val; }
+    void add_layout_flags(LayoutFlags val) override { cmd_state_.layout_flags |= val; }
 
-    void setInstrumentsChanged(bool val) override { cmdState_.instrumentsChanged = val; }
+    void set_instruments_changed(bool val) override { cmd_state_.instruments_changed = val; }
 
-    void setExcerptsChanged(bool val) { cmdState_.excerptsChanged = val; }
+    void set_excerpts_changed(bool val) { cmd_state_.excerpts_changed = val; }
 
-    bool excerptsChanged() const { return cmdState_.excerptsChanged; }
+    bool excerpts_changed() const { return cmd_state_.excerpts_changed; }
 
-    bool instrumentsChanged() const { return cmdState_.instrumentsChanged; }
+    bool instruments_changed() const { return cmd_state_.instruments_changed; }
 
     void update() { update(true); }
 
-    void lockUpdates(bool locked);
+    void lock_updates(bool locked);
 
-    int midiPortCount() const { return midiPortCount_; }
+    int midi_port_count() const { return midi_port_count_; }
 
-    void setMidiPortCount(int val) { midiPortCount_ = val; }
+    void set_midi_port_count(int val) { midi_port_count_ = val; }
 
-    std::vector<MidiMapping> &midiMapping() { return midiMapping_; }
+    std::vector<MidiMapping> &midi_mapping() { return midi_mapping_; }
 
-    MidiMapping *midiMapping(int channel) { return &midiMapping_[channel]; }
+    MidiMapping *midi_mapping(int channel) { return &midi_mapping_[channel]; }
 
-    void addMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel);
-    void updateMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel);
+    void add_midi_mapping(InstrChannel *channel, Part *part, int midi_port, int midi_channel);
+    void update_midi_mapping(InstrChannel *channel, Part *part, int midi_port, int midi_channel);
 
-    int midiPort(int idx) const { return midiMapping_[idx].port(); }
+    int midi_port(int idx) const { return midi_mapping_[idx].port(); }
 
-    int midiChannel(int idx) const { return midiMapping_[idx].channel(); }
+    int midi_channel(int idx) const { return midi_mapping_[idx].channel(); }
 
-    void rebuildMidiMapping();
-    void checkMidiMapping();
+    void rebuild_midi_mapping();
+    void check_midi_mapping();
 
-    bool exportMidiMapping() { return !isSimpleMidiMapping_; }
+    bool export_midi_mapping() { return !is_simple_midi_mapping_; }
 
-    int getNextFreeMidiMapping(std::set<int> &occupiedMidiChannels, unsigned int &searchMidiMappingFrom, int p = -1, int ch = -1);
-    int getNextFreeDrumMidiMapping(std::set<int> &occupiedMidiChannels);
-    void rebuildAndUpdateExpressive(Synthesizer *synth);
-    void updateExpressive(Synthesizer *synth);
-    void updateExpressive(Synthesizer *synth, bool expressive, bool force = false);
+    int get_next_free_midi_mapping(std::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, int p = -1, int ch = -1);
+    int get_next_free_drum_midi_mapping(std::set<int> &occupied_midi_channels);
+    void rebuild_and_update_expressive(Synthesizer *synth);
+    void update_expressive(Synthesizer *synth);
+    void update_expressive(Synthesizer *synth, bool expressive, bool force = false);
 
-    using Score::loopBoundaryTick;
-    Fraction loopBoundaryTick(LoopBoundaryType type) const;
-    void setLoopBoundaryTick(LoopBoundaryType type, Fraction tick);
+    using Score::loop_boundary_tick;
+    Fraction loop_boundary_tick(LoopBoundaryType type) const;
+    void set_loop_boundary_tick(LoopBoundaryType type, Fraction tick);
 
-    void addExcerpt(Excerpt *, size_t index = muse::nidx);
-    void removeExcerpt(Excerpt *);
-    void deleteExcerpt(Excerpt *);
+    void add_excerpt(Excerpt *, size_t index = muse::nidx);
+    void remove_excerpt(Excerpt *);
+    void delete_excerpt(Excerpt *);
 
-    void initAndAddExcerpt(Excerpt *, bool);
-    void initExcerpt(Excerpt *);
-    void initEmptyExcerpt(Excerpt *);
+    void init_and_add_excerpt(Excerpt *, bool);
+    void init_excerpt(Excerpt *);
+    void init_empty_excerpt(Excerpt *);
 
-    void initAutomation(); // TODO: Placeholder?
+    void init_automation(); // TODO: Placeholder?
 
-    void setPlaybackScore(Score *);
+    void set_playback_score(Score *);
 
-    Score *playbackScore() { return playbackScore_; }
+    Score *playback_score() { return playback_score_; }
 
-    const Score *playbackScore() const { return playbackScore_; }
+    const Score *playback_score() const { return playback_score_; }
 
-    InstrChannel *playbackChannel(const InstrChannel *c) { return midiMapping_[c->channel()].articulation(); }
+    InstrChannel *playback_channel(const InstrChannel *c) { return midi_mapping_[c->channel()].articulation(); }
 
-    const InstrChannel *playbackChannel(const InstrChannel *c) const { return midiMapping_[c->channel()].articulation(); }
+    const InstrChannel *playback_channel(const InstrChannel *c) const { return midi_mapping_[c->channel()].articulation(); }
 
-    MasterScore *unrollRepeats();
+    MasterScore *unroll_repeats();
 
-    MeasureBase *insertMeasure(MeasureBase *beforeMeasure = nullptr, const InsertMeasureOptions &options = InsertMeasureOptions());
+    MeasureBase *insert_measure(MeasureBase *before_measure = nullptr, const InsertMeasureOptions &options = InsertMeasureOptions());
 
-    IFileInfoProviderPtr fileInfo() const;
-    void setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider);
+    IFileInfoProviderPtr file_info() const;
+    void set_file_info_provider(IFileInfoProviderPtr file_info_provider);
 
     String name() const override;
 
-    muse::Ret sanityCheck();
+    muse::Ret sanity_check();
 
 private:
-    void update(bool resetCmdState, bool layoutAllParts = false);
+    void update(bool reset_cmd_state, bool layout_all_parts = false);
 
-    void updateAutomation(const ScoreChanges &changes);
+    void update_automation(const ScoreChanges &changes);
 
-    void onTimeInserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &oldSegments) override;
+    void on_time_inserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &old_segments) override;
 
-    void reorderMidiMapping();
-    void rebuildExcerptsMidiMapping();
-    void removeDeletedMidiMapping();
+    void reorder_midi_mapping();
+    void rebuild_excerpts_midi_mapping();
+    void remove_deleted_midi_mapping();
 
-    int updateMidiMapping();
-    void doUpdateMidiMapping(int &maxport, std::set<int> &occupiedMidiChannels, unsigned int &searchMidiMappingFrom, Part *part,
-                             InstrChannel *channel, bool useDrumset);
+    int update_midi_mapping();
+    void do_update_midi_mapping(int &maxport, std::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, Part *part,
+                                InstrChannel *channel, bool use_drumset);
 
     friend class EngravingProject;
     friend class compat::ScoreAccess;
@@ -253,38 +253,38 @@ private:
     MasterScore(const EngravingServices &services, const MStyle &,
                 std::weak_ptr<EngravingProject> project = std::weak_ptr<EngravingProject>());
 
-    void initParts(Excerpt *);
+    void init_parts(Excerpt *);
 
-    EIDRegister eidRegister_;
-    std::unique_ptr<TransactionManager> transactionManager_;
-    UndoStack *undoStack_ = nullptr;
+    EIDRegister eid_register_;
+    std::unique_ptr<TransactionManager> transaction_manager_;
+    UndoStack *undo_stack_ = nullptr;
     TimeSigMap *sigmap_ = nullptr;
-    RepeatList *expandedRepeatList_ = nullptr;
-    RepeatList *nonExpandedRepeatList_ = nullptr;
-    ScoreAutomationController *automationController_ = nullptr;
-    bool expandRepeats_ = true;
+    RepeatList *expanded_repeat_list_ = nullptr;
+    RepeatList *non_expanded_repeat_list_ = nullptr;
+    ScoreAutomationController *automation_controller_ = nullptr;
+    bool expand_repeats_ = true;
 
     std::vector<Excerpt *> excerpts_;
-    std::vector<PartChannelSettingsLink> playbackSettingsLinks_;
-    Score *playbackScore_ = nullptr;
-    std::vector<IScoreChangesListener *> changesListeners_;
+    std::vector<PartChannelSettingsLink> playback_settings_links_;
+    Score *playback_score_ = nullptr;
+    std::vector<IScoreChangesListener *> changes_listeners_;
 
-    bool readOnly_ = false;
+    bool read_only_ = false;
 
-    CmdState cmdState_; // modified during cmd processing
-    bool updatesLocked_ = false;
+    CmdState cmd_state_; // modified during cmd processing
+    bool updates_locked_ = false;
 
-    std::array<Fraction, 2> loopBoundaries_; ///< 0 - LoopIn, 1 - LoopOut
+    std::array<Fraction, 2> loop_boundaries_; ///< 0 - LoopIn, 1 - LoopOut
 
-    int midiPortCount_ = 0; // A count of ALSA midi out ports
-    std::vector<MidiMapping> midiMapping_;
-    bool isSimpleMidiMapping_ = false; // midi mapping is simple if all ports and channels
+    int midi_port_count_ = 0; // A count of ALSA midi out ports
+    std::vector<MidiMapping> midi_mapping_;
+    bool is_simple_midi_mapping_ = false; // midi mapping is simple if all ports and channels
     // don't decrease and don't have gaps
 
     std::weak_ptr<EngravingProject> project_;
 
     // FIXME: Move to EngravingProject
     // We can't yet, because project_ is not set on every MasterScore
-    IFileInfoProviderPtr fileInfoProvider_;
+    IFileInfoProviderPtr file_info_provider_;
 };
 } // namespace mu::engraving

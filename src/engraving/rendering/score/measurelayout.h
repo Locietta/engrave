@@ -49,66 +49,67 @@ public:
 
     static void layout2(Measure *item, LayoutContext &ctx);
 
-    static void getNextMeasure(LayoutContext &ctx);
-    static void updateTicksMeasNumbersAndMMRests(MeasureBase *currentMB, LayoutContext &ctx);
-    static void layoutMeasure(MeasureBase *currentMB, LayoutContext &ctx);
+    static void get_next_measure(LayoutContext &ctx);
+    static void update_ticks_meas_numbers_and_mm_rests(MeasureBase *current_mb, LayoutContext &ctx);
+    static void layout_measure(MeasureBase *current_mb, LayoutContext &ctx);
 
-    static void computePreSpacingItems(Measure *m, LayoutContext &ctx);
+    static void compute_pre_spacing_items(Measure *m, LayoutContext &ctx);
 
-    static void layoutStaffLines(Measure *m, LayoutContext &ctx);
-    static void layoutPlayCountText(Measure *m, LayoutContext &ctx);
-    static void layoutMeasureNumber(Measure *m, LayoutContext &ctx);
-    static void layoutMeasureElements(Measure *m, LayoutContext &ctx);
+    static void layout_staff_lines(Measure *m, LayoutContext &ctx);
+    static void layout_play_count_text(Measure *m, LayoutContext &ctx);
+    static void layout_measure_number(Measure *m, LayoutContext &ctx);
+    static void layout_measure_elements(Measure *m, LayoutContext &ctx);
 
-    static void createEndBarLines(Measure *m, bool isLastMeasureInSystem, LayoutContext &ctx);
-    static Segment *addHeaderClef(Measure *m, bool isFirstClef, const Staff *staff, LayoutContext &ctx);
-    static Segment *addHeaderKeySig(Measure *m, bool isFirstKeysig, const Staff *staff, LayoutContext &ctx);
-    static void addSystemHeader(Measure *m, bool isFirstSystem, LayoutContext &ctx);
-    static void removeSystemHeader(Measure *m);
-    static void addSystemTrailer(Measure *m, Measure *nm, LayoutContext &ctx);
-    static void removeSystemTrailer(Measure *m, LayoutContext &ctx);
+    static void create_end_bar_lines(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx);
+    static Segment *add_header_clef(Measure *m, bool is_first_clef, const Staff *staff, LayoutContext &ctx);
+    static Segment *add_header_key_sig(Measure *m, bool is_first_keysig, const Staff *staff, LayoutContext &ctx);
+    static void add_system_header(Measure *m, bool is_first_system, LayoutContext &ctx);
+    static void remove_system_header(Measure *m);
+    static void add_system_trailer(Measure *m, Measure *nm, LayoutContext &ctx);
+    static void remove_system_trailer(Measure *m, LayoutContext &ctx);
 
-    static void setRepeatCourtesiesAndParens(Measure *m, LayoutContext &ctx);
+    static void set_repeat_courtesies_and_parens(Measure *m, LayoutContext &ctx);
 
-    static void updateGraceNotes(Measure *measure, LayoutContext &ctx);
+    static void update_grace_notes(Measure *measure, LayoutContext &ctx);
 
-    static void createSystemBeginBarLine(Measure *m, LayoutContext &ctx);
+    static void create_system_begin_bar_line(Measure *m, LayoutContext &ctx);
 
-    static void stretchMeasureInPracticeMode(Measure *m, double targetWidth, LayoutContext &ctx);
+    static void stretch_measure_in_practice_mode(Measure *m, double target_width, LayoutContext &ctx);
 
-    static void layoutTimeTickAnchors(Measure *m, LayoutContext &ctx);
+    static void layout_time_tick_anchors(Measure *m, LayoutContext &ctx);
 
-    static MeasureStartEndPos getMeasureStartEndPos(const Measure *measure, const Segment *firstCrSeg, const staff_idx_t staffIdx,
-                                                    const bool needsHeaderException, const bool modernMMRest, const LayoutContext &ctx);
+    static MeasureStartEndPos get_measure_start_end_pos(const Measure *measure, const Segment *first_cr_seg, const staff_idx_t staff_idx,
+                                                        const bool needs_header_exception, const bool modern_mm_rest,
+                                                        const LayoutContext &ctx);
 
-    static void updateKeySignatures(const Measure *measure, LayoutContext &ctx);
+    static void update_key_signatures(const Measure *measure, LayoutContext &ctx);
 
-    static int adjustMeasureNumber(Measure *m, int measureNumber);
+    static int adjust_measure_number(Measure *m, int measure_number);
 
 private:
-    static void barLinesSetSpan(Segment *seg, LayoutContext &ctx);
+    static void bar_lines_set_span(Segment *seg, LayoutContext &ctx);
 
-    static void layoutPartialWidth(StaffLines *lines, LayoutContext &ctx, double w, double wPartial, bool alignLeft);
+    static void layout_partial_width(StaffLines *lines, LayoutContext &ctx, double w, double w_partial, bool align_left);
 
-    static void moveToNextMeasure(LayoutContext &ctx);
+    static void move_to_next_measure(LayoutContext &ctx);
 
-    static void checkStaffMoveValidity(Measure *measure, const LayoutContext &ctx);
+    static void check_staff_move_validity(Measure *measure, const LayoutContext &ctx);
 
-    static void setClefSegVisibility(Measure *m, bool isLastMeasureInSystem, LayoutContext &ctx);
+    static void set_clef_seg_visibility(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx);
 
-    static void setCourtesyTimeSig(Measure *m, const Fraction &refSigTick, const Fraction &courtesySigTick, const SegmentType segType,
-                                   LayoutContext &ctx);
-    static void setCourtesyKeySig(Measure *m, const Fraction &refSigTick, const Fraction &courtesySigTick, const SegmentType segType,
+    static void set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick,
+                                      const SegmentType seg_type, LayoutContext &ctx);
+    static void set_courtesy_key_sig(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick,
+                                     const SegmentType seg_type, LayoutContext &ctx);
+    static void set_courtesy_clef(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick, const SegmentType seg_type,
                                   LayoutContext &ctx);
-    static void setCourtesyClef(Measure *m, const Fraction &refSigTick, const Fraction &courtesySigTick, const SegmentType segType,
-                                LayoutContext &ctx);
 
-    static void removeRepeatCourtesyParenthesesMeasure(Measure *m, const bool continuation, LayoutContext &ctx);
-    static void removeRepeatCourtesyParenthesis(EngravingItem *item, const DirectionH direction = DirectionH::AUTO);
-    static void addRepeatCourtesyParentheses(Measure *m, const bool continuation, LayoutContext &ctx);
-    static void addRepeatCourtesies(Measure *m, LayoutContext &ctx);
-    static void removeRepeatCourtesies(Measure *m);
-    static void addRepeatContinuationCourtesies(Measure *m, LayoutContext &ctx);
-    static void removeRepeatContinuationCourtesies(Measure *m);
+    static void remove_repeat_courtesy_parentheses_measure(Measure *m, const bool continuation, LayoutContext &ctx);
+    static void remove_repeat_courtesy_parenthesis(EngravingItem *item, const DirectionH direction = DirectionH::AUTO);
+    static void add_repeat_courtesy_parentheses(Measure *m, const bool continuation, LayoutContext &ctx);
+    static void add_repeat_courtesies(Measure *m, LayoutContext &ctx);
+    static void remove_repeat_courtesies(Measure *m);
+    static void add_repeat_continuation_courtesies(Measure *m, LayoutContext &ctx);
+    static void remove_repeat_continuation_courtesies(Measure *m);
 };
 } // namespace mu::engraving::rendering::score

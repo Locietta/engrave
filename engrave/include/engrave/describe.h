@@ -12,8 +12,8 @@ struct PropInfo {
     // The name an edit or a read uses: the property's MSCX name, or its engine name
     // when that is empty or shared with another property (all names are unique).
     std::string name;
-    ValueKind kind = ValueKind::Opaque;
-    Unit unit = Unit::None;
+    ValueKind kind = ValueKind::OPAQUE;
+    Unit unit = Unit::NONE;
     // The accepted MSCX tokens of an Enum kind, in TConv order.  Empty for the
     // kinds that are not enum and for the enum types whose token set is open
     // (SYMID) or composite (Align, OrnamentInterval).
@@ -38,8 +38,8 @@ struct TypeInfo {
 // One score style.
 struct StyleInfo {
     std::string name; // the Sid name, e.g. "pageWidth"
-    ValueKind kind = ValueKind::Opaque;
-    Unit unit = Unit::None;
+    ValueKind kind = ValueKind::OPAQUE;
+    Unit unit = Unit::NONE;
     std::vector<std::string> enum_tokens;
     Value default_value;
 };

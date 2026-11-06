@@ -30,9 +30,9 @@ struct NominalNoteCtx;
 
 class GlissandosRenderer {
 public:
-    static muse::mpe::duration_t discreteGlissandoStepDuration(const Note *note, const muse::mpe::duration_t noteDuration);
+    static muse::mpe::duration_t discrete_glissando_step_duration(const Note *note, const muse::mpe::duration_t note_duration);
 
-    static void renderDiscreteGlissando(const Note *note, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result);
-    static void renderContinuousGlissando(const Note *note, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result);
+    static void render_discrete_glissando(const Note *note, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result);
+    static void render_continuous_glissando(const Note *note, NominalNoteCtx &ctx, muse::mpe::PlaybackEventList &result);
 };
 } // namespace mu::engraving

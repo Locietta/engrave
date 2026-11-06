@@ -37,37 +37,37 @@ using namespace mu::engraving;
 ///   or, if nothing is selected, the entire score
 //---------------------------------------------------------
 
-void EditRehearsalMark::resequenceRehearsalMarks(Transaction &, Score *score) {
-    bool noSelection = !score->selection().isRange();
+void EditRehearsalMark::resequence_rehearsal_marks(Transaction &, Score *score) {
+    bool no_selection = !score->selection().is_range();
 
-    if (noSelection) {
-        score->cmdSelectAll();
-    } else if (!score->selection().isRange()) {
+    if (no_selection) {
+        score->cmd_select_all();
+    } else if (!score->selection().is_range()) {
         return;
     }
 
     RehearsalMark *last = nullptr;
-    for (Segment *s = score->selection().startSegment(); s && s != score->selection().endSegment(); s = s->next1()) {
+    for (Segment *s = score->selection().start_segment(); s && s != score->selection().end_segment(); s = s->next1()) {
         for (EngravingItem *e : s->annotations()) {
-            if (!e->isRehearsalMark()) {
+            if (!e->is_rehearsal_mark()) {
                 continue;
             }
-            RehearsalMark *rm = toRehearsalMark(e);
-            if (!rm->isTopSystemObject()) {
+            RehearsalMark *rm = to_rehearsal_mark(e);
+            if (!rm->is_top_system_object()) {
                 continue;
             }
             if (last) {
-                String rmText = nextRehearsalMarkText(last, rm);
-                for (EngravingObject *le : rm->linkList()) {
-                    le->undoChangeProperty(Pid::TEXT, rmText);
+                String rm_text = next_rehearsal_mark_text(last, rm);
+                for (EngravingObject *le : rm->link_list()) {
+                    le->undo_change_property(Pid::TEXT, rm_text);
                 }
             }
             last = rm;
         }
     }
 
-    if (noSelection) {
-        score->deselectAll();
+    if (no_selection) {
+        score->deselect_all();
     }
 }
 
@@ -75,17 +75,17 @@ void EditRehearsalMark::resequenceRehearsalMarks(Transaction &, Score *score) {
 //   createRehearsalMarkText
 //---------------------------------------------------------
 
-String EditRehearsalMark::createRehearsalMarkText(const Score *score, RehearsalMark *current) {
+String EditRehearsalMark::create_rehearsal_mark_text(const Score *score, RehearsalMark *current) {
     Fraction tick = current->segment()->tick();
     RehearsalMark *before = 0;
     RehearsalMark *after = 0;
-    for (Segment *s = score->firstSegment(SegmentType::All); s; s = s->next1()) {
+    for (Segment *s = score->first_segment(SegmentType::ALL); s; s = s->next1()) {
         for (EngravingItem *e : s->annotations()) {
-            if (e && e->isRehearsalMark()) {
+            if (e && e->is_rehearsal_mark()) {
                 if (s->tick() < tick) {
-                    before = toRehearsalMark(e);
+                    before = to_rehearsal_mark(e);
                 } else if (s->tick() > tick) {
-                    after = toRehearsalMark(e);
+                    after = to_rehearsal_mark(e);
                     break;
                 }
             }
@@ -95,20 +95,20 @@ String EditRehearsalMark::createRehearsalMarkText(const Score *score, RehearsalM
         }
     }
     String s = u"A";
-    String s1 = before ? before->xmlText() : u"";
-    String s2 = after ? after->xmlText() : u"";
-    if (s1.isEmpty()) {
+    String s1 = before ? before->xml_text() : u"";
+    String s2 = after ? after->xml_text() : u"";
+    if (s1.is_empty()) {
         return s;
     }
-    s = nextRehearsalMarkText(before, current); // try to sequence
-    if (s == current->xmlText()) {
+    s = next_rehearsal_mark_text(before, current); // try to sequence
+    if (s == current->xml_text()) {
         // no sequence detected (or current happens to be correct)
         return s;
     } else if (s == s2) {
         // next in sequence already present
-        if (s1.at(0).isLetter()) {
+        if (s1.at(0).is_letter()) {
             if (s1.size() == 2) {
-                s = String(s1.at(0)) + Char::fromAscii(s1.at(1).toAscii() + 1); // BB, BC, CC
+                s = String(s1.at(0)) + Char::from_ascii(s1.at(1).to_ascii() + 1); // BB, BC, CC
             } else {
                 s = s1 + u'1'; // B, B1, C
             }
@@ -130,25 +130,25 @@ String EditRehearsalMark::createRehearsalMarkText(const Score *score, RehearsalM
 //      If number of previous rehearsal mark matches measure number, assume use of measure numbers throughout
 //---------------------------------------------------------
 
-String EditRehearsalMark::nextRehearsalMarkText(const RehearsalMark *previous, const RehearsalMark *current) {
-    String previousText = previous->xmlText();
-    String fallback = current ? current->xmlText() : previousText + u"'";
+String EditRehearsalMark::next_rehearsal_mark_text(const RehearsalMark *previous, const RehearsalMark *current) {
+    String previous_text = previous->xml_text();
+    String fallback = current ? current->xml_text() : previous_text + u"'";
 
-    if (previousText.size() == 1 && previousText.at(0).isLetter()) {
+    if (previous_text.size() == 1 && previous_text.at(0).is_letter()) {
         // single letter sequence
-        if (previousText == "Z") {
+        if (previous_text == "Z") {
             return u"AA";
-        } else if (previousText == "z") {
+        } else if (previous_text == "z") {
             return u"aa";
         } else {
-            return String(Char::fromAscii(previousText.at(0).toAscii() + 1));
+            return String(Char::from_ascii(previous_text.at(0).to_ascii() + 1));
         }
-    } else if (previousText.size() == 2 && previousText.at(0).isLetter() && previousText.at(1).isLetter()) {
+    } else if (previous_text.size() == 2 && previous_text.at(0).is_letter() && previous_text.at(1).is_letter()) {
         // double letter sequence
-        if (previousText.at(0) == previousText.at(1)) {
+        if (previous_text.at(0) == previous_text.at(1)) {
             // repeated letter sequence
-            if (previousText.toUpper() != "ZZ") {
-                String c = Char::fromAscii(previousText.at(0).toAscii() + 1);
+            if (previous_text.to_upper() != "ZZ") {
+                String c = Char::from_ascii(previous_text.at(0).to_ascii() + 1);
                 return c + c;
             } else {
                 return fallback;
@@ -159,16 +159,16 @@ String EditRehearsalMark::nextRehearsalMarkText(const RehearsalMark *previous, c
     } else {
         // try to interpret as number
         bool ok;
-        int n = previousText.toInt(&ok);
+        int n = previous_text.to_int(&ok);
         if (!ok) {
             return fallback;
-        } else if (current && n == previous->segment()->measure()->measureNumber() + 1) {
+        } else if (current && n == previous->segment()->measure()->measure_number() + 1) {
             // use measure number
-            n = current->segment()->measure()->measureNumber() + 1;
+            n = current->segment()->measure()->measure_number() + 1;
             return String::number(n);
         } else {
             // use number sequence
-            n = previousText.toInt() + 1;
+            n = previous_text.to_int() + 1;
             return String::number(n);
         }
     }

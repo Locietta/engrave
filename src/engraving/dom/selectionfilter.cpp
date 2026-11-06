@@ -27,49 +27,49 @@
 using namespace mu::engraving;
 
 struct FilterParams {
-    unsigned int otherFilter = 0;
-    unsigned int noneMask = 0;
-    unsigned int allMask = 0;
+    unsigned int other_filter = 0;
+    unsigned int none_mask = 0;
+    unsigned int all_mask = 0;
 };
 
-static bool isFiltered_Impl(const unsigned int &currentFilter, const FilterParams &params) {
-    if (params.otherFilter == params.noneMask || params.otherFilter == params.allMask) {
-        return currentFilter == params.otherFilter;
+static bool is_filtered_impl(const unsigned int &current_filter, const FilterParams &params) {
+    if (params.other_filter == params.none_mask || params.other_filter == params.all_mask) {
+        return current_filter == params.other_filter;
     }
-    return currentFilter & params.otherFilter;
+    return current_filter & params.other_filter;
 }
 
-static void setFiltered_Impl(unsigned int &currentFilter, FilterParams &params, bool filtered) {
-    if (params.otherFilter == params.noneMask) {
-        params.otherFilter = params.allMask;
-        setFiltered_Impl(currentFilter, params, !filtered);
+static void set_filtered_impl(unsigned int &current_filter, FilterParams &params, bool filtered) {
+    if (params.other_filter == params.none_mask) {
+        params.other_filter = params.all_mask;
+        set_filtered_impl(current_filter, params, !filtered);
         return;
     }
-    filtered ? currentFilter |= params.otherFilter : currentFilter &= ~params.otherFilter;
+    filtered ? current_filter |= params.other_filter : current_filter &= ~params.other_filter;
 }
 
-bool SelectionFilter::isFiltered(const SelectionFilterTypesVariant &variant) const {
+bool SelectionFilter::is_filtered(const SelectionFilterTypesVariant &variant) const {
     switch (variant.index()) {
         case 0: {
             const VoicesSelectionFilterTypes type = std::get<VoicesSelectionFilterTypes>(variant);
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(filteredVoicesTypes_, params);
+            return is_filtered_impl(filtered_voices_types_, params);
         }
         case 1: {
             const NotesInChordSelectionFilterTypes type = std::get<NotesInChordSelectionFilterTypes>(variant);
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(filteredNotesInChordTypes_, params);
+            return is_filtered_impl(filtered_notes_in_chord_types_, params);
         }
         case 2: {
             const ElementsSelectionFilterTypes type = std::get<ElementsSelectionFilterTypes>(variant);
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(filteredElementsTypes_, params);
+            return is_filtered_impl(filtered_elements_types_, params);
         }
         default: break;
     }
@@ -78,14 +78,14 @@ bool SelectionFilter::isFiltered(const SelectionFilterTypesVariant &variant) con
     return true;
 }
 
-void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bool filtered) {
+void SelectionFilter::set_filtered(const SelectionFilterTypesVariant &variant, bool filtered) {
     switch (variant.index()) {
         case 0: {
             const VoicesSelectionFilterTypes type = std::get<VoicesSelectionFilterTypes>(variant);
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL)};
-            setFiltered_Impl(filteredVoicesTypes_, params, filtered);
+            set_filtered_impl(filtered_voices_types_, params, filtered);
             return;
         }
         case 1: {
@@ -93,7 +93,7 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL)};
-            setFiltered_Impl(filteredNotesInChordTypes_, params, filtered);
+            set_filtered_impl(filtered_notes_in_chord_types_, params, filtered);
             return;
         }
         case 2: {
@@ -101,7 +101,7 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL)};
-            setFiltered_Impl(filteredElementsTypes_, params, filtered);
+            set_filtered_impl(filtered_elements_types_, params, filtered);
             return;
         }
         default: break;
@@ -110,77 +110,77 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
     UNREACHABLE;
 }
 
-bool SelectionFilter::canSelect(const EngravingItem *e) const {
-    IF_ASSERT_FAILED(!e->isNote() && !e->isTuplet()) {
+bool SelectionFilter::can_select(const EngravingItem *e) const {
+    IF_ASSERT_FAILED(!e->is_note() && !e->is_tuplet()) {
         LOGE() << "Using canSelect on a Note or Tuplet - use canSelectNoteIdx or canSelectTuplet instead";
         return true;
     }
 
     switch (e->type()) {
-        case ElementType::DYNAMIC: return isFiltered(ElementsSelectionFilterTypes::DYNAMIC);
+        case ElementType::DYNAMIC: return is_filtered(ElementsSelectionFilterTypes::DYNAMIC);
         case ElementType::HAIRPIN:
-        case ElementType::HAIRPIN_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::HAIRPIN);
+        case ElementType::HAIRPIN_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::HAIRPIN);
         case ElementType::ARTICULATION:
         case ElementType::TAPPING:
         case ElementType::VIBRATO:
         case ElementType::VIBRATO_SEGMENT:
-        case ElementType::FERMATA: return isFiltered(ElementsSelectionFilterTypes::ARTICULATION);
+        case ElementType::FERMATA: return is_filtered(ElementsSelectionFilterTypes::ARTICULATION);
         case ElementType::ORNAMENT:
         case ElementType::TRILL:
-        case ElementType::TRILL_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::ORNAMENT);
+        case ElementType::TRILL_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::ORNAMENT);
         case ElementType::LYRICS:
         case ElementType::LYRICSLINE:
         case ElementType::LYRICSLINE_SEGMENT:
         case ElementType::PARTIAL_LYRICSLINE:
-        case ElementType::PARTIAL_LYRICSLINE_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::LYRICS);
-        case ElementType::FINGERING: return isFiltered(ElementsSelectionFilterTypes::FINGERING);
-        case ElementType::HARMONY: return isFiltered(ElementsSelectionFilterTypes::CHORD_SYMBOL);
+        case ElementType::PARTIAL_LYRICSLINE_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::LYRICS);
+        case ElementType::FINGERING: return is_filtered(ElementsSelectionFilterTypes::FINGERING);
+        case ElementType::HARMONY: return is_filtered(ElementsSelectionFilterTypes::CHORD_SYMBOL);
         case ElementType::SLUR:
         case ElementType::SLUR_SEGMENT:
         case ElementType::HAMMER_ON_PULL_OFF:
-        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::SLUR);
+        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::SLUR);
         case ElementType::TIE:
-        case ElementType::TIE_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::TIE);
-        case ElementType::FIGURED_BASS: return isFiltered(ElementsSelectionFilterTypes::FIGURED_BASS);
+        case ElementType::TIE_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::TIE);
+        case ElementType::FIGURED_BASS: return is_filtered(ElementsSelectionFilterTypes::FIGURED_BASS);
         case ElementType::OTTAVA:
-        case ElementType::OTTAVA_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::OTTAVA);
+        case ElementType::OTTAVA_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::OTTAVA);
         case ElementType::PEDAL:
-        case ElementType::PEDAL_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::PEDAL_LINE);
+        case ElementType::PEDAL_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::PEDAL_LINE);
         case ElementType::ARPEGGIO:
-        case ElementType::CHORD_BRACKET: return isFiltered(ElementsSelectionFilterTypes::ARPEGGIO);
+        case ElementType::CHORD_BRACKET: return is_filtered(ElementsSelectionFilterTypes::ARPEGGIO);
         case ElementType::GLISSANDO:
-        case ElementType::GLISSANDO_SEGMENT: return isFiltered(ElementsSelectionFilterTypes::GLISSANDO);
-        case ElementType::FRET_DIAGRAM: return isFiltered(ElementsSelectionFilterTypes::FRET_DIAGRAM);
-        case ElementType::BREATH: return isFiltered(ElementsSelectionFilterTypes::BREATH);
+        case ElementType::GLISSANDO_SEGMENT: return is_filtered(ElementsSelectionFilterTypes::GLISSANDO);
+        case ElementType::FRET_DIAGRAM: return is_filtered(ElementsSelectionFilterTypes::FRET_DIAGRAM);
+        case ElementType::BREATH: return is_filtered(ElementsSelectionFilterTypes::BREATH);
         case ElementType::TREMOLO_SINGLECHORD:
-        case ElementType::TREMOLO_TWOCHORD: return isFiltered(ElementsSelectionFilterTypes::TREMOLO);
+        case ElementType::TREMOLO_TWOCHORD: return is_filtered(ElementsSelectionFilterTypes::TREMOLO);
         default: break;
     }
 
     // Special cases...
-    if (e->isTextBase()) {
-        return isFiltered(ElementsSelectionFilterTypes::OTHER_TEXT);
+    if (e->is_text_base()) {
+        return is_filtered(ElementsSelectionFilterTypes::OTHER_TEXT);
     }
 
-    if (e->isSLine() || e->isSLineSegment()) { // NoteLine, Volta
-        return isFiltered(ElementsSelectionFilterTypes::OTHER_LINE);
+    if (e->is_s_line() || e->is_s_line_segment()) { // NoteLine, Volta
+        return is_filtered(ElementsSelectionFilterTypes::OTHER_LINE);
     }
 
-    if (e->isChord() && toChord(e)->isGrace()) {
-        return isFiltered(ElementsSelectionFilterTypes::GRACE_NOTE);
+    if (e->is_chord() && to_chord(e)->is_grace()) {
+        return is_filtered(ElementsSelectionFilterTypes::GRACE_NOTE);
     }
 
     return true;
 }
 
-bool SelectionFilter::canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord, bool selectionContainsMultiNoteChords) const {
-    if (totalNotesInChord == 1) {
+bool SelectionFilter::can_select_note_idx(size_t note_idx, size_t total_notes_in_chord, bool selection_contains_multi_note_chords) const {
+    if (total_notes_in_chord == 1) {
         //! NOTE: Always include single notes when the selection consists solely of single notes...
-        return includeSingleNotes_ || !selectionContainsMultiNoteChords;
+        return include_single_notes_ || !selection_contains_multi_note_chords;
     }
 
     NotesInChordSelectionFilterTypes type = NotesInChordSelectionFilterTypes::NONE;
-    switch (noteIdx) {
+    switch (note_idx) {
         case 0: type = NotesInChordSelectionFilterTypes::BOTTOM_NOTE; break;
         case 1: type = NotesInChordSelectionFilterTypes::SECOND_NOTE; break;
         case 2: type = NotesInChordSelectionFilterTypes::THIRD_NOTE; break;
@@ -192,41 +192,42 @@ bool SelectionFilter::canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord,
     }
 
     //! NOTE: Everything above "normal" we handle as top notes...
-    const bool idxIsNormal = noteIdx < NUM_NOTES_IN_CHORD_SELECTION_FILTER_TYPES - 1;
-    if (noteIdx == totalNotesInChord - 1 || !idxIsNormal) {
-        return isFiltered(NotesInChordSelectionFilterTypes::TOP_NOTE) || (idxIsNormal && isFiltered(type));
+    const bool idx_is_normal = note_idx < ::mu::engraving::num_notes_in_chord_selection_filter_types - 1;
+    if (note_idx == total_notes_in_chord - 1 || !idx_is_normal) {
+        return is_filtered(NotesInChordSelectionFilterTypes::TOP_NOTE) || (idx_is_normal && is_filtered(type));
     }
 
     IF_ASSERT_FAILED(type != NotesInChordSelectionFilterTypes::NONE) { return true; }
 
-    return isFiltered(type);
+    return is_filtered(type);
 }
 
-bool SelectionFilter::canSelectTuplet(const Tuplet *tuplet, const Fraction &selectionRangeStart, const Fraction &selectionRangeEnd,
-                                      bool selectionContainsMultiNoteChords) const {
+bool SelectionFilter::can_select_tuplet(const Tuplet *tuplet, const Fraction &selection_range_start, const Fraction &selection_range_end,
+                                        bool selection_contains_multi_note_chords) const {
     // Tuplets are selectable if all of their contained elements are selectable...
     for (const DurationElement *element : tuplet->elements()) {
-        if (element->tick() < selectionRangeStart || element->tick() >= selectionRangeEnd) {
+        if (element->tick() < selection_range_start || element->tick() >= selection_range_end) {
             return false;
         }
         switch (element->type()) {
             case ElementType::CHORD: {
-                const std::vector<Note *> notes = toChord(element)->notes();
-                for (size_t noteIdx = 0; noteIdx < notes.size(); ++noteIdx) {
-                    if (!canSelectNoteIdx(noteIdx, notes.size(), selectionContainsMultiNoteChords)) {
+                const std::vector<Note *> notes = to_chord(element)->notes();
+                for (size_t note_idx = 0; note_idx < notes.size(); ++note_idx) {
+                    if (!can_select_note_idx(note_idx, notes.size(), selection_contains_multi_note_chords)) {
                         return false;
                     }
                 }
                 break;
             }
             case ElementType::REST:
-                if (!canSelect(element)) {
+                if (!can_select(element)) {
                     return false;
                 }
                 break;
             case ElementType::TUPLET: {
                 // Recursive call...
-                if (!canSelectTuplet(toTuplet(element), selectionRangeStart, selectionRangeEnd, selectionContainsMultiNoteChords)) {
+                if (!can_select_tuplet(to_tuplet(element), selection_range_start, selection_range_end,
+                                       selection_contains_multi_note_chords)) {
                     return false;
                 }
                 break;
@@ -240,13 +241,13 @@ bool SelectionFilter::canSelectTuplet(const Tuplet *tuplet, const Fraction &sele
     return true;
 }
 
-bool SelectionFilter::canSelectVoice(track_idx_t track) const {
+bool SelectionFilter::can_select_voice(track_idx_t track) const {
     voice_idx_t voice = track2voice(track);
     switch (voice) {
-        case 0: return isFiltered(VoicesSelectionFilterTypes::FIRST_VOICE);
-        case 1: return isFiltered(VoicesSelectionFilterTypes::SECOND_VOICE);
-        case 2: return isFiltered(VoicesSelectionFilterTypes::THIRD_VOICE);
-        case 3: return isFiltered(VoicesSelectionFilterTypes::FOURTH_VOICE);
+        case 0: return is_filtered(VoicesSelectionFilterTypes::FIRST_VOICE);
+        case 1: return is_filtered(VoicesSelectionFilterTypes::SECOND_VOICE);
+        case 2: return is_filtered(VoicesSelectionFilterTypes::THIRD_VOICE);
+        case 3: return is_filtered(VoicesSelectionFilterTypes::FOURTH_VOICE);
     }
     return true;
 }

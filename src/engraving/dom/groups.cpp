@@ -41,7 +41,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct NoteGroup {
-    Fraction timeSig;
+    Fraction time_sig;
     Groups endings;
 };
 
@@ -49,7 +49,7 @@ struct NoteGroup {
 //   noteGroups
 //---------------------------------------------------------
 
-static std::vector<NoteGroup> noteGroups{
+static std::vector<NoteGroup> note_groups{
     {Fraction(2, 2), Groups({{4, 0x200}, {8, 0x110}, {12, 0x200}, {16, 0x111}, {20, 0x200}, {24, 0x110}, {28, 0x200}})},
     {Fraction(3, 2), Groups({{4, 0x200},
                              {8, 0x110},
@@ -116,54 +116,54 @@ static std::vector<NoteGroup> noteGroups{
 //    based on time signature properties but respecting manual settings
 //---------------------------------------------------------
 
-BeamMode Groups::baseBeamMode(const ChordRest *cr, const ChordRest *prev) {
-    if (cr->isGrace() || cr->beamMode() != BeamMode::AUTO) {
-        return cr->beamMode();
+BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev) {
+    if (cr->is_grace() || cr->beam_mode() != BeamMode::AUTO) {
+        return cr->beam_mode();
     }
     assert(cr->staff());
 
     // we need to figure out the longest note value beat upon which cr falls in the measure
-    Fraction maxTickLen = std::max(cr->ticks(), prev ? prev->ticks() : Fraction());
-    Fraction smallestTickLen = Fraction(1, 8); // start with 8th
-    Fraction tickLenLimit = Fraction(1, 32);   // only check up to 32nds because that's all thats available
-                                               // in timesig properties
-    while (smallestTickLen > maxTickLen || cr->rtick().ticks() % smallestTickLen.ticks() != 0) {
-        smallestTickLen /= 2; // proceed to 16th, 32nd, etc
-        if (smallestTickLen < tickLenLimit) {
-            smallestTickLen = cr->ticks();
+    Fraction max_tick_len = std::max(cr->ticks(), prev ? prev->ticks() : Fraction());
+    Fraction smallest_tick_len = Fraction(1, 8); // start with 8th
+    Fraction tick_len_limit = Fraction(1, 32);   // only check up to 32nds because that's all thats available
+                                                 // in timesig properties
+    while (smallest_tick_len > max_tick_len || cr->rtick().ticks() % smallest_tick_len.ticks() != 0) {
+        smallest_tick_len /= 2; // proceed to 16th, 32nd, etc
+        if (smallest_tick_len < tick_len_limit) {
+            smallest_tick_len = cr->ticks();
             break;
         }
     }
-    DurationType bigBeatDuration = TDuration(smallestTickLen).type();
+    DurationType big_beat_duration = TDuration(smallest_tick_len).type();
 
-    TDuration crDuration = cr->durationType();
+    TDuration cr_duration = cr->duration_type();
     const Groups &g = cr->staff()->group(cr->tick());
-    Fraction stretch = cr->staff()->timeStretch(cr->tick());
-    Fraction tick = cr->rtick() * stretch + cr->measure()->anacrusisOffset();
+    Fraction stretch = cr->staff()->time_stretch(cr->tick());
+    Fraction tick = cr->rtick() * stretch + cr->measure()->anacrusis_offset();
 
     // We can choose to break beams based on its place in the measure, or by its duration. These
     // can be consolidated mostly, with bias towards its duration.
-    BeamMode byType = g.beamMode(tick.ticks(), crDuration.type());
-    BeamMode byPos = g.beamMode(tick.ticks(), bigBeatDuration);
-    BeamMode val = byType == BeamMode::AUTO ? byPos : byType;
+    BeamMode by_type = g.beam_mode(tick.ticks(), cr_duration.type());
+    BeamMode by_pos = g.beam_mode(tick.ticks(), big_beat_duration);
+    BeamMode val = by_type == BeamMode::AUTO ? by_pos : by_type;
 
     // context-dependent checks
-    if (val == BeamMode::AUTO && tick.isNotZero()) {
+    if (val == BeamMode::AUTO && tick.is_not_zero()) {
         // if current or previous cr is in tuplet (but not both in same tuplet):
         // consider it as if this were next shorter duration
-        if (prev && (cr->tuplet() != prev->tuplet()) && (crDuration == prev->durationType())) {
-            if (crDuration >= DurationType::V_EIGHTH) {
-                val = g.beamMode(tick.ticks(), DurationType::V_16TH);
-            } else if (crDuration == DurationType::V_16TH) {
-                val = g.beamMode(tick.ticks(), DurationType::V_32ND);
+        if (prev && (cr->tuplet() != prev->tuplet()) && (cr_duration == prev->duration_type())) {
+            if (cr_duration >= DurationType::V_EIGHTH) {
+                val = g.beam_mode(tick.ticks(), DurationType::V_16TH);
+            } else if (cr_duration == DurationType::V_16TH) {
+                val = g.beam_mode(tick.ticks(), DurationType::V_32ND);
             } else {
-                val = g.beamMode(tick.ticks(), DurationType::V_64TH);
+                val = g.beam_mode(tick.ticks(), DurationType::V_64TH);
             }
         }
         // if there is a hole between previous and current cr, break beam
         // exclude tuplets from this check; tick calculations can be unreliable
         // and they seem to be handled well anyhow
-        if (cr->voice() && prev && !prev->tuplet() && prev->endTick() < cr->tick()) {
+        if (cr->voice() && prev && !prev->tuplet() && prev->end_tick() < cr->tick()) {
             val = BeamMode::BEGIN;
         }
     }
@@ -176,89 +176,89 @@ BeamMode Groups::baseBeamMode(const ChordRest *cr, const ChordRest *prev) {
 //    final beam mode after applying contextual corrections
 //---------------------------------------------------------
 
-BeamMode Groups::actualBeamMode(const ChordRest *cr, const ChordRest *prev) {
+BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev) {
     Measure *measure = cr->measure();
     const Staff *stf = cr->staff();
-    TimeSig *ts = stf->timeSig(measure->tick());
-    bool checkBeats = ts && ts->denominator() == 4;
+    TimeSig *ts = stf->time_sig(measure->tick());
+    bool check_beats = ts && ts->denominator() == 4;
 
-    std::unordered_map<int, TDuration> beatSubdivision;
-    if (checkBeats && cr->rtick().isNotZero()) {
+    std::unordered_map<int, TDuration> beat_subdivision;
+    if (check_beats && cr->rtick().is_not_zero()) {
         Fraction stretch = ts->stretch();
         Fraction tick = cr->rtick() * stretch;
 
-        if ((tick.ticks() % Constants::DIVISION) == 0) {
-            for (Segment *s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-                ChordRest *mcr = toChordRest(s->element(cr->track()));
+        if ((tick.ticks() % Constants::division) == 0) {
+            for (Segment *s = measure->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
+                ChordRest *mcr = to_chord_rest(s->element(cr->track()));
                 if (mcr == 0) {
                     continue;
                 }
-                int beat = (mcr->rtick() * stretch).ticks() / Constants::DIVISION;
-                if (muse::contains(beatSubdivision, beat)) {
-                    beatSubdivision[beat] = std::min(beatSubdivision[beat], mcr->durationType());
+                int beat = (mcr->rtick() * stretch).ticks() / Constants::division;
+                if (muse::contains(beat_subdivision, beat)) {
+                    beat_subdivision[beat] = std::min(beat_subdivision[beat], mcr->duration_type());
                 } else {
-                    beatSubdivision[beat] = mcr->durationType();
+                    beat_subdivision[beat] = mcr->duration_type();
                 }
             }
         }
     }
 
-    return actualBeamMode(cr, prev, &beatSubdivision);
+    return actual_beam_mode(cr, prev, &beat_subdivision);
 }
 
-BeamMode Groups::actualBeamMode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beatSubdivision) {
+BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beat_subdivision) {
     // do not beam rests set to BeamMode::AUTO or with only other rests
-    if (cr->isRest() && cr->beamMode() == BeamMode::AUTO) {
+    if (cr->is_rest() && cr->beam_mode() == BeamMode::AUTO) {
         return BeamMode::NONE;
     }
 
-    TDuration durationType = cr->durationType();
+    TDuration duration_type = cr->duration_type();
     // chord with no hooks cannot be beamed
-    if (cr->isChord() && durationType.hooks() == 0) {
+    if (cr->is_chord() && duration_type.hooks() == 0) {
         return BeamMode::NONE;
     }
     // if chord has hooks and is 2nd element of a cross-measure value
     // set beam mode to NONE (do not combine with following chord beam/hook, if any)
-    if (durationType.hooks() > 0 && cr->crossMeasure() == CrossMeasure::SECOND) {
+    if (duration_type.hooks() > 0 && cr->cross_measure() == CrossMeasure::SECOND) {
         return BeamMode::NONE;
     }
 
-    BeamMode bm = Groups::baseBeamMode(cr, prev);
+    BeamMode bm = Groups::base_beam_mode(cr, prev);
 
     if (bm == BeamMode::AUTO) {
         // start beam at the beginning of measures
-        if (cr->rtick().isZero()) {
+        if (cr->rtick().is_zero()) {
             return BeamMode::BEGIN;
         }
 
         // perform additional context-dependent checks
         Measure *measure = cr->measure();
         const Staff *stf = cr->staff();
-        TimeSig *ts = stf->timeSig(measure->tick());
-        bool checkBeats = ts && ts->denominator() == 4;
+        TimeSig *ts = stf->time_sig(measure->tick());
+        bool check_beats = ts && ts->denominator() == 4;
         Fraction stretch = ts ? ts->stretch() : Fraction(1, 1);
 
         // check if we need to break beams according to minimum duration in current / previous beat
-        if (checkBeats) {
+        if (check_beats) {
             Fraction tick = cr->rtick() * stretch;
             // check if on the beat
-            if ((tick.ticks() % Constants::DIVISION) == 0) {
-                int beat = tick.ticks() / Constants::DIVISION;
+            if ((tick.ticks() % Constants::division) == 0) {
+                int beat = tick.ticks() / Constants::division;
                 // get minimum duration for this & previous beat
-                auto it_current = beatSubdivision->find(beat);
-                auto it_prev = beatSubdivision->find(beat - 1);
-                TDuration current_min = (it_current != beatSubdivision->end()) ? it_current->second : TDuration(DurationType::V_INVALID);
-                TDuration prev_min = (it_prev != beatSubdivision->end()) ? it_prev->second : TDuration(DurationType::V_INVALID);
-                TDuration minDuration = std::min(current_min, prev_min);
+                auto it_current = beat_subdivision->find(beat);
+                auto it_prev = beat_subdivision->find(beat - 1);
+                TDuration current_min = (it_current != beat_subdivision->end()) ? it_current->second : TDuration(DurationType::V_INVALID);
+                TDuration prev_min = (it_prev != beat_subdivision->end()) ? it_prev->second : TDuration(DurationType::V_INVALID);
+                TDuration min_duration = std::min(current_min, prev_min);
                 // re-calculate beam as if this were the duration of current chordrest
-                TDuration saveDuration = cr->actualDurationType();
-                TDuration saveCMDuration = cr->crossMeasureDurationType();
-                CrossMeasure saveCrossMeasVal = cr->crossMeasure();
-                const_cast<ChordRest *>(cr)->setDurationType(minDuration);
-                bm = Groups::baseBeamMode(cr, prev);
-                const_cast<ChordRest *>(cr)->setDurationType(saveDuration);
-                const_cast<ChordRest *>(cr)->setCrossMeasure(saveCrossMeasVal);
-                const_cast<ChordRest *>(cr)->setCrossMeasureDurationType(saveCMDuration);
+                TDuration save_duration = cr->actual_duration_type();
+                TDuration save_cm_duration = cr->cross_measure_duration_type();
+                CrossMeasure save_cross_meas_val = cr->cross_measure();
+                const_cast<ChordRest *>(cr)->set_duration_type(min_duration);
+                bm = Groups::base_beam_mode(cr, prev);
+                const_cast<ChordRest *>(cr)->set_duration_type(save_duration);
+                const_cast<ChordRest *>(cr)->set_cross_measure(save_cross_meas_val);
+                const_cast<ChordRest *>(cr)->set_cross_measure_duration_type(save_cm_duration);
             }
         }
     }
@@ -271,7 +271,7 @@ BeamMode Groups::actualBeamMode(const ChordRest *cr, const ChordRest *prev, cons
 //    tick is relative to begin of measure
 //---------------------------------------------------------
 
-BeamMode Groups::beamMode(int tick, DurationType d) const {
+BeamMode Groups::beam_mode(int tick, DurationType d) const {
     int shift;
     switch (d) {
         case DurationType::V_EIGHTH: shift = 0; break;
@@ -285,7 +285,7 @@ BeamMode Groups::beamMode(int tick, DurationType d) const {
         case DurationType::V_1024TH: shift = 8; break;
         default: return BeamMode::AUTO;
     }
-    const int dm = Constants::DIVISION / 8;
+    const int dm = Constants::division / 8;
     for (const GroupNode &e : nodes_) {
         if (e.pos * dm < tick) {
             continue;
@@ -311,14 +311,14 @@ BeamMode Groups::beamMode(int tick, DurationType d) const {
 //---------------------------------------------------------
 
 const Groups &Groups::endings(const Fraction &f) {
-    for (const NoteGroup &g : noteGroups) {
-        if (g.timeSig.identical(f)) {
+    for (const NoteGroup &g : note_groups) {
+        if (g.time_sig.identical(f)) {
             return g.endings;
         }
     }
     NoteGroup g;
-    g.timeSig = f;
-    noteGroups.push_back(g);
+    g.time_sig = f;
+    note_groups.push_back(g);
 
     int pos = 0;
     switch (f.denominator()) {
@@ -335,16 +335,16 @@ const Groups &Groups::endings(const Fraction &f) {
         GroupNode n;
         n.pos = pos * i;
         n.action = 0x111;
-        g.endings.addNode(n);
+        g.endings.add_node(n);
     }
-    return noteGroups.back().endings;
+    return note_groups.back().endings;
 }
 
 //---------------------------------------------------------
 //   addStop
 //---------------------------------------------------------
 
-void Groups::addStop(int pos, DurationType d, BeamMode bm) {
+void Groups::add_stop(int pos, DurationType d, BeamMode bm) {
     int shift;
     switch (d) {
         case DurationType::V_EIGHTH: shift = 0; break;

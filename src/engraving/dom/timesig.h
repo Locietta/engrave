@@ -51,21 +51,21 @@ class TimeSig final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, TimeSig)
     DECLARE_CLASSOF(ElementType::TIMESIG)
 
-    M_PROPERTY2(bool, isCourtesy, setIsCourtesy, false)
+    M_PROPERTY2(bool, is_courtesy, set_is_courtesy, false)
 
 public:
 
-    void setOwnershipParent(DummyParentOr<Segment> parent);
+    void set_ownership_parent(DummyParentOr<Segment> parent);
 
     String ssig() const;
-    void setSSig(const String &);
+    void set_s_sig(const String &);
 
     TimeSig *clone() const override { return new TimeSig(*this); }
 
-    TimeSigType timeSigType() const { return timeSigType_; }
+    TimeSigType time_sig_type() const { return time_sig_type_; }
 
     int subtype() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
     bool operator==(const TimeSig &) const;
 
@@ -75,7 +75,7 @@ public:
 
     Fraction sig() const { return sig_; }
 
-    void setSig(const Fraction &f, TimeSigType st = TimeSigType::NORMAL);
+    void set_sig(const Fraction &f, TimeSigType st = TimeSigType::NORMAL);
 
     int numerator() const { return sig_.numerator(); }
 
@@ -83,75 +83,75 @@ public:
 
     Fraction stretch() const { return stretch_; }
 
-    void setStretch(const Fraction &s) { stretch_ = s; }
+    void set_stretch(const Fraction &s) { stretch_ = s; }
 
-    int numeratorStretch() const { return stretch_.numerator(); }
+    int numerator_stretch() const { return stretch_.numerator(); }
 
-    int denominatorStretch() const { return stretch_.denominator(); }
+    int denominator_stretch() const { return stretch_.denominator(); }
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }
 
-    bool showCourtesySig() const { return showCourtesySig_; }
+    bool show_courtesy_sig() const { return show_courtesy_sig_; }
 
-    void setShowCourtesySig(bool v) { showCourtesySig_ = v; }
+    void set_show_courtesy_sig(bool v) { show_courtesy_sig_ = v; }
 
-    const String &numeratorString() const { return numeratorString_; }
+    const String &numerator_string() const { return numerator_string_; }
 
-    void setNumeratorString(const String &);
+    void set_numerator_string(const String &);
 
-    const String &denominatorString() const { return denominatorString_; }
+    const String &denominator_string() const { return denominator_string_; }
 
-    void setDenominatorString(const String &);
+    void set_denominator_string(const String &);
 
-    bool largeParentheses() const { return largeParentheses_; }
+    bool large_parentheses() const { return large_parentheses_; }
 
-    void setLargeParentheses(bool v) { largeParentheses_ = v; }
+    void set_large_parentheses(bool v) { large_parentheses_ = v; }
 
-    void setFrom(const TimeSig *);
+    void set_from(const TimeSig *);
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
     const Groups &groups() const { return groups_; }
 
-    void setGroups(const Groups &e) { groups_ = e; }
+    void set_groups(const Groups &e) { groups_ = e; }
 
-    bool isLocal() const { return stretch_ != Fraction(1, 1); }
+    bool is_local() const { return stretch_ != Fraction(1, 1); }
 
-    PointF staffOffset() const override;
+    PointF staff_offset() const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    void initElementStyle(const ElementStyle *) override;
-    void styleChanged() override;
-    Sid getPropertyStyle(Pid id) const override;
+    void init_element_style(const ElementStyle *) override;
+    void style_changed() override;
+    Sid get_property_style(Pid id) const override;
 
-    bool showOnThisStaff() const;
-    bool isAboveStaves() const;
-    bool isAcrossStaves() const;
-    TimeSigPlacement timeSigPlacement() const;
-    TimeSigStyle timeSigStyle() const;
-    double numDist() const;
-    double yPos() const;
+    bool show_on_this_staff() const;
+    bool is_above_staves() const;
+    bool is_across_staves() const;
+    TimeSigPlacement time_sig_placement() const;
+    TimeSigStyle time_sig_style() const;
+    double num_dist() const;
+    double y_pos() const;
 
     const ScaleF &scale() const { return scale_; }
 
-    void setScale(const ScaleF &s) { scale_ = s; } // TODO: think about what to do with this
+    void set_scale(const ScaleF &s) { scale_ = s; } // TODO: think about what to do with this
 
     struct LayoutData : public EngravingItem::LayoutData {
         SymIdList ns;
         SymIdList ds;
         PointF pz;
         PointF pn;
-        PointF pointLargeLeftParen;
-        PointF pointLargeRightParen;
+        PointF point_large_left_paren;
+        PointF point_large_right_paren;
     };
     DECLARE_LAYOUTDATA_METHODS(TimeSig)
 
@@ -164,16 +164,16 @@ private:
     friend class Factory;
     TimeSig(DummyParentOr<Segment> parent);
 
-    String numeratorString_; // calculated from actualSig() if !customText
-    String denominatorString_;
+    String numerator_string_; // calculated from actualSig() if !customText
+    String denominator_string_;
 
     Fraction sig_;
     Fraction stretch_; // localSig / globalSig
     Groups groups_;
 
     ScaleF scale_ = ScaleF(1.0, 1.0);
-    TimeSigType timeSigType_ = TimeSigType::NORMAL;
-    bool showCourtesySig_ = false;
-    bool largeParentheses_ = false;
+    TimeSigType time_sig_type_ = TimeSigType::NORMAL;
+    bool show_courtesy_sig_ = false;
+    bool large_parentheses_ = false;
 };
 } // namespace mu::engraving

@@ -42,164 +42,164 @@ public:
     typedef typename EventSequenceMap::const_iterator SequenceIterator;
     typedef typename EventSequence::const_iterator EventIterator;
 
-    AbstractEventSequencer() { resetAllIterators(); }
+    AbstractEventSequencer() { reset_all_iterators(); }
 
     virtual ~AbstractEventSequencer() = default;
 
     void load(const mpe::PlaybackData &data) {
 
-        playbackData_ = data;
+        playback_data_ = data;
 
-        updateMainStreamEvents(data.originEvents, data.dynamics);
+        update_main_stream_events(data.origin_events, data.dynamics);
     }
 
-    const mpe::PlaybackData &playbackData() const { return playbackData_; }
+    const mpe::PlaybackData &playback_data() const { return playback_data_; }
 
-    void updateMainStream() {
-        if (shouldUpdateMainStreamEvents_) {
-            updateMainStreamEvents(playbackData_.originEvents, playbackData_.dynamics);
-            shouldUpdateMainStreamEvents_ = false;
+    void update_main_stream() {
+        if (should_update_main_stream_events_) {
+            update_main_stream_events(playback_data_.origin_events, playback_data_.dynamics);
+            should_update_main_stream_events_ = false;
         }
     }
 
-    void setUpdateMainStreamWhenInactive(bool update) { updateMainStreamWhenInactive_ = update; }
+    void set_update_main_stream_when_inactive(bool update) { update_main_stream_when_inactive_ = update; }
 
-    void flushOffstream() {
-        if (offStreamEvents_.empty()) {
+    void flush_offstream() {
+        if (off_stream_events_.empty()) {
             return;
         }
 
-        offStreamEvents_.clear();
-        updateOffSequenceIterator();
+        off_stream_events_.clear();
+        update_off_sequence_iterator();
 
-        if (onOffStreamFlushed_) {
-            onOffStreamFlushed_();
+        if (on_off_stream_flushed_) {
+            on_off_stream_flushed_();
         }
     }
 
-    void setActive(const bool active) {
-        if (isActive_ == active) {
+    void set_active(const bool active) {
+        if (is_active_ == active) {
             return;
         }
 
-        isActive_ = active;
+        is_active_ = active;
 
-        if (isActive_) {
-            updateMainStream();
+        if (is_active_) {
+            update_main_stream();
         }
     }
 
-    bool isActive() const { return isActive_; }
+    bool is_active() const { return is_active_; }
 
-    void setPlaybackPosition(const msecs_t newPlaybackPosition) {
+    void set_playback_position(const msecs_t new_playback_position) {
 
-        playbackPosition_ = newPlaybackPosition;
-        resetAllIterators();
+        playback_position_ = new_playback_position;
+        reset_all_iterators();
     }
 
-    msecs_t playbackPosition() const { return playbackPosition_; }
+    msecs_t playback_position() const { return playback_position_; }
 
     using OnFlushedCallback = std::function<void()>;
 
-    void setOnOffStreamFlushed(OnFlushedCallback flushed) { onOffStreamFlushed_ = flushed; }
+    void set_on_off_stream_flushed(OnFlushedCallback flushed) { on_off_stream_flushed_ = flushed; }
 
-    void setOnMainStreamFlushed(OnFlushedCallback flushed) { onMainStreamFlushed_ = flushed; }
+    void set_on_main_stream_flushed(OnFlushedCallback flushed) { on_main_stream_flushed_ = flushed; }
 
-    EventSequenceMap movePlaybackForward(const msecs_t nextMsecs) {
+    EventSequenceMap move_playback_forward(const msecs_t next_msecs) {
 
         EventSequenceMap result;
 
-        if (!isActive_) {
-            result.emplace(offstreamPosition_, EventSequence());
+        if (!is_active_) {
+            result.emplace(offstream_position_, EventSequence());
 
-            if (currentOffSequenceIt_ == offStreamEvents_.cend()) {
+            if (current_off_sequence_it_ == off_stream_events_.cend()) {
                 return result;
             }
 
-            offstreamPosition_ += nextMsecs;
-            handleOffStream(result);
+            offstream_position_ += next_msecs;
+            handle_off_stream(result);
 
             return result;
         }
 
         // Empty sequence means to continue the previous sequence
-        result.emplace(playbackPosition_, EventSequence());
-        playbackPosition_ += nextMsecs;
+        result.emplace(playback_position_, EventSequence());
+        playback_position_ += next_msecs;
 
-        if (currentMainSequenceIt_ == mainStreamEvents_.cend()) {
+        if (current_main_sequence_it_ == main_stream_events_.cend()) {
             return result;
         }
 
-        handleMainStream(result);
+        handle_main_stream(result);
 
         return result;
     }
 
 protected:
-    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
-    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap &events) = 0;
+    virtual void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
+    virtual void update_off_stream_events(const mpe::PlaybackEventsMap &events) = 0;
 
-    void resetAllIterators() {
-        updateMainSequenceIterator();
-        updateOffSequenceIterator();
+    void reset_all_iterators() {
+        update_main_sequence_iterator();
+        update_off_sequence_iterator();
     }
 
-    void updateMainSequenceIterator() { currentMainSequenceIt_ = mainStreamEvents_.lower_bound(playbackPosition_); }
+    void update_main_sequence_iterator() { current_main_sequence_it_ = main_stream_events_.lower_bound(playback_position_); }
 
-    void updateOffSequenceIterator() {
-        currentOffSequenceIt_ = offStreamEvents_.cbegin();
-        offstreamPosition_ = 0;
+    void update_off_sequence_iterator() {
+        current_off_sequence_it_ = off_stream_events_.cbegin();
+        offstream_position_ = 0;
     }
 
-    void handleMainStream(EventSequenceMap &result) {
-        while (currentMainSequenceIt_ != mainStreamEvents_.end() && currentMainSequenceIt_->first <= playbackPosition_) {
+    void handle_main_stream(EventSequenceMap &result) {
+        while (current_main_sequence_it_ != main_stream_events_.end() && current_main_sequence_it_->first <= playback_position_) {
             if (OfflineCancellation::requested()) return;
-            EventSequence &sequence = result[currentMainSequenceIt_->first];
-            for (const auto &event : currentMainSequenceIt_->second) {
+            EventSequence &sequence = result[current_main_sequence_it_->first];
+            for (const auto &event : current_main_sequence_it_->second) {
                 if (OfflineCancellation::requested()) return;
                 sequence.push_back(event);
             }
-            currentMainSequenceIt_ = std::next(currentMainSequenceIt_);
+            current_main_sequence_it_ = std::next(current_main_sequence_it_);
         }
     }
 
-    void handleOffStream(EventSequenceMap &result) {
-        if (offStreamEvents_.empty()) {
+    void handle_off_stream(EventSequenceMap &result) {
+        if (off_stream_events_.empty()) {
             return;
         }
 
-        while (currentOffSequenceIt_ != offStreamEvents_.end() && currentOffSequenceIt_->first <= offstreamPosition_) {
+        while (current_off_sequence_it_ != off_stream_events_.end() && current_off_sequence_it_->first <= offstream_position_) {
             if (OfflineCancellation::requested()) return;
-            EventSequence &sequence = result[currentOffSequenceIt_->first];
-            for (auto &event : currentOffSequenceIt_->second) {
+            EventSequence &sequence = result[current_off_sequence_it_->first];
+            for (auto &event : current_off_sequence_it_->second) {
                 if (OfflineCancellation::requested()) return;
                 sequence.push_back(std::move(event));
             }
-            currentOffSequenceIt_ = offStreamEvents_.erase(currentOffSequenceIt_);
+            current_off_sequence_it_ = off_stream_events_.erase(current_off_sequence_it_);
         }
 
-        if (currentOffSequenceIt_ == offStreamEvents_.end()) {
-            offstreamPosition_ = 0;
+        if (current_off_sequence_it_ == off_stream_events_.end()) {
+            offstream_position_ = 0;
         }
     }
 
-    mutable msecs_t playbackPosition_ = 0;
-    mutable msecs_t offstreamPosition_ = 0;
+    mutable msecs_t playback_position_ = 0;
+    mutable msecs_t offstream_position_ = 0;
 
-    SequenceIterator currentMainSequenceIt_;
-    SequenceIterator currentOffSequenceIt_;
-    EventSequenceMap mainStreamEvents_;
-    EventSequenceMap offStreamEvents_;
+    SequenceIterator current_main_sequence_it_;
+    SequenceIterator current_off_sequence_it_;
+    EventSequenceMap main_stream_events_;
+    EventSequenceMap off_stream_events_;
 
-    mpe::PlaybackData playbackData_;
+    mpe::PlaybackData playback_data_;
 
-    bool isActive_ = false;
+    bool is_active_ = false;
 
-    OnFlushedCallback onOffStreamFlushed_;
-    OnFlushedCallback onMainStreamFlushed_;
+    OnFlushedCallback on_off_stream_flushed_;
+    OnFlushedCallback on_main_stream_flushed_;
 
 private:
-    bool shouldUpdateMainStreamEvents_ = false;
-    bool updateMainStreamWhenInactive_ = false;
+    bool should_update_main_stream_events_ = false;
+    bool update_main_stream_when_inactive_ = false;
 };
 } // namespace muse::audio::engine

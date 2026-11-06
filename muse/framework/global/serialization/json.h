@@ -45,25 +45,25 @@ public:
     JsonValue(const JsonObject &v);
     JsonValue(std::shared_ptr<JsonData> d = nullptr);
 
-    bool isNull() const;
-    bool isBool() const;
-    bool isNumber() const;
-    bool isString() const;
-    bool isArray() const;
-    bool isObject() const;
+    bool is_null() const;
+    bool is_bool() const;
+    bool is_number() const;
+    bool is_string() const;
+    bool is_array() const;
+    bool is_object() const;
 
-    bool toBool() const;
-    int toInt() const;
-    double toDouble() const;
-    String toString() const;
-    const std::string &toStdString() const;
-    JsonArray toArray() const;
-    JsonObject toObject() const;
+    bool to_bool() const;
+    int to_int() const;
+    double to_double() const;
+    String to_string() const;
+    const std::string &to_std_string() const;
+    JsonArray to_array() const;
+    JsonObject to_object() const;
 
-    Val toVal() const;
-    static JsonValue fromVal(const Val &val);
+    Val to_val() const;
+    static JsonValue from_val(const Val &val);
 
-    void setNull();
+    void set_null();
     JsonValue &operator=(bool v);
     JsonValue &operator=(int v);
     JsonValue &operator=(double v);
@@ -168,7 +168,7 @@ class JsonObject {
 public:
     JsonObject(std::shared_ptr<JsonData> d = nullptr);
 
-    bool isValid() const;
+    bool is_valid() const;
 
     bool empty() const;
     size_t size() const;
@@ -204,15 +204,15 @@ public:
     JsonDocument(JsonObject o);
     JsonDocument(JsonArray a);
 
-    enum class Format { Indented, Compact };
+    enum class Format { INDENTED, COMPACT };
 
-    bool isObject() const;
-    bool isArray() const;
-    JsonObject rootObject() const;
-    JsonArray rootArray() const;
+    bool is_object() const;
+    bool is_array() const;
+    JsonObject root_object() const;
+    JsonArray root_array() const;
 
-    ByteArray toJson(Format format = Format::Indented) const;
-    static JsonDocument fromJson(const ByteArray &ba, std::string *err = nullptr);
+    ByteArray to_json(Format format = Format::INDENTED) const;
+    static JsonDocument from_json(const ByteArray &ba, std::string *err = nullptr);
 
 private:
     std::shared_ptr<JsonData> data_;

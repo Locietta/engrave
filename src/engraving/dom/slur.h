@@ -36,9 +36,9 @@ class SlurSegment : public SlurTieSegment {
     OBJECT_ALLOCATOR(engraving, SlurSegment)
     DECLARE_CLASSOF(ElementType::SLUR_SEGMENT)
 
-    M_PROPERTY2(double, extraHeight, setExtraHeight, 0.0)
-    M_PROPERTY2(PointF, endPointOff1, setEndPointOff1, PointF(0.0, 0.0))
-    M_PROPERTY2(PointF, endPointOff2, setEndPointOff2, PointF(0.0, 0.0))
+    M_PROPERTY2(double, extra_height, set_extra_height, 0.0)
+    M_PROPERTY2(PointF, end_point_off1, set_end_point_off1, PointF(0.0, 0.0))
+    M_PROPERTY2(PointF, end_point_off2, set_end_point_off2, PointF(0.0, 0.0))
 
 public:
     SlurSegment(Slur *sp, ElementType type = ElementType::SLUR_SEGMENT);
@@ -46,16 +46,16 @@ public:
 
     SlurSegment *clone() const override { return new SlurSegment(*this); }
 
-    bool isEdited() const;
-    bool isEndPointsEdited() const;
+    bool is_edited() const;
+    bool is_end_points_edited() const;
 
-    Slur *slur() const { return toSlur(spanner()); }
+    Slur *slur() const { return to_slur(spanner()); }
 
-    double endWidth() const override;
-    double midWidth() const override;
-    double dottedWidth() const override;
+    double end_width() const override;
+    double mid_width() const override;
+    double dotted_width() const override;
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
 protected:
 };
@@ -91,53 +91,53 @@ public:
 
     Slur *clone() const override { return new Slur(*this); }
 
-    void setTrack(track_idx_t val) override;
+    void set_track(track_idx_t val) override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    PropertyValue get_property(Pid property_id) const override;
+    PropertyValue property_default(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
 
-    SlurSegment *frontSegment() { return toSlurSegment(Spanner::frontSegment()); }
+    SlurSegment *front_segment() { return to_slur_segment(Spanner::front_segment()); }
 
-    const SlurSegment *frontSegment() const { return toSlurSegment(Spanner::frontSegment()); }
+    const SlurSegment *front_segment() const { return to_slur_segment(Spanner::front_segment()); }
 
-    SlurSegment *backSegment() { return toSlurSegment(Spanner::backSegment()); }
+    SlurSegment *back_segment() { return to_slur_segment(Spanner::back_segment()); }
 
-    const SlurSegment *backSegment() const { return toSlurSegment(Spanner::backSegment()); }
+    const SlurSegment *back_segment() const { return to_slur_segment(Spanner::back_segment()); }
 
-    SlurSegment *segmentAt(int n) { return toSlurSegment(Spanner::segmentAt(n)); }
+    SlurSegment *segment_at(int n) { return to_slur_segment(Spanner::segment_at(n)); }
 
-    const SlurSegment *segmentAt(int n) const { return toSlurSegment(Spanner::segmentAt(n)); }
+    const SlurSegment *segment_at(int n) const { return to_slur_segment(Spanner::segment_at(n)); }
 
-    bool isCrossStaff();
-    bool hasCrossBeams();
+    bool is_cross_staff();
+    bool has_cross_beams();
 
-    const StemFloated &stemFloated() const { return stemFloated_; }
+    const StemFloated &stem_floated() const { return stem_floated_; }
 
-    StemFloated &stemFloated() { return stemFloated_; }
+    StemFloated &stem_floated() { return stem_floated_; }
 
-    SlurTieSegment *newSlurTieSegment() override { return new SlurSegment(this); }
+    SlurTieSegment *new_slur_tie_segment() override { return new SlurSegment(this); }
 
-    double scalingFactor() const override;
+    double scaling_factor() const override;
 
-    void undoSetIncoming(bool incoming);
-    void undoSetOutgoing(bool outgoing);
-    void setIncoming(bool incoming);
-    void setOutgoing(bool outgoing);
-    bool isIncoming() const;
-    bool isOutgoing() const;
+    void undo_set_incoming(bool incoming);
+    void undo_set_outgoing(bool outgoing);
+    void set_incoming(bool incoming);
+    void set_outgoing(bool outgoing);
+    bool is_incoming() const;
+    bool is_outgoing() const;
 
-    void undoChangeStartEndElements(ChordRest *scr, ChordRest *ecr);
+    void undo_change_start_end_elements(ChordRest *scr, ChordRest *ecr);
 
 private:
-    M_PROPERTY2(ConnectedElement, connectedElement, setConnectedElement, ConnectedElement::NONE)
-    M_PROPERTY2(PartialSpannerDirection, partialSpannerDirection, setPartialSpannerDirection, PartialSpannerDirection::NONE)
+    M_PROPERTY2(ConnectedElement, connected_element, set_connected_element, ConnectedElement::NONE)
+    M_PROPERTY2(PartialSpannerDirection, partial_spanner_direction, set_partial_spanner_direction, PartialSpannerDirection::NONE)
 
-    PartialSpannerDirection calcIncomingDirection(bool incoming);
-    PartialSpannerDirection calcOutgoingDirection(bool outgoing);
+    PartialSpannerDirection calc_incoming_direction(bool incoming);
+    PartialSpannerDirection calc_outgoing_direction(bool outgoing);
 
     friend class Factory;
 
-    StemFloated stemFloated_; // end point position is attached to stem but floated towards the note
+    StemFloated stem_floated_; // end point position is attached to stem but floated towards the note
 };
 } // namespace mu::engraving

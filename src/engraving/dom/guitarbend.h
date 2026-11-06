@@ -51,11 +51,11 @@ class GuitarBend final : public SLine {
     OBJECT_ALLOCATOR(engraving, GuitarBend)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND)
 
-    M_PROPERTY2(DirectionV, direction, setDirection, DirectionV::AUTO)
-    M_PROPERTY2(int, bendAmountInQuarterTones, setBendAmountInQuarterTones, 4)
-    M_PROPERTY2(GuitarBendShowHoldLine, showHoldLine, setShowHoldLine, GuitarBendShowHoldLine::AUTO)
-    M_PROPERTY2(float, startTimeFactor, setStartTimeFactor, 0.f)
-    M_PROPERTY2(float, endTimeFactor, setEndTimeFactor, 1.f)
+    M_PROPERTY2(DirectionV, direction, set_direction, DirectionV::AUTO)
+    M_PROPERTY2(int, bend_amount_in_quarter_tones, set_bend_amount_in_quarter_tones, 4)
+    M_PROPERTY2(GuitarBendShowHoldLine, show_hold_line, set_show_hold_line, GuitarBendShowHoldLine::AUTO)
+    M_PROPERTY2(float, start_time_factor, set_start_time_factor, 0.f)
+    M_PROPERTY2(float, end_time_factor, set_end_time_factor, 1.f)
 
 public:
     GuitarBend(EngravingObject *parent);
@@ -64,128 +64,128 @@ public:
 
     GuitarBend *clone() const override { return new GuitarBend(*this); }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
     Anchor anchor() const override { return Anchor::NOTE; }
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
-    Note *startNote() const;
-    Note *startNoteOfChain() const;
+    Note *start_note() const;
+    Note *start_note_of_chain() const;
 
-    Note *endNote() const;
-    void changeBendAmount(int bendAmount, int startBendAmount);
-    void setEndNotePitch(int pitch, int quarterToneOffset);
+    Note *end_note() const;
+    void change_bend_amount(int bend_amount, int start_bend_amount);
+    void set_end_note_pitch(int pitch, int quarter_tone_offset);
 
-    bool isReleaseBend() const;
-    bool isFullRelease() const;
-    bool angledPreBend() const;
-    bool isDive() const;
-    bool isFullReleaseDive() const;
+    bool is_release_bend() const;
+    bool is_full_release() const;
+    bool angled_pre_bend() const;
+    bool is_dive() const;
+    bool is_full_release_dive() const;
 
-    static void fixNotesFrettingForGraceBend(Note *grace, Note *main);
-    static void fixNotesFrettingForStandardBend(Note *startNote, Note *endNote);
-    static Note *createEndNote(Note *startNote, GuitarBendType bendType = GuitarBendType::BEND);
+    static void fix_notes_fretting_for_grace_bend(Note *grace, Note *main);
+    static void fix_notes_fretting_for_standard_bend(Note *start_note, Note *end_note);
+    static Note *create_end_note(Note *start_note, GuitarBendType bend_type = GuitarBendType::BEND);
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid id) const override;
 
-    static constexpr int SLACK_BEND_AMOUNT = -33;
-    void computeBendAmount();
-    int totBendAmountIncludingPrecedingBends() const;
-    void computeBendText();
-    void computeIsInvalidOrNeedsWarning();
+    static constexpr int slack_bend_amount = -33;
+    void compute_bend_amount();
+    int tot_bend_amount_including_preceding_bends() const;
+    void compute_bend_text();
+    void compute_is_invalid_or_needs_warning();
 
-    bool isInvalid() const { return isInvalid_; }
+    bool is_invalid() const { return is_invalid_; }
 
-    bool isBorderlineUnplayable() const { return isBorderlineUnplayable_; }
+    bool is_borderline_unplayable() const { return is_borderline_unplayable_; }
 
-    GuitarBend *overlappingBendOrDive() const;
+    GuitarBend *overlapping_bend_or_dive() const;
 
-    GuitarBend *findPrecedingBend() const;
-    GuitarBend *findFollowingPreBendOrDive() const;
-    WhammyBar *findOverlappingWhammyBar(Fraction startTick, Fraction endTick) const;
+    GuitarBend *find_preceding_bend() const;
+    GuitarBend *find_following_pre_bend_or_dive() const;
+    WhammyBar *find_overlapping_whammy_bar(Fraction start_tick, Fraction end_tick) const;
 
-    void updateHoldLine();
+    void update_hold_line();
 
-    void setHoldLine(GuitarBendHold *hold) { holdLine_ = hold; }
+    void set_hold_line(GuitarBendHold *hold) { hold_line_ = hold; }
 
-    GuitarBendHold *holdLine() const { return holdLine_; }
+    GuitarBendHold *hold_line() const { return hold_line_; }
 
-    double lineWidth() const;
+    double line_width() const;
 
-    Color curColor(const rendering::PaintOptions &opt) const override;
+    Color cur_color(const rendering::PaintOptions &opt) const override;
 
-    DirectionV diveTabPos() const { return diveTabPos_; }
+    DirectionV dive_tab_pos() const { return dive_tab_pos_; }
 
-    void setDiveTabPos(DirectionV v) { diveTabPos_ = v; }
+    void set_dive_tab_pos(DirectionV v) { dive_tab_pos_ = v; }
 
-    static void adaptBendsFromTabToStandardStaff(const Staff *staff);
+    static void adapt_bends_from_tab_to_standard_staff(const Staff *staff);
 
-    static GuitarBendType bendTypeFromActionIcon(ActionIconType actionIconType);
+    static GuitarBendType bend_type_from_action_icon(ActionIconType action_icon_type);
 
-    GuitarBendType bendType() const { return bendType_; }
+    GuitarBendType bend_type() const { return bend_type_; }
 
-    void setBendType(GuitarBendType t);
+    void set_bend_type(GuitarBendType t);
 
-    VibratoType dipVibratoType() const { return dipVibratoType_; }
+    VibratoType dip_vibrato_type() const { return dip_vibrato_type_; }
 
-    void setDipVibratoType(VibratoType v) { dipVibratoType_ = v; }
+    void set_dip_vibrato_type(VibratoType v) { dip_vibrato_type_ = v; }
 
-    bool isSlack() const { return isSlack_; }
+    bool is_slack() const { return is_slack_; }
 
-    void setIsSlack(bool v) { isSlack_ = v; }
+    void set_is_slack(bool v) { is_slack_ = v; }
 
-    std::optional<float> targetTimeFactor() const { return targetTimeFactor_; }
+    std::optional<float> target_time_factor() const { return target_time_factor_; }
 
-    void setTargetTimeFactor(float v);
+    void set_target_time_factor(float v);
 
     struct LayoutData : public SLine::LayoutData {
     public:
         bool up() const { return up_; }
 
-        void setUp(bool v) { up_ = v; }
+        void set_up(bool v) { up_ = v; }
 
-        bool isInside() const { return isInside_; }
+        bool is_inside() const { return is_inside_; }
 
-        void setIsInside(bool v) { isInside_ = v; }
+        void set_is_inside(bool v) { is_inside_ = v; }
 
-        const String &bendDigit() const { return bendDigit_; }
+        const String &bend_digit() const { return bend_digit_; }
 
-        void setBendDigit(const String &s) { bendDigit_ = s; }
+        void set_bend_digit(const String &s) { bend_digit_ = s; }
 
-        const std::set<int> &diveLevels() const { return diveLevels_; }
+        const std::set<int> &dive_levels() const { return dive_levels_; }
 
-        void resetDiveLevels() { diveLevels_.clear(); }
+        void reset_dive_levels() { dive_levels_.clear(); }
 
-        void setDiveLevels(const std::set<int> &v) { diveLevels_ = v; }
+        void set_dive_levels(const std::set<int> &v) { dive_levels_ = v; }
 
-        bool aboveStaff() const { return aboveStaff_; }
+        bool above_staff() const { return above_staff_; }
 
-        void setAboveStaff(bool v) { aboveStaff_ = v; }
+        void set_above_staff(bool v) { above_staff_ = v; }
 
     private:
         bool up_ = true;
-        bool isInside_ = false;
-        String bendDigit_;
-        std::set<int> diveLevels_;
-        bool aboveStaff_ = false;
+        bool is_inside_ = false;
+        String bend_digit_;
+        std::set<int> dive_levels_;
+        bool above_staff_ = false;
     };
     DECLARE_LAYOUTDATA_METHODS(GuitarBend)
 
 protected:
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 
 private:
-    GuitarBendType bendType_ = GuitarBendType::BEND;
-    GuitarBendHold *holdLine_ = nullptr;
-    bool isInvalid_ = false;
-    bool isBorderlineUnplayable_ = false;
-    DirectionV diveTabPos_ = DirectionV::AUTO;
-    VibratoType dipVibratoType_ = VibratoType::NONE;
-    bool isSlack_ = false;
-    std::optional<float> targetTimeFactor_;
+    GuitarBendType bend_type_ = GuitarBendType::BEND;
+    GuitarBendHold *hold_line_ = nullptr;
+    bool is_invalid_ = false;
+    bool is_borderline_unplayable_ = false;
+    DirectionV dive_tab_pos_ = DirectionV::AUTO;
+    VibratoType dip_vibrato_type_ = VibratoType::NONE;
+    bool is_slack_ = false;
+    std::optional<float> target_time_factor_;
 };
 
 class GuitarBendText; // forward decl
@@ -199,51 +199,51 @@ public:
     GuitarBendSegment(const GuitarBendSegment &);
     ~GuitarBendSegment() override;
 
-    GuitarBend *guitarBend() const { return toGuitarBend(spanner()); }
+    GuitarBend *guitar_bend() const { return to_guitar_bend(spanner()); }
 
     GuitarBendSegment *clone() const override { return new GuitarBendSegment(*this); }
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue propertyDefault(Pid id) const override;
-    EngravingObject *propertyDelegate(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue property_default(Pid id) const override;
+    EngravingObject *property_delegate(Pid id) const override;
 
-    PointF vertexPointOff() const { return vertexPointOff_; }
+    PointF vertex_point_off() const { return vertex_point_off_; }
 
-    void setVertexPointOff(PointF p) { vertexPointOff_ = p; }
+    void set_vertex_point_off(PointF p) { vertex_point_off_ = p; }
 
     void reset() override;
 
-    double lineWidth() const;
+    double line_width() const;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    GuitarBendText *bendText() const { return text_; }
+    GuitarBendText *bend_text() const { return text_; }
 
-    void setBendText(GuitarBendText *t) { text_ = t; }
+    void set_bend_text(GuitarBendText *t) { text_ = t; }
 
-    bool isUserModified() const override;
+    bool is_user_modified() const override;
 
-    Color curColor(const rendering::PaintOptions &opt) const override { return guitarBend()->curColor(opt); }
+    Color cur_color(const rendering::PaintOptions &opt) const override { return guitar_bend()->cur_color(opt); }
 
     struct LayoutData : public LineSegment::LayoutData {
     public:
-        const PointF &vertexPoint() const { return vertexPoint_; }
+        const PointF &vertex_point() const { return vertex_point_; }
 
-        void setVertexPoint(PointF p) { vertexPoint_ = p; }
+        void set_vertex_point(PointF p) { vertex_point_ = p; }
 
         const PainterPath &path() const { return path_; }
 
-        void setPath(const PainterPath &path) { path_ = path; }
+        void set_path(const PainterPath &path) { path_ = path; }
 
         const PolygonF &arrow() const { return arrow_; }
 
         PolygonF &arrow() { return arrow_; }
 
-        void setArrow(const PolygonF &a) { arrow_ = a; }
+        void set_arrow(const PolygonF &a) { arrow_ = a; }
 
     private:
-        PointF vertexPoint_ = PointF(); // Coordinates relative to pos()
+        PointF vertex_point_ = PointF(); // Coordinates relative to pos()
         PainterPath path_ = PainterPath();
         PolygonF arrow_ = PolygonF();
     };
@@ -251,7 +251,7 @@ public:
 
 private:
 
-    PointF vertexPointOff_ = PointF();
+    PointF vertex_point_off_ = PointF();
     GuitarBendText *text_ = nullptr;
 };
 
@@ -267,21 +267,21 @@ public:
 
     Anchor anchor() const override { return Anchor::NOTE; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
-    Note *startNote() const;
-    Note *endNote() const;
+    Note *start_note() const;
+    Note *end_note() const;
 
-    GuitarBend *guitarBend() const { return toGuitarBend(ownershipParent()); }
+    GuitarBend *guitar_bend() const { return to_guitar_bend(ownership_parent()); }
 
-    double lineWidth() const;
+    double line_width() const;
 
 protected:
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 };
 
 class GuitarBendHoldSegment final : public LineSegment {
@@ -291,39 +291,39 @@ class GuitarBendHoldSegment final : public LineSegment {
 public:
     GuitarBendHoldSegment(GuitarBendHold *sp);
 
-    GuitarBendHold *guitarBendHold() const { return toGuitarBendHold(spanner()); }
+    GuitarBendHold *guitar_bend_hold() const { return to_guitar_bend_hold(spanner()); }
 
     GuitarBendHoldSegment *clone() const override { return new GuitarBendHoldSegment(*this); }
 
-    GuitarBendSegment *startBendSeg() const { return startBendSeg_; }
+    GuitarBendSegment *start_bend_seg() const { return start_bend_seg_; }
 
-    GuitarBendSegment *endBendSeg() const { return endBendSeg_; }
+    GuitarBendSegment *end_bend_seg() const { return end_bend_seg_; }
 
-    void setStartBendSeg(GuitarBendSegment *s) { startBendSeg_ = s; }
+    void set_start_bend_seg(GuitarBendSegment *s) { start_bend_seg_ = s; }
 
-    void setEndBendSeg(GuitarBendSegment *s) { endBendSeg_ = s; }
+    void set_end_bend_seg(GuitarBendSegment *s) { end_bend_seg_ = s; }
 
-    double dashLength() const { return dashLength_; }
+    double dash_length() const { return dash_length_; }
 
-    double lineWidth() const { return guitarBendHold()->lineWidth(); }
+    double line_width() const { return guitar_bend_hold()->line_width(); }
 
     struct LayoutData : LineSegment::LayoutData {
     public:
-        const SymIdList &symIds() const { return symIds_; }
+        const SymIdList &sym_ids() const { return sym_ids_; }
 
-        void setSymIds(const SymIdList &v) { symIds_ = v; }
+        void set_sym_ids(const SymIdList &v) { sym_ids_ = v; }
 
     private:
-        SymIdList symIds_;
+        SymIdList sym_ids_;
     };
     DECLARE_LAYOUTDATA_METHODS(GuitarBendHoldSegment)
 
 private:
 
-    double dashLength_ = 3.0;
+    double dash_length_ = 3.0;
 
-    GuitarBendSegment *startBendSeg_ = nullptr;
-    GuitarBendSegment *endBendSeg_ = nullptr;
+    GuitarBendSegment *start_bend_seg_ = nullptr;
+    GuitarBendSegment *end_bend_seg_ = nullptr;
 };
 
 class GuitarBendText final : public TextBase {
@@ -335,6 +335,6 @@ public:
 
     GuitarBendText *clone() const override { return new GuitarBendText(*this); }
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 };
 } // namespace mu::engraving

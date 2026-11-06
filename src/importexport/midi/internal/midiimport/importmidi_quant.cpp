@@ -45,11 +45,11 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace Quantize {
-ReducedFraction quantValueToFraction(MidiOperations::QuantValue quantValue) {
-    const auto division = ReducedFraction::fromTicks(Constants::DIVISION);
+ReducedFraction quant_value_to_fraction(MidiOperations::QuantValue quant_value) {
+    const auto division = ReducedFraction::from_ticks(Constants::division);
     ReducedFraction fraction;
 
-    switch (quantValue) {
+    switch (quant_value) {
         case MidiOperations::QuantValue::Q_4: fraction = division; break;
         case MidiOperations::QuantValue::Q_8: fraction = division / 2; break;
         case MidiOperations::QuantValue::Q_16: fraction = division / 4; break;
@@ -65,325 +65,329 @@ ReducedFraction quantValueToFraction(MidiOperations::QuantValue quantValue) {
     return fraction;
 }
 
-MidiOperations::QuantValue fractionToQuantValue(const ReducedFraction &fraction) {
-    const auto division = ReducedFraction::fromTicks(Constants::DIVISION);
-    MidiOperations::QuantValue quantValue = MidiOperations::QuantValue::Q_4;
+MidiOperations::QuantValue fraction_to_quant_value(const ReducedFraction &fraction) {
+    const auto division = ReducedFraction::from_ticks(Constants::division);
+    MidiOperations::QuantValue quant_value = MidiOperations::QuantValue::Q_4;
 
     if (fraction == division) {
-        quantValue = MidiOperations::QuantValue::Q_4;
+        quant_value = MidiOperations::QuantValue::Q_4;
     } else if (fraction == division / 2) {
-        quantValue = MidiOperations::QuantValue::Q_8;
+        quant_value = MidiOperations::QuantValue::Q_8;
     } else if (fraction == division / 4) {
-        quantValue = MidiOperations::QuantValue::Q_16;
+        quant_value = MidiOperations::QuantValue::Q_16;
     } else if (fraction == division / 8) {
-        quantValue = MidiOperations::QuantValue::Q_32;
+        quant_value = MidiOperations::QuantValue::Q_32;
     } else if (fraction == division / 16) {
-        quantValue = MidiOperations::QuantValue::Q_64;
+        quant_value = MidiOperations::QuantValue::Q_64;
     } else if (fraction == division / 32) {
-        quantValue = MidiOperations::QuantValue::Q_128;
+        quant_value = MidiOperations::QuantValue::Q_128;
     } else if (fraction == division / 64) {
-        quantValue = MidiOperations::QuantValue::Q_256;
+        quant_value = MidiOperations::QuantValue::Q_256;
     } else if (fraction == division / 128) {
-        quantValue = MidiOperations::QuantValue::Q_512;
+        quant_value = MidiOperations::QuantValue::Q_512;
     } else if (fraction == division / 256) {
-        quantValue = MidiOperations::QuantValue::Q_1024;
+        quant_value = MidiOperations::QuantValue::Q_1024;
     } else {
         LOGD("Unknown quant fraction %d/%d in division %d/%d.", fraction.numerator(), fraction.denominator(), division.numerator(),
              division.denominator());
-        quantValue = MidiOperations::QuantValue::Q_INVALID;
+        quant_value = MidiOperations::QuantValue::Q_INVALID;
     }
 
-    return quantValue;
+    return quant_value;
 }
 
-MidiOperations::QuantValue defaultQuantValueFromPreferences() {
+MidiOperations::QuantValue default_quant_value_from_preferences() {
     // The engine has no MIDI import preferences: the upstream default, a 16th.
-    int ticks = Constants::DIVISION / 4;
-    const auto fraction = ReducedFraction::fromTicks(ticks);
-    MidiOperations::QuantValue quantValue = fractionToQuantValue(fraction);
-    if (quantValue == MidiOperations::QuantValue::Q_INVALID) {
+    int ticks = Constants::division / 4;
+    const auto fraction = ReducedFraction::from_ticks(ticks);
+    MidiOperations::QuantValue quant_value = fraction_to_quant_value(fraction);
+    if (quant_value == MidiOperations::QuantValue::Q_INVALID) {
         LOGD("Unknown shortestNote value %d in preferences, defaulting to 16th.", ticks);
-        quantValue = MidiOperations::QuantValue::Q_16;
+        quant_value = MidiOperations::QuantValue::Q_16;
     }
-    return quantValue;
+    return quant_value;
 }
 
-ReducedFraction shortestQuantizedNoteInRange(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
-                                             const std::multimap<ReducedFraction, MidiChord>::const_iterator &end) {
-    const auto division = ReducedFraction::fromTicks(Constants::DIVISION);
-    auto minDuration = division;
+ReducedFraction shortest_quantized_note_in_range(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
+                                                 const std::multimap<ReducedFraction, MidiChord>::const_iterator &end) {
+    const auto division = ReducedFraction::from_ticks(Constants::division);
+    auto min_duration = division;
     for (auto it = beg; it != end; ++it) {
         for (const auto &note : it->second.notes) {
-            if (note.offTime - it->first < minDuration) {
-                minDuration = note.offTime - it->first;
+            if (note.off_time - it->first < min_duration) {
+                min_duration = note.off_time - it->first;
             }
         }
     }
-    const auto minAllowedDuration = MChord::minAllowedDuration();
+    const auto min_allowed_duration = MChord::min_allowed_duration();
     auto shortest = division;
-    for (; shortest > minAllowedDuration; shortest /= 2) {
-        if (shortest <= minDuration) {
+    for (; shortest > min_allowed_duration; shortest /= 2) {
+        if (shortest <= min_duration) {
             break;
         }
     }
     return shortest;
 }
 
-ReducedFraction reduceQuantIfDottedNote(const ReducedFraction &noteLen, const ReducedFraction &raster) {
-    auto newRaster = raster;
-    const auto div = noteLen / raster;
-    const double ratio = div.toDouble();
+ReducedFraction reduce_quant_if_dotted_note(const ReducedFraction &note_len, const ReducedFraction &raster) {
+    auto new_raster = raster;
+    const auto div = note_len / raster;
+    const double ratio = div.to_double();
     if (ratio > 1.45 && ratio < 1.55) { // 1.5: dotted note that is larger than quantization value
-        newRaster /= 2;                 // reduce quantization error for dotted notes
+        new_raster /= 2;                // reduce quantization error for dotted notes
     }
-    return newRaster;
+    return new_raster;
 }
 
-ReducedFraction quantizeValue(const ReducedFraction &value, const ReducedFraction &quant) {
-    const auto valueReduced = value.reduced();
-    const auto rasterReduced = quant.reduced();
-    int valNum = valueReduced.numerator() * rasterReduced.denominator();
-    const int rastNum = rasterReduced.numerator() * valueReduced.denominator();
-    const int commonDen = valueReduced.denominator() * rasterReduced.denominator();
-    valNum = ((valNum + rastNum / 2) / rastNum) * rastNum;
-    return ReducedFraction(valNum, commonDen).reduced();
+ReducedFraction quantize_value(const ReducedFraction &value, const ReducedFraction &quant) {
+    const auto value_reduced = value.reduced();
+    const auto raster_reduced = quant.reduced();
+    int val_num = value_reduced.numerator() * raster_reduced.denominator();
+    const int rast_num = raster_reduced.numerator() * value_reduced.denominator();
+    const int common_den = value_reduced.denominator() * raster_reduced.denominator();
+    val_num = ((val_num + rast_num / 2) / rast_num) * rast_num;
+    return ReducedFraction(val_num, common_den).reduced();
 }
 
-ReducedFraction quantForLen(const ReducedFraction &noteLen, const ReducedFraction &basicQuant) {
-    auto quant = basicQuant;
-    while (quant > noteLen && quant >= MChord::minAllowedDuration() * 2) {
+ReducedFraction quant_for_len(const ReducedFraction &note_len, const ReducedFraction &basic_quant) {
+    auto quant = basic_quant;
+    while (quant > note_len && quant >= MChord::min_allowed_duration() * 2) {
         quant /= 2;
     }
 
-    if (quant >= MChord::minAllowedDuration() * 2) {
-        quant = reduceQuantIfDottedNote(noteLen, quant);
+    if (quant >= MChord::min_allowed_duration() * 2) {
+        quant = reduce_quant_if_dotted_note(note_len, quant);
     }
 
     return quant;
 }
 
-ReducedFraction quantForTuplet(const ReducedFraction &tupletLen, const ReducedFraction &tupletRatio) {
-    const auto quant = tupletLen / tupletRatio.numerator();
+ReducedFraction quant_for_tuplet(const ReducedFraction &tuplet_len, const ReducedFraction &tuplet_ratio) {
+    const auto quant = tuplet_len / tuplet_ratio.numerator();
 
-    Q_ASSERT_X(quant >= MChord::minAllowedDuration(), "Quantize::quantForTuplet", "Too small quant value");
+    Q_ASSERT_X(quant >= MChord::min_allowed_duration(), "Quantize::quantForTuplet", "Too small quant value");
 
-    if (quant >= MChord::minAllowedDuration() * 2) {
+    if (quant >= MChord::min_allowed_duration() * 2) {
         return quant / 2;
     }
 
     return quant;
 }
 
-ReducedFraction findMinQuant(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basicQuant) {
-    ReducedFraction minQuant(-1, 1);
+ReducedFraction find_min_quant(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basic_quant) {
+    ReducedFraction min_quant(-1, 1);
     for (const auto &note : chord.second.notes) {
-        const auto quant = quantForLen(note.offTime - chord.first, basicQuant);
-        if (minQuant == ReducedFraction(-1, 1) || quant < minQuant) {
-            minQuant = quant;
+        const auto quant = quant_for_len(note.off_time - chord.first, basic_quant);
+        if (min_quant == ReducedFraction(-1, 1) || quant < min_quant) {
+            min_quant = quant;
         }
     }
-    return minQuant;
+    return min_quant;
 }
 
-ReducedFraction findQuantizedTupletChordOnTime(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &tupletLen,
-                                               const ReducedFraction &tupletRatio, const ReducedFraction &rangeStart) {
-    if (chord.first <= rangeStart) {
-        return rangeStart;
+ReducedFraction find_quantized_tuplet_chord_on_time(const std::pair<const ReducedFraction, MidiChord> &chord,
+                                                    const ReducedFraction &tuplet_len, const ReducedFraction &tuplet_ratio,
+                                                    const ReducedFraction &range_start) {
+    if (chord.first <= range_start) {
+        return range_start;
     }
-    const auto quant = quantForTuplet(tupletLen, tupletRatio);
-    return rangeStart + quantizeValue(chord.first - rangeStart, quant);
+    const auto quant = quant_for_tuplet(tuplet_len, tuplet_ratio);
+    return range_start + quantize_value(chord.first - range_start, quant);
 }
 
-ReducedFraction findQuantizedChordOnTime(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basicQuant) {
-    const ReducedFraction quant = findMinQuant(chord, basicQuant);
-    return quantizeValue(chord.first, quant);
+ReducedFraction find_quantized_chord_on_time(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basic_quant) {
+    const ReducedFraction quant = find_min_quant(chord, basic_quant);
+    return quantize_value(chord.first, quant);
 }
 
-std::pair<ReducedFraction, ReducedFraction> findQuantizedTupletNoteOffTime(const ReducedFraction &onTime, const ReducedFraction &offTime,
-                                                                           const ReducedFraction &tupletLen,
-                                                                           const ReducedFraction &tupletRatio,
-                                                                           const ReducedFraction &rangeStart) {
-    if (offTime <= rangeStart) {
-        return {rangeStart, tupletLen};
+std::pair<ReducedFraction, ReducedFraction>
+find_quantized_tuplet_note_off_time(const ReducedFraction &on_time, const ReducedFraction &off_time, const ReducedFraction &tuplet_len,
+                                    const ReducedFraction &tuplet_ratio, const ReducedFraction &range_start) {
+    if (off_time <= range_start) {
+        return {range_start, tuplet_len};
     }
 
-    ReducedFraction qOffTime;
-    auto quant = quantForTuplet(tupletLen, tupletRatio);
+    ReducedFraction q_off_time;
+    auto quant = quant_for_tuplet(tuplet_len, tuplet_ratio);
 
     while (true) {
-        qOffTime = rangeStart + quantizeValue(offTime - rangeStart, quant);
-        if (qOffTime <= onTime) {
-            if (quant >= MChord::minAllowedDuration() * 2) {
+        q_off_time = range_start + quantize_value(off_time - range_start, quant);
+        if (q_off_time <= on_time) {
+            if (quant >= MChord::min_allowed_duration() * 2) {
                 quant /= 2;
                 continue;
             }
-            qOffTime = onTime + quant;
+            q_off_time = on_time + quant;
         }
         break;
     }
-    return {qOffTime, quant};
+    return {q_off_time, quant};
 }
 
-std::pair<ReducedFraction, ReducedFraction> findQuantizedNoteOffTime(const std::pair<const ReducedFraction, MidiChord> &chord,
-                                                                     const ReducedFraction &offTime, const ReducedFraction &basicQuant) {
-    ReducedFraction qOffTime;
-    auto quant = quantForLen(offTime - chord.first, basicQuant);
+std::pair<ReducedFraction, ReducedFraction> find_quantized_note_off_time(const std::pair<const ReducedFraction, MidiChord> &chord,
+                                                                         const ReducedFraction &off_time,
+                                                                         const ReducedFraction &basic_quant) {
+    ReducedFraction q_off_time;
+    auto quant = quant_for_len(off_time - chord.first, basic_quant);
 
     while (true) {
-        qOffTime = quantizeValue(offTime, quant);
-        if (qOffTime <= chord.first) {
-            if (quant >= MChord::minAllowedDuration() * 2) {
+        q_off_time = quantize_value(off_time, quant);
+        if (q_off_time <= chord.first) {
+            if (quant >= MChord::min_allowed_duration() * 2) {
                 quant /= 2;
                 continue;
             }
-            qOffTime = chord.first + quant;
+            q_off_time = chord.first + quant;
         }
         break;
     }
-    return {qOffTime, quant};
+    return {q_off_time, quant};
 }
 
-ReducedFraction findMinQuantizedOnTime(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basicQuant) {
-    ReducedFraction minOnTime(-1, 1);
+ReducedFraction find_min_quantized_on_time(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basic_quant) {
+    ReducedFraction min_on_time(-1, 1);
     for (const auto &note : chord.second.notes) {
-        const auto quant = quantForLen(note.offTime - chord.first, basicQuant);
-        const auto onTime = quantizeValue(chord.first, quant);
-        if (minOnTime == ReducedFraction(-1, 1) || onTime < minOnTime) {
-            minOnTime = onTime;
+        const auto quant = quant_for_len(note.off_time - chord.first, basic_quant);
+        const auto on_time = quantize_value(chord.first, quant);
+        if (min_on_time == ReducedFraction(-1, 1) || on_time < min_on_time) {
+            min_on_time = on_time;
         }
     }
-    return minOnTime;
+    return min_on_time;
 }
 
-ReducedFraction findMaxQuantizedTupletOffTime(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &tupletLen,
-                                              const ReducedFraction &tupletRatio, const ReducedFraction &rangeStart) {
-    ReducedFraction maxOffTime(0, 1);
+ReducedFraction find_max_quantized_tuplet_off_time(const std::pair<const ReducedFraction, MidiChord> &chord,
+                                                   const ReducedFraction &tuplet_len, const ReducedFraction &tuplet_ratio,
+                                                   const ReducedFraction &range_start) {
+    ReducedFraction max_off_time(0, 1);
     for (const auto &note : chord.second.notes) {
-        if (note.offTime <= rangeStart) {
+        if (note.off_time <= range_start) {
             continue;
         }
-        const auto offTime = findQuantizedTupletNoteOffTime(chord.first, note.offTime, tupletLen, tupletRatio, rangeStart).first;
-        if (offTime > maxOffTime) {
-            maxOffTime = offTime;
+        const auto off_time = find_quantized_tuplet_note_off_time(chord.first, note.off_time, tuplet_len, tuplet_ratio, range_start).first;
+        if (off_time > max_off_time) {
+            max_off_time = off_time;
         }
     }
-    return maxOffTime;
+    return max_off_time;
 }
 
-ReducedFraction findMaxQuantizedOffTime(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basicQuant) {
-    ReducedFraction maxOffTime(0, 1);
+ReducedFraction find_max_quantized_off_time(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basic_quant) {
+    ReducedFraction max_off_time(0, 1);
     for (const auto &note : chord.second.notes) {
-        const auto offTime = findQuantizedNoteOffTime(chord, note.offTime, basicQuant).first;
-        if (offTime > maxOffTime) {
-            maxOffTime = offTime;
+        const auto off_time = find_quantized_note_off_time(chord, note.off_time, basic_quant).first;
+        if (off_time > max_off_time) {
+            max_off_time = off_time;
         }
     }
-    return maxOffTime;
+    return max_off_time;
 }
 
-ReducedFraction findOnTimeTupletQuantError(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &tupletLen,
-                                           const ReducedFraction &tupletRatio, const ReducedFraction &rangeStart) {
-    const auto qOnTime = findQuantizedTupletChordOnTime(chord, tupletLen, tupletRatio, rangeStart);
-    return (chord.first - qOnTime).absValue();
+ReducedFraction find_on_time_tuplet_quant_error(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &tuplet_len,
+                                                const ReducedFraction &tuplet_ratio, const ReducedFraction &range_start) {
+    const auto q_on_time = find_quantized_tuplet_chord_on_time(chord, tuplet_len, tuplet_ratio, range_start);
+    return (chord.first - q_on_time).abs_value();
 }
 
-ReducedFraction findOnTimeQuantError(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basicQuant) {
-    const auto qOnTime = findQuantizedChordOnTime(chord, basicQuant);
-    return (chord.first - qOnTime).absValue();
+ReducedFraction find_on_time_quant_error(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &basic_quant) {
+    const auto q_on_time = find_quantized_chord_on_time(chord, basic_quant);
+    return (chord.first - q_on_time).abs_value();
 }
 
-ReducedFraction findOffTimeTupletQuantError(const ReducedFraction &onTime, const ReducedFraction &offTime, const ReducedFraction &tupletLen,
-                                            const ReducedFraction &tupletRatio, const ReducedFraction &rangeStart) {
-    const auto qOffTime = findQuantizedTupletNoteOffTime(onTime, offTime, tupletLen, tupletRatio, rangeStart).first;
-    return (offTime - qOffTime).absValue();
+ReducedFraction find_off_time_tuplet_quant_error(const ReducedFraction &on_time, const ReducedFraction &off_time,
+                                                 const ReducedFraction &tuplet_len, const ReducedFraction &tuplet_ratio,
+                                                 const ReducedFraction &range_start) {
+    const auto q_off_time = find_quantized_tuplet_note_off_time(on_time, off_time, tuplet_len, tuplet_ratio, range_start).first;
+    return (off_time - q_off_time).abs_value();
 }
 
-ReducedFraction findOffTimeQuantError(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &offTime,
-                                      const ReducedFraction &basicQuant) {
-    const auto qOffTime = findQuantizedNoteOffTime(chord, offTime, basicQuant).first;
-    return (offTime - qOffTime).absValue();
+ReducedFraction find_off_time_quant_error(const std::pair<const ReducedFraction, MidiChord> &chord, const ReducedFraction &off_time,
+                                          const ReducedFraction &basic_quant) {
+    const auto q_off_time = find_quantized_note_off_time(chord, off_time, basic_quant).first;
+    return (off_time - q_off_time).abs_value();
 }
 
-ReducedFraction findQuantForRange(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
-                                  const std::multimap<ReducedFraction, MidiChord>::const_iterator &end, const ReducedFraction &basicQuant) {
-    const auto shortestLen = shortestQuantizedNoteInRange(beg, end);
-    return quantForLen(shortestLen, basicQuant);
+ReducedFraction find_quant_for_range(const std::multimap<ReducedFraction, MidiChord>::const_iterator &beg,
+                                     const std::multimap<ReducedFraction, MidiChord>::const_iterator &end,
+                                     const ReducedFraction &basic_quant) {
+    const auto shortest_len = shortest_quantized_note_in_range(beg, end);
+    return quant_for_len(shortest_len, basic_quant);
 }
 
 //--------------------------------------------------------------------------------------------
 
-bool isHumanPerformance(const std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap) {
+bool is_human_performance(const std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap) {
     if (chords.empty()) {
         return false;
     }
 
-    const auto basicQuant = ReducedFraction::fromTicks(Constants::DIVISION) / 4; // 1/16
+    const auto basic_quant = ReducedFraction::from_ticks(Constants::division) / 4; // 1/16
     int matches = 0;
     int count = 0;
 
-    std::set<ReducedFraction> usedOnTimes;
+    std::set<ReducedFraction> used_on_times;
 
     for (const auto &chord : chords) {
-        const auto quant = std::min(basicQuant, quantForLen(MChord::maxNoteLen(chord), basicQuant));
-        const auto onTime = quantizeValue(chord.first, quant);
-        int barIndex, beat, tick;
-        sigmap->tickValues(onTime.ticks(), &barIndex, &beat, &tick);
+        const auto quant = std::min(basic_quant, quant_for_len(MChord::max_note_len(chord), basic_quant));
+        const auto on_time = quantize_value(chord.first, quant);
+        int bar_index, beat, tick;
+        sigmap->tick_values(on_time.ticks(), &bar_index, &beat, &tick);
 
-        const auto barStart = ReducedFraction::fromTicks(sigmap->bar2tick(barIndex, 0));
-        const auto barFraction = ReducedFraction(sigmap->timesig(barStart.ticks()).timesig());
-        const auto beatLen = Meter::beatLength(barFraction);
+        const auto bar_start = ReducedFraction::from_ticks(sigmap->bar2tick(bar_index, 0));
+        const auto bar_fraction = ReducedFraction(sigmap->timesig(bar_start.ticks()).timesig());
+        const auto beat_len = Meter::beat_length(bar_fraction);
 
-        if (((onTime - barStart) / beatLen).reduced().denominator() == 1 && usedOnTimes.find(onTime) == usedOnTimes.end()) {
-            usedOnTimes.insert(onTime);
+        if (((on_time - bar_start) / beat_len).reduced().denominator() == 1 && used_on_times.find(on_time) == used_on_times.end()) {
+            used_on_times.insert(on_time);
             ++count;
-            const auto diff = (onTime - chord.first).absValue();
-            if (diff < MChord::minAllowedDuration()) {
+            const auto diff = (on_time - chord.first).abs_value();
+            if (diff < MChord::min_allowed_duration()) {
                 ++matches;
             }
         }
     }
 
-    const double TOL = 0.6;
+    const double tol_value = 0.6;
     const double matched = matches * 1.0 / count;
 
-    return matched < TOL;
+    return matched < tol_value;
 }
 
-std::multimap<int, MTrack> getTrackWithAllChords(const std::multimap<int, MTrack> &tracks) {
-    std::multimap<int, MTrack> singleTrack{{0, MTrack()}};
-    auto &allChords = singleTrack.begin()->second.chords;
+std::multimap<int, MTrack> get_track_with_all_chords(const std::multimap<int, MTrack> &tracks) {
+    std::multimap<int, MTrack> single_track{{0, MTrack()}};
+    auto &all_chords = single_track.begin()->second.chords;
     for (const auto &track : tracks) {
         const MTrack &t = track.second;
         for (const auto &chord : t.chords) {
-            allChords.insert(chord);
+            all_chords.insert(chord);
         }
     }
-    return singleTrack;
+    return single_track;
 }
 
-void setIfHumanPerformance(const std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap) {
-    auto allChordsTrack = getTrackWithAllChords(tracks);
-    MChord::collectChords(allChordsTrack, {2, 1}, {1, 2});
-    const MTrack &track = allChordsTrack.begin()->second;
-    const auto &allChords = track.chords;
-    if (allChords.empty()) {
+void set_if_human_performance(const std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap) {
+    auto all_chords_track = get_track_with_all_chords(tracks);
+    MChord::collect_chords(all_chords_track, {2, 1}, {1, 2});
+    const MTrack &track = all_chords_track.begin()->second;
+    const auto &all_chords = track.chords;
+    if (all_chords.empty()) {
         return;
     }
-    const bool isHuman = isHumanPerformance(allChords, sigmap);
-    auto &opers = midiImportOperations.data()->trackOpers;
-    if (opers.isHumanPerformance.canRedefineDefaultLater()) {
-        opers.isHumanPerformance.setDefaultValue(isHuman);
+    const bool is_human = is_human_performance(all_chords, sigmap);
+    auto &opers = midi_import_operations.data()->track_opers;
+    if (opers.is_human_performance.can_redefine_default_later()) {
+        opers.is_human_performance.set_default_value(is_human);
     }
 
-    if (isHuman) {
-        if (opers.quantValue.canRedefineDefaultLater()) {
-            opers.quantValue.setDefaultValue(MidiOperations::QuantValue::Q_8);
+    if (is_human) {
+        if (opers.quant_value.can_redefine_default_later()) {
+            opers.quant_value.set_default_value(MidiOperations::QuantValue::Q_8);
         }
-        if (opers.maxVoiceCount.canRedefineDefaultLater()) {
-            opers.maxVoiceCount.setDefaultValue(MidiOperations::VoiceCount::V_2);
+        if (opers.max_voice_count.can_redefine_default_later()) {
+            opers.max_voice_count.set_default_value(MidiOperations::VoiceCount::V_2);
         }
-        const double ticksPerSec = MidiTempo::findBasicTempo(tracks, true) * Constants::DIVISION;
-        MidiBeat::findBeatLocations(allChords, sigmap, ticksPerSec); // and set time sig
+        const double ticks_per_sec = MidiTempo::find_basic_tempo(tracks, true) * Constants::division;
+        MidiBeat::find_beat_locations(all_chords, sigmap, ticks_per_sec); // and set time sig
     }
 }
 
@@ -391,129 +395,128 @@ void setIfHumanPerformance(const std::multimap<int, MTrack> &tracks, TimeSigMap 
 
 // remove small intersection with the next chord
 
-void preserveLegato(ReducedFraction &offTime, bool isOffTimeInTuplet, const std::multimap<ReducedFraction, MidiChord>::iterator &chordIt,
-                    const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basicQuant) {
-    auto it = std::next(chordIt);
-    while (it != chords.end() && it->second.voice != chordIt->second.voice) {
+void preserve_legato(ReducedFraction &off_time, bool is_off_time_in_tuplet,
+                     const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
+                     const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant) {
+    auto it = std::next(chord_it);
+    while (it != chords.end() && it->second.voice != chord_it->second.voice) {
         ++it;
     }
     if (it != chords.end()) {
-        const auto ioi = it->first - chordIt->first;
-        const auto cross = offTime - it->first;
+        const auto ioi = it->first - chord_it->first;
+        const auto cross = off_time - it->first;
 
-        if (it->second.isInTuplet && isOffTimeInTuplet) {
+        if (it->second.is_in_tuplet && is_off_time_in_tuplet) {
             // while we don't split tuplet into voices we don't want to have
             // note intersections smaller than tuplet note length
             const auto &tuplet = it->second.tuplet->second;
-            const auto tupletNoteLen = tuplet.len / tuplet.tupletNumber;
-            if (cross > ReducedFraction(0, 1) && cross < tupletNoteLen) {
-                offTime = it->first;
+            const auto tuplet_note_len = tuplet.len / tuplet.tuplet_number;
+            if (cross > ReducedFraction(0, 1) && cross < tuplet_note_len) {
+                off_time = it->first;
             }
-        } else if (!it->second.isInTuplet && !isOffTimeInTuplet) {
-            if (cross > ReducedFraction(0, 1) && cross < ioi / 2 && cross < basicQuant / 2) {
-                offTime = it->first;
+        } else if (!it->second.is_in_tuplet && !is_off_time_in_tuplet) {
+            if (cross > ReducedFraction(0, 1) && cross < ioi / 2 && cross < basic_quant / 2) {
+                off_time = it->first;
             }
         }
     }
 }
 
-std::pair<ReducedFraction, ReducedFraction> quantizeOffTimeForTuplet(const ReducedFraction &noteOffTime,
-                                                                     const std::multimap<ReducedFraction, MidiChord>::iterator &chordIt,
-                                                                     const std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                     const ReducedFraction &basicQuant,
-                                                                     const MidiTuplet::TupletData &tuplet) {
-    Q_ASSERT_X(chordIt->first < noteOffTime, "Quantize::quantizeOffTimeForTuplet", "Negative or zero note length");
+std::pair<ReducedFraction, ReducedFraction>
+quantize_off_time_for_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
+                             const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
+                             const MidiTuplet::TupletData &tuplet) {
+    Q_ASSERT_X(chord_it->first < note_off_time, "Quantize::quantizeOffTimeForTuplet", "Negative or zero note length");
 
-    const auto tupletRatio = MidiTuplet::tupletLimits(tuplet.tupletNumber).ratio;
-    const auto result = findQuantizedTupletNoteOffTime(chordIt->first, noteOffTime, tuplet.len, tupletRatio, tuplet.onTime);
-    auto offTime = result.first;
+    const auto tuplet_ratio = MidiTuplet::tuplet_limits(tuplet.tuplet_number).ratio;
+    const auto result = find_quantized_tuplet_note_off_time(chord_it->first, note_off_time, tuplet.len, tuplet_ratio, tuplet.on_time);
+    auto off_time = result.first;
     auto quant = result.second;
 
-    preserveLegato(offTime, true, chordIt, chords, basicQuant);
+    preserve_legato(off_time, true, chord_it, chords, basic_quant);
 
     // verify that offTime is still inside tuplet
-    if (offTime < tuplet.onTime) {
-        offTime = tuplet.onTime;
+    if (off_time < tuplet.on_time) {
+        off_time = tuplet.on_time;
         quant = tuplet.len;
-    } else if (offTime > tuplet.onTime + tuplet.len) {
-        offTime = tuplet.onTime + tuplet.len;
+    } else if (off_time > tuplet.on_time + tuplet.len) {
+        off_time = tuplet.on_time + tuplet.len;
         quant = tuplet.len;
     }
 
-    return {offTime, quant};
+    return {off_time, quant};
 }
 
-std::pair<ReducedFraction, ReducedFraction> quantizeOffTimeForNonTuplet(const ReducedFraction &noteOffTime,
-                                                                        const std::multimap<ReducedFraction, MidiChord>::iterator &chordIt,
-                                                                        const std::multimap<ReducedFraction, MidiChord> &chords,
-                                                                        const ReducedFraction &basicQuant) {
-    Q_ASSERT_X(chordIt->first < noteOffTime, "Quantize::quantizeOffTimeForNonTuplet", "Negative or zero note length");
+std::pair<ReducedFraction, ReducedFraction>
+quantize_off_time_for_non_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
+                                 const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant) {
+    Q_ASSERT_X(chord_it->first < note_off_time, "Quantize::quantizeOffTimeForNonTuplet", "Negative or zero note length");
 
-    const MidiChord &chord = chordIt->second;
-    const auto result = findQuantizedNoteOffTime(*chordIt, noteOffTime, basicQuant);
-    auto offTime = result.first;
+    const MidiChord &chord = chord_it->second;
+    const auto result = find_quantized_note_off_time(*chord_it, note_off_time, basic_quant);
+    auto off_time = result.first;
     auto quant = result.second;
-    preserveLegato(offTime, false, chordIt, chords, basicQuant);
+    preserve_legato(off_time, false, chord_it, chords, basic_quant);
 
     // verify that offTime is still outside tuplets
-    if (chord.isInTuplet) {
+    if (chord.is_in_tuplet) {
         const auto &tuplet = chord.tuplet->second;
-        if (offTime < tuplet.onTime + tuplet.len) {
-            offTime = tuplet.onTime + tuplet.len;
+        if (off_time < tuplet.on_time + tuplet.len) {
+            off_time = tuplet.on_time + tuplet.len;
             quant = tuplet.len;
-            return {offTime, quant};
+            return {off_time, quant};
         }
     }
-    auto next = std::next(chordIt);
+    auto next = std::next(chord_it);
     while (true) {
         if (next == chords.end()) {
             break;
         }
-        if (!next->second.isInTuplet || next->second.voice != chord.voice) {
+        if (!next->second.is_in_tuplet || next->second.voice != chord.voice) {
             ++next;
             continue;
         }
-        const bool isInSameTuplet = chord.isInTuplet && next->second.tuplet == chord.tuplet;
+        const bool is_in_same_tuplet = chord.is_in_tuplet && next->second.tuplet == chord.tuplet;
         const auto &tuplet = next->second.tuplet->second;
-        if (isInSameTuplet || tuplet.onTime + tuplet.len <= offTime) {
+        if (is_in_same_tuplet || tuplet.on_time + tuplet.len <= off_time) {
             ++next;
             continue;
         }
 
-        if (offTime > tuplet.onTime) {
-            offTime = tuplet.onTime;
+        if (off_time > tuplet.on_time) {
+            off_time = tuplet.on_time;
             quant = tuplet.len;
         }
         break;
     }
 
-    return {offTime, quant};
+    return {off_time, quant};
 }
 
 struct QuantPos {
     ReducedFraction time;
-    int metricalLevel;
+    int metrical_level;
     double penalty;
-    int prevPos;
+    int prev_pos;
 };
 
 struct QuantData {
     std::multimap<ReducedFraction, MidiChord>::const_iterator chord;
     ReducedFraction quant;
-    ReducedFraction quantForLen;
-    ReducedFraction chordRangeStart;
-    ReducedFraction chordRangeEnd;
+    ReducedFraction quant_for_len;
+    ReducedFraction chord_range_start;
+    ReducedFraction chord_range_end;
     // if inter on time interval with previous chord
     // is less than min allowed duration
     // then chord can be merged with previous chord
-    bool canMergeWithPrev = false;
-    int metricalLevelForLen;
+    bool can_merge_with_prev = false;
+    int metrical_level_for_len;
     std::vector<QuantPos> positions;
 };
 
 #ifndef NDEBUG
 
-bool areAllVoicesSame(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_all_voices_same(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
     auto it = chords.begin();
     const int voice = (*it)->second.voice;
     for (++it; it != chords.end(); ++it) {
@@ -524,13 +527,13 @@ bool areAllVoicesSame(const std::deque<std::multimap<ReducedFraction, MidiChord>
     return true;
 }
 
-bool areChordsDifferent(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
-    std::set<const std::pair<const ReducedFraction, MidiChord> *> chordSet;
+bool are_chords_different(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+    std::set<const std::pair<const ReducedFraction, MidiChord> *> chord_set;
 
     for (const auto &chord : chords) {
-        const auto it = chordSet.find(&*chord);
-        if (it == chordSet.end()) {
-            chordSet.insert(&*chord);
+        const auto it = chord_set.find(&*chord);
+        if (it == chord_set.end()) {
+            chord_set.insert(&*chord);
         } else {
             return false;
         }
@@ -539,58 +542,58 @@ bool areChordsDifferent(const std::deque<std::multimap<ReducedFraction, MidiChor
     return true;
 }
 
-bool notLessThanPrev(const std::vector<QuantData>::iterator &it, const std::vector<QuantData> &data) {
+bool not_less_than_prev(const std::vector<QuantData>::iterator &it, const std::vector<QuantData> &data) {
     if (it != data.begin()) {
         const auto prev = std::prev(it);
-        if (prev->chordRangeStart > it->chordRangeStart) {
+        if (prev->chord_range_start > it->chord_range_start) {
             return false;
         }
     }
     return true;
 }
 
-bool isTupletRangeCorrect(const MidiTuplet::TupletData &tuplet, const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd) {
-    return rangeStart == tuplet.onTime && rangeEnd == tuplet.onTime + tuplet.len;
+bool is_tuplet_range_correct(const MidiTuplet::TupletData &tuplet, const ReducedFraction &range_start, const ReducedFraction &range_end) {
+    return range_start == tuplet.on_time && range_end == tuplet.on_time + tuplet.len;
 }
 
-void checkOffTime(const MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &chordIt,
-                  const std::multimap<ReducedFraction, MidiChord> &chords) {
-    Q_ASSERT_X(note.offTime - chordIt->first >= MChord::minAllowedDuration(), "Quantize::checkOffTime", "Too small note length");
+void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
+                    const std::multimap<ReducedFraction, MidiChord> &chords) {
+    Q_ASSERT_X(note.off_time - chord_it->first >= MChord::min_allowed_duration(), "Quantize::checkOffTime", "Too small note length");
 
-    if (note.isInTuplet) {
+    if (note.is_in_tuplet) {
         const auto &tuplet = note.tuplet->second;
 
-        Q_ASSERT_X(note.offTime >= tuplet.onTime && note.offTime <= tuplet.onTime + tuplet.len, "Quantize::checkOffTime",
+        Q_ASSERT_X(note.off_time >= tuplet.on_time && note.off_time <= tuplet.on_time + tuplet.len, "Quantize::checkOffTime",
                    "Note off time is outside tuplet but should be inside");
     } else {
-        const auto &chord = chordIt->second;
+        const auto &chord = chord_it->second;
 
-        auto next = std::next(chordIt);
+        auto next = std::next(chord_it);
         while (true) {
             if (next == chords.end()) {
                 break;
             }
-            if (!next->second.isInTuplet || next->second.voice != chord.voice) {
+            if (!next->second.is_in_tuplet || next->second.voice != chord.voice) {
                 ++next;
                 continue;
             }
             const auto &tuplet = next->second.tuplet->second;
-            if ((chord.isInTuplet && next->second.tuplet == chord.tuplet) || tuplet.onTime + tuplet.len <= note.offTime) {
+            if ((chord.is_in_tuplet && next->second.tuplet == chord.tuplet) || tuplet.on_time + tuplet.len <= note.off_time) {
                 ++next;
                 continue;
             }
 
-            Q_ASSERT_X(note.offTime <= tuplet.onTime, "Quantize::checkOffTime", "Note off time is inside next tuplet but it shouldn't");
+            Q_ASSERT_X(note.off_time <= tuplet.on_time, "Quantize::checkOffTime", "Note off time is inside next tuplet but it shouldn't");
             break;
         }
 
-        auto prev = chordIt;
+        auto prev = chord_it;
         while (true) {
-            if (prev->second.barIndex != chord.barIndex) {
+            if (prev->second.bar_index != chord.bar_index) {
                 break;
             }
-            if (prev->second.voice != chord.voice || !prev->second.isInTuplet ||
-                (chord.isInTuplet && prev->second.tuplet == chord.tuplet)) {
+            if (prev->second.voice != chord.voice || !prev->second.is_in_tuplet ||
+                (chord.is_in_tuplet && prev->second.tuplet == chord.tuplet)) {
                 if (prev != chords.begin()) {
                     --prev;
                     continue;
@@ -598,7 +601,7 @@ void checkOffTime(const MidiNote &note, const std::multimap<ReducedFraction, Mid
             } else {
                 const auto &tuplet = prev->second.tuplet->second;
 
-                Q_ASSERT_X(note.offTime >= tuplet.onTime + tuplet.len, "Quantize::checkOffTime",
+                Q_ASSERT_X(note.off_time >= tuplet.on_time + tuplet.len, "Quantize::checkOffTime",
                            "Note off time is inside prev tuplet but it shouldn't");
             }
             break;
@@ -606,12 +609,12 @@ void checkOffTime(const MidiNote &note, const std::multimap<ReducedFraction, Mid
     }
 }
 
-bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::set<std::tuple<ReducedFraction, int, int>> onTimeVoicesBars;
+bool are_on_time_values_different(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    std::set<std::tuple<ReducedFraction, int, int>> on_time_voices_bars;
     for (const auto &chord : chords) {
-        const auto tuple = std::make_tuple(chord.first, chord.second.voice, chord.second.barIndex);
-        if (onTimeVoicesBars.find(tuple) == onTimeVoicesBars.end()) {
-            onTimeVoicesBars.insert(tuple);
+        const auto tuple = std::make_tuple(chord.first, chord.second.voice, chord.second.bar_index);
+        if (on_time_voices_bars.find(tuple) == on_time_voices_bars.end()) {
+            on_time_voices_bars.insert(tuple);
         } else {
             return false;
         }
@@ -619,11 +622,11 @@ bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord> &c
     return true;
 }
 
-bool areTupletChordsConsistent(const std::multimap<ReducedFraction, MidiChord> &chords) {
-    std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator prevTuplet;
-    bool prevTupletSet = false;
-    bool isInTuplet = false;
-    const int limit = MidiVoice::voiceLimit();
+bool are_tuplet_chords_consistent(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator prev_tuplet;
+    bool prev_tuplet_set = false;
+    bool is_in_tuplet = false;
+    const int limit = MidiVoice::voice_limit();
 
     for (int voice = 0; voice != limit; ++voice) {
         for (const auto &chord : chords) {
@@ -631,37 +634,37 @@ bool areTupletChordsConsistent(const std::multimap<ReducedFraction, MidiChord> &
             if (c.voice != voice) {
                 continue;
             }
-            if (c.isInTuplet) {
-                if (!isInTuplet && prevTupletSet && c.tuplet == prevTuplet) {
-                    LOGD() << "Inconsistent tuplets, bar (from 1):" << (c.barIndex + 1);
+            if (c.is_in_tuplet) {
+                if (!is_in_tuplet && prev_tuplet_set && c.tuplet == prev_tuplet) {
+                    LOGD() << "Inconsistent tuplets, bar (from 1):" << (c.bar_index + 1);
                     return false; // there is a non-tuplet chord inside tuplet
                 }
-                isInTuplet = true;
-                prevTuplet = c.tuplet;
-                prevTupletSet = true;
+                is_in_tuplet = true;
+                prev_tuplet = c.tuplet;
+                prev_tuplet_set = true;
             } else {
-                isInTuplet = false;
+                is_in_tuplet = false;
             }
         }
     }
     return true;
 }
 
-bool areTupletChordsConsistent(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_tuplet_chords_consistent(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
     auto it = chords.begin();
-    const bool isInTuplet = (*it)->second.isInTuplet;
+    const bool is_in_tuplet = (*it)->second.is_in_tuplet;
     for (it = std::next(it); it != chords.end(); ++it) {
-        if (isInTuplet && (!(*it)->second.isInTuplet || (*it)->second.tuplet != (*chords.begin())->second.tuplet)) {
+        if (is_in_tuplet && (!(*it)->second.is_in_tuplet || (*it)->second.tuplet != (*chords.begin())->second.tuplet)) {
             return false;
         }
-        if (!isInTuplet && (*it)->second.isInTuplet) {
+        if (!is_in_tuplet && (*it)->second.is_in_tuplet) {
             return false;
         }
     }
     return true;
 }
 
-bool areChordsSortedByOnTime(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+bool are_chords_sorted_by_on_time(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
     for (size_t i = 0; i != chords.size() - 1; ++i) {
         if (chords[i]->first >= chords[i + 1]->first) {
             return false;
@@ -672,7 +675,7 @@ bool areChordsSortedByOnTime(const std::deque<std::multimap<ReducedFraction, Mid
 
 #endif
 
-ReducedFraction quantizeToLarge(const ReducedFraction &time, const ReducedFraction &quant) {
+ReducedFraction quantize_to_large(const ReducedFraction &time, const ReducedFraction &quant) {
     const auto ratio = time / quant;
     auto quantized = quant * (ratio.numerator() / ratio.denominator());
     if (quantized < time) {
@@ -681,7 +684,7 @@ ReducedFraction quantizeToLarge(const ReducedFraction &time, const ReducedFracti
     return quantized;
 }
 
-ReducedFraction quantizeToSmall(const ReducedFraction &time, const ReducedFraction &quant) {
+ReducedFraction quantize_to_small(const ReducedFraction &time, const ReducedFraction &quant) {
     const auto ratio = time / quant;
     auto quantized = quant * (ratio.numerator() / ratio.denominator());
     if (quantized >= time) {
@@ -690,386 +693,391 @@ ReducedFraction quantizeToSmall(const ReducedFraction &time, const ReducedFracti
     return quantized;
 }
 
-void findMetricalLevels(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
-                        const ReducedFraction &tupletQuant, const ReducedFraction &barStart, const ReducedFraction &barFraction) {
-    const auto divsInfo = (tupletQuant != ReducedFraction(-1, 1)) ?
-                              Meter::divisionInfo(barFraction, {(*chords.begin())->second.tuplet->second}) :
-                              Meter::divisionInfo(barFraction, {});
+void find_metrical_levels(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+                          const ReducedFraction &tuplet_quant, const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
+    const auto divs_info = (tuplet_quant != ReducedFraction(-1, 1)) ?
+                               Meter::division_info(bar_fraction, {(*chords.begin())->second.tuplet->second}) :
+                               Meter::division_info(bar_fraction, {});
 
     for (QuantData &d : data) {
-        for (auto t = d.chordRangeStart; t <= d.chordRangeEnd; t += d.quant) {
+        for (auto t = d.chord_range_start; t <= d.chord_range_end; t += d.quant) {
             QuantPos p;
             p.time = t;
-            p.metricalLevel = Meter::levelOfTick(t - barStart, divsInfo);
+            p.metrical_level = Meter::level_of_tick(t - bar_start, divs_info);
             d.positions.push_back(p);
         }
 
-        int minLevel = std::numeric_limits<int>::max();
+        int min_level = std::numeric_limits<int>::max();
         while (true) {
-            for (auto t = d.chordRangeStart; t <= d.chordRangeEnd; t += d.quant) {
-                if (((t - barStart) / d.quantForLen).reduced().denominator() != 1) {
+            for (auto t = d.chord_range_start; t <= d.chord_range_end; t += d.quant) {
+                if (((t - bar_start) / d.quant_for_len).reduced().denominator() != 1) {
                     continue;
                 }
-                int level = Meter::levelOfTick(t - barStart, divsInfo);
-                if (level < minLevel) {
-                    minLevel = level;
+                int level = Meter::level_of_tick(t - bar_start, divs_info);
+                if (level < min_level) {
+                    min_level = level;
                 }
             }
-            if (minLevel == std::numeric_limits<int>::max()) {
-                d.quantForLen /= 2;
+            if (min_level == std::numeric_limits<int>::max()) {
+                d.quant_for_len /= 2;
 
-                Q_ASSERT_X(d.quantForLen >= MChord::minAllowedDuration(), "Quantize::findMetricalLevels",
+                Q_ASSERT_X(d.quant_for_len >= MChord::min_allowed_duration(), "Quantize::findMetricalLevels",
                            "quantForLen < min allowed duration");
 
                 continue;
             }
             break;
         }
-        d.metricalLevelForLen = minLevel;
+        d.metrical_level_for_len = min_level;
     }
 }
 
-void findChordRangeEnds(std::vector<QuantData> &data, const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd,
-                        const ReducedFraction &barStart, const ReducedFraction &beatLen) {
+void find_chord_range_ends(std::vector<QuantData> &data, const ReducedFraction &range_start, const ReducedFraction &range_end,
+                           const ReducedFraction &bar_start, const ReducedFraction &beat_len) {
 #ifdef NDEBUG
-    Q_UNUSED(rangeStart);
+    Q_UNUSED(range_start);
 #endif
     for (auto it = data.rbegin(); it != data.rend(); ++it) {
         QuantData &d = *it;
-        d.chordRangeEnd = barStart + quantizeToSmall(rangeEnd - barStart, d.quant);
+        d.chord_range_end = bar_start + quantize_to_small(range_end - bar_start, d.quant);
 
-        Q_ASSERT_X(d.chord->first + beatLen >= rangeStart, "Quantize::findChordRangeEnds", "chord on time + beatLen < rangeStart");
+        Q_ASSERT_X(d.chord->first + beat_len >= range_start, "Quantize::findChordRangeEnds", "chord on time + beatLen < rangeStart");
 
-        if (d.chord->first + beatLen < rangeEnd) {
-            d.chordRangeEnd = barStart + quantizeToSmall(d.chord->first + beatLen - barStart, d.quant);
+        if (d.chord->first + beat_len < range_end) {
+            d.chord_range_end = bar_start + quantize_to_small(d.chord->first + beat_len - bar_start, d.quant);
         }
         if (it != data.rbegin()) {
             const auto prev = std::prev(it); // next in terms of time
-            if (prev->chordRangeEnd < d.chordRangeEnd) {
-                d.chordRangeEnd = barStart + quantizeToSmall(prev->chordRangeEnd - barStart, d.quant);
+            if (prev->chord_range_end < d.chord_range_end) {
+                d.chord_range_end = bar_start + quantize_to_small(prev->chord_range_end - bar_start, d.quant);
             }
-            if (!prev->canMergeWithPrev && d.chordRangeEnd == prev->chordRangeEnd) {
-                d.chordRangeEnd -= d.quant;
+            if (!prev->can_merge_with_prev && d.chord_range_end == prev->chord_range_end) {
+                d.chord_range_end -= d.quant;
             }
         }
-        if (d.chordRangeEnd < d.chordRangeStart) {
-            d.chordRangeEnd = d.chordRangeStart;
+        if (d.chord_range_end < d.chord_range_start) {
+            d.chord_range_end = d.chord_range_start;
         }
 
-        Q_ASSERT_X(d.chordRangeEnd < rangeEnd, "Quantize::findChordRangeEnds", "chordRangeEnd > rangeEnd");
-        Q_ASSERT_X(d.chordRangeStart <= d.chordRangeEnd, "Quantize::findChordRangeEnds", "chordRangeStart is greater than chordRangeEnd");
-        Q_ASSERT_X(((d.chordRangeEnd - barStart) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
+        Q_ASSERT_X(d.chord_range_end < range_end, "Quantize::findChordRangeEnds", "chordRangeEnd > rangeEnd");
+        Q_ASSERT_X(d.chord_range_start <= d.chord_range_end, "Quantize::findChordRangeEnds",
+                   "chordRangeStart is greater than chordRangeEnd");
+        Q_ASSERT_X(((d.chord_range_end - bar_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
                    "chordRangeEnd - barStart is not dividable by quant");
-        Q_ASSERT_X(((d.chordRangeEnd - d.chordRangeStart) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
+        Q_ASSERT_X(((d.chord_range_end - d.chord_range_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
                    "chordRangeEnd - chordRangeStart is not dividable by quant");
     }
 }
 
-void findChordRangeStarts(std::vector<QuantData> &data, const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd,
-                          const ReducedFraction &barStart, const ReducedFraction &beatLen) {
+void find_chord_range_starts(std::vector<QuantData> &data, const ReducedFraction &range_start, const ReducedFraction &range_end,
+                             const ReducedFraction &bar_start, const ReducedFraction &beat_len) {
     for (auto it = data.begin(); it != data.end(); ++it) {
         QuantData &d = *it;
         while (true) {
-            d.chordRangeStart = barStart + quantizeToLarge(rangeStart - barStart, d.quant);
+            d.chord_range_start = bar_start + quantize_to_large(range_start - bar_start, d.quant);
 
-            Q_ASSERT_X(d.chord->first - beatLen <= rangeEnd, "Quantize::findChordRangeStarts", "chord on time - beatLen > rangeEnd");
+            Q_ASSERT_X(d.chord->first - beat_len <= range_end, "Quantize::findChordRangeStarts", "chord on time - beatLen > rangeEnd");
 
-            if (d.chord->first - beatLen > rangeStart) {
-                d.chordRangeStart = barStart + quantizeToLarge(d.chord->first - beatLen - barStart, d.quant);
+            if (d.chord->first - beat_len > range_start) {
+                d.chord_range_start = bar_start + quantize_to_large(d.chord->first - beat_len - bar_start, d.quant);
             }
 
             if (it != data.begin()) {
                 const auto prev = std::prev(it);
-                if (prev->chordRangeStart > d.chordRangeStart) {
-                    d.chordRangeStart = barStart + quantizeToLarge(prev->chordRangeStart - barStart, d.quant);
+                if (prev->chord_range_start > d.chord_range_start) {
+                    d.chord_range_start = bar_start + quantize_to_large(prev->chord_range_start - bar_start, d.quant);
                 }
-                if (!d.canMergeWithPrev && d.chordRangeStart == prev->chordRangeStart) {
-                    d.chordRangeStart += d.quant;
+                if (!d.can_merge_with_prev && d.chord_range_start == prev->chord_range_start) {
+                    d.chord_range_start += d.quant;
                 }
             }
 
-            if (d.chordRangeStart >= rangeEnd) {
-                if (d.quant >= MChord::minAllowedDuration() * 2) {
+            if (d.chord_range_start >= range_end) {
+                if (d.quant >= MChord::min_allowed_duration() * 2) {
                     d.quant /= 2;
                 } else {
-                    d.canMergeWithPrev = true;
+                    d.can_merge_with_prev = true;
                 }
                 continue;
             }
             break;
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(notLessThanPrev(it, data), "Quantize::findChordRangeStarts", "chordRangeStart is less than previous chordRangeStart");
-        Q_ASSERT_X(d.chordRangeStart >= rangeStart, "Quantize::findChordRangeStarts", "chordRangeStart < rangeStart");
-        Q_ASSERT_X(d.chordRangeStart < rangeEnd, "Quantize::findChordRangeStarts", "chordRangeStart >= rangeEnd");
-        Q_ASSERT_X(((d.chordRangeStart - barStart) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeStarts",
+        Q_ASSERT_X(not_less_than_prev(it, data), "Quantize::findChordRangeStarts", "chordRangeStart is less than previous chordRangeStart");
+        Q_ASSERT_X(d.chord_range_start >= range_start, "Quantize::findChordRangeStarts", "chordRangeStart < rangeStart");
+        Q_ASSERT_X(d.chord_range_start < range_end, "Quantize::findChordRangeStarts", "chordRangeStart >= rangeEnd");
+        Q_ASSERT_X(((d.chord_range_start - bar_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeStarts",
                    "chordRangeStart - barStart is not dividable by quant");
 #endif
     }
 }
 
-void findQuants(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
-                const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd, const ReducedFraction &basicQuant,
-                const ReducedFraction &tupletQuant, const ReducedFraction &barFraction) {
+void find_quants(std::vector<QuantData> &data, const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+                 const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
+                 const ReducedFraction &tuplet_quant, const ReducedFraction &bar_fraction) {
     for (auto it = chords.begin(); it != chords.end(); ++it) {
-        const auto chordIt = *it;
+        const auto chord_it = *it;
         QuantData d;
-        d.chord = chordIt;
-        auto len = MChord::minNoteLen(*chordIt);
-        if (rangeEnd - rangeStart < len) {
-            len = rangeEnd - rangeStart;
+        d.chord = chord_it;
+        auto len = MChord::min_note_len(*chord_it);
+        if (range_end - range_start < len) {
+            len = range_end - range_start;
         }
         if (it != chords.begin()) {
-            const auto prevChordIt = *std::prev(it);
-            if (chordIt->first - prevChordIt->first < len) {
-                len = chordIt->first - prevChordIt->first;
+            const auto prev_chord_it = *std::prev(it);
+            if (chord_it->first - prev_chord_it->first < len) {
+                len = chord_it->first - prev_chord_it->first;
             }
-            if (len < MChord::minAllowedDuration()) {
-                d.canMergeWithPrev = true;
+            if (len < MChord::min_allowed_duration()) {
+                d.can_merge_with_prev = true;
             }
         }
-        if (tupletQuant != ReducedFraction(-1, 1)) {
+        if (tuplet_quant != ReducedFraction(-1, 1)) {
             const MidiTuplet::TupletData &tuplet = (*chords.begin())->second.tuplet->second;
-            d.quant = tupletQuant;
-            d.quantForLen = tuplet.len / tuplet.tupletNumber;
+            d.quant = tuplet_quant;
+            d.quant_for_len = tuplet.len / tuplet.tuplet_number;
         } else {
-            d.quant = quantForLen(len, basicQuant);
-            auto maxQuant = basicQuant;
-            while (maxQuant < barFraction) {
-                maxQuant *= 2;
+            d.quant = quant_for_len(len, basic_quant);
+            auto max_quant = basic_quant;
+            while (max_quant < bar_fraction) {
+                max_quant *= 2;
             }
-            d.quantForLen = quantForLen(std::min(MChord::minNoteLen(*chordIt), rangeEnd - rangeStart), maxQuant);
+            d.quant_for_len = quant_for_len(std::min(MChord::min_note_len(*chord_it), range_end - range_start), max_quant);
         }
 
-        Q_ASSERT_X(d.quant <= rangeEnd - rangeStart, "Quantize::findQuants", "Quant value is larger than range interval");
+        Q_ASSERT_X(d.quant <= range_end - range_start, "Quantize::findQuants", "Quant value is larger than range interval");
 
         data.push_back(d);
     }
 }
 
-ReducedFraction findTupletQuant(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
-    ReducedFraction tupletQuant(-1, 1);
-    if ((*chords.begin())->second.isInTuplet) {
+ReducedFraction find_tuplet_quant(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords) {
+    ReducedFraction tuplet_quant(-1, 1);
+    if ((*chords.begin())->second.is_in_tuplet) {
         const MidiTuplet::TupletData &tuplet = (*chords.begin())->second.tuplet->second;
-        const auto tupletRatio = MidiTuplet::tupletLimits(tuplet.tupletNumber).ratio;
-        tupletQuant = quantForTuplet(tuplet.len, tupletRatio);
+        const auto tuplet_ratio = MidiTuplet::tuplet_limits(tuplet.tuplet_number).ratio;
+        tuplet_quant = quant_for_tuplet(tuplet.len, tuplet_ratio);
     }
 
-    return tupletQuant;
+    return tuplet_quant;
 }
 
-std::vector<QuantData> findQuantData(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
-                                     const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd, const ReducedFraction &basicQuant,
-                                     const ReducedFraction &barStart, const ReducedFraction &barFraction) {
+std::vector<QuantData> find_quant_data(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+                                       const ReducedFraction &range_start, const ReducedFraction &range_end,
+                                       const ReducedFraction &basic_quant, const ReducedFraction &bar_start,
+                                       const ReducedFraction &bar_fraction) {
     Q_ASSERT_X(!chords.empty(), "Quantize::findQuantData", "Empty chords");
 
     std::vector<QuantData> data;
-    const auto tupletQuant = findTupletQuant(chords);
-    const auto beatLen = Meter::beatLength(barFraction);
+    const auto tuplet_quant = find_tuplet_quant(chords);
+    const auto beat_len = Meter::beat_length(bar_fraction);
 
-    findQuants(data, chords, rangeStart, rangeEnd, basicQuant, tupletQuant, barFraction);
-    findChordRangeStarts(data, rangeStart, rangeEnd, barStart, beatLen);
-    findChordRangeEnds(data, rangeStart, rangeEnd, barStart, beatLen);
-    findMetricalLevels(data, chords, tupletQuant, barStart, barFraction);
+    find_quants(data, chords, range_start, range_end, basic_quant, tuplet_quant, bar_fraction);
+    find_chord_range_starts(data, range_start, range_end, bar_start, beat_len);
+    find_chord_range_ends(data, range_start, range_end, bar_start, beat_len);
+    find_metrical_levels(data, chords, tuplet_quant, bar_start, bar_fraction);
 
     return data;
 }
 
 struct QuantInfo {
-    ReducedFraction onTime;
+    ReducedFraction on_time;
     double penalty = 0.0;
     std::multimap<ReducedFraction, MidiChord>::const_iterator chord;
 };
 
-int findLastChordPosition(const std::vector<QuantData> &quantData) {
-    int posIndex = -1;
-    double minPenalty = std::numeric_limits<double>::max();
-    const auto &lastPositions = quantData[quantData.size() - 1].positions;
-    for (size_t i = 0; i != lastPositions.size(); ++i) {
-        if (lastPositions[i].penalty < minPenalty) {
-            minPenalty = lastPositions[i].penalty;
-            posIndex = static_cast<int>(i);
+int find_last_chord_position(const std::vector<QuantData> &quant_data) {
+    int pos_index = -1;
+    double min_penalty = std::numeric_limits<double>::max();
+    const auto &last_positions = quant_data[quant_data.size() - 1].positions;
+    for (size_t i = 0; i != last_positions.size(); ++i) {
+        if (last_positions[i].penalty < min_penalty) {
+            min_penalty = last_positions[i].penalty;
+            pos_index = static_cast<int>(i);
         }
     }
 
-    Q_ASSERT_X(posIndex != -1, "Quantize::findLastChordPosition", "Last index was not found");
+    Q_ASSERT_X(pos_index != -1, "Quantize::findLastChordPosition", "Last index was not found");
 
-    return posIndex;
+    return pos_index;
 }
 
-void applyDynamicProgramming(std::vector<QuantData> &quantData) {
-    const auto &opers = midiImportOperations.data()->trackOpers;
-    const bool isHuman = opers.isHumanPerformance.value();
-    const double MERGE_PENALTY_COEFF = 5.0;
+void apply_dynamic_programming(std::vector<QuantData> &quant_data) {
+    const auto &opers = midi_import_operations.data()->track_opers;
+    const bool is_human = opers.is_human_performance.value();
+    const double merge_penalty_coeff = 5.0;
 
-    for (size_t chordIndex = 0; chordIndex != quantData.size(); ++chordIndex) {
-        QuantData &d = quantData[chordIndex];
+    for (size_t chord_index = 0; chord_index != quant_data.size(); ++chord_index) {
+        QuantData &d = quant_data[chord_index];
         for (size_t pos = 0; pos != d.positions.size(); ++pos) {
             QuantPos &p = d.positions[pos];
 
-            const auto timePenalty = (d.chord->first - p.time).absValue().toDouble();
-            const double levelDiff = std::abs(d.metricalLevelForLen - p.metricalLevel);
+            const auto time_penalty = (d.chord->first - p.time).abs_value().to_double();
+            const double level_diff = std::abs(d.metrical_level_for_len - p.metrical_level);
 
-            if (isHuman) {
-                if (p.metricalLevel <= d.metricalLevelForLen) {
-                    p.penalty = timePenalty + levelDiff * d.quantForLen.toDouble();
+            if (is_human) {
+                if (p.metrical_level <= d.metrical_level_for_len) {
+                    p.penalty = time_penalty + level_diff * d.quant_for_len.to_double();
                 } else {
-                    p.penalty = timePenalty / (1 + levelDiff);
+                    p.penalty = time_penalty / (1 + level_diff);
                 }
             } else {
-                if (p.metricalLevel <= d.metricalLevelForLen) {
-                    p.penalty = timePenalty * (1 + levelDiff);
+                if (p.metrical_level <= d.metrical_level_for_len) {
+                    p.penalty = time_penalty * (1 + level_diff);
                 } else {
-                    p.penalty = timePenalty;
+                    p.penalty = time_penalty;
                 }
             }
 
-            if (chordIndex == 0) {
+            if (chord_index == 0) {
                 continue;
             }
 
-            const QuantData &dPrev = quantData[chordIndex - 1];
-            double minPenalty = std::numeric_limits<double>::max();
-            int minPos = -1;
+            const QuantData &d_prev = quant_data[chord_index - 1];
+            double min_penalty = std::numeric_limits<double>::max();
+            int min_pos = -1;
 
-            for (size_t posPrev = 0; posPrev != dPrev.positions.size(); ++posPrev) {
-                const QuantPos &pPrev = dPrev.positions[posPrev];
-                if (pPrev.time > p.time) {
+            for (size_t pos_prev = 0; pos_prev != d_prev.positions.size(); ++pos_prev) {
+                const QuantPos &p_prev = d_prev.positions[pos_prev];
+                if (p_prev.time > p.time) {
                     continue;
                 }
 
-                double penalty = pPrev.penalty;
-                if (pPrev.time == p.time) {
-                    if (!d.canMergeWithPrev) {
+                double penalty = p_prev.penalty;
+                if (p_prev.time == p.time) {
+                    if (!d.can_merge_with_prev) {
                         continue;
                     }
-                    penalty += d.quant.toDouble() * MERGE_PENALTY_COEFF;
+                    penalty += d.quant.to_double() * merge_penalty_coeff;
                 }
 
-                if (penalty < minPenalty) {
-                    minPenalty = penalty;
-                    minPos = static_cast<int>(posPrev);
+                if (penalty < min_penalty) {
+                    min_penalty = penalty;
+                    min_pos = static_cast<int>(pos_prev);
                 }
             }
 
-            Q_ASSERT_X(minPos != -1, "Quantize::applyDynamicProgramming", "Min pos was not found");
+            Q_ASSERT_X(min_pos != -1, "Quantize::applyDynamicProgramming", "Min pos was not found");
 
-            p.penalty += minPenalty;
-            p.prevPos = minPos;
+            p.penalty += min_penalty;
+            p.prev_pos = min_pos;
         }
     }
 }
 
-void quantizeOnTimesInRange(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
-                            std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &foundOnTimes,
-                            const ReducedFraction &rangeStart, const ReducedFraction &rangeEnd, const ReducedFraction &basicQuant,
-                            const ReducedFraction &barStart, const ReducedFraction &barFraction) {
+void quantize_on_times_in_range(const std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords,
+                                std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+                                const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
+                                const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
 #ifndef NDEBUG
     Q_ASSERT_X(!chords.empty(), "Quantize::quantizeOnTimesInRange", "Empty chords");
-    Q_ASSERT_X(areAllVoicesSame(chords), "Quantize::quantizeOnTimesInRange", "Chord voices are not the same");
-    Q_ASSERT_X(areChordsDifferent(chords), "Quantize::quantizeOnTimesInRange", "There are chord duplicates");
-    Q_ASSERT_X(areTupletChordsConsistent(chords), "Quantize::quantizeOnTimesInRange", "Tuplet and non-tuplet chords mismatch");
-    Q_ASSERT_X(areChordsSortedByOnTime(chords), "Quantize::quantizeOnTimesInRange", "Chords are not sorted by on time values");
+    Q_ASSERT_X(are_all_voices_same(chords), "Quantize::quantizeOnTimesInRange", "Chord voices are not the same");
+    Q_ASSERT_X(are_chords_different(chords), "Quantize::quantizeOnTimesInRange", "There are chord duplicates");
+    Q_ASSERT_X(are_tuplet_chords_consistent(chords), "Quantize::quantizeOnTimesInRange", "Tuplet and non-tuplet chords mismatch");
+    Q_ASSERT_X(are_chords_sorted_by_on_time(chords), "Quantize::quantizeOnTimesInRange", "Chords are not sorted by on time values");
 
-    Q_ASSERT_X(rangeStart != ReducedFraction(-1, 1) && rangeEnd != ReducedFraction(-1, 1) && rangeStart < rangeEnd,
+    Q_ASSERT_X(range_start != ReducedFraction(-1, 1) && range_end != ReducedFraction(-1, 1) && range_start < range_end,
                "Quantize::quantizeOnTimesInRange", "Range start and/or range end are incorrect");
 
-    Q_ASSERT_X((chords.front()->second.isInTuplet) ? isTupletRangeCorrect(chords.front()->second.tuplet->second, rangeStart, rangeEnd) :
-                                                     true,
+    Q_ASSERT_X((chords.front()->second.is_in_tuplet) ?
+                   is_tuplet_range_correct(chords.front()->second.tuplet->second, range_start, range_end) :
+                   true,
                "Quantize::quantizeOnTimesInRange", "Tuplet range is incorrect");
 #endif
-    std::vector<QuantData> quantData = findQuantData(chords, rangeStart, rangeEnd, basicQuant, barStart, barFraction);
-    applyDynamicProgramming(quantData);
+    std::vector<QuantData> quant_data = find_quant_data(chords, range_start, range_end, basic_quant, bar_start, bar_fraction);
+    apply_dynamic_programming(quant_data);
 
     // backward dynamic programming step - collect optimal chord positions
-    int posIndex = findLastChordPosition(quantData);
+    int pos_index = find_last_chord_position(quant_data);
 
-    Q_ASSERT_X(quantData.size() == chords.size(), "Quantize::quantizeOnTimesInRange", "Sizes of quant data and chords are not equal");
+    Q_ASSERT_X(quant_data.size() == chords.size(), "Quantize::quantizeOnTimesInRange", "Sizes of quant data and chords are not equal");
 
-    for (size_t chordIndex = quantData.size() - 1;; --chordIndex) {
-        const QuantPos &p = quantData[chordIndex].positions[posIndex];
-        const auto onTime = p.time;
-        const auto chordIt = chords[chordIndex];
+    for (size_t chord_index = quant_data.size() - 1;; --chord_index) {
+        const QuantPos &p = quant_data[chord_index].positions[pos_index];
+        const auto on_time = p.time;
+        const auto chord_it = chords[chord_index];
 
-        const auto found = foundOnTimes.find(&*chordIt);
-        if (found == foundOnTimes.end()) {
+        const auto found = found_on_times.find(&*chord_it);
+        if (found == found_on_times.end()) {
             QuantInfo info;
-            info.chord = chordIt;
-            info.onTime = onTime;
+            info.chord = chord_it;
+            info.on_time = on_time;
             info.penalty = p.penalty;
-            foundOnTimes.insert({&*chordIt, info});
+            found_on_times.insert({&*chord_it, info});
         } else if (p.penalty < found->second.penalty) {
-            found->second.onTime = onTime;
+            found->second.on_time = on_time;
             found->second.penalty = p.penalty;
         }
 
-        if (chordIndex == 0) {
+        if (chord_index == 0) {
             break;
         }
-        posIndex = p.prevPos;
+        pos_index = p.prev_pos;
     }
 }
 
 // input chords - sorted by onTime value
 
-void applyTupletStaccato(std::multimap<ReducedFraction, MidiChord> &chords) {
-    for (auto chordIt = chords.begin(); chordIt != chords.end(); ++chordIt) {
-        for (MidiNote &note : chordIt->second.notes) {
-            if (note.isInTuplet && note.staccato) {
+void apply_tuplet_staccato(std::multimap<ReducedFraction, MidiChord> &chords) {
+    for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
+        for (MidiNote &note : chord_it->second.notes) {
+            if (note.is_in_tuplet && note.staccato) {
                 const MidiTuplet::TupletData &tuplet = note.tuplet->second;
                 // decrease tuplet error by enlarging staccato notes:
                 // make note.len = tuplet note length
-                const auto tupletNoteLen = tuplet.len / tuplet.tupletNumber;
-                note.offTime = chordIt->first + tupletNoteLen;
+                const auto tuplet_note_len = tuplet.len / tuplet.tuplet_number;
+                note.off_time = chord_it->first + tuplet_note_len;
             }
         }
     }
 }
 
-void quantizeOffTimes(std::multimap<ReducedFraction, MidiChord> &quantizedChords, const ReducedFraction &basicQuant) {
-    for (auto chordIt = quantizedChords.begin(); chordIt != quantizedChords.end(); ++chordIt) {
-        MidiChord &chord = chordIt->second;
+void quantize_off_times(std::multimap<ReducedFraction, MidiChord> &quantized_chords, const ReducedFraction &basic_quant) {
+    for (auto chord_it = quantized_chords.begin(); chord_it != quantized_chords.end(); ++chord_it) {
+        MidiChord &chord = chord_it->second;
         // quantize off times
         for (auto &note : chord.notes) {
             // check if note is not in tuplet anymore
-            if (note.isInTuplet) {
-                if (chordIt->first >= note.tuplet->first + note.tuplet->second.len) {
-                    note.isInTuplet = false;
+            if (note.is_in_tuplet) {
+                if (chord_it->first >= note.tuplet->first + note.tuplet->second.len) {
+                    note.is_in_tuplet = false;
                 }
             }
 
-            const auto result = (note.isInTuplet) ?
-                                    quantizeOffTimeForTuplet(note.offTime, chordIt, quantizedChords, basicQuant, note.tuplet->second) :
-                                    quantizeOffTimeForNonTuplet(note.offTime, chordIt, quantizedChords, basicQuant);
-            note.offTime = result.first;
-            note.offTimeQuant = result.second;
+            const auto result =
+                (note.is_in_tuplet) ?
+                    quantize_off_time_for_tuplet(note.off_time, chord_it, quantized_chords, basic_quant, note.tuplet->second) :
+                    quantize_off_time_for_non_tuplet(note.off_time, chord_it, quantized_chords, basic_quant);
+            note.off_time = result.first;
+            note.off_time_quant = result.second;
 #ifndef NDEBUG
-            checkOffTime(note, chordIt, quantizedChords);
+            check_off_time(note, chord_it, quantized_chords);
 #endif
         }
     }
 }
 
-void addChordsFromPrevRange(std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chordsToQuant,
-                            const std::multimap<ReducedFraction, MidiChord> &chords, bool currentlyInTuplet, int currentBarIndex, int voice,
-                            const ReducedFraction &barStart, const ReducedFraction &rangeStart, const ReducedFraction &basicQuant) {
-    if (currentlyInTuplet) {
+void add_chords_from_prev_range(std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> &chords_to_quant,
+                                const std::multimap<ReducedFraction, MidiChord> &chords, bool currently_in_tuplet, int current_bar_index,
+                                int voice, const ReducedFraction &bar_start, const ReducedFraction &range_start,
+                                const ReducedFraction &basic_quant) {
+    if (currently_in_tuplet) {
         return;
     }
 
-    auto it = chordsToQuant.front();
+    auto it = chords_to_quant.front();
     if (it == chords.begin()) {
         return;
     }
     --it;
 
-    if (rangeStart == barStart) { // new bar
-        while (it->second.barIndex >= currentBarIndex - 1) {
-            if (it->second.voice == voice && it->second.barIndex == currentBarIndex) {
-                Q_ASSERT_X(!it->second.isInTuplet, "Quantize::addChordsFromPrevRange",
+    if (range_start == bar_start) { // new bar
+        while (it->second.bar_index >= current_bar_index - 1) {
+            if (it->second.voice == voice && it->second.bar_index == current_bar_index) {
+                Q_ASSERT_X(!it->second.is_in_tuplet, "Quantize::addChordsFromPrevRange",
                            "Tuplet chord from previous bar belongs to the current bar");
 
-                chordsToQuant.push_front(it);
+                chords_to_quant.push_front(it);
             }
             if (it == chords.begin()) {
                 break;
@@ -1077,10 +1085,10 @@ void addChordsFromPrevRange(std::deque<std::multimap<ReducedFraction, MidiChord>
             --it;
         }
     } else {
-        const auto tol = basicQuant / 2;
-        while (it->first > rangeStart - tol) {
-            if (it->second.voice == voice && !it->second.isInTuplet) {
-                chordsToQuant.push_front(it);
+        const auto tol = basic_quant / 2;
+        while (it->first > range_start - tol) {
+            if (it->second.voice == voice && !it->second.is_in_tuplet) {
+                chords_to_quant.push_front(it);
             }
             if (it == chords.begin()) {
                 break;
@@ -1090,73 +1098,74 @@ void addChordsFromPrevRange(std::deque<std::multimap<ReducedFraction, MidiChord>
     }
 }
 
-void quantizeOnTimes(const std::multimap<ReducedFraction, MidiChord> &chords,
-                     std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &foundOnTimes,
-                     const ReducedFraction &basicQuant, const TimeSigMap *sigmap) {
-    int maxVoice = 0;
-    for (int voice = 0; voice <= maxVoice; ++voice) {
-        int currentBarIndex = -1;
-        ReducedFraction rangeStart(-1, 1);
-        ReducedFraction rangeEnd(-1, 1);
-        ReducedFraction barFraction(-1, 1);
-        ReducedFraction barStart(-1, 1);
-        bool currentlyInTuplet = false;
-        std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> chordsToQuant;
+void quantize_on_times(const std::multimap<ReducedFraction, MidiChord> &chords,
+                       std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times,
+                       const ReducedFraction &basic_quant, const TimeSigMap *sigmap) {
+    int max_voice = 0;
+    for (int voice = 0; voice <= max_voice; ++voice) {
+        int current_bar_index = -1;
+        ReducedFraction range_start(-1, 1);
+        ReducedFraction range_end(-1, 1);
+        ReducedFraction bar_fraction(-1, 1);
+        ReducedFraction bar_start(-1, 1);
+        bool currently_in_tuplet = false;
+        std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> chords_to_quant;
 
-        for (auto chordIt = chords.begin(); chordIt != chords.end(); ++chordIt) {
-            Q_ASSERT_X(MChord::minNoteLen(*chordIt) >= MChord::minAllowedDuration(), "Quantize::quantizeOnTimes",
+        for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
+            Q_ASSERT_X(MChord::min_note_len(*chord_it) >= MChord::min_allowed_duration(), "Quantize::quantizeOnTimes",
                        "Note length is less than min allowed duration");
 
-            if (chordIt->second.voice > maxVoice) {
-                maxVoice = chordIt->second.voice;
+            if (chord_it->second.voice > max_voice) {
+                max_voice = chord_it->second.voice;
             }
-            if (chordIt->second.voice != voice) {
+            if (chord_it->second.voice != voice) {
                 continue;
             }
 
-            if (chordsToQuant.empty()) {
-                rangeStart = rangeEnd;
-                currentlyInTuplet = chordIt->second.isInTuplet;
-                if (currentBarIndex != chordIt->second.barIndex) {
-                    currentBarIndex = chordIt->second.barIndex;
-                    barStart = ReducedFraction::fromTicks(sigmap->bar2tick(currentBarIndex, 0));
-                    barFraction = ReducedFraction(sigmap->timesig(barStart.ticks()).timesig());
-                    if (!currentlyInTuplet) {
-                        rangeStart = barStart;
+            if (chords_to_quant.empty()) {
+                range_start = range_end;
+                currently_in_tuplet = chord_it->second.is_in_tuplet;
+                if (current_bar_index != chord_it->second.bar_index) {
+                    current_bar_index = chord_it->second.bar_index;
+                    bar_start = ReducedFraction::from_ticks(sigmap->bar2tick(current_bar_index, 0));
+                    bar_fraction = ReducedFraction(sigmap->timesig(bar_start.ticks()).timesig());
+                    if (!currently_in_tuplet) {
+                        range_start = bar_start;
                     }
                 }
-                if (currentlyInTuplet) {
-                    const auto &tuplet = chordIt->second.tuplet->second;
-                    rangeStart = tuplet.onTime;
-                    rangeEnd = tuplet.onTime + tuplet.len;
+                if (currently_in_tuplet) {
+                    const auto &tuplet = chord_it->second.tuplet->second;
+                    range_start = tuplet.on_time;
+                    range_end = tuplet.on_time + tuplet.len;
                 }
             }
 
-            chordsToQuant.push_back(chordIt);
+            chords_to_quant.push_back(chord_it);
 
-            auto nextChord = std::next(chordIt);
-            while (nextChord != chords.end() && nextChord->second.voice != voice) {
-                ++nextChord;
+            auto next_chord = std::next(chord_it);
+            while (next_chord != chords.end() && next_chord->second.voice != voice) {
+                ++next_chord;
             }
-            if (nextChord == chords.end() || nextChord->second.barIndex != currentBarIndex ||
-                nextChord->second.isInTuplet != currentlyInTuplet ||
-                (nextChord->second.isInTuplet && currentlyInTuplet && nextChord->second.tuplet != chordIt->second.tuplet)) {
-                if (!currentlyInTuplet) {
-                    if (nextChord != chords.end()) {
-                        if (nextChord->second.barIndex != currentBarIndex) {
-                            rangeEnd = ReducedFraction::fromTicks(sigmap->bar2tick(currentBarIndex + 1, 0));
-                        } else if (nextChord->second.isInTuplet) {
-                            rangeEnd = nextChord->second.tuplet->second.onTime;
+            if (next_chord == chords.end() || next_chord->second.bar_index != current_bar_index ||
+                next_chord->second.is_in_tuplet != currently_in_tuplet ||
+                (next_chord->second.is_in_tuplet && currently_in_tuplet && next_chord->second.tuplet != chord_it->second.tuplet)) {
+                if (!currently_in_tuplet) {
+                    if (next_chord != chords.end()) {
+                        if (next_chord->second.bar_index != current_bar_index) {
+                            range_end = ReducedFraction::from_ticks(sigmap->bar2tick(current_bar_index + 1, 0));
+                        } else if (next_chord->second.is_in_tuplet) {
+                            range_end = next_chord->second.tuplet->second.on_time;
                         }
                     } else {
-                        rangeEnd = ReducedFraction::fromTicks(sigmap->bar2tick(currentBarIndex + 1, 0));
+                        range_end = ReducedFraction::from_ticks(sigmap->bar2tick(current_bar_index + 1, 0));
                     }
                 }
 
-                addChordsFromPrevRange(chordsToQuant, chords, currentlyInTuplet, currentBarIndex, voice, barStart, rangeStart, basicQuant);
+                add_chords_from_prev_range(chords_to_quant, chords, currently_in_tuplet, current_bar_index, voice, bar_start, range_start,
+                                           basic_quant);
 
-                quantizeOnTimesInRange(chordsToQuant, foundOnTimes, rangeStart, rangeEnd, basicQuant, barStart, barFraction);
-                chordsToQuant.clear();
+                quantize_on_times_in_range(chords_to_quant, found_on_times, range_start, range_end, basic_quant, bar_start, bar_fraction);
+                chords_to_quant.clear();
             }
         }
     }
@@ -1165,39 +1174,39 @@ void quantizeOnTimes(const std::multimap<ReducedFraction, MidiChord> &chords,
 // if on time after quantization become >= note off time
 // then shift note off time preserving old note length
 
-void moveOffTimes(const ReducedFraction &oldOnTime, const ReducedFraction &newOnTime, std::vector<MidiNote> &notes) {
+void move_off_times(const ReducedFraction &old_on_time, const ReducedFraction &new_on_time, std::vector<MidiNote> &notes) {
     for (auto &note : notes) {
-        if (newOnTime >= note.offTime) {
-            Q_ASSERT_X(newOnTime > oldOnTime, "Quantize::moveOffTimes", "Invalid note on time or off time");
-            Q_ASSERT_X(note.offTime > oldOnTime, "Quantize::moveOffTimes", "Invalid old note length");
+        if (new_on_time >= note.off_time) {
+            Q_ASSERT_X(new_on_time > old_on_time, "Quantize::moveOffTimes", "Invalid note on time or off time");
+            Q_ASSERT_X(note.off_time > old_on_time, "Quantize::moveOffTimes", "Invalid old note length");
 
-            note.offTime += newOnTime - oldOnTime;
+            note.off_time += new_on_time - old_on_time;
         }
     }
 }
 
 std::multimap<ReducedFraction, MidiChord>
-findQuantizedChords(const std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &foundOnTimes) {
-    std::multimap<ReducedFraction, MidiChord> quantizedChords;
-    for (const auto &f : foundOnTimes) {
+find_quantized_chords(const std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> &found_on_times) {
+    std::multimap<ReducedFraction, MidiChord> quantized_chords;
+    for (const auto &f : found_on_times) {
         const QuantInfo &i = f.second;
         const MidiChord &chord = i.chord->second;
 
-        auto found = quantizedChords.end();
-        const auto range = quantizedChords.equal_range(i.onTime);
+        auto found = quantized_chords.end();
+        const auto range = quantized_chords.equal_range(i.on_time);
         for (auto it = range.first; it != range.second; ++it) {
             if (it->second.voice == chord.voice) {
                 found = it;
                 break;
             }
         }
-        if (found != quantizedChords.end()) {
+        if (found != quantized_chords.end()) {
             MidiChord &fc = found->second;
             fc.notes.insert(fc.notes.end(), chord.notes.begin(), chord.notes.end()); // merge chords with equal on times
-            moveOffTimes(i.chord->first, i.onTime, fc.notes);
-            if (chord.isInTuplet) {
-                if (!fc.isInTuplet) {
-                    fc.isInTuplet = true;
+            move_off_times(i.chord->first, i.on_time, fc.notes);
+            if (chord.is_in_tuplet) {
+                if (!fc.is_in_tuplet) {
+                    fc.is_in_tuplet = true;
                     fc.tuplet = chord.tuplet;
                 }
 #ifndef NDEBUG
@@ -1207,52 +1216,52 @@ findQuantizedChords(const std::map<const std::pair<const ReducedFraction, MidiCh
 #endif
             }
         } else {
-            MidiChord midiChord(chord); // copy chord
-            moveOffTimes(i.chord->first, i.onTime, midiChord.notes);
-            quantizedChords.insert({i.onTime, midiChord});
+            MidiChord midi_chord(chord); // copy chord
+            move_off_times(i.chord->first, i.on_time, midi_chord.notes);
+            quantized_chords.insert({i.on_time, midi_chord});
         }
     }
 
-    return quantizedChords;
+    return quantized_chords;
 }
 
-void removeUselessTupletReferences(std::multimap<ReducedFraction, MidiChord> &chords) {
+void remove_useless_tuplet_references(std::multimap<ReducedFraction, MidiChord> &chords) {
     for (auto &chord : chords) {
-        if (chord.second.isInTuplet) {
+        if (chord.second.is_in_tuplet) {
             const auto &tuplet = chord.second.tuplet->second;
-            if (chord.first >= tuplet.onTime + tuplet.len) {
-                chord.second.isInTuplet = false;
+            if (chord.first >= tuplet.on_time + tuplet.len) {
+                chord.second.is_in_tuplet = false;
             }
         }
         for (auto &note : chord.second.notes) {
-            if (note.isInTuplet) {
+            if (note.is_in_tuplet) {
                 const auto &tuplet = note.tuplet->second;
-                if (note.offTime <= tuplet.onTime) {
-                    note.isInTuplet = false;
+                if (note.off_time <= tuplet.on_time) {
+                    note.is_in_tuplet = false;
                 }
             }
         }
     }
 }
 
-void quantizeChords(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap, const ReducedFraction &basicQuant) {
+void quantize_chords(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap, const ReducedFraction &basic_quant) {
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::areTupletReferencesValid(chords), "Quantize::quantizeChords", "Some tuplet references are invalid");
-    Q_ASSERT_X(areOnTimeValuesDifferent(chords), "Quantize::quantizeChords", "Chords of the same voices have equal on time values");
-    Q_ASSERT_X(areTupletChordsConsistent(chords), "Quantize::quantizeChords", "There are non-tuplet chords between tuplet chords");
-    Q_ASSERT_X(MChord::areNotesLongEnough(chords), "Quantize::quantizeChords", "There are too short notes");
-    Q_ASSERT_X(MChord::areBarIndexesSuccessive(chords), "Quantize::quantizeChords", "Bar indexes are not successive");
+    Q_ASSERT_X(MidiTuplet::are_tuplet_references_valid(chords), "Quantize::quantizeChords", "Some tuplet references are invalid");
+    Q_ASSERT_X(are_on_time_values_different(chords), "Quantize::quantizeChords", "Chords of the same voices have equal on time values");
+    Q_ASSERT_X(are_tuplet_chords_consistent(chords), "Quantize::quantizeChords", "There are non-tuplet chords between tuplet chords");
+    Q_ASSERT_X(MChord::are_notes_long_enough(chords), "Quantize::quantizeChords", "There are too short notes");
+    Q_ASSERT_X(MChord::are_bar_indexes_successive(chords), "Quantize::quantizeChords", "Bar indexes are not successive");
 #endif
-    applyTupletStaccato(chords); // apply staccato for tuplet off times
-    std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> foundOnTimes;
-    quantizeOnTimes(chords, foundOnTimes, basicQuant, sigmap);
-    auto quantizedChords = findQuantizedChords(foundOnTimes);
+    apply_tuplet_staccato(chords); // apply staccato for tuplet off times
+    std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
+    quantize_on_times(chords, found_on_times, basic_quant, sigmap);
+    auto quantized_chords = find_quantized_chords(found_on_times);
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::areTupletReferencesValid(quantizedChords), "Quantize::quantizeChords", "Some tuplet references are invalid");
+    Q_ASSERT_X(MidiTuplet::are_tuplet_references_valid(quantized_chords), "Quantize::quantizeChords", "Some tuplet references are invalid");
 #endif
-    quantizeOffTimes(quantizedChords, basicQuant);
-    std::swap(chords, quantizedChords);
+    quantize_off_times(quantized_chords, basic_quant);
+    std::swap(chords, quantized_chords);
 
-    removeUselessTupletReferences(chords);
+    remove_useless_tuplet_references(chords);
 }
 }} // namespace mu::iex::midi::Quantize

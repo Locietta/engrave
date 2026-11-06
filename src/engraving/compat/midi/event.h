@@ -43,7 +43,7 @@ enum class BeatType : unsigned char;
 class PlayEvent : public MidiCoreEvent {
     OBJECT_ALLOCATOR(engraving, PlayEvent)
 protected:
-    float _tuning = .0f;
+    float tuning_value = .0f;
 
 public:
     PlayEvent() : MidiCoreEvent() {}
@@ -52,9 +52,9 @@ public:
 
     PlayEvent(uint8_t t, uint8_t c, uint8_t a, uint8_t b) : MidiCoreEvent(t, c, a, b) {}
 
-    float tuning() const { return _tuning; }
+    float tuning() const { return tuning_value; }
 
-    void setTuning(float v) { _tuning = v; }
+    void set_tuning(float v) { tuning_value = v; }
 };
 
 //---------------------------------------------------------
@@ -72,46 +72,47 @@ public:
 
     NPlayEvent(const MidiCoreEvent &e) : PlayEvent(e) {}
 
-    NPlayEvent(BeatType beatType);
+    NPlayEvent(BeatType beat_type);
 
-    const Note *note() const { return _note; }
+    const Note *note() const { return note_value; }
 
-    void setNote(const Note *v) { _note = v; }
+    void set_note(const Note *v) { note_value = v; }
 
-    const Harmony *harmony() const { return _harmony; }
+    const Harmony *harmony() const { return harmony_value; }
 
-    void setHarmony(const Harmony *v) { _harmony = v; }
+    void set_harmony(const Harmony *v) { harmony_value = v; }
 
-    void setEffect(MidiInstrumentEffect effect) { _effect = effect; }
+    void set_effect(MidiInstrumentEffect effect) { effect_value = effect; }
 
-    MidiInstrumentEffect effect() const { return _effect; }
+    MidiInstrumentEffect effect() const { return effect_value; }
 
-    size_t getOriginatingStaff() const { return _origin; }
+    size_t get_originating_staff() const { return origin; }
 
-    void setOriginatingStaff(size_t i) { _origin = i; }
+    void set_originating_staff(size_t i) { origin = i; }
 
-    void setDiscard(size_t d) { _discard = d; }
+    void set_discard(size_t d) { discard_value = d; }
 
-    size_t discard() const { return _discard; }
+    size_t discard() const { return discard_value; }
 
-    bool isMuted() const;
+    bool is_muted() const;
 
-    void setPortamento(bool p) { _portamento = p; }
+    void set_portamento(bool p) { portamento_value = p; }
 
     bool portamento() const {
-        return _portamento == true || (this->type() == ME_CONTROLLER &&
-                                       (this->controller() == CTRL_PORTAMENTO || this->controller() == CTRL_PORTAMENTO_CONTROL ||
-                                        this->controller() == CTRL_PORTAMENTO_TIME_MSB || this->controller() == CTRL_PORTAMENTO_TIME_LSB));
+        return portamento_value == true ||
+               (this->type() == ME_CONTROLLER &&
+                (this->controller() == CTRL_PORTAMENTO || this->controller() == CTRL_PORTAMENTO_CONTROL ||
+                 this->controller() == CTRL_PORTAMENTO_TIME_MSB || this->controller() == CTRL_PORTAMENTO_TIME_LSB));
     }
 
 private:
 
-    const Note *_note = nullptr;
-    const Harmony *_harmony = nullptr;
-    size_t _origin = size_t(-1);
-    size_t _discard = 0;
-    bool _portamento = false;
-    MidiInstrumentEffect _effect = MidiInstrumentEffect::NONE;
+    const Note *note_value = nullptr;
+    const Harmony *harmony_value = nullptr;
+    size_t origin = size_t(-1);
+    size_t discard_value = 0;
+    bool portamento_value = false;
+    MidiInstrumentEffect effect_value = MidiInstrumentEffect::NONE;
 };
 
 //---------------------------------------------------------
@@ -121,17 +122,17 @@ private:
 class Event : public PlayEvent {
     OBJECT_ALLOCATOR(engraving, Event)
 
-    int _ontime;
-    int _noquantOntime;
-    int _noquantDuration;
-    int _duration;
-    int _tpc; // tonal pitch class
-    int _voice;
-    std::vector<Event> _notes;
-    uint8_t *_edata; // always zero terminated (_data[_len] == 0; )
-    int _len;
-    int _metaType;
-    const Note *_note;
+    int ontime_value;
+    int noquant_ontime_value;
+    int noquant_duration_value;
+    int duration_value;
+    int tpc_value; // tonal pitch class
+    int voice_value;
+    std::vector<Event> notes_value;
+    uint8_t *edata_value; // always zero terminated (_data[_len] == 0; )
+    int len_value;
+    int meta_type_value;
+    const Note *note_value;
 
 public:
     Event();
@@ -142,49 +143,49 @@ public:
 
     void dump() const;
 
-    int noquantOntime() const { return _noquantOntime; }
+    int noquant_ontime() const { return noquant_ontime_value; }
 
-    void setNoquantOntime(int v) { _noquantOntime = v; }
+    void set_noquant_ontime(int v) { noquant_ontime_value = v; }
 
-    int noquantDuration() const { return _noquantDuration; }
+    int noquant_duration() const { return noquant_duration_value; }
 
-    void setNoquantDuration(int v) { _noquantDuration = v; }
+    void set_noquant_duration(int v) { noquant_duration_value = v; }
 
-    int ontime() const { return _ontime; }
+    int ontime() const { return ontime_value; }
 
-    void setOntime(int v) { _ontime = v; }
+    void set_ontime(int v) { ontime_value = v; }
 
-    int duration() const { return _duration; }
+    int duration() const { return duration_value; }
 
-    void setDuration(int v) { _duration = v; }
+    void set_duration(int v) { duration_value = v; }
 
-    int voice() const { return _voice; }
+    int voice() const { return voice_value; }
 
-    void setVoice(int val) { _voice = val; }
+    void set_voice(int val) { voice_value = val; }
 
-    int offtime() const { return _ontime + _duration; }
+    int offtime() const { return ontime_value + duration_value; }
 
-    std::vector<Event> &notes() { return _notes; }
+    std::vector<Event> &notes() { return notes_value; }
 
-    const uint8_t *edata() const { return _edata; }
+    const uint8_t *edata() const { return edata_value; }
 
-    void setEData(uint8_t *d) { _edata = d; }
+    void set_e_data(uint8_t *d) { edata_value = d; }
 
-    int len() const { return _len; }
+    int len() const { return len_value; }
 
-    void setLen(int l) { _len = l; }
+    void set_len(int l) { len_value = l; }
 
-    int metaType() const { return _metaType; }
+    int meta_type() const { return meta_type_value; }
 
-    void setMetaType(int v) { _metaType = v; }
+    void set_meta_type(int v) { meta_type_value = v; }
 
-    int tpc() const { return _tpc; }
+    int tpc() const { return tpc_value; }
 
-    void setTpc(int v) { _tpc = v; }
+    void set_tpc(int v) { tpc_value = v; }
 
-    const Note *note() const { return _note; }
+    const Note *note() const { return note_value; }
 
-    void setNote(const Note *v) { _note = v; }
+    void set_note(const Note *v) { note_value = v; }
 };
 
 //---------------------------------------------------------
@@ -196,21 +197,21 @@ class EventList : public std::vector<Event> {
     OBJECT_ALLOCATOR(engraving, EventList)
 public:
     void insert(const Event &);
-    void insertNote(int channel, Note *);
+    void insert_note(int channel, Note *);
 };
 
 class EventsHolder {
     OBJECT_ALLOCATOR(engraving, EventsHolder)
 
     using events_multimap_t = std::multimap<int, NPlayEvent>;
-    std::vector<events_multimap_t> _channels;
+    std::vector<events_multimap_t> channels;
 public:
-    [[nodiscard]] size_t size() const { return _channels.size(); }
+    [[nodiscard]] size_t size() const { return channels.size(); }
 
     events_multimap_t &operator[](std::size_t idx);
     const events_multimap_t &operator[](std::size_t idx) const;
-    void mergePitchWheelEvents(EventsHolder &pitchWheelEvents);
-    void fixupMIDI();
+    void merge_pitch_wheel_events(EventsHolder &pitch_wheel_events);
+    void fixup_midi();
 };
 
 typedef EventList::iterator iEvent;

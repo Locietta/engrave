@@ -44,7 +44,7 @@ using json = nlohmann::ordered_json;
 namespace music {
 namespace {
 
-std::string str(const muse::String &value) { return value.toStdString(); }
+std::string str(const muse::String &value) { return value.to_std_string(); }
 
 std::string str(muse::AsciiStringView value) { return std::string(value.ascii(), value.size()); }
 
@@ -61,7 +61,7 @@ std::string plain(const muse::String &rich) {
         else if (!tag)
             text.append(rich.at(i));
     }
-    return TextBase::unEscape(text).toStdString();
+    return TextBase::un_escape(text).to_std_string();
 }
 
 std::string fraction(const Fraction &f) { return std::to_string(f.numerator()) + "/" + std::to_string(f.denominator()); }
@@ -92,32 +92,32 @@ const char *staff_group(StaffGroup group) {
 }
 
 // Untranslated subtype label ("Line break", "D.C. al Fine", "8va alta", ...).
-std::string subtype(const EngravingItem *item) { return str(item->subtypeUserName().str); }
+std::string subtype(const EngravingItem *item) { return str(item->subtype_user_name().str); }
 
 json text_item(const EngravingItem *item) {
     json out;
-    out["type"] = str(TConv::toXml(item->type()));
+    out["type"] = str(TConv::to_xml(item->type()));
     out["tick"] = item->tick().ticks();
     out["track"] = static_cast<int>(item->track());
     // Dynamics omit the UI tooltip subtype label ("f (Forte)" vs "f (forte)");
     // the dynamic field below is the stable identity.
-    if (!item->isDynamic()) {
+    if (!item->is_dynamic()) {
         const std::string sub = subtype(item);
         if (!sub.empty()) {
             out["subtype"] = sub;
         }
     }
     // Dynamics render as SMuFL glyphs; their kind is recorded below instead.
-    if (item->isTextBase() && !item->isDynamic()) {
-        out["text"] = str(toTextBase(item)->plainText());
+    if (item->is_text_base() && !item->is_dynamic()) {
+        out["text"] = str(to_text_base(item)->plain_text());
     }
-    if (item->isTempoText()) {
+    if (item->is_tempo_text()) {
         // Quarter-note BPM rounded like test_roundtrip.py rounds <tempo> (beats per second there).
-        out["bpm"] = std::round(toTempoText(item)->tempo().val * 60.0 * 1e4) / 1e4;
-    } else if (item->isDynamic()) {
-        out["dynamic"] = str(TConv::toXml(toDynamic(item)->dynamicType()));
-    } else if (item->isHarmony()) {
-        out["harmony"] = str(toHarmony(item)->harmonyName());
+        out["bpm"] = std::round(to_tempo_text(item)->tempo().val * 60.0 * 1e4) / 1e4;
+    } else if (item->is_dynamic()) {
+        out["dynamic"] = str(TConv::to_xml(to_dynamic(item)->dynamic_type()));
+    } else if (item->is_harmony()) {
+        out["harmony"] = str(to_harmony(item)->harmony_name());
     }
     return out;
 }
@@ -145,7 +145,7 @@ json measure_element_json(const EngravingItem *item) {
             break;
         default:
             // Other system-level elements without a meaningful staff omit track.
-            if (item->systemFlag() && !item->flag(ElementFlag::ON_STAFF)) {
+            if (item->system_flag() && !item->flag(ElementFlag::ON_STAFF)) {
                 out.erase("track");
             }
             break;
@@ -158,8 +158,8 @@ json note_json(const Note *note) {
     out["pitch"] = note->pitch();
     out["tpc1"] = note->tpc1();
     out["tpc2"] = note->tpc2();
-    out["head"] = str(TConv::toXml(note->headGroup()));
-    out["headType"] = str(TConv::toXml(note->headType()));
+    out["head"] = str(TConv::to_xml(note->head_group()));
+    out["headType"] = str(TConv::to_xml(note->head_type()));
     if (note->fret() >= 0 || note->string() >= 0) {
         out["fret"] = note->fret();
         out["string"] = note->string();
@@ -170,10 +170,10 @@ json note_json(const Note *note) {
     if (!note->play()) {
         out["play"] = false;
     }
-    if (const Tie *tie = note->tieFor()) {
+    if (const Tie *tie = note->tie_for()) {
         if (tie->type() == ElementType::LAISSEZ_VIB) {
             out["laissezVib"] = true;
-        } else if (const Note *end = tie->endNote()) {
+        } else if (const Note *end = tie->end_note()) {
             out["tieTo"] = {end->tick().ticks(), static_cast<int>(end->track()), end->pitch()};
         } else {
             out["tieTo"] = nullptr; // partial tie (e.g. into a volta)
@@ -182,8 +182,8 @@ json note_json(const Note *note) {
     json fingerings = json::array();
     json elements = json::array(); // symbols, bends, note-attached text, ...
     for (const EngravingItem *e : const_cast<Note *>(note)->el()) {
-        if (e->isFingering()) {
-            fingerings.push_back(str(toTextBase(e)->plainText()));
+        if (e->is_fingering()) {
+            fingerings.push_back(str(to_text_base(e)->plain_text()));
         } else if (!e->generated()) {
             json item = text_item(e);
             item.erase("tick");
@@ -202,19 +202,19 @@ json note_json(const Note *note) {
 
 json chord_rest_json(const ChordRest *cr) {
     json out;
-    out["kind"] = cr->isChord() ? "chord" : cr->isMeasureRepeat() ? "measureRepeat" : "rest";
+    out["kind"] = cr->is_chord() ? "chord" : cr->is_measure_repeat() ? "measureRepeat" : "rest";
     out["tick"] = cr->tick().ticks();
-    out["ticks"] = cr->isChord() && toChord(cr)->isGrace() ? 0 : cr->actualTicks().ticks();
-    out["duration"] = str(TConv::toXml(cr->durationType().type()));
+    out["ticks"] = cr->is_chord() && to_chord(cr)->is_grace() ? 0 : cr->actual_ticks().ticks();
+    out["duration"] = str(TConv::to_xml(cr->duration_type().type()));
     if (cr->dots()) {
         out["dots"] = cr->dots();
     }
     if (const Tuplet *tuplet = cr->tuplet()) {
         out["tuplet"] = fraction(tuplet->ratio());
     }
-    if (cr->isChord()) {
-        const Chord *chord = toChord(cr);
-        out["grace"] = grace_kind(chord->noteType());
+    if (cr->is_chord()) {
+        const Chord *chord = to_chord(cr);
+        out["grace"] = grace_kind(chord->note_type());
         json notes = json::array();
         for (const Note *note : chord->notes()) {
             notes.push_back(note_json(note));
@@ -222,7 +222,7 @@ json chord_rest_json(const ChordRest *cr) {
         out["notes"] = notes;
         json articulations = json::array();
         for (const Articulation *a : chord->articulations()) {
-            articulations.push_back(str(TConv::toXml(a->symId())));
+            articulations.push_back(str(TConv::to_xml(a->sym_id())));
         }
         if (!articulations.empty()) {
             out["articulations"] = articulations;
@@ -231,30 +231,30 @@ json chord_rest_json(const ChordRest *cr) {
         json elements = json::array();
         for (const EngravingItem *e : const_cast<Chord *>(chord)->el()) {
             if (!e->generated()) {
-                elements.push_back(str(TConv::toXml(e->type())) + ":" + subtype(e));
+                elements.push_back(str(TConv::to_xml(e->type())) + ":" + subtype(e));
             }
         }
         if (chord->arpeggio()) {
             elements.push_back("Arpeggio:" + subtype(chord->arpeggio()));
         }
-        if (chord->tremoloSingleChord()) {
-            elements.push_back("TremoloSingleChord:" + subtype(chord->tremoloSingleChord()));
+        if (chord->tremolo_single_chord()) {
+            elements.push_back("TremoloSingleChord:" + subtype(chord->tremolo_single_chord()));
         }
-        if (chord->tremoloTwoChord()) {
-            elements.push_back("TremoloTwoChord:" + subtype(chord->tremoloTwoChord()));
+        if (chord->tremolo_two_chord()) {
+            elements.push_back("TremoloTwoChord:" + subtype(chord->tremolo_two_chord()));
         }
         if (!elements.empty()) {
             out["elements"] = elements;
         }
-        if (chord->stemDirection() != DirectionV::AUTO) {
-            out["stemDirection"] = str(TConv::toXml(chord->stemDirection()));
+        if (chord->stem_direction() != DirectionV::AUTO) {
+            out["stemDirection"] = str(TConv::to_xml(chord->stem_direction()));
         }
-    } else if (!toRest(cr)->visible()) {
+    } else if (!to_rest(cr)->visible()) {
         out["visible"] = false;
     }
     json lyrics = json::array();
     for (const Lyrics *l : cr->lyrics()) {
-        lyrics.push_back({l->verse(), str(l->plainText())});
+        lyrics.push_back({l->verse(), str(l->plain_text())});
     }
     if (!lyrics.empty()) {
         out["lyrics"] = lyrics;
@@ -264,7 +264,7 @@ json chord_rest_json(const ChordRest *cr) {
 
 json spanner_json(const Spanner *sp) {
     json out;
-    out["type"] = str(TConv::toXml(sp->type()));
+    out["type"] = str(TConv::to_xml(sp->type()));
     out["tick"] = sp->tick().ticks();
     out["tick2"] = sp->tick2().ticks();
     out["track"] = static_cast<int>(sp->track());
@@ -274,11 +274,11 @@ json spanner_json(const Spanner *sp) {
         out["subtype"] = sub;
     }
     out["anchor"] = static_cast<int>(sp->anchor());
-    if (sp->isVolta()) {
-        out["endings"] = toVolta(sp)->endings();
+    if (sp->is_volta()) {
+        out["endings"] = to_volta(sp)->endings();
     }
-    if (sp->isTextLineBase()) {
-        const std::string begin = str(toTextLineBase(sp)->beginText());
+    if (sp->is_text_line_base()) {
+        const std::string begin = str(to_text_line_base(sp)->begin_text());
         if (!begin.empty()) {
             out["beginText"] = begin;
         }
@@ -288,17 +288,17 @@ json spanner_json(const Spanner *sp) {
 
 json part_json(const Part *part) {
     json out;
-    out["id"] = part->id().toStdString();
-    out["partName"] = plain(part->partName());
-    out["longName"] = plain(part->longName());
-    out["shortName"] = plain(part->shortName());
-    out["instrumentId"] = str(part->instrumentId());
+    out["id"] = part->id().to_std_string();
+    out["partName"] = plain(part->part_name());
+    out["longName"] = plain(part->long_name());
+    out["shortName"] = plain(part->short_name());
+    out["instrumentId"] = str(part->instrument_id());
     out["show"] = part->show();
     const Interval transpose = part->instrument()->transpose();
     out["transpose"] = {transpose.chromatic, transpose.diatonic};
     json staves = json::array();
     for (const Staff *staff : part->staves()) {
-        const StaffType *type = staff->staffType(Fraction(0, 1));
+        const StaffType *type = staff->staff_type(Fraction(0, 1));
         staves.push_back({
             {"index", static_cast<int>(staff->idx())},
             {"group", staff_group(type->group())},
@@ -338,13 +338,13 @@ json score_body(Score *score) {
         events.push_back(json::array({json::array(), json::array(), json::array(), json::array()}));
     }
 
-    for (const Measure *m = score->firstMeasure(); m; m = m->nextMeasure()) {
+    for (const Measure *m = score->first_measure(); m; m = m->next_measure()) {
         json measure;
         measure["tick"] = m->tick().ticks();
         measure["ticks"] = m->ticks().ticks();
         measure["timesig"] = fraction(m->timesig());
-        measure["startRepeat"] = m->repeatStart();
-        measure["endRepeat"] = m->repeatEnd() ? m->repeatCount() : 0;
+        measure["startRepeat"] = m->repeat_start();
+        measure["endRepeat"] = m->repeat_end() ? m->repeat_count() : 0;
         if (m->flag(ElementFlag::EXCLUDE_FROM_NUMBERING)) {
             // 5.0 renamed the "irregular" measure flag (Pid::IRREGULAR) to this.
             measure["irregular"] = true;
@@ -367,41 +367,41 @@ json score_body(Score *score) {
                     annotations.push_back(text_item(a));
                 }
             }
-            for (size_t track = 0; track < nstaves * VOICES; ++track) {
+            for (size_t track = 0; track < nstaves * ::mu::engraving::voices; ++track) {
                 const EngravingItem *e = seg->element(static_cast<track_idx_t>(track));
                 if (!e || e->generated()) {
                     continue;
                 }
-                const size_t staff = track / VOICES;
-                if (e->isChordRest()) {
-                    const ChordRest *cr = toChordRest(e);
-                    json &voice = events[staff][track % VOICES];
-                    if (cr->isChord()) {
-                        for (const Chord *g : toChord(cr)->graceNotesBefore()) {
+                const size_t staff = track / ::mu::engraving::voices;
+                if (e->is_chord_rest()) {
+                    const ChordRest *cr = to_chord_rest(e);
+                    json &voice = events[staff][track % ::mu::engraving::voices];
+                    if (cr->is_chord()) {
+                        for (const Chord *g : to_chord(cr)->grace_notes_before()) {
                             voice.push_back(chord_rest_json(g));
                         }
                     }
                     voice.push_back(chord_rest_json(cr));
-                    if (cr->isChord()) {
-                        for (const Chord *g : toChord(cr)->graceNotesAfter()) {
+                    if (cr->is_chord()) {
+                        for (const Chord *g : to_chord(cr)->grace_notes_after()) {
                             voice.push_back(chord_rest_json(g));
                         }
                     }
-                } else if (e->isClef()) {
+                } else if (e->is_clef()) {
                     signatures.push_back({{"type", "Clef"},
                                           {"tick", seg->tick().ticks()},
                                           {"staff", staff},
-                                          {"value", str(TConv::toXml(toClef(e)->clefType()))}});
-                } else if (e->isKeySig()) {
-                    const KeySig *k = toKeySig(e);
+                                          {"value", str(TConv::to_xml(to_clef(e)->clef_type()))}});
+                } else if (e->is_key_sig()) {
+                    const KeySig *k = to_key_sig(e);
                     signatures.push_back({{"type", "KeySig"},
                                           {"tick", seg->tick().ticks()},
                                           {"staff", staff},
-                                          {"value", static_cast<int>(k->concertKey())},
+                                          {"value", static_cast<int>(k->concert_key())},
                                           {"key", static_cast<int>(k->key())}});
-                } else if (e->isTimeSig()) {
+                } else if (e->is_time_sig()) {
                     signatures.push_back(
-                        {{"type", "TimeSig"}, {"tick", seg->tick().ticks()}, {"staff", staff}, {"value", fraction(toTimeSig(e)->sig())}});
+                        {{"type", "TimeSig"}, {"tick", seg->tick().ticks()}, {"staff", staff}, {"value", fraction(to_time_sig(e)->sig())}});
                 } else {
                     // Breaths, user barlines, ambitus, ...
                     segment_elements.push_back(text_item(e));
@@ -417,7 +417,7 @@ json score_body(Score *score) {
     out["segmentElements"] = segment_elements;
 
     json spanners = json::array();
-    for (const auto &entry : score->spannerMap().map()) {
+    for (const auto &entry : score->spanner_map().map()) {
         const Spanner *sp = entry.second;
         if (!sp->generated()) {
             spanners.push_back(spanner_json(sp));
@@ -434,7 +434,7 @@ json semantic_dump(MasterScore *score) {
     json out;
     out["schema"] = 1;
     json meta = json::object();
-    for (const auto &[name, value] : score->metaTags()) {
+    for (const auto &[name, value] : score->meta_tags()) {
         if (name != u"creationDate" && name != u"platform") {
             meta[str(name)] = str(value);
         }
@@ -445,14 +445,14 @@ json semantic_dump(MasterScore *score) {
     // replacement for the 4.x TempoMap it replaced: one point per tempo marking,
     // per resampled gradual-change step and per pause, keyed by score tick.
     json tempo = json::array();
-    for (const TempoTimePoint &point : score->tempoTimeline(false).points()) {
+    for (const TempoTimePoint &point : score->tempo_timeline(false).points()) {
         tempo.push_back({point.utick, std::round(point.bps * 60.0 * 1e4) / 1e4});
     }
     out["tempoMap"] = tempo;
 
-    score->setExpandRepeats(true);
+    score->set_expand_repeats(true);
     json playback = json::array();
-    for (const RepeatSegment *rs : score->repeatList()) {
+    for (const RepeatSegment *rs : score->repeat_list()) {
         playback.push_back({rs->tick, rs->len(), rs->utick});
     }
     out["playbackOrder"] = playback;
@@ -465,10 +465,10 @@ json semantic_dump(MasterScore *score) {
         e["name"] = str(excerpt->name());
         json part_ids = json::array();
         for (const Part *p : excerpt->parts()) {
-            part_ids.push_back(p->id().toStdString());
+            part_ids.push_back(p->id().to_std_string());
         }
         e["partIds"] = part_ids;
-        if (Score *es = excerpt->excerptScore()) {
+        if (Score *es = excerpt->excerpt_score()) {
             e["score"] = score_body(es);
         }
         excerpts.push_back(e);

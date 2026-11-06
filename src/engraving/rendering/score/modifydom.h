@@ -35,14 +35,14 @@ namespace mu::engraving::rendering::score {
 class ModifyDom {
 public:
 
-    static void setCrossMeasure(const Measure *measure, LayoutContext &ctx);
-    static void connectTremolo(Measure *m);
-    static void cmdUpdateNotes(const Measure *measure, const DomAccessor &dom);
-    static void createStems(const Measure *measure, LayoutContext &ctx);
-    static void setTrackForChordGraceNotes(Measure *measure, const DomAccessor &dom);
-    static void sortMeasureSegments(Measure *measure, LayoutContext &ctx);
+    static void set_cross_measure(const Measure *measure, LayoutContext &ctx);
+    static void connect_tremolo(Measure *m);
+    static void cmd_update_notes(const Measure *measure, const DomAccessor &dom);
+    static void create_stems(const Measure *measure, LayoutContext &ctx);
+    static void set_track_for_chord_grace_notes(Measure *measure, const DomAccessor &dom);
+    static void sort_measure_segments(Measure *measure, LayoutContext &ctx);
 private:
-    static void removeAndAddBeginSegments(Measure *measure);
+    static void remove_and_add_begin_segments(Measure *measure);
 };
 } // namespace mu::engraving::rendering::score
 

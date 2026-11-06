@@ -29,27 +29,27 @@ using namespace mu::engraving::write;
 
 std::shared_ptr<IEngravingConfiguration> WriteContext::configuration() const { return score_->configuration(); }
 
-bool WriteContext::canWrite(const EngravingItem *e) const {
-    if (!_filter.has_value()) {
+bool WriteContext::can_write(const EngravingItem *e) const {
+    if (!filter.has_value()) {
         return true;
     }
 
-    return _filter.value().canSelect(e);
+    return filter.value().can_select(e);
 }
 
-bool WriteContext::canWriteNoteIdx(size_t noteIdx, size_t totalNotesInChord) const {
-    if (!_filter.has_value()) {
+bool WriteContext::can_write_note_idx(size_t note_idx, size_t total_notes_in_chord) const {
+    if (!filter.has_value()) {
         return true;
     }
 
     const Selection &sel = score_->selection();
-    return _filter.value().canSelectNoteIdx(noteIdx, totalNotesInChord, sel.rangeContainsMultiNoteChords());
+    return filter.value().can_select_note_idx(note_idx, total_notes_in_chord, sel.range_contains_multi_note_chords());
 }
 
-bool WriteContext::canWriteVoice(track_idx_t track) const {
-    if (!_filter.has_value()) {
+bool WriteContext::can_write_voice(track_idx_t track) const {
+    if (!filter.has_value()) {
         return true;
     }
 
-    return _filter.value().canSelectVoice(track);
+    return filter.value().can_select_voice(track);
 }

@@ -24,17 +24,17 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-GuitarBendImporter::GuitarBendImporter(Score *score) : bendCollector_(score), score_(score) {}
+GuitarBendImporter::GuitarBendImporter(Score *score) : bend_collector_(score), score_(score) {}
 
-void GuitarBendImporter::collectBend(Note *note, const mu::engraving::PitchValues &pitchValues) {
-    bendCollector_.storeBendData(note, pitchValues);
+void GuitarBendImporter::collect_bend(Note *note, const mu::engraving::PitchValues &pitch_values) {
+    bend_collector_.store_bend_data(note, pitch_values);
 }
 
-void GuitarBendImporter::collectDive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues) {
-    diveCollector_.collectDiveData(chord, pitchValues);
+void GuitarBendImporter::collect_dive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitch_values) {
+    dive_collector_.collect_dive_data(chord, pitch_values);
 }
 
-void GuitarBendImporter::addElementsToScore() {
-    bendBuilder_.addElementsToScore(score_, bendCollector_.collectBendDataContext(), diveCollector_.context());
+void GuitarBendImporter::add_elements_to_score() {
+    bend_builder_.add_elements_to_score(score_, bend_collector_.collect_bend_data_context(), dive_collector_.context());
 }
 } // namespace mu::iex::guitarpro

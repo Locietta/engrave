@@ -37,12 +37,12 @@ int main(int argc, char **argv) {
 <barline location="right"><repeat direction="backward"/></barline></measure></part>
 </score-partwise>)",
                                                       "musicxml");
-        auto *score = project->masterScore();
+        auto *score = project->master_score();
         for (bool expanded : {false, true}) {
             for (bool segments : {false, true}) {
-                score->setExpandRepeats(expanded);
+                score->set_expand_repeats(expanded);
                 const auto data = music::score_positions(score, segments);
-                expect(score->expandRepeats() == expanded, "Position query changed repeat setting");
+                expect(score->expand_repeats() == expanded, "Position query changed repeat setting");
                 expect(data.at("elements").size() == 1 && data.at("events").size() == 2, "Position query failed to expand the repeat");
             }
         }
@@ -61,26 +61,27 @@ int main(int argc, char **argv) {
 <measure number="5"><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
 </part></score-partwise>)",
                                                      "musicxml");
-        auto *mmScore = mmrest->masterScore();
-        auto *mmFirst = mmScore->firstMeasureMM();
-        expect(mmFirst && mmFirst->isMMRest() && mmFirst->mmRestCount() == 4,
+        auto *mm_score = mmrest->master_score();
+        auto *mm_first = mm_score->first_measure_mm();
+        expect(mm_first && mm_first->is_mm_rest() && mm_first->mm_rest_count() == 4,
                "MusicXML multiple-rest was not imported as a multi-measure rest");
-        auto *mmNext = mmFirst->nextMeasureMM();
-        expect(mmNext && !mmNext->isMMRest() && !mmNext->nextMeasureMM(), "Multi-measure rest did not cover the four underlying measures");
+        auto *mm_next = mm_first->next_measure_mm();
+        expect(mm_next && !mm_next->is_mm_rest() && !mm_next->next_measure_mm(),
+               "Multi-measure rest did not cover the four underlying measures");
         // Upstream PositionJsonWriter iterates firstMeasureMM/nextMeasureMM, so a
         // four-measure rest contributes one element at its start, not four.
-        const auto mmMeasures = music::score_positions(mmScore, false);
-        expect(mmMeasures.at("elements").size() == 2 && mmMeasures.at("events").size() == 2,
+        const auto mm_measures = music::score_positions(mm_score, false);
+        expect(mm_measures.at("elements").size() == 2 && mm_measures.at("events").size() == 2,
                "Measure positions did not follow upstream multi-measure rest iteration");
-        expect(mmMeasures.at("events")[0].at("position") == 0 && mmMeasures.at("events")[1].at("position") == 8000,
+        expect(mm_measures.at("events")[0].at("position") == 0 && mm_measures.at("events")[1].at("position") == 8000,
                "Measure positions do not span the multi-measure rest in milliseconds");
-        check_on_page(mmMeasures);
-        const auto mmSegments = music::score_positions(mmScore, true);
-        expect(mmSegments.at("elements").size() == 2 && mmSegments.at("events").size() == 2,
+        check_on_page(mm_measures);
+        const auto mm_segments = music::score_positions(mm_score, true);
+        expect(mm_segments.at("elements").size() == 2 && mm_segments.at("events").size() == 2,
                "Segment positions did not follow upstream multi-measure rest iteration");
-        expect(mmSegments.at("events")[0].at("position") == 0 && mmSegments.at("events")[1].at("position") == 8000,
+        expect(mm_segments.at("events")[0].at("position") == 0 && mm_segments.at("events")[1].at("position") == 8000,
                "Segment positions do not span the multi-measure rest in milliseconds");
-        check_on_page(mmSegments);
+        check_on_page(mm_segments);
         bool rejected = false;
         try {
             music::score_positions(nullptr, false);

@@ -34,18 +34,18 @@ bool PainterItemMarker::enabled = true;
 
 Painter::Painter(IPaintProviderPtr provider, const std::string &name) : provider_(provider), name_(name) { init(); }
 
-Painter::~Painter() { endTarget(false); }
+Painter::~Painter() { end_target(false); }
 
 void Painter::init() {
-    provider_->beginTarget(name_);
+    provider_->begin_target(name_);
     if (extended) {
-        extended->beginTarget(name_);
+        extended->begin_target(name_);
     }
 
     State st;
-    st.worldTransform = provider_->transform();
-    st.isWxF = true;
-    st.transform = st.worldTransform;
+    st.world_transform = provider_->transform();
+    st.is_wx_f = true;
+    st.transform = st.world_transform;
 
     states_ = std::stack<State>();
     states_.push(std::move(st));
@@ -53,90 +53,90 @@ void Painter::init() {
 
 IPaintProviderPtr Painter::provider() const { return provider_; }
 
-void Painter::setProvider(const IPaintProviderPtr &p, bool reinit) {
+void Painter::set_provider(const IPaintProviderPtr &p, bool reinit) {
     provider_ = p;
     if (reinit) {
         init();
     }
 }
 
-bool Painter::endDraw() { return endTarget(true); }
+bool Painter::end_draw() { return end_target(true); }
 
-bool Painter::endTarget(bool endDraw) {
-    provider_->beforeEndTargetHook(this);
+bool Painter::end_target(bool end_draw) {
+    provider_->before_end_target_hook(this);
     if (extended) {
-        extended->beforeEndTargetHook(this);
+        extended->before_end_target_hook(this);
     }
 
-    bool ok = provider_->endTarget(endDraw);
+    bool ok = provider_->end_target(end_draw);
     if (extended) {
-        extended->endTarget(endDraw);
+        extended->end_target(end_draw);
     }
     return ok;
 }
 
-bool Painter::isActive() const { return provider_->isActive(); }
+bool Painter::is_active() const { return provider_->is_active(); }
 
-void Painter::beginObject(const std::string &name) {
-    provider_->beginObject(name);
+void Painter::begin_object(const std::string &name) {
+    provider_->begin_object(name);
     if (extended) {
-        extended->beginObject(name);
+        extended->begin_object(name);
     }
 }
 
-void Painter::endObject() {
-    provider_->endObject();
+void Painter::end_object() {
+    provider_->end_object();
     if (extended) {
-        extended->endObject();
+        extended->end_object();
     }
 }
 
-void Painter::setAntialiasing(bool arg) {
-    provider_->setAntialiasing(arg);
+void Painter::set_antialiasing(bool arg) {
+    provider_->set_antialiasing(arg);
     if (extended) {
-        extended->setAntialiasing(arg);
+        extended->set_antialiasing(arg);
     }
 }
 
-void Painter::setCompositionMode(CompositionMode mode) {
-    provider_->setCompositionMode(mode);
+void Painter::set_composition_mode(CompositionMode mode) {
+    provider_->set_composition_mode(mode);
     if (extended) {
-        extended->setCompositionMode(mode);
+        extended->set_composition_mode(mode);
     }
 }
 
-void Painter::setFont(const Font &font) {
-    provider_->setFont(font);
+void Painter::set_font(const Font &font) {
+    provider_->set_font(font);
     if (extended) {
-        extended->setFont(font);
+        extended->set_font(font);
     }
 }
 
 const Font &Painter::font() const { return provider_->font(); }
 
-void Painter::setPen(const Pen &pen) {
-    provider_->setPen(pen);
+void Painter::set_pen(const Pen &pen) {
+    provider_->set_pen(pen);
     if (extended) {
-        extended->setPen(pen);
+        extended->set_pen(pen);
     }
 }
 
-void Painter::setNoPen() { setPen(Pen(PenStyle::NoPen)); }
+void Painter::set_no_pen() { set_pen(Pen(PenStyle::NO_PEN)); }
 
 const Pen &Painter::pen() const { return provider_->pen(); }
 
-void Painter::setBrush(const Brush &brush) {
-    provider_->setBrush(brush);
+void Painter::set_brush(const Brush &brush) {
+    provider_->set_brush(brush);
     if (extended) {
-        extended->setBrush(brush);
+        extended->set_brush(brush);
     }
 }
 
 const Brush &Painter::brush() const { return provider_->brush(); }
 
 void Painter::save() {
-    State newSt = states_.top();
-    states_.push(newSt);
+    State new_st = states_.top();
+    states_.push(new_st);
 
     provider_->save();
     if (extended) {
@@ -155,281 +155,282 @@ void Painter::restore() {
     }
 }
 
-double Painter::deviceLogicalDpi() const { return provider_->deviceLogicalDpi(); }
+double Painter::device_logical_dpi() const { return provider_->device_logical_dpi(); }
 
-void Painter::setWorldTransform(const Transform &matrix, bool combine) {
-    State &st = editableState();
+void Painter::set_world_transform(const Transform &matrix, bool combine) {
+    State &st = editable_state();
     if (combine) {
-        st.worldTransform = matrix * st.worldTransform; // combines
+        st.world_transform = matrix * st.world_transform; // combines
     } else {
-        st.worldTransform = matrix; // set new matrix
+        st.world_transform = matrix; // set new matrix
     }
-    st.isWxF = true;
-    updateMatrix();
+    st.is_wx_f = true;
+    update_matrix();
 }
 
-const Transform &Painter::worldTransform() const { return state().worldTransform; }
+const Transform &Painter::world_transform() const { return state().world_transform; }
 
 void Painter::scale(double sx, double sy) {
-    State &st = editableState();
-    st.worldTransform.scale(sx, sy);
-    st.isWxF = true;
-    updateMatrix();
+    State &st = editable_state();
+    st.world_transform.scale(sx, sy);
+    st.is_wx_f = true;
+    update_matrix();
 }
 
 void Painter::rotate(double angle) {
-    State &st = editableState();
-    st.worldTransform.rotate(angle);
-    st.isWxF = true;
-    updateMatrix();
+    State &st = editable_state();
+    st.world_transform.rotate(angle);
+    st.is_wx_f = true;
+    update_matrix();
 }
 
 void Painter::translate(double dx, double dy) {
-    State &st = editableState();
-    st.worldTransform.translate(dx, dy);
-    st.isWxF = true;
-    updateMatrix();
+    State &st = editable_state();
+    st.world_transform.translate(dx, dy);
+    st.is_wx_f = true;
+    update_matrix();
 }
 
 RectF Painter::window() const { return state().window; }
 
-void Painter::setWindow(const RectF &window) {
-    State &st = editableState();
+void Painter::set_window(const RectF &window) {
+    State &st = editable_state();
     st.window = window;
-    st.isVxF = true;
-    updateViewTransform();
+    st.is_vx_f = true;
+    update_view_transform();
 
     // for debug purpose
-    provider_->setWindow(window);
+    provider_->set_window(window);
     if (extended) {
-        extended->setWindow(window);
+        extended->set_window(window);
     }
 }
 
 RectF Painter::viewport() const { return state().viewport; }
 
-void Painter::setViewport(const RectF &viewport) {
-    State &st = editableState();
+void Painter::set_viewport(const RectF &viewport) {
+    State &st = editable_state();
     st.viewport = viewport;
-    st.isVxF = true;
-    updateViewTransform();
+    st.is_vx_f = true;
+    update_view_transform();
 
     // for debug purpose
-    provider_->setViewport(viewport);
+    provider_->set_viewport(viewport);
     if (extended) {
-        extended->setViewport(viewport);
+        extended->set_viewport(viewport);
     }
 }
 
 // drawing functions
 
-void Painter::fillPath(const PainterPath &path, const Brush &brush) {
-    Pen oldPen = this->pen();
-    Brush oldBrush = this->brush();
-    setPen(Pen(PenStyle::NoPen));
-    setBrush(brush);
+void Painter::fill_path(const PainterPath &path, const Brush &brush) {
+    Pen old_pen = this->pen();
+    Brush old_brush = this->brush();
+    set_pen(Pen(PenStyle::NO_PEN));
+    set_brush(brush);
 
-    drawPath(path);
+    draw_path(path);
 
-    setPen(oldPen);
-    setBrush(oldBrush);
+    set_pen(old_pen);
+    set_brush(old_brush);
 }
 
-void Painter::strokePath(const PainterPath &path, const Pen &pen) {
-    Pen oldPen = this->pen();
-    Brush oldBrush = this->brush();
-    setPen(pen);
-    setBrush(BrushStyle::NoBrush);
+void Painter::stroke_path(const PainterPath &path, const Pen &pen) {
+    Pen old_pen = this->pen();
+    Brush old_brush = this->brush();
+    set_pen(pen);
+    set_brush(BrushStyle::NO_BRUSH);
 
-    drawPath(path);
+    draw_path(path);
 
-    setPen(oldPen);
-    setBrush(oldBrush);
+    set_pen(old_pen);
+    set_brush(old_brush);
 }
 
-void Painter::drawPath(const PainterPath &path) {
-    provider_->drawPath(path);
+void Painter::draw_path(const PainterPath &path) {
+    provider_->draw_path(path);
     if (extended) {
-        extended->drawPath(path);
+        extended->draw_path(path);
     }
 }
 
-void Painter::drawLines(const LineF *lines, size_t lineCount) {
-    for (size_t i = 0; i < lineCount; ++i) {
+void Painter::draw_lines(const LineF *lines, size_t line_count) {
+    for (size_t i = 0; i < line_count; ++i) {
         PointF pts[2] = {lines[i].p1(), lines[i].p2()};
         if (pts[0] == pts[1]) {
             LOGE() << "draw point not implemented";
         }
-        drawPolyline(pts, 2);
+        draw_polyline(pts, 2);
     }
 }
 
-void Painter::drawLines(const PointF *pointPairs, size_t lineCount) {
+void Painter::draw_lines(const PointF *point_pairs, size_t line_count) {
     static_assert(sizeof(LineF) == 2 * sizeof(PointF), "must be: sizeof(LineF) == 2 * sizeof(PointF)");
 
-    drawLines((const LineF *) pointPairs, lineCount);
+    draw_lines((const LineF *) point_pairs, line_count);
 }
 
-void Painter::drawRects(const RectF *rects, size_t rectCount) {
-    for (size_t i = 0; i < rectCount; ++i) {
+void Painter::draw_rects(const RectF *rects, size_t rect_count) {
+    for (size_t i = 0; i < rect_count; ++i) {
         PainterPath path;
-        path.addRect(rects[i]);
-        if (path.isEmpty()) {
+        path.add_rect(rects[i]);
+        if (path.is_empty()) {
             continue;
         }
-        drawPath(path);
+        draw_path(path);
     }
 }
 
-void Painter::drawEllipse(const RectF &rect) {
+void Painter::draw_ellipse(const RectF &rect) {
     PainterPath path;
-    path.addEllipse(rect);
-    provider_->drawPath(path);
+    path.add_ellipse(rect);
+    provider_->draw_path(path);
     if (extended) {
-        extended->drawPath(path);
+        extended->draw_path(path);
     }
 }
 
-void Painter::drawPolyline(const PointF *points, size_t pointCount) {
-    provider_->drawPolygon(points, pointCount, PolygonMode::Polyline);
+void Painter::draw_polyline(const PointF *points, size_t point_count) {
+    provider_->draw_polygon(points, point_count, PolygonMode::POLYLINE);
     if (extended) {
-        extended->drawPolygon(points, pointCount, PolygonMode::Polyline);
+        extended->draw_polygon(points, point_count, PolygonMode::POLYLINE);
     }
 }
 
-void Painter::drawPolygon(const PointF *points, size_t pointCount, FillRule fillRule) {
-    PolygonMode mode = (fillRule == FillRule::OddEvenFill) ? PolygonMode::OddEven : PolygonMode::Winding;
-    provider_->drawPolygon(points, pointCount, mode);
+void Painter::draw_polygon(const PointF *points, size_t point_count, FillRule fill_rule) {
+    PolygonMode mode = (fill_rule == FillRule::ODD_EVEN_FILL) ? PolygonMode::ODD_EVEN : PolygonMode::WINDING;
+    provider_->draw_polygon(points, point_count, mode);
     if (extended) {
-        extended->drawPolygon(points, pointCount, mode);
+        extended->draw_polygon(points, point_count, mode);
     }
 }
 
-void Painter::drawConvexPolygon(const PointF *points, size_t pointCount) {
-    provider_->drawPolygon(points, pointCount, PolygonMode::Convex);
+void Painter::draw_convex_polygon(const PointF *points, size_t point_count) {
+    provider_->draw_polygon(points, point_count, PolygonMode::CONVEX);
     if (extended) {
-        extended->drawPolygon(points, pointCount, PolygonMode::Convex);
+        extended->draw_polygon(points, point_count, PolygonMode::CONVEX);
     }
 }
 
-void Painter::drawArc(const RectF &r, int a, int alen) {
+void Painter::draw_arc(const RectF &r, int a, int alen) {
     //! NOTE Copied from QPainter source code
 
     RectF rect = r.normalized();
 
     PainterPath path;
-    path.arcMoveTo(rect, a / 16.0);
-    path.arcTo(rect, a / 16.0, alen / 16.0);
-    strokePath(path, pen());
+    path.arc_move_to(rect, a / 16.0);
+    path.arc_to(rect, a / 16.0, alen / 16.0);
+    stroke_path(path, pen());
 }
 
-void Painter::drawRoundedRect(const RectF &rect, double xRadius, double yRadius) {
-    if (xRadius <= 0 || yRadius <= 0) { // draw normal rectangle
-        drawRect(rect);
+void Painter::draw_rounded_rect(const RectF &rect, double x_radius, double y_radius) {
+    if (x_radius <= 0 || y_radius <= 0) { // draw normal rectangle
+        draw_rect(rect);
         return;
     }
 
     PainterPath path;
-    path.addRoundedRect(rect, xRadius, yRadius);
-    drawPath(path);
+    path.add_rounded_rect(rect, x_radius, y_radius);
+    draw_path(path);
 }
 
-void Painter::applyFontSizeScaling() {
-    static constexpr double MU_ENGRAVING_DPI = 1200; // Same as mu::engraving::DPI. TODO: pass as parameter.
+void Painter::apply_font_size_scaling() {
+    static constexpr double mu_engraving_dpi = 1200; // Same as mu::engraving::DPI. TODO: pass as parameter.
     Font f = font();
-    double scaledPointSize = f.pointSizeF() * MU_ENGRAVING_DPI / deviceLogicalDpi();
-    f.setPointSizeF(scaledPointSize);
-    setFont(f);
+    double scaled_point_size = f.point_size_f() * mu_engraving_dpi / device_logical_dpi();
+    f.set_point_size_f(scaled_point_size);
+    set_font(f);
 }
 
-void Painter::drawText(const PointF &point, const String &text) {
-    applyFontSizeScaling();
+void Painter::draw_text(const PointF &point, const String &text) {
+    apply_font_size_scaling();
 
-    provider_->drawText(point, text);
+    provider_->draw_text(point, text);
     if (extended) {
-        extended->drawText(point, text);
+        extended->draw_text(point, text);
     }
 }
 
-void Painter::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
-    applyFontSizeScaling();
+void Painter::draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text) {
+    apply_font_size_scaling();
 
-    provider_->drawText(rect, alignment, textFlags, text);
+    provider_->draw_text(rect, alignment, text_flags, text);
     if (extended) {
-        extended->drawText(rect, alignment, textFlags, text);
+        extended->draw_text(rect, alignment, text_flags, text);
     }
 }
 
-void Painter::drawSymbol(const PointF &point, char32_t ucs4Code) {
-    applyFontSizeScaling();
+void Painter::draw_symbol(const PointF &point, char32_t ucs4_code) {
+    apply_font_size_scaling();
 
-    provider_->drawSymbol(point, ucs4Code);
+    provider_->draw_symbol(point, ucs4_code);
     if (extended) {
-        extended->drawSymbol(point, ucs4Code);
+        extended->draw_symbol(point, ucs4_code);
     }
 }
 
-void Painter::fillRect(const RectF &rect, const Brush &brush) {
-    Pen oldPen = this->pen();
-    Brush oldBrush = this->brush();
-    setPen(Pen(PenStyle::NoPen));
-    setBrush(brush);
+void Painter::fill_rect(const RectF &rect, const Brush &brush) {
+    Pen old_pen = this->pen();
+    Brush old_brush = this->brush();
+    set_pen(Pen(PenStyle::NO_PEN));
+    set_brush(brush);
 
-    drawRect(rect);
+    draw_rect(rect);
 
-    setBrush(oldBrush);
-    setPen(oldPen);
+    set_brush(old_brush);
+    set_pen(old_pen);
 }
 
-void Painter::drawPixmap(const PointF &point, const Pixmap &pm) {
-    provider_->drawPixmap(point, pm);
+void Painter::draw_pixmap(const PointF &point, const Pixmap &pm) {
+    provider_->draw_pixmap(point, pm);
     if (extended) {
-        extended->drawPixmap(point, pm);
+        extended->draw_pixmap(point, pm);
     }
 }
 
-void Painter::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
-    provider_->drawTiledPixmap(rect, pm, offset);
+void Painter::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
+    provider_->draw_tiled_pixmap(rect, pm, offset);
     if (extended) {
-        extended->drawTiledPixmap(rect, pm, offset);
+        extended->draw_tiled_pixmap(rect, pm, offset);
     }
 }
 
-Painter::State &Painter::editableState() { return states_.top(); }
+Painter::State &Painter::editable_state() { return states_.top(); }
 
 const Painter::State &Painter::state() const { return states_.top(); }
 
-void Painter::updateViewTransform() {
-    State &st = editableState();
-    if (st.window.isNull()) {
-        st.viewTransform = Transform();
-        updateMatrix();
+void Painter::update_view_transform() {
+    State &st = editable_state();
+    if (st.window.is_null()) {
+        st.view_transform = Transform();
+        update_matrix();
         return;
     }
 
-    double scaleW = double(st.viewport.width()) / double(st.window.width());
-    double scaleH = double(st.viewport.height()) / double(st.window.height());
-    st.viewTransform = Transform(scaleW, 0, 0, scaleH, st.viewport.x() - st.window.x() * scaleW, st.viewport.y() - st.window.y() * scaleH);
-    updateMatrix();
+    double scale_w = double(st.viewport.width()) / double(st.window.width());
+    double scale_h = double(st.viewport.height()) / double(st.window.height());
+    st.view_transform =
+        Transform(scale_w, 0, 0, scale_h, st.viewport.x() - st.window.x() * scale_w, st.viewport.y() - st.window.y() * scale_h);
+    update_matrix();
 }
 
-void Painter::updateMatrix() {
-    Painter::State &st = editableState();
-    st.transform = st.isWxF ? st.worldTransform : Transform();
-    if (st.isVxF) {
-        st.transform *= st.viewTransform;
+void Painter::update_matrix() {
+    Painter::State &st = editable_state();
+    st.transform = st.is_wx_f ? st.world_transform : Transform();
+    if (st.is_vx_f) {
+        st.transform *= st.view_transform;
     }
 
-    provider_->setTransform(st.transform);
+    provider_->set_transform(st.transform);
     if (extended) {
-        extended->setTransform(st.transform);
+        extended->set_transform(st.transform);
     }
 }
 
-bool Painter::hasClipping() const { return provider_->hasClipping(); }
+bool Painter::has_clipping() const { return provider_->has_clipping(); }
 
-void Painter::setClipRect(const RectF &rect) { provider_->setClipRect(rect); }
+void Painter::set_clip_rect(const RectF &rect) { provider_->set_clip_rect(rect); }
 
-void Painter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { provider_->setMask(background, maskRects); }
+void Painter::set_mask(const RectF &background, const std::vector<RectF> &mask_rects) { provider_->set_mask(background, mask_rects); }
 
-void Painter::setClipping(bool enable) { provider_->setClipping(enable); }
+void Painter::set_clipping(bool enable) { provider_->set_clipping(enable); }

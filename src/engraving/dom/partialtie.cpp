@@ -8,92 +8,92 @@
 namespace mu::engraving {
 PartialTie::PartialTie(DummyParentOr<Note> parent) : Tie(ElementType::PARTIAL_TIE, parent) {}
 
-mu::engraving::PropertyValue mu::engraving::PartialTie::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::PARTIAL_SPANNER_DIRECTION: return partialSpannerDirection();
-        default: return Tie::getProperty(propertyId);
+mu::engraving::PropertyValue mu::engraving::PartialTie::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::PARTIAL_SPANNER_DIRECTION: return partial_spanner_direction();
+        default: return Tie::get_property(property_id);
     }
 }
 
-PropertyValue PartialTie::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue PartialTie::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::PARTIAL_SPANNER_DIRECTION: return PartialSpannerDirection::OUTGOING;
-        default: return Tie::propertyDefault(propertyId);
+        default: return Tie::property_default(property_id);
     }
 }
 
-bool PartialTie::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::PARTIAL_SPANNER_DIRECTION: setPartialSpannerDirection(v.value<PartialSpannerDirection>()); break;
-        default: return Tie::setProperty(propertyId, v);
+bool PartialTie::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::PARTIAL_SPANNER_DIRECTION: set_partial_spanner_direction(v.value<PartialSpannerDirection>()); break;
+        default: return Tie::set_property(property_id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
-SlurTieSegment *PartialTie::newSlurTieSegment() {
+SlurTieSegment *PartialTie::new_slur_tie_segment() {
     PartialTieSegment *seg = new PartialTieSegment(this);
-    seg->setTrack(track());
+    seg->set_track(track());
     return seg;
 }
 
-void PartialTie::setStartNote(Note *note) {
-    setPartialSpannerDirection(PartialSpannerDirection::OUTGOING);
-    Tie::setStartNote(note);
-    Tie::setEndNote(nullptr);
+void PartialTie::set_start_note(Note *note) {
+    set_partial_spanner_direction(PartialSpannerDirection::OUTGOING);
+    Tie::set_start_note(note);
+    Tie::set_end_note(nullptr);
 }
 
-void PartialTie::setEndNote(Note *note) {
-    setPartialSpannerDirection(PartialSpannerDirection::INCOMING);
-    Tie::setStartNote(nullptr);
-    Tie::setEndNote(note);
-    setOwnershipParent(note);
+void PartialTie::set_end_note(Note *note) {
+    set_partial_spanner_direction(PartialSpannerDirection::INCOMING);
+    Tie::set_start_note(nullptr);
+    Tie::set_end_note(note);
+    set_ownership_parent(note);
 }
 
-bool PartialTie::allJumpPointsInactive() const {
-    if (!isOutgoing()) {
+bool PartialTie::all_jump_points_inactive() const {
+    if (!is_outgoing()) {
         return false;
     }
-    return Tie::allJumpPointsInactive();
+    return Tie::all_jump_points_inactive();
 }
 
-TieJumpPointList *PartialTie::tieJumpPoints() {
-    if (!isOutgoing()) {
+TieJumpPointList *PartialTie::tie_jump_points() {
+    if (!is_outgoing()) {
         return nullptr;
     }
 
-    return Tie::tieJumpPoints();
+    return Tie::tie_jump_points();
 }
 
-const TieJumpPointList *PartialTie::tieJumpPoints() const {
-    if (!isOutgoing()) {
+const TieJumpPointList *PartialTie::tie_jump_points() const {
+    if (!is_outgoing()) {
         return nullptr;
     }
 
-    return Tie::tieJumpPoints();
+    return Tie::tie_jump_points();
 }
 
-Note *PartialTie::startNote() const {
-    if (isOutgoing()) {
-        return Tie::startNote();
+Note *PartialTie::start_note() const {
+    if (is_outgoing()) {
+        return Tie::start_note();
     }
-    return startTie() ? startTie()->startNote() : nullptr;
+    return start_tie() ? start_tie()->start_note() : nullptr;
 }
 
 PartialTieSegment::PartialTieSegment(PartialTie *sp) : TieSegment(ElementType::PARTIAL_TIE_SEGMENT, sp) {}
 
 PartialTieSegment::PartialTieSegment(const PartialTieSegment &s) : TieSegment(s) {}
 
-String PartialTieSegment::formatBarsAndBeats() const {
-    const PartialTie *pt = this->partialTie();
+String PartialTieSegment::format_bars_and_beats() const {
+    const PartialTie *pt = this->partial_tie();
     const Note *note = pt ? pt->note() : nullptr;
     const Chord *chord = note ? note->chord() : nullptr;
     const Segment *seg = chord ? chord->segment() : nullptr;
 
     if (!seg) {
-        return EngravingItem::formatBarsAndBeats();
+        return EngravingItem::format_bars_and_beats();
     }
 
-    return seg->formatBarsAndBeats();
+    return seg->format_bars_and_beats();
 }
 } // namespace mu::engraving

@@ -80,30 +80,30 @@ void for_each_object(MasterScore &master, const Function &func) {
     const auto visit = [&func, &seen](EngravingObject *object) {
         if (object && seen.insert(object).second) func(*object);
     };
-    for (Score *score : master.scoreList()) {
+    for (Score *score : master.score_list()) {
         visit(score);
         for (Part *part : score->parts()) visit(part);
         for (Staff *staff : score->staves()) visit(staff);
-        for (Spanner *spanner : score->spannerList()) visit(spanner);
+        for (Spanner *spanner : score->spanner_list()) visit(spanner);
         // scanElements skips what is on a hidden staff and never hands out a chord
         // itself (only its notes, stem and the rest), so a measure's own lists and
         // segments are walked as well, and a chord is reached through its parts.
         const auto visit_item = [&visit](EngravingItem *item) {
             visit(item);
             EngravingObject *parent = item->parent();
-            if (parent && parent->isChordRest()) visit(parent);
+            if (parent && parent->is_chord_rest()) visit(parent);
             // A beam is referred to by the chords it joins, not held by a measure.
-            if (item->isChordRest()) visit(mu::engraving::toChordRest(item)->beam());
+            if (item->is_chord_rest()) visit(mu::engraving::to_chord_rest(item)->beam());
         };
         const auto visit_tree = [&visit_item](EngravingItem *item) {
             visit_item(item);
-            item->scanElements(visit_item);
+            item->scan_elements(visit_item);
         };
         for (mu::engraving::MeasureBase *mb = score->first(); mb; mb = mb->next()) {
             visit(mb);
-            if (!mb->isMeasure()) continue;
-            Measure *measure = mu::engraving::toMeasure(mb);
-            if (measure->mmRest()) visit(measure->mmRest());
+            if (!mb->is_measure()) continue;
+            Measure *measure = mu::engraving::to_measure(mb);
+            if (measure->mm_rest()) visit(measure->mm_rest());
             for (EngravingItem *item : measure->el()) visit_tree(item);
             for (Segment *segment = measure->first(); segment; segment = segment->next()) {
                 for (EngravingItem *item : segment->elist()) {
@@ -112,13 +112,13 @@ void for_each_object(MasterScore &master, const Function &func) {
                 for (EngravingItem *item : segment->annotations()) visit_tree(item);
             }
         }
-        score->scanElements(visit_item);
+        score->scan_elements(visit_item);
     }
 }
 
 int score_index(MasterScore &master, const Score *score) {
     int index = 0;
-    for (const Score *candidate : master.scoreList()) {
+    for (const Score *candidate : master.score_list()) {
         if (candidate == score) return index;
         ++index;
     }
@@ -128,7 +128,7 @@ int score_index(MasterScore &master, const Score *score) {
 Placement placement_of(MasterScore &master, const EngravingObject &object) {
     Placement placement;
     placement.score = score_index(master, object.score());
-    if (!object.isEngravingItem()) return placement;
+    if (!object.is_engraving_item()) return placement;
     const auto &item = static_cast<const EngravingItem &>(object);
     const auto track = static_cast<long long>(item.track());
     if (track < 0) return placement;
@@ -153,13 +153,13 @@ bool in_document(MasterScore &master, EngravingObject *object) {
 
 bool in_score(MasterScore &master, const EngravingObject *object) {
     const EngravingObject *top = object;
-    while (const EngravingObject *parent = top->ownershipParent()) top = parent;
-    for (const Score *score : master.scoreList()) {
+    while (const EngravingObject *parent = top->ownership_parent()) top = parent;
+    for (const Score *score : master.score_list()) {
         if (static_cast<const EngravingObject *>(score) == top) return true;
     }
-    if (!object->isSpanner() || !object->score()) return false;
-    const auto spanners = object->score()->spannerList();
-    return std::ranges::find(spanners, mu::engraving::toSpanner(object)) != spanners.end();
+    if (!object->is_spanner() || !object->score()) return false;
+    const auto spanners = object->score()->spanner_list();
+    return std::ranges::find(spanners, mu::engraving::to_spanner(object)) != spanners.end();
 }
 
 namespace {
@@ -171,33 +171,33 @@ struct SegmentKind {
 };
 
 constexpr SegmentKind segment_kinds[] = {
-    {SegmentType::BeginBarLine, "BeginBarLine"},
-    {SegmentType::HeaderClef, "HeaderClef"},
-    {SegmentType::KeySig, "KeySig"},
-    {SegmentType::Ambitus, "Ambitus"},
-    {SegmentType::Breath, "Breath"},
-    {SegmentType::TimeSig, "TimeSig"},
-    {SegmentType::StartRepeatBarLine, "StartRepeatBarLine"},
-    {SegmentType::ClefStartRepeatAnnounce, "ClefStartRepeatAnnounce"},
-    {SegmentType::KeySigStartRepeatAnnounce, "KeySigStartRepeatAnnounce"},
-    {SegmentType::TimeSigStartRepeatAnnounce, "TimeSigStartRepeatAnnounce"},
-    {SegmentType::Clef, "Clef"},
-    {SegmentType::BarLine, "BarLine"},
-    {SegmentType::TimeTick, "TimeTick"},
-    {SegmentType::ChordRest, "ChordRest"},
-    {SegmentType::ClefRepeatAnnounce, "ClefRepeatAnnounce"},
-    {SegmentType::KeySigRepeatAnnounce, "KeySigRepeatAnnounce"},
-    {SegmentType::TimeSigRepeatAnnounce, "TimeSigRepeatAnnounce"},
-    {SegmentType::EndBarLine, "EndBarLine"},
-    {SegmentType::KeySigAnnounce, "KeySigAnnounce"},
-    {SegmentType::TimeSigAnnounce, "TimeSigAnnounce"},
+    {SegmentType::BEGIN_BAR_LINE, "BeginBarLine"},
+    {SegmentType::HEADER_CLEF, "HeaderClef"},
+    {SegmentType::KEY_SIG, "KeySig"},
+    {SegmentType::AMBITUS, "Ambitus"},
+    {SegmentType::BREATH, "Breath"},
+    {SegmentType::TIME_SIG, "TimeSig"},
+    {SegmentType::START_REPEAT_BAR_LINE, "StartRepeatBarLine"},
+    {SegmentType::CLEF_START_REPEAT_ANNOUNCE, "ClefStartRepeatAnnounce"},
+    {SegmentType::KEY_SIG_START_REPEAT_ANNOUNCE, "KeySigStartRepeatAnnounce"},
+    {SegmentType::TIME_SIG_START_REPEAT_ANNOUNCE, "TimeSigStartRepeatAnnounce"},
+    {SegmentType::CLEF, "Clef"},
+    {SegmentType::BAR_LINE, "BarLine"},
+    {SegmentType::TIME_TICK, "TimeTick"},
+    {SegmentType::CHORD_REST, "ChordRest"},
+    {SegmentType::CLEF_REPEAT_ANNOUNCE, "ClefRepeatAnnounce"},
+    {SegmentType::KEY_SIG_REPEAT_ANNOUNCE, "KeySigRepeatAnnounce"},
+    {SegmentType::TIME_SIG_REPEAT_ANNOUNCE, "TimeSigRepeatAnnounce"},
+    {SegmentType::END_BAR_LINE, "EndBarLine"},
+    {SegmentType::KEY_SIG_ANNOUNCE, "KeySigAnnounce"},
+    {SegmentType::TIME_SIG_ANNOUNCE, "TimeSigAnnounce"},
 };
 
 SegmentType segment_type_of(std::string_view token) {
     for (const SegmentKind &kind : segment_kinds) {
         if (kind.token == token) return kind.type;
     }
-    return SegmentType::Invalid;
+    return SegmentType::INVALID;
 }
 
 std::string_view segment_token(SegmentType type) {
@@ -219,7 +219,7 @@ Result<Resolved> resolve_at(const std::vector<T *> &items, std::int32_t index, s
 
 IdClass id_class(const EngravingObject &object) {
     switch (object.type()) {
-        case ElementType::SEGMENT: return IdClass::address;
+        case ElementType::SEGMENT: return IdClass::ADDRESS;
         // Layout builds these from what is written (a chord builds its stem, a system its
         // brackets), so an id on one is not in the file and does not survive the next layout
         // pass.  RootItem, DummyParent and ShadowNote belong to the score itself.
@@ -241,48 +241,48 @@ IdClass id_class(const EngravingObject &object) {
         case ElementType::PARENTHESIS:
         case ElementType::ROOT_ITEM:
         case ElementType::DUMMY:
-        case ElementType::SHADOW_NOTE: return IdClass::layout;
+        case ElementType::SHADOW_NOTE: return IdClass::LAYOUT;
         default: break;
     }
     // A multi-measure rest is layout's: it replaces a range of measures, and so is
     // everything it holds.
-    if (object.isMeasure() && mu::engraving::toMeasure(&object)->isMMRest()) return IdClass::layout;
-    if (object.isEngravingItem()) {
-        const Measure *measure = static_cast<const EngravingItem &>(object).findMeasure();
-        if (measure && measure->isMMRest()) return IdClass::layout;
+    if (object.is_measure() && mu::engraving::to_measure(&object)->is_mm_rest()) return IdClass::LAYOUT;
+    if (object.is_engraving_item()) {
+        const Measure *measure = static_cast<const EngravingItem &>(object).find_measure();
+        if (measure && measure->is_mm_rest()) return IdClass::LAYOUT;
     }
     // A tuplet draws its own number, and layout creates that text.
-    if (object.isText() && object.ownershipParent() && object.ownershipParent()->isTuplet()) return IdClass::layout;
+    if (object.is_text() && object.ownership_parent() && object.ownership_parent()->is_tuplet()) return IdClass::LAYOUT;
     // A spanner is kept in its score's spanner map when it is anchored to a segment. One
     // anchored to a note hangs off the note instead, and a read can drop it (a tie whose
     // other end is missing), so the ones the map holds are what the walk hands out.
-    if (object.isSpanner()) {
+    if (object.is_spanner()) {
         const Score *score = object.score();
-        if (!score) return IdClass::session;
-        const auto spanners = score->spannerList();
-        const auto found = std::ranges::find(spanners, mu::engraving::toSpanner(&object));
-        return found == spanners.end() ? IdClass::session : IdClass::persisted;
+        if (!score) return IdClass::SESSION;
+        const auto spanners = score->spanner_list();
+        const auto found = std::ranges::find(spanners, mu::engraving::to_spanner(&object));
+        return found == spanners.end() ? IdClass::SESSION : IdClass::PERSISTED;
     }
     // A spanner segment is rebuilt by layout from its spanner.
-    if (object.isSpannerSegment()) return IdClass::layout;
+    if (object.is_spanner_segment()) return IdClass::LAYOUT;
     // Whatever layout hangs off a layout object (the text of a hairpin, a notehead of a
     // grace group) is rebuilt with it.
-    const EngravingObject *parent = object.ownershipParent();
-    if (parent && id_class(*parent) == IdClass::layout) return IdClass::layout;
-    return IdClass::persisted;
+    const EngravingObject *parent = object.ownership_parent();
+    if (parent && id_class(*parent) == IdClass::LAYOUT) return IdClass::LAYOUT;
+    return IdClass::PERSISTED;
 }
 
 bool takes_id(const EngravingObject &object) {
-    if (id_class(object) != IdClass::persisted) return false;
-    if (!object.isEngravingItem()) return true;
+    if (id_class(object) != IdClass::PERSISTED) return false;
+    if (!object.is_engraving_item()) return true;
     const auto &item = static_cast<const EngravingItem &>(object);
     if (item.generated()) return false;
     // The writer stores no id for an empty text (a template's empty title, subtitle or
     // poet placeholder), so one of those has none until it has text.
-    return !item.isText() || !static_cast<const mu::engraving::TextBase &>(item).empty();
+    return !item.is_text() || !static_cast<const mu::engraving::TextBase &>(item).empty();
 }
 
-mu::engraving::EID to_engine(const ElementId &id) { return mu::engraving::EID::fromParts(id.hi, id.lo); }
+mu::engraving::EID to_engine(const ElementId &id) { return mu::engraving::EID::from_parts(id.hi, id.lo); }
 
 ElementId from_engine(const mu::engraving::EID &id) { return {id.first(), id.second()}; }
 
@@ -290,15 +290,15 @@ void assign_missing_ids(MasterScore &master) {
     std::unordered_set<const EngravingObject *> document;
     for_each_object(master, [&document, &master](EngravingObject &object) {
         document.insert(&object);
-        if (takes_id(object) && !object.eid().isValid()) object.assignNewEID();
+        if (takes_id(object) && !object.eid().is_valid()) object.assign_new_eid();
     });
     // An id whose element is no longer part of the document must go as well: a read can
     // replace what it built (an excerpt score's first pass, a tie whose other end is
     // missing), and such an entry would answer for an element no caller can address.
     // An element the walk does not hand out but that is still in a score (a guitar bend
     // on its note) keeps the id the file gave it, so that a save writes the same id again.
-    for (const auto &[eid, object] : master.eidRegister()->entries()) {
-        if (!document.contains(object) && !in_score(master, object)) master.eidRegister()->removeItem(object);
+    for (const auto &[eid, object] : master.eid_register()->entries()) {
+        if (!document.contains(object) && !in_score(master, object)) master.eid_register()->remove_item(object);
     }
 }
 
@@ -313,7 +313,7 @@ std::vector<LiveId> live_ids(MasterScore &master) {
     for_each_object(master, [&master, &ids](EngravingObject &object) {
         if (!takes_id(object)) return;
         const mu::engraving::EID eid = object.eid();
-        if (eid.isValid()) ids.push_back({from_engine(eid), &object, placement_of(master, object)});
+        if (eid.is_valid()) ids.push_back({from_engine(eid), &object, placement_of(master, object)});
     });
     std::ranges::sort(ids, {}, &LiveId::id);
     return ids;
@@ -354,14 +354,14 @@ Result<Resolved> resolve(MasterScore &master, const ElementId &id) {
     // A score, a part and a shared part own their ids through the document's lists,
     // not through an element's ownership chain: find them there, never through a
     // register pointer that could name an object the lists no longer hold.
-    for (Score *score : master.scoreList()) {
+    for (Score *score : master.score_list()) {
         if (score->eid() == eid) return Resolved{score, true};
         for (Part *part : score->parts()) {
             if (part->eid() == eid) return Resolved{part, true};
         }
     }
 
-    EngravingObject *object = master.eidRegister()->itemFromEID(eid);
+    EngravingObject *object = master.eid_register()->item_from_eid(eid);
     if (!object) return fail(ErrorCode::NOT_FOUND, std::format("no element has id {}", to_string(id)));
     if (!in_document(master, object)) {
         return fail(ErrorCode::STALE_HANDLE, std::format("the element with id {} is not part of the score", to_string(id)));
@@ -371,7 +371,7 @@ Result<Resolved> resolve(MasterScore &master, const ElementId &id) {
 
 ScoreSel selection_of(const Score &score) {
     ScoreSel selection;
-    if (!score.isMaster()) selection.excerpt = from_engine(score.eid());
+    if (!score.is_master()) selection.excerpt = from_engine(score.eid());
     return selection;
 }
 
@@ -382,9 +382,9 @@ Result<Score *> select_score(MasterScore &master, const ScoreSel &selection) {
     if (!found) return std::unexpected(found.error());
     if (found->object->type() != ElementType::SCORE) {
         return std::unexpected(
-            Error{ErrorCode::INVALID_ARGUMENT, std::format("the selection names a {}, not a score", found->object->typeName())});
+            Error{ErrorCode::INVALID_ARGUMENT, std::format("the selection names a {}, not a score", found->object->type_name())});
     }
-    return mu::engraving::toScore(found->object);
+    return mu::engraving::to_score(found->object);
 }
 
 Result<Resolved> resolve(MasterScore &master, const Address &address) {
@@ -398,7 +398,7 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                     return fail(ErrorCode::INVALID_ARGUMENT, "a segment address names a measure");
                 }
                 const SegmentType kind = segment_type_of(value.kind);
-                if (kind == SegmentType::Invalid) {
+                if (kind == SegmentType::INVALID) {
                     return fail(ErrorCode::INVALID_ARGUMENT, std::format("'{}' is not a segment type", value.kind));
                 }
                 const Fraction &tick = value.tick;
@@ -406,13 +406,13 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                     tick.den > std::numeric_limits<int>::max()) {
                     return fail(ErrorCode::INVALID_ARGUMENT, "a segment tick must fit the engine's fraction with a positive denominator");
                 }
-                Measure *found = mu::engraving::toMeasure(measure->object);
+                Measure *found = mu::engraving::to_measure(measure->object);
                 // findSegment subtracts the measure tick before comparing. Large
                 // denominators can overflow that intermediate. Compare absolute
                 // ticks without narrowing the engine's unreduced 64-bit terms.
                 Segment *segment = nullptr;
                 for (Segment *candidate = found->first(); candidate; candidate = candidate->next()) {
-                    if (!candidate->isType(kind)) continue;
+                    if (!candidate->is_type(kind)) continue;
                     const auto position = candidate->tick();
                     if (position.denominator64() > 0 &&
                         detail::compare_fraction(position.numerator64(), position.denominator64(), tick.num, tick.den) == 0) {
@@ -434,14 +434,14 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                 if (!selected) return fail(ErrorCode::STALE_HANDLE, selected.error().message);
                 const Result<Resolved> page = resolve_at((*selected)->pages(), value.page, "page");
                 if (!page) return page;
-                return resolve_at(mu::engraving::toPage(page->object)->systems(), value.index, "system");
+                return resolve_at(mu::engraving::to_page(page->object)->systems(), value.index, "system");
             } else {
                 const Result<Resolved> spanner = resolve(master, value.spanner);
                 if (!spanner) return spanner;
-                if (!spanner->object->isSpanner()) {
+                if (!spanner->object->is_spanner()) {
                     return fail(ErrorCode::INVALID_ARGUMENT, "a spanner segment address names a spanner");
                 }
-                return resolve_at(mu::engraving::toSpanner(spanner->object)->spannerSegments(), value.index, "spanner segment");
+                return resolve_at(mu::engraving::to_spanner(spanner->object)->spanner_segments(), value.index, "spanner segment");
             }
         },
         address);
@@ -451,13 +451,13 @@ std::optional<Address> address_of(const EngravingObject &object) {
     if (object.type() == ElementType::SEGMENT) {
         const auto &segment = static_cast<const Segment &>(object);
         const Measure *measure = segment.measure();
-        if (!measure || !measure->eid().isValid()) return std::nullopt;
+        if (!measure || !measure->eid().is_valid()) return std::nullopt;
         SegmentAddress address;
         address.measure = from_engine(measure->eid());
         const auto tick = address_tick(segment.tick());
         if (!tick) return std::nullopt;
         address.tick = *tick;
-        address.kind = segment_token(segment.segmentType());
+        address.kind = segment_token(segment.segment_type());
         return Address{address};
     }
     if (object.type() == ElementType::PAGE) {
@@ -466,7 +466,7 @@ std::optional<Address> address_of(const EngravingObject &object) {
         if (!score) return std::nullopt;
         PageAddress address;
         address.score = selection_of(*score);
-        address.index = static_cast<std::int32_t>(score->pageIdx(&page));
+        address.index = static_cast<std::int32_t>(score->page_idx(&page));
         return Address{address};
     }
     if (object.type() == ElementType::SYSTEM) {
@@ -476,18 +476,18 @@ std::optional<Address> address_of(const EngravingObject &object) {
         if (!score || !page) return std::nullopt;
         SystemAddress address;
         address.score = selection_of(*score);
-        address.page = static_cast<std::int32_t>(score->pageIdx(page));
+        address.page = static_cast<std::int32_t>(score->page_idx(page));
         const auto &systems = page->systems();
         const auto index = std::ranges::find(systems, &system);
         if (index == systems.end()) return std::nullopt;
         address.index = static_cast<std::int32_t>(index - systems.begin());
         return Address{address};
     }
-    if (object.isSpannerSegment()) {
+    if (object.is_spanner_segment()) {
         const auto &segment = static_cast<const mu::engraving::SpannerSegment &>(object);
         const Spanner *spanner = segment.spanner();
-        if (!spanner || !spanner->eid().isValid()) return std::nullopt;
-        const auto &segments = spanner->spannerSegments();
+        if (!spanner || !spanner->eid().is_valid()) return std::nullopt;
+        const auto &segments = spanner->spanner_segments();
         const auto index = std::ranges::find(segments, &segment);
         if (index == segments.end()) return std::nullopt;
         SpannerSegmentAddress address;
@@ -499,7 +499,7 @@ std::optional<Address> address_of(const EngravingObject &object) {
 }
 
 std::vector<Diagnostic> id_repairs(MasterScore &master) {
-    const mu::engraving::EIDRepairCount repairs = master.eidRegister()->repairs();
+    const mu::engraving::EIDRepairCount repairs = master.eid_register()->repairs();
     std::vector<Diagnostic> diagnostics;
     if (repairs.malformed > 0) {
         diagnostics.push_back(

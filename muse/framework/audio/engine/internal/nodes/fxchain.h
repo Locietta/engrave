@@ -35,25 +35,25 @@ struct FxChainTag {
 namespace muse::audio::engine {
 class FxChain : public ChainNode<FxChainTag> {
 public:
-    void setFxList(const std::vector<IFxProcessorPtr> &fxList);
+    void set_fx_list(const std::vector<IFxProcessorPtr> &fx_list);
 
     //! NOTE Must be set after adding all nodes to the chain
-    void setFxChainSpec(const AudioFxChain &fxChainSpec);
-    const AudioFxChain &fxChainSpec() const;
+    void set_fx_chain_spec(const AudioFxChain &fx_chain_spec);
+    const AudioFxChain &fx_chain_spec() const;
 
-    void setPlayheadPosition(PlayheadPositionPtr playheadPosition);
+    void set_playhead_position(PlayheadPositionPtr playhead_position);
 
-    bool shouldProcessDuringSilence() const;
+    bool should_process_during_silence() const;
 
 private:
     void rebuild() override;
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    void updateShouldProcessDuringSilence();
+    void update_should_process_during_silence();
 
-    AudioFxChain fxChainSpec_;
+    AudioFxChain fx_chain_spec_;
 
-    bool shouldProcessDuringSilence_ = false;
+    bool should_process_during_silence_ = false;
 };
 
 using FxChainPtr = std::shared_ptr<FxChain>;

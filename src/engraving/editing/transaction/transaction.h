@@ -110,51 +110,51 @@ public:
     Transaction &operator=(Transaction &&) = default;
 
     void push(UndoableCommand *cmd);
-    void pushWithoutPerforming(UndoableCommand *cmd);
+    void push_without_performing(UndoableCommand *cmd);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended
     /// (`appended` false) and once after it was appended and performed (`appended`
     /// true). A hook that throws on the first call owns `cmd`.
     using PushHook = void (*)(UndoableCommand *cmd, bool appended);
-    static void setPushHook(PushHook hook);
+    static void set_push_hook(PushHook hook);
 
 private:
     friend class TransactionManager;
-    Transaction(UndoableTransaction *undoableTransaction);
+    Transaction(UndoableTransaction *undoable_transaction);
 
     static Transaction &dummy();
 
-    UndoableTransaction *undoableTransaction_ = nullptr;
-    bool isDummy_ = false;
+    UndoableTransaction *undoable_transaction_ = nullptr;
+    bool is_dummy_ = false;
 
-    static inline PushHook s_pushHook = nullptr;
+    static inline PushHook s_push_hook = nullptr;
 };
 
 class TransactionManager {
 public:
-    explicit TransactionManager(MasterScore *masterScore);
+    explicit TransactionManager(MasterScore *master_score);
 
-    UndoStack *undoStack() const;
+    UndoStack *undo_stack() const;
 
     void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
 
-    void beginTransaction(const muse::TranslatableString &description);
-    void endTransaction(bool rollback = false, bool layoutAllParts = false, bool keepRolledBackElements = false);
+    void begin_transaction(const muse::TranslatableString &description);
+    void end_transaction(bool rollback = false, bool layout_all_parts = false, bool keep_rolled_back_elements = false);
 
     void reopen();
 
     /// Returns the current transaction, if any is active.
     /// Where possible, prefer using `transaction()` instead of this method.
-    Transaction *currentTransaction() const;
+    Transaction *current_transaction() const;
 
-    Transaction &currentOrDummyTransaction();
+    Transaction &current_or_dummy_transaction();
 
-    void undoRedo(bool undo, EditData *editData);
+    void undo_redo(bool undo, EditData *edit_data);
 
 private:
-    MasterScore *masterScore_ = nullptr;
+    MasterScore *master_score_ = nullptr;
 
-    std::unique_ptr<Transaction> currentTransaction_;
+    std::unique_ptr<Transaction> current_transaction_;
 };
 } // namespace mu::engraving

@@ -27,36 +27,36 @@
 #include "log.h"
 
 namespace mu::engraving {
-bool RangeLock::contains(const MeasureBase *mb) const { return startMB_->isBeforeOrEqual(mb) && mb->isBeforeOrEqual(endMB_); }
+bool RangeLock::contains(const MeasureBase *mb) const { return start_mb_->is_before_or_equal(mb) && mb->is_before_or_equal(end_mb_); }
 
 void RangeLocks::add(const RangeLock *lock) {
-    rangeLocks_.emplace(lock->startMB(), lock);
+    range_locks_.emplace(lock->start_mb(), lock);
 
 #ifndef NDEBUG
-    sanityCheck();
+    sanity_check();
 #endif
 }
 
 void RangeLocks::remove(const RangeLock *lock) {
-    rangeLocks_.erase(lock->startMB());
+    range_locks_.erase(lock->start_mb());
 
 #ifndef NDEBUG
-    sanityCheck();
+    sanity_check();
 #endif
 }
 
-const RangeLock *RangeLocks::lockStartingAt(const MeasureBase *mb) const {
-    auto iter = rangeLocks_.find(mb);
-    return iter != rangeLocks_.end() ? iter->second : nullptr;
+const RangeLock *RangeLocks::lock_starting_at(const MeasureBase *mb) const {
+    auto iter = range_locks_.find(mb);
+    return iter != range_locks_.end() ? iter->second : nullptr;
 }
 
-const RangeLock *RangeLocks::lockContaining(const MeasureBase *mb) const {
-    if (rangeLocks_.empty()) {
+const RangeLock *RangeLocks::lock_containing(const MeasureBase *mb) const {
+    if (range_locks_.empty()) {
         return nullptr;
     }
 
-    auto iter = rangeLocks_.lower_bound(mb);
-    if (iter != rangeLocks_.begin() && (iter == rangeLocks_.end() || mb->isBefore(iter->second->startMB()))) {
+    auto iter = range_locks_.lower_bound(mb);
+    if (iter != range_locks_.begin() && (iter == range_locks_.end() || mb->is_before(iter->second->start_mb()))) {
         --iter;
     }
 
@@ -65,15 +65,15 @@ const RangeLock *RangeLocks::lockContaining(const MeasureBase *mb) const {
     return lock->contains(mb) ? lock : nullptr;
 }
 
-std::vector<const RangeLock *> RangeLocks::locksContainedInRange(const MeasureBase *start, const MeasureBase *end) const {
+std::vector<const RangeLock *> RangeLocks::locks_contained_in_range(const MeasureBase *start, const MeasureBase *end) const {
     std::vector<const RangeLock *> result;
 
-    for (auto &pair : rangeLocks_) {
+    for (auto &pair : range_locks_) {
         const RangeLock *lock = pair.second;
-        if (start->isBeforeOrEqual(lock->startMB()) && lock->endMB()->isBeforeOrEqual(end)) {
+        if (start->is_before_or_equal(lock->start_mb()) && lock->end_mb()->is_before_or_equal(end)) {
             result.push_back(lock);
         }
-        if (lock->startMB()->isAfter(end)) {
+        if (lock->start_mb()->is_after(end)) {
             break;
         }
     }
@@ -81,38 +81,38 @@ std::vector<const RangeLock *> RangeLocks::locksContainedInRange(const MeasureBa
     return result;
 }
 
-std::vector<const RangeLock *> RangeLocks::allLocks() const { return muse::values(rangeLocks_); }
+std::vector<const RangeLock *> RangeLocks::all_locks() const { return muse::values(range_locks_); }
 
 #ifndef NDEBUG
-void RangeLocks::sanityCheck() {
-    for (auto iter = rangeLocks_.begin(); iter != rangeLocks_.end();) {
-        auto curIter = iter;
-        auto nextIter = ++iter;
-        if (nextIter == rangeLocks_.end()) {
+void RangeLocks::sanity_check() {
+    for (auto iter = range_locks_.begin(); iter != range_locks_.end();) {
+        auto cur_iter = iter;
+        auto next_iter = ++iter;
+        if (next_iter == range_locks_.end()) {
             break;
         }
 
-        const MeasureBase *curMB = curIter->first;
-        const RangeLock *curLock = curIter->second;
+        const MeasureBase *cur_mb = cur_iter->first;
+        const RangeLock *cur_lock = cur_iter->second;
 
-        DO_ASSERT(curLock->startMB() == curMB);
+        DO_ASSERT(cur_lock->start_mb() == cur_mb);
 
-        const MeasureBase *nextMB = nextIter->first;
-        const RangeLock *nextLock = nextIter->second;
+        const MeasureBase *next_mb = next_iter->first;
+        const RangeLock *next_lock = next_iter->second;
 
-        DO_ASSERT(nextLock->startMB() == nextMB);
-        DO_ASSERT(curMB->isBefore(nextMB));
-        DO_ASSERT(curLock->endMB()->isBefore(nextLock->startMB()));
+        DO_ASSERT(next_lock->start_mb() == next_mb);
+        DO_ASSERT(cur_mb->is_before(next_mb));
+        DO_ASSERT(cur_lock->end_mb()->is_before(next_lock->start_mb()));
     }
 }
 
 void RangeLocks::dump() const {
-    for (auto &pair : rangeLocks_) {
+    for (auto &pair : range_locks_) {
         const RangeLock *sl = pair.second;
-        const Measure *startMeasure = sl->startMB()->isMeasure() ? toMeasure(sl->startMB()) : sl->startMB()->prevMeasure();
-        const Measure *endMeasure = sl->endMB()->isMeasure() ? toMeasure(sl->endMB()) : sl->endMB()->prevMeasure();
-        LOGD() << "RangeLock --- Start measure: " << (startMeasure ? startMeasure->measureNumber() : -1)
-               << ", End Measure: " << (endMeasure ? endMeasure->measureNumber() : -1);
+        const Measure *start_measure = sl->start_mb()->is_measure() ? to_measure(sl->start_mb()) : sl->start_mb()->prev_measure();
+        const Measure *end_measure = sl->end_mb()->is_measure() ? to_measure(sl->end_mb()) : sl->end_mb()->prev_measure();
+        LOGD() << "RangeLock --- Start measure: " << (start_measure ? start_measure->measure_number() : -1)
+               << ", End Measure: " << (end_measure ? end_measure->measure_number() : -1);
     }
 }
 

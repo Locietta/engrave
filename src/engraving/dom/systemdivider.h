@@ -41,23 +41,23 @@ public:
 
     SystemDivider *clone() const override { return new SystemDivider(*this); }
 
-    SystemDividerType dividerType() const { return dividerType_; }
+    SystemDividerType divider_type() const { return divider_type_; }
 
-    void setDividerType(SystemDividerType v);
+    void set_divider_type(SystemDividerType v);
 
     Segment *segment() const override { return nullptr; }
 
-    System *system() const { return (System *) ownershipParent(); }
+    System *system() const { return (System *) ownership_parent(); }
 
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
 
-    void styleChanged() override;
-    Sid getPropertyStyle(Pid id) const override;
+    void style_changed() override;
+    Sid get_property_style(Pid id) const override;
 
     void reset() override;
 
 private:
-    SystemDividerType dividerType_ = SystemDividerType::LEFT;
+    SystemDividerType divider_type_ = SystemDividerType::LEFT;
 };
 } // namespace mu::engraving
 

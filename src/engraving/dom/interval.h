@@ -39,20 +39,20 @@ struct Interval {
     void flip();
     void reduce();
     Interval reduced();
-    bool isZero() const;
+    bool is_zero() const;
 
     bool operator!=(const Interval &a) const { return diatonic != a.diatonic || chromatic != a.chromatic; }
 
     bool operator==(const Interval &a) const { return diatonic == a.diatonic && chromatic == a.chromatic; }
 
-    static Interval fromOrnamentInterval(OrnamentInterval ornInt);
+    static Interval from_ornament_interval(OrnamentInterval orn_int);
 
     /// An array of all supported interval sorted by size.
     ///
     /// Because intervals can be spelled differently, this array
     /// tracks all the different valid intervals. They are arranged
     /// in diatonic then chromatic order.
-    static const std::array<Interval, 26> allIntervals;
+    static const std::array<Interval, 26> all_intervals;
 
     /// Finds the most likely diatonic interval for a semitone distance. Uses
     /// the most common diatonic intervals.

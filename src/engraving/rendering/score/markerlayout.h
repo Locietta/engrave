@@ -30,10 +30,10 @@ class LayoutConfiguration;
 
 class MarkerLayout {
 public:
-    static void layoutMarker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
+    static void layout_marker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
 
 private:
-    static void doLayoutMarker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
-    static double computeCustomTextOffset(const Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
+    static void do_layout_marker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
+    static double compute_custom_text_offset(const Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

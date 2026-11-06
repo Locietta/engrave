@@ -30,8 +30,8 @@ class AllPassDispersion {
 public:
     AllPassDispersion() {
         // these values have been manually tuned to produce a 50-sample IR that has a (low) peak of 0.453731
-        processor_[0].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.2492, 2.168, 1.0));
-        processor_[1].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.1119, 2.033, 1.0));
+        processor_[0].set_target_coefficients(IirBiquadFilter::create_allpass2_p(0.2492, 2.168, 1.0));
+        processor_[1].set_target_coefficients(IirBiquadFilter::create_allpass2_p(0.1119, 2.033, 1.0));
         reset();
     }
 
@@ -41,21 +41,21 @@ public:
         }
     }
 
-    void process(float **signalPtr, int numCh, int n) {
+    void process(float **signal_ptr, int num_ch, int n) {
         for (auto &p : processor_) {
-            p.process(signalPtr, numCh, n);
+            p.process(signal_ptr, num_ch, n);
         }
     }
 
-    void processMonoSample(float &s) {
+    void process_mono_sample(float &s) {
         for (auto &p : processor_) {
-            p.processMonoSample(s);
+            p.process_mono_sample(s);
         }
     }
 
-    void processStereoSample(float &l, float &r) {
+    void process_stereo_sample(float &l, float &r) {
         for (auto &p : processor_) {
-            p.processStereoSample(l, r);
+            p.process_stereo_sample(l, r);
         }
     }
 

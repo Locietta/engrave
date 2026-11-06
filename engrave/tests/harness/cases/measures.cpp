@@ -47,7 +47,7 @@ using mu::engraving::SegmentType;
 using mu::engraving::Staff;
 using mu::engraving::TConv;
 using mu::engraving::TimeSig;
-using mu::engraving::VOICES;
+using mu::engraving::voices;
 
 mu::engraving::Fraction engine_fraction(const Fraction &value) { return mu::engraving::Fraction(int(value.num), int(value.den)); }
 
@@ -56,24 +56,24 @@ Fraction fraction_of(const mu::engraving::Fraction &value) { return {value.numer
 // The scores of the document, the master first and then the excerpts.
 std::vector<Score *> scores_of(Document &document) {
     std::vector<Score *> scores;
-    for (Score *score : master_of(document).scoreList()) scores.push_back(score);
+    for (Score *score : master_of(document).score_list()) scores.push_back(score);
     return scores;
 }
 
 std::vector<Measure *> measures_of(Score *score) {
     std::vector<Measure *> measures;
-    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) measures.push_back(measure);
+    for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) measures.push_back(measure);
     return measures;
 }
 
 Measure *measure_at(Score *score, int index) {
-    Measure *measure = score->firstMeasure();
-    for (int i = 0; i < index && measure; ++i) measure = measure->nextMeasure();
+    Measure *measure = score->first_measure();
+    for (int i = 0; i < index && measure; ++i) measure = measure->next_measure();
     return measure;
 }
 
 ElementId id_of(const mu::engraving::EngravingObject &object) {
-    if (!object.eid().isValid()) throw std::invalid_argument(std::format("a {} has no id", object.typeName()));
+    if (!object.eid().is_valid()) throw std::invalid_argument(std::format("a {} has no id", object.type_name()));
     return from_engine(object.eid());
 }
 
@@ -95,17 +95,17 @@ bool has_id(const Fingerprint &print, const ElementId &id) {
 
 bool break_on(const MeasureBase &measure, LayoutBreakType kind) {
     switch (kind) {
-        case LayoutBreakType::LINE: return measure.lineBreak();
-        case LayoutBreakType::PAGE: return measure.pageBreak();
-        case LayoutBreakType::SECTION: return measure.sectionBreak();
-        case LayoutBreakType::NOBREAK: return measure.noBreak();
+        case LayoutBreakType::LINE: return measure.line_break();
+        case LayoutBreakType::PAGE: return measure.page_break();
+        case LayoutBreakType::SECTION: return measure.section_break();
+        case LayoutBreakType::NOBREAK: return measure.no_break();
     }
     return false;
 }
 
 bool has_break_element(const MeasureBase &measure, LayoutBreakType kind) {
     for (const EngravingItem *item : measure.el()) {
-        if (item->isLayoutBreak() && static_cast<const LayoutBreak *>(item)->layoutBreakType() == kind) return true;
+        if (item->is_layout_break() && static_cast<const LayoutBreak *>(item)->layout_break_type() == kind) return true;
     }
     return false;
 }
@@ -128,10 +128,10 @@ std::vector<std::vector<Key>> keys_of(Document &document, const mu::engraving::F
     for (Score *score : scores_of(document)) {
         std::vector<Key> row;
         const Measure *measure = score->tick2measure(tick);
-        const Segment *segment = measure ? measure->findSegment(SegmentType::KeySig, tick) : nullptr;
+        const Segment *segment = measure ? measure->find_segment(SegmentType::KEY_SIG, tick) : nullptr;
         for (std::size_t staff = 0; staff < score->nstaves(); ++staff) {
-            const EngravingItem *item = segment ? segment->element(staff * VOICES) : nullptr;
-            row.push_back(item && item->isKeySig() ? static_cast<const KeySig *>(item)->concertKey() : Key::INVALID);
+            const EngravingItem *item = segment ? segment->element(staff * ::mu::engraving::voices) : nullptr;
+            row.push_back(item && item->is_key_sig() ? static_cast<const KeySig *>(item)->concert_key() : Key::INVALID);
         }
         keys.push_back(std::move(row));
     }
@@ -195,7 +195,7 @@ OpCase append_frame_case() {
         .expect = [](Document &document, const Fingerprint &before, const Fingerprint &after) -> std::string {
             if (count_of(after, "VBox") != count_of(before, "VBox") + 1) return "the frame count is not one higher";
             MeasureBase *last = master_of(document).last();
-            if (!last || !last->isVBox()) return "the master does not end with the frame";
+            if (!last || !last->is_v_box()) return "the master does not end with the frame";
             if (!has_id(after, id_of(*last))) return "the new frame has no id";
             return {};
         },
@@ -264,11 +264,11 @@ std::string expect_time_sig(Document &document, const mu::engraving::Fraction &t
         if (!measure) return "the measure at the tick is gone";
         if (measure->timesig() != wanted) return "the measure kept its time signature";
         if (measure->ticks() != wanted) return "the measure kept its length";
-        const Segment *segment = measure->findSegment(SegmentType::TimeSig, measure->tick());
+        const Segment *segment = measure->find_segment(SegmentType::TIME_SIG, measure->tick());
         const EngravingItem *item = segment ? segment->element(0) : nullptr;
-        if (!item || !item->isTimeSig()) return "the measure starts without a time signature";
+        if (!item || !item->is_time_sig()) return "the measure starts without a time signature";
         if (static_cast<const TimeSig *>(item)->sig() != wanted) return "the time signature element kept its value";
-        for (Measure *each = measure; each; each = each->nextMeasure()) {
+        for (Measure *each = measure; each; each = each->next_measure()) {
             if (each->timesig() != wanted) return "a measure after it kept its time signature";
         }
     }
@@ -305,7 +305,7 @@ std::string expect_key(Document &document, const mu::engraving::Fraction &tick, 
                        const std::vector<std::vector<Key>> &was) {
     const std::vector<std::vector<Key>> now = keys_of(document, tick);
     const std::vector<Staff *> group =
-        staff < 0 ? std::vector<Staff *>{} : master_of(document).staff(mu::engraving::staff_idx_t(staff))->staffList();
+        staff < 0 ? std::vector<Staff *>{} : master_of(document).staff(mu::engraving::staff_idx_t(staff))->staff_list();
     const std::vector<Score *> scores = scores_of(document);
     for (std::size_t s = 0; s < now.size(); ++s) {
         for (std::size_t i = 0; i < now[s].size(); ++i) {
@@ -353,7 +353,7 @@ OpCase key_case(std::string name, std::string fixture, int at, int key, std::opt
 std::string expect_clef(Document &document, const mu::engraving::Fraction &tick, int staff, ClefType clef,
                         const std::vector<std::vector<ClefType>> &was) {
     const std::vector<std::vector<ClefType>> now = clefs_of(document, tick);
-    const std::vector<Staff *> group = master_of(document).staff(mu::engraving::staff_idx_t(staff))->staffList();
+    const std::vector<Staff *> group = master_of(document).staff(mu::engraving::staff_idx_t(staff))->staff_list();
     const std::vector<Score *> scores = scores_of(document);
     for (std::size_t s = 0; s < now.size(); ++s) {
         for (std::size_t i = 0; i < now[s].size(); ++i) {
@@ -382,14 +382,14 @@ OpCase clef_case(std::string name, std::string fixture, int at, int segment, int
                 Score &master = master_of(document);
                 Measure *measure = measure_at(&master, at);
                 if (!measure) throw std::invalid_argument(std::format("the fixture has no measure {}", at));
-                Segment *where = measure->first(SegmentType::ChordRest);
-                for (int i = 0; i < segment && where; ++i) where = where->next(SegmentType::ChordRest);
+                Segment *where = measure->first(SegmentType::CHORD_REST);
+                for (int i = 0; i < segment && where; ++i) where = where->next(SegmentType::CHORD_REST);
                 if (!where) throw std::invalid_argument("the measure has no such segment");
                 shared->tick = where->tick();
                 shared->was = clefs_of(document, shared->tick);
                 const SegmentAddress address{
                     .measure = id_of(*measure), .staff = staff, .voice = 0, .tick = fraction_of(where->tick()), .kind = "ChordRest"};
-                return Batch{{InsertClef{.at = address, .clef = TConv::toXml(clef).ascii()}}};
+                return Batch{{InsertClef{.at = address, .clef = TConv::to_xml(clef).ascii()}}};
             },
         .expect = [shared, staff, clef](Document &document, const Fingerprint &,
                                         const Fingerprint &) { return expect_clef(document, shared->tick, staff, clef, shared->was); },
@@ -413,7 +413,7 @@ std::string expect_break(Document &document, int at, LayoutBreakType kind, bool 
         if (has_break_element(*measure, kind) != wanted) {
             return std::format("part {}: the break element does not match the flag", s);
         }
-        if (wanted && kind == LayoutBreakType::PAGE && measure->lineBreak()) return "a line break survived a page break";
+        if (wanted && kind == LayoutBreakType::PAGE && measure->line_break()) return "a line break survived a page break";
     }
     return {};
 }
@@ -436,7 +436,7 @@ OpCase break_case(std::string name, std::string fixture, int at, LayoutBreakType
                     shared->was.push_back(break_on(*measure, kind));
                 }
                 Measure *target = measure_at(&master_of(document), at);
-                return Batch{{SetLayoutBreak{.measure = id_of(*target), .kind = TConv::toXml(kind).ascii(), .on = on}}};
+                return Batch{{SetLayoutBreak{.measure = id_of(*target), .kind = TConv::to_xml(kind).ascii(), .on = on}}};
             },
         .expect = [shared, at, kind, on](Document &document, const Fingerprint &,
                                          const Fingerprint &) { return expect_break(document, at, kind, on, shared->was); },

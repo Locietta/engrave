@@ -31,23 +31,23 @@ class DefaultStyle {
 public:
     static DefaultStyle *instance();
 
-    void init(const muse::io::path_t &defaultStyleFilePath, const muse::io::path_t &partStyleFilePath, const SizeF &defaultPageSize);
+    void init(const muse::io::PathT &default_style_file_path, const muse::io::PathT &part_style_file_path, const SizeF &default_page_size);
 
-    static const MStyle &baseStyle();
+    static const MStyle &base_style();
 
-    static const MStyle &defaultStyle();
-    static const MStyle *defaultStyleForParts();
+    static const MStyle &default_style();
+    static const MStyle *default_style_for_parts();
 
-    static const MStyle &resolveStyleDefaults(const int defaultsVersion);
+    static const MStyle &resolve_style_defaults(const int defaults_version);
 
 private:
     DefaultStyle() = default;
 
-    static bool doLoadStyle(MStyle *style, const muse::io::path_t &filePath);
+    static bool do_load_style(MStyle *style, const muse::io::PathT &file_path);
 
-    MStyle baseStyle_;    // builtin initial style
-    MStyle defaultStyle_; // builtin modified by preferences
-    MStyle *defaultStyleForParts_ = nullptr;
+    MStyle base_style_;    // builtin initial style
+    MStyle default_style_; // builtin modified by preferences
+    MStyle *default_style_for_parts_ = nullptr;
 };
 } // namespace mu::engraving
 

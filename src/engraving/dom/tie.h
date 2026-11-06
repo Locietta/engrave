@@ -42,30 +42,30 @@ public:
 
     TieSegment *clone() const override { return new TieSegment(*this); }
 
-    void addAdjustmentOffset(const PointF &offset, Grip grip) { adjustmentOffsets_[static_cast<size_t>(grip)] += offset; }
+    void add_adjustment_offset(const PointF &offset, Grip grip) { adjustment_offsets_[static_cast<size_t>(grip)] += offset; }
 
-    void resetAdjustmentOffset() { adjustmentOffsets_.fill(PointF()); }
+    void reset_adjustment_offset() { adjustment_offsets_.fill(PointF()); }
 
-    PointF adjustmentOffset(Grip grip) { return adjustmentOffsets_[static_cast<size_t>(grip)]; }
+    PointF adjustment_offset(Grip grip) { return adjustment_offsets_[static_cast<size_t>(grip)]; }
 
-    void consolidateAdjustmentOffsetIntoUserOffset();
+    void consolidate_adjustment_offset_into_user_offset();
 
-    bool isEdited() const;
+    bool is_edited() const;
 
     Tie *tie() const { return (Tie *) spanner(); }
 
-    void setStaffMove(int val) { staffMove_ = val; }
+    void set_staff_move(int val) { staff_move_ = val; }
 
-    staff_idx_t vStaffIdx() const override { return staffIdx() + staffMove_; }
+    staff_idx_t v_staff_idx() const override { return staff_idx() + staff_move_; }
 
-    virtual double minShoulderHeight() const;
-    virtual double maxShoulderHeight() const;
-    double endWidth() const override;
-    double midWidth() const override;
-    double dottedWidth() const override;
+    virtual double min_shoulder_height() const;
+    virtual double max_shoulder_height() const;
+    double end_width() const override;
+    double mid_width() const override;
+    double dotted_width() const override;
 
     struct LayoutData : public SlurTieSegment::LayoutData {
-        bool allJumpPointsInactive = false;
+        bool all_jump_points_inactive = false;
     };
     DECLARE_LAYOUTDATA_METHODS(TieSegment)
 
@@ -73,8 +73,8 @@ protected:
     TieSegment(const ElementType &type, Tie *sp);
 
 private:
-    int staffMove_ = 0;
-    std::array<PointF, static_cast<size_t>(Grip::GRIPS)> adjustmentOffsets_;
+    int staff_move_ = 0;
+    std::array<PointF, static_cast<size_t>(Grip::GRIPS)> adjustment_offsets_;
 };
 
 //---------------------------------------------------------
@@ -96,73 +96,73 @@ public:
 
     virtual ~Tie() {}
 
-    virtual Note *startNote() const;
-    virtual void setStartNote(Note *note);
-    virtual Note *endNote() const;
+    virtual Note *start_note() const;
+    virtual void set_start_note(Note *note);
+    virtual Note *end_note() const;
 
-    virtual void setEndNote(Note *note) { setEndElement((EngravingItem *) note); }
+    virtual void set_end_note(Note *note) { set_end_element((EngravingItem *) note); }
 
-    bool isInside() const { return isInside_; }
+    bool is_inside() const { return is_inside_; }
 
-    void setIsInside(bool val) { isInside_ = val; }
+    void set_is_inside(bool val) { is_inside_ = val; }
 
-    virtual bool isOuterTieOfChord(Grip startOrEnd) const;
-    bool hasTiedSecondInside() const;
-    bool isCrossStaff() const;
+    virtual bool is_outer_tie_of_chord(Grip start_or_end) const;
+    bool has_tied_second_inside() const;
+    bool is_cross_staff() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    PropertyValue propertyDefault(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    PropertyValue get_property(Pid property_id) const override;
+    PropertyValue property_default(Pid id) const override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
 
-    TieSegment *frontSegment() { return toTieSegment(Spanner::frontSegment()); }
+    TieSegment *front_segment() { return to_tie_segment(Spanner::front_segment()); }
 
-    const TieSegment *frontSegment() const { return toTieSegment(Spanner::frontSegment()); }
+    const TieSegment *front_segment() const { return to_tie_segment(Spanner::front_segment()); }
 
-    TieSegment *backSegment() { return toTieSegment(Spanner::backSegment()); }
+    TieSegment *back_segment() { return to_tie_segment(Spanner::back_segment()); }
 
-    const TieSegment *backSegment() const { return toTieSegment(Spanner::backSegment()); }
+    const TieSegment *back_segment() const { return to_tie_segment(Spanner::back_segment()); }
 
-    TieSegment *segmentAt(int n) { return toTieSegment(Spanner::segmentAt(n)); }
+    TieSegment *segment_at(int n) { return to_tie_segment(Spanner::segment_at(n)); }
 
-    const TieSegment *segmentAt(int n) const { return toTieSegment(Spanner::segmentAt(n)); }
+    const TieSegment *segment_at(int n) const { return to_tie_segment(Spanner::segment_at(n)); }
 
-    SlurTieSegment *newSlurTieSegment() override { return new TieSegment(this); }
+    SlurTieSegment *new_slur_tie_segment() override { return new TieSegment(this); }
 
-    double scalingFactor() const override;
+    double scaling_factor() const override;
 
-    const TiePlacement &tiePlacement() const { return tiePlacement_; }
+    const TiePlacement &tie_placement() const { return tie_placement_; }
 
-    void setTiePlacement(const TiePlacement &val) { tiePlacement_ = val; }
+    void set_tie_placement(const TiePlacement &val) { tie_placement_ = val; }
 
     // Outgoing ties before repeats
-    void updatePossibleJumpPoints();
-    void addTiesToJumpPoints();
-    void undoRemoveTiesFromJumpPoints();
-    virtual bool allJumpPointsInactive() const;
-    virtual TieJumpPointList *tieJumpPoints();
-    virtual const TieJumpPointList *tieJumpPoints() const;
+    void update_possible_jump_points();
+    void add_ties_to_jump_points();
+    void undo_remove_ties_from_jump_points();
+    virtual bool all_jump_points_inactive() const;
+    virtual TieJumpPointList *tie_jump_points();
+    virtual const TieJumpPointList *tie_jump_points() const;
 
     // Incoming ties after repeats
-    void setJumpPoint(TieJumpPoint *jumpPoint) { jumpPoint_ = jumpPoint; }
+    void set_jump_point(TieJumpPoint *jump_point) { jump_point_ = jump_point; }
 
-    void updateStartTieOnRemoval();
+    void update_start_tie_on_removal();
 
-    TieJumpPoint *jumpPoint() const { return jumpPoint_; }
+    TieJumpPoint *jump_point() const { return jump_point_; }
 
-    Tie *startTie() const;
+    Tie *start_tie() const;
 
-    static void changeTieType(Tie *oldTie, Note *endNote = nullptr);
+    static void change_tie_type(Tie *old_tie, Note *end_note = nullptr);
 
 protected:
     Tie(const ElementType &type, EngravingObject *parent = nullptr);
 
-    bool isInSpannerMap() const override { return false; }
+    bool is_in_spanner_map() const override { return false; }
 
-    bool isInside_ = false;
-    TiePlacement tiePlacement_ = TiePlacement::AUTO;
+    bool is_inside_ = false;
+    TiePlacement tie_placement_ = TiePlacement::AUTO;
 
     // Jump point information for incoming ties after repeats
-    TieJumpPoint *jumpPoint_ = nullptr;
-    TieJumpPointList *startTieJumpPoints() const;
+    TieJumpPoint *jump_point_ = nullptr;
+    TieJumpPointList *start_tie_jump_points() const;
 };
 } // namespace mu::engraving

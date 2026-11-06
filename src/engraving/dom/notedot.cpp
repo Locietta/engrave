@@ -36,21 +36,21 @@ namespace mu::engraving {
 //   NoteDot
 //---------------------------------------------------------
 
-NoteDot::NoteDot(DummyParentOr<Note> parent) : EngravingItem(ElementType::NOTEDOT, parent) { setFlag(ElementFlag::MOVABLE, false); }
+NoteDot::NoteDot(DummyParentOr<Note> parent) : EngravingItem(ElementType::NOTEDOT, parent) { set_flag(ElementFlag::MOVABLE, false); }
 
-NoteDot::NoteDot(Rest *parent) : EngravingItem(ElementType::NOTEDOT, parent) { setFlag(ElementFlag::MOVABLE, false); }
+NoteDot::NoteDot(Rest *parent) : EngravingItem(ElementType::NOTEDOT, parent) { set_flag(ElementFlag::MOVABLE, false); }
 
 //---------------------------------------------------------
 //   elementBase
 //---------------------------------------------------------
 
-EngravingItem *NoteDot::elementBase() const {
-    return ownershipParentItem(); // a dot can belong to a note or a rest
+EngravingItem *NoteDot::element_base() const {
+    return ownership_parent_item(); // a dot can belong to a note or a rest
 }
 
 //---------------------------------------------------------
 //   mag
 //---------------------------------------------------------
 
-double NoteDot::mag() const { return layoutParent()->mag() * style().styleD(Sid::dotMag); }
+double NoteDot::mag() const { return layout_parent()->mag() * style().style_d(Sid::DOT_MAG); }
 } // namespace mu::engraving

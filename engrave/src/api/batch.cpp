@@ -51,9 +51,9 @@ std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<s
 // resolved before it ran has to be resolved again.
 bool structural(const UndoableCommand *command) {
     switch (command->type()) {
-        case CommandType::ChangeProperty:
-        case CommandType::ChangeStyle:
-        case CommandType::ChangeStyleValues: return false;
+        case CommandType::CHANGE_PROPERTY:
+        case CommandType::CHANGE_STYLE:
+        case CommandType::CHANGE_STYLE_VALUES: return false;
         default: return true;
     }
 }
@@ -64,16 +64,16 @@ bool structural(const UndoableCommand *command) {
 std::vector<std::string> id_list(MasterScore &master) {
     std::vector<std::string> ids;
     for (const LiveId &entry : live_ids(master)) {
-        ids.push_back(std::format("{} {} {}/{}/{}", to_string(entry.id), entry.object->typeName(), entry.placement.score,
+        ids.push_back(std::format("{} {} {}/{}/{}", to_string(entry.id), entry.object->type_name(), entry.placement.score,
                                   entry.placement.tick, entry.placement.track));
     }
     std::ranges::sort(ids);
     return ids;
 }
 
-bool engine_failed() { return MScore::_error != MsError::MS_NO_ERROR && !MScore::_errorIsWarning; }
+bool engine_failed() { return MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning; }
 
-bool engine_warned() { return MScore::_error != MsError::MS_NO_ERROR && MScore::_errorIsWarning; }
+bool engine_warned() { return MScore::error != MsError::MS_NO_ERROR && MScore::error_is_warning; }
 
 } // namespace
 
@@ -136,10 +136,10 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
     if (!selection.excerpt) return &master_;
     const Result<Resolved> found = resolve(master_, *selection.excerpt);
     if (!found) return std::unexpected(found.error());
-    if (!found->object->isScore()) {
+    if (!found->object->is_score()) {
         return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a score", to_string(*selection.excerpt)));
     }
-    return mu::engraving::toScore(found->object);
+    return mu::engraving::to_score(found->object);
 }
 
 void EditContext::created(EngravingObject *object) { created_[op_].push_back(object); }
@@ -163,7 +163,7 @@ struct BatchGuard::Snapshot {
     std::vector<Versions> versions;
 };
 
-BatchGuard::BatchGuard(Document &document) : document_(document), context_(*DocumentAccess::impl(document).project->masterScore()) {}
+BatchGuard::BatchGuard(Document &document) : document_(document), context_(*DocumentAccess::impl(document).project->master_score()) {}
 
 Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) const {
     const auto &document = DocumentAccess::impl(document_);
@@ -173,8 +173,8 @@ Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) c
                     std::format("the document is at revision {}, not {}", document.revision, *expected_revision));
     }
     const MasterScore &master = context_.master();
-    const UndoStack *stack = master.undoStack();
-    if (master.readOnly() || stack->isLocked() || stack->hasActiveTransaction())
+    const UndoStack *stack = master.undo_stack();
+    if (master.read_only() || stack->is_locked() || stack->has_active_transaction())
         return fail(ErrorCode::EDIT_REJECTED, "the score cannot be edited now");
     return {};
 }
@@ -227,15 +227,15 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     bool snapshot_ran = snapshot_step.empty() && policy == Policy::SNAPSHOT;
 
     MasterScore &master = context_.master();
-    UndoStack *stack = master.undoStack();
+    UndoStack *stack = master.undo_stack();
     std::optional<Snapshot> snapshot;
     if (policy == Policy::SNAPSHOT) {
         snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz", music::ExportOptions{}, {}),
                             music::semantic_dump(&master).dump(1),
                             id_list(master),
                             {}};
-        for (const mu::engraving::Score *score : master.scoreList())
-            snapshot->versions.push_back({score->mscoreVersion(), score->mscoreRevision(), score->mscVersion(), score->npages() > 0});
+        for (const mu::engraving::Score *score : master.score_list())
+            snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version(), score->npages() > 0});
     }
     const std::vector<LiveId> before = live_ids(master);
     const std::size_t history = stack->size();
@@ -245,34 +245,34 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     bool engine_threw = false;
     const auto check_engine = [&failure, &result, &steps](std::size_t step) {
         if (engine_failed()) {
-            failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine refused it: {}", MScore::errorToString(MScore::_error)),
+            failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine refused it: {}", MScore::error_to_string(MScore::error)),
                             step < steps.size() ? std::optional(step) : std::nullopt};
         } else if (engine_warned()) {
-            result.diagnostics.push_back({Severity::WARNING, MScore::errorToString(MScore::_error)});
+            result.diagnostics.push_back({Severity::WARNING, MScore::error_to_string(MScore::error)});
         }
-        MScore::setError(MsError::MS_NO_ERROR);
+        MScore::set_error(MsError::MS_NO_ERROR);
         return !failure;
     };
     try {
-        MScore::setError(MsError::MS_NO_ERROR);
-        master.startCmd(muse::TranslatableString::untranslatable("engrave edit"));
-        if (!stack->hasActiveTransaction()) return fail(ErrorCode::EDIT_REJECTED, "the engine did not start a transaction");
+        MScore::set_error(MsError::MS_NO_ERROR);
+        master.start_cmd(muse::TranslatableString::untranslatable("engrave edit"));
+        if (!stack->has_active_transaction()) return fail(ErrorCode::EDIT_REJECTED, "the engine did not start a transaction");
         for (std::size_t i = 0; i <= steps.size(); ++i) {
             context_.op_ = i;
             if (hooks.before_step) hooks.before_step(i);
             if (!check_engine(i) || i == steps.size()) break;
             if (i < snapshot_step.size() && snapshot_step[i]) snapshot_ran = true;
-            const std::size_t mark = stack->activeTransaction()->commands().size();
+            const std::size_t mark = stack->active_transaction()->commands().size();
             if (auto applied = steps[i](context_); !applied) {
                 failure = std::move(applied.error());
                 failure->op_index = i;
                 break;
             }
             if (!check_engine(i)) break;
-            const auto &commands = stack->activeTransaction()->commands();
+            const auto &commands = stack->active_transaction()->commands();
             if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++context_.epoch_;
         }
-        if (!failure) master.endCmd(false, true);
+        if (!failure) master.end_cmd(false, true);
     } catch (const std::bad_alloc &) {
         roll_back(snapshot ? &*snapshot : nullptr, history, true);
         throw;
@@ -300,7 +300,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         }
     }
     const bool changed = stack->size() > history;
-    if (!hooks.keep_history) stack->clearHistory();
+    if (!hooks.keep_history) stack->clear_history();
     assign_missing_ids(master);
     IdDiff diff = diff_ids(before, live_ids(master));
     if (changed) ++document.revision;
@@ -312,7 +312,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     result.ops.resize(steps.size());
     for (std::size_t i = 0; i < steps.size(); ++i) {
         for (const EngravingObject *object : context_.created_[i]) {
-            const bool named = object && takes_id(*object) && object->eid().isValid();
+            const bool named = object && takes_id(*object) && object->eid().is_valid();
             result.ops[i].created.push_back(named ? std::optional(from_engine(object->eid())) : std::nullopt);
         }
     }
@@ -324,7 +324,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
 void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool unwind_unsafe) {
     auto &document = DocumentAccess::impl(document_);
     MasterScore &master = context_.master();
-    UndoStack *stack = master.undoStack();
+    UndoStack *stack = master.undo_stack();
     try {
         if (snapshot) {
             // The transaction's unwind keeps the layout the score had; a reload of the
@@ -334,38 +334,38 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
             // unwind is taken whenever it can be trusted to bring the score back
             // exactly: the engine did not throw, and no operation whose rollback policy
             // is Snapshot has run. When it cannot, the snapshot is the way back.
-            const bool active = stack->hasActiveTransaction();
+            const bool active = stack->has_active_transaction();
             if (active && !unwind_unsafe) {
                 // The undo's own layout is the one the score had, so it is kept: a
                 // relayout would read the score back through the layout code that the
                 // snapshot's reload uses and move the elements the same way.
-                master.endCmd(true, true);
+                master.end_cmd(true, true);
                 if (!same_score(*snapshot)) restore(*snapshot);
             } else {
                 // The project is replaced rather than unwound: an operation whose rollback
                 // policy is Snapshot cannot be undone (the excerpt build frees its links
                 // twice), and after a failure in the middle of a command the undo is not
                 // to be trusted either.
-                if (active) stack->endTransaction(true);
+                if (active) stack->end_transaction(true);
                 restore(*snapshot);
             }
-        } else if (stack->hasActiveTransaction()) {
-            master.endCmd(true, true);
+        } else if (stack->has_active_transaction()) {
+            master.end_cmd(true, true);
         } else if (stack->size() > history) {
             // The commit itself failed after the transaction was recorded: undo it,
             // which C2 of the harness proves equal to the unwind.
-            master.undoRedo(true, nullptr);
-            stack->clearHistory();
+            master.undo_redo(true, nullptr);
+            stack->clear_history();
             // The engine's undo lays out the master score only.
-            for (mu::engraving::Score *score : master.scoreList()) {
-                if (score->npages() > 0) score->doLayout();
+            for (mu::engraving::Score *score : master.score_list()) {
+                if (score->npages() > 0) score->do_layout();
             }
         }
     } catch (...) {
         document.poisoned = true;
         throw;
     }
-    MScore::setError(MsError::MS_NO_ERROR);
+    MScore::set_error(MsError::MS_NO_ERROR);
 }
 
 void BatchGuard::restore(const Snapshot &snapshot) {
@@ -377,15 +377,15 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     // layout), so what was laid out is laid out again, as a load does.
     mu::engraving::ScoreLoad load;
     auto versions = snapshot.versions.begin();
-    for (mu::engraving::Score *score : project->masterScore()->scoreList()) {
+    for (mu::engraving::Score *score : project->master_score()->score_list()) {
         if (versions == snapshot.versions.end()) break;
-        score->setMscoreVersion(versions->version);
-        score->setMscoreRevision(versions->revision);
-        score->setMscVersion(versions->msc_version);
-        if (versions->laid_out) score->doLayout();
+        score->set_mscore_version(versions->version);
+        score->set_mscore_revision(versions->revision);
+        score->set_msc_version(versions->msc_version);
+        if (versions->laid_out) score->do_layout();
         ++versions;
     }
-    assign_missing_ids(*project->masterScore());
+    assign_missing_ids(*project->master_score());
     document.project = std::move(project);
 }
 

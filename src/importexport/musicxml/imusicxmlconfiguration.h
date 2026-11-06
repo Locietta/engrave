@@ -30,35 +30,35 @@ class IMusicXmlConfiguration {
 public:
     virtual ~IMusicXmlConfiguration() = default;
 
-    virtual bool importBreaks() const = 0;
-    virtual void setImportBreaks(bool value) = 0;
+    virtual bool import_breaks() const = 0;
+    virtual void set_import_breaks(bool value) = 0;
 
-    virtual bool importLayout() const = 0;
-    virtual void setImportLayout(bool value) = 0;
+    virtual bool import_layout() const = 0;
+    virtual void set_import_layout(bool value) = 0;
 
-    virtual bool exportLayout() const = 0;
-    virtual void setExportLayout(bool value) = 0;
+    virtual bool export_layout() const = 0;
+    virtual void set_export_layout(bool value) = 0;
 
-    virtual bool exportMu3Compat() const = 0;
-    virtual void setExportMu3Compat(bool value) = 0;
+    virtual bool export_mu3_compat() const = 0;
+    virtual void set_export_mu3_compat(bool value) = 0;
 
-    enum class MusicXmlExportBreaksType { All, Manual, No };
+    enum class MusicXmlExportBreaksType { ALL, MANUAL, NO };
 
-    virtual MusicXmlExportBreaksType exportBreaksType() const = 0;
-    virtual void setExportBreaksType(MusicXmlExportBreaksType breaksType) = 0;
+    virtual MusicXmlExportBreaksType export_breaks_type() const = 0;
+    virtual void set_export_breaks_type(MusicXmlExportBreaksType breaks_type) = 0;
 
-    virtual bool exportInvisibleElements() const = 0;
-    virtual void setExportInvisibleElements(bool value) = 0;
+    virtual bool export_invisible_elements() const = 0;
+    virtual void set_export_invisible_elements(bool value) = 0;
 
-    virtual bool needUseDefaultFont() const = 0;
-    virtual void setNeedUseDefaultFont(bool value) = 0;
-    virtual void setNeedUseDefaultFontOverride(std::optional<bool> value) = 0;
+    virtual bool need_use_default_font() const = 0;
+    virtual void set_need_use_default_font(bool value) = 0;
+    virtual void set_need_use_default_font_override(std::optional<bool> value) = 0;
 
-    virtual bool needAskAboutApplyingNewStyle() const = 0;
-    virtual void setNeedAskAboutApplyingNewStyle(bool value) = 0;
+    virtual bool need_ask_about_applying_new_style() const = 0;
+    virtual void set_need_ask_about_applying_new_style(bool value) = 0;
 
-    virtual bool inferTextType() const = 0;
-    virtual void setInferTextType(bool value) = 0;
-    virtual void setInferTextTypeOverride(std::optional<bool> value) = 0;
+    virtual bool infer_text_type() const = 0;
+    virtual void set_infer_text_type(bool value) = 0;
+    virtual void set_infer_text_type_override(std::optional<bool> value) = 0;
 };
 } // namespace mu::iex::musicxml

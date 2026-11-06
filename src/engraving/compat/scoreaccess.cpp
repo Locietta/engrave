@@ -26,16 +26,16 @@
 using namespace mu::engraving;
 using namespace mu::engraving::compat;
 
-MasterScore *ScoreAccess::createMasterScore(const EngravingServices &services) { return new MasterScore(services); }
+MasterScore *ScoreAccess::create_master_score(const EngravingServices &services) { return new MasterScore(services); }
 
-MasterScore *ScoreAccess::createMasterScoreWithBaseStyle(const EngravingServices &services) {
-    return new MasterScore(services, DefaultStyle::baseStyle());
+MasterScore *ScoreAccess::create_master_score_with_base_style(const EngravingServices &services) {
+    return new MasterScore(services, DefaultStyle::base_style());
 }
 
-MasterScore *ScoreAccess::createMasterScoreWithDefaultStyle(const EngravingServices &services) {
-    return new MasterScore(services, DefaultStyle::defaultStyle());
+MasterScore *ScoreAccess::create_master_score_with_default_style(const EngravingServices &services) {
+    return new MasterScore(services, DefaultStyle::default_style());
 }
 
-MasterScore *ScoreAccess::createMasterScore(const EngravingServices &services, const MStyle &style) {
+MasterScore *ScoreAccess::create_master_score(const EngravingServices &services, const MStyle &style) {
     return new MasterScore(services, style);
 }

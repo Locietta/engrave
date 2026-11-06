@@ -38,11 +38,11 @@
 namespace muse::audio::encode {
 class FlacHandler final : public FLAC::Encoder::Stream {
 public:
-    explicit FlacHandler(io::IODevice &outDev) : outDev_{&outDev} { DO_ASSERT(outDev_); }
+    explicit FlacHandler(io::IODevice &out_dev) : out_dev_{&out_dev} { DO_ASSERT(out_dev_); }
 
 protected:
     FLAC__StreamEncoderWriteStatus write_callback(const FLAC__byte buffer[], const size_t bytes, uint32_t, uint32_t) override {
-        if (outDev_->write(buffer, bytes) != bytes) {
+        if (out_dev_->write(buffer, bytes) != bytes) {
             return FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR;
         }
 
@@ -50,7 +50,7 @@ protected:
     }
 
     FLAC__StreamEncoderSeekStatus seek_callback(const FLAC__uint64 absolute_byte_offset) override {
-        if (!outDev_->seek(absolute_byte_offset)) {
+        if (!out_dev_->seek(absolute_byte_offset)) {
             return FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR;
         }
 
@@ -58,30 +58,30 @@ protected:
     }
 
     FLAC__StreamEncoderTellStatus tell_callback(FLAC__uint64 *absolute_byte_offset) override {
-        *absolute_byte_offset = outDev_->pos();
+        *absolute_byte_offset = out_dev_->pos();
         return FLAC__STREAM_ENCODER_TELL_STATUS_OK;
     }
 
 private:
-    io::IODevice *outDev_;
+    io::IODevice *out_dev_;
 };
 
-FlacEncoder::FlacEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice)
-    : AbstractAudioEncoder(format), flac_{std::make_unique<FlacHandler>(dstDevice)} {}
+FlacEncoder::FlacEncoder(const SoundTrackFormat &format, io::IODevice &dst_device)
+    : AbstractAudioEncoder(format), flac_{std::make_unique<FlacHandler>(dst_device)} {}
 
 FlacEncoder::~FlacEncoder() noexcept = default;
 
-bool FlacEncoder::begin(const samples_t totalSamplesNumber) {
-    int bitsPerSample = 0;
-    switch (format_.sampleFormat) {
-        case AudioSampleFormat::Int16: bitsPerSample = 16; break;
-        case AudioSampleFormat::Int24: bitsPerSample = 24; break;
+bool FlacEncoder::begin(const samples_t total_samples_number) {
+    int bits_per_sample = 0;
+    switch (format_.sample_format) {
+        case AudioSampleFormat::INT16: bits_per_sample = 16; break;
+        case AudioSampleFormat::INT24: bits_per_sample = 24; break;
         default: return false;
     }
 
-    if (!flac_->set_verify(true) || !flac_->set_compression_level(0) || !flac_->set_channels(format_.outputSpec.audioChannelCount) ||
-        !flac_->set_sample_rate(format_.outputSpec.sampleRate) || !flac_->set_bits_per_sample(bitsPerSample) ||
-        !flac_->set_total_samples_estimate(totalSamplesNumber)) {
+    if (!flac_->set_verify(true) || !flac_->set_compression_level(0) || !flac_->set_channels(format_.output_spec.audio_channel_count) ||
+        !flac_->set_sample_rate(format_.output_spec.sample_rate) || !flac_->set_bits_per_sample(bits_per_sample) ||
+        !flac_->set_total_samples_estimate(total_samples_number)) {
         return false;
     }
 
@@ -104,42 +104,43 @@ bool FlacEncoder::begin(const samples_t totalSamplesNumber) {
     return true;
 }
 
-size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float *input) {
-    int bitsPerSample = 0;
-    switch (format_.sampleFormat) {
-        case AudioSampleFormat::Int16: bitsPerSample = 16; break;
-        case AudioSampleFormat::Int24: bitsPerSample = 24; break;
+size_t FlacEncoder::encode(const samples_t samples_per_channel, const float *input) {
+    int bits_per_sample = 0;
+    switch (format_.sample_format) {
+        case AudioSampleFormat::INT16: bits_per_sample = 16; break;
+        case AudioSampleFormat::INT24: bits_per_sample = 24; break;
         default: return 0;
     }
 
-    const auto channels = format_.outputSpec.audioChannelCount;
-    if (channels == 0 || samplesPerChannel == 0) {
+    const auto channels = format_.output_spec.audio_channel_count;
+    if (channels == 0 || samples_per_channel == 0) {
         return 0;
     }
 
-    constexpr uint32_t BLOCK_FRAMES = 1024;
-    std::vector<FLAC__int32> blockBuffer(static_cast<size_t>(BLOCK_FRAMES) * channels);
+    constexpr uint32_t block_frames = 1024;
+    std::vector<FLAC__int32> block_buffer(static_cast<size_t>(block_frames) * channels);
 
-    for (samples_t frameStart = 0; frameStart < samplesPerChannel;) {
+    for (samples_t frame_start = 0; frame_start < samples_per_channel;) {
         if (OfflineCancellation::requested()) return 0;
-        const uint32_t framesCount = static_cast<uint32_t>(std::min<samples_t>(BLOCK_FRAMES, samplesPerChannel - frameStart));
+        const uint32_t frames_count = static_cast<uint32_t>(std::min<samples_t>(block_frames, samples_per_channel - frame_start));
 
-        for (size_t frame = 0; frame < framesCount; ++frame) {
+        for (size_t frame = 0; frame < frames_count; ++frame) {
             for (audioch_t c = 0; c < channels; ++c) {
-                const size_t i = (static_cast<size_t>(frameStart) + frame) * channels + c;
-                blockBuffer[static_cast<size_t>(frame) * channels + c] = dsp::convertFloatSamples<FLAC__int32>(input[i], bitsPerSample);
+                const size_t i = (static_cast<size_t>(frame_start) + frame) * channels + c;
+                block_buffer[static_cast<size_t>(frame) * channels + c] =
+                    dsp::convert_float_samples<FLAC__int32>(input[i], bits_per_sample);
             }
         }
 
-        if (!flac_->process_interleaved(blockBuffer.data(), framesCount)) {
+        if (!flac_->process_interleaved(block_buffer.data(), frames_count)) {
             return 0;
         }
 
-        frameStart += framesCount;
+        frame_start += frames_count;
     }
 
-    return static_cast<size_t>(samplesPerChannel) * channels;
+    return static_cast<size_t>(samples_per_channel) * channels;
 }
 
-Ret FlacEncoder::end() { return flac_->finish() ? make_ok() : make_ret(Err::ErrorEncode, "FLAC finalization failed"); }
+Ret FlacEncoder::end() { return flac_->finish() ? make_ok() : make_ret(Err::ERROR_ENCODE, "FLAC finalization failed"); }
 } // namespace muse::audio::encode

@@ -12,15 +12,15 @@ namespace engrave {
 // and Absolute from the property value type; Millimetre and Degree are vocabulary
 // for the per-property units a later slice can add.
 enum struct Unit {
-    None,
-    Spatium,  // staff spaces
-    Absolute, // 1/1200 inch: the engine's DPI (a millimetre is DPMM of these)
-    Millimetre,
-    Degree,
+    NONE,
+    SPATIUM,  // staff spaces
+    ABSOLUTE, // 1/1200 inch: the engine's DPI (a millimetre is DPMM of these)
+    MILLIMETRE,
+    DEGREE,
 };
 
 // The shape of a property or style value.  One per Value alternative.
-enum struct ValueKind { Bool, Int, Real, String, Point, Size, Color, Fraction, Enum, IntList, Opaque };
+enum struct ValueKind { BOOL, INT, REAL, STRING, POINT, SIZE, COLOR, FRACTION, ENUM, INT_LIST, OPAQUE };
 
 namespace detail {
 

@@ -26,24 +26,24 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-FxNode::FxNode(IFxProcessorPtr fxProcessor, PlayheadPositionPtr playheadPosition)
-    : fxProcessor_(fxProcessor), playheadPosition_(playheadPosition) {
-    assert(fxProcessor_ && "FxNode requires a non-null IFxProcessor");
+FxNode::FxNode(IFxProcessorPtr fx_processor, PlayheadPositionPtr playhead_position)
+    : fx_processor_(fx_processor), playhead_position_(playhead_position) {
+    assert(fx_processor_ && "FxNode requires a non-null IFxProcessor");
 
-    setName(std::string("Fx[") + fxProcessor_->name() + "]");
+    set_name(std::string("Fx[") + fx_processor_->name() + "]");
 }
 
-void FxNode::setPlayheadPosition(PlayheadPositionPtr playheadPosition) { playheadPosition_ = playheadPosition; }
+void FxNode::set_playhead_position(PlayheadPositionPtr playhead_position) { playhead_position_ = playhead_position; }
 
-void FxNode::onModeChanged(const ProcessMode mode) { fxProcessor_->setMode(mode); }
+void FxNode::on_mode_changed(const ProcessMode mode) { fx_processor_->set_mode(mode); }
 
-const AudioFxParams &FxNode::params() const { return fxProcessor_->params(); }
+const AudioFxParams &FxNode::params() const { return fx_processor_->params(); }
 
-bool FxNode::shouldProcessDuringSilence() const { return fxProcessor_->shouldProcessDuringSilence(); }
+bool FxNode::should_process_during_silence() const { return fx_processor_->should_process_during_silence(); }
 
-void FxNode::onOutputSpecChanged(const OutputSpec &spec) { fxProcessor_->setOutputSpec(spec); }
+void FxNode::on_output_spec_changed(const OutputSpec &spec) { fx_processor_->set_output_spec(spec); }
 
-void FxNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    samples_t pos = playheadPosition_ ? playheadPosition_->currentPosition().samples() : 0;
-    fxProcessor_->process(buffer, samplesPerChannel, pos);
+void FxNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+    samples_t pos = playhead_position_ ? playhead_position_->current_position().samples() : 0;
+    fx_processor_->process(buffer, samples_per_channel, pos);
 }

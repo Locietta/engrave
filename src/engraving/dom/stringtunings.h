@@ -32,40 +32,40 @@ class StringTunings final : public StaffTextBase {
     DECLARE_CLASSOF(ElementType::STRING_TUNINGS)
 
 public:
-    explicit StringTunings(DummyParentOr<Segment> parent, TextStyleType textStyleType = TextStyleType::STRING_TUNINGS);
+    explicit StringTunings(DummyParentOr<Segment> parent, TextStyleType text_style_type = TextStyleType::STRING_TUNINGS);
     StringTunings(const StringTunings &s);
 
     StringTunings *clone() const override;
 
-    PropertyValue getProperty(Pid id) const override;
-    PropertyValue propertyDefault(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &val) override;
+    PropertyValue get_property(Pid id) const override;
+    PropertyValue property_default(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &val) override;
 
-    const StringData *stringData() const;
-    void setStringData(const StringData &stringData);
-    void undoStringData(const StringData &stringData);
+    const StringData *string_data() const;
+    void set_string_data(const StringData &string_data);
+    void undo_string_data(const StringData &string_data);
 
     const String &preset() const;
-    void setPreset(const String &preset);
+    void set_preset(const String &preset);
 
-    const std::vector<string_idx_t> &visibleStrings() const;
-    void setVisibleStrings(const std::vector<string_idx_t> &visibleStrings);
+    const std::vector<string_idx_t> &visible_strings() const;
+    void set_visible_strings(const std::vector<string_idx_t> &visible_strings);
 
-    void updateText();
+    void update_text();
 
-    bool noStringVisible() const;
+    bool no_string_visible() const;
 
-    void triggerLayout() const override;
+    void trigger_layout() const override;
 
 private:
-    String generateText() const;
+    String generate_text() const;
 
     String preset_;
-    std::vector<string_idx_t> visibleStrings_;
-    StringData stringData_;
+    std::vector<string_idx_t> visible_strings_;
+    StringData string_data_;
 
-    bool noStringVisible_ = false;
-    std::optional<int> stringsNumber_;
+    bool no_string_visible_ = false;
+    std::optional<int> strings_number_;
 };
 } // namespace mu::engraving
 

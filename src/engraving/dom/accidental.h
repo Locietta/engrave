@@ -239,55 +239,55 @@ public:
 
     Note *note() const;
 
-    TranslatableString subtypeUserName() const override;
-    void setSubtype(const AsciiStringView &s);
+    TranslatableString subtype_user_name() const override;
+    void set_subtype(const AsciiStringView &s);
 
-    int subtype() const override { return (int) accidentalType_; }
+    int subtype() const override { return (int) accidental_type_; }
 
-    void setAccidentalType(AccidentalType t);
+    void set_accidental_type(AccidentalType t);
 
-    AccidentalType accidentalType() const { return accidentalType_; }
+    AccidentalType accidental_type() const { return accidental_type_; }
 
-    void setRole(AccidentalRole r) { role_ = r; }
+    void set_role(AccidentalRole r) { role_ = r; }
 
     AccidentalRole role() const { return role_; }
 
     AccidentalBracket bracket() const { return bracket_; }
 
-    void setBracket(AccidentalBracket val) { bracket_ = val; }
+    void set_bracket(AccidentalBracket val) { bracket_ = val; }
 
-    bool parentNoteHasParentheses() const;
+    bool parent_note_has_parentheses() const;
 
-    bool isSmall() const { return isSmall_; }
+    bool is_small() const { return is_small_; }
 
-    void setSmall(bool val) { isSmall_ = val; }
+    void set_small(bool val) { is_small_ = val; }
 
-    SymId symId() const;
+    SymId sym_id() const;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
 
     static AccidentalVal subtype2value(AccidentalType); // return effective pitch offset
     static SymId subtype2symbol(AccidentalType);
     static AsciiStringView subtype2name(AccidentalType);
     static AccidentalType value2subtype(AccidentalVal);
-    static AccidentalType value2MicrotonalSubtype(AccidentalVal val, int quarterOff);
+    static AccidentalType value2_microtonal_subtype(AccidentalVal val, int quarter_off);
     static AccidentalType name2subtype(const AsciiStringView &);
 
-    static bool isMicrotonal(AccidentalType t) { return t > AccidentalType::FLAT3; }
+    static bool is_microtonal(AccidentalType t) { return t > AccidentalType::FLAT3; }
 
-    static double subtype2centOffset(AccidentalType);
-    static AccidentalType centOffset2Subtype(double centOffset);
+    static double subtype2cent_offset(AccidentalType);
+    static AccidentalType cent_offset2_subtype(double cent_offset);
 
-    int stackingOrder() const { return ldata()->stackingNumber + stackingOrderOffset_; }
+    int stacking_order() const { return ldata()->stacking_number + stacking_order_offset_; }
 
     int line() const;
 
-    void computeMag();
+    void compute_mag();
 
     struct LayoutData : public EngravingItem::LayoutData {
         struct Sym {
@@ -295,24 +295,24 @@ public:
             double x;
             double y;
 
-            Sym(SymId _sym, double _x, double _y) : sym(_sym), x(_x), y(_y) {}
+            Sym(SymId input_sym, double input_x, double input_y) : sym(input_sym), x(input_x), y(input_y) {}
         };
 
         std::vector<Sym> syms;
 
-        ld_field<int> stackingNumber = {"[Accidental] stackingNumber", 0};
-        ld_field<int> verticalSubgroup = {"[Accidental] verticalSubgroup", 0};
+        ld_field<int> stacking_number = {"[Accidental] stackingNumber", 0};
+        ld_field<int> vertical_subgroup = {"[Accidental] verticalSubgroup", 0};
         ld_field<int> column = {"[Accidental] column", 0};
         ld_field<std::vector<Accidental *>> octaves = {"[Accidental] octaves", std::vector<Accidental *>{}};
         ld_field<std::vector<Accidental *>> seconds = {"[Accidental] seconds", std::vector<Accidental *>{}};
 
-        bool isValid() const override { return EngravingItem::LayoutData::isValid() && !syms.empty(); }
+        bool is_valid() const override { return EngravingItem::LayoutData::is_valid() && !syms.empty(); }
     };
     DECLARE_LAYOUTDATA_METHODS(Accidental)
 
-    int stackingOrderOffset() const { return stackingOrderOffset_; }
+    int stacking_order_offset() const { return stacking_order_offset_; }
 
-    void setStackingOrderOffset(int v) { stackingOrderOffset_ = v; }
+    void set_stacking_order_offset(int v) { stacking_order_offset_ = v; }
 
 private:
 
@@ -320,12 +320,12 @@ private:
 
     Accidental(DummyParentOr<EngravingItem> parent);
 
-    AccidentalType accidentalType_ = AccidentalType::NONE;
+    AccidentalType accidental_type_ = AccidentalType::NONE;
     AccidentalBracket bracket_ = AccidentalBracket::NONE;
     AccidentalRole role_ = AccidentalRole::AUTO;
-    bool isSmall_ = false;
-    int stackingOrderOffset_ = 0;
+    bool is_small_ = false;
+    int stacking_order_offset_ = 0;
 };
 
-extern AccidentalVal sym2accidentalVal(SymId id);
+extern AccidentalVal sym2accidental_val(SymId id);
 } // namespace mu::engraving

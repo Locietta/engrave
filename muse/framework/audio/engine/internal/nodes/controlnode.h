@@ -34,21 +34,21 @@ namespace muse::audio::engine {
 class ControlNode : public AudioNode<ControlTag> {
 public:
 
-    void setVolume(float value);
+    void set_volume(float value);
     float volume() const;
-    void setPan(float pan);
+    void set_pan(float pan);
     float pan() const;
-    void setMuted(bool muted);
+    void set_muted(bool muted);
     bool muted() const;
 
 protected:
 
-    void updateChannelGains();
+    void update_channel_gains();
 
-    void onOutputSpecChanged(const OutputSpec &spec) override;
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    std::vector<float> channelGains_;
+    std::vector<float> channel_gains_;
 
     float volume_ = 1.0f;
     float pan_ = 0.0f;

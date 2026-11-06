@@ -27,32 +27,32 @@
 using namespace mu::engraving;
 using namespace muse;
 
-void GraceNotesMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    IF_ASSERT_FAILED(item->isChord()) { return; }
+void GraceNotesMetaParser::do_parse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->is_chord()) { return; }
 
-    mpe::ArticulationType type = mpe::ArticulationType::Undefined;
+    mpe::ArticulationType type = mpe::ArticulationType::UNDEFINED;
 
-    const Chord *graceChord = toChord(item);
+    const Chord *grace_chord = to_chord(item);
 
-    if (!graceChord->isChordPlayable()) {
+    if (!grace_chord->is_chord_playable()) {
         return;
     }
 
-    switch (graceChord->noteType()) {
-        case NoteType::ACCIACCATURA: type = mpe::ArticulationType::Acciaccatura; break;
+    switch (grace_chord->note_type()) {
+        case NoteType::ACCIACCATURA: type = mpe::ArticulationType::ACCIACCATURA; break;
 
         case NoteType::APPOGGIATURA:
         case NoteType::GRACE4:
         case NoteType::GRACE16:
-        case NoteType::GRACE32: type = mpe::ArticulationType::PreAppoggiatura; break;
+        case NoteType::GRACE32: type = mpe::ArticulationType::PRE_APPOGGIATURA; break;
 
         case NoteType::GRACE8_AFTER:
         case NoteType::GRACE16_AFTER:
-        case NoteType::GRACE32_AFTER: type = mpe::ArticulationType::PostAppoggiatura; break;
+        case NoteType::GRACE32_AFTER: type = mpe::ArticulationType::POST_APPOGGIATURA; break;
         default: break;
     }
 
-    if (type == mpe::ArticulationType::Undefined) {
+    if (type == mpe::ArticulationType::UNDEFINED) {
         return;
     }
 
@@ -61,5 +61,5 @@ void GraceNotesMetaParser::doParse(const EngravingItem *item, const RenderingCon
         return;
     }
 
-    appendArticulationData(mpe::ArticulationMeta(type, pattern, ctx.nominalTimestamp, ctx.nominalDuration), result);
+    append_articulation_data(mpe::ArticulationMeta(type, pattern, ctx.nominal_timestamp, ctx.nominal_duration), result);
 }

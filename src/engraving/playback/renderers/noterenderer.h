@@ -29,17 +29,17 @@ class Note;
 
 class NoteRenderer {
 public:
-    static bool shouldRender(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations);
+    static bool should_render(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations);
     static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
 
 private:
-    static void renderPartialTie(const Note *outgoingNote, NominalNoteCtx &outgoingNoteCtx);
-    static void renderNormalTie(const Note *firstNote, NominalNoteCtx &firstNoteCtx);
-    static void addTiedNote(const NominalNoteCtx &tiedNoteCtx, NominalNoteCtx &firstNoteCtx);
-    static void updateArticulationBoundaries(const muse::mpe::timestamp_t noteTimestamp, const muse::mpe::duration_t noteDuration,
-                                             muse::mpe::ArticulationMap &articulations);
-    static void applySwingIfNeed(const Note *note, NominalNoteCtx &noteCtx);
+    static void render_partial_tie(const Note *outgoing_note, NominalNoteCtx &outgoing_note_ctx);
+    static void render_normal_tie(const Note *first_note, NominalNoteCtx &first_note_ctx);
+    static void add_tied_note(const NominalNoteCtx &tied_note_ctx, NominalNoteCtx &first_note_ctx);
+    static void update_articulation_boundaries(const muse::mpe::timestamp_t note_timestamp, const muse::mpe::duration_t note_duration,
+                                               muse::mpe::ArticulationMap &articulations);
+    static void apply_swing_if_need(const Note *note, NominalNoteCtx &note_ctx);
 
-    static NominalNoteCtx buildNominalNoteCtx(const Note *note, const RenderingContext &ctx);
+    static NominalNoteCtx build_nominal_note_ctx(const Note *note, const RenderingContext &ctx);
 };
 } // namespace mu::engraving

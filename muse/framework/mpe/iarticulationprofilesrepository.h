@@ -32,10 +32,10 @@ class IArticulationProfilesRepository {
 public:
     virtual ~IArticulationProfilesRepository() = default;
 
-    virtual ArticulationsProfilePtr createNew() const = 0;
-    virtual ArticulationsProfilePtr defaultProfile(const ArticulationFamily family) const = 0;
-    virtual ArticulationsProfilePtr loadProfile(const io::path_t &path) const = 0;
-    virtual void saveProfile(const io::path_t &path, const ArticulationsProfilePtr profilePtr) = 0;
+    virtual ArticulationsProfilePtr create_new() const = 0;
+    virtual ArticulationsProfilePtr default_profile(const ArticulationFamily family) const = 0;
+    virtual ArticulationsProfilePtr load_profile(const io::PathT &path) const = 0;
+    virtual void save_profile(const io::PathT &path, const ArticulationsProfilePtr profile_ptr) = 0;
 };
 } // namespace muse::mpe
 

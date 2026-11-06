@@ -85,7 +85,7 @@ using engrave::PropertyRead;
 using mu::engraving::MasterScore;
 
 // A whole note in the engine's ticks, which is what a Fraction in the API counts.
-constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::DIVISION;
+constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::division;
 
 std::filesystem::path g_assets;
 std::vector<std::filesystem::path> g_corpus;
@@ -133,10 +133,10 @@ TEST(Read, InstrumentLabelNumberFlags500) {
         ASSERT_EQ(parts.size(), 1u);
         const auto *instrument = parts.front()->instrument();
         ASSERT_NE(instrument, nullptr);
-        const auto &label = instrument->instrumentLabel();
+        const auto &label = instrument->instrument_label();
         EXPECT_EQ(label.number(), 1);
-        EXPECT_EQ(label.showNumberLong(), long_flag);
-        EXPECT_EQ(label.showNumberShort(), short_flag);
+        EXPECT_EQ(label.show_number_long(), long_flag);
+        EXPECT_EQ(label.show_number_short(), short_flag);
     };
     const auto check_roundtrip = [&](const std::string &xml, bool long_flag, bool short_flag) {
         auto document = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
@@ -306,7 +306,7 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
     const auto baseline = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(baseline);
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
-        for (auto stage : {Progress::Stage::Converting, Progress::Stage::Serializing}) {
+        for (auto stage : {Progress::Stage::CONVERTING, Progress::Stage::SERIALIZING}) {
             Progress observed;
             const auto result =
                 document->export_score_with_warnings({.format = format,
@@ -324,7 +324,7 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
             EXPECT_EQ(result.error().code, ErrorCode::CANCELLED);
             EXPECT_EQ(observed.stage, stage);
             EXPECT_GE(observed.units, 2u);
-            EXPECT_EQ(engrave::testing::write470_progress().stage, Progress::Stage::None);
+            EXPECT_EQ(engrave::testing::write470_progress().stage, Progress::Stage::NONE);
         }
         // Determine a working allowance reached *inside* serialization, then
         // replay with that allowance. Earlier phases fit; the next growth fails.
@@ -334,7 +334,7 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
              .capture = {.cancelled =
                              [&] {
                                  const auto p = engrave::testing::write470_progress();
-                                 if (!allowance && p.stage == Progress::Stage::Serializing && p.units >= 2) allowance = p.working_bytes;
+                                 if (!allowance && p.stage == Progress::Stage::SERIALIZING && p.units >= 2) allowance = p.working_bytes;
                                  return false;
                              },
                          .max_working_bytes = 128 * 1024 * 1024},
@@ -352,7 +352,7 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
                                                                    .native_version = "4.70"});
         ASSERT_FALSE(limited);
         EXPECT_EQ(limited.error().code, ErrorCode::RESOURCE_LIMIT);
-        EXPECT_EQ(last.stage, Progress::Stage::Serializing);
+        EXPECT_EQ(last.stage, Progress::Stage::SERIALIZING);
         EXPECT_GE(last.units, 2u);
         const auto recovery = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
         ASSERT_TRUE(recovery);
@@ -377,16 +377,16 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     ASSERT_TRUE(opened);
     auto document = std::move(*opened);
     auto &master = master_of(*document);
-    auto *measure = master.firstMeasure();
+    auto *measure = master.first_measure();
     ASSERT_NE(measure, nullptr);
-    auto *next = measure->nextMeasure();
+    auto *next = measure->next_measure();
     ASSERT_NE(next, nullptr);
     const auto id = engrave::from_engine(measure->eid());
     const auto next_id = engrave::from_engine(next->eid());
     mu::engraving::RangeLock lock(measure, measure);
     mu::engraving::RangeLock next_lock(next, next);
-    master.addPageLock(&lock);
-    master.addPageLock(&next_lock);
+    master.add_page_lock(&lock);
+    master.add_page_lock(&next_lock);
 
     struct RemoveLock {
         MasterScore &score;
@@ -394,8 +394,8 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
         const mu::engraving::RangeLock *second;
 
         ~RemoveLock() {
-            score.removePageLock(first);
-            score.removePageLock(second);
+            score.remove_page_lock(first);
+            score.remove_page_lock(second);
         }
     } remove_lock{master, &lock, &next_lock};
 
@@ -409,7 +409,7 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
         EXPECT_EQ(result->warnings[1].code, "B470_PAGE_LOCK_DROPPED");
         ASSERT_TRUE(result->warnings[1].object);
         EXPECT_EQ(result->warnings[1].object->id, engrave::to_string(next_id) + ".." + engrave::to_string(next_id));
-        EXPECT_EQ(master.pageLocks()->allLocks().size(), 2u);
+        EXPECT_EQ(master.page_locks()->all_locks().size(), 2u);
     }
 }
 
@@ -418,7 +418,7 @@ TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
     const auto score_id = engrave::from_engine(master.eid());
-    master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
+    master.style().set(mu::engraving::Sid::MIN_SYSTEM_DISTANCE, mu::engraving::Spatium(99.0));
     const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
@@ -428,15 +428,15 @@ TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
     EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
     ASSERT_TRUE(warning.object);
     EXPECT_EQ(warning.object->id, engrave::to_string(score_id));
-    EXPECT_DOUBLE_EQ(master.style().styleS(mu::engraving::Sid::minSystemDistance).val(), 99.0);
+    EXPECT_DOUBLE_EQ(master.style().style_s(mu::engraving::Sid::MIN_SYSTEM_DISTANCE).val(), 99.0);
 }
 
 TEST(Export470, DeduplicatesUnmappedStylesWithoutPublishing) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
-    master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
-    master.style().set(mu::engraving::Sid::maxSystemDistance, mu::engraving::Spatium(100.0));
+    master.style().set(mu::engraving::Sid::MIN_SYSTEM_DISTANCE, mu::engraving::Spatium(99.0));
+    master.style().set(mu::engraving::Sid::MAX_SYSTEM_DISTANCE, mu::engraving::Spatium(100.0));
     const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
@@ -563,7 +563,7 @@ TEST(Export470, MissingTieIdNamesTheStartNote) {
     // Exercise the explicit non-EID locator when no owner is addressable.
     auto &master = master_of(**document);
     for (auto *object : engrave::document_objects(master))
-        if (object->eid().isValid()) master.eidRegister()->removeItem(object);
+        if (object->eid().is_valid()) master.eid_register()->remove_item(object);
     auto first = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     auto second = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(first);
@@ -578,12 +578,12 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
     auto &master = master_of(*document);
     std::size_t ties = 0;
     for (auto *object : engrave::document_objects(master)) {
-        if (!object->isNote()) continue;
-        auto *tie = static_cast<mu::engraving::Note *>(object)->tieFor();
-        if (!tie || !tie->endNote()) continue;
+        if (!object->is_note()) continue;
+        auto *tie = static_cast<mu::engraving::Note *>(object)->tie_for();
+        if (!tie || !tie->end_note()) continue;
         ++ties;
-        tie->endNote()->setPitch(tie->startNote()->pitch() + 2);
-        tie->startNote()->staff()->setVisible(false);
+        tie->end_note()->set_pitch(tie->start_note()->pitch() + 2);
+        tie->start_note()->staff()->set_visible(false);
     }
     ASSERT_EQ(ties, 4u);
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
@@ -597,7 +597,7 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
 TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
     auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
     ASSERT_TRUE(document);
-    ASSERT_TRUE(master_of(*document).style().styleB(mu::engraving::Sid::windsNameByGroup));
+    ASSERT_TRUE(master_of(*document).style().style_b(mu::engraving::Sid::WINDS_NAME_BY_GROUP));
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_TRUE(result) << result.error().message;
@@ -605,7 +605,7 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
         for (const auto &warning : result->warnings) EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
         auto reopened = g_engine->open(result->bytes, {.format = format});
         ASSERT_TRUE(reopened);
-        EXPECT_FALSE(master_of(**reopened).style().styleB(mu::engraving::Sid::windsNameByGroup));
+        EXPECT_FALSE(master_of(**reopened).style().style_b(mu::engraving::Sid::WINDS_NAME_BY_GROUP));
         auto bytes_only = document->export_score({.format = format, .native_version = "4.70"});
         EXPECT_FALSE(bytes_only);
     }
@@ -641,22 +641,22 @@ void expect_code(const engrave::Result<T> &result, ErrorCode expected, std::stri
 class Command {
 public:
     explicit Command(MasterScore &score) : score_(score) {
-        mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
-        score_.startCmd(muse::TranslatableString::untranslatable("engrave read test"));
+        mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
+        score_.start_cmd(muse::TranslatableString::untranslatable("engrave read test"));
     }
 
     ~Command() {
-        if (open_) score_.endCmd(false, true);
+        if (open_) score_.end_cmd(false, true);
     }
 
     Command(const Command &) = delete;
     Command &operator=(const Command &) = delete;
 
     void commit() {
-        score_.endCmd(false, true);
+        score_.end_cmd(false, true);
         open_ = false;
         engrave::assign_missing_ids(score_);
-        score_.undoStack()->clearHistory();
+        score_.undo_stack()->clear_history();
     }
 
 private:
@@ -856,7 +856,7 @@ TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto &document = **opened;
-    auto *title = master_of(document).getText(mu::engraving::TextStyleType::TITLE);
+    auto *title = master_of(document).get_text(mu::engraving::TextStyleType::TITLE);
     ASSERT_NE(title, nullptr);
     const double before = title->ldata()->bbox().width();
     ASSERT_GT(before, 0.0);
@@ -1026,10 +1026,10 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     // that it is no longer reachable from the document, then restore ownership.
     MasterScore &master = master_of(*document);
     auto *removed = master.excerpts().front();
-    master.removeExcerpt(removed);
+    master.remove_excerpt(removed);
     expect_code(document->outline(excerpt), ErrorCode::STALE_HANDLE, "stale outline");
     expect_code(document->positions(engrave::PositionKind::MEASURE, excerpt), ErrorCode::STALE_HANDLE, "stale score");
-    master.addExcerpt(removed);
+    master.add_excerpt(removed);
 }
 
 TEST(Read, PositionsRefuseAPoisonedDocument) {
@@ -1104,9 +1104,9 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
         ASSERT_TRUE(notes);
         EXPECT_EQ(pitches(*notes), pitches(*source_notes));
         if (format == engrave::Format::MSCX || format == engrave::Format::MSCZ) {
-            EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
-            EXPECT_EQ(master_of(**reopened).metaTag(u"workTitle"), master_of(*document).metaTag(u"workTitle"));
-            EXPECT_EQ(master_of(**reopened).metaTag(u"partName").toStdString(), with_excerpt->excerpts.front().name);
+            EXPECT_DOUBLE_EQ(master_of(**reopened).style().style_s(mu::engraving::Sid::STAFF_DISTANCE).val(), 9.0);
+            EXPECT_EQ(master_of(**reopened).meta_tag(u"workTitle"), master_of(*document).meta_tag(u"workTitle"));
+            EXPECT_EQ(master_of(**reopened).meta_tag(u"partName").to_std_string(), with_excerpt->excerpts.front().name);
         }
     }
     EXPECT_EQ(document->revision(), revision);
@@ -1119,10 +1119,10 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
     expect_code(document->export_score({.format = engrave::Format::MUSIC_XML, .score = {master_notes->elements.front().id}}),
                 ErrorCode::INVALID_ARGUMENT, "note is not an excerpt");
     auto *removed = master_of(*document).excerpts().front();
-    master_of(*document).removeExcerpt(removed);
+    master_of(*document).remove_excerpt(removed);
     expect_code(document->export_score({.format = engrave::Format::MSCZ, .score = selection}), ErrorCode::STALE_HANDLE,
                 "stale excerpt export");
-    master_of(*document).addExcerpt(removed);
+    master_of(*document).add_excerpt(removed);
 }
 
 TEST(Read, MscxMasterExportRetainsStyle) {
@@ -1138,7 +1138,7 @@ TEST(Read, MscxMasterExportRetainsStyle) {
     ASSERT_TRUE(exported);
     const auto reopened = g_engine->open(*exported, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
-    EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
+    EXPECT_DOUBLE_EQ(master_of(**reopened).style().style_s(mu::engraving::Sid::STAFF_DISTANCE).val(), 9.0);
     const auto outline = (*reopened)->outline();
     ASSERT_TRUE(outline);
     ASSERT_EQ(outline->excerpts.size(), original->excerpts.size());
@@ -1194,7 +1194,7 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
 TEST(Read, LargeScoreCaptureStopsBeforeMaterializingTheOutput) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    master_of(*document).setMetaTag(u"workTitle", muse::String::fromStdString(std::string(512 * 1024, 'x')));
+    master_of(*document).set_meta_tag(u"workTitle", muse::String::from_std_string(std::string(512 * 1024, 'x')));
     const auto rejected = document->export_score({.format = engrave::Format::MSCX, .capture = {.max_bytes = 1024}});
     expect_code(rejected, ErrorCode::RESOURCE_LIMIT, "large score output limit");
     const auto success = document->export_score({.format = engrave::Format::MSCX});
@@ -1599,7 +1599,7 @@ TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
     const auto found = engrave::resolve(master_of(*document), id);
     ASSERT_TRUE(found);
     auto *signature = static_cast<mu::engraving::TimeSig *>(found->object);
-    signature->setSig(mu::engraving::Fraction(2, 2));
+    signature->set_sig(mu::engraving::Fraction(2, 2));
     const auto written = document->get(id, {"timesig"});
     ASSERT_TRUE(written);
     ASSERT_EQ(written->size(), 1u);
@@ -1608,7 +1608,7 @@ TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
     EXPECT_EQ(actual.den, 2);
     EXPECT_FALSE(written->front().is_default); // the default is written as 4/4
 
-    signature->setSig(mu::engraving::Fraction(4, 4));
+    signature->set_sig(mu::engraving::Fraction(4, 4));
     const auto default_value = document->get(id, {"timesig"});
     ASSERT_TRUE(default_value);
     ASSERT_EQ(default_value->size(), 1u);
@@ -1665,7 +1665,7 @@ TEST(Read, LimitsAreEnforced) {
     {
         Command command(master);
         for (std::size_t i = 0; i <= engrave::max_query_results; ++i) {
-            if (!master.Score::insertMeasure(mu::engraving::ElementType::MEASURE, nullptr)) {
+            if (!master.Score::insert_measure(mu::engraving::ElementType::MEASURE, nullptr)) {
                 GTEST_SKIP() << "the engine did not append a measure";
             }
         }
@@ -1673,10 +1673,10 @@ TEST(Read, LimitsAreEnforced) {
     }
     engrave::Query everything;
     everything.types = {"Measure"};
-    const auto tooMany = document->query(everything);
-    ASSERT_FALSE(tooMany) << "a query over " << everything.types.front() << " elements succeeded";
-    EXPECT_EQ(tooMany.error().code, ErrorCode::RESOURCE_LIMIT);
-    EXPECT_FALSE(tooMany.error().message.empty());
+    const auto too_many = document->query(everything);
+    ASSERT_FALSE(too_many) << "a query over " << everything.types.front() << " elements succeeded";
+    EXPECT_EQ(too_many.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_FALSE(too_many.error().message.empty());
 
     // The same score narrowed to a measure window fits again.
     everything.first_measure = 0;
@@ -1725,7 +1725,7 @@ TEST(Read, GetReadsProperties) {
         Command command(master);
         const auto dynamic = engrave::resolve(master, dynamic_id);
         ASSERT_TRUE(dynamic) << dynamic.error().message;
-        dynamic->object->undoResetProperty(mu::engraving::Pid::MIN_DISTANCE);
+        dynamic->object->undo_reset_property(mu::engraving::Pid::MIN_DISTANCE);
         command.commit();
     }
     auto styled = document->get(dynamic_id, {"minDistance"});
@@ -1738,8 +1738,8 @@ TEST(Read, GetReadsProperties) {
         Command command(master);
         const auto dynamic = engrave::resolve(master, dynamic_id);
         ASSERT_TRUE(dynamic) << dynamic.error().message;
-        dynamic->object->undoChangeProperty(mu::engraving::Pid::MIN_DISTANCE, mu::engraving::PropertyValue::fromValue(2.5),
-                                            mu::engraving::PropertyFlags::UNSTYLED);
+        dynamic->object->undo_change_property(mu::engraving::Pid::MIN_DISTANCE, mu::engraving::PropertyValue::from_value(2.5),
+                                              mu::engraving::PropertyFlags::UNSTYLED);
         command.commit();
     }
     auto changed = document->get(dynamic_id, {"minDistance"});
@@ -1752,7 +1752,7 @@ TEST(Read, GetReadsProperties) {
         Command command(master);
         const auto dynamic = engrave::resolve(master, dynamic_id);
         ASSERT_TRUE(dynamic) << dynamic.error().message;
-        dynamic->object->undoResetProperty(mu::engraving::Pid::MIN_DISTANCE);
+        dynamic->object->undo_reset_property(mu::engraving::Pid::MIN_DISTANCE);
         command.commit();
     }
     auto reset = document->get(dynamic_id, {"minDistance"});
@@ -1965,8 +1965,8 @@ std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document &
     if (format == engrave::Format::MSCX) {
         const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
-        while (!reader.atEnd()) reader.readNext();
-        EXPECT_FALSE(reader.isError()) << reader.errorString().toStdString();
+        while (!reader.at_end()) reader.read_next();
+        EXPECT_FALSE(reader.is_error()) << reader.error_string().to_std_string();
     }
     auto reopened = g_engine->open(*saved, {.format = format});
     EXPECT_TRUE(reopened);
@@ -2024,7 +2024,7 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
         const auto check = [&](engrave::Document &document) {
             const auto dynamics = imported_dynamics(document);
             ASSERT_EQ(dynamics.size(), 1u);
-            EXPECT_EQ(dynamics.front()->getProperty(mu::engraving::Pid::VELOCITY).toInt(), c.direction);
+            EXPECT_EQ(dynamics.front()->get_property(mu::engraving::Pid::VELOCITY).to_int(), c.direction);
             engrave::Query query;
             query.types = {"Note"};
             const auto notes = document.query(query);
@@ -2032,7 +2032,7 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
             ASSERT_EQ(notes->elements.size(), 1u);
             const auto note = engrave::resolve(master_of(document), notes->elements.front().id);
             ASSERT_TRUE(note);
-            EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->userVelocity(), c.note);
+            EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->user_velocity(), c.note);
         };
         check(**opened);
         for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
@@ -2050,11 +2050,11 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
     ASSERT_EQ(notes->elements.size(), 1u);
     const auto note = engrave::resolve(master_of(**plain), notes->elements.front().id);
     ASSERT_TRUE(note);
-    EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->userVelocity(), 0);
+    EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->user_velocity(), 0);
 
-    const std::string longNumber(100000, '9');
+    const std::string long_number(100000, '9');
     const auto direction = std::format(
-        R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", longNumber);
+        R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", long_number);
     auto large = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(large);
     const auto dynamics = imported_dynamics(**large);
@@ -2125,9 +2125,9 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
                 ASSERT_EQ(dynamics.size(), 1u);
                 // The native XML reader discards whitespace-only nodes around
                 // embedded symbols; import itself preserves the source text.
-                const bool nativeWhitespace = reopened && std::string_view(c.children) == "<other-dynamics> f </other-dynamics>";
-                EXPECT_EQ(dynamics.front()->xmlText().toStdString(), nativeWhitespace ? "<sym>dynamicForte</sym>" : c.xml);
-                EXPECT_EQ(dynamics.front()->dynamicType(), c.type);
+                const bool native_whitespace = reopened && std::string_view(c.children) == "<other-dynamics> f </other-dynamics>";
+                EXPECT_EQ(dynamics.front()->xml_text().to_std_string(), native_whitespace ? "<sym>dynamicForte</sym>" : c.xml);
+                EXPECT_EQ(dynamics.front()->dynamic_type(), c.type);
                 if (c.type == DynamicType::OTHER) EXPECT_EQ(dynamics.front()->velocity(), -1);
                 EXPECT_TRUE(dynamics.front()->visible());
             };
@@ -2152,8 +2152,8 @@ TEST(Read, MusicXmlManyLiteralSpansPreserveText) {
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
-    EXPECT_EQ(dynamics.front()->dynamicType(), mu::engraving::DynamicType::F);
-    EXPECT_EQ(dynamics.front()->xmlText().toStdString(), literal + "<sym>dynamicForte</sym>");
+    EXPECT_EQ(dynamics.front()->dynamic_type(), mu::engraving::DynamicType::F);
+    EXPECT_EQ(dynamics.front()->xml_text().to_std_string(), literal + "<sym>dynamicForte</sym>");
 }
 
 TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
@@ -2172,13 +2172,13 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
             ASSERT_EQ(dynamics.size(), 2u);
             std::set<DynamicType> types;
             for (const auto *dynamic : dynamics) {
-                types.insert(dynamic->dynamicType());
-                const bool piano = dynamic->dynamicType() == DynamicType::P;
+                types.insert(dynamic->dynamic_type());
+                const bool piano = dynamic->dynamic_type() == DynamicType::P;
                 EXPECT_TRUE(dynamic->visible());
-                EXPECT_EQ(dynamic->color(), muse::Color::fromString(piano ? "#FF0000" : "#0000FF"));
+                EXPECT_EQ(dynamic->color(), muse::Color::from_string(piano ? "#FF0000" : "#0000FF"));
                 EXPECT_EQ(dynamic->placement(), notation && piano ? PlacementV::ABOVE : PlacementV::BELOW);
-                EXPECT_EQ(dynamic->frameType(), piano ? FrameType::CIRCLE : FrameType::RECTANGLE);
-                EXPECT_EQ(dynamic->tick().ticks(), notation ? 0 : Constants::DIVISION);
+                EXPECT_EQ(dynamic->frame_type(), piano ? FrameType::CIRCLE : FrameType::RECTANGLE);
+                EXPECT_EQ(dynamic->tick().ticks(), notation ? 0 : Constants::division);
             }
             EXPECT_EQ(types, (std::set<DynamicType>{DynamicType::P, DynamicType::F}));
         };
@@ -2201,8 +2201,8 @@ TEST(Read, MusicXmlDynamicsKeepPerContainerInferredPlacement) {
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 2u);
     for (const auto *dynamic : dynamics) {
-        EXPECT_EQ(dynamic->placement(), dynamic->dynamicType() == mu::engraving::DynamicType::P ? mu::engraving::PlacementV::ABOVE :
-                                                                                                  mu::engraving::PlacementV::BELOW);
+        EXPECT_EQ(dynamic->placement(), dynamic->dynamic_type() == mu::engraving::DynamicType::P ? mu::engraving::PlacementV::ABOVE :
+                                                                                                   mu::engraving::PlacementV::BELOW);
     }
 }
 
@@ -2244,9 +2244,9 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
             ASSERT_TRUE(opened);
             const auto dynamics = imported_dynamics(**opened);
             ASSERT_EQ(dynamics.size(), 1u);
-            EXPECT_EQ(dynamics.front()->dynamicType(), c.type);
+            EXPECT_EQ(dynamics.front()->dynamic_type(), c.type);
             EXPECT_EQ(dynamics.front()->velocity(), c.velocity);
-            EXPECT_EQ(dynamics.front()->changeInVelocity(), c.change);
+            EXPECT_EQ(dynamics.front()->change_in_velocity(), c.change);
         }
     }
 }
@@ -2254,16 +2254,16 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
 TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     auto seed = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(seed);
-    auto &config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).musicXml());
+    auto &config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).music_xml());
 
     struct RestoreInference {
         mu::iex::musicxml::IMusicXmlConfiguration &config;
         bool previous;
 
-        ~RestoreInference() { config.setInferTextTypeOverride(previous); }
-    } restore{config, config.inferTextType()};
+        ~RestoreInference() { config.set_infer_text_type_override(previous); }
+    } restore{config, config.infer_text_type()};
 
-    config.setInferTextTypeOverride(true);
+    config.set_infer_text_type_override(true);
     const auto xml = dynamics_musicxml(R"(<direction><direction-type><dynamics><mp/></dynamics>
 <words>-</words><dynamics><f/></dynamics></direction-type></direction>)",
                                        "");
@@ -2271,15 +2271,15 @@ TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
-    EXPECT_EQ(dynamics.front()->xmlText().toStdString(),
+    EXPECT_EQ(dynamics.front()->xml_text().to_std_string(),
               "<sym>dynamicMezzo</sym><sym>dynamicPiano</sym><sym>dynamicCombinedSeparatorHyphen</sym><sym>dynamicForte</sym>");
     const auto words = dynamics_musicxml("<direction><direction-type><words>mf</words></direction-type></direction>", "");
     auto inferred = g_engine->open(as_bytes(words), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(inferred);
-    const auto wordDynamics = imported_dynamics(**inferred);
-    ASSERT_EQ(wordDynamics.size(), 1u);
-    EXPECT_EQ(wordDynamics.front()->dynamicType(), mu::engraving::DynamicType::MF);
-    EXPECT_EQ(wordDynamics.front()->velocity(), 80);
+    const auto word_dynamics = imported_dynamics(**inferred);
+    ASSERT_EQ(word_dynamics.size(), 1u);
+    EXPECT_EQ(word_dynamics.front()->dynamic_type(), mu::engraving::DynamicType::MF);
+    EXPECT_EQ(word_dynamics.front()->velocity(), 80);
 }
 
 TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
@@ -2294,7 +2294,7 @@ TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
                 const auto dynamics = imported_dynamics(doc);
                 ASSERT_EQ(dynamics.size(), 1u);
                 const bool other = children == "<ff/><pp/>";
-                EXPECT_EQ(dynamics.front()->dynamicType(), other ? DynamicType::OTHER : DynamicType::FP);
+                EXPECT_EQ(dynamics.front()->dynamic_type(), other ? DynamicType::OTHER : DynamicType::FP);
                 EXPECT_EQ(dynamics.front()->velocity(), sound ? 45 : (other ? -1 : 96));
             };
             check(**opened);
@@ -2323,13 +2323,13 @@ TEST(Read, MusicXmlLiteralDynamicsExportReimport) {
         ASSERT_TRUE(saved);
         const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
-        while (!reader.atEnd()) reader.readNext();
-        EXPECT_FALSE(reader.isError());
+        while (!reader.at_end()) reader.read_next();
+        EXPECT_FALSE(reader.is_error());
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
-        EXPECT_EQ(dynamics.front()->xmlText().toStdString(), literal);
+        EXPECT_EQ(dynamics.front()->xml_text().to_std_string(), literal);
     }
 }
 
@@ -2345,8 +2345,8 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
             const auto check = [&](engrave::Document &doc) {
                 const auto dynamics = imported_dynamics(doc);
                 ASSERT_EQ(dynamics.size(), 1u);
-                EXPECT_EQ(dynamics.front()->dynamicType(), tag == "f" ? DynamicType::F : DynamicType::FP);
-                EXPECT_FALSE(dynamics.front()->hasCustomText());
+                EXPECT_EQ(dynamics.front()->dynamic_type(), tag == "f" ? DynamicType::F : DynamicType::FP);
+                EXPECT_FALSE(dynamics.front()->has_custom_text());
             };
             check(**opened);
             for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
@@ -2375,7 +2375,7 @@ TEST(Read, MusicXmlSingleSmuflDynamicsExportReimport) {
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
-        EXPECT_EQ(dynamics.front()->xmlText().toStdString(), std::format("<sym>{}</sym>", name));
+        EXPECT_EQ(dynamics.front()->xml_text().to_std_string(), std::format("<sym>{}</sym>", name));
     }
 }
 
@@ -2398,10 +2398,10 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
-        const auto text = original.front()->xmlText();
-        const auto type = original.front()->dynamicType();
+        const auto text = original.front()->xml_text();
+        const auto type = original.front()->dynamic_type();
         const auto velocity = original.front()->velocity();
-        const auto velocityChange = original.front()->changeInVelocity();
+        const auto velocity_change = original.front()->change_in_velocity();
         if (children.starts_with("<other-dynamics>sempre f</other-dynamics>")) {
             EXPECT_EQ(type, mu::engraving::DynamicType::F);
         } else if (children.starts_with("<other-dynamics>sempre </other-dynamics><f/>")) {
@@ -2423,10 +2423,10 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
-        EXPECT_EQ(dynamics.front()->xmlText(), text);
-        EXPECT_EQ(dynamics.front()->dynamicType(), type);
+        EXPECT_EQ(dynamics.front()->xml_text(), text);
+        EXPECT_EQ(dynamics.front()->dynamic_type(), type);
         EXPECT_EQ(dynamics.front()->velocity(), velocity);
-        EXPECT_EQ(dynamics.front()->changeInVelocity(), velocityChange);
+        EXPECT_EQ(dynamics.front()->change_in_velocity(), velocity_change);
     }
 }
 
@@ -2437,17 +2437,17 @@ TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
     ASSERT_TRUE(opened);
     const auto original = imported_dynamics(**opened);
     ASSERT_EQ(original.size(), 1u);
-    EXPECT_EQ(original.front()->dynamicType(), mu::engraving::DynamicType::F);
+    EXPECT_EQ(original.front()->dynamic_type(), mu::engraving::DynamicType::F);
     const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(saved);
     auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(reopened);
     const auto dynamics = imported_dynamics(**reopened);
     ASSERT_EQ(dynamics.size(), 1u);
-    EXPECT_EQ(dynamics.front()->dynamicType(), original.front()->dynamicType());
-    EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
+    EXPECT_EQ(dynamics.front()->dynamic_type(), original.front()->dynamic_type());
+    EXPECT_EQ(dynamics.front()->xml_text(), original.front()->xml_text());
     EXPECT_EQ(dynamics.front()->velocity(), original.front()->velocity());
-    EXPECT_EQ(dynamics.front()->changeInVelocity(), original.front()->changeInVelocity());
+    EXPECT_EQ(dynamics.front()->change_in_velocity(), original.front()->change_in_velocity());
 }
 
 TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
@@ -2461,17 +2461,17 @@ TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
         const auto expected = children.starts_with("<f/>") ? mu::engraving::DynamicType::F : mu::engraving::DynamicType::SF;
-        EXPECT_EQ(original.front()->dynamicType(), expected);
+        EXPECT_EQ(original.front()->dynamic_type(), expected);
         const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
-        EXPECT_EQ(dynamics.front()->dynamicType(), original.front()->dynamicType());
-        EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
+        EXPECT_EQ(dynamics.front()->dynamic_type(), original.front()->dynamic_type());
+        EXPECT_EQ(dynamics.front()->xml_text(), original.front()->xml_text());
         EXPECT_EQ(dynamics.front()->velocity(), original.front()->velocity());
-        EXPECT_EQ(dynamics.front()->changeInVelocity(), original.front()->changeInVelocity());
+        EXPECT_EQ(dynamics.front()->change_in_velocity(), original.front()->change_in_velocity());
     }
 }
 
@@ -2483,7 +2483,7 @@ TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
-        const auto type = original.front()->dynamicType();
+        const auto type = original.front()->dynamic_type();
         const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
         const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
@@ -2492,8 +2492,8 @@ TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
-        EXPECT_EQ(dynamics.front()->dynamicType(), type);
-        EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
+        EXPECT_EQ(dynamics.front()->dynamic_type(), type);
+        EXPECT_EQ(dynamics.front()->xml_text(), original.front()->xml_text());
     }
 }
 
@@ -2503,8 +2503,8 @@ TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
-    dynamics.front()->setDynamicType(mu::engraving::DynamicType::OTHER);
-    dynamics.front()->setXmlText(u"<sym>ornamentPrallMordent</sym>");
+    dynamics.front()->set_dynamic_type(mu::engraving::DynamicType::OTHER);
+    dynamics.front()->set_xml_text(u"<sym>ornamentPrallMordent</sym>");
     const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(saved);
     const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
@@ -2519,7 +2519,7 @@ TEST(Read, MusicXmlNotationDynamicsKeepExistingVisibility) {
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
     EXPECT_TRUE(dynamics.front()->visible());
-    EXPECT_EQ(dynamics.front()->dynamicType(), mu::engraving::DynamicType::FP);
+    EXPECT_EQ(dynamics.front()->dynamic_type(), mu::engraving::DynamicType::FP);
 }
 
 // --- corpus discovery ----------------------------------------------------
@@ -2551,8 +2551,8 @@ std::string chordline_offset_fixture() {
 
 std::vector<mu::engraving::ChordLine *> offset_test_lines(mu::engraving::Score &score) {
     std::vector<mu::engraving::ChordLine *> lines;
-    score.scanElements([&](mu::engraving::EngravingItem *item) {
-        if (item->isChordLine()) lines.push_back(mu::engraving::toChordLine(item));
+    score.scan_elements([&](mu::engraving::EngravingItem *item) {
+        if (item->is_chord_line()) lines.push_back(mu::engraving::to_chord_line(item));
     });
     return lines;
 }
@@ -2560,13 +2560,13 @@ std::vector<mu::engraving::ChordLine *> offset_test_lines(mu::engraving::Score &
 std::string offset_test_write(const mu::engraving::ChordLine *line) {
     muse::ByteArray bytes;
     muse::io::Buffer buffer(&bytes);
-    buffer.open(muse::io::IODevice::WriteOnly);
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
     {
         mu::engraving::XmlWriter xml(&buffer);
         mu::engraving::write::WriteContext ctx(line->score());
         mu::engraving::write::TWrite::write(line, xml, ctx);
     }
-    return {reinterpret_cast<const char *>(bytes.constData()), bytes.size()};
+    return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
 }
 
 TEST(Read, ChordLineOffsetsEachAndCombined500) {
@@ -2601,9 +2601,9 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                     auto lines = offset_test_lines(master);
                     ASSERT_EQ(lines.size(), 1u);
                     auto *line = lines[0];
-                    EXPECT_EQ(line->hasSourceOffsets(), mask != 0);
-                    const double unit = line->offsetIsSpatiumDependent() ? master.style().spatium() : mu::engraving::DPMM;
-                    const double sp = line->spatium(), mag = line->chord()->intrinsicMag();
+                    EXPECT_EQ(line->has_source_offsets(), mask != 0);
+                    const double unit = line->offset_is_spatium_dependent() ? master.style().spatium() : mu::engraving::dpmm;
+                    const double sp = line->spatium(), mag = line->chord()->intrinsic_mag();
                     if (small) EXPECT_LT(mag, 1.0);
                     const double x = (type == "3" || type == "4") ? -1.2 : 1.2;
                     const double y = (type == "1" || type == "4") ? 1.0 : -1.0;
@@ -2612,18 +2612,18 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                             std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(0, y / 2), muse::PointF(x / 2, y),
                                                         muse::PointF(x, y)} :
                             std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(x / 2, 0), muse::PointF(x, y / 2), muse::PointF(x, y)};
-                    ASSERT_EQ(line->ldata()->path.elementCount(), 4u);
+                    ASSERT_EQ(line->ldata()->path.element_count(), 4u);
                     for (size_t i = 0; i < 4; ++i) {
                         const auto offset = (mask & (1 << i)) ? input[i] : muse::PointF();
-                        EXPECT_NEAR(line->sourceOffsets()[i].x(), offset.x() * unit, 1e-6);
-                        EXPECT_NEAR(line->sourceOffsets()[i].y(), offset.y() * unit, 1e-6);
-                        const auto &p = line->ldata()->path.elementAt(i);
+                        EXPECT_NEAR(line->source_offsets()[i].x(), offset.x() * unit, 1e-6);
+                        EXPECT_NEAR(line->source_offsets()[i].y(), offset.y() * unit, 1e-6);
+                        const auto &p = line->ldata()->path.element_at(i);
                         EXPECT_NEAR(p.x, (defaults[i].x() * sp + offset.x() * unit) * mag, 1e-6);
                         EXPECT_NEAR(p.y, (defaults[i].y() * sp + offset.y() * unit) * mag, 1e-6);
                     }
                     std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
-                    EXPECT_EQ(copy->hasSourceOffsets(), mask != 0);
-                    EXPECT_EQ(copy->sourceOffsets(), line->sourceOffsets());
+                    EXPECT_EQ(copy->has_source_offsets(), mask != 0);
+                    EXPECT_EQ(copy->source_offsets(), line->source_offsets());
                     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
                         auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
                         ASSERT_TRUE(saved) << saved.error().message;
@@ -2631,10 +2631,10 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                         ASSERT_TRUE(reopened) << reopened.error().message;
                         auto roundtrip = offset_test_lines(master_of(**reopened));
                         ASSERT_EQ(roundtrip.size(), 1u);
-                        EXPECT_EQ(roundtrip[0]->hasSourceOffsets(), mask != 0);
+                        EXPECT_EQ(roundtrip[0]->has_source_offsets(), mask != 0);
                         for (size_t i = 0; i < 4; ++i) {
-                            EXPECT_NEAR(roundtrip[0]->sourceOffsets()[i].x(), line->sourceOffsets()[i].x(), 1e-6);
-                            EXPECT_NEAR(roundtrip[0]->sourceOffsets()[i].y(), line->sourceOffsets()[i].y(), 1e-6);
+                            EXPECT_NEAR(roundtrip[0]->source_offsets()[i].x(), line->source_offsets()[i].x(), 1e-6);
+                            EXPECT_NEAR(roundtrip[0]->source_offsets()[i].y(), line->source_offsets()[i].y(), 1e-6);
                         }
                     }
                 }
@@ -2652,14 +2652,14 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
         auto *line = lines[0];
-        const auto source = line->sourceOffsets();
-        if (line->isStraight()) {
-            ASSERT_EQ(line->ldata()->path.elementCount(), 2u);
-            const double mag = line->chord()->intrinsicMag();
-            EXPECT_NEAR(line->ldata()->path.elementAt(0).x, source[0].x() * mag, 1e-6);
-            EXPECT_NEAR(line->ldata()->path.elementAt(1).x, (1.2 * line->spatium() + source[3].x()) * mag, 1e-6);
-        } else if (line->isWavy()) {
-            EXPECT_EQ(line->ldata()->path.elementCount(), 0u);
+        const auto source = line->source_offsets();
+        if (line->is_straight()) {
+            ASSERT_EQ(line->ldata()->path.element_count(), 2u);
+            const double mag = line->chord()->intrinsic_mag();
+            EXPECT_NEAR(line->ldata()->path.element_at(0).x, source[0].x() * mag, 1e-6);
+            EXPECT_NEAR(line->ldata()->path.element_at(1).x, (1.2 * line->spatium() + source[3].x()) * mag, 1e-6);
+        } else if (line->is_wavy()) {
+            EXPECT_EQ(line->ldata()->path.element_count(), 0u);
         }
         // Serialize a clone with no layout path. Call the writer directly, so
         // an export helper cannot silently repair layout before this assertion.
@@ -2676,11 +2676,11 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         auto reloaded = offset_test_lines(master_of(**reopened));
         ASSERT_EQ(reloaded.size(), 1u);
         for (size_t i = 0; i < 4; ++i) {
-            EXPECT_NEAR(reloaded[0]->sourceOffsets()[i].x(), source[i].x(), 1e-6);
-            EXPECT_NEAR(reloaded[0]->sourceOffsets()[i].y(), source[i].y(), 1e-6);
+            EXPECT_NEAR(reloaded[0]->source_offsets()[i].x(), source[i].x(), 1e-6);
+            EXPECT_NEAR(reloaded[0]->source_offsets()[i].y(), source[i].y(), 1e-6);
         }
-        EXPECT_EQ(reloaded[0]->isStraight(), line->isStraight());
-        EXPECT_EQ(reloaded[0]->isWavy(), line->isWavy());
+        EXPECT_EQ(reloaded[0]->is_straight(), line->is_straight());
+        EXPECT_EQ(reloaded[0]->is_wavy(), line->is_wavy());
     }
 }
 
@@ -2692,9 +2692,9 @@ TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
         ASSERT_TRUE(document);
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
-        ASSERT_FALSE(lines[0]->offsetIsSpatiumDependent());
-        EXPECT_NEAR(lines[0]->sourceOffsets()[3].x(), mu::engraving::DPMM, 1e-6);
-        const auto source = lines[0]->sourceOffsets();
+        ASSERT_FALSE(lines[0]->offset_is_spatium_dependent());
+        EXPECT_NEAR(lines[0]->source_offsets()[3].x(), mu::engraving::dpmm, 1e-6);
+        const auto source = lines[0]->source_offsets();
         for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
             auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
             ASSERT_TRUE(saved);
@@ -2702,10 +2702,10 @@ TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
             ASSERT_TRUE(reopened);
             auto again = offset_test_lines(master_of(**reopened));
             ASSERT_EQ(again.size(), 1u);
-            EXPECT_FALSE(again[0]->offsetIsSpatiumDependent());
+            EXPECT_FALSE(again[0]->offset_is_spatium_dependent());
             for (size_t i = 0; i < 4; ++i) {
-                EXPECT_NEAR(again[0]->sourceOffsets()[i].x(), source[i].x(), 1e-6);
-                EXPECT_NEAR(again[0]->sourceOffsets()[i].y(), source[i].y(), 1e-6);
+                EXPECT_NEAR(again[0]->source_offsets()[i].x(), source[i].x(), 1e-6);
+                EXPECT_NEAR(again[0]->source_offsets()[i].y(), source[i].y(), 1e-6);
             }
         }
     }
@@ -2733,17 +2733,17 @@ TEST(Read, ChordLinePhysicalOffsetsFollowBothSpatiumCallbacks) {
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
         auto *line = lines[0];
-        const auto original = line->sourceOffsets();
-        master_of(**document).spatiumChanged(1.0, 1.25);
-        line->staff()->setLocalSpatium(1.0, 0.8, mu::engraving::Fraction(0, 1));
+        const auto original = line->source_offsets();
+        master_of(**document).spatium_changed(1.0, 1.25);
+        line->staff()->set_local_spatium(1.0, 0.8, mu::engraving::Fraction(0, 1));
         for (size_t i = 0; i < 4; ++i) {
-            EXPECT_NEAR(line->sourceOffsets()[i].x(), original[i].x(), 1e-9);
-            EXPECT_NEAR(line->sourceOffsets()[i].y(), original[i].y(), 1e-9);
+            EXPECT_NEAR(line->source_offsets()[i].x(), original[i].x(), 1e-9);
+            EXPECT_NEAR(line->source_offsets()[i].y(), original[i].y(), 1e-9);
         }
-        line->staff()->setLocalSpatium(1.0, 0.75, mu::engraving::Fraction(0, 1));
+        line->staff()->set_local_spatium(1.0, 0.75, mu::engraving::Fraction(0, 1));
         for (size_t i = 0; i < 4; ++i) {
-            EXPECT_NEAR(line->sourceOffsets()[i].x(), original[i].x() * 0.75, 1e-9);
-            EXPECT_NEAR(line->sourceOffsets()[i].y(), original[i].y() * 0.75, 1e-9);
+            EXPECT_NEAR(line->source_offsets()[i].x(), original[i].x() * 0.75, 1e-9);
+            EXPECT_NEAR(line->source_offsets()[i].y(), original[i].y() * 0.75, 1e-9);
         }
         auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved);
@@ -2752,8 +2752,8 @@ TEST(Read, ChordLinePhysicalOffsetsFollowBothSpatiumCallbacks) {
         auto again = offset_test_lines(master_of(**reopened));
         ASSERT_EQ(again.size(), 1u);
         for (size_t i = 0; i < 4; ++i) {
-            EXPECT_NEAR(again[0]->sourceOffsets()[i].x(), original[i].x() * 0.75, 1e-6);
-            EXPECT_NEAR(again[0]->sourceOffsets()[i].y(), original[i].y() * 0.75, 1e-6);
+            EXPECT_NEAR(again[0]->source_offsets()[i].x(), original[i].x() * 0.75, 1e-6);
+            EXPECT_NEAR(again[0]->source_offsets()[i].y(), original[i].y() * 0.75, 1e-6);
         }
     }
 }
@@ -2767,15 +2767,15 @@ TEST(Read, ChordLineZeroMissingAndMalformedOffsets) {
         ASSERT_TRUE(document);
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
-        EXPECT_EQ(lines[0]->hasSourceOffsets(), !tags.empty());
-        EXPECT_EQ(lines[0]->sourceOffsets(), (std::array<muse::PointF, 4>{}));
+        EXPECT_EQ(lines[0]->has_source_offsets(), !tags.empty());
+        EXPECT_EQ(lines[0]->source_offsets(), (std::array<muse::PointF, 4>{}));
         auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved);
         auto reopened = g_engine->open(*saved);
         ASSERT_TRUE(reopened);
         auto again = offset_test_lines(master_of(**reopened));
         ASSERT_EQ(again.size(), 1u);
-        EXPECT_EQ(again[0]->hasSourceOffsets(), !tags.empty());
+        EXPECT_EQ(again[0]->has_source_offsets(), !tags.empty());
     }
     for (const std::string tags : {"<o1 x=\"nan\"/>", "<o1 x=\"1junk\"/>", "<o1 x=\"1e999\"/>", "<o1/><o1/>", "<o1><unexpected/></o1>",
                                    "<Path><Element type=\"2\" x=\"1\" y=\"1\"/></Path>", "<Path/><o1/>", "<o1/><Path/>"}) {
@@ -2799,14 +2799,14 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
     auto edited = std::ranges::find_if(lines, [](const auto *l) { return l->modified(); });
     ASSERT_NE(edited, lines.end());
     auto *line = *edited;
-    EXPECT_FALSE(line->hasSourceOffsets());
+    EXPECT_FALSE(line->has_source_offsets());
     const auto path = line->ldata()->path;
-    ASSERT_EQ(path.elementCount(), 3u);
-    EXPECT_EQ(path.elementAt(0).type, muse::draw::PainterPath::ElementType::MoveToElement);
+    ASSERT_EQ(path.element_count(), 3u);
+    EXPECT_EQ(path.element_at(0).type, muse::draw::PainterPath::ElementType::MOVE_TO_ELEMENT);
     for (size_t i = 1; i < 3; ++i) {
-        EXPECT_EQ(path.elementAt(i).type, muse::draw::PainterPath::ElementType::LineToElement);
-        EXPECT_NEAR(path.elementAt(i).x, 1.5 * i * line->spatium(), 1e-6);
-        EXPECT_NEAR(path.elementAt(i).y, 2.5 * line->spatium(), 1e-6);
+        EXPECT_EQ(path.element_at(i).type, muse::draw::PainterPath::ElementType::LINE_TO_ELEMENT);
+        EXPECT_NEAR(path.element_at(i).x, 1.5 * i * line->spatium(), 1e-6);
+        EXPECT_NEAR(path.element_at(i).y, 2.5 * line->spatium(), 1e-6);
     }
     for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto saved = doc->export_score({.format = format, .native_version = "5.00"});
@@ -2816,12 +2816,12 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
         auto again = offset_test_lines(master_of(**reopened));
         auto found = std::ranges::find_if(again, [](const auto *l) { return l->modified(); });
         ASSERT_NE(found, again.end());
-        ASSERT_EQ((*found)->ldata()->path.elementCount(), path.elementCount());
-        for (size_t i = 0; i < path.elementCount(); ++i) {
-            const auto &p = (*found)->ldata()->path.elementAt(i);
-            EXPECT_EQ(p.type, path.elementAt(i).type);
-            EXPECT_NEAR(p.x, path.elementAt(i).x, 1e-6);
-            EXPECT_NEAR(p.y, path.elementAt(i).y, 1e-6);
+        ASSERT_EQ((*found)->ldata()->path.element_count(), path.element_count());
+        for (size_t i = 0; i < path.element_count(); ++i) {
+            const auto &p = (*found)->ldata()->path.element_at(i);
+            EXPECT_EQ(p.type, path.element_at(i).type);
+            EXPECT_NEAR(p.x, path.element_at(i).x, 1e-6);
+            EXPECT_NEAR(p.y, path.element_at(i).y, 1e-6);
         }
     }
 }

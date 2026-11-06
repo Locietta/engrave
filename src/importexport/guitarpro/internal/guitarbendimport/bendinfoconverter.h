@@ -33,6 +33,6 @@ class Chord;
 namespace mu::iex::guitarpro {
 class BendInfoConverter {
 public:
-    static ImportedBendInfo fillBendInfo(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
+    static ImportedBendInfo fill_bend_info(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values);
 };
 } // namespace mu::iex::guitarpro

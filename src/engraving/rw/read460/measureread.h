@@ -32,9 +32,9 @@ namespace mu::engraving::read460 {
 class MeasureRead {
 public:
 
-    static void readMeasure(Measure *measure, XmlReader &xml, ReadContext &ctx, int staffIdx);
+    static void read_measure(Measure *measure, XmlReader &xml, ReadContext &ctx, int staff_idx);
 
 private:
-    static void readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, int staffIdx, bool irregular);
+    static void read_voice(Measure *measure, XmlReader &e, ReadContext &ctx, int staff_idx, bool irregular);
 };
 } // namespace mu::engraving::read460

@@ -40,10 +40,10 @@ using note_idx_t = uint8_t;
 using TempoMap = std::map<tick_t, tempo_t>;
 using Events = std::map<tick_t, std::vector<Event>>;
 
-static constexpr int MODWHEEL_CONTROLLER = 1;
-static constexpr int EXPRESSION_CONTROLLER = 11;
-static constexpr int SUSTAIN_PEDAL_CONTROLLER = 64;
-static constexpr int SOSTENUTO_PEDAL_CONTROLLER = 66;
+static constexpr int modwheel_controller = 1;
+static constexpr int expression_controller = 11;
+static constexpr int sustain_pedal_controller = 64;
+static constexpr int sostenuto_pedal_controller = 66;
 
 struct Program {
     Program(bank_t b = 0, program_t p = 0) : bank(b), program(p) {}
@@ -73,14 +73,14 @@ struct MidiMapping {
     TempoMap tempo;
     Programs programms;
 
-    bool isValid() const { return !programms.empty() && !tempo.empty(); }
+    bool is_valid() const { return !programms.empty() && !tempo.empty(); }
 
     bool operator==(const MidiMapping &other) const {
         return division == other.division && tempo == other.tempo && programms == other.programms;
     }
 };
 
-static constexpr char NONE_DEVICE_ID[] = "-1";
+static constexpr char none_device_id[] = "-1";
 
 using MidiDeviceID = std::string;
 
@@ -93,24 +93,24 @@ struct MidiDevice {
 
 using MidiDeviceList = std::vector<MidiDevice>;
 
-inline MidiDeviceID makeUniqueDeviceId(int index, int arg1, int arg2) {
+inline MidiDeviceID make_unique_device_id(int index, int arg1, int arg2) {
     return std::to_string(index) + ":" + std::to_string(arg1) + ":" + std::to_string(arg2);
 }
 
-inline std::vector<int> splitDeviceId(const MidiDeviceID &deviceId) {
+inline std::vector<int> split_device_id(const MidiDeviceID &device_id) {
     std::vector<int> result;
 
     std::size_t current, previous = 0;
     std::string delim = ":";
-    current = deviceId.find(delim);
-    std::size_t delimLen = delim.length();
+    current = device_id.find(delim);
+    std::size_t delim_len = delim.length();
 
     while (current != std::string::npos) {
-        result.push_back(std::stoi(deviceId.substr(previous, current - previous)));
-        previous = current + delimLen;
-        current = deviceId.find(delim, previous);
+        result.push_back(std::stoi(device_id.substr(previous, current - previous)));
+        previous = current + delim_len;
+        current = device_id.find(delim, previous);
     }
-    result.push_back(std::stoi(deviceId.substr(previous, current - previous)));
+    result.push_back(std::stoi(device_id.substr(previous, current - previous)));
 
     return result;
 }

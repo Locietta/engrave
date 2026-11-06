@@ -30,29 +30,29 @@
 namespace muse::audio::dsp {
 class Compressor {
 public:
-    Compressor(const unsigned int sampleRate);
+    Compressor(const unsigned int sample_rate);
 
-    bool isActive() const;
-    void setIsActive(const bool active);
+    bool is_active() const;
+    void set_is_active(const bool active);
 
-    void process(const float linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel);
+    void process(const float linear_rms, float *buffer, const audioch_t &audio_channels_count, const samples_t samples_per_channel);
 private:
-    float attackTimeCoefficient() const;
-    float releaseTimeCoefficient() const;
+    float attack_time_coefficient() const;
+    float release_time_coefficient() const;
 
-    volume_db_t gainSmoothing(const float &newGainReduction) const;
-    volume_db_t computeGain(const volume_db_t &logarithmSample) const;
+    volume_db_t gain_smoothing(const float &new_gain_reduction) const;
+    volume_db_t compute_gain(const volume_db_t &logarithm_sample) const;
 
-    EnvelopeFilterConfig filterConfig_;
+    EnvelopeFilterConfig filter_config_;
 
-    float softThresholdLower_ = 0.f;
-    float softThresholdUpper_ = 0.f;
-    float previousGainReduction_ = 1.f;
+    float soft_threshold_lower_ = 0.f;
+    float soft_threshold_upper_ = 0.f;
+    float previous_gain_reduction_ = 1.f;
 
-    float feedbackGain_ = 0.f;
-    float feedbackFactor_ = 0.f;
+    float feedback_gain_ = 0.f;
+    float feedback_factor_ = 0.f;
 
-    bool isActive_ = false;
+    bool is_active_ = false;
 };
 
 using CompressorPtr = std::unique_ptr<Compressor>;

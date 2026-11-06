@@ -32,17 +32,17 @@ using namespace mu::engraving;
 
 namespace {
 
-constexpr size_t MAX_REGION_MEASURES = 128;
-constexpr size_t MAX_NOTE_RESULTS = 4096;
-constexpr size_t MAX_PROJECTION_MEASURES = 1024;
-constexpr size_t MAX_PROJECTION_NOTES = 16384;
-constexpr size_t MAX_PROJECTION_SPANS = 4096;
-constexpr size_t MAX_PROJECTION_PARTS = 256;
-constexpr size_t PROJECTION_BLOCK_MEASURES = 128;
+constexpr size_t max_region_measures = 128;
+constexpr size_t max_note_results = 4096;
+constexpr size_t max_projection_measures = 1024;
+constexpr size_t max_projection_notes = 16384;
+constexpr size_t max_projection_spans = 4096;
+constexpr size_t max_projection_parts = 256;
+constexpr size_t projection_block_measures = 128;
 
 std::vector<Measure *> standard_measures(Score *score) {
     std::vector<Measure *> measures;
-    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         measures.push_back(measure);
     }
     return measures;
@@ -51,16 +51,16 @@ std::vector<Measure *> standard_measures(Score *score) {
 std::string stable_eid_string(const EngravingObject *object) {
     if (!object) throw std::runtime_error("Cannot assign an EID to a null score object");
     EID eid = object->eid();
-    if (!eid.isValid()) eid = object->assignNewEID();
-    if (!eid.isValid()) throw std::runtime_error("Failed to assign a stable score EID");
-    return eid.toStdString();
+    if (!eid.is_valid()) eid = object->assign_new_eid();
+    if (!eid.is_valid()) throw std::runtime_error("Failed to assign a stable score EID");
+    return eid.to_std_string();
 }
 
 std::vector<staff_idx_t> part_staff_indices(Score *score, Part *part) {
     std::vector<staff_idx_t> result;
     if (!part) throw std::invalid_argument("Score region part is null");
     for (Staff *staff : part->staves()) {
-        const staff_idx_t index = score->staffIdx(staff);
+        const staff_idx_t index = score->staff_idx(staff);
         if (index == muse::nidx) throw std::runtime_error("Part staff is not present in the score");
         result.push_back(index);
     }
@@ -69,8 +69,8 @@ std::vector<staff_idx_t> part_staff_indices(Score *score, Part *part) {
 }
 
 Measure *enclosed_measure(EngravingItem *item) {
-    for (EngravingObject *object = item; object; object = object->ownershipParent()) {
-        if (object->isMeasure()) return toMeasure(object);
+    for (EngravingObject *object = item; object; object = object->ownership_parent()) {
+        if (object->is_measure()) return to_measure(object);
     }
     return nullptr;
 }
@@ -100,23 +100,23 @@ QueryCapture make_query_capture(Score *score) {
     // Chord-anchored slurs and other spanners are not exposed through Note's
     // spanner lists, so collect their chords per part in the same pass.
     std::unordered_set<const Spanner *> seen;
-    for (const auto &entry : score->spannerMap().map()) {
+    for (const auto &entry : score->spanner_map().map()) {
         Spanner *spanner = entry.second;
         if (!spanner || !seen.insert(spanner).second) continue;
         capture.spanners.push_back(spanner);
-        if (spanner->isTie()) continue;
+        if (spanner->is_tie()) continue;
         Part *part = item_part(spanner);
         if (!part) continue;
         auto &chords = capture.spanned_chords[part];
         const auto add_anchor_chord = [&](EngravingItem *anchor) {
             if (!anchor) return;
-            if (anchor->isChord())
-                chords.insert(toChord(anchor));
-            else if (anchor->isNote())
-                chords.insert(toNote(anchor)->chord());
+            if (anchor->is_chord())
+                chords.insert(to_chord(anchor));
+            else if (anchor->is_note())
+                chords.insert(to_note(anchor)->chord());
         };
-        add_anchor_chord(spanner->startElement());
-        add_anchor_chord(spanner->endElement());
+        add_anchor_chord(spanner->start_element());
+        add_anchor_chord(spanner->end_element());
     }
     return capture;
 }
@@ -132,14 +132,14 @@ std::string measure_id(QueryCapture &capture, Measure *measure) {
 // Measure and segment anchors carry no meaningful voice; every other anchor
 // must match the requested voice, when one was requested.
 bool voice_matches(std::optional<unsigned> voice, const EngravingItem *anchor) {
-    if (!voice || !anchor || anchor->isMeasure() || anchor->isSegment()) return true;
+    if (!voice || !anchor || anchor->is_measure() || anchor->is_segment()) return true;
     return static_cast<unsigned>(anchor->voice()) == *voice;
 }
 
 bool anchor_inside(const QueryCapture &capture, Part *part, size_t first, size_t last, EngravingItem *anchor) {
     if (!anchor) return false;
     // Note/chord/rest anchors must match the selected part.
-    if (!anchor->isMeasure() && !anchor->isSegment()) {
+    if (!anchor->is_measure() && !anchor->is_segment()) {
         const Part *anchor_part = item_part(anchor);
         if (anchor_part && anchor_part != part) return false;
     }
@@ -167,15 +167,15 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
 
     for (size_t index = first; index < last; ++index) {
         Measure *measure = capture.measures[index];
-        for (Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+        for (Segment *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             for (const staff_idx_t staff_index : staff_indices) {
                 for (const unsigned current_voice : voices) {
                     EngravingItem *item = segment->element(staff2track(staff_index, current_voice));
-                    if (!item || !item->isChord()) continue;
-                    Chord *chord = toChord(item);
+                    if (!item || !item->is_chord()) continue;
+                    Chord *chord = to_chord(item);
                     // Grace notes have no independent duration in this model and
                     // are explicitly outside the stable pitch-edit contract.
-                    if (chord->isGrace()) continue;
+                    if (chord->is_grace()) continue;
                     if (voice && static_cast<unsigned>(chord->voice()) != *voice) continue;
                     for (Note *note : chord->notes()) {
                         if (!note) continue;
@@ -191,15 +191,15 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
                         }
                         const std::string note_measure_id = measure_id(capture, note_measure ? note_measure : measure);
 
-                        const bool tied = note->tieFor() != nullptr || note->tieBack() != nullptr;
-                        const bool is_spanned = !note->spannerFor().empty() || !note->spannerBack().empty() ||
+                        const bool tied = note->tie_for() != nullptr || note->tie_back() != nullptr;
+                        const bool is_spanned = !note->spanner_for().empty() || !note->spanner_back().empty() ||
                                                 (spanned_chords && spanned_chords->count(chord) != 0);
 
                         if (detect_cross_region && tied) {
-                            if (note->tieFor() && !inside(note->tieFor()->endNote())) {
+                            if (note->tie_for() && !inside(note->tie_for()->end_note())) {
                                 cross_region = true;
                             }
-                            if (note->tieBack() && !inside(note->tieBack()->startNote())) {
+                            if (note->tie_back() && !inside(note->tie_back()->start_note())) {
                                 cross_region = true;
                             }
                         }
@@ -207,8 +207,8 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
                             const auto crosses = [&](const std::vector<Spanner *> &spanners) {
                                 for (Spanner *spanner : spanners) {
                                     if (!spanner) continue;
-                                    EngravingItem *start = spanner->startElement();
-                                    EngravingItem *end = spanner->endElement();
+                                    EngravingItem *start = spanner->start_element();
+                                    EngravingItem *end = spanner->end_element();
                                     if (!start && !end) continue;
                                     // Ignore a spanner only when neither anchor
                                     // belongs to this query; one anchor in
@@ -218,11 +218,11 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
                                 }
                                 return false;
                             };
-                            if (crosses(note->spannerFor()) || crosses(note->spannerBack())) cross_region = true;
+                            if (crosses(note->spanner_for()) || crosses(note->spanner_back())) cross_region = true;
                         }
 
-                        notes.push_back({stable_eid_string(note), note_measure_id, part_index, chord->staffIdx(), note_measure_index,
-                                         static_cast<unsigned>(chord->voice()), chord->tick().ticks(), chord->actualTicks().ticks(),
+                        notes.push_back({stable_eid_string(note), note_measure_id, part_index, chord->staff_idx(), note_measure_index,
+                                         static_cast<unsigned>(chord->voice()), chord->tick().ticks(), chord->actual_ticks().ticks(),
                                          note->pitch(), tied, is_spanned});
                     }
                 }
@@ -235,8 +235,9 @@ std::vector<NoteView> capture_region_notes(QueryCapture &capture, Score *score, 
 
 ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const ScoreRegion &region) {
     if (!score) throw std::invalid_argument("A master score is required");
-    if (region.measure_count > MAX_REGION_MEASURES) throw std::invalid_argument("Score region exceeds the 128-measure query bound");
-    if (region.voice && *region.voice >= VOICES) throw std::invalid_argument("Score region voice must be in 0..3");
+    if (region.measure_count > ::music::max_region_measures)
+        throw std::invalid_argument("Score region exceeds the 128-measure query bound");
+    if (region.voice && *region.voice >= ::mu::engraving::voices) throw std::invalid_argument("Score region voice must be in 0..3");
 
     const std::vector<Part *> &parts = score->parts();
     if (region.part_index >= parts.size()) throw std::invalid_argument("Score region part index is out of range");
@@ -261,7 +262,7 @@ ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const Scor
     if (region.voice) {
         voices.push_back(*region.voice);
     } else {
-        for (unsigned voice = 0; voice < static_cast<unsigned>(VOICES); ++voice) voices.push_back(voice);
+        for (unsigned voice = 0; voice < static_cast<unsigned>(::mu::engraving::voices); ++voice) voices.push_back(voice);
     }
 
     // A tie or spanner is cross-region when either anchor lies outside the
@@ -269,7 +270,7 @@ ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const Scor
     bool cross_region = false;
     if (last > first) {
         const int region_start = measures[first]->tick().ticks();
-        const int region_end = measures[last - 1]->endTick().ticks();
+        const int region_end = measures[last - 1]->end_tick().ticks();
         const auto inside = [&](EngravingItem *anchor) {
             return voice_matches(region.voice, anchor) && anchor_inside(capture, part, first, last, anchor);
         };
@@ -278,14 +279,14 @@ ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const Scor
             // Skip only when neither anchor is in the requested voice; an
             // anchor in another voice is outside the window, so such a spanner
             // still crosses it.
-            if (!voice_matches(region.voice, spanner->startElement()) && !voice_matches(region.voice, spanner->endElement())) {
+            if (!voice_matches(region.voice, spanner->start_element()) && !voice_matches(region.voice, spanner->end_element())) {
                 continue;
             }
-            const bool start_inside = inside(spanner->startElement());
-            const bool end_inside = inside(spanner->endElement());
+            const bool start_inside = inside(spanner->start_element());
+            const bool end_inside = inside(spanner->end_element());
             if (start_inside != end_inside) {
                 cross_region = true;
-            } else if (!start_inside && !end_inside && !spanner->isTie()) {
+            } else if (!start_inside && !end_inside && !spanner->is_tie()) {
                 const int spanner_start = spanner->tick().ticks();
                 const int spanner_end = spanner_start + spanner->ticks().ticks();
                 if (spanner_end > region_start && spanner_start < region_end) cross_region = true;
@@ -293,8 +294,8 @@ ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const Scor
         }
     }
 
-    view.notes = capture_region_notes(capture, score, part, region.part_index, first, last, voices, region.voice, MAX_NOTE_RESULTS, true,
-                                      cross_region);
+    view.notes = capture_region_notes(capture, score, part, region.part_index, first, last, voices, region.voice, ::music::max_note_results,
+                                      true, cross_region);
     view.has_cross_region_spanners = cross_region;
     return view;
 }
@@ -309,13 +310,13 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
         result.unavailable_reason = reason;
         return result;
     };
-    if (projection.part_count > MAX_PROJECTION_PARTS) return unavailable("Score exceeds 256-part snapshot limit");
+    if (projection.part_count > ::music::max_projection_parts) return unavailable("Score exceeds 256-part snapshot limit");
 
     QueryCapture capture = make_query_capture(score);
-    if (capture.measures.size() > MAX_PROJECTION_MEASURES) return unavailable("Score exceeds 1024-measure snapshot limit");
+    if (capture.measures.size() > ::music::max_projection_measures) return unavailable("Score exceeds 1024-measure snapshot limit");
     // Check the spanner bound before capturing notes: an over-budget score is
     // unavailable regardless of how many notes it holds.
-    if (capture.spanners.size() > MAX_PROJECTION_SPANS) return unavailable("Score exceeds 4096-spanner snapshot limit");
+    if (capture.spanners.size() > ::music::max_projection_spans) return unavailable("Score exceeds 4096-spanner snapshot limit");
 
     projection.measures.reserve(capture.measures.size());
     for (size_t index = 0; index < capture.measures.size(); ++index) {
@@ -324,12 +325,12 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
     }
 
     std::vector<unsigned> all_voices;
-    for (unsigned voice = 0; voice < static_cast<unsigned>(VOICES); ++voice) all_voices.push_back(voice);
+    for (unsigned voice = 0; voice < static_cast<unsigned>(::mu::engraving::voices); ++voice) all_voices.push_back(voice);
 
     for (size_t part = 0; part < projection.part_count; ++part) {
-        for (size_t first = 0; first < capture.measures.size(); first += PROJECTION_BLOCK_MEASURES) {
-            const size_t count = std::min(PROJECTION_BLOCK_MEASURES, capture.measures.size() - first);
-            const size_t remaining = MAX_PROJECTION_NOTES - projection.notes.size();
+        for (size_t first = 0; first < capture.measures.size(); first += ::music::projection_block_measures) {
+            const size_t count = std::min(::music::projection_block_measures, capture.measures.size() - first);
+            const size_t remaining = ::music::max_projection_notes - projection.notes.size();
             bool unused_cross_region = false;
             std::vector<NoteView> notes;
             try {
@@ -352,7 +353,7 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
         ScoreSpanEndpoint result;
         if (!item) return result;
         result.part_index = part_index(item_part(item));
-        if (!item->isMeasure() && !item->isSegment()) result.voice = static_cast<unsigned>(item->voice());
+        if (!item->is_measure() && !item->is_segment()) result.voice = static_cast<unsigned>(item->voice());
         const auto it = capture.measure_indices.find(enclosed_measure(item));
         if (it != capture.measure_indices.end()) result.measure_index = it->second;
         return result;
@@ -360,9 +361,9 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
     std::unordered_set<const Spanner *> captured;
     const auto capture_span = [&](Spanner *span) {
         if (!span || !captured.insert(span).second) return true;
-        if (projection.spans.size() == MAX_PROJECTION_SPANS) return false;
-        projection.spans.push_back({part_index(item_part(span)), endpoint(span->startElement()), endpoint(span->endElement()),
-                                    span->tick().ticks(), span->tick2().ticks(), span->isTie()});
+        if (projection.spans.size() == ::music::max_projection_spans) return false;
+        projection.spans.push_back({part_index(item_part(span)), endpoint(span->start_element()), endpoint(span->end_element()),
+                                    span->tick().ticks(), span->tick2().ticks(), span->is_tie()});
         return true;
     };
     for (Spanner *span : capture.spanners) {
@@ -370,16 +371,16 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
     }
     // Ties are not guaranteed to be present in SpannerMap.
     for (auto *measure : capture.measures) {
-        for (auto *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+        for (auto *segment = measure->first(SegmentType::CHORD_REST); segment; segment = segment->next(SegmentType::CHORD_REST)) {
             for (track_idx_t track = 0; track < score->ntracks(); ++track) {
                 auto *item = segment->element(track);
-                if (!item || !item->isChord()) continue;
-                for (auto *note : toChord(item)->notes()) {
-                    if (!capture_span(note->tieFor()) || !capture_span(note->tieBack()))
+                if (!item || !item->is_chord()) continue;
+                for (auto *note : to_chord(item)->notes()) {
+                    if (!capture_span(note->tie_for()) || !capture_span(note->tie_back()))
                         return unavailable("Score exceeds 4096-spanner snapshot limit");
-                    for (auto *span : note->spannerFor())
+                    for (auto *span : note->spanner_for())
                         if (!capture_span(span)) return unavailable("Score exceeds 4096-spanner snapshot limit");
-                    for (auto *span : note->spannerBack())
+                    for (auto *span : note->spanner_back())
                         if (!capture_span(span)) return unavailable("Score exceeds 4096-spanner snapshot limit");
                 }
             }
@@ -391,8 +392,8 @@ ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *score)
 
 ScoreRegionView query_score_projection(const ScoreReadProjection &projection, const ScoreRegion &region) {
     if (!projection.complete) throw ScoreQueryLimit("Score projection unavailable: " + projection.unavailable_reason);
-    if (region.part_index >= projection.part_count || region.measure_count > MAX_REGION_MEASURES ||
-        (region.voice && *region.voice >= VOICES) || region.first_measure > projection.measures.size() ||
+    if (region.part_index >= projection.part_count || region.measure_count > ::music::max_region_measures ||
+        (region.voice && *region.voice >= ::mu::engraving::voices) || region.first_measure > projection.measures.size() ||
         region.measure_count > projection.measures.size() - region.first_measure)
         throw std::invalid_argument("Score projection region is out of bounds");
     ScoreRegionView result;
@@ -402,7 +403,7 @@ ScoreRegionView query_score_projection(const ScoreReadProjection &projection, co
         if (note.part_index != region.part_index || note.measure_index < first || note.measure_index >= end ||
             (region.voice && note.voice != *region.voice))
             continue;
-        if (result.notes.size() == MAX_NOTE_RESULTS) throw ScoreQueryLimit("Score region query exceeds 4096 notes");
+        if (result.notes.size() == ::music::max_note_results) throw ScoreQueryLimit("Score region query exceeds 4096 notes");
         result.notes.push_back(note);
     }
     const auto inside = [&](const ScoreSpanEndpoint &point) {

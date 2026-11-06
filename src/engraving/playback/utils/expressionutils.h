@@ -28,78 +28,84 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-constexpr muse::mpe::dynamic_level_t NATURAL_DYNAMIC_LEVEL = muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::Natural);
+constexpr muse::mpe::dynamic_level_t natural_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::NATURAL);
 
-inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> ORDINARY_DYNAMIC_LEVELS{
-    {DynamicType::N, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ppppppppp)},
-    {DynamicType::PPPPPP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::pppppp)},
-    {DynamicType::PPPPP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ppppp)},
-    {DynamicType::PPPP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::pppp)},
-    {DynamicType::PPP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ppp)},
-    {DynamicType::PP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::pp)},
-    {DynamicType::P, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::p)},
-    {DynamicType::MP, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::mp)},
-    {DynamicType::MF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::mf)},
-    {DynamicType::F, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::f)},
-    {DynamicType::FF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ff)},
-    {DynamicType::FFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::fff)},
-    {DynamicType::FFFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ffff)},
-    {DynamicType::FFFFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::fffff)},
-    {DynamicType::FFFFFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ffffff)}};
+inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> ordinary_dynamic_levels{
+    {DynamicType::N, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPPPPP)},
+    {DynamicType::PPPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPP)},
+    {DynamicType::PPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPP)},
+    {DynamicType::PPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPP)},
+    {DynamicType::PPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPP)},
+    {DynamicType::PP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PP)},
+    {DynamicType::P, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::P)},
+    {DynamicType::MP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MP)},
+    {DynamicType::MF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF)},
+    {DynamicType::F, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+    {DynamicType::FF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+    {DynamicType::FFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+    {DynamicType::FFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFF)},
+    {DynamicType::FFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFF)},
+    {DynamicType::FFFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFFF)}};
 
-inline bool isOrdinaryDynamicType(const DynamicType type) { return ORDINARY_DYNAMIC_LEVELS.find(type) != ORDINARY_DYNAMIC_LEVELS.cend(); }
+inline bool is_ordinary_dynamic_type(const DynamicType type) {
+    return ::mu::engraving::ordinary_dynamic_levels.find(type) != ::mu::engraving::ordinary_dynamic_levels.cend();
+}
 
-inline muse::mpe::dynamic_level_t dynamicLevelFromOrdinaryType(const DynamicType type,
-                                                               const muse::mpe::dynamic_level_t defLevel = NATURAL_DYNAMIC_LEVEL) {
-    auto search = ORDINARY_DYNAMIC_LEVELS.find(type);
-    if (search != ORDINARY_DYNAMIC_LEVELS.cend()) {
+inline muse::mpe::dynamic_level_t
+dynamic_level_from_ordinary_type(const DynamicType type,
+                                 const muse::mpe::dynamic_level_t def_level = ::mu::engraving::natural_dynamic_level) {
+    auto search = ::mu::engraving::ordinary_dynamic_levels.find(type);
+    if (search != ::mu::engraving::ordinary_dynamic_levels.cend()) {
         return search->second;
     }
 
-    return defLevel;
+    return def_level;
 }
 
-inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> SINGLE_NOTE_DYNAMIC_LEVELS{
-    {DynamicType::SF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::f)},
-    {DynamicType::SFZ, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::f)},
-    {DynamicType::SFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ff)},
-    {DynamicType::SFFZ, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::ff)},
-    {DynamicType::SFFF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::fff)},
-    {DynamicType::SFFFZ, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::fff)},
-    {DynamicType::RFZ, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::f)},
-    {DynamicType::RF, muse::mpe::dynamicLevelFromType(muse::mpe::DynamicType::f)}};
+inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> single_note_dynamic_levels{
+    {DynamicType::SF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+    {DynamicType::SFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+    {DynamicType::SFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+    {DynamicType::SFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+    {DynamicType::SFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+    {DynamicType::SFFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+    {DynamicType::RFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+    {DynamicType::RF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)}};
 
-inline bool isSingleNoteDynamicType(const DynamicType type) {
-    return SINGLE_NOTE_DYNAMIC_LEVELS.find(type) != SINGLE_NOTE_DYNAMIC_LEVELS.cend();
+inline bool is_single_note_dynamic_type(const DynamicType type) {
+    return ::mu::engraving::single_note_dynamic_levels.find(type) != ::mu::engraving::single_note_dynamic_levels.cend();
 }
 
-inline muse::mpe::dynamic_level_t dynamicLevelFromSingleNoteType(const DynamicType type,
-                                                                 const muse::mpe::dynamic_level_t defLevel = NATURAL_DYNAMIC_LEVEL) {
-    auto search = SINGLE_NOTE_DYNAMIC_LEVELS.find(type);
-    if (search != SINGLE_NOTE_DYNAMIC_LEVELS.cend()) {
+inline muse::mpe::dynamic_level_t
+dynamic_level_from_single_note_type(const DynamicType type,
+                                    const muse::mpe::dynamic_level_t def_level = ::mu::engraving::natural_dynamic_level) {
+    auto search = ::mu::engraving::single_note_dynamic_levels.find(type);
+    if (search != ::mu::engraving::single_note_dynamic_levels.cend()) {
         return search->second;
     }
 
-    return defLevel;
+    return def_level;
 }
 
 struct CompoundDynamic {
     DynamicType from = DynamicType::OTHER;
     DynamicType to = DynamicType::OTHER;
 
-    bool isValid() const { return from != DynamicType::OTHER && to != DynamicType::OTHER; }
+    bool is_valid() const { return from != DynamicType::OTHER && to != DynamicType::OTHER; }
 };
 
-inline const std::unordered_map<DynamicType, CompoundDynamic> COMPOUND_DYNAMICS{{DynamicType::FP, {DynamicType::F, DynamicType::P}},
+inline const std::unordered_map<DynamicType, CompoundDynamic> compound_dynamics{{DynamicType::FP, {DynamicType::F, DynamicType::P}},
                                                                                 {DynamicType::PF, {DynamicType::P, DynamicType::F}},
                                                                                 {DynamicType::SFP, {DynamicType::F, DynamicType::P}},
                                                                                 {DynamicType::SFPP, {DynamicType::F, DynamicType::PP}}};
 
-inline bool isCompoundDynamicType(const DynamicType type) { return COMPOUND_DYNAMICS.find(type) != COMPOUND_DYNAMICS.cend(); }
+inline bool is_compound_dynamic_type(const DynamicType type) {
+    return ::mu::engraving::compound_dynamics.find(type) != ::mu::engraving::compound_dynamics.cend();
+}
 
-inline const CompoundDynamic &compoundDynamicFromType(const DynamicType type) {
-    auto search = COMPOUND_DYNAMICS.find(type);
-    if (search != COMPOUND_DYNAMICS.cend()) {
+inline const CompoundDynamic &compound_dynamic_from_type(const DynamicType type) {
+    auto search = ::mu::engraving::compound_dynamics.find(type);
+    if (search != ::mu::engraving::compound_dynamics.cend()) {
         return search->second;
     }
 
@@ -107,61 +113,62 @@ inline const CompoundDynamic &compoundDynamicFromType(const DynamicType type) {
     return empty;
 }
 
-inline muse::mpe::ArticulationType articulationFromPlayTechType(const PlayingTechniqueType technique) {
+inline muse::mpe::ArticulationType articulation_from_play_tech_type(const PlayingTechniqueType technique) {
     switch (technique) {
-        case PlayingTechniqueType::Natural: return muse::mpe::ArticulationType::Standard;
-        case PlayingTechniqueType::Pizzicato: return muse::mpe::ArticulationType::Pizzicato;
-        case PlayingTechniqueType::Open: return muse::mpe::ArticulationType::Open;
-        case PlayingTechniqueType::Mute: return muse::mpe::ArticulationType::Mute;
-        case PlayingTechniqueType::Tremolo: return muse::mpe::ArticulationType::Tremolo64th;
-        case PlayingTechniqueType::Detache: return muse::mpe::ArticulationType::Detache;
-        case PlayingTechniqueType::Martele: return muse::mpe::ArticulationType::Martele;
-        case PlayingTechniqueType::ColLegno: return muse::mpe::ArticulationType::ColLegno;
-        case PlayingTechniqueType::SulPonticello: return muse::mpe::ArticulationType::SulPont;
-        case PlayingTechniqueType::SulTasto: return muse::mpe::ArticulationType::SulTasto;
-        case PlayingTechniqueType::Distortion: return muse::mpe::ArticulationType::Distortion;
-        case PlayingTechniqueType::Overdrive: return muse::mpe::ArticulationType::Overdrive;
-        case PlayingTechniqueType::Harmonics: return muse::mpe::ArticulationType::Harmonic;
-        case PlayingTechniqueType::JazzTone: return muse::mpe::ArticulationType::JazzTone;
-        case PlayingTechniqueType::Vibrato: return muse::mpe::ArticulationType::Vibrato;
-        case PlayingTechniqueType::Legato: return muse::mpe::ArticulationType::Legato;
-        case PlayingTechniqueType::HandbellsSwing: return muse::mpe::ArticulationType::Swing;
-        case PlayingTechniqueType::HandbellsSwingUp: return muse::mpe::ArticulationType::Swing;
-        case PlayingTechniqueType::HandbellsSwingDown: return muse::mpe::ArticulationType::Swing;
-        case PlayingTechniqueType::HandbellsEcho1: return muse::mpe::ArticulationType::Echo;
-        case PlayingTechniqueType::HandbellsEcho2: return muse::mpe::ArticulationType::Echo;
-        case PlayingTechniqueType::HandbellsLV: return muse::mpe::ArticulationType::Pedal;
-        case PlayingTechniqueType::HandbellsDamp: return muse::mpe::ArticulationType::Standard;
-        case PlayingTechniqueType::HandbellsR: return muse::mpe::ArticulationType::Ring;
-        case PlayingTechniqueType::Undefined: return muse::mpe::ArticulationType::Undefined;
+        case PlayingTechniqueType::NATURAL: return muse::mpe::ArticulationType::STANDARD;
+        case PlayingTechniqueType::PIZZICATO: return muse::mpe::ArticulationType::PIZZICATO;
+        case PlayingTechniqueType::OPEN: return muse::mpe::ArticulationType::OPEN;
+        case PlayingTechniqueType::MUTE: return muse::mpe::ArticulationType::MUTE;
+        case PlayingTechniqueType::TREMOLO: return muse::mpe::ArticulationType::TREMOLO64TH;
+        case PlayingTechniqueType::DETACHE: return muse::mpe::ArticulationType::DETACHE;
+        case PlayingTechniqueType::MARTELE: return muse::mpe::ArticulationType::MARTELE;
+        case PlayingTechniqueType::COL_LEGNO: return muse::mpe::ArticulationType::COL_LEGNO;
+        case PlayingTechniqueType::SUL_PONTICELLO: return muse::mpe::ArticulationType::SUL_PONT;
+        case PlayingTechniqueType::SUL_TASTO: return muse::mpe::ArticulationType::SUL_TASTO;
+        case PlayingTechniqueType::DISTORTION: return muse::mpe::ArticulationType::DISTORTION;
+        case PlayingTechniqueType::OVERDRIVE: return muse::mpe::ArticulationType::OVERDRIVE;
+        case PlayingTechniqueType::HARMONICS: return muse::mpe::ArticulationType::HARMONIC;
+        case PlayingTechniqueType::JAZZ_TONE: return muse::mpe::ArticulationType::JAZZ_TONE;
+        case PlayingTechniqueType::VIBRATO: return muse::mpe::ArticulationType::VIBRATO;
+        case PlayingTechniqueType::LEGATO: return muse::mpe::ArticulationType::LEGATO;
+        case PlayingTechniqueType::HANDBELLS_SWING: return muse::mpe::ArticulationType::SWING;
+        case PlayingTechniqueType::HANDBELLS_SWING_UP: return muse::mpe::ArticulationType::SWING;
+        case PlayingTechniqueType::HANDBELLS_SWING_DOWN: return muse::mpe::ArticulationType::SWING;
+        case PlayingTechniqueType::HANDBELLS_ECHO1: return muse::mpe::ArticulationType::ECHO;
+        case PlayingTechniqueType::HANDBELLS_ECHO2: return muse::mpe::ArticulationType::ECHO;
+        case PlayingTechniqueType::HANDBELLS_LV: return muse::mpe::ArticulationType::PEDAL;
+        case PlayingTechniqueType::HANDBELLS_DAMP: return muse::mpe::ArticulationType::STANDARD;
+        case PlayingTechniqueType::HANDBELLS_R: return muse::mpe::ArticulationType::RING;
+        case PlayingTechniqueType::UNDEFINED: return muse::mpe::ArticulationType::UNDEFINED;
     }
 
-    return muse::mpe::ArticulationType::Undefined;
+    return muse::mpe::ArticulationType::UNDEFINED;
 }
 
-static const muse::mpe::ArticulationTypeSet GRACE_NOTE_ARTICULATION_TYPES{
-    muse::mpe::ArticulationType::Acciaccatura,
-    muse::mpe::ArticulationType::PostAppoggiatura,
-    muse::mpe::ArticulationType::PreAppoggiatura,
+static const muse::mpe::ArticulationTypeSet grace_note_articulation_types{
+    muse::mpe::ArticulationType::ACCIACCATURA,
+    muse::mpe::ArticulationType::POST_APPOGGIATURA,
+    muse::mpe::ArticulationType::PRE_APPOGGIATURA,
 };
 
-inline bool isGraceNotePlacedBeforePrincipalNote(const muse::mpe::ArticulationType type) {
-    return type == muse::mpe::ArticulationType::Acciaccatura || type == muse::mpe::ArticulationType::PreAppoggiatura;
+inline bool is_grace_note_placed_before_principal_note(const muse::mpe::ArticulationType type) {
+    return type == muse::mpe::ArticulationType::ACCIACCATURA || type == muse::mpe::ArticulationType::PRE_APPOGGIATURA;
 }
 
-inline void updateArticulationBoundaries(const muse::mpe::ArticulationType type, const muse::mpe::timestamp_t nominalTimestamp,
-                                         const muse::mpe::duration_t nominalDuration, muse::mpe::ArticulationMap &articulations) {
+inline void update_articulation_boundaries(const muse::mpe::ArticulationType type, const muse::mpe::timestamp_t nominal_timestamp,
+                                           const muse::mpe::duration_t nominal_duration, muse::mpe::ArticulationMap &articulations) {
     if (articulations.empty()) {
         return;
     }
 
-    const muse::mpe::ArticulationAppliedData &articulationData = articulations.at(type);
+    const muse::mpe::ArticulationAppliedData &articulation_data = articulations.at(type);
 
-    muse::mpe::timestamp_t articulationOccupiedFrom = nominalTimestamp - articulationData.meta.timestamp;
-    muse::mpe::timestamp_t articulationOccupiedTo = nominalTimestamp + nominalDuration - articulationData.meta.timestamp;
+    muse::mpe::timestamp_t articulation_occupied_from = nominal_timestamp - articulation_data.meta.timestamp;
+    muse::mpe::timestamp_t articulation_occupied_to = nominal_timestamp + nominal_duration - articulation_data.meta.timestamp;
 
-    articulations.updateOccupiedRange(type, muse::mpe::occupiedPercentage(articulationOccupiedFrom, articulationData.meta.overallDuration),
-                                      muse::mpe::occupiedPercentage(articulationOccupiedTo, articulationData.meta.overallDuration));
+    articulations.update_occupied_range(type,
+                                        muse::mpe::occupied_percentage(articulation_occupied_from, articulation_data.meta.overall_duration),
+                                        muse::mpe::occupied_percentage(articulation_occupied_to, articulation_data.meta.overall_duration));
 }
 } // namespace mu::engraving
 

@@ -42,18 +42,18 @@ namespace mu::engraving {
 //          void setColor(const Color& val) { _color = val; }
 //---------------------------------------------------------
 
-#define M_PROPERTY(a, b, c)              \
-    a _##b{};                            \
-public:                                  \
-    const a &b() const { return _##b; }  \
-    void c(const a &val) { _##b = val; } \
+#define M_PROPERTY(a, b, c)                   \
+    a b##_value{};                            \
+public:                                       \
+    const a &b() const { return b##_value; }  \
+    void c(const a &val) { b##_value = val; } \
 private:
 
-#define M_PROPERTY2(a, b, c, d)          \
-    a _##b{d};                           \
-public:                                  \
-    const a &b() const { return _##b; }  \
-    void c(const a &val) { _##b = val; } \
+#define M_PROPERTY2(a, b, c, d)               \
+    a b##_value{d};                           \
+public:                                       \
+    const a &b() const { return b##_value; }  \
+    void c(const a &val) { b##_value = val; } \
 private:
 
 //---------------------------------------------------------
@@ -547,13 +547,13 @@ enum class PropertyGroup : unsigned char {
 
 using PropertyIdSet = std::unordered_set<Pid>;
 
-extern PropertyValue propertyFromString(P_TYPE type, String value);
-extern String propertyToString(Pid, const PropertyValue &value, bool mscx);
-extern P_TYPE propertyType(Pid);
-extern const char *propertyName(Pid);
-extern bool propertyLink(Pid id);
-extern bool propertyLinkSameScore(Pid id);
-extern PropertyGroup propertyGroup(Pid id);
-extern Pid propertyId(const muse::AsciiStringView &name);
-extern String propertyUserName(Pid);
+extern PropertyValue property_from_string(PType type, String value);
+extern String property_to_string(Pid, const PropertyValue &value, bool mscx);
+extern PType property_type(Pid);
+extern const char *property_name(Pid);
+extern bool property_link(Pid id);
+extern bool property_link_same_score(Pid id);
+extern PropertyGroup property_group(Pid id);
+extern Pid property_id(const muse::AsciiStringView &name);
+extern String property_user_name(Pid);
 } // namespace mu::engraving

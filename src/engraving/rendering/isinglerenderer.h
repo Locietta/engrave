@@ -33,7 +33,7 @@ class ISingleRenderer {
 public:
     virtual ~ISingleRenderer() = default;
 
-    virtual void layoutItem(EngravingItem *item) = 0;
-    virtual void drawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) = 0;
+    virtual void layout_item(EngravingItem *item) = 0;
+    virtual void draw_item(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) = 0;
 };
 } // namespace mu::engraving::rendering

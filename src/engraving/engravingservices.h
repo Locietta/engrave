@@ -22,13 +22,13 @@ class IScoreRenderer;
 // and outlives every score built with it; scores keep a reference.
 struct EngravingServices {
     std::shared_ptr<IEngravingConfiguration> configuration;
-    std::shared_ptr<IEngravingFontsProvider> engravingFonts;
-    std::shared_ptr<IEngravingContextConfiguration> contextConfiguration;
+    std::shared_ptr<IEngravingFontsProvider> engraving_fonts;
+    std::shared_ptr<IEngravingContextConfiguration> context_configuration;
     std::shared_ptr<rendering::IScoreRenderer> renderer;
     // Raster image codec and thumbnails. The engine has none: it rejects scores
     // with raster images when they are opened, so the paths that need it are
     // not reached.
-    std::shared_ptr<muse::draw::IImageProvider> imageProvider;
+    std::shared_ptr<muse::draw::IImageProvider> image_provider;
     // Null until the palette score exists (it is built with these services).
 };
 } // namespace mu::engraving

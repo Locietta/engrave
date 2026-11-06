@@ -49,8 +49,8 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-void ChordArticulationsParser::buildChordArticulationMap(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    if (!chord || !ctx.isValid()) {
+void ChordArticulationsParser::build_chord_articulation_map(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    if (!chord || !ctx.is_valid()) {
         LOGE() << "Unable to render playback events of invalid chord";
         return;
     }
@@ -58,86 +58,86 @@ void ChordArticulationsParser::buildChordArticulationMap(const Chord *chord, con
     parse(chord, ctx, result);
 
     for (const auto &pair : result) {
-        if (isSingleNoteArticulation(pair.first)) {
+        if (is_single_note_articulation(pair.first)) {
             continue;
         }
 
-        duration_percentage_t occupiedFrom =
-            occupiedPercentage(ctx.nominalTimestamp - pair.second.meta.timestamp, pair.second.meta.overallDuration);
-        duration_percentage_t occupiedTo =
-            occupiedPercentage(ctx.nominalTimestamp + ctx.nominalDuration - pair.second.meta.timestamp, pair.second.meta.overallDuration);
+        duration_percentage_t occupied_from =
+            occupied_percentage(ctx.nominal_timestamp - pair.second.meta.timestamp, pair.second.meta.overall_duration);
+        duration_percentage_t occupied_to = occupied_percentage(ctx.nominal_timestamp + ctx.nominal_duration - pair.second.meta.timestamp,
+                                                                pair.second.meta.overall_duration);
 
-        result.updateOccupiedRange(pair.first, occupiedFrom, occupiedTo);
+        result.update_occupied_range(pair.first, occupied_from, occupied_to);
     }
 
-    result.preCalculateAverageData();
+    result.pre_calculate_average_data();
 }
 
-void ChordArticulationsParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    IF_ASSERT_FAILED(item->isChord()) { return; }
+void ChordArticulationsParser::do_parse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->is_chord()) { return; }
 
-    const Chord *chord = toChord(item);
+    const Chord *chord = to_chord(item);
 
-    parseSpanners(chord, ctx, result);
-    parseAnnotations(chord, ctx, result);
-    parseTremolo(chord, ctx, result);
-    parseArpeggio(chord, ctx, result);
-    parseGraceNotes(chord, ctx, result);
-    parseChordLine(chord, ctx, result);
-    parseArticulationSymbols(chord, ctx, result);
-    parseTapping(chord, ctx, result);
-    parseBreath(chord, ctx, result);
+    parse_spanners(chord, ctx, result);
+    parse_annotations(chord, ctx, result);
+    parse_tremolo(chord, ctx, result);
+    parse_arpeggio(chord, ctx, result);
+    parse_grace_notes(chord, ctx, result);
+    parse_chord_line(chord, ctx, result);
+    parse_articulation_symbols(chord, ctx, result);
+    parse_tapping(chord, ctx, result);
+    parse_breath(chord, ctx, result);
 }
 
-void ChordArticulationsParser::parseSpanners(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    const SpannerMap &spannerMap = ctx.score->spannerMap();
-    if (spannerMap.empty()) {
+void ChordArticulationsParser::parse_spanners(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    const SpannerMap &spanner_map = ctx.score->spanner_map();
+    if (spanner_map.empty()) {
         return;
     }
 
-    auto intervals = spannerMap.findOverlapping(ctx.nominalPositionStartTick, ctx.nominalPositionEndTick,
-                                                /*excludeCollisions*/ true);
+    auto intervals = spanner_map.find_overlapping(ctx.nominal_position_start_tick, ctx.nominal_position_end_tick,
+                                                  /*excludeCollisions*/ true);
 
     for (const auto &interval : intervals) {
         const Spanner *spanner = interval.value;
 
-        if (!SpannersMetaParser::isAbleToParse(spanner)) {
+        if (!SpannersMetaParser::is_able_to_parse(spanner)) {
             continue;
         }
 
-        if (SpannerFilter::isMultiStaffSpanner(spanner)) {
+        if (SpannerFilter::is_multi_staff_spanner(spanner)) {
             if (spanner->part() != chord->part()) {
                 continue;
             }
         } else {
-            if (spanner->staffIdx() != chord->staffIdx()) {
+            if (spanner->staff_idx() != chord->staff_idx()) {
                 continue;
             }
         }
 
-        if (!SpannerFilter::isItemPlayable(spanner, ctx)) {
+        if (!SpannerFilter::is_item_playable(spanner, ctx)) {
             continue;
         }
 
-        RenderingContext spannerContext = ctx;
-        spannerContext.nominalTimestamp = timestampFromTicks(ctx.score, interval.start + ctx.positionTickOffset);
-        spannerContext.nominalPositionStartTick = interval.start;
-        spannerContext.nominalDurationTicks = SpannerFilter::spannerActualDurationTicks(spanner, interval.stop - interval.start);
-        spannerContext.nominalPositionEndTick = spannerContext.nominalPositionStartTick + spannerContext.nominalDurationTicks;
+        RenderingContext spanner_context = ctx;
+        spanner_context.nominal_timestamp = timestamp_from_ticks(ctx.score, interval.start + ctx.position_tick_offset);
+        spanner_context.nominal_position_start_tick = interval.start;
+        spanner_context.nominal_duration_ticks = SpannerFilter::spanner_actual_duration_ticks(spanner, interval.stop - interval.start);
+        spanner_context.nominal_position_end_tick = spanner_context.nominal_position_start_tick + spanner_context.nominal_duration_ticks;
 
-        SpannersMetaParser::parse(spanner, spannerContext, result);
+        SpannersMetaParser::parse(spanner, spanner_context, result);
     }
 }
 
-void ChordArticulationsParser::parseArticulationSymbols(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordArticulationsParser::parse_articulation_symbols(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     for (const Articulation *articulation : chord->articulations()) {
         SymbolsMetaParser::parse(articulation, ctx, result);
     }
 }
 
-void ChordArticulationsParser::parseAnnotations(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordArticulationsParser::parse_annotations(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     for (const EngravingItem *annotation : chord->segment()->annotations()) {
-        if (annotation->staffIdx() != chord->staffIdx()) {
+        if (annotation->staff_idx() != chord->staff_idx()) {
             continue;
         }
 
@@ -145,27 +145,27 @@ void ChordArticulationsParser::parseAnnotations(const Chord *chord, const Render
     }
 }
 
-void ChordArticulationsParser::parseTremolo(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordArticulationsParser::parse_tremolo(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     // single chord
     {
-        const TremoloSingleChord *tremoloSingle = chord->tremoloSingleChord();
-        if (tremoloSingle && tremoloSingle->playTremolo()) {
-            TremoloSingleMetaParser::parse(tremoloSingle, ctx, result);
+        const TremoloSingleChord *tremolo_single = chord->tremolo_single_chord();
+        if (tremolo_single && tremolo_single->play_tremolo()) {
+            TremoloSingleMetaParser::parse(tremolo_single, ctx, result);
         }
     }
 
     // two chord
     {
-        const TremoloTwoChord *tremoloTwo = chord->tremoloTwoChord();
-        if (tremoloTwo && tremoloTwo->playTremolo()) {
-            TremoloTwoMetaParser::parse(tremoloTwo, ctx, result);
+        const TremoloTwoChord *tremolo_two = chord->tremolo_two_chord();
+        if (tremolo_two && tremolo_two->play_tremolo()) {
+            TremoloTwoMetaParser::parse(tremolo_two, ctx, result);
         }
     }
 }
 
-void ChordArticulationsParser::parseArpeggio(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordArticulationsParser::parse_arpeggio(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     const Arpeggio *arpeggio = chord->arpeggio();
-    if (!arpeggio || arpeggio->isChordBracket()) {
+    if (!arpeggio || arpeggio->is_chord_bracket()) {
         return;
     }
 
@@ -176,36 +176,36 @@ void ChordArticulationsParser::parseArpeggio(const Chord *chord, const Rendering
     ArpeggioMetaParser::parse(arpeggio, ctx, result);
 }
 
-void ChordArticulationsParser::parseGraceNotes(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    for (const Chord *graceChord : chord->graceNotes()) {
-        GraceNotesMetaParser::parse(graceChord, ctx, result);
+void ChordArticulationsParser::parse_grace_notes(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    for (const Chord *grace_chord : chord->grace_notes()) {
+        GraceNotesMetaParser::parse(grace_chord, ctx, result);
     }
 }
 
-void ChordArticulationsParser::parseChordLine(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    const ChordLine *chordLine = chord->chordLine();
-    if (!chordLine || !chordLine->playChordLine()) {
+void ChordArticulationsParser::parse_chord_line(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    const ChordLine *chord_line = chord->chord_line();
+    if (!chord_line || !chord_line->play_chord_line()) {
         return;
     }
 
-    ChordLineMetaParser::parse(chordLine, ctx, result);
+    ChordLineMetaParser::parse(chord_line, ctx, result);
 }
 
-void ChordArticulationsParser::parseTapping(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void ChordArticulationsParser::parse_tapping(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     const Tapping *tapping = chord->tapping();
-    if (!tapping || !tapping->playArticulation()) {
+    if (!tapping || !tapping->play_articulation()) {
         return;
     }
 
-    mpe::ArticulationType type = mpe::ArticulationType::Undefined;
+    mpe::ArticulationType type = mpe::ArticulationType::UNDEFINED;
 
     switch (tapping->hand()) {
-        case TappingHand::LEFT: type = mpe::ArticulationType::LeftHandTapping; break;
-        case TappingHand::RIGHT: type = mpe::ArticulationType::RightHandTapping; break;
+        case TappingHand::LEFT: type = mpe::ArticulationType::LEFT_HAND_TAPPING; break;
+        case TappingHand::RIGHT: type = mpe::ArticulationType::RIGHT_HAND_TAPPING; break;
         case TappingHand::INVALID: break;
     }
 
-    if (type == mpe::ArticulationType::Undefined) {
+    if (type == mpe::ArticulationType::UNDEFINED) {
         return;
     }
 
@@ -214,21 +214,21 @@ void ChordArticulationsParser::parseTapping(const Chord *chord, const RenderingC
         return;
     }
 
-    appendArticulationData(mpe::ArticulationMeta(type, pattern, ctx.nominalTimestamp, ctx.nominalDuration), result);
+    append_articulation_data(mpe::ArticulationMeta(type, pattern, ctx.nominal_timestamp, ctx.nominal_duration), result);
 }
 
-void ChordArticulationsParser::parseBreath(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
-    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(ArticulationType::Breath);
+void ChordArticulationsParser::parse_breath(const Chord *chord, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(ArticulationType::BREATH);
     if (pattern.empty()) {
         return;
     }
 
-    const Breath *breath = chord->hasBreathMark();
+    const Breath *breath = chord->has_breath_mark();
     if (!breath) {
         return;
     }
 
-    const mpe::timestamp_t timestamp = timestampFromTicks(ctx.score, breath->tick().ticks() + ctx.positionTickOffset);
+    const mpe::timestamp_t timestamp = timestamp_from_ticks(ctx.score, breath->tick().ticks() + ctx.position_tick_offset);
     const mpe::duration_t duration = breath->pause() * 1000000;
-    appendArticulationData(mpe::ArticulationMeta(ArticulationType::Breath, pattern, timestamp, duration), result);
+    append_articulation_data(mpe::ArticulationMeta(ArticulationType::BREATH, pattern, timestamp, duration), result);
 }

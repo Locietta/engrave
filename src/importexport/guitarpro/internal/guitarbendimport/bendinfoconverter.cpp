@@ -26,7 +26,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-ImportedBendInfo BendInfoConverter::fillBendInfo(const Note *note, const PitchValues &pitchValues) {
+ImportedBendInfo BendInfoConverter::fill_bend_info(const Note *note, const PitchValues &pitch_values) {
     enum class PitchValuesDiff {
         NONE,
         SAME_PITCH_AND_TIME,
@@ -38,11 +38,11 @@ ImportedBendInfo BendInfoConverter::fillBendInfo(const Note *note, const PitchVa
 
     using pvd = PitchValuesDiff;
 
-    ImportedBendInfo importedInfo;
-    PitchValuesDiff currentPitchDiff;
-    PitchValuesDiff previousPitchDiff = PitchValuesDiff::NONE;
+    ImportedBendInfo imported_info;
+    PitchValuesDiff current_pitch_diff;
+    PitchValuesDiff previous_pitch_diff = PitchValuesDiff::NONE;
 
-    auto pitchDiff = [](const PitchValue &prev, const PitchValue &cur) {
+    auto pitch_diff = [](const PitchValue &prev, const PitchValue &cur) {
         if (prev.pitch == cur.pitch) {
             return prev.time == cur.time ? pvd::SAME_PITCH_AND_TIME : pvd::SAME_PITCH_DIFF_TIME;
         }
@@ -54,41 +54,41 @@ ImportedBendInfo BendInfoConverter::fillBendInfo(const Note *note, const PitchVa
         return prev.pitch < cur.pitch ? pvd::INCREASED_PITCH_DIFF_TIME : pvd::DECREASED_PITCH_DIFF_TIME;
     };
 
-    auto addPrebendOrHold = [&importedInfo](const PitchValue &start) {
-        importedInfo.timeOffsetFromStart = start.time;
-        importedInfo.pitchOffsetFromStart = start.pitch;
+    auto add_prebend_or_hold = [&imported_info](const PitchValue &start) {
+        imported_info.time_offset_from_start = start.time;
+        imported_info.pitch_offset_from_start = start.pitch;
         if (start.pitch > 0) {
-            importedInfo.type = BendType::PREBEND;
+            imported_info.type = BendType::PREBEND;
         }
     };
 
-    for (size_t i = 0; i < pitchValues.size() - 1; i++) {
-        currentPitchDiff = pitchDiff(pitchValues[i], pitchValues[i + 1]);
-        if (currentPitchDiff == pvd::SAME_PITCH_AND_TIME) {
+    for (size_t i = 0; i < pitch_values.size() - 1; i++) {
+        current_pitch_diff = pitch_diff(pitch_values[i], pitch_values[i + 1]);
+        if (current_pitch_diff == pvd::SAME_PITCH_AND_TIME) {
             continue;
         }
 
-        if (currentPitchDiff == previousPitchDiff && !importedInfo.segments.empty()) {
-            BendSegment &lastSegment = importedInfo.segments.back();
-            lastSegment.middleTime = pitchValues[i + 1].time; // there is no "hold" in bend, cause both segments go same direction
-            lastSegment.endTime = pitchValues[i + 1].time;
-            lastSegment.endPitch = pitchValues[i + 1].pitch;
+        if (current_pitch_diff == previous_pitch_diff && !imported_info.segments.empty()) {
+            BendSegment &last_segment = imported_info.segments.back();
+            last_segment.middle_time = pitch_values[i + 1].time; // there is no "hold" in bend, cause both segments go same direction
+            last_segment.end_time = pitch_values[i + 1].time;
+            last_segment.end_pitch = pitch_values[i + 1].pitch;
             continue;
         }
 
-        switch (currentPitchDiff) {
+        switch (current_pitch_diff) {
             case pvd::NONE:
             case pvd::SAME_PITCH_AND_TIME: break;
 
             case pvd::SAME_PITCH_DIFF_TIME:
             case pvd::INCREASED_PITCH_SAME_TIME: {
-                if (importedInfo.segments.empty()) {
-                    addPrebendOrHold(pitchValues[i]);
+                if (imported_info.segments.empty()) {
+                    add_prebend_or_hold(pitch_values[i]);
                 } else {
-                    BendSegment &lastSegment = importedInfo.segments.back();
-                    lastSegment.middleTime = lastSegment.endTime;
-                    lastSegment.endTime = pitchValues[i + 1].time;
-                    lastSegment.endPitch = pitchValues[i + 1].pitch;
+                    BendSegment &last_segment = imported_info.segments.back();
+                    last_segment.middle_time = last_segment.end_time;
+                    last_segment.end_time = pitch_values[i + 1].time;
+                    last_segment.end_pitch = pitch_values[i + 1].pitch;
                 }
 
                 break;
@@ -96,40 +96,40 @@ ImportedBendInfo BendInfoConverter::fillBendInfo(const Note *note, const PitchVa
 
             case pvd::INCREASED_PITCH_DIFF_TIME:
             case pvd::DECREASED_PITCH_DIFF_TIME: {
-                if (importedInfo.segments.empty()) {
-                    addPrebendOrHold(pitchValues[i]);
+                if (imported_info.segments.empty()) {
+                    add_prebend_or_hold(pitch_values[i]);
                 }
 
-                BendSegment newSegment;
-                newSegment.startPitch = pitchValues[i].pitch;
-                newSegment.endPitch = pitchValues[i + 1].pitch;
-                newSegment.startTime = pitchValues[i].time;
-                newSegment.middleTime = pitchValues[i + 1].time;
-                newSegment.endTime = pitchValues[i + 1].time;
-                importedInfo.segments.push_back(newSegment);
+                BendSegment new_segment;
+                new_segment.start_pitch = pitch_values[i].pitch;
+                new_segment.end_pitch = pitch_values[i + 1].pitch;
+                new_segment.start_time = pitch_values[i].time;
+                new_segment.middle_time = pitch_values[i + 1].time;
+                new_segment.end_time = pitch_values[i + 1].time;
+                imported_info.segments.push_back(new_segment);
                 break;
             }
         }
 
-        previousPitchDiff = currentPitchDiff;
+        previous_pitch_diff = current_pitch_diff;
     }
 
-    importedInfo.note = note;
-    if (!importedInfo.segments.empty()) {
-        importedInfo.segments.back().endTime = PitchValue::MAX_TIME;
+    imported_info.note = note;
+    if (!imported_info.segments.empty()) {
+        imported_info.segments.back().end_time = PitchValue::max_time;
     }
 
-    for (auto &seg : importedInfo.segments) {
-        if (seg.endTime - seg.middleTime == 1) {
-            seg.middleTime = seg.endTime;
+    for (auto &seg : imported_info.segments) {
+        if (seg.end_time - seg.middle_time == 1) {
+            seg.middle_time = seg.end_time;
         }
     }
 
-    if (importedInfo.segments.size() == 1 && importedInfo.type == BendType::NORMAL_BEND &&
-        importedInfo.segments.front().pitchDiff() == GP_PITCH_PER_QUARTERTONE) {
-        importedInfo.type = BendType::SLIGHT_BEND;
+    if (imported_info.segments.size() == 1 && imported_info.type == BendType::NORMAL_BEND &&
+        imported_info.segments.front().pitch_diff() == ::mu::iex::guitarpro::gp_pitch_per_quartertone) {
+        imported_info.type = BendType::SLIGHT_BEND;
     }
 
-    return importedInfo;
+    return imported_info;
 }
 } // namespace mu::iex::guitarpro

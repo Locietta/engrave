@@ -45,18 +45,18 @@ namespace mu::engraving {
 //   tupletStyle
 //---------------------------------------------------------
 
-static const ElementStyle tupletStyle{
-    {Sid::tupletDirection, Pid::DIRECTION},
-    {Sid::tupletNumberType, Pid::NUMBER_TYPE},
-    {Sid::tupletBracketType, Pid::BRACKET_TYPE},
-    {Sid::tupletBracketWidth, Pid::LINE_WIDTH},
-    {Sid::tupletFontFace, Pid::FONT_FACE},
-    {Sid::tupletFontSize, Pid::FONT_SIZE},
-    {Sid::tupletFontStyle, Pid::FONT_STYLE},
-    {Sid::tupletAlign, Pid::ALIGN},
-    {Sid::tupletPosition, Pid::POSITION},
-    {Sid::tupletMinDistance, Pid::MIN_DISTANCE},
-    {Sid::tupletFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
+static const ElementStyle tuplet_style{
+    {Sid::TUPLET_DIRECTION, Pid::DIRECTION},
+    {Sid::TUPLET_NUMBER_TYPE, Pid::NUMBER_TYPE},
+    {Sid::TUPLET_BRACKET_TYPE, Pid::BRACKET_TYPE},
+    {Sid::TUPLET_BRACKET_WIDTH, Pid::LINE_WIDTH},
+    {Sid::TUPLET_FONT_FACE, Pid::FONT_FACE},
+    {Sid::TUPLET_FONT_SIZE, Pid::FONT_SIZE},
+    {Sid::TUPLET_FONT_STYLE, Pid::FONT_STYLE},
+    {Sid::TUPLET_ALIGN, Pid::ALIGN},
+    {Sid::TUPLET_POSITION, Pid::POSITION},
+    {Sid::TUPLET_MIN_DISTANCE, Pid::MIN_DISTANCE},
+    {Sid::TUPLET_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
 };
 
 //---------------------------------------------------------
@@ -65,31 +65,31 @@ static const ElementStyle tupletStyle{
 
 Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUPLET, parent) {
     direction_ = DirectionV::AUTO;
-    numberType_ = TupletNumberType::SHOW_NUMBER;
-    bracketType_ = TupletBracketType::AUTO_BRACKET;
+    number_type_ = TupletNumberType::SHOW_NUMBER;
+    bracket_type_ = TupletBracketType::AUTO_BRACKET;
     ratio_ = Fraction(1, 1);
     number_ = 0;
-    hasBracket_ = false;
-    isUp_ = true;
-    initElementStyle(&tupletStyle);
+    has_bracket_ = false;
+    is_up_ = true;
+    init_element_style(&::mu::engraving::tuplet_style);
 }
 
 Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     tick_ = t.tick_;
-    hasBracket_ = t.hasBracket_;
+    has_bracket_ = t.has_bracket_;
     ratio_ = t.ratio_;
-    baseLen_ = t.baseLen_;
+    base_len_ = t.base_len_;
     direction_ = t.direction_;
-    numberType_ = t.numberType_;
-    bracketType_ = t.bracketType_;
-    bracketWidth_ = t.bracketWidth_;
+    number_type_ = t.number_type_;
+    bracket_type_ = t.bracket_type_;
+    bracket_width_ = t.bracket_width_;
 
-    isUp_ = t.isUp_;
+    is_up_ = t.is_up_;
 
     p1_ = t.p1_;
     p2_ = t.p2_;
-    userP1_ = t.userP1_;
-    userP2_ = t.userP2_;
+    user_p1_ = t.user_p1_;
+    user_p2_ = t.user_p2_;
 
     // recreated on layout
     number_ = 0;
@@ -100,25 +100,25 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
 //---------------------------------------------------------
 
 Tuplet::~Tuplet() {
-    beingDestructed_ = true;
+    being_destructed_ = true;
 
-    for (DurationElement *de : allElements_) {
+    for (DurationElement *de : all_elements_) {
         assert(de->tuplet() == this);
-        de->setTuplet(nullptr);
+        de->set_tuplet(nullptr);
     }
     delete number_;
 }
 
-void Tuplet::setOwnershipParent(DummyParentOr<Measure> parent) { EngravingItem::setOwnershipParent(parent); }
+void Tuplet::set_ownership_parent(DummyParentOr<Measure> parent) { EngravingItem::set_ownership_parent(parent); }
 
 //---------------------------------------------------------
 //   setSelected
 //---------------------------------------------------------
 
-void Tuplet::setSelected(bool f) {
-    EngravingItem::setSelected(f);
+void Tuplet::set_selected(bool f) {
+    EngravingItem::set_selected(f);
     if (number_) {
-        number_->setSelected(f);
+        number_->set_selected(f);
     }
 }
 
@@ -126,10 +126,10 @@ void Tuplet::setSelected(bool f) {
 //   setVisible
 //---------------------------------------------------------
 
-void Tuplet::setVisible(bool f) {
-    EngravingItem::setVisible(f);
+void Tuplet::set_visible(bool f) {
+    EngravingItem::set_visible(f);
     if (number_) {
-        number_->setVisible(f);
+        number_->set_visible(f);
     }
 }
 
@@ -137,14 +137,14 @@ void Tuplet::setVisible(bool f) {
 //   setColor
 //---------------------------------------------------------
 
-void Tuplet::setColor(const Color &col) {
-    EngravingItem::setColor(col);
+void Tuplet::set_color(const Color &col) {
+    EngravingItem::set_color(col);
     if (number_) {
-        number_->setColor(col);
+        number_->set_color(col);
     }
 }
 
-EngravingObject *Tuplet::propertyDelegate(Pid id) const {
+EngravingObject *Tuplet::property_delegate(Pid id) const {
     switch (id) {
         case Pid::FONT_FACE:
         case Pid::FONT_STYLE:
@@ -168,11 +168,11 @@ Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 //   Set FONT_ITALIC to true, because for tuplets number should be italic
 //---------------------------------------------------------
 
-void Tuplet::resetNumberProperty() { resetNumberProperty(number_); }
+void Tuplet::reset_number_property() { reset_number_property(number_); }
 
-void Tuplet::resetNumberProperty(Text *number) {
+void Tuplet::reset_number_property(Text *number) {
     for (auto p : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
-        number->resetProperty(p);
+        number->reset_property(p);
     }
 }
 
@@ -180,75 +180,75 @@ void Tuplet::resetNumberProperty(Text *number) {
 //   calcHasBracket
 //---------------------------------------------------------
 
-bool Tuplet::calcHasBracket(const DurationElement *cr1, const DurationElement *cr2) const {
-    if (bracketType_ != TupletBracketType::AUTO_BRACKET) {
-        return bracketType_ != TupletBracketType::SHOW_NO_BRACKET;
+bool Tuplet::calc_has_bracket(const DurationElement *cr1, const DurationElement *cr2) const {
+    if (bracket_type_ != TupletBracketType::AUTO_BRACKET) {
+        return bracket_type_ != TupletBracketType::SHOW_NO_BRACKET;
     }
     if (cr1 == cr2) { // Degenerate tuplet
         return false;
     }
-    if (!cr1->isChord() || !cr2->isChord()) {
+    if (!cr1->is_chord() || !cr2->is_chord()) {
         return true;
     }
-    const Chord *c1 = toChord(cr1);
-    const Chord *c2 = toChord(cr2);
+    const Chord *c1 = to_chord(cr1);
+    const Chord *c2 = to_chord(cr2);
 
-    Beam const *beamStart = c1->beam();
-    Beam const *beamEnd = c2->beam();
-    if (!beamStart || !beamEnd || beamStart != beamEnd) {
+    Beam const *beam_start = c1->beam();
+    Beam const *beam_end = c2->beam();
+    if (!beam_start || !beam_end || beam_start != beam_end) {
         return true;
     }
-    bool tupletStartsBeam = beamStart->elements().front() == c1;
-    bool tupletEndsBeam = beamEnd->elements().back() == c2;
-    bool headSide = isUp() != (c1->up() || c2->up());
-    bool isCross = c1->vStaffIdx() != c2->vStaffIdx();
-    if (tupletStartsBeam && tupletEndsBeam && (!headSide || isCross)) {
+    bool tuplet_starts_beam = beam_start->elements().front() == c1;
+    bool tuplet_ends_beam = beam_end->elements().back() == c2;
+    bool head_side = is_up() != (c1->up() || c2->up());
+    bool is_cross = c1->v_staff_idx() != c2->v_staff_idx();
+    if (tuplet_starts_beam && tuplet_ends_beam && (!head_side || is_cross)) {
         return false;
     }
 
-    int beamCount = -1;
-    for (DurationElement *e : currentElements_) {
-        if (e->isTuplet() || e->isRest()) {
+    int beam_count = -1;
+    for (DurationElement *e : current_elements_) {
+        if (e->is_tuplet() || e->is_rest()) {
             return true;
-        } else if (e->isChordRest()) {
-            ChordRest *cr = toChordRest(e);
+        } else if (e->is_chord_rest()) {
+            ChordRest *cr = to_chord_rest(e);
             if (cr->beam() == 0) {
                 return true;
             }
-            if (beamCount == -1) {
-                beamCount = cr->beams();
-            } else if (beamCount != cr->beams()) {
+            if (beam_count == -1) {
+                beam_count = cr->beams();
+            } else if (beam_count != cr->beams()) {
                 return true;
             }
         }
     }
-    if (beamCount < 1) {
+    if (beam_count < 1) {
         return true;
     }
 
-    bool startChordBreaks32 = false;
-    bool startChordBreaks64 = false;
-    Chord *prevStartChord = c1->prev();
-    if (prevStartChord) {
-        beamStart->calcBeamBreaks(c1, prevStartChord, beamCount - 1, startChordBreaks32, startChordBreaks64);
+    bool start_chord_breaks32 = false;
+    bool start_chord_breaks64 = false;
+    Chord *prev_start_chord = c1->prev();
+    if (prev_start_chord) {
+        beam_start->calc_beam_breaks(c1, prev_start_chord, beam_count - 1, start_chord_breaks32, start_chord_breaks64);
     }
-    bool startChordDefinesTuplet = startChordBreaks32 || startChordBreaks64 || tupletStartsBeam;
-    if (prevStartChord) {
-        startChordDefinesTuplet = startChordDefinesTuplet || prevStartChord->beams() < beamCount;
-    }
-
-    bool endChordBreaks32 = false;
-    bool endChordBreaks64 = false;
-    Chord *nextEndChord = c2->next();
-    if (nextEndChord) {
-        beamEnd->calcBeamBreaks(nextEndChord, c2, beamCount - 1, endChordBreaks32, endChordBreaks64);
-    }
-    bool endChordDefinesTuplet = endChordBreaks32 || endChordBreaks64 || tupletEndsBeam;
-    if (nextEndChord) {
-        endChordDefinesTuplet = endChordDefinesTuplet || nextEndChord->beams() < beamCount;
+    bool start_chord_defines_tuplet = start_chord_breaks32 || start_chord_breaks64 || tuplet_starts_beam;
+    if (prev_start_chord) {
+        start_chord_defines_tuplet = start_chord_defines_tuplet || prev_start_chord->beams() < beam_count;
     }
 
-    if (startChordDefinesTuplet && endChordDefinesTuplet && (!headSide || isCross)) {
+    bool end_chord_breaks32 = false;
+    bool end_chord_breaks64 = false;
+    Chord *next_end_chord = c2->next();
+    if (next_end_chord) {
+        beam_end->calc_beam_breaks(next_end_chord, c2, beam_count - 1, end_chord_breaks32, end_chord_breaks64);
+    }
+    bool end_chord_defines_tuplet = end_chord_breaks32 || end_chord_breaks64 || tuplet_ends_beam;
+    if (next_end_chord) {
+        end_chord_defines_tuplet = end_chord_defines_tuplet || next_end_chord->beams() < beam_count;
+    }
+
+    if (start_chord_defines_tuplet && end_chord_defines_tuplet && (!head_side || is_cross)) {
         return false;
     }
 
@@ -259,9 +259,9 @@ bool Tuplet::calcHasBracket(const DurationElement *cr1, const DurationElement *c
 //   scanElements
 //---------------------------------------------------------
 
-void Tuplet::scanElements(std::function<void(EngravingItem *)> func) {
+void Tuplet::scan_elements(std::function<void(EngravingItem *)> func) {
     if (number_) {
-        number_->scanElements(func);
+        number_->scan_elements(func);
     }
 
     func(this);
@@ -273,9 +273,9 @@ void Tuplet::scanElements(std::function<void(EngravingItem *)> func) {
 
 void Tuplet::add(EngravingItem *e) {
 #ifndef NDEBUG
-    for (DurationElement *el : currentElements_) {
+    for (DurationElement *el : current_elements_) {
         if (el == e) {
-            LOGD("%p: %p %s already there", this, e, e->typeName());
+            LOGD("%p: %p %s already there", this, e, e->type_name());
             return;
         }
     }
@@ -285,22 +285,22 @@ void Tuplet::add(EngravingItem *e) {
         case ElementType::CHORD:
         case ElementType::REST:
         case ElementType::TUPLET: {
-            DurationElement *de = toDurationElement(e);
-            de->setTuplet(this);
+            DurationElement *de = to_duration_element(e);
+            de->set_tuplet(this);
 
             bool found = false;
             Fraction tick = de->rtick();
             if (tick != Fraction(-1, 1)) {
-                for (unsigned int i = 0; i < currentElements_.size(); ++i) {
-                    if (currentElements_[i]->rtick() > tick) {
-                        currentElements_.insert(currentElements_.begin() + i, de);
+                for (unsigned int i = 0; i < current_elements_.size(); ++i) {
+                    if (current_elements_[i]->rtick() > tick) {
+                        current_elements_.insert(current_elements_.begin() + i, de);
                         found = true;
                         break;
                     }
                 }
             }
             if (!found) {
-                currentElements_.push_back(de);
+                current_elements_.push_back(de);
             }
         } break;
 
@@ -323,12 +323,12 @@ void Tuplet::remove(EngravingItem *e) {
         case ElementType::CHORD:
         case ElementType::REST:
         case ElementType::TUPLET: {
-            auto i = std::find(currentElements_.begin(), currentElements_.end(), toDurationElement(e));
-            if (i == currentElements_.end()) {
-                LOGD("Tuplet::remove: cannot find element <%s>", e->typeName());
-                LOGD("  elements %zu", currentElements_.size());
+            auto i = std::find(current_elements_.begin(), current_elements_.end(), to_duration_element(e));
+            if (i == current_elements_.end()) {
+                LOGD("Tuplet::remove: cannot find element <%s>", e->type_name());
+                LOGD("  elements %zu", current_elements_.size());
             } else {
-                currentElements_.erase(i);
+                current_elements_.erase(i);
                 e->removed();
             }
         } break;
@@ -336,17 +336,17 @@ void Tuplet::remove(EngravingItem *e) {
     }
 }
 
-void Tuplet::addDurationElement(DurationElement *de) {
-    assert(!beingDestructed_);
-    allElements_.insert(de);
+void Tuplet::add_duration_element(DurationElement *de) {
+    assert(!being_destructed_);
+    all_elements_.insert(de);
 }
 
-void Tuplet::removeDurationElement(DurationElement *de) {
-    if (beingDestructed_) {
+void Tuplet::remove_duration_element(DurationElement *de) {
+    if (being_destructed_) {
         return;
     }
 
-    allElements_.erase(de);
+    all_elements_.erase(de);
 }
 
 //---------------------------------------------------------
@@ -358,8 +358,8 @@ void Tuplet::removeDurationElement(DurationElement *de) {
 //---------------------------------------------------------
 
 void Tuplet::reset() {
-    undoChangeProperty(Pid::P1, PointF());
-    undoChangeProperty(Pid::P2, PointF());
+    undo_change_property(Pid::P1, PointF());
+    undo_change_property(Pid::P2, PointF());
     EngravingItem::reset();
 }
 
@@ -369,49 +369,49 @@ void Tuplet::reset() {
 
 void Tuplet::dump() const {
     EngravingItem::dump();
-    LOGD() << "ratio: " << ratio_.toString();
+    LOGD() << "ratio: " << ratio_.to_string();
 }
 
 //---------------------------------------------------------
 //   setTrack
 //---------------------------------------------------------
 
-void Tuplet::setTrack(track_idx_t val) {
+void Tuplet::set_track(track_idx_t val) {
     if (tuplet()) {
-        tuplet()->setTrack(val);
+        tuplet()->set_track(val);
     }
     if (number_) {
-        number_->setTrack(val);
+        number_->set_track(val);
     }
-    EngravingItem::setTrack(val);
+    EngravingItem::set_track(val);
 }
 
 //---------------------------------------------------------
 //   tickGreater
 //---------------------------------------------------------
 
-static bool tickGreater(const DurationElement *a, const DurationElement *b) { return a->tick() < b->tick(); }
+static bool tick_greater(const DurationElement *a, const DurationElement *b) { return a->tick() < b->tick(); }
 
 //---------------------------------------------------------
 //   sortElements
 //---------------------------------------------------------
 
-void Tuplet::sortElements() { std::sort(currentElements_.begin(), currentElements_.end(), tickGreater); }
+void Tuplet::sort_elements() { std::sort(current_elements_.begin(), current_elements_.end(), tick_greater); }
 
 //---------------------------------------------------------
 //   cross
 //---------------------------------------------------------
 
 bool Tuplet::cross() const {
-    for (DurationElement *de : currentElements_) {
+    for (DurationElement *de : current_elements_) {
         if (!de) {
             continue;
-        } else if (de->isChordRest()) {
-            if (toChordRest(de)->staffMove()) {
+        } else if (de->is_chord_rest()) {
+            if (to_chord_rest(de)->staff_move()) {
                 return true;
             }
-        } else if (de->isTuplet()) {
-            if (toTuplet(de)->cross()) {
+        } else if (de->is_tuplet()) {
+            if (to_tuplet(de)->cross()) {
                 return true;
             }
         }
@@ -424,7 +424,7 @@ bool Tuplet::cross() const {
 ///  Staff index for layout based on the first ChordRest
 //---------------------------------------------------------
 
-staff_idx_t Tuplet::vStaffIdx() const {
+staff_idx_t Tuplet::v_staff_idx() const {
     if (elements().empty()) {
         return muse::nidx;
     }
@@ -434,15 +434,15 @@ staff_idx_t Tuplet::vStaffIdx() const {
         return muse::nidx;
     }
 
-    while (cr->isTuplet()) {
-        const Tuplet *t = toTuplet(cr);
+    while (cr->is_tuplet()) {
+        const Tuplet *t = to_tuplet(cr);
         if (t->elements().empty()) {
             return muse::nidx;
         }
         cr = t->elements().front();
     }
 
-    return cr->vStaffIdx();
+    return cr->v_staff_idx();
 }
 
 //---------------------------------------------------------
@@ -451,9 +451,9 @@ staff_idx_t Tuplet::vStaffIdx() const {
 ///  even if the tuplet is not complete yet
 //---------------------------------------------------------
 
-Fraction Tuplet::elementsDuration() {
+Fraction Tuplet::elements_duration() {
     Fraction f;
-    for (DurationElement *el : currentElements_) {
+    for (DurationElement *el : current_elements_) {
         f += el->ticks();
     }
     return f;
@@ -463,47 +463,47 @@ Fraction Tuplet::elementsDuration() {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Tuplet::getProperty(Pid propertyId) const {
-    if (EngravingObject *delegate = propertyDelegate(propertyId)) {
-        return delegate->getProperty(propertyId);
+PropertyValue Tuplet::get_property(Pid property_id) const {
+    if (EngravingObject *delegate = property_delegate(property_id)) {
+        return delegate->get_property(property_id);
     }
-    switch (propertyId) {
-        case Pid::DIRECTION: return PropertyValue::fromValue<DirectionV>(direction_);
-        case Pid::NUMBER_TYPE: return int(numberType_);
-        case Pid::BRACKET_TYPE: return int(bracketType_);
-        case Pid::LINE_WIDTH: return bracketWidth_;
+    switch (property_id) {
+        case Pid::DIRECTION: return PropertyValue::from_value<DirectionV>(direction_);
+        case Pid::NUMBER_TYPE: return int(number_type_);
+        case Pid::BRACKET_TYPE: return int(bracket_type_);
+        case Pid::LINE_WIDTH: return bracket_width_;
         case Pid::NORMAL_NOTES: return ratio_.denominator();
         case Pid::ACTUAL_NOTES: return ratio_.numerator();
-        case Pid::P1: return userP1_;
-        case Pid::P2: return userP2_;
+        case Pid::P1: return user_p1_;
+        case Pid::P2: return user_p2_;
         default: break;
     }
-    return DurationElement::getProperty(propertyId);
+    return DurationElement::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool Tuplet::setProperty(Pid propertyId, const PropertyValue &v) {
-    if (EngravingObject *delegate = propertyDelegate(propertyId)) {
-        return delegate->setProperty(propertyId, v);
+bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
+    if (EngravingObject *delegate = property_delegate(property_id)) {
+        return delegate->set_property(property_id, v);
     }
-    switch (propertyId) {
-        case Pid::DIRECTION: setDirection(v.value<DirectionV>()); break;
-        case Pid::NUMBER_TYPE: setNumberType(TupletNumberType(v.toInt())); break;
-        case Pid::BRACKET_TYPE: setBracketType(TupletBracketType(v.toInt())); break;
-        case Pid::LINE_WIDTH: setBracketWidth(v.value<Spatium>()); break;
-        case Pid::NORMAL_NOTES: ratio_.setDenominator(v.toInt()); break;
-        case Pid::ACTUAL_NOTES: ratio_.setNumerator(v.toInt()); break;
-        case Pid::P1: userP1_ = v.value<PointF>(); break;
-        case Pid::P2: userP2_ = v.value<PointF>(); break;
-        case Pid::TICK: setTick(v.value<Fraction>()); break;
-        default: return DurationElement::setProperty(propertyId, v);
+    switch (property_id) {
+        case Pid::DIRECTION: set_direction(v.value<DirectionV>()); break;
+        case Pid::NUMBER_TYPE: set_number_type(TupletNumberType(v.to_int())); break;
+        case Pid::BRACKET_TYPE: set_bracket_type(TupletBracketType(v.to_int())); break;
+        case Pid::LINE_WIDTH: set_bracket_width(v.value<Spatium>()); break;
+        case Pid::NORMAL_NOTES: ratio_.set_denominator(v.to_int()); break;
+        case Pid::ACTUAL_NOTES: ratio_.set_numerator(v.to_int()); break;
+        case Pid::P1: user_p1_ = v.value<PointF>(); break;
+        case Pid::P2: user_p2_ = v.value<PointF>(); break;
+        case Pid::TICK: set_tick(v.value<Fraction>()); break;
+        default: return DurationElement::set_property(property_id, v);
     }
-    if (!currentElements_.empty()) {
-        currentElements_.front()->triggerLayout();
-        currentElements_.back()->triggerLayout();
+    if (!current_elements_.empty()) {
+        current_elements_.front()->trigger_layout();
+        current_elements_.back()->trigger_layout();
     }
     return true;
 }
@@ -512,7 +512,7 @@ bool Tuplet::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Tuplet::propertyDefault(Pid id) const {
+PropertyValue Tuplet::property_default(Pid id) const {
     switch (id) {
         case Pid::TEXT_STYLE: return TextStyleType::TUPLET;
         case Pid::SYSTEM_FLAG: return false;
@@ -521,23 +521,23 @@ PropertyValue Tuplet::propertyDefault(Pid id) const {
         case Pid::ACTUAL_NOTES: return 0;
         case Pid::P1:
         case Pid::P2: return PointF();
-        case Pid::POSITION: return style().styleV(Sid::tupletPosition);
-        case Pid::ALIGN: return style().styleV(Sid::tupletAlign);
-        case Pid::FONT_FACE: return style().styleV(Sid::tupletFontFace);
-        case Pid::FONT_SIZE: return style().styleV(Sid::tupletFontSize);
-        case Pid::FONT_STYLE: return style().styleV(Sid::tupletFontStyle);
-        case Pid::SIZE_SPATIUM_DEPENDENT: return style().styleV(Sid::tupletFontSpatiumDependent);
+        case Pid::POSITION: return style().style_v(Sid::TUPLET_POSITION);
+        case Pid::ALIGN: return style().style_v(Sid::TUPLET_ALIGN);
+        case Pid::FONT_FACE: return style().style_v(Sid::TUPLET_FONT_FACE);
+        case Pid::FONT_SIZE: return style().style_v(Sid::TUPLET_FONT_SIZE);
+        case Pid::FONT_STYLE: return style().style_v(Sid::TUPLET_FONT_STYLE);
+        case Pid::SIZE_SPATIUM_DEPENDENT: return style().style_v(Sid::TUPLET_FONT_SPATIUM_DEPENDENT);
         default: break;
     }
 
     // TODO: what does this do? Why TextStyleType::DEFAULT?
-    for (const auto &spp : *textStyle(TextStyleType::DEFAULT)) {
+    for (const auto &spp : *text_style(TextStyleType::DEFAULT)) {
         if (spp.pid == id) {
-            return styleValue(id, spp.sid);
+            return style_value(id, spp.sid);
         }
     }
 
-    return DurationElement::propertyDefault(id);
+    return DurationElement::property_default(id);
 }
 
 //---------------------------------------------------------
@@ -548,11 +548,11 @@ PropertyValue Tuplet::propertyDefault(Pid id) const {
 ///    See issue #136406 and Pull request #2881
 //---------------------------------------------------------
 
-void Tuplet::sanitizeTuplet() {
+void Tuplet::sanitize_tuplet() {
     if (ratio().numerator() == ratio().reduced().numerator()) { // return if the ratio is an irreducible fraction
         return;
     }
-    Fraction baseLenDuration = (Fraction(ratio().denominator(), 1) * baseLen().fraction()).reduced();
+    Fraction base_len_duration = (Fraction(ratio().denominator(), 1) * base_len().fraction()).reduced();
 
     // Due to a bug present in 2.1 (and before), a tuplet with non-reduced ratio could be
     // in a corrupted state (mismatch between duration and base length).
@@ -561,34 +561,34 @@ void Tuplet::sanitizeTuplet() {
     // not-completely filled tuplets, such as tuplets in voices > 0 with
     // gaps (for example, a tuplet in second voice with a deleted chordrest element)
 
-    Fraction testDuration(0, 1);
+    Fraction test_duration(0, 1);
     for (DurationElement *de : elements()) {
         if (!de) {
             continue;
         }
-        Fraction elementDuration(0, 1);
-        if (de->isTuplet()) {
-            Tuplet *t = toTuplet(de);
-            t->sanitizeTuplet();
-            elementDuration = t->ticks();
+        Fraction element_duration(0, 1);
+        if (de->is_tuplet()) {
+            Tuplet *t = to_tuplet(de);
+            t->sanitize_tuplet();
+            element_duration = t->ticks();
         } else {
-            elementDuration = de->ticks();
+            element_duration = de->ticks();
         }
-        testDuration += elementDuration;
+        test_duration += element_duration;
     }
-    testDuration = testDuration / ratio();
-    testDuration.reduce();
-    if (elements().back()->endTick() - elements().front()->tick() > testDuration) {
+    test_duration = test_duration / ratio();
+    test_duration.reduce();
+    if (elements().back()->end_tick() - elements().front()->tick() > test_duration) {
         return; // this tuplet has missing elements; do not sanitize
     }
-    if (!(testDuration == baseLenDuration && baseLenDuration == ticks())) {
-        Fraction f = testDuration * Fraction(1, ratio().denominator());
+    if (!(test_duration == base_len_duration && base_len_duration == ticks())) {
+        Fraction f = test_duration * Fraction(1, ratio().denominator());
         f.reduce();
         Fraction fbl(1, f.denominator());
-        if (TDuration::isValid(fbl)) {
-            setTicks(testDuration);
-            setBaseLen(fbl);
-            LOGD("Tuplet %p sanitized duration %d/%d   baseLen %d/%d", this, testDuration.numerator(), testDuration.denominator(), 1,
+        if (TDuration::is_valid(fbl)) {
+            set_ticks(test_duration);
+            set_base_len(fbl);
+            LOGD("Tuplet %p sanitized duration %d/%d   baseLen %d/%d", this, test_duration.numerator(), test_duration.denominator(), 1,
                  fbl.denominator());
         } else {
             LOGD("Impossible to sanitize the tuplet");
@@ -603,20 +603,20 @@ void Tuplet::sanitizeTuplet() {
 //     Needed for importing files that saved incomplete tuplets.
 //---------------------------------------------------------
 
-Fraction Tuplet::addMissingElement(const Fraction &startTick, const Fraction &endTick) {
-    Fraction f = (endTick - startTick) * ratio();
+Fraction Tuplet::add_missing_element(const Fraction &start_tick, const Fraction &end_tick) {
+    Fraction f = (end_tick - start_tick) * ratio();
     TDuration d = TDuration(f, true);
-    if (!d.isValid()) {
+    if (!d.is_valid()) {
         LOGD("Tuplet::addMissingElement(): invalid duration: %d/%d", f.numerator(), f.denominator());
-        return Fraction::fromTicks(0);
+        return Fraction::from_ticks(0);
     }
     f = d.fraction();
-    Segment *segment = measure()->getSegment(SegmentType::ChordRest, startTick);
-    Rest *rest = Factory::createRest(segment);
-    rest->setDurationType(d);
-    rest->setTicks(f);
-    rest->setTrack(track());
-    rest->setVisible(false);
+    Segment *segment = measure()->get_segment(SegmentType::CHORD_REST, start_tick);
+    Rest *rest = Factory::create_rest(segment);
+    rest->set_duration_type(d);
+    rest->set_ticks(f);
+    rest->set_track(track());
+    rest->set_visible(false);
 
     segment->add(rest);
     add(rest);
@@ -630,7 +630,7 @@ Fraction Tuplet::addMissingElement(const Fraction &startTick, const Fraction &en
 //     that saved incomplete tuplets.
 //---------------------------------------------------------
 
-void Tuplet::addMissingElements() {
+void Tuplet::add_missing_elements() {
     if (tuplet()) {
         return; // do not correct nested tuplets
     }
@@ -638,96 +638,96 @@ void Tuplet::addMissingElements() {
         return; // nothing to do for tuplets in voice 1
     }
 
-    Fraction missingElementsDuration = ticks() * ratio() - elementsDuration();
-    if (missingElementsDuration.isZero()) {
+    Fraction missing_elements_duration = ticks() * ratio() - elements_duration();
+    if (missing_elements_duration.is_zero()) {
         return;
     }
 
     // first, fill in any holes in the middle of the tuplet
-    Fraction expectedTick = elements().front()->tick();
+    Fraction expected_tick = elements().front()->tick();
 
-    const std::vector<DurationElement *> elementsCopy = elements(); // mofified during loop
-    for (const DurationElement *de : elementsCopy) {
+    const std::vector<DurationElement *> elements_copy = elements(); // mofified during loop
+    for (const DurationElement *de : elements_copy) {
         if (!de) {
             continue;
         }
-        if (de->tick() != expectedTick) {
-            missingElementsDuration -= addMissingElement(expectedTick, de->tick());
-            if (missingElementsDuration.isZero()) {
+        if (de->tick() != expected_tick) {
+            missing_elements_duration -= add_missing_element(expected_tick, de->tick());
+            if (missing_elements_duration.is_zero()) {
                 return;
             }
         }
-        expectedTick += de->actualTicks();
+        expected_tick += de->actual_ticks();
     }
 
     // calculate the tick where we would expect a tuplet of this duration to start
     // TODO: check:
-    expectedTick = elements().front()->tick() - Fraction::fromTicks(elements().front()->tick().ticks() % ticks().ticks());
-    if (expectedTick != elements().front()->tick()) {
+    expected_tick = elements().front()->tick() - Fraction::from_ticks(elements().front()->tick().ticks() % ticks().ticks());
+    if (expected_tick != elements().front()->tick()) {
         // try to fill a hole at the beginning of the tuplet
-        Fraction firstAvailableTick = measure()->tick();
-        Segment *segment = measure()->findSegment(SegmentType::ChordRest, elements().front()->tick());
-        ChordRest *prevChordRest = segment && segment->prev() ? segment->prev()->nextChordRest(track(), true) : nullptr;
-        if (prevChordRest && prevChordRest->measure() == measure()) {
-            firstAvailableTick = prevChordRest->endTick();
+        Fraction first_available_tick = measure()->tick();
+        Segment *segment = measure()->find_segment(SegmentType::CHORD_REST, elements().front()->tick());
+        ChordRest *prev_chord_rest = segment && segment->prev() ? segment->prev()->next_chord_rest(track(), true) : nullptr;
+        if (prev_chord_rest && prev_chord_rest->measure() == measure()) {
+            first_available_tick = prev_chord_rest->end_tick();
         }
-        if (firstAvailableTick != elements().front()->tick()) {
-            Fraction f = missingElementsDuration / ratio();
-            Fraction ticksRequired = f;
-            Fraction endTick = elements().front()->tick();
-            Fraction startTick = std::max(firstAvailableTick, endTick - ticksRequired);
-            if (expectedTick > startTick) {
-                startTick = expectedTick;
+        if (first_available_tick != elements().front()->tick()) {
+            Fraction f = missing_elements_duration / ratio();
+            Fraction ticks_required = f;
+            Fraction end_tick = elements().front()->tick();
+            Fraction start_tick = std::max(first_available_tick, end_tick - ticks_required);
+            if (expected_tick > start_tick) {
+                start_tick = expected_tick;
             }
-            missingElementsDuration -= addMissingElement(startTick, endTick);
-            if (missingElementsDuration.isZero()) {
+            missing_elements_duration -= add_missing_element(start_tick, end_tick);
+            if (missing_elements_duration.is_zero()) {
                 return;
             }
         }
     }
     // now fill a hole at the end of the tuplet
-    Fraction startTick = elements().back()->endTick();
-    Fraction endTick = elements().front()->tick() + ticks();
+    Fraction start_tick = elements().back()->end_tick();
+    Fraction end_tick = elements().front()->tick() + ticks();
     // just to be safe, find the next ChordRest in the track, and adjust endTick if necessary
-    Segment *segment = measure()->findSegment(SegmentType::ChordRest, elements().back()->tick());
-    ChordRest *nextChordRest = segment && segment->next() ? segment->next()->nextChordRest(track(), false) : nullptr;
-    if (nextChordRest && nextChordRest->tick() < endTick) {
-        endTick = nextChordRest->tick();
+    Segment *segment = measure()->find_segment(SegmentType::CHORD_REST, elements().back()->tick());
+    ChordRest *next_chord_rest = segment && segment->next() ? segment->next()->next_chord_rest(track(), false) : nullptr;
+    if (next_chord_rest && next_chord_rest->tick() < end_tick) {
+        end_tick = next_chord_rest->tick();
     }
-    missingElementsDuration -= addMissingElement(startTick, endTick);
-    if (!missingElementsDuration.isZero()) {
-        LOGD("Tuplet::addMissingElements(): still missing duration of %d/%d", missingElementsDuration.numerator(),
-             missingElementsDuration.denominator());
+    missing_elements_duration -= add_missing_element(start_tick, end_tick);
+    if (!missing_elements_duration.is_zero()) {
+        LOGD("Tuplet::addMissingElements(): still missing duration of %d/%d", missing_elements_duration.numerator(),
+             missing_elements_duration.denominator());
     }
 }
 
-int Tuplet::computeTupletDenominator(int numerator, Fraction totalDuration) {
+int Tuplet::compute_tuplet_denominator(int numerator, Fraction total_duration) {
     if (numerator <= 0) {
         return 0;
     }
-    Fraction noteDuration = totalDuration / numerator;
-    Fraction baseLen(1, 1);
-    Fraction ratio = (totalDuration / baseLen).reduced();
-    while (ratio.denominator() != 1 || baseLen / 2 >= noteDuration) {
-        baseLen /= 2;
-        ratio = (totalDuration / baseLen).reduced();
+    Fraction note_duration = total_duration / numerator;
+    Fraction base_len(1, 1);
+    Fraction ratio = (total_duration / base_len).reduced();
+    while (ratio.denominator() != 1 || base_len / 2 >= note_duration) {
+        base_len /= 2;
+        ratio = (total_duration / base_len).reduced();
     }
     return ratio.numerator();
 }
 
-EngravingItem *Tuplet::nextElement() {
-    ChordRest *firstElement = toChordRest(elements().front());
-    if (firstElement->isChord()) {
-        Chord *chord = toChord(firstElement);
-        return chord->firstGraceOrNote();
+EngravingItem *Tuplet::next_element() {
+    ChordRest *first_element = to_chord_rest(elements().front());
+    if (first_element->is_chord()) {
+        Chord *chord = to_chord(first_element);
+        return chord->first_grace_or_note();
     }
-    return firstElement;
+    return first_element;
 }
 
-EngravingItem *Tuplet::prevElement() {
-    ChordRest *firstElement = toChordRest(elements().front());
-    staff_idx_t staffId = firstElement->staffIdx();
-    EngravingItem *prevItem = firstElement->segment()->prevElement(staffId);
-    return prevItem;
+EngravingItem *Tuplet::prev_element() {
+    ChordRest *first_element = to_chord_rest(elements().front());
+    staff_idx_t staff_id = first_element->staff_idx();
+    EngravingItem *prev_item = first_element->segment()->prev_element(staff_id);
+    return prev_item;
 }
 } // namespace mu::engraving

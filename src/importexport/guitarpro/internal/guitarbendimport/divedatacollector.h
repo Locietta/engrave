@@ -34,17 +34,17 @@ class DiveDataCollector {
 public:
     DiveDataCollector() = default;
 
-    void collectDiveData(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues);
+    void collect_dive_data(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitch_values);
 
     DiveDataContext &context() { return ctx_; }
 
 private:
     struct PrevWhammy {
-        int destPitch = 0;
-        mu::engraving::Fraction endTick;
+        int dest_pitch = 0;
+        mu::engraving::Fraction end_tick;
     };
 
     DiveDataContext ctx_;
-    std::unordered_map<mu::engraving::track_idx_t, PrevWhammy> lastWhammyByTrack_;
+    std::unordered_map<mu::engraving::track_idx_t, PrevWhammy> last_whammy_by_track_;
 };
 } // namespace mu::iex::guitarpro

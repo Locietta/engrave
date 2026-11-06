@@ -36,16 +36,16 @@ public:
 
     virtual const AudioFxParams &params() const = 0;
 
-    virtual void setOutputSpec(const OutputSpec &spec) = 0;
+    virtual void set_output_spec(const OutputSpec &spec) = 0;
 
     virtual bool active() const = 0;
-    virtual void setActive(bool active) = 0;
+    virtual void set_active(bool active) = 0;
 
-    virtual void setMode(const ProcessMode mode) = 0;
+    virtual void set_mode(const ProcessMode mode) = 0;
 
-    virtual bool shouldProcessDuringSilence() const = 0;
+    virtual bool should_process_during_silence() const = 0;
 
-    virtual void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) = 0;
+    virtual void process(float *buffer, samples_t sample_count, samples_t playback_position_samples = 0) = 0;
 };
 
 using IFxProcessorPtr = std::shared_ptr<IFxProcessor>;

@@ -33,11 +33,11 @@ class Transaction;
 
 class EditMeasureRepeat {
 public:
-    static void addMeasureRepeat(Transaction &tx, Score *score, Measure *firstMeasure, int numMeasures, staff_idx_t staffIdx);
-    static bool makeMeasureRepeatGroup(Transaction &tx, Score *score, Measure *firstMeasure, int numMeasures, staff_idx_t staffIdx);
+    static void add_measure_repeat(Transaction &tx, Score *score, Measure *first_measure, int num_measures, staff_idx_t staff_idx);
+    static bool make_measure_repeat_group(Transaction &tx, Score *score, Measure *first_measure, int num_measures, staff_idx_t staff_idx);
 
     // Creates one MeasureRepeat at tick of subtype numMeasures, creating a segment if necessary.
     // Does NOT set measureRepeatCount or do anything else with the measure(s)!
-    static MeasureRepeat *addMeasureRepeat(Transaction &tx, Score *score, const Fraction &tick, track_idx_t track, int numMeasures);
+    static MeasureRepeat *add_measure_repeat(Transaction &tx, Score *score, const Fraction &tick, track_idx_t track, int num_measures);
 };
 } // namespace mu::engraving

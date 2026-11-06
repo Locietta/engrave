@@ -61,10 +61,10 @@ enum class DrumSetType : uint16_t {
 struct GpDrumSet {
     std::string_view name;
     DrumSetType idx;
-    uint8_t numLines;
+    uint8_t num_lines;
 };
 
-static const std::unordered_map<std::string_view, GpDrumSet> PERC_STAFF_LINES_FROM_INSTRUMENT = {
+static const std::unordered_map<std::string_view, GpDrumSet> perc_staff_lines_from_instrument = {
     {"Agogo", {"Agogo", DrumSetType::AGOGO, 2}},
     {"Hand Clap", {"Hand Clap", DrumSetType::HAND_CLAP, 1}},
     {"Tambourine", {"Tambourine", DrumSetType::TAMBOURINE, 1}},
@@ -88,31 +88,31 @@ static const std::unordered_map<std::string_view, GpDrumSet> PERC_STAFF_LINES_FR
     {"Surdo", {"Surdo", DrumSetType::SURDO, 1}},
 };
 
-inline mu::engraving::Drumset *gpDrumset = nullptr;
-inline mu::engraving::Drumset *gpAgogoSet = nullptr;
-inline mu::engraving::Drumset *gpHandClapSet = nullptr;
-inline mu::engraving::Drumset *gpTambourineSet = nullptr;
-inline mu::engraving::Drumset *gpCowbellSet = nullptr;
-inline mu::engraving::Drumset *gpVibraslapSet = nullptr;
-inline mu::engraving::Drumset *gpBongosSet = nullptr;
-inline mu::engraving::Drumset *gpCongasSet = nullptr;
-inline mu::engraving::Drumset *gpTimbalesSet = nullptr;
-inline mu::engraving::Drumset *gpCabasaSet = nullptr;
-inline mu::engraving::Drumset *gpMaracasSet = nullptr;
-inline mu::engraving::Drumset *gpWhistleSet = nullptr;
-inline mu::engraving::Drumset *gpGuiroSet = nullptr;
-inline mu::engraving::Drumset *gpClavesSet = nullptr;
-inline mu::engraving::Drumset *gpWoodblockSet = nullptr;
-inline mu::engraving::Drumset *gpCuicaSet = nullptr;
-inline mu::engraving::Drumset *gpTriangleSet = nullptr;
-inline mu::engraving::Drumset *gpShakerSet = nullptr;
-inline mu::engraving::Drumset *gpJingleBellSet = nullptr;
-inline mu::engraving::Drumset *gpBellTreeSet = nullptr;
-inline mu::engraving::Drumset *gpCastanetsSet = nullptr;
-inline mu::engraving::Drumset *gpSurdoSet = nullptr;
+inline mu::engraving::Drumset *gp_drumset = nullptr;
+inline mu::engraving::Drumset *gp_agogo_set = nullptr;
+inline mu::engraving::Drumset *gp_hand_clap_set = nullptr;
+inline mu::engraving::Drumset *gp_tambourine_set = nullptr;
+inline mu::engraving::Drumset *gp_cowbell_set = nullptr;
+inline mu::engraving::Drumset *gp_vibraslap_set = nullptr;
+inline mu::engraving::Drumset *gp_bongos_set = nullptr;
+inline mu::engraving::Drumset *gp_congas_set = nullptr;
+inline mu::engraving::Drumset *gp_timbales_set = nullptr;
+inline mu::engraving::Drumset *gp_cabasa_set = nullptr;
+inline mu::engraving::Drumset *gp_maracas_set = nullptr;
+inline mu::engraving::Drumset *gp_whistle_set = nullptr;
+inline mu::engraving::Drumset *gp_guiro_set = nullptr;
+inline mu::engraving::Drumset *gp_claves_set = nullptr;
+inline mu::engraving::Drumset *gp_woodblock_set = nullptr;
+inline mu::engraving::Drumset *gp_cuica_set = nullptr;
+inline mu::engraving::Drumset *gp_triangle_set = nullptr;
+inline mu::engraving::Drumset *gp_shaker_set = nullptr;
+inline mu::engraving::Drumset *gp_jingle_bell_set = nullptr;
+inline mu::engraving::Drumset *gp_bell_tree_set = nullptr;
+inline mu::engraving::Drumset *gp_castanets_set = nullptr;
+inline mu::engraving::Drumset *gp_surdo_set = nullptr;
 
-void initGuitarProDrumset();
-void initGuitarProPercussionSet(const GpDrumSet &ds);
-void setInstrumentDrumset(mu::engraving::Instrument *instrument, const GpDrumSet &ds);
+void init_guitar_pro_drumset();
+void init_guitar_pro_percussion_set(const GpDrumSet &ds);
+void set_instrument_drumset(mu::engraving::Instrument *instrument, const GpDrumSet &ds);
 } // namespace mu::iex::guitarpro::drumset
 #endif

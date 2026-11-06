@@ -33,24 +33,24 @@ class Staff;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiTie {
-bool isTiedFor(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
-bool isTiedBack(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
+bool is_tied_for(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
+bool is_tied_back(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
 
 class TieStateMachine {
 public:
     enum class State : char { UNTIED, TIED_FOR, TIED_BOTH, TIED_BACK };
 
-    void addSeg(const engraving::Segment *seg, mu::engraving::track_idx_t strack);
+    void add_seg(const engraving::Segment *seg, mu::engraving::track_idx_t strack);
 
     State state() const { return state_; }
 
 private:
-    std::set<mu::engraving::voice_idx_t> tiedVoices;
+    std::set<mu::engraving::voice_idx_t> tied_voices;
     State state_ = State::UNTIED;
 };
 
 #ifndef NDEBUG
-bool areTiesConsistent(const engraving::Staff *staff);
+bool are_ties_consistent(const engraving::Staff *staff);
 #endif
 }} // namespace mu::iex::midi::MidiTie
 

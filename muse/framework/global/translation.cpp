@@ -32,11 +32,11 @@ static String translate(const char *context, const char *key, const char *disamb
     UNUSED(context);
     UNUSED(disambiguation);
     UNUSED(n);
-    return String::fromUtf8(key);
+    return String::from_utf8(key);
 }
 
 std::string muse::trc(const char *context, const char *key, const char *disambiguation, int n) {
-    return translate(context, key, disambiguation, n).toStdString();
+    return translate(context, key, disambiguation, n).to_std_string();
 }
 
 String muse::mtrc(const char *context, const char *key, const char *disambiguation, int n) {
@@ -44,12 +44,12 @@ String muse::mtrc(const char *context, const char *key, const char *disambiguati
 }
 
 String muse::mtrc(const char *context, const String &key, const char *disambiguation, int n) {
-    ByteArray keyutf8 = key.toUtf8();
-    return translate(context, keyutf8.constChar(), disambiguation, n);
+    ByteArray keyutf8 = key.to_utf8();
+    return translate(context, keyutf8.const_char(), disambiguation, n);
 }
 
 String muse::mtrc(const char *context, const String &key, const String &disambiguation, int n) {
-    ByteArray keyutf8 = key.toUtf8();
-    ByteArray disutf8 = disambiguation.toUtf8();
-    return translate(context, keyutf8.constChar(), disutf8.empty() ? nullptr : disutf8.constChar(), n);
+    ByteArray keyutf8 = key.to_utf8();
+    ByteArray disutf8 = disambiguation.to_utf8();
+    return translate(context, keyutf8.const_char(), disutf8.empty() ? nullptr : disutf8.const_char(), n);
 }

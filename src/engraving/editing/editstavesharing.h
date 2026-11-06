@@ -37,19 +37,20 @@ using StaveSharingGroups = std::vector<StaveSharingGroup>;
 
 class EditStaveSharing {
 public:
-    static void toggleStaveSharing(Transaction &tx, Score *score, bool on);
-    static void handleRemovePart(Transaction &tx, Part *part);
+    static void toggle_stave_sharing(Transaction &tx, Score *score, bool on);
+    static void handle_remove_part(Transaction &tx, Part *part);
 
 private:
-    static void cmdCreateSharedStaves(Transaction &tx, Score *score);
-    static void cmdRemoveSharedStaves(Score *score);
+    static void cmd_create_shared_staves(Transaction &tx, Score *score);
+    static void cmd_remove_shared_staves(Score *score);
 
-    static StaveSharingGroups computeGroups(Score *score);
-    static void createSharedParts(Transaction &tx, const StaveSharingGroups &groups, Score *score);
-    static SharedPart *createSharedPart(Score *score, size_t idx, const Instrument *instr);
-    static void addStaffToSharedPart(SharedPart *sharedPart, const Part *originPart, const KeyList &keyList, const StaffType *staffType);
+    static StaveSharingGroups compute_groups(Score *score);
+    static void create_shared_parts(Transaction &tx, const StaveSharingGroups &groups, Score *score);
+    static SharedPart *create_shared_part(Score *score, size_t idx, const Instrument *instr);
+    static void add_staff_to_shared_part(SharedPart *shared_part, const Part *origin_part, const KeyList &key_list,
+                                         const StaffType *staff_type);
 
-    static void connectSharedPart(Transaction &tx, SharedPart *sharedPart, Part *originPart);
-    static void disconnectSharedPart(Transaction &tx, SharedPart *sharedPart, Part *originPart);
+    static void connect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part);
+    static void disconnect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part);
 };
 } // namespace mu::engraving

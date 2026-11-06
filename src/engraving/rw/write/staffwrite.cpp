@@ -31,48 +31,48 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-static void writeMeasure(XmlWriter &xml, WriteContext &ctx, MeasureBase *m, staff_idx_t staffIdx, bool writeSystemElements,
-                         bool forceTimeSig) {
+static void write_measure(XmlWriter &xml, WriteContext &ctx, MeasureBase *m, staff_idx_t staff_idx, bool write_system_elements,
+                          bool force_time_sig) {
     //
     // special case multi measure rest
     //
-    if (m->isMeasure() || staffIdx == 0) {
+    if (m->is_measure() || staff_idx == 0) {
         if (Measure::classof(m)) {
-            MeasureWrite::writeMeasure(toMeasure(m), xml, ctx, staffIdx, writeSystemElements, forceTimeSig);
+            MeasureWrite::write_measure(to_measure(m), xml, ctx, staff_idx, write_system_elements, force_time_sig);
         } else {
-            TWrite::writeItem(m, xml, ctx);
+            TWrite::write_item(m, xml, ctx);
         }
     }
 
-    if (m->score()->style().styleB(Sid::createMultiMeasureRests) && m->isMeasure() && toMeasure(m)->mmRest()) {
-        MeasureWrite::writeMeasure(toMeasure(m)->mmRest(), xml, ctx, staffIdx, writeSystemElements, forceTimeSig);
+    if (m->score()->style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS) && m->is_measure() && to_measure(m)->mm_rest()) {
+        MeasureWrite::write_measure(to_measure(m)->mm_rest(), xml, ctx, staff_idx, write_system_elements, force_time_sig);
     }
 
-    ctx.setCurTick(m->endTick());
+    ctx.set_cur_tick(m->end_tick());
 }
 
-void StaffWrite::writeStaff(const Staff *staff, XmlWriter &xml, write::WriteContext &ctx, MeasureBase *measureStart,
-                            MeasureBase *measureEnd, staff_idx_t staffStart, staff_idx_t staffIdx) {
-    xml.startElement(staff, {{"id", static_cast<int>(staffIdx + 1 - staffStart)}});
+void StaffWrite::write_staff(const Staff *staff, XmlWriter &xml, write::WriteContext &ctx, MeasureBase *measure_start,
+                             MeasureBase *measure_end, staff_idx_t staff_start, staff_idx_t staff_idx) {
+    xml.start_element(staff, {{"id", static_cast<int>(staff_idx + 1 - staff_start)}});
 
-    ctx.setCurTick(measureStart->tick());
-    ctx.setTickDiff(ctx.curTick());
-    ctx.setCurTrack(staffIdx * VOICES);
-    bool writeSystemElements = (staffIdx == staffStart);
-    bool firstMeasureWritten = false;
-    bool forceTimeSig = false;
-    for (MeasureBase *m = measureStart; m != measureEnd; m = m->next()) {
+    ctx.set_cur_tick(measure_start->tick());
+    ctx.set_tick_diff(ctx.cur_tick());
+    ctx.set_cur_track(staff_idx * ::mu::engraving::voices);
+    bool write_system_elements = (staff_idx == staff_start);
+    bool first_measure_written = false;
+    bool force_time_sig = false;
+    for (MeasureBase *m = measure_start; m != measure_end; m = m->next()) {
         // force timesig if first measure and range is set
-        if (ctx.shouldWriteRange() && m->isMeasure()) {
-            if (!firstMeasureWritten) {
-                forceTimeSig = true;
-                firstMeasureWritten = true;
+        if (ctx.should_write_range() && m->is_measure()) {
+            if (!first_measure_written) {
+                force_time_sig = true;
+                first_measure_written = true;
             } else {
-                forceTimeSig = false;
+                force_time_sig = false;
             }
         }
-        writeMeasure(xml, ctx, m, staffIdx, writeSystemElements, forceTimeSig);
+        write_measure(xml, ctx, m, staff_idx, write_system_elements, force_time_sig);
     }
 
-    xml.endElement();
+    xml.end_element();
 }

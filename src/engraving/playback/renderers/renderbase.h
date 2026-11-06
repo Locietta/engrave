@@ -31,17 +31,17 @@ namespace mu::engraving {
 template <class T>
 class RenderBase {
 public:
-    static bool isAbleToRender(const muse::mpe::ArticulationType &type) {
-        const muse::mpe::ArticulationTypeSet &supportedTypes = T::supportedTypes();
+    static bool is_able_to_render(const muse::mpe::ArticulationType &type) {
+        const muse::mpe::ArticulationTypeSet &supported_types = T::supported_types();
 
-        return supportedTypes.find(type) != supportedTypes.cend();
+        return supported_types.find(type) != supported_types.cend();
     }
 
-    static void render(const EngravingItem *item, const muse::mpe::ArticulationType preferredType, const RenderingContext &context,
+    static void render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &context,
                        muse::mpe::PlaybackEventList &result) {
         IF_ASSERT_FAILED(item) { return; }
 
-        T::doRender(item, preferredType, context, result);
+        T::do_render(item, preferred_type, context, result);
     }
 };
 } // namespace mu::engraving

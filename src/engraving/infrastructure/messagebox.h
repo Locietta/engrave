@@ -28,9 +28,9 @@
 namespace mu::engraving {
 class MessageBox {
 public:
-    enum Button { Ok, Cancel };
+    enum Button { OK, CANCEL };
 
-    Button warning(const std::string &title, const std::string &text, const std::set<Button> &buttons = {Ok, Cancel});
+    Button warning(const std::string &title, const std::string &text, const std::set<Button> &buttons = {OK, CANCEL});
 };
 } // namespace mu::engraving
 

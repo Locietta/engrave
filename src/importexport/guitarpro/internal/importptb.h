@@ -47,21 +47,21 @@ class PalmMute;
 
 namespace mu::iex::guitarpro {
 class PowerTab {
-    muse::io::IODevice *_file = nullptr;
+    muse::io::IODevice *file = nullptr;
     mu::engraving::MasterScore *score = nullptr;
 
-    bool readBoolean();
-    unsigned char readUInt8();
-    char readChar();
-    unsigned short readShort();
-    int readInt();
+    bool read_boolean();
+    unsigned char read_u_int8();
+    char read_char();
+    unsigned short read_short();
+    int read_int();
     void skip(int len = 1);
-    std::string readString(int length = -1);
+    std::string read_string(int length = -1);
 
-    struct ptSongInfo {
+    struct PtSongInfo {
         int classification{0};
-        int releaseType{0};
-        int albumType{0};
+        int release_type{0};
+        int album_type{0};
         int day{0};
         int month{0};
         int year{0};
@@ -74,65 +74,65 @@ class PowerTab {
         std::string author;
         std::string lyricist;
         std::string arranger;
-        std::string guitarTranscriber;
-        std::string bassTranscriber;
+        std::string guitar_transcriber;
+        std::string bass_transcriber;
         std::string lyrics;
-        std::string guitarInstructions;
-        std::string bassInstructions;
+        std::string guitar_instructions;
+        std::string bass_instructions;
         std::string instructions;
         std::string copyright;
     };
 
-    struct ptComponent {
-        enum Type { Empty, GuitarIn, Tempo, Symbol, Bar, Note, Beat, TDirection };
+    struct PtComponent {
+        enum Type { EMPTY, GUITAR_IN, TEMPO, SYMBOL, BAR, NOTE, BEAT, T_DIRECTION };
 
-        virtual Type type() { return Empty; }
+        virtual Type type() { return EMPTY; }
 
-        virtual ~ptComponent() {}
+        virtual ~PtComponent() {}
     };
 
-    struct stRhytmSlash final : public ptComponent {
+    struct StRhytmSlash final : public PtComponent {
         int position{0};
         int duration{0};
         bool triplet{false};
         bool tripletend{false};
         bool dotted{false};
-        bool doubleDotted{false};
+        bool double_dotted{false};
         bool is_rest{false};
     };
 
-    struct ptGuitarIn final : public ptComponent {
-        int rhythmSlash{true};
+    struct PtGuitarIn final : public PtComponent {
+        int rhythm_slash{true};
         int staff{0};
         int trackinfo{0};
         int section{0};
         int position{0};
 
-        Type type() override { return GuitarIn; }
+        Type type() override { return GUITAR_IN; }
     };
 
-    struct ptSymbol final : public ptComponent {
+    struct PtSymbol final : public PtComponent {
         int value{0};
 
-        ptSymbol(int val) : value(val) {}
+        PtSymbol(int val) : value(val) {}
 
-        Type type() override { return Symbol; }
+        Type type() override { return SYMBOL; }
     };
 
-    struct ptBar final : public ptComponent {
-        int measureNo{0};
-        int repeatClose{0};
-        bool repeatStart{false};
+    struct PtBar final : public PtComponent {
+        int measure_no{0};
+        int repeat_close{0};
+        bool repeat_start{false};
 
         int numerator{0};
         int denominator{0};
 
-        Type type() override { return Bar; }
+        Type type() override { return BAR; }
     };
 
-    std::vector<ptBar *> bars;
+    std::vector<PtBar *> bars;
 
-    struct ptNote final : public ptComponent {
+    struct PtNote final : public PtComponent {
         int value{0};
         int str{0};
         int bend{0};
@@ -141,10 +141,10 @@ class PowerTab {
         bool hammer{false};
         int slide{0};
 
-        Type type() override { return Note; }
+        Type type() override { return NOTE; }
     };
 
-    struct ptChord final : public ptComponent {
+    struct PtChord final : public PtComponent {
         int key;
         int formula;
         int modification;
@@ -153,7 +153,7 @@ class PowerTab {
         std::vector<int> frets;
     };
 
-    struct ptChordText final : public ptComponent {
+    struct PtChordText final : public PtComponent {
         int position;
         int key;
         int formula;
@@ -161,35 +161,35 @@ class PowerTab {
         int extra;
     };
 
-    struct ptBeat final : public ptComponent {
+    struct PtBeat final : public PtComponent {
         int position{0};
         int staff{0};
         int voice{0};
         int mmrest{0};
-        bool isRest{false};
+        bool is_rest_value{false};
         int duration{0};
         int enters{0};
         int times{0};
         bool dotted{false};
         bool tuplet{false};
-        bool doubleDotted{false};
+        bool double_dotted{false};
         bool vibrato{false};
         bool grace{false};
-        bool arpeggioUp{false};
-        bool arpeggioDown{false};
-        bool palmMute{false};
+        bool arpeggio_up{false};
+        bool arpeggio_down{false};
+        bool palm_mute{false};
         bool accent{false};
         bool staccato{false};
-        std::vector<ptNote> notes;
+        std::vector<PtNote> notes;
 
-        ptBeat(int _staff, int _voice) : staff(_staff), voice(_voice) {}
+        PtBeat(int input_staff, int input_voice) : staff(input_staff), voice(input_voice) {}
 
-        ptBeat() = default;
+        PtBeat() = default;
 
-        Type type() override { return Beat; }
+        Type type() override { return BEAT; }
     };
 
-    struct ptDirection final : public ptComponent {
+    struct PtDirection final : public PtComponent {
         enum Direction {
             DIRECTION_CODA = 0,
             DIRECTION_DOUBLE_CODA = 1,
@@ -215,18 +215,18 @@ class PowerTab {
         enum ActiveSym { ACTIVE_SYMBOL_NONE = 0, ACTIVE_SYMBOL_DC = 1, ACTIVE_SYMBOL_DS = 2, ACTIVE_SYMBOL_DSS = 3 };
 
         Direction direction{DIRECTION_CODA};
-        ActiveSym activeSymbol{ACTIVE_SYMBOL_NONE};
+        ActiveSym active_symbol{ACTIVE_SYMBOL_NONE};
         int repeat{0};
 
-        ptDirection(int dir, int sym, int rep) : direction((Direction) dir), activeSymbol((ActiveSym) sym), repeat(rep) {}
+        PtDirection(int dir, int sym, int rep) : direction((Direction) dir), active_symbol((ActiveSym) sym), repeat(rep) {}
 
-        Type type() override { return TDirection; }
+        Type type() override { return T_DIRECTION; }
     };
 
-    struct ptPosition {
+    struct PtPosition {
         int position{0};
-        std::vector<std::shared_ptr<ptComponent>> components;
-        void addComponent(ptComponent *c);
+        std::vector<std::shared_ptr<PtComponent>> components;
+        void add_component(PtComponent *c);
     };
 
     struct TrackInfo {
@@ -240,46 +240,46 @@ class PowerTab {
         int tremolo{0};
         int phaser{0};
         int capo{0};
-        std::string tuningName;
+        std::string tuning_name;
         int offset{0};
         std::vector<int> strings;
         int notes_count{0};
     };
 
-    typedef std::list<ptBeat> tBeatList;
+    typedef std::list<PtBeat> tBeatList;
 
-    struct ptTrack;
+    struct PtTrack;
 
-    struct ptSection {
+    struct PtSection {
         int number{0};
         int staves{0};
-        std::string partName;
-        char partMarker{0};
+        std::string part_name;
+        char part_marker{0};
 
-        std::vector<ptPosition> positions;
+        std::vector<PtPosition> positions;
 
-        std::vector<int> staffMap;
+        std::vector<int> staff_map;
 
         int tempo{0};
 
-        std::list<stRhytmSlash> rhythm;
+        std::list<StRhytmSlash> rhythm;
 
-        std::map<int, ptChordText> chordTextMap;
+        std::map<int, PtChordText> chord_text_map;
         std::vector<tBeatList> beats;
-        std::list<std::shared_ptr<ptBar>> bars;
+        std::list<std::shared_ptr<PtBar>> bars;
         bool readed{false};
 
-        void copyTracks(ptTrack *);
+        void copy_tracks(PtTrack *);
 
-        ptSection(int num);
-        ptPosition &getPosition(int pos);
-        int getNextPositionNumber();
+        PtSection(int num);
+        PtPosition &get_position(int pos);
+        int get_next_position_number();
     };
 
-    struct chordData {
+    struct ChordData {
         int a[3];
 
-        bool operator>(const chordData &other) const {
+        bool operator>(const ChordData &other) const {
             if (a[0] == other.a[0]) {
                 if (a[1] == other.a[1]) {
                     return a[2] > other.a[2];
@@ -289,7 +289,7 @@ class PowerTab {
             return a[0] > other.a[0];
         }
 
-        bool operator<(const chordData &other) const {
+        bool operator<(const ChordData &other) const {
             if (a[0] == other.a[0]) {
                 if (a[1] == other.a[1]) {
                     return a[2] < other.a[2];
@@ -299,71 +299,71 @@ class PowerTab {
             return a[0] < other.a[0];
         }
 
-        bool operator==(const chordData &other) const { return memcmp(a, other.a, 3 * sizeof(int)) == 0; }
+        bool operator==(const ChordData &other) const { return memcmp(a, other.a, 3 * sizeof(int)) == 0; }
     };
 
-    struct ptTrack {
+    struct PtTrack {
         std::vector<TrackInfo> infos;
-        std::vector<ptSection> sections;
-        ptSection &getSection(int ind);
-        std::map<chordData, ptChord> diagramMap;
+        std::vector<PtSection> sections;
+        PtSection &get_section(int ind);
+        std::map<ChordData, PtChord> diagram_map;
 
-        std::list<ptGuitarIn> guitar_ins;
+        std::list<PtGuitarIn> guitar_ins;
     };
 
-    struct ptSong {
-        ptSongInfo info;
-        ptTrack track1;
-        ptTrack track2;
+    struct PtSong {
+        PtSongInfo info;
+        PtTrack track1;
+        PtTrack track2;
     };
 
-    void readSongInfo(ptSongInfo &info);
-    void readDataInstruments(ptTrack &info);
-    void readTrackInfo(ptTrack &info);
-    void readGuitarIn(ptTrack &info);
-    void readTempoMarker(ptTrack &info);
-    void readSectionSymbol(ptTrack &info);
-    void readSection(ptSection &sec);
-    void readBarLine(ptSection &sec);
-    void readDirection(ptSection &sec);
-    void readTimeSignature(ptBar *bar);
-    void readStaff(int staff, ptSection &sec);
-    void readPosition(int staff, int voice, ptSection &sec);
-    void readNote(ptBeat *beat);
-    void readRehearsalSign(ptSection &sec);
-    void readChordText(ptSection &sec);
-    void readChord(ptTrack &si);
-    void readRhytmSlash(ptSection &sec);
+    void read_song_info(PtSongInfo &info);
+    void read_data_instruments(PtTrack &info);
+    void read_track_info(PtTrack &info);
+    void read_guitar_in(PtTrack &info);
+    void read_tempo_marker(PtTrack &info);
+    void read_section_symbol(PtTrack &info);
+    void read_section(PtSection &sec);
+    void read_bar_line(PtSection &sec);
+    void read_direction(PtSection &sec);
+    void read_time_signature(PtBar *bar);
+    void read_staff(int staff, PtSection &sec);
+    void read_position(int staff, int voice, PtSection &sec);
+    void read_note(PtBeat *beat);
+    void read_rehearsal_sign(PtSection &sec);
+    void read_chord_text(PtSection &sec);
+    void read_chord(PtTrack &si);
+    void read_rhytm_slash(PtSection &sec);
 
-    void readFloatingText();
-    void readFontSettings();
-    void readDynamic();
-    void readKeySignature();
+    void read_floating_text();
+    void read_font_settings();
+    void read_dynamic();
+    void read_key_signature();
 
-    bool readVersion();
-    int readHeaderItems();
+    bool read_version();
+    int read_header_items();
 
-    std::vector<int> lastStaffMap;
-    std::vector<int> getStaffMap(ptSection &sec);
-    int repeatCount{0};
-    void addToScore(ptSection &sec);
+    std::vector<int> last_staff_map;
+    std::vector<int> get_staff_map(PtSection &sec);
+    int repeat_count{0};
+    void add_to_score(PtSection &sec);
 
-    mu::engraving::Measure *createMeasure(ptBar *bar, const mu::engraving::Fraction &tick);
-    void fillMeasure(tBeatList &elist, mu::engraving::Measure *measure, int staff, std::vector<mu::engraving::Note *> &);
+    mu::engraving::Measure *create_measure(PtBar *bar, const mu::engraving::Fraction &tick);
+    void fill_measure(tBeatList &elist, mu::engraving::Measure *measure, int staff, std::vector<mu::engraving::Note *> &);
 
     int staves{0};
 
-    ptTrack *curTrack;
-    int staffInc{0};
-    char lastPart{0};
+    PtTrack *cur_track;
+    int staff_inc{0};
+    char last_part{0};
 
-    ptSection *cur_section;
+    PtSection *cur_section;
 
-    std::vector<mu::engraving::PalmMute *> _palmMutes;
-    void addPalmMute(mu::engraving::Chord *);
+    std::vector<mu::engraving::PalmMute *> palm_mutes;
+    void add_palm_mute(mu::engraving::Chord *);
 
 public:
-    PowerTab(muse::io::IODevice *f, mu::engraving::MasterScore *s) : _file(f), score(s) {}
+    PowerTab(muse::io::IODevice *f, mu::engraving::MasterScore *s) : file(f), score(s) {}
 
     mu::engraving::Err read();
 };

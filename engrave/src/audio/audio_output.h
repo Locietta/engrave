@@ -10,15 +10,15 @@ namespace music {
 // The worker applies the projected size before rendering and the parent checks
 // the finished file, so an oversized render fails before it fills the disk.
 enum class AudioOutputCodec {
-    Wav,
-    Flac,
-    Ogg,
-    Mp3,
-    Aac,
+    WAV,
+    FLAC,
+    OGG,
+    MP3,
+    AAC,
 };
 
-inline constexpr std::uint64_t kAudioOutputLimit = 1024ULL * 1024 * 1024;
-inline constexpr std::uint64_t kNonAudioOutputLimit = 256ULL * 1024 * 1024;
+inline constexpr std::uint64_t k_audio_output_limit = 1024ULL * 1024 * 1024;
+inline constexpr std::uint64_t k_non_audio_output_limit = 256ULL * 1024 * 1024;
 
 // Upper bound of the file an audio export of `duration_secs` will produce with
 // the encoder settings in engine_audio.cpp: stereo output at `sample_rate` (44100
@@ -31,11 +31,11 @@ inline std::uint64_t projected_audio_bytes(AudioOutputCodec codec, double durati
     }
     const auto frames = static_cast<std::uint64_t>(duration_secs * sample_rate);
     switch (codec) {
-        case AudioOutputCodec::Wav: return 44 + frames * 8;           // Float32 stereo
-        case AudioOutputCodec::Flac: return 1024 * 1024 + frames * 4; // Int16, uncompressed worst case
-        case AudioOutputCodec::Ogg:
-        case AudioOutputCodec::Mp3:
-        case AudioOutputCodec::Aac: return 1024 * 1024 + static_cast<std::uint64_t>(duration_secs * 16000.0); // 128 kbps
+        case AudioOutputCodec::WAV: return 44 + frames * 8;           // Float32 stereo
+        case AudioOutputCodec::FLAC: return 1024 * 1024 + frames * 4; // Int16, uncompressed worst case
+        case AudioOutputCodec::OGG:
+        case AudioOutputCodec::MP3:
+        case AudioOutputCodec::AAC: return 1024 * 1024 + static_cast<std::uint64_t>(duration_secs * 16000.0); // 128 kbps
     }
     return 0;
 }

@@ -42,13 +42,13 @@ SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { dirty_ = true; }
 
 void SpannerMap::update() const {
     TRACEFUNC;
-    IntervalList regularIntervals;
-    IntervalList collisionFreeIntervals;
+    IntervalList regular_intervals;
+    IntervalList collision_free_intervals;
 
-    collectIntervals(regularIntervals, collisionFreeIntervals);
+    collect_intervals(regular_intervals, collision_free_intervals);
 
-    tree_ = interval_tree::IntervalTree<Spanner *>(std::move(regularIntervals));
-    collisionFreeTree_ = interval_tree::IntervalTree<Spanner *>(std::move(collisionFreeIntervals));
+    tree_ = interval_tree::IntervalTree<Spanner *>(std::move(regular_intervals));
+    collision_free_tree_ = interval_tree::IntervalTree<Spanner *>(std::move(collision_free_intervals));
     dirty_ = false;
 }
 
@@ -56,15 +56,15 @@ void SpannerMap::update() const {
 //   findContained
 //---------------------------------------------------------
 
-const SpannerMap::IntervalList &SpannerMap::findContained(int start, int stop, bool excludeCollisions) const {
+const SpannerMap::IntervalList &SpannerMap::find_contained(int start, int stop, bool exclude_collisions) const {
     if (dirty_) {
         update();
     }
 
     results_.clear();
 
-    if (excludeCollisions) {
-        results_ = collisionFreeTree_.findContained(start, stop);
+    if (exclude_collisions) {
+        results_ = collision_free_tree_.findContained(start, stop);
     } else {
         results_ = tree_.findContained(start, stop);
     }
@@ -76,15 +76,15 @@ const SpannerMap::IntervalList &SpannerMap::findContained(int start, int stop, b
 //   findOverlapping
 //---------------------------------------------------------
 
-const SpannerMap::IntervalList &SpannerMap::findOverlapping(int start, int stop, bool excludeCollisions) const {
+const SpannerMap::IntervalList &SpannerMap::find_overlapping(int start, int stop, bool exclude_collisions) const {
     if (dirty_) {
         update();
     }
 
     results_.clear();
 
-    if (excludeCollisions) {
-        results_ = collisionFreeTree_.findOverlapping(start, stop);
+    if (exclude_collisions) {
+        results_ = collision_free_tree_.findOverlapping(start, stop);
     } else {
         results_ = tree_.findOverlapping(start, stop);
     }
@@ -92,43 +92,43 @@ const SpannerMap::IntervalList &SpannerMap::findOverlapping(int start, int stop,
     return results_;
 }
 
-void SpannerMap::collectIntervals(IntervalList &regularIntervals, IntervalList &collisionFreeIntervals) const {
+void SpannerMap::collect_intervals(IntervalList &regular_intervals, IntervalList &collision_free_intervals) const {
     using IntervalsByType = std::map<ElementType, IntervalList>;
     using IntervalsByPart = std::map<ID, IntervalsByType>;
 
-    IntervalsByPart intervalsByPart;
+    IntervalsByPart intervals_by_part;
 
     //!Note Because of the current UX of spanners adjustments spanners collision is a regular thing,
     //!     so we have to manage those cases when two similar spanners (e.g. Pedal line) are overlapping
     //!     with each other.
-    constexpr int collidingSpannersPadding = 1;
+    constexpr int colliding_spanners_padding = 1;
 
     for (const auto &pair : *this) {
         Spanner *spanner = pair.second;
 
-        int newSpannerStartTick = spanner->tick().ticks();
-        int newSpannerEndTick = spanner->tick2().ticks();
+        int new_spanner_start_tick = spanner->tick().ticks();
+        int new_spanner_end_tick = spanner->tick2().ticks();
 
-        IntervalsByType &intervalsByType = intervalsByPart[spanner->part()->id()];
-        IntervalList &intervalList = intervalsByType[spanner->type()];
+        IntervalsByType &intervals_by_type = intervals_by_part[spanner->part()->id()];
+        IntervalList &interval_list = intervals_by_type[spanner->type()];
 
-        if (!intervalList.empty()) {
-            auto lastIntervalIt = intervalList.rbegin();
-            if (lastIntervalIt->stop >= newSpannerStartTick) {
-                if (!lastIntervalIt->value->isLinked(spanner)) {
-                    lastIntervalIt->stop = newSpannerStartTick - collidingSpannersPadding;
+        if (!interval_list.empty()) {
+            auto last_interval_it = interval_list.rbegin();
+            if (last_interval_it->stop >= new_spanner_start_tick) {
+                if (!last_interval_it->value->is_linked(spanner)) {
+                    last_interval_it->stop = new_spanner_start_tick - colliding_spanners_padding;
                 }
             }
         }
 
-        intervalList.emplace_back(interval_tree::Interval<Spanner *>(newSpannerStartTick, newSpannerEndTick, spanner));
+        interval_list.emplace_back(interval_tree::Interval<Spanner *>(new_spanner_start_tick, new_spanner_end_tick, spanner));
 
-        regularIntervals.push_back(interval_tree::Interval(newSpannerStartTick, newSpannerEndTick, spanner));
+        regular_intervals.push_back(interval_tree::Interval(new_spanner_start_tick, new_spanner_end_tick, spanner));
     }
 
-    for (const auto &pair : intervalsByPart) {
+    for (const auto &pair : intervals_by_part) {
         for (const auto &intervals : pair.second) {
-            collisionFreeIntervals.insert(collisionFreeIntervals.end(), intervals.second.begin(), intervals.second.end());
+            collision_free_intervals.insert(collision_free_intervals.end(), intervals.second.begin(), intervals.second.end());
         }
     }
 }
@@ -137,7 +137,7 @@ void SpannerMap::collectIntervals(IntervalList &regularIntervals, IntervalList &
 //   addSpanner
 //---------------------------------------------------------
 
-void SpannerMap::addSpanner(Spanner *s) {
+void SpannerMap::add_spanner(Spanner *s) {
     insert(std::pair<int, Spanner *>(s->tick().ticks(), s));
     dirty_ = true;
 }
@@ -146,7 +146,7 @@ void SpannerMap::addSpanner(Spanner *s) {
 //   removeSpanner
 //---------------------------------------------------------
 
-bool SpannerMap::removeSpanner(Spanner *s) {
+bool SpannerMap::remove_spanner(Spanner *s) {
     for (auto i = begin(); i != end(); ++i) {
         if (i->second == s) {
             erase(i);
@@ -154,7 +154,7 @@ bool SpannerMap::removeSpanner(Spanner *s) {
             return true;
         }
     }
-    LOGD("%s (%p) not found", s->typeName(), s);
+    LOGD("%s (%p) not found", s->type_name(), s);
     return false;
 }
 
@@ -166,7 +166,7 @@ bool SpannerMap::removeSpanner(Spanner *s) {
 void SpannerMap::dump() const {
     LOGD("SpannerMap::dump");
     for (auto i = begin(); i != end(); ++i) {
-        LOGD("   %5d: %s %p", i->first, i->second->typeName(), i->second);
+        LOGD("   %5d: %s %p", i->first, i->second->type_name(), i->second);
     }
 }
 

@@ -28,20 +28,20 @@
 namespace mu::engraving {
 class TremoloRenderer : public RenderBase<TremoloRenderer> {
 public:
-    static const muse::mpe::ArticulationTypeSet &supportedTypes();
+    static const muse::mpe::ArticulationTypeSet &supported_types();
 
-    static void doRender(const EngravingItem *item, const muse::mpe::ArticulationType preferredType, const RenderingContext &ctx,
-                         muse::mpe::PlaybackEventList &result);
+    static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,
+                          muse::mpe::PlaybackEventList &result);
 
 private:
     using TremoloTimeCache = std::unordered_map<const Note *, muse::mpe::TimestampAndDuration>;
 
-    static int stepDurationTicks(const Chord *chord, int tremoloLines);
-    static void buildAndAppendEvents(const Chord *chord, const muse::mpe::ArticulationType type, const int stepDurationTicks,
-                                     const int startTick, const RenderingContext &ctx, TremoloTimeCache &tremoloCache,
-                                     muse::mpe::PlaybackEventList &result);
-    static const muse::mpe::TimestampAndDuration &tremoloTimeAndDuration(const Note *note, const RenderingContext &ctx,
-                                                                         TremoloTimeCache &cache);
+    static int step_duration_ticks(const Chord *chord, int tremolo_lines);
+    static void build_and_append_events(const Chord *chord, const muse::mpe::ArticulationType type, const int step_duration_ticks,
+                                        const int start_tick, const RenderingContext &ctx, TremoloTimeCache &tremolo_cache,
+                                        muse::mpe::PlaybackEventList &result);
+    static const muse::mpe::TimestampAndDuration &tremolo_time_and_duration(const Note *note, const RenderingContext &ctx,
+                                                                            TremoloTimeCache &cache);
 };
 } // namespace mu::engraving
 

@@ -62,25 +62,25 @@ class BagpipeEmbellishment final : public EngravingItem {
 
 public:
     BagpipeEmbellishment(DummyParentOr<EngravingItem> parent)
-        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), embelType_(EmbellishmentType(0)) {}
+        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), embel_type_(EmbellishmentType(0)) {}
 
     BagpipeEmbellishment *clone() const override { return new BagpipeEmbellishment(*this); }
 
-    EmbellishmentType embelType() const { return embelType_; }
+    EmbellishmentType embel_type() const { return embel_type_; }
 
-    void setEmbelType(EmbellishmentType val) { embelType_ = val; }
+    void set_embel_type(EmbellishmentType val) { embel_type_ = val; }
 
     double mag() const override;
 
-    static const BagpipeNoteInfo BAGPIPE_NOTEINFO_LIST[];
-    BagpipeNoteList resolveNoteList() const;
+    static const BagpipeNoteInfo bagpipe_noteinfo_list[];
+    BagpipeNoteList resolve_note_list() const;
 
     struct LayoutData : public EngravingItem::LayoutData {
         struct NoteData {
-            PointF headXY;
-            LineF stemLine;
-            PointF flagXY;
-            LineF ledgerLine;
+            PointF head_xy;
+            LineF stem_line;
+            PointF flag_xy;
+            LineF ledger_line;
         };
 
         struct BeamData {
@@ -90,20 +90,20 @@ public:
             double x2 = 0.0;
         };
 
-        bool isDrawBeam = false;
-        bool isDrawFlag = false;
-        double spatium = 1.0;         // spatium
-        SymId headsym = SymId::noSym; // grace note head symbol
-        SymId flagsym = SymId::noSym; // grace note flag symbol
-        double stemLineW = 0.0;       // line width for stem
-        std::map<size_t /*note index*/, NoteData> notesData;
-        BeamData beamData;
+        bool is_draw_beam = false;
+        bool is_draw_flag = false;
+        double spatium = 1.0;          // spatium
+        SymId headsym = SymId::NO_SYM; // grace note head symbol
+        SymId flagsym = SymId::NO_SYM; // grace note flag symbol
+        double stem_line_w = 0.0;      // line width for stem
+        std::map<size_t /*note index*/, NoteData> notes_data;
+        BeamData beam_data;
     };
     DECLARE_LAYOUTDATA_METHODS(BagpipeEmbellishment)
 
 private:
 
-    EmbellishmentType embelType_;
+    EmbellishmentType embel_type_;
 };
 } // namespace mu::engraving
 

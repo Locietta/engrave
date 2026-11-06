@@ -42,11 +42,11 @@ class ChangeStyle : public UndoableCommand {
     void undo() override;
 
 public:
-    ChangeStyle(Score *, const MStyle &, const bool overlapOnly = false);
+    ChangeStyle(Score *, const MStyle &, const bool overlap_only = false);
 
-    StyleIdSet changedIds() const;
+    StyleIdSet changed_ids() const;
 
-    UNDO_TYPE(CommandType::ChangeStyle)
+    UNDO_TYPE(CommandType::CHANGE_STYLE)
     UNDO_NAME("ChangeStyle")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -59,7 +59,7 @@ public:
 
     const std::unordered_map<Sid, PropertyValue> &values() const { return values_; }
 
-    UNDO_TYPE(CommandType::ChangeStyleValues)
+    UNDO_TYPE(CommandType::CHANGE_STYLE_VALUES)
     UNDO_NAME("ChangeStyleValues")
     UNDO_CHANGED_OBJECTS({score_})
 
@@ -72,6 +72,6 @@ private:
 
 class EditStyle {
 public:
-    static bool loadStyle(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign = false, bool overlap = false);
+    static bool load_style(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign = false, bool overlap = false);
 };
 } // namespace mu::engraving

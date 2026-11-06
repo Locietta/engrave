@@ -30,7 +30,7 @@ ID::ID(const ID &id) : id_(id.id_) {}
 
 ID::ID(const std::string &id) : id_(!id.empty() ? std::stoul(id) : 0) {}
 
-bool ID::isValid() const { return id_ != 0; }
+bool ID::is_valid() const { return id_ != 0; }
 
 ID &ID::operator=(const ID &id) {
     id_ = id.id_;
@@ -56,6 +56,6 @@ bool ID::operator<(const ID &id) const { return id_ < id.id_; }
 
 bool ID::operator>(const ID &id) const { return id_ > id.id_; }
 
-uint64_t ID::toUint64() const { return id_; }
+uint64_t ID::to_uint64() const { return id_; }
 
-std::string ID::toStdString() const { return std::to_string(id_); }
+std::string ID::to_std_string() const { return std::to_string(id_); }

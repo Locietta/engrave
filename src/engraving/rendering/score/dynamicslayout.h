@@ -29,12 +29,12 @@ class LayoutConfiguration;
 
 class DynamicsLayout {
 public:
-    static void layoutDynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
 
 private:
-    static void doLayoutDynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
-    static double computeCustomTextOffset(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
-    static void layoutDynamicToEndOfPrevious(const Dynamic *item, TextBase::LayoutData *ldata);
-    static void manageBarlineCollisions(const Dynamic *item, TextBase::LayoutData *ldata);
+    static void do_layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
+    static double compute_custom_text_offset(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void layout_dynamic_to_end_of_previous(const Dynamic *item, TextBase::LayoutData *ldata);
+    static void manage_barline_collisions(const Dynamic *item, TextBase::LayoutData *ldata);
 };
 } // namespace mu::engraving::rendering::score

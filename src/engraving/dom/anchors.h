@@ -30,30 +30,30 @@ class Factory;
 
 class EditTimeTickAnchors {
 public:
-    static void updateAnchors(const EngravingItem *item);
-    static void updateAnchors(Measure *measure, staff_idx_t staffIdx, const std::set<Fraction> &additionalAnchorRelTicks = {});
-    static TimeTickAnchor *createTimeTickAnchor(Measure *measure, Fraction relTick, staff_idx_t staffIdx);
-    static void updateLayout(Measure *measure);
+    static void update_anchors(const EngravingItem *item);
+    static void update_anchors(Measure *measure, staff_idx_t staff_idx, const std::set<Fraction> &additional_anchor_rel_ticks = {});
+    static TimeTickAnchor *create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx);
+    static void update_layout(Measure *measure);
 };
 
 class MoveElementAnchors {
 public:
-    static void moveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
-    static void checkMeasureBoundariesAndMoveIfNeed(EngravingItem *element);
+    static void move_segment(EngravingItem *element, Segment *new_seg, Fraction tick_diff);
+    static void check_measure_boundaries_and_move_if_need(EngravingItem *element);
 
 private:
-    static bool canAnchorToEndOfPrevious(const EngravingItem *element);
-    static void moveSegment(EngravingItem *element, bool forward);
-    static Segment *getNewSegment(EngravingItem *element, Segment *curSeg, bool forward);
-    static Segment *findNewAnchorableSegment(const Segment *curSeg, bool forward);
-    static Segment *findNewAnchorableSegmentFromDrag(EngravingItem *element, Segment *curSeg);
+    static bool can_anchor_to_end_of_previous(const EngravingItem *element);
+    static void move_segment(EngravingItem *element, bool forward);
+    static Segment *get_new_segment(EngravingItem *element, Segment *cur_seg, bool forward);
+    static Segment *find_new_anchorable_segment(const Segment *cur_seg, bool forward);
+    static Segment *find_new_anchorable_segment_from_drag(EngravingItem *element, Segment *cur_seg);
 
-    static void doMoveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
-    static void doMoveSegment(FiguredBass *element, Segment *newSeg, Fraction tickDiff);
-    static void doMoveHarmonyOrFretDiagramSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
+    static void do_move_segment(EngravingItem *element, Segment *new_seg, Fraction tick_diff);
+    static void do_move_segment(FiguredBass *element, Segment *new_seg, Fraction tick_diff);
+    static void do_move_harmony_or_fret_diagram_segment(EngravingItem *element, Segment *new_seg, Fraction tick_diff);
 
-    static void moveSnappedItems(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
-    static void rebaseOffsetOnMoveSegment(EngravingItem *element, const PointF &curOffset, Segment *newSeg, Segment *oldSeg);
+    static void move_snapped_items(EngravingItem *element, Segment *new_seg, Fraction tick_diff);
+    static void rebase_offset_on_move_segment(EngravingItem *element, const PointF &cur_offset, Segment *new_seg, Segment *old_seg);
 };
 
 class TimeTickAnchor : public EngravingItem {
@@ -61,20 +61,20 @@ class TimeTickAnchor : public EngravingItem {
     friend class Factory;
 
 public:
-    Segment *segment() const { return toSegment(ownershipParentItem()); }
+    Segment *segment() const { return to_segment(ownership_parent_item()); }
 
     TimeTickAnchor *clone() const override { return new TimeTickAnchor(*this); }
 
     enum class DrawRegion : unsigned char { OUT_OF_RANGE, EXTENDED_REGION, MAIN_REGION };
 
-    DrawRegion drawRegion() const;
+    DrawRegion draw_region() const;
 
-    voice_idx_t voiceIdx() const;
+    voice_idx_t voice_idx() const;
 
     struct LayoutData : public EngravingItem::LayoutData {
         bool darker() const { return darker_; }
 
-        void setDarker(bool v) { darker_ = v; }
+        void set_darker(bool v) { darker_ = v; }
 
     private:
         bool darker_ = false;

@@ -28,11 +28,11 @@
 namespace muse::audio::fx {
 class MuseFxResolver : public AbstractFxResolver {
 public:
-    AudioResourceMetaList resolveResources() const override;
+    AudioResourceMetaList resolve_resources() const override;
 
 private:
-    IFxProcessorPtr createMasterFx(const AudioFxParams &fxParams, const OutputSpec &outputSpec) const override;
-    IFxProcessorPtr createTrackFx(const TrackId trackId, const AudioFxParams &fxParams, const OutputSpec &outputSpec) const override;
+    IFxProcessorPtr create_master_fx(const AudioFxParams &fx_params, const OutputSpec &output_spec) const override;
+    IFxProcessorPtr create_track_fx(const TrackId track_id, const AudioFxParams &fx_params, const OutputSpec &output_spec) const override;
 };
 } // namespace muse::audio::fx
 

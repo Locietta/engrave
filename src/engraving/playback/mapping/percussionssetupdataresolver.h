@@ -28,7 +28,7 @@
 namespace mu::engraving {
 class PercussionsSetupDataResolver : public SetupDataResolverBase<PercussionsSetupDataResolver> {
 public:
-    static muse::mpe::PlaybackSetupData doResolve(const Instrument *instrument);
+    static muse::mpe::PlaybackSetupData do_resolve(const Instrument *instrument);
 };
 } // namespace mu::engraving
 

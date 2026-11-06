@@ -32,26 +32,26 @@ namespace muse::io {
 class Dir {
 public:
     Dir() = default;
-    Dir(const path_t &path);
+    Dir(const PathT &path);
 
-    path_t path() const;
-    path_t absolutePath() const;
+    PathT path() const;
+    PathT absolute_path() const;
 
     bool exists() const;
-    Ret removeRecursively();
+    Ret remove_recursively();
 
     Ret mkpath();
-    static Ret mkpath(const path_t &path);
+    static Ret mkpath(const PathT &path);
 
-    static RetVal<io::paths_t> scanFiles(const io::path_t &rootDir, const std::vector<std::string> &filters,
-                                         ScanMode mode = ScanMode::FilesInCurrentDirAndSubdirs);
+    static RetVal<io::paths_t> scan_files(const io::PathT &root_dir, const std::vector<std::string> &filters,
+                                          ScanMode mode = ScanMode::FILES_IN_CURRENT_DIR_AND_SUBDIRS);
 
-    static path_t fromNativeSeparators(const path_t &pathName);
-    static path_t cleanPath(const path_t &path);
-    static path_t tempPath();
+    static PathT from_native_separators(const PathT &path_name);
+    static PathT clean_path(const PathT &path);
+    static PathT temp_path();
 
 private:
-    path_t path_;
+    PathT path_;
 };
 } // namespace muse::io
 

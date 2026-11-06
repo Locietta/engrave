@@ -55,9 +55,9 @@ namespace mu::iex::musicxml {
 //   importMusicXmlfromBuffer
 //---------------------------------------------------------
 
-Err importMusicXmlfromBuffer(Score *score, const String & /*name*/, const ByteArray &data, const IMusicXmlConfiguration &configuration) {
+Err import_music_xmlfrom_buffer(Score *score, const String & /*name*/, const ByteArray &data, const IMusicXmlConfiguration &configuration) {
     MusicXmlLogger logger;
-    logger.setLoggingLevel(MusicXmlLogger::Level::MXML_ERROR); // errors only
+    logger.set_logging_level(MusicXmlLogger::Level::MXML_ERROR); // errors only
     //logger.setLoggingLevel(MusicXmlLogger::Level::MXML_INFO);
     //logger.setLoggingLevel(MusicXmlLogger::Level::MXML_TRACE); // also include tracing
 
@@ -68,19 +68,19 @@ Err importMusicXmlfromBuffer(Score *score, const String & /*name*/, const ByteAr
 
     // pass 2
     MusicXmlParserPass2 pass2(score, pass1, &logger);
-    if (res == Err::NoError) {
+    if (res == Err::NO_ERROR) {
         res = pass2.parse(data);
     }
 
     for (const Part *part : score->parts()) {
         for (const auto &pair : part->instruments()) {
-            pair.second->updateInstrumentId();
+            pair.second->update_instrument_id();
         }
     }
 
     // report result
     const String pass2_errors = pass2.errors();
-    if (!(pass1_errors.isEmpty() && pass2_errors.isEmpty())) {}
+    if (!(pass1_errors.is_empty() && pass2_errors.is_empty())) {}
 
     return res;
 }
@@ -112,23 +112,23 @@ static_assert(int(DurationType::V_BREVE) == int(DurationType::V_LONG) + 1 && int
 Extract rootfile from compressed MusicXML file \a qf, return true if OK and false on error.
 */
 
-static bool extractRootfile(const String &name, ByteArray &data) {
+static bool extract_rootfile(const String &name, ByteArray &data) {
     ZipReader zip(name);
 
-    ByteArray ba = zip.fileData("META-INF/container.xml");
+    ByteArray ba = zip.file_data("META-INF/container.xml");
 
     XmlStreamReader e(ba);
 
     String rootfile;
-    while (e.readNextStartElement()) {
+    while (e.read_next_start_element()) {
         if (e.name() != "container") {
             break;
         }
-        while (e.readNextStartElement()) {
+        while (e.read_next_start_element()) {
             if (e.name() != "rootfiles") {
                 break;
             }
-            while (e.readNextStartElement()) {
+            while (e.read_next_start_element()) {
                 if (e.name() == "rootfile") {
                     rootfile = e.attribute("full-path");
                     break;
@@ -137,7 +137,7 @@ static bool extractRootfile(const String &name, ByteArray &data) {
         }
     }
 
-    data = zip.fileData(rootfile.toStdString());
+    data = zip.file_data(rootfile.to_std_string());
     return true;
 }
 
@@ -149,20 +149,20 @@ static bool extractRootfile(const String &name, ByteArray &data) {
  Validate and import MusicXML data from file \a name contained in ByteArray \a data into score \a score.
  */
 
-static Err doValidateAndImport(Score *score, const String &name, const ByteArray &data, bool forceMode,
-                               const IMusicXmlConfiguration &configuration) {
+static Err do_validate_and_import(Score *score, const String &name, const ByteArray &data, bool force_mode,
+                                  const IMusicXmlConfiguration &configuration) {
     Err res;
 
-    if (!forceMode) {
+    if (!force_mode) {
         // Validate the file
         res = MusicXmlValidation::validate(name, data);
-        if (res != Err::NoError) {
+        if (res != Err::NO_ERROR) {
             return res;
         }
     }
 
     // actually do the import
-    res = importMusicXmlfromBuffer(score, name, data, configuration);
+    res = import_music_xmlfrom_buffer(score, name, data, configuration);
     //LOGD("res %d", static_cast<int>(res));
     return res;
 }
@@ -172,27 +172,27 @@ static Err doValidateAndImport(Score *score, const String &name, const ByteArray
 //    return Err::File* errors
 //---------------------------------------------------------
 
-Err importMusicXml(MasterScore *score, const String &name, bool forceMode, const IMusicXmlConfiguration &configuration) {
+Err import_music_xml(MasterScore *score, const String &name, bool force_mode, const IMusicXmlConfiguration &configuration) {
     ScoreLoad sl; // suppress warnings for undo push/pop
 
     //LOGD("importMusicXml(%p, %s)", score, muPrintable(name));
 
     // open the MusicXML file
-    io::File xmlFile(name);
-    if (!xmlFile.exists()) {
-        return Err::FileNotFound;
+    io::File xml_file(name);
+    if (!xml_file.exists()) {
+        return Err::FILE_NOT_FOUND;
     }
 
-    if (!xmlFile.open(io::IODevice::ReadOnly)) {
+    if (!xml_file.open(io::IODevice::READ_ONLY)) {
         LOGE() << "could not open MusicXML file: " << name;
-        return Err::FileOpenError;
+        return Err::FILE_OPEN_ERROR;
     }
 
-    const ByteArray data = xmlFile.readAll();
-    xmlFile.close();
+    const ByteArray data = xml_file.read_all();
+    xml_file.close();
 
     // and import it
-    return doValidateAndImport(score, name, data, forceMode, configuration);
+    return do_validate_and_import(score, name, data, force_mode, configuration);
 }
 
 //---------------------------------------------------------
@@ -204,20 +204,20 @@ Err importMusicXml(MasterScore *score, const String &name, bool forceMode, const
  Import compressed MusicXML file \a name into the Score.
  */
 
-Err importCompressedMusicXml(MasterScore *score, const String &name, bool forceMode, const IMusicXmlConfiguration &configuration) {
+Err import_compressed_music_xml(MasterScore *score, const String &name, bool force_mode, const IMusicXmlConfiguration &configuration) {
     //LOGD("importCompressedMusicXml(%p, %s)", score, muPrintable(name));
 
     if (!io::File::exists(name)) {
-        return Err::FileNotFound;
+        return Err::FILE_NOT_FOUND;
     }
 
     // extract the root file
     ByteArray data;
-    if (!extractRootfile(name, data)) {
-        return Err::FileBadFormat; // appropriate error message has been printed by extractRootfile
+    if (!extract_rootfile(name, data)) {
+        return Err::FILE_BAD_FORMAT; // appropriate error message has been printed by extractRootfile
     }
 
     // and import it
-    return doValidateAndImport(score, name, data, forceMode, configuration);
+    return do_validate_and_import(score, name, data, force_mode, configuration);
 }
 } // namespace mu::iex::musicxml

@@ -34,18 +34,18 @@ class IFontsDatabase {
 public:
     virtual ~IFontsDatabase() = default;
 
-    virtual void setDefaultFont(Font::Type type, const FontDataKey &key) = 0;
-    virtual void insertSubstitution(const String &f1, const String &substituteName) = 0;
-    virtual void removeSubstitutions(const String &f1, const std::vector<String> &substituteNames) = 0;
+    virtual void set_default_font(Font::Type type, const FontDataKey &key) = 0;
+    virtual void insert_substitution(const String &f1, const String &substitute_name) = 0;
+    virtual void remove_substitutions(const String &f1, const std::vector<String> &substitute_names) = 0;
 
-    virtual int addFont(const FontDataKey &key, const io::path_t &path) = 0;
-    virtual int addFont(const FontDataKey &key, std::shared_ptr<io::IODevice> device) = 0;
+    virtual int add_font(const FontDataKey &key, const io::PathT &path) = 0;
+    virtual int add_font(const FontDataKey &key, std::shared_ptr<io::IODevice> device) = 0;
 
-    virtual void removeFont(const FontDataKey &key) = 0;
+    virtual void remove_font(const FontDataKey &key) = 0;
 
-    virtual FontDataKey actualFont(const FontDataKey &requireKey, Font::Type type) const = 0;
-    virtual std::vector<FontDataKey> substitutionFonts(const FontDataKey &requireKey) const = 0;
-    virtual FontData fontData(const FontDataKey &requireKey, Font::Type type) const = 0;
+    virtual FontDataKey actual_font(const FontDataKey &require_key, Font::Type type) const = 0;
+    virtual std::vector<FontDataKey> substitution_fonts(const FontDataKey &require_key) const = 0;
+    virtual FontData font_data(const FontDataKey &require_key, Font::Type type) const = 0;
 
     virtual uint64_t revision() const = 0;
 };

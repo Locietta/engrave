@@ -46,77 +46,77 @@ public:
 
     Bracket *clone() const override { return new Bracket(*this); }
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    void setBracketItem(BracketItem *i) { bi_ = i; }
+    void set_bracket_item(BracketItem *i) { bi_ = i; }
 
-    BracketItem *bracketItem() const { return bi_; }
+    BracketItem *bracket_item() const { return bi_; }
 
-    BracketType bracketType() const { return bi_->bracketType(); }
+    BracketType bracket_type() const { return bi_->bracket_type(); }
 
-    int subtype() const override { return int(bracketType()); }
+    int subtype() const override { return int(bracket_type()); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    size_t firstStaff() const { return firstStaff_; }
+    size_t first_staff() const { return first_staff_; }
 
-    size_t lastStaff() const { return lastStaff_; }
+    size_t last_staff() const { return last_staff_; }
 
-    void setStaffSpan(size_t a, size_t b);
+    void set_staff_span(size_t a, size_t b);
 
-    InstrumentNameType labelType() const { return labelType_; }
+    InstrumentNameType label_type() const { return label_type_; }
 
-    void setLabelType(InstrumentNameType t) { labelType_ = t; }
+    void set_label_type(InstrumentNameType t) { label_type_ = t; }
 
-    SymId braceSymbol() const { return braceSymbol_; }
+    SymId brace_symbol() const { return brace_symbol_; }
 
-    void setBraceSymbol(const SymId &sym) { braceSymbol_ = sym; }
+    void set_brace_symbol(const SymId &sym) { brace_symbol_ = sym; }
 
     size_t column() const { return bi_->column(); }
 
-    size_t span() const { return bi_->bracketSpan(); }
+    size_t span() const { return bi_->bracket_span(); }
 
     double magx() const { return magx_; }
 
-    System *system() const { return (System *) ownershipParent(); }
+    System *system() const { return (System *) ownership_parent(); }
 
     Measure *measure() const { return measure_; }
 
-    void setMeasure(Measure *measure) { measure_ = measure; }
+    void set_measure(Measure *measure) { measure_ = measure; }
 
     const BracketItem *bi() const { return bi_; }
 
     Color color() const override { return bi_->color(); }
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
-    using EngravingObject::undoChangeProperty;
+    void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;
+    using EngravingObject::undo_change_property;
 
     Fraction tick() const override;
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
     Text *text() const { return text_; }
 
-    void setText(Text *t) { text_ = t; }
+    void set_text(Text *t) { text_ = t; }
 
     bool intersects(const Bracket *other) const;
-    bool contains(staff_idx_t staffIdx) const;
+    bool contains(staff_idx_t staff_idx) const;
 
     struct LayoutData : public EngravingItem::LayoutData {
-        SymId braceSymbol = SymId::noSym;
+        SymId brace_symbol = SymId::NO_SYM;
         PainterPath path;
         Shape shape;
-        ld_field<double> bracketHeight = {"[Bracket] bracketHeight", 0.0};
-        ld_field<double> bracketWidth = {"[Bracket] bracketWidth", 0.0};
+        ld_field<double> bracket_height = {"[Bracket] bracketHeight", 0.0};
+        ld_field<double> bracket_width = {"[Bracket] bracketWidth", 0.0};
 
-        double h2(LD_ACCESS mode = LD_ACCESS::CHECK) const { return bracketHeight.value(mode) * 0.5; }
+        double h2(LdAccess mode = LdAccess::CHECK) const { return bracket_height.value(mode) * 0.5; }
     };
     DECLARE_LAYOUTDATA_METHODS(Bracket)
 
@@ -128,12 +128,12 @@ private:
     BracketItem *bi_ = nullptr;
     double ay1_ = 0.0;
 
-    size_t firstStaff_ = 0;
-    size_t lastStaff_ = 0;
+    size_t first_staff_ = 0;
+    size_t last_staff_ = 0;
 
-    InstrumentNameType labelType_;
+    InstrumentNameType label_type_;
 
-    SymId braceSymbol_ = SymId::noSym;
+    SymId brace_symbol_ = SymId::NO_SYM;
 
     // horizontal scaling factor for brace symbol. Cannot be equal to magY or depend on h
     // because layout needs width of brace before knowing height of system...

@@ -33,14 +33,14 @@ class System;
 namespace mu::engraving::rendering::score {
 class AlignmentLayout {
 public:
-    static void alignItemsWithTheirSnappingChain(const std::vector<EngravingItem *> &elements, const System *system);
-    static void alignItemsForSystem(const std::vector<EngravingItem *> &elements, const System *system);
-    static void alignItemsGroup(const std::vector<EngravingItem *> &elements, const System *system);
-    static void alignHopoLetters(const HammerOnPullOff *hopo, const System *system);
+    static void align_items_with_their_snapping_chain(const std::vector<EngravingItem *> &elements, const System *system);
+    static void align_items_for_system(const std::vector<EngravingItem *> &elements, const System *system);
+    static void align_items_group(const std::vector<EngravingItem *> &elements, const System *system);
+    static void align_hopo_letters(const HammerOnPullOff *hopo, const System *system);
 
 private:
-    static void moveItemToY(EngravingItem *item, double y, const System *system);
-    static double yOpticalCenter(const EngravingItem *item);
-    static bool isAbove(const EngravingItem *item);
+    static void move_item_to_y(EngravingItem *item, double y, const System *system);
+    static double y_optical_center(const EngravingItem *item);
+    static bool is_above(const EngravingItem *item);
 };
 } // namespace mu::engraving::rendering::score

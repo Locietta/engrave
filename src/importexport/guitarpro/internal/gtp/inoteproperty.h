@@ -11,42 +11,42 @@ public:
 class BendProperty : public INoteProperty {
 public:
 
-    void setDestinationOffset(float v) { _destinationOffset = v; }
+    void set_destination_offset(float v) { destination_offset_value = v; }
 
-    void setDestinationValue(float v) { _destinationValue = v; }
+    void set_destination_value(float v) { destination_value_value = v; }
 
-    void setMiddleOffset1(float v) { _middleOffset1 = v; }
+    void set_middle_offset1(float v) { middle_offset1_value = v; }
 
-    void setMiddleOffset2(float v) { _middleOffset2 = v; }
+    void set_middle_offset2(float v) { middle_offset2_value = v; }
 
-    void setMiddleValue(float v) { _middleValue = v; }
+    void set_middle_value(float v) { middle_value_value = v; }
 
-    void setOriginOffset(float v) { _originOffset = v; }
+    void set_origin_offset(float v) { origin_offset_value = v; }
 
-    void setOriginValue(float v) { _originValue = v; }
+    void set_origin_value(float v) { origin_value_value = v; }
 
-    float destinationOffset() const { return _destinationOffset; }
+    float destination_offset() const { return destination_offset_value; }
 
-    float destinationValue() const { return _destinationValue; }
+    float destination_value() const { return destination_value_value; }
 
-    float middleOffset1() const { return _middleOffset1; }
+    float middle_offset1() const { return middle_offset1_value; }
 
-    float middleOffset2() const { return _middleOffset2; }
+    float middle_offset2() const { return middle_offset2_value; }
 
-    float middleValue() const { return _middleValue; }
+    float middle_value() const { return middle_value_value; }
 
-    float originOffset() const { return _originOffset; }
+    float origin_offset() const { return origin_offset_value; }
 
-    float originValue() const { return _originValue; }
+    float origin_value() const { return origin_value_value; }
 
 private:
-    float _destinationOffset{-1};
-    float _destinationValue{-1};
-    float _middleOffset1{-1};
-    float _middleOffset2{-1};
-    float _middleValue{-1};
-    float _originOffset{-1};
-    float _originValue{-1};
+    float destination_offset_value{-1};
+    float destination_value_value{-1};
+    float middle_offset1_value{-1};
+    float middle_offset2_value{-1};
+    float middle_value_value{-1};
+    float origin_offset_value{-1};
+    float origin_value_value{-1};
 };
 } // namespace mu::iex::guitarpro
 #endif // MU_IMPORTEXPORT_INOTEPROPERTY_H

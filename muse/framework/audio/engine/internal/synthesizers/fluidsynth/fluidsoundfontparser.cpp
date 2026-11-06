@@ -31,7 +31,7 @@
 using namespace muse;
 using namespace muse::audio::synth;
 
-RetVal<SoundFontMeta> FluidSoundFontParser::parseSoundFont(const SoundFontPath &path) {
+RetVal<SoundFontMeta> FluidSoundFontParser::parse_sound_font(const SoundFontPath &path) {
     fluid_settings_t *settings = nullptr;
     fluid_sfloader_t *loader = nullptr;
     fluid_sfont_t *sfont = nullptr;
@@ -50,23 +50,23 @@ RetVal<SoundFontMeta> FluidSoundFontParser::parseSoundFont(const SoundFontPath &
 
     settings = new_fluid_settings();
     if (!settings) {
-        return make_ret(Ret::Code::UnknownError);
+        return make_ret(Ret::Code::UNKNOWN_ERROR);
     }
 
     fluid_settings_setint(settings, "synth.dynamic-sample-loading", 1);
 
     loader = new_fluid_defsfloader(settings);
     if (!loader) {
-        return make_ret(Ret::Code::UnknownError);
+        return make_ret(Ret::Code::UNKNOWN_ERROR);
     }
 
     sfont = fluid_defsfloader_load(loader, path.c_str());
     if (!sfont) {
-        return make_ret(Ret::Code::UnknownError);
+        return make_ret(Ret::Code::UNKNOWN_ERROR);
     }
 
     SoundFontMeta meta;
-    meta.name = io::completeBasename(path).toStdString();
+    meta.name = io::complete_basename(path).to_std_string();
     meta.path = path;
 
     fluid_defsfont_sfont_iteration_start(sfont);

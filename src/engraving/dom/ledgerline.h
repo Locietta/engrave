@@ -48,20 +48,20 @@ public:
 
     LedgerLine *clone() const override { return new LedgerLine(*this); }
 
-    Chord *chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return to_chord(ownership_parent()); }
 
     double len() const { return len_; }
 
-    void setLen(double v) { len_ = v; }
+    void set_len(double v) { len_ = v; }
 
-    void setVertical(bool v) { vertical_ = v; }
+    void set_vertical(bool v) { vertical_ = v; }
 
     bool vertical() const { return vertical_; }
 
-    void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
+    void spatium_changed(double /*oldValue*/, double /*newValue*/) override;
 
     struct LayoutData : public EngravingItem::LayoutData {
-        double lineWidth = 0.0;
+        double line_width = 0.0;
     };
 
     DECLARE_LAYOUTDATA_METHODS(LedgerLine);

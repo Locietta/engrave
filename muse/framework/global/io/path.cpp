@@ -27,21 +27,21 @@
 using namespace muse;
 using namespace muse::io;
 
-path_t::path_t(const String &s) : path_(s.toStdString()) {}
+PathT::PathT(const String &s) : path_(s.to_std_string()) {}
 
-path_t::path_t(const std::string &s) : path_(s) {}
+PathT::PathT(const std::string &s) : path_(s) {}
 
-path_t::path_t(std::string &&s) : path_(std::move(s)) {}
+PathT::PathT(std::string &&s) : path_(std::move(s)) {}
 
-path_t::path_t(const char *s) : path_(s ? s : "") {}
+PathT::PathT(const char *s) : path_(s ? s : "") {}
 
-bool path_t::empty() const { return path_.empty(); }
+bool PathT::empty() const { return path_.empty(); }
 
-size_t path_t::size() const { return path_.size(); }
+size_t PathT::size() const { return path_.size(); }
 
-bool path_t::hasSuffix(const char *str) const { return io::FileInfo::suffix(path_).toLower() == str; }
+bool PathT::has_suffix(const char *str) const { return io::FileInfo::suffix(path_).to_lower() == str; }
 
-path_t path_t::appendingComponent(const path_t &other) const {
+PathT PathT::appending_component(const PathT &other) const {
     if ((!path_.empty() && path_.back() == '/') || (!other.path_.empty() && other.path_.front() == '/')) {
         return path_ + other.path_;
     }
@@ -49,7 +49,7 @@ path_t path_t::appendingComponent(const path_t &other) const {
     return path_ + '/' + other.path_;
 }
 
-path_t path_t::appendingSuffix(const path_t &suffix) const {
+PathT PathT::appending_suffix(const PathT &suffix) const {
     if (!suffix.path_.empty() && suffix.path_.front() == '.') {
         return path_ + suffix.path_;
     }
@@ -57,47 +57,47 @@ path_t path_t::appendingSuffix(const path_t &suffix) const {
     return path_ + '.' + suffix.path_;
 }
 
-String path_t::toString() const { return String::fromStdString(path_); }
+String PathT::to_string() const { return String::from_std_string(path_); }
 
-const std::string &path_t::toStdString() const { return path_; }
+const std::string &PathT::to_std_string() const { return path_; }
 
-const char *path_t::c_str() const { return path_.c_str(); }
+const char *PathT::c_str() const { return path_.c_str(); }
 
-std::string muse::io::suffix(const io::path_t &path) { return FileInfo::suffix(path).toLower().toStdString(); }
+std::string muse::io::suffix(const io::PathT &path) { return FileInfo::suffix(path).to_lower().to_std_string(); }
 
-io::path_t muse::io::filename(const io::path_t &path, bool includingExtension) {
+io::PathT muse::io::filename(const io::PathT &path, bool including_extension) {
     FileInfo fi(path);
-    return includingExtension ? fi.fileName() : fi.completeBaseName();
+    return including_extension ? fi.file_name() : fi.complete_base_name();
 }
 
-io::path_t muse::io::basename(const io::path_t &path) {
+io::PathT muse::io::basename(const io::PathT &path) {
     FileInfo fi(path);
-    return fi.baseName();
+    return fi.base_name();
 }
 
-io::path_t muse::io::completeBasename(const io::path_t &path) {
+io::PathT muse::io::complete_basename(const io::PathT &path) {
     FileInfo fi(path);
-    return fi.completeBaseName();
+    return fi.complete_base_name();
 }
 
-io::path_t muse::io::absolutePath(const path_t &path) { return FileInfo(path).absolutePath(); }
+io::PathT muse::io::absolute_path(const PathT &path) { return FileInfo(path).absolute_path(); }
 
-io::path_t muse::io::absoluteFilePath(const path_t &path) { return FileInfo(path).absoluteFilePath(); }
+io::PathT muse::io::absolute_file_path(const PathT &path) { return FileInfo(path).absolute_file_path(); }
 
-io::path_t muse::io::dirpath(const io::path_t &path) { return FileInfo(path).dir().path(); }
+io::PathT muse::io::dirpath(const io::PathT &path) { return FileInfo(path).dir().path(); }
 
-io::path_t muse::io::absoluteDirpath(const io::path_t &path) { return FileInfo(path).dir().absolutePath(); }
+io::PathT muse::io::absolute_dirpath(const io::PathT &path) { return FileInfo(path).dir().absolute_path(); }
 
-bool muse::io::isAbsolute(const path_t &path) { return FileInfo(path).isAbsolute(); }
+bool muse::io::is_absolute(const PathT &path) { return FileInfo(path).is_absolute(); }
 
-bool muse::io::isAllowedFileName(const path_t &fn_) {
-    std::string fn = basename(fn_).toStdString();
+bool muse::io::is_allowed_file_name(const PathT &input_fn) {
+    std::string fn = basename(input_fn).to_std_string();
     if (fn.empty()) {
         return false;
     }
 
     // Windows filenames are not case sensitive.
-    fn = String::fromStdString(fn).toUpper().toStdString();
+    fn = String::from_std_string(fn).to_upper().to_std_string();
 
     static const std::string illegal = "<>:\"|?*";
 
@@ -144,12 +144,12 @@ bool muse::io::isAllowedFileName(const path_t &fn_) {
     return true;
 }
 
-io::path_t muse::io::escapeFileName(const io::path_t &fn_) {
+io::PathT muse::io::escape_file_name(const io::PathT &input_fn) {
     //
     // special characters in filenames are a constant source
     // of trouble, this replaces some of them common in german:
     //
-    String fn = fn_.toString();
+    String fn = input_fn.to_string();
     fn = fn.simplified();
     fn = fn.replace(' ', '_');
     fn = fn.replace('\n', '_');
@@ -176,7 +176,7 @@ io::path_t muse::io::escapeFileName(const io::path_t &fn_) {
     return fn;
 }
 
-paths_t muse::io::pathsFromString(const std::string &str, const std::string &delim) {
+paths_t muse::io::paths_from_string(const std::string &str, const std::string &delim) {
     if (str.empty()) {
         return {};
     }
@@ -187,23 +187,23 @@ paths_t muse::io::pathsFromString(const std::string &str, const std::string &del
     paths_t ps;
     ps.reserve(strs.size());
     for (const std::string &s : strs) {
-        ps.push_back(path_t(s));
+        ps.push_back(PathT(s));
     }
     return ps;
 }
 
-std::string muse::io::pathsToString(const paths_t &ps, const std::string &delim) {
+std::string muse::io::paths_to_string(const paths_t &ps, const std::string &delim) {
     std::string result;
     bool first = true;
-    for (const path_t &_path : ps) {
+    for (const PathT &path_value : ps) {
         if (!first) {
             result += delim;
         }
         first = false;
-        result += _path.toStdString();
+        result += path_value.to_std_string();
     }
 
     return result;
 }
 
-path_t muse::io::toNativeSeparators(const path_t &path) { return path; }
+PathT muse::io::to_native_separators(const PathT &path) { return path; }

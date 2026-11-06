@@ -30,18 +30,18 @@ class IMidiOutPort {
 public:
     virtual ~IMidiOutPort() = default;
 
-    virtual MidiDeviceList availableDevices() const = 0;
+    virtual MidiDeviceList available_devices() const = 0;
 
-    virtual Ret connect(const MidiDeviceID &deviceID) = 0;
+    virtual Ret connect(const MidiDeviceID &device_id) = 0;
     virtual void disconnect() = 0;
-    virtual bool isConnected() const = 0;
-    virtual MidiDeviceID deviceID() const = 0;
+    virtual bool is_connected() const = 0;
+    virtual MidiDeviceID device_id() const = 0;
 
     // Whether the output port supports it, rather than whether the receiver supports it
     // (If the receiver does not support MIDI 2.0, then it's the output port's resposibility to convert to MIDI 1.0)
-    virtual bool supportsMIDI20Output() const = 0;
+    virtual bool supports_mid_i20_output() const = 0;
 
-    virtual Ret sendEvent(const Event &e) = 0;
+    virtual Ret send_event(const Event &e) = 0;
 };
 } // namespace muse::midi
 

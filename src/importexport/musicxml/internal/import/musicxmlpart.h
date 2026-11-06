@@ -29,78 +29,80 @@ class MusicXmlOctaveShiftList : public std::map<engraving::Fraction, int> {
 public:
     MusicXmlOctaveShiftList() {}
 
-    int octaveShift(const engraving::Fraction f) const;
-    void addOctaveShift(const int shift, const engraving::Fraction f);
-    void calcOctaveShiftShifts();
+    int octave_shift(const engraving::Fraction f) const;
+    void add_octave_shift(const int shift, const engraving::Fraction f);
+    void calc_octave_shift_shifts();
 };
 
 class MusicXmlPart {
 public:
     MusicXmlPart(muse::String id = {}, muse::String name = {});
-    void addMeasureNumberAndDuration(muse::String measureNumber, engraving::Fraction measureDuration);
+    void add_measure_number_and_duration(muse::String measure_number, engraving::Fraction measure_duration);
 
-    muse::String getId() const { return id_; }
+    muse::String get_id() const { return id_; }
 
-    muse::String toString() const;
+    muse::String to_string() const;
     VoiceList voicelist; // the voice map information TODO: make private
-    engraving::Fraction measureDuration(size_t i) const;
+    engraving::Fraction measure_duration(size_t i) const;
 
-    size_t nMeasures() const { return measureDurations_.size(); }
+    size_t n_measures() const { return measure_durations_.size(); }
 
-    MusicXmlInstrList _instrList;    // TODO: make private
-    MusicXmlIntervalList _intervals; ///< Transpositions
+    MusicXmlInstrList instr_list;   // TODO: make private
+    MusicXmlIntervalList intervals; ///< Transpositions
     engraving::Interval interval(const engraving::Fraction f) const;
-    int octaveShift(const engraving::staff_idx_t staff, const engraving::Fraction f) const;
-    void addOctaveShift(const engraving::staff_idx_t staff, const int shift, const engraving::Fraction f);
-    void calcOctaveShifts();
+    int octave_shift(const engraving::staff_idx_t staff, const engraving::Fraction f) const;
+    void add_octave_shift(const engraving::staff_idx_t staff, const int shift, const engraving::Fraction f);
+    void calc_octave_shifts();
 
-    void setName(muse::String nm) { name_ = nm; }
+    void set_name(muse::String nm) { name_ = nm; }
 
-    muse::String getName() const { return name_; }
+    muse::String get_name() const { return name_; }
 
-    void setPrintName(const bool b) { printName_ = b; }
+    void set_print_name(const bool b) { print_name_ = b; }
 
-    bool getPrintName() const { return printName_; }
+    bool get_print_name() const { return print_name_; }
 
-    void setAbbr(muse::String ab) { abbr_ = ab; }
+    void set_abbr(muse::String ab) { abbr_ = ab; }
 
-    muse::String getAbbr() const { return abbr_; }
+    muse::String get_abbr() const { return abbr_; }
 
-    void setPrintAbbr(const bool b) { printAbbr_ = b; }
+    void set_print_abbr(const bool b) { print_abbr_ = b; }
 
-    bool getPrintAbbr() const { return printAbbr_; }
+    bool get_print_abbr() const { return print_abbr_; }
 
-    std::map<int, int> staffNumberToIndex() const { return staffNumberToIndex_; }
+    std::map<int, int> staff_number_to_index() const { return staff_number_to_index_; }
 
-    int staffNumberToIndex(const int staffNumber) const;
+    int staff_number_to_index(const int staff_number) const;
 
-    void insertStaffNumberToIndex(const int staffNumber, const int staffIndex) { staffNumberToIndex_.insert({staffNumber, staffIndex}); }
+    void insert_staff_number_to_index(const int staff_number, const int staff_index) {
+        staff_number_to_index_.insert({staff_number, staff_index});
+    }
 
-    LyricNumberHandler &lyricNumberHandler() { return lyricNumberHandler_; }
+    LyricNumberHandler &lyric_number_handler() { return lyric_number_handler_; }
 
-    const LyricNumberHandler &lyricNumberHandler() const { return lyricNumberHandler_; }
+    const LyricNumberHandler &lyric_number_handler() const { return lyric_number_handler_; }
 
-    void setMaxStaff(const int staff);
+    void set_max_staff(const int staff);
 
-    int maxStaff() const { return maxStaff_; }
+    int max_staff() const { return max_staff_; }
 
-    bool isVocalStaff() const;
-    bool isPercussionStaff() const;
+    bool is_vocal_staff() const;
+    bool is_percussion_staff() const;
 
-    void hasLyrics(bool b) { hasLyrics_ = b; }
+    void has_lyrics(bool b) { has_lyrics_ = b; }
 private:
     muse::String id_;
     muse::String name_;
-    bool printName_ = true;
+    bool print_name_ = true;
     muse::String abbr_;
-    bool printAbbr_ = true;
-    std::vector<muse::String> measureNumbers_;          // MusicXML measure number attribute
-    std::vector<engraving::Fraction> measureDurations_; // duration in fraction for every measure
-    std::vector<MusicXmlOctaveShiftList> octaveShifts_; // octave shift list for every staff
-    LyricNumberHandler lyricNumberHandler_;
-    int maxStaff_ = -1; // maximum staff value found (0 based), -1 = none
-    bool hasLyrics_ = false;
-    std::map<int, int> staffNumberToIndex_; // Mapping from staff number to index in staff list.
+    bool print_abbr_ = true;
+    std::vector<muse::String> measure_numbers_;          // MusicXML measure number attribute
+    std::vector<engraving::Fraction> measure_durations_; // duration in fraction for every measure
+    std::vector<MusicXmlOctaveShiftList> octave_shifts_; // octave shift list for every staff
+    LyricNumberHandler lyric_number_handler_;
+    int max_staff_ = -1; // maximum staff value found (0 based), -1 = none
+    bool has_lyrics_ = false;
+    std::map<int, int> staff_number_to_index_; // Mapping from staff number to index in staff list.
     // Only for when staves are discarded in MusicXmlParserPass1::attributes.
 };
 } // namespace mu::iex::musicxml

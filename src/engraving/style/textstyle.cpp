@@ -28,1659 +28,1661 @@
 using namespace mu;
 
 namespace mu::engraving {
-const TextStyle defaultTextStyle{
+const TextStyle default_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::defaultFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::defaultFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::defaultLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::defaultFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::defaultFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::defaultColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::defaultAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::defaultFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::defaultFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::defaultFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::defaultFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::defaultFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::defaultFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::defaultMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::defaultPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::DEFAULT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::DEFAULT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::DEFAULT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::DEFAULT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::DEFAULT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::DEFAULT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::DEFAULT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::DEFAULT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::DEFAULT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::DEFAULT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::DEFAULT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::DEFAULT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::DEFAULT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::DEFAULT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::DEFAULT_POSITION, Pid::POSITION},
     }},
-    {Sid::defaultOffset, Sid::defaultOffset}};
+    {Sid::DEFAULT_OFFSET, Sid::DEFAULT_OFFSET}};
 
-const TextStyle titleTextStyle{
+const TextStyle title_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::titleFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::titleFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::titleLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::titleFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::titleFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::titleColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::titleAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::titleFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::titleFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::titleFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::titleFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::titleFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::titleFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::titleMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::titlePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TITLE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TITLE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TITLE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TITLE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TITLE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TITLE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TITLE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TITLE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TITLE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TITLE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TITLE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TITLE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TITLE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TITLE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TITLE_POSITION, Pid::POSITION},
     }},
-    {Sid::titleOffset, Sid::titleOffset}};
+    {Sid::TITLE_OFFSET, Sid::TITLE_OFFSET}};
 
-const TextStyle subTitleTextStyle{
+const TextStyle sub_title_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::subTitleFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::subTitleFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::subTitleLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::subTitleFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::subTitleFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::subTitleColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::subTitleAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::subTitleFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::subTitleFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::subTitleFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::subTitleFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::subTitleFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::subTitleFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::subTitleMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::subTitlePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::SUB_TITLE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::SUB_TITLE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::SUB_TITLE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::SUB_TITLE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::SUB_TITLE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::SUB_TITLE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::SUB_TITLE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::SUB_TITLE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::SUB_TITLE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::SUB_TITLE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::SUB_TITLE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::SUB_TITLE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::SUB_TITLE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::SUB_TITLE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::SUB_TITLE_POSITION, Pid::POSITION},
     }},
-    {Sid::subTitleOffset, Sid::subTitleOffset}};
+    {Sid::SUB_TITLE_OFFSET, Sid::SUB_TITLE_OFFSET}};
 
-const TextStyle composerTextStyle{
+const TextStyle composer_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::composerFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::composerFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::composerLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::composerFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::composerFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::composerColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::composerAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::composerFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::composerFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::composerFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::composerFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::composerFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::composerFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::composerMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::composerPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::COMPOSER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::COMPOSER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::COMPOSER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::COMPOSER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::COMPOSER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::COMPOSER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::COMPOSER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::COMPOSER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::COMPOSER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::COMPOSER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::COMPOSER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::COMPOSER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::COMPOSER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::COMPOSER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::COMPOSER_POSITION, Pid::POSITION},
     }},
-    {Sid::composerOffset, Sid::composerOffset}};
+    {Sid::COMPOSER_OFFSET, Sid::COMPOSER_OFFSET}};
 
-const TextStyle lyricistTextStyle{
+const TextStyle lyricist_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::lyricistFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::lyricistFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::lyricistLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::lyricistFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::lyricistFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::lyricistColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::lyricistAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::lyricistFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::lyricistFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::lyricistFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::lyricistFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::lyricistFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::lyricistFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::lyricistMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::lyricistPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LYRICIST_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LYRICIST_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LYRICIST_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LYRICIST_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LYRICIST_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LYRICIST_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LYRICIST_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LYRICIST_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LYRICIST_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LYRICIST_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LYRICIST_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LYRICIST_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LYRICIST_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LYRICIST_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LYRICIST_POSITION, Pid::POSITION},
     }},
-    {Sid::lyricistOffset, Sid::lyricistOffset}};
+    {Sid::LYRICIST_OFFSET, Sid::LYRICIST_OFFSET}};
 
-const TextStyle lyricsEvenTextStyle{
+const TextStyle lyrics_even_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::lyricsEvenFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::lyricsEvenFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::lyricsEvenLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::lyricsEvenFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::lyricsEvenFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::lyricsEvenColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::lyricsEvenAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::lyricsEvenFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::lyricsEvenFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::lyricsEvenFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::lyricsEvenFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::lyricsEvenFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::lyricsEvenFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::lyricsEvenMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::lyricsEvenPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LYRICS_EVEN_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LYRICS_EVEN_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LYRICS_EVEN_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LYRICS_EVEN_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LYRICS_EVEN_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LYRICS_EVEN_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LYRICS_EVEN_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LYRICS_EVEN_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LYRICS_EVEN_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LYRICS_EVEN_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LYRICS_EVEN_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LYRICS_EVEN_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LYRICS_EVEN_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LYRICS_EVEN_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LYRICS_EVEN_POSITION, Pid::POSITION},
     }},
-    {Sid::lyricsPosAbove, Sid::lyricsPosBelow}};
+    {Sid::LYRICS_POS_ABOVE, Sid::LYRICS_POS_BELOW}};
 
-const TextStyle lyricsOddTextStyle{
+const TextStyle lyrics_odd_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::lyricsOddFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::lyricsOddFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::lyricsOddLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::lyricsOddFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::lyricsOddFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::lyricsOddColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::lyricsOddAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::lyricsOddFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::lyricsOddFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::lyricsOddFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::lyricsOddFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::lyricsOddFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::lyricsOddFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::lyricsOddMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::lyricsOddPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LYRICS_ODD_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LYRICS_ODD_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LYRICS_ODD_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LYRICS_ODD_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LYRICS_ODD_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LYRICS_ODD_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LYRICS_ODD_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LYRICS_ODD_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LYRICS_ODD_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LYRICS_ODD_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LYRICS_ODD_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LYRICS_ODD_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LYRICS_ODD_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LYRICS_ODD_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LYRICS_ODD_POSITION, Pid::POSITION},
     }},
-    {Sid::lyricsPosAbove, Sid::lyricsPosBelow}};
+    {Sid::LYRICS_POS_ABOVE, Sid::LYRICS_POS_BELOW}};
 
-const TextStyle fingeringTextStyle{
+const TextStyle fingering_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::fingeringFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::fingeringFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::fingeringLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::fingeringFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::fingeringFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::fingeringColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::fingeringAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::fingeringFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::fingeringFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::fingeringFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::fingeringFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::fingeringFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::fingeringFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::fingeringMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::fingeringPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::FINGERING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::FINGERING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::FINGERING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::FINGERING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::FINGERING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::FINGERING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::FINGERING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::FINGERING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::FINGERING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::FINGERING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::FINGERING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::FINGERING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::FINGERING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::FINGERING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::FINGERING_POSITION, Pid::POSITION},
     }},
-    {Sid::fingeringOffset, Sid::fingeringOffset}};
+    {Sid::FINGERING_OFFSET, Sid::FINGERING_OFFSET}};
 
-const TextStyle tabFretNumberTextStyle{
+const TextStyle tab_fret_number_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::tabFretNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::tabFretNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::tabFretNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::tabFretNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::tabFretNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::tabFretNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::tabFretNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::tabFretNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::tabFretNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::tabFretNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::tabFretNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::tabFretNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::tabFretNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::tabFretNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::FONT_FACE, Sid::TAB_FRET_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TAB_FRET_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TAB_FRET_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TAB_FRET_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TAB_FRET_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TAB_FRET_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TAB_FRET_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TAB_FRET_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TAB_FRET_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TAB_FRET_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TAB_FRET_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TAB_FRET_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TAB_FRET_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TAB_FRET_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
     }},
-    {Sid::tabFretNumberOffset, Sid::tabFretNumberOffset}};
+    {Sid::TAB_FRET_NUMBER_OFFSET, Sid::TAB_FRET_NUMBER_OFFSET}};
 
-const TextStyle lhGuitarFingeringTextStyle{
+const TextStyle lh_guitar_fingering_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::lhGuitarFingeringFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::lhGuitarFingeringFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::lhGuitarFingeringLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::lhGuitarFingeringFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::lhGuitarFingeringFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::lhGuitarFingeringColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::lhGuitarFingeringAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::lhGuitarFingeringFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::lhGuitarFingeringFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::lhGuitarFingeringFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::lhGuitarFingeringFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::lhGuitarFingeringFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::lhGuitarFingeringFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::lhGuitarFingeringMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::lhGuitarFingeringPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LH_GUITAR_FINGERING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LH_GUITAR_FINGERING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LH_GUITAR_FINGERING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LH_GUITAR_FINGERING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LH_GUITAR_FINGERING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LH_GUITAR_FINGERING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LH_GUITAR_FINGERING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LH_GUITAR_FINGERING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LH_GUITAR_FINGERING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LH_GUITAR_FINGERING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LH_GUITAR_FINGERING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LH_GUITAR_FINGERING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LH_GUITAR_FINGERING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LH_GUITAR_FINGERING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LH_GUITAR_FINGERING_POSITION, Pid::POSITION},
     }},
-    {Sid::lhGuitarFingeringOffset, Sid::lhGuitarFingeringOffset}};
+    {Sid::LH_GUITAR_FINGERING_OFFSET, Sid::LH_GUITAR_FINGERING_OFFSET}};
 
-const TextStyle rhGuitarFingeringTextStyle{
+const TextStyle rh_guitar_fingering_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::rhGuitarFingeringFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::rhGuitarFingeringFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::rhGuitarFingeringLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::rhGuitarFingeringFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::rhGuitarFingeringFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::rhGuitarFingeringColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::rhGuitarFingeringAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::rhGuitarFingeringFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::rhGuitarFingeringFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::rhGuitarFingeringFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::rhGuitarFingeringFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::rhGuitarFingeringFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::rhGuitarFingeringFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::rhGuitarFingeringMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::rhGuitarFingeringPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::RH_GUITAR_FINGERING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::RH_GUITAR_FINGERING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::RH_GUITAR_FINGERING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::RH_GUITAR_FINGERING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::RH_GUITAR_FINGERING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::RH_GUITAR_FINGERING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::RH_GUITAR_FINGERING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::RH_GUITAR_FINGERING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::RH_GUITAR_FINGERING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::RH_GUITAR_FINGERING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::RH_GUITAR_FINGERING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::RH_GUITAR_FINGERING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::RH_GUITAR_FINGERING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::RH_GUITAR_FINGERING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::RH_GUITAR_FINGERING_POSITION, Pid::POSITION},
     }},
-    {Sid::rhGuitarFingeringOffset, Sid::rhGuitarFingeringOffset}};
+    {Sid::RH_GUITAR_FINGERING_OFFSET, Sid::RH_GUITAR_FINGERING_OFFSET}};
 
-const TextStyle hammerOnPullOffTextStyle{
+const TextStyle hammer_on_pull_off_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::hammerOnPullOffTappingFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::hammerOnPullOffTappingFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::hammerOnPullOffTappingLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::hammerOnPullOffTappingFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::hammerOnPullOffTappingFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::hammerOnPullOffTappingColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::hammerOnPullOffTappingAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::hammerOnPullOffTappingFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::hammerOnPullOffTappingFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::hammerOnPullOffTappingFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::hammerOnPullOffTappingFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::hammerOnPullOffTappingFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::hammerOnPullOffTappingFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::hammerOnPullOffTappingMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::FONT_FACE, Sid::HAMMER_ON_PULL_OFF_TAPPING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::HAMMER_ON_PULL_OFF_TAPPING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::HAMMER_ON_PULL_OFF_TAPPING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::HAMMER_ON_PULL_OFF_TAPPING_FONT_SPATIUM_DEPENDENT,
+         Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::HAMMER_ON_PULL_OFF_TAPPING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::HAMMER_ON_PULL_OFF_TAPPING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::HAMMER_ON_PULL_OFF_TAPPING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::HAMMER_ON_PULL_OFF_TAPPING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::HAMMER_ON_PULL_OFF_TAPPING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
     }},
-    {Sid::hammerOnPullOffTappingOffset, Sid::hammerOnPullOffTappingOffset}};
+    {Sid::HAMMER_ON_PULL_OFF_TAPPING_OFFSET, Sid::HAMMER_ON_PULL_OFF_TAPPING_OFFSET}};
 
-const TextStyle stringNumberTextStyle{
+const TextStyle string_number_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::stringNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::stringNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::stringNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::stringNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::stringNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::stringNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::stringNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::stringNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::stringNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::stringNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::stringNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::stringNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::stringNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::stringNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::stringNumberPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::STRING_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::STRING_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::STRING_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::STRING_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::STRING_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::STRING_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::STRING_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::STRING_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::STRING_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::STRING_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::STRING_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::STRING_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::STRING_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::STRING_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::STRING_NUMBER_POSITION, Pid::POSITION},
     }},
-    {Sid::stringNumberOffset, Sid::stringNumberOffset}};
+    {Sid::STRING_NUMBER_OFFSET, Sid::STRING_NUMBER_OFFSET}};
 
-const TextStyle stringTuningsStyle{
+const TextStyle string_tunings_style{
     {{
         // identical to staffText except for fontSize
-        {TextStylePropertyType::FontFace, Sid::staffTextFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::stringTuningsFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::staffTextLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::staffTextFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::staffTextFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::staffTextColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::staffTextAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::staffTextFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::staffTextFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::staffTextFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::staffTextFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::staffTextFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::staffTextFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::stringTuningsMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::FONT_FACE, Sid::STAFF_TEXT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::STRING_TUNINGS_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::STAFF_TEXT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::STAFF_TEXT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::STAFF_TEXT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::STAFF_TEXT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::STAFF_TEXT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::STAFF_TEXT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::STAFF_TEXT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::STAFF_TEXT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::STAFF_TEXT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::STAFF_TEXT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::STAFF_TEXT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::STRING_TUNINGS_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
     }},
-    {Sid::staffTextPosAbove, Sid::staffTextPosBelow}};
+    {Sid::STAFF_TEXT_POS_ABOVE, Sid::STAFF_TEXT_POS_BELOW}};
 
-const TextStyle fretDiagramFingeringStyle{
+const TextStyle fret_diagram_fingering_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::fretDiagramFingeringFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::fretDiagramFingeringFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::fretDiagramFingeringLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::fretDiagramFingeringFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::fretDiagramFingeringFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::fretDiagramFingeringColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::fretDiagramFingeringAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::fretDiagramFingeringFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::fretDiagramFingeringFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::fretDiagramFingeringFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::fretDiagramFingeringFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::fretDiagramFingeringFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::fretDiagramFingeringFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::fretDiagramFingeringMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::fretDiagramFingeringPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::FRET_DIAGRAM_FINGERING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::FRET_DIAGRAM_FINGERING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::FRET_DIAGRAM_FINGERING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::FRET_DIAGRAM_FINGERING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::FRET_DIAGRAM_FINGERING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::FRET_DIAGRAM_FINGERING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::FRET_DIAGRAM_FINGERING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::FRET_DIAGRAM_FINGERING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::FRET_DIAGRAM_FINGERING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::FRET_DIAGRAM_FINGERING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::FRET_DIAGRAM_FINGERING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::FRET_DIAGRAM_FINGERING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::FRET_DIAGRAM_FINGERING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::FRET_DIAGRAM_FINGERING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::FRET_DIAGRAM_FINGERING_POSITION, Pid::POSITION},
     }},
-    {Sid::fretDiagramFingeringPosAbove, Sid::fretDiagramFingeringPosAbove}};
+    {Sid::FRET_DIAGRAM_FINGERING_POS_ABOVE, Sid::FRET_DIAGRAM_FINGERING_POS_ABOVE}};
 
-const TextStyle fretDiagramFretNumberStyle{
+const TextStyle fret_diagram_fret_number_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::fretDiagramFretNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::fretDiagramFretNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::fretDiagramFretNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::fretDiagramFretNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::fretDiagramFretNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::fretDiagramFretNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::fretDiagramFretNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::fretDiagramFretNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::fretDiagramFretNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::fretDiagramFretNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::fretDiagramFretNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::fretDiagramFretNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::fretDiagramFretNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::fretDiagramFretNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::FONT_FACE, Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::FRET_DIAGRAM_FRET_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::FRET_DIAGRAM_FRET_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::FRET_DIAGRAM_FRET_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::FRET_DIAGRAM_FRET_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::FRET_DIAGRAM_FRET_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::FRET_DIAGRAM_FRET_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
     }},
-    {Sid::fretDiagramFretNumberPosAbove, Sid::fretDiagramFretNumberPosAbove}};
+    {Sid::FRET_DIAGRAM_FRET_NUMBER_POS_ABOVE, Sid::FRET_DIAGRAM_FRET_NUMBER_POS_ABOVE}};
 
-const TextStyle harpPedalDiagramTextStyle{
+const TextStyle harp_pedal_diagram_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::harpPedalDiagramFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::harpPedalDiagramFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::harpPedalDiagramLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::harpPedalDiagramFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::harpPedalDiagramFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::harpPedalDiagramColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::harpPedalDiagramAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::harpPedalDiagramFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::harpPedalDiagramFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::harpPedalDiagramFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::harpPedalDiagramFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::harpPedalDiagramFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::harpPedalDiagramFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::harpPedalDiagramMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::harpPedalDiagramMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::harpPedalDiagramPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::HARP_PEDAL_DIAGRAM_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::HARP_PEDAL_DIAGRAM_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::HARP_PEDAL_DIAGRAM_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::HARP_PEDAL_DIAGRAM_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::HARP_PEDAL_DIAGRAM_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::HARP_PEDAL_DIAGRAM_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::HARP_PEDAL_DIAGRAM_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::HARP_PEDAL_DIAGRAM_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::HARP_PEDAL_DIAGRAM_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::HARP_PEDAL_DIAGRAM_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::HARP_PEDAL_DIAGRAM_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::HARP_PEDAL_DIAGRAM_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::HARP_PEDAL_DIAGRAM_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::HARP_PEDAL_DIAGRAM_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::HARP_PEDAL_DIAGRAM_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::HARP_PEDAL_DIAGRAM_POSITION, Pid::POSITION},
     }},
-    {Sid::harpPedalDiagramOffset, Sid::harpPedalDiagramOffset}};
+    {Sid::HARP_PEDAL_DIAGRAM_OFFSET, Sid::HARP_PEDAL_DIAGRAM_OFFSET}};
 
-const TextStyle articulationTextStyle{
+const TextStyle articulation_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::articulationFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::articulationFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::articulationLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::articulationFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::articulationFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::articulationColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::articulationAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::articulationFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::articulationFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::articulationFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::articulationFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::articulationFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::articulationFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::articulationMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::FONT_FACE, Sid::ARTICULATION_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::ARTICULATION_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::ARTICULATION_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::ARTICULATION_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::ARTICULATION_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::ARTICULATION_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::ARTICULATION_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::ARTICULATION_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::ARTICULATION_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::ARTICULATION_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::ARTICULATION_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::ARTICULATION_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::ARTICULATION_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::ARTICULATION_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
     }},
-    {Sid::articulationOffset, Sid::articulationOffset}};
+    {Sid::ARTICULATION_OFFSET, Sid::ARTICULATION_OFFSET}};
 
-const TextStyle harpPedalTextDiagramTextStyle{
+const TextStyle harp_pedal_text_diagram_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::harpPedalTextDiagramFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::harpPedalTextDiagramFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::harpPedalTextDiagramLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::harpPedalTextDiagramFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::harpPedalTextDiagramFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::harpPedalTextDiagramColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::harpPedalTextDiagramAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::harpPedalTextDiagramFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::harpPedalTextDiagramFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::harpPedalTextDiagramFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::harpPedalTextDiagramFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::harpPedalTextDiagramFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::harpPedalTextDiagramFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::harpPedalTextDiagramMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::harpPedalTextDiagramPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::HARP_PEDAL_TEXT_DIAGRAM_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::HARP_PEDAL_TEXT_DIAGRAM_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::HARP_PEDAL_TEXT_DIAGRAM_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::HARP_PEDAL_TEXT_DIAGRAM_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::HARP_PEDAL_TEXT_DIAGRAM_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::HARP_PEDAL_TEXT_DIAGRAM_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::HARP_PEDAL_TEXT_DIAGRAM_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::HARP_PEDAL_TEXT_DIAGRAM_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::HARP_PEDAL_TEXT_DIAGRAM_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::HARP_PEDAL_TEXT_DIAGRAM_POSITION, Pid::POSITION},
     }},
-    {Sid::harpPedalTextDiagramOffset, Sid::harpPedalTextDiagramOffset}};
+    {Sid::HARP_PEDAL_TEXT_DIAGRAM_OFFSET, Sid::HARP_PEDAL_TEXT_DIAGRAM_OFFSET}};
 
-const TextStyle longInstrumentTextStyle{
+const TextStyle long_instrument_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::longInstrumentFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::longInstrumentFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::longInstrumentLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::longInstrumentFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::longInstrumentFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::longInstrumentColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::longInstrumentAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::longInstrumentFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::longInstrumentFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::longInstrumentFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::longInstrumentFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::longInstrumentFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::longInstrumentFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::longInstrumentMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::longInstrumentPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LONG_INSTRUMENT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LONG_INSTRUMENT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LONG_INSTRUMENT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LONG_INSTRUMENT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LONG_INSTRUMENT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LONG_INSTRUMENT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LONG_INSTRUMENT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LONG_INSTRUMENT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LONG_INSTRUMENT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LONG_INSTRUMENT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LONG_INSTRUMENT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LONG_INSTRUMENT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LONG_INSTRUMENT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LONG_INSTRUMENT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LONG_INSTRUMENT_POSITION, Pid::POSITION},
     }},
-    {Sid::longInstrumentOffset, Sid::longInstrumentOffset}};
+    {Sid::LONG_INSTRUMENT_OFFSET, Sid::LONG_INSTRUMENT_OFFSET}};
 
-const TextStyle shortInstrumentTextStyle{
+const TextStyle short_instrument_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::shortInstrumentFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::shortInstrumentFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::shortInstrumentLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::shortInstrumentFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::shortInstrumentFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::shortInstrumentColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::shortInstrumentAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::shortInstrumentFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::shortInstrumentFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::shortInstrumentFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::shortInstrumentFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::shortInstrumentFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::shortInstrumentFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::shortInstrumentMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::shortInstrumentPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::SHORT_INSTRUMENT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::SHORT_INSTRUMENT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::SHORT_INSTRUMENT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::SHORT_INSTRUMENT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::SHORT_INSTRUMENT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::SHORT_INSTRUMENT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::SHORT_INSTRUMENT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::SHORT_INSTRUMENT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::SHORT_INSTRUMENT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::SHORT_INSTRUMENT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::SHORT_INSTRUMENT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::SHORT_INSTRUMENT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::SHORT_INSTRUMENT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::SHORT_INSTRUMENT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::SHORT_INSTRUMENT_POSITION, Pid::POSITION},
     }},
-    {Sid::shortInstrumentOffset, Sid::shortInstrumentOffset}};
+    {Sid::SHORT_INSTRUMENT_OFFSET, Sid::SHORT_INSTRUMENT_OFFSET}};
 
-const TextStyle partInstrumentTextStyle{
+const TextStyle part_instrument_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::partInstrumentFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::partInstrumentFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::partInstrumentLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::partInstrumentFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::partInstrumentFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::partInstrumentColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::partInstrumentAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::partInstrumentFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::partInstrumentFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::partInstrumentFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::partInstrumentFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::partInstrumentFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::partInstrumentFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::partInstrumentMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::partInstrumentPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::PART_INSTRUMENT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::PART_INSTRUMENT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::PART_INSTRUMENT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::PART_INSTRUMENT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::PART_INSTRUMENT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::PART_INSTRUMENT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::PART_INSTRUMENT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::PART_INSTRUMENT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::PART_INSTRUMENT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::PART_INSTRUMENT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::PART_INSTRUMENT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::PART_INSTRUMENT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::PART_INSTRUMENT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::PART_INSTRUMENT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::PART_INSTRUMENT_POSITION, Pid::POSITION},
     }},
-    {Sid::partInstrumentOffset, Sid::partInstrumentOffset}};
+    {Sid::PART_INSTRUMENT_OFFSET, Sid::PART_INSTRUMENT_OFFSET}};
 
-const TextStyle groupBracketTextStyle{
+const TextStyle group_bracket_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::groupBracketFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::groupBracketFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::groupBracketLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::groupBracketFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::groupBracketFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::groupBracketColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::groupBracketAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::groupBracketFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::groupBracketFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::groupBracketFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::groupBracketFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::groupBracketFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::groupBracketFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::groupBracketMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::longInstrumentPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::GROUP_BRACKET_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::GROUP_BRACKET_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::GROUP_BRACKET_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::GROUP_BRACKET_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::GROUP_BRACKET_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::GROUP_BRACKET_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::GROUP_BRACKET_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::GROUP_BRACKET_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::GROUP_BRACKET_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::GROUP_BRACKET_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::GROUP_BRACKET_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::GROUP_BRACKET_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::GROUP_BRACKET_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::GROUP_BRACKET_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LONG_INSTRUMENT_POSITION, Pid::POSITION},
     }},
-    {Sid::groupBracketOffset, Sid::groupBracketOffset}};
+    {Sid::GROUP_BRACKET_OFFSET, Sid::GROUP_BRACKET_OFFSET}};
 
 // With the single exception of text alignment, after 4.1 Dynamics use Expression text style
-const TextStyle dynamicsTextStyle{
+const TextStyle dynamics_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::expressionFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::expressionFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::expressionLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::expressionFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::expressionFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::expressionColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::dynamicsAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::expressionFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::expressionFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::expressionFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::expressionFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::expressionFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::expressionFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dynamicsSize, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::dynamicsMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::dynamicsPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::EXPRESSION_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::EXPRESSION_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::EXPRESSION_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::EXPRESSION_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::EXPRESSION_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::EXPRESSION_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::DYNAMICS_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::EXPRESSION_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::EXPRESSION_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::EXPRESSION_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::EXPRESSION_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::EXPRESSION_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::EXPRESSION_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DYNAMICS_SIZE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::DYNAMICS_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::DYNAMICS_POSITION, Pid::POSITION},
     }},
-    {Sid::dynamicsPosAbove, Sid::dynamicsPosBelow}};
+    {Sid::DYNAMICS_POS_ABOVE, Sid::DYNAMICS_POS_BELOW}};
 
-const TextStyle expressionTextStyle{
+const TextStyle expression_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::expressionFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::expressionFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::expressionLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::expressionFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::expressionFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::expressionColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::expressionAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::expressionFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::expressionFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::expressionFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::expressionFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::expressionFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::expressionFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::expressionMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::expressionPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::EXPRESSION_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::EXPRESSION_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::EXPRESSION_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::EXPRESSION_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::EXPRESSION_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::EXPRESSION_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::EXPRESSION_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::EXPRESSION_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::EXPRESSION_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::EXPRESSION_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::EXPRESSION_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::EXPRESSION_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::EXPRESSION_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::EXPRESSION_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::EXPRESSION_POSITION, Pid::POSITION},
     }},
-    {Sid::expressionPosAbove, Sid::expressionPosBelow}};
+    {Sid::EXPRESSION_POS_ABOVE, Sid::EXPRESSION_POS_BELOW}};
 
-const TextStyle tempoTextStyle{
+const TextStyle tempo_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::tempoFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::tempoFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::tempoLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::tempoFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::tempoFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::tempoColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::tempoAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::tempoFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::tempoFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::tempoFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::tempoFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::tempoFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::tempoFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::tempoMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::tempoPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TEMPO_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TEMPO_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TEMPO_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TEMPO_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TEMPO_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TEMPO_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TEMPO_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TEMPO_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TEMPO_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TEMPO_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TEMPO_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TEMPO_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TEMPO_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TEMPO_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TEMPO_POSITION, Pid::POSITION},
     }},
-    {Sid::tempoPosAbove, Sid::tempoPosBelow}};
+    {Sid::TEMPO_POS_ABOVE, Sid::TEMPO_POS_BELOW}};
 
-const TextStyle tempoChangeTextStyle{
+const TextStyle tempo_change_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::tempoChangeFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::tempoChangeFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::tempoChangeLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::tempoChangeFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::tempoChangeFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::tempoChangeColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::tempoChangeAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::tempoChangeFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::tempoChangeFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::tempoChangeFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::tempoChangeFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::tempoChangeFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::tempoChangeFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::tempoChangeMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::tempoChangePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TEMPO_CHANGE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TEMPO_CHANGE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TEMPO_CHANGE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TEMPO_CHANGE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TEMPO_CHANGE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TEMPO_CHANGE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TEMPO_CHANGE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TEMPO_CHANGE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TEMPO_CHANGE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TEMPO_CHANGE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TEMPO_CHANGE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TEMPO_CHANGE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TEMPO_CHANGE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TEMPO_CHANGE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TEMPO_CHANGE_POSITION, Pid::POSITION},
     }},
-    {Sid::tempoChangePosAbove, Sid::tempoChangePosBelow}};
+    {Sid::TEMPO_CHANGE_POS_ABOVE, Sid::TEMPO_CHANGE_POS_BELOW}};
 
-const TextStyle metronomeTextStyle{
+const TextStyle metronome_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::metronomeFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::metronomeFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::metronomeLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::metronomeFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::metronomeFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::metronomeColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::metronomeAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::metronomeFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::metronomeFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::metronomeFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::metronomeFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::metronomeFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::metronomeFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::metronomeMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::FONT_FACE, Sid::METRONOME_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::METRONOME_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::METRONOME_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::METRONOME_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::METRONOME_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::METRONOME_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::METRONOME_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::METRONOME_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::METRONOME_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::METRONOME_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::METRONOME_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::METRONOME_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::METRONOME_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::METRONOME_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
     }},
-    {Sid::metronomeOffset, Sid::metronomeOffset}};
+    {Sid::METRONOME_OFFSET, Sid::METRONOME_OFFSET}};
 
-const TextStyle measureNumberTextStyle{
+const TextStyle measure_number_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::measureNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::measureNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::measureNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::measureNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::measureNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::measureNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::measureNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::measureNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::measureNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::measureNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::measureNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::measureNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::measureNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::measureNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::measureNumberPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::MEASURE_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::MEASURE_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::MEASURE_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::MEASURE_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::MEASURE_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::MEASURE_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::MEASURE_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::MEASURE_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::MEASURE_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::MEASURE_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::MEASURE_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::MEASURE_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::MEASURE_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::MEASURE_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::MEASURE_NUMBER_POSITION, Pid::POSITION},
     }},
-    {Sid::measureNumberPosAbove, Sid::measureNumberPosBelow}};
+    {Sid::MEASURE_NUMBER_POS_ABOVE, Sid::MEASURE_NUMBER_POS_BELOW}};
 
-const TextStyle measureNumberAlternateTextStyle{
+const TextStyle measure_number_alternate_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::measureNumberAlternateFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::measureNumberAlternateFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::measureNumberAlternateLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::measureNumberAlternateFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::measureNumberAlternateFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::measureNumberAlternateColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::measureNumberAlternateAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::measureNumberAlternateFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::measureNumberAlternateFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::measureNumberAlternateFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::measureNumberAlternateFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::measureNumberAlternateFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::measureNumberAlternateFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::measureNumberAlternateMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::measureNumberAlternatePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::MEASURE_NUMBER_ALTERNATE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::MEASURE_NUMBER_ALTERNATE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::MEASURE_NUMBER_ALTERNATE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::MEASURE_NUMBER_ALTERNATE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::MEASURE_NUMBER_ALTERNATE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::MEASURE_NUMBER_ALTERNATE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::MEASURE_NUMBER_ALTERNATE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::MEASURE_NUMBER_ALTERNATE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::MEASURE_NUMBER_ALTERNATE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::MEASURE_NUMBER_ALTERNATE_POSITION, Pid::POSITION},
     }},
-    {Sid::measureNumberAlternatePosAbove, Sid::measureNumberAlternatePosBelow}};
+    {Sid::MEASURE_NUMBER_ALTERNATE_POS_ABOVE, Sid::MEASURE_NUMBER_ALTERNATE_POS_BELOW}};
 
-const TextStyle mmRestRangeTextStyle{
+const TextStyle mm_rest_range_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::mmRestRangeFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::mmRestRangeFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::mmRestRangeFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::mmRestRangeFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::mmRestRangeColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::mmRestRangeAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::mmRestRangeFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::mmRestRangeFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::mmRestRangeFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::mmRestRangeFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::mmRestRangeFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::mmRestRangeFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::mmRestRangeMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::mmRestRangePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::MM_REST_RANGE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::MM_REST_RANGE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::MM_REST_RANGE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::MM_REST_RANGE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::MM_REST_RANGE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::MM_REST_RANGE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::MM_REST_RANGE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::MM_REST_RANGE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::MM_REST_RANGE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::MM_REST_RANGE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::MM_REST_RANGE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::MM_REST_RANGE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::MM_REST_RANGE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::MM_REST_RANGE_POSITION, Pid::POSITION},
     }},
-    {Sid::mmRestRangePosAbove, Sid::mmRestRangePosBelow}};
+    {Sid::MM_REST_RANGE_POS_ABOVE, Sid::MM_REST_RANGE_POS_BELOW}};
 
-const TextStyle translatorTextStyle{
+const TextStyle translator_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::translatorFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::translatorFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::translatorLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::translatorFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::translatorFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::translatorColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::translatorAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::translatorFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::translatorFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::translatorFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::translatorFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::translatorFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::translatorFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::translatorMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::translatorPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TRANSLATOR_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TRANSLATOR_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TRANSLATOR_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TRANSLATOR_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TRANSLATOR_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TRANSLATOR_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TRANSLATOR_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TRANSLATOR_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TRANSLATOR_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TRANSLATOR_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TRANSLATOR_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TRANSLATOR_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TRANSLATOR_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TRANSLATOR_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TRANSLATOR_POSITION, Pid::POSITION},
     }},
-    {Sid::translatorOffset, Sid::translatorOffset}};
+    {Sid::TRANSLATOR_OFFSET, Sid::TRANSLATOR_OFFSET}};
 
-const TextStyle tupletTextStyle{
+const TextStyle tuplet_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::tupletFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::tupletFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::tupletLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::tupletFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::tupletFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::tupletColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::tupletAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::tupletFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::tupletFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::tupletFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::tupletFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::tupletFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::tupletFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::tupletMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::tupletMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::tupletPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TUPLET_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TUPLET_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TUPLET_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TUPLET_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TUPLET_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TUPLET_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TUPLET_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TUPLET_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TUPLET_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TUPLET_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TUPLET_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TUPLET_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TUPLET_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::TUPLET_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TUPLET_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TUPLET_POSITION, Pid::POSITION},
     }},
-    {Sid::tupletOffset, Sid::tupletOffset}};
+    {Sid::TUPLET_OFFSET, Sid::TUPLET_OFFSET}};
 
-const TextStyle systemTextStyle{
+const TextStyle system_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::systemTextFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::systemTextFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::systemTextLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::systemTextFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::systemTextFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::systemTextColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::systemTextAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::systemTextFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::systemTextFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::systemTextFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::systemTextFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::systemTextFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::systemTextFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::systemTextMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::systemTextPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::SYSTEM_TEXT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::SYSTEM_TEXT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::SYSTEM_TEXT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::SYSTEM_TEXT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::SYSTEM_TEXT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::SYSTEM_TEXT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::SYSTEM_TEXT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::SYSTEM_TEXT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::SYSTEM_TEXT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::SYSTEM_TEXT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::SYSTEM_TEXT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::SYSTEM_TEXT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::SYSTEM_TEXT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::SYSTEM_TEXT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::SYSTEM_TEXT_POSITION, Pid::POSITION},
     }},
-    {Sid::systemTextPosAbove, Sid::systemTextPosBelow}};
+    {Sid::SYSTEM_TEXT_POS_ABOVE, Sid::SYSTEM_TEXT_POS_BELOW}};
 
-const TextStyle staffTextStyle{
+const TextStyle staff_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::staffTextFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::staffTextFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::staffTextLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::staffTextFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::staffTextFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::staffTextColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::staffTextAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::staffTextFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::staffTextFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::staffTextFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::staffTextFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::staffTextFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::staffTextFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::staffTextMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::staffTextPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::STAFF_TEXT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::STAFF_TEXT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::STAFF_TEXT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::STAFF_TEXT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::STAFF_TEXT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::STAFF_TEXT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::STAFF_TEXT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::STAFF_TEXT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::STAFF_TEXT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::STAFF_TEXT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::STAFF_TEXT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::STAFF_TEXT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::STAFF_TEXT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::STAFF_TEXT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::STAFF_TEXT_POSITION, Pid::POSITION},
     }},
-    {Sid::staffTextPosAbove, Sid::staffTextPosBelow}};
+    {Sid::STAFF_TEXT_POS_ABOVE, Sid::STAFF_TEXT_POS_BELOW}};
 
-const TextStyle staveSharingLabelStyle{
+const TextStyle stave_sharing_label_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::staveSharingLabelFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::staveSharingLabelFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::staveSharingLabelLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::staveSharingLabelFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::staveSharingLabelFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::staveSharingLabelColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::staveSharingLabelAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::staveSharingLabelFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::staveSharingLabelFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::staveSharingLabelFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::staveSharingLabelFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::staveSharingLabelFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::staveSharingLabelFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::staffTextMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::staveSharingLabelPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::STAVE_SHARING_LABEL_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::STAVE_SHARING_LABEL_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::STAVE_SHARING_LABEL_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::STAVE_SHARING_LABEL_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::STAVE_SHARING_LABEL_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::STAVE_SHARING_LABEL_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::STAVE_SHARING_LABEL_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::STAVE_SHARING_LABEL_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::STAVE_SHARING_LABEL_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::STAVE_SHARING_LABEL_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::STAVE_SHARING_LABEL_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::STAVE_SHARING_LABEL_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::STAVE_SHARING_LABEL_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::STAFF_TEXT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::STAVE_SHARING_LABEL_POSITION, Pid::POSITION},
     }},
-    {Sid::staveSharingLabelPosAbove, Sid::staveSharingLabelPosBelow}};
+    {Sid::STAVE_SHARING_LABEL_POS_ABOVE, Sid::STAVE_SHARING_LABEL_POS_BELOW}};
 
-const TextStyle chordSymbolTextStyleA{
+const TextStyle chord_symbol_text_style_a{
     {{
-        {TextStylePropertyType::FontFace, Sid::chordSymbolAFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::chordSymbolAFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::chordSymbolALineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::chordSymbolAFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::chordSymbolAFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::chordSymbolAColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::chordSymbolAAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::chordSymbolAFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::chordSymbolAFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::chordSymbolAFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::chordSymbolAFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::chordSymbolAFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::chordSymbolAFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::chordSymbolAMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::chordSymPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::CHORD_SYMBOL_A_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::CHORD_SYMBOL_A_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::CHORD_SYMBOL_A_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::CHORD_SYMBOL_A_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::CHORD_SYMBOL_A_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::CHORD_SYMBOL_A_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::CHORD_SYMBOL_A_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::CHORD_SYMBOL_A_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::CHORD_SYMBOL_A_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::CHORD_SYMBOL_A_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::CHORD_SYMBOL_A_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::CHORD_SYMBOL_A_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::CHORD_SYMBOL_A_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::CHORD_SYMBOL_A_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::CHORD_SYM_POSITION, Pid::POSITION},
     }},
-    {Sid::chordSymbolAPosAbove, Sid::chordSymbolAPosBelow}};
+    {Sid::CHORD_SYMBOL_A_POS_ABOVE, Sid::CHORD_SYMBOL_A_POS_BELOW}};
 
-const TextStyle chordSymbolTextStyleB{
+const TextStyle chord_symbol_text_style_b{
     {{
-        {TextStylePropertyType::FontFace, Sid::chordSymbolBFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::chordSymbolBFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::chordSymbolBLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::chordSymbolBFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::chordSymbolBFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::chordSymbolBColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::chordSymbolBAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::chordSymbolBFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::chordSymbolBFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::chordSymbolBFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::chordSymbolBFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::chordSymbolBFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::chordSymbolBFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::chordSymbolBMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::chordSymPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::CHORD_SYMBOL_B_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::CHORD_SYMBOL_B_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::CHORD_SYMBOL_B_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::CHORD_SYMBOL_B_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::CHORD_SYMBOL_B_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::CHORD_SYMBOL_B_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::CHORD_SYMBOL_B_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::CHORD_SYMBOL_B_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::CHORD_SYMBOL_B_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::CHORD_SYMBOL_B_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::CHORD_SYMBOL_B_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::CHORD_SYMBOL_B_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::CHORD_SYMBOL_B_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::CHORD_SYMBOL_B_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::CHORD_SYM_POSITION, Pid::POSITION},
     }},
-    {Sid::chordSymbolBPosAbove, Sid::chordSymbolBPosBelow}};
+    {Sid::CHORD_SYMBOL_B_POS_ABOVE, Sid::CHORD_SYMBOL_B_POS_BELOW}};
 
-const TextStyle romanNumeralTextStyle{
+const TextStyle roman_numeral_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::romanNumeralFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::romanNumeralFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::romanNumeralLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::romanNumeralFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::romanNumeralFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::romanNumeralColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::romanNumeralAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::romanNumeralFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::romanNumeralFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::romanNumeralFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::romanNumeralFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::romanNumeralFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::romanNumeralFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::romanNumeralMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::chordSymPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::ROMAN_NUMERAL_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::ROMAN_NUMERAL_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::ROMAN_NUMERAL_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::ROMAN_NUMERAL_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::ROMAN_NUMERAL_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::ROMAN_NUMERAL_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::ROMAN_NUMERAL_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::ROMAN_NUMERAL_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::ROMAN_NUMERAL_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::ROMAN_NUMERAL_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::ROMAN_NUMERAL_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::ROMAN_NUMERAL_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::ROMAN_NUMERAL_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::ROMAN_NUMERAL_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::CHORD_SYM_POSITION, Pid::POSITION},
     }},
-    {Sid::romanNumeralPosAbove, Sid::romanNumeralPosBelow}};
+    {Sid::ROMAN_NUMERAL_POS_ABOVE, Sid::ROMAN_NUMERAL_POS_BELOW}};
 
-const TextStyle nashvilleNumberTextStyle{
+const TextStyle nashville_number_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::nashvilleNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::nashvilleNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::nashvilleNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::nashvilleNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::nashvilleNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::nashvilleNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::nashvilleNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::nashvilleNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::nashvilleNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::nashvilleNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::nashvilleNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::nashvilleNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::nashvilleNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::nashvilleNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::chordSymPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::NASHVILLE_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::NASHVILLE_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::NASHVILLE_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::NASHVILLE_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::NASHVILLE_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::NASHVILLE_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::NASHVILLE_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::NASHVILLE_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::NASHVILLE_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::NASHVILLE_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::NASHVILLE_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::NASHVILLE_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::NASHVILLE_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::NASHVILLE_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::CHORD_SYM_POSITION, Pid::POSITION},
     }},
-    {Sid::nashvilleNumberPosAbove, Sid::nashvilleNumberPosBelow}};
+    {Sid::NASHVILLE_NUMBER_POS_ABOVE, Sid::NASHVILLE_NUMBER_POS_BELOW}};
 
-const TextStyle rehearsalMarkTextStyle{
+const TextStyle rehearsal_mark_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::rehearsalMarkFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::rehearsalMarkFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::rehearsalMarkLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::rehearsalMarkFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::rehearsalMarkFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::rehearsalMarkColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::rehearsalMarkAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::rehearsalMarkFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::rehearsalMarkFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::rehearsalMarkFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::rehearsalMarkFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::rehearsalMarkFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::rehearsalMarkFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::rehearsalMarkMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::rehearsalMarkPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::REHEARSAL_MARK_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::REHEARSAL_MARK_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::REHEARSAL_MARK_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::REHEARSAL_MARK_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::REHEARSAL_MARK_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::REHEARSAL_MARK_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::REHEARSAL_MARK_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::REHEARSAL_MARK_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::REHEARSAL_MARK_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::REHEARSAL_MARK_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::REHEARSAL_MARK_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::REHEARSAL_MARK_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::REHEARSAL_MARK_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::REHEARSAL_MARK_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::REHEARSAL_MARK_POSITION, Pid::POSITION},
     }},
-    {Sid::rehearsalMarkPosAbove, Sid::rehearsalMarkPosBelow}};
+    {Sid::REHEARSAL_MARK_POS_ABOVE, Sid::REHEARSAL_MARK_POS_BELOW}};
 
-const TextStyle repeatPlayCountTextStyle{
+const TextStyle repeat_play_count_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::repeatPlayCountFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::repeatPlayCountFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::repeatPlayCountLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::repeatPlayCountFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::repeatPlayCountFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::repeatPlayCountColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::repeatPlayCountAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::repeatPlayCountFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::repeatPlayCountFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::repeatPlayCountFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::repeatPlayCountFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::repeatPlayCountFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::repeatPlayCountFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::repeatPlayCountMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::repeatPlayCountPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::REPEAT_PLAY_COUNT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::REPEAT_PLAY_COUNT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::REPEAT_PLAY_COUNT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::REPEAT_PLAY_COUNT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::REPEAT_PLAY_COUNT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::REPEAT_PLAY_COUNT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::REPEAT_PLAY_COUNT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::REPEAT_PLAY_COUNT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::REPEAT_PLAY_COUNT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::REPEAT_PLAY_COUNT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::REPEAT_PLAY_COUNT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::REPEAT_PLAY_COUNT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::REPEAT_PLAY_COUNT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::REPEAT_PLAY_COUNT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::REPEAT_PLAY_COUNT_POSITION, Pid::POSITION},
     }},
-    {Sid::repeatPlayCountPosAbove, Sid::repeatPlayCountPosBelow}};
+    {Sid::REPEAT_PLAY_COUNT_POS_ABOVE, Sid::REPEAT_PLAY_COUNT_POS_BELOW}};
 
-const TextStyle repeatLeftTextStyle{
+const TextStyle repeat_left_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::repeatLeftFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::repeatLeftFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::repeatLeftLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::repeatLeftFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::repeatLeftFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::repeatLeftColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::repeatLeftAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::repeatLeftFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::repeatLeftFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::repeatLeftFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::repeatLeftFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::repeatLeftFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::repeatLeftFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::repeatLeftMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::repeatLeftPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::REPEAT_LEFT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::REPEAT_LEFT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::REPEAT_LEFT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::REPEAT_LEFT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::REPEAT_LEFT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::REPEAT_LEFT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::REPEAT_LEFT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::REPEAT_LEFT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::REPEAT_LEFT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::REPEAT_LEFT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::REPEAT_LEFT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::REPEAT_LEFT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::REPEAT_LEFT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::REPEAT_LEFT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::REPEAT_LEFT_POSITION, Pid::POSITION},
     }},
-    {Sid::markerPosAbove, Sid::markerPosAbove}};
+    {Sid::MARKER_POS_ABOVE, Sid::MARKER_POS_ABOVE}};
 
-const TextStyle repeatRightTextStyle{
+const TextStyle repeat_right_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::repeatRightFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::repeatRightFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::repeatRightLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::repeatRightFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::repeatRightFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::repeatRightColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::repeatRightAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::repeatRightFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::repeatRightFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::repeatRightFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::repeatRightFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::repeatRightFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::repeatRightFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::repeatRightMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::repeatRightPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::REPEAT_RIGHT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::REPEAT_RIGHT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::REPEAT_RIGHT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::REPEAT_RIGHT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::REPEAT_RIGHT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::REPEAT_RIGHT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::REPEAT_RIGHT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::REPEAT_RIGHT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::REPEAT_RIGHT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::REPEAT_RIGHT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::REPEAT_RIGHT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::REPEAT_RIGHT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::REPEAT_RIGHT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::REPEAT_RIGHT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::REPEAT_RIGHT_POSITION, Pid::POSITION},
     }},
-    {Sid::jumpPosAbove, Sid::jumpPosAbove}};
+    {Sid::JUMP_POS_ABOVE, Sid::JUMP_POS_ABOVE}};
 
-const TextStyle frameTextStyle{
+const TextStyle frame_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::frameFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::frameFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::frameLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::frameFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::frameFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::frameColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::frameAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::frameFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::frameFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::frameFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::frameFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::frameFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::frameFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::frameMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::framePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::FRAME_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::FRAME_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::FRAME_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::FRAME_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::FRAME_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::FRAME_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::FRAME_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::FRAME_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::FRAME_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::FRAME_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::FRAME_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::FRAME_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::FRAME_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::FRAME_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::FRAME_POSITION, Pid::POSITION},
     }},
-    {Sid::frameOffset, Sid::frameOffset}};
+    {Sid::FRAME_OFFSET, Sid::FRAME_OFFSET}};
 
-const TextStyle textLineTextStyle{
+const TextStyle text_line_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::textLineFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::textLineFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::textLineLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::textLineFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::textLineFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::textLineColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::textLineTextAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::textLineFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::textLineFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::textLineFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::textLineFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::textLineFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::textLineFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::textLineMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::textLinePosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::TEXT_LINE_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::TEXT_LINE_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::TEXT_LINE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::TEXT_LINE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::TEXT_LINE_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::TEXT_LINE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::TEXT_LINE_TEXT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::TEXT_LINE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::TEXT_LINE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::TEXT_LINE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::TEXT_LINE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::TEXT_LINE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::TEXT_LINE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::TEXT_LINE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::TEXT_LINE_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::textLinePosAbove, Sid::textLinePosBelow}};
+    {Sid::TEXT_LINE_POS_ABOVE, Sid::TEXT_LINE_POS_BELOW}};
 
-const TextStyle systemTextLineTextStyle{
+const TextStyle system_text_line_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::systemTextLineFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::systemTextLineFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::systemTextLineLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::systemTextLineFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::systemTextLineFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::systemTextLineColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::systemTextLineTextAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::systemTextLineFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::systemTextLineFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::systemTextLineFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::systemTextLineFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::systemTextLineFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::systemTextLineFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::systemTextLineMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::systemTextLinePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::SYSTEM_TEXT_LINE_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::SYSTEM_TEXT_LINE_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::SYSTEM_TEXT_LINE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::SYSTEM_TEXT_LINE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::SYSTEM_TEXT_LINE_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::SYSTEM_TEXT_LINE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::SYSTEM_TEXT_LINE_TEXT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::SYSTEM_TEXT_LINE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::SYSTEM_TEXT_LINE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::SYSTEM_TEXT_LINE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::SYSTEM_TEXT_LINE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::SYSTEM_TEXT_LINE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::SYSTEM_TEXT_LINE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::SYSTEM_TEXT_LINE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::SYSTEM_TEXT_LINE_POSITION, Pid::POSITION},
     }},
-    {Sid::systemTextLinePosAbove, Sid::systemTextLinePosBelow}};
+    {Sid::SYSTEM_TEXT_LINE_POS_ABOVE, Sid::SYSTEM_TEXT_LINE_POS_BELOW}};
 
-const TextStyle noteLineTextStyle{
+const TextStyle note_line_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::noteLineFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::noteLineFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::noteLineLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::noteLineFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::noteLineFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::noteLineColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::noteLineAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::noteLineFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::noteLineFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::noteLineFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::noteLineFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::noteLineFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::noteLineFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::noteLineMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::noteLinePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::NOTE_LINE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::NOTE_LINE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::NOTE_LINE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::NOTE_LINE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::NOTE_LINE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::NOTE_LINE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::NOTE_LINE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::NOTE_LINE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::NOTE_LINE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::NOTE_LINE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::NOTE_LINE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::NOTE_LINE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::NOTE_LINE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::NOTE_LINE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::NOTE_LINE_POSITION, Pid::POSITION},
     }},
-    {Sid::noteLineOffset, Sid::noteLineOffset}};
+    {Sid::NOTE_LINE_OFFSET, Sid::NOTE_LINE_OFFSET}};
 
-const TextStyle glissandoTextStyle{
+const TextStyle glissando_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::glissandoFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::glissandoFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::glissandoLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::glissandoFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::glissandoFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::glissandoColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::glissandoAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::glissandoFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::glissandoFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::glissandoFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::glissandoFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::glissandoFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::glissandoFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::glissandoMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::glissandoPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::GLISSANDO_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::GLISSANDO_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::GLISSANDO_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::GLISSANDO_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::GLISSANDO_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::GLISSANDO_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::GLISSANDO_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::GLISSANDO_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::GLISSANDO_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::GLISSANDO_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::GLISSANDO_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::GLISSANDO_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::GLISSANDO_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::GLISSANDO_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::GLISSANDO_POSITION, Pid::POSITION},
     }},
-    {Sid::glissandoOffset, Sid::glissandoOffset}};
+    {Sid::GLISSANDO_OFFSET, Sid::GLISSANDO_OFFSET}};
 
-const TextStyle ottavaTextStyle{
+const TextStyle ottava_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::ottavaFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::ottavaFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::ottavaLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::ottavaFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::ottavaFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::ottavaColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::ottavaTextAlignAbove, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::ottavaFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::ottavaFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::ottavaFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::ottavaFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::ottavaFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::ottavaFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::ottavaMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::ottavaMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::ottavaPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::OTTAVA_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::OTTAVA_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::OTTAVA_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::OTTAVA_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::OTTAVA_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::OTTAVA_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::OTTAVA_TEXT_ALIGN_ABOVE, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::OTTAVA_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::OTTAVA_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::OTTAVA_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::OTTAVA_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::OTTAVA_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::OTTAVA_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::OTTAVA_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::OTTAVA_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::OTTAVA_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::ottavaPosAbove, Sid::ottavaPosBelow}};
+    {Sid::OTTAVA_POS_ABOVE, Sid::OTTAVA_POS_BELOW}};
 
-const TextStyle voltaTextStyle{
+const TextStyle volta_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::voltaFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::voltaFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::voltaLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::voltaFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::voltaFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::voltaColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::voltaAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::voltaFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::voltaFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::voltaFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::voltaFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::voltaFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::voltaFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::voltaMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::voltaPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::VOLTA_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::VOLTA_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::VOLTA_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::VOLTA_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::VOLTA_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::VOLTA_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::VOLTA_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::VOLTA_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::VOLTA_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::VOLTA_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::VOLTA_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::VOLTA_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::VOLTA_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::VOLTA_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::VOLTA_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::voltaOffset, Sid::voltaOffset}};
+    {Sid::VOLTA_OFFSET, Sid::VOLTA_OFFSET}};
 
-const TextStyle pedalTextStyle{
+const TextStyle pedal_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::pedalFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::pedalFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::pedalLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::pedalFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::pedalFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::pedalColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::pedalTextAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::pedalFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::pedalFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::pedalFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::pedalFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::pedalFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::pedalFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::pedalMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::pedalMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::pedalPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::PEDAL_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::PEDAL_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::PEDAL_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::PEDAL_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::PEDAL_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::PEDAL_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::PEDAL_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::PEDAL_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::PEDAL_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::PEDAL_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::PEDAL_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::PEDAL_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::PEDAL_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::PEDAL_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::PEDAL_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::PEDAL_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::pedalOffset, Sid::pedalOffset}};
+    {Sid::PEDAL_OFFSET, Sid::PEDAL_OFFSET}};
 
-const TextStyle letRingTextStyle{
+const TextStyle let_ring_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::letRingFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::letRingFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::letRingLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::letRingFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::letRingFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::letRingColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::letRingTextAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::letRingFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::letRingFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::letRingFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::letRingFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::letRingFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::letRingFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::letRingMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::letRingPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::LET_RING_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::LET_RING_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::LET_RING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::LET_RING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::LET_RING_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::LET_RING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::LET_RING_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::LET_RING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::LET_RING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::LET_RING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::LET_RING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::LET_RING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::LET_RING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::LET_RING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::LET_RING_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::letRingOffset, Sid::letRingOffset}};
+    {Sid::LET_RING_OFFSET, Sid::LET_RING_OFFSET}};
 
-const TextStyle whammyBarTextStyle{
+const TextStyle whammy_bar_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::whammyBarFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::whammyBarFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::whammyBarLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::whammyBarFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::whammyBarFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::whammyBarColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::whammyBarTextAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::whammyBarFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::whammyBarFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::whammyBarFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::whammyBarFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::whammyBarFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::whammyBarFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::whammyBarMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::whammyBarPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::WHAMMY_BAR_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::WHAMMY_BAR_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::WHAMMY_BAR_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::WHAMMY_BAR_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::WHAMMY_BAR_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::WHAMMY_BAR_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::WHAMMY_BAR_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::WHAMMY_BAR_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::WHAMMY_BAR_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::WHAMMY_BAR_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::WHAMMY_BAR_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::WHAMMY_BAR_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::WHAMMY_BAR_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::WHAMMY_BAR_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::WHAMMY_BAR_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::whammyBarOffset, Sid::whammyBarOffset}};
+    {Sid::WHAMMY_BAR_OFFSET, Sid::WHAMMY_BAR_OFFSET}};
 
-const TextStyle palmMuteTextStyle{
+const TextStyle palm_mute_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::palmMuteFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::palmMuteFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::palmMuteLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::palmMuteFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::palmMuteFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::palmMuteColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::palmMuteTextAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::palmMuteFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::palmMuteFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::palmMuteFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::palmMuteFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::palmMuteFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::palmMuteFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::palmMuteMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::palmMutePosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::PALM_MUTE_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::PALM_MUTE_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::PALM_MUTE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::PALM_MUTE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::PALM_MUTE_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::PALM_MUTE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::PALM_MUTE_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::PALM_MUTE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::PALM_MUTE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::PALM_MUTE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::PALM_MUTE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::PALM_MUTE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::PALM_MUTE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::PALM_MUTE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::PALM_MUTE_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::palmMuteOffset, Sid::palmMuteOffset}};
+    {Sid::PALM_MUTE_OFFSET, Sid::PALM_MUTE_OFFSET}};
 
-const TextStyle hairpinTextStyle{
+const TextStyle hairpin_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::hairpinFontFace, Pid::BEGIN_FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::hairpinFontSize, Pid::BEGIN_FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::hairpinLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::hairpinFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::hairpinFontStyle, Pid::BEGIN_FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::hairpinColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::hairpinTextAlign, Pid::BEGIN_TEXT_ALIGN},
-        {TextStylePropertyType::FrameType, Sid::hairpinFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::hairpinFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::hairpinFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::hairpinFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::hairpinFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::hairpinFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::hairpinMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::hairpinPosition, Pid::BEGIN_TEXT_POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::HAIRPIN_FONT_FACE, Pid::BEGIN_FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::HAIRPIN_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::HAIRPIN_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::HAIRPIN_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::HAIRPIN_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::HAIRPIN_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::HAIRPIN_TEXT_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::HAIRPIN_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::HAIRPIN_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::HAIRPIN_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::HAIRPIN_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::HAIRPIN_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::HAIRPIN_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::HAIRPIN_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::HAIRPIN_POSITION, Pid::BEGIN_TEXT_POSITION},
     }},
-    {Sid::hairpinOffset, Sid::hairpinOffset}};
+    {Sid::HAIRPIN_OFFSET, Sid::HAIRPIN_OFFSET}};
 
-const TextStyle bendTextStyle{{{
-                                  {TextStylePropertyType::FontFace, Sid::bendFontFace, Pid::FONT_FACE},
-                                  {TextStylePropertyType::FontSize, Sid::bendFontSize, Pid::FONT_SIZE},
-                                  {TextStylePropertyType::LineSpacing, Sid::bendLineSpacing, Pid::TEXT_LINE_SPACING},
-                                  {TextStylePropertyType::SizeSpatiumDependent, Sid::bendFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-                                  {TextStylePropertyType::FontStyle, Sid::bendFontStyle, Pid::FONT_STYLE},
-                                  {TextStylePropertyType::Color, Sid::bendColor, Pid::COLOR},
-                                  {TextStylePropertyType::TextAlign, Sid::bendAlign, Pid::BEGIN_TEXT_ALIGN},
-                                  {TextStylePropertyType::FrameType, Sid::bendFrameType, Pid::FRAME_TYPE},
-                                  {TextStylePropertyType::FramePadding, Sid::bendFramePadding, Pid::FRAME_PADDING},
-                                  {TextStylePropertyType::FrameWidth, Sid::bendFrameWidth, Pid::FRAME_WIDTH},
-                                  {TextStylePropertyType::FrameRound, Sid::bendFrameRound, Pid::FRAME_ROUND},
-                                  {TextStylePropertyType::FrameBorderColor, Sid::bendFrameFgColor, Pid::FRAME_FG_COLOR},
-                                  {TextStylePropertyType::FrameFillColor, Sid::bendFrameBgColor, Pid::FRAME_BG_COLOR},
-                                  {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-                                  {TextStylePropertyType::MusicalSymbolsSize, Sid::bendMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-                                  {TextStylePropertyType::Position, Sid::bendPosition, Pid::POSITION},
-                              }},
-                              {Sid::bendOffset, Sid::bendOffset}};
-
-const TextStyle headerTextStyle{
+const TextStyle bend_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::headerFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::headerFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::headerLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::headerFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::headerFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::headerColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::headerAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::headerFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::headerFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::headerFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::headerFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::headerFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::headerFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::headerMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::headerPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::BEND_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::BEND_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::BEND_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::BEND_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::BEND_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::BEND_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::BEND_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::BEND_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::BEND_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::BEND_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::BEND_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::BEND_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::BEND_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::BEND_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::BEND_POSITION, Pid::POSITION},
     }},
-    {Sid::headerOffset, Sid::headerOffset}};
+    {Sid::BEND_OFFSET, Sid::BEND_OFFSET}};
 
-const TextStyle footerTextStyle{
+const TextStyle header_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::footerFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::footerFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::footerLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::footerFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::footerFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::footerColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::footerAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::footerFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::footerFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::footerFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::footerFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::footerFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::footerFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::footerMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::footerPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::HEADER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::HEADER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::HEADER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::HEADER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::HEADER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::HEADER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::HEADER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::HEADER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::HEADER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::HEADER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::HEADER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::HEADER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::HEADER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::HEADER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::HEADER_POSITION, Pid::POSITION},
     }},
-    {Sid::footerOffset, Sid::footerOffset}};
+    {Sid::HEADER_OFFSET, Sid::HEADER_OFFSET}};
 
-const TextStyle copyrightTextStyle{
+const TextStyle footer_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::copyrightFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::copyrightFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::copyrightLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::copyrightFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::copyrightFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::copyrightColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::copyrightAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::copyrightFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::copyrightFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::copyrightFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::copyrightFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::copyrightFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::copyrightFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::copyrightMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::copyrightPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::FOOTER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::FOOTER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::FOOTER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::FOOTER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::FOOTER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::FOOTER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::FOOTER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::FOOTER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::FOOTER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::FOOTER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::FOOTER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::FOOTER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::FOOTER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::FOOTER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::FOOTER_POSITION, Pid::POSITION},
     }},
-    {Sid::copyrightOffset, Sid::copyrightOffset}};
+    {Sid::FOOTER_OFFSET, Sid::FOOTER_OFFSET}};
 
-const TextStyle pageNumberTextStyle{
+const TextStyle copyright_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::pageNumberFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::pageNumberFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::pageNumberLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::pageNumberFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::pageNumberFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::pageNumberColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::pageNumberAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::pageNumberFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::pageNumberFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::pageNumberFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::pageNumberFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::pageNumberFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::pageNumberFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::pageNumberMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::pageNumberPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::COPYRIGHT_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::COPYRIGHT_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::COPYRIGHT_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::COPYRIGHT_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::COPYRIGHT_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::COPYRIGHT_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::COPYRIGHT_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::COPYRIGHT_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::COPYRIGHT_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::COPYRIGHT_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::COPYRIGHT_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::COPYRIGHT_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::COPYRIGHT_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::COPYRIGHT_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::COPYRIGHT_POSITION, Pid::POSITION},
     }},
-    {Sid::pageNumberOffset, Sid::pageNumberOffset}};
+    {Sid::COPYRIGHT_OFFSET, Sid::COPYRIGHT_OFFSET}};
 
-const TextStyle instrumentChangeTextStyle{
+const TextStyle page_number_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::instrumentChangeFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::instrumentChangeFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::instrumentChangeLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::instrumentChangeFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::instrumentChangeFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::instrumentChangeColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::instrumentChangeAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::instrumentChangeFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::instrumentChangeFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::instrumentChangeFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::instrumentChangeFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::instrumentChangeFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::instrumentChangeFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::instrumentChangeMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::instrumentChangePosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::PAGE_NUMBER_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::PAGE_NUMBER_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::PAGE_NUMBER_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::PAGE_NUMBER_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::PAGE_NUMBER_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::PAGE_NUMBER_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::PAGE_NUMBER_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::PAGE_NUMBER_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::PAGE_NUMBER_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::PAGE_NUMBER_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::PAGE_NUMBER_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::PAGE_NUMBER_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::PAGE_NUMBER_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::PAGE_NUMBER_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::PAGE_NUMBER_POSITION, Pid::POSITION},
     }},
-    {Sid::instrumentChangeOffset, Sid::instrumentChangeOffset}};
+    {Sid::PAGE_NUMBER_OFFSET, Sid::PAGE_NUMBER_OFFSET}};
 
-const TextStyle stickingTextStyle{
+const TextStyle instrument_change_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::stickingFontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::stickingFontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::stickingLineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::stickingFontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::stickingFontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::stickingColor, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::stickingAlign, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::stickingFrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::stickingFramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::stickingFrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::stickingFrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::stickingFrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::stickingFrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::stickingMusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::stickingPosition, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::INSTRUMENT_CHANGE_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::INSTRUMENT_CHANGE_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::INSTRUMENT_CHANGE_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::INSTRUMENT_CHANGE_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::INSTRUMENT_CHANGE_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::INSTRUMENT_CHANGE_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::INSTRUMENT_CHANGE_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::INSTRUMENT_CHANGE_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::INSTRUMENT_CHANGE_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::INSTRUMENT_CHANGE_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::INSTRUMENT_CHANGE_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::INSTRUMENT_CHANGE_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::INSTRUMENT_CHANGE_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::INSTRUMENT_CHANGE_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::INSTRUMENT_CHANGE_POSITION, Pid::POSITION},
     }},
-    {Sid::stickingPosAbove, Sid::stickingPosBelow}};
+    {Sid::INSTRUMENT_CHANGE_OFFSET, Sid::INSTRUMENT_CHANGE_OFFSET}};
 
-const TextStyle user1TextStyle{
+const TextStyle sticking_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user1FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user1FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user1LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user1FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user1FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user1Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user1Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user1FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user1FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user1FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user1FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user1FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user1FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user1MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user1Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::STICKING_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::STICKING_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::STICKING_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::STICKING_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::STICKING_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::STICKING_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::STICKING_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::STICKING_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::STICKING_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::STICKING_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::STICKING_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::STICKING_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::STICKING_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::STICKING_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::STICKING_POSITION, Pid::POSITION},
     }},
-    {Sid::user1Offset, Sid::user1Offset}};
+    {Sid::STICKING_POS_ABOVE, Sid::STICKING_POS_BELOW}};
 
-const TextStyle user2TextStyle{
+const TextStyle user1_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user2FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user2FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user2LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user2FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user2FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user2Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user2Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user2FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user2FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user2FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user2FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user2FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user2FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user2MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user2Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER1_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER1_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER1_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER1_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER1_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER1_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER1_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER1_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER1_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER1_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER1_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER1_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER1_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER1_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER1_POSITION, Pid::POSITION},
     }},
-    {Sid::user2Offset, Sid::user2Offset}};
+    {Sid::USER1_OFFSET, Sid::USER1_OFFSET}};
 
-const TextStyle user3TextStyle{
+const TextStyle user2_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user3FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user3FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user3LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user3FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user3FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user3Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user3Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user3FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user3FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user3FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user3FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user3FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user3FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user3MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user3Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER2_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER2_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER2_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER2_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER2_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER2_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER2_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER2_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER2_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER2_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER2_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER2_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER2_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER2_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER2_POSITION, Pid::POSITION},
     }},
-    {Sid::user3Offset, Sid::user3Offset}};
+    {Sid::USER2_OFFSET, Sid::USER2_OFFSET}};
 
-const TextStyle user4TextStyle{
+const TextStyle user3_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user4FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user4FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user4LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user4FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user4FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user4Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user4Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user4FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user4FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user4FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user4FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user4FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user4FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user4MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user4Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER3_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER3_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER3_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER3_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER3_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER3_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER3_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER3_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER3_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER3_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER3_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER3_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER3_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER3_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER3_POSITION, Pid::POSITION},
     }},
-    {Sid::user4Offset, Sid::user4Offset}};
+    {Sid::USER3_OFFSET, Sid::USER3_OFFSET}};
 
-const TextStyle user5TextStyle{
+const TextStyle user4_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user5FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user5FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user5LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user5FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user5FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user5Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user5Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user5FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user5FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user5FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user5FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user5FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user5FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user5MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user5Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER4_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER4_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER4_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER4_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER4_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER4_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER4_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER4_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER4_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER4_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER4_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER4_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER4_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER4_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER4_POSITION, Pid::POSITION},
     }},
-    {Sid::user5Offset, Sid::user5Offset}};
+    {Sid::USER4_OFFSET, Sid::USER4_OFFSET}};
 
-const TextStyle user6TextStyle{
+const TextStyle user5_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user6FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user6FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user6LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user6FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user6FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user6Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user6Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user6FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user6FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user6FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user6FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user6FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user6FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user6MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user6Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER5_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER5_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER5_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER5_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER5_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER5_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER5_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER5_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER5_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER5_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER5_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER5_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER5_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER5_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER5_POSITION, Pid::POSITION},
     }},
-    {Sid::user6Offset, Sid::user6Offset}};
+    {Sid::USER5_OFFSET, Sid::USER5_OFFSET}};
 
-const TextStyle user7TextStyle{
+const TextStyle user6_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user7FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user7FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user7LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user7FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user7FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user7Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user7Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user7FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user7FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user7FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user7FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user7FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user7FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user7MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user7Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER6_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER6_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER6_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER6_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER6_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER6_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER6_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER6_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER6_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER6_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER6_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER6_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER6_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER6_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER6_POSITION, Pid::POSITION},
     }},
-    {Sid::user7Offset, Sid::user7Offset}};
+    {Sid::USER6_OFFSET, Sid::USER6_OFFSET}};
 
-const TextStyle user8TextStyle{
+const TextStyle user7_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user8FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user8FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user8LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user8FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user8FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user8Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user8Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user8FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user8FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user8FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user8FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user8FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user8FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user8MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user8Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER7_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER7_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER7_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER7_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER7_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER7_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER7_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER7_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER7_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER7_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER7_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER7_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER7_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER7_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER7_POSITION, Pid::POSITION},
     }},
-    {Sid::user8Offset, Sid::user8Offset}};
+    {Sid::USER7_OFFSET, Sid::USER7_OFFSET}};
 
-const TextStyle user9TextStyle{
+const TextStyle user8_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user9FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user9FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user9LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user9FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user9FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user9Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user9Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user9FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user9FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user9FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user9FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user9FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user9FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user9MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user9Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER8_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER8_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER8_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER8_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER8_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER8_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER8_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER8_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER8_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER8_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER8_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER8_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER8_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER8_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER8_POSITION, Pid::POSITION},
     }},
-    {Sid::user9Offset, Sid::user9Offset}};
+    {Sid::USER8_OFFSET, Sid::USER8_OFFSET}};
 
-const TextStyle user10TextStyle{
+const TextStyle user9_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user10FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user10FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user10LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user10FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user10FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user10Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user10Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user10FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user10FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user10FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user10FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user10FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user10FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user10MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user10Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER9_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER9_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER9_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER9_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER9_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER9_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER9_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER9_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER9_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER9_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER9_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER9_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER9_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER9_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER9_POSITION, Pid::POSITION},
     }},
-    {Sid::user10Offset, Sid::user10Offset}};
+    {Sid::USER9_OFFSET, Sid::USER9_OFFSET}};
 
-const TextStyle user11TextStyle{
+const TextStyle user10_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user11FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user11FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user11LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user11FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user11FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user11Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user11Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user11FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user11FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user11FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user11FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user11FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user11FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user11MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user11Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER10_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER10_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER10_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER10_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER10_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER10_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER10_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER10_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER10_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER10_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER10_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER10_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER10_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER10_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER10_POSITION, Pid::POSITION},
     }},
-    {Sid::user11Offset, Sid::user11Offset}};
+    {Sid::USER10_OFFSET, Sid::USER10_OFFSET}};
 
-const TextStyle user12TextStyle{
+const TextStyle user11_text_style{
     {{
-        {TextStylePropertyType::FontFace, Sid::user12FontFace, Pid::FONT_FACE},
-        {TextStylePropertyType::FontSize, Sid::user12FontSize, Pid::FONT_SIZE},
-        {TextStylePropertyType::LineSpacing, Sid::user12LineSpacing, Pid::TEXT_LINE_SPACING},
-        {TextStylePropertyType::SizeSpatiumDependent, Sid::user12FontSpatiumDependent, Pid::SIZE_SPATIUM_DEPENDENT},
-        {TextStylePropertyType::FontStyle, Sid::user12FontStyle, Pid::FONT_STYLE},
-        {TextStylePropertyType::Color, Sid::user12Color, Pid::COLOR},
-        {TextStylePropertyType::TextAlign, Sid::user12Align, Pid::ALIGN},
-        {TextStylePropertyType::FrameType, Sid::user12FrameType, Pid::FRAME_TYPE},
-        {TextStylePropertyType::FramePadding, Sid::user12FramePadding, Pid::FRAME_PADDING},
-        {TextStylePropertyType::FrameWidth, Sid::user12FrameWidth, Pid::FRAME_WIDTH},
-        {TextStylePropertyType::FrameRound, Sid::user12FrameRound, Pid::FRAME_ROUND},
-        {TextStylePropertyType::FrameBorderColor, Sid::user12FrameFgColor, Pid::FRAME_FG_COLOR},
-        {TextStylePropertyType::FrameFillColor, Sid::user12FrameBgColor, Pid::FRAME_BG_COLOR},
-        {TextStylePropertyType::MusicalSymbolsScale, Sid::dummyMusicalSymbolsScale, Pid::MUSICAL_SYMBOLS_SCALE},
-        {TextStylePropertyType::MusicalSymbolsSize, Sid::user12MusicalSymbolSize, Pid::MUSIC_SYMBOL_SIZE},
-        {TextStylePropertyType::Position, Sid::user12Position, Pid::POSITION},
+        {TextStylePropertyType::FONT_FACE, Sid::USER11_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER11_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER11_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER11_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER11_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER11_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER11_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER11_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER11_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER11_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER11_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER11_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER11_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER11_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER11_POSITION, Pid::POSITION},
     }},
-    {Sid::user12Offset, Sid::user12Offset}};
+    {Sid::USER11_OFFSET, Sid::USER11_OFFSET}};
 
-const TextStyle *textStyle(TextStyleType idx) {
+const TextStyle user12_text_style{
+    {{
+        {TextStylePropertyType::FONT_FACE, Sid::USER12_FONT_FACE, Pid::FONT_FACE},
+        {TextStylePropertyType::FONT_SIZE, Sid::USER12_FONT_SIZE, Pid::FONT_SIZE},
+        {TextStylePropertyType::LINE_SPACING, Sid::USER12_LINE_SPACING, Pid::TEXT_LINE_SPACING},
+        {TextStylePropertyType::SIZE_SPATIUM_DEPENDENT, Sid::USER12_FONT_SPATIUM_DEPENDENT, Pid::SIZE_SPATIUM_DEPENDENT},
+        {TextStylePropertyType::FONT_STYLE, Sid::USER12_FONT_STYLE, Pid::FONT_STYLE},
+        {TextStylePropertyType::COLOR, Sid::USER12_COLOR, Pid::COLOR},
+        {TextStylePropertyType::TEXT_ALIGN, Sid::USER12_ALIGN, Pid::ALIGN},
+        {TextStylePropertyType::FRAME_TYPE, Sid::USER12_FRAME_TYPE, Pid::FRAME_TYPE},
+        {TextStylePropertyType::FRAME_PADDING, Sid::USER12_FRAME_PADDING, Pid::FRAME_PADDING},
+        {TextStylePropertyType::FRAME_WIDTH, Sid::USER12_FRAME_WIDTH, Pid::FRAME_WIDTH},
+        {TextStylePropertyType::FRAME_ROUND, Sid::USER12_FRAME_ROUND, Pid::FRAME_ROUND},
+        {TextStylePropertyType::FRAME_BORDER_COLOR, Sid::USER12_FRAME_FG_COLOR, Pid::FRAME_FG_COLOR},
+        {TextStylePropertyType::FRAME_FILL_COLOR, Sid::USER12_FRAME_BG_COLOR, Pid::FRAME_BG_COLOR},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SCALE, Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::MUSICAL_SYMBOLS_SCALE},
+        {TextStylePropertyType::MUSICAL_SYMBOLS_SIZE, Sid::USER12_MUSICAL_SYMBOL_SIZE, Pid::MUSIC_SYMBOL_SIZE},
+        {TextStylePropertyType::POSITION, Sid::USER12_POSITION, Pid::POSITION},
+    }},
+    {Sid::USER12_OFFSET, Sid::USER12_OFFSET}};
+
+const TextStyle *text_style(TextStyleType idx) {
     switch (idx) {
-        case TextStyleType::DEFAULT: return &defaultTextStyle;
+        case TextStyleType::DEFAULT: return &::mu::engraving::default_text_style;
 
-        case TextStyleType::TITLE: return &titleTextStyle;
-        case TextStyleType::SUBTITLE: return &subTitleTextStyle;
-        case TextStyleType::COMPOSER: return &composerTextStyle;
-        case TextStyleType::LYRICIST: return &lyricistTextStyle;
-        case TextStyleType::TRANSLATOR: return &translatorTextStyle;
-        case TextStyleType::FRAME: return &frameTextStyle;
-        case TextStyleType::INSTRUMENT_EXCERPT: return &partInstrumentTextStyle;
-        case TextStyleType::INSTRUMENT_LONG: return &longInstrumentTextStyle;
-        case TextStyleType::INSTRUMENT_SHORT: return &shortInstrumentTextStyle;
-        case TextStyleType::INSTRUMENT_CHANGE: return &instrumentChangeTextStyle;
-        case TextStyleType::GROUP_BRACKET: return &groupBracketTextStyle;
-        case TextStyleType::HEADER: return &headerTextStyle;
-        case TextStyleType::FOOTER: return &footerTextStyle;
-        case TextStyleType::COPYRIGHT: return &copyrightTextStyle;
-        case TextStyleType::PAGE_NUMBER: return &pageNumberTextStyle;
+        case TextStyleType::TITLE: return &::mu::engraving::title_text_style;
+        case TextStyleType::SUBTITLE: return &::mu::engraving::sub_title_text_style;
+        case TextStyleType::COMPOSER: return &::mu::engraving::composer_text_style;
+        case TextStyleType::LYRICIST: return &::mu::engraving::lyricist_text_style;
+        case TextStyleType::TRANSLATOR: return &::mu::engraving::translator_text_style;
+        case TextStyleType::FRAME: return &::mu::engraving::frame_text_style;
+        case TextStyleType::INSTRUMENT_EXCERPT: return &::mu::engraving::part_instrument_text_style;
+        case TextStyleType::INSTRUMENT_LONG: return &::mu::engraving::long_instrument_text_style;
+        case TextStyleType::INSTRUMENT_SHORT: return &::mu::engraving::short_instrument_text_style;
+        case TextStyleType::INSTRUMENT_CHANGE: return &::mu::engraving::instrument_change_text_style;
+        case TextStyleType::GROUP_BRACKET: return &::mu::engraving::group_bracket_text_style;
+        case TextStyleType::HEADER: return &::mu::engraving::header_text_style;
+        case TextStyleType::FOOTER: return &::mu::engraving::footer_text_style;
+        case TextStyleType::COPYRIGHT: return &::mu::engraving::copyright_text_style;
+        case TextStyleType::PAGE_NUMBER: return &::mu::engraving::page_number_text_style;
 
-        case TextStyleType::MEASURE_NUMBER: return &measureNumberTextStyle;
-        case TextStyleType::MEASURE_NUMBER_ALTERNATE: return &measureNumberAlternateTextStyle;
-        case TextStyleType::MMREST_RANGE: return &mmRestRangeTextStyle;
+        case TextStyleType::MEASURE_NUMBER: return &::mu::engraving::measure_number_text_style;
+        case TextStyleType::MEASURE_NUMBER_ALTERNATE: return &::mu::engraving::measure_number_alternate_text_style;
+        case TextStyleType::MMREST_RANGE: return &::mu::engraving::mm_rest_range_text_style;
 
-        case TextStyleType::TEMPO: return &tempoTextStyle;
-        case TextStyleType::TEMPO_CHANGE: return &tempoChangeTextStyle;
-        case TextStyleType::METRONOME: return &metronomeTextStyle;
-        case TextStyleType::REPEAT_PLAY_COUNT: return &repeatPlayCountTextStyle;
-        case TextStyleType::REPEAT_LEFT: return &repeatLeftTextStyle;
-        case TextStyleType::REPEAT_RIGHT: return &repeatRightTextStyle;
-        case TextStyleType::REHEARSAL_MARK: return &rehearsalMarkTextStyle;
-        case TextStyleType::SYSTEM: return &systemTextStyle;
+        case TextStyleType::TEMPO: return &::mu::engraving::tempo_text_style;
+        case TextStyleType::TEMPO_CHANGE: return &::mu::engraving::tempo_change_text_style;
+        case TextStyleType::METRONOME: return &::mu::engraving::metronome_text_style;
+        case TextStyleType::REPEAT_PLAY_COUNT: return &::mu::engraving::repeat_play_count_text_style;
+        case TextStyleType::REPEAT_LEFT: return &::mu::engraving::repeat_left_text_style;
+        case TextStyleType::REPEAT_RIGHT: return &::mu::engraving::repeat_right_text_style;
+        case TextStyleType::REHEARSAL_MARK: return &::mu::engraving::rehearsal_mark_text_style;
+        case TextStyleType::SYSTEM: return &::mu::engraving::system_text_style;
 
-        case TextStyleType::STAFF: return &staffTextStyle;
-        case TextStyleType::STAVE_SHARING: return &staveSharingLabelStyle;
-        case TextStyleType::EXPRESSION: return &expressionTextStyle;
-        case TextStyleType::DYNAMICS: return &dynamicsTextStyle;
-        case TextStyleType::HAIRPIN: return &hairpinTextStyle;
-        case TextStyleType::LYRICS_ODD: return &lyricsOddTextStyle;
-        case TextStyleType::LYRICS_EVEN: return &lyricsEvenTextStyle;
-        case TextStyleType::HARMONY_A: return &chordSymbolTextStyleA;
-        case TextStyleType::HARMONY_B: return &chordSymbolTextStyleB;
-        case TextStyleType::HARMONY_ROMAN: return &romanNumeralTextStyle;
-        case TextStyleType::HARMONY_NASHVILLE: return &nashvilleNumberTextStyle;
+        case TextStyleType::STAFF: return &::mu::engraving::staff_text_style;
+        case TextStyleType::STAVE_SHARING: return &::mu::engraving::stave_sharing_label_style;
+        case TextStyleType::EXPRESSION: return &::mu::engraving::expression_text_style;
+        case TextStyleType::DYNAMICS: return &::mu::engraving::dynamics_text_style;
+        case TextStyleType::HAIRPIN: return &::mu::engraving::hairpin_text_style;
+        case TextStyleType::LYRICS_ODD: return &::mu::engraving::lyrics_odd_text_style;
+        case TextStyleType::LYRICS_EVEN: return &::mu::engraving::lyrics_even_text_style;
+        case TextStyleType::HARMONY_A: return &::mu::engraving::chord_symbol_text_style_a;
+        case TextStyleType::HARMONY_B: return &::mu::engraving::chord_symbol_text_style_b;
+        case TextStyleType::HARMONY_ROMAN: return &::mu::engraving::roman_numeral_text_style;
+        case TextStyleType::HARMONY_NASHVILLE: return &::mu::engraving::nashville_number_text_style;
 
-        case TextStyleType::TUPLET: return &tupletTextStyle;
-        case TextStyleType::ARTICULATION: return &articulationTextStyle;
-        case TextStyleType::STICKING: return &stickingTextStyle;
-        case TextStyleType::FINGERING: return &fingeringTextStyle;
-        case TextStyleType::TAB_FRET_NUMBER: return &tabFretNumberTextStyle;
-        case TextStyleType::LH_GUITAR_FINGERING: return &lhGuitarFingeringTextStyle;
-        case TextStyleType::RH_GUITAR_FINGERING: return &rhGuitarFingeringTextStyle;
-        case TextStyleType::HAMMER_ON_PULL_OFF: return &hammerOnPullOffTextStyle;
-        case TextStyleType::STRING_NUMBER: return &stringNumberTextStyle;
-        case TextStyleType::STRING_TUNINGS: return &stringTuningsStyle; // todo
-        case TextStyleType::FRET_DIAGRAM_FINGERING: return &fretDiagramFingeringStyle;
-        case TextStyleType::FRET_DIAGRAM_FRET_NUMBER: return &fretDiagramFretNumberStyle;
-        case TextStyleType::HARP_PEDAL_DIAGRAM: return &harpPedalDiagramTextStyle;
-        case TextStyleType::HARP_PEDAL_TEXT_DIAGRAM: return &harpPedalTextDiagramTextStyle;
+        case TextStyleType::TUPLET: return &::mu::engraving::tuplet_text_style;
+        case TextStyleType::ARTICULATION: return &::mu::engraving::articulation_text_style;
+        case TextStyleType::STICKING: return &::mu::engraving::sticking_text_style;
+        case TextStyleType::FINGERING: return &::mu::engraving::fingering_text_style;
+        case TextStyleType::TAB_FRET_NUMBER: return &::mu::engraving::tab_fret_number_text_style;
+        case TextStyleType::LH_GUITAR_FINGERING: return &::mu::engraving::lh_guitar_fingering_text_style;
+        case TextStyleType::RH_GUITAR_FINGERING: return &::mu::engraving::rh_guitar_fingering_text_style;
+        case TextStyleType::HAMMER_ON_PULL_OFF: return &::mu::engraving::hammer_on_pull_off_text_style;
+        case TextStyleType::STRING_NUMBER: return &::mu::engraving::string_number_text_style;
+        case TextStyleType::STRING_TUNINGS: return &::mu::engraving::string_tunings_style; // todo
+        case TextStyleType::FRET_DIAGRAM_FINGERING: return &::mu::engraving::fret_diagram_fingering_style;
+        case TextStyleType::FRET_DIAGRAM_FRET_NUMBER: return &::mu::engraving::fret_diagram_fret_number_style;
+        case TextStyleType::HARP_PEDAL_DIAGRAM: return &::mu::engraving::harp_pedal_diagram_text_style;
+        case TextStyleType::HARP_PEDAL_TEXT_DIAGRAM: return &::mu::engraving::harp_pedal_text_diagram_text_style;
 
-        case TextStyleType::TEXTLINE: return &textLineTextStyle;
-        case TextStyleType::SYSTEM_TEXTLINE: return &systemTextLineTextStyle;
-        case TextStyleType::NOTELINE: return &noteLineTextStyle;
-        case TextStyleType::VOLTA: return &voltaTextStyle;
-        case TextStyleType::OTTAVA: return &ottavaTextStyle;
-        case TextStyleType::GLISSANDO: return &glissandoTextStyle;
-        case TextStyleType::PEDAL: return &pedalTextStyle;
-        case TextStyleType::BEND: return &bendTextStyle;
-        case TextStyleType::LET_RING: return &letRingTextStyle;
-        case TextStyleType::WHAMMY_BAR: return &whammyBarTextStyle;
-        case TextStyleType::PALM_MUTE: return &palmMuteTextStyle;
+        case TextStyleType::TEXTLINE: return &::mu::engraving::text_line_text_style;
+        case TextStyleType::SYSTEM_TEXTLINE: return &::mu::engraving::system_text_line_text_style;
+        case TextStyleType::NOTELINE: return &::mu::engraving::note_line_text_style;
+        case TextStyleType::VOLTA: return &::mu::engraving::volta_text_style;
+        case TextStyleType::OTTAVA: return &::mu::engraving::ottava_text_style;
+        case TextStyleType::GLISSANDO: return &::mu::engraving::glissando_text_style;
+        case TextStyleType::PEDAL: return &::mu::engraving::pedal_text_style;
+        case TextStyleType::BEND: return &::mu::engraving::bend_text_style;
+        case TextStyleType::LET_RING: return &::mu::engraving::let_ring_text_style;
+        case TextStyleType::WHAMMY_BAR: return &::mu::engraving::whammy_bar_text_style;
+        case TextStyleType::PALM_MUTE: return &::mu::engraving::palm_mute_text_style;
 
-        case TextStyleType::USER1: return &user1TextStyle;
-        case TextStyleType::USER2: return &user2TextStyle;
-        case TextStyleType::USER3: return &user3TextStyle;
-        case TextStyleType::USER4: return &user4TextStyle;
-        case TextStyleType::USER5: return &user5TextStyle;
-        case TextStyleType::USER6: return &user6TextStyle;
-        case TextStyleType::USER7: return &user7TextStyle;
-        case TextStyleType::USER8: return &user8TextStyle;
-        case TextStyleType::USER9: return &user9TextStyle;
-        case TextStyleType::USER10: return &user10TextStyle;
-        case TextStyleType::USER11: return &user11TextStyle;
-        case TextStyleType::USER12: return &user12TextStyle;
+        case TextStyleType::USER1: return &::mu::engraving::user1_text_style;
+        case TextStyleType::USER2: return &::mu::engraving::user2_text_style;
+        case TextStyleType::USER3: return &::mu::engraving::user3_text_style;
+        case TextStyleType::USER4: return &::mu::engraving::user4_text_style;
+        case TextStyleType::USER5: return &::mu::engraving::user5_text_style;
+        case TextStyleType::USER6: return &::mu::engraving::user6_text_style;
+        case TextStyleType::USER7: return &::mu::engraving::user7_text_style;
+        case TextStyleType::USER8: return &::mu::engraving::user8_text_style;
+        case TextStyleType::USER9: return &::mu::engraving::user9_text_style;
+        case TextStyleType::USER10: return &::mu::engraving::user10_text_style;
+        case TextStyleType::USER11: return &::mu::engraving::user11_text_style;
+        case TextStyleType::USER12: return &::mu::engraving::user12_text_style;
 
         case TextStyleType::TEXT_TYPES: return nullptr;
         case TextStyleType::IGNORED_TYPES: return nullptr;
@@ -1690,9 +1692,9 @@ const TextStyle *textStyle(TextStyleType idx) {
     return nullptr;
 }
 
-static std::vector<TextStyleType> _allTextStyles;
+static std::vector<TextStyleType> all_text_styles_ids;
 
-static const std::vector<TextStyleType> _primaryTextStyles = {
+static const std::vector<TextStyleType> primary_text_styles_ids = {
     TextStyleType::TITLE,
     TextStyleType::SUBTITLE,
     TextStyleType::COMPOSER,
@@ -1744,29 +1746,29 @@ static const std::vector<TextStyleType> _primaryTextStyles = {
 //   allTextStyles
 //---------------------------------------------------------
 
-const std::vector<TextStyleType> &allTextStyles() {
-    if (_allTextStyles.empty()) {
-        _allTextStyles.reserve(int(TextStyleType::TEXT_TYPES));
+const std::vector<TextStyleType> &all_text_styles() {
+    if (all_text_styles_ids.empty()) {
+        all_text_styles_ids.reserve(int(TextStyleType::TEXT_TYPES));
         for (int t = int(TextStyleType::DEFAULT) + 1; t < int(TextStyleType::TEXT_TYPES); ++t) {
-            _allTextStyles.push_back(TextStyleType(t));
+            all_text_styles_ids.push_back(TextStyleType(t));
         }
     }
-    return _allTextStyles;
+    return all_text_styles_ids;
 }
 
 //---------------------------------------------------------
 //   primaryTextStyles
 //---------------------------------------------------------
 
-const std::vector<TextStyleType> &primaryTextStyles() { return _primaryTextStyles; }
+const std::vector<TextStyleType> &primary_text_styles() { return ::mu::engraving::primary_text_styles_ids; }
 
-static std::vector<TextStyleType> _editableTextStyles;
+static std::vector<TextStyleType> editable_text_styles_ids;
 
-const std::vector<TextStyleType> &editableTextStyles() {
-    if (_editableTextStyles.empty()) {
-        _editableTextStyles = allTextStyles();
-        muse::remove(_editableTextStyles, TextStyleType::DYNAMICS);
+const std::vector<TextStyleType> &editable_text_styles() {
+    if (editable_text_styles_ids.empty()) {
+        editable_text_styles_ids = all_text_styles();
+        muse::remove(editable_text_styles_ids, TextStyleType::DYNAMICS);
     }
-    return _editableTextStyles;
+    return editable_text_styles_ids;
 }
 } // namespace mu::engraving

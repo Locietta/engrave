@@ -36,41 +36,41 @@ struct CairoPainter final : IPaintProvider {
      *  cairo_destroy().  The cairo_t must outlive the CairoPainter.  Text is
      *  drawn with the font bytes of fontsDatabase, which must outlive it too.
      */
-    CairoPainter(cairo_t *context, const IFontsDatabase &fontsDatabase, double deviceDpi = 1200.0);
+    CairoPainter(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi = 1200.0);
     ~CairoPainter() override;
 
     CairoPainter(const CairoPainter &) = delete;
     CairoPainter &operator=(const CairoPainter &) = delete;
 
-    cairo_t *cairoContext() const;
+    cairo_t *cairo_context() const;
 
-    bool isActive() const override;
-    void beginTarget(const std::string &name) override;
-    void beforeEndTargetHook(Painter *painter) override;
-    bool endTarget(bool endDraw = false) override;
+    bool is_active() const override;
+    void begin_target(const std::string &name) override;
+    void before_end_target_hook(Painter *painter) override;
+    bool end_target(bool end_draw = false) override;
 
-    void beginObject(const std::string &name) override;
-    void endObject() override;
+    void begin_object(const std::string &name) override;
+    void end_object() override;
 
-    void setAntialiasing(bool arg) override;
-    void setCompositionMode(CompositionMode mode) override;
-    void setWindow(const RectF &window) override;
-    void setViewport(const RectF &viewport) override;
+    void set_antialiasing(bool arg) override;
+    void set_composition_mode(CompositionMode mode) override;
+    void set_window(const RectF &window) override;
+    void set_viewport(const RectF &viewport) override;
 
-    void setFont(const Font &font) override;
+    void set_font(const Font &font) override;
     const Font &font() const override;
 
-    void setPen(const Pen &pen) override;
-    void setNoPen() override;
+    void set_pen(const Pen &pen) override;
+    void set_no_pen() override;
     const Pen &pen() const override;
 
-    void setBrush(const Brush &brush) override;
+    void set_brush(const Brush &brush) override;
     const Brush &brush() const override;
 
     void save() override;
     void restore() override;
 
-    double deviceLogicalDpi() const override;
+    double device_logical_dpi() const override;
 
     /*! setTransform() installs the complete world*viewport matrix, matching
      *  QPainterProvider.  muse::draw::Painter already composes window/viewport
@@ -78,25 +78,25 @@ struct CairoPainter final : IPaintProvider {
      *  before the first setTransform() are composed automatically; after an
      *  explicit transform the matrix is authoritative.
      */
-    void setTransform(const Transform &transform) override;
+    void set_transform(const Transform &transform) override;
     const Transform &transform() const override;
 
-    void drawPath(const PainterPath &path) override;
-    void drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) override;
+    void draw_path(const PainterPath &path) override;
+    void draw_polygon(const PointF *points, size_t point_count, PolygonMode mode) override;
 
-    void drawText(const PointF &point, const String &text) override;
-    void drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) override;
+    void draw_text(const PointF &point, const String &text) override;
+    void draw_text(const RectF &rect, Alignment alignment, TextFlags text_flags, const String &text) override;
 
-    void drawSymbol(const PointF &point, char32_t ucs4Code) override;
+    void draw_symbol(const PointF &point, char32_t ucs4_code) override;
 
-    void drawPixmap(const PointF &point, const Pixmap &pm) override;
-    void drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset = PointF()) override;
+    void draw_pixmap(const PointF &point, const Pixmap &pm) override;
+    void draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, const PointF &offset = PointF()) override;
 
-    bool hasClipping() const override;
+    bool has_clipping() const override;
 
-    void setClipRect(const RectF &rect) override;
-    void setMask(const RectF &background, const std::vector<RectF> &maskRects) override;
-    void setClipping(bool enable) override;
+    void set_clip_rect(const RectF &rect) override;
+    void set_mask(const RectF &background, const std::vector<RectF> &mask_rects) override;
+    void set_clipping(bool enable) override;
 
 private:
     struct Impl;

@@ -34,18 +34,18 @@ namespace mu::engraving::rendering::score {
 class PageLayout {
 public:
 
-    static void getNextPage(LayoutContext &ctx);
-    static void collectPage(LayoutContext &ctx);
+    static void get_next_page(LayoutContext &ctx);
+    static void collect_page(LayoutContext &ctx);
 
 private:
-    static void layoutPage(LayoutContext &ctx, Page *page, double restHeight, double footerPadding, bool squeezeToFit);
-    static void distributeStaves(LayoutContext &ctx, Page *page, double footerPadding, bool squeezeToFit);
+    static void layout_page(LayoutContext &ctx, Page *page, double rest_height, double footer_padding, bool squeeze_to_fit);
+    static void distribute_staves(LayoutContext &ctx, Page *page, double footer_padding, bool squeeze_to_fit);
 
-    static void layoutCrossStaffElements(LayoutContext &ctx, Page *page);
-    static void layoutCrossStaffSlurs(LayoutContext &ctx, System *system);
-    static void layoutArticAndFingeringOnCrossStaffBeams(LayoutContext &ctx, System *system);
+    static void layout_cross_staff_elements(LayoutContext &ctx, Page *page);
+    static void layout_cross_staff_slurs(LayoutContext &ctx, System *system);
+    static void layout_artic_and_fingering_on_cross_staff_beams(LayoutContext &ctx, System *system);
 
-    static void layoutSystemDividers(LayoutContext &ctx, Page *page);
-    static void updateSystemDivider(LayoutContext &ctx, System *system, System *nextSystem, SystemDividerType type, bool needsDivider);
+    static void layout_system_dividers(LayoutContext &ctx, Page *page);
+    static void update_system_divider(LayoutContext &ctx, System *system, System *next_system, SystemDividerType type, bool needs_divider);
 };
 } // namespace mu::engraving::rendering::score

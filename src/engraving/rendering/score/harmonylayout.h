@@ -35,67 +35,67 @@ class System;
 namespace mu::engraving::rendering::score {
 class HarmonyLayout {
 public:
-    static void layoutHarmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_harmony(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
 
 private:
 
     struct HarmonyRenderCtx {
         PointF pos = PointF(0.0, 0.0);
-        std::vector<HarmonyRenderItem *> renderItemList;
+        std::vector<HarmonyRenderItem *> render_item_list;
 
         // Reset every single chord
-        bool hAlign = true;
+        bool h_align = true;
         HarmonyInfo *info = nullptr;
 
         // Reset every render() call
         std::stack<PointF> stack;
         int tpc = Tpc::TPC_INVALID;
-        NoteSpellingType noteSpelling = NoteSpellingType::STANDARD;
-        NoteCaseType noteCase = NoteCaseType::AUTO;
+        NoteSpellingType note_spelling = NoteSpellingType::STANDARD;
+        NoteCaseType note_case = NoteCaseType::AUTO;
         double scale = 1.0;
 
         double x() const { return pos.x(); }
 
         double y() const { return pos.y(); }
 
-        void setx(double v) { pos.setX(v); }
+        void setx(double v) { pos.set_x(v); }
 
-        void movex(double v) { pos.setX(pos.x() + v); }
+        void movex(double v) { pos.set_x(pos.x() + v); }
 
-        void sety(double v) { pos.setY(v); }
+        void sety(double v) { pos.set_y(v); }
 
-        void movey(double v) { pos.setY(pos.y() + v); }
+        void movey(double v) { pos.set_y(pos.y() + v); }
     };
 
-    static PointF calculateBoundingRect(const Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
-    static void layoutModifierParentheses(const Harmony *item, const LayoutContext &ctx);
+    static PointF calculate_bounding_rect(const Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
+    static void layout_modifier_parentheses(const Harmony *item, const LayoutContext &ctx);
 
     static void render(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx);
-    static void doRenderSingleHarmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, int rootTpc, int bassTpc,
-                                      const LayoutContext &ctx);
-    static void renderSingleHarmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx);
-    static void renderRomanNumeral(Harmony *item, Harmony::LayoutData *ldata);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, const String &str, HarmonyRenderCtx &harmonyCtx);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, SymId sym, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx);
-    static void render(Harmony *item, Harmony::LayoutData *ldata, const std::vector<RenderActionPtr> &renderList,
-                       HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx, int tpc,
-                       NoteSpellingType noteSpelling = NoteSpellingType::STANDARD, NoteCaseType noteCase = NoteCaseType::AUTO,
-                       double noteMag = 1.0);
+    static void do_render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, int root_tpc,
+                                         int bass_tpc, const LayoutContext &ctx);
+    static void render_single_harmony(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
+    static void render_roman_numeral(Harmony *item, Harmony::LayoutData *ldata);
+    static void render(Harmony *item, Harmony::LayoutData *ldata, const String &str, HarmonyRenderCtx &harmony_ctx);
+    static void render(Harmony *item, Harmony::LayoutData *ldata, SymId sym, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
+    static void render(Harmony *item, Harmony::LayoutData *ldata, const std::vector<RenderActionPtr> &render_list,
+                       HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx, int tpc,
+                       NoteSpellingType note_spelling = NoteSpellingType::STANDARD, NoteCaseType note_case = NoteCaseType::AUTO,
+                       double note_mag = 1.0);
 
-    static void renderAction(Harmony *item, Harmony::LayoutData *ldata, const RenderActionPtr &a, HarmonyRenderCtx &harmonyCtx,
-                             const LayoutContext &ctx);
-    static void renderActionSet(Harmony *item, Harmony::LayoutData *ldata, const RenderActionSetPtr &a, HarmonyRenderCtx &harmonyCtx,
-                                const LayoutContext &ctx);
-    static void renderActionMove(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmonyCtx);
-    static void renderActionMoveXHeight(Harmony *item, const RenderActionMoveXHeightPtr &a, HarmonyRenderCtx &harmonyCtx);
-    static void renderActionPush(HarmonyRenderCtx &harmonyCtx);
-    static void renderActionPop(const RenderActionPopPtr &a, HarmonyRenderCtx &harmonyCtx);
-    static void renderActionNote(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx);
-    static void renderActionAcc(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx);
-    static void renderActionAlign(HarmonyRenderCtx &harmonyCtx);
-    static void renderActionScale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmonyCtx);
-    static void renderActionParen(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmonyCtx);
+    static void render_action(Harmony *item, Harmony::LayoutData *ldata, const RenderActionPtr &a, HarmonyRenderCtx &harmony_ctx,
+                              const LayoutContext &ctx);
+    static void render_action_set(Harmony *item, Harmony::LayoutData *ldata, const RenderActionSetPtr &a, HarmonyRenderCtx &harmony_ctx,
+                                  const LayoutContext &ctx);
+    static void render_action_move(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmony_ctx);
+    static void render_action_move_x_height(Harmony *item, const RenderActionMoveXHeightPtr &a, HarmonyRenderCtx &harmony_ctx);
+    static void render_action_push(HarmonyRenderCtx &harmony_ctx);
+    static void render_action_pop(const RenderActionPopPtr &a, HarmonyRenderCtx &harmony_ctx);
+    static void render_action_note(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx);
+    static void render_action_acc(Harmony *item, Harmony::LayoutData *ldata, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
+    static void render_action_align(HarmonyRenderCtx &harmony_ctx);
+    static void render_action_scale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmony_ctx);
+    static void render_action_paren(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmony_ctx);
 
-    static void kernCharacters(const Harmony *item, const String &text, HarmonyRenderCtx &harmonyCtx, const LayoutContext &ctx);
+    static void kern_characters(const Harmony *item, const String &text, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

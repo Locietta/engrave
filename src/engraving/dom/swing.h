@@ -30,14 +30,14 @@ struct SwingParameters;
 class Swing {
 public:
     struct ChordDurationAdjustment {
-        double remainingDurationMultiplier = 0.;
-        double durationMultiplier = 0.;
+        double remaining_duration_multiplier = 0.;
+        double duration_multiplier = 0.;
 
-        bool isNull() const;
+        bool is_null() const;
     };
 
-    static ChordDurationAdjustment applySwing(const Chord *chord, const SwingParameters &params);
-    static void swingAdjustParams(const Chord *chord, const SwingParameters &params, int &onTime, int &gateTime);
+    static ChordDurationAdjustment apply_swing(const Chord *chord, const SwingParameters &params);
+    static void swing_adjust_params(const Chord *chord, const SwingParameters &params, int &on_time, int &gate_time);
 };
 } // namespace mu::engraving
 

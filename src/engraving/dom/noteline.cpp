@@ -25,94 +25,94 @@
 #include "text.h"
 
 namespace mu::engraving {
-static const ElementStyle noteLineStyle{
-    {Sid::noteLinePlacement, Pid::PLACEMENT},
-    {Sid::noteLineFontFace, Pid::BEGIN_FONT_FACE},
-    {Sid::noteLineFontFace, Pid::CONTINUE_FONT_FACE},
-    {Sid::noteLineFontFace, Pid::END_FONT_FACE},
-    {Sid::noteLineFontSize, Pid::BEGIN_FONT_SIZE},
-    {Sid::noteLineFontSize, Pid::CONTINUE_FONT_SIZE},
-    {Sid::noteLineFontSize, Pid::END_FONT_SIZE},
-    {Sid::noteLineFontStyle, Pid::BEGIN_FONT_STYLE},
-    {Sid::noteLineFontStyle, Pid::CONTINUE_FONT_STYLE},
-    {Sid::noteLineFontStyle, Pid::END_FONT_STYLE},
-    {Sid::noteLineAlign, Pid::BEGIN_TEXT_ALIGN},
-    {Sid::noteLineAlign, Pid::CONTINUE_TEXT_ALIGN},
-    {Sid::noteLineAlign, Pid::END_TEXT_ALIGN},
-    {Sid::noteLinePosition, Pid::BEGIN_TEXT_POSITION},
-    {Sid::noteLinePosition, Pid::CONTINUE_TEXT_POSITION},
-    {Sid::noteLinePosition, Pid::END_TEXT_POSITION},
-    {Sid::noteLineFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
-    {Sid::noteLineWidth, Pid::LINE_WIDTH},
-    {Sid::noteLineStyle, Pid::LINE_STYLE},
-    {Sid::noteLineDashLineLen, Pid::DASH_LINE_LEN},
-    {Sid::noteLineDashGapLen, Pid::DASH_GAP_LEN},
-    {Sid::noteLineEndLineArrowHeight, Pid::END_LINE_ARROW_HEIGHT},
-    {Sid::noteLineEndLineArrowWidth, Pid::END_LINE_ARROW_WIDTH},
-    {Sid::noteLineBeginLineArrowHeight, Pid::BEGIN_LINE_ARROW_HEIGHT},
-    {Sid::noteLineBeginLineArrowWidth, Pid::BEGIN_LINE_ARROW_WIDTH},
-    {Sid::noteLineEndFilledArrowHeight, Pid::END_FILLED_ARROW_HEIGHT},
-    {Sid::noteLineEndFilledArrowWidth, Pid::END_FILLED_ARROW_WIDTH},
-    {Sid::noteLineBeginFilledArrowHeight, Pid::BEGIN_FILLED_ARROW_HEIGHT},
-    {Sid::noteLineBeginFilledArrowWidth, Pid::BEGIN_FILLED_ARROW_WIDTH},
-    {Sid::noteLineMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::noteLineMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::noteLineMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
-    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
-    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
+static const ElementStyle note_line_style{
+    {Sid::NOTE_LINE_PLACEMENT, Pid::PLACEMENT},
+    {Sid::NOTE_LINE_FONT_FACE, Pid::BEGIN_FONT_FACE},
+    {Sid::NOTE_LINE_FONT_FACE, Pid::CONTINUE_FONT_FACE},
+    {Sid::NOTE_LINE_FONT_FACE, Pid::END_FONT_FACE},
+    {Sid::NOTE_LINE_FONT_SIZE, Pid::BEGIN_FONT_SIZE},
+    {Sid::NOTE_LINE_FONT_SIZE, Pid::CONTINUE_FONT_SIZE},
+    {Sid::NOTE_LINE_FONT_SIZE, Pid::END_FONT_SIZE},
+    {Sid::NOTE_LINE_FONT_STYLE, Pid::BEGIN_FONT_STYLE},
+    {Sid::NOTE_LINE_FONT_STYLE, Pid::CONTINUE_FONT_STYLE},
+    {Sid::NOTE_LINE_FONT_STYLE, Pid::END_FONT_STYLE},
+    {Sid::NOTE_LINE_ALIGN, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::NOTE_LINE_ALIGN, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::NOTE_LINE_ALIGN, Pid::END_TEXT_ALIGN},
+    {Sid::NOTE_LINE_POSITION, Pid::BEGIN_TEXT_POSITION},
+    {Sid::NOTE_LINE_POSITION, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::NOTE_LINE_POSITION, Pid::END_TEXT_POSITION},
+    {Sid::NOTE_LINE_FONT_SPATIUM_DEPENDENT, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
+    {Sid::NOTE_LINE_WIDTH, Pid::LINE_WIDTH},
+    {Sid::NOTE_LINE_STYLE, Pid::LINE_STYLE},
+    {Sid::NOTE_LINE_DASH_LINE_LEN, Pid::DASH_LINE_LEN},
+    {Sid::NOTE_LINE_DASH_GAP_LEN, Pid::DASH_GAP_LEN},
+    {Sid::NOTE_LINE_END_LINE_ARROW_HEIGHT, Pid::END_LINE_ARROW_HEIGHT},
+    {Sid::NOTE_LINE_END_LINE_ARROW_WIDTH, Pid::END_LINE_ARROW_WIDTH},
+    {Sid::NOTE_LINE_BEGIN_LINE_ARROW_HEIGHT, Pid::BEGIN_LINE_ARROW_HEIGHT},
+    {Sid::NOTE_LINE_BEGIN_LINE_ARROW_WIDTH, Pid::BEGIN_LINE_ARROW_WIDTH},
+    {Sid::NOTE_LINE_END_FILLED_ARROW_HEIGHT, Pid::END_FILLED_ARROW_HEIGHT},
+    {Sid::NOTE_LINE_END_FILLED_ARROW_WIDTH, Pid::END_FILLED_ARROW_WIDTH},
+    {Sid::NOTE_LINE_BEGIN_FILLED_ARROW_HEIGHT, Pid::BEGIN_FILLED_ARROW_HEIGHT},
+    {Sid::NOTE_LINE_BEGIN_FILLED_ARROW_WIDTH, Pid::BEGIN_FILLED_ARROW_WIDTH},
+    {Sid::NOTE_LINE_MUSICAL_SYMBOL_SIZE, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::NOTE_LINE_MUSICAL_SYMBOL_SIZE, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::NOTE_LINE_MUSICAL_SYMBOL_SIZE, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::DUMMY_MUSICAL_SYMBOLS_SCALE, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
 };
 
 NoteLineSegment::NoteLineSegment(NoteLine *sp) : TextLineBaseSegment(ElementType::NOTELINE_SEGMENT, sp, ElementFlag::MOVABLE) {
-    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
+    end_text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
-EngravingObject *NoteLineSegment::propertyDelegate(Pid pid) const {
+EngravingObject *NoteLineSegment::property_delegate(Pid pid) const {
     if (pid == Pid::NOTELINE_PLACEMENT) {
-        return noteLine();
+        return note_line();
     }
 
-    return TextLineBaseSegment::propertyDelegate(pid);
+    return TextLineBaseSegment::property_delegate(pid);
 }
 
 NoteLine::NoteLine(EngravingObject *parent) : TextLineBase(ElementType::NOTELINE, parent, ElementFlag::MOVABLE) {
-    initElementStyle(&noteLineStyle);
+    init_element_style(&::mu::engraving::note_line_style);
 
-    static const std::array<Pid, 18> propertiesToInitialise{Pid::BEGIN_TEXT,
-                                                            Pid::CONTINUE_TEXT,
-                                                            Pid::END_TEXT,
-                                                            Pid::LINE_VISIBLE,
-                                                            Pid::BEGIN_TEXT_OFFSET,
-                                                            Pid::CONTINUE_TEXT_OFFSET,
-                                                            Pid::END_TEXT_OFFSET,
-                                                            Pid::BEGIN_HOOK_TYPE,
-                                                            Pid::END_HOOK_TYPE,
-                                                            Pid::BEGIN_TEXT_PLACE,
-                                                            Pid::CONTINUE_TEXT_PLACE,
-                                                            Pid::END_TEXT_PLACE,
-                                                            Pid::BEGIN_HOOK_HEIGHT,
-                                                            Pid::END_HOOK_HEIGHT,
-                                                            Pid::DIAGONAL,
-                                                            Pid::NOTELINE_PLACEMENT,
-                                                            Pid::GAP_BETWEEN_TEXT_AND_LINE,
-                                                            Pid::SYSTEM_FLAG};
+    static const std::array<Pid, 18> properties_to_initialise{Pid::BEGIN_TEXT,
+                                                              Pid::CONTINUE_TEXT,
+                                                              Pid::END_TEXT,
+                                                              Pid::LINE_VISIBLE,
+                                                              Pid::BEGIN_TEXT_OFFSET,
+                                                              Pid::CONTINUE_TEXT_OFFSET,
+                                                              Pid::END_TEXT_OFFSET,
+                                                              Pid::BEGIN_HOOK_TYPE,
+                                                              Pid::END_HOOK_TYPE,
+                                                              Pid::BEGIN_TEXT_PLACE,
+                                                              Pid::CONTINUE_TEXT_PLACE,
+                                                              Pid::END_TEXT_PLACE,
+                                                              Pid::BEGIN_HOOK_HEIGHT,
+                                                              Pid::END_HOOK_HEIGHT,
+                                                              Pid::DIAGONAL,
+                                                              Pid::NOTELINE_PLACEMENT,
+                                                              Pid::GAP_BETWEEN_TEXT_AND_LINE,
+                                                              Pid::SYSTEM_FLAG};
 
-    for (const Pid &pid : propertiesToInitialise) {
-        resetProperty(pid);
+    for (const Pid &pid : properties_to_initialise) {
+        reset_property(pid);
     }
 }
 
 NoteLine::NoteLine(const NoteLine &nl) : TextLineBase(nl) {}
 
-LineSegment *NoteLine::createLineSegment() {
+LineSegment *NoteLine::create_line_segment() {
     NoteLineSegment *seg = new NoteLineSegment(this);
-    seg->setTrack(track());
+    seg->set_track(track());
     return seg;
 }
 
-PropertyValue NoteLine::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue NoteLine::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::BEGIN_TEXT:
         case Pid::CONTINUE_TEXT:
         case Pid::END_TEXT: return "";
@@ -133,33 +133,33 @@ PropertyValue NoteLine::propertyDefault(Pid propertyId) const {
         case Pid::GAP_BETWEEN_TEXT_AND_LINE: return 0.5_sp;
         case Pid::SYSTEM_FLAG: return false;
         case Pid::TEXT_STYLE: return TextStyleType::NOTELINE;
-        default: return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::property_default(property_id);
     }
 }
 
-PropertyValue NoteLine::getProperty(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue NoteLine::get_property(Pid property_id) const {
+    switch (property_id) {
         case Pid::PLAY: return PropertyValue();
         case Pid::PLACEMENT: return PlacementV::ABOVE;
-        case Pid::NOTELINE_PLACEMENT: return lineEndPlacement_;
-        default: return TextLineBase::getProperty(propertyId);
+        case Pid::NOTELINE_PLACEMENT: return line_end_placement_;
+        default: return TextLineBase::get_property(property_id);
     }
 }
 
-bool NoteLine::setProperty(Pid propertyId, const PropertyValue &val) {
-    switch (propertyId) {
+bool NoteLine::set_property(Pid property_id, const PropertyValue &val) {
+    switch (property_id) {
         case Pid::PLAY: break;
-        case Pid::NOTELINE_PLACEMENT: setLineEndPlacement(val.value<NoteLineEndPlacement>()); break;
-        default: return TextLineBase::setProperty(propertyId, val);
+        case Pid::NOTELINE_PLACEMENT: set_line_end_placement(val.value<NoteLineEndPlacement>()); break;
+        default: return TextLineBase::set_property(property_id, val);
     }
 
     return true;
 }
 
 void NoteLine::reset() {
-    undoResetProperty(Pid::NOTELINE_PLACEMENT);
+    undo_reset_property(Pid::NOTELINE_PLACEMENT);
     TextLineBase::reset();
 }
 
-Sid NoteLine::defaultPosSid() const { return Sid::NOSTYLE; }
+Sid NoteLine::default_pos_sid() const { return Sid::NOSTYLE; }
 } // namespace mu::engraving

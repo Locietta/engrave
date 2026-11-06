@@ -39,10 +39,10 @@ using namespace mu::engraving;
 //   setBeamMode
 //---------------------------------------------------------
 
-void EditBeam::setBeamMode(Transaction &, Score *score, BeamMode mode) {
-    for (ChordRest *cr : score->getSelectedChordRests()) {
+void EditBeam::set_beam_mode(Transaction &, Score *score, BeamMode mode) {
+    for (ChordRest *cr : score->get_selected_chord_rests()) {
         if (cr) {
-            cr->undoChangeProperty(Pid::BEAM_MODE, mode);
+            cr->undo_change_property(Pid::BEAM_MODE, mode);
         }
     }
 }
@@ -51,51 +51,51 @@ void EditBeam::setBeamMode(Transaction &, Score *score, BeamMode mode) {
 //   beamSelectedRange
 //---------------------------------------------------------
 
-void EditBeam::beamSelectedRange(Transaction &tx, Score *score) {
-    if (!score->selection().isRange()) {
+void EditBeam::beam_selected_range(Transaction &tx, Score *score) {
+    if (!score->selection().is_range()) {
         return;
     }
 
-    resetBeamMode(tx, score);
+    reset_beam_mode(tx, score);
 
-    const track_idx_t startTrack = staff2track(score->selection().staffStart());
-    const track_idx_t endTrack = staff2track(score->selection().staffEnd());
-    const SelectionFilter filter = score->selectionFilter();
+    const track_idx_t start_track = staff2track(score->selection().staff_start());
+    const track_idx_t end_track = staff2track(score->selection().staff_end());
+    const SelectionFilter filter = score->selection_filter();
 
-    for (staff_idx_t trackIdx = startTrack; trackIdx < endTrack; ++trackIdx) {
-        if (!filter.canSelectVoice(trackIdx)) {
+    for (staff_idx_t track_idx = start_track; track_idx < end_track; ++track_idx) {
+        if (!filter.can_select_voice(track_idx)) {
             continue;
         }
 
-        ChordRest *firstChordRest = score->selection().firstChordRest(trackIdx);
-        ChordRest *lastChordRest = score->selection().lastChordRest(trackIdx);
+        ChordRest *first_chord_rest = score->selection().first_chord_rest(track_idx);
+        ChordRest *last_chord_rest = score->selection().last_chord_rest(track_idx);
 
-        if (!firstChordRest || !lastChordRest) {
+        if (!first_chord_rest || !last_chord_rest) {
             continue;
         }
 
-        ChordRest *prev = Navigation::prevChordRest(firstChordRest);
-        ChordRest *cr = firstChordRest;
-        BeamMode actualBeamMode = Groups::actualBeamMode(cr, prev);
-        if (actualBeamMode != BeamMode::BEGIN) {
-            cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::BEGIN);
+        ChordRest *prev = Navigation::prev_chord_rest(first_chord_rest);
+        ChordRest *cr = first_chord_rest;
+        BeamMode actual_beam_mode = Groups::actual_beam_mode(cr, prev);
+        if (actual_beam_mode != BeamMode::BEGIN) {
+            cr->undo_change_property(Pid::BEAM_MODE, BeamMode::BEGIN);
         }
 
-        while (cr != lastChordRest) {
+        while (cr != last_chord_rest) {
             prev = cr;
-            cr = Navigation::nextChordRest(cr);
-            actualBeamMode = Groups::actualBeamMode(cr, prev);
-            if (actualBeamMode == BeamMode::BEGIN || actualBeamMode == BeamMode::NONE) {
-                cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::MID);
+            cr = Navigation::next_chord_rest(cr);
+            actual_beam_mode = Groups::actual_beam_mode(cr, prev);
+            if (actual_beam_mode == BeamMode::BEGIN || actual_beam_mode == BeamMode::NONE) {
+                cr->undo_change_property(Pid::BEAM_MODE, BeamMode::MID);
             }
         }
 
         prev = cr;
-        cr = Navigation::nextChordRest(cr);
+        cr = Navigation::next_chord_rest(cr);
         if (cr) {
-            actualBeamMode = Groups::actualBeamMode(cr, prev);
-            if (actualBeamMode != BeamMode::BEGIN && actualBeamMode != BeamMode::NONE) {
-                cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::BEGIN);
+            actual_beam_mode = Groups::actual_beam_mode(cr, prev);
+            if (actual_beam_mode != BeamMode::BEGIN && actual_beam_mode != BeamMode::NONE) {
+                cr->undo_change_property(Pid::BEAM_MODE, BeamMode::BEGIN);
             }
         }
     }
@@ -105,49 +105,49 @@ void EditBeam::beamSelectedRange(Transaction &tx, Score *score) {
 //   resetBeamMode
 //---------------------------------------------------------
 
-void EditBeam::resetBeamMode(Transaction &, Score *score) {
-    bool noSelection = score->selection().isNone();
-    if (noSelection) {
-        score->cmdSelectAll();
-    } else if (!score->selection().isRange()) {
+void EditBeam::reset_beam_mode(Transaction &, Score *score) {
+    bool no_selection = score->selection().is_none();
+    if (no_selection) {
+        score->cmd_select_all();
+    } else if (!score->selection().is_range()) {
         LOGD("no system or staff selected");
         return;
     }
 
-    ChordRest *firstCr = score->selection().firstChordRest();
-    if (!firstCr) {
+    ChordRest *first_cr = score->selection().first_chord_rest();
+    if (!first_cr) {
         LOGD("no chord/rest in selection");
         return;
     }
 
-    const track_idx_t trackStart = staff2track(score->selection().staffStart());
-    const track_idx_t trackEnd = staff2track(score->selection().staffEnd());
-    const Fraction endTick = score->selection().tickEnd();
-    const SelectionFilter filter = score->selectionFilter();
+    const track_idx_t track_start = staff2track(score->selection().staff_start());
+    const track_idx_t track_end = staff2track(score->selection().staff_end());
+    const Fraction end_tick = score->selection().tick_end();
+    const SelectionFilter filter = score->selection_filter();
 
-    for (Segment *seg = firstCr->segment(); seg && seg->tick() < endTick; seg = seg->next1(SegmentType::ChordRest)) {
-        for (track_idx_t track = trackStart; track < trackEnd; ++track) {
-            if (!filter.canSelectVoice(track)) {
+    for (Segment *seg = first_cr->segment(); seg && seg->tick() < end_tick; seg = seg->next1(SegmentType::CHORD_REST)) {
+        for (track_idx_t track = track_start; track < track_end; ++track) {
+            if (!filter.can_select_voice(track)) {
                 continue;
             }
 
-            ChordRest *cr = toChordRest(seg->element(track));
+            ChordRest *cr = to_chord_rest(seg->element(track));
             if (!cr) {
                 continue;
             }
-            if (cr->isChord()) {
-                if (cr->beamMode() != BeamMode::AUTO) {
-                    cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::AUTO);
+            if (cr->is_chord()) {
+                if (cr->beam_mode() != BeamMode::AUTO) {
+                    cr->undo_change_property(Pid::BEAM_MODE, BeamMode::AUTO);
                 }
-            } else if (cr->isRest()) {
-                if (cr->beamMode() != BeamMode::NONE) {
-                    cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::NONE);
+            } else if (cr->is_rest()) {
+                if (cr->beam_mode() != BeamMode::NONE) {
+                    cr->undo_change_property(Pid::BEAM_MODE, BeamMode::NONE);
                 }
             }
         }
     }
 
-    if (noSelection) {
-        score->deselectAll();
+    if (no_selection) {
+        score->deselect_all();
     }
 }

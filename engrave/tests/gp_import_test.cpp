@@ -80,10 +80,10 @@ std::vector<std::filesystem::path> score_files() {
 /// imported score is not merely present but structurally sound where the crash was.
 std::size_t chords_without_notes(mu::engraving::Score *score) {
     std::size_t count = 0;
-    for (mu::engraving::Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (mu::engraving::Measure *measure = score->first_measure(); measure; measure = measure->next_measure()) {
         for (mu::engraving::Segment *segment = measure->first(); segment; segment = segment->next()) {
             for (mu::engraving::EngravingItem *element : segment->elist()) {
-                if (element && element->isChord() && mu::engraving::toChord(element)->notes().empty()) {
+                if (element && element->is_chord() && mu::engraving::to_chord(element)->notes().empty()) {
                     ++count;
                 }
             }
@@ -112,7 +112,7 @@ TEST(GuitarProImport, EveryTestDataFileOpensOrReturnsAnError) {
         ++opened;
         mu::engraving::MasterScore *master = engrave::DocumentAccess::master_score(**document);
         ASSERT_NE(master, nullptr) << "a document without a score";
-        EXPECT_NE(master->firstMeasure(), nullptr) << "a score without a measure";
+        EXPECT_NE(master->first_measure(), nullptr) << "a score without a measure";
         EXPECT_FALSE(master->parts().empty()) << "a score without a part";
         EXPECT_EQ(chords_without_notes(master), 0u) << "an imported chord holds no note";
     }

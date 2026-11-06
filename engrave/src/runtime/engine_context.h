@@ -43,15 +43,15 @@ struct EngineContext {
     EngineContext(const EngineContext &) = delete;
     EngineContext &operator=(const EngineContext &) = delete;
 
-    muse::io::IFileSystem &fileSystem() const;
+    muse::io::IFileSystem &file_system() const;
     RuntimeAssets &assets() const;
     EngineAudio &audio() const;
-    muse::draw::IFontsDatabase &fontsDatabase() const;
+    muse::draw::IFontsDatabase &fonts_database() const;
     // The services every score of this engine is built with. Tests may replace
     // a service before they create scores.
     mu::engraving::EngravingServices &engraving() const;
-    const muse::mpe::IArticulationProfilesRepository &articulationProfiles() const;
-    const mu::iex::musicxml::IMusicXmlConfiguration &musicXml() const;
+    const muse::mpe::IArticulationProfilesRepository &articulation_profiles() const;
+    const mu::iex::musicxml::IMusicXmlConfiguration &music_xml() const;
 
 private:
     struct Impl;

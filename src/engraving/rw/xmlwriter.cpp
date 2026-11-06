@@ -37,17 +37,17 @@ XmlWriter::XmlWriter(muse::io::IODevice *device) : XmlStreamWriter(device) {}
 
 XmlWriter::~XmlWriter() {}
 
-void XmlWriter::startElementRaw(const String &s) { XmlStreamWriter::startElementRaw(s); }
+void XmlWriter::start_element_raw(const String &s) { XmlStreamWriter::start_element_raw(s); }
 
-void XmlWriter::startElement(const AsciiStringView &name, const Attributes &attrs) { XmlStreamWriter::startElement(name, attrs); }
+void XmlWriter::start_element(const AsciiStringView &name, const Attributes &attrs) { XmlStreamWriter::start_element(name, attrs); }
 
-void XmlWriter::startElement(const EngravingObject *se, const Attributes &attrs) { startElement(se->typeName(), se, attrs); }
+void XmlWriter::start_element(const EngravingObject *se, const Attributes &attrs) { start_element(se->type_name(), se, attrs); }
 
-void XmlWriter::startElement(const AsciiStringView &name, const EngravingObject *se, const Attributes &attrs) {
-    XmlStreamWriter::startElement(name, attrs);
+void XmlWriter::start_element(const AsciiStringView &name, const EngravingObject *se, const Attributes &attrs) {
+    XmlStreamWriter::start_element(name, attrs);
 
-    if (_recordElements) {
-        _elements.emplace_back(se, name);
+    if (record_elements) {
+        elements_value.emplace_back(se, name);
     }
 }
 
@@ -66,205 +66,205 @@ void XmlWriter::tag(const AsciiStringView &name, const Attributes &attrs, const 
     XmlStreamWriter::element(name, attrs, body);
 }
 
-void XmlWriter::tagRaw(const String &elementWithAttrs, const Value &body) { XmlStreamWriter::elementRaw(elementWithAttrs, body); }
+void XmlWriter::tag_raw(const String &element_with_attrs, const Value &body) { XmlStreamWriter::element_raw(element_with_attrs, body); }
 
 //---------------------------------------------------------
 //   tag
 //---------------------------------------------------------
 
-void XmlWriter::tagProperty(Pid id, const PropertyValue &val, const PropertyValue &def) {
+void XmlWriter::tag_property(Pid id, const PropertyValue &val, const PropertyValue &def) {
     if (val == def) {
         return;
     }
 
-    const char *name = propertyName(id);
+    const char *name = property_name(id);
     if (name == 0) {
         return;
     }
 
-    P_TYPE valType = val.type();
-    P_TYPE propType = propertyType(id);
-    if (valType != propType) {
+    PType val_type = val.type();
+    PType prop_type = property_type(id);
+    if (val_type != prop_type) {
         LOGD() << "property value type mismatch, prop: " << name;
     }
 
-    const String writableVal(propertyToString(id, val, /* mscx */ true));
-    if (writableVal.isEmpty()) {
+    const String writable_val(property_to_string(id, val, /* mscx */ true));
+    if (writable_val.is_empty()) {
         //! NOTE The data type is ABSOLUTE, but we write SPATIUM
         //! (the conversion from Absolute to Spatium occurred higher up the stack)
-        if (propType == P_TYPE::ABSOLUTE) {
-            propType = P_TYPE::SPATIUM;
+        if (prop_type == PType::ABSOLUTE) {
+            prop_type = PType::SPATIUM;
         }
 
         //! HACK Temporary hack. We used to have some kind of property with property type BOOL,
         //! but the used value type is INT (not just 1 and 0)
         //! TODO: remove if deemed safe
-        IF_ASSERT_FAILED(!(propType == P_TYPE::BOOL && valType == P_TYPE::INT)) { propType = P_TYPE::INT; }
+        IF_ASSERT_FAILED(!(prop_type == PType::BOOL && val_type == PType::INT)) { prop_type = PType::INT; }
 
-        tagProperty(name, propType, val);
+        tag_property(name, prop_type, val);
     } else {
-        tagProperty(name, P_TYPE::STRING, PropertyValue(writableVal));
+        tag_property(name, PType::STRING, PropertyValue(writable_val));
     }
 }
 
-void XmlWriter::tagProperty(const AsciiStringView &name, const PropertyValue &val, const PropertyValue &def) {
+void XmlWriter::tag_property(const AsciiStringView &name, const PropertyValue &val, const PropertyValue &def) {
     if (val == def) {
         return;
     }
 
-    tagProperty(name, val.type(), val);
+    tag_property(name, val.type(), val);
 }
 
-void XmlWriter::tagProperty(const AsciiStringView &name, P_TYPE type, const PropertyValue &data) {
+void XmlWriter::tag_property(const AsciiStringView &name, PType type, const PropertyValue &data) {
     switch (type) {
-        case P_TYPE::UNDEFINED: UNREACHABLE; break;
+        case PType::UNDEFINED: UNREACHABLE; break;
         // base
-        case P_TYPE::BOOL: element(name, int(data.value<bool>())); break;
-        case P_TYPE::INT:
-        case P_TYPE::SIZE_T: element(name, data.value<int>()); break;
-        case P_TYPE::REAL: element(name, data.value<double>()); break;
-        case P_TYPE::STRING: element(name, data.value<String>()); break;
+        case PType::BOOL: element(name, int(data.value<bool>())); break;
+        case PType::INT:
+        case PType::SIZE_T: element(name, data.value<int>()); break;
+        case PType::REAL: element(name, data.value<double>()); break;
+        case PType::STRING: element(name, data.value<String>()); break;
         // geometry
-        case P_TYPE::POINT: {
+        case PType::POINT: {
             PointF p = data.value<PointF>();
             element(name, {{"x", p.x()}, {"y", p.y()}});
         } break;
-        case P_TYPE::SIZE: {
+        case PType::SIZE: {
             SizeF s = data.value<SizeF>();
             element(name, {{"w", s.width()}, {"h", s.height()}});
         } break;
-        case P_TYPE::DRAW_PATH:
+        case PType::DRAW_PATH:
             UNREACHABLE; //! TODO
             break;
-        case P_TYPE::SCALE: {
+        case PType::SCALE: {
             ScaleF s = data.value<ScaleF>();
             element(name, {{"w", s.width()}, {"h", s.height()}});
         } break;
-        case P_TYPE::SPATIUM: element(name, data.value<Spatium>().val()); break;
-        case P_TYPE::ABSOLUTE: element(name, data.value<double>()); break;
+        case PType::SPATIUM: element(name, data.value<Spatium>().val()); break;
+        case PType::ABSOLUTE: element(name, data.value<double>()); break;
 
         // draw
-        case P_TYPE::SYMID: {
-            element(name, TConv::toXml(data.value<SymId>()));
+        case PType::SYMID: {
+            element(name, TConv::to_xml(data.value<SymId>()));
         } break;
-        case P_TYPE::COLOR: {
+        case PType::COLOR: {
             Color color(data.value<Color>());
             element(name, {{"r", color.red()}, {"g", color.green()}, {"b", color.blue()}, {"a", color.alpha()}});
         } break;
-        case P_TYPE::ORNAMENT_STYLE: {
-            element(name, TConv::toXml(data.value<OrnamentStyle>()));
+        case PType::ORNAMENT_STYLE: {
+            element(name, TConv::to_xml(data.value<OrnamentStyle>()));
         } break;
-        case P_TYPE::ORNAMENT_SHOW_ACCIDENTAL: element(name, static_cast<int>(data.value<OrnamentShowAccidental>())); break;
-        case P_TYPE::GLISS_STYLE: {
-            element(name, TConv::toXml(data.value<GlissandoStyle>()));
+        case PType::ORNAMENT_SHOW_ACCIDENTAL: element(name, static_cast<int>(data.value<OrnamentShowAccidental>())); break;
+        case PType::GLISS_STYLE: {
+            element(name, TConv::to_xml(data.value<GlissandoStyle>()));
         } break;
-        case P_TYPE::GLISS_TYPE: {
-            element(name, TConv::toXml(data.value<GlissandoType>()));
+        case PType::GLISS_TYPE: {
+            element(name, TConv::to_xml(data.value<GlissandoType>()));
         } break;
-        case P_TYPE::ALIGN: {
-            element(name, TConv::toXml(data.value<Align>()));
+        case PType::ALIGN: {
+            element(name, TConv::to_xml(data.value<Align>()));
         } break;
-        case P_TYPE::ALIGN_H: {
-            element(name, TConv::toXml(data.value<AlignH>()));
+        case PType::ALIGN_H: {
+            element(name, TConv::to_xml(data.value<AlignH>()));
         } break;
-        case P_TYPE::PLACEMENT_V: {
-            element(name, TConv::toXml(data.value<PlacementV>()));
+        case PType::PLACEMENT_V: {
+            element(name, TConv::to_xml(data.value<PlacementV>()));
         } break;
-        case P_TYPE::PLACEMENT_H: {
-            element(name, TConv::toXml(data.value<PlacementH>()));
+        case PType::PLACEMENT_H: {
+            element(name, TConv::to_xml(data.value<PlacementH>()));
         } break;
-        case P_TYPE::TEXT_PLACE: {
-            element(name, TConv::toXml(data.value<TextPlace>()));
+        case PType::TEXT_PLACE: {
+            element(name, TConv::to_xml(data.value<TextPlace>()));
         } break;
-        case P_TYPE::DIRECTION_V: {
-            element(name, TConv::toXml(data.value<DirectionV>()));
+        case PType::DIRECTION_V: {
+            element(name, TConv::to_xml(data.value<DirectionV>()));
         } break;
-        case P_TYPE::DIRECTION_H: {
-            element(name, TConv::toXml(data.value<DirectionH>()));
+        case PType::DIRECTION_H: {
+            element(name, TConv::to_xml(data.value<DirectionH>()));
         } break;
-        case P_TYPE::ORIENTATION: {
-            element(name, TConv::toXml(data.value<Orientation>()));
+        case PType::ORIENTATION: {
+            element(name, TConv::to_xml(data.value<Orientation>()));
         } break;
         // time
-        case P_TYPE::FRACTION: {
-            tagFraction(name, data.value<Fraction>());
+        case PType::FRACTION: {
+            tag_fraction(name, data.value<Fraction>());
         } break;
-        case P_TYPE::LAYOUTBREAK_TYPE: {
-            element(name, TConv::toXml(data.value<LayoutBreakType>()));
+        case PType::LAYOUTBREAK_TYPE: {
+            element(name, TConv::to_xml(data.value<LayoutBreakType>()));
         } break;
-        case P_TYPE::BARLINE_TYPE: {
-            element(name, TConv::toXml(data.value<BarLineType>()));
+        case PType::BARLINE_TYPE: {
+            element(name, TConv::to_xml(data.value<BarLineType>()));
         } break;
-        case P_TYPE::NOTEHEAD_TYPE: {
-            element(name, TConv::toXml(data.value<NoteHeadType>()));
+        case PType::NOTEHEAD_TYPE: {
+            element(name, TConv::to_xml(data.value<NoteHeadType>()));
         } break;
-        case P_TYPE::NOTEHEAD_SCHEME: {
-            element(name, TConv::toXml(data.value<NoteHeadScheme>()));
+        case PType::NOTEHEAD_SCHEME: {
+            element(name, TConv::to_xml(data.value<NoteHeadScheme>()));
         } break;
-        case P_TYPE::NOTEHEAD_GROUP: {
-            element(name, TConv::toXml(data.value<NoteHeadGroup>()));
+        case PType::NOTEHEAD_GROUP: {
+            element(name, TConv::to_xml(data.value<NoteHeadGroup>()));
         } break;
-        case P_TYPE::CLEF_TYPE: {
-            element(name, TConv::toXml(data.value<ClefType>()));
+        case PType::CLEF_TYPE: {
+            element(name, TConv::to_xml(data.value<ClefType>()));
         } break;
-        case P_TYPE::CLEF_TO_BARLINE_POS: element(name, static_cast<int>(data.value<ClefToBarlinePosition>())); break;
-        case P_TYPE::DYNAMIC_TYPE: {
-            element(name, TConv::toXml(data.value<DynamicType>()));
+        case PType::CLEF_TO_BARLINE_POS: element(name, static_cast<int>(data.value<ClefToBarlinePosition>())); break;
+        case PType::DYNAMIC_TYPE: {
+            element(name, TConv::to_xml(data.value<DynamicType>()));
         } break;
-        case P_TYPE::DYNAMIC_SPEED: {
-            element(name, TConv::toXml(data.value<DynamicSpeed>()));
+        case PType::DYNAMIC_SPEED: {
+            element(name, TConv::to_xml(data.value<DynamicSpeed>()));
         } break;
-        case P_TYPE::LINE_TYPE: {
-            element(name, TConv::toXml(data.value<LineType>()));
+        case PType::LINE_TYPE: {
+            element(name, TConv::to_xml(data.value<LineType>()));
         } break;
-        case P_TYPE::HOOK_TYPE: {
-            element(name, TConv::toXml(data.value<HookType>()));
+        case PType::HOOK_TYPE: {
+            element(name, TConv::to_xml(data.value<HookType>()));
         } break;
-        case P_TYPE::KEY_MODE: {
-            element(name, TConv::toXml(data.value<KeyMode>()));
+        case PType::KEY_MODE: {
+            element(name, TConv::to_xml(data.value<KeyMode>()));
         } break;
-        case P_TYPE::TEXT_STYLE: {
-            element(name, TConv::toXml(data.value<TextStyleType>()));
+        case PType::TEXT_STYLE: {
+            element(name, TConv::to_xml(data.value<TextStyleType>()));
         } break;
-        case P_TYPE::SLUR_STYLE_TYPE: element(name, static_cast<int>(data.value<SlurStyleType>())); break;
-        case P_TYPE::CHANGE_METHOD: {
-            element(name, TConv::toXml(data.value<ChangeMethod>()));
+        case PType::SLUR_STYLE_TYPE: element(name, static_cast<int>(data.value<SlurStyleType>())); break;
+        case PType::CHANGE_METHOD: {
+            element(name, TConv::to_xml(data.value<ChangeMethod>()));
         } break;
-        case P_TYPE::ACCIDENTAL_ROLE: {
-            element(name, TConv::toXml(data.value<AccidentalRole>()));
+        case PType::ACCIDENTAL_ROLE: {
+            element(name, TConv::to_xml(data.value<AccidentalRole>()));
         } break;
-        case P_TYPE::PLAYTECH_TYPE: {
-            element(name, TConv::toXml(data.value<PlayingTechniqueType>()));
+        case PType::PLAYTECH_TYPE: {
+            element(name, TConv::to_xml(data.value<PlayingTechniqueType>()));
         } break;
-        case P_TYPE::TEMPOCHANGE_TYPE: {
-            element(name, TConv::toXml(data.value<GradualTempoChangeType>()));
+        case PType::TEMPOCHANGE_TYPE: {
+            element(name, TConv::to_xml(data.value<GradualTempoChangeType>()));
         } break;
-        case P_TYPE::ORNAMENT_INTERVAL: {
-            element(name, TConv::toXml(data.value<OrnamentInterval>()));
+        case PType::ORNAMENT_INTERVAL: {
+            element(name, TConv::to_xml(data.value<OrnamentInterval>()));
         } break;
-        case P_TYPE::TIE_PLACEMENT: {
-            element(name, TConv::toXml(data.value<TiePlacement>()));
+        case PType::TIE_PLACEMENT: {
+            element(name, TConv::to_xml(data.value<TiePlacement>()));
         } break;
-        case P_TYPE::VOICE_ASSIGNMENT: {
-            element(name, TConv::toXml(data.value<VoiceAssignment>()));
+        case PType::VOICE_ASSIGNMENT: {
+            element(name, TConv::to_xml(data.value<VoiceAssignment>()));
         } break;
-        case P_TYPE::AUTO_ON_OFF: {
-            element(name, TConv::toXml(data.value<AutoOnOff>()));
+        case PType::AUTO_ON_OFF: {
+            element(name, TConv::to_xml(data.value<AutoOnOff>()));
         } break;
-        case P_TYPE::AUTO_CUSTOM_HIDE: {
-            element(name, TConv::toXml(data.value<AutoCustomHide>()));
+        case PType::AUTO_CUSTOM_HIDE: {
+            element(name, TConv::to_xml(data.value<AutoCustomHide>()));
         } break;
-        case P_TYPE::INT_VEC: {
-            element(name, TConv::toXml(data.value<std::vector<int>>()));
+        case PType::INT_VEC: {
+            element(name, TConv::to_xml(data.value<std::vector<int>>()));
         } break;
-        case P_TYPE::PARTIAL_SPANNER_DIRECTION: {
-            element(name, TConv::toXml(data.value<PartialSpannerDirection>()));
+        case PType::PARTIAL_SPANNER_DIRECTION: {
+            element(name, TConv::to_xml(data.value<PartialSpannerDirection>()));
         } break;
-        case P_TYPE::PARENTHESES_MODE: {
-            element(name, TConv::toXml(data.value<ParenthesesMode>()));
+        case PType::PARENTHESES_MODE: {
+            element(name, TConv::to_xml(data.value<ParenthesesMode>()));
         } break;
-        case P_TYPE::MARKER_TYPE: {
-            element(name, TConv::toXml(data.value<MarkerType>()));
+        case PType::MARKER_TYPE: {
+            element(name, TConv::to_xml(data.value<MarkerType>()));
         } break;
         default: {
             UNREACHABLE; //! TODO
@@ -272,17 +272,17 @@ void XmlWriter::tagProperty(const AsciiStringView &name, P_TYPE type, const Prop
     }
 }
 
-void XmlWriter::tagPoint(const AsciiStringView &name, const PointF &p) { tag(name, {{"x", p.x()}, {"y", p.y()}}); }
+void XmlWriter::tag_point(const AsciiStringView &name, const PointF &p) { tag(name, {{"x", p.x()}, {"y", p.y()}}); }
 
-void XmlWriter::tagFraction(const AsciiStringView &name, const Fraction &v, const Fraction &def) {
+void XmlWriter::tag_fraction(const AsciiStringView &name, const Fraction &v, const Fraction &def) {
     if (v == def) {
         return;
     }
 
-    element(name, v.toString());
+    element(name, v.to_string());
 }
 
-void XmlWriter::writeXml(const String &name, String s) {
+void XmlWriter::write_xml(const String &name, String s) {
     for (size_t i = 0; i < s.size(); ++i) {
         char16_t c = s.at(i).unicode();
         if (c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D) {
@@ -290,10 +290,10 @@ void XmlWriter::writeXml(const String &name, String s) {
         }
     }
 
-    elementStringRaw(name, s);
+    element_string_raw(name, s);
 }
 
 void XmlWriter::comment(const String &text) { XmlStreamWriter::comment(text); }
 
-String XmlWriter::xmlString(const String &s) { return s.toXmlEscaped(); }
+String XmlWriter::xml_string(const String &s) { return s.to_xml_escaped(); }
 } // namespace mu::engraving

@@ -35,11 +35,11 @@ class MidiChord;
 class MTrack;
 
 namespace MidiBeat {
-void removeEvery2ndBeat(std::set<ReducedFraction> &beatSet);
-void findBeatLocations(const std::multimap<ReducedFraction, MidiChord> &allChords, engraving::TimeSigMap *sigmap, double ticksPerSec);
+void remove_every2nd_beat(std::set<ReducedFraction> &beat_set);
+void find_beat_locations(const std::multimap<ReducedFraction, MidiChord> &all_chords, engraving::TimeSigMap *sigmap, double ticks_per_sec);
 
-void adjustChordsToBeats(std::multimap<int, MTrack> &tracks);
-void setTimeSignature(engraving::TimeSigMap *sigmap);
+void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks);
+void set_time_signature(engraving::TimeSigMap *sigmap);
 } // namespace MidiBeat
 } // namespace mu::iex::midi
 

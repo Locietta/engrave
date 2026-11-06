@@ -48,19 +48,19 @@ class EIDRegister {
 public:
     EIDRegister() = default;
 
-    EID newEIDForItem(const EngravingObject *item);
+    EID new_eid_for_item(const EngravingObject *item);
     // False, and neither map touched, when the EID already belongs to another
     // element; the caller gives the element a fresh EID instead.
-    bool registerItemEID(const EID &eid, const EngravingObject *item);
-    void removeItem(const EngravingObject *item);
-    void onItemDestroyed(const EngravingObject *item);
+    bool register_item_eid(const EID &eid, const EngravingObject *item);
+    void remove_item(const EngravingObject *item);
+    void on_item_destroyed(const EngravingObject *item);
 
-    void noteMalformedEID() { ++repairs_.malformed; }
+    void note_malformed_eid() { ++repairs_.malformed; }
 
     EIDRepairCount repairs() const;
 
-    EngravingObject *itemFromEID(const EID &eid) const;
-    EID EIDFromItem(const EngravingObject *item) const;
+    EngravingObject *item_from_eid(const EID &eid) const;
+    EID eid_from_item(const EngravingObject *item) const;
     // Every pair in the register, for the id bijection checks of the tests.
     std::vector<std::pair<EID, const EngravingObject *>> entries() const;
     size_t size() const;
@@ -68,12 +68,12 @@ public:
 private:
     EIDRegister(const EIDRegister &) = delete;
 
-    std::unordered_map<EID, EngravingObject *> eidToItem_;
-    std::unordered_map<EngravingObject *, EID> itemToEid_;
+    std::unordered_map<EID, EngravingObject *> eid_to_item_;
+    std::unordered_map<EngravingObject *, EID> item_to_eid_;
 
     EIDRepairCount repairs_;
 
-    uint64_t maxValTestMode_ = 0;
+    uint64_t max_val_test_mode_ = 0;
 
     mutable std::shared_mutex mutex_;
 };

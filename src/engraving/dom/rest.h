@@ -43,13 +43,13 @@ public:
 
     int below() const { return below_; }
 
-    void setAbove(int v) { above_ = std::max(std::min(above_, v), 0); }
+    void set_above(int v) { above_ = std::max(std::min(above_, v), 0); }
 
-    void setBelow(int v) { below_ = std::max(std::min(below_, v), 0); }
+    void set_below(int v) { below_ = std::max(std::min(below_, v), 0); }
 
     bool locked() const { return locked_; }
 
-    void setLocked(bool v) { locked_ = v; }
+    void set_locked(bool v) { locked_ = v; }
 
 private:
     int above_ = 0.0; // In space units
@@ -68,91 +68,91 @@ class Rest : public ChordRest {
 
 public:
 
-    ~Rest() { muse::DeleteAll(dots_); }
+    ~Rest() { muse::delete_all(dots_); }
 
-    void hack_toRestType();
+    void hack_to_rest_type();
 
     Rest &operator=(const Rest &) = delete;
 
     Rest *clone() const override { return new Rest(*this, false); }
 
-    EngravingItem *linkedClone() override { return new Rest(*this, true); }
+    EngravingItem *linked_clone() override { return new Rest(*this, true); }
 
-    Measure *measure() const override { return ownershipParent() ? toMeasure(ownershipParent()->ownershipParent()) : 0; }
+    Measure *measure() const override { return ownership_parent() ? to_measure(ownership_parent()->ownership_parent()) : 0; }
 
     double mag() const override;
-    double intrinsicMag() const override;
+    double intrinsic_mag() const override;
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
-    void setTrack(track_idx_t val) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void set_track(track_idx_t val) override;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    bool isGap() const { return gap_; }
+    bool is_gap() const { return gap_; }
 
-    virtual void setGap(bool v) { gap_ = v; }
+    virtual void set_gap(bool v) { gap_ = v; }
 
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
 
-    void checkDots();
+    void check_dots();
 
     NoteDot *dot(int n);
-    const std::vector<NoteDot *> &dotList() const;
+    const std::vector<NoteDot *> &dot_list() const;
 
-    int dotLine() const { return dotline_; }
+    int dot_line() const { return dotline_; }
 
-    void setDotLine(int l) { dotline_ = l; }
+    void set_dot_line(int l) { dotline_ = l; }
 
-    static int getDotline(DurationType durationType);
+    static int get_dotline(DurationType duration_type);
     bool accent();
-    void setAccent(bool flag);
+    void set_accent(bool flag);
 
-    bool isWholeRest() const;
-    bool isBreveRest() const;
+    bool is_whole_rest() const;
+    bool is_breve_rest() const;
 
-    DeadSlapped *deadSlapped() const { return deadSlapped_; }
+    DeadSlapped *dead_slapped() const { return dead_slapped_; }
 
-    double rightEdge() const override;
-    double centerX() const;
+    double right_edge() const override;
+    double center_x() const;
 
-    bool alignWithOtherRests() const { return alignWithOtherRests_; }
+    bool align_with_other_rests() const { return align_with_other_rests_; }
 
-    void setAlignWithOtherRests(bool v) { alignWithOtherRests_ = v; }
+    void set_align_with_other_rests(bool v) { align_with_other_rests_ = v; }
 
-    void localSpatiumChanged(double oldValue, double newValue) override;
-    PropertyValue propertyDefault(Pid) const override;
-    void resetProperty(Pid id) override;
-    bool setProperty(Pid propertyId, const PropertyValue &v) override;
-    PropertyValue getProperty(Pid propertyId) const override;
-    void undoChangeDotsVisible(bool v);
+    void local_spatium_changed(double old_value, double new_value) override;
+    PropertyValue property_default(Pid) const override;
+    void reset_property(Pid id) override;
+    bool set_property(Pid property_id, const PropertyValue &v) override;
+    PropertyValue get_property(Pid property_id) const override;
+    void undo_change_dots_visible(bool v);
 
-    EngravingItem *nextElement() override;
-    EngravingItem *prevElement() override;
+    EngravingItem *next_element() override;
+    EngravingItem *prev_element() override;
 
-    bool shouldNotBeDrawn() const;
-    bool debugDrawGap() const;
+    bool should_not_be_drawn() const;
+    bool debug_draw_gap() const;
 
-    RestVerticalClearance &verticalClearance() { return verticalClearance_; }
+    RestVerticalClearance &vertical_clearance() { return vertical_clearance_; }
 
     struct LayoutData : public ChordRest::LayoutData {
-        std::vector<Rest *> mergedRests; // Rests from other voices that may be merged with this
-        ld_field<SymId> sym = {"[Rest] sym", SymId::restQuarter};
+        std::vector<Rest *> merged_rests; // Rests from other voices that may be merged with this
+        ld_field<SymId> sym = {"[Rest] sym", SymId::REST_QUARTER};
     };
     DECLARE_LAYOUTDATA_METHODS(Rest)
 
-    SymId getSymbol(DurationType type, int line, int lines) const;
-    double symWidthNoLedgerLines(LayoutData *ldata) const;
+    SymId get_symbol(DurationType type, int line, int lines) const;
+    double sym_width_no_ledger_lines(LayoutData *ldata) const;
 
 protected:
     Rest(const ElementType &type, DummyParentOr<Segment> parent);
     Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDuration &);
     Rest(const Rest &, bool link = false);
 
-    Sid getPropertyStyle(Pid pid) const override;
+    Sid get_property_style(Pid pid) const override;
 
-    virtual RectF numberRect() const { return RectF(); } // TODO: add style to show number over 1-measure rests
+    virtual RectF number_rect() const { return RectF(); } // TODO: add style to show number over 1-measure rests
 
 private:
 
@@ -160,19 +160,19 @@ private:
     Rest(DummyParentOr<Segment> parent);
     Rest(DummyParentOr<Segment> parent, const TDuration &);
 
-    double upPos() const override;
-    double downPos() const override;
-    void setOffset(const PointF &o) override;
+    double up_pos() const override;
+    double down_pos() const override;
+    void set_offset(const PointF &o) override;
 
     // values calculated by layout:
 
     int dotline_ = -1; // depends on rest symbol
     bool gap_ = false; // invisible and not selectable for user
     std::vector<NoteDot *> dots_;
-    DeadSlapped *deadSlapped_ = nullptr;
+    DeadSlapped *dead_slapped_ = nullptr;
 
-    RestVerticalClearance verticalClearance_;
+    RestVerticalClearance vertical_clearance_;
 
-    bool alignWithOtherRests_ = true;
+    bool align_with_other_rests_ = true;
 };
 } // namespace mu::engraving

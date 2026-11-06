@@ -46,7 +46,7 @@ public:
 
     Volta *volta() const { return (Volta *) spanner(); }
 
-    EngravingObject *propertyDelegate(Pid) const override;
+    EngravingObject *property_delegate(Pid) const override;
 };
 
 //---------------------------------------------------------
@@ -67,36 +67,36 @@ public:
 
     Anchor anchor() const override { return Anchor::MEASURE; }
 
-    LineSegment *createLineSegment() override;
+    LineSegment *create_line_segment() override;
 
-    bool allowTimeAnchor() const override { return false; }
+    bool allow_time_anchor() const override { return false; }
 
-    void setChannel() const;
+    void set_channel() const;
 
     std::vector<int> endings() const { return endings_; }
 
     std::vector<int> &endings() { return endings_; }
 
-    void setEndings(const std::vector<int> &l);
-    void setText(const String &s);
+    void set_endings(const std::vector<int> &l);
+    void set_text(const String &s);
     String text() const;
 
-    bool hasEnding(int repeat) const;
-    int firstEnding() const;
-    int lastEnding() const;
-    void setVoltaType(Volta::Type); // deprecated
-    Type voltaType() const;         // deprecated
+    bool has_ending(int repeat) const;
+    int first_ending() const;
+    int last_ending() const;
+    void set_volta_type(Volta::Type); // deprecated
+    Type volta_type() const;          // deprecated
 
-    bool isFirstVolta() const { return endings_.size() == 1 && hasEnding(1); }
+    bool is_first_volta() const { return endings_.size() == 1 && has_ending(1); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    PointF linePos(Grip grip, System **system) const override;
+    PointF line_pos(Grip grip, System **system) const override;
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
 private:
     std::vector<int> endings_;

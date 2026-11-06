@@ -3,42 +3,42 @@
 #include "style/style.h"
 
 namespace mu::engraving {
-static const ElementStyle chordBracketStyle{
-    {Sid::chordBracketHookLen, Pid::BRACKET_HOOK_LEN},
+static const ElementStyle chord_bracket_style{
+    {Sid::CHORD_BRACKET_HOOK_LEN, Pid::BRACKET_HOOK_LEN},
 };
 
 ChordBracket::ChordBracket(DummyParentOr<Chord> parent) : Arpeggio(parent, ElementType::CHORD_BRACKET) {
-    setArpeggioType(ArpeggioType::BRACKET);
+    set_arpeggio_type(ArpeggioType::BRACKET);
 
-    initElementStyle(&chordBracketStyle);
+    init_element_style(&::mu::engraving::chord_bracket_style);
 }
 
-PropertyValue ChordBracket::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::BRACKET_HOOK_LEN: return hookLength_;
-        case Pid::BRACKET_HOOK_POS: return hookPos_;
-        case Pid::BRACKET_RIGHT_SIDE: return rightSide_;
+PropertyValue ChordBracket::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::BRACKET_HOOK_LEN: return hook_length_;
+        case Pid::BRACKET_HOOK_POS: return hook_pos_;
+        case Pid::BRACKET_RIGHT_SIDE: return right_side_;
         default: break;
     }
-    return Arpeggio::getProperty(propertyId);
+    return Arpeggio::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool ChordBracket::setProperty(Pid propertyId, const PropertyValue &val) {
-    switch (propertyId) {
-        case Pid::BRACKET_HOOK_LEN: hookLength_ = val.value<Spatium>(); break;
-        case Pid::BRACKET_HOOK_POS: hookPos_ = val.value<DirectionV>(); break;
-        case Pid::BRACKET_RIGHT_SIDE: rightSide_ = val.toBool(); break;
+bool ChordBracket::set_property(Pid property_id, const PropertyValue &val) {
+    switch (property_id) {
+        case Pid::BRACKET_HOOK_LEN: hook_length_ = val.value<Spatium>(); break;
+        case Pid::BRACKET_HOOK_POS: hook_pos_ = val.value<DirectionV>(); break;
+        case Pid::BRACKET_RIGHT_SIDE: right_side_ = val.to_bool(); break;
         default:
-            if (!Arpeggio::setProperty(propertyId, val)) {
+            if (!Arpeggio::set_property(property_id, val)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -46,20 +46,20 @@ bool ChordBracket::setProperty(Pid propertyId, const PropertyValue &val) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue ChordBracket::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::BRACKET_HOOK_LEN: return style().styleS(Sid::chordBracketHookLen);
+PropertyValue ChordBracket::property_default(Pid property_id) const {
+    switch (property_id) {
+        case Pid::BRACKET_HOOK_LEN: return style().style_s(Sid::CHORD_BRACKET_HOOK_LEN);
         case Pid::BRACKET_HOOK_POS: return DirectionV::AUTO; // Both
         case Pid::BRACKET_RIGHT_SIDE: return false;
         default: break;
     }
-    return Arpeggio::propertyDefault(propertyId);
+    return Arpeggio::property_default(property_id);
 }
 
 void ChordBracket::reset() {
-    resetProperty(Pid::BRACKET_HOOK_LEN);
-    resetProperty(Pid::BRACKET_HOOK_POS);
-    resetProperty(Pid::BRACKET_RIGHT_SIDE);
+    reset_property(Pid::BRACKET_HOOK_LEN);
+    reset_property(Pid::BRACKET_HOOK_POS);
+    reset_property(Pid::BRACKET_RIGHT_SIDE);
 
     Arpeggio::reset();
 }

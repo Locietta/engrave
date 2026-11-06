@@ -59,7 +59,7 @@ using audioch_t = uint8_t;
 using volume_db_t = db_t;
 using volume_dbfs_t = db_t;
 using gain_t = float;
-using balance_t = number_t<float>;
+using balance_t = NumberT<float>;
 
 using AudioCtxId = uint16_t;
 
@@ -72,59 +72,61 @@ using aux_channel_idx_t = uint8_t;
 using PlaybackData = std::variant<mpe::PlaybackData, io::IODevice *>;
 using PlaybackSetupData = mpe::PlaybackSetupData;
 
-static constexpr TrackId INVALID_TRACK_ID = -1;
-static constexpr TrackId MASTER_TRACK_ID = 0;
+static constexpr TrackId invalid_track_id = -1;
+static constexpr TrackId master_track_id = 0;
 
-static constexpr char DEFAULT_DEVICE_ID[] = "default";
+static constexpr char default_device_id[] = "default";
 
 #ifdef _WIN32
-static constexpr samples_t MINIMUM_BUFFER_SIZE = 256;
+static constexpr samples_t minimum_buffer_size = 256;
 #else
-static constexpr samples_t MINIMUM_BUFFER_SIZE = 128;
+static constexpr samples_t minimum_buffer_size = 128;
 #endif
 
-static constexpr samples_t MAXIMUM_BUFFER_SIZE = 4096;
+static constexpr samples_t maximum_buffer_size = 4096;
 
 struct OutputSpec {
-    sample_rate_t sampleRate = 0;
-    samples_t samplesPerChannel = 0;
-    audioch_t audioChannelCount = 0;
+    sample_rate_t sample_rate = 0;
+    samples_t samples_per_channel = 0;
+    audioch_t audio_channel_count = 0;
 
-    inline bool isValid() const { return sampleRate > 0 && samplesPerChannel > 0 && audioChannelCount > 0; }
+    inline bool is_valid() const { return sample_rate > 0 && samples_per_channel > 0 && audio_channel_count > 0; }
 
     inline bool operator==(const OutputSpec &other) const {
-        return sampleRate == other.sampleRate && samplesPerChannel == other.samplesPerChannel &&
-               audioChannelCount == other.audioChannelCount;
+        return sample_rate == other.sample_rate && samples_per_channel == other.samples_per_channel &&
+               audio_channel_count == other.audio_channel_count;
     }
 
     inline bool operator!=(const OutputSpec &other) const { return !this->operator==(other); }
 
     std::string dump() const {
         std::stringstream ss;
-        ss << "sampleRate: " << sampleRate << ", samplesPerChannel: " << samplesPerChannel << ", audioChannelCount: " << audioChannelCount;
+        ss << "sampleRate: " << sample_rate << ", samplesPerChannel: " << samples_per_channel
+           << ", audioChannelCount: " << audio_channel_count;
         return ss.str();
     }
 };
 
-enum class SoundTrackType { Undefined = -1, MP3, OGG, FLAC, WAV, AAC };
+enum class SoundTrackType { UNDEFINED = -1, MP3, OGG, FLAC, WAV, AAC };
 
-enum class AudioSampleFormat { Undefined = 0, Int16, Int24, Float32 };
+enum class AudioSampleFormat { UNDEFINED = 0, INT16, INT24, FLOAT32 };
 
 struct SoundTrackFormat {
-    SoundTrackType type = SoundTrackType::Undefined;
-    OutputSpec outputSpec;
-    AudioSampleFormat sampleFormat = AudioSampleFormat::Undefined;
-    int bitRate = 0;
-    secs_t leadingSilenceDuration = 0.0;
-    secs_t trailingSilenceDuration = 0.0;
+    SoundTrackType type = SoundTrackType::UNDEFINED;
+    OutputSpec output_spec;
+    AudioSampleFormat sample_format = AudioSampleFormat::UNDEFINED;
+    int bit_rate = 0;
+    secs_t leading_silence_duration = 0.0;
+    secs_t trailing_silence_duration = 0.0;
 
     bool operator==(const SoundTrackFormat &other) const {
-        return type == other.type && outputSpec == other.outputSpec && sampleFormat == other.sampleFormat && bitRate == other.bitRate &&
-               leadingSilenceDuration == other.leadingSilenceDuration && trailingSilenceDuration == other.trailingSilenceDuration;
+        return type == other.type && output_spec == other.output_spec && sample_format == other.sample_format &&
+               bit_rate == other.bit_rate && leading_silence_duration == other.leading_silence_duration &&
+               trailing_silence_duration == other.trailing_silence_duration;
     }
 
-    bool isValid() const {
-        if (!outputSpec.isValid()) {
+    bool is_valid() const {
+        if (!output_spec.is_valid()) {
             return false;
         }
 
@@ -132,13 +134,13 @@ struct SoundTrackFormat {
             case SoundTrackType::WAV:
             case SoundTrackType::FLAC:
                 // For lossless/uncompressed, sample format must be defined
-                return sampleFormat != AudioSampleFormat::Undefined;
+                return sample_format != AudioSampleFormat::UNDEFINED;
 
             case SoundTrackType::MP3:
             case SoundTrackType::OGG:
             case SoundTrackType::AAC:
                 // For lossy, bitrate must be positive
-                return bitRate > 0;
+                return bit_rate > 0;
 
             default: return false;
         }
@@ -146,9 +148,9 @@ struct SoundTrackFormat {
 };
 
 struct AudioEngineConfig {
-    bool autoProcessOnlineSoundsInBackground = false;
-    bool isLazyProcessingOfOnlineSoundsEnabled = false;
-    bool useSoundFontLowPassFilter = false;
+    bool auto_process_online_sounds_in_background = false;
+    bool is_lazy_processing_of_online_sounds_enabled = false;
+    bool use_sound_font_low_pass_filter = false;
 };
 
 using AudioSourceName = std::string;
@@ -158,9 +160,9 @@ using AudioUnitConfig = std::map<std::string, std::string>;
 using AudioResourceId = std::string;
 using AudioResourceIdList = std::vector<AudioResourceId>;
 
-inline AudioResourceId toAudioResourceId(const muse::audioplugins::PluginResourceId &id) { return id; }
+inline AudioResourceId to_audio_resource_id(const muse::audioplugins::PluginResourceId &id) { return id; }
 
-inline AudioResourceIdList toAudioResourceIdList(const muse::audioplugins::PluginResourceIdList &ids) {
+inline AudioResourceIdList to_audio_resource_id_list(const muse::audioplugins::PluginResourceIdList &ids) {
     return AudioResourceIdList(ids.begin(), ids.end());
 }
 
@@ -175,7 +177,7 @@ struct AudioResourceMeta {
     AudioResourceAttributes attributes;
     std::string type; // wire-string format identifier; see AudioResourceType enum below
 
-    const String &attributeVal(const String &key) const {
+    const String &attribute_val(const String &key) const {
         auto search = attributes.find(key);
         if (search != attributes.cend()) {
             return search->second;
@@ -184,7 +186,7 @@ struct AudioResourceMeta {
         return empty;
     }
 
-    bool isValid() const { return !id.empty() && !vendor.empty() && !type.empty(); }
+    bool is_valid() const { return !id.empty() && !vendor.empty() && !type.empty(); }
 
     bool operator==(const AudioResourceMeta &other) const {
         return id == other.id && vendor == other.vendor && type == other.type && attributes == other.attributes;
@@ -200,120 +202,122 @@ struct AudioResourceMeta {
 using AudioResourceMetaList = std::vector<AudioResourceMeta>;
 using AudioResourceMetaSet = std::set<AudioResourceMeta>;
 
-inline bool boolAttribute(const AudioResourceMeta &meta, const String &key, bool fallback = false) {
-    const String &v = meta.attributeVal(key);
+inline bool bool_attribute(const AudioResourceMeta &meta, const String &key, bool fallback = false) {
+    const String &v = meta.attribute_val(key);
     if (v.empty()) {
         return fallback;
     }
     return v == u"true" || v == u"1";
 }
 
-inline int intAttribute(const AudioResourceMeta &meta, const String &key, int fallback = 0) {
-    const String &v = meta.attributeVal(key);
+inline int int_attribute(const AudioResourceMeta &meta, const String &key, int fallback = 0) {
+    const String &v = meta.attribute_val(key);
     if (v.empty()) {
         return fallback;
     }
     bool ok = true;
-    int n = v.toInt(&ok);
+    int n = v.to_int(&ok);
     return ok ? n : fallback;
 }
 
 // Wire strings persisted in the plugin cache; constexpr for the RESOURCE_TYPE_NAMES map below.
-inline constexpr std::string_view FLUID_SOUNDFONT_TYPE_NAME = "FluidSoundfont";
-inline constexpr std::string_view NATIVE_EFFECT_TYPE_NAME = "NativeEffect";
+inline constexpr std::string_view fluid_soundfont_type_name = "FluidSoundfont";
+inline constexpr std::string_view native_effect_type_name = "NativeEffect";
 
 // Engine-internal routing enum, distinct from the opaque audioplugins::PluginType string.
 enum class AudioResourceType {
-    Undefined = -1,
-    FluidSoundfont,
-    VstPlugin,
-    NativeEffect,
-    MuseSamplerSoundPack,
+    UNDEFINED = -1,
+    FLUID_SOUNDFONT,
+    VST_PLUGIN,
+    NATIVE_EFFECT,
+    MUSE_SAMPLER_SOUND_PACK,
 };
 
-static const std::map<AudioResourceType, std::string> RESOURCE_TYPE_NAMES = {
-    {AudioResourceType::FluidSoundfont, std::string(FLUID_SOUNDFONT_TYPE_NAME)},
-    {AudioResourceType::VstPlugin, "VstPlugin"},
-    {AudioResourceType::NativeEffect, std::string(NATIVE_EFFECT_TYPE_NAME)},
-    {AudioResourceType::MuseSamplerSoundPack, "MuseSamplerSoundPack"},
+static const std::map<AudioResourceType, std::string> resource_type_names = {
+    {AudioResourceType::FLUID_SOUNDFONT, std::string(::muse::audio::fluid_soundfont_type_name)},
+    {AudioResourceType::VST_PLUGIN, "VstPlugin"},
+    {AudioResourceType::NATIVE_EFFECT, std::string(::muse::audio::native_effect_type_name)},
+    {AudioResourceType::MUSE_SAMPLER_SOUND_PACK, "MuseSamplerSoundPack"},
 };
 
-inline const std::string &resourceTypeName(AudioResourceType type) {
-    auto it = RESOURCE_TYPE_NAMES.find(type);
-    if (it != RESOURCE_TYPE_NAMES.end()) {
+inline const std::string &resource_type_name(AudioResourceType type) {
+    auto it = ::muse::audio::resource_type_names.find(type);
+    if (it != ::muse::audio::resource_type_names.end()) {
         return it->second;
     }
     static const std::string empty;
     return empty;
 }
 
-inline AudioResourceType resourceTypeFromString(const std::string &name) {
-    for (const auto &kv : RESOURCE_TYPE_NAMES) {
+inline AudioResourceType resource_type_from_string(const std::string &name) {
+    for (const auto &kv : ::muse::audio::resource_type_names) {
         if (kv.second == name) {
             return kv.first;
         }
     }
-    return AudioResourceType::Undefined;
+    return AudioResourceType::UNDEFINED;
 }
 
-inline bool isResourceType(const AudioResourceMeta &meta, AudioResourceType type) { return resourceTypeFromString(meta.type) == type; }
+inline bool is_resource_type(const AudioResourceMeta &meta, AudioResourceType type) { return resource_type_from_string(meta.type) == type; }
 
-static const String PLAYBACK_SETUP_DATA_ATTRIBUTE(u"playbackSetupData");
-static const String HAS_NATIVE_EDITOR_SUPPORT_ATTRIBUTE(u"hasNativeEditorSupport");
+static const String playback_setup_data_attribute(u"playbackSetupData");
+static const String has_native_editor_support_attribute(u"hasNativeEditorSupport");
 
-inline bool hasNativeEditorSupport(const AudioResourceMeta &meta) { return boolAttribute(meta, HAS_NATIVE_EDITOR_SUPPORT_ATTRIBUTE); }
+inline bool has_native_editor_support(const AudioResourceMeta &meta) {
+    return bool_attribute(meta, ::muse::audio::has_native_editor_support_attribute);
+}
 
-static const std::map<AudioResourceType, String> RESOURCE_TYPE_MAP = {
-    {AudioResourceType::Undefined, u"undefined"},
-    {AudioResourceType::MuseSamplerSoundPack, u"muse_sampler_sound_pack"},
-    {AudioResourceType::FluidSoundfont, u"fluid_soundfont"},
-    {AudioResourceType::VstPlugin, u"vst_plugin"},
-    {AudioResourceType::NativeEffect, u"muse_plugin"},
+static const std::map<AudioResourceType, String> resource_type_map = {
+    {AudioResourceType::UNDEFINED, u"undefined"},
+    {AudioResourceType::MUSE_SAMPLER_SOUND_PACK, u"muse_sampler_sound_pack"},
+    {AudioResourceType::FLUID_SOUNDFONT, u"fluid_soundfont"},
+    {AudioResourceType::VST_PLUGIN, u"vst_plugin"},
+    {AudioResourceType::NATIVE_EFFECT, u"muse_plugin"},
 };
 
-static const AudioResourceId MUSE_REVERB_ID("Muse Reverb");
+static const AudioResourceId muse_reverb_id("Muse Reverb");
 
 enum class AudioFxType {
-    Undefined = -1,
-    VstFx,
-    MuseFx,
+    UNDEFINED = -1,
+    VST_FX,
+    MUSE_FX,
 };
 
 enum class AudioFxCategory {
-    Undefined = -1,
-    FxEqualizer,
-    FxAnalyzer,
-    FxDelay,
-    FxDistortion,
-    FxDynamics,
-    FxFilter,
-    FxGenerator,
-    FxMastering,
-    FxModulation,
-    FxPitchShift,
-    FxRestoration,
-    FxReverb,
-    FxSurround,
-    FxTools,
-    FxOther,
+    UNDEFINED = -1,
+    FX_EQUALIZER,
+    FX_ANALYZER,
+    FX_DELAY,
+    FX_DISTORTION,
+    FX_DYNAMICS,
+    FX_FILTER,
+    FX_GENERATOR,
+    FX_MASTERING,
+    FX_MODULATION,
+    FX_PITCH_SHIFT,
+    FX_RESTORATION,
+    FX_REVERB,
+    FX_SURROUND,
+    FX_TOOLS,
+    FX_OTHER,
 };
 
-inline const std::unordered_map<AudioFxCategory, String> AUDIO_FX_CATEGORY_TO_STRING_MAP{
-    {AudioFxCategory::FxEqualizer, u"EQ"},
-    {AudioFxCategory::FxAnalyzer, u"Analyzer"},
-    {AudioFxCategory::FxDelay, u"Delay"},
-    {AudioFxCategory::FxDistortion, u"Distortion"},
-    {AudioFxCategory::FxDynamics, u"Dynamics"},
-    {AudioFxCategory::FxFilter, u"Filter"},
-    {AudioFxCategory::FxGenerator, u"Generator"},
-    {AudioFxCategory::FxMastering, u"Mastering"},
-    {AudioFxCategory::FxModulation, u"Modulation"},
-    {AudioFxCategory::FxPitchShift, u"Pitch Shift"},
-    {AudioFxCategory::FxRestoration, u"Restoration"},
-    {AudioFxCategory::FxReverb, u"Reverb"},
-    {AudioFxCategory::FxSurround, u"Surround"},
-    {AudioFxCategory::FxTools, u"Tools"},
-    {AudioFxCategory::FxOther, u"Fx"},
+inline const std::unordered_map<AudioFxCategory, String> audio_fx_category_to_string_map{
+    {AudioFxCategory::FX_EQUALIZER, u"EQ"},
+    {AudioFxCategory::FX_ANALYZER, u"Analyzer"},
+    {AudioFxCategory::FX_DELAY, u"Delay"},
+    {AudioFxCategory::FX_DISTORTION, u"Distortion"},
+    {AudioFxCategory::FX_DYNAMICS, u"Dynamics"},
+    {AudioFxCategory::FX_FILTER, u"Filter"},
+    {AudioFxCategory::FX_GENERATOR, u"Generator"},
+    {AudioFxCategory::FX_MASTERING, u"Mastering"},
+    {AudioFxCategory::FX_MODULATION, u"Modulation"},
+    {AudioFxCategory::FX_PITCH_SHIFT, u"Pitch Shift"},
+    {AudioFxCategory::FX_RESTORATION, u"Restoration"},
+    {AudioFxCategory::FX_REVERB, u"Reverb"},
+    {AudioFxCategory::FX_SURROUND, u"Surround"},
+    {AudioFxCategory::FX_TOOLS, u"Tools"},
+    {AudioFxCategory::FX_OTHER, u"Fx"},
 };
 
 using AudioFxCategories = std::set<AudioFxCategory>;
@@ -322,49 +326,51 @@ using AudioFxChainOrder = int8_t;
 struct AudioFxParams {
     AudioFxCategories categories;
     AudioUnitConfig configuration;
-    AudioResourceMeta resourceMeta;
-    AudioFxChainOrder chainOrder = -1;
+    AudioResourceMeta resource_meta;
+    AudioFxChainOrder chain_order = -1;
     bool active = false;
 
     AudioFxType type() const {
-        switch (resourceTypeFromString(resourceMeta.type)) {
-            case AudioResourceType::VstPlugin: return AudioFxType::VstFx;
-            case AudioResourceType::NativeEffect: return AudioFxType::MuseFx;
-            case AudioResourceType::FluidSoundfont:
-            case AudioResourceType::MuseSamplerSoundPack:
-            case AudioResourceType::Undefined: break;
+        switch (resource_type_from_string(resource_meta.type)) {
+            case AudioResourceType::VST_PLUGIN: return AudioFxType::VST_FX;
+            case AudioResourceType::NATIVE_EFFECT: return AudioFxType::MUSE_FX;
+            case AudioResourceType::FLUID_SOUNDFONT:
+            case AudioResourceType::MUSE_SAMPLER_SOUND_PACK:
+            case AudioResourceType::UNDEFINED: break;
         }
 
-        return AudioFxType::Undefined;
+        return AudioFxType::UNDEFINED;
     }
 
     bool operator==(const AudioFxParams &other) const {
-        return active == other.active && chainOrder == other.chainOrder && resourceMeta == other.resourceMeta &&
+        return active == other.active && chain_order == other.chain_order && resource_meta == other.resource_meta &&
                categories == other.categories && configuration == other.configuration;
     }
 
     bool operator!=(const AudioFxParams &other) const { return !(*this == other); }
 
-    bool operator<(const AudioFxParams &other) const { return resourceMeta < other.resourceMeta && chainOrder < other.chainOrder; }
+    bool operator<(const AudioFxParams &other) const { return resource_meta < other.resource_meta && chain_order < other.chain_order; }
 
-    bool isValid() const { return resourceMeta.isValid(); }
+    bool is_valid() const { return resource_meta.is_valid(); }
 };
 
 using AudioFxChain = std::map<AudioFxChainOrder, AudioFxParams>;
 
 struct AuxSendParams {
-    gain_t signalAmount = 0.f; // [0; 1]
+    gain_t signal_amount = 0.f; // [0; 1]
     bool active = false;
 
-    bool operator==(const AuxSendParams &other) const { return RealIsEqual(signalAmount, other.signalAmount) && active == other.active; }
+    bool operator==(const AuxSendParams &other) const {
+        return real_is_equal(signal_amount, other.signal_amount) && active == other.active;
+    }
 };
 
 using AuxSendsParams = std::vector<AuxSendParams>;
 
-static constexpr volume_db_t VOLUME_DB_MIN = volume_db_t::make(-60.f);
-static constexpr volume_db_t VOLUME_DB_MAX = volume_db_t::make(12.f);
-static constexpr balance_t BALANCE_MIN = balance_t::make(-1.f);
-static constexpr balance_t BALANCE_MAX = balance_t::make(1.f);
+static constexpr volume_db_t volume_db_min = volume_db_t::make(-60.f);
+static constexpr volume_db_t volume_db_max = volume_db_t::make(12.f);
+static constexpr balance_t balance_min = balance_t::make(-1.f);
+static constexpr balance_t balance_max = balance_t::make(1.f);
 
 struct ControlParams {
     AutomatableValue<volume_db_t> volume;
@@ -376,30 +382,30 @@ struct ControlParams {
     bool operator!=(const ControlParams &other) const { return !this->operator==(other); }
 };
 
-enum class AudioSourceType { Undefined = -1, Fluid, Vsti, MuseSampler };
+enum class AudioSourceType { UNDEFINED = -1, FLUID, VSTI, MUSE_SAMPLER };
 
-inline AudioSourceType sourceTypeFromResourceType(const muse::audioplugins::PluginType &metaType) {
-    switch (resourceTypeFromString(metaType)) {
-        case AudioResourceType::FluidSoundfont: return AudioSourceType::Fluid;
-        case AudioResourceType::VstPlugin: return AudioSourceType::Vsti;
-        case AudioResourceType::MuseSamplerSoundPack: return AudioSourceType::MuseSampler;
-        case AudioResourceType::NativeEffect:
-        case AudioResourceType::Undefined: break;
+inline AudioSourceType source_type_from_resource_type(const muse::audioplugins::PluginType &meta_type) {
+    switch (resource_type_from_string(meta_type)) {
+        case AudioResourceType::FLUID_SOUNDFONT: return AudioSourceType::FLUID;
+        case AudioResourceType::VST_PLUGIN: return AudioSourceType::VSTI;
+        case AudioResourceType::MUSE_SAMPLER_SOUND_PACK: return AudioSourceType::MUSE_SAMPLER;
+        case AudioResourceType::NATIVE_EFFECT:
+        case AudioResourceType::UNDEFINED: break;
     }
 
-    return AudioSourceType::Undefined;
+    return AudioSourceType::UNDEFINED;
 }
 
 struct AudioSourceParams {
-    AudioResourceMeta resourceMeta;
+    AudioResourceMeta resource_meta;
     AudioUnitConfig configuration;
 
-    AudioSourceType type() const { return sourceTypeFromResourceType(resourceMeta.type); }
+    AudioSourceType type() const { return source_type_from_resource_type(resource_meta.type); }
 
-    bool isValid() const { return type() != AudioSourceType::Undefined && resourceMeta.isValid(); }
+    bool is_valid() const { return type() != AudioSourceType::UNDEFINED && resource_meta.is_valid(); }
 
     bool operator==(const AudioSourceParams &other) const {
-        return type() == other.type() && resourceMeta == other.resourceMeta && configuration == other.configuration;
+        return type() == other.type() && resource_meta == other.resource_meta && configuration == other.configuration;
     }
 
     bool operator!=(const AudioSourceParams &other) const { return !this->operator==(other); }
@@ -409,8 +415,8 @@ using AudioInputParams = AudioSourceParams;
 
 struct TrackParams {
     AudioInputParams source;
-    AudioFxChain fxChain;
-    AuxSendsParams auxSends;
+    AudioFxChain fx_chain;
+    AuxSendsParams aux_sends;
     ControlParams control;
 };
 
@@ -427,7 +433,7 @@ struct AutomatedControlParams {
     balance_t balance = 0.f;
 };
 
-enum class PlaybackStatus { Stopped = 0, Paused, Running };
+enum class PlaybackStatus { STOPPED = 0, PAUSED, RUNNING };
 
 using AudioDeviceID = std::string;
 
@@ -441,36 +447,36 @@ struct AudioDevice {
 using AudioDeviceList = std::vector<AudioDevice>;
 
 using SoundPresetAttributes = std::map<String, String>;
-static const String PLAYING_TECHNIQUES_ATTRIBUTE(u"playing_techniques");
+static const String playing_techniques_attribute(u"playing_techniques");
 
 struct SoundPreset {
     String code;
     String name;
-    bool isDefault = false;
+    bool is_default = false;
     SoundPresetAttributes attributes;
 
     bool operator==(const SoundPreset &other) const {
-        return code == other.code && name == other.name && isDefault == other.isDefault && attributes == other.attributes;
+        return code == other.code && name == other.name && is_default == other.is_default && attributes == other.attributes;
     }
 
-    bool isValid() const { return !code.empty(); }
+    bool is_valid() const { return !code.empty(); }
 };
 
 using SoundPresetList = std::vector<SoundPreset>;
 
-enum class ProcessMode { Undefined = 0, Idle, Playing, PlayingOffline };
+enum class ProcessMode { UNDEFINED = 0, IDLE, PLAYING, PLAYING_OFFLINE };
 
 inline std::string to_string(ProcessMode mode) {
     switch (mode) {
-        case ProcessMode::Undefined: return "Undefined";
-        case ProcessMode::Idle: return "Idle";
-        case ProcessMode::Playing: return "Playing";
-        case ProcessMode::PlayingOffline: return "PlayingOffline";
+        case ProcessMode::UNDEFINED: return "Undefined";
+        case ProcessMode::IDLE: return "Idle";
+        case ProcessMode::PLAYING: return "Playing";
+        case ProcessMode::PLAYING_OFFLINE: return "PlayingOffline";
     }
     return "Unknown";
 }
 
-inline bool isModePlaying(ProcessMode mode) { return mode == ProcessMode::Playing || mode == ProcessMode::PlayingOffline; }
+inline bool is_mode_playing(ProcessMode mode) { return mode == ProcessMode::PLAYING || mode == ProcessMode::PLAYING_OFFLINE; }
 
 struct InputProcessingProgress {
     struct ChunkInfo {
@@ -487,47 +493,47 @@ struct InputProcessingProgress {
         int64_t total = 0;
     };
 
-    enum Status : unsigned int { Undefined = 0, Started, Processing, Finished };
+    enum Status : unsigned int { UNDEFINED = 0, STARTED, PROCESSING, FINISHED };
 
     struct StatusInfo {
-        Status status = Status::Undefined;
-        int errorCode = 0;
-        std::string errorText;
+        Status status = Status::UNDEFINED;
+        int error_code = 0;
+        std::string error_text;
         using StatusData = std::map<std::string, std::string>;
         StatusData data;
     };
 
-    bool isStarted = false;
+    bool is_started = false;
 };
 
 enum SaveSoundTrackStage {
-    Unknown = 0,
-    ProcessingOnlineSounds,
-    WritingSoundTrack,
+    UNKNOWN = 0,
+    PROCESSING_ONLINE_SOUNDS,
+    WRITING_SOUND_TRACK,
 };
 
 struct TransportEvent {
     enum class Type : unsigned char {
-        Unknown = 0,
-        Play,
-        Pause,
-        Stop,
-        Seek,
+        UNKNOWN = 0,
+        PLAY,
+        PAUSE,
+        STOP,
+        SEEK,
     };
 
     struct SeekData {
         secs_t position = 0.;
     };
 
-    static TransportEvent play() { return {Type::Play, {}}; }
+    static TransportEvent play() { return {Type::PLAY, {}}; }
 
-    static TransportEvent pause() { return {Type::Pause, {}}; }
+    static TransportEvent pause() { return {Type::PAUSE, {}}; }
 
-    static TransportEvent stop() { return {Type::Stop, {}}; }
+    static TransportEvent stop() { return {Type::STOP, {}}; }
 
-    static TransportEvent seek(secs_t pos) { return {Type::Seek, SeekData{pos}}; }
+    static TransportEvent seek(secs_t pos) { return {Type::SEEK, SeekData{pos}}; }
 
-    Type type = Type::Unknown;
+    Type type = Type::UNKNOWN;
     std::variant<std::monostate, SeekData> data;
 };
 
@@ -535,6 +541,7 @@ using TransportEvents = std::vector<TransportEvent>;
 } // namespace muse::audio
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::audio::OutputSpec &spec) {
-    s << "sampleRate: " << spec.sampleRate << ", channels: " << spec.audioChannelCount << ", samplesPerChannel: " << spec.samplesPerChannel;
+    s << "sampleRate: " << spec.sample_rate << ", channels: " << spec.audio_channel_count
+      << ", samplesPerChannel: " << spec.samples_per_channel;
     return s;
 }

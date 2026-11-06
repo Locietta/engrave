@@ -37,22 +37,23 @@ enum class SegmentType;
 namespace mu::engraving::rendering::score {
 class MaskLayout {
 public:
-    static void computeMasks(LayoutContext &ctx, Page *page);
+    static void compute_masks(LayoutContext &ctx, Page *page);
 
 private:
-    static void computeBarlineMasks(const Segment *barlineSement, const System *system, const std::vector<TextBase *> &allSystemText,
-                                    LayoutContext &ctx);
-    static void maskBarlineForText(BarLine *barline, const std::vector<TextBase *> &allSystemText);
-    static std::vector<TextBase *> collectAllSystemText(const System *system);
+    static void compute_barline_masks(const Segment *barline_sement, const System *system, const std::vector<TextBase *> &all_system_text,
+                                      LayoutContext &ctx);
+    static void mask_barline_for_text(BarLine *barline, const std::vector<TextBase *> &all_system_text);
+    static std::vector<TextBase *> collect_all_system_text(const System *system);
 
-    static void computeSlurTieMasks(SlurTieSegment *slurTieSegment);
+    static void compute_slur_tie_masks(SlurTieSegment *slur_tie_segment);
 
-    static Shape createFilteredItemShape(const Shape &overlyingItemShape, const Shape &maskedItemShape, const double collisionPadding);
-    static Shape createFilteredItemShape(const Shape &overlyingItemShape, const Shape &maskedItemShape,
-                                         const double horizontalCollisionPadding, const double verticalCollisionPadding);
+    static Shape create_filtered_item_shape(const Shape &overlying_item_shape, const Shape &masked_item_shape,
+                                            const double collision_padding);
+    static Shape create_filtered_item_shape(const Shape &overlying_item_shape, const Shape &masked_item_shape,
+                                            const double horizontal_collision_padding, const double vertical_collision_padding);
 
-    static void cleanupMask(const Shape &itemShape, Shape &mask, double minFragmentLength);
+    static void cleanup_mask(const Shape &item_shape, Shape &mask, double min_fragment_length);
 
-    static void maskTABStringLinesForFrets(StaffLines *staffLines, const LayoutContext &ctx);
+    static void mask_tab_string_lines_for_frets(StaffLines *staff_lines, const LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

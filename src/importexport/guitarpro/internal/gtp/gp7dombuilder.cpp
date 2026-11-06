@@ -7,133 +7,133 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack>> GP7DomBuilder::createGPTrack(XmlDomNode *trackNode, XmlDomNode *versionNode) {
-    static const std::set<String> sUnused = {u"Color",
-                                             u"SystemsDefautLayout",
-                                             u"SystemsLayout",
-                                             u"AutoBrush",
-                                             u"PalmMute",
-                                             u"AutoAccentuation",
-                                             u"PlayingStyle",
-                                             u"UseOneChannelPerString",
-                                             u"IconId",
-                                             u"InstrumentSet",
-                                             u"ForcedSound",
-                                             u"PlaybackState",
-                                             u"AudioEngineState",
-                                             u"Automations"};
+std::pair<int, std::unique_ptr<GPTrack>> GP7DomBuilder::create_gp_track(XmlDomNode *track_node, XmlDomNode *version_node) {
+    static const std::set<String> s_unused = {u"Color",
+                                              u"SystemsDefautLayout",
+                                              u"SystemsLayout",
+                                              u"AutoBrush",
+                                              u"PalmMute",
+                                              u"AutoAccentuation",
+                                              u"PlayingStyle",
+                                              u"UseOneChannelPerString",
+                                              u"IconId",
+                                              u"InstrumentSet",
+                                              u"ForcedSound",
+                                              u"PlaybackState",
+                                              u"AudioEngineState",
+                                              u"Automations"};
 
-    int trackIdx = trackNode->toElement().attribute("id").value().toInt();
-    auto track = std::make_unique<GPTrack>(trackIdx);
-    XmlDomNode trackChildNode = trackNode->firstChild();
-    String version = versionNode->toElement().text();
+    int track_idx = track_node->to_element().attribute("id").value().to_int();
+    auto track = std::make_unique<GPTrack>(track_idx);
+    XmlDomNode track_child_node = track_node->first_child();
+    String version = version_node->to_element().text();
 
-    while (!trackChildNode.isNull()) {
-        String nodeName = trackChildNode.nodeName();
-        if (nodeName == u"Name") {
-            track->setName(trackChildNode.toElement().text());
-        } else if (nodeName == u"RSE") {
-            GPTrack::RSE rse = readTrackRSE(&trackChildNode);
-            track->setRSE(rse);
-        } else if (nodeName == u"MidiConnection") {
-            int midiChannel = readMidiChannel(&trackChildNode);
-            track->setMidiChannel(midiChannel);
-        } else if (nodeName == u"ShortName") {
-            track->setShortName(trackChildNode.toElement().text());
-        } else if (nodeName == u"Sounds") {
-            int programm = readMidiProgramm(&trackChildNode);
-            auto soundNode = trackChildNode.firstChild();
-            while (!soundNode.isNull()) {
-                GPTrack::Sound sound = readSounds(&soundNode);
-                track->addSound(sound);
+    while (!track_child_node.is_null()) {
+        String node_name = track_child_node.node_name();
+        if (node_name == u"Name") {
+            track->set_name(track_child_node.to_element().text());
+        } else if (node_name == u"RSE") {
+            GPTrack::RSE rse = read_track_rse(&track_child_node);
+            track->set_rse(rse);
+        } else if (node_name == u"MidiConnection") {
+            int midi_channel = read_midi_channel(&track_child_node);
+            track->set_midi_channel(midi_channel);
+        } else if (node_name == u"ShortName") {
+            track->set_short_name(track_child_node.to_element().text());
+        } else if (node_name == u"Sounds") {
+            int programm = read_midi_programm(&track_child_node);
+            auto sound_node = track_child_node.first_child();
+            while (!sound_node.is_null()) {
+                GPTrack::Sound sound = read_sounds(&sound_node);
+                track->add_sound(sound);
 
-                soundNode = soundNode.nextSibling();
+                sound_node = sound_node.next_sibling();
             }
-            track->setProgramm(programm);
-        } else if (nodeName == u"Staves") {
-            auto staffNode = trackChildNode.firstChild();
-            int staffCount = 0;
-            while (!staffNode.isNull()) {
-                auto propertyNode = staffNode.firstChild();
+            track->set_programm(programm);
+        } else if (node_name == u"Staves") {
+            auto staff_node = track_child_node.first_child();
+            int staff_count = 0;
+            while (!staff_node.is_null()) {
+                auto property_node = staff_node.first_child();
                 // there is a bug in gp v 7.0.0
                 // All parts marked to use flat for tuning string,
                 // but in real world gp uses tuning presets
                 // so we have to ignore <Flats/> and <TuningFlat> props
-                readTrackProperties(&propertyNode, track.get(), version == "7");
-                staffNode = staffNode.nextSibling();
-                staffCount++;
+                read_track_properties(&property_node, track.get(), version == "7");
+                staff_node = staff_node.next_sibling();
+                staff_count++;
             }
-            track->setStaffCount(staffCount);
-        } else if (nodeName == u"NotationPatch") {
-            auto innerNode = trackChildNode.firstChildElement("LineCount");
-            if (!innerNode.isNull()) {
-                track->setLineCount(innerNode.toElement().text().toInt());
+            track->set_staff_count(staff_count);
+        } else if (node_name == u"NotationPatch") {
+            auto inner_node = track_child_node.first_child_element("LineCount");
+            if (!inner_node.is_null()) {
+                track->set_line_count(inner_node.to_element().text().to_int());
             }
-        } else if (nodeName == u"Transpose") {
-            auto octaveNode = trackChildNode.firstChildElement("Octave");
-            int octave = octaveNode.toElement().text().toInt();
-            auto chromaticNode = trackChildNode.firstChildElement("Chromatic");
-            int chromatic = chromaticNode.toElement().text().toInt();
+        } else if (node_name == u"Transpose") {
+            auto octave_node = track_child_node.first_child_element("Octave");
+            int octave = octave_node.to_element().text().to_int();
+            auto chromatic_node = track_child_node.first_child_element("Chromatic");
+            int chromatic = chromatic_node.to_element().text().to_int();
             int transpose = 12 * octave + chromatic;
-            track->setTranspose(transpose);
-        } else if (nodeName == u"Lyrics") {
-            readLyrics(trackChildNode, track.get());
-        } else if (nodeName == u"Automations") {
-            auto automationNode = trackChildNode.firstChild();
-            while (!automationNode.isNull()) {
-                GPTrack::SoundAutomation automation = readTrackAutomation(&automationNode);
-                if (!automation.type.isEmpty()) {
-                    track->addSoundAutomation(automation);
+            track->set_transpose(transpose);
+        } else if (node_name == u"Lyrics") {
+            read_lyrics(track_child_node, track.get());
+        } else if (node_name == u"Automations") {
+            auto automation_node = track_child_node.first_child();
+            while (!automation_node.is_null()) {
+                GPTrack::SoundAutomation automation = read_track_automation(&automation_node);
+                if (!automation.type.is_empty()) {
+                    track->add_sound_automation(automation);
                 }
-                automationNode = automationNode.nextSibling();
+                automation_node = automation_node.next_sibling();
             }
-        } else if (sUnused.find(nodeName) != sUnused.end()) {
+        } else if (s_unused.find(node_name) != s_unused.end()) {
             // Ignored nodes
         }
 
-        trackChildNode = trackChildNode.nextSibling();
+        track_child_node = track_child_node.next_sibling();
     }
 
-    return std::make_pair(trackIdx, std::move(track));
+    return std::make_pair(track_idx, std::move(track));
 }
 
-int GP7DomBuilder::readMidiChannel(XmlDomNode *trackChildNode) const {
-    int channel = trackChildNode->firstChildElement("PrimaryChannel").text().toInt();
+int GP7DomBuilder::read_midi_channel(XmlDomNode *track_child_node) const {
+    int channel = track_child_node->first_child_element("PrimaryChannel").text().to_int();
 
     return channel;
 }
 
-int GP7DomBuilder::readMidiProgramm(XmlDomNode *trackChildNode) const {
-    int programm = trackChildNode->firstChild().firstChildElement("MIDI").firstChildElement("Program").text().toInt();
+int GP7DomBuilder::read_midi_programm(XmlDomNode *track_child_node) const {
+    int programm = track_child_node->first_child().first_child_element("MIDI").first_child_element("Program").text().to_int();
 
     return programm;
 }
 
-GPTrack::Sound GP7DomBuilder::readSounds(XmlDomNode *soundNode) const {
+GPTrack::Sound GP7DomBuilder::read_sounds(XmlDomNode *sound_node) const {
     GPTrack::Sound result;
 
-    result.programm = soundNode->firstChildElement("MIDI").firstChildElement("Program").text().toInt();
-    result.name = soundNode->firstChildElement("Name").text();
-    result.label = soundNode->firstChildElement("Label").text();
-    result.path = soundNode->firstChildElement("Path").text();
-    result.role = soundNode->firstChildElement("Role").text();
+    result.programm = sound_node->first_child_element("MIDI").first_child_element("Program").text().to_int();
+    result.name = sound_node->first_child_element("Name").text();
+    result.label = sound_node->first_child_element("Label").text();
+    result.path = sound_node->first_child_element("Path").text();
+    result.role = sound_node->first_child_element("Role").text();
 
     return result;
 }
 
-GPTrack::SoundAutomation GP7DomBuilder::readTrackAutomation(XmlDomNode *automationNode) const {
+GPTrack::SoundAutomation GP7DomBuilder::read_track_automation(XmlDomNode *automation_node) const {
     GPTrack::SoundAutomation result;
 
-    String type = automationNode->firstChildElement("Type").text();
+    String type = automation_node->first_child_element("Type").text();
     if (type != u"Sound") {
         return result;
     }
 
     result.type = type;
-    result.linear = automationNode->firstChildElement("Linear").text() == u"true";
-    result.bar = automationNode->firstChildElement("Bar").text().toInt();
-    result.value = automationNode->firstChildElement("Value").text();
-    result.position = automationNode->firstChildElement("Position").text().toFloat();
+    result.linear = automation_node->first_child_element("Linear").text() == u"true";
+    result.bar = automation_node->first_child_element("Bar").text().to_int();
+    result.value = automation_node->first_child_element("Value").text();
+    result.position = automation_node->first_child_element("Position").text().to_float();
 
     return result;
 }

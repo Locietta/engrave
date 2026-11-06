@@ -32,23 +32,23 @@ class AddElement : public UndoableCommand {
 
     EngravingItem *element = nullptr;
 
-    void endUndoRedo(bool) const;
+    void end_undo_redo(bool) const;
     void undo() override;
     void redo() override;
 
 public:
     AddElement(EngravingItem *);
 
-    EngravingItem *getElement() const { return element; }
+    EngravingItem *get_element() const { return element; }
 
     void cleanup(bool) override;
     const char *name() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
+    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
 
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 
-    UNDO_TYPE(CommandType::AddElement)
+    UNDO_TYPE(CommandType::ADD_ELEMENT)
 };
 
 class RemoveElement : public UndoableCommand {
@@ -63,27 +63,27 @@ public:
     void cleanup(bool) override;
     const char *name() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
+    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
 
-    std::vector<EngravingObject *> objectItems() const override;
+    std::vector<EngravingObject *> object_items() const override;
 
-    UNDO_TYPE(CommandType::RemoveElement)
+    UNDO_TYPE(CommandType::REMOVE_ELEMENT)
 };
 
 class ChangeElement : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeElement)
 
-    EngravingItem *oldElement = nullptr;
-    EngravingItem *newElement = nullptr;
+    EngravingItem *old_element = nullptr;
+    EngravingItem *new_element = nullptr;
 
     void flip() override;
 
 public:
-    ChangeElement(EngravingItem *oldElement, EngravingItem *newElement);
+    ChangeElement(EngravingItem *old_element, EngravingItem *new_element);
 
-    UNDO_TYPE(CommandType::ChangeElement)
+    UNDO_TYPE(CommandType::CHANGE_ELEMENT)
     UNDO_NAME("ChangeElement")
-    UNDO_CHANGED_OBJECTS({oldElement, newElement})
+    UNDO_CHANGED_OBJECTS({old_element, new_element})
 };
 
 class ChangeParent : public UndoableCommand {
@@ -91,14 +91,14 @@ class ChangeParent : public UndoableCommand {
 
     EngravingItem *element = nullptr;
     EngravingItem *parent = nullptr;
-    staff_idx_t staffIdx = muse::nidx;
+    staff_idx_t staff_idx = muse::nidx;
 
     void flip() override;
 
 public:
-    ChangeParent(EngravingItem *e, EngravingItem *p, staff_idx_t si) : element(e), parent(p), staffIdx(si) {}
+    ChangeParent(EngravingItem *e, EngravingItem *p, staff_idx_t si) : element(e), parent(p), staff_idx(si) {}
 
-    UNDO_TYPE(CommandType::ChangeParent)
+    UNDO_TYPE(CommandType::CHANGE_PARENT)
     UNDO_NAME("ChangeParent")
     UNDO_CHANGED_OBJECTS({element, parent})
 };
@@ -115,7 +115,7 @@ class ChangeSegmentParent : public UndoableCommand {
 public:
     ChangeSegmentParent(Segment *s, Measure *p, Fraction t) : segment(s), parent(p), tick(t) {}
 
-    UNDO_TYPE(CommandType::ChangeParent)
+    UNDO_TYPE(CommandType::CHANGE_PARENT)
     UNDO_NAME("ChangeSegmentParent")
     UNDO_CHANGED_OBJECTS({segment})
 };
@@ -123,7 +123,7 @@ public:
 class LinkUnlink : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, LinkUnlink)
 
-    bool mustDelete{false};
+    bool must_delete{false};
 
 protected:
     LinkedObjects *le = nullptr;
@@ -147,7 +147,7 @@ public:
 
     void redo() override { unlink(); }
 
-    UNDO_TYPE(CommandType::Unlink)
+    UNDO_TYPE(CommandType::UNLINK)
     UNDO_NAME("Unlink")
 };
 
@@ -160,9 +160,9 @@ public:
 
     void redo() override { link(); }
 
-    UNDO_TYPE(CommandType::Link)
+    UNDO_TYPE(CommandType::LINK)
     UNDO_NAME("Link")
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
+    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
 };
 } // namespace mu::engraving

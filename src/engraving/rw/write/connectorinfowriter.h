@@ -50,9 +50,9 @@ public:
     void write();
 
 protected:
-    const EngravingItem *_connector;
+    const EngravingItem *connector_value;
 
-    virtual const char *tagName() const = 0;
+    virtual const char *tag_name() const = 0;
 
 private:
     XmlWriter *xml_ = nullptr;
@@ -67,11 +67,11 @@ private:
 class SpannerWriter : public ConnectorInfoWriter {
     OBJECT_ALLOCATOR(engraving, SpannerWriter)
 protected:
-    const char *tagName() const override { return "Spanner"; }
+    const char *tag_name() const override { return "Spanner"; }
 public:
     SpannerWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const Spanner *spanner, int track, Fraction frac,
                   bool start);
 
-    static void fillSpannerPosition(Location &l, const MeasureBase *endpoint, const Fraction &tick, bool clipboardmode);
+    static void fill_spanner_position(Location &l, const MeasureBase *endpoint, const Fraction &tick, bool clipboardmode);
 };
 } // namespace mu::engraving::write

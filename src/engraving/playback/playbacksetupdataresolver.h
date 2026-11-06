@@ -30,9 +30,9 @@ class Instrument;
 
 class PlaybackSetupDataResolver {
 public:
-    void resolveSetupData(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
-    void resolveChordSymbolsSetupData(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
-    void resolveMetronomeSetupData(muse::mpe::PlaybackSetupData &result) const;
+    void resolve_setup_data(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
+    void resolve_chord_symbols_setup_data(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
+    void resolve_metronome_setup_data(muse::mpe::PlaybackSetupData &result) const;
 };
 } // namespace mu::engraving
 

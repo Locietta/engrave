@@ -29,84 +29,87 @@
 
 #include "global/asserts.h"
 
+#undef NOT_SUPPORTED
+#undef NOT_IMPLEMENTED
+
 namespace muse {
 class Ret {
 public:
 
     enum class Code {
-        Undefined = -1,
-        Ok = 0,
-        UnknownError = 1,
+        UNDEFINED = -1,
+        OK = 0,
+        UNKNOWN_ERROR = 1,
 
         // not error, just codes
-        Cancel = 3, // abort by user
+        CANCEL = 3, // abort by user
 
-        NotSupported = 4,
-        NotImplemented = 5,
-        NotAllowed = 9,
+        NOT_SUPPORTED = 4,
+        NOT_IMPLEMENTED = 5,
+        NOT_ALLOWED = 9,
 
-        BadData = 6,
-        BadArgs = 7,
-        Busy = 8,
+        BAD_DATA = 6,
+        BAD_ARGS = 7,
+        BUSY = 8,
 
         // Global errors
-        GlobalFirst = 20,
-        InternalError = 21,
-        GlobalLast = 99,
+        GLOBAL_FIRST = 20,
+        INTERNAL_ERROR = 21,
+        GLOBAL_LAST = 99,
 
-        UiFirst = 100,
-        UiLast = 199,
+        UI_FIRST = 100,
+        UI_LAST = 199,
 
-        ExtensionsFirst = 200,
-        ExtensionsLast = 299,
+        EXTENSIONS_FIRST = 200,
+        EXTENSIONS_LAST = 299,
 
-        AudioFirst = 300,
-        AudioLast = 399,
+        AUDIO_FIRST = 300,
+        AUDIO_LAST = 399,
 
-        SystemFirst = 400,
-        SystemLast = 499,
+        SYSTEM_FIRST = 400,
+        SYSTEM_LAST = 499,
 
-        NetworkFirst = 500,
-        NetworkLast = 599,
+        NETWORK_FIRST = 500,
+        NETWORK_LAST = 599,
 
-        MidiFirst = 600,
-        MidiLast = 699,
+        MIDI_FIRST = 600,
+        MIDI_LAST = 699,
 
-        LanguagesFirst = 700,
-        LanguagesLast = 799,
+        LANGUAGES_FIRST = 700,
+        LANGUAGES_LAST = 799,
 
-        NotationFirst = 1000,
-        NotationLast = 1299,
+        NOTATION_FIRST = 1000,
+        NOTATION_LAST = 1299,
 
-        ConverterFirst = 1300,
-        ConverterLast = 1399,
+        CONVERTER_FIRST = 1300,
+        CONVERTER_LAST = 1399,
 
-        VstFirst = 1400,
-        VstLast = 1499,
+        VST_FIRST = 1400,
+        VST_LAST = 1499,
 
-        WorkspaceFirst = 1500,
-        WorkspaceLast = 1599,
+        WORKSPACE_FIRST = 1500,
+        WORKSPACE_LAST = 1599,
 
-        LearnFirst = 1600,
-        LearnLast = 1699,
+        LEARN_FIRST = 1600,
+        LEARN_LAST = 1699,
 
-        UpdateFirst = 1700,
-        UpdateLast = 1799,
+        UPDATE_FIRST = 1700,
+        UPDATE_LAST = 1799,
 
-        CloudFirst = 1800,
-        CloudLast = 1899,
+        CLOUD_FIRST = 1800,
+        CLOUD_LAST = 1899,
 
-        EngravingFirst = 2000,
-        EngravingLast = 2999,
+        ENGRAVING_FIRST = 2000,
+        ENGRAVING_LAST = 2999,
 
-        ProjectFirst = 3000,
-        ProjectLast = 3999,
+        PROJECT_FIRST = 3000,
+        PROJECT_LAST = 3999,
 
-        DiagnosticsFirst = 4000,
-        DiagnosticsLast = 4999,
+        DIAGNOSTICS_FIRST = 4000,
+        DIAGNOSTICS_LAST = 4999,
 
-        MuseSoundsFirst = 5000,
-        MuseSoundsLast = 5999
+        MUSE_SOUNDS_FIRST = 5000,
+        MUSE_SOUNDS_LAST = 5999
     };
 
     Ret() = default;
@@ -115,22 +118,22 @@ public:
     explicit Ret(Code c);
     explicit Ret(const int &c, const std::string &text);
 
-    void setCode(int c);
+    void set_code(int c);
     int code() const;
     bool valid() const;
     bool success() const;
-    void setText(const std::string &s);
+    void set_text(const std::string &s);
     const std::string &text() const;
-    void setData(const std::string &key, const std::any &val);
+    void set_data(const std::string &key, const std::any &val);
 
     template <typename DataType>
-    DataType data(const std::string &key, const DataType &defaultValue) const {
+    DataType data(const std::string &key, const DataType &default_value) const {
         static_assert(!std::is_reference_v<DataType>, "DataType must not be a reference");
         static_assert(!std::is_pointer_v<DataType>, "DataType must not be a pointer");
 
         const auto it = data_.find(key);
         if (it == data_.end()) {
-            return defaultValue;
+            return default_value;
         }
 
         if (it->second.type() == typeid(DataType)) {
@@ -139,13 +142,13 @@ public:
             } catch (const std::bad_any_cast &e) {
                 IF_ASSERT_FAILED_X(false, "Ret::data<" + std::string(typeid(DataType).name()) + ">: bad_any_cast for key '" + key +
                                               "': " + e.what()) {
-                    return defaultValue;
+                    return default_value;
                 }
             }
         }
         IF_ASSERT_FAILED_X(false, "Ret::data<" + std::string(typeid(DataType).name()) + ">: type mismatch for key '" + key +
                                       "', stored type is " + it->second.type().name()) {
-            return defaultValue;
+            return default_value;
         }
     }
 
@@ -155,7 +158,7 @@ public:
     }
 
     inline Ret &operator=(bool arg) {
-        code_ = arg ? int(Code::Ok) : int(Code::UnknownError);
+        code_ = arg ? int(Code::OK) : int(Code::UNKNOWN_ERROR);
         return *this;
     }
 
@@ -163,15 +166,15 @@ public:
 
     inline bool operator!() const { return !success(); }
 
-    std::string toString() const;
+    std::string to_string() const;
 
 private:
-    int code_ = int(Code::Undefined);
+    int code_ = int(Code::UNDEFINED);
     std::string text_;
     std::map<std::string, std::any> data_;
 };
 
-inline muse::Ret make_ok() { return Ret(static_cast<int>(Ret::Code::Ok)); }
+inline muse::Ret make_ok() { return Ret(static_cast<int>(Ret::Code::OK)); }
 
 inline muse::Ret make_ret(Ret::Code e) { return Ret(static_cast<int>(e)); }
 

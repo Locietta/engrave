@@ -27,8 +27,8 @@
 namespace mu::engraving {
 class TestUtils {
 public:
-    static Score *createPart(MasterScore *masterScore, size_t partNumber = 0);
-    static Score *createEmptyPart(MasterScore *masterScore);
-    static void createParts(MasterScore *masterScore, size_t numberOfParts);
+    static Score *create_part(MasterScore *master_score, size_t part_number = 0);
+    static Score *create_empty_part(MasterScore *master_score);
+    static void create_parts(MasterScore *master_score, size_t number_of_parts);
 };
 } // namespace mu::engraving

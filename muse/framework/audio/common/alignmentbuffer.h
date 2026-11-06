@@ -48,10 +48,10 @@ public:
             std::copy(data, data + size, buf_.begin() + tail_);
             tail_ += size;
         } else {
-            size_t firstPart = buf_.size() - tail_;
-            std::copy(data, data + firstPart, buf_.begin() + tail_);
-            std::copy(data + firstPart, data + size, buf_.begin());
-            tail_ = size - firstPart;
+            size_t first_part = buf_.size() - tail_;
+            std::copy(data, data + first_part, buf_.begin() + tail_);
+            std::copy(data + first_part, data + size, buf_.begin());
+            tail_ = size - first_part;
         }
 
         availableRead_ += size;
@@ -72,10 +72,10 @@ public:
             std::copy(buf_.begin() + head_, buf_.begin() + head_ + size, dest);
             head_ += size;
         } else {
-            size_t firstPart = buf_.size() - head_;
+            size_t first_part = buf_.size() - head_;
             std::copy(buf_.begin() + head_, buf_.begin() + buf_.size(), dest);
-            std::copy(buf_.begin(), buf_.begin() + (size - firstPart), dest + firstPart);
-            head_ = size - firstPart;
+            std::copy(buf_.begin(), buf_.begin() + (size - first_part), dest + first_part);
+            head_ = size - first_part;
         }
 
         availableRead_ -= size;

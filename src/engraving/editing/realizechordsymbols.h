@@ -36,7 +36,7 @@ public:
     // If a voicing and duration type are specified, the harmony voicing settings will be
     // overridden by the passed parameters. Otherwise, the settings set on the harmony object
     // will be used.
-    static void realizeChordSymbols(Transaction &tx, Score *score, bool literal = true, Voicing voicing = Voicing(-1),
-                                    HDuration durationType = HDuration(-1));
+    static void realize_chord_symbols(Transaction &tx, Score *score, bool literal = true, Voicing voicing = Voicing(-1),
+                                      HDuration duration_type = HDuration(-1));
 };
 } // namespace mu::engraving

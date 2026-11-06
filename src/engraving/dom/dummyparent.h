@@ -40,11 +40,11 @@ public:
 
     void init();
 
-    RootItem *rootItem() const { return root_; }
+    RootItem *root_item() const { return root_; }
 
-    PropertyValue getProperty(Pid) const override { return PropertyValue(); }
+    PropertyValue get_property(Pid) const override { return PropertyValue(); }
 
-    bool setProperty(Pid, const PropertyValue &) override { return false; }
+    bool set_property(Pid, const PropertyValue &) override { return false; }
 
 private:
     RootItem *root_ = nullptr;

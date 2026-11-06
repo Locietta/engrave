@@ -46,29 +46,29 @@ using mu::engraving::UndoableCommand;
 std::map<std::string, std::string> mscz_files(const std::vector<std::byte> &bytes) {
     muse::ByteArray data(reinterpret_cast<const std::uint8_t *>(bytes.data()), bytes.size());
     muse::io::Buffer buffer(&data);
-    buffer.open(muse::io::IODevice::ReadOnly);
+    buffer.open(muse::io::IODevice::READ_ONLY);
     muse::ZipReader zip(&buffer);
     std::map<std::string, std::string> files;
-    for (const auto &info : zip.fileInfoList()) {
-        if (!info.isFile) continue;
-        const muse::ByteArray file = zip.fileData(info.filePath.toStdString());
-        files.emplace(info.filePath.toStdString(), std::string(reinterpret_cast<const char *>(file.constData()), file.size()));
+    for (const auto &info : zip.file_info_list()) {
+        if (!info.is_file) continue;
+        const muse::ByteArray file = zip.file_data(info.file_path.to_std_string());
+        files.emplace(info.file_path.to_std_string(), std::string(reinterpret_cast<const char *>(file.const_data()), file.size()));
     }
     return files;
 }
 
 std::string externals(MasterScore &master) {
     std::string text;
-    for (const auto &mapping : master.midiMapping()) {
+    for (const auto &mapping : master.midi_mapping()) {
         const auto &parts = master.parts();
         const auto part = std::ranges::find(parts, mapping.part());
         text += std::format("midi part={} port={} channel={}\n", part - parts.begin(), int(mapping.port()), int(mapping.channel()));
     }
-    for (const Score *score : master.scoreList()) {
-        for (const auto &[key, value] : score->metaTags()) text += std::format("tag {}={}\n", key.toStdString(), value.toStdString());
+    for (const Score *score : master.score_list()) {
+        for (const auto &[key, value] : score->meta_tags()) text += std::format("tag {}={}\n", key.to_std_string(), value.to_std_string());
     }
-    text += std::format("selection none={} input track={} note entry={}\n", master.selection().isNone(),
-                        static_cast<long long>(master.inputState().track()), master.inputState().noteEntryMode());
+    text += std::format("selection none={} input track={} note entry={}\n", master.selection().is_none(),
+                        static_cast<long long>(master.input_state().track()), master.input_state().note_entry_mode());
     return text;
 }
 
@@ -122,11 +122,11 @@ struct Fault : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-enum struct Inject { none, before, after, alloc };
+enum struct Inject { NONE, BEFORE, AFTER, ALLOC };
 
 // Numbers the commands of one edit as they are pushed, and fails the one at `at`.
 struct Pushes {
-    Inject mode = Inject::none;
+    Inject mode = Inject::NONE;
     std::size_t at = 0;
     std::size_t count = 0;
     std::vector<std::pair<const UndoableCommand *, std::size_t>> running; // pushed, not yet performed
@@ -148,7 +148,7 @@ void on_push(UndoableCommand *command, bool appended) {
     }
     if (number != g_pushes.at) return;
     switch (g_pushes.mode) {
-        case Inject::before:
+        case Inject::BEFORE:
             if (appended) return;
             // The command never entered the transaction, so nothing here will undo it,
             // and its element is not necessarily free-standing: the engine may already
@@ -159,13 +159,13 @@ void on_push(UndoableCommand *command, bool appended) {
             // command only and leave the element to whatever still owns it.
             delete command;
             throw Fault("fault injected before a push");
-        case Inject::after:
+        case Inject::AFTER:
             if (appended) throw Fault("fault injected after a push");
             return;
-        case Inject::alloc:
+        case Inject::ALLOC:
             if (appended) throw std::bad_alloc();
             return;
-        case Inject::none: return;
+        case Inject::NONE: return;
     }
 }
 
@@ -173,10 +173,10 @@ class PushHook {
 public:
     PushHook(Inject mode, std::size_t at) {
         g_pushes = {mode, at};
-        mu::engraving::Transaction::setPushHook(on_push);
+        mu::engraving::Transaction::set_push_hook(on_push);
     }
 
-    ~PushHook() { mu::engraving::Transaction::setPushHook(nullptr); }
+    ~PushHook() { mu::engraving::Transaction::set_push_hook(nullptr); }
 
     PushHook(const PushHook &) = delete;
     PushHook &operator=(const PushHook &) = delete;
@@ -193,8 +193,8 @@ const std::string pass = "pass";
 std::unique_ptr<Document> open(Engine &engine, const std::filesystem::path &fixture) {
     auto document = engine.open(fixture);
     if (!document) throw std::runtime_error(std::format("{}: {}", fixture.string(), document.error().message));
-    for (Score *score : master_of(**document).scoreList()) {
-        if (score->npages() == 0) score->doLayout();
+    for (Score *score : master_of(**document).score_list()) {
+        if (score->npages() == 0) score->do_layout();
     }
     return std::move(*document);
 }
@@ -210,16 +210,17 @@ std::string inv(Document &document) {
     MasterScore &master = master_of(document);
     std::unordered_set<const EngravingObject *> objects;
     for (EngravingObject *object : document_objects(master)) objects.insert(object);
-    for (const auto &[eid, object] : master.eidRegister()->entries()) {
-        if (object->eid() != eid) return eid.toStdString() + ": the reverse entry disagrees";
-        if (id_class(*object) == IdClass::persisted && !objects.contains(object) && !in_score(master, object))
-            return eid.toStdString() + " names an element that left the document";
+    for (const auto &[eid, object] : master.eid_register()->entries()) {
+        if (object->eid() != eid) return eid.to_std_string() + ": the reverse entry disagrees";
+        if (id_class(*object) == IdClass::PERSISTED && !objects.contains(object) && !in_score(master, object))
+            return eid.to_std_string() + " names an element that left the document";
     }
     for (const LiveId &entry : live_ids(master)) {
-        if (master.eidRegister()->itemFromEID(to_engine(entry.id)) != entry.object) return to_string(entry.id) + " names another element";
+        if (master.eid_register()->item_from_eid(to_engine(entry.id)) != entry.object)
+            return to_string(entry.id) + " names another element";
     }
     for (const EngravingObject *object : objects) {
-        if (takes_id(*object) && !object->eid().isValid()) return std::string(object->typeName()) + " has no id";
+        if (takes_id(*object) && !object->eid().is_valid()) return std::string(object->type_name()) + " has no id";
     }
     return {};
 }
@@ -230,7 +231,7 @@ std::string check_commit(Engine &engine, const OpCase &op_case, const std::files
     const Batch batch = op_case.make(*document);
     Result<EditResult> result;
     {
-        PushHook hook(Inject::none, 0);
+        PushHook hook(Inject::NONE, 0);
         result = document->edit(batch, before.revision);
         pushes = hook.count();
     }
@@ -257,12 +258,12 @@ std::string check_undo(Engine &engine, const OpCase &op_case, const std::filesys
     const Fingerprint before = fingerprint(*document);
     const auto result = document->edit(op_case.make(*document));
     if (!result) return "fail: the batch failed: " + std::string(to_string(result.error().code));
-    master_of(*document).undoRedo(true, nullptr);
+    master_of(*document).undo_redo(true, nullptr);
     // What the undone commands created stays alive, and registered, until the
     // history that could redo it is dropped.
-    master_of(*document).undoStack()->clearHistory();
+    master_of(*document).undo_stack()->clear_history();
     // The engine's undo lays out the master score only.
-    for (Score *score : master_of(*document).scoreList()) score->doLayout();
+    for (Score *score : master_of(*document).score_list()) score->do_layout();
     const auto changed = differences(before, fingerprint(*document), {"revision", "undo"});
     return changed.empty() ? pass : "fail: undo left " + joined(changed);
 }
@@ -270,7 +271,7 @@ std::string check_undo(Engine &engine, const OpCase &op_case, const std::filesys
 // One injected failure: the batch must fail (with bad_alloc thrown for `alloc`),
 // and every fingerprint field must be what it was.
 struct Injection {
-    Inject mode = Inject::none;
+    Inject mode = Inject::NONE;
     std::size_t push = 0;
     std::function<void(std::size_t)> before_step;
     std::string label;
@@ -288,9 +289,9 @@ std::string check_injection(Engine &engine, const OpCase &op_case, const std::fi
     try {
         PushHook hook(injection.mode, injection.push);
         const auto result = document->edit(batch);
-        failed = !result && injection.mode != Inject::alloc;
+        failed = !result && injection.mode != Inject::ALLOC;
     } catch (const std::bad_alloc &) {
-        failed = injection.mode == Inject::alloc;
+        failed = injection.mode == Inject::ALLOC;
     }
     hooks = {};
     if (!failed) return injection.label + ": the batch did not fail as injected";
@@ -308,7 +309,7 @@ std::string check_poison(Engine &engine, const OpCase &op_case, const std::files
     hooks.fail_restore = true;
     const Batch batch = op_case.make(*document);
     try {
-        PushHook hook(Inject::after, 1);
+        PushHook hook(Inject::AFTER, 1);
         (void) document->edit(batch);
         return "a failed restore did not throw";
     } catch (const std::exception &) {}
@@ -337,20 +338,20 @@ std::pair<std::string, std::string> check_rollbacks(Engine &engine, const OpCase
             failures.push_back(std::move(failure));
     };
     for (std::size_t push = 1; push <= pushes; ++push) {
-        run(c3, {Inject::before, push, {}, std::format("before push {}", push)});
-        run(c3, {Inject::after, push, {}, std::format("after push {}", push)});
-        run(c4, {Inject::alloc, push, {}, std::format("bad_alloc at push {}", push)});
+        run(c3, {Inject::BEFORE, push, {}, std::format("before push {}", push)});
+        run(c3, {Inject::AFTER, push, {}, std::format("after push {}", push)});
+        run(c4, {Inject::ALLOC, push, {}, std::format("bad_alloc at push {}", push)});
     }
     // Between the operations, and between the last one and the commit.
     for (std::size_t step = 1; step <= ops; ++step) {
-        run(c3, {Inject::none, 0,
+        run(c3, {Inject::NONE, 0,
                  [step](std::size_t at) {
                      if (at == step) throw Fault("fault injected between operations");
                  },
                  std::format("exception before step {}", step)});
-        run(c3, {Inject::none, 0,
+        run(c3, {Inject::NONE, 0,
                  [step](std::size_t at) {
-                     if (at == step) MScore::setError(mu::engraving::MsError::NO_NOTE_SELECTED);
+                     if (at == step) MScore::set_error(mu::engraving::MsError::NO_NOTE_SELECTED);
                  },
                  std::format("engine error before step {}", step)});
     }
@@ -375,25 +376,25 @@ Fingerprint fingerprint(Document &document) {
     print.files = mscz_files(*saved);
     print.semantic = music::semantic_dump(&master).dump(1);
     for (const LiveId &entry : live_ids(master)) {
-        print.ids.push_back(std::format("{} {} {}/{}/{}", to_string(entry.id), entry.object->typeName(), entry.placement.score,
+        print.ids.push_back(std::format("{} {} {}/{}/{}", to_string(entry.id), entry.object->type_name(), entry.placement.score,
                                         entry.placement.tick, entry.placement.track));
     }
     std::ranges::sort(print.ids);
     print.revision = document.revision();
-    print.undo_count = master.undoStack()->size();
-    print.undo_active = master.undoStack()->hasActiveTransaction();
-    print.engine_error = static_cast<int>(MScore::_error);
+    print.undo_count = master.undo_stack()->size();
+    print.undo_active = master.undo_stack()->has_active_transaction();
+    print.engine_error = static_cast<int>(MScore::error);
     int index = 0;
-    for (Score *score : master.scoreList()) {
+    for (Score *score : master.score_list()) {
         if (score->npages() > 0)
             print.layout.push_back(std::format("score {} pages {} {}", index, score->npages(), music::score_positions(score, true).dump()));
         ++index;
     }
     print.externals = externals(master);
-    print.registered = master.eidRegister()->size();
+    print.registered = master.eid_register()->size();
     for (const EngravingObject *object : document_objects(master)) {
-        const bool generated = object->isEngravingItem() && static_cast<const mu::engraving::EngravingItem *>(object)->generated();
-        if (id_class(*object) != IdClass::layout && !generated) ++print.objects[object->typeName()];
+        const bool generated = object->is_engraving_item() && static_cast<const mu::engraving::EngravingItem *>(object)->generated();
+        if (id_class(*object) != IdClass::LAYOUT && !generated) ++print.objects[object->type_name()];
     }
     return print;
 }
@@ -537,7 +538,7 @@ ElementId find_id(Document &document, std::string_view type, const std::function
     // Document order, not id order: an imported score gets new random ids on every
     // open, and each check opens the fixture again.
     for (const EngravingObject *object : document_objects(master_of(document))) {
-        if (object->typeName() != type || !takes_id(*object) || !object->eid().isValid()) continue;
+        if (object->type_name() != type || !takes_id(*object) || !object->eid().is_valid()) continue;
         if (!match || match(*object)) return from_engine(object->eid());
     }
     throw std::invalid_argument(std::format("the fixture has no matching {} with an id", type));
@@ -552,13 +553,13 @@ EngravingObject &element(Document &document, const ElementId &id) {
 Value property(Document &document, const ElementId &id, std::string_view name) {
     const mu::engraving::Pid pid = api::pid_of(name);
     if (pid == mu::engraving::Pid::END) throw std::invalid_argument(std::format("no property '{}'", name));
-    return api::to_value(mu::engraving::propertyType(pid), element(document, id).getProperty(pid));
+    return api::to_value(mu::engraving::property_type(pid), element(document, id).get_property(pid));
 }
 
 ScoreSel excerpt(Document &document, std::size_t index) {
     const auto &excerpts = master_of(document).excerpts();
     if (index >= excerpts.size()) throw std::invalid_argument(std::format("the fixture has no excerpt {}", index));
-    return {from_engine(excerpts[index]->excerptScore()->eid())};
+    return {from_engine(excerpts[index]->excerpt_score()->eid())};
 }
 
 } // namespace engrave::harness

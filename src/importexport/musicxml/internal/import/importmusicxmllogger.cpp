@@ -33,10 +33,10 @@ namespace mu::iex::musicxml {
 //   xmlLocation
 //---------------------------------------------------------
 
-static String xmlLocation(const muse::XmlStreamReader *xmlreader) {
+static String xml_location(const muse::XmlStreamReader *xmlreader) {
     String loc;
     if (xmlreader) {
-        loc = String(u" at byte offset %1").arg(size_t(xmlreader->byteOffset()));
+        loc = String(u" at byte offset %1").arg(size_t(xmlreader->byte_offset()));
     }
     return loc;
 }
@@ -53,7 +53,7 @@ static void to_xml_log(MusicXmlLogger::Level level, const String &text, const Xm
         default: str = u"Unknown"; break;
     }
 
-    str += xmlLocation(xmlreader);
+    str += xml_location(xmlreader);
     str += u": ";
     str += text;
 
@@ -68,7 +68,7 @@ static void to_xml_log(MusicXmlLogger::Level level, const String &text, const Xm
  Log debug (function) trace.
  */
 
-void MusicXmlLogger::logDebugTrace(const String &trace, const muse::XmlStreamReader *xmlreader) {
+void MusicXmlLogger::log_debug_trace(const String &trace, const muse::XmlStreamReader *xmlreader) {
     if (level_ <= Level::MXML_TRACE) {
         to_xml_log(Level::MXML_TRACE, trace, xmlreader);
     }
@@ -82,7 +82,7 @@ void MusicXmlLogger::logDebugTrace(const String &trace, const muse::XmlStreamRea
  Log debug \a info (non-fatal events relevant for debugging).
  */
 
-void MusicXmlLogger::logDebugInfo(const String &info, const XmlStreamReader *xmlreader) {
+void MusicXmlLogger::log_debug_info(const String &info, const XmlStreamReader *xmlreader) {
     if (level_ <= Level::MXML_INFO) {
         to_xml_log(Level::MXML_INFO, info, xmlreader);
     }
@@ -96,7 +96,7 @@ void MusicXmlLogger::logDebugInfo(const String &info, const XmlStreamReader *xml
  Log \a error (possibly non-fatal but to be reported to the user anyway).
  */
 
-void MusicXmlLogger::logError(const String &error, const XmlStreamReader *xmlreader) {
+void MusicXmlLogger::log_error(const String &error, const XmlStreamReader *xmlreader) {
     if (level_ <= Level::MXML_ERROR) {
         to_xml_log(Level::MXML_ERROR, error, xmlreader);
     }

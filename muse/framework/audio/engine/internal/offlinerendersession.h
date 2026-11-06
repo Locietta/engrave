@@ -13,12 +13,12 @@ public:
     ~OfflineRenderSession();
     OfflineRenderSession(const OfflineRenderSession &) = delete;
     OfflineRenderSession &operator=(const OfflineRenderSession &) = delete;
-    RetVal2<TrackId, TrackParams> addTrack(const std::string &name, const mpe::PlaybackData &data, const TrackParams &params);
-    RetVal2<TrackId, TrackParams> addAuxTrack(const std::string &name, const TrackParams &params);
+    RetVal2<TrackId, TrackParams> add_track(const std::string &name, const mpe::PlaybackData &data, const TrackParams &params);
+    RetVal2<TrackId, TrackParams> add_aux_track(const std::string &name, const TrackParams &params);
 
     IAudioNodePtr output() const { return master_; }
 
-    void resetSources();
+    void reset_sources();
 private:
     RetVal2<TrackId, TrackParams> add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params);
     IAudioFactory &factory_;
@@ -26,6 +26,6 @@ private:
     std::shared_ptr<Mixer> mixer_;
     TrackChainPtr master_;
     std::vector<TrackChainPtr> tracks_;
-    TrackId lastId_ = MASTER_TRACK_ID;
+    TrackId last_id_ = ::muse::audio::master_track_id;
 };
 } // namespace muse::audio::engine

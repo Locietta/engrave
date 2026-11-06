@@ -134,11 +134,11 @@ std::string engine_soundfont_resource_id(const EngineAudio &audio);
 std::string engine_soundfont_uri(const EngineAudio &audio);
 
 enum class EngineAudioFormat {
-    Wav,
-    Flac,
-    Ogg,
-    Mp3,
-    Aac,
+    WAV,
+    FLAC,
+    OGG,
+    MP3,
+    AAC,
 };
 
 // Per-track mix override. Entries are indexed by the public trackId returned
@@ -158,7 +158,7 @@ struct EngineAudioTrackParams {
 };
 
 struct AudioRenderRequest {
-    EngineAudioFormat format = EngineAudioFormat::Wav;
+    EngineAudioFormat format = EngineAudioFormat::WAV;
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
     std::function<std::unique_ptr<muse::audio::encode::AbstractAudioEncoder>(const muse::audio::SoundTrackFormat &, muse::io::IODevice &)>
@@ -199,16 +199,16 @@ struct AudioRenderResult {
     // Why a render failed. EngineFailure is the only kind the caller cannot act
     // on: the engine's graph, synthesizer or encoder failed.
     enum class Failure {
-        None,
-        Cancelled,
-        InvalidScore,  // nothing to play, or no length to play it
-        ResourceLimit, // the projected output exceeds the 1 GiB cap
-        Io,            // opening, writing or closing the output failed
-        EngineFailure,
+        NONE,
+        CANCELLED,
+        INVALID_SCORE,  // nothing to play, or no length to play it
+        RESOURCE_LIMIT, // the projected output exceeds the 1 GiB cap
+        IO,             // opening, writing or closing the output failed
+        ENGINE_FAILURE,
     };
 
     bool ok = false;
-    Failure failure = Failure::None;
+    Failure failure = Failure::NONE;
     std::string error;
     // Total sample frames the writer emits: (repeat-expanded play time + 3 s,
     // truncated to milliseconds) at 44100 Hz. Computed from the same duration

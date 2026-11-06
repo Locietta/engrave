@@ -42,14 +42,14 @@ class PauseMap : std::map<int, int> {
 public:
     void calculate(const engraving::Score *s);
 
-    inline int tickWithPauses(int utick) const { return utick + offsetAtUTick(utick); }
+    inline int tick_with_pauses(int utick) const { return utick + offset_at_u_tick(utick); }
 
-    const std::map<int, double> &tempoEvents() const { return tempoEvents_; }
+    const std::map<int, double> &tempo_events() const { return tempo_events_; }
 
 private:
-    int offsetAtUTick(int utick) const;
+    int offset_at_u_tick(int utick) const;
 
-    std::map<int, double> tempoEvents_;
+    std::map<int, double> tempo_events_;
 };
 } // namespace mu::engraving
 #endif

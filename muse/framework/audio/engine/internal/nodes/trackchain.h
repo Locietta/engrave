@@ -40,34 +40,34 @@ namespace muse::audio::engine {
 class TrackChain : public ChainNode<TrackChainTag> {
 public:
 
-    TrackChain(TrackId trackId, const std::string &trackName);
+    TrackChain(TrackId track_id, const std::string &track_name);
 
-    TrackId trackId() const;
-    const std::string &trackName() const;
+    TrackId track_id() const;
+    const std::string &track_name() const;
 
-    void setSource(IAudioNodePtr source);
+    void set_source(IAudioNodePtr source);
     IAudioNodePtr source() const;
 
-    void setFxChain(FxChainPtr fxChain);
-    FxChainPtr fxChain() const;
+    void set_fx_chain(FxChainPtr fx_chain);
+    FxChainPtr fx_chain() const;
 
-    void setControl(AutomationControlNodePtr controlNode);
+    void set_control(AutomationControlNodePtr control_node);
     AutomationControlNodePtr control() const;
 
-    void setSignal(SignalNodePtr signalNode);
+    void set_signal(SignalNodePtr signal_node);
     SignalNodePtr signal() const;
 
     void rebuild() override;
 
 protected:
 
-    void doSelfProcess(float *, samples_t) override {}
+    void do_self_process(float *, samples_t) override {}
 
-    TrackId trackId_ = INVALID_TRACK_ID;
-    std::string trackName_;
+    TrackId track_id_ = ::muse::audio::invalid_track_id;
+    std::string track_name_;
 
     IAudioNodePtr source_;
-    FxChainPtr fxChain_;
+    FxChainPtr fx_chain_;
     AutomationControlNodePtr control_;
     SignalNodePtr signal_;
 };

@@ -32,52 +32,52 @@
 namespace muse::audio::synth {
 class FluidSequencer : public engine::AbstractEventSequencer<midi::Event> {
 public:
-    void init(const mpe::PlaybackSetupData &setupData, const std::optional<midi::Program> &programOverride, bool useDynamicEvents,
-              midi::channel_t maxChannels);
+    void init(const mpe::PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override, bool use_dynamic_events,
+              midi::channel_t max_channels);
 
     struct ChannelExpressionLevel {
         midi::channel_t channel = 0;
         int level = 0;
     };
 
-    bool usesDynamicEvents() const;
-    std::vector<ChannelExpressionLevel> currentExpressionLevels() const;
-    int naturalExpressionLevel() const;
+    bool uses_dynamic_events() const;
+    std::vector<ChannelExpressionLevel> current_expression_levels() const;
+    int natural_expression_level() const;
 
     const ChannelMap &channels() const;
-    void setOnChannelAdded(std::function<void(midi::channel_t, const midi::Program &)> onChannelAdded);
-    int lastStaff() const;
+    void set_on_channel_added(std::function<void(midi::channel_t, const midi::Program &)> on_channel_added);
+    int last_staff() const;
 
 private:
-    void updateMainStreamEvents(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) override;
-    void updateOffStreamEvents(const mpe::PlaybackEventsMap &events) override;
+    void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) override;
+    void update_off_stream_events(const mpe::PlaybackEventsMap &events) override;
 
     using SostenutoTimeAndDurations = std::map<midi::channel_t, std::vector<mpe::TimestampAndDuration>>;
 
-    void addPlaybackEvents(EventSequenceMap &destination, const mpe::PlaybackEventsMap &events, const bool isMainStream);
-    void addDynamicEvents(EventSequenceMap &destination, const mpe::DynamicAutomationLayers &layers);
-    void addNoteEvent(EventSequenceMap &destination, const mpe::NoteEvent &noteEvent, SostenutoTimeAndDurations &sostenutoTimeAndDurations,
-                      const bool isMainStream);
-    void addPedalEvent(EventSequenceMap &destination, const mpe::ArticulationMeta &meta, const midi::channel_t channelIdx);
-    void addControlChangeEvent(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const mpe::ControllerChangeEvent &event);
-    void addControlChange(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const int midiControlIdx,
-                          const midi::channel_t channelIdx, const uint32_t value);
-    void addPitchCurve(EventSequenceMap &destination, const mpe::NoteEvent &noteEvent, const mpe::ArticulationMeta &artMeta,
-                       const midi::channel_t channelIdx);
-    void addPitchBend(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const midi::channel_t channelIdx,
-                      const uint32_t value);
-    void addSostenutoEvents(EventSequenceMap &destination, const SostenutoTimeAndDurations &sostenutoTimeAndDurations);
+    void add_playback_events(EventSequenceMap &destination, const mpe::PlaybackEventsMap &events, const bool is_main_stream);
+    void add_dynamic_events(EventSequenceMap &destination, const mpe::DynamicAutomationLayers &layers);
+    void add_note_event(EventSequenceMap &destination, const mpe::NoteEvent &note_event,
+                        SostenutoTimeAndDurations &sostenuto_time_and_durations, const bool is_main_stream);
+    void add_pedal_event(EventSequenceMap &destination, const mpe::ArticulationMeta &meta, const midi::channel_t channel_idx);
+    void add_control_change_event(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const mpe::ControllerChangeEvent &event);
+    void add_control_change(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const int midi_control_idx,
+                            const midi::channel_t channel_idx, const uint32_t value);
+    void add_pitch_curve(EventSequenceMap &destination, const mpe::NoteEvent &note_event, const mpe::ArticulationMeta &art_meta,
+                         const midi::channel_t channel_idx);
+    void add_pitch_bend(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const midi::channel_t channel_idx,
+                        const uint32_t value);
+    void add_sostenuto_events(EventSequenceMap &destination, const SostenutoTimeAndDurations &sostenuto_time_and_durations);
 
-    midi::channel_t resolveChannel(const mpe::NoteEvent &noteEvent) const;
-    midi::note_idx_t noteIndex(const mpe::pitch_level_t pitchLevel) const;
-    midi::tuning_t noteTuning(const mpe::NoteEvent &noteEvent, const int noteIdx) const;
-    midi::velocity_t noteVelocity(const mpe::NoteEvent &noteEvent) const;
-    int expressionLevel(const mpe::dynamic_level_t dynamicLevel) const;
-    int pitchBendLevel(const mpe::pitch_level_t pitchLevel) const;
+    midi::channel_t resolve_channel(const mpe::NoteEvent &note_event) const;
+    midi::note_idx_t note_index(const mpe::pitch_level_t pitch_level) const;
+    midi::tuning_t note_tuning(const mpe::NoteEvent &note_event, const int note_idx) const;
+    midi::velocity_t note_velocity(const mpe::NoteEvent &note_event) const;
+    int expression_level(const mpe::dynamic_level_t dynamic_level) const;
+    int pitch_bend_level(const mpe::pitch_level_t pitch_level) const;
 
     mutable ChannelMap channels_;
-    bool useDynamicEvents_ = false;
-    int lastStaff_ = -1;
+    bool use_dynamic_events_ = false;
+    int last_staff_ = -1;
 };
 } // namespace muse::audio::synth
 

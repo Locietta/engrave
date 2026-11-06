@@ -36,27 +36,27 @@ class TripletFeel final : public SystemText {
     DECLARE_CLASSOF(ElementType::TRIPLET_FEEL)
 
 public:
-    TripletFeel(DummyParentOr<Segment> parent, TripletFeelType tripletFillType = TripletFeelType::NONE);
-    void setTripletProperty();
+    TripletFeel(DummyParentOr<Segment> parent, TripletFeelType triplet_fill_type = TripletFeelType::NONE);
+    void set_triplet_property();
 
     TripletFeel *clone() const override { return new TripletFeel(*this); }
 
-    TripletFeelType getTripletFeelType() const { return tripletFeelType_; }
+    TripletFeelType get_triplet_feel_type() const { return triplet_feel_type_; }
 
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    Sid getPropertyStyle(Pid id) const override;
-    TranslatableString subtypeUserName() const override;
+    PropertyValue property_default(Pid property_id) const override;
+    Sid get_property_style(Pid id) const override;
+    TranslatableString subtype_user_name() const override;
 
 
 private:
 
-    constexpr static int eightDivision = 2;
-    constexpr static int sixteenthDivision = 4;
-    constexpr static int tripletRatio = 66;
-    constexpr static int dottedRatio = 75;
-    constexpr static int scottishRatio = 25;
-    constexpr static int zeroRatio = 0;
+    constexpr static int eight_division = 2;
+    constexpr static int sixteenth_division = 4;
+    constexpr static int triplet_ratio = 66;
+    constexpr static int dotted_ratio = 75;
+    constexpr static int scottish_ratio = 25;
+    constexpr static int zero_ratio = 0;
 
-    TripletFeelType tripletFeelType_ = TripletFeelType::NONE;
+    TripletFeelType triplet_feel_type_ = TripletFeelType::NONE;
 };
 } // namespace mu::engraving

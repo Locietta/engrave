@@ -31,24 +31,24 @@ struct OffsetSids {
 };
 
 enum class TextStylePropertyType : char {
-    Undefined = 0,
-    FontFace,
-    FontSize,
-    LineSpacing,
-    SizeSpatiumDependent,
-    FontStyle,
-    Color,
-    TextAlign,
-    Offset,
-    FrameType,
-    FramePadding,
-    FrameWidth,
-    FrameRound,
-    FrameBorderColor,
-    FrameFillColor,
-    MusicalSymbolsScale,
-    MusicalSymbolsSize,
-    Position
+    UNDEFINED = 0,
+    FONT_FACE,
+    FONT_SIZE,
+    LINE_SPACING,
+    SIZE_SPATIUM_DEPENDENT,
+    FONT_STYLE,
+    COLOR,
+    TEXT_ALIGN,
+    OFFSET,
+    FRAME_TYPE,
+    FRAME_PADDING,
+    FRAME_WIDTH,
+    FRAME_ROUND,
+    FRAME_BORDER_COLOR,
+    FRAME_FILL_COLOR,
+    MUSICAL_SYMBOLS_SCALE,
+    MUSICAL_SYMBOLS_SIZE,
+    POSITION
 };
 
 struct TextStyleProperty {
@@ -57,11 +57,11 @@ struct TextStyleProperty {
     Pid pid;
 };
 
-constexpr size_t TEXT_STYLE_SIZE = 16;
+constexpr size_t text_style_size = 16;
 
 struct TextStyle {
-    std::array<TextStyleProperty, TEXT_STYLE_SIZE> properties;
-    OffsetSids offsetSids;
+    std::array<TextStyleProperty, ::mu::engraving::text_style_size> properties;
+    OffsetSids offset_sids;
 
     auto begin() { return properties.begin(); }
 
@@ -82,8 +82,8 @@ struct TextStyle {
     const auto &at(size_t i) const { return properties.at(i); }
 };
 
-const TextStyle *textStyle(TextStyleType);
-const std::vector<TextStyleType> &allTextStyles();
-const std::vector<TextStyleType> &editableTextStyles();
-const std::vector<TextStyleType> &primaryTextStyles();
+const TextStyle *text_style(TextStyleType);
+const std::vector<TextStyleType> &all_text_styles();
+const std::vector<TextStyleType> &editable_text_styles();
+const std::vector<TextStyleType> &primary_text_styles();
 } // namespace mu::engraving

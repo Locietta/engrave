@@ -38,9 +38,10 @@ class InsertTime : public UndoableCommand {
     void undo() override;
 
 public:
-    InsertTime(Score *_score, const Fraction &_tick, const Fraction &_len) : score(_score), tick(_tick), len(_len) {}
+    InsertTime(Score *input_score, const Fraction &input_tick, const Fraction &input_len)
+        : score(input_score), tick(input_tick), len(input_len) {}
 
-    UNDO_TYPE(CommandType::InsertTime)
+    UNDO_TYPE(CommandType::INSERT_TIME)
     UNDO_NAME("InsertTime")
     UNDO_CHANGED_OBJECTS({score})
 };
@@ -55,9 +56,10 @@ class InsertTimeUnmanagedSpanner : public UndoableCommand {
     void flip() override;
 
 public:
-    InsertTimeUnmanagedSpanner(Score *s, const Fraction &_tick, const Fraction &_len) : score(s), tick(_tick), len(_len) {}
+    InsertTimeUnmanagedSpanner(Score *s, const Fraction &input_tick, const Fraction &input_len)
+        : score(s), tick(input_tick), len(input_len) {}
 
-    UNDO_TYPE(CommandType::InsertTimeUnmanagedSpanner)
+    UNDO_TYPE(CommandType::INSERT_TIME_UNMANAGED_SPANNER)
     UNDO_NAME("InsertTimeUnmanagedSpanner")
     UNDO_CHANGED_OBJECTS({score})
 };

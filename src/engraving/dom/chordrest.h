@@ -59,68 +59,70 @@ public:
     ChordRest &operator=(const ChordRest &) = delete;
     ~ChordRest();
 
-    virtual void scanElements(std::function<void(EngravingItem *)> func) override;
+    virtual void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     virtual EngravingItem *drop(Transaction &tx, EditData &) override;
-    virtual void undoUnlink() override;
+    virtual void undo_unlink() override;
 
-    virtual Segment *segment() const { return (Segment *) ownershipParent(); }
+    virtual Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    void setBeamMode(BeamMode m) { beamMode_ = m; }
+    void set_beam_mode(BeamMode m) { beam_mode_ = m; }
 
-    BeamMode beamMode() const { return beamMode_; }
+    BeamMode beam_mode() const { return beam_mode_; }
 
-    void setBeam(Beam *b);
-    void setBeamlet(BeamSegment *b);
+    void set_beam(Beam *b);
+    void set_beamlet(BeamSegment *b);
 
     BeamSegment *beamlet() const { return beamlet_; }
 
     virtual Beam *beam() const final;
 
-    int beams() const { return durationType_.hooks(); }
+    int beams() const { return duration_type_.hooks(); }
 
-    virtual double upPos() const = 0;
-    virtual double downPos() const = 0;
+    virtual double up_pos() const = 0;
+    virtual double down_pos() const = 0;
 
-    virtual double rightEdge() const = 0;
+    virtual double right_edge() const = 0;
 
-    bool isSmall() const { return isSmall_; }
+    bool is_small() const { return is_small_; }
 
-    void setSmall(bool val) { isSmall_ = val; }
+    void set_small(bool val) { is_small_ = val; }
 
-    int staffMove() const { return staffMove_; }
+    int staff_move() const { return staff_move_; }
 
-    void setStaffMove(int val) { staffMove_ = val; }
+    void set_staff_move(int val) { staff_move_ = val; }
 
-    int storedStaffMove() const { return storedStaffMove_; }
+    int stored_staff_move() const { return stored_staff_move_; }
 
-    staff_idx_t vStaffIdx() const override { return staffIdx() + staffMove_; }
+    staff_idx_t v_staff_idx() const override { return staff_idx() + staff_move_; }
 
-    void checkStaffMoveValidity();
+    void check_staff_move_validity();
 
-    const TDuration durationType() const { return crossMeasure_ == CrossMeasure::FIRST ? crossMeasureTDur_ : durationType_; }
+    const TDuration duration_type() const { return cross_measure_ == CrossMeasure::FIRST ? cross_measure_t_dur_ : duration_type_; }
 
-    const TDuration actualDurationType() const { return durationType_; }
+    const TDuration actual_duration_type() const { return duration_type_; }
 
-    void setDurationType(DurationType t);
-    void setDurationType(const Fraction &ticks);
-    void setDurationType(TDuration v);
+    void set_duration_type(DurationType t);
+    void set_duration_type(const Fraction &ticks);
+    void set_duration_type(TDuration v);
 
-    void setDots(int n) { durationType_.setDots(n); }
+    void set_dots(int n) { duration_type_.set_dots(n); }
 
     int dots() const {
-        return crossMeasure_ == CrossMeasure::FIRST ? crossMeasureTDur_.dots() :
-                                                      (crossMeasure_ == CrossMeasure::SECOND ? 0 : durationType_.dots());
+        return cross_measure_ == CrossMeasure::FIRST ? cross_measure_t_dur_.dots() :
+                                                       (cross_measure_ == CrossMeasure::SECOND ? 0 : duration_type_.dots());
     }
 
-    int actualDots() const { return durationType_.dots(); }
+    int actual_dots() const { return duration_type_.dots(); }
 
-    Fraction durationTypeTicks() const { return crossMeasure_ == CrossMeasure::FIRST ? crossMeasureTDur_.ticks() : durationType_.ticks(); }
+    Fraction duration_type_ticks() const {
+        return cross_measure_ == CrossMeasure::FIRST ? cross_measure_t_dur_.ticks() : duration_type_.ticks();
+    }
 
-    String durationUserName() const;
+    String duration_user_name() const;
 
-    void setTrack(track_idx_t val) override;
+    void set_track(track_idx_t val) override;
 
     const std::vector<Lyrics *> &lyrics() const { return lyrics_; }
 
@@ -128,75 +130,75 @@ public:
 
     Lyrics *lyrics(int verse) const;
     Lyrics *lyrics(int verse, PlacementV) const;
-    int lastVerse(PlacementV) const;
-    bool isMelismaEnd() const;
-    void setMelismaEnd(bool v);
+    int last_verse(PlacementV) const;
+    bool is_melisma_end() const;
+    void set_melisma_end(bool v);
 
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
-    void removeDeleteBeam(bool beamed);
-    void replaceBeam(Beam *newBeam);
+    void remove_delete_beam(bool beamed);
+    void replace_beam(Beam *new_beam);
 
     const ElementList &el() const { return el_; }
 
     //! TODO Look like a hack, see using
-    void addFermata(Fermata *f) { addEl(f); }
+    void add_fermata(Fermata *f) { add_el(f); }
 
-    void removeFermata(Fermata *f) { removeEl(f); }
+    void remove_fermata(Fermata *f) { remove_el(f); }
 
     //! --------------------------------
 
-    Slur *slur(const ChordRest *secondChordRest = nullptr) const;
+    Slur *slur(const ChordRest *second_chord_rest = nullptr) const;
 
-    CrossMeasure crossMeasure() const { return crossMeasure_; }
+    CrossMeasure cross_measure() const { return cross_measure_; }
 
-    void setCrossMeasure(CrossMeasure val) { crossMeasure_ = val; }
+    void set_cross_measure(CrossMeasure val) { cross_measure_ = val; }
 
     // the following two functions should not be used, unless absolutely necessary;
     // the cross-measure duration is best managed through setDuration() and crossMeasureSetup()
-    TDuration crossMeasureDurationType() const { return crossMeasureTDur_; }
+    TDuration cross_measure_duration_type() const { return cross_measure_t_dur_; }
 
-    void setCrossMeasureDurationType(TDuration v) { crossMeasureTDur_ = v; }
+    void set_cross_measure_duration_type(TDuration v) { cross_measure_t_dur_ = v; }
 
-    void undoChangeProperty(Pid id, const PropertyValue &newValue, PropertyFlags ps = PropertyFlags::NOSTYLE) override;
-    void localSpatiumChanged(double oldValue, double newValue) override;
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
-    bool isGrace() const;
-    bool isGraceBefore() const;
-    bool isGraceAfter() const;
-    Breath *hasBreathMark() const;
+    void undo_change_property(Pid id, const PropertyValue &new_value, PropertyFlags ps = PropertyFlags::NOSTYLE) override;
+    void local_spatium_changed(double old_value, double new_value) override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    bool is_grace() const;
+    bool is_grace_before() const;
+    bool is_grace_after() const;
+    Breath *has_breath_mark() const;
 
-    Segment *nextSegmentAfterCR(SegmentType types) const;
+    Segment *next_segment_after_cr(SegmentType types) const;
 
-    void setScore(Score *s) override;
-    EngravingItem *nextArticulationOrLyric(EngravingItem *e);
-    EngravingItem *prevArticulationOrLyric(EngravingItem *e);
-    virtual EngravingItem *nextElement() override;
-    virtual EngravingItem *prevElement() override;
-    EngravingItem *lastElementBeforeSegment();
-    virtual EngravingItem *nextSegmentElement() override;
-    virtual EngravingItem *prevSegmentElement() override;
+    void set_score(Score *s) override;
+    EngravingItem *next_articulation_or_lyric(EngravingItem *e);
+    EngravingItem *prev_articulation_or_lyric(EngravingItem *e);
+    virtual EngravingItem *next_element() override;
+    virtual EngravingItem *prev_element() override;
+    EngravingItem *last_element_before_segment();
+    virtual EngravingItem *next_segment_element() override;
+    virtual EngravingItem *prev_segment_element() override;
 
-    virtual void computeUp();
+    virtual void compute_up();
 
-    bool isFullMeasureRest() const { return durationType_ == DurationType::V_MEASURE; }
+    bool is_full_measure_rest() const { return duration_type_ == DurationType::V_MEASURE; }
 
-    virtual void removeMarkings(bool keepTremolo = false);
+    virtual void remove_markings(bool keep_tremolo = false);
 
-    bool isBefore(const EngravingItem *) const override;
+    bool is_before(const EngravingItem *) const override;
 
-    virtual double intrinsicMag() const = 0;
+    virtual double intrinsic_mag() const = 0;
 
-    TabDurationSymbol *tabDur() const { return tabDur_; }
+    TabDurationSymbol *tab_dur() const { return tab_dur_; }
 
-    void setTabDur(TabDurationSymbol *s) { tabDur_ = s; }
+    void set_tab_dur(TabDurationSymbol *s) { tab_dur_ = s; }
 
-    bool isBelowCrossBeam(const BeamBase *beamBase) const;
+    bool is_below_cross_beam(const BeamBase *beam_base) const;
 
-    bool hasFollowingJumpItem() const;
-    bool hasPrecedingJumpItem() const;
+    bool has_following_jump_item() const;
+    bool has_preceding_jump_item() const;
 
     struct LayoutData : public DurationElement::LayoutData {
         ld_field<bool> up = {"[ChordRest] up", true}; // actual stem direction
@@ -204,7 +206,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(ChordRest)
 
     //! DEPRECATED ------
-    void setUp(bool val) { mutldata()->up = val; }
+    void set_up(bool val) { mutldata()->up = val; }
 
     bool up() const { return ldata()->up; }
 
@@ -212,32 +214,32 @@ public:
 
 protected:
 
-    void addEl(EngravingItem *e) { el_.push_back(e); }
+    void add_el(EngravingItem *e) { el_.push_back(e); }
 
-    bool removeEl(EngravingItem *e) { return el_.remove(e); }
+    bool remove_el(EngravingItem *e) { return el_.remove(e); }
 
-    void clearEls() { el_.clear(); }
+    void clear_els() { el_.clear(); }
 
     std::vector<Lyrics *> lyrics_;
-    TabDurationSymbol *tabDur_ = nullptr; // stores a duration symbol in tablature staves
+    TabDurationSymbol *tab_dur_ = nullptr; // stores a duration symbol in tablature staves
 
     Beam *beam_ = nullptr;
     BeamSegment *beamlet_ = nullptr;
-    BeamMode beamMode_ = BeamMode::INVALID;
-    bool isSmall_ = false;
-    bool melismaEnd_ = false;
+    BeamMode beam_mode_ = BeamMode::INVALID;
+    bool is_small_ = false;
+    bool melisma_end_ = false;
 
     // CrossMeasure: combine 2 tied notes if across a bar line and can be combined in a single duration
-    CrossMeasure crossMeasure_ = CrossMeasure::UNKNOWN; ///< 0: no cross-measure modification; 1: 1st note of a mod.; -1: 2nd note
-    TDuration crossMeasureTDur_;                        ///< the total Duration type of the combined notes
+    CrossMeasure cross_measure_ = CrossMeasure::UNKNOWN; ///< 0: no cross-measure modification; 1: 1st note of a mod.; -1: 2nd note
+    TDuration cross_measure_t_dur_;                      ///< the total Duration type of the combined notes
 
 private:
 
-    void processSiblings(std::function<void(EngravingItem *)> func);
+    void process_siblings(std::function<void(EngravingItem *)> func);
 
     ElementList el_;
-    TDuration durationType_;
-    int staffMove_ = 0;       // -1, 0, +1, used for crossbeaming
-    int storedStaffMove_ = 0; // used to remember and re-apply staff move if needed
+    TDuration duration_type_;
+    int staff_move_ = 0;        // -1, 0, +1, used for crossbeaming
+    int stored_staff_move_ = 0; // used to remember and re-apply staff move if needed
 };
 } // namespace mu::engraving

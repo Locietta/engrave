@@ -49,8 +49,8 @@ using namespace muse;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle beamStyle{
-    {Sid::beamNoSlope, Pid::BEAM_NO_SLOPE},
+static const ElementStyle beam_style{
+    {Sid::BEAM_NO_SLOPE, Pid::BEAM_NO_SLOPE},
 };
 
 //---------------------------------------------------------
@@ -58,8 +58,8 @@ static const ElementStyle beamStyle{
 //---------------------------------------------------------
 
 Beam::Beam(Score *parent) : BeamBase(ElementType::BEAM, parent->dummy()) {
-    initElementStyle(&beamStyle);
-    resetProperty(Pid::BEAM_CROSS_STAFF_MOVE);
+    init_element_style(&::mu::engraving::beam_style);
+    reset_property(Pid::BEAM_CROSS_STAFF_MOVE);
 }
 
 System *Beam::system() const {
@@ -70,12 +70,12 @@ System *Beam::system() const {
     return measure ? measure->system() : nullptr;
 }
 
-EngravingItem *Beam::layoutParent() const { return system(); }
+EngravingItem *Beam::layout_parent() const { return system(); }
 
-EngravingItem *Beam::accessibleParentItem() const {
+EngravingItem *Beam::accessible_parent_item() const {
     // The system a beam is drawn on does not own it and cannot list it, so in the
     // accessibility tree the beam stays where it is parked: on the dummy.
-    return score()->dummy()->rootItem();
+    return score()->dummy()->root_item();
 }
 
 //---------------------------------------------------------
@@ -84,18 +84,18 @@ EngravingItem *Beam::accessibleParentItem() const {
 
 Beam::Beam(const Beam &b) : BeamBase(b) {
     elements_ = b.elements_;
-    growLeft_ = b.growLeft_;
-    growRight_ = b.growRight_;
-    beamDist_ = b.beamDist_;
+    grow_left_ = b.grow_left_;
+    grow_right_ = b.grow_right_;
+    beam_dist_ = b.beam_dist_;
     fragments_.reserve(b.fragments_.size());
     for (const BeamFragment *f : b.fragments_) {
         fragments_.push_back(new BeamFragment(*f));
     }
-    minCRMove_ = b.minCRMove_;
-    maxCRMove_ = b.maxCRMove_;
-    isGrace_ = b.isGrace_;
+    min_cr_move_ = b.min_cr_move_;
+    max_cr_move_ = b.max_cr_move_;
+    is_grace_ = b.is_grace_;
     cross_ = b.cross_;
-    fullCross_ = b.fullCross_;
+    full_cross_ = b.full_cross_;
     slope_ = b.slope_;
 }
 
@@ -108,12 +108,12 @@ Beam::~Beam() {
     // delete all references from chords
     //
     for (ChordRest *cr : elements_) {
-        cr->setBeam(nullptr);
+        cr->set_beam(nullptr);
     }
 
-    clearBeamSegments();
+    clear_beam_segments();
 
-    muse::DeleteAll(fragments_);
+    muse::delete_all(fragments_);
     fragments_.clear();
 }
 
@@ -122,8 +122,8 @@ Beam::~Beam() {
 //---------------------------------------------------------
 
 void Beam::add(EngravingItem *e) {
-    if (e->isChordRest()) {
-        addChordRest(toChordRest(e));
+    if (e->is_chord_rest()) {
+        add_chord_rest(to_chord_rest(e));
         e->added();
     }
 }
@@ -133,8 +133,8 @@ void Beam::add(EngravingItem *e) {
 //---------------------------------------------------------
 
 void Beam::remove(EngravingItem *e) {
-    if (e->isChordRest()) {
-        removeChordRest(toChordRest(e));
+    if (e->is_chord_rest()) {
+        remove_chord_rest(to_chord_rest(e));
         e->removed();
     }
 }
@@ -143,8 +143,8 @@ void Beam::remove(EngravingItem *e) {
 //   addChordRest
 //---------------------------------------------------------
 
-void Beam::addChordRest(ChordRest *a) {
-    a->setBeam(this);
+void Beam::add_chord_rest(ChordRest *a) {
+    a->set_beam(this);
     if (!muse::contains(elements_, a)) {
         //
         // insert element in same order as it appears
@@ -154,7 +154,7 @@ void Beam::addChordRest(ChordRest *a) {
             for (size_t i = 0; i < elements_.size(); ++i) {
                 Segment *s = elements_[i]->segment();
                 if ((s->tick() > a->segment()->tick()) ||
-                    ((s->tick() == a->segment()->tick()) && (a->segment()->next(SegmentType::ChordRest) == s))) {
+                    ((s->tick() == a->segment()->tick()) && (a->segment()->next(SegmentType::CHORD_REST) == s))) {
                     elements_.insert(elements_.begin() + i, a);
                     return;
                 }
@@ -168,21 +168,21 @@ void Beam::addChordRest(ChordRest *a) {
 //   removeChordRest
 //---------------------------------------------------------
 
-void Beam::removeChordRest(ChordRest *a) {
+void Beam::remove_chord_rest(ChordRest *a) {
     if (!muse::remove(elements_, a)) {
         LOGD("Beam::remove(): cannot find ChordRest");
     }
-    a->setBeam(0);
+    a->set_beam(0);
 }
 
-const Chord *Beam::findChordWithCustomStemDirection() const {
+const Chord *Beam::find_chord_with_custom_stem_direction() const {
     for (const ChordRest *rest : elements()) {
-        if (!rest->isChord()) {
+        if (!rest->is_chord()) {
             continue;
         }
 
-        const Chord *chord = toChord(rest);
-        if (chord->stemDirection() != DirectionV::AUTO) {
+        const Chord *chord = to_chord(rest);
+        if (chord->stem_direction() != DirectionV::AUTO) {
             return chord;
         }
     }
@@ -190,28 +190,28 @@ const Chord *Beam::findChordWithCustomStemDirection() const {
     return nullptr;
 }
 
-const BeamSegment *Beam::topLevelSegmentForElement(const ChordRest *element) const {
-    const std::vector<BeamSegment *> &segments = beamSegments();
-    size_t segmentsSize = segments.size();
+const BeamSegment *Beam::top_level_segment_for_element(const ChordRest *element) const {
+    const std::vector<BeamSegment *> &segments = beam_segments();
+    size_t segments_size = segments.size();
 
-    IF_ASSERT_FAILED(segmentsSize > 0) { return nullptr; }
+    IF_ASSERT_FAILED(segments_size > 0) { return nullptr; }
 
-    const BeamSegment *curSegment = segments[0];
-    if (segmentsSize == 1) {
-        return curSegment;
+    const BeamSegment *cur_segment = segments[0];
+    if (segments_size == 1) {
+        return cur_segment;
     }
 
     for (const BeamSegment *segment : segments) {
-        if (segment->level <= curSegment->level) {
+        if (segment->level <= cur_segment->level) {
             continue;
         }
-        Fraction elementTick = element->tick();
-        if (segment->startTick <= elementTick && segment->endTick >= elementTick) {
-            curSegment = segment;
+        Fraction element_tick = element->tick();
+        if (segment->start_tick <= element_tick && segment->end_tick >= element_tick) {
+            cur_segment = segment;
         }
     }
 
-    return curSegment;
+    return cur_segment;
 }
 
 //---------------------------------------------------------
@@ -220,24 +220,24 @@ const BeamSegment *Beam::topLevelSegmentForElement(const ChordRest *element) con
 
 void Beam::move(const PointF &offset) {
     EngravingItem::move(offset);
-    for (BeamSegment *bs : beamSegments_) {
+    for (BeamSegment *bs : beam_segments_) {
         bs->line.translate(offset);
     }
 }
 
-void Beam::calcBeamBreaks(const ChordRest *cr, const ChordRest *prevCr, int level, bool &isBroken16, bool &isBroken32) const {
-    BeamMode beamMode = cr->beamMode();
-    if (cr->isRest() && (beamMode == BeamMode::MID || beamMode == BeamMode::BEGIN16 || beamMode == BeamMode::BEGIN32)) {
+void Beam::calc_beam_breaks(const ChordRest *cr, const ChordRest *prev_cr, int level, bool &is_broken16, bool &is_broken32) const {
+    BeamMode beam_mode = cr->beam_mode();
+    if (cr->is_rest() && (beam_mode == BeamMode::MID || beam_mode == BeamMode::BEGIN16 || beam_mode == BeamMode::BEGIN32)) {
         // when a rest has beamMode MID we can just ignore it entirely and allow any beams to continue through
-        switch (beamMode) {
-            case BeamMode::MID: isBroken16 = isBroken32 = false; break;
+        switch (beam_mode) {
+            case BeamMode::MID: is_broken16 = is_broken32 = false; break;
             case BeamMode::BEGIN16:
-                isBroken16 = level > 0;
-                isBroken32 = false;
+                is_broken16 = level > 0;
+                is_broken32 = false;
                 break;
             case BeamMode::BEGIN32:
-                isBroken16 = false;
-                isBroken32 = level > 1;
+                is_broken16 = false;
+                is_broken32 = level > 1;
                 break;
             default:
                 // should be unreachable
@@ -247,34 +247,34 @@ void Beam::calcBeamBreaks(const ChordRest *cr, const ChordRest *prevCr, int leve
     }
     // get default beam mode -- based on time signature preferences
     const Groups &group = cr->staff()->group(cr->measure()->tick());
-    BeamMode defaultBeamMode = group.baseBeamMode(cr, prevCr);
+    BeamMode default_beam_mode = group.base_beam_mode(cr, prev_cr);
 
-    bool isManuallyBroken16 = level >= 1 && beamMode == BeamMode::BEGIN16;
-    bool isManuallyBroken32 = level >= 2 && beamMode == BeamMode::BEGIN32;
-    bool isDefaultBroken16 = beamMode == BeamMode::AUTO && level >= 1 && defaultBeamMode == BeamMode::BEGIN16;
-    bool isDefaultBroken32 = beamMode == BeamMode::AUTO && level >= 2 && defaultBeamMode == BeamMode::BEGIN32;
+    bool is_manually_broken16 = level >= 1 && beam_mode == BeamMode::BEGIN16;
+    bool is_manually_broken32 = level >= 2 && beam_mode == BeamMode::BEGIN32;
+    bool is_default_broken16 = beam_mode == BeamMode::AUTO && level >= 1 && default_beam_mode == BeamMode::BEGIN16;
+    bool is_default_broken32 = beam_mode == BeamMode::AUTO && level >= 2 && default_beam_mode == BeamMode::BEGIN32;
 
-    isBroken16 = isManuallyBroken16 || isDefaultBroken16;
-    isBroken32 = isManuallyBroken32 || isDefaultBroken32;
+    is_broken16 = is_manually_broken16 || is_default_broken16;
+    is_broken32 = is_manually_broken32 || is_default_broken32;
 
     // deal with beam-embedded triplets by breaking beams as if they are their underlying durations
     // note that we use max(hooks, 1) here because otherwise we'd end up breaking the main (level 0) beam for
     // tuplets that take up non-beamed amounts of space (eg. 16th note quintuplets)
     // a tuplet's total duration needn't be a single note value, so truncate it
-    if (level > 0 && prevCr && cr->beamMode() == BeamMode::AUTO) {
-        if (cr->tuplet() && cr->tuplet() != prevCr->tuplet()) {
+    if (level > 0 && prev_cr && cr->beam_mode() == BeamMode::AUTO) {
+        if (cr->tuplet() && cr->tuplet() != prev_cr->tuplet()) {
             // this cr starts a tuplet
             int beams = std::max(TDuration(cr->tuplet()->ticks(), /*truncate*/ true).hooks(), 1);
             if (beams <= level) {
-                isBroken16 = level == 1;
-                isBroken32 = level >= 2;
+                is_broken16 = level == 1;
+                is_broken32 = level >= 2;
             }
-        } else if (prevCr->tuplet() && prevCr->tuplet() != cr->tuplet()) {
+        } else if (prev_cr->tuplet() && prev_cr->tuplet() != cr->tuplet()) {
             // this is a non-tuplet cr that is first after a tuplet
-            int beams = std::max(TDuration(prevCr->tuplet()->ticks(), /*truncate*/ true).hooks(), 1);
+            int beams = std::max(TDuration(prev_cr->tuplet()->ticks(), /*truncate*/ true).hooks(), 1);
             if (beams <= level) {
-                isBroken16 = level == 1;
-                isBroken32 = level >= 2;
+                is_broken16 = level == 1;
+                is_broken32 = level >= 2;
             }
         }
     }
@@ -284,10 +284,10 @@ void Beam::calcBeamBreaks(const ChordRest *cr, const ChordRest *prevCr, int leve
 //   spatiumChanged
 //---------------------------------------------------------
 
-void Beam::spatiumChanged(double oldValue, double newValue) {
-    int idx = directionIdx();
-    if (userModified()) {
-        double diff = newValue / oldValue;
+void Beam::spatium_changed(double old_value, double new_value) {
+    int idx = direction_idx();
+    if (user_modified()) {
+        double diff = new_value / old_value;
         for (BeamFragment *f : fragments_) {
             f->py1[idx] = f->py1[idx] * diff;
             f->py2[idx] = f->py2[idx] * diff;
@@ -299,31 +299,31 @@ void Beam::spatiumChanged(double oldValue, double newValue) {
 //   setBeamDirection
 //---------------------------------------------------------
 
-void Beam::setDirection(DirectionV d) {
+void Beam::set_direction(DirectionV d) {
     if (direction() == d || cross_) {
         return;
     }
 
-    doSetDirection(d);
+    do_set_direction(d);
 
     if (d != DirectionV::AUTO) {
-        setUp(d == DirectionV::UP);
+        set_up(d == DirectionV::UP);
     }
 
     for (ChordRest *e : elements()) {
-        if (e->isChord()) {
-            toChord(e)->undoChangeProperty(Pid::STEM_DIRECTION, d);
+        if (e->is_chord()) {
+            to_chord(e)->undo_change_property(Pid::STEM_DIRECTION, d);
         }
     }
 }
 
-void Beam::setAsFeathered(const bool slower) {
+void Beam::set_as_feathered(const bool slower) {
     if (slower) {
-        undoChangeProperty(Pid::GROW_LEFT, 1.0);
-        undoChangeProperty(Pid::GROW_RIGHT, 0.0);
+        undo_change_property(Pid::GROW_LEFT, 1.0);
+        undo_change_property(Pid::GROW_RIGHT, 0.0);
     } else {
-        undoChangeProperty(Pid::GROW_LEFT, 0.0);
-        undoChangeProperty(Pid::GROW_RIGHT, 1.0);
+        undo_change_property(Pid::GROW_LEFT, 0.0);
+        undo_change_property(Pid::GROW_RIGHT, 1.0);
     }
 }
 
@@ -332,30 +332,30 @@ void Beam::setAsFeathered(const bool slower) {
 //---------------------------------------------------------
 
 void Beam::reset() {
-    if (!RealIsEqual(growLeft(), 1.0)) {
-        undoChangeProperty(Pid::GROW_LEFT, 1.0);
+    if (!real_is_equal(grow_left(), 1.0)) {
+        undo_change_property(Pid::GROW_LEFT, 1.0);
     }
-    if (!RealIsEqual(growRight(), 1.0)) {
-        undoChangeProperty(Pid::GROW_RIGHT, 1.0);
+    if (!real_is_equal(grow_right(), 1.0)) {
+        undo_change_property(Pid::GROW_RIGHT, 1.0);
     }
-    if (userModified()) {
-        undoChangeProperty(Pid::BEAM_POS, PropertyValue::fromValue(beamPos()));
-        undoChangeProperty(Pid::USER_MODIFIED, false);
+    if (user_modified()) {
+        undo_change_property(Pid::BEAM_POS, PropertyValue::from_value(beam_pos()));
+        undo_change_property(Pid::USER_MODIFIED, false);
     }
-    undoChangeProperty(Pid::STEM_DIRECTION, DirectionV::AUTO);
-    undoResetProperty(Pid::BEAM_NO_SLOPE);
-    undoResetProperty(Pid::BEAM_CROSS_STAFF_MOVE);
-    undoChangeProperty(Pid::GENERATED, true);
+    undo_change_property(Pid::STEM_DIRECTION, DirectionV::AUTO);
+    undo_reset_property(Pid::BEAM_NO_SLOPE);
+    undo_reset_property(Pid::BEAM_CROSS_STAFF_MOVE);
+    undo_change_property(Pid::GENERATED, true);
 }
 
 //---------------------------------------------------------
 //   triggerLayout
 //---------------------------------------------------------
 
-void Beam::triggerLayout() const {
+void Beam::trigger_layout() const {
     if (!elements_.empty()) {
-        elements_.front()->triggerLayout();
-        elements_.back()->triggerLayout();
+        elements_.front()->trigger_layout();
+        elements_.back()->trigger_layout();
     }
 }
 
@@ -363,11 +363,11 @@ void Beam::triggerLayout() const {
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Beam::acceptDrop(EditData &data) const {
-    EngravingItem *e = data.dropElement;
+bool Beam::accept_drop(EditData &data) const {
+    EngravingItem *e = data.drop_element;
 
-    if (e->isActionIcon()) {
-        ActionIconType type = toActionIcon(e)->actionType();
+    if (e->is_action_icon()) {
+        ActionIconType type = to_action_icon(e)->action_type();
         return type == ActionIconType::BEAM_FEATHERED_DECELERATE || type == ActionIconType::BEAM_FEATHERED_ACCELERATE;
     }
 
@@ -379,16 +379,16 @@ bool Beam::acceptDrop(EditData &data) const {
 //---------------------------------------------------------
 
 EngravingItem *Beam::drop(Transaction &, EditData &data) {
-    if (!data.dropElement->isActionIcon()) {
+    if (!data.drop_element->is_action_icon()) {
         return nullptr;
     }
 
-    ActionIcon *e = toActionIcon(data.dropElement);
+    ActionIcon *e = to_action_icon(data.drop_element);
 
-    if (e->actionType() == ActionIconType::BEAM_FEATHERED_DECELERATE) {
-        setAsFeathered(true /*slower*/);
-    } else if (e->actionType() == ActionIconType::BEAM_FEATHERED_ACCELERATE) {
-        setAsFeathered(false /*slower*/);
+    if (e->action_type() == ActionIconType::BEAM_FEATHERED_DECELERATE) {
+        set_as_feathered(true /*slower*/);
+    } else if (e->action_type() == ActionIconType::BEAM_FEATHERED_ACCELERATE) {
+        set_as_feathered(false /*slower*/);
     }
 
     return nullptr;
@@ -398,60 +398,60 @@ EngravingItem *Beam::drop(Transaction &, EditData &data) {
 //   beamPos
 //---------------------------------------------------------
 
-PairF Beam::beamPos() const {
+PairF Beam::beam_pos() const {
     if (fragments_.empty()) {
         return PairF(0.0, 0.0);
     }
     BeamFragment *f = fragments_.back();
-    int idx = directionIdx();
-    double _spatium = spatium();
-    return PairF(f->py1[idx] / _spatium, f->py2[idx] / _spatium);
+    int idx = direction_idx();
+    double spatium_value = spatium();
+    return PairF(f->py1[idx] / spatium_value, f->py2[idx] / spatium_value);
 }
 
 //---------------------------------------------------------
 //   setBeamPos
 //---------------------------------------------------------
 
-void Beam::setBeamPos(const PairF &bp) {
+void Beam::set_beam_pos(const PairF &bp) {
     if (fragments_.empty()) {
         fragments_.push_back(new BeamFragment);
     }
     BeamFragment *f = fragments_.back();
-    int idx = directionIdx();
-    setUserModified(true);
-    setGenerated(false);
+    int idx = direction_idx();
+    set_user_modified(true);
+    set_generated(false);
 
-    double _spatium = spatium();
-    if (noSlope()) {
-        f->py1[idx] = f->py2[idx] = (bp.first + bp.second) * 0.5 * _spatium;
+    double spatium_value = spatium();
+    if (no_slope()) {
+        f->py1[idx] = f->py2[idx] = (bp.first + bp.second) * 0.5 * spatium_value;
     } else {
-        f->py1[idx] = bp.first * _spatium;
-        f->py2[idx] = bp.second * _spatium;
+        f->py1[idx] = bp.first * spatium_value;
+        f->py2[idx] = bp.second * spatium_value;
     }
 }
 
-void Beam::setNoSlope(bool b) {
-    noSlope_ = b;
+void Beam::set_no_slope(bool b) {
+    no_slope_ = b;
 
     // Make flat if usermodified
-    if (noSlope_) {
-        int idx = directionIdx();
-        if (userModified()) {
+    if (no_slope_) {
+        int idx = direction_idx();
+        if (user_modified()) {
             BeamFragment *f = fragments_.back();
             f->py1[idx] = f->py2[idx] = (f->py1[idx] + f->py2[idx]) * 0.5;
         }
     }
 }
 
-void Beam::computeAndSetSlope() {
-    double xDiff = endAnchor_.x() - startAnchor_.x();
-    double yDiff = endAnchor_.y() - startAnchor_.y();
-    if (std::abs(xDiff) < 0.5 * spatium()) {
+void Beam::compute_and_set_slope() {
+    double x_diff = end_anchor_.x() - start_anchor_.x();
+    double y_diff = end_anchor_.y() - start_anchor_.y();
+    if (std::abs(x_diff) < 0.5 * spatium()) {
         // Temporary safeguard: a beam this short is invalid, and exists only as a temporary state,
         // so don't try to compute the slope as it will be wrong. Needs a better solution in future.
-        setSlope(0.0);
+        set_slope(0.0);
     } else {
-        setSlope(yDiff / xDiff);
+        set_slope(y_diff / x_diff);
     }
 }
 
@@ -459,22 +459,22 @@ void Beam::computeAndSetSlope() {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Beam::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::GROW_LEFT: return growLeft();
-        case Pid::GROW_RIGHT: return growRight();
-        case Pid::BEAM_POS: return PropertyValue::fromValue(beamPos());
-        case Pid::BEAM_NO_SLOPE: return noSlope();
+PropertyValue Beam::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::GROW_LEFT: return grow_left();
+        case Pid::GROW_RIGHT: return grow_right();
+        case Pid::BEAM_POS: return PropertyValue::from_value(beam_pos());
+        case Pid::BEAM_NO_SLOPE: return no_slope();
         case Pid::POSITION_LINKED_TO_MASTER:
         case Pid::APPEARANCE_LINKED_TO_MASTER:
-            for (ChordRest *chordRest : elements()) {
-                bool linked = chordRest->getProperty(propertyId).toBool();
+            for (ChordRest *chord_rest : elements()) {
+                bool linked = chord_rest->get_property(property_id).to_bool();
                 if (!linked) {
                     return false;
                 }
             }
             return true;
-        default: return BeamBase::getProperty(propertyId);
+        default: return BeamBase::get_property(property_id);
     }
 }
 
@@ -482,35 +482,35 @@ PropertyValue Beam::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Beam::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::GROW_LEFT: setGrowLeft(v.toDouble()); break;
-        case Pid::GROW_RIGHT: setGrowRight(v.toDouble()); break;
+bool Beam::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::GROW_LEFT: set_grow_left(v.to_double()); break;
+        case Pid::GROW_RIGHT: set_grow_right(v.to_double()); break;
         case Pid::BEAM_POS:
-            if (userModified()) {
-                setBeamPos(v.value<PairF>());
+            if (user_modified()) {
+                set_beam_pos(v.value<PairF>());
             }
             break;
-        case Pid::BEAM_NO_SLOPE: setNoSlope(v.toBool()); break;
+        case Pid::BEAM_NO_SLOPE: set_no_slope(v.to_bool()); break;
         case Pid::POSITION_LINKED_TO_MASTER:
         case Pid::APPEARANCE_LINKED_TO_MASTER:
-            if (v.toBool() == true) {
-                for (ChordRest *chordRest : elements()) {
+            if (v.to_bool() == true) {
+                for (ChordRest *chord_rest : elements()) {
                     // when re-linking, re-link all the chords
-                    chordRest->setProperty(propertyId, v);
+                    chord_rest->set_property(property_id, v);
                 }
-                resetProperty(Pid::STEM_DIRECTION);
+                reset_property(Pid::STEM_DIRECTION);
                 break;
             }
         // fall through
         default:
-            if (!BeamBase::setProperty(propertyId, v)) {
+            if (!BeamBase::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
-    setGenerated(false);
+    trigger_layout();
+    set_generated(false);
     return true;
 }
 
@@ -518,12 +518,12 @@ bool Beam::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Beam::propertyDefault(Pid id) const {
+PropertyValue Beam::property_default(Pid id) const {
     switch (id) {
         case Pid::GROW_LEFT: return 1.0;
         case Pid::GROW_RIGHT: return 1.0;
-        case Pid::BEAM_POS: return PropertyValue::fromValue(beamPos());
-        default: return BeamBase::propertyDefault(id);
+        case Pid::BEAM_POS: return PropertyValue::from_value(beam_pos());
+        default: return BeamBase::property_default(id);
     }
 }
 
@@ -532,13 +532,13 @@ PropertyValue Beam::propertyDefault(Pid id) const {
 //    add beam shape to skyline
 //---------------------------------------------------------
 
-void Beam::addSkyline(Skyline &sk) {
-    if (beamSegments_.empty() || !addToSkyline()) {
+void Beam::add_skyline(Skyline &sk) {
+    if (beam_segments_.empty() || !add_to_skyline()) {
         return;
     }
 
     // Only add the outer segment, no need to add the inner one
-    sk.add(beamSegments_.front()->shape());
+    sk.add(beam_segments_.front()->shape());
 }
 
 //---------------------------------------------------------
@@ -561,7 +561,7 @@ Fraction Beam::rtick() const { return elements_.empty() ? Fraction(0, 1) : eleme
 Fraction Beam::ticks() const {
     Fraction ticks = Fraction(0, 1);
     for (ChordRest *cr : elements_) {
-        ticks += cr->actualTicks();
+        ticks += cr->actual_ticks();
     }
     return ticks;
 }
@@ -570,7 +570,7 @@ Fraction Beam::ticks() const {
 //   actionIconTypeForBeamMode
 //---------------------------------------------------------
 
-ActionIconType Beam::actionIconTypeForBeamMode(BeamMode mode) {
+ActionIconType Beam::action_icon_type_for_beam_mode(BeamMode mode) {
     switch (mode) {
         case BeamMode::AUTO: return ActionIconType::BEAM_AUTO;
         case BeamMode::NONE: return ActionIconType::BEAM_NONE;
@@ -586,7 +586,7 @@ ActionIconType Beam::actionIconTypeForBeamMode(BeamMode mode) {
 //---------------------------------------------------------
 //   isMovable
 //---------------------------------------------------------
-bool Beam::isMovable() const { return true; }
+bool Beam::is_movable() const { return true; }
 
 //---------------------------------------------------------
 //   startDrag
@@ -596,66 +596,66 @@ bool Beam::isMovable() const { return true; }
 //---------------------------------------------------------
 //   containsChord
 //---------------------------------------------------------
-bool Beam::hasAllRests() {
+bool Beam::has_all_rests() {
     for (ChordRest *cr : elements_) {
-        if (cr && cr->isChord()) {
+        if (cr && cr->is_chord()) {
             return false;
         }
     }
     return true;
 }
 
-void Beam::clearBeamSegments() {
-    for (ChordRest *chordRest : elements_) {
-        chordRest->setBeamlet(nullptr);
+void Beam::clear_beam_segments() {
+    for (ChordRest *chord_rest : elements_) {
+        chord_rest->set_beamlet(nullptr);
     }
 
-    BeamBase::clearBeamSegments();
+    BeamBase::clear_beam_segments();
 }
 
 //-------------------------------------------------------
 // BEAM SEGMENT CLASS
 //-------------------------------------------------------
 
-BeamSegment::BeamSegment(EngravingItem *b) : parentElement(b) {
-    DO_ASSERT(parentElement->isType(ElementType::BEAM) || parentElement->isType(ElementType::TREMOLO_TWOCHORD));
+BeamSegment::BeamSegment(EngravingItem *b) : parent_element(b) {
+    DO_ASSERT(parent_element->is_type(ElementType::BEAM) || parent_element->is_type(ElementType::TREMOLO_TWOCHORD));
 }
 
 Shape BeamSegment::shape() const {
     Shape shape;
-    PointF startPoint = line.p1();
-    PointF endPoint = line.p2();
-    double _beamWidth = parentElement->isBeam() ? item_cast<const Beam *>(parentElement)->beamWidth_ :
-                                                  item_cast<const TremoloTwoChord *>(parentElement)->ldata()->beamWidth;
+    PointF start_point = line.p1();
+    PointF end_point = line.p2();
+    double beam_width = parent_element->is_beam() ? item_cast<const Beam *>(parent_element)->beam_width_ :
+                                                    item_cast<const TremoloTwoChord *>(parent_element)->ldata()->beam_width;
     // This is the case of right-beamlets
-    if (startPoint.x() > endPoint.x()) {
-        std::swap(startPoint, endPoint);
+    if (start_point.x() > end_point.x()) {
+        std::swap(start_point, end_point);
     }
-    double beamHorizontalLength = endPoint.x() - startPoint.x();
+    double beam_horizontal_length = end_point.x() - start_point.x();
     // If beam is horizontal, one rectangle is enough
-    if (muse::RealIsEqual(startPoint.y(), endPoint.y())) {
-        RectF rect(startPoint.x(), startPoint.y(), beamHorizontalLength, _beamWidth / 2);
-        rect.adjust(0.0, -_beamWidth / 2, 0.0, 0.0);
-        shape.add(rect, parentElement);
+    if (muse::real_is_equal(start_point.y(), end_point.y())) {
+        RectF rect(start_point.x(), start_point.y(), beam_horizontal_length, beam_width / 2);
+        rect.adjust(0.0, -beam_width / 2, 0.0, 0.0);
+        shape.add(rect, parent_element);
         return shape;
     }
     // If not, break the beam shape into multiple rectangles
-    double beamHeightDiff = endPoint.y() - startPoint.y();
-    int subBoxesCount = floor(beamHorizontalLength / parentElement->spatium());
-    subBoxesCount = std::max(subBoxesCount, 1); // at least one rectangle, of course (avoid division by zero)
-    double horizontalStep = beamHorizontalLength / subBoxesCount;
-    double verticalStep = beamHeightDiff / subBoxesCount;
-    std::vector<PointF> pointsOnBeamLine;
-    pointsOnBeamLine.reserve(subBoxesCount);
-    pointsOnBeamLine.push_back(startPoint);
-    for (int i = 0; i < subBoxesCount - 1; ++i) {
-        PointF nextPoint = pointsOnBeamLine.back() + PointF(horizontalStep, verticalStep);
-        pointsOnBeamLine.push_back(nextPoint);
+    double beam_height_diff = end_point.y() - start_point.y();
+    int sub_boxes_count = floor(beam_horizontal_length / parent_element->spatium());
+    sub_boxes_count = std::max(sub_boxes_count, 1); // at least one rectangle, of course (avoid division by zero)
+    double horizontal_step = beam_horizontal_length / sub_boxes_count;
+    double vertical_step = beam_height_diff / sub_boxes_count;
+    std::vector<PointF> points_on_beam_line;
+    points_on_beam_line.reserve(sub_boxes_count);
+    points_on_beam_line.push_back(start_point);
+    for (int i = 0; i < sub_boxes_count - 1; ++i) {
+        PointF next_point = points_on_beam_line.back() + PointF(horizontal_step, vertical_step);
+        points_on_beam_line.push_back(next_point);
     }
-    for (PointF point : pointsOnBeamLine) {
-        RectF rect(point.x(), point.y(), horizontalStep, _beamWidth / 2);
-        rect.adjust(0.0, -_beamWidth / 2, 0.0, 0.0);
-        shape.add(rect, parentElement);
+    for (PointF point : points_on_beam_line) {
+        RectF rect(point.x(), point.y(), horizontal_step, beam_width / 2);
+        rect.adjust(0.0, -beam_width / 2, 0.0, 0.0);
+        shape.add(rect, parent_element);
     }
     return shape;
 }

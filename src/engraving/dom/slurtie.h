@@ -68,14 +68,15 @@ class CubicBezier {
     PointF p4;
 
 public:
-    CubicBezier(PointF _p1, PointF _p2, PointF _p3, PointF _p4) : p1(_p1), p2(_p2), p3(_p3), p4(_p4) {}
+    CubicBezier(PointF input_p1, PointF input_p2, PointF input_p3, PointF input_p4)
+        : p1(input_p1), p2(input_p2), p3(input_p3), p4(input_p4) {}
 
-    PointF pointAtPercent(double t) const {
+    PointF point_at_percent(double t) const {
         assert(t >= 0.0 && t <= 1.0);
         const double r = 1.0 - t;
-        const PointF B123 = r * (r * p1 + t * p2) + t * (r * p2 + t * p3);
-        const PointF B234 = r * (r * p2 + t * p3) + t * (r * p3 + t * p4);
-        return r * B123 + t * B234;
+        const PointF b123 = r * (r * p1 + t * p2) + t * (r * p2 + t * p3);
+        const PointF b234 = r * (r * p2 + t * p3) + t * (r * p3 + t * p4);
+        return r * b123 + t * b234;
     }
 };
 
@@ -90,36 +91,36 @@ class SlurTieSegment : public SpannerSegment {
 
 public:
 
-    virtual void spatiumChanged(double, double) override;
+    virtual void spatium_changed(double, double) override;
 
-    SlurTie *slurTie() const { return (SlurTie *) spanner(); }
+    SlurTie *slur_tie() const { return (SlurTie *) spanner(); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
-    virtual EngravingObject *propertyDelegate(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
+    virtual EngravingObject *property_delegate(Pid) const override;
     virtual void reset() override;
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
     void move(const PointF &s) override;
 
     int subtype() const override;
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    void setSlurOffset(Grip i, const PointF &val) { ups_[int(i)].off = val; }
+    void set_slur_offset(Grip i, const PointF &val) { ups_[int(i)].off = val; }
 
     const UP &ups(Grip i) const { return ups_[int(i)]; }
 
     UP &ups(Grip i) { return ups_[int(i)]; }
 
-    virtual bool isUserModified() const override;
+    virtual bool is_user_modified() const override;
 
-    virtual double endWidth() const = 0;
-    virtual double midWidth() const = 0;
-    virtual double dottedWidth() const = 0;
+    virtual double end_width() const = 0;
+    virtual double mid_width() const = 0;
+    virtual double dotted_width() const = 0;
 
     struct LayoutData : public SpannerSegment::LayoutData {
         ld_field<muse::draw::PainterPath> path = "path";
-        ld_field<double> midThickness = "midThickness";
+        ld_field<double> mid_thickness = "midThickness";
     };
     DECLARE_LAYOUTDATA_METHODS(SlurTieSegment)
 
@@ -147,49 +148,49 @@ public:
 
     bool up() const { return up_; }
 
-    void setUp(bool val) { up_ = val; }
+    void set_up(bool val) { up_ = val; }
 
     virtual void reset() override;
 
-    DirectionV slurDirection() const { return slurDirection_; }
+    DirectionV slur_direction() const { return slur_direction_; }
 
-    void setSlurDirection(DirectionV d) { slurDirection_ = d; }
+    void set_slur_direction(DirectionV d) { slur_direction_ = d; }
 
-    void undoSetSlurDirection(DirectionV d);
+    void undo_set_slur_direction(DirectionV d);
 
     virtual bool contains(const PointF &) const { return false; } // not selectable
 
-    SlurStyleType styleType() const { return styleType_; }
+    SlurStyleType style_type() const { return style_type_; }
 
-    void setStyleType(SlurStyleType type) { styleType_ = type; }
+    void set_style_type(SlurStyleType type) { style_type_ = type; }
 
-    int subtype() const override { return static_cast<int>(styleType_) + 1; }
+    int subtype() const override { return static_cast<int>(style_type_) + 1; }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    AutoOnOff maskSlurTie() const { return maskSlurTie_; }
+    AutoOnOff mask_slur_tie() const { return mask_slur_tie_; }
 
-    void setMaskSlurTie(AutoOnOff val) { maskSlurTie_ = val; }
+    void set_mask_slur_tie(AutoOnOff val) { mask_slur_tie_ = val; }
 
-    virtual SlurTieSegment *newSlurTieSegment() = 0;
+    virtual SlurTieSegment *new_slur_tie_segment() = 0;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
 
-    void fixupSegments(unsigned nsegs);
+    void fixup_segments(unsigned nsegs);
 
-    virtual double scalingFactor() const = 0;
+    virtual double scaling_factor() const = 0;
 
 protected:
 
     bool up_ = true; // actual direction
 
-    DirectionV slurDirection_ = DirectionV::AUTO;
+    DirectionV slur_direction_ = DirectionV::AUTO;
 
 private:
 
-    SlurStyleType styleType_ = SlurStyleType::Undefined;
-    AutoOnOff maskSlurTie_ = AutoOnOff::AUTO;
+    SlurStyleType style_type_ = SlurStyleType::UNDEFINED;
+    AutoOnOff mask_slur_tie_ = AutoOnOff::AUTO;
 };
 } // namespace mu::engraving

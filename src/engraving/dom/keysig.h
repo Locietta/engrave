@@ -34,81 +34,81 @@ class KeySig final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, KeySig)
     DECLARE_CLASSOF(ElementType::KEYSIG)
 
-    M_PROPERTY2(bool, isCourtesy, setIsCourtesy, false)
+    M_PROPERTY2(bool, is_courtesy, set_is_courtesy, false)
 
 public:
 
     KeySig *clone() const override { return new KeySig(*this); }
 
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     double mag() const override;
 
-    void setKey(Key concertKey, Key transposedKey);
-    void setKey(Key concertKey);
+    void set_key(Key concert_key, Key transposed_key);
+    void set_key(Key concert_key);
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    Measure *measure() const { return ownershipParent() ? (Measure *) ownershipParent()->ownershipParent() : nullptr; }
+    Measure *measure() const { return ownership_parent() ? (Measure *) ownership_parent()->ownership_parent() : nullptr; }
 
     Key key() const { return sig_.key(); }
 
-    Key concertKey() const { return sig_.concertKey(); }
+    Key concert_key() const { return sig_.concert_key(); }
 
-    const std::vector<CustDef> &customKeyDefs() const { return sig_.customKeyDefs(); }
+    const std::vector<CustDef> &custom_key_defs() const { return sig_.custom_key_defs(); }
 
-    int degInKey(int degree) const { return sig_.degInKey(degree); }
+    int deg_in_key(int degree) const { return sig_.deg_in_key(degree); }
 
-    SymId symInKey(SymId sym, int degree) const { return sig_.symInKey(sym, degree); }
+    SymId sym_in_key(SymId sym, int degree) const { return sig_.sym_in_key(sym, degree); }
 
-    bool isCustom() const { return sig_.custom(); }
+    bool is_custom() const { return sig_.custom(); }
 
-    bool isAtonal() const { return sig_.isAtonal(); }
+    bool is_atonal() const { return sig_.is_atonal(); }
 
-    bool isChange() const;
+    bool is_change() const;
 
-    const KeySigEvent &keySigEvent() const { return sig_; }
+    const KeySigEvent &key_sig_event() const { return sig_; }
 
     bool operator==(const KeySig &) const;
-    void changeKeySigEvent(const KeySigEvent &);
+    void change_key_sig_event(const KeySigEvent &);
 
-    void setKeySigEvent(const KeySigEvent &e) { sig_ = e; }
+    void set_key_sig_event(const KeySigEvent &e) { sig_ = e; }
 
-    bool showCourtesy() const { return showCourtesy_; }
+    bool show_courtesy() const { return show_courtesy_; }
 
-    void setShowCourtesy(bool v) { showCourtesy_ = v; }
+    void set_show_courtesy(bool v) { show_courtesy_ = v; }
 
     KeyMode mode() const { return sig_.mode(); }
 
-    void setMode(KeyMode v) { sig_.setMode(v); }
+    void set_mode(KeyMode v) { sig_.set_mode(v); }
 
-    PointF staffOffset() const override;
+    PointF staff_offset() const override;
 
-    bool hideNaturals() const { return hideNaturals_; }
+    bool hide_naturals() const { return hide_naturals_; }
 
-    void setHideNaturals(bool hide) { hideNaturals_ = hide; }
+    void set_hide_naturals(bool hide) { hide_naturals_ = hide; }
 
-    void setForInstrumentChange(bool forInstrumentChange) { sig_.setForInstrumentChange(forInstrumentChange); }
+    void set_for_instrument_change(bool for_instrument_change) { sig_.set_for_instrument_change(for_instrument_change); }
 
-    bool forInstrumentChange() const { return sig_.forInstrumentChange(); }
+    bool for_instrument_change() const { return sig_.for_instrument_change(); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    using EngravingItem::undoChangeProperty;
-    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
-    PropertyValue propertyDefault(Pid id) const override;
-    EngravingObject *propertyDelegate(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    using EngravingItem::undo_change_property;
+    void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;
+    PropertyValue property_default(Pid id) const override;
+    EngravingObject *property_delegate(Pid) const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
     int subtype() const override { return int(key()) + 7; }
 
-    muse::TranslatableString subtypeUserName() const override;
+    muse::TranslatableString subtype_user_name() const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
-        std::vector<KeySym> keySymbols;
+        std::vector<KeySym> key_symbols;
     };
     DECLARE_LAYOUTDATA_METHODS(KeySig)
 
@@ -118,10 +118,10 @@ private:
     KeySig(DummyParentOr<Segment>);
     KeySig(const KeySig &);
 
-    void addLayout(SymId sym, int line);
+    void add_layout(SymId sym, int line);
 
-    bool showCourtesy_;
-    bool hideNaturals_; // used in layout to override score style (needed for the Continuous panel)
+    bool show_courtesy_;
+    bool hide_naturals_; // used in layout to override score style (needed for the Continuous panel)
     KeySigEvent sig_;
 };
 } // namespace mu::engraving

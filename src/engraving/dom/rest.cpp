@@ -60,39 +60,39 @@ namespace mu::engraving {
 
 Rest::Rest(DummyParentOr<Segment> parent) : Rest(ElementType::REST, parent) {}
 
-Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent) : ChordRest(type, parent) { beamMode_ = BeamMode::NONE; }
+Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent) : ChordRest(type, parent) { beam_mode_ = BeamMode::NONE; }
 
 Rest::Rest(DummyParentOr<Segment> parent, const TDuration &d) : Rest(ElementType::REST, parent, d) {}
 
 Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDuration &d) : ChordRest(type, parent) {
-    beamMode_ = BeamMode::NONE;
-    setDurationType(d);
-    if (d.fraction().isValid()) {
-        setTicks(d.fraction());
+    beam_mode_ = BeamMode::NONE;
+    set_duration_type(d);
+    if (d.fraction().is_valid()) {
+        set_ticks(d.fraction());
     }
 }
 
 Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
     if (link) {
         score()->undo(new Link(this, const_cast<Rest *>(&r)));
-        setAutoplace(true);
+        set_autoplace(true);
     }
     gap_ = r.gap_;
     dotline_ = r.dotline_;
     for (NoteDot *dot : r.dots_) {
-        add(Factory::copyNoteDot(*dot));
+        add(Factory::copy_note_dot(*dot));
     }
 
-    if (r.deadSlapped_) {
-        DeadSlapped *ndc = Factory::copyDeadSlapped(*r.deadSlapped_);
+    if (r.dead_slapped_) {
+        DeadSlapped *ndc = Factory::copy_dead_slapped(*r.dead_slapped_);
         add(ndc);
         if (link) {
-            score()->undo(new Link(ndc, r.deadSlapped_));
+            score()->undo(new Link(ndc, r.dead_slapped_));
         }
     }
 }
 
-void Rest::hack_toRestType() { hack_setType(ElementType::REST); }
+void Rest::hack_to_rest_type() { hack_set_type(ElementType::REST); }
 
 //---------------------------------------------------------
 //   setOffset, overridden from EngravingItem
@@ -101,51 +101,51 @@ void Rest::hack_toRestType() { hack_setType(ElementType::REST); }
 //      replaced by special symbols with ledger lines
 //---------------------------------------------------------
 
-void Rest::setOffset(const PointF &o) {
-    double _spatium = spatium();
-    int line = lrint(o.y() / _spatium);
+void Rest::set_offset(const PointF &o) {
+    double spatium_value = spatium();
+    int line = lrint(o.y() / spatium_value);
 
     //! NOTE We need to find out why this is being done here.
     //! We rewrite sym in the layout (we get from the Rest::getSymbol method )
 
     LayoutData *ldata = mutldata();
 
-    if (ldata->sym == SymId::restWhole && (line <= -2 || line >= 3)) {
-        ldata->sym = SymId::restWholeLegerLine;
-    } else if (ldata->sym == SymId::restWholeLegerLine && (line > -2 && line < 4)) {
-        ldata->sym = SymId::restWhole;
-    } else if (ldata->sym == SymId::restHalf && (line <= -3 || line >= 3)) {
-        ldata->sym = SymId::restHalfLegerLine;
-    } else if (ldata->sym == SymId::restHalfLegerLine && (line > -3 && line < 3)) {
-        ldata->sym = SymId::restHalf;
+    if (ldata->sym == SymId::REST_WHOLE && (line <= -2 || line >= 3)) {
+        ldata->sym = SymId::REST_WHOLE_LEGER_LINE;
+    } else if (ldata->sym == SymId::REST_WHOLE_LEGER_LINE && (line > -2 && line < 4)) {
+        ldata->sym = SymId::REST_WHOLE;
+    } else if (ldata->sym == SymId::REST_HALF && (line <= -3 || line >= 3)) {
+        ldata->sym = SymId::REST_HALF_LEGER_LINE;
+    } else if (ldata->sym == SymId::REST_HALF_LEGER_LINE && (line > -3 && line < 3)) {
+        ldata->sym = SymId::REST_HALF;
     }
 
-    EngravingItem::setOffset(o);
+    EngravingItem::set_offset(o);
 }
 
 //---------------------------------------------------------
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Rest::acceptDrop(EditData &data) const {
-    EngravingItem *e = data.dropElement;
+bool Rest::accept_drop(EditData &data) const {
+    EngravingItem *e = data.drop_element;
 
     switch (e->type()) {
         case ElementType::CHORD:
         case ElementType::NOTE:
         case ElementType::IMAGE:
         case ElementType::SYMBOL: return true;
-        case ElementType::MEASURE_REPEAT: return durationType().type() == DurationType::V_MEASURE;
+        case ElementType::MEASURE_REPEAT: return duration_type().type() == DurationType::V_MEASURE;
         default:
             // prevent 'hanging' slurs, avoid crash on tie
-            if (e->isSpanner()) {
-                static const std::set<ElementType> ignoredTypes{ElementType::SLUR, ElementType::HAMMER_ON_PULL_OFF, ElementType::TIE,
-                                                                ElementType::GLISSANDO};
-                return !muse::contains(ignoredTypes, e->type());
+            if (e->is_spanner()) {
+                static const std::set<ElementType> ignored_types{ElementType::SLUR, ElementType::HAMMER_ON_PULL_OFF, ElementType::TIE,
+                                                                 ElementType::GLISSANDO};
+                return !muse::contains(ignored_types, e->type());
             }
             break;
     }
-    return ChordRest::acceptDrop(data);
+    return ChordRest::accept_drop(data);
 }
 
 //---------------------------------------------------------
@@ -153,11 +153,11 @@ bool Rest::acceptDrop(EditData &data) const {
 //---------------------------------------------------------
 
 EngravingItem *Rest::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.dropElement;
+    EngravingItem *e = data.drop_element;
     switch (e->type()) {
         case ElementType::ARTICULATION: {
-            Articulation *a = toArticulation(e);
-            if (!a->isFermata() || !EditChord::toggleArticulation(score(), this, a)) {
+            Articulation *a = to_articulation(e);
+            if (!a->is_fermata() || !EditChord::toggle_articulation(score(), this, a)) {
                 delete e;
                 e = nullptr;
             }
@@ -165,29 +165,29 @@ EngravingItem *Rest::drop(Transaction &tx, EditData &data) {
             return e;
 
         case ElementType::CHORD: {
-            Chord *c = toChord(e);
-            Note *n = c->upNote();
-            DirectionV dir = c->stemDirection();
+            Chord *c = to_chord(e);
+            Note *n = c->up_note();
+            DirectionV dir = c->stem_direction();
             NoteVal nval;
             nval.pitch = n->pitch();
-            nval.headGroup = n->headGroup();
-            Fraction d = score()->inputState().ticks();
-            if (!d.isZero()) {
-                Segment *seg = score()->setNoteRest(segment(), track(), nval, d, dir);
+            nval.head_group = n->head_group();
+            Fraction d = score()->input_state().ticks();
+            if (!d.is_zero()) {
+                Segment *seg = score()->set_note_rest(segment(), track(), nval, d, dir);
                 if (seg) {
-                    const ChordRest *cr = toChordRest(seg->element(track()));
+                    const ChordRest *cr = to_chord_rest(seg->element(track()));
                     if (cr) {
-                        NoteInput::nextInputPos(tx, score(), cr, false);
+                        NoteInput::next_input_pos(tx, score(), cr, false);
                     }
                 }
             }
             delete e;
         } break;
         case ElementType::MEASURE_REPEAT: {
-            int numMeasures = toMeasureRepeat(e)->numMeasures();
+            int num_measures = to_measure_repeat(e)->num_measures();
             delete e;
-            if (durationType().type() == DurationType::V_MEASURE) {
-                EditMeasureRepeat::addMeasureRepeat(tx, score(), measure(), numMeasures, staffIdx());
+            if (duration_type().type() == DurationType::V_MEASURE) {
+                EditMeasureRepeat::add_measure_repeat(tx, score(), measure(), num_measures, staff_idx());
             }
             break;
         }
@@ -201,57 +201,57 @@ EngravingItem *Rest::drop(Transaction &tx, EditData &data) {
 //   getSymbol
 //---------------------------------------------------------
 
-SymId Rest::getSymbol(DurationType type, int line, int lines) const {
+SymId Rest::get_symbol(DurationType type, int line, int lines) const {
     switch (type) {
-        case DurationType::V_LONG: return SymId::restLonga;
-        case DurationType::V_BREVE: return (line < 0 || line >= lines) ? SymId::restDoubleWholeLegerLine : SymId::restDoubleWhole;
+        case DurationType::V_LONG: return SymId::REST_LONGA;
+        case DurationType::V_BREVE: return (line < 0 || line >= lines) ? SymId::REST_DOUBLE_WHOLE_LEGER_LINE : SymId::REST_DOUBLE_WHOLE;
         case DurationType::V_MEASURE:
             if (ticks() >= Fraction(2, 1)) {
-                return (line < 0 || line >= lines) ? SymId::restDoubleWholeLegerLine : SymId::restDoubleWhole;
+                return (line < 0 || line >= lines) ? SymId::REST_DOUBLE_WHOLE_LEGER_LINE : SymId::REST_DOUBLE_WHOLE;
             }
         // fall through
-        case DurationType::V_WHOLE: return (line < 0 || line >= lines) ? SymId::restWholeLegerLine : SymId::restWhole;
-        case DurationType::V_HALF: return (line < 0 || line >= lines) ? SymId::restHalfLegerLine : SymId::restHalf;
-        case DurationType::V_QUARTER: return SymId::restQuarter;
-        case DurationType::V_EIGHTH: return SymId::rest8th;
-        case DurationType::V_16TH: return SymId::rest16th;
-        case DurationType::V_32ND: return SymId::rest32nd;
-        case DurationType::V_64TH: return SymId::rest64th;
-        case DurationType::V_128TH: return SymId::rest128th;
-        case DurationType::V_256TH: return SymId::rest256th;
-        case DurationType::V_512TH: return SymId::rest512th;
-        case DurationType::V_1024TH: return SymId::rest1024th;
-        default: LOGD("unknown rest type %d", int(type)); return SymId::restQuarter;
+        case DurationType::V_WHOLE: return (line < 0 || line >= lines) ? SymId::REST_WHOLE_LEGER_LINE : SymId::REST_WHOLE;
+        case DurationType::V_HALF: return (line < 0 || line >= lines) ? SymId::REST_HALF_LEGER_LINE : SymId::REST_HALF;
+        case DurationType::V_QUARTER: return SymId::REST_QUARTER;
+        case DurationType::V_EIGHTH: return SymId::REST8TH;
+        case DurationType::V_16TH: return SymId::REST16TH;
+        case DurationType::V_32ND: return SymId::REST32ND;
+        case DurationType::V_64TH: return SymId::REST64TH;
+        case DurationType::V_128TH: return SymId::REST128TH;
+        case DurationType::V_256TH: return SymId::REST256TH;
+        case DurationType::V_512TH: return SymId::REST512TH;
+        case DurationType::V_1024TH: return SymId::REST1024TH;
+        default: LOGD("unknown rest type %d", int(type)); return SymId::REST_QUARTER;
     }
 }
 
-double Rest::symWidthNoLedgerLines(LayoutData *ldata) const {
-    if (ldata->sym == SymId::restHalfLegerLine) {
-        return symWidth(SymId::restHalf);
+double Rest::sym_width_no_ledger_lines(LayoutData *ldata) const {
+    if (ldata->sym == SymId::REST_HALF_LEGER_LINE) {
+        return sym_width(SymId::REST_HALF);
     }
-    if (ldata->sym == SymId::restWholeLegerLine) {
-        return symWidth(SymId::restWhole);
+    if (ldata->sym == SymId::REST_WHOLE_LEGER_LINE) {
+        return sym_width(SymId::REST_WHOLE);
     }
-    if (ldata->sym == SymId::restDoubleWholeLegerLine) {
-        return symWidth(SymId::restDoubleWhole);
+    if (ldata->sym == SymId::REST_DOUBLE_WHOLE_LEGER_LINE) {
+        return sym_width(SymId::REST_DOUBLE_WHOLE);
     }
-    return symWidth(ldata->sym);
+    return sym_width(ldata->sym);
 }
 
 //---------------------------------------------------------
 //   checkDots
 //---------------------------------------------------------
 
-void Rest::checkDots() {
+void Rest::check_dots() {
     int n = dots() - int(dots_.size());
     for (int i = 0; i < n; ++i) {
-        NoteDot *dot = Factory::createNoteDot(this);
-        dot->setVisible(visible());
-        score()->undoAddElement(dot);
+        NoteDot *dot = Factory::create_note_dot(this);
+        dot->set_visible(visible());
+        score()->undo_add_element(dot);
     }
     if (n < 0) {
         for (int i = 0; i < -n; ++i) {
-            score()->undoRemoveElement(dots_.back());
+            score()->undo_remove_element(dots_.back());
         }
     }
 }
@@ -261,19 +261,19 @@ void Rest::checkDots() {
 //---------------------------------------------------------
 
 NoteDot *Rest::dot(int n) {
-    checkDots();
+    check_dots();
     return dots_[n];
 }
 
-const std::vector<NoteDot *> &Rest::dotList() const { return dots_; }
+const std::vector<NoteDot *> &Rest::dot_list() const { return dots_; }
 
 //---------------------------------------------------------
 //   getDotline
 //---------------------------------------------------------
 
-int Rest::getDotline(DurationType durationType) {
+int Rest::get_dotline(DurationType duration_type) {
     int dl = -1;
-    switch (durationType) {
+    switch (duration_type) {
         case DurationType::V_64TH:
         case DurationType::V_32ND: dl = -3; break;
         case DurationType::V_1024TH:
@@ -287,48 +287,48 @@ int Rest::getDotline(DurationType durationType) {
     return dl;
 }
 
-bool Rest::isWholeRest() const {
-    TDuration durType = durationType();
-    return durType == DurationType::V_WHOLE || (durType == DurationType::V_MEASURE && measure() && measure()->ticks() < Fraction(2, 1));
+bool Rest::is_whole_rest() const {
+    TDuration dur_type = duration_type();
+    return dur_type == DurationType::V_WHOLE || (dur_type == DurationType::V_MEASURE && measure() && measure()->ticks() < Fraction(2, 1));
 }
 
-bool Rest::isBreveRest() const {
-    TDuration durType = durationType();
-    return durType == DurationType::V_BREVE || (durType == DurationType::V_MEASURE && measure() && measure()->ticks() >= Fraction(2, 1));
+bool Rest::is_breve_rest() const {
+    TDuration dur_type = duration_type();
+    return dur_type == DurationType::V_BREVE || (dur_type == DurationType::V_MEASURE && measure() && measure()->ticks() >= Fraction(2, 1));
 }
 
 //---------------------------------------------------------
 //   upPos
 //---------------------------------------------------------
 
-double Rest::upPos() const { return symBbox(ldata()->sym()).y(); }
+double Rest::up_pos() const { return sym_bbox(ldata()->sym()).y(); }
 
 //---------------------------------------------------------
 //   downPos
 //---------------------------------------------------------
 
-double Rest::downPos() const { return symBbox(ldata()->sym()).y() + symHeight(ldata()->sym()); }
+double Rest::down_pos() const { return sym_bbox(ldata()->sym()).y() + sym_height(ldata()->sym()); }
 
 //---------------------------------------------------------
 //   scanElements
 //---------------------------------------------------------
 
-void Rest::scanElements(std::function<void(EngravingItem *)> func) {
-    ChordRest::scanElements(func);
+void Rest::scan_elements(std::function<void(EngravingItem *)> func) {
+    ChordRest::scan_elements(func);
     for (EngravingItem *e : el()) {
-        e->scanElements(func);
+        e->scan_elements(func);
     }
     for (NoteDot *dot : dots_) {
-        dot->scanElements(func);
+        dot->scan_elements(func);
     }
-    if (!isGap() || debugDrawGap()) {
+    if (!is_gap() || debug_draw_gap()) {
         func(this);
     }
-    if (leftParen()) {
-        func(leftParen());
+    if (left_paren()) {
+        func(left_paren());
     }
-    if (rightParen()) {
-        func(rightParen());
+    if (right_paren()) {
+        func(right_paren());
     }
 }
 
@@ -336,10 +336,10 @@ void Rest::scanElements(std::function<void(EngravingItem *)> func) {
 //   setTrack
 //---------------------------------------------------------
 
-void Rest::setTrack(track_idx_t val) {
-    ChordRest::setTrack(val);
+void Rest::set_track(track_idx_t val) {
+    ChordRest::set_track(val);
     for (NoteDot *dot : dots_) {
-        dot->setTrack(val);
+        dot->set_track(val);
     }
 }
 
@@ -348,8 +348,8 @@ void Rest::setTrack(track_idx_t val) {
 //---------------------------------------------------------
 
 double Rest::mag() const {
-    double m = staff() ? staff()->staffMag(this) : 1.0;
-    return m * intrinsicMag();
+    double m = staff() ? staff()->staff_mag(this) : 1.0;
+    return m * intrinsic_mag();
 }
 
 //---------------------------------------------------------
@@ -358,10 +358,10 @@ double Rest::mag() const {
 //   by staff size)
 //---------------------------------------------------------
 
-double Rest::intrinsicMag() const {
+double Rest::intrinsic_mag() const {
     double m = 1.0;
-    if (isSmall()) {
-        m *= style().styleD(Sid::smallNoteMag);
+    if (is_small()) {
+        m *= style().style_d(Sid::SMALL_NOTE_MAG);
     }
     return m;
 }
@@ -370,11 +370,11 @@ double Rest::intrinsicMag() const {
 //   rightEdge
 //---------------------------------------------------------
 
-double Rest::rightEdge() const { return x() + width(); }
+double Rest::right_edge() const { return x() + width(); }
 
-double Rest::centerX() const {
+double Rest::center_x() const {
     SymId sym = ldata()->sym();
-    RectF bbox = symBbox(sym);
+    RectF bbox = sym_bbox(sym);
     return bbox.left() + bbox.width() / 2;
 }
 
@@ -382,21 +382,21 @@ double Rest::centerX() const {
 //   accent
 //---------------------------------------------------------
 
-bool Rest::accent() { return voice() >= 2 && isSmall(); }
+bool Rest::accent() { return voice() >= 2 && is_small(); }
 
 //---------------------------------------------------------
 //   setAccent
 //---------------------------------------------------------
 
-void Rest::setAccent(bool flag) {
-    undoChangeProperty(Pid::SMALL, flag);
+void Rest::set_accent(bool flag) {
+    undo_change_property(Pid::SMALL, flag);
     if (voice() % 2 == 0) {
         if (flag) {
-            double yOffset = -(ldata()->bbox().bottom());
-            if (durationType() >= DurationType::V_HALF) {
-                yOffset -= staff()->spatium(tick()) * 0.5;
+            double y_offset = -(ldata()->bbox().bottom());
+            if (duration_type() >= DurationType::V_HALF) {
+                y_offset -= staff()->spatium(tick()) * 0.5;
             }
-            mutldata()->moveY(yOffset);
+            mutldata()->move_y(y_offset);
         }
     }
 }
@@ -406,18 +406,18 @@ void Rest::setAccent(bool flag) {
 //---------------------------------------------------------
 
 void Rest::add(EngravingItem *e) {
-    if (e->ownershipParent() != this) {
-        e->setOwnershipParent(this);
+    if (e->ownership_parent() != this) {
+        e->set_ownership_parent(this);
     }
-    e->setTrack(track());
+    e->set_track(track());
 
     switch (e->type()) {
         case ElementType::NOTEDOT:
-            dots_.push_back(toNoteDot(e));
+            dots_.push_back(to_note_dot(e));
             e->added();
             break;
         case ElementType::DEAD_SLAPPED:
-            deadSlapped_ = toDeadSlapped(e);
+            dead_slapped_ = to_dead_slapped(e);
             e->added();
             break;
         default: ChordRest::add(e); break;
@@ -434,12 +434,12 @@ void Rest::remove(EngravingItem *e) {
             dots_.pop_back();
             e->removed();
             break;
-        case ElementType::DEAD_SLAPPED: deadSlapped_ = nullptr;
+        case ElementType::DEAD_SLAPPED: dead_slapped_ = nullptr;
         // fallthrough
         case ElementType::SYMBOL:
         case ElementType::IMAGE:
-            if (!removeEl(e)) {
-                LOGD("Rest::remove(): cannot find %s", e->typeName());
+            if (!remove_el(e)) {
+                LOGD("Rest::remove(): cannot find %s", e->type_name());
             } else {
                 e->removed();
             }
@@ -452,13 +452,13 @@ void Rest::remove(EngravingItem *e) {
 //   localSpatiumChanged
 //---------------------------------------------------------
 
-void Rest::localSpatiumChanged(double oldValue, double newValue) {
-    ChordRest::localSpatiumChanged(oldValue, newValue);
+void Rest::local_spatium_changed(double old_value, double new_value) {
+    ChordRest::local_spatium_changed(old_value, new_value);
     for (EngravingItem *e : dots_) {
-        e->localSpatiumChanged(oldValue, newValue);
+        e->local_spatium_changed(old_value, new_value);
     }
     for (EngravingItem *e : el()) {
-        e->localSpatiumChanged(oldValue, newValue);
+        e->local_spatium_changed(old_value, new_value);
     }
 }
 
@@ -466,11 +466,11 @@ void Rest::localSpatiumChanged(double oldValue, double newValue) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Rest::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Rest::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::GAP: return false;
         case Pid::ALIGN_WITH_OTHER_RESTS: return true;
-        default: return ChordRest::propertyDefault(propertyId);
+        default: return ChordRest::property_default(property_id);
     }
 }
 
@@ -478,8 +478,8 @@ PropertyValue Rest::propertyDefault(Pid propertyId) const {
 //   resetProperty
 //---------------------------------------------------------
 
-void Rest::resetProperty(Pid id) {
-    setProperty(id, propertyDefault(id));
+void Rest::reset_property(Pid id) {
+    set_property(id, property_default(id));
     return;
 }
 
@@ -487,11 +487,11 @@ void Rest::resetProperty(Pid id) {
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Rest::getProperty(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Rest::get_property(Pid property_id) const {
+    switch (property_id) {
         case Pid::GAP: return gap_;
-        case Pid::ALIGN_WITH_OTHER_RESTS: return alignWithOtherRests();
-        default: return ChordRest::getProperty(propertyId);
+        case Pid::ALIGN_WITH_OTHER_RESTS: return align_with_other_rests();
+        default: return ChordRest::get_property(property_id);
     }
 }
 
@@ -499,20 +499,20 @@ PropertyValue Rest::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Rest::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::GAP: gap_ = v.toBool(); break;
-        case Pid::VISIBLE: setVisible(v.toBool()); break;
+bool Rest::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::GAP: gap_ = v.to_bool(); break;
+        case Pid::VISIBLE: set_visible(v.to_bool()); break;
         case Pid::OFFSET:
-            setOffset(v.value<PointF>());
-            if (measure() && durationType().type() == DurationType::V_MEASURE) {
-                measure()->triggerLayout();
+            set_offset(v.value<PointF>());
+            if (measure() && duration_type().type() == DurationType::V_MEASURE) {
+                measure()->trigger_layout();
             }
             break;
-        case Pid::ALIGN_WITH_OTHER_RESTS: setAlignWithOtherRests(v.toBool()); break;
-        default: return ChordRest::setProperty(propertyId, v);
+        case Pid::ALIGN_WITH_OTHER_RESTS: set_align_with_other_rests(v.to_bool()); break;
+        default: return ChordRest::set_property(property_id, v);
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -520,9 +520,9 @@ bool Rest::setProperty(Pid propertyId, const PropertyValue &v) {
 //   undoChangeDotsVisible
 //---------------------------------------------------------
 
-void Rest::undoChangeDotsVisible(bool v) {
+void Rest::undo_change_dots_visible(bool v) {
     for (NoteDot *dot : dots_) {
-        dot->undoChangeProperty(Pid::VISIBLE, v);
+        dot->undo_change_property(Pid::VISIBLE, v);
     }
 }
 
@@ -530,13 +530,13 @@ void Rest::undoChangeDotsVisible(bool v) {
 //   nextElement
 //---------------------------------------------------------
 
-EngravingItem *Rest::nextElement() { return ChordRest::nextElement(); }
+EngravingItem *Rest::next_element() { return ChordRest::next_element(); }
 
 //---------------------------------------------------------
 //   prevElement
 //---------------------------------------------------------
 
-EngravingItem *Rest::prevElement() { return ChordRest::prevElement(); }
+EngravingItem *Rest::prev_element() { return ChordRest::prev_element(); }
 
 //---------------------------------------------------------
 //   Rest::shouldNotBeDrawn
@@ -545,27 +545,27 @@ EngravingItem *Rest::prevElement() { return ChordRest::prevElement(); }
 //    also measures covered by MeasureRepeat show no rests
 //---------------------------------------------------------
 
-bool Rest::shouldNotBeDrawn() const {
-    const StaffType *st = staff() ? staff()->staffTypeForElement(this) : nullptr;
+bool Rest::should_not_be_drawn() const {
+    const StaffType *st = staff() ? staff()->staff_type_for_element(this) : nullptr;
     if (generated()) {
         return true;
     }
 
-    if (st && st->isTabStaff() && (!st->showRests() || st->genDurations()) && (!measure() || !measure()->isMMRest())) {
+    if (st && st->is_tab_staff() && (!st->show_rests() || st->gen_durations()) && (!measure() || !measure()->is_mm_rest())) {
         return true;
     }
 
-    if (measure() && measure()->measureRepeatCount(staffIdx())) {
+    if (measure() && measure()->measure_repeat_count(staff_idx())) {
         return true;
     }
 
     return false;
 }
 
-bool Rest::debugDrawGap() const { return configuration()->debuggingOptions().showGapRests; }
+bool Rest::debug_draw_gap() const { return configuration()->debugging_options().show_gap_rests; }
 
 //---------------------------------------------------------
 //   getPropertyStyle
 //---------------------------------------------------------
-Sid Rest::getPropertyStyle(Pid pid) const { return ChordRest::getPropertyStyle(pid); }
+Sid Rest::get_property_style(Pid pid) const { return ChordRest::get_property_style(pid); }
 } // namespace mu::engraving

@@ -41,7 +41,7 @@ public:
 
     PalmMuteSegment *clone() const override { return new PalmMuteSegment(*this); }
 
-    PalmMute *palmMute() const { return (PalmMute *) spanner(); }
+    PalmMute *palm_mute() const { return (PalmMute *) spanner(); }
 
     friend class PalmMute;
 };
@@ -61,13 +61,13 @@ public:
 
     //      virtual void write(XmlWriter& xml) const override;
 
-    LineSegment *createLineSegment() override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
+    LineSegment *create_line_segment() override;
+    PropertyValue property_default(Pid property_id) const override;
 
-    void setChannel();
+    void set_channel();
 
 protected:
-    Sid defaultPosSid() const override;
+    Sid default_pos_sid() const override;
 
     friend class PalmMuteLine;
 };

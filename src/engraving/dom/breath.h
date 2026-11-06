@@ -33,8 +33,8 @@ class Factory;
 //---------------------------------------------------------
 
 struct BreathType {
-    SymId id = SymId::noSym;
-    bool isCaesura = false;
+    SymId id = SymId::NO_SYM;
+    bool is_caesura = false;
     double pause = false;
 };
 
@@ -53,30 +53,30 @@ public:
 
     double mag() const override;
 
-    void setSymId(SymId id) { symId_ = id; }
+    void set_sym_id(SymId id) { sym_id_ = id; }
 
-    SymId symId() const { return symId_; }
+    SymId sym_id() const { return sym_id_; }
 
     double pause() const { return pause_; }
 
-    void setPause(double v) { pause_ = v; }
+    void set_pause(double v) { pause_ = v; }
 
-    Segment *segment() const { return (Segment *) ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownership_parent(); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    int subtype() const override { return int(symId_); }
+    int subtype() const override { return int(sym_id_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    bool isCaesura() const;
+    bool is_caesura() const;
 
-    static const std::vector<BreathType> BREATH_LIST;
+    static const std::vector<BreathType> breath_list;
 
 private:
 
@@ -84,7 +84,7 @@ private:
     Breath(DummyParentOr<Segment> parent);
 
     double pause_ = 0.0;
-    SymId symId_ = SymId::breathMarkComma;
+    SymId sym_id_ = SymId::BREATH_MARK_COMMA;
 };
 } // namespace mu::engraving
 #endif

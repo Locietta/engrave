@@ -30,8 +30,8 @@ class Measure;
 
 class ExchangeVoices {
 public:
-    static void exchangeVoicesInSelection(Score *score, voice_idx_t srcVoice, voice_idx_t dstVoice);
-    static void exchangeVoices(Score *score, Measure *measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
-                               staff_idx_t dstStaff);
+    static void exchange_voices_in_selection(Score *score, voice_idx_t src_voice, voice_idx_t dst_voice);
+    static void exchange_voices(Score *score, Measure *measure, voice_idx_t src_voice, voice_idx_t dst_voice, staff_idx_t src_staff,
+                                staff_idx_t dst_staff);
 };
 } // namespace mu::engraving

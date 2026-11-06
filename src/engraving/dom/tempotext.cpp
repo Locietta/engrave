@@ -47,10 +47,10 @@ namespace mu::engraving {
 //   tempoStyle
 //---------------------------------------------------------
 
-static const ElementStyle tempoStyle{
-    {Sid::tempoSystemFlag, Pid::SYSTEM_FLAG},
-    {Sid::tempoPlacement, Pid::PLACEMENT},
-    {Sid::tempoMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle tempo_style{
+    {Sid::TEMPO_SYSTEM_FLAG, Pid::SYSTEM_FLAG},
+    {Sid::TEMPO_PLACEMENT, Pid::PLACEMENT},
+    {Sid::TEMPO_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
@@ -59,29 +59,29 @@ static const ElementStyle tempoStyle{
 
 TempoText::TempoText(DummyParentOr<Segment> parent)
     : TextBase(ElementType::TEMPO_TEXT, parent, TextStyleType::TEMPO, ElementFlag::SYSTEM | ElementFlag::ON_STAFF) {
-    initElementStyle(&tempoStyle);
-    tempoTextType_ = TempoTextType::NORMAL;
+    init_element_style(&::mu::engraving::tempo_style);
+    tempo_text_type_ = TempoTextType::NORMAL;
     tempo_ = 2.0; // propertyDefault(P_TEMPO).toDouble();
-    followText_ = false;
+    follow_text_ = false;
     relative_ = 1.0;
-    isRelative_ = false;
+    is_relative_ = false;
 
-    resetProperty(Pid::MUSIC_SYMBOL_SIZE);
+    reset_property(Pid::MUSIC_SYMBOL_SIZE);
 }
 
-void TempoText::setTempoTextType(TempoTextType ttt) { tempoTextType_ = ttt; }
+void TempoText::set_tempo_text_type(TempoTextType ttt) { tempo_text_type_ = ttt; }
 
-double TempoText::tempoBpm() const {
+double TempoText::tempo_bpm() const {
     //! NOTE: find tempo in format " = 180"
     std::regex regex("\\s*=\\s*(\\d+[.]{0,1}\\d*)");
     std::smatch match;
-    std::string stru8 = xmlText().toStdString();
+    std::string stru8 = xml_text().to_std_string();
     std::regex_search(stru8, match, regex);
     if (match.empty() || match.size() < 1) {
         return 0;
     }
 
-    double tempo = String::fromStdString(match[1].str()).toDouble();
+    double tempo = String::from_std_string(match[1].str()).to_double();
     return tempo;
 }
 
@@ -94,7 +94,7 @@ struct TempoPattern {
     double f;
     TDuration d;
 
-    TempoPattern(const char *s, double v, DurationType val, int dots = 0) : pattern(s), f(v), d(val) { d.setDots(dots); }
+    TempoPattern(const char *s, double v, DurationType val, int dots = 0) : pattern(s), f(v), d(val) { d.set_dots(dots); }
 };
 
 // note: findTempoDuration requires the longer patterns to be before the shorter patterns in tp
@@ -131,16 +131,16 @@ static const TempoPattern tp[] = {
 //    set len to the match length and dur to the duration value
 //---------------------------------------------------------
 
-int TempoText::findTempoDuration(const String &s, int &len, TDuration &dur) {
+int TempoText::find_tempo_duration(const String &s, int &len, TDuration &dur) {
     len = 0;
     dur = TDuration();
-    std::string su8 = s.toStdString();
+    std::string su8 = s.to_std_string();
     for (const auto &i : tp) {
         std::regex regex(i.pattern);
         std::smatch match;
         std::regex_search(su8, match, regex);
         if (!match.empty()) {
-            len = static_cast<int>(String::fromStdString(match[0].str()).size());
+            len = static_cast<int>(String::from_std_string(match[0].str()).size());
             dur = i.d;
             return std::distance(su8.cbegin(), match[0].first);
         }
@@ -152,12 +152,12 @@ TDuration TempoText::duration() const {
     int dummy = 0;
     TDuration result;
 
-    findTempoDuration(plainText(), dummy, result);
+    find_tempo_duration(plain_text(), dummy, result);
 
     return result;
 }
 
-static const TempoPattern tpSym[] = {
+static const TempoPattern tp_sym[] = {
     TempoPattern("<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym><sym>metAugmentationDot</sym>", 1.75 / 60.0,
                  DurationType::V_QUARTER, 2), // double dotted 1/4
     TempoPattern("<sym>metNoteQuarterUp</sym><sym>space</sym><sym>metAugmentationDot</sym>", 1.5 / 60.0, DurationType::V_QUARTER,
@@ -196,10 +196,10 @@ static const TempoPattern tpSym[] = {
 //    find the tempoText string representation for duration
 //---------------------------------------------------------
 
-String TempoText::duration2tempoTextString(const TDuration dur) {
-    for (const TempoPattern &pa : tpSym) {
+String TempoText::duration2tempo_text_string(const TDuration dur) {
+    for (const TempoPattern &pa : ::mu::engraving::tp_sym) {
         if (pa.d == dur) {
-            String res = String::fromUtf8(pa.pattern);
+            String res = String::from_utf8(pa.pattern);
             return res;
         }
     }
@@ -211,10 +211,10 @@ String TempoText::duration2tempoTextString(const TDuration dur) {
 //---------------------------------------------------------
 
 BeatsPerSecond TempoText::tempo() const {
-    if (isRelative_) {
-        const BeatsPerSecond tempoBefore = score()->tempo(tick() - Fraction::eps());
-        const BeatsPerSecond v = tempoBefore * relative_;
-        return BeatsPerSecond(std::clamp(v.val, Constants::MIN_TEMPO.val, Constants::MAX_TEMPO.val));
+    if (is_relative_) {
+        const BeatsPerSecond tempo_before = score()->tempo(tick() - Fraction::eps());
+        const BeatsPerSecond v = tempo_before * relative_;
+        return BeatsPerSecond(std::clamp(v.val, Constants::min_tempo.val, Constants::max_tempo.val));
     }
     return tempo_;
 }
@@ -223,14 +223,14 @@ BeatsPerSecond TempoText::tempo() const {
 //   undoChangeProperty
 //---------------------------------------------------------
 
-void TempoText::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
+void TempoText::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::TEMPO_FOLLOW_TEXT) {
-        EngravingObject::undoChangeProperty(id, v, ps);
-        if (followText_) {
-            updateTempo();
+        EngravingObject::undo_change_property(id, v, ps);
+        if (follow_text_) {
+            update_tempo();
         }
     } else {
-        EngravingObject::undoChangeProperty(id, v, ps);
+        EngravingObject::undo_change_property(id, v, ps);
     }
 }
 
@@ -238,11 +238,11 @@ void TempoText::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags
 //   updateTempo
 //---------------------------------------------------------
 
-void TempoText::updateTempo() {
+void TempoText::update_tempo() {
     // cache regexp, they are costly to create
     static std::unordered_map<String, std::regex> regexps;
     static std::unordered_map<String, std::regex> regexps2;
-    String s = plainText();
+    String s = plain_text();
     s.replace(u",", u".");
     s.replace(u"<sym>space</sym>", u" ");
     s.replace(u"≒", u"=");
@@ -251,12 +251,12 @@ void TempoText::updateTempo() {
     s.replace(u"ca.", u"");
     s.replace(u"c.", u"");
     s.replace(u"approx.", u"");
-    std::string su8 = s.toStdString();
+    std::string su8 = s.to_std_string();
     for (const TempoPattern &pa : tp) {
-        String pattern = String::fromUtf8(pa.pattern);
+        String pattern = String::from_utf8(pa.pattern);
         std::regex re;
-        if (!muse::contains(regexps, String::fromUtf8(pa.pattern))) {
-            re = std::regex(String(u"%1\\s*=\\s*(\\d+[.]{0,1}\\d*)\\s*").arg(pattern).toStdString());
+        if (!muse::contains(regexps, String::from_utf8(pa.pattern))) {
+            re = std::regex(String(u"%1\\s*=\\s*(\\d+[.]{0,1}\\d*)\\s*").arg(pattern).to_std_string());
             regexps[pattern] = re;
         }
         re = muse::value(regexps, pattern);
@@ -264,21 +264,21 @@ void TempoText::updateTempo() {
         std::regex_search(su8, match, re);
         if (!match.empty()) {
             if (match.size() == 2) {
-                BeatsPerSecond nt = BeatsPerSecond(String::fromStdString(match[1].str()).toDouble() * pa.f);
-                if (isRelative_ || nt != tempo_) {
-                    undoChangeProperty(Pid::TEMPO, PropertyValue(nt), propertyFlags(Pid::TEMPO));
+                BeatsPerSecond nt = BeatsPerSecond(String::from_std_string(match[1].str()).to_double() * pa.f);
+                if (is_relative_ || nt != tempo_) {
+                    undo_change_property(Pid::TEMPO, PropertyValue(nt), property_flags(Pid::TEMPO));
                     relative_ = 1.0;
-                    isRelative_ = false;
+                    is_relative_ = false;
                 }
                 break;
             }
         } else {
             for (const TempoPattern &pa2 : tp) {
-                String pattern2 = String::fromUtf8(pa2.pattern);
+                String pattern2 = String::from_utf8(pa2.pattern);
                 String key = String(u"%1_%2").arg(pattern, pattern2);
                 std::regex re2;
                 if (!muse::contains(regexps2, key)) {
-                    re2 = std::regex(String(u"%1\\s*=\\s*%2\\s*").arg(pattern, pattern2).toStdString());
+                    re2 = std::regex(String(u"%1\\s*=\\s*%2\\s*").arg(pattern, pattern2).to_std_string());
                     regexps2[key] = re2;
                 }
                 re2 = muse::value(regexps2, key);
@@ -286,7 +286,7 @@ void TempoText::updateTempo() {
                 std::regex_search(su8, match2, re2);
                 if (!match2.empty()) {
                     relative_ = pa2.f / pa.f;
-                    isRelative_ = true;
+                    is_relative_ = true;
                     return;
                 }
             }
@@ -298,28 +298,28 @@ void TempoText::updateTempo() {
 //   setTempo
 //---------------------------------------------------------
 
-void TempoText::setTempo(BeatsPerSecond v) {
-    if (v.val < Constants::MIN_TEMPO.val) {
-        v = Constants::MIN_TEMPO;
-    } else if (v.val > Constants::MAX_TEMPO.val) {
-        v = Constants::MAX_TEMPO;
+void TempoText::set_tempo(BeatsPerSecond v) {
+    if (v.val < Constants::min_tempo.val) {
+        v = Constants::min_tempo;
+    } else if (v.val > Constants::max_tempo.val) {
+        v = Constants::max_tempo;
     }
     tempo_ = v;
     relative_ = 1.0;
-    isRelative_ = false;
+    is_relative_ = false;
 }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue TempoText::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::PLAY: return playTempoText_;
+PropertyValue TempoText::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::PLAY: return play_tempo_text_;
         case Pid::TEMPO: return tempo_;
-        case Pid::TEMPO_FOLLOW_TEXT: return followText_;
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return alignRightOfRehearsalMark_;
-        default: return TextBase::getProperty(propertyId);
+        case Pid::TEMPO_FOLLOW_TEXT: return follow_text_;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return align_right_of_rehearsal_mark_;
+        default: return TextBase::get_property(property_id);
     }
 }
 
@@ -327,19 +327,19 @@ PropertyValue TempoText::getProperty(Pid propertyId) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool TempoText::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::PLAY: setPlayTempoText(v.toBool()); break;
-        case Pid::TEMPO: setTempo(v.value<BeatsPerSecond>()); break;
-        case Pid::TEMPO_FOLLOW_TEXT: setFollowText(v.toBool()); break;
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: alignRightOfRehearsalMark_ = v.toBool(); break;
+bool TempoText::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::PLAY: set_play_tempo_text(v.to_bool()); break;
+        case Pid::TEMPO: set_tempo(v.value<BeatsPerSecond>()); break;
+        case Pid::TEMPO_FOLLOW_TEXT: set_follow_text(v.to_bool()); break;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: align_right_of_rehearsal_mark_ = v.to_bool(); break;
         default:
-            if (!TextBase::setProperty(propertyId, v)) {
+            if (!TextBase::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
+    trigger_layout();
     return true;
 }
 
@@ -347,14 +347,14 @@ bool TempoText::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue TempoText::propertyDefault(Pid id) const {
+PropertyValue TempoText::property_default(Pid id) const {
     switch (id) {
         case Pid::PLAY: return true;
         case Pid::TEXT_STYLE: return TextStyleType::TEMPO;
         case Pid::TEMPO: return BeatsPerSecond(2.0);
         case Pid::TEMPO_FOLLOW_TEXT: return false;
         case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return true;
-        default: return TextBase::propertyDefault(id);
+        default: return TextBase::property_default(id);
     }
 }
 
@@ -362,14 +362,14 @@ PropertyValue TempoText::propertyDefault(Pid id) const {
 //   duration2userName
 //---------------------------------------------------------
 
-String TempoText::duration2userName(const TDuration t) {
+String TempoText::duration2user_name(const TDuration t) {
     String dots;
     switch (t.dots()) {
-        case 1: dots = muse::mtrc("engraving", "Dotted %1").arg(TConv::translatedUserName(t.type())); break;
-        case 2: dots = muse::mtrc("engraving", "Double dotted %1").arg(TConv::translatedUserName(t.type())); break;
-        case 3: dots = muse::mtrc("engraving", "Triple dotted %1").arg(TConv::translatedUserName(t.type())); break;
-        case 4: dots = muse::mtrc("engraving", "Quadruple dotted %1").arg(TConv::translatedUserName(t.type())); break;
-        default: dots = TConv::translatedUserName(t.type()); break;
+        case 1: dots = muse::mtrc("engraving", "Dotted %1").arg(TConv::translated_user_name(t.type())); break;
+        case 2: dots = muse::mtrc("engraving", "Double dotted %1").arg(TConv::translated_user_name(t.type())); break;
+        case 3: dots = muse::mtrc("engraving", "Triple dotted %1").arg(TConv::translated_user_name(t.type())); break;
+        case 4: dots = muse::mtrc("engraving", "Quadruple dotted %1").arg(TConv::translated_user_name(t.type())); break;
+        default: dots = TConv::translated_user_name(t.type()); break;
     }
     return dots;
 }
@@ -378,26 +378,26 @@ String TempoText::duration2userName(const TDuration t) {
 //   accessibleInfo
 //---------------------------------------------------------
 
-String TempoText::tempoInfo() const {
+String TempoText::tempo_info() const {
     TDuration t1;
     TDuration t2;
     int len1;
     int len2;
-    String text = plainText();
-    String firstPart = text.split(u" = ").front();
-    String secondPart = text.split(u" = ").back();
-    int x1 = findTempoDuration(firstPart, len1, t1);
+    String text = plain_text();
+    String first_part = text.split(u" = ").front();
+    String second_part = text.split(u" = ").back();
+    int x1 = find_tempo_duration(first_part, len1, t1);
     int x2 = -1;
     if (relative_) {
-        x2 = findTempoDuration(secondPart, len2, t2);
+        x2 = find_tempo_duration(second_part, len2, t2);
     }
 
     String info;
 
     if (x1 != -1) {
-        String dots1 = duration2userName(t1);
+        String dots1 = duration2user_name(t1);
         if (x2 != -1) {
-            String dots2 = duration2userName(t2);
+            String dots2 = duration2user_name(t2);
             //: %1 and %2 are note durations. If your language does not have different terms
             //: for "quarter note" and "quarter" (for example), or if the translations for
             //: the durations as separate strings are not suitable to be used as adjectives
@@ -409,18 +409,18 @@ String TempoText::tempoInfo() const {
             //: "quarter note" and "quarter" (for example), or if the translations for the
             //: durations as separate strings are not suitable to be used as adjectives here,
             //: translate "%1 note" with "%1", so that just the duration will be shown.
-            info = muse::mtrc("engraving", "%1 note = %2").arg(dots1, secondPart);
+            info = muse::mtrc("engraving", "%1 note = %2").arg(dots1, second_part);
         }
     }
 
     return info;
 }
 
-void TempoText::commitText() {
-    if (followText_) {
-        updateTempo();
+void TempoText::commit_text() {
+    if (follow_text_) {
+        update_tempo();
     }
 
-    TextBase::commitText();
+    TextBase::commit_text();
 }
 } // namespace mu::engraving

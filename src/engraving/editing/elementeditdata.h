@@ -31,8 +31,8 @@ namespace mu::engraving {
 //    holds element specific data during element editing:
 //
 enum class EditDataType : signed char {
-    ElementEditData,
-    TextEditData,
+    ELEMENT_EDIT_DATA,
+    TEXT_EDIT_DATA,
 };
 
 class ElementEditData {
@@ -46,11 +46,11 @@ public:
     };
 
     EngravingItem *e = nullptr;
-    std::vector<PropertyData> propertyData;
+    std::vector<PropertyData> property_data;
 
-    void pushProperty(Pid pid) { propertyData.emplace_back(PropertyData{pid, e->getProperty(pid), e->propertyFlags(pid)}); }
+    void push_property(Pid pid) { property_data.emplace_back(PropertyData{pid, e->get_property(pid), e->property_flags(pid)}); }
 
-    virtual EditDataType type() { return EditDataType::ElementEditData; }
+    virtual EditDataType type() { return EditDataType::ELEMENT_EDIT_DATA; }
 };
 
 using ElementEditDataPtr = std::shared_ptr<ElementEditData>;

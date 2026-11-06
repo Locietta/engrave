@@ -47,10 +47,10 @@ public:
 
     bool empty() const { return nodes_.empty(); }
 
-    void addNode(const GroupNode &n) { nodes_.push_back(n); }
+    void add_node(const GroupNode &n) { nodes_.push_back(n); }
 
-    BeamMode beamMode(int tick, DurationType d) const;
-    void addStop(int pos, DurationType d, BeamMode bm);
+    BeamMode beam_mode(int tick, DurationType d) const;
+    void add_stop(int pos, DurationType d, BeamMode bm);
 
     bool operator==(const Groups &g) const {
         if (g.nodes_.size() != nodes_.size()) {
@@ -67,9 +67,10 @@ public:
     void dump(const char *) const;
 
     static const Groups &endings(const Fraction &f);
-    static BeamMode baseBeamMode(const ChordRest *cr, const ChordRest *prev = 0);
-    static BeamMode actualBeamMode(const ChordRest *cr, const ChordRest *prev);
-    static BeamMode actualBeamMode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beatSubdivision);
+    static BeamMode base_beam_mode(const ChordRest *cr, const ChordRest *prev = 0);
+    static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev);
+    static BeamMode actual_beam_mode(const ChordRest *cr, const ChordRest *prev,
+                                     const std::unordered_map<int, TDuration> *beat_subdivision);
 
 private:
     GroupNodes nodes_;

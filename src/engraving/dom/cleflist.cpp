@@ -29,13 +29,17 @@ namespace mu::engraving {
 //   ClefTypeList::operator==
 //---------------------------------------------------------
 
-bool ClefTypeList::operator==(const ClefTypeList &t) const { return t.concertClef == concertClef && t.transposingClef == transposingClef; }
+bool ClefTypeList::operator==(const ClefTypeList &t) const {
+    return t.concert_clef == concert_clef && t.transposing_clef == transposing_clef;
+}
 
 //---------------------------------------------------------
 //   ClefTypeList::operator!=
 //---------------------------------------------------------
 
-bool ClefTypeList::operator!=(const ClefTypeList &t) const { return t.concertClef != concertClef || t.transposingClef != transposingClef; }
+bool ClefTypeList::operator!=(const ClefTypeList &t) const {
+    return t.concert_clef != concert_clef || t.transposing_clef != transposing_clef;
+}
 
 //---------------------------------------------------------
 //   clef
@@ -56,7 +60,7 @@ ClefTypeList ClefList::clef(int tick) const {
 //   setClef
 //---------------------------------------------------------
 
-void ClefList::setClef(int tick, ClefTypeList ctl) {
+void ClefList::set_clef(int tick, ClefTypeList ctl) {
     auto i = find(tick);
     if (i == end()) {
         insert(std::pair<int, ClefTypeList>(tick, ctl));
@@ -72,7 +76,7 @@ void ClefList::setClef(int tick, ClefTypeList ctl) {
 //    return -1, if no such clef
 //---------------------------------------------------------
 
-int ClefList::nextClefTick(int tick) const {
+int ClefList::next_clef_tick(int tick) const {
     if (empty()) {
         return -1;
     }
@@ -90,7 +94,7 @@ int ClefList::nextClefTick(int tick) const {
 //    in effect at tick
 //---------------------------------------------------------
 
-int ClefList::currentClefTick(int tick) const {
+int ClefList::current_clef_tick(int tick) const {
     if (empty()) {
         return 0;
     }

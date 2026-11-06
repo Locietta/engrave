@@ -38,10 +38,10 @@ namespace mu::iex::midi {
 using MidiIODevice = muse::io::IODevice;
 
 class MidiTrack {
-    std::multimap<int, MidiEvent> _events;
-    int _outChannel;
-    int _outPort;
-    bool _drumTrack;
+    std::multimap<int, MidiEvent> events_value;
+    int out_channel_value;
+    int out_port_value;
+    bool drum_track_value;
 
 public:
     MidiTrack();
@@ -49,22 +49,22 @@ public:
 
     bool empty() const;
 
-    const std::multimap<int, MidiEvent> &events() const { return _events; }
+    const std::multimap<int, MidiEvent> &events() const { return events_value; }
 
-    std::multimap<int, MidiEvent> &events() { return _events; }
+    std::multimap<int, MidiEvent> &events() { return events_value; }
 
-    int outChannel() const { return _outChannel; }
+    int out_channel() const { return out_channel_value; }
 
-    void setOutChannel(int n);
+    void set_out_channel(int n);
 
-    int outPort() const { return _outPort; }
+    int out_port() const { return out_port_value; }
 
-    void setOutPort(int n) { _outPort = n; }
+    void set_out_port(int n) { out_port_value = n; }
 
-    bool drumTrack() const { return _drumTrack; }
+    bool drum_track() const { return drum_track_value; }
 
     void insert(int tick, const MidiEvent &);
-    void mergeNoteOnOff();
+    void merge_note_on_off();
 };
 
 //---------------------------------------------------------
@@ -73,65 +73,65 @@ public:
 
 class MidiFile {
     MidiIODevice *fp;
-    std::vector<MidiTrack> _tracks;
-    int _division;
-    bool _isDivisionInTps; ///< ticks per second, alternative - ticks per beat
-    int _format;           ///< midi file format (0-2)
-    bool _noRunningStatus; ///< do not use running status on output
+    std::vector<MidiTrack> tracks_value;
+    int division_value;
+    bool is_division_in_tps_value; ///< ticks per second, alternative - ticks per beat
+    int format_value;              ///< midi file format (0-2)
+    bool no_running_status;        ///< do not use running status on output
 
     // values used during read()
-    int status;     ///< running status
-    int sstatus;    ///< running status (not reset after meta or sysex events)
-    int click;      ///< current tick position in file
-    int64_t curPos; ///< current file byte position
+    int status;      ///< running status
+    int sstatus;     ///< running status (not reset after meta or sysex events)
+    int click;       ///< current tick position in file
+    int64_t cur_pos; ///< current file byte position
 
     //! Set when a low-level write() fails. The per-event helpers cannot return
     //! a status, so the top-level write() surfaces the error instead.
-    bool _writeError = false;
+    bool write_error = false;
 
-    void writeEvent(const MidiEvent &event);
+    void write_event(const MidiEvent &event);
 
 protected:
     // write
     bool write(const void *, int64_t);
-    void writeShort(int);
-    void writeLong(int);
-    bool writeTrack(const MidiTrack &);
+    void write_short(int);
+    void write_long(int);
+    bool write_track(const MidiTrack &);
     void putvl(unsigned);
 
     void put(unsigned char c) { write(&c, 1); }
 
-    void writeStatus(int type, int channel);
+    void write_status(int type, int channel);
 
     // read
     void read(void *, int64_t);
     int getvl();
-    int readShort();
-    int readLong();
-    bool readEvent(MidiEvent *);
-    bool readTrack();
+    int read_short();
+    int read_long();
+    bool read_event(MidiEvent *);
+    bool read_track();
 
-    void resetRunningStatus() { status = -1; }
+    void reset_running_status() { status = -1; }
 
 public:
     MidiFile();
     bool read(MidiIODevice *);
     bool write(MidiIODevice *);
 
-    std::vector<MidiTrack> &tracks() { return _tracks; }
+    std::vector<MidiTrack> &tracks() { return tracks_value; }
 
-    const std::vector<MidiTrack> &tracks() const { return _tracks; }
+    const std::vector<MidiTrack> &tracks() const { return tracks_value; }
 
-    int format() const { return _format; }
+    int format() const { return format_value; }
 
-    void setFormat(int fmt) { _format = fmt; }
+    void set_format(int fmt) { format_value = fmt; }
 
-    int division() const { return _division; }
+    int division() const { return division_value; }
 
-    bool isDivisionInTps() const { return _isDivisionInTps; }
+    bool is_division_in_tps() const { return is_division_in_tps_value; }
 
-    void setDivision(int val) { _division = val; }
+    void set_division(int val) { division_value = val; }
 
-    void separateChannel();
+    void separate_channel();
 };
 } // namespace mu::iex::midi

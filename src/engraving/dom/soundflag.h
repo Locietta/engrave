@@ -36,47 +36,47 @@ public:
 
     SoundFlag *clone() const override;
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
-    PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue &value) override;
-    PropertyValue propertyDefault(Pid id) const override;
+    PropertyValue get_property(Pid id) const override;
+    bool set_property(Pid id, const PropertyValue &value) override;
+    PropertyValue property_default(Pid id) const override;
 
-    bool canBeExcludedFromOtherParts() const override { return false; }
+    bool can_be_excluded_from_other_parts() const override { return false; }
 
     using PresetCodes = StringList;
     using PlayingTechniqueCode = String;
 
-    const PresetCodes &soundPresets() const;
-    void setSoundPresets(const PresetCodes &soundPresets);
+    const PresetCodes &sound_presets() const;
+    void set_sound_presets(const PresetCodes &sound_presets);
 
-    const PlayingTechniqueCode &playingTechnique() const;
-    void setPlayingTechnique(const PlayingTechniqueCode &technique);
+    const PlayingTechniqueCode &playing_technique() const;
+    void set_playing_technique(const PlayingTechniqueCode &technique);
 
     bool play() const;
-    void setPlay(bool play);
+    void set_play(bool play);
 
-    bool applyToAllStaves() const;
-    void setApplyToAllStaves(bool apply);
+    bool apply_to_all_staves() const;
+    void set_apply_to_all_staves(bool apply);
 
     void clear();
 
-    bool shouldHide() const;
+    bool should_hide() const;
 
-    void undoChangeSoundFlag(const PresetCodes &presets, const PlayingTechniqueCode &technique);
+    void undo_change_sound_flag(const PresetCodes &presets, const PlayingTechniqueCode &technique);
 
-    char16_t iconCode() const;
-    muse::draw::Font iconFont() const;
-    Color iconBackgroundColor() const;
+    char16_t icon_code() const;
+    muse::draw::Font icon_font() const;
+    Color icon_background_color() const;
 
 private:
-    PresetCodes soundPresets_;
-    PlayingTechniqueCode playingTechnique_;
+    PresetCodes sound_presets_;
+    PlayingTechniqueCode playing_technique_;
 
-    muse::draw::Font iconFont_;
-    bool iconFontValid_ = false;
+    muse::draw::Font icon_font_;
+    bool icon_font_valid_ = false;
 
     bool play_ = true;
-    bool applyToAllStaves_ = true;
+    bool apply_to_all_staves_ = true;
 };
 } // namespace mu::engraving

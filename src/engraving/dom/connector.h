@@ -49,7 +49,7 @@ class ConnectorInfo {
 
 public:
     ConnectorInfo(const EngravingItem *current, int track = -1, Fraction = {-1, 1});
-    ConnectorInfo(const Score *score, const Location &currentLocation);
+    ConnectorInfo(const Score *score, const Location &current_location);
     virtual ~ConnectorInfo() = default;
 
     ConnectorInfo *prev() const { return prev_; }
@@ -61,55 +61,55 @@ public:
 
     ElementType type() const { return type_; }
 
-    const Location &location() const { return currentLoc_; }
+    const Location &location() const { return current_loc_; }
 
     bool connect(ConnectorInfo *other);
     bool finished() const;
 
     // for reconnection of broken connectors
-    int connectionDistance(const ConnectorInfo &c2) const;
-    void forceConnect(ConnectorInfo *c2);
+    int connection_distance(const ConnectorInfo &c2) const;
+    void force_connect(ConnectorInfo *c2);
 
-    bool hasPrevious() const { return prevLoc_.measure() != INT_MIN; }
+    bool has_previous() const { return prev_loc_.measure() != INT_MIN; }
 
-    bool hasNext() const { return nextLoc_.measure() != INT_MIN; }
+    bool has_next() const { return next_loc_.measure() != INT_MIN; }
 
-    bool isStart() const { return !hasPrevious() && hasNext(); }
+    bool is_start() const { return !has_previous() && has_next(); }
 
-    bool isMiddle() const { return hasPrevious() && hasNext(); }
+    bool is_middle() const { return has_previous() && has_next(); }
 
-    bool isEnd() const { return hasPrevious() && !hasNext(); }
+    bool is_end() const { return has_previous() && !has_next(); }
 
 protected:
 
-    void updateLocation(const EngravingItem *e, Location &i, bool clipboardmode);
-    void updateCurrentInfo(bool clipboardmode);
+    void update_location(const EngravingItem *e, Location &i, bool clipboardmode);
+    void update_current_info(bool clipboardmode);
 
-    bool currentUpdated() const { return currentUpdated_; }
+    bool current_updated() const { return current_updated_; }
 
-    void setCurrentUpdated(bool v) { currentUpdated_ = v; }
+    void set_current_updated(bool v) { current_updated_ = v; }
 
-    ConnectorInfo *findFirst();
-    const ConnectorInfo *findFirst() const;
-    ConnectorInfo *findLast();
-    const ConnectorInfo *findLast() const;
+    ConnectorInfo *find_first();
+    const ConnectorInfo *find_first() const;
+    ConnectorInfo *find_last();
+    const ConnectorInfo *find_last() const;
 
     ElementType type_ = ElementType::INVALID;
-    Location currentLoc_;
-    Location prevLoc_ = Location::absolute();
-    Location nextLoc_ = Location::absolute();
+    Location current_loc_;
+    Location prev_loc_ = Location::absolute();
+    Location next_loc_ = Location::absolute();
 
     ConnectorInfo *prev_ = nullptr;
     ConnectorInfo *next_ = nullptr;
 
 private:
-    bool finishedLeft() const;
-    bool finishedRight() const;
+    bool finished_left() const;
+    bool finished_right() const;
 
-    static int orderedConnectionDistance(const ConnectorInfo &c1, const ConnectorInfo &c2);
+    static int ordered_connection_distance(const ConnectorInfo &c1, const ConnectorInfo &c2);
 
     const EngravingItem *current_ = nullptr;
-    bool currentUpdated_ = false;
+    bool current_updated_ = false;
     const Score *score_ = nullptr;
 };
 } // namespace mu::engraving

@@ -60,21 +60,21 @@ void subtract(const T *src1, const T *src2, T *dst, int32_t n) {
 }
 
 template <class T>
-void constantMultiply(const T *src, T constant, T *dst, int32_t n) {
+void constant_multiply(const T *src, T constant, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] = src[i] * constant;
     }
 }
 
 template <class T>
-inline void constantMultiplyAndAdd(const T *src, T constant, T *dst, int32_t n) {
+inline void constant_multiply_and_add(const T *src, T constant, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] += src[i] * constant;
     }
 }
 
 template <class T>
-void setToZero(T *dst, int32_t n) {
+void set_to_zero(T *dst, int32_t n) {
     std::fill(dst, dst + n, 0.f);
 }
 }} // namespace muse::audio::fx::vo

@@ -37,16 +37,16 @@ namespace mu::engraving {
 //   jumpStyle
 //---------------------------------------------------------
 
-static const ElementStyle jumpStyle{
-    {Sid::repeatRightPlacement, Pid::PLACEMENT},
-    {Sid::repeatMinDistance, Pid::MIN_DISTANCE},
+static const ElementStyle jump_style{
+    {Sid::REPEAT_RIGHT_PLACEMENT, Pid::PLACEMENT},
+    {Sid::REPEAT_MIN_DISTANCE, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   JumpTypeTable
 //---------------------------------------------------------
 
-const std::vector<JumpTypeTableItem> jumpTypeTable{
+const std::vector<JumpTypeTableItem> jump_type_table{
     {JumpType::DC, "D.C.", "start", "end", ""},
     {JumpType::DC_AL_FINE, "D.C. al Fine", "start", "fine", ""},
     {JumpType::DC_AL_CODA, "D.C. al Coda", "start", "coda", "codab"},
@@ -68,22 +68,22 @@ const std::vector<JumpTypeTableItem> jumpTypeTable{
 
 Jump::Jump(DummyParentOr<Measure> parent)
     : TextBase(ElementType::JUMP, parent, TextStyleType::REPEAT_RIGHT, ElementFlag::MOVABLE | ElementFlag::SYSTEM | ElementFlag::ON_STAFF) {
-    initElementStyle(&jumpStyle);
-    playRepeats_ = false;
+    init_element_style(&::mu::engraving::jump_style);
+    play_repeats_ = false;
 }
 
 //---------------------------------------------------------
 //   setJumpType
 //---------------------------------------------------------
 
-void Jump::setJumpType(JumpType t) {
-    for (const JumpTypeTableItem &p : jumpTypeTable) {
+void Jump::set_jump_type(JumpType t) {
+    for (const JumpTypeTableItem &p : ::mu::engraving::jump_type_table) {
         if (p.type == t) {
-            setXmlText(String::fromAscii(p.text.ascii()));
-            setJumpTo(String::fromAscii(p.jumpTo.ascii()));
-            setPlayUntil(String::fromAscii(p.playUntil.ascii()));
-            setContinueAt(String::fromAscii(p.continueAt.ascii()));
-            initTextStyleType(TextStyleType::REPEAT_RIGHT);
+            set_xml_text(String::from_ascii(p.text.ascii()));
+            set_jump_to(String::from_ascii(p.jump_to.ascii()));
+            set_play_until(String::from_ascii(p.play_until.ascii()));
+            set_continue_at(String::from_ascii(p.continue_at.ascii()));
+            init_text_style_type(TextStyleType::REPEAT_RIGHT);
             break;
         }
     }
@@ -93,50 +93,50 @@ void Jump::setJumpType(JumpType t) {
 //   jumpType
 //---------------------------------------------------------
 
-JumpType Jump::jumpType() const {
-    for (const JumpTypeTableItem &t : jumpTypeTable) {
-        if (jumpTo_ == t.jumpTo && playUntil_ == t.playUntil && continueAt_ == t.continueAt) {
+JumpType Jump::jump_type() const {
+    for (const JumpTypeTableItem &t : ::mu::engraving::jump_type_table) {
+        if (jump_to_ == t.jump_to && play_until_ == t.play_until && continue_at_ == t.continue_at) {
             return t.type;
         }
     }
     return JumpType::USER;
 }
 
-String Jump::jumpTypeUserName() const { return TConv::translatedUserName(jumpType()); }
+String Jump::jump_type_user_name() const { return TConv::translated_user_name(jump_type()); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Jump::getProperty(Pid propertyId) const {
-    switch (propertyId) {
-        case Pid::JUMP_TO: return jumpTo();
-        case Pid::PLAY_UNTIL: return playUntil();
-        case Pid::CONTINUE_AT: return continueAt();
-        case Pid::PLAY_REPEATS: return playRepeats();
+PropertyValue Jump::get_property(Pid property_id) const {
+    switch (property_id) {
+        case Pid::JUMP_TO: return jump_to();
+        case Pid::PLAY_UNTIL: return play_until();
+        case Pid::CONTINUE_AT: return continue_at();
+        case Pid::PLAY_REPEATS: return play_repeats();
         default: break;
     }
-    return TextBase::getProperty(propertyId);
+    return TextBase::get_property(property_id);
 }
 
 //---------------------------------------------------------
 //   setProperty
 //---------------------------------------------------------
 
-bool Jump::setProperty(Pid propertyId, const PropertyValue &v) {
-    switch (propertyId) {
-        case Pid::JUMP_TO: setJumpTo(v.value<String>()); break;
-        case Pid::PLAY_UNTIL: setPlayUntil(v.value<String>()); break;
-        case Pid::CONTINUE_AT: setContinueAt(v.value<String>()); break;
-        case Pid::PLAY_REPEATS: setPlayRepeats(v.toBool()); break;
+bool Jump::set_property(Pid property_id, const PropertyValue &v) {
+    switch (property_id) {
+        case Pid::JUMP_TO: set_jump_to(v.value<String>()); break;
+        case Pid::PLAY_UNTIL: set_play_until(v.value<String>()); break;
+        case Pid::CONTINUE_AT: set_continue_at(v.value<String>()); break;
+        case Pid::PLAY_REPEATS: set_play_repeats(v.to_bool()); break;
         default:
-            if (!TextBase::setProperty(propertyId, v)) {
+            if (!TextBase::set_property(property_id, v)) {
                 return false;
             }
             break;
     }
-    triggerLayout();
-    score()->invalidateRepeatList();
+    trigger_layout();
+    score()->invalidate_repeat_list();
     return true;
 }
 
@@ -144,8 +144,8 @@ bool Jump::setProperty(Pid propertyId, const PropertyValue &v) {
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Jump::propertyDefault(Pid propertyId) const {
-    switch (propertyId) {
+PropertyValue Jump::property_default(Pid property_id) const {
+    switch (property_id) {
         case Pid::JUMP_TO:
         case Pid::PLAY_UNTIL:
         case Pid::CONTINUE_AT: return String();
@@ -153,23 +153,23 @@ PropertyValue Jump::propertyDefault(Pid propertyId) const {
         case Pid::PLACEMENT: return PlacementV::ABOVE;
         default: break;
     }
-    return TextBase::propertyDefault(propertyId);
+    return TextBase::property_default(property_id);
 }
 
 //---------------------------------------------------------
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Jump::nextSegmentElement() {
+EngravingItem *Jump::next_segment_element() {
     Segment *seg = measure()->last();
-    return seg->firstElementForNavigation(staffIdx());
+    return seg->first_element_for_navigation(staff_idx());
 }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem *Jump::prevSegmentElement() { return nextSegmentElement(); }
+EngravingItem *Jump::prev_segment_element() { return next_segment_element(); }
 
 //---------------------------------------------------------
 //   accessibleInfo
@@ -179,5 +179,5 @@ EngravingItem *Jump::prevSegmentElement() { return nextSegmentElement(); }
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Jump::subtypeUserName() const { return TConv::userName(jumpType()); }
+muse::TranslatableString Jump::subtype_user_name() const { return TConv::user_name(jump_type()); }
 } // namespace mu::engraving

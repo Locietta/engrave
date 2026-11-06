@@ -47,26 +47,26 @@ public:
 
     Spacer *clone() const override { return new Spacer(*this); }
 
-    Measure *measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return to_measure(ownership_parent()); }
 
-    SpacerType spacerType() const { return spacerType_; }
+    SpacerType spacer_type() const { return spacer_type_; }
 
-    void setSpacerType(SpacerType t) { spacerType_ = t; }
+    void set_spacer_type(SpacerType t) { spacer_type_ = t; }
 
-    int subtype() const override { return int(spacerType_); }
+    int subtype() const override { return int(spacer_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    void setGap(Spatium sp);
+    void set_gap(Spatium sp);
 
     Spatium gap() const { return gap_; }
 
-    double absoluteGap() const { return absoluteFromSpatium(gap_); }
+    double absolute_gap() const { return absolute_from_spatium(gap_); }
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid id) const override;
-    void triggerLayout() const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid id) const override;
+    void trigger_layout() const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
         PainterPath path;
@@ -79,7 +79,7 @@ private:
     Spacer(DummyParentOr<Measure> parent);
     Spacer(const Spacer &);
 
-    SpacerType spacerType_ = SpacerType::UP;
+    SpacerType spacer_type_ = SpacerType::UP;
     Spatium gap_;
 };
 } // namespace mu::engraving

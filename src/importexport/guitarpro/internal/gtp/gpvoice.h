@@ -9,21 +9,21 @@ namespace mu::iex::guitarpro {
 class GPVoice {
 public:
 
-    void addGPBeat(const std::shared_ptr<GPBeat> &b) { _beats.push_back(b); }
+    void add_gp_beat(const std::shared_ptr<GPBeat> &b) { beats_value.push_back(b); }
 
-    void setId(int id) { _id = id; }
+    void set_id(int id) { id_value = id; }
 
-    void setPosition(int pos) { _pos = pos; }
+    void set_position(int pos) { pos_value = pos; }
 
-    int position() const { return _pos; }
+    int position() const { return pos_value; }
 
-    const std::vector<std::shared_ptr<GPBeat>> &beats() const { return _beats; }
+    const std::vector<std::shared_ptr<GPBeat>> &beats() const { return beats_value; }
 
 private:
 
-    int _id = -1; // imported id
-    int _pos = 0; // for defining correct track number
-    std::vector<std::shared_ptr<GPBeat>> _beats;
+    int id_value = -1; // imported id
+    int pos_value = 0; // for defining correct track number
+    std::vector<std::shared_ptr<GPBeat>> beats_value;
 };
 } // namespace mu::iex::guitarpro
 

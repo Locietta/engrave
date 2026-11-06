@@ -36,8 +36,8 @@ class WriteScoreHook {
 public:
     WriteScoreHook() = default;
 
-    void onWriteStyle302(Score *score, XmlWriter &xml, bool inlineStyle = false);
-    void onWriteExcerpts302(Score *score, XmlWriter &xml, write::WriteContext &ctx);
+    void on_write_style302(Score *score, XmlWriter &xml, bool inline_style = false);
+    void on_write_excerpts302(Score *score, XmlWriter &xml, write::WriteContext &ctx);
 };
 } // namespace mu::engraving::compat
 #endif // MU_ENGRAVING_WRITESCOREHOOK_H

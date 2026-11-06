@@ -80,13 +80,13 @@ constexpr bool operator&(ArticulationShowIn a1, ArticulationShowIn a2) {
     return static_cast<unsigned char>(a1) & static_cast<unsigned char>(a2);
 }
 
-enum class ArticulationsUpdateMode : unsigned char { Insert, Remove };
+enum class ArticulationsUpdateMode : unsigned char { INSERT, REMOVE };
 
-std::set<SymId> updateArticulations(const std::set<SymId> &articulationSymbolIds, SymId articulationSymbolId,
-                                    ArticulationsUpdateMode updateMode = ArticulationsUpdateMode::Insert);
-std::set<SymId> splitArticulations(const std::set<SymId> &articulationSymbolIds);
-std::set<SymId> joinArticulations(const std::set<SymId> &articulationSymbolIds);
-std::set<SymId> flipArticulations(const std::set<SymId> &articulationSymbolIds, PlacementV placement);
+std::set<SymId> update_articulations(const std::set<SymId> &articulation_symbol_ids, SymId articulation_symbol_id,
+                                     ArticulationsUpdateMode update_mode = ArticulationsUpdateMode::INSERT);
+std::set<SymId> split_articulations(const std::set<SymId> &articulation_symbol_ids);
+std::set<SymId> join_articulations(const std::set<SymId> &articulation_symbol_ids);
+std::set<SymId> flip_articulations(const std::set<SymId> &articulation_symbol_ids, PlacementV placement);
 
 //---------------------------------------------------------
 //   @@ Articulation
@@ -106,42 +106,42 @@ public:
 
     virtual double mag() const override;
 
-    SymId symId() const { return symId_; }
+    SymId sym_id() const { return sym_id_; }
 
-    void setSymId(SymId id);
+    void set_sym_id(SymId id);
     virtual int subtype() const override;
 
-    void setTextType(ArticulationTextType textType);
+    void set_text_type(ArticulationTextType text_type);
 
-    ArticulationTextType textType() const { return textType_; }
+    ArticulationTextType text_type() const { return text_type_; }
 
     Text *text() const { return text_; }
 
-    void setText(Text *t) { text_ = t; }
+    void set_text(Text *t) { text_ = t; }
 
-    void setSelected(bool f) override;
-    void setVisible(bool f) override;
+    void set_selected(bool f) override;
+    void set_visible(bool f) override;
 
-    TranslatableString typeUserName() const override;
-    TranslatableString subtypeUserName() const override;
-    String articulationName() const; // type-name of articulation; used for midi rendering
-    static String symId2ArticulationName(SymId symId);
+    TranslatableString type_user_name() const override;
+    TranslatableString subtype_user_name() const override;
+    String articulation_name() const; // type-name of articulation; used for midi rendering
+    static String sym_id2_articulation_name(SymId sym_id);
 
-    bool layoutCloseToNote() const;
+    bool layout_close_to_note() const;
 
-    bool isHiddenOnTabStaff() const;
+    bool is_hidden_on_tab_staff() const;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid) const override;
-    void resetProperty(Pid id) override;
-    Sid getPropertyStyle(Pid id) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid) const override;
+    void reset_property(Pid id) override;
+    Sid get_property_style(Pid id) const override;
 
-    void setDirection(DirectionV d) { direction_ = d; }
+    void set_direction(DirectionV d) { direction_ = d; }
 
     DirectionV direction() const { return direction_; }
 
-    ChordRest *chordRest() const;
+    ChordRest *chord_rest() const;
     Segment *segment() const;
     Measure *measure() const;
     System *system() const;
@@ -149,59 +149,59 @@ public:
 
     ArticulationAnchor anchor() const { return anchor_; }
 
-    void setAnchor(ArticulationAnchor v) { anchor_ = v; }
+    void set_anchor(ArticulationAnchor v) { anchor_ = v; }
 
-    OrnamentStyle ornamentStyle() const { return ornamentStyle_; }
+    OrnamentStyle ornament_style() const { return ornament_style_; }
 
-    void setOrnamentStyle(OrnamentStyle val) { ornamentStyle_ = val; }
+    void set_ornament_style(OrnamentStyle val) { ornament_style_ = val; }
 
-    bool playArticulation() const { return playArticulation_; }
+    bool play_articulation() const { return play_articulation_; }
 
-    void setPlayArticulation(bool val) { playArticulation_ = val; }
+    void set_play_articulation(bool val) { play_articulation_ = val; }
 
-    String channelName() const { return channelName_; }
+    String channel_name() const { return channel_name_; }
 
-    void setChannelName(const String &s) { channelName_ = s; }
+    void set_channel_name(const String &s) { channel_name_ = s; }
 
-    bool isDouble() const { return categories_ & ArticulationCategory::DOUBLE; }
+    bool is_double() const { return categories_ & ArticulationCategory::DOUBLE; }
 
-    bool isTenuto() const { return categories_ & ArticulationCategory::TENUTO; }
+    bool is_tenuto() const { return categories_ & ArticulationCategory::TENUTO; }
 
-    bool isStaccato() const { return categories_ & ArticulationCategory::STACCATO; }
+    bool is_staccato() const { return categories_ & ArticulationCategory::STACCATO; }
 
-    bool isAccent() const { return categories_ & ArticulationCategory::ACCENT; }
+    bool is_accent() const { return categories_ & ArticulationCategory::ACCENT; }
 
-    bool isMarcato() const { return categories_ & ArticulationCategory::MARCATO; }
+    bool is_marcato() const { return categories_ & ArticulationCategory::MARCATO; }
 
-    bool isLuteFingering() const { return categories_ & ArticulationCategory::LUTE_FINGERING; }
+    bool is_lute_fingering() const { return categories_ & ArticulationCategory::LUTE_FINGERING; }
 
-    bool isLaissezVib() const { return categories_ & ArticulationCategory::LAISSEZ_VIB; }
+    bool is_laissez_vib() const { return categories_ & ArticulationCategory::LAISSEZ_VIB; }
 
-    bool isHandbellsArticulation() const { return categories_ & ArticulationCategory::HANDBELLS; }
+    bool is_handbells_articulation() const { return categories_ & ArticulationCategory::HANDBELLS; }
 
-    bool isBasicArticulation() const;
+    bool is_basic_articulation() const;
 
-    void styleChanged() override;
+    void style_changed() override;
 
-    bool isOnCrossBeamSide() const;
+    bool is_on_cross_beam_side() const;
 
-    staff_idx_t vStaffIdx() const override;
+    staff_idx_t v_staff_idx() const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
         ld_field<bool> up = {"[Articulation] up", true};
-        ld_field<SymId> symId = {"[Articulation] symId", SymId::noSym};
+        ld_field<SymId> sym_id = {"[Articulation] symId", SymId::NO_SYM};
 
         void reset() override {
             EngravingItem::LayoutData::reset();
             up.reset();
-            symId.reset();
+            sym_id.reset();
         }
 
-        double opticalCenter() const;
+        double optical_center() const;
     };
     DECLARE_LAYOUTDATA_METHODS(Articulation)
 
-    void setUp(bool val);
+    void set_up(bool val);
 
     //! --- DEPRECATED ---
     bool up() const { return ldata()->up; }
@@ -214,28 +214,28 @@ protected:
 
 private:
 
-    void setupShowOnTabStyles();
+    void setup_show_on_tab_styles();
 
     enum class AnchorGroup : unsigned char { ARTICULATION, LUTE_FINGERING, OTHER };
-    static AnchorGroup anchorGroup(SymId);
+    static AnchorGroup anchor_group(SymId);
 
-    void computeCategories();
+    void compute_categories();
 
     ArticulationCategories categories_ = ArticulationCategory::NONE;
 
-    SymId symId_ = SymId::noSym;
+    SymId sym_id_ = SymId::NO_SYM;
     DirectionV direction_ = DirectionV::AUTO;
-    String channelName_;
+    String channel_name_;
 
-    ArticulationTextType textType_ = ArticulationTextType::NO_TEXT;
+    ArticulationTextType text_type_ = ArticulationTextType::NO_TEXT;
     Text *text_ = nullptr;
 
     ArticulationAnchor anchor_ = ArticulationAnchor::AUTO;
 
-    OrnamentStyle ornamentStyle_ = OrnamentStyle::DEFAULT; // for use in ornaments such as trill
-    bool playArticulation_ = true;
+    OrnamentStyle ornament_style_ = OrnamentStyle::DEFAULT; // for use in ornaments such as trill
+    bool play_articulation_ = true;
 
-    std::pair<Sid, Sid> showOnTabStyles_ = {Sid::NOSTYLE, Sid::NOSTYLE};
+    std::pair<Sid, Sid> show_on_tab_styles_ = {Sid::NOSTYLE, Sid::NOSTYLE};
 };
 } // namespace mu::engraving
 

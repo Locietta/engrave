@@ -65,7 +65,7 @@ public:
     ObjectAllocator(const char *module, const char *name, destroyer_t dtor);
     ~ObjectAllocator();
 
-    static size_t DEFAULT_BLOCK_SIZE;
+    static size_t default_block_size;
 
     const char *module() const;
     const char *name() const;
@@ -85,20 +85,20 @@ public:
     struct Info {
         std::string module;
         std::string name;
-        size_t chunkSize = 0;
-        size_t blockCount = 0;
-        size_t totalChunks = 0;
-        size_t freeChunks = 0;
+        size_t chunk_size = 0;
+        size_t block_count = 0;
+        size_t total_chunks = 0;
+        size_t free_chunks = 0;
 
-        uint64_t totalAllocatedCount = 0;
-        uint64_t totalFreeCount = 0;
+        uint64_t total_allocated_count = 0;
+        uint64_t total_free_count = 0;
 
-        uint64_t usedChunks() const { return totalChunks - freeChunks; }
+        uint64_t used_chunks() const { return total_chunks - free_chunks; }
 
-        uint64_t allocatedBytes() const { return totalChunks * chunkSize; }
+        uint64_t allocated_bytes() const { return total_chunks * chunk_size; }
     };
 
-    Info stateInfo() const;
+    Info state_info() const;
 
     static bool enabled() { return s_used; }
 
@@ -121,22 +121,22 @@ private:
 
     struct Block {
         Chunk *begin = nullptr;
-        size_t chunkCount = 0;
-        size_t chunkSize = 0;
+        size_t chunk_count = 0;
+        size_t chunk_size = 0;
     };
 
-    Block allocateBlock(size_t chunkSize) const;
+    Block allocate_block(size_t chunk_size) const;
 
     const char *module_ = nullptr;
     const char *name_ = nullptr;
-    size_t chunkSize_ = 0;
+    size_t chunk_size_ = 0;
     destroyer_t dtor_ = nullptr;
     Chunk *free_ = nullptr;
     std::vector<Block> blocks_;
 
     struct Statistic {
-        uint64_t totalAllocatedCount = 0;
-        uint64_t totalFreeCount = 0;
+        uint64_t total_allocated_count = 0;
+        uint64_t total_free_count = 0;
     };
 
     Statistic statistic_;
@@ -153,10 +153,10 @@ public:
     void reg(ObjectAllocator *a);
     void unreg(ObjectAllocator *a);
 
-    void cleanupAll(const std::string &module);
+    void cleanup_all(const std::string &module);
 
-    void printStatistic(const std::string &title);
-    void printState(const std::string &title);
+    void print_statistic(const std::string &title);
+    void print_state(const std::string &title);
 
 private:
     std::list<ObjectAllocator *> allocators_;

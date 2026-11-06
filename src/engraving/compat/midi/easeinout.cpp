@@ -46,10 +46,10 @@ namespace mu::engraving {
 // transfer curve. The code could be simplified because the Bezier curve is constrained as a well
 // defined transfer function. It is not suitable for general or arbitrary Bezier curve work. -YP
 //-------------------------------------------------------------------------------------------------
-double EaseInOut::tFromX(const double x) const {
+double EaseInOut::t_from_x(const double x) const {
     const double pi = 3.14159265358979323846;
-    double w1 = easeIn_ - x;
-    double w2 = 1.0 - easeOut_ - x;
+    double w1 = ease_in_ - x;
+    double w2 = 1.0 - ease_out_ - x;
     double d = x + 3.0 * w1 - 3.0 * w2 + (1.0 - x);
     double a = (-3.0 * x - 6.0 * w1 + 3 * w2) / d;
     double b = (3.0 * x + 3.0 * w1) / d;
@@ -60,7 +60,7 @@ double EaseInOut::tFromX(const double x) const {
     double discr = (q * q) / 4.0 + (p * p * p) / 27.0;
     double t = 0.0;
     // Crazy idea to first test the least probable case with such an expensive test but...
-    if (muse::RealIsNull(discr)) {
+    if (muse::real_is_null(discr)) {
         // Case that happens extremely rarely --> 2 roots.
         double q2 = q / 2.0;
         double u = q2 < 0.0 ? std::pow(-q2, 1.0 / 3.0) : -std::pow(q2, 1.0 / 3.0);
@@ -99,22 +99,22 @@ double EaseInOut::tFromX(const double x) const {
 // constant. Thus, when computing the Y root there is only one case and the math simplifies to the
 // following simple expression.
 //-------------------------------------------------------------------------------------------------
-double EaseInOut::tFromY(const double y) const { return 0.5 + std::cos((4.0 * M_PI + std::acos(1.0 - 2.0 * y)) / 3.0); }
+double EaseInOut::t_from_y(const double y) const { return 0.5 + std::cos((4.0 * M_PI + std::acos(1.0 - 2.0 * y)) / 3.0); }
 
 //-------------------------------------------------------------------------------------------------
 // Given a number of note to place within the given duration, return the list of on-times for each
 // note given the current ease-in and ease-out parameters. The first note is at time 0 while the
 //-------------------------------------------------------------------------------------------------
-void EaseInOut::timeList(const int nbNotes, const int duration, std::vector<int> *times) const {
-    double nNotes = double(nbNotes);
+void EaseInOut::time_list(const int nb_notes, const int duration, std::vector<int> *times) const {
+    double n_notes = double(nb_notes);
     double space = double(duration);
-    if (RealIsNull(easeIn_) && RealIsNull(easeOut_)) {
-        for (int n = 0; n <= nbNotes; n++) {
-            times->push_back(static_cast<int>(std::lround((static_cast<double>(n) / nNotes) * space)));
+    if (real_is_null(ease_in_) && real_is_null(ease_out_)) {
+        for (int n = 0; n <= nb_notes; n++) {
+            times->push_back(static_cast<int>(std::lround((static_cast<double>(n) / n_notes) * space)));
         }
     } else {
-        for (int n = 0; n <= nbNotes; n++) {
-            times->push_back(static_cast<int>(std::lround(XfromY(static_cast<double>(n) / nNotes) * space)));
+        for (int n = 0; n <= nb_notes; n++) {
+            times->push_back(static_cast<int>(std::lround(xfrom_y(static_cast<double>(n) / n_notes) * space)));
         }
     }
 }

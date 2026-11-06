@@ -29,25 +29,25 @@ namespace mu::engraving::rendering::score {
 class Autoplace {
 public:
 
-    static void autoplaceSegmentElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);
-    static void autoplaceMeasureElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);
+    static void autoplace_segment_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);
+    static void autoplace_measure_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);
 
-    static void autoplaceSegmentElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool add = true) {
-        autoplaceSegmentElement(item, ldata, item->placeAbove(), add);
+    static void autoplace_segment_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool add = true) {
+        autoplace_segment_element(item, ldata, item->place_above(), add);
     }
 
-    static void autoplaceMeasureElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool add = true) {
-        autoplaceMeasureElement(item, ldata, item->placeAbove(), add);
+    static void autoplace_measure_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool add = true) {
+        autoplace_measure_element(item, ldata, item->place_above(), add);
     }
 
-    static void autoplaceSpannerSegment(const SpannerSegment *item, SpannerSegment::LayoutData *ldata);
+    static void autoplace_spanner_segment(const SpannerSegment *item, SpannerSegment::LayoutData *ldata);
 
-    static double distanceToMoveItem(const EngravingItem *item, const SkylineLine &staffSkyline, const Shape &shape, bool above,
-                                     double minSkylineHorizontalClearance, double minDistance);
+    static double distance_to_move_item(const EngravingItem *item, const SkylineLine &staff_skyline, const Shape &shape, bool above,
+                                        double min_skyline_horizontal_clearance, double min_distance);
 
-    static void doAutoplaceElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, const System *system, bool above, bool add,
-                                   double minSkylineHorizontalClearance, double spatium);
+    static void do_autoplace_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, const System *system, bool above,
+                                     bool add, double min_skyline_horizontal_clearance, double spatium);
 
-    static bool itemsShouldIgnoreEachOther(const EngravingItem *itemToAutoplace, const EngravingItem *itemInSkyline);
+    static bool items_should_ignore_each_other(const EngravingItem *item_to_autoplace, const EngravingItem *item_in_skyline);
 };
 } // namespace mu::engraving::rendering::score

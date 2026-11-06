@@ -40,10 +40,10 @@ static muse::testing::SuiteEnvironment
     mnx_se({new muse::draw::DrawModule(), new mu::engraving::EngravingModule(), new mu::iex::mnxio::MnxModule()}, nullptr, []() {
         LOGI() << "mnx tests suite post init";
 
-        mu::engraving::ScoreRW::setRootPath(muse::String::fromUtf8(iex_mnx_tests_DATA_ROOT));
+        mu::engraving::ScoreRW::set_root_path(muse::String::from_utf8(iex_mnx_tests_DATA_ROOT));
 
-        mu::engraving::MScore::testMode = true;
-        mu::engraving::MScore::noGui = true;
+        mu::engraving::MScore::test_mode = true;
+        mu::engraving::MScore::no_gui = true;
 
-        loadInstrumentTemplates(":/engraving/instruments/instruments.xml");
+        load_instrument_templates(":/engraving/instruments/instruments.xml");
     });

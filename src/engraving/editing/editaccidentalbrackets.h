@@ -28,7 +28,7 @@ class Transaction;
 
 class EditAccidentalBrackets {
 public:
-    static void addBracket(Transaction &tx, Score *score);
-    static void addBraces(Transaction &tx, Score *score);
+    static void add_bracket(Transaction &tx, Score *score);
+    static void add_braces(Transaction &tx, Score *score);
 };
 } // namespace mu::engraving

@@ -31,15 +31,15 @@ class ChangeClefType : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeClefType)
 
     Clef *clef = nullptr;
-    ClefType concertClef;
-    ClefType transposingClef;
+    ClefType concert_clef;
+    ClefType transposing_clef;
 
     void flip() override;
 
 public:
     ChangeClefType(Clef *, ClefType cl, ClefType tc);
 
-    UNDO_TYPE(CommandType::ChangeClefType)
+    UNDO_TYPE(CommandType::CHANGE_CLEF_TYPE)
     UNDO_NAME("ChangeClef")
     UNDO_CHANGED_OBJECTS({clef})
 };
@@ -52,10 +52,10 @@ class Transaction;
 
 class EditClef {
 public:
-    static bool canInsertClef(const Score *score, ClefType type);
-    static void insertClef(Transaction &tx, Score *score, ClefType type);
-    static void insertClef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr);
-    static void undoChangeClef(Transaction &tx, Score *score, Staff *ostaff, EngravingItem *e, ClefType ct,
-                               bool forInstrumentChange = false, Clef *clefToRelink = nullptr);
+    static bool can_insert_clef(const Score *score, ClefType type);
+    static void insert_clef(Transaction &tx, Score *score, ClefType type);
+    static void insert_clef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr);
+    static void undo_change_clef(Transaction &tx, Score *score, Staff *ostaff, EngravingItem *e, ClefType ct,
+                                 bool for_instrument_change = false, Clef *clef_to_relink = nullptr);
 };
 } // namespace mu::engraving

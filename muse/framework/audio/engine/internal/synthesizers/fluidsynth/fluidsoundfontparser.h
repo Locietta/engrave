@@ -30,7 +30,7 @@
 namespace muse::audio::synth {
 class FluidSoundFontParser {
 public:
-    static RetVal<SoundFontMeta> parseSoundFont(const SoundFontPath &path);
+    static RetVal<SoundFontMeta> parse_sound_font(const SoundFontPath &path);
 };
 } // namespace muse::audio::synth
 

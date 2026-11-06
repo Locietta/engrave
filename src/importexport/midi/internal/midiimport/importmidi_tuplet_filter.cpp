@@ -31,24 +31,24 @@
 #include <set>
 
 namespace mu::iex::midi { namespace MidiTuplet {
-bool isMoreTupletVoicesAllowed(int voicesInUse, int availableVoices) {
-    return !(voicesInUse >= availableVoices || voicesInUse >= tupletVoiceLimit());
+bool is_more_tuplet_voices_allowed(int voices_in_use, int available_voices) {
+    return !(voices_in_use >= available_voices || voices_in_use >= tuplet_voice_limit());
 }
 
 class TupletErrorResult {
 public:
-    TupletErrorResult(double t = 0.0, double relPlaces = 0.0, const ReducedFraction &r = ReducedFraction(0, 1), size_t vc = 0,
+    TupletErrorResult(double t = 0.0, double rel_places = 0.0, const ReducedFraction &r = ReducedFraction(0, 1), size_t vc = 0,
                       size_t tc = 0)
-        : tupletAverageError(t), relativeUsedChordPlaces(relPlaces), sumLengthOfRests(r), voiceCount(vc), tupletCount(tc) {}
+        : tuplet_average_error(t), relative_used_chord_places(rel_places), sum_length_of_rests(r), voice_count(vc), tuplet_count(tc) {}
 
-    bool isInitialized() const { return tupletCount != 0; }
+    bool is_initialized() const { return tuplet_count != 0; }
 
     bool operator<(const TupletErrorResult &er) const {
-        double value = div(tupletAverageError, er.tupletAverageError) - div(relativeUsedChordPlaces, er.relativeUsedChordPlaces) +
-                       div(sumLengthOfRests.numerator() * 1.0 / sumLengthOfRests.denominator(),
-                           er.sumLengthOfRests.numerator() * 1.0 / er.sumLengthOfRests.denominator());
+        double value = div(tuplet_average_error, er.tuplet_average_error) - div(relative_used_chord_places, er.relative_used_chord_places) +
+                       div(sum_length_of_rests.numerator() * 1.0 / sum_length_of_rests.denominator(),
+                           er.sum_length_of_rests.numerator() * 1.0 / er.sum_length_of_rests.denominator());
         if (value == 0) {
-            value = div(voiceCount, er.voiceCount) + div(tupletCount, er.tupletCount);
+            value = div(voice_count, er.voice_count) + div(tuplet_count, er.tuplet_count);
         }
         return value < 0;
     }
@@ -61,23 +61,23 @@ private:
         return (val1 - val2) / std::max(val1, val2);
     }
 
-    double tupletAverageError;
-    double relativeUsedChordPlaces;
-    ReducedFraction sumLengthOfRests;
-    size_t voiceCount;
-    size_t tupletCount;
+    double tuplet_average_error;
+    double relative_used_chord_places;
+    ReducedFraction sum_length_of_rests;
+    size_t voice_count;
+    size_t tuplet_count;
 };
 
-bool haveCommonChords(int i, int j, const std::vector<TupletInfo> &tuplets) {
+bool have_common_chords(int i, int j, const std::vector<TupletInfo> &tuplets) {
     if (tuplets.empty()) {
         return false;
     }
-    std::set<std::pair<const ReducedFraction, MidiChord> *> usedChords;
+    std::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
     for (const auto &chord : tuplets[i].chords) {
-        usedChords.insert(&*chord.second);
+        used_chords.insert(&*chord.second);
     }
     for (const auto &chord : tuplets[j].chords) {
-        if (usedChords.find(&*chord.second) != usedChords.end()) {
+        if (used_chords.find(&*chord.second) != used_chords.end()) {
             return true;
         }
     }
@@ -87,11 +87,11 @@ bool haveCommonChords(int i, int j, const std::vector<TupletInfo> &tuplets) {
 // remove overlapping tuplets with the same tuplet number
 // when tuplet with bigger length contains the same notes
 
-void removeUselessTuplets(std::vector<TupletInfo> &tuplets) {
+void remove_useless_tuplets(std::vector<TupletInfo> &tuplets) {
     struct {
         bool operator()(const TupletInfo &t1, const TupletInfo &t2) {
-            if (t1.tupletNumber != t2.tupletNumber) {
-                return t1.tupletNumber < t2.tupletNumber;
+            if (t1.tuplet_number != t2.tuplet_number) {
+                return t1.tuplet_number < t2.tuplet_number;
             }
             return t1.len < t2.len;
         }
@@ -102,16 +102,16 @@ void removeUselessTuplets(std::vector<TupletInfo> &tuplets) {
     size_t beg = 0;
     while (beg < tuplets.size()) {
         size_t end = beg + 1;
-        while (tuplets.size() > end && tuplets[end].tupletNumber == tuplets[beg].tupletNumber) {
+        while (tuplets.size() > end && tuplets[end].tuplet_number == tuplets[beg].tuplet_number) {
             ++end;
         }
         for (size_t i = beg; i < end - 1; ++i) {
             const auto &t1 = tuplets[i];
             for (size_t j = i + 1; j < end; ++j) {
                 const auto &t2 = tuplets[j];
-                if (t1.onTime >= t2.onTime && t1.onTime + t1.len <= t2.onTime + t2.len) {
+                if (t1.on_time >= t2.on_time && t1.on_time + t1.len <= t2.on_time + t2.len) {
                     // check onTimes
-                    if (t2.chords.rbegin()->first < t1.onTime + t1.len && t2.chords.begin()->first >= t1.onTime) {
+                    if (t2.chords.rbegin()->first < t1.on_time + t1.len && t2.chords.begin()->first >= t1.on_time) {
                         // remove larger tuplet
                         tuplets.erase(tuplets.begin() + j);
                         --j;
@@ -124,29 +124,29 @@ void removeUselessTuplets(std::vector<TupletInfo> &tuplets) {
     }
 }
 
-std::set<int> findLongestUncommonGroup(const std::vector<TupletInfo> &tuplets, const ReducedFraction &basicQuant) {
+std::set<int> find_longest_uncommon_group(const std::vector<TupletInfo> &tuplets, const ReducedFraction &basic_quant) {
     struct TInfo {
         bool operator<(const TInfo &other) const {
-            if (offTime < other.offTime) {
+            if (off_time < other.off_time) {
                 return true;
-            } else if (offTime > other.offTime) {
+            } else if (off_time > other.off_time) {
                 return false;
             } else {
-                return onTime > other.onTime;
+                return on_time > other.on_time;
             }
         }
 
-        bool operator==(const TInfo &other) const { return offTime == other.offTime; }
+        bool operator==(const TInfo &other) const { return off_time == other.off_time; }
 
-        ReducedFraction onTime;
-        ReducedFraction offTime;
+        ReducedFraction on_time;
+        ReducedFraction off_time;
         int index;
     };
 
     std::vector<TInfo> info;
     for (size_t i = 0; i != tuplets.size(); ++i) {
         const auto &tuplet = tuplets[i];
-        const auto interval = tupletInterval(tuplet, basicQuant);
+        const auto interval = tuplet_interval(tuplet, basic_quant);
         info.push_back({interval.first, interval.second, static_cast<int>(i)});
     }
 
@@ -158,15 +158,15 @@ std::set<int> findLongestUncommonGroup(const std::vector<TupletInfo> &tuplets, c
     // non-overlapping tuplets can have common chords
 
     std::set<int> indexes;
-    size_t lastSelected = 0;
+    size_t last_selected = 0;
     for (size_t i = 0; i != info.size(); ++i) {
-        if (i > 0 && info[i].onTime < info[lastSelected].offTime) {
+        if (i > 0 && info[i].on_time < info[last_selected].off_time) {
             continue;
         }
-        if (haveCommonChords(info[lastSelected].index, info[i].index, tuplets)) {
+        if (have_common_chords(info[last_selected].index, info[i].index, tuplets)) {
             continue;
         }
-        lastSelected = i;
+        last_selected = i;
         indexes.insert(info[i].index);
     }
 
@@ -175,17 +175,17 @@ std::set<int> findLongestUncommonGroup(const std::vector<TupletInfo> &tuplets, c
 
 struct TupletCommon {
     // indexes of tuplets that have common chords with the tuplet with tupletIndex
-    std::set<int> commonIndexes;
+    std::set<int> common_indexes;
 };
 
-bool areInCommons(const TupletInfo &t1, const TupletInfo &t2) {
+bool are_in_commons(const TupletInfo &t1, const TupletInfo &t2) {
     for (auto it1 = t1.chords.begin(); it1 != t1.chords.end(); ++it1) {
         for (auto it2 = t2.chords.begin(); it2 != t2.chords.end(); ++it2) {
             if (&*it1->second != &*it2->second) {
                 continue;
             }
-            if (t1.firstChordIndex != 0 || t2.firstChordIndex != 0 || it1 != t1.chords.begin() || it2 != t2.chords.begin() ||
-                !isMoreTupletVoicesAllowed(1, it1->second->second.notes.size())) {
+            if (t1.first_chord_index != 0 || t2.first_chord_index != 0 || it1 != t1.chords.begin() || it2 != t2.chords.begin() ||
+                !is_more_tuplet_voices_allowed(1, it1->second->second.notes.size())) {
                 return true;
             }
         }
@@ -193,34 +193,34 @@ bool areInCommons(const TupletInfo &t1, const TupletInfo &t2) {
     return false;
 }
 
-std::vector<TupletCommon> findTupletCommons(const std::vector<TupletInfo> &tuplets) {
-    std::vector<TupletCommon> tupletCommons(tuplets.size());
+std::vector<TupletCommon> find_tuplet_commons(const std::vector<TupletInfo> &tuplets) {
+    std::vector<TupletCommon> tuplet_commons(tuplets.size());
 
     for (size_t i = 0; i != tuplets.size() - 1; ++i) {
         for (size_t j = i + 1; j != tuplets.size(); ++j) {
-            if (areInCommons(tuplets[i], tuplets[j])) {
-                tupletCommons[i].commonIndexes.insert(int(j));
+            if (are_in_commons(tuplets[i], tuplets[j])) {
+                tuplet_commons[i].common_indexes.insert(int(j));
             }
         }
     }
-    return tupletCommons;
+    return tuplet_commons;
 }
 
-bool isInCommonIndexes(int indexToCheck, const std::vector<int> &selectedTuplets, const std::vector<TupletCommon> &tupletCommons) {
-    for (size_t i = 0; i != selectedTuplets.size(); ++i) {
-        const int tupletIndex = selectedTuplets[i];
+bool is_in_common_indexes(int index_to_check, const std::vector<int> &selected_tuplets, const std::vector<TupletCommon> &tuplet_commons) {
+    for (size_t i = 0; i != selected_tuplets.size(); ++i) {
+        const int tuplet_index = selected_tuplets[i];
 
-        Q_ASSERT_X(indexToCheck != tupletIndex, "MidiTuplet::isInCommonIndexes",
+        Q_ASSERT_X(index_to_check != tuplet_index, "MidiTuplet::isInCommonIndexes",
                    "Checked indexes are the same but they should be different");
 
-        if (indexToCheck > tupletIndex) {
-            const auto &indexes = tupletCommons[tupletIndex].commonIndexes;
-            if (indexes.find(indexToCheck) != indexes.end()) {
+        if (index_to_check > tuplet_index) {
+            const auto &indexes = tuplet_commons[tuplet_index].common_indexes;
+            if (indexes.find(index_to_check) != indexes.end()) {
                 return true;
             }
         } else {
-            const auto &indexes = tupletCommons[indexToCheck].commonIndexes;
-            if (indexes.find(tupletIndex) != indexes.end()) {
+            const auto &indexes = tuplet_commons[index_to_check].common_indexes;
+            if (indexes.find(tuplet_index) != indexes.end()) {
                 return true;
             }
         }
@@ -228,51 +228,51 @@ bool isInCommonIndexes(int indexToCheck, const std::vector<int> &selectedTuplets
     return false;
 }
 
-TupletErrorResult findTupletError(const std::vector<int> &tupletIndexes, const std::vector<TupletInfo> &tuplets, size_t voiceCount,
-                                  const ReducedFraction &basicQuant) {
-    ReducedFraction sumError{0, 1};
-    ReducedFraction sumLengthOfRests{0, 1};
-    size_t sumChordCount = 0;
-    int sumChordPlaces = 0;
-    std::set<std::pair<const ReducedFraction, MidiChord> *> usedChords;
-    std::vector<char> usedIndexes(tuplets.size(), 0);
+TupletErrorResult find_tuplet_error(const std::vector<int> &tuplet_indexes, const std::vector<TupletInfo> &tuplets, size_t voice_count,
+                                    const ReducedFraction &basic_quant) {
+    ReducedFraction sum_error{0, 1};
+    ReducedFraction sum_length_of_rests{0, 1};
+    size_t sum_chord_count = 0;
+    int sum_chord_places = 0;
+    std::set<std::pair<const ReducedFraction, MidiChord> *> used_chords;
+    std::vector<char> used_indexes(tuplets.size(), 0);
 
-    for (int i : tupletIndexes) {
+    for (int i : tuplet_indexes) {
         const auto &tuplet = tuplets[i];
 
-        sumError += tuplet.tupletSumError;
-        sumLengthOfRests += tuplet.sumLengthOfRests;
-        sumChordCount += tuplet.chords.size();
-        sumChordPlaces += tuplet.tupletNumber;
+        sum_error += tuplet.tuplet_sum_error;
+        sum_length_of_rests += tuplet.sum_length_of_rests;
+        sum_chord_count += tuplet.chords.size();
+        sum_chord_places += tuplet.tuplet_number;
 
-        usedIndexes[i] = 1;
+        used_indexes[i] = 1;
         for (const auto &chord : tuplet.chords) {
-            usedChords.insert(&*chord.second);
+            used_chords.insert(&*chord.second);
         }
     }
     // add quant error of all chords excluded from tuplets
     for (size_t i = 0; i != tuplets.size(); ++i) {
-        if (usedIndexes[i]) {
+        if (used_indexes[i]) {
             continue;
         }
         const auto &tuplet = tuplets[i];
         for (const auto &chord : tuplet.chords) {
-            if (usedChords.find(&*chord.second) != usedChords.end()) {
+            if (used_chords.find(&*chord.second) != used_chords.end()) {
                 continue;
             }
-            sumError += Quantize::findOnTimeQuantError(*chord.second, basicQuant);
+            sum_error += Quantize::find_on_time_quant_error(*chord.second, basic_quant);
         }
     }
 
-    return TupletErrorResult{sumError.numerator() * 1.0 / (sumError.denominator() * sumChordCount), sumChordCount * 1.0 / sumChordPlaces,
-                             sumLengthOfRests, voiceCount, tupletIndexes.size()};
+    return TupletErrorResult{sum_error.numerator() * 1.0 / (sum_error.denominator() * sum_chord_count),
+                             sum_chord_count * 1.0 / sum_chord_places, sum_length_of_rests, voice_count, tuplet_indexes.size()};
 }
 
 #ifndef NDEBUG
 
-bool areCommonsDifferent(const std::vector<int> &selectedCommons) {
+bool are_commons_different(const std::vector<int> &selected_commons) {
     std::set<int> commons;
-    for (int i : selectedCommons) {
+    for (int i : selected_commons) {
         if (commons.find(i) != commons.end()) {
             return false;
         }
@@ -281,14 +281,14 @@ bool areCommonsDifferent(const std::vector<int> &selectedCommons) {
     return true;
 }
 
-bool areCommonsUncommon(const std::vector<int> &selectedCommons, const std::vector<TupletCommon> &tupletCommons) {
+bool are_commons_uncommon(const std::vector<int> &selected_commons, const std::vector<TupletCommon> &tuplet_commons) {
     std::set<int> commons;
-    for (int i : selectedCommons) {
-        for (int j : tupletCommons[i].commonIndexes) {
+    for (int i : selected_commons) {
+        for (int j : tuplet_commons[i].common_indexes) {
             commons.insert(j);
         }
     }
-    for (int i : selectedCommons) {
+    for (int i : selected_commons) {
         if (commons.find(i) != commons.end()) {
             return false;
         }
@@ -298,12 +298,12 @@ bool areCommonsUncommon(const std::vector<int> &selectedCommons, const std::vect
 
 #endif
 
-int findAvailableVoice(size_t tupletIndex, const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tupletIntervals,
-                       const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voiceIntervals) {
+int find_available_voice(size_t tuplet_index, const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals,
+                         const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals) {
     int voice = 0;
     while (true) {
-        const auto it = voiceIntervals.find(voice);
-        if (it != voiceIntervals.end() && haveIntersection(tupletIntervals[tupletIndex], it->second)) {
+        const auto it = voice_intervals.find(voice);
+        if (it != voice_intervals.end() && have_intersection(tuplet_intervals[tuplet_index], it->second)) {
             ++voice;
             continue;
         }
@@ -313,55 +313,55 @@ int findAvailableVoice(size_t tupletIndex, const std::vector<std::pair<ReducedFr
     return voice;
 }
 
-std::map<std::pair<const ReducedFraction, MidiChord> *, int> prepareUsedFirstChords(const std::vector<int> &selectedTuplets,
-                                                                                    const std::vector<TupletInfo> &tuplets) {
-    std::map<std::pair<const ReducedFraction, MidiChord> *, int> usedFirstChords;
-    for (int i : selectedTuplets) {
-        if (tuplets[i].firstChordIndex != 0) {
+std::map<std::pair<const ReducedFraction, MidiChord> *, int> prepare_used_first_chords(const std::vector<int> &selected_tuplets,
+                                                                                       const std::vector<TupletInfo> &tuplets) {
+    std::map<std::pair<const ReducedFraction, MidiChord> *, int> used_first_chords;
+    for (int i : selected_tuplets) {
+        if (tuplets[i].first_chord_index != 0) {
             continue;
         }
-        const auto firstChord = tuplets[i].chords.begin();
-        const auto it = usedFirstChords.find(&*firstChord->second);
-        if (it != usedFirstChords.end()) {
+        const auto first_chord = tuplets[i].chords.begin();
+        const auto it = used_first_chords.find(&*first_chord->second);
+        if (it != used_first_chords.end()) {
             ++(it->second);
         } else {
-            usedFirstChords.insert({&*firstChord->second, 1});
+            used_first_chords.insert({&*first_chord->second, 1});
         }
     }
 
-    return usedFirstChords;
+    return used_first_chords;
 }
 
-std::vector<int> findUnusedIndexes(const std::vector<int> &selectedTuplets) {
-    std::vector<int> unusedIndexes;
+std::vector<int> find_unused_indexes(const std::vector<int> &selected_tuplets) {
+    std::vector<int> unused_indexes;
     int k = 0;
-    for (int i = 0; i != selectedTuplets.back(); ++i) {
-        if (i == selectedTuplets[k]) {
+    for (int i = 0; i != selected_tuplets.back(); ++i) {
+        if (i == selected_tuplets[k]) {
             ++k;
             continue;
         }
-        unusedIndexes.push_back(i);
+        unused_indexes.push_back(i);
     }
-    return unusedIndexes;
+    return unused_indexes;
 }
 
-bool canUseIndex(int indexToCheck, const std::vector<TupletInfo> &tuplets,
-                 const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tupletIntervals,
-                 const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voiceIntervals,
-                 const std::map<std::pair<const ReducedFraction, MidiChord> *, int> &usedFirstChords) {
-    const auto &tuplet = tuplets[indexToCheck];
+bool can_use_index(int index_to_check, const std::vector<TupletInfo> &tuplets,
+                   const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals,
+                   const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
+                   const std::map<std::pair<const ReducedFraction, MidiChord> *, int> &used_first_chords) {
+    const auto &tuplet = tuplets[index_to_check];
     // check tuplets for common 1st chord
-    if (tuplet.firstChordIndex == 0) {
-        const auto firstChord = tuplet.chords.begin();
-        const auto it = usedFirstChords.find(&*firstChord->second);
-        if (it != usedFirstChords.end() && !isMoreTupletVoicesAllowed(it->second, it->first->second.notes.size())) {
+    if (tuplet.first_chord_index == 0) {
+        const auto first_chord = tuplet.chords.begin();
+        const auto it = used_first_chords.find(&*first_chord->second);
+        if (it != used_first_chords.end() && !is_more_tuplet_voices_allowed(it->second, it->first->second.notes.size())) {
             return false;
         }
     }
     // check tuplets for resulting voice count
-    const int voice = findAvailableVoice(indexToCheck, tupletIntervals, voiceIntervals);
-    const int voiceCount = std::max((int) voiceIntervals.size(), voice + 1); // index + 1 = count
-    if (voiceCount > 1 && (int) tuplet.chords.size() < tupletLimits(tuplet.tupletNumber).minNoteCountAddVoice) {
+    const int voice = find_available_voice(index_to_check, tuplet_intervals, voice_intervals);
+    const int voice_count = std::max((int) voice_intervals.size(), voice + 1); // index + 1 = count
+    if (voice_count > 1 && (int) tuplet.chords.size() < tuplet_limits(tuplet.tuplet_number).min_note_count_add_voice) {
         return false;
     }
     return true;
@@ -369,7 +369,7 @@ bool canUseIndex(int indexToCheck, const std::vector<TupletInfo> &tuplets,
 
 #ifndef NDEBUG
 
-bool areTupletChordsEmpty(const std::vector<TupletInfo> &tuplets) {
+bool are_tuplet_chords_empty(const std::vector<TupletInfo> &tuplets) {
     for (const auto &tuplet : tuplets) {
         if (tuplet.chords.empty()) {
             return true;
@@ -379,22 +379,22 @@ bool areTupletChordsEmpty(const std::vector<TupletInfo> &tuplets) {
 }
 
 template <typename Iter>
-bool validateSelectedTuplets(Iter beginIt, Iter endIt, const std::vector<TupletInfo> &tuplets) {
+bool validate_selected_tuplets(Iter begin_it, Iter end_it, const std::vector<TupletInfo> &tuplets) {
     // <chord address, used voices>
-    std::map<std::pair<const ReducedFraction, MidiChord> *, size_t> usedChords;
-    for (auto indexIt = beginIt; indexIt != endIt; ++indexIt) {
-        const auto &tuplet = tuplets[*indexIt];
+    std::map<std::pair<const ReducedFraction, MidiChord> *, size_t> used_chords;
+    for (auto index_it = begin_it; index_it != end_it; ++index_it) {
+        const auto &tuplet = tuplets[*index_it];
         const auto &chords = tuplet.chords;
         for (auto it = chords.begin(); it != chords.end(); ++it) {
-            bool isFirstChord = (tuplet.firstChordIndex == 0 && it == tuplet.chords.begin());
-            const auto fit = usedChords.find(&*(it->second));
-            if (fit == usedChords.end()) {
-                usedChords.insert({&*(it->second), isFirstChord ? 1 : engraving::VOICES});
+            bool is_first_chord = (tuplet.first_chord_index == 0 && it == tuplet.chords.begin());
+            const auto fit = used_chords.find(&*(it->second));
+            if (fit == used_chords.end()) {
+                used_chords.insert({&*(it->second), is_first_chord ? 1 : engraving::voices});
             } else {
-                if (!isFirstChord) {
+                if (!is_first_chord) {
                     return false;
                 }
-                if (!isMoreTupletVoicesAllowed(static_cast<int>(fit->second), it->second->second.notes.size())) {
+                if (!is_more_tuplet_voices_allowed(static_cast<int>(fit->second), it->second->second.notes.size())) {
                     return false;
                 }
                 ++(fit->second);
@@ -406,33 +406,33 @@ bool validateSelectedTuplets(Iter beginIt, Iter endIt, const std::vector<TupletI
 
 #endif
 
-void tryUpdateBestIndexes(std::vector<int> &bestTupletIndexes, TupletErrorResult &minCurrentError, const std::vector<int> &selectedTuplets,
-                          const std::vector<TupletInfo> &tuplets,
-                          const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voiceIntervals,
-                          const ReducedFraction &basicQuant) {
-    const size_t voiceCount = voiceIntervals.size();
-    const auto error = findTupletError(selectedTuplets, tuplets, voiceCount, basicQuant);
-    if (!minCurrentError.isInitialized() || error < minCurrentError) {
-        minCurrentError = error;
-        bestTupletIndexes = selectedTuplets;
+void try_update_best_indexes(std::vector<int> &best_tuplet_indexes, TupletErrorResult &min_current_error,
+                             const std::vector<int> &selected_tuplets, const std::vector<TupletInfo> &tuplets,
+                             const std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &voice_intervals,
+                             const ReducedFraction &basic_quant) {
+    const size_t voice_count = voice_intervals.size();
+    const auto error = find_tuplet_error(selected_tuplets, tuplets, voice_count, basic_quant);
+    if (!min_current_error.is_initialized() || error < min_current_error) {
+        min_current_error = error;
+        best_tuplet_indexes = selected_tuplets;
     }
 }
 
 std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>>
-prepareVoiceIntervals(const std::vector<int> &selectedTuplets,
-                      const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tupletIntervals) {
+prepare_voice_intervals(const std::vector<int> &selected_tuplets,
+                        const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals) {
     // <voice, intervals>
-    std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> voiceIntervals;
-    for (int i : selectedTuplets) {
-        int voice = findAvailableVoice(i, tupletIntervals, voiceIntervals);
-        voiceIntervals[voice].push_back(tupletIntervals[i]);
+    std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> voice_intervals;
+    for (int i : selected_tuplets) {
+        int voice = find_available_voice(i, tuplet_intervals, voice_intervals);
+        voice_intervals[voice].push_back(tuplet_intervals[i]);
     }
-    return voiceIntervals;
+    return voice_intervals;
 }
 
 class ValidTuplets {
 public:
-    ValidTuplets(int tupletsSize) : indexes_(tupletsSize), first_(0) {
+    ValidTuplets(int tuplets_size) : indexes_(tuplets_size), first_(0) {
         for (int i = 0; i != (int) indexes_.size(); ++i) {
             indexes_[i] = {i - 1, i + 1};
         }
@@ -440,7 +440,7 @@ public:
 
     int first() const { return first_; }
 
-    bool isValid(int index) const { return index >= first_ && index < (int) indexes_.size(); }
+    bool is_valid(int index) const { return index >= first_ && index < (int) indexes_.size(); }
 
     int next(int index) const { return indexes_[index].second; }
 
@@ -486,98 +486,99 @@ private:
     int first_;
 };
 
-void findNextTuplet(std::vector<int> &selectedTuplets, ValidTuplets &validTuplets, std::vector<int> &bestTupletIndexes,
-                    TupletErrorResult &minCurrentError, const std::vector<TupletCommon> &tupletCommons,
-                    const std::vector<TupletInfo> &tuplets, const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tupletIntervals,
-                    size_t commonsSize, const ReducedFraction &basicQuant) {
-    while (!validTuplets.empty()) {
-        size_t index = validTuplets.first();
+void find_next_tuplet(std::vector<int> &selected_tuplets, ValidTuplets &valid_tuplets, std::vector<int> &best_tuplet_indexes,
+                      TupletErrorResult &min_current_error, const std::vector<TupletCommon> &tuplet_commons,
+                      const std::vector<TupletInfo> &tuplets,
+                      const std::vector<std::pair<ReducedFraction, ReducedFraction>> &tuplet_intervals, size_t commons_size,
+                      const ReducedFraction &basic_quant) {
+    while (!valid_tuplets.empty()) {
+        size_t index = valid_tuplets.first();
 
-        bool isCommonGroupBegins = (selectedTuplets.empty() && index == commonsSize);
-        if (isCommonGroupBegins) { // first level
+        bool is_common_group_begins = (selected_tuplets.empty() && index == commons_size);
+        if (is_common_group_begins) { // first level
             for (size_t i = index; i < tuplets.size(); ++i) {
-                selectedTuplets.push_back(int(i));
+                selected_tuplets.push_back(int(i));
             }
         } else {
-            selectedTuplets.push_back(int(index));
+            selected_tuplets.push_back(int(index));
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(validateSelectedTuplets(selectedTuplets.begin(), selectedTuplets.end(), tuplets), "MIDI tuplets::findNextTuplet",
+        Q_ASSERT_X(validate_selected_tuplets(selected_tuplets.begin(), selected_tuplets.end(), tuplets), "MIDI tuplets::findNextTuplet",
                    "Tuplets have common chords but they shouldn't");
 #endif
 
-        const auto voiceIntervals = prepareVoiceIntervals(selectedTuplets, tupletIntervals);
-        const auto usedFirstChords = prepareUsedFirstChords(selectedTuplets, tuplets);
+        const auto voice_intervals = prepare_voice_intervals(selected_tuplets, tuplet_intervals);
+        const auto used_first_chords = prepare_used_first_chords(selected_tuplets, tuplets);
 #ifndef NDEBUG
-        Q_ASSERT_X(areCommonsDifferent(selectedTuplets), "MidiTuplet::findNextTuplet", "There are duplicates in selected commons");
-        Q_ASSERT_X(areCommonsUncommon(selectedTuplets, tupletCommons), "MidiTuplet::findNextTuplet", "Incompatible selected commons");
+        Q_ASSERT_X(are_commons_different(selected_tuplets), "MidiTuplet::findNextTuplet", "There are duplicates in selected commons");
+        Q_ASSERT_X(are_commons_uncommon(selected_tuplets, tuplet_commons), "MidiTuplet::findNextTuplet", "Incompatible selected commons");
 #endif
 
-        if (isCommonGroupBegins) {
-            bool canAddMoreIndexes = false;
-            for (size_t i = 0; i != commonsSize; ++i) {
-                if (!isInCommonIndexes(int(i), selectedTuplets, tupletCommons) &&
-                    canUseIndex(int(i), tuplets, tupletIntervals, voiceIntervals, usedFirstChords)) {
-                    canAddMoreIndexes = true;
+        if (is_common_group_begins) {
+            bool can_add_more_indexes = false;
+            for (size_t i = 0; i != commons_size; ++i) {
+                if (!is_in_common_indexes(int(i), selected_tuplets, tuplet_commons) &&
+                    can_use_index(int(i), tuplets, tuplet_intervals, voice_intervals, used_first_chords)) {
+                    can_add_more_indexes = true;
                     break;
                 }
             }
-            if (!canAddMoreIndexes) {
-                tryUpdateBestIndexes(bestTupletIndexes, minCurrentError, selectedTuplets, tuplets, voiceIntervals, basicQuant);
+            if (!can_add_more_indexes) {
+                try_update_best_indexes(best_tuplet_indexes, min_current_error, selected_tuplets, tuplets, voice_intervals, basic_quant);
             }
             return;
         }
 
-        validTuplets.exclude(int(index));
-        const auto savedTuplets = validTuplets.save();
+        valid_tuplets.exclude(int(index));
+        const auto saved_tuplets = valid_tuplets.save();
         // check tuplets for compatibility
-        if (!validTuplets.empty()) {
-            for (int i : tupletCommons[index].commonIndexes) {
-                validTuplets.exclude(i);
-                if (validTuplets.empty()) {
+        if (!valid_tuplets.empty()) {
+            for (int i : tuplet_commons[index].common_indexes) {
+                valid_tuplets.exclude(i);
+                if (valid_tuplets.empty()) {
                     break;
                 }
             }
         }
-        for (int i = validTuplets.first(); validTuplets.isValid(i);) {
-            if (!canUseIndex(i, tuplets, tupletIntervals, voiceIntervals, usedFirstChords)) {
-                i = validTuplets.exclude(i);
+        for (int i = valid_tuplets.first(); valid_tuplets.is_valid(i);) {
+            if (!can_use_index(i, tuplets, tuplet_intervals, voice_intervals, used_first_chords)) {
+                i = valid_tuplets.exclude(i);
                 continue;
             }
-            i = validTuplets.next(i);
+            i = valid_tuplets.next(i);
         }
-        if (validTuplets.empty()) {
-            const auto unusedIndexes = findUnusedIndexes(selectedTuplets);
-            bool canAddMoreIndexes = false;
-            for (int i : unusedIndexes) {
-                if (!isInCommonIndexes(i, selectedTuplets, tupletCommons) &&
-                    canUseIndex(i, tuplets, tupletIntervals, voiceIntervals, usedFirstChords)) {
-                    canAddMoreIndexes = true;
+        if (valid_tuplets.empty()) {
+            const auto unused_indexes = find_unused_indexes(selected_tuplets);
+            bool can_add_more_indexes = false;
+            for (int i : unused_indexes) {
+                if (!is_in_common_indexes(i, selected_tuplets, tuplet_commons) &&
+                    can_use_index(i, tuplets, tuplet_intervals, voice_intervals, used_first_chords)) {
+                    can_add_more_indexes = true;
                     break;
                 }
             }
-            if (!canAddMoreIndexes) {
-                tryUpdateBestIndexes(bestTupletIndexes, minCurrentError, selectedTuplets, tuplets, voiceIntervals, basicQuant);
+            if (!can_add_more_indexes) {
+                try_update_best_indexes(best_tuplet_indexes, min_current_error, selected_tuplets, tuplets, voice_intervals, basic_quant);
             }
         } else {
-            findNextTuplet(selectedTuplets, validTuplets, bestTupletIndexes, minCurrentError, tupletCommons, tuplets, tupletIntervals,
-                           commonsSize, basicQuant);
+            find_next_tuplet(selected_tuplets, valid_tuplets, best_tuplet_indexes, min_current_error, tuplet_commons, tuplets,
+                             tuplet_intervals, commons_size, basic_quant);
         }
 
-        selectedTuplets.pop_back();
-        validTuplets.restore(savedTuplets);
+        selected_tuplets.pop_back();
+        valid_tuplets.restore(saved_tuplets);
     }
 }
 
-void moveUncommonTupletsToEnd(std::vector<TupletInfo> &tuplets, std::set<int> &uncommons) {
-    int swapWith = int(tuplets.size()) - 1;
-    for (int i = swapWith; i >= 0; --i) {
+void move_uncommon_tuplets_to_end(std::vector<TupletInfo> &tuplets, std::set<int> &uncommons) {
+    int swap_with = int(tuplets.size()) - 1;
+    for (int i = swap_with; i >= 0; --i) {
         auto it = uncommons.find(i);
         if (it != uncommons.end()) {
-            if (i != swapWith) {
-                std::swap(tuplets[i], tuplets[swapWith]);
+            if (i != swap_with) {
+                std::swap(tuplets[i], tuplets[swap_with]);
             }
-            --swapWith;
+            --swap_with;
             uncommons.erase(it);
         }
     }
@@ -585,84 +586,84 @@ void moveUncommonTupletsToEnd(std::vector<TupletInfo> &tuplets, std::set<int> &u
     Q_ASSERT_X(uncommons.empty(), "MidiTuplet::moveUncommonTupletsToEnd", "Untested uncommon tuplets remaining");
 }
 
-std::vector<int> findBestTuplets(const std::vector<TupletCommon> &tupletCommons, const std::vector<TupletInfo> &tuplets, size_t commonsSize,
-                                 const ReducedFraction &basicQuant) {
-    std::vector<int> bestTupletIndexes;
-    std::vector<int> selectedTuplets;
-    TupletErrorResult minCurrentError;
-    const auto tupletIntervals = findTupletIntervals(tuplets, basicQuant);
+std::vector<int> find_best_tuplets(const std::vector<TupletCommon> &tuplet_commons, const std::vector<TupletInfo> &tuplets,
+                                   size_t commons_size, const ReducedFraction &basic_quant) {
+    std::vector<int> best_tuplet_indexes;
+    std::vector<int> selected_tuplets;
+    TupletErrorResult min_current_error;
+    const auto tuplet_intervals = find_tuplet_intervals(tuplets, basic_quant);
 
-    ValidTuplets validTuplets(int(tuplets.size()));
+    ValidTuplets valid_tuplets(int(tuplets.size()));
 
-    findNextTuplet(selectedTuplets, validTuplets, bestTupletIndexes, minCurrentError, tupletCommons, tuplets, tupletIntervals, commonsSize,
-                   basicQuant);
+    find_next_tuplet(selected_tuplets, valid_tuplets, best_tuplet_indexes, min_current_error, tuplet_commons, tuplets, tuplet_intervals,
+                     commons_size, basic_quant);
 
-    return bestTupletIndexes;
+    return best_tuplet_indexes;
 }
 
-void removeExtraTuplets(std::vector<TupletInfo> &tuplets) {
-    const size_t MAX_TUPLETS = 17; // found empirically
+void remove_extra_tuplets(std::vector<TupletInfo> &tuplets) {
+    const size_t max_tuplets = 17; // found empirically
 
-    if (tuplets.size() <= MAX_TUPLETS) {
+    if (tuplets.size() <= max_tuplets) {
         return;
     }
 
     std::map<TupletErrorResult, size_t> errors;
     for (size_t i = 0; i != tuplets.size(); ++i) {
-        auto tupletError = TupletErrorResult{tuplets[i].tupletSumError.numerator() * 1.0 /
-                                                 (tuplets[i].tupletSumError.denominator() * tuplets[i].chords.size()),
-                                             tuplets[i].chords.size() * 1.0 / tuplets[i].tupletNumber, tuplets[i].sumLengthOfRests, 1, 1};
-        errors.insert({tupletError, i});
+        auto tuplet_error = TupletErrorResult{
+            tuplets[i].tuplet_sum_error.numerator() * 1.0 / (tuplets[i].tuplet_sum_error.denominator() * tuplets[i].chords.size()),
+            tuplets[i].chords.size() * 1.0 / tuplets[i].tuplet_number, tuplets[i].sum_length_of_rests, 1, 1};
+        errors.insert({tuplet_error, i});
     }
-    std::vector<TupletInfo> newTuplets;
+    std::vector<TupletInfo> new_tuplets;
     size_t count = 0;
     for (const auto &e : errors) {
         ++count;
-        newTuplets.push_back(tuplets[e.second]);
-        if (count == MAX_TUPLETS) {
+        new_tuplets.push_back(tuplets[e.second]);
+        if (count == max_tuplets) {
             break;
         }
     }
 
-    std::swap(tuplets, newTuplets);
+    std::swap(tuplets, new_tuplets);
 }
 
 // first chord in tuplet may belong to other tuplet at the same time
 // in the case if there are enough notes in this first chord
 // to be split into different voices
 
-void filterTuplets(std::vector<TupletInfo> &tuplets, const ReducedFraction &basicQuant) {
+void filter_tuplets(std::vector<TupletInfo> &tuplets, const ReducedFraction &basic_quant) {
     if (tuplets.empty()) {
         return;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(!areTupletChordsEmpty(tuplets), "MIDI tuplets: filterTuplets", "Tuplet has no chords but it should");
+    Q_ASSERT_X(!are_tuplet_chords_empty(tuplets), "MIDI tuplets: filterTuplets", "Tuplet has no chords but it should");
 #endif
-    removeUselessTuplets(tuplets);
-    removeExtraTuplets(tuplets);
+    remove_useless_tuplets(tuplets);
+    remove_extra_tuplets(tuplets);
 
-    std::set<int> uncommons = findLongestUncommonGroup(tuplets, basicQuant);
+    std::set<int> uncommons = find_longest_uncommon_group(tuplets, basic_quant);
 #ifndef NDEBUG
-    Q_ASSERT_X(validateSelectedTuplets(uncommons.begin(), uncommons.end(), tuplets), "MIDI tuplets: filterTuplets",
+    Q_ASSERT_X(validate_selected_tuplets(uncommons.begin(), uncommons.end(), tuplets), "MIDI tuplets: filterTuplets",
                "Uncommon tuplets have common chords but they shouldn't");
 #endif
-    size_t commonsSize = tuplets.size();
+    size_t commons_size = tuplets.size();
     if (uncommons.size() > 1) {
-        commonsSize -= uncommons.size();
-        moveUncommonTupletsToEnd(tuplets, uncommons);
+        commons_size -= uncommons.size();
+        move_uncommon_tuplets_to_end(tuplets, uncommons);
     }
-    const auto tupletCommons = findTupletCommons(tuplets);
+    const auto tuplet_commons = find_tuplet_commons(tuplets);
 
-    const std::vector<int> bestIndexes = findBestTuplets(tupletCommons, tuplets, commonsSize, basicQuant);
+    const std::vector<int> best_indexes = find_best_tuplets(tuplet_commons, tuplets, commons_size, basic_quant);
 #ifndef NDEBUG
-    Q_ASSERT_X(validateSelectedTuplets(bestIndexes.begin(), bestIndexes.end(), tuplets), "MIDI tuplets: filterTuplets",
+    Q_ASSERT_X(validate_selected_tuplets(best_indexes.begin(), best_indexes.end(), tuplets), "MIDI tuplets: filterTuplets",
                "Tuplets have common chords but they shouldn't");
 #endif
-    std::vector<TupletInfo> newTuplets;
-    for (int i : bestIndexes) {
-        newTuplets.push_back(tuplets[i]);
+    std::vector<TupletInfo> new_tuplets;
+    for (int i : best_indexes) {
+        new_tuplets.push_back(tuplets[i]);
     }
 
-    std::swap(tuplets, newTuplets);
+    std::swap(tuplets, new_tuplets);
 }
 }} // namespace mu::iex::midi::MidiTuplet

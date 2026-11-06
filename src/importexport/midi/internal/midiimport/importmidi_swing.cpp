@@ -39,46 +39,46 @@ public:
 
     void add(ChordRest *cr);
 
-    bool wasSwingApplied() const { return swingApplied; }
+    bool was_swing_applied() const { return swing_applied; }
 
 private:
     std::vector<ChordRest *> elements;
-    ReducedFraction sumLen;
-    const ReducedFraction FULL_LEN = {1, 4};
-    MidiOperations::Swing swingType;
-    bool swingApplied = false;
+    ReducedFraction sum_len;
+    const ReducedFraction full_len = {1, 4};
+    MidiOperations::Swing swing_type;
+    bool swing_applied = false;
 
     void reset();
     void append(ChordRest *cr);
-    void checkNormalSwing();
-    void checkShuffle();
-    void applySwing();
-    bool areAllTuplets() const;
-    bool areAllNonTuplets() const;
+    void check_normal_swing();
+    void check_shuffle();
+    void apply_swing();
+    bool are_all_tuplets() const;
+    bool are_all_non_tuplets() const;
 };
 
-SwingDetector::SwingDetector(MidiOperations::Swing st) : swingType(st) {}
+SwingDetector::SwingDetector(MidiOperations::Swing st) : swing_type(st) {}
 
 void SwingDetector::add(ChordRest *cr) {
     if (elements.empty()) {
-        if (ReducedFraction(cr->globalTicks()) >= FULL_LEN) {
+        if (ReducedFraction(cr->global_ticks()) >= full_len) {
             return;
         }
-        const int tickInBar = (cr->tick() - cr->measure()->tick()).ticks();
-        if (tickInBar % Constants::DIVISION == 0) {
+        const int tick_in_bar = (cr->tick() - cr->measure()->tick()).ticks();
+        if (tick_in_bar % Constants::division == 0) {
             append(cr);
         }
     } else {
-        if (sumLen + ReducedFraction(cr->globalTicks()) > FULL_LEN) {
+        if (sum_len + ReducedFraction(cr->global_ticks()) > full_len) {
             reset();
             return;
         }
         append(cr);
-        if (sumLen == FULL_LEN) {
+        if (sum_len == full_len) {
             // check for swing patterns
-            switch (swingType) {
-                case MidiOperations::Swing::SWING: checkNormalSwing(); break;
-                case MidiOperations::Swing::SHUFFLE: checkShuffle(); break;
+            switch (swing_type) {
+                case MidiOperations::Swing::SWING: check_normal_swing(); break;
+                case MidiOperations::Swing::SHUFFLE: check_shuffle(); break;
                 default: break;
             }
             reset();
@@ -88,71 +88,71 @@ void SwingDetector::add(ChordRest *cr) {
 
 void SwingDetector::reset() {
     elements.clear();
-    sumLen = ReducedFraction(Fraction(0, 1));
+    sum_len = ReducedFraction(Fraction(0, 1));
 }
 
 void SwingDetector::append(ChordRest *cr) {
-    if (cr->isChord() || cr->isRest()) {
+    if (cr->is_chord() || cr->is_rest()) {
         elements.push_back(cr);
-        sumLen += ReducedFraction(cr->globalTicks());
+        sum_len += ReducedFraction(cr->global_ticks());
     }
 }
 
-void SwingDetector::checkNormalSwing() {
-    if (elements.size() == 2 && areAllTuplets() && (elements[0]->isChord() || elements[1]->isChord()) &&
+void SwingDetector::check_normal_swing() {
+    if (elements.size() == 2 && are_all_tuplets() && (elements[0]->is_chord() || elements[1]->is_chord()) &&
         elements[0]->ticks().reduced() == Fraction(1, 4) && elements[1]->ticks().reduced() == Fraction(1, 8)) {
         // swing with two 8th notes
         // or 8th note + 8th rest
         // or 8th rest + 8th note
-        applySwing();
-    } else if (elements.size() == 3 && elements[0]->isChord() && elements[1]->isRest() && elements[2]->isChord() &&
+        apply_swing();
+    } else if (elements.size() == 3 && elements[0]->is_chord() && elements[1]->is_rest() && elements[2]->is_chord() &&
                elements[0]->ticks().reduced() == Fraction(1, 8) && elements[1]->ticks().reduced() == Fraction(1, 8) &&
                elements[2]->ticks().reduced() == Fraction(1, 8)) {
         // swing with two 8th notes
-        applySwing();
+        apply_swing();
     }
 }
 
-void SwingDetector::checkShuffle() {
-    if (elements.size() == 2 && areAllNonTuplets() && elements[0]->isChord() && (elements[1]->isChord() || elements[1]->isRest()) &&
+void SwingDetector::check_shuffle() {
+    if (elements.size() == 2 && are_all_non_tuplets() && elements[0]->is_chord() && (elements[1]->is_chord() || elements[1]->is_rest()) &&
         elements[0]->ticks().reduced() == Fraction(3, 16) // dotted 8th
         && elements[1]->ticks().reduced() == Fraction(1, 16)) {
         // swing with two 8th notes
         // or 8th note + 8th rest
-        applySwing();
+        apply_swing();
     }
 }
 
-void SwingDetector::applySwing() {
+void SwingDetector::apply_swing() {
     if (elements.size() != 2 && elements.size() != 3) {
         return;
     }
 
     Tuplet *tuplet = nullptr;
     for (ChordRest *el : elements) {
-        el->setDurationType(DurationType::V_EIGHTH);
-        el->setTicks(Fraction(1, 8));
-        el->setDots(0);
+        el->set_duration_type(DurationType::V_EIGHTH);
+        el->set_ticks(Fraction(1, 8));
+        el->set_dots(0);
         if (el->tuplet()) {
             if (!tuplet) {
                 tuplet = el->tuplet();
             }
             tuplet->remove(el);
-            el->setTuplet(nullptr);
+            el->set_tuplet(nullptr);
         }
     }
 
     const ChordRest *first = elements.front();
-    const int startTick = first->segment()->tick().ticks();
+    const int start_tick = first->segment()->tick().ticks();
     ChordRest *last = elements.back();
     last->segment()->remove(last);
-    Segment *s = last->measure()->getSegment(SegmentType::ChordRest, Fraction::fromTicks(startTick + Constants::DIVISION / 2));
+    Segment *s = last->measure()->get_segment(SegmentType::CHORD_REST, Fraction::from_ticks(start_tick + Constants::division / 2));
     s->add(last);
 
     if (elements.size() == 3) {
         // remove central rest
         ChordRest *cr = elements[1];
-        cr->score()->removeElement(cr);
+        cr->score()->remove_element(cr);
         delete cr;
     }
 
@@ -161,12 +161,12 @@ void SwingDetector::applySwing() {
         delete tuplet;
         tuplet = nullptr;
     }
-    if (!swingApplied) {
-        swingApplied = true;
+    if (!swing_applied) {
+        swing_applied = true;
     }
 }
 
-bool SwingDetector::areAllTuplets() const {
+bool SwingDetector::are_all_tuplets() const {
     for (const auto &el : elements) {
         if (!el->tuplet()) {
             return false;
@@ -175,7 +175,7 @@ bool SwingDetector::areAllTuplets() const {
     return true;
 }
 
-bool SwingDetector::areAllNonTuplets() const {
+bool SwingDetector::are_all_non_tuplets() const {
     for (const auto &el : elements) {
         if (el->tuplet()) {
             return false;
@@ -186,9 +186,9 @@ bool SwingDetector::areAllNonTuplets() const {
 
 // ---------------------------------------------------------------
 
-muse::String swingCaption(MidiOperations::Swing swingType) {
+muse::String swing_caption(MidiOperations::Swing swing_type) {
     muse::String caption;
-    switch (swingType) {
+    switch (swing_type) {
         case MidiOperations::Swing::SWING: caption = u"Swing"; break;
         case MidiOperations::Swing::SHUFFLE: caption = u"Shuffle"; break;
         case MidiOperations::Swing::NONE: break;
@@ -196,27 +196,27 @@ muse::String swingCaption(MidiOperations::Swing swingType) {
     return caption;
 }
 
-void detectSwing(Staff *staff, MidiOperations::Swing swingType) {
+void detect_swing(Staff *staff, MidiOperations::Swing swing_type) {
     Score *score = staff->score();
-    const track_idx_t strack = staff->idx() * VOICES;
-    SwingDetector swingDetector(swingType);
+    const track_idx_t strack = staff->idx() * ::mu::engraving::voices;
+    SwingDetector swing_detector(swing_type);
 
-    for (Segment *seg = score->firstSegment(SegmentType::ChordRest); seg; seg = seg->next1(SegmentType::ChordRest)) {
-        for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-            ChordRest *cr = toChordRest(seg->element(strack + voice));
+    for (Segment *seg = score->first_segment(SegmentType::CHORD_REST); seg; seg = seg->next1(SegmentType::CHORD_REST)) {
+        for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+            ChordRest *cr = to_chord_rest(seg->element(strack + voice));
             if (!cr) {
                 continue;
             }
-            swingDetector.add(cr);
+            swing_detector.add(cr);
         }
     }
-    if (swingDetector.wasSwingApplied()) {
+    if (swing_detector.was_swing_applied()) {
         // add swing label to the score
-        Segment *seg = score->firstSegment(SegmentType::ChordRest);
+        Segment *seg = score->first_segment(SegmentType::CHORD_REST);
         StaffText *st = new StaffText(seg, TextStyleType::STAFF);
-        st->setPlainText(swingCaption(swingType));
-        st->setTrack(strack); // voice == 0
-        score->addElement(st);
+        st->set_plain_text(swing_caption(swing_type));
+        st->set_track(strack); // voice == 0
+        score->add_element(st);
     }
 }
 }} // namespace mu::iex::midi::Swing

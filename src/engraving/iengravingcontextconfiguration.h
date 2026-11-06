@@ -27,8 +27,8 @@ class IEngravingContextConfiguration {
 public:
     virtual ~IEngravingContextConfiguration() = default;
 
-    virtual double guiScaling() const = 0;
+    virtual double gui_scaling() const = 0;
 
-    virtual bool isAccessibleEnabled() const = 0;
+    virtual bool is_accessible_enabled() const = 0;
 };
 } // namespace mu::engraving

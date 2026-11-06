@@ -33,185 +33,185 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void TappingLayout::layoutTapping(Tapping *item, Tapping::LayoutData *ldata, LayoutContext &ctx) {
+void TappingLayout::layout_tapping(Tapping *item, Tapping::LayoutData *ldata, LayoutContext &ctx) {
     IF_ASSERT_FAILED(item->hand() != TappingHand::INVALID) { return; }
 
     const MStyle &style = item->style();
-    bool tabStaff = item->staffType()->isTabStaff();
+    bool tab_staff = item->staff_type()->is_tab_staff();
 
     if (item->hand() == TappingHand::LEFT) {
-        layoutLeftHandTapping(item, ldata, style, tabStaff, ctx);
+        layout_left_hand_tapping(item, ldata, style, tab_staff, ctx);
     } else {
-        layoutRightHandTapping(item, ldata, style, tabStaff, ctx);
+        layout_right_hand_tapping(item, ldata, style, tab_staff, ctx);
     }
 
-    if (ldata->symId != SymId::noSym) {
-        ldata->setShape(Shape(item->symBbox(ldata->symId), item));
+    if (ldata->sym_id != SymId::NO_SYM) {
+        ldata->set_shape(Shape(item->sym_bbox(ldata->sym_id), item));
     } else if (TappingText *text = item->text()) {
-        RectF textBbox = text->ldata()->bbox();
-        text->setPos(PointF(-textBbox.x(), 0.0));
-        ldata->setShape(Shape(textBbox.translated(text->pos()), item));
+        RectF text_bbox = text->ldata()->bbox();
+        text->set_pos(PointF(-text_bbox.x(), 0.0));
+        ldata->set_shape(Shape(text_bbox.translated(text->pos()), item));
     }
 
-    if (tabStaff) {
+    if (tab_staff) {
         // Slightly increase vertical padding on TAB staves
-        item->setMinDistance(item->staff()->lineDistance(item->tick()) * style.styleS(Sid::articulationMinDistance));
+        item->set_min_distance(item->staff()->line_distance(item->tick()) * style.style_s(Sid::ARTICULATION_MIN_DISTANCE));
     }
 }
 
-void TappingLayout::layoutLeftHandTapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tabStaff,
-                                          LayoutContext &ctx) {
-    updateHalfSlurs(item, style, tabStaff, ctx);
+void TappingLayout::layout_left_hand_tapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tab_staff,
+                                             LayoutContext &ctx) {
+    update_half_slurs(item, style, tab_staff, ctx);
 
-    LHTappingSymbol lhSym = tabStaff ? style.styleV(Sid::lhTappingSymbolTab).value<LHTappingSymbol>() :
-                                       style.styleV(Sid::lhTappingSymbolNormalStave).value<LHTappingSymbol>();
+    LHTappingSymbol lh_sym = tab_staff ? style.style_v(Sid::LH_TAPPING_SYMBOL_TAB).value<LHTappingSymbol>() :
+                                         style.style_v(Sid::LH_TAPPING_SYMBOL_NORMAL_STAVE).value<LHTappingSymbol>();
 
-    bool dontShowSymbols = item->lhShowItems() == LHTappingShowItems::HALF_SLUR;
+    bool dont_show_symbols = item->lh_show_items() == LHTappingShowItems::HALF_SLUR;
 
-    if (lhSym != LHTappingSymbol::DOT || dontShowSymbols) {
-        ldata->symId = SymId::noSym;
+    if (lh_sym != LHTappingSymbol::DOT || dont_show_symbols) {
+        ldata->sym_id = SymId::NO_SYM;
     }
-    if (lhSym != LHTappingSymbol::CIRCLED_T || dontShowSymbols) {
+    if (lh_sym != LHTappingSymbol::CIRCLED_T || dont_show_symbols) {
         delete item->text();
-        item->setText(nullptr);
+        item->set_text(nullptr);
     }
 
-    if (dontShowSymbols) {
+    if (dont_show_symbols) {
         return;
     }
 
-    if (lhSym == LHTappingSymbol::DOT) {
-        ldata->symId = SymId::windClosedHole;
-        ldata->setMag(0.5);
-    } else if (lhSym == LHTappingSymbol::CIRCLED_T) {
-        ldata->setMag(1.0);
+    if (lh_sym == LHTappingSymbol::DOT) {
+        ldata->sym_id = SymId::WIND_CLOSED_HOLE;
+        ldata->set_mag(0.5);
+    } else if (lh_sym == LHTappingSymbol::CIRCLED_T) {
+        ldata->set_mag(1.0);
         TappingText *text = item->text();
         if (!text) {
             text = new TappingText(item);
         }
-        item->setText(text);
-        text->setTrack(item->track());
-        text->setXmlText("T");
-        text->setFrameType(FrameType::CIRCLE);
-        text->setAlign(Align(AlignH::LEFT, AlignV::BASELINE));
-        TextLayout::layoutBaseTextBase(text, ctx);
+        item->set_text(text);
+        text->set_track(item->track());
+        text->set_xml_text("T");
+        text->set_frame_type(FrameType::CIRCLE);
+        text->set_align(Align(AlignH::LEFT, AlignV::BASELINE));
+        TextLayout::layout_base_text_base(text, ctx);
         // Move the circle up very slightly to look better centered on the T
         text->mutldata()->frame.translate(0.0, -0.02 * text->height());
     }
 }
 
-void TappingLayout::updateHalfSlurs(Tapping *item, const MStyle &style, bool tabStaff, LayoutContext &ctx) {
-    Chord *chord = item->parent() && item->parent()->isChord() ? toChord(item->parent()) : nullptr;
+void TappingLayout::update_half_slurs(Tapping *item, const MStyle &style, bool tab_staff, LayoutContext &ctx) {
+    Chord *chord = item->parent() && item->parent()->is_chord() ? to_chord(item->parent()) : nullptr;
     if (!chord) {
         return;
     }
 
-    bool showHalfSlurAbove = item->lhShowItems() != LHTappingShowItems::SYMBOL;
-    if (showHalfSlurAbove) {
-        TappingHalfSlur *halfSlurAbove = item->halfSlurAbove();
-        if (!halfSlurAbove) {
-            halfSlurAbove = new TappingHalfSlur(item);
-            item->setHalfSlurAbove(halfSlurAbove);
-            halfSlurAbove->setSelected(item->selected());
+    bool show_half_slur_above = item->lh_show_items() != LHTappingShowItems::SYMBOL;
+    if (show_half_slur_above) {
+        TappingHalfSlur *half_slur_above = item->half_slur_above();
+        if (!half_slur_above) {
+            half_slur_above = new TappingHalfSlur(item);
+            item->set_half_slur_above(half_slur_above);
+            half_slur_above->set_selected(item->selected());
         }
 
-        halfSlurAbove->setOwnershipParent(item);
-        halfSlurAbove->setIsHalfSlurAbove(true);
-        halfSlurAbove->setTrack(item->track());
-        halfSlurAbove->setTick(item->tick());
-        halfSlurAbove->setTicks(Fraction(0, 1));
-        halfSlurAbove->setStartElement(chord);
-        halfSlurAbove->setEndElement(chord);
-        if (tabStaff) {
-            halfSlurAbove->setSlurDirection(DirectionV::UP);
+        half_slur_above->set_ownership_parent(item);
+        half_slur_above->set_is_half_slur_above(true);
+        half_slur_above->set_track(item->track());
+        half_slur_above->set_tick(item->tick());
+        half_slur_above->set_ticks(Fraction(0, 1));
+        half_slur_above->set_start_element(chord);
+        half_slur_above->set_end_element(chord);
+        if (tab_staff) {
+            half_slur_above->set_slur_direction(DirectionV::UP);
         }
 
-        layoutHalfSlur(item, halfSlurAbove, ctx);
-    } else if (item->halfSlurAbove()) {
-        delete item->halfSlurAbove();
-        item->setHalfSlurAbove(nullptr);
+        layout_half_slur(item, half_slur_above, ctx);
+    } else if (item->half_slur_above()) {
+        delete item->half_slur_above();
+        item->set_half_slur_above(nullptr);
     }
 
-    bool showHalfSlurBelow = tabStaff && showHalfSlurAbove && style.styleB(Sid::lhTappingSlurTopAndBottomNoteOnTab) &&
-                             toChord(item->parent())->notes().size() > 1;
-    if (showHalfSlurBelow) {
-        TappingHalfSlur *halfSlurBelow = item->halfSlurBelow();
-        if (!halfSlurBelow) {
-            halfSlurBelow = new TappingHalfSlur(item);
-            item->setHalfSlurBelow(halfSlurBelow);
+    bool show_half_slur_below = tab_staff && show_half_slur_above && style.style_b(Sid::LH_TAPPING_SLUR_TOP_AND_BOTTOM_NOTE_ON_TAB) &&
+                                to_chord(item->parent())->notes().size() > 1;
+    if (show_half_slur_below) {
+        TappingHalfSlur *half_slur_below = item->half_slur_below();
+        if (!half_slur_below) {
+            half_slur_below = new TappingHalfSlur(item);
+            item->set_half_slur_below(half_slur_below);
         }
 
-        halfSlurBelow->setOwnershipParent(item);
-        halfSlurBelow->setIsHalfSlurAbove(false);
-        halfSlurBelow->setTrack(item->track());
-        halfSlurBelow->setTick(item->tick());
-        halfSlurBelow->setTicks(Fraction(0, 1));
-        halfSlurBelow->setStartElement(chord);
-        halfSlurBelow->setEndElement(chord);
-        halfSlurBelow->setSlurDirection(DirectionV::DOWN);
+        half_slur_below->set_ownership_parent(item);
+        half_slur_below->set_is_half_slur_above(false);
+        half_slur_below->set_track(item->track());
+        half_slur_below->set_tick(item->tick());
+        half_slur_below->set_ticks(Fraction(0, 1));
+        half_slur_below->set_start_element(chord);
+        half_slur_below->set_end_element(chord);
+        half_slur_below->set_slur_direction(DirectionV::DOWN);
 
-        layoutHalfSlur(item, halfSlurBelow, ctx);
-    } else if (item->halfSlurBelow()) {
-        delete item->halfSlurBelow();
-        item->setHalfSlurBelow(nullptr);
+        layout_half_slur(item, half_slur_below, ctx);
+    } else if (item->half_slur_below()) {
+        delete item->half_slur_below();
+        item->set_half_slur_below(nullptr);
     }
 }
 
-void TappingLayout::layoutHalfSlur(Tapping *item, TappingHalfSlur *slur, LayoutContext &ctx) {
-    System *system = toSystem(item->findAncestor(ElementType::SYSTEM));
+void TappingLayout::layout_half_slur(Tapping *item, TappingHalfSlur *slur, LayoutContext &ctx) {
+    System *system = to_system(item->find_ancestor(ElementType::SYSTEM));
     IF_ASSERT_FAILED(system) { return; }
 
-    for (SpannerSegment *seg : slur->spannerSegments()) {
-        seg->moveToSystem(nullptr);
+    for (SpannerSegment *seg : slur->spanner_segments()) {
+        seg->move_to_system(nullptr);
     }
 
-    Skyline &skyline = system->staff(item->staffIdx())->skyline();
-    TappingHalfSlurSegment *slurSeg = toTappingHalfSlurSegment(SlurTieLayout::layoutSystem(slur, system, ctx));
+    Skyline &skyline = system->staff(item->staff_idx())->skyline();
+    TappingHalfSlurSegment *slur_seg = to_tapping_half_slur_segment(SlurTieLayout::layout_system(slur, system, ctx));
 
-    Shape segShape = slurSeg->shape();
+    Shape seg_shape = slur_seg->shape();
 
-    RectF mask(segShape.bbox());
-    mask.setWidth(0.5 * mask.width());
-    const double maskPad = 0.25 * item->spatium();
-    mask.adjust(-maskPad, -maskPad, 0.0, maskPad);
-    slurSeg->mutldata()->setMask(mask);
+    RectF mask(seg_shape.bbox());
+    mask.set_width(0.5 * mask.width());
+    const double mask_pad = 0.25 * item->spatium();
+    mask.adjust(-mask_pad, -mask_pad, 0.0, mask_pad);
+    slur_seg->mutldata()->set_mask(mask);
 
-    Shape maskedShape;
-    double roundingMargin = 0.05 * item->spatium(); // otherwise rounding errors may affect the threshold
-    for (ShapeElement &el : segShape.elements()) {
-        if (el.left() > mask.right() - roundingMargin) {
-            maskedShape.add(el);
+    Shape masked_shape;
+    double rounding_margin = 0.05 * item->spatium(); // otherwise rounding errors may affect the threshold
+    for (ShapeElement &el : seg_shape.elements()) {
+        if (el.left() > mask.right() - rounding_margin) {
+            masked_shape.add(el);
         }
     }
-    slurSeg->mutldata()->setShape(maskedShape);
+    slur_seg->mutldata()->set_shape(masked_shape);
 
-    skyline.add(maskedShape.translated(slurSeg->pos()));
+    skyline.add(masked_shape.translated(slur_seg->pos()));
 }
 
-void TappingLayout::layoutRightHandTapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tabStaff,
-                                           LayoutContext &ctx) {
-    RHTappingSymbol rhSym = tabStaff ? style.styleV(Sid::rhTappingSymbolTab).value<RHTappingSymbol>() :
-                                       style.styleV(Sid::rhTappingSymbolNormalStave).value<RHTappingSymbol>();
+void TappingLayout::layout_right_hand_tapping(Tapping *item, Tapping::LayoutData *ldata, const MStyle &style, bool tab_staff,
+                                              LayoutContext &ctx) {
+    RHTappingSymbol rh_sym = tab_staff ? style.style_v(Sid::RH_TAPPING_SYMBOL_TAB).value<RHTappingSymbol>() :
+                                         style.style_v(Sid::RH_TAPPING_SYMBOL_NORMAL_STAVE).value<RHTappingSymbol>();
 
-    if (rhSym != RHTappingSymbol::PLUS) {
-        ldata->symId = SymId::noSym;
+    if (rh_sym != RHTappingSymbol::PLUS) {
+        ldata->sym_id = SymId::NO_SYM;
     }
-    if (rhSym != RHTappingSymbol::T) {
+    if (rh_sym != RHTappingSymbol::T) {
         delete item->text();
-        item->setText(nullptr);
+        item->set_text(nullptr);
     }
 
-    if (rhSym == RHTappingSymbol::PLUS) {
-        ldata->symId = SymId::pluckedLeftHandPizzicato;
-    } else if (rhSym == RHTappingSymbol::T) {
+    if (rh_sym == RHTappingSymbol::PLUS) {
+        ldata->sym_id = SymId::PLUCKED_LEFT_HAND_PIZZICATO;
+    } else if (rh_sym == RHTappingSymbol::T) {
         TappingText *text = item->text();
         if (!text) {
             text = new TappingText(item);
         }
-        item->setText(text);
-        text->setTrack(item->track());
-        text->setXmlText("T");
-        text->setAlign(Align(AlignH::LEFT, AlignV::BASELINE));
-        TextLayout::layoutBaseTextBase(text, ctx);
+        item->set_text(text);
+        text->set_track(item->track());
+        text->set_xml_text("T");
+        text->set_align(Align(AlignH::LEFT, AlignV::BASELINE));
+        TextLayout::layout_base_text_base(text, ctx);
     }
 }

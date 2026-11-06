@@ -34,32 +34,32 @@ class MMRest;
 namespace mu::engraving::rendering::score {
 using RestGroup = std::vector<Rest *>;
 using RestGroups = std::vector<RestGroup>;
-using InterruptionPoints = std::array<std::list<Fraction>, VOICES>;
+using InterruptionPoints = std::array<std::list<Fraction>, ::mu::engraving::voices>;
 
 class RestLayout {
 public:
-    static void layoutRest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
-    static void fillShape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
+    static void fill_shape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf);
 
-    static void resolveVerticalRestConflicts(LayoutContext &ctx, Segment *segment, staff_idx_t staffIdx);
-    static void resolveRestVSChord(std::vector<Rest *> &rests, std::vector<Chord *> &chords, const Staff *staff, Segment *segment);
-    static void resolveRestVSRest(std::vector<Rest *> &rests, const Staff *staff, Segment *segment, LayoutContext &ctx,
-                                  bool considerBeams = false);
+    static void resolve_vertical_rest_conflicts(LayoutContext &ctx, Segment *segment, staff_idx_t staff_idx);
+    static void resolve_rest_vs_chord(std::vector<Rest *> &rests, std::vector<Chord *> &chords, const Staff *staff, Segment *segment);
+    static void resolve_rest_vs_rest(std::vector<Rest *> &rests, const Staff *staff, Segment *segment, LayoutContext &ctx,
+                                     bool consider_beams = false);
 
-    static void alignRests(const System *system, LayoutContext &ctx);
-    static void checkFullMeasureRestCollisions(const System *system, LayoutContext &ctx);
+    static void align_rests(const System *system, LayoutContext &ctx);
+    static void check_full_measure_rest_collisions(const System *system, LayoutContext &ctx);
 
 private:
-    static void fillShape(const Rest *item, Rest::LayoutData *ldata);
-    static void fillShape(const MMRest *item, MMRest::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void fill_shape(const Rest *item, Rest::LayoutData *ldata);
+    static void fill_shape(const MMRest *item, MMRest::LayoutData *ldata, const LayoutConfiguration &conf);
 
-    static int computeNaturalLine(int lines);
-    static int computeVoiceOffset(const Rest *item, Rest::LayoutData *ldata); // Vertical displacement in multi-voice cases
-    static int computeWholeOrBreveRestOffset(const Rest *item, int voiceOffset, int lines);
+    static int compute_natural_line(int lines);
+    static int compute_voice_offset(const Rest *item, Rest::LayoutData *ldata); // Vertical displacement in multi-voice cases
+    static int compute_whole_or_breve_rest_offset(const Rest *item, int voice_offset, int lines);
 
-    static void updateSymbol(const Rest *item, Rest::LayoutData *ldata);
+    static void update_symbol(const Rest *item, Rest::LayoutData *ldata);
 
-    static RestGroups computeRestGroups(const System *system, LayoutContext &ctx);
-    static InterruptionPoints computeInterruptionPoints(const Measure *measure, staff_idx_t staffIdx);
+    static RestGroups compute_rest_groups(const System *system, LayoutContext &ctx);
+    static InterruptionPoints compute_interruption_points(const Measure *measure, staff_idx_t staff_idx);
 };
 } // namespace mu::engraving::rendering::score

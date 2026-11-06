@@ -30,23 +30,23 @@ class Chord;
 
 class ChordArticulationsParser : public MetaParserBase<ChordArticulationsParser> {
 public:
-    static void buildChordArticulationMap(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void build_chord_articulation_map(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void do_parse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 private:
-    static void parseSpanners(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseArticulationSymbols(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseAnnotations(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseTremolo(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseArpeggio(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseGraceNotes(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseChordLine(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseTapping(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
-    static void parseBreath(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_spanners(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_articulation_symbols(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_annotations(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_tremolo(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_arpeggio(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_grace_notes(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_chord_line(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_tapping(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parse_breath(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 };
 } // namespace mu::engraving
 

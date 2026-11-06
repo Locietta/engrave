@@ -34,7 +34,7 @@ public:
     MnemonicString(const char *context, const char *str, const char *disambiguation = nullptr, int n = -1)
         : raw_(context, str, disambiguation, n) {}
 
-    inline bool isEmpty() const { return raw_.isEmpty(); }
+    inline bool is_empty() const { return raw_.is_empty(); }
 
     inline const TranslatableString &raw() const { return raw_; }
 

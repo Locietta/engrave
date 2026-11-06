@@ -34,16 +34,16 @@ namespace muse::audio::engine {
 class SignalNode : public AudioNode<SignalTag> {
 public:
 
-    bool isSilent() const;
+    bool is_silent() const;
 
 protected:
 
-    void onOutputSpecChanged(const OutputSpec &spec) override;
+    void on_output_spec_changed(const OutputSpec &spec) override;
 
-    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
+    void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    std::vector<float> channelPeaks_;
-    bool isSilent_ = true;
+    std::vector<float> channel_peaks_;
+    bool is_silent_ = true;
 };
 
 using SignalNodePtr = std::shared_ptr<SignalNode>;

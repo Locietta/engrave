@@ -29,10 +29,10 @@ class Transaction;
 
 class EditVisibility {
 public:
-    static void setSelectedElementsVisible(Transaction &tx, Score *score);
-    static void setSelectedElementsInvisible(Transaction &tx, Score *score);
-    static void toggleVisible(Transaction &tx, Score *score);
+    static void set_selected_elements_visible(Transaction &tx, Score *score);
+    static void set_selected_elements_invisible(Transaction &tx, Score *score);
+    static void toggle_visible(Transaction &tx, Score *score);
 
-    static void undoChangeVisible(Transaction &tx, EngravingItem *item, bool visible);
+    static void undo_change_visible(Transaction &tx, EngravingItem *item, bool visible);
 };
 } // namespace mu::engraving

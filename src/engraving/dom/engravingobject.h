@@ -237,7 +237,7 @@ private:
 
 //! The given parent if there is one, the dummy otherwise.
 template <typename T>
-DummyParentOr<T> parentOrDummy(T *parent, DummyParent *dummy) {
+DummyParentOr<T> parent_or_dummy(T *parent, DummyParent *dummy) {
     return parent ? DummyParentOr<T>(parent) : DummyParentOr<T>(dummy);
 }
 
@@ -250,107 +250,107 @@ public:
 
     inline ElementType type() const { return type_; }
 
-    inline bool isType(ElementType t) const { return t == type_; }
+    inline bool is_type(ElementType t) const { return t == type_; }
 
-    const char *typeName() const;
-    virtual TranslatableString typeUserName() const;
-    virtual String translatedTypeUserName() const;
+    const char *type_name() const;
+    virtual TranslatableString type_user_name() const;
+    virtual String translated_type_user_name() const;
 
     EID eid() const;
-    bool setEID(EID id) const;
-    EID assignNewEID() const;
+    bool set_eid(EID id) const;
+    EID assign_new_eid() const;
 
     //! The raw tree link, i.e. the inverse of children(): the ownership parent
     //! if there is one, otherwise the dummy the object is parked on. Prefer
     //! ownershipParent(), which reports "not attached to anything" as null.
     EngravingObject *parent() const;
 
-    void setOwnershipParent(EngravingObject *p);
+    void set_ownership_parent(EngravingObject *p);
     //! The parent this object is attached to. Null while it is parked on the dummy,
     //! i.e. not attached to anything.
-    EngravingObject *ownershipParent() const;
-    void moveToDummy();
+    EngravingObject *ownership_parent() const;
+    void move_to_dummy();
 
     const EngravingObjectList &children() const { return children_; }
 
-    EngravingItemList childrenItems(bool all = false) const;
-    std::vector<EngravingItem *> getChildren(bool includeInvisible = true) const;
+    EngravingItemList children_items(bool all = false) const;
+    std::vector<EngravingItem *> get_children(bool include_invisible = true) const;
 
-    virtual void scanElements(std::function<void(EngravingItem *)>) {}
+    virtual void scan_elements(std::function<void(EngravingItem *)>) {}
 
     // context
-    virtual void setScore(Score *s);
+    virtual void set_score(Score *s);
     Score *score() const;
-    MasterScore *masterScore() const;
-    bool onSameScore(const EngravingObject *other) const;
+    MasterScore *master_score() const;
+    bool on_same_score(const EngravingObject *other) const;
     const MStyle &style() const;
 
-    virtual EngravingObject *propertyDelegate(Pid) const { return nullptr; }
+    virtual EngravingObject *property_delegate(Pid) const { return nullptr; }
 
-    virtual PropertyValue getProperty(Pid) const = 0;
-    virtual bool setProperty(Pid, const PropertyValue &) = 0;
-    virtual PropertyValue propertyDefault(Pid) const;
-    virtual void resetProperty(Pid id);
+    virtual PropertyValue get_property(Pid) const = 0;
+    virtual bool set_property(Pid, const PropertyValue &) = 0;
+    virtual PropertyValue property_default(Pid) const;
+    virtual void reset_property(Pid id);
 
-    virtual bool sizeIsSpatiumDependent() const { return true; }
+    virtual bool size_is_spatium_dependent() const { return true; }
 
-    virtual bool offsetIsSpatiumDependent() const { return true; }
+    virtual bool offset_is_spatium_dependent() const { return true; }
 
     virtual void reset(); // reset all properties & position to default
 
-    virtual void initElementStyle(const ElementStyle *);
+    virtual void init_element_style(const ElementStyle *);
 
-    virtual const ElementStyle *styledProperties() const { return elementStyle_; }
+    virtual const ElementStyle *styled_properties() const { return element_style_; }
 
-    virtual PropertyFlags *propertyFlagsList() const { return propertyFlagsList_; }
+    virtual PropertyFlags *property_flags_list() const { return property_flags_list_; }
 
-    virtual PropertyFlags propertyFlags(Pid) const;
-    bool isStyled(Pid pid) const;
-    PropertyValue styleValue(Pid, Sid) const;
+    virtual PropertyFlags property_flags(Pid) const;
+    bool is_styled(Pid pid) const;
+    PropertyValue style_value(Pid, Sid) const;
 
-    virtual void setPropertyFlags(Pid, PropertyFlags);
+    virtual void set_property_flags(Pid, PropertyFlags);
 
-    virtual Sid getPropertyStyle(Pid) const;
+    virtual Sid get_property_style(Pid) const;
 
-    virtual void styleChanged();
+    virtual void style_changed();
 
-    virtual void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps);
-    void undoChangeProperty(Pid id, const PropertyValue &);
-    void undoResetProperty(Pid id);
+    virtual void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps);
+    void undo_change_property(Pid id, const PropertyValue &);
+    void undo_reset_property(Pid id);
 
-    void undoPushProperty(Pid);
+    void undo_push_property(Pid);
 
-    std::list<EngravingObject *> linkList() const;
+    std::list<EngravingObject *> link_list() const;
 
-    void linkTo(EngravingObject *);
+    void link_to(EngravingObject *);
     void unlink();
-    bool isLinked(EngravingObject *se = nullptr) const;
+    bool is_linked(EngravingObject *se = nullptr) const;
 
-    virtual void undoUnlink();
+    virtual void undo_unlink();
 
     LinkedObjects *links() const { return links_; }
 
-    void setLinks(LinkedObjects *le);
+    void set_links(LinkedObjects *le);
 
 protected:
-    virtual int getPropertyFlagsIdx(Pid id) const;
+    virtual int get_property_flags_idx(Pid id) const;
 
     //! NOTE For compatibility reasons, hope, we will remove the need for this method.
-    void hack_setType(const ElementType &t) { type_ = t; }
+    void hack_set_type(const ElementType &t) { type_ = t; }
 
-    void addChild(EngravingObject *o);
-    void removeChild(EngravingObject *o);
+    void add_child(EngravingObject *o);
+    void remove_child(EngravingObject *o);
 
-    const ElementStyle *elementStyle_{&EMPTY_STYLE};
-    PropertyFlags *propertyFlagsList_ = nullptr;
+    const ElementStyle *element_style_{&::mu::engraving::EngravingObject::empty_style};
+    PropertyFlags *property_flags_list_ = nullptr;
     LinkedObjects *links_ = nullptr;
     Score *score_ = nullptr;
 
 private:
-    static ElementStyle const EMPTY_STYLE;
+    static ElementStyle const empty_style;
 
-    void doSetParent(EngravingObject *p);
-    void doSetScore(Score *sc);
+    void do_set_parent(EngravingObject *p);
+    void do_set_score(Score *sc);
 
     ElementType type_ = ElementType::INVALID;
 
@@ -359,7 +359,7 @@ private:
 
 public:
 
-    virtual std::list<EngravingObject *> linkListForPropertyPropagation() const { return linkList(); }
+    virtual std::list<EngravingObject *> link_list_for_property_propagation() const { return link_list(); }
 
     //---------------------------------------------------
     // check type
@@ -369,234 +369,236 @@ public:
     //    bool             isChordRest()
     //---------------------------------------------------
 
-#define CONVERT(a, b) \
-    bool is##a() const { return type() == ElementType::b; }
+#define CONVERT(predicate, kind) \
+    bool predicate() const { return type() == ElementType::kind; }
 
-    CONVERT(Note, NOTE)
-    CONVERT(Rest, REST)
-    CONVERT(MMRest, MMREST)
-    CONVERT(DeadSlapped, DEAD_SLAPPED)
-    CONVERT(Chord, CHORD)
-    CONVERT(BarLine, BAR_LINE)
-    CONVERT(Articulation, ARTICULATION)
-    CONVERT(Ornament, ORNAMENT)
-    CONVERT(Fermata, FERMATA)
-    CONVERT(Marker, MARKER)
-    CONVERT(Clef, CLEF)
-    CONVERT(KeySig, KEYSIG)
-    CONVERT(TimeSig, TIMESIG)
-    CONVERT(Measure, MEASURE)
-    CONVERT(TempoText, TEMPO_TEXT)
-    CONVERT(Breath, BREATH)
-    CONVERT(HBox, HBOX)
-    CONVERT(VBox, VBOX)
-    CONVERT(TBox, TBOX)
-    CONVERT(FBox, FBOX)
-    CONVERT(Glissando, GLISSANDO)
-    CONVERT(GlissandoSegment, GLISSANDO_SEGMENT)
-    CONVERT(GuitarBend, GUITAR_BEND)
-    CONVERT(GuitarBendSegment, GUITAR_BEND_SEGMENT)
-    CONVERT(GuitarBendHold, GUITAR_BEND_HOLD)
-    CONVERT(GuitarBendHoldSegment, GUITAR_BEND_HOLD_SEGMENT)
-    CONVERT(GuitarBendText, GUITAR_BEND_TEXT)
-    CONVERT(SystemDivider, SYSTEM_DIVIDER)
-    CONVERT(RehearsalMark, REHEARSAL_MARK)
-    CONVERT(TripletFeel, TRIPLET_FEEL)
-    CONVERT(Harmony, HARMONY)
-    CONVERT(Volta, VOLTA)
-    CONVERT(Jump, JUMP)
-    CONVERT(Ottava, OTTAVA)
-    CONVERT(LayoutBreak, LAYOUT_BREAK)
-    CONVERT(StaffVisibilityIndicator, STAFF_VISIBILITY_INDICATOR)
-    CONVERT(SystemLockIndicator, SYSTEM_LOCK_INDICATOR)
-    CONVERT(Segment, SEGMENT)
-    CONVERT(System, SYSTEM)
-    CONVERT(Lyrics, LYRICS)
-    CONVERT(Stem, STEM)
-    CONVERT(Beam, BEAM)
-    CONVERT(Hook, HOOK)
-    CONVERT(StemSlash, STEM_SLASH)
-    CONVERT(LaissezVibSegment, LAISSEZ_VIB_SEGMENT)
-    CONVERT(LaissezVib, LAISSEZ_VIB)
-    CONVERT(PartialTieSegment, PARTIAL_TIE_SEGMENT)
-    CONVERT(PartialTie, PARTIAL_TIE)
-    CONVERT(Spacer, SPACER)
-    CONVERT(StaffLines, STAFF_LINES)
-    CONVERT(Ambitus, AMBITUS)
-    CONVERT(Bracket, BRACKET)
-    CONVERT(InstrumentChange, INSTRUMENT_CHANGE)
-    CONVERT(StaffTypeChange, STAFFTYPE_CHANGE)
-    CONVERT(Hairpin, HAIRPIN)
-    CONVERT(HairpinSegment, HAIRPIN_SEGMENT)
-    CONVERT(Bend, BEND)
-    CONVERT(TremoloBar, TREMOLOBAR)
-    CONVERT(MeasureRepeat, MEASURE_REPEAT)
-    CONVERT(Tuplet, TUPLET)
-    CONVERT(NoteDot, NOTEDOT)
-    CONVERT(Dynamic, DYNAMIC)
-    CONVERT(Expression, EXPRESSION)
-    CONVERT(InstrumentName, INSTRUMENT_NAME)
-    CONVERT(Accidental, ACCIDENTAL)
-    CONVERT(TextLine, TEXTLINE)
-    CONVERT(TextLineSegment, TEXTLINE_SEGMENT)
-    CONVERT(Pedal, PEDAL)
-    CONVERT(PedalSegment, PEDAL_SEGMENT)
-    CONVERT(OttavaSegment, OTTAVA_SEGMENT)
-    CONVERT(LedgerLine, LEDGER_LINE)
-    CONVERT(ActionIcon, ACTION_ICON)
-    CONVERT(VoltaSegment, VOLTA_SEGMENT)
-    CONVERT(NoteLine, NOTELINE)
-    CONVERT(NoteLineSegment, NOTELINE_SEGMENT)
-    CONVERT(Trill, TRILL)
-    CONVERT(TrillSegment, TRILL_SEGMENT)
-    CONVERT(LetRing, LET_RING)
-    CONVERT(LetRingSegment, LET_RING_SEGMENT)
-    CONVERT(GradualTempoChange, GRADUAL_TEMPO_CHANGE)
-    CONVERT(GradualTempoChangeSegment, GRADUAL_TEMPO_CHANGE_SEGMENT)
-    CONVERT(Vibrato, VIBRATO)
-    CONVERT(PalmMute, PALM_MUTE)
-    CONVERT(PalmMuteSegment, PALM_MUTE_SEGMENT)
-    CONVERT(WhammyBar, WHAMMY_BAR)
-    CONVERT(WhammyBarSegment, WHAMMY_BAR_SEGMENT)
-    CONVERT(Rasgueado, RASGUEADO)
-    CONVERT(RasgueadoSegment, RASGUEADO_SEGMENT)
-    CONVERT(HarmonicMark, HARMONIC_MARK)
-    CONVERT(HarmonicMarkSegment, HARMONIC_MARK_SEGMENT)
-    CONVERT(PickScrape, PICK_SCRAPE)
-    CONVERT(PickScrapeSegment, PICK_SCRAPE_SEGMENT)
-    CONVERT(VibratoSegment, VIBRATO_SEGMENT)
-    CONVERT(Symbol, SYMBOL)
-    CONVERT(FSymbol, FSYMBOL)
-    CONVERT(Fingering, FINGERING)
-    CONVERT(NoteHead, NOTEHEAD)
-    CONVERT(PartialLyricsLine, PARTIAL_LYRICSLINE)
-    CONVERT(PartialLyricsLineSegment, PARTIAL_LYRICSLINE_SEGMENT)
-    CONVERT(FiguredBass, FIGURED_BASS)
-    CONVERT(FiguredBassItem, FIGURED_BASS_ITEM)
-    CONVERT(StaffState, STAFF_STATE)
-    CONVERT(Arpeggio, ARPEGGIO)
-    CONVERT(ChordBracket, CHORD_BRACKET)
-    CONVERT(Image, IMAGE)
-    CONVERT(ChordLine, CHORDLINE)
-    CONVERT(FretDiagram, FRET_DIAGRAM)
-    CONVERT(HarpPedalDiagram, HARP_DIAGRAM)
-    CONVERT(Page, PAGE)
-    CONVERT(PageLockIndicator, PAGE_LOCK_INDICATOR)
-    CONVERT(Text, TEXT)
-    CONVERT(MeasureNumber, MEASURE_NUMBER)
-    CONVERT(MMRestRange, MMREST_RANGE)
-    CONVERT(StaffText, STAFF_TEXT)
-    CONVERT(StaveSharingLabel, STAVE_SHARING_LABEL)
-    CONVERT(SystemText, SYSTEM_TEXT)
-    CONVERT(SoundFlag, SOUND_FLAG)
-    CONVERT(PlayCountText, PLAY_COUNT_TEXT)
-    CONVERT(PlayTechAnnotation, PLAYTECH_ANNOTATION)
-    CONVERT(Capo, CAPO)
-    CONVERT(BracketItem, BRACKET_ITEM)
-    CONVERT(Score, SCORE)
-    CONVERT(Staff, STAFF)
-    CONVERT(Part, PART)
-    CONVERT(SharedPart, SHARED_PART)
-    CONVERT(BagpipeEmbellishment, BAGPIPE_EMBELLISHMENT)
-    CONVERT(Lasso, LASSO)
-    CONVERT(Sticking, STICKING)
-    CONVERT(GraceNotesGroup, GRACE_NOTES_GROUP)
-    CONVERT(StringTunings, STRING_TUNINGS)
-    CONVERT(TimeTickAnchor, TIME_TICK_ANCHOR)
-    CONVERT(Parenthesis, PARENTHESIS)
-    CONVERT(ShadowNote, SHADOW_NOTE)
-    CONVERT(HammerOnPullOff, HAMMER_ON_PULL_OFF)
-    CONVERT(HammerOnPullOffSegment, HAMMER_ON_PULL_OFF_SEGMENT)
-    CONVERT(HammerOnPullOffText, HAMMER_ON_PULL_OFF_TEXT)
-    CONVERT(Tapping, TAPPING)
-    CONVERT(TappingHalfSlur, TAPPING_HALF_SLUR)
-    CONVERT(TappingHalfSlurSegment, TAPPING_HALF_SLUR_SEGMENT)
+    CONVERT(is_note, NOTE)
+    CONVERT(is_rest, REST)
+    CONVERT(is_mm_rest, MMREST)
+    CONVERT(is_dead_slapped, DEAD_SLAPPED)
+    CONVERT(is_chord, CHORD)
+    CONVERT(is_bar_line, BAR_LINE)
+    CONVERT(is_articulation, ARTICULATION)
+    CONVERT(is_ornament, ORNAMENT)
+    CONVERT(is_fermata, FERMATA)
+    CONVERT(is_marker, MARKER)
+    CONVERT(is_clef, CLEF)
+    CONVERT(is_key_sig, KEYSIG)
+    CONVERT(is_time_sig, TIMESIG)
+    CONVERT(is_measure, MEASURE)
+    CONVERT(is_tempo_text, TEMPO_TEXT)
+    CONVERT(is_breath, BREATH)
+    CONVERT(is_h_box, HBOX)
+    CONVERT(is_v_box, VBOX)
+    CONVERT(is_t_box, TBOX)
+    CONVERT(is_f_box, FBOX)
+    CONVERT(is_glissando, GLISSANDO)
+    CONVERT(is_glissando_segment, GLISSANDO_SEGMENT)
+    CONVERT(is_guitar_bend, GUITAR_BEND)
+    CONVERT(is_guitar_bend_segment, GUITAR_BEND_SEGMENT)
+    CONVERT(is_guitar_bend_hold, GUITAR_BEND_HOLD)
+    CONVERT(is_guitar_bend_hold_segment, GUITAR_BEND_HOLD_SEGMENT)
+    CONVERT(is_guitar_bend_text, GUITAR_BEND_TEXT)
+    CONVERT(is_system_divider, SYSTEM_DIVIDER)
+    CONVERT(is_rehearsal_mark, REHEARSAL_MARK)
+    CONVERT(is_triplet_feel, TRIPLET_FEEL)
+    CONVERT(is_harmony, HARMONY)
+    CONVERT(is_volta, VOLTA)
+    CONVERT(is_jump, JUMP)
+    CONVERT(is_ottava, OTTAVA)
+    CONVERT(is_layout_break, LAYOUT_BREAK)
+    CONVERT(is_staff_visibility_indicator, STAFF_VISIBILITY_INDICATOR)
+    CONVERT(is_system_lock_indicator, SYSTEM_LOCK_INDICATOR)
+    CONVERT(is_segment, SEGMENT)
+    CONVERT(is_system, SYSTEM)
+    CONVERT(is_lyrics, LYRICS)
+    CONVERT(is_stem, STEM)
+    CONVERT(is_beam, BEAM)
+    CONVERT(is_hook, HOOK)
+    CONVERT(is_stem_slash, STEM_SLASH)
+    CONVERT(is_laissez_vib_segment, LAISSEZ_VIB_SEGMENT)
+    CONVERT(is_laissez_vib, LAISSEZ_VIB)
+    CONVERT(is_partial_tie_segment, PARTIAL_TIE_SEGMENT)
+    CONVERT(is_partial_tie, PARTIAL_TIE)
+    CONVERT(is_spacer, SPACER)
+    CONVERT(is_staff_lines, STAFF_LINES)
+    CONVERT(is_ambitus, AMBITUS)
+    CONVERT(is_bracket, BRACKET)
+    CONVERT(is_instrument_change, INSTRUMENT_CHANGE)
+    CONVERT(is_staff_type_change, STAFFTYPE_CHANGE)
+    CONVERT(is_hairpin, HAIRPIN)
+    CONVERT(is_hairpin_segment, HAIRPIN_SEGMENT)
+    CONVERT(is_bend, BEND)
+    CONVERT(is_tremolo_bar, TREMOLOBAR)
+    CONVERT(is_measure_repeat, MEASURE_REPEAT)
+    CONVERT(is_tuplet, TUPLET)
+    CONVERT(is_note_dot, NOTEDOT)
+    CONVERT(is_dynamic, DYNAMIC)
+    CONVERT(is_expression, EXPRESSION)
+    CONVERT(is_instrument_name, INSTRUMENT_NAME)
+    CONVERT(is_accidental, ACCIDENTAL)
+    CONVERT(is_text_line, TEXTLINE)
+    CONVERT(is_text_line_segment, TEXTLINE_SEGMENT)
+    CONVERT(is_pedal, PEDAL)
+    CONVERT(is_pedal_segment, PEDAL_SEGMENT)
+    CONVERT(is_ottava_segment, OTTAVA_SEGMENT)
+    CONVERT(is_ledger_line, LEDGER_LINE)
+    CONVERT(is_action_icon, ACTION_ICON)
+    CONVERT(is_volta_segment, VOLTA_SEGMENT)
+    CONVERT(is_note_line, NOTELINE)
+    CONVERT(is_note_line_segment, NOTELINE_SEGMENT)
+    CONVERT(is_trill, TRILL)
+    CONVERT(is_trill_segment, TRILL_SEGMENT)
+    CONVERT(is_let_ring, LET_RING)
+    CONVERT(is_let_ring_segment, LET_RING_SEGMENT)
+    CONVERT(is_gradual_tempo_change, GRADUAL_TEMPO_CHANGE)
+    CONVERT(is_gradual_tempo_change_segment, GRADUAL_TEMPO_CHANGE_SEGMENT)
+    CONVERT(is_vibrato, VIBRATO)
+    CONVERT(is_palm_mute, PALM_MUTE)
+    CONVERT(is_palm_mute_segment, PALM_MUTE_SEGMENT)
+    CONVERT(is_whammy_bar, WHAMMY_BAR)
+    CONVERT(is_whammy_bar_segment, WHAMMY_BAR_SEGMENT)
+    CONVERT(is_rasgueado, RASGUEADO)
+    CONVERT(is_rasgueado_segment, RASGUEADO_SEGMENT)
+    CONVERT(is_harmonic_mark, HARMONIC_MARK)
+    CONVERT(is_harmonic_mark_segment, HARMONIC_MARK_SEGMENT)
+    CONVERT(is_pick_scrape, PICK_SCRAPE)
+    CONVERT(is_pick_scrape_segment, PICK_SCRAPE_SEGMENT)
+    CONVERT(is_vibrato_segment, VIBRATO_SEGMENT)
+    CONVERT(is_symbol, SYMBOL)
+    CONVERT(is_f_symbol, FSYMBOL)
+    CONVERT(is_fingering, FINGERING)
+    CONVERT(is_note_head, NOTEHEAD)
+    CONVERT(is_partial_lyrics_line, PARTIAL_LYRICSLINE)
+    CONVERT(is_partial_lyrics_line_segment, PARTIAL_LYRICSLINE_SEGMENT)
+    CONVERT(is_figured_bass, FIGURED_BASS)
+    CONVERT(is_figured_bass_item, FIGURED_BASS_ITEM)
+    CONVERT(is_staff_state, STAFF_STATE)
+    CONVERT(is_arpeggio, ARPEGGIO)
+    CONVERT(is_chord_bracket, CHORD_BRACKET)
+    CONVERT(is_image, IMAGE)
+    CONVERT(is_chord_line, CHORDLINE)
+    CONVERT(is_fret_diagram, FRET_DIAGRAM)
+    CONVERT(is_harp_pedal_diagram, HARP_DIAGRAM)
+    CONVERT(is_page, PAGE)
+    CONVERT(is_page_lock_indicator, PAGE_LOCK_INDICATOR)
+    CONVERT(is_text, TEXT)
+    CONVERT(is_measure_number, MEASURE_NUMBER)
+    CONVERT(is_mm_rest_range, MMREST_RANGE)
+    CONVERT(is_staff_text, STAFF_TEXT)
+    CONVERT(is_stave_sharing_label, STAVE_SHARING_LABEL)
+    CONVERT(is_system_text, SYSTEM_TEXT)
+    CONVERT(is_sound_flag, SOUND_FLAG)
+    CONVERT(is_play_count_text, PLAY_COUNT_TEXT)
+    CONVERT(is_play_tech_annotation, PLAYTECH_ANNOTATION)
+    CONVERT(is_capo, CAPO)
+    CONVERT(is_bracket_item, BRACKET_ITEM)
+    CONVERT(is_score, SCORE)
+    CONVERT(is_staff, STAFF)
+    CONVERT(is_part, PART)
+    CONVERT(is_shared_part, SHARED_PART)
+    CONVERT(is_bagpipe_embellishment, BAGPIPE_EMBELLISHMENT)
+    CONVERT(is_lasso, LASSO)
+    CONVERT(is_sticking, STICKING)
+    CONVERT(is_grace_notes_group, GRACE_NOTES_GROUP)
+    CONVERT(is_string_tunings, STRING_TUNINGS)
+    CONVERT(is_time_tick_anchor, TIME_TICK_ANCHOR)
+    CONVERT(is_parenthesis, PARENTHESIS)
+    CONVERT(is_shadow_note, SHADOW_NOTE)
+    CONVERT(is_hammer_on_pull_off, HAMMER_ON_PULL_OFF)
+    CONVERT(is_hammer_on_pull_off_segment, HAMMER_ON_PULL_OFF_SEGMENT)
+    CONVERT(is_hammer_on_pull_off_text, HAMMER_ON_PULL_OFF_TEXT)
+    CONVERT(is_tapping, TAPPING)
+    CONVERT(is_tapping_half_slur, TAPPING_HALF_SLUR)
+    CONVERT(is_tapping_half_slur_segment, TAPPING_HALF_SLUR_SEGMENT)
 #undef CONVERT
 
-    virtual bool isEngravingItem() const { return false; } // overridden in element.h
+    virtual bool is_engraving_item() const { return false; } // overridden in element.h
 
-    bool isRestFamily() const { return isRest() || isMMRest() || isMeasureRepeat(); }
+    bool is_rest_family() const { return is_rest() || is_mm_rest() || is_measure_repeat(); }
 
-    bool isChordRest() const { return isRestFamily() || isChord(); }
+    bool is_chord_rest() const { return is_rest_family() || is_chord(); }
 
-    bool isDurationElement() const { return isChordRest() || isTuplet(); }
+    bool is_duration_element() const { return is_chord_rest() || is_tuplet(); }
 
-    bool isSlurTie() const { return isSlur() || isTie(); }
+    bool is_slur_tie() const { return is_slur() || is_tie(); }
 
-    bool isSlurTieSegment() const { return isSlurSegment() || isTieSegment(); }
+    bool is_slur_tie_segment() const { return is_slur_segment() || is_tie_segment(); }
 
-    bool isSLineSegment() const;
+    bool is_s_line_segment() const;
 
-    bool isBox() const { return isVBox() || isHBox() || isTBox() || isFBox(); }
+    bool is_box() const { return is_v_box() || is_h_box() || is_t_box() || is_f_box(); }
 
-    bool isVBoxBase() const { return isVBox() || isTBox() || isFBox(); }
+    bool is_v_box_base() const { return is_v_box() || is_t_box() || is_f_box(); }
 
-    bool isMeasureBase() const { return isMeasure() || isBox(); }
+    bool is_measure_base() const { return is_measure() || is_box(); }
 
-    bool isTextBase() const;
+    bool is_text_base() const;
 
-    bool isTextLineBaseSegment() const {
-        return isHairpinSegment() || isLetRingSegment() || isGradualTempoChangeSegment() || isTextLineSegment() || isOttavaSegment() ||
-               isPalmMuteSegment() || isPickScrapeSegment() || isWhammyBarSegment() || isRasgueadoSegment() || isHarmonicMarkSegment() ||
-               isPedalSegment() || isVoltaSegment() || isNoteLineSegment();
+    bool is_text_line_base_segment() const {
+        return is_hairpin_segment() || is_let_ring_segment() || is_gradual_tempo_change_segment() || is_text_line_segment() ||
+               is_ottava_segment() || is_palm_mute_segment() || is_pick_scrape_segment() || is_whammy_bar_segment() ||
+               is_rasgueado_segment() || is_harmonic_mark_segment() || is_pedal_segment() || is_volta_segment() || is_note_line_segment();
     }
 
-    bool isSlur() const {
+    bool is_slur() const {
         return type() == ElementType::SLUR || type() == ElementType::HAMMER_ON_PULL_OFF || type() == ElementType::TAPPING_HALF_SLUR;
     }
 
-    bool isSlurSegment() const {
+    bool is_slur_segment() const {
         return type() == ElementType::SLUR_SEGMENT || type() == ElementType::HAMMER_ON_PULL_OFF_SEGMENT ||
                type() == ElementType::TAPPING_HALF_SLUR_SEGMENT;
     }
 
-    bool isLineSegment() const {
-        return isGlissandoSegment() || isLyricsLineSegment() || isTextLineBaseSegment() || isTrillSegment() || isVibratoSegment() ||
-               isGuitarBendSegment() || isGuitarBendHoldSegment();
+    bool is_line_segment() const {
+        return is_glissando_segment() || is_lyrics_line_segment() || is_text_line_base_segment() || is_trill_segment() ||
+               is_vibrato_segment() || is_guitar_bend_segment() || is_guitar_bend_hold_segment();
     }
 
-    bool isTieSegment() const {
+    bool is_tie_segment() const {
         return type() == ElementType::TIE_SEGMENT || type() == ElementType::LAISSEZ_VIB_SEGMENT ||
                type() == ElementType::PARTIAL_TIE_SEGMENT;
     }
 
-    bool isTie() const { return type() == ElementType::TIE || type() == ElementType::LAISSEZ_VIB || type() == ElementType::PARTIAL_TIE; }
+    bool is_tie() const { return type() == ElementType::TIE || type() == ElementType::LAISSEZ_VIB || type() == ElementType::PARTIAL_TIE; }
 
-    bool isSpannerSegment() const { return isLineSegment() || isTextLineBaseSegment() || isSlurSegment() || isTieSegment(); }
+    bool is_spanner_segment() const { return is_line_segment() || is_text_line_base_segment() || is_slur_segment() || is_tie_segment(); }
 
-    bool isBSymbol() const { return isImage() || isSymbol(); }
+    bool is_b_symbol() const { return is_image() || is_symbol(); }
 
-    bool isTextLineBase() const {
-        return isHairpin() || isLetRing() || isGradualTempoChange() || isTextLine() || isOttava() || isPalmMute() || isPickScrape() ||
-               isWhammyBar() || isRasgueado() || isHarmonicMark() || isPedal() || isVolta() || isNoteLine();
+    bool is_text_line_base() const {
+        return is_hairpin() || is_let_ring() || is_gradual_tempo_change() || is_text_line() || is_ottava() || is_palm_mute() ||
+               is_pick_scrape() || is_whammy_bar() || is_rasgueado() || is_harmonic_mark() || is_pedal() || is_volta() || is_note_line();
     }
 
-    bool isLyricsLine() const { return type() == ElementType::LYRICSLINE || type() == ElementType::PARTIAL_LYRICSLINE; }
+    bool is_lyrics_line() const { return type() == ElementType::LYRICSLINE || type() == ElementType::PARTIAL_LYRICSLINE; }
 
-    bool isLyricsLineSegment() const {
+    bool is_lyrics_line_segment() const {
         return type() == ElementType::LYRICSLINE_SEGMENT || type() == ElementType::PARTIAL_LYRICSLINE_SEGMENT;
     }
 
-    bool isSLine() const { return isTextLineBase() || isTrill() || isGlissando() || isVibrato() || isGuitarBend() || isGuitarBendHold(); }
-
-    bool isSpanner() const { return isSlur() || isTie() || isLyricsLine() || isSLine(); }
-
-    bool isStaffTextBase() const {
-        return isStaffText() || isStaveSharingLabel() || isSystemText() || isTripletFeel() || isPlayTechAnnotation() || isCapo() ||
-               isStringTunings();
+    bool is_s_line() const {
+        return is_text_line_base() || is_trill() || is_glissando() || is_vibrato() || is_guitar_bend() || is_guitar_bend_hold();
     }
 
-    bool isArticulationFamily() const { return isArticulation() || isOrnament() || isTapping(); }
+    bool is_spanner() const { return is_slur() || is_tie() || is_lyrics_line() || is_s_line(); }
 
-    bool isArticulationOrFermata() const { return isArticulationFamily() || isFermata(); }
+    bool is_staff_text_base() const {
+        return is_staff_text() || is_stave_sharing_label() || is_system_text() || is_triplet_feel() || is_play_tech_annotation() ||
+               is_capo() || is_string_tunings();
+    }
 
-    bool isIndicatorIcon() const { return isSystemLockIndicator() || isPageLockIndicator() || isStaffVisibilityIndicator(); }
+    bool is_articulation_family() const { return is_articulation() || is_ornament() || is_tapping(); }
+
+    bool is_articulation_or_fermata() const { return is_articulation_family() || is_fermata(); }
+
+    bool is_indicator_icon() const { return is_system_lock_indicator() || is_page_lock_indicator() || is_staff_visibility_indicator(); }
 };
 
 template <typename... ParentTypes>
 template <typename T>
 T *DummyParentOr<ParentTypes...>::as() const {
-    return parent_ && !parent_->isType(ElementType::DUMMY) ? static_cast<T *>(parent_) : nullptr;
+    return parent_ && !parent_->is_type(ElementType::DUMMY) ? static_cast<T *>(parent_) : nullptr;
 }
 
 //---------------------------------------------------
@@ -607,203 +609,203 @@ T *DummyParentOr<ParentTypes...>::as() const {
 //    ChordRest* toChordRest(EngravingItem* e)
 //---------------------------------------------------
 
-static inline Rest *toRest(EngravingObject *e) {
-    assert(!e || e->isRestFamily());
+static inline Rest *to_rest(EngravingObject *e) {
+    assert(!e || e->is_rest_family());
     return (Rest *) e;
 }
 
-static inline const Rest *toRest(const EngravingObject *e) {
-    assert(!e || e->isRestFamily());
+static inline const Rest *to_rest(const EngravingObject *e) {
+    assert(!e || e->is_rest_family());
     return (const Rest *) e;
 }
 
-static inline Articulation *toArticulation(EngravingObject *e) {
-    assert(!e || e->isArticulationFamily());
+static inline Articulation *to_articulation(EngravingObject *e) {
+    assert(!e || e->is_articulation_family());
     return (Articulation *) e;
 }
 
-static inline const Articulation *toArticulation(const EngravingObject *e) {
-    assert(!e || e->isArticulationFamily());
+static inline const Articulation *to_articulation(const EngravingObject *e) {
+    assert(!e || e->is_articulation_family());
     return (const Articulation *) e;
 }
 
-static inline Arpeggio *toArpeggio(EngravingObject *e) {
-    assert(!e || e->isArpeggio() || e->isChordBracket());
+static inline Arpeggio *to_arpeggio(EngravingObject *e) {
+    assert(!e || e->is_arpeggio() || e->is_chord_bracket());
     return (Arpeggio *) e;
 }
 
-static inline const Arpeggio *toArpeggio(const EngravingObject *e) {
-    assert(!e || e->isArpeggio() || e->isChordBracket());
+static inline const Arpeggio *to_arpeggio(const EngravingObject *e) {
+    assert(!e || e->is_arpeggio() || e->is_chord_bracket());
     return (const Arpeggio *) e;
 }
 
-#define CONVERT(a)                                           \
-    static inline a *to##a(EngravingObject *e) {             \
-        assert(!e || e->is##a());                            \
-        return (a *) e;                                      \
-    }                                                        \
-    static inline const a *to##a(const EngravingObject *e) { \
-        assert(!e || e->is##a());                            \
-        return (const a *) e;                                \
+#define CONVERT(a, cast_name, predicate)                         \
+    static inline a *cast_name(EngravingObject *e) {             \
+        assert(!e || e->predicate());                            \
+        return (a *) e;                                          \
+    }                                                            \
+    static inline const a *cast_name(const EngravingObject *e) { \
+        assert(!e || e->predicate());                            \
+        return (const a *) e;                                    \
     }
 
-CONVERT(EngravingItem)
-CONVERT(Note)
-CONVERT(Chord)
-CONVERT(BarLine)
-CONVERT(Ornament)
-CONVERT(Fermata)
-CONVERT(Marker)
-CONVERT(Clef)
-CONVERT(KeySig)
-CONVERT(TimeSig)
-CONVERT(Measure)
-CONVERT(MeasureBase)
-CONVERT(DurationElement)
-CONVERT(ChordRest)
-CONVERT(TempoText)
-CONVERT(Breath)
-CONVERT(Box)
-CONVERT(HBox)
-CONVERT(VBox)
-CONVERT(TBox)
-CONVERT(FBox)
-CONVERT(Spanner)
-CONVERT(SpannerSegment)
-CONVERT(Glissando)
-CONVERT(GlissandoSegment)
-CONVERT(GuitarBend)
-CONVERT(GuitarBendSegment)
-CONVERT(GuitarBendHold)
-CONVERT(GuitarBendHoldSegment)
-CONVERT(GuitarBendText)
-CONVERT(SystemDivider)
-CONVERT(RehearsalMark)
-CONVERT(Bend)
-CONVERT(TripletFeel)
-CONVERT(Harmony)
-CONVERT(Jump)
-CONVERT(StaffText)
-CONVERT(StaveSharingLabel);
-CONVERT(StaffTextBase)
-CONVERT(TextBase)
-CONVERT(TextLineBase)
-CONVERT(TextLineBaseSegment)
-CONVERT(PlayCountText)
-CONVERT(PlayTechAnnotation)
-CONVERT(Capo)
-CONVERT(Ottava)
-CONVERT(LayoutBreak)
-CONVERT(IndicatorIcon)
-CONVERT(StaffVisibilityIndicator)
-CONVERT(SystemLockIndicator)
-CONVERT(Segment)
-CONVERT(System)
-CONVERT(Lyrics)
-CONVERT(Stem)
-CONVERT(Beam)
-CONVERT(Hook)
-CONVERT(StemSlash)
-CONVERT(SLine)
-CONVERT(LineSegment)
-CONVERT(Slur)
-CONVERT(SlurSegment)
-CONVERT(Tie)
-CONVERT(TieSegment)
-CONVERT(SlurTie)
-CONVERT(SlurTieSegment)
-CONVERT(LaissezVibSegment)
-CONVERT(PartialTieSegment)
-CONVERT(Spacer)
-CONVERT(StaffLines)
-CONVERT(Ambitus)
-CONVERT(Bracket)
-CONVERT(InstrumentChange)
-CONVERT(StaffTypeChange)
-CONVERT(Text)
-CONVERT(MeasureNumber)
-CONVERT(MMRestRange)
-CONVERT(Hairpin)
-CONVERT(HairpinSegment)
-CONVERT(TremoloBar)
-CONVERT(MeasureRepeat)
-CONVERT(MMRest)
-CONVERT(Tuplet)
-CONVERT(NoteDot)
-CONVERT(Dynamic)
-CONVERT(Expression)
-CONVERT(InstrumentName)
-CONVERT(Accidental)
-CONVERT(TextLine)
-CONVERT(TextLineSegment)
-CONVERT(Pedal)
-CONVERT(PedalSegment)
-CONVERT(OttavaSegment)
-CONVERT(LedgerLine)
-CONVERT(ActionIcon)
-CONVERT(Volta)
-CONVERT(VoltaSegment)
-CONVERT(NoteLine)
-CONVERT(NoteLineSegment)
-CONVERT(Trill)
-CONVERT(TrillSegment)
-CONVERT(LetRing)
-CONVERT(LetRingSegment)
-CONVERT(GradualTempoChange)
-CONVERT(GradualTempoChangeSegment)
-CONVERT(Vibrato)
-CONVERT(VibratoSegment)
-CONVERT(PalmMute)
-CONVERT(PalmMuteSegment)
-CONVERT(WhammyBar)
-CONVERT(WhammyBarSegment)
-CONVERT(Rasgueado)
-CONVERT(RasgueadoSegment)
-CONVERT(HarmonicMark)
-CONVERT(HarmonicMarkSegment)
-CONVERT(PickScrape)
-CONVERT(PickScrapeSegment)
-CONVERT(Symbol)
-CONVERT(FSymbol)
-CONVERT(BSymbol)
-CONVERT(Fingering)
-CONVERT(NoteHead)
-CONVERT(LyricsLine)
-CONVERT(LyricsLineSegment)
-CONVERT(FiguredBass)
-CONVERT(FiguredBassItem)
-CONVERT(StaffState)
-CONVERT(ChordBracket)
-CONVERT(Image)
-CONVERT(ChordLine)
-CONVERT(FretDiagram)
-CONVERT(HarpPedalDiagram)
-CONVERT(Page)
-CONVERT(PageLockIndicator)
-CONVERT(SystemText)
-CONVERT(BracketItem)
-CONVERT(Staff)
-CONVERT(Part)
-CONVERT(SharedPart)
-CONVERT(Lasso)
-CONVERT(BagpipeEmbellishment)
-CONVERT(Sticking)
-CONVERT(GraceNotesGroup)
-CONVERT(DeadSlapped)
-CONVERT(StringTunings)
-CONVERT(SoundFlag)
-CONVERT(TimeTickAnchor)
-CONVERT(LaissezVib)
-CONVERT(PartialTie)
-CONVERT(PartialLyricsLine)
-CONVERT(PartialLyricsLineSegment)
-CONVERT(Parenthesis)
-CONVERT(ShadowNote)
-CONVERT(HammerOnPullOff)
-CONVERT(HammerOnPullOffSegment)
-CONVERT(HammerOnPullOffText)
-CONVERT(Tapping)
-CONVERT(TappingHalfSlur)
-CONVERT(TappingHalfSlurSegment)
+CONVERT(EngravingItem, to_engraving_item, is_engraving_item)
+CONVERT(Note, to_note, is_note)
+CONVERT(Chord, to_chord, is_chord)
+CONVERT(BarLine, to_bar_line, is_bar_line)
+CONVERT(Ornament, to_ornament, is_ornament)
+CONVERT(Fermata, to_fermata, is_fermata)
+CONVERT(Marker, to_marker, is_marker)
+CONVERT(Clef, to_clef, is_clef)
+CONVERT(KeySig, to_key_sig, is_key_sig)
+CONVERT(TimeSig, to_time_sig, is_time_sig)
+CONVERT(Measure, to_measure, is_measure)
+CONVERT(MeasureBase, to_measure_base, is_measure_base)
+CONVERT(DurationElement, to_duration_element, is_duration_element)
+CONVERT(ChordRest, to_chord_rest, is_chord_rest)
+CONVERT(TempoText, to_tempo_text, is_tempo_text)
+CONVERT(Breath, to_breath, is_breath)
+CONVERT(Box, to_box, is_box)
+CONVERT(HBox, to_h_box, is_h_box)
+CONVERT(VBox, to_v_box, is_v_box)
+CONVERT(TBox, to_t_box, is_t_box)
+CONVERT(FBox, to_f_box, is_f_box)
+CONVERT(Spanner, to_spanner, is_spanner)
+CONVERT(SpannerSegment, to_spanner_segment, is_spanner_segment)
+CONVERT(Glissando, to_glissando, is_glissando)
+CONVERT(GlissandoSegment, to_glissando_segment, is_glissando_segment)
+CONVERT(GuitarBend, to_guitar_bend, is_guitar_bend)
+CONVERT(GuitarBendSegment, to_guitar_bend_segment, is_guitar_bend_segment)
+CONVERT(GuitarBendHold, to_guitar_bend_hold, is_guitar_bend_hold)
+CONVERT(GuitarBendHoldSegment, to_guitar_bend_hold_segment, is_guitar_bend_hold_segment)
+CONVERT(GuitarBendText, to_guitar_bend_text, is_guitar_bend_text)
+CONVERT(SystemDivider, to_system_divider, is_system_divider)
+CONVERT(RehearsalMark, to_rehearsal_mark, is_rehearsal_mark)
+CONVERT(Bend, to_bend, is_bend)
+CONVERT(TripletFeel, to_triplet_feel, is_triplet_feel)
+CONVERT(Harmony, to_harmony, is_harmony)
+CONVERT(Jump, to_jump, is_jump)
+CONVERT(StaffText, to_staff_text, is_staff_text)
+CONVERT(StaveSharingLabel, to_stave_sharing_label, is_stave_sharing_label);
+CONVERT(StaffTextBase, to_staff_text_base, is_staff_text_base)
+CONVERT(TextBase, to_text_base, is_text_base)
+CONVERT(TextLineBase, to_text_line_base, is_text_line_base)
+CONVERT(TextLineBaseSegment, to_text_line_base_segment, is_text_line_base_segment)
+CONVERT(PlayCountText, to_play_count_text, is_play_count_text)
+CONVERT(PlayTechAnnotation, to_play_tech_annotation, is_play_tech_annotation)
+CONVERT(Capo, to_capo, is_capo)
+CONVERT(Ottava, to_ottava, is_ottava)
+CONVERT(LayoutBreak, to_layout_break, is_layout_break)
+CONVERT(IndicatorIcon, to_indicator_icon, is_indicator_icon)
+CONVERT(StaffVisibilityIndicator, to_staff_visibility_indicator, is_staff_visibility_indicator)
+CONVERT(SystemLockIndicator, to_system_lock_indicator, is_system_lock_indicator)
+CONVERT(Segment, to_segment, is_segment)
+CONVERT(System, to_system, is_system)
+CONVERT(Lyrics, to_lyrics, is_lyrics)
+CONVERT(Stem, to_stem, is_stem)
+CONVERT(Beam, to_beam, is_beam)
+CONVERT(Hook, to_hook, is_hook)
+CONVERT(StemSlash, to_stem_slash, is_stem_slash)
+CONVERT(SLine, to_s_line, is_s_line)
+CONVERT(LineSegment, to_line_segment, is_line_segment)
+CONVERT(Slur, to_slur, is_slur)
+CONVERT(SlurSegment, to_slur_segment, is_slur_segment)
+CONVERT(Tie, to_tie, is_tie)
+CONVERT(TieSegment, to_tie_segment, is_tie_segment)
+CONVERT(SlurTie, to_slur_tie, is_slur_tie)
+CONVERT(SlurTieSegment, to_slur_tie_segment, is_slur_tie_segment)
+CONVERT(LaissezVibSegment, to_laissez_vib_segment, is_laissez_vib_segment)
+CONVERT(PartialTieSegment, to_partial_tie_segment, is_partial_tie_segment)
+CONVERT(Spacer, to_spacer, is_spacer)
+CONVERT(StaffLines, to_staff_lines, is_staff_lines)
+CONVERT(Ambitus, to_ambitus, is_ambitus)
+CONVERT(Bracket, to_bracket, is_bracket)
+CONVERT(InstrumentChange, to_instrument_change, is_instrument_change)
+CONVERT(StaffTypeChange, to_staff_type_change, is_staff_type_change)
+CONVERT(Text, to_text, is_text)
+CONVERT(MeasureNumber, to_measure_number, is_measure_number)
+CONVERT(MMRestRange, to_mm_rest_range, is_mm_rest_range)
+CONVERT(Hairpin, to_hairpin, is_hairpin)
+CONVERT(HairpinSegment, to_hairpin_segment, is_hairpin_segment)
+CONVERT(TremoloBar, to_tremolo_bar, is_tremolo_bar)
+CONVERT(MeasureRepeat, to_measure_repeat, is_measure_repeat)
+CONVERT(MMRest, to_mm_rest, is_mm_rest)
+CONVERT(Tuplet, to_tuplet, is_tuplet)
+CONVERT(NoteDot, to_note_dot, is_note_dot)
+CONVERT(Dynamic, to_dynamic, is_dynamic)
+CONVERT(Expression, to_expression, is_expression)
+CONVERT(InstrumentName, to_instrument_name, is_instrument_name)
+CONVERT(Accidental, to_accidental, is_accidental)
+CONVERT(TextLine, to_text_line, is_text_line)
+CONVERT(TextLineSegment, to_text_line_segment, is_text_line_segment)
+CONVERT(Pedal, to_pedal, is_pedal)
+CONVERT(PedalSegment, to_pedal_segment, is_pedal_segment)
+CONVERT(OttavaSegment, to_ottava_segment, is_ottava_segment)
+CONVERT(LedgerLine, to_ledger_line, is_ledger_line)
+CONVERT(ActionIcon, to_action_icon, is_action_icon)
+CONVERT(Volta, to_volta, is_volta)
+CONVERT(VoltaSegment, to_volta_segment, is_volta_segment)
+CONVERT(NoteLine, to_note_line, is_note_line)
+CONVERT(NoteLineSegment, to_note_line_segment, is_note_line_segment)
+CONVERT(Trill, to_trill, is_trill)
+CONVERT(TrillSegment, to_trill_segment, is_trill_segment)
+CONVERT(LetRing, to_let_ring, is_let_ring)
+CONVERT(LetRingSegment, to_let_ring_segment, is_let_ring_segment)
+CONVERT(GradualTempoChange, to_gradual_tempo_change, is_gradual_tempo_change)
+CONVERT(GradualTempoChangeSegment, to_gradual_tempo_change_segment, is_gradual_tempo_change_segment)
+CONVERT(Vibrato, to_vibrato, is_vibrato)
+CONVERT(VibratoSegment, to_vibrato_segment, is_vibrato_segment)
+CONVERT(PalmMute, to_palm_mute, is_palm_mute)
+CONVERT(PalmMuteSegment, to_palm_mute_segment, is_palm_mute_segment)
+CONVERT(WhammyBar, to_whammy_bar, is_whammy_bar)
+CONVERT(WhammyBarSegment, to_whammy_bar_segment, is_whammy_bar_segment)
+CONVERT(Rasgueado, to_rasgueado, is_rasgueado)
+CONVERT(RasgueadoSegment, to_rasgueado_segment, is_rasgueado_segment)
+CONVERT(HarmonicMark, to_harmonic_mark, is_harmonic_mark)
+CONVERT(HarmonicMarkSegment, to_harmonic_mark_segment, is_harmonic_mark_segment)
+CONVERT(PickScrape, to_pick_scrape, is_pick_scrape)
+CONVERT(PickScrapeSegment, to_pick_scrape_segment, is_pick_scrape_segment)
+CONVERT(Symbol, to_symbol, is_symbol)
+CONVERT(FSymbol, to_f_symbol, is_f_symbol)
+CONVERT(BSymbol, to_b_symbol, is_b_symbol)
+CONVERT(Fingering, to_fingering, is_fingering)
+CONVERT(NoteHead, to_note_head, is_note_head)
+CONVERT(LyricsLine, to_lyrics_line, is_lyrics_line)
+CONVERT(LyricsLineSegment, to_lyrics_line_segment, is_lyrics_line_segment)
+CONVERT(FiguredBass, to_figured_bass, is_figured_bass)
+CONVERT(FiguredBassItem, to_figured_bass_item, is_figured_bass_item)
+CONVERT(StaffState, to_staff_state, is_staff_state)
+CONVERT(ChordBracket, to_chord_bracket, is_chord_bracket)
+CONVERT(Image, to_image, is_image)
+CONVERT(ChordLine, to_chord_line, is_chord_line)
+CONVERT(FretDiagram, to_fret_diagram, is_fret_diagram)
+CONVERT(HarpPedalDiagram, to_harp_pedal_diagram, is_harp_pedal_diagram)
+CONVERT(Page, to_page, is_page)
+CONVERT(PageLockIndicator, to_page_lock_indicator, is_page_lock_indicator)
+CONVERT(SystemText, to_system_text, is_system_text)
+CONVERT(BracketItem, to_bracket_item, is_bracket_item)
+CONVERT(Staff, to_staff, is_staff)
+CONVERT(Part, to_part, is_part)
+CONVERT(SharedPart, to_shared_part, is_shared_part)
+CONVERT(Lasso, to_lasso, is_lasso)
+CONVERT(BagpipeEmbellishment, to_bagpipe_embellishment, is_bagpipe_embellishment)
+CONVERT(Sticking, to_sticking, is_sticking)
+CONVERT(GraceNotesGroup, to_grace_notes_group, is_grace_notes_group)
+CONVERT(DeadSlapped, to_dead_slapped, is_dead_slapped)
+CONVERT(StringTunings, to_string_tunings, is_string_tunings)
+CONVERT(SoundFlag, to_sound_flag, is_sound_flag)
+CONVERT(TimeTickAnchor, to_time_tick_anchor, is_time_tick_anchor)
+CONVERT(LaissezVib, to_laissez_vib, is_laissez_vib)
+CONVERT(PartialTie, to_partial_tie, is_partial_tie)
+CONVERT(PartialLyricsLine, to_partial_lyrics_line, is_partial_lyrics_line)
+CONVERT(PartialLyricsLineSegment, to_partial_lyrics_line_segment, is_partial_lyrics_line_segment)
+CONVERT(Parenthesis, to_parenthesis, is_parenthesis)
+CONVERT(ShadowNote, to_shadow_note, is_shadow_note)
+CONVERT(HammerOnPullOff, to_hammer_on_pull_off, is_hammer_on_pull_off)
+CONVERT(HammerOnPullOffSegment, to_hammer_on_pull_off_segment, is_hammer_on_pull_off_segment)
+CONVERT(HammerOnPullOffText, to_hammer_on_pull_off_text, is_hammer_on_pull_off_text)
+CONVERT(Tapping, to_tapping, is_tapping)
+CONVERT(TappingHalfSlur, to_tapping_half_slur, is_tapping_half_slur)
+CONVERT(TappingHalfSlurSegment, to_tapping_half_slur_segment, is_tapping_half_slur_segment)
 #undef CONVERT
 } // namespace mu::engraving

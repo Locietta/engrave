@@ -32,42 +32,42 @@ using namespace mu::engraving;
 
 StaffTextBase::StaffTextBase(const ElementType &type, DummyParentOr<Segment> parent, TextStyleType tid, ElementFlags flags)
     : TextBase(type, parent, tid, flags) {
-    setSwingParameters(Constants::DIVISION / 2, 60);
+    set_swing_parameters(Constants::division / 2, 60);
 }
 
 void StaffTextBase::clear() {
-    for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        channelNames_[voice].clear();
+    for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+        channel_names_[voice].clear();
     }
-    clearAeolusStops();
+    clear_aeolus_stops();
 }
 
-void StaffTextBase::clearAeolusStops() {
+void StaffTextBase::clear_aeolus_stops() {
     for (int i = 0; i < 4; ++i) {
-        aeolusStops_[i] = 0;
+        aeolus_stops_[i] = 0;
     }
 }
 
-void StaffTextBase::setAeolusStop(int group, int idx, bool val) {
+void StaffTextBase::set_aeolus_stop(int group, int idx, bool val) {
     if (val) {
-        aeolusStops_[group] |= (1 << idx);
+        aeolus_stops_[group] |= (1 << idx);
     } else {
-        aeolusStops_[group] &= ~(1 << idx);
+        aeolus_stops_[group] &= ~(1 << idx);
     }
 }
 
-void StaffTextBase::setAeolusStop(int group, int val) { aeolusStops_[group] = val; }
+void StaffTextBase::set_aeolus_stop(int group, int val) { aeolus_stops_[group] = val; }
 
-bool StaffTextBase::getAeolusStop(int group, int idx) const { return aeolusStops_[group] & (1 << idx); }
+bool StaffTextBase::get_aeolus_stop(int group, int idx) const { return aeolus_stops_[group] & (1 << idx); }
 
-int StaffTextBase::aeolusStop(int group) const { return aeolusStops_[group]; }
+int StaffTextBase::aeolus_stop(int group) const { return aeolus_stops_[group]; }
 
 Segment *StaffTextBase::segment() const {
-    if (!ownershipParent()->isSegment()) {
-        LOGD("parent %s", ownershipParent()->typeName());
+    if (!ownership_parent()->is_segment()) {
+        LOGD("parent %s", ownership_parent()->type_name());
         return 0;
     }
-    Segment *s = toSegment(ownershipParent());
+    Segment *s = to_segment(ownership_parent());
     return s;
 }
 
@@ -76,7 +76,7 @@ void StaffTextBase::added() {
 
     Score *s = score();
     if (s && swing()) {
-        s->updateSwing();
+        s->update_swing();
     }
 }
 
@@ -85,6 +85,6 @@ void StaffTextBase::removed() {
 
     Score *s = score();
     if (s && swing()) {
-        s->updateSwing();
+        s->update_swing();
     }
 }

@@ -28,23 +28,23 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-void AnnotationsMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+void AnnotationsMetaParser::do_parse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
     IF_ASSERT_FAILED(item) { return; }
 
-    mpe::ArticulationType type = mpe::ArticulationType::Undefined;
+    mpe::ArticulationType type = mpe::ArticulationType::UNDEFINED;
 
-    if (item->isDynamic()) {
-        const Dynamic *dynamic = toDynamic(item);
-        const DynamicType dynamicType = dynamic->dynamicType();
+    if (item->is_dynamic()) {
+        const Dynamic *dynamic = to_dynamic(item);
+        const DynamicType dynamic_type = dynamic->dynamic_type();
 
-        if (dynamicType == DynamicType::S || dynamicType == DynamicType::SF || dynamicType == DynamicType::SFF ||
-            dynamicType == DynamicType::SFFF || dynamicType == DynamicType::SFZ || dynamicType == DynamicType::SFFZ ||
-            dynamicType == DynamicType::SFFFZ || dynamicType == DynamicType::SFP || dynamicType == DynamicType::SFPP) {
-            type = mpe::ArticulationType::Subito;
+        if (dynamic_type == DynamicType::S || dynamic_type == DynamicType::SF || dynamic_type == DynamicType::SFF ||
+            dynamic_type == DynamicType::SFFF || dynamic_type == DynamicType::SFZ || dynamic_type == DynamicType::SFFZ ||
+            dynamic_type == DynamicType::SFFFZ || dynamic_type == DynamicType::SFP || dynamic_type == DynamicType::SFPP) {
+            type = mpe::ArticulationType::SUBITO;
         }
     }
 
-    if (type == mpe::ArticulationType::Undefined) {
+    if (type == mpe::ArticulationType::UNDEFINED) {
         return;
     }
 
@@ -53,5 +53,5 @@ void AnnotationsMetaParser::doParse(const EngravingItem *item, const RenderingCo
         return;
     }
 
-    appendArticulationData(mpe::ArticulationMeta(type, pattern, ctx.nominalTimestamp, ctx.nominalDuration), result);
+    append_articulation_data(mpe::ArticulationMeta(type, pattern, ctx.nominal_timestamp, ctx.nominal_duration), result);
 }

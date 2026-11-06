@@ -45,49 +45,49 @@ public:
 
     InstrumentName *clone() const override { return new InstrumentName(*this); }
 
-    InstrumentNameType instrumentNameType() const { return instrumentNameType_; }
+    InstrumentNameType instrument_name_type() const { return instrument_name_type_; }
 
-    void setInstrumentNameType(InstrumentNameType v);
+    void set_instrument_name_type(InstrumentNameType v);
 
-    InstrumentNameRole instrumentNameRole() const { return instrumentNameRole_; }
+    InstrumentNameRole instrument_name_role() const { return instrument_name_role_; }
 
-    void setInstrumentNameRole(InstrumentNameRole v) { instrumentNameRole_ = v; }
+    void set_instrument_name_role(InstrumentNameRole v) { instrument_name_role_ = v; }
 
-    System *system() const { return toSystem(ownershipParent()); }
+    System *system() const { return to_system(ownership_parent()); }
 
-    SysStaff *sysStaff() const { return sysStaff_; }
+    SysStaff *sys_staff() const { return sys_staff_; }
 
-    void setSysStaff(SysStaff *s) { sysStaff_ = s; }
+    void set_sys_staff(SysStaff *s) { sys_staff_ = s; }
 
-    double largestStaffSpatium() const;
+    double largest_staff_spatium() const;
 
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
 
-    bool positionRelativeToNoteheadRest() const override { return false; }
+    bool position_relative_to_notehead_rest() const override { return false; }
 
-    staff_idx_t effectiveStaffIdx() const override;
+    staff_idx_t effective_staff_idx() const override;
 
     struct LayoutData : public TextBase::LayoutData {
     public:
         int column() const { return column_; }
 
-        void setColumn(int v) { column_ = v; }
+        void set_column(int v) { column_ = v; }
 
-        staff_idx_t endIdxOfGroup() const { return endIdxOfGroup_; }
+        staff_idx_t end_idx_of_group() const { return end_idx_of_group_; }
 
-        void setEndIdxOfGroup(staff_idx_t v) { endIdxOfGroup_ = v; }
+        void set_end_idx_of_group(staff_idx_t v) { end_idx_of_group_ = v; }
 
     private:
         int column_ = 0;
-        staff_idx_t endIdxOfGroup_ = muse::nidx; // one-after last spanned staff (for GROUP types)
+        staff_idx_t end_idx_of_group_ = muse::nidx; // one-after last spanned staff (for GROUP types)
     };
     DECLARE_LAYOUTDATA_METHODS(InstrumentName)
 
 private:
 
-    InstrumentNameType instrumentNameType_ = InstrumentNameType::LONG;
-    InstrumentNameRole instrumentNameRole_ = InstrumentNameRole::PART;
-    SysStaff *sysStaff_ = nullptr;
+    InstrumentNameType instrument_name_type_ = InstrumentNameType::LONG;
+    InstrumentNameRole instrument_name_role_ = InstrumentNameRole::PART;
+    SysStaff *sys_staff_ = nullptr;
 };
 } // namespace mu::engraving
 #endif

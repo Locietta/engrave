@@ -29,7 +29,7 @@ using namespace muse::draw;
 Bezier::Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4)
     : x1_(x1), y1_(y1), x2_(x2), y2_(y2), x3_(x3), y3_(y3), x4_(x4), y4_(y4) {}
 
-Bezier Bezier::fromPoints(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4) {
+Bezier Bezier::from_points(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4) {
     return {p1.x(), p1.y(), p2.x(), p2.y(), p3.x(), p3.y(), p4.x(), p4.y()};
 }
 
@@ -43,19 +43,19 @@ void Bezier::coefficients(double t, double &a, double &b, double &c, double &d) 
     c *= 3. * t1;
 }
 
-Bezier Bezier::bezierOnInterval(double t0, double t1) const {
-    if (RealIsNull(t0) && RealIsEqual(t1, 1)) {
+Bezier Bezier::bezier_on_interval(double t0, double t1) const {
+    if (real_is_null(t0) && real_is_equal(t1, 1)) {
         return *this;
     }
     Bezier bezier = *this;
     Bezier result;
-    bezier.parameterSplitLeft(t0, &result);
-    double trueT = (t1 - t0) / (1 - t0);
-    bezier.parameterSplitLeft(trueT, &result);
+    bezier.parameter_split_left(t0, &result);
+    double true_t = (t1 - t0) / (1 - t0);
+    bezier.parameter_split_left(true_t, &result);
     return result;
 }
 
-void Bezier::parameterSplitLeft(double t, Bezier *left) {
+void Bezier::parameter_split_left(double t, Bezier *left) {
     left->x1_ = x1_;
     left->y1_ = y1_;
     left->x2_ = x1_ + t * (x2_ - x1_);
@@ -72,7 +72,7 @@ void Bezier::parameterSplitLeft(double t, Bezier *left) {
     left->y4_ = y1_ = left->y3_ + t * (y2_ - left->y3_);
 }
 
-PointF Bezier::pointAt(double t) const {
+PointF Bezier::point_at(double t) const {
     // numerically more stable:
     double x, y;
     double t1 = 1. - t;

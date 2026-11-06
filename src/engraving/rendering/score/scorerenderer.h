@@ -32,32 +32,32 @@ class ScoreRenderer : public IScoreRenderer {
 public:
 
     // Main interface
-    void layoutScore(Score *score, const Fraction &st, const Fraction &et) const override;
-    void layoutHeadersFooters(Score *score) const override;
+    void layout_score(Score *score, const Fraction &st, const Fraction &et) const override;
+    void layout_headers_footers(Score *score) const override;
 
-    SizeF pageSizeInch(const Score *score) const override;
-    SizeF pageSizeInch(const Score *score, const ScorePaintOptions &opt) const override;
-    void paintScore(muse::draw::Painter *painter, Score *score, const ScorePaintOptions &opt) const override;
-    void paintItem(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt) const override;
+    SizeF page_size_inch(const Score *score) const override;
+    SizeF page_size_inch(const Score *score, const ScorePaintOptions &opt) const override;
+    void paint_score(muse::draw::Painter *painter, Score *score, const ScorePaintOptions &opt) const override;
+    void paint_item(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt) const override;
 
     //! TODO Investigation is required, probably these functions or their calls should not be.
     // Other
-    void layoutTextLineBaseSegment(TextLineBaseSegment *item) override;
-    void layoutBeam1(Beam *item) override;
-    void layoutStem(Chord *item) override;
+    void layout_text_line_base_segment(TextLineBaseSegment *item) override;
+    void layout_beam1(Beam *item) override;
+    void layout_stem(Chord *item) override;
 
     // Layout Text 1
-    void layoutText1(TextBase *item, bool base = false) override;
+    void layout_text1(TextBase *item, bool base = false) override;
 
-    void computeBezier(TieSegment *tieSeg, PointF shoulderOffset = PointF()) override;
-    void computeBezier(SlurSegment *slurSeg, PointF shoulderOffset = PointF()) override;
+    void compute_bezier(TieSegment *tie_seg, PointF shoulder_offset = PointF()) override;
+    void compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset = PointF()) override;
 
-    bool scoreHasTimestampHeadersFooters(const Score *score) const override;
+    bool score_has_timestamp_headers_footers(const Score *score) const override;
 
 private:
     // Layout Single Item
-    void doLayoutItem(EngravingItem *item) override;
+    void do_layout_item(EngravingItem *item) override;
 
-    void doDrawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) override;
+    void do_draw_item(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) override;
 };
 } // namespace mu::engraving::rendering::score

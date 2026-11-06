@@ -28,31 +28,31 @@
 using namespace muse;
 using namespace muse::draw;
 
-static int s_fontID = -1;
+static int s_font_id = -1;
 
-void FontsDatabase::setDefaultFont(Font::Type type, const FontDataKey &key) {
+void FontsDatabase::set_default_font(Font::Type type, const FontDataKey &key) {
     defaults_[type] = key;
     ++revision_;
 }
 
-void FontsDatabase::insertSubstitution(const String &familyName, const String &substituteName) {
-    FontDataKey familyKey(familyName);
-    FontDataKey substituteKey(substituteName);
-    familySubstitutions_[familyKey].push_back(substituteKey);
+void FontsDatabase::insert_substitution(const String &family_name, const String &substitute_name) {
+    FontDataKey family_key(family_name);
+    FontDataKey substitute_key(substitute_name);
+    family_substitutions_[family_key].push_back(substitute_key);
 
     ++revision_;
 }
 
-void FontsDatabase::removeSubstitutions(const String &familyName, const std::vector<String> &substituteNames) {
-    auto it = familySubstitutions_.find(FontDataKey(familyName));
-    if (it == familySubstitutions_.end()) {
+void FontsDatabase::remove_substitutions(const String &family_name, const std::vector<String> &substitute_names) {
+    auto it = family_substitutions_.find(FontDataKey(family_name));
+    if (it == family_substitutions_.end()) {
         return;
     }
 
     std::vector<FontDataKey> &substitutes = it->second;
     size_t removed = 0;
-    for (const String &substituteName : substituteNames) {
-        removed += std::erase(substitutes, FontDataKey(substituteName));
+    for (const String &substitute_name : substitute_names) {
+        removed += std::erase(substitutes, FontDataKey(substitute_name));
     }
 
     if (removed == 0) {
@@ -60,19 +60,19 @@ void FontsDatabase::removeSubstitutions(const String &familyName, const std::vec
     }
 
     if (substitutes.empty()) {
-        familySubstitutions_.erase(it);
+        family_substitutions_.erase(it);
     }
 
     ++revision_;
 }
 
-const FontDataKey &FontsDatabase::defaultFont(Font::Type type) const {
+const FontDataKey &FontsDatabase::default_font(Font::Type type) const {
     auto it = defaults_.find(type);
     if (it != defaults_.end()) {
         return it->second;
     }
 
-    it = defaults_.find(Font::Type::Unknown);
+    it = defaults_.find(Font::Type::UNKNOWN);
     IF_ASSERT_FAILED(it != defaults_.end()) {
         static FontDataKey null;
         return null;
@@ -80,30 +80,30 @@ const FontDataKey &FontsDatabase::defaultFont(Font::Type type) const {
     return it->second;
 }
 
-int FontsDatabase::addFont(const FontDataKey &key, const io::path_t &path) { return addFont(key, std::make_shared<io::File>(path)); }
+int FontsDatabase::add_font(const FontDataKey &key, const io::PathT &path) { return add_font(key, std::make_shared<io::File>(path)); }
 
-int FontsDatabase::addFont(const FontDataKey &key, std::shared_ptr<io::IODevice> device) {
+int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice> device) {
     if (!device) {
         LOGE() << "no device for font: " << key.family().id();
         return -1;
     }
 
-    const std::string filePath = device->meta("file_path");
+    const std::string file_path = device->meta("file_path");
     ByteArray data;
-    if (filePath.empty()) {
-        if (device->open(io::IODevice::ReadOnly)) {
-            data = device->readAll();
+    if (file_path.empty()) {
+        if (device->open(io::IODevice::READ_ONLY)) {
+            data = device->read_all();
         }
         if (data.empty()) {
             LOGE() << "failed read font: " << key.family().id();
             return -1;
         }
-    } else if (!io::File::exists(filePath)) {
-        LOGW() << "font file not found: " << filePath;
+    } else if (!io::File::exists(file_path)) {
+        LOGW() << "font file not found: " << file_path;
         return -1;
     }
 
-    const int id = ++s_fontID;
+    const int id = ++s_font_id;
 
     auto it = fonts_.find(key);
     if (it != fonts_.end()) {
@@ -117,7 +117,7 @@ int FontsDatabase::addFont(const FontDataKey &key, std::shared_ptr<io::IODevice>
     return id;
 }
 
-void FontsDatabase::removeFont(const FontDataKey &key) {
+void FontsDatabase::remove_font(const FontDataKey &key) {
     auto it = fonts_.find(key);
     if (it == fonts_.end()) {
         return;
@@ -130,40 +130,40 @@ void FontsDatabase::removeFont(const FontDataKey &key) {
 
 void FontsDatabase::release(const FontInfo &fi) { UNUSED(fi); }
 
-FontDataKey FontsDatabase::actualFont(const FontDataKey &requireKey, Font::Type type) const {
-    if (fontInfo(requireKey).valid()) {
-        return requireKey;
+FontDataKey FontsDatabase::actual_font(const FontDataKey &require_key, Font::Type type) const {
+    if (font_info(require_key).valid()) {
+        return require_key;
     }
 
-    FontDataKey def = defaultFont(type);
-    LOGW() << "not found required font: " << requireKey.family().id() << ", will be using default: " << def.family().id();
+    FontDataKey def = default_font(type);
+    LOGW() << "not found required font: " << require_key.family().id() << ", will be using default: " << def.family().id();
     return def;
 }
 
-std::vector<FontDataKey> FontsDatabase::substitutionFonts(const FontDataKey &requireKey) const {
-    auto familyIt = familySubstitutions_.find(FontDataKey(requireKey.family()));
-    if (familyIt != familySubstitutions_.end()) {
-        return familyIt->second;
+std::vector<FontDataKey> FontsDatabase::substitution_fonts(const FontDataKey &require_key) const {
+    auto family_it = family_substitutions_.find(FontDataKey(require_key.family()));
+    if (family_it != family_substitutions_.end()) {
+        return family_it->second;
     }
 
     static std::vector<FontDataKey> null;
     return null;
 }
 
-FontData FontsDatabase::fontData(const FontDataKey &requireKey, Font::Type type) const {
-    FontDataKey key = actualFont(requireKey, type);
-    const FontInfo &info = fontInfo(key);
+FontData FontsDatabase::font_data(const FontDataKey &require_key, Font::Type type) const {
+    FontDataKey key = actual_font(require_key, type);
+    const FontInfo &info = font_info(key);
     if (!info.valid()) {
         return FontData();
     }
 
-    if (!info.device->isOpen() && !info.device->open(io::IODevice::ReadOnly)) {
+    if (!info.device->is_open() && !info.device->open(io::IODevice::READ_ONLY)) {
         LOGE() << "failed open font: " << key.family().id();
         return FontData();
     }
 
     info.device->seek(0);
-    ByteArray data = info.device->readAll();
+    ByteArray data = info.device->read_all();
     if (data.empty()) {
         LOGE() << "failed read font: " << key.family().id();
         return FontData();
@@ -174,7 +174,7 @@ FontData FontsDatabase::fontData(const FontDataKey &requireKey, Font::Type type)
 
 uint64_t FontsDatabase::revision() const { return revision_; }
 
-const FontsDatabase::FontInfo &FontsDatabase::fontInfo(const FontDataKey &key) const {
+const FontsDatabase::FontInfo &FontsDatabase::font_info(const FontDataKey &key) const {
     auto it = fonts_.find(key);
     if (it != fonts_.end()) {
         return it->second;

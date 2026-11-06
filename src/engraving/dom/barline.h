@@ -31,22 +31,22 @@ class Factory;
 class Segment;
 class Transaction;
 
-static constexpr int MIN_BARLINE_FROMTO_DIST = 2;
-static constexpr int MIN_BARLINE_SPAN_FROMTO = -2;
+static constexpr int min_barline_fromto_dist = 2;
+static constexpr int min_barline_span_fromto = -2;
 
 // bar line span for 1-line staves is special: goes from 2sp above the line to 2sp below the line;
-static constexpr int BARLINE_SPAN_1LINESTAFF_FROM = -4;
-static constexpr int BARLINE_SPAN_1LINESTAFF_TO = 4;
+static constexpr int barline_span_1_linestaff_from = -4;
+static constexpr int barline_span_1_linestaff_to = 4;
 
 // data for some preset bar line span types
-static constexpr int BARLINE_SPAN_TICK1_FROM = -1;
-static constexpr int BARLINE_SPAN_TICK1_TO = -7;
-static constexpr int BARLINE_SPAN_TICK2_FROM = -2;
-static constexpr int BARLINE_SPAN_TICK2_TO = -6;
-static constexpr int BARLINE_SPAN_SHORT1_FROM = 2;
-static constexpr int BARLINE_SPAN_SHORT1_TO = -2;
-static constexpr int BARLINE_SPAN_SHORT2_FROM = 1;
-static constexpr int BARLINE_SPAN_SHORT2_TO = -1;
+static constexpr int barline_span_tic_k1_from = -1;
+static constexpr int barline_span_tic_k1_to = -7;
+static constexpr int barline_span_tic_k2_from = -2;
+static constexpr int barline_span_tic_k2_to = -6;
+static constexpr int barline_span_shor_t1_from = 2;
+static constexpr int barline_span_shor_t1_to = -2;
+static constexpr int barline_span_shor_t2_from = 1;
+static constexpr int barline_span_shor_t2_to = -1;
 
 //---------------------------------------------------------
 //   BarLineTableItem
@@ -54,7 +54,7 @@ static constexpr int BARLINE_SPAN_SHORT2_TO = -1;
 
 struct BarLineTableItem {
     BarLineType type;
-    const muse::TranslatableString &userName;
+    const muse::TranslatableString &user_name;
 };
 
 //---------------------------------------------------------
@@ -72,78 +72,78 @@ public:
 
     BarLine &operator=(const BarLine &) = delete;
 
-    void setOwnershipParent(DummyParentOr<Segment> parent);
+    void set_ownership_parent(DummyParentOr<Segment> parent);
 
     BarLine *clone() const override { return new BarLine(*this); }
 
-    PointF canvasPos() const override; ///< position in canvas coordinates
-    PointF pagePos() const override;   ///< position in page coordinates
+    PointF canvas_pos() const override; ///< position in canvas coordinates
+    PointF page_pos() const override;   ///< position in page coordinates
 
-    void scanElements(std::function<void(EngravingItem *)> func) override;
-    void setTrack(track_idx_t t) override;
+    void scan_elements(std::function<void(EngravingItem *)> func) override;
+    void set_track(track_idx_t t) override;
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
-    bool acceptDrop(EditData &) const override;
+    bool accept_drop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Segment *segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return to_segment(ownership_parent()); }
 
-    Measure *measure() const { return ownershipParent() ? toMeasure(ownershipParent()->ownershipParent()) : nullptr; }
+    Measure *measure() const { return ownership_parent() ? to_measure(ownership_parent()->ownership_parent()) : nullptr; }
 
-    void setSpanStaff(const bool val) { spanStaff_ = val; }
+    void set_span_staff(const bool val) { span_staff_ = val; }
 
-    void setSpanFrom(int val) { spanFrom_ = val; }
+    void set_span_from(int val) { span_from_ = val; }
 
-    void setSpanTo(int val) { spanTo_ = val; }
+    void set_span_to(int val) { span_to_ = val; }
 
-    void setShowTips(bool val);
+    void set_show_tips(bool val);
 
-    bool spanStaff() const { return spanStaff_; }
+    bool span_staff() const { return span_staff_; }
 
-    int spanFrom() const { return spanFrom_; }
+    int span_from() const { return span_from_; }
 
-    int spanTo() const { return spanTo_; }
+    int span_to() const { return span_to_; }
 
-    bool showTips() const;
+    bool show_tips() const;
 
     const ElementList *el() const { return &el_; }
 
-    static String translatedUserTypeName(BarLineType);
+    static String translated_user_type_name(BarLineType);
 
-    void setBarLineType(BarLineType i) { barLineType_ = i; }
+    void set_bar_line_type(BarLineType i) { bar_line_type_ = i; }
 
-    BarLineType barLineType() const { return barLineType_; }
+    BarLineType bar_line_type() const { return bar_line_type_; }
 
-    bool isTop() const;
-    bool isBottom() const;
+    bool is_top() const;
+    bool is_bottom() const;
 
-    int subtype() const override { return int(barLineType_); }
+    int subtype() const override { return int(bar_line_type_); }
 
-    TranslatableString subtypeUserName() const override;
+    TranslatableString subtype_user_name() const override;
 
-    PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue &) override;
-    PropertyValue propertyDefault(Pid propertyId) const override;
-    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
-    using EngravingObject::undoChangeProperty;
-    EngravingObject *propertyDelegate(Pid) const override;
+    PropertyValue get_property(Pid property_id) const override;
+    bool set_property(Pid property_id, const PropertyValue &) override;
+    PropertyValue property_default(Pid property_id) const override;
+    void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    using EngravingObject::undo_change_property;
+    EngravingObject *property_delegate(Pid) const override;
 
-    void setPlayCount(int playCount) { playCount_ = playCount; }
+    void set_play_count(int play_count) { play_count_ = play_count; }
 
-    int playCount() const { return playCount_; }
+    int play_count() const { return play_count_; }
 
-    PlayCountText *playCountText() const;
+    PlayCountText *play_count_text() const;
 
-    EngravingItem *nextSegmentElement() override;
-    EngravingItem *prevSegmentElement() override;
+    EngravingItem *next_segment_element() override;
+    EngravingItem *prev_segment_element() override;
 
-    void setSelected(bool f) override;
+    void set_selected(bool f) override;
 
-    void styleChanged() override;
+    void style_changed() override;
 
-    static const std::vector<BarLineTableItem> barLineTable;
+    static const std::vector<BarLineTableItem> bar_line_table;
 
-    void calcY();
+    void calc_y();
 
     struct LayoutData : public EngravingItem::LayoutData {
         double y1 = 0.0;
@@ -158,13 +158,13 @@ private:
     BarLine(DummyParentOr<Segment> parent);
     BarLine(const BarLine &);
 
-    bool spanStaff_ = false; // span barline to next staff if true
-    int spanFrom_ = 0;       // line number on start and end staves
-    int spanTo_ = 0;
-    BarLineType barLineType_ = BarLineType::NORMAL;
+    bool span_staff_ = false; // span barline to next staff if true
+    int span_from_ = 0;       // line number on start and end staves
+    int span_to_ = 0;
+    BarLineType bar_line_type_ = BarLineType::NORMAL;
 
     ElementList el_; ///< fermata or other articulations
 
-    int playCount_ = -1; // For use during copy & paste
+    int play_count_ = -1; // For use during copy & paste
 };
 } // namespace mu::engraving

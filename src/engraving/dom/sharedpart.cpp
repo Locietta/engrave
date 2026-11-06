@@ -41,8 +41,8 @@ std::string dump(const SharedTrackMap &map) {
 
 SharedPart::SharedPart(Score *score) : Part(score, ElementType::SHARED_PART) {}
 
-void SharedPart::addOriginPart(Part *p) {
-    DO_ASSERT(p->type() == ElementType::PART && !muse::contains(originParts_, p));
+void SharedPart::add_origin_part(Part *p) {
+    DO_ASSERT(p->type() == ElementType::PART && !muse::contains(origin_parts_, p));
 
     const std::vector<Part *> &parts = score()->parts();
     if (muse::contains(parts, p)) {
@@ -51,94 +51,94 @@ void SharedPart::addOriginPart(Part *p) {
             order[parts[i]] = i;
         }
 
-        auto it = std::lower_bound(originParts_.begin(), originParts_.end(), p,
+        auto it = std::lower_bound(origin_parts_.begin(), origin_parts_.end(), p,
                                    [&order](Part *part1, Part *part2) { return order[part1] < order[part2]; });
 
-        originParts_.insert(it, p);
+        origin_parts_.insert(it, p);
     } else {
         // Can happen while reading files as p has not been added to the score yet
-        originParts_.push_back(p);
+        origin_parts_.push_back(p);
     }
 
-    p->setSharedPart(this);
+    p->set_shared_part(this);
 
-    computeIsSameInstruments();
+    compute_is_same_instruments();
 }
 
-void SharedPart::removeOriginPart(Part *p) {
-    DO_ASSERT(muse::remove(originParts_, p));
+void SharedPart::remove_origin_part(Part *p) {
+    DO_ASSERT(muse::remove(origin_parts_, p));
 
-    p->setSharedPart(nullptr);
+    p->set_shared_part(nullptr);
 
-    computeIsSameInstruments();
+    compute_is_same_instruments();
 }
 
-Part *SharedPart::mappedOriginPart(track_idx_t sharedTrack, const Fraction &tick) const {
-    const SharedTrackMap &trackMap = trackMapAtTick(tick.negative() ? Fraction(0, 1) : tick);
+Part *SharedPart::mapped_origin_part(track_idx_t shared_track, const Fraction &tick) const {
+    const SharedTrackMap &track_map = track_map_at_tick(tick.negative() ? Fraction(0, 1) : tick);
 
-    track_idx_t originTrack = muse::key(trackMap, sharedTrack, muse::nidx);
+    track_idx_t origin_track = muse::key(track_map, shared_track, muse::nidx);
 
-    const Staff *originStaff = originTrack != muse::nidx ? score()->staff(track2staff(originTrack)) : nullptr;
-    return originStaff ? originStaff->part() : nullptr;
+    const Staff *origin_staff = origin_track != muse::nidx ? score()->staff(track2staff(origin_track)) : nullptr;
+    return origin_staff ? origin_staff->part() : nullptr;
 }
 
-const Part *SharedPart::originPart(track_idx_t sharedTrack, const Fraction &tick) const {
-    if (sharedTrack != muse::nidx) {
-        if (const Part *p = mappedOriginPart(sharedTrack, tick)) {
+const Part *SharedPart::origin_part(track_idx_t shared_track, const Fraction &tick) const {
+    if (shared_track != muse::nidx) {
+        if (const Part *p = mapped_origin_part(shared_track, tick)) {
             return p;
         }
     }
 
-    return originParts_.empty() ? this : originParts_.front();
+    return origin_parts_.empty() ? this : origin_parts_.front();
 }
 
-Part *SharedPart::originPartForStaff(staff_idx_t sharedStaffIdx, const Fraction &tick) const {
-    return mappedOriginPart(staff2track(sharedStaffIdx, 0), tick);
+Part *SharedPart::origin_part_for_staff(staff_idx_t shared_staff_idx, const Fraction &tick) const {
+    return mapped_origin_part(staff2track(shared_staff_idx, 0), tick);
 }
 
-const SharedTrackMap &SharedPart::trackMapAtTick(const Fraction &tick) const {
-    static constexpr Fraction TICK_ZERO = Fraction(0, 1);
+const SharedTrackMap &SharedPart::track_map_at_tick(const Fraction &tick) const {
+    static constexpr Fraction tick_zero = Fraction(0, 1);
 
-    IF_ASSERT_FAILED(trackMapsByTick_.size() > 0) {
-        const_cast<SharedPart *>(this)->trackMapsByTick_[TICK_ZERO] = SharedTrackMap();
-        return trackMapsByTick_.at(TICK_ZERO);
+    IF_ASSERT_FAILED(track_maps_by_tick_.size() > 0) {
+        const_cast<SharedPart *>(this)->track_maps_by_tick_[tick_zero] = SharedTrackMap();
+        return track_maps_by_tick_.at(tick_zero);
     }
 
-    DO_ASSERT(muse::contains(trackMapsByTick_, TICK_ZERO));
+    DO_ASSERT(muse::contains(track_maps_by_tick_, tick_zero));
 
-    IF_ASSERT_FAILED(tick.positive()) { return trackMapsByTick_.at(TICK_ZERO); }
+    IF_ASSERT_FAILED(tick.positive()) { return track_maps_by_tick_.at(tick_zero); }
 
-    auto upperBound = trackMapsByTick_.upper_bound(tick);
-    DO_ASSERT(upperBound != trackMapsByTick_.begin());
+    auto upper_bound_value = track_maps_by_tick_.upper_bound(tick);
+    DO_ASSERT(upper_bound_value != track_maps_by_tick_.begin());
 
-    --upperBound;
+    --upper_bound_value;
 
-    return upperBound->second;
+    return upper_bound_value->second;
 }
 
-void SharedPart::setTrackMapAtTick(const SharedTrackMap &map, const Fraction &tick) { trackMapsByTick_[tick] = map; }
+void SharedPart::set_track_map_at_tick(const SharedTrackMap &map, const Fraction &tick) { track_maps_by_tick_[tick] = map; }
 
-void mu::engraving::SharedPart::removeMapsBetweenTicks(const Fraction &startTick, const Fraction &endTick) {
-    auto upperBound = trackMapsByTick_.lower_bound(startTick);
-    if (upperBound == trackMapsByTick_.end()) {
+void mu::engraving::SharedPart::remove_maps_between_ticks(const Fraction &start_tick, const Fraction &end_tick) {
+    auto upper_bound_value = track_maps_by_tick_.lower_bound(start_tick);
+    if (upper_bound_value == track_maps_by_tick_.end()) {
         return;
     }
 
-    for (auto iter = upperBound; iter != trackMapsByTick_.end();) {
-        if (iter->first >= endTick) {
+    for (auto iter = upper_bound_value; iter != track_maps_by_tick_.end();) {
+        if (iter->first >= end_tick) {
             break;
         }
-        iter = trackMapsByTick_.erase(iter);
+        iter = track_maps_by_tick_.erase(iter);
     }
 }
 
-bool SharedPart::isSameInstrumentsAtTick(const Fraction &tick) {
-    if (originParts_.empty()) {
+bool SharedPart::is_same_instruments_at_tick(const Fraction &tick) {
+    if (origin_parts_.empty()) {
         return false;
     }
 
-    const Instrument *instr = originParts_.front()->instrument(tick);
-    for (Part *p : originParts_) {
+    const Instrument *instr = origin_parts_.front()->instrument(tick);
+    for (Part *p : origin_parts_) {
         if (p->instrument(tick)->id() != instr->id()) {
             return false;
         }
@@ -147,61 +147,61 @@ bool SharedPart::isSameInstrumentsAtTick(const Fraction &tick) {
     return true;
 }
 
-void SharedPart::computeIsSameInstruments() { isSameInstruments_ = isSameInstrumentsAtTick(Fraction(0, 1)); }
+void SharedPart::compute_is_same_instruments() { is_same_instruments_ = is_same_instruments_at_tick(Fraction(0, 1)); }
 
-mu::engraving::String mu::engraving::SharedPart::partName() const {
+mu::engraving::String mu::engraving::SharedPart::part_name() const {
     const Instrument *i = instrument();
-    String fullName = plainPartName(i);
+    String full_name = plain_part_name(i);
 
     const String &transp = i->transposition();
     if (!transp.empty()) {
         //: For instrument transposition, e.g. Horn in F
-        fullName += u" " + muse::mtrc("engraving", "in") + u" " + transp;
+        full_name += u" " + muse::mtrc("engraving", "in") + u" " + transp;
     }
 
-    int firstNumber = 10000;
-    int lastNumber = 0;
+    int first_number = 10000;
+    int last_number = 0;
 
-    for (const Part *originPart : originParts()) {
-        int number = originPart->instrument()->number();
-        firstNumber = std::min(firstNumber, number);
-        lastNumber = std::max(lastNumber, number);
+    for (const Part *origin_part : origin_parts()) {
+        int number = origin_part->instrument()->number();
+        first_number = std::min(first_number, number);
+        last_number = std::max(last_number, number);
     }
 
-    if (firstNumber == lastNumber) {
-        return fullName;
+    if (first_number == last_number) {
+        return full_name;
     }
 
-    fullName += u" " + String::number(firstNumber) + u"-" + String::number(lastNumber);
+    full_name += u" " + String::number(first_number) + u"-" + String::number(last_number);
 
-    return fullName;
+    return full_name;
 }
 
-PropertyValue SharedPart::getProperty(Pid pid) const {
+PropertyValue SharedPart::get_property(Pid pid) const {
     switch (pid) {
         case Pid::SHARED_PART_ENABLED: return enabled_;
-        default: return Part::getProperty(pid);
+        default: return Part::get_property(pid);
     }
 }
 
-PropertyValue SharedPart::propertyDefault(Pid pid) const {
+PropertyValue SharedPart::property_default(Pid pid) const {
     switch (pid) {
         case Pid::SHARED_PART_ENABLED: return true;
-        default: return Part::propertyDefault(pid);
+        default: return Part::property_default(pid);
     }
 }
 
-bool SharedPart::setProperty(Pid pid, const PropertyValue &v) {
+bool SharedPart::set_property(Pid pid, const PropertyValue &v) {
     switch (pid) {
-        case Pid::SHARED_PART_ENABLED: enabled_ = v.toBool(); break;
-        default: return Part::setProperty(pid, v);
+        case Pid::SHARED_PART_ENABLED: enabled_ = v.to_bool(); break;
+        default: return Part::set_property(pid, v);
     }
 
-    score()->setLayoutAll();
+    score()->set_layout_all();
     return true;
 }
 
-bool SharedPart::enabled() const { return enabled_ && style().styleB(Sid::enableStaveSharing); }
+bool SharedPart::enabled() const { return enabled_ && style().style_b(Sid::ENABLE_STAVE_SHARING); }
 
-bool SharedPart::show() const { return show_ && enabled_ && style().styleB(Sid::enableStaveSharing); }
+bool SharedPart::show() const { return show_ && enabled_ && style().style_b(Sid::ENABLE_STAVE_SHARING); }
 } // namespace mu::engraving

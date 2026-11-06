@@ -171,7 +171,7 @@ namespace mu::engraving::rendering::single {
 class SingleDraw {
 public:
 
-    static void drawItem(const EngravingItem *item, muse::draw::Painter *painter, const PaintOptions &opt); // factory
+    static void draw_item(const EngravingItem *item, muse::draw::Painter *painter, const PaintOptions &opt); // factory
 
 private:
     static void draw(const Accidental *item, muse::draw::Painter *painter, const PaintOptions &opt);
@@ -285,11 +285,11 @@ private:
 
     static void draw(const WhammyBarSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
-    static void drawTextBase(const TextBase *item, muse::draw::Painter *painter, const PaintOptions &opt);
-    static void draw(const TextBlock &textBlock, const TextBase *item, muse::draw::Painter *painter);
-    static void draw(const TextFragment &textFragment, const TextBase *item, muse::draw::Painter *painter);
-    static void drawTextLineBaseSegment(const TextLineBaseSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
+    static void draw_text_base(const TextBase *item, muse::draw::Painter *painter, const PaintOptions &opt);
+    static void draw(const TextBlock &text_block, const TextBase *item, muse::draw::Painter *painter);
+    static void draw(const TextFragment &text_fragment, const TextBase *item, muse::draw::Painter *painter);
+    static void draw_text_line_base_segment(const TextLineBaseSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
-    static void setMask(const EngravingItem *item, muse::draw::Painter *painter);
+    static void set_mask(const EngravingItem *item, muse::draw::Painter *painter);
 };
 } // namespace mu::engraving::rendering::single

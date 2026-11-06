@@ -36,11 +36,11 @@ public:
 
     virtual std::vector<std::string> formats() const = 0;
 
-    virtual bool hasFormat(const std::string &mimeType) const = 0;
-    virtual muse::ByteArray data(const std::string &mimeType) const = 0;
+    virtual bool has_format(const std::string &mime_type) const = 0;
+    virtual muse::ByteArray data(const std::string &mime_type) const = 0;
 
-    virtual bool hasImage() const = 0;
-    virtual std::shared_ptr<muse::draw::Pixmap> imageData() const = 0;
+    virtual bool has_image() const = 0;
+    virtual std::shared_ptr<muse::draw::Pixmap> image_data() const = 0;
 };
 } // namespace mu::engraving
 

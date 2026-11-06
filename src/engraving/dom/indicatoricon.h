@@ -35,10 +35,10 @@ public:
 
     IndicatorIcon *clone() const override { return new IndicatorIcon(*this); }
 
-    System *system() const { return toSystem(ownershipParent()); }
+    System *system() const { return to_system(ownership_parent()); }
 
     struct LayoutData : public EngravingItem::LayoutData {
-        ld_field<RectF> rangeRect = {"[IndicatorIcon] rangeRect", RectF()};
+        ld_field<RectF> range_rect = {"[IndicatorIcon] rangeRect", RectF()};
     };
     DECLARE_LAYOUTDATA_METHODS(IndicatorIcon)
 
@@ -46,8 +46,8 @@ public:
 
     Fraction tick() const override;
 
-    virtual char16_t iconCode() const { return 0x000; }
+    virtual char16_t icon_code() const { return 0x000; }
 
-    void undoChangeProperty(Pid, const PropertyValue &, PropertyFlags) override { return; } // not editable
+    void undo_change_property(Pid, const PropertyValue &, PropertyFlags) override { return; } // not editable
 };
 } // namespace mu::engraving

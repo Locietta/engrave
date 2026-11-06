@@ -29,20 +29,20 @@
 namespace mu::engraving::rendering::score {
 class TextLayout {
 public:
-    static void layoutBaseTextBase(const TextBase *item, TextBase::LayoutData *data);
-    static void layoutBaseTextBase(TextBase *item, LayoutContext &ctx);
-    static void layoutBaseTextBase1(const TextBase *item, TextBase::LayoutData *data);
-    static void layoutBaseTextBase1(TextBase *item, const LayoutContext &ctx);
+    static void layout_base_text_base(const TextBase *item, TextBase::LayoutData *data);
+    static void layout_base_text_base(TextBase *item, LayoutContext &ctx);
+    static void layout_base_text_base1(const TextBase *item, TextBase::LayoutData *data);
+    static void layout_base_text_base1(TextBase *item, const LayoutContext &ctx);
 
-    static void computeTextHighResShape(const TextBase *item, TextBase::LayoutData *ldata);
-    static void layoutTextBlock(TextBlock *item, const TextBase *t);
+    static void compute_text_high_res_shape(const TextBase *item, TextBase::LayoutData *ldata);
+    static void layout_text_block(TextBlock *item, const TextBase *t);
 
-    static void substituteMusicFont(muse::draw::Font &font, double size);
+    static void substitute_music_font(muse::draw::Font &font, double size);
 
 private:
-    static void textHorizontalLayout(const TextBase *item, Shape &shape, double maxBlockWidth, TextBase::LayoutData *ldata);
-    static void justifyLine(const TextBase *item, TextBlock *textBlock, double maxBlockWidth);
-    static double musicSymbolBaseLineAdjust(const TextBlock *block, const TextBase *t, const TextFragment &f,
-                                            const std::list<TextFragment>::iterator fi);
+    static void text_horizontal_layout(const TextBase *item, Shape &shape, double max_block_width, TextBase::LayoutData *ldata);
+    static void justify_line(const TextBase *item, TextBlock *text_block, double max_block_width);
+    static double music_symbol_base_line_adjust(const TextBlock *block, const TextBase *t, const TextFragment &f,
+                                                const std::list<TextFragment>::iterator fi);
 };
 } // namespace mu::engraving::rendering::score

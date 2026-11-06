@@ -40,7 +40,7 @@ using ValMap = std::map<std::string, Val>;
 
 class Val {
 public:
-    enum class Type { Undefined = 0, Bool, Int, Int64, Double, String, List, Map, Color };
+    enum class Type { UNDEFINED = 0, BOOL, INT, INT64, DOUBLE, STRING, LIST, MAP, COLOR };
 
     Val() = default;
     explicit Val(bool val);
@@ -49,82 +49,82 @@ public:
     explicit Val(double val);
 
     template <typename T>
-    explicit Val(number_t<T> val) : Val{val.raw()} {}
+    explicit Val(NumberT<T> val) : Val{val.raw()} {}
 
     explicit Val(const std::string &str);
     explicit Val(const char *str);
-    explicit Val(const io::path_t &path);
+    explicit Val(const io::PathT &path);
     explicit Val(const ValList &list);
     explicit Val(const ValMap &map);
 
     template <class E, typename = std::enable_if_t<std::is_enum_v<E>>>
     explicit Val(E val) : Val{static_cast<std::underlying_type_t<E>>(val)} {}
 
-    void setType(Type t);
+    void set_type(Type t);
     Type type() const;
 
-    bool isNull() const;
-    bool toBool() const;
-    int toInt() const;
-    int64_t toInt64() const;
-    double toDouble() const;
-    float toFloat() const;
-    std::string toString() const;
-    io::path_t toPath() const;
-    ValList toList() const;
-    ValMap toMap() const;
+    bool is_null() const;
+    bool to_bool() const;
+    int to_int() const;
+    int64_t to_int64() const;
+    double to_double() const;
+    float to_float() const;
+    std::string to_string() const;
+    io::PathT to_path() const;
+    ValList to_list() const;
+    ValMap to_map() const;
 
     template <class E, typename = std::enable_if_t<std::is_enum_v<E>>>
-    E toEnum() const {
-        return static_cast<E>(toInt());
+    E to_enum() const {
+        return static_cast<E>(to_int());
     }
 
     template <typename T>
-    std::optional<T> toType() const {
+    std::optional<T> to_type() const {
         if constexpr (std::is_same<T, bool>::value) {
-            return doToBool();
+            return do_to_bool();
         } else if constexpr (std::is_same<T, int>::value) {
-            return doToInt();
+            return do_to_int();
         } else if constexpr (std::is_same<T, int64_t>::value) {
-            return doToInt64();
+            return do_to_int64();
         } else if constexpr (std::is_same<T, double>::value) {
-            return doToDouble();
-        } else if constexpr (is_number<T>()) {
-            auto value = toType<typename T::value_type>();
+            return do_to_double();
+        } else if constexpr (IsNumber<T>()) {
+            auto value = to_type<typename T::value_type>();
             if (!value) {
                 return std::nullopt;
             }
             return T(*value);
         } else if constexpr (std::is_same<T, std::string>::value) {
-            return doToString();
-        } else if constexpr (std::is_same<T, io::path_t>::value) {
-            return doToPath();
+            return do_to_string();
+        } else if constexpr (std::is_same<T, io::PathT>::value) {
+            return do_to_path();
         } else if constexpr (std::is_same<T, ValList>::value) {
-            return doToList();
+            return do_to_list();
         } else if constexpr (std::is_same<T, ValMap>::value) {
-            return doToMap();
-        } else if constexpr (is_vector<T>::value) {
-            auto list = doToList();
+            return do_to_map();
+        } else if constexpr (IsVector<T>::value) {
+            auto list = do_to_list();
             if (!list) {
                 return std::nullopt;
             }
             T result;
             for (const auto &item : *list) {
-                auto value = item.toType<typename T::value_type>();
+                auto value = item.to_type<typename T::value_type>();
                 if (!value) {
                     return std::nullopt;
                 }
                 result.push_back(*value);
             }
             return result;
-        } else if constexpr (is_string_map<T>()) {
-            auto map = doToMap();
+        } else if constexpr (IsStringMap<T>()) {
+            auto map = do_to_map();
             if (!map) {
                 return std::nullopt;
             }
             T result;
             for (const auto &item : *map) {
-                auto value = item.second.toType<typename T::mapped_type>();
+                auto value = item.second.to_type<typename T::mapped_type>();
                 if (!value) {
                     return std::nullopt;
                 }
@@ -138,7 +138,7 @@ public:
     }
 
     template <typename T>
-    static Val fromType(const T &value) {
+    static Val from_type(const T &value) {
         if constexpr (std::is_same<T, bool>::value) {
             return Val(value);
         } else if constexpr (std::is_same<T, int>::value) {
@@ -147,26 +147,26 @@ public:
             return Val(value);
         } else if constexpr (std::is_same<T, double>::value) {
             return Val(value);
-        } else if constexpr (is_number<T>()) {
+        } else if constexpr (IsNumber<T>()) {
             return Val(value);
         } else if constexpr (std::is_same<T, std::string>::value) {
             return Val(value);
-        } else if constexpr (std::is_same<T, io::path_t>::value) {
+        } else if constexpr (std::is_same<T, io::PathT>::value) {
             return Val(value);
         } else if constexpr (std::is_same<T, ValList>::value) {
             return Val(value);
         } else if constexpr (std::is_same<T, ValMap>::value) {
             return Val(value);
-        } else if constexpr (is_vector<T>::value) {
+        } else if constexpr (IsVector<T>::value) {
             ValList list;
             for (const auto &item : value) {
-                list.push_back(fromType(item));
+                list.push_back(from_type(item));
             }
             return Val(list);
-        } else if constexpr (is_string_map<T>()) {
+        } else if constexpr (IsStringMap<T>()) {
             ValMap map;
             for (const auto &item : value) {
-                map[item.first] = fromType(item.second);
+                map[item.first] = from_type(item.second);
             }
             return Val(map);
         } else {
@@ -182,57 +182,57 @@ public:
 private:
 
     template <typename T>
-    struct is_number : std::false_type {};
+    struct IsNumber : std::false_type {};
 
     template <typename T>
-    struct is_number<number_t<T>> : std::true_type {};
+    struct IsNumber<NumberT<T>> : std::true_type {};
 
     template <typename T>
-    struct is_vector : std::false_type {};
+    struct IsVector : std::false_type {};
 
     template <typename U, typename A>
-    struct is_vector<std::vector<U, A>> : std::true_type {};
+    struct IsVector<std::vector<U, A>> : std::true_type {};
 
     template <typename T>
-    struct is_string_map : std::false_type {};
+    struct IsStringMap : std::false_type {};
 
     template <typename U, typename C, typename A>
-    struct is_string_map<std::map<std::string, U, C, A>> : std::true_type {};
+    struct IsStringMap<std::map<std::string, U, C, A>> : std::true_type {};
 
-    Type valueType() const;
+    Type value_type() const;
 
-    std::optional<bool> doToBool() const;
-    std::optional<int> doToInt() const;
-    std::optional<int64_t> doToInt64() const;
-    std::optional<double> doToDouble() const;
-    std::optional<std::string> doToString() const;
-    std::optional<io::path_t> doToPath() const;
-    std::optional<ValList> doToList() const;
-    std::optional<ValMap> doToMap() const;
+    std::optional<bool> do_to_bool() const;
+    std::optional<int> do_to_int() const;
+    std::optional<int64_t> do_to_int64() const;
+    std::optional<double> do_to_double() const;
+    std::optional<std::string> do_to_string() const;
+    std::optional<io::PathT> do_to_path() const;
+    std::optional<ValList> do_to_list() const;
+    std::optional<ValMap> do_to_map() const;
 
     //! NOTE Should be sync with valueType method
     using Value = std::variant<std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap>;
     Value val_;
-    Type type_ = Type::Undefined;
+    Type type_ = Type::UNDEFINED;
 };
 
 //! NOTE Helper class for the serialization/deserialization of lists and maps
 class ValJson {
 public:
-    static bool toString(const ValList &list, std::string &str);
-    static bool toString(const ValMap &map, std::string &str);
-    static bool fromString(const std::string &str, ValList &list);
-    static bool fromString(const std::string &str, ValMap &map);
+    static bool to_string(const ValList &list, std::string &str);
+    static bool to_string(const ValMap &map, std::string &str);
+    static bool from_string(const std::string &str, ValList &list);
+    static bool from_string(const std::string &str, ValMap &map);
 
 private:
     static std::string_view trim(std::string_view str);
-    static bool isIntegerToken(std::string_view str);
-    static bool isDoubleToken(std::string_view str);
-    static bool splitTopLevel(std::string_view str, std::vector<std::string_view> &out);
-    static size_t topLevelColon(std::string_view str);
-    static std::optional<Val> parseValue(std::string_view token);
-    static bool parseList(std::string_view str, ValList &list);
-    static bool parseMap(std::string_view str, ValMap &map);
+    static bool is_integer_token(std::string_view str);
+    static bool is_double_token(std::string_view str);
+    static bool split_top_level(std::string_view str, std::vector<std::string_view> &out);
+    static size_t top_level_colon(std::string_view str);
+    static std::optional<Val> parse_value(std::string_view token);
+    static bool parse_list(std::string_view str, ValList &list);
+    static bool parse_map(std::string_view str, ValMap &map);
 };
 } // namespace muse
 

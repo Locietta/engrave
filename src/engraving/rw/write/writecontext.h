@@ -30,81 +30,82 @@
 
 namespace mu::engraving::write {
 struct WriteRange {
-    MeasureBase *startMeasure = nullptr;
-    MeasureBase *endMeasure = nullptr;
-    staff_idx_t startStaffIdx = muse::nidx;
-    staff_idx_t endStaffIdx = muse::nidx;
+    MeasureBase *start_measure = nullptr;
+    MeasureBase *end_measure = nullptr;
+    staff_idx_t start_staff_idx = muse::nidx;
+    staff_idx_t end_staff_idx = muse::nidx;
 
     bool operator==(const WriteRange &r) const {
-        return startMeasure == r.startMeasure && endMeasure == r.endMeasure && startStaffIdx == r.startStaffIdx &&
-               endStaffIdx == r.endStaffIdx;
+        return start_measure == r.start_measure && end_measure == r.end_measure && start_staff_idx == r.start_staff_idx &&
+               end_staff_idx == r.end_staff_idx;
     }
 };
 
 class WriteContext {
 public:
 
-    WriteContext(const Score *s, bool clipboardMode = false) : score_(s), _clipboardmode(clipboardMode) {}
+    WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 
     std::shared_ptr<IEngravingConfiguration> configuration() const;
 
-    Fraction curTick() const { return _curTick; }
+    Fraction cur_tick() const { return cur_tick_value; }
 
-    void setCurTick(const Fraction &v) { _curTick = v; }
+    void set_cur_tick(const Fraction &v) { cur_tick_value = v; }
 
-    void incCurTick(const Fraction &v) { _curTick += v; }
+    void inc_cur_tick(const Fraction &v) { cur_tick_value += v; }
 
-    Fraction tickDiff() const { return _tickDiff; }
+    Fraction tick_diff() const { return tick_diff_value; }
 
-    void setTickDiff(const Fraction &v) { _tickDiff = v; }
+    void set_tick_diff(const Fraction &v) { tick_diff_value = v; }
 
-    track_idx_t curTrack() const { return _curTrack; }
+    track_idx_t cur_track() const { return cur_track_value; }
 
-    void setCurTrack(track_idx_t v) { _curTrack = v; }
+    void set_cur_track(track_idx_t v) { cur_track_value = v; }
 
-    int trackDiff() const { return _trackDiff; }
+    int track_diff() const { return track_diff_value; }
 
-    void setTrackDiff(int v) { _trackDiff = v; }
+    void set_track_diff(int v) { track_diff_value = v; }
 
-    bool clipboardmode() const { return _clipboardmode; }
+    bool clipboardmode() const { return clipboardmode_value; }
 
     // For a standalone excerpt, resolve link groups to the first member that
     // this writer actually emits, never to an absent master-score element.
-    void setStandalone(bool value) { _standalone = value; }
+    void set_standalone(bool value) { standalone_value = value; }
 
-    bool standalone() const { return _standalone; }
+    bool standalone() const { return standalone_value; }
 
-    EID standaloneLink(const void *group, EID current) { return _standaloneLinks.try_emplace(group, current).first->second; }
+    EID standalone_link(const void *group, EID current) { return standalone_links.try_emplace(group, current).first->second; }
 
-    void setInlineStyle(bool value) { _inlineStyle = value; }
+    void set_inline_style(bool value) { inline_style_value = value; }
 
-    bool inlineStyle() const { return _inlineStyle; }
+    bool inline_style() const { return inline_style_value; }
 
-    void setInlineExcerpts(bool value) { _inlineExcerpts = value; }
+    void set_inline_excerpts(bool value) { inline_excerpts_value = value; }
 
-    bool inlineExcerpts() const { return _inlineExcerpts; }
+    bool inline_excerpts() const { return inline_excerpts_value; }
 
-    const std::optional<Fraction> &firstClipboardTick() const { return _firstClipboardTick; }
+    const std::optional<Fraction> &first_clipboard_tick() const { return first_clipboard_tick_value; }
 
-    void setFirstClipboardTick(const Fraction &v) { _firstClipboardTick = v; }
+    void set_first_clipboard_tick(const Fraction &v) { first_clipboard_tick_value = v; }
 
-    void setFilter(const SelectionFilter &f) { _filter = f; }
+    void set_filter(const SelectionFilter &f) { filter = f; }
 
-    bool canWrite(const EngravingItem *) const;
-    bool canWriteNoteIdx(size_t noteIdx, size_t totalNotesInChord) const;
-    bool canWriteVoice(track_idx_t track) const;
+    bool can_write(const EngravingItem *) const;
+    bool can_write_note_idx(size_t note_idx, size_t total_notes_in_chord) const;
+    bool can_write_voice(track_idx_t track) const;
 
-    bool shouldWriteRange() const { return _range.has_value(); }
+    bool should_write_range() const { return range_value.has_value(); }
 
-    const std::optional<WriteRange> &range() const { return _range; }
+    const std::optional<WriteRange> &range() const { return range_value; }
 
-    void setRange(const WriteRange &v) { _range = v; }
+    void set_range(const WriteRange &v) { range_value = v; }
 
     inline bool operator==(const WriteContext &c) const {
-        return _curTick == c._curTick && _tickDiff == c._tickDiff && _curTrack == c._curTrack && _trackDiff == c._trackDiff &&
-               _clipboardmode == c._clipboardmode && _standalone == c._standalone && _inlineStyle == c._inlineStyle &&
-               _inlineExcerpts == c._inlineExcerpts && _standaloneLinks == c._standaloneLinks && _filter == c._filter &&
-               _range == c._range && _firstClipboardTick == c._firstClipboardTick;
+        return cur_tick_value == c.cur_tick_value && tick_diff_value == c.tick_diff_value && cur_track_value == c.cur_track_value &&
+               track_diff_value == c.track_diff_value && clipboardmode_value == c.clipboardmode_value &&
+               standalone_value == c.standalone_value && inline_style_value == c.inline_style_value &&
+               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links && filter == c.filter &&
+               range_value == c.range_value && first_clipboard_tick_value == c.first_clipboard_tick_value;
     }
 
     inline bool operator!=(const WriteContext &c) const { return !this->operator==(c); }
@@ -113,19 +114,19 @@ private:
 
     const Score *score_ = nullptr;
 
-    Fraction _curTick{0, 1}; // used to optimize output
-    Fraction _tickDiff{0, 1};
-    track_idx_t _curTrack = muse::nidx;
-    int _trackDiff{0}; // saved track is curTrack-trackDiff
+    Fraction cur_tick_value{0, 1}; // used to optimize output
+    Fraction tick_diff_value{0, 1};
+    track_idx_t cur_track_value = muse::nidx;
+    int track_diff_value{0}; // saved track is curTrack-trackDiff
 
-    bool _clipboardmode{false}; // used to modify write() behaviour
-    bool _standalone{false};
-    bool _inlineStyle{false};
-    bool _inlineExcerpts{false};
-    std::map<const void *, EID> _standaloneLinks;
+    bool clipboardmode_value{false}; // used to modify write() behaviour
+    bool standalone_value{false};
+    bool inline_style_value{false};
+    bool inline_excerpts_value{false};
+    std::map<const void *, EID> standalone_links;
 
-    std::optional<WriteRange> _range;
-    std::optional<SelectionFilter> _filter;
-    std::optional<Fraction> _firstClipboardTick;
+    std::optional<WriteRange> range_value;
+    std::optional<SelectionFilter> filter;
+    std::optional<Fraction> first_clipboard_tick_value;
 };
 } // namespace mu::engraving::write

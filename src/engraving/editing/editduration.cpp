@@ -49,13 +49,13 @@
 
 using namespace mu::engraving;
 
-void EditDuration::doubleDuration(Transaction &tx, Score *score) { incDecDuration(tx, score, -1, false); }
+void EditDuration::double_duration(Transaction &tx, Score *score) { inc_dec_duration(tx, score, -1, false); }
 
-void EditDuration::halfDuration(Transaction &tx, Score *score) { incDecDuration(tx, score, 1, false); }
+void EditDuration::half_duration(Transaction &tx, Score *score) { inc_dec_duration(tx, score, 1, false); }
 
-void EditDuration::incDurationDotted(Transaction &tx, Score *score) { incDecDuration(tx, score, -1, true); }
+void EditDuration::inc_duration_dotted(Transaction &tx, Score *score) { inc_dec_duration(tx, score, -1, true); }
 
-void EditDuration::decDurationDotted(Transaction &tx, Score *score) { incDecDuration(tx, score, 1, true); }
+void EditDuration::dec_duration_dotted(Transaction &tx, Score *score) { inc_dec_duration(tx, score, 1, true); }
 
 //---------------------------------------------------------
 //   incDecDuration
@@ -63,80 +63,81 @@ void EditDuration::decDurationDotted(Transaction &tx, Score *score) { incDecDura
 //     When stepDotted is true, will step by nearest dotted or undotted note
 //---------------------------------------------------------
 
-void EditDuration::incDecDuration(Transaction &tx, Score *score, int nSteps, bool stepDotted) {
+void EditDuration::inc_dec_duration(Transaction &tx, Score *score, int n_steps, bool step_dotted) {
     Selection &selection = score->selection();
-    InputState &is = score->inputState();
+    InputState &is = score->input_state();
 
-    if (selection.isRange()) {
-        if (!selection.canCopy()) {
+    if (selection.is_range()) {
+        if (!selection.can_copy()) {
             return;
         }
-        ChordRest *firstCR = selection.firstChordRest();
-        if (firstCR->isGrace()) {
-            firstCR = toChordRest(firstCR->parent());
+        ChordRest *first_cr = selection.first_chord_rest();
+        if (first_cr->is_grace()) {
+            first_cr = to_chord_rest(first_cr->parent());
         }
-        TDuration initialDuration = firstCR->ticks();
-        TDuration d = initialDuration.shiftRetainDots(nSteps, stepDotted);
-        if (!d.isValid()) {
+        TDuration initial_duration = first_cr->ticks();
+        TDuration d = initial_duration.shift_retain_dots(n_steps, step_dotted);
+        if (!d.is_valid()) {
             return;
         }
-        Fraction scale = d.ticks() / initialDuration.ticks();
-        for (ChordRest *cr : score->getSelectedChordRests()) {
-            Fraction newTicks = cr->ticks() * scale;
-            if (newTicks < Fraction(1, 1024) ||
-                (stepDotted && cr->durationType().dots() != firstCR->durationType().dots() && !cr->isGrace())) {
+        Fraction scale = d.ticks() / initial_duration.ticks();
+        for (ChordRest *cr : score->get_selected_chord_rests()) {
+            Fraction new_ticks = cr->ticks() * scale;
+            if (new_ticks < Fraction(1, 1024) ||
+                (step_dotted && cr->duration_type().dots() != first_cr->duration_type().dots() && !cr->is_grace())) {
                 return;
             }
         }
-        const muse::ByteArray mimeData(selection.mimeData());
-        XmlReader e(mimeData);
-        score->deleteRange(selection.startSegment(), selection.endSegment(), staff2track(selection.staffStart()),
-                           staff2track(selection.staffEnd()), score->selectionFilter(), selection.rangeContainsMultiNoteChords());
-        Paste::pasteStaff(tx, score, e, selection.startSegment(), selection.staffStart(), scale);
-    } else if (selection.isList()) {
-        const std::vector<Note *> notes = selection.noteList();
-        const std::set<ChordRest *> crsSet = score->getSelectedChordRests();
-        std::vector<ChordRest *> crs(crsSet.begin(), crsSet.end());
+        const muse::ByteArray mime_data(selection.mime_data());
+        XmlReader e(mime_data);
+        score->delete_range(selection.start_segment(), selection.end_segment(), staff2track(selection.staff_start()),
+                            staff2track(selection.staff_end()), score->selection_filter(), selection.range_contains_multi_note_chords());
+        Paste::paste_staff(tx, score, e, selection.start_segment(), selection.staff_start(), scale);
+    } else if (selection.is_list()) {
+        const std::vector<Note *> notes = selection.note_list();
+        const std::set<ChordRest *> crs_set = score->get_selected_chord_rests();
+        std::vector<ChordRest *> crs(crs_set.begin(), crs_set.end());
         std::sort(crs.begin(), crs.end(), [](const ChordRest *a, const ChordRest *b) { return a->tick() > b->tick(); });
 
         for (ChordRest *cr : crs) {
             // if measure rest is selected as input, then the correct initialDuration will be the
             // duration of the measure's time signature, else is just the ChordRest's duration
-            TDuration initialDuration = cr->durationType();
-            if (initialDuration == DurationType::V_MEASURE) {
-                initialDuration = TDuration(cr->measure()->timesig(), true);
+            TDuration initial_duration = cr->duration_type();
+            if (initial_duration == DurationType::V_MEASURE) {
+                initial_duration = TDuration(cr->measure()->timesig(), true);
 
-                if (initialDuration.fraction() < cr->measure()->timesig() && nSteps > 0) {
+                if (initial_duration.fraction() < cr->measure()->timesig() && n_steps > 0) {
                     // Duration already shortened by truncation; shorten one step less
-                    --nSteps;
+                    --n_steps;
                 }
             }
 
-            TDuration newDuration{stepDotted ? initialDuration.shiftRetainDots(nSteps, stepDotted) : initialDuration.shift(nSteps)};
-            if (!newDuration.isValid()) {
+            TDuration new_duration{step_dotted ? initial_duration.shift_retain_dots(n_steps, step_dotted) :
+                                                 initial_duration.shift(n_steps)};
+            if (!new_duration.is_valid()) {
                 continue;
             }
 
-            if (cr->isGrace()) {
-                score->undoChangeChordRestLen(cr, newDuration);
+            if (cr->is_grace()) {
+                score->undo_change_chord_rest_len(cr, new_duration);
             } else {
-                score->changeCRlen(cr, newDuration);
+                score->change_c_rlen(cr, new_duration);
             }
         }
         for (Note *n : notes) {
-            if (score->canReselectItem(n)) {
-                score->select(toEngravingItem(n), SelectType::ADD);
+            if (score->can_reselect_item(n)) {
+                score->select(to_engraving_item(n), SelectType::ADD);
             }
         }
-        if (is.noteEntryMode()) {
+        if (is.note_entry_mode()) {
             const ChordRest *cr = crs.size() == 1 ? crs.front() : nullptr;
             IF_ASSERT_FAILED(cr) {
                 // (At time of writing) it shouldn't be possible to have more than
                 // one CR selected during note entry...
                 return;
             }
-            is.setDuration(cr->durationType());
-            NoteInput::nextInputPos(tx, score, cr, false);
+            is.set_duration(cr->duration_type());
+            NoteInput::next_input_pos(tx, score, cr, false);
         }
     }
 }
@@ -145,93 +146,94 @@ void EditDuration::incDecDuration(Transaction &tx, Score *score, int nSteps, boo
 //   extendToNextNote
 //---------------------------------------------------------
 
-void EditDuration::extendToNextNote(Transaction &tx, Score *score) {
+void EditDuration::extend_to_next_note(Transaction &tx, Score *score) {
     Selection &selection = score->selection();
-    InputState &is = score->inputState();
+    InputState &is = score->input_state();
 
-    const Fraction startTick = selection.tickStart();
-    Fraction endTick = selection.tickEnd();
-    const staff_idx_t startStaff = selection.staffStart();
-    const staff_idx_t endStaff = selection.staffEnd();
-    Box *startBox = selection.startBox();
-    Box *endBox = selection.endBox();
+    const Fraction start_tick = selection.tick_start();
+    Fraction end_tick = selection.tick_end();
+    const staff_idx_t start_staff = selection.staff_start();
+    const staff_idx_t end_staff = selection.staff_end();
+    Box *start_box = selection.start_box();
+    Box *end_box = selection.end_box();
 
-    std::vector<EngravingItem *> toSelect;
-    const bool wasRangeSelection = selection.isRange();
-    const std::vector<Note *> initialSelection = selection.noteList();
+    std::vector<EngravingItem *> to_select;
+    const bool was_range_selection = selection.is_range();
+    const std::vector<Note *> initial_selection = selection.note_list();
 
-    for (ChordRest *cr : score->getSelectedChordRests()) {
-        ChordRest *ncr = Navigation::nextChordRest(cr);
-        if (cr->isRest() || cr->isGrace() || cr->endTick() == score->endTick() || (ncr && ncr->isChord() && cr->endTick() == ncr->tick())) {
+    for (ChordRest *cr : score->get_selected_chord_rests()) {
+        ChordRest *ncr = Navigation::next_chord_rest(cr);
+        if (cr->is_rest() || cr->is_grace() || cr->end_tick() == score->end_tick() ||
+            (ncr && ncr->is_chord() && cr->end_tick() == ncr->tick())) {
             continue;
         }
-        std::vector<Note *> chordNotes = toChord(cr)->notes();
-        std::vector<Note *> selectedChordNotes;
-        for (Note *n : chordNotes) {
-            if (std::find(initialSelection.begin(), initialSelection.end(), n) != initialSelection.end()) {
-                selectedChordNotes.push_back(n);
-                toSelect.push_back(n);
-                if (LaissezVib *lv = n->laissezVib()) {
-                    score->undoRemoveElement(lv);
+        std::vector<Note *> chord_notes = to_chord(cr)->notes();
+        std::vector<Note *> selected_chord_notes;
+        for (Note *n : chord_notes) {
+            if (std::find(initial_selection.begin(), initial_selection.end(), n) != initial_selection.end()) {
+                selected_chord_notes.push_back(n);
+                to_select.push_back(n);
+                if (LaissezVib *lv = n->laissez_vib()) {
+                    score->undo_remove_element(lv);
                 }
             }
         }
-        bool allNotesSelected = chordNotes.size() == selectedChordNotes.size() ? true : false;
+        bool all_notes_selected = chord_notes.size() == selected_chord_notes.size() ? true : false;
 
-        while (cr->endTick() != score->endTick()) { // not at end of score
-            if (ncr && cr->endTick() == ncr->tick() && ncr->isChord()) {
+        while (cr->end_tick() != score->end_tick()) { // not at end of score
+            if (ncr && cr->end_tick() == ncr->tick() && ncr->is_chord()) {
                 break;
             }
-            if (!ncr || cr->endTick() != ncr->tick() // if voices>0 have empty measures till end OR have empty measures between cr and ncr
-                || cr->tuplet() != ncr->tuplet() || !allNotesSelected) {
-                std::vector<Note *> notesToExtend =
-                    !allNotesSelected ? (allNotesSelected = true, selectedChordNotes) : toChord(cr)->notes();
-                is.setTrack(cr->track());
-                is.setSegment(cr->segment());
-                is.moveToNextInputPos();
-                is.setLastSegment(is.segment());
+            if (!ncr || cr->end_tick() != ncr->tick() // if voices>0 have empty measures till end OR have empty measures between cr and ncr
+                || cr->tuplet() != ncr->tuplet() || !all_notes_selected) {
+                std::vector<Note *> notes_to_extend =
+                    !all_notes_selected ? (all_notes_selected = true, selected_chord_notes) : to_chord(cr)->notes();
+                is.set_track(cr->track());
+                is.set_segment(cr->segment());
+                is.move_to_next_input_pos();
+                is.set_last_segment(is.segment());
 
                 if (!is.cr()) {
-                    score->expandVoice();
+                    score->expand_voice();
                 }
-                is.setDuration(is.cr()->durationType());
+                is.set_duration(is.cr()->duration_type());
 
                 Note *nn = nullptr;
-                for (size_t i = 0; i < notesToExtend.size(); i++) {
-                    Note *note = notesToExtend[i];
-                    NoteVal nval(note->noteVal());
-                    nn = NoteInput::addPitch(tx, score, nval, i != 0);
+                for (size_t i = 0; i < notes_to_extend.size(); i++) {
+                    Note *note = notes_to_extend[i];
+                    NoteVal nval(note->note_val());
+                    nn = NoteInput::add_pitch(tx, score, nval, i != 0);
 
-                    Tie *tie = Factory::createTie(note);
-                    tie->setStartNote(note);
-                    tie->setTrack(note->track());
-                    tie->setTick(note->chord()->segment()->tick());
-                    tie->setEndNote(nn);
-                    tie->setTicks(nn->chord()->segment()->tick() - note->chord()->segment()->tick());
-                    score->undoAddElement(tie);
+                    Tie *tie = Factory::create_tie(note);
+                    tie->set_start_note(note);
+                    tie->set_track(note->track());
+                    tie->set_tick(note->chord()->segment()->tick());
+                    tie->set_end_note(nn);
+                    tie->set_ticks(nn->chord()->segment()->tick() - note->chord()->segment()->tick());
+                    score->undo_add_element(tie);
                 }
-                cr = toChordRest(nn->chord());
-                toSelect.push_back(cr);
+                cr = to_chord_rest(nn->chord());
+                to_select.push_back(cr);
             } else {
-                Fraction newDur = cr->ticks() + ncr->ticks();
-                score->changeCRlen(cr, newDur);
-                while (toChord(cr)->notes()[0]->tieFor()) {
-                    cr = Navigation::nextChordRest(cr);
-                    toSelect.push_back(cr);
+                Fraction new_dur = cr->ticks() + ncr->ticks();
+                score->change_c_rlen(cr, new_dur);
+                while (to_chord(cr)->notes()[0]->tie_for()) {
+                    cr = Navigation::next_chord_rest(cr);
+                    to_select.push_back(cr);
                 }
             }
-            ncr = Navigation::nextChordRest(cr);
-            endTick = cr->endTick() >= endTick ? cr->endTick() : endTick;
+            ncr = Navigation::next_chord_rest(cr);
+            end_tick = cr->end_tick() >= end_tick ? cr->end_tick() : end_tick;
         }
     }
 
-    if (wasRangeSelection) {
-        selection.setRangeTicks(startTick, endTick, startStaff, endStaff, startBox, endBox);
-        selection.updateSelectedElements();
+    if (was_range_selection) {
+        selection.set_range_ticks(start_tick, end_tick, start_staff, end_staff, start_box, end_box);
+        selection.update_selected_elements();
     } else {
-        for (EngravingItem *ei : toSelect) {
-            if (ei->isChord()) {
-                std::vector<Note *> notes = toChord(ei)->notes();
+        for (EngravingItem *ei : to_select) {
+            if (ei->is_chord()) {
+                std::vector<Note *> notes = to_chord(ei)->notes();
                 score->select({notes.begin(), notes.end()}, SelectType::ADD);
             } else {
                 score->select(ei, SelectType::ADD);

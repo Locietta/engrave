@@ -36,87 +36,87 @@
 
 using namespace mu::engraving;
 
-static Fraction dividingRatio(const ChordRest *chordRest, const Fraction &ratio, bool autoBaseLen) {
+static Fraction dividing_ratio(const ChordRest *chord_rest, const Fraction &ratio, bool auto_base_len) {
     Fraction result = ratio;
-    if (autoBaseLen) {
-        result.setDenominator(Tuplet::computeTupletDenominator(ratio.numerator(), chordRest->ticks()));
+    if (auto_base_len) {
+        result.set_denominator(Tuplet::compute_tuplet_denominator(ratio.numerator(), chord_rest->ticks()));
     }
     return result;
 }
 
 // Selected chords/rests a tuplet can start at, in score order
-static std::vector<ChordRest *> selectedTupletChordRests(const Score *score) {
+static std::vector<ChordRest *> selected_tuplet_chord_rests(const Score *score) {
     // Score order, not pointer order
-    const std::set<ChordRest *> selectedChordRests = score->getSelectedChordRests();
-    std::vector<ChordRest *> sortedChordRests(selectedChordRests.begin(), selectedChordRests.end());
-    std::sort(sortedChordRests.begin(), sortedChordRests.end(), [](const ChordRest *a, const ChordRest *b) {
+    const std::set<ChordRest *> selected_chord_rests = score->get_selected_chord_rests();
+    std::vector<ChordRest *> sorted_chord_rests(selected_chord_rests.begin(), selected_chord_rests.end());
+    std::sort(sorted_chord_rests.begin(), sorted_chord_rests.end(), [](const ChordRest *a, const ChordRest *b) {
         return a->tick() != b->tick() ? a->tick() < b->tick() : a->track() < b->track();
     });
 
-    std::vector<ChordRest *> chordRests;
+    std::vector<ChordRest *> chord_rests;
 
     // Make sure each linked group is handled only once
-    std::unordered_set<const LinkedObjects *> handledLinks;
+    std::unordered_set<const LinkedObjects *> handled_links;
 
-    for (ChordRest *chordRest : sortedChordRests) {
-        if (chordRest->links() && !handledLinks.insert(chordRest->links()).second) {
+    for (ChordRest *chord_rest : sorted_chord_rests) {
+        if (chord_rest->links() && !handled_links.insert(chord_rest->links()).second) {
             continue;
         }
 
-        if (!chordRest->isGrace() && !(chordRest->isChord() && toChord(chordRest)->isTrillCueNote())) {
-            chordRests.push_back(chordRest);
+        if (!chord_rest->is_grace() && !(chord_rest->is_chord() && to_chord(chord_rest)->is_trill_cue_note())) {
+            chord_rests.push_back(chord_rest);
         }
     }
 
-    return chordRests;
+    return chord_rests;
 }
 
-static void selectTupletStart(Score *score, const Tuplet *tuplet) {
+static void select_tuplet_start(Score *score, const Tuplet *tuplet) {
     if (tuplet->elements().empty()) {
         return;
     }
 
-    DurationElement *firstElement = tuplet->elements().front();
+    DurationElement *first_element = tuplet->elements().front();
     // SINGLE also moves the input position
-    if (firstElement->isChord()) {
-        const std::vector<Note *> &notes = toChord(firstElement)->notes();
-        IF_ASSERT_FAILED(!notes.empty()) { score->select(firstElement, SelectType::SINGLE); }
+    if (first_element->is_chord()) {
+        const std::vector<Note *> &notes = to_chord(first_element)->notes();
+        IF_ASSERT_FAILED(!notes.empty()) { score->select(first_element, SelectType::SINGLE); }
         else {
             score->select(notes.front(), SelectType::SINGLE);
             score->select({notes.begin() + 1, notes.end()}, SelectType::ADD);
         }
     } else {
-        score->select(firstElement, SelectType::SINGLE);
+        score->select(first_element, SelectType::SINGLE);
     }
 }
 
-std::vector<Tuplet *> EditTuplet::addTuplets(Transaction &, Score *score, const Fraction &ratio, TupletNumberType numberType,
-                                             TupletBracketType bracketType, bool autoBaseLen) {
+std::vector<Tuplet *> EditTuplet::add_tuplets(Transaction &, Score *score, const Fraction &ratio, TupletNumberType number_type,
+                                              TupletBracketType bracket_type, bool auto_base_len) {
     Selection &selection = score->selection();
-    const bool wasRangeSelection = selection.isRange();
-    const Fraction startTick = selection.tickStart();
-    const Fraction endTick = selection.tickEnd();
-    const staff_idx_t startStaff = selection.staffStart();
-    const staff_idx_t endStaff = selection.staffEnd();
-    Box *startBox = selection.startBox();
-    Box *endBox = selection.endBox();
+    const bool was_range_selection = selection.is_range();
+    const Fraction start_tick = selection.tick_start();
+    const Fraction end_tick = selection.tick_end();
+    const staff_idx_t start_staff = selection.staff_start();
+    const staff_idx_t end_staff = selection.staff_end();
+    Box *start_box = selection.start_box();
+    Box *end_box = selection.end_box();
 
     std::vector<Tuplet *> tuplets;
-    for (ChordRest *chordRest : selectedTupletChordRests(score)) {
-        if (Tuplet *tuplet = score->addTuplet(chordRest, dividingRatio(chordRest, ratio, autoBaseLen), numberType, bracketType)) {
+    for (ChordRest *chord_rest : selected_tuplet_chord_rests(score)) {
+        if (Tuplet *tuplet = score->add_tuplet(chord_rest, dividing_ratio(chord_rest, ratio, auto_base_len), number_type, bracket_type)) {
             tuplets.push_back(tuplet);
         }
     }
 
-    if (wasRangeSelection) {
-        selection.setRangeTicks(startTick, endTick, startStaff, endStaff, startBox, endBox);
-        selection.updateSelectedElements();
+    if (was_range_selection) {
+        selection.set_range_ticks(start_tick, end_tick, start_staff, end_staff, start_box, end_box);
+        selection.update_selected_elements();
     } else if (!tuplets.empty()) {
-        selectTupletStart(score, tuplets.front());
+        select_tuplet_start(score, tuplets.front());
     }
 
     if (!tuplets.empty()) {
-        score->inputState().setDuration(tuplets.front()->baseLen());
+        score->input_state().set_duration(tuplets.front()->base_len());
     }
 
     return tuplets;

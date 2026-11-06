@@ -75,13 +75,13 @@ void apply_metadata(mu::engraving::MasterScore *score, const CreateOptions &opti
     mu::engraving::ScoreLoad load;
     for (const Field &field : fields) {
         if (field.value.empty()) continue;
-        const muse::String text = muse::String::fromStdString(field.value);
-        score->setMetaTag(field.tag, text);
-        mu::engraving::TextBase *item = score->getText(field.style);
-        if (!item) item = score->addText(field.style);
-        if (item) item->setPlainText(text);
+        const muse::String text = muse::String::from_std_string(field.value);
+        score->set_meta_tag(field.tag, text);
+        mu::engraving::TextBase *item = score->get_text(field.style);
+        if (!item) item = score->add_text(field.style);
+        if (item) item->set_plain_text(text);
     }
-    score->setLayoutAll();
+    score->set_layout_all();
     score->update();
 }
 } // namespace
@@ -115,13 +115,13 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
         options.cache_dir.empty() ? std::filesystem::temp_directory_path(ec) : std::filesystem::absolute(options.cache_dir);
     for (const auto &soundfont : options.soundfonts) impl->state.soundfonts.push_back(std::filesystem::absolute(soundfont));
     impl->state.audio_sample_rate = options.audio_sample_rate;
-    mu::engraving::MScore::testMode = options.deterministic_ids;
+    mu::engraving::MScore::test_mode = options.deterministic_ids;
     impl->state.context = std::make_unique<music::EngineContext>(
         utf8(resources), options.cache_dir.empty() ? std::string() : utf8(std::filesystem::absolute(options.cache_dir)));
     std::unique_ptr<Engine> engine(new Engine(std::move(impl)));
     for (const auto &font : options.fonts) {
         try {
-            engine->impl_->state.context->assets().addFont(utf8(std::filesystem::absolute(font)));
+            engine->impl_->state.context->assets().add_font(utf8(std::filesystem::absolute(font)));
         } catch (const std::runtime_error &error) {
             return fail(ErrorCode::INVALID_INPUT, error.what());
         }
@@ -136,7 +136,7 @@ Result<void> Engine::add_font(const std::filesystem::path &file) {
     try {
         // addFont publishes a new registry and replaces the font engine, discarding
         // its cached FreeType faces and glyph metrics before documents relayout.
-        impl_->state.context->assets().addFont(utf8(std::filesystem::absolute(file)));
+        impl_->state.context->assets().add_font(utf8(std::filesystem::absolute(file)));
     } catch (const std::runtime_error &error) {
         return fail(ErrorCode::INVALID_INPUT, error.what());
     }
@@ -162,7 +162,8 @@ Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &fi
         std::error_code ec;
         if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NOT_FOUND, "no SoundFont file '" + utf8(file) + "'");
         try {
-            retained.push_back(path_from_utf8(impl_->state.context->assets().freezeSoundFont(utf8(std::filesystem::absolute(file))).path));
+            retained.push_back(
+                path_from_utf8(impl_->state.context->assets().freeze_sound_font(utf8(std::filesystem::absolute(file))).path));
         } catch (const std::runtime_error &error) {
             return fail(ErrorCode::INVALID_INPUT, error.what());
         }
@@ -243,9 +244,9 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
     // input, before the DOM exists and before anything can rewrite the archive.
     music::ScoreAudioMixDefaults audio_defaults;
     if (*format == Format::MSCZ) audio_defaults = music::score_audio_mix_defaults(bytes);
-    if (project->isCorruptedUponLoading())
+    if (project->is_corrupted_upon_loading())
         diagnostics.push_back({Severity::WARNING, "the score failed the engine's sanity check after loading"});
-    auto repairs = id_repairs(*project->masterScore());
+    auto repairs = id_repairs(*project->master_score());
     if (options.strict_ids && !repairs.empty()) {
         return fail(ErrorCode::INVALID_INPUT, "the score has malformed or duplicated element ids: " + repairs.front().message);
     }
@@ -297,7 +298,7 @@ Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &o
     } catch (const std::exception &error) {
         return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the template '{}': {}", utf8(mscx), error.what()));
     }
-    apply_metadata(project->masterScore(), options);
+    apply_metadata(project->master_score(), options);
     return Document::Impl::make(impl_->state, std::move(project), {}, {});
 }
 
