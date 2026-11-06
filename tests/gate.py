@@ -107,6 +107,7 @@ def main():
             ]
         run(name, cmd, a.engine_source)
 
+    run("comparator-mutations", [sys.executable, ROOT / "tests/test_inventory.py"])
     if not a.skip_build:
         config = [
             "f",
@@ -122,7 +123,7 @@ def main():
         ]
         if a.cairo_prefix:
             config.append("--cairo_prefix=" + str(a.cairo_prefix))
-        if platform == "linux" and a.cairo_prefix:
+        if platform == "linux" and a.cairo_prefix and (a.cairo_prefix / "bin/x86_64-conda-linux-gnu-gcc").is_file():
             prefix = a.cairo_prefix
             config += [
                 "--cc=" + str(prefix / "bin/x86_64-conda-linux-gnu-gcc"),
