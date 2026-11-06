@@ -19,7 +19,7 @@ struct AudioOptions {
 - **Callback Exception Latching and Cleanup**: Per `engrave/src/audio/engine_audio.cpp:536`, the driver catches and latches any exception thrown by the `cancelled` callback (`callback_error = std::current_exception()`), treating the operation as cancelled. The driver proceeds through orderly teardown (idling the DSP graph, joining worker threads, closing file devices, and deleting any intermediate output file). If removing the intermediate file fails, the driver returns `ErrorCode::IO` first. Otherwise, once cleanup completes, the latched exception is rethrown via `std::rethrow_exception` to propagate to the caller.
 - **No Artifact Publication**: When cancellation is observed, no output bytes are delivered to the caller's `ByteSink` (or delivery stops immediately if partial chunks were delivered during publication), and all intermediate encoded files are deleted before returning.
 - **Unpoisoned State**: Cancellation leaves the `Document` and `Engine` in a clean, consistent state. Subsequent operations (edits, renders, or repeat audio exports) in the same session proceed normally and produce bit-identical results.
-- **Error Code**: A cancelled render returns `ErrorCode::Cancelled` in `Result<AudioRenderResult>`.
+- **Error Code**: A cancelled render returns `ErrorCode::CANCELLED` in `Result<AudioRenderResult>`.
 
 ## 2. Cancellation Checkpoints and Stages
 
@@ -73,4 +73,4 @@ In addition to explicit cancellation via `AudioOptions::cancelled`, audio export
 - `AudioOptions::max_bytes`: Limits the maximum byte length of the finalized encoded file.
 - `AudioOptions::max_write_bytes`: Limits the cumulative bytes written to the intermediate file (including encoder header rewrites).
 
-Exceeding either budget terminates rendering immediately with `ErrorCode::ResourceLimit` (or `ErrorCode::Io`), removes the intermediate file, and invokes no further sink callbacks.
+Exceeding either budget terminates rendering immediately with `ErrorCode::RESOURCE_LIMIT` (or `ErrorCode::IO`), removes the intermediate file, and invokes no further sink callbacks.
