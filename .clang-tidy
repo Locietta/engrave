@@ -20,9 +20,6 @@ CheckOptions:
     value: lower_case
   - key: readability-identifier-naming.FunctionCase
     value: lower_case
-  # Implemented by the excluded thirdparty/kors_logger/src/logger.cpp bridge.
-  - key: readability-identifier-naming.FunctionIgnoredRegexp
-    value: "^(assertionDiagnosticsEnabled|assertionFailure)$"
   - key: readability-identifier-naming.MemberCase
     value: lower_case
   # LLVM treats static data members separately. These mirror the optional

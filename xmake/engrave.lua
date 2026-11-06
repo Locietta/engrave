@@ -273,7 +273,6 @@ target("muse_mpe")
         engine("muse/framework/global")
     )
     add_files(
-        engine("muse/framework/mpe/*.cpp"),
         engine("muse/framework/mpe/internal/*.cpp")
     )
 
@@ -327,7 +326,7 @@ target("iex_mnx")
         engine("src/engraving/infrastructure"),
         engine("src/engraving/thirdparty/dtl")
     )
-    add_files(engine("src/importexport/mnx/internal/import/*.cpp"), engine("src/importexport/mnx/internal/shared/*.cpp"))
+    add_files(engine("src/importexport/mnx/internal/export/*.cpp"), engine("src/importexport/mnx/internal/import/*.cpp"), engine("src/importexport/mnx/internal/shared/*.cpp"))
 target_end()
 
 target("iex_guitarpro")
