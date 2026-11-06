@@ -5,8 +5,8 @@
 -- Tests: xmake f --engrave_tests=y && xmake build c0_gate
 --
 -- The engine targets themselves live in xmake/engrave.lua, which is also the
--- file the musescore-mcp superproject includes from its pinned vendor/musescore
--- submodule (or --musescore_source checkout).  Everything here is what a build
+-- file the engrave-mcp superproject includes from its pinned vendor/engrave
+-- submodule (or --engine_source checkout).  Everything here is what a build
 -- of the engine *as a project* needs but a library must not impose on its
 -- consumer: project identity, languages, package policies, the pinned zlib,
 -- and the platform feature macros and toolchain flags the engine translation
