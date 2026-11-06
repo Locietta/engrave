@@ -22,6 +22,7 @@
 #pragma once
 
 #include <string>
+#include <typeinfo>
 
 #include "global/asserts.h"
 
