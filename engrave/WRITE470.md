@@ -41,18 +41,19 @@ struct ExportOutput {
 - **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::Unsupported` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
 - **Refused Export**: If an export is refused due to incompatible features, no bytes are produced (`bytes` is empty), and `Error::export_warnings` details all blocking elements.
 
-## 2. Preserved Features
+## 2. Bounded Supported Subset
 
-The 4.70 exporter preserves the following core notation and structural constructs without warnings:
-- **Staves & Clefs**: Standard pitched staves, treble clef, bass clef.
-- **Notes & Rests**: Pitched notes, standard time signatures (e.g. 4/4), whole, half, quarter, and eighth note durations, and half rests.
-- **Grace Notes**: Appoggiaturas and eighth after-graces.
-- **Ties**: Same-voice, same-measure ties (including paired pitch edits).
-- **Spanners**: Track-0 pedal markings (from tick 0 to 960).
-- **Braces**: Standard score braces.
-- **Identities**: Musical Element IDs (EIDs) and link references on musical and staff objects are preserved.
-- **Part Names**: Numeric part IDs and part names are retained. (Note: MuseScore 4.70 does not support part EIDs; part EIDs are omitted).
-- **Excerpt Selections**: An excerpt selected via `ExportOptions::score` exports as a genuine standalone 4.70 score with its own parts, style, and linked notation elements preserved.
+The initial 4.70 exporter is intentionally small and fails closed. It accepts only an independently checked, bounded subset of 5.00 notation and structures; everything else is refused (`ErrorCode::UNSUPPORTED`).
+
+The guard in `engrave/src/score/write470.cpp:376` accepts only:
+- **Instruments**: Accepts only `piano` or `flute` instrument IDs (flute requires bounded pitch ranges `minPitchP=59`, `maxPitchP=98`, `minPitchA=60`, `maxPitchA=93`). All other instrument IDs and tokens are refused.
+- **Staves & Clefs**: Standard pitched staves (`group="pitched"`, `name="stdNormal"`), and only G clefs (`concertClefType="G"`, `transposingClefType="G"`). Bass clef and all other clef types are refused.
+- **Time & Key Signatures**: Only 4/4 time signature (`sigN="4"`, `sigD="4"`) and C major key signature (`concertKey="0"`). All other meters and key signatures are refused.
+- **Notes, Rests & Durations**: Pitched notes, half rests, and whole, half, and quarter durations (`whole`, `half`, `quarter`). Eighth durations (`eighth`) and the specified grace forms (`appoggiatura` and `grace8after`) are accepted only for standalone excerpts; everything else is refused.
+- **Ties & Spanners**: Same-voice, same-measure ties (including paired pitch edits). Note spanners must be `Tie`; non-note spanners must be `Pedal` (track-0 pedal markings). Custom chord lists and non-generated automation curves are refused.
+- **Braces**: Ordinary score braces (`bracket type="1"`).
+- **Identities**: Serialized musical, staff, and score EIDs supported by the bounded mapping, plus legacy numeric part IDs. MuseScore 4.70 has no part EID representation; part EIDs are omitted.
+- **Excerpt Selections**: An excerpt selected via `ExportOptions::score` (such as the verified linked Flute excerpt) exports as a standalone 4.70 score with its own parts, style, and linked notation elements preserved.
 
 ## 3. Degraded Features (Exported with Warnings)
 
