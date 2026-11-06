@@ -37,7 +37,7 @@ struct ExportOutput {
 - **Warning Contract**: Each warning has a stable, frozen `code`, human-readable `message`, and an optional source `{ kind, id }` object. Codes and messages are frozen.
 - **Ordering Contract**:
   - `Document::export_score_with_warnings` returns ordered `ExportWarning` values.
-  - On a successful export, warnings contain degraded feature warnings in document encounter order.
+  - On a successful export, warnings are not purely in document encounter order: `convert_degradations` first collects serialized degradations (`B470_SHARED_PART_DROPPED`, `B470_STAVE_SHARING_LABEL_DROPPED`, `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`) during a pre-order traversal of the serialized score XML, followed by a separate pass over source scores and parts (`write470.cpp:643`) that appends instrument group-name warnings (`B470_INSTRUMENT_GROUP_NAME_DROPPED`).
   - On a refused export that reaches post-serialization checks, degraded warnings are prepended before unmapped feature warnings (`degraded` followed by `unsupported`). However, an invalid tie returns early (`write470.cpp:599`) before degradation and style scans run, so only `B470_INVALID_TIE` is reported and no degradation warnings precede it in that case.
   - Identical warning objects are deduplicated preserving the order of their first occurrence.
   - Non-EID warning locators retain document-wide score indices (master score 0, followed by excerpts in source order) even when exporting an excerpt.
