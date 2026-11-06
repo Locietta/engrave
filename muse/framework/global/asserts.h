@@ -28,18 +28,18 @@ SOFTWARE.
 #include "logstream.h"
 
 namespace muse::diagnostics {
-bool assertionDiagnosticsEnabled();
-void assertionFailure(std::string_view, const char *, int);
+bool assertion_diagnostics_enabled();
+void assertion_failure(std::string_view, const char *, int);
 } // namespace muse::diagnostics
 
 // Formatting remains lazy even when a failed condition is checked in release.
-#define MUSE_ASSERT_DIAGNOSTIC_IMPL(msg, stream_name)                                   \
-    do {                                                                                \
-        if (muse::diagnostics::assertionDiagnosticsEnabled()) {                         \
-            muse::logger::Stream stream_name;                                           \
-            stream_name << msg;                                                         \
-            muse::diagnostics::assertionFailure(stream_name.str(), __FILE__, __LINE__); \
-        }                                                                               \
+#define MUSE_ASSERT_DIAGNOSTIC_IMPL(msg, stream_name)                                    \
+    do {                                                                                 \
+        if (muse::diagnostics::assertion_diagnostics_enabled()) {                        \
+            muse::logger::Stream stream_name;                                            \
+            stream_name << msg;                                                          \
+            muse::diagnostics::assertion_failure(stream_name.str(), __FILE__, __LINE__); \
+        }                                                                                \
     } while (false)
 
 #define MUSE_ASSERT_DIAGNOSTIC(msg) MUSE_ASSERT_DIAGNOSTIC_IMPL(msg, UNIQUE_VAR_NAME(muse_assert_message_))
@@ -73,11 +73,11 @@ void assertionFailure(std::string_view, const char *, int);
 #define IF_ASSERT_FAILED_X(cond, msg) IF_ASSERT_FAILED_X_IMPL(cond, msg, UNIQUE_VAR_NAME(if_assert_failed_))
 #define IF_ASSERT_FAILED(cond) IF_ASSERT_FAILED_X(cond, #cond)
 
-#define IF_FAILED_IMPL(cond, var_name)                                  \
-    const bool var_name = static_cast<bool>(cond);                      \
-    if (!(var_name)) {                                                  \
-        muse::diagnostics::assertionFailure(#cond, __FILE__, __LINE__); \
-    }                                                                   \
+#define IF_FAILED_IMPL(cond, var_name)                                   \
+    const bool var_name = static_cast<bool>(cond);                       \
+    if (!(var_name)) {                                                   \
+        muse::diagnostics::assertion_failure(#cond, __FILE__, __LINE__); \
+    }                                                                    \
     if (!(var_name))
 
 #define IF_FAILED(cond) IF_FAILED_IMPL(cond, UNIQUE_VAR_NAME(if_failed_))

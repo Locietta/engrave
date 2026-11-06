@@ -28,7 +28,6 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/score.h"
 #include "global/appinfo.h"
-#include "global/iapplication.h"
 #include "global/io/path.h"
 #include "global/log.h"
 #include "global/translation.h"
@@ -179,7 +178,7 @@ muse::Ret MnxExporter::export_mnx() {
             muse::TranslatableString("importexport/mnx",
                                      "MNX export skipped because the score contains no exportable parts. (Tablature is not supported yet).")
                 .str;
-        return muse::make_ret(muse::Ret::Code::NOT_SUPPORTED, msg);
+        return muse::make_ret(muse::Ret::Code::NOT_SUPPORTED, msg.to_std_string());
     }
     create_layout(exported_staves_, "full-score");
     /// @todo Creation of all layouts and scores, including excerpts. (Deferred to a future dev cycle.)
