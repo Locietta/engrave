@@ -50,12 +50,12 @@ build dependencies are explicitly marked as such.
 - **License**: SIL Open Font License, Version 1.1 (`fonts/edwin/LICENSE.txt`).
 
 #### Finale Broadway (`fonts/finalebroadway/`)
-- **Files**: `FinaleBroadway.otf`, `FinaleBroadwayText.otf`, `FinaleBroadway.json`, `Finale Broadway Text.json`
+- **Files**: `FinaleBroadway.otf`, `FinaleBroadwayText.otf`, `FinaleBroadway.json`
 - **Notice**: Copyright (C) 2021 MakeMusic, Inc. (https://www.makemusic.com/), with Reserved Font Names "Finale", "Broadway", "Maestro", "Engraver", "Jazz", "Ash", and "Legacy".
 - **License**: SIL Open Font License, Version 1.1 (`fonts/finalebroadway/OFL.txt`).
 
 #### Finale Maestro (`fonts/finalemaestro/`)
-- **Files**: `FinaleMaestro.otf`, `FinaleMaestroText-Regular.otf`, `FinaleMaestro.json`, `Finale Maestro Text.json`
+- **Files**: `FinaleMaestro.otf`, `FinaleMaestroText-Regular.otf`, `FinaleMaestro.json`
 - **Notice**: Copyright (C) 2021 MakeMusic, Inc. (https://www.makemusic.com/), with Reserved Font Names "Finale", "Maestro", "Broadway", "Engraver", "Jazz", "Ash", and "Legacy".
 - **License**: SIL Open Font License, Version 1.1 (`fonts/finalemaestro/OFL.txt`).
 
