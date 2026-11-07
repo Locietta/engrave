@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -556,7 +557,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             throw std::runtime_error("model cancellation callback");
         return false;
     };
-    EXPECT_THROW((void) document.render_audio(options, [](auto) {}), std::runtime_error);
+    EXPECT_THROW(std::ignore = document.render_audio(options, [](auto) {}), std::runtime_error);
     EXPECT_EQ(render(), baseline);
 }
 

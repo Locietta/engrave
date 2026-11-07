@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -308,9 +309,9 @@ TEST(Audio, FailedSinkDoesNotPoisonNextRender) {
     options.format = engrave::AudioFormat::WAV;
     const auto expected = detail::render_audio(*document, options);
     ASSERT_FALSE(expected.bytes.empty());
-    EXPECT_THROW(
-        (void) document->render_audio(options, [](std::span<const std::byte>) { throw std::runtime_error("deliberate sink failure"); }),
-        std::runtime_error);
+    EXPECT_THROW(std::ignore = document->render_audio(
+                     options, [](std::span<const std::byte>) { throw std::runtime_error("deliberate sink failure"); }),
+                 std::runtime_error);
     const auto recovered = detail::render_audio(*document, options);
     EXPECT_EQ(expected.bytes, recovered.bytes);
 }

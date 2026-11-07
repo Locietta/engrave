@@ -237,10 +237,7 @@ static void play_note(EventsHolder &events, const Note *note, PlayNoteParams par
             PitchWheelRenderer::PitchWheelFunction func;
             func.m_start_tick = params.on_time - params.offset;
             func.m_end_tick = params.off_time - params.offset;
-            auto microtonal_pw = [pw_value](uint32_t tick) {
-                UNUSED(tick);
-                return static_cast<int>(std::round(pw_value));
-            };
+            auto microtonal_pw = [pw_value]([[maybe_unused]] uint32_t tick) { return static_cast<int>(std::round(pw_value)); };
             func.func = microtonal_pw;
             pitch_wheel_renderer.add_pitch_wheel_function(func, params.channel, params.staff_idx, MidiInstrumentEffect::NONE);
         }
@@ -298,10 +295,7 @@ static void add_const_pitch_wheel(int start_tick, int end_tick, float value, Pit
     const float scale = (float) g_wheel_spec.m_limit / g_wheel_spec.m_amplitude;
 
     PitchWheelRenderer::PitchWheelFunction pitch_wheel_const_func;
-    auto const_func = [value, scale](uint32_t tick) {
-        UNUSED(tick)
-        return value * scale;
-    };
+    auto const_func = [value, scale]([[maybe_unused]] uint32_t tick) { return value * scale; };
 
     pitch_wheel_const_func.func = const_func;
     pitch_wheel_const_func.m_start_tick = start_tick;
@@ -613,10 +607,7 @@ static void collect_bend(const PitchValues &play_data, staff_idx_t staff_idx, in
 
     //! y = releaseValue linear curve
     uint32_t release_value = play_data.at(pitch_size - 1).pitch * scale;
-    auto bend_func = [release_value](uint32_t tick) {
-        UNUSED(tick)
-        return release_value;
-    };
+    auto bend_func = [release_value]([[maybe_unused]] uint32_t tick) { return release_value; };
     func.func = bend_func;
     pitch_wheel_renderer.add_pitch_wheel_function(func, channel, staff_idx, effect);
 }
@@ -1515,8 +1506,7 @@ static Trill *find_first_trill(Chord *chord) {
     return nullptr;
 }
 
-void CompatMidiRendererInternal::render_score(EventsHolder &events, const Context &context, bool expand_repeats) {
-    UNUSED(expand_repeats);
+void CompatMidiRendererInternal::render_score(EventsHolder &events, const Context &context, [[maybe_unused]] bool expand_repeats) {
 
     context_ = context;
     PitchWheelRenderer pitch_wheel_render(g_wheel_spec);

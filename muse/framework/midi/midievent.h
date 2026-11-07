@@ -31,10 +31,6 @@
 
 #include "containers.h"
 
-#ifndef UNUSED
-#define UNUSED(x) (void) x;
-#endif
-
 #ifndef MU_FALLTHROUGH
 #if __has_cpp_attribute(fallthrough)
 #define MU_FALLTHROUGH() [[fallthrough]]
@@ -1054,23 +1050,13 @@ struct Event {
     }
 
 private:
-    void assert_message_type(const std::set<MessageType> &supported_types) const {
-#ifdef NDEBUG
-        UNUSED(supported_types);
-#else
+    void assert_message_type([[maybe_unused]] const std::set<MessageType> &supported_types) const {
         assert(is_message_type_in(supported_types));
-#endif
     }
 
     void assert_channel_voice() const { assert(is_channel_voice()); }
 
-    void assert_opcode(const std::set<Opcode> &supported_opcodes) const {
-#ifdef NDEBUG
-        UNUSED(supported_opcodes);
-#else
-        assert(is_opcode_in(supported_opcodes));
-#endif
-    }
+    void assert_opcode([[maybe_unused]] const std::set<Opcode> &supported_opcodes) const { assert(is_opcode_in(supported_opcodes)); }
 
     static uint32_t scale_up(uint32_t src_val, size_t src_bits, size_t dst_bits) {
         // simple bit shift

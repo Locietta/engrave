@@ -656,8 +656,7 @@ void GuitarPro::read_lyrics() {
 //   createSlide
 //---------------------------------------------------------
 
-void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, Note *note) {
-    UNUSED(note);
+void GuitarPro::create_slide(int sl, ChordRest *cr, int staff_idx, [[maybe_unused]] Note *note) {
     // shift / legato slide
     if (sl == ::mu::iex::guitarpro::GuitarPro::shift_slide || sl == ::mu::iex::guitarpro::GuitarPro::legato_slide) {
         Glissando *s = mu::engraving::Factory::create_glissando(cr);

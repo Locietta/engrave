@@ -84,11 +84,10 @@ StaffType::StaffType(StaffGroup sg, StaffTypes staff_type, int lines, int stp_of
       gen_clef_(gen_clef), gen_timesig_(gen_time_sig), gen_keysig_(gen_key_sig) {}
 
 StaffType::StaffType(StaffGroup sg, StaffTypes staff_type, int lines, int stp_off, double line_dist, bool gen_clef, bool show_bar_lines,
-                     bool stemless, bool gen_timesig, bool invisible, const Color &color, const String &dur_font_name, double gen_dur,
-                     bool fret_font_use_text_style, const String &fret_font_name, TablatureSymbolRepeat sym_repeat, bool lines_through,
-                     TablatureMinimStyle minim_style, bool on_lines, bool show_rests, bool stems_down, bool stem_through, bool upside_down,
-                     bool show_tab_fingering, bool use_numbers, bool show_back_tied) {
-    UNUSED(invisible);
+                     bool stemless, bool gen_timesig, [[maybe_unused]] bool invisible, const Color &color, const String &dur_font_name,
+                     double gen_dur, bool fret_font_use_text_style, const String &fret_font_name, TablatureSymbolRepeat sym_repeat,
+                     bool lines_through, TablatureMinimStyle minim_style, bool on_lines, bool show_rests, bool stems_down,
+                     bool stem_through, bool upside_down, bool show_tab_fingering, bool use_numbers, bool show_back_tied) {
     color_ = color;
     group_ = sg;
     staff_type_ = staff_type;

@@ -46,7 +46,10 @@ enum class LdAccess : unsigned char {
     }
 
 #else
-#define LD_CONDITION(val) (void) val;
+#define LD_CONDITION(val)                                 \
+    do {                                                  \
+        [[maybe_unused]] const auto ld_condition = (val); \
+    } while (false);
 #endif
 
 // mark as independent
@@ -61,14 +64,12 @@ struct LdFieldDebug {
 
     inline bool has_value() const { return val_.has_value(); }
 
-    inline const T &value(LdAccess mode = LdAccess::CHECK) const {
+    inline const T &value([[maybe_unused]] LdAccess mode = LdAccess::CHECK) const {
         if (!val_.has_value()) {
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
             if (mode == LdAccess::CHECK) {
                 LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << name_;
             }
-#else
-            (void) mode;
 #endif
             return def_;
         }

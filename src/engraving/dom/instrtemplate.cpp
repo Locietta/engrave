@@ -402,12 +402,10 @@ void InstrumentTemplate::read(XmlReader &e) {
         if (tag == "soundId") {
             sound_id = e.read_text();
         } else if (tag == "longName" || tag == "name") { // "name" is obsolete
-            int pos = e.int_attribute("pos", 0);
-            UNUSED(pos);
+            [[maybe_unused]] int pos = e.int_attribute("pos", 0);
             instrument_name.set_long_name(translate_instrument_name(id, u"longName", e.read_text()));
         } else if (tag == "shortName" || tag == "short-name") { // "short-name" is obsolete
-            int pos = e.int_attribute("pos", 0);
-            UNUSED(pos);
+            [[maybe_unused]] int pos = e.int_attribute("pos", 0);
             instrument_name.set_short_name(translate_instrument_name(id, u"shortName", e.read_text()));
         } else if (tag == "trackName") {
             track_name = translate_instrument_name(id, u"trackName", e.read_text());
