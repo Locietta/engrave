@@ -19,9 +19,9 @@ import zipfile
 from pathlib import Path
 
 from integration.test_public_output import compare, describe_audio_file, describe_render, probe_command
-from support.links import setup_link
 from support import golden as g
-from support.paths import INPUT_ROOT, REPO_ROOT
+from support.links import setup_link
+from support.paths import INPUT_ROOT
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,6 +44,7 @@ def run_compat_exports(run, compat, build_dir, assets, soundfont, output, suffix
 
 def main():
     from support.dependencies import validate_dependencies
+
     validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--engine-source", type=Path, default=ROOT)
@@ -176,10 +177,19 @@ def main():
         cwd = a.output / name
         cwd.mkdir(exist_ok=True)
         run(name, [a.build_dir / (name + suffix), *args], cwd)
-    run("write470-excerpts", [sys.executable,
-        ROOT / "engrave/tests/test_write470_excerpts.py",
-        "--probe", a.build_dir / ("write470_probe" + suffix),
-        "--assets", a.assets, "--out", a.output / "write470-excerpts"])
+    run(
+        "write470-excerpts",
+        [
+            sys.executable,
+            ROOT / "engrave/tests/test_write470_excerpts.py",
+            "--probe",
+            a.build_dir / ("write470_probe" + suffix),
+            "--assets",
+            a.assets,
+            "--out",
+            a.output / "write470-excerpts",
+        ],
+    )
     run(
         "mnx_schema",
         [
@@ -244,7 +254,13 @@ def main():
             a.output / "archives",
         ],
     )
-    font = Path("C:/Windows/Fonts/arial.ttf") if platform == "windows" else (a.cairo_prefix / "fonts/DejaVuSans.ttf" if a.cairo_prefix else Path("/usr/share/fonts/TTF/DejaVuSans.ttf"))
+    font = (
+        Path("C:/Windows/Fonts/arial.ttf")
+        if platform == "windows"
+        else (
+            a.cairo_prefix / "fonts/DejaVuSans.ttf" if a.cairo_prefix else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
+        )
+    )
     run(
         "assets",
         [
@@ -332,7 +348,8 @@ def main():
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     allow = g.load_allow(ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
     matched_allow = set()
-    from support.inventory import validate_baseline, validate_actual, validate_allow_usage
+    from support.inventory import validate_actual, validate_allow_usage, validate_baseline
+
     inventory = validate_baseline(ROOT / "tests/data/golden" / platform)
     for source in sources:
         raw = a.output / "raw" / source.name
@@ -405,7 +422,13 @@ def main():
     )
     # Entries are only expected to match on the platforms they pin.
     validate_allow_usage(allow, matched_allow, platform)
-    inputs = [ROOT / "tests/data/golden/inputs.json", a.soundfont, ROOT / "tests/data/golden/allow.json", *sources, *compat]
+    inputs = [
+        ROOT / "tests/data/golden/inputs.json",
+        a.soundfont,
+        ROOT / "tests/data/golden/allow.json",
+        *sources,
+        *compat,
+    ]
     provenance = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     report = dict(
         provenance=provenance,

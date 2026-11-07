@@ -58,48 +58,25 @@ Usage:
 from __future__ import annotations
 
 import sys
-
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import argparse
 
-import asyncio
 
-import base64
 
 import difflib
-
 import hashlib
-
 import json
-
 import os
-
 import re
-
 import shutil
-
 import subprocess
-
 import sys
-
-import tempfile
-
-import xml.etree.ElementTree as ET
-
 import zipfile
-
-from fractions import Fraction
-
 from pathlib import Path
 
 from support.composition_fixture import composition_musicxml
-
-from support.musicxml_semantic import musicxml_semantic
-
-from support.paths import REPO_ROOT
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -132,24 +109,30 @@ ALLOW_KINDS = ("different", "extra")
 
 DEFAULT_PLATFORM = "windows" if sys.platform.startswith("win") else "linux"
 
+
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
 
 class GoldenFormatError(ValueError):
     """A golden file lacks evidence this golden.py requires; recapture it."""
 
+
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
 
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
+
 
 def write_json(path: Path, value, indent: int = 1) -> None:
     write_text(
         path,
         json.dumps(value, indent=indent, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n",
     )
+
 
 EID_TAGS = (
     "eid",
@@ -162,6 +145,7 @@ EID_TAGS = (
     "endMeasure",
     "sharedPart",
 )
+
 
 def normalize_mscx(text: str) -> str:
     eid_map: dict[str, str] = {}
@@ -184,6 +168,7 @@ def normalize_mscx(text: str) -> str:
         text = re.sub(rf'(<metaTag name="{name}">)[^<]*(</metaTag>)', r"\1\2", text)
     return text
 
+
 def normalize_musicxml(text: str) -> str:
     for tag in ("encoding-date", "software"):
         text = re.sub(rf"(<{tag}>)[^<]*(</{tag}>)", r"\1\2", text)
@@ -195,9 +180,11 @@ def normalize_musicxml(text: str) -> str:
         )
     return text
 
+
 def normalize_svg(text: str) -> str:
     # SVG exports carry no timestamp in the observed engine build; keep as-is.
     return text
+
 
 def round_json(value):
     if isinstance(value, float):
@@ -208,6 +195,7 @@ def round_json(value):
         return [round_json(item) for item in value]
     return value
 
+
 def image_size(data: bytes) -> dict:
     import io
 
@@ -216,8 +204,10 @@ def image_size(data: bytes) -> dict:
     with Image.open(io.BytesIO(data)) as image:
         return {"width": image.width, "height": image.height}
 
+
 def load_rounded(path: Path):
     return round_json(json.loads(read_text(path)))
+
 
 def describe_png(path: Path) -> dict:
     from PIL import Image
@@ -230,6 +220,7 @@ def describe_png(path: Path) -> dict:
             "mode": image.mode,
             "sha256": sha256(rgba.tobytes()),
         }
+
 
 def describe_pdf(path: Path) -> dict:
     import pymupdf  # pinned in pixi.toml; cairo hides the volatile metadata in object streams
@@ -259,6 +250,7 @@ def describe_pdf(path: Path) -> dict:
     # Raw export bytes vary by one with compressed cairo metadata; report the
     # normalized size so the golden is stable.
     return {"pages": pages, "bytes": len(canonical), "sha256": sha256(canonical)}
+
 
 def describe_audio(path: Path) -> dict:
     import numpy as np
@@ -303,6 +295,7 @@ def describe_audio(path: Path) -> dict:
         "spectralCentroidHz": round(weighted / weight, 1) if weight else 0.0,
     }
 
+
 def describe_mscz(path: Path) -> dict:
     with zipfile.ZipFile(path) as archive:
         names = sorted(archive.namelist())
@@ -321,6 +314,7 @@ def describe_mscz(path: Path) -> dict:
             else:
                 entries.append({"name": name, "size": len(data)})
     return {"entries": entries, "texts": texts}
+
 
 def describe_mxl(path: Path) -> dict:
     with zipfile.ZipFile(path) as archive:
@@ -341,6 +335,7 @@ def describe_mxl(path: Path) -> dict:
                 "sha256": sha256(normalized.encode("utf-8")),
             }
     return document
+
 
 def describe_midi(data: bytes) -> dict:
     if not data.startswith(b"MThd"):
@@ -484,6 +479,7 @@ def describe_midi(data: bytes) -> dict:
         tracks.append(events)
     return {"format": midi_format, "division": division, "tracks": tracks}
 
+
 def positions(path):
     result = load_rounded(path)
     result["pageSize"] = result.pop("page_size")
@@ -495,12 +491,15 @@ def positions(path):
                 item[key] = int(item[key])
     return result
 
+
 def sanitize(text: str, roots: list[Path]) -> str:
     for root in roots:
         text = text.replace(str(root), "<tmp>")
     return text
 
+
 SEMANTIC_DUMP: dict = {}
+
 
 def semantic_dump(source: Path, dest: Path, roots, *extra: str, config=None) -> None:
     """Run the semantic_dump dev tool next to the server binary; errors become .error.txt."""
@@ -525,6 +524,7 @@ def semantic_dump(source: Path, dest: Path, roots, *extra: str, config=None) -> 
         )
         return
     write_json(dest, json.loads(result.stdout.decode("utf-8")))
+
 
 EDIT_SCENARIOS = {
     "edit-replace-measures": {
@@ -559,9 +559,11 @@ EDIT_SCENARIOS = {
     },
 }
 
+
 def fixture_files() -> list[Path]:
     files = sorted(path for path in FIXTURE_DIR.iterdir() if path.is_file() and path.name != "README.md")
     return files + [path for path in EXTRA_FIXTURES if path.is_file()]
+
 
 def mnx_fixture_files() -> list[Path]:
     """Engine-owned MNX inputs covered by the platform baseline."""
@@ -573,6 +575,7 @@ def mnx_fixture_files() -> list[Path]:
         raise FileNotFoundError(f"missing MNX fixtures: {missing}")
     return files
 
+
 def reset_root(root: Path) -> None:
     if root.exists():
         for child in root.iterdir():
@@ -581,6 +584,7 @@ def reset_root(root: Path) -> None:
             else:
                 child.unlink()
     root.mkdir(parents=True, exist_ok=True)
+
 
 def build_index(root: Path) -> dict:
     index = {}
@@ -592,6 +596,7 @@ def build_index(root: Path) -> dict:
         index[folder.name] = files
     write_json(root / "index.json", index)
     return index
+
 
 def load_allow(path: Path, context: str = "host") -> list[dict]:
     if not path.is_file():
@@ -619,6 +624,7 @@ def load_allow(path: Path, context: str = "host") -> list[dict]:
             raise ValueError("allow entries require explicit platform SHA-256 pins")
     return [e for e in entries if e["context"] == context]
 
+
 def allow_accept(entries, fixture, output, kind, actual_sha, platform):
     """Return (position, entry, problem) for the first matching allow entry."""
     matches = [
@@ -643,6 +649,7 @@ def allow_accept(entries, fixture, output, kind, actual_sha, platform):
             return position, entry, None
     return None, None, "; ".join(problems) if problems else None
 
+
 def verify_golden_index(root: Path, index: dict) -> list[str]:
     on_disk = {path.name for path in root.iterdir() if path.is_dir()}
     issues = [f"unindexed fixture {name}" for name in sorted(on_disk - set(index))]
@@ -656,6 +663,7 @@ def verify_golden_index(root: Path, index: dict) -> list[str]:
             if actual != index[name][entry]:
                 issues.append(f"indexed file hash mismatch {name}/{entry}: expected {index[name][entry]}, got {actual}")
     return issues
+
 
 def silence_windows(audio: dict) -> list[bool]:
     """Per-window exact-silence flags from the stored PCM evidence."""
@@ -675,6 +683,7 @@ def silence_windows(audio: dict) -> list[bool]:
         except (TypeError, ValueError):
             raise GoldenFormatError(f"audio.json {SILENCE_EVIDENCE!r} values must be sample counts") from None
     return windows
+
 
 def audio_equal(golden, actual, key=None) -> bool:
     if isinstance(golden, dict) and isinstance(actual, dict):
@@ -720,6 +729,7 @@ def audio_equal(golden, actual, key=None) -> bool:
         return abs(golden - actual) <= AUDIO_TOLERANCES.get(key, 1e-9)
     return golden == actual
 
+
 def files_equal(golden: Path, actual: Path, output: str) -> bool:
     if output == "audio.json":
         try:
@@ -727,6 +737,7 @@ def files_equal(golden: Path, actual: Path, output: str) -> bool:
         except (json.JSONDecodeError, KeyError):
             return False
     return golden.read_bytes() == actual.read_bytes()
+
 
 def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path) -> None:
     lines = list(
@@ -744,6 +755,7 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
         "".join(line if line.endswith("\n") else line + "\n" for line in lines),
     )
 
+
 INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
 
 
@@ -754,7 +766,9 @@ def verify_input_provenance(*, root=ROOT, sources=None, fixture_dir=FIXTURE_DIR)
         if sha256(manifest.read_bytes()) != INPUT_MANIFEST_SHA256:
             return ["input provenance manifest hash mismatch"]
         pins = json.loads(read_text(manifest))["fixtures"]
-        sources = {source.name: source for source in (fixture_files() + mnx_fixture_files() if sources is None else sources)}
+        sources = {
+            source.name: source for source in (fixture_files() + mnx_fixture_files() if sources is None else sources)
+        }
         sources.update({name: fixture_dir / scenario["source"] for name, scenario in EDIT_SCENARIOS.items()})
         if set(pins) != set(sources):
             return ["input fixture inventory differs from reviewed pins"]
@@ -779,13 +793,15 @@ def verify_input_provenance(*, root=ROOT, sources=None, fixture_dir=FIXTURE_DIR)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return [f"invalid input provenance: {exc}"]
 
+
 def compare_trees(
     golden_root: Path,
     actual_root: Path,
     allow: list[dict],
     output: Path,
     platform: str,
-    *, provenance_check=verify_input_provenance,
+    *,
+    provenance_check=verify_input_provenance,
 ) -> int:
     golden_index = json.loads(read_text(golden_root / "index.json"))
     counts = {
