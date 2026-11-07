@@ -1993,7 +1993,7 @@ static void reset_tuplets(Tuplets &tuplets) {
  TODO: preferably use automatically initialized variables
  */
 
-void MusicXmlParserPass2::init_part_state([[maybe_unused]] const String &part_id) {
+void MusicXmlParserPass2::init_part_state(const String &part_id) {
     time_sig_dura_ = Fraction(0, 0); // invalid
     ties_.clear();
     unstarted_tie_notes_.clear();

@@ -23,6 +23,7 @@
 #define MU_ENGRAVING_LD_ACCESS_DEV_H
 
 #include <optional>
+#include <tuple>
 
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
 #include "log.h"
@@ -46,10 +47,7 @@ enum class LdAccess : unsigned char {
     }
 
 #else
-#define LD_CONDITION(val)                                 \
-    do {                                                  \
-        [[maybe_unused]] const auto ld_condition = (val); \
-    } while (false);
+#define LD_CONDITION(val) std::ignore = (val);
 #endif
 
 // mark as independent
