@@ -84,7 +84,7 @@ end
 if is_plat("windows") then
     set_runtimes("MD")
     set_exceptions("cxx")
-    add_defines("WIN32", "WIN32_LEAN_AND_MEAN", "NOMINMAX", "_USE_MATH_DEFINES", "_UNICODE")
+    add_defines("WIN32", "WIN32_LEAN_AND_MEAN", "NOGDI", "NOMINMAX", "_USE_MATH_DEFINES", "_UNICODE")
     add_cxflags("/utf-8", "/Zc:__cplusplus", {tools = {"cl", "clang_cl"}})
     add_cflags("/utf-8", {tools = {"cl", "clang_cl"}})
 elseif is_plat("macosx") then
