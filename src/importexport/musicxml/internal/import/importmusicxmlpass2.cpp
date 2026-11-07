@@ -1993,8 +1993,7 @@ static void reset_tuplets(Tuplets &tuplets) {
  TODO: preferably use automatically initialized variables
  */
 
-void MusicXmlParserPass2::init_part_state(const String &part_id) {
-    UNUSED(part_id);
+void MusicXmlParserPass2::init_part_state([[maybe_unused]] const String &part_id) {
     time_sig_dura_ = Fraction(0, 0); // invalid
     ties_.clear();
     unstarted_tie_notes_.clear();
@@ -7786,8 +7785,8 @@ FretDiagram *MusicXmlParserPass2::frame() {
  Parse the /score-partwise/part/measure/harmony node.
  */
 
-void MusicXmlParserPass2::harmony(const String &part_id, Measure *measure, const Fraction &s_time, HarmonyMap &harmony_map) {
-    UNUSED(measure);
+void MusicXmlParserPass2::harmony(const String &part_id, [[maybe_unused]] Measure *measure, const Fraction &s_time,
+                                  HarmonyMap &harmony_map) {
     track_idx_t track = pass1_.track_for_part(part_id);
 
     Staff *staff = score_->staff(track2staff(track));

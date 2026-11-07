@@ -7,6 +7,7 @@
 #include <new>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 
@@ -308,7 +309,7 @@ std::string check_poison(Engine &engine, const OpCase &op_case, const std::files
     const Batch batch = op_case.make(*document);
     try {
         PushHook hook(Inject::AFTER, 1);
-        (void) document->edit(batch);
+        std::ignore = document->edit(batch);
         return "a failed restore did not throw";
     } catch (const std::exception &) {}
     hooks = {};

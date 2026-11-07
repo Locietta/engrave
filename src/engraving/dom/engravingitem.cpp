@@ -2234,9 +2234,8 @@ void EngravingItem::LayoutData::scan_connected_items_in_snapping_chain(const Sys
     }
 }
 
-const RectF &EngravingItem::LayoutData::bbox(LdAccess mode) const {
+const RectF &EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
-    UNUSED(mode);
     const Shape &sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 
     //! NOTE Temporary
@@ -2337,12 +2336,9 @@ Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
 }
 
 #ifndef NDEBUG
-void EngravingItem::LayoutData::do_set_pos_debug_hook(double x, double y) {
-    UNUSED(x);
-    UNUSED(y);
-}
+void EngravingItem::LayoutData::do_set_pos_debug_hook([[maybe_unused]] double x, [[maybe_unused]] double y) {}
 
-void EngravingItem::LayoutData::set_width_debug_hook(double w) { UNUSED(w); }
+void EngravingItem::LayoutData::set_width_debug_hook([[maybe_unused]] double w) {}
 
 #endif
 

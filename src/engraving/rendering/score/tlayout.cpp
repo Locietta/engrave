@@ -3438,7 +3438,7 @@ void TLayout::layout_key_sig(const KeySig *item, KeySig::LayoutData *ldata, cons
     ldata->set_shape(key_sig_shape);
 }
 
-void TLayout::layout_laissez_vib(LaissezVib *item) { UNUSED(item); }
+void TLayout::layout_laissez_vib([[maybe_unused]] LaissezVib *item) {}
 
 void TLayout::layout_layout_break(const LayoutBreak *item, LayoutBreak::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
@@ -5394,7 +5394,7 @@ void TLayout::layout_tapping(Tapping *item, Tapping::LayoutData *ldata, LayoutCo
     TappingLayout::layout_tapping(item, ldata, ctx);
 }
 
-void TLayout::layout_tapping_half_slur(TappingHalfSlur *item) { UNUSED(item) }
+void TLayout::layout_tapping_half_slur([[maybe_unused]] TappingHalfSlur *item) {}
 
 void TLayout::layout_tempo_text(const TempoText *item, TempoText::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
@@ -5855,7 +5855,7 @@ void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutCon
     ldata->set_shape(shape);
 }
 
-void TLayout::layout_tie(Tie *item, LayoutContext &) { UNUSED(item); }
+void TLayout::layout_tie([[maybe_unused]] Tie *item, LayoutContext &) {}
 
 void TLayout::layout_time_sig(const TimeSig *item, TimeSig::LayoutData *ldata, const LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);

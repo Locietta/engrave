@@ -20,6 +20,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -152,7 +153,7 @@ TEST(Edit, APoisonedDocumentRefusesWork) {
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
     const Batch batch{{SetStyle{{}, "staffDistance", 9.0}}};
-    EXPECT_ANY_THROW((void) document->edit(batch));
+    EXPECT_ANY_THROW(std::ignore = document->edit(batch));
     hooks = {};
     const auto expect_poisoned = [](const auto &result) {
         ASSERT_FALSE(result);

@@ -88,8 +88,7 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
         // dedupe here after skipping malformed entries. The order matches the
         // engine: instruments are stored by their first tick in a std::map.
         std::set<muse::String> seen_instruments;
-        for (const auto &[tick, instrument] : part->instruments()) {
-            (void) tick;
+        for ([[maybe_unused]] const auto &[tick, instrument] : part->instruments()) {
             if (!instrument) {
                 continue;
             }

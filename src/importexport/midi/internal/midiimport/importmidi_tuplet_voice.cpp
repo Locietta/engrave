@@ -418,14 +418,11 @@ std::list<TiedTuplet>::iterator erase_back_tied_tuplet(const std::list<TiedTuple
 }
 
 void set_voices_from_prev_bars(std::list<TiedTuplet> &back_tied_tuplets, std::vector<TupletInfo> &tuplets, std::set<int> &pending_tuplets,
-                               const std::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
+                               [[maybe_unused]] const std::set<std::pair<const ReducedFraction, MidiChord> *> &pending_non_tuplets,
                                std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &tuplet_intervals,
                                std::map<int, std::vector<std::pair<ReducedFraction, ReducedFraction>>> &back_tuplet_intervals,
                                const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
                                const ReducedFraction &bar_start) {
-#ifdef NDEBUG
-    (void) (pending_non_tuplets);
-#endif
     bool loop_again = false;
     do {
         for (auto it = back_tied_tuplets.begin(); it != back_tied_tuplets.end();) {

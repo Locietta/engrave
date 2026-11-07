@@ -7,8 +7,7 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::create_gp_track(XmlDomNode *track_node, XmlDomNode *version_node) {
-    UNUSED(version_node);
+std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::create_gp_track(XmlDomNode *track_node, [[maybe_unused]] XmlDomNode *version_node) {
     static const std::set<String> s_unused_nodes = {
         u"Color", // we don't use icon color for the tracks
         u"SystemsDefaultLayout",

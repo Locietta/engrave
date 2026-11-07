@@ -1444,10 +1444,7 @@ void SingleLayout::layout(Tapping *item, const Context &ctx) {
     item->setbbox(text->ldata()->bbox());
 }
 
-void SingleLayout::layout(SoundFlag *item, const Context &ctx) {
-    UNUSED(item);
-    UNUSED(ctx);
-}
+void SingleLayout::layout([[maybe_unused]] SoundFlag *item, [[maybe_unused]] const Context &ctx) {}
 
 void SingleLayout::layout(Stem *item, const Context &ctx) {
     LayoutContext tctx(ctx.dont_use_score());

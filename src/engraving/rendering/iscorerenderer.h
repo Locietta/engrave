@@ -131,8 +131,7 @@ struct IScoreRenderer {
         if constexpr (std::is_same<T, EngravingItem *>::value) {
             // supported
         } else {
-            Supported check(item);
-            (void) check;
+            [[maybe_unused]] Supported check(item);
         }
     }
 

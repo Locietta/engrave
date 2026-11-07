@@ -33,6 +33,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -1036,7 +1037,7 @@ TEST(Read, PositionsRefuseAPoisonedDocument) {
     hooks.policy = engrave::api::Policy::SNAPSHOT;
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
-    EXPECT_ANY_THROW((void) document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    EXPECT_ANY_THROW(std::ignore = document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
     hooks = {};
     expect_code(document->positions(engrave::PositionKind::MEASURE), ErrorCode::POISONED, "poisoned document");
 }
@@ -1177,12 +1178,12 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
     expect_code(document->export_score({.format = engrave::Format::MIDI, .capture = {.max_bytes = 64}}), ErrorCode::UNSUPPORTED,
                 "bounded MIDI capture");
     int checks = 0;
-    EXPECT_THROW((void) document->export_score({.format = engrave::Format::MSCZ, .capture = {.cancelled = [&]() -> bool {
-                                                                                     if (++checks == 20)
-                                                                                         throw std::runtime_error(
-                                                                                             "capture callback failure");
-                                                                                     return false;
-                                                                                 }}}),
+    EXPECT_THROW(std::ignore =
+                     document->export_score({.format = engrave::Format::MSCZ, .capture = {.cancelled = [&]() -> bool {
+                                                                                  if (++checks == 20)
+                                                                                      throw std::runtime_error("capture callback failure");
+                                                                                  return false;
+                                                                              }}}),
                  std::runtime_error);
     EXPECT_EQ(checks, 20);
     EXPECT_TRUE(document->export_score({.format = engrave::Format::MSCZ}));

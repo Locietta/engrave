@@ -81,5 +81,3 @@ void assertion_failure(std::string_view, const char *, int);
     if (!(var_name))
 
 #define IF_FAILED(cond) IF_FAILED_IMPL(cond, UNIQUE_VAR_NAME(if_failed_))
-
-#define UNUSED(x) (void) x;

@@ -75,8 +75,7 @@ struct ScoreAudioMixDefaults {
     bool is_neutral(int excerpt_id = -1, const std::string &excerpt_name = "") const noexcept {
         if (!(master == AudioOutputParams{})) return false;
         if (excerpt_id < 0) {
-            for (const auto &[identity, output] : tracks) {
-                (void) identity;
+            for ([[maybe_unused]] const auto &[identity, output] : tracks) {
                 if (!(output == AudioOutputParams{})) return false;
             }
             return true;

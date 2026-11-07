@@ -29,10 +29,7 @@
 using namespace muse;
 using namespace muse::draw;
 
-static bool is_ftx(const ByteArray &data) {
-    UNUSED(data);
-    return false;
-}
+static bool is_ftx([[maybe_unused]] const ByteArray &data) { return false; }
 
 static const double default_pixel_size = 100.0;
 static const double loaded_pixel_size_constant = 200.0;

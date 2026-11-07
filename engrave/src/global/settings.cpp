@@ -32,10 +32,8 @@ void Settings::load() {
 
 void Settings::reload() { load(); }
 
-void Settings::reset(bool keep_default_settings, bool notify_about_changes, bool notify_other_instances) {
-    (void) keep_default_settings;
-    (void) notify_other_instances;
-    (void) notify_about_changes;
+void Settings::reset([[maybe_unused]] bool keep_default_settings, [[maybe_unused]] bool notify_about_changes,
+                     [[maybe_unused]] bool notify_other_instances) {
     local_settings_.clear();
     is_transaction_started_ = false;
     for (auto &[k, item] : items_) {
@@ -97,8 +95,7 @@ void Settings::set_can_be_manually_edited(const Settings::Key &key, bool can_be_
     }
 }
 
-void Settings::begin_transaction(bool notify_to_other_instances) {
-    (void) notify_to_other_instances;
+void Settings::begin_transaction([[maybe_unused]] bool notify_to_other_instances) {
     if (is_transaction_started_) {
         throw std::logic_error("Transaction is already started");
     }
@@ -106,16 +103,14 @@ void Settings::begin_transaction(bool notify_to_other_instances) {
     is_transaction_started_ = true;
 }
 
-void Settings::commit_transaction(bool notify_to_other_instances) {
-    (void) notify_to_other_instances;
+void Settings::commit_transaction([[maybe_unused]] bool notify_to_other_instances) {
     if (!is_transaction_started_) return;
     items_ = std::move(local_settings_);
     is_transaction_started_ = false;
     local_settings_.clear();
 }
 
-void Settings::rollback_transaction(bool notify_to_other_instances) {
-    (void) notify_to_other_instances;
+void Settings::rollback_transaction([[maybe_unused]] bool notify_to_other_instances) {
     is_transaction_started_ = false;
     local_settings_.clear();
 }
@@ -143,9 +138,6 @@ void Settings::insert_new_item(const Settings::Key &key, const Val &value) {
 
 Settings::Items Settings::read_items() const { return items_; }
 
-void Settings::write_value(const Key &key, const Val &value) {
-    (void) key;
-    (void) value;
-}
+void Settings::write_value([[maybe_unused]] const Key &key, [[maybe_unused]] const Val &value) {}
 
 } // namespace muse

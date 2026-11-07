@@ -3474,8 +3474,7 @@ void TRead::read(Rest *r, XmlReader &e, ReadContext &ctx) {
     }
 }
 
-void TRead::read(Segment *s, XmlReader &e, ReadContext &ctx) {
-    UNUSED(ctx);
+void TRead::read(Segment *s, XmlReader &e, [[maybe_unused]] ReadContext &ctx) {
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
 

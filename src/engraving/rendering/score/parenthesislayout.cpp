@@ -87,8 +87,7 @@ void ParenthesisLayout::layout_chord_parentheses(const Chord *chord, const Layou
 }
 
 void ParenthesisLayout::layout_parentheses(Parenthesis *left_paren, Parenthesis *right_paren, Shape &dummy_item_shape,
-                                           bool item_add_to_skyline, const LayoutContext &ctx) {
-    UNUSED(ctx);
+                                           bool item_add_to_skyline, [[maybe_unused]] const LayoutContext &ctx) {
     if (!left_paren || !right_paren) {
         // 1 parenthesis
         Parenthesis *paren = left_paren ? left_paren : right_paren;

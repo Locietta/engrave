@@ -27,10 +27,7 @@ using namespace muse::draw;
 
 //! NOTE Perhaps in the future we need to add something like ISvgRenderer
 
-SvgRenderer::SvgRenderer(const ByteArray &data) {
-    MUSE_NOT_SUPPORTED;
-    UNUSED(data);
-}
+SvgRenderer::SvgRenderer([[maybe_unused]] const ByteArray &data) { MUSE_NOT_SUPPORTED; }
 
 SvgRenderer::~SvgRenderer() {}
 
@@ -39,8 +36,4 @@ muse::SizeF SvgRenderer::default_size() const {
     return SizeF();
 }
 
-void SvgRenderer::render(Painter *painter, const RectF &rect) {
-    MUSE_NOT_SUPPORTED;
-    UNUSED(painter);
-    UNUSED(rect);
-}
+void SvgRenderer::render([[maybe_unused]] Painter *painter, [[maybe_unused]] const RectF &rect) { MUSE_NOT_SUPPORTED; }
