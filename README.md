@@ -128,46 +128,59 @@ The engine operates on a single dedicated owner thread per process. Lifecycle ru
 
 ## Testing
 
-Engine tests are built with xmake:
+### Test Layout
+
+The engine test suite is organized into distinct directories:
+
+- `tests/integration/`: Standalone executable integration test scripts (`test_assets.py`, `test_excerpts.py`, `test_engine_audio.py`, `test_roundtrip.py`, `test_archives.py`, `test_export_options.py`, `test_oracle_harness.py`, `test_public_output.py`, `test_upstream_gtest.py`). These scripts are run directly and are never imported as Python modules.
+- `tests/engrave_testing/`: The shared testing package (`golden`, `paths`, `public_output`, `dependencies`, `inventory`, `links`, `mscx`, `export_formats`, etc.).
+- `tests/gate.py`: The public C++ boundary gate runner.
+- `tests/test_inventory.py`: Verification suite for golden comparators, inventory integrity, and baseline mutations.
+- `tests/data/`: Shared golden baselines, test inputs, and platform allow-lists (`tests/data/golden/allow.json`).
+
+### Building Test Binaries
+
+Engine tests are built with xmake (pass `-P .` when building in a nested checkout):
 
 ```bash
-xmake f --engrave_tests=y
-xmake build engine_tests
+xmake f -P . --engrave_tests=y
+xmake build -P . engine_tests
 ```
 
-The standalone gate builds and executes the public API, import, playback and
-adapter suites, asset verification, MNX schema validation, independent semantic
-checks and indexed public-output comparisons:
+### Running the Public Boundary Gate
+
+The standalone gate (`tests/gate.py`) builds and executes the public API, import, playback, and adapter suites, asset verification, MNX schema validation, independent semantic checks, and indexed public-output comparisons.
+
+In a fork-only checkout, `tests/gate.py` automatically prepends `tests/` and `tools/` to `PYTHONPATH` in its execution environment while preserving any existing `PYTHONPATH`:
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/native-prefix --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/cairo/prefix --output .runtime/gate-run
 python tests/test_inventory.py
 ```
 
-Use a fresh output directory. Windows uses native Python/PowerShell and a Cairo
-prefix ending in `Library`; put its `bin` on PATH. Linux uses the native prefix
-and its `bin` on PATH and `lib` on LD_LIBRARY_PATH. When a prefix supplies the
-Conda compiler, the gate selects it; otherwise configure with the system compiler.
-The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock.
-`--skip-build` is diagnostic only. The dense-audio cancellation timing assertion
-can fail on Windows; failures are retained and must not be reported as a pass.
+Use a fresh output directory for each run. Windows uses native Python/PowerShell and a Cairo prefix ending in `Library`; put its `bin` on `PATH`. Linux uses the native prefix with its `bin` on `PATH` and `lib` on `LD_LIBRARY_PATH`. When a prefix supplies the Conda compiler, the gate selects it; otherwise configure with the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
 
-Create a new virtual environment with Python 3.13 (`python -m venv .venv`),
-then install with `.venv/bin/python -m pip install -r tests/requirements.txt`
-(Windows: `.venv/Scripts/python.exe`). Run the commands above with that Python.
-All normalization and validation dependencies are exact pins matching the host
-pixi.lock. The gate rejects missing or different versions before building or
-capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
+Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install with `.venv/bin/python -m pip install -r tests/requirements.txt` (Windows: `.venv/Scripts/python.exe`). Run the commands above with that Python. All normalization and validation dependencies are exact pins matching the host `pixi.lock`. The gate rejects missing or different versions before building or capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
 
-Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0,
-Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed
-in the supplied native prefix on Linux. xmake 3.1.1+, MSVC 14.51+ or GCC 15.3
-build the C++23 closure. No MCP SDK or desktop MuseScore installation is needed.
-Shared input/baseline provenance is frozen under `tests/data`; the host reads
-these files through its submodule. `gate-inventory.json` explicitly selects the
-251 master API artifacts from the complete shared platform index. The index's
-entire payload inventory and hashes are verified before comparison.
+Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0, Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed in the supplied native prefix on Linux. xmake 3.1.1+, MSVC 14.51+ or GCC 15.3 build the C++23 closure. No MCP SDK or desktop MuseScore installation is needed. Shared input/baseline provenance is frozen under `tests/data`; the host reads these files through its submodule. `gate-inventory.json` explicitly selects the 251 master API artifacts from the complete shared platform index. The index's entire payload inventory and hashes are verified before comparison.
+
+### Running a Single Fork Test Script Directly
+
+To execute an individual integration script in a fork-only checkout without an editable package install, prepend `tests` and `tools` to `PYTHONPATH`:
+
+```bash
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH = "tests;tools;$env:PYTHONPATH"
+python tests/integration/test_assets.py --binary build/gate/assets_test.exe --assets .runtime/assets --font C:/Windows/Fonts/arial.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+```
+
+Alternatively, install the `engrave-testing` package in editable mode within the virtual environment (`pip install -e .`), allowing test scripts to run directly without specifying `PYTHONPATH`.
 
 ## Development
 
