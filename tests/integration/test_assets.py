@@ -7,7 +7,7 @@ import subprocess
 import zlib
 from pathlib import Path
 
-from engrave_testing.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT, pixi_env
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--binary", type=Path, required=True)
@@ -35,7 +35,7 @@ def fallback_fixture():
         a.font.parent / "Ubuntu-M.ttf",
         a.font.parent / "Ubuntu-B.ttf",
         a.font.parent / "DejaVuSans-Bold.ttf",
-        root / ".pixi/envs/native/fonts/Ubuntu-M.ttf",
+        pixi_env(root) / "fonts/Ubuntu-M.ttf",
         Path("C:/Windows/Fonts/arialbd.ttf"),
         Path("/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf"),
         Path("/usr/share/fonts/TTF/Ubuntu-M.ttf"),

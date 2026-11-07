@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "description": "SVG page and raster statistics checked by tests/support/check_rendered_page.py; hash-pinned exceptions identify accepted output differences.",
+  "description": "SVG page and raster statistics checked by host tests/engrave_mcp_testing/check_rendered_page.py; hash-pinned exceptions identify accepted output differences.",
   "pages": {
     "bend.gp/page-0.svg": {
       "stats": {
