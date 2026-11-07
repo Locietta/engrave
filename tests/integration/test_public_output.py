@@ -23,14 +23,7 @@ This module is used by tests/gate.py; partial captures are not an acceptance CLI
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-
 import subprocess
-import sys
 from pathlib import Path
 
 from support.golden import (
@@ -45,6 +38,8 @@ from support.golden import (
     write_json,
     write_text,
 )
+from support.inventory import validate_actual, validate_allow_usage, validate_baseline
+
 
 def probe_command(
     probe: Path,
@@ -102,7 +97,6 @@ def compare(
     counts: dict,
     matched_allow: set | None = None,
 ) -> None:
-    from support.inventory import validate_baseline, validate_actual
     inventory = validate_baseline(golden_root)
     validate_actual(fixture, out, names, inventory)
     local_matched = set()
@@ -129,8 +123,8 @@ def compare(
         suffix = f" (allow mismatch: {problem})" if problem else ""
         print(f"different    {fixture}/{name} actual sha256={actual_sha}{suffix}")
 
-    from support.inventory import validate_allow_usage
     validate_allow_usage(allow, local_matched, platform, {(fixture, n) for n in names})
+
 
 if __name__ == "__main__":
     raise SystemExit("Partial comparison CLI removed; use tests/gate.py for validated captures")

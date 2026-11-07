@@ -6,12 +6,6 @@ semantic representation, ignoring all layout and appearance details.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-
 import argparse
 import json
 import pathlib
@@ -1082,7 +1076,7 @@ def main() -> None:
 
     if args.tree:
         if not args.output:
-            parser.error("--output DIR is required when using --tree ROOT")
+            parser.error("--output DIR is required when using --tree REPO_ROOT")
         root_dir = pathlib.Path(args.tree)
         out_dir = pathlib.Path(args.output)
 

@@ -1,66 +1,32 @@
 from __future__ import annotations
 
-import sys
-
-from pathlib import Path
-
 import argparse
-
-import asyncio
-
 import contextlib
-
 import hashlib
-
 import io
-
 import json
-
 import math
-
 import os
-
 import re
-
 import shutil
-
 import socket
-
 import subprocess
-
 import sys
-
 import tempfile
-
 import traceback
-
 import xml.etree.ElementTree as ET
-
 from collections import Counter
-
 from collections.abc import Callable
-
 from pathlib import Path
-
 from typing import Any
-
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
+import numpy as np
+import soundfile as sf
+from support import golden as golden
+from support.make_sine_soundfont import generate_sine_soundfont
 from support.paths import REPO_ROOT
 
-ROOT = Path(__file__).resolve().parents[2]
-
-import numpy as np
-
-import soundfile as sf
-
-from support import golden as golden
-
-from support.golden import describe_midi
-
-from support.make_sine_soundfont import generate_sine_soundfont
 
 def find_probe_binary(bin_dir: Path | None) -> Path:
     candidates = []
@@ -73,12 +39,12 @@ def find_probe_binary(bin_dir: Path | None) -> Path:
         )
     candidates.extend(
         [
-            ROOT / "build" / "xmake-windows" / "engine_audio_probe.exe",
-            ROOT / "build" / "xmake-windows" / "engine_audio_probe",
-            ROOT / "build" / "xmake-linux" / "engine_audio_probe",
-            ROOT / "build" / "xmake-linux" / "engine_audio_probe.exe",
-            ROOT / "build" / "windows" / "engine_audio_probe.exe",
-            ROOT / "build" / "linux" / "engine_audio_probe",
+            REPO_ROOT / "build" / "xmake-windows" / "engine_audio_probe.exe",
+            REPO_ROOT / "build" / "xmake-windows" / "engine_audio_probe",
+            REPO_ROOT / "build" / "xmake-linux" / "engine_audio_probe",
+            REPO_ROOT / "build" / "xmake-linux" / "engine_audio_probe.exe",
+            REPO_ROOT / "build" / "windows" / "engine_audio_probe.exe",
+            REPO_ROOT / "build" / "linux" / "engine_audio_probe",
         ]
     )
     for c in candidates:
@@ -86,9 +52,10 @@ def find_probe_binary(bin_dir: Path | None) -> Path:
             return c.resolve()
     raise FileNotFoundError(f"engine_audio_probe binary not found in {bin_dir} or standard build dirs")
 
+
 def probe_env() -> dict[str, str]:
     env = os.environ.copy()
-    native_env = ROOT / ".pixi" / "envs" / "native"
+    native_env = REPO_ROOT / ".pixi" / "envs" / "native"
     for extra in (native_env / "Library" / "bin", native_env / "bin"):
         if extra.is_dir():
             env["PATH"] = str(extra.resolve()) + os.pathsep + env.get("PATH", "")
@@ -96,6 +63,7 @@ def probe_env() -> dict[str, str]:
         if lib.is_dir():
             env["LD_LIBRARY_PATH"] = str(lib.resolve()) + os.pathsep + env.get("LD_LIBRARY_PATH", "")
     return env
+
 
 def run_probe(
     probe_bin: Path,
@@ -134,8 +102,10 @@ def run_probe(
             f"Failed to parse engine_audio_probe JSON:\nStdout:\n{proc.stdout}\nStderr:\n{proc.stderr}"
         ) from err
 
+
 def golden_platform() -> str:
     return "windows" if sys.platform.startswith("win") else "linux"
+
 
 def numeric_values(values: list[Any]) -> list[float]:
     """Flatten scalar lists and per-channel lists (rmsEnvelope is nested)."""
@@ -143,12 +113,14 @@ def numeric_values(values: list[Any]) -> list[float]:
         return [float(item) for pair in values for item in pair]
     return [float(item) for item in values]
 
+
 def decode_audio(path: Path) -> tuple[np.ndarray, int]:
     audio, rate = sf.read(str(path), always_2d=True)
     assert audio.size > 0, f"{path} decoded to no audio"
     assert np.isfinite(audio).all(), f"{path} decoded audio contains NaN or Inf"
     assert audio.shape[1] == 2, f"{path} decoded channels != 2: {audio.shape[1]}"
     return audio, int(rate)
+
 
 def decode_with_ffmpeg(source: Path, destination: Path) -> tuple[np.ndarray, int] | None:
     ffmpeg = shutil.which("ffmpeg")
@@ -160,6 +132,7 @@ def decode_with_ffmpeg(source: Path, destination: Path) -> tuple[np.ndarray, int
         check=True,
     )
     return decode_audio(destination)
+
 
 CROSS_PLATFORM_TOLERANCES = {
     "peak": 0.025,
@@ -193,11 +166,14 @@ DECODED_DURATION_TOLERANCE = {
     "aac": 0.15,
 }
 
+
 class AudioCheckPending(Exception):
     """A required check cannot yet be completed."""
 
+
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
 
 def audio_fixture_sources() -> dict[str, Path]:
     # The edit scenarios in golden.EDIT_SCENARIOS do not export audio.
@@ -207,12 +183,13 @@ def audio_fixture_sources() -> dict[str, Path]:
     assert all(path.is_file() for path in golden.EXTRA_FIXTURES), "extra golden fixture missing"
     edits = set(golden.EDIT_SCENARIOS)
     assert not edits.intersection(fixtures), "fixture and edit scenario names overlap"
-    indexed = set(json.loads((ROOT / "tests/data/golden" / "windows" / "index.json").read_text(encoding="utf-8")))
+    indexed = set(json.loads((REPO_ROOT / "tests/data/golden" / "windows" / "index.json").read_text(encoding="utf-8")))
     expected = set(fixtures) | edits
     assert expected == indexed, (
         f"golden source inventory differs: missing {sorted(indexed - expected)}, unindexed {sorted(expected - indexed)}"
     )
     return fixtures
+
 
 def validate_version_proof(path: Path, platform: str, engine_commit: str) -> None:
     root = ET.parse(path).getroot()
@@ -228,6 +205,7 @@ def validate_version_proof(path: Path, platform: str, engine_commit: str) -> Non
     )
     expected_platform = {"windows": "Microsoft Windows", "linux": "Linux"}[platform]
     assert written_platform == expected_platform, (written_platform, expected_platform)
+
 
 def write_capture_manifest(
     target: Path,
@@ -246,18 +224,19 @@ def write_capture_manifest(
         "engine_commit": engine_commit,
         "binary_sha256": binary_sha,
         "soundfont_sha256": soundfont_sha,
-        "extractor_sha256": file_sha256(ROOT / "tests/support/golden.py"),
+        "extractor_sha256": file_sha256(REPO_ROOT / "tests/support/golden.py"),
         "capture_script_sha256": file_sha256(Path(__file__)),
-        "fixture_helper_sha256": file_sha256(ROOT / "tests/support/composition_fixture.py"),
+        "fixture_helper_sha256": file_sha256(REPO_ROOT / "tests/support/composition_fixture.py"),
         "version_proof_sha256": file_sha256(target / "version.mscx"),
         "fixture_sha256": {name: file_sha256(path) for name, path in fixtures.items()},
         "audio_sha256": {name: file_sha256(target / name / "audio.json") for name in fixtures},
     }
     golden.write_json(target / "manifest.json", manifest)
 
+
 def capture_destination(capture_root: Path, platform: str) -> Path:
     root = capture_root.resolve()
-    golden_root = (ROOT / "tests/data/golden").resolve()
+    golden_root = (REPO_ROOT / "tests/data/golden").resolve()
     assert root != golden_root and golden_root not in root.parents, (
         "capture directory must not be inside tests/data/golden"
     )
@@ -271,6 +250,7 @@ def capture_destination(capture_root: Path, platform: str) -> Path:
             f"refusing to replace an unrelated capture: {destination}"
         )
     return destination
+
 
 def read_audio_capture(
     tree: Path,
@@ -291,11 +271,11 @@ def read_audio_capture(
     assert manifest.get("engine_commit") == engine_commit, f"{platform} capture engine is stale"
     assert re.fullmatch(r"[0-9a-f]{64}", manifest.get("binary_sha256", "")), manifest_path
     assert manifest.get("soundfont_sha256") == soundfont_sha, f"{platform} soundfont differs"
-    assert manifest.get("extractor_sha256") == file_sha256(ROOT / "tests/support/golden.py"), (
+    assert manifest.get("extractor_sha256") == file_sha256(REPO_ROOT / "tests/support/golden.py"), (
         f"{platform} feature extractor is stale"
     )
     assert manifest.get("capture_script_sha256") == file_sha256(Path(__file__)), f"{platform} capture script is stale"
-    assert manifest.get("fixture_helper_sha256") == file_sha256(ROOT / "tests/support/composition_fixture.py"), (
+    assert manifest.get("fixture_helper_sha256") == file_sha256(REPO_ROOT / "tests/support/composition_fixture.py"), (
         f"{platform} fixture helper is stale"
     )
     proof = tree / "version.mscx"
@@ -315,6 +295,7 @@ def read_audio_capture(
     for name, path in paths.items():
         assert hashes[name] == file_sha256(path), f"{platform} capture changed: {name}/audio.json"
     return paths
+
 
 def test_cross_platform_audio_features(
     evidence: dict[str, Any],
@@ -383,6 +364,7 @@ def test_cross_platform_audio_features(
     summary = ", ".join(f"{key} {value:.6g}" for key, value in maxima.items())
     print(f"  {len(windows)} fixtures agree across Windows/Linux (max deltas: {summary})")
 
+
 def run_audio_checks(
     checks: list[tuple[str, Callable[[], None]]],
     evidence: dict[str, Any],
@@ -415,6 +397,7 @@ def run_audio_checks(
     print(f"  overall: {status.upper()}")
     return {"passed": 0, "failed": 1, "pending": 2}[status]
 
+
 def test_audio_check_reporting() -> None:
     """Exercise missing, incomplete, stale, mismatching and complete captures."""
     feature = {
@@ -432,7 +415,7 @@ def test_audio_check_reporting() -> None:
     source_commit, engine_commit, soundfont_sha = "a" * 40, "b" * 40, "c" * 64
     with tempfile.TemporaryDirectory(prefix="musescore-audio-check-") as temp_dir:
         captures = Path(temp_dir)
-        for forbidden in (ROOT / "tests/data/golden", captures / "unrelated"):
+        for forbidden in (REPO_ROOT / "tests/data/golden", captures / "unrelated"):
             if forbidden == captures / "unrelated":
                 (forbidden / "windows").mkdir(parents=True)
             try:
@@ -524,7 +507,7 @@ def test_audio_check_reporting() -> None:
         for platform in ("windows", "linux"):
             for name in fixtures:
                 shutil.copyfile(
-                    ROOT / "tests/data/golden" / "windows" / name / "audio.json",
+                    REPO_ROOT / "tests/data/golden" / "windows" / name / "audio.json",
                     captures / platform / name / "audio.json",
                 )
             write_capture_manifest(
@@ -568,6 +551,7 @@ def test_audio_check_reporting() -> None:
         f"mismatching and {len(fixtures)}-fixture matching captures"
     )
 
+
 def check_sine_onset(onset_idx: int, expected_t: float, sr: int, midi_pitch: int) -> float:
     offset_frames = abs(onset_idx - expected_t * sr)
     diff_ms = offset_frames * 1000.0 / sr
@@ -578,12 +562,14 @@ def check_sine_onset(onset_idx: int, expected_t: float, sr: int, midi_pitch: int
     )
     return diff_ms
 
+
 def check_sine_pitch(cents_diff: float, midi_pitch: int, detected_freq: float, expected_freq: float) -> None:
     assert cents_diff <= SINE_PITCH_MAX_CENTS, (
         f"Pitch {midi_pitch} frequency error {cents_diff:.9f} cents exceeds "
         f"{SINE_PITCH_MAX_CENTS:.2f} cent tolerance "
         f"(detected {detected_freq:.3f} Hz, expected {expected_freq:.3f} Hz)"
     )
+
 
 def test_sine_threshold_mutations() -> None:
     # The reference onset and the exact pitch limit must pass; the old 5 ms / 1 cent
@@ -603,6 +589,7 @@ def test_sine_threshold_mutations() -> None:
             raise AssertionError(f"Sine threshold mutation was not rejected: {name}")
     print("  Sine threshold mutations PASSED: 88-sample onset and 0.90-cent pitch rejected")
 
+
 def test_pitch_onset_and_level(
     probe_bin: Path,
     assets: Path,
@@ -610,11 +597,11 @@ def test_pitch_onset_and_level(
     evidence: dict[str, Any],
 ) -> None:
     print("[2/6] Testing pitch, onset and sine SoundFont output level...")
-    sine_sf2 = ROOT / "tests/data/engine_audio" / "sine.sf2"
+    sine_sf2 = REPO_ROOT / "tests/data/engine_audio" / "sine.sf2"
     if not sine_sf2.is_file():
         generate_sine_soundfont(sine_sf2)
 
-    score_path = ROOT / "tests/data/engine_audio" / "pitch_test.musicxml"
+    score_path = REPO_ROOT / "tests/data/engine_audio" / "pitch_test.musicxml"
     if not score_path.is_file():
         raise FileNotFoundError(f"Missing pitch test score: {score_path}")
 
@@ -692,7 +679,7 @@ def test_pitch_onset_and_level(
 
     # Output level: one explicit mf note at C4. The captured events must show
     # the documented dynamic mapping, then the steady-state RMS must match.
-    level_score = ROOT / "tests/data/engine_audio" / "level_test.musicxml"
+    level_score = REPO_ROOT / "tests/data/engine_audio" / "level_test.musicxml"
     assert level_score.is_file(), f"Missing level test score: {level_score}"
     level_wav = out_dir / "level_test.wav"
     if level_wav.exists():
@@ -743,23 +730,26 @@ def test_pitch_onset_and_level(
         f"({level_relative * 100:.2f}% <= {SINE_LEVEL_RMS_RELATIVE_TOLERANCE * 100:.1f}%)"
     )
 
+
 def midi_fixtures() -> list[tuple[str, Path]]:
     return [
-        ("evening", ROOT / "tests/data/inputs" / "evening.musicxml"),
+        ("evening", REPO_ROOT / "tests/data/inputs" / "evening.musicxml"),
         (
             "hairpins_and_repeats",
-            ROOT / "tests/data/inputs" / "golden" / "hairpins_and_repeats.mscx",
+            REPO_ROOT / "tests/data/inputs" / "golden" / "hairpins_and_repeats.mscx",
         ),
-        ("pedal", ROOT / "tests/data/inputs" / "golden" / "pedal.mscx"),
-        ("bend.gp", ROOT / "tests/data/inputs" / "golden" / "bend.gp"),
-        ("repeat70", ROOT / "tests/data/inputs" / "golden" / "repeat70.mscx"),
+        ("pedal", REPO_ROOT / "tests/data/inputs" / "golden" / "pedal.mscx"),
+        ("bend.gp", REPO_ROOT / "tests/data/inputs" / "golden" / "bend.gp"),
+        ("repeat70", REPO_ROOT / "tests/data/inputs" / "golden" / "repeat70.mscx"),
     ]
+
 
 def midi_golden_file(name: str, golden_dir: Path) -> Path:
     platform_file = golden_dir / golden_platform() / f"{name}.json"
     if platform_file.is_file():
         return platform_file
     return golden_dir / f"{name}.json"
+
 
 CC_EXPRESSION = 11
 
@@ -866,14 +856,17 @@ MIDI_ACCEPTED_RULES: dict[str, dict[str, Any]] = {
     },
 }
 
+
 def midi_event_class(event: dict[str, Any]) -> str:
     opcode = str(event["opcode"]).rsplit("::", 1)[-1]
     if opcode == "ControlChange":
         return f"CC{event['index']}"
     return opcode
 
+
 def midi_class_totals(events: list[dict[str, Any]]) -> dict[str, int]:
     return dict(sorted(Counter(midi_event_class(event) for event in events).items()))
+
 
 def predict_50_midi_events(
     name: str, reference_events: list[dict[str, Any]]
@@ -920,6 +913,7 @@ def predict_50_midi_events(
     }
     return predicted, stats
 
+
 def describe_event_difference(actual: list[dict[str, Any]], expected: list[dict[str, Any]]) -> str:
     for index, (actual_event, expected_event) in enumerate(zip(actual, expected)):
         if actual_event != expected_event:
@@ -929,6 +923,7 @@ def describe_event_difference(actual: list[dict[str, Any]], expected: list[dict[
     if len(actual) < len(expected):
         return f"missing event {len(actual)}: {expected[len(actual)]}"
     return "no difference"
+
 
 def check_midi_stream_against_reference(
     name: str,
@@ -1008,6 +1003,7 @@ def check_midi_stream_against_reference(
         "matches_reference_with_accepted_differences": True,
     }
 
+
 def midi_oracle_negative_controls(name: str, golden: dict[str, Any], actual_events: list[dict[str, Any]]) -> list[str]:
     """Exercise the same comparison used by the lane with deliberately bad streams."""
     rejected = []
@@ -1058,6 +1054,7 @@ def midi_oracle_negative_controls(name: str, golden: dict[str, Any], actual_even
         reject("CC11.extra_removal_beyond_pinned_count", mutated)
     return rejected
 
+
 def test_midi_event_goldens(
     probe_bin: Path,
     assets: Path,
@@ -1067,7 +1064,7 @@ def test_midi_event_goldens(
 ) -> None:
     print("[3/6] Testing the 4.7.6 MIDI event reference plus the accepted 5.0 differences...")
     fixtures = midi_fixtures()
-    golden_dir = ROOT / "tests/data/engine_audio" / "midi"
+    golden_dir = REPO_ROOT / "tests/data/engine_audio" / "midi"
     golden_results = {}
 
     for name, fix_path in fixtures:
@@ -1109,7 +1106,7 @@ def test_midi_event_goldens(
             res.get("midiEventTotal"),
             res.get("midiEventsTruncated"),
         )
-        result["golden"] = str(golden_file.relative_to(ROOT))
+        result["golden"] = str(golden_file.relative_to(REPO_ROOT))
         result["reference_sha256"] = reference_sha256
         result["negative_controls_rejected"] = midi_oracle_negative_controls(name, golden, events)
         golden_results[name] = result
@@ -1145,6 +1142,7 @@ def test_midi_event_goldens(
     )
     print("  evening negative controls rejected: " + ", ".join(golden_results["evening"]["negative_controls_rejected"]))
 
+
 def test_determinism_and_decoding(
     probe_bin: Path,
     assets: Path,
@@ -1153,7 +1151,7 @@ def test_determinism_and_decoding(
     evidence: dict[str, Any],
 ) -> None:
     print("[4/6] Testing determinism, decoded durations and non-ASCII paths across wav, flac, ogg, mp3, aac...")
-    score_path = ROOT / "tests/data/inputs" / "golden" / "hairpins_and_repeats.mscx"
+    score_path = REPO_ROOT / "tests/data/inputs" / "golden" / "hairpins_and_repeats.mscx"
     formats = ["wav", "flac", "ogg", "mp3", "aac"]
     det_results = {}
 
@@ -1215,13 +1213,13 @@ def test_determinism_and_decoding(
         det_results[fmt] = dec_info
 
     # Non-ASCII SoundFont copy and output paths for every audio format.
-    sine_sf2 = ROOT / "tests/data/engine_audio" / "sine.sf2"
+    sine_sf2 = REPO_ROOT / "tests/data/engine_audio" / "sine.sf2"
     if not sine_sf2.is_file():
         generate_sine_soundfont(sine_sf2)
     nonascii_sf = out_dir / "非ASCII 音色" / "正弦 音色.sf2"
     nonascii_sf.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(sine_sf2, nonascii_sf)
-    pitch_score = ROOT / "tests/data/engine_audio" / "pitch_test.musicxml"
+    pitch_score = REPO_ROOT / "tests/data/engine_audio" / "pitch_test.musicxml"
     nonascii_dir = out_dir / "输出 音频"
     nonascii_dir.mkdir(parents=True, exist_ok=True)
     nonascii_results = {}
@@ -1276,6 +1274,7 @@ def test_determinism_and_decoding(
     print(f"  Determinism and decoded-duration checks PASSED for {', '.join(formats)}")
     print(f"  Non-ASCII SoundFont and output paths PASSED for {', '.join(formats)}")
 
+
 def test_excerpt_rendering_parity(
     probe_bin: Path,
     assets: Path,
@@ -1284,7 +1283,7 @@ def test_excerpt_rendering_parity(
     evidence: dict[str, Any],
 ) -> None:
     print("[6/6] Testing excerpt render identity against master with other parts muted...")
-    score_path = ROOT / "tests/data/inputs" / "evening.musicxml"
+    score_path = REPO_ROOT / "tests/data/inputs" / "evening.musicxml"
     out_exc = out_dir / "evening_excerpt0.wav"
     out_muted = out_dir / "evening_master_muted12.wav"
 
@@ -1329,13 +1328,14 @@ def test_excerpt_rendering_parity(
         "(identity by construction: excerpt = master with other parts muted)"
     )
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Standalone engine audio checks")
     parser.add_argument("--engine-only", action="store_true", help="accepted for host wrapper compatibility")
     parser.add_argument("--bin-dir", type=Path, required=True)
     parser.add_argument("--resources", type=Path, required=True)
     parser.add_argument("--soundfont", type=Path, required=True)
-    parser.add_argument("--engine-source", type=Path, default=ROOT)
+    parser.add_argument("--engine-source", type=Path, default=REPO_ROOT)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     probe_bin = find_probe_binary(args.bin_dir)
@@ -1347,12 +1347,19 @@ def main() -> int:
         ("sine_threshold_mutations", test_sine_threshold_mutations),
         ("pitch_onset_level", lambda: test_pitch_onset_and_level(probe_bin, args.resources, out_dir, evidence)),
         ("midi_goldens", lambda: test_midi_event_goldens(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
-        ("determinism_codecs", lambda: test_determinism_and_decoding(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
-        ("excerpt_parity", lambda: test_excerpt_rendering_parity(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
+        (
+            "determinism_codecs",
+            lambda: test_determinism_and_decoding(probe_bin, args.resources, args.soundfont, out_dir, evidence),
+        ),
+        (
+            "excerpt_parity",
+            lambda: test_excerpt_rendering_parity(probe_bin, args.resources, args.soundfont, out_dir, evidence),
+        ),
     ]
     code = run_audio_checks(checks, evidence)
     (out_dir / "evidence.json").write_text(json.dumps(evidence, indent=2), encoding="utf-8")
     return code
+
 
 if __name__ == "__main__":
     sys.exit(main())

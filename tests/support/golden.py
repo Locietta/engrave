@@ -57,14 +57,9 @@ Usage:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-
 import difflib
 import hashlib
+import io
 import json
 import os
 import re
@@ -74,13 +69,17 @@ import sys
 import zipfile
 from pathlib import Path
 
+import numpy as np
+import pymupdf  # pinned in pixi.toml; cairo hides the volatile metadata in object streams
+import soundfile as sf
+from PIL import Image
 from support.composition_fixture import composition_musicxml
 
-ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-FIXTURE_DIR = ROOT / "tests/data/inputs" / "golden"
+FIXTURE_DIR = REPO_ROOT / "tests/data/inputs" / "golden"
 
-EXTRA_FIXTURES = (ROOT / "tests/data/inputs" / "evening.musicxml",)
+EXTRA_FIXTURES = (REPO_ROOT / "tests/data/inputs" / "evening.musicxml",)
 
 GENERATE_EXCERPTS = {"chordline_path.mscx"}
 
@@ -195,9 +194,6 @@ def round_json(value):
 
 
 def image_size(data: bytes) -> dict:
-    import io
-
-    from PIL import Image
 
     with Image.open(io.BytesIO(data)) as image:
         return {"width": image.width, "height": image.height}
@@ -208,7 +204,6 @@ def load_rounded(path: Path):
 
 
 def describe_png(path: Path) -> dict:
-    from PIL import Image
 
     with Image.open(path) as image:
         rgba = image.convert("RGBA")
@@ -221,7 +216,6 @@ def describe_png(path: Path) -> dict:
 
 
 def describe_pdf(path: Path) -> dict:
-    import pymupdf  # pinned in pixi.toml; cairo hides the volatile metadata in object streams
 
     document = pymupdf.open(stream=path.read_bytes(), filetype="pdf")
     try:
@@ -251,8 +245,6 @@ def describe_pdf(path: Path) -> dict:
 
 
 def describe_audio(path: Path) -> dict:
-    import numpy as np
-    import soundfile as sf
 
     audio, rate = sf.read(path, always_2d=True)
     frames, channels = audio.shape
@@ -565,7 +557,7 @@ def fixture_files() -> list[Path]:
 
 def mnx_fixture_files() -> list[Path]:
     """Engine-owned MNX inputs covered by the platform baseline."""
-    engine = Path(os.environ.get("MUSESCORE_ENGINE_SOURCE", ROOT))
+    engine = Path(os.environ.get("MUSESCORE_ENGINE_SOURCE", REPO_ROOT))
     data = engine / "src/importexport/mnx/tests/data"
     files = [data / name for name in MNX_FIXTURES]
     missing = [str(path) for path in files if not path.is_file()]
@@ -759,7 +751,7 @@ INPUT_MANIFEST_SHA256 = "79c29d609ec8374363a37942140c8b02032b86fa45d9ab47b450dd4
 
 def verify_input_provenance(*, root=None, sources=None, fixture_dir=None, scenarios=None) -> list[str]:
     """Check current inputs against main's reviewed migration pins."""
-    root = ROOT if root is None else root
+    root = REPO_ROOT if root is None else root
     fixture_dir = FIXTURE_DIR if fixture_dir is None else fixture_dir
     scenarios = EDIT_SCENARIOS if scenarios is None else scenarios
     try:

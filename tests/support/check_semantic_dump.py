@@ -37,10 +37,6 @@ Usage:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import json
 import re
@@ -49,14 +45,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from support.paths import REPO_ROOT
-
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = Path(__file__).resolve().parent
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
-
 from integration.test_roundtrip import parse_mscx
+from support.paths import REPO_ROOT
 
 # Fixed, documented set of spanner types supported across both native semantic dump
 # and independent MSCX parser. Ties are compared in check_events via note "tieTo".
@@ -508,7 +498,7 @@ def main() -> int:
         "root",
         nargs="?",
         type=Path,
-        default=ROOT / "tests/data/golden/windows",
+        default=REPO_ROOT / "tests/data/golden/windows",
         help="Golden root containing one directory per fixture",
     )
     parser.add_argument(
