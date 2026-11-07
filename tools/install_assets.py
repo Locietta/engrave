@@ -3,10 +3,10 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'engrave/assets.json'
