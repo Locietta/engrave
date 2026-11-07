@@ -11,7 +11,8 @@ from unittest.mock import patch
 
 from integration.test_public_output import compare
 from support import golden as g
-from support.inventory import validate_actual, validate_baseline
+from support.dependencies import validate_dependencies
+from support.inventory import validate_actual, validate_allow_usage, validate_baseline
 from support.paths import REPO_ROOT
 
 TEST_ROOT = REPO_ROOT / "tests"
@@ -133,7 +134,6 @@ class InventoryMutations(unittest.TestCase):
             validate_baseline(self.golden)
 
     def test_full_gate_rejects_allowance_outside_inventory(self):
-        from support.inventory import validate_allow_usage
 
         allowance = [{"fixture": "unselected", "output": "unexpected", "sha256": {"windows": "0" * 64}}]
         with self.assertRaisesRegex(ValueError, "unused"):
@@ -141,7 +141,6 @@ class InventoryMutations(unittest.TestCase):
         validate_allow_usage(allowance, set(), "linux")
 
     def test_dependency_mismatch(self):
-        from support.dependencies import validate_dependencies
 
         with patch("support.dependencies.version", return_value="wrong"):
             with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
