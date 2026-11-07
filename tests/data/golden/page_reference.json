@@ -1,14 +1,8 @@
 {
-  "version": 3,
-  "description": "4.7.6 SVG page statistics computed by scripts/check_rendered_page.py from the source in each entry; SVG hashes are of normalized exports.",
+  "version": 4,
+  "description": "SVG page and raster statistics checked by tests/support/check_rendered_page.py; hash-pinned exceptions identify accepted output differences.",
   "pages": {
     "bend.gp/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/bend.gp/page-0.svg",
-        "svg_sha256": "fa586a96af72c008dfb3b310fd0c6dc5586cdd006aa3913062887bf6dbb06f4d"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -38,15 +32,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "60498c2445b6271e1871da3e951d6e39f81fec521b0a9d267bfad34aa6149382",
-          "rgba_sha256": "485ce04f0fbe73ffad8b2887b7ff913cbbbce2f4db600889969e49eb4f375237",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/bend.gp/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -145,12 +130,6 @@
       }
     },
     "bends.mid/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/bends.mid/page-0.svg",
-        "svg_sha256": "e342f5f962e72b6485eb9377806fb7ca06953a1c07901156451d83bd2028e8c8"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -180,15 +159,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "d209eecbee71c91022e32963b60a1e7d5fca3344db07d211c4dd1143ff5e85a0",
-          "rgba_sha256": "1b5292ab436c995ee0611371747151caff70c54a1ffcbb619475a7ff6e43b275",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/bends.mid/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -287,12 +257,6 @@
       }
     },
     "chordline_path.mscx/excerpt-0/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/chordline_path.mscx/excerpt-0/page-0.svg",
-        "svg_sha256": "d9fe1b2fb461dc487093ec03df78cc07d497e28d7366d1edd734ecc661bfc57a"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -324,12 +288,6 @@
       "png": null
     },
     "chordline_path.mscx/excerpt-1/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/chordline_path.mscx/excerpt-1/page-0.svg",
-        "svg_sha256": "382a7aca581fc3f3d125830e726aada11e07a5e70b47993c05b93bd852b1792a"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -361,12 +319,6 @@
       "png": null
     },
     "chordline_path.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/chordline_path.mscx/page-0.svg",
-        "svg_sha256": "f2f8099bf32fa77513c05ac19dd32098a5b40ad53f565877ac0eed89b001ae16"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -396,15 +348,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "3ead15a6ffa3ad28e8936920afe35b4ad6e879093d52b3f26c8985a66b820657",
-          "rgba_sha256": "f44fc62be0c8e488a091e1aee050856702a7cb73db1ab8d5a63828762d48c682",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/chordline_path.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -503,12 +446,6 @@
       }
     },
     "coverage.musicxml/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/coverage.musicxml/page-0.svg",
-        "svg_sha256": "9e03dded51741bb15c31d23e7f8b603ce570feaed86570fd6d1cc8448109f645"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -538,15 +475,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "1c8895800e6d2e09dacc67fc954525bd3413c0671d7f6092cfddeabd35b79a4a",
-          "rgba_sha256": "196a81287d7d2127bbb27eeb788359ae3c50afe2b1a0da482617f03451b089fb",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/coverage.musicxml/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -645,12 +573,6 @@
       }
     },
     "created.json/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/created.json/page-0.svg",
-        "svg_sha256": "a46c6db3287c357cfc5ac0ef0a7e3dc0a81e00473bc04cf5d05873054d1099ab"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -680,15 +602,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "cd6ae7d2ade024ec36488acb2c4874d47a7ca63520dd897dbd1778d030a5029f",
-          "rgba_sha256": "c55c47d9b6144dc10fff16228910831461f5511372842393534dd73eeb9d9810",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/created.json/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -787,19 +700,6 @@
       }
     },
     "custom_part_name.mscx/page-0.svg": {
-      "source": {
-        "kind": "binary",
-        "version": "4.7.6",
-        "binary": "E:/OSS/musescore-mcp/build/xmake-windows/musescore-mcp.exe",
-        "binary_sha256": "3572536b01d5879359ade8cecc4f7f0b9a4a8f22c3ff99ab49a5ee16ee81e411",
-        "fixture": "fixtures/golden/custom_part_name.mscx",
-        "fixture_sha256": "6ebc303484a6fcbec818d7587fb68e5f707c7c9ad89a9b89a0b3b719372968bb",
-        "assets": "E:/OSS/musescore-mcp/.runtime/assets",
-        "assets_manifest_sha256": "cc3e58e8994032da78ed047d454f7e5fcd911d9b2200f113bb2b7d7160cb8e4a",
-        "soundfont_sha256": "cfcd66d89e8386823400eca64934b14fbea7bf48ba1f00d21189af1262794ec2",
-        "capture": "MCP score_open and score_export SVG page 0, normalized by scripts/golden.py",
-        "svg_sha256": "8494a15eb07ba28b28e0d8772e4c63d9c604bb9a370e490595cae3f946b2e1e1"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -829,11 +729,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "59ccaab9d967fc514957b06587665367f6caa6ffcd167d1f7ceac3ad08ab2636",
-          "rgba_sha256": "d3aefb7ede7605195da2c011a0afc8efd4c1316204727817dac0ab7860f55a3a",
-          "fixture_sha256": "6ebc303484a6fcbec818d7587fb68e5f707c7c9ad89a9b89a0b3b719372968bb"
-        },
         "stats": {
           "size": [
             1191,
@@ -932,12 +827,6 @@
       }
     },
     "drums_import.musicxml/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/drums_import.musicxml/page-0.svg",
-        "svg_sha256": "3a88bf789300d2acab8e6bc2d9352dc9c8417c380f7a57f73c1f707dce1143ab"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -967,15 +856,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "5e0b01a133bd2f4e05d016f34337dfbf8cd195cfdc3eb7758f8f9535b3eaa1a3",
-          "rgba_sha256": "250769e56849466bd09b566942983269719ef93f23bb5e5a12bdd6607ff144a3",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/drums_import.musicxml/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1225,
@@ -1074,12 +954,6 @@
       }
     },
     "evening.musicxml/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/evening.musicxml/page-0.svg",
-        "svg_sha256": "d70e868eaca04d87e4dda6ed3ad11f0a0d702c5b3323d1e57dbfed910a899cac"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1109,15 +983,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "7bdf289788c58545f6a8ddd80e1e17b9e8a000aac69d9273db5112ab4b088a3a",
-          "rgba_sha256": "2861f6574161f49563d5e6ed73275dcee9531a0a9466ea714bee1af49e3e1992",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/evening.musicxml/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -1216,12 +1081,6 @@
       }
     },
     "ghost_note.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/ghost_note.mscx/page-0.svg",
-        "svg_sha256": "6a1f89a16deddd94d204351ae16bbb49aa791dfde061b0cfa41692b23c8abffb"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1251,15 +1110,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "51f3d1db2be7a32d57904f2a23a27c118bf3ada6a688ea313fa9765784bb7e0f",
-          "rgba_sha256": "df81c57d8e66a44c57f18e12f457f9181bfbb24cea9f7cd396c9e5363ce9e27d",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/ghost_note.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -1358,12 +1208,6 @@
       }
     },
     "hairpins_and_repeats.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/hairpins_and_repeats.mscx/page-0.svg",
-        "svg_sha256": "8494a15eb07ba28b28e0d8772e4c63d9c604bb9a370e490595cae3f946b2e1e1"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1393,15 +1237,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "59ccaab9d967fc514957b06587665367f6caa6ffcd167d1f7ceac3ad08ab2636",
-          "rgba_sha256": "d3aefb7ede7605195da2c011a0afc8efd4c1316204727817dac0ab7860f55a3a",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/hairpins_and_repeats.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -1500,12 +1335,6 @@
       }
     },
     "layout_elements.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/layout_elements.mscx/page-0.svg",
-        "svg_sha256": "283f3114e08e6e0034a0328701a25611a9f1d7c3ca76cc4ab216502445393788"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1535,15 +1364,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "925848ee6d209a56a3d928cc78136ac1eaf3e7c2c3d0a7b6613bd27ea9fb1722",
-          "rgba_sha256": "ecc67b50b843b5f04abf988441bf98d43d9f3825a76e4004a050cf0180ac1565",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/layout_elements.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -1642,12 +1462,6 @@
       }
     },
     "linked_parts.mscx/excerpt-0/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/linked_parts.mscx/excerpt-0/page-0.svg",
-        "svg_sha256": "2e35c92307ffdf009c4192e8ff1bede71f07a58064624bba7c53cefb6f7e07b3"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1679,12 +1493,6 @@
       "png": null
     },
     "linked_parts.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/linked_parts.mscx/page-0.svg",
-        "svg_sha256": "06ceba4860c4f6504dd362eb0868ddd6bd418086041df7411ad3476598538957"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1714,15 +1522,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "d0cab27d46c7cad5672d3f3f9beb0394918d259cd8ff8522e6692175f7dd33eb",
-          "rgba_sha256": "648239f9ebecad530074b95b304c404529dd8c96e3c35c482d995cf151c81e80",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/linked_parts.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -1821,12 +1620,6 @@
       }
     },
     "lyrics.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/lyrics.mscx/page-0.svg",
-        "svg_sha256": "1fff95ee7203a3ecc79f9e16708d5c45fb64ea4795805bf5522339cdc21011a7"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1851,15 +1644,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "bc55c44ba3b7e1bf79530f64338edfbb83a226d23a5c92ea430595b12052d7fc",
-          "rgba_sha256": "022299d5346125effe85541b26b95670de7b6ca51e46adf44299796895fd4a1d",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/lyrics.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             567,
@@ -1958,12 +1742,6 @@
       }
     },
     "named_noteheads_perc.musicxml/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/named_noteheads_perc.musicxml/page-0.svg",
-        "svg_sha256": "9a59925b67686f1e5a961c503b1892bde66fed8bbe2c80e2a2b7bd09a19faac7"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -1993,15 +1771,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "c2609d09b2f9553946f82c62b90e64ce5ee0dfe539754f00b9fb997070e5188e",
-          "rgba_sha256": "16046be556b88cdc9ea219e0aa6c8d8b1188b7b0515c3e5ce12e3b4d2166c425",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/named_noteheads_perc.musicxml/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2100,12 +1869,6 @@
       }
     },
     "pedal.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/pedal.mscx/page-0.svg",
-        "svg_sha256": "2e51fb55fc994be1c681bd882de93f6e3087634bda352e4a98e1dfd47b346da9"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2135,15 +1898,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "cf86ee2425af022d3cfa664560b90b0086739ca223ea4aba6f8c772eeba103ca",
-          "rgba_sha256": "dd970b9478b7553c5821eff3da4987856b071ce948b2f40cbb7f09fec3655cce",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/pedal.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2242,12 +1996,6 @@
       }
     },
     "perc_stem_dir.musicxml/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/perc_stem_dir.musicxml/page-0.svg",
-        "svg_sha256": "36675fb51375917adc3674627ef29b08f4672027f1f48696d1a3a4f0420160c6"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2277,15 +2025,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "798cd713f3c8b370ebc4c35b7f76b5df52c667e852142ae4a1be9c4b7f38e7ea",
-          "rgba_sha256": "956400f5b9b2bb24ae5c8fe17cc552471912b6fd4b9cf7b072d2dd2c33a3c02e",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/perc_stem_dir.musicxml/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2384,12 +2123,6 @@
       }
     },
     "repeat70.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/repeat70.mscx/page-0.svg",
-        "svg_sha256": "5c2dd088de256b029f8da5552a814a703c37b76c1923004a0380c0163d67bcdb"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2419,15 +2152,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "c5d5a94dd9e3439a87ec0c7ef3f9ea194f953f3fb78e51cf9702045b218ae48d",
-          "rgba_sha256": "f947b03fed049be41905c39021dfa33018eaac59ba83a2deb8a8be01ea367009",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/repeat70.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2526,12 +2250,6 @@
       }
     },
     "repeat71.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/repeat71.mscx/page-0.svg",
-        "svg_sha256": "6d7b39a8eeee40fd172daa96c9cb1c9648ad1246d1a07da2106d280afc52753a"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2561,15 +2279,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "2405f6d7ecc17cab15790f4ab54352fc0110a453a4fefab3418947d8b433a95f",
-          "rgba_sha256": "0fef217d5d94c32f4da5b2d138e42dbbf0eb1f3c3864e6db36b763ce5e123674",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/repeat71.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2668,12 +2377,6 @@
       }
     },
     "repeat72.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/repeat72.mscx/page-0.svg",
-        "svg_sha256": "f7e8016c85ddc72245266ab6bde84b411d964d73f573e8260a12ababa30cc625"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2703,15 +2406,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "2f1243e55219018801018e2f56c948e867f8968d99115792a5259dab3bce077f",
-          "rgba_sha256": "7f01c315a04ed2ace61e6fe2b8c124b2aac8e34b8b64089862c8e49ea820c624",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/repeat72.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2810,12 +2504,6 @@
       }
     },
     "repeat_with_2_voltas.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/repeat_with_2_voltas.mscx/page-0.svg",
-        "svg_sha256": "b5c90687a188dbf462ef9fe75b1d4259699dbdf8f5efbc3314974b727feffd57"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2845,15 +2533,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "09b7612b1295e82e34c571670bb78e4665003c5728c6dfb0dfab8eb8a539f1fe",
-          "rgba_sha256": "58a6d4ff79c34ac944ac573e584e845a467984a256c0d0577e0bc40b0e37ccde",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/repeat_with_2_voltas.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -2952,12 +2631,6 @@
       }
     },
     "slurs.mscz/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/slurs.mscz/page-0.svg",
-        "svg_sha256": "113e1d8aaaa0914bb1801cf4cbb657d0fa5cf8d8e12d603f0594a2fab896f651"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -2987,15 +2660,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "6e7bc2c2f18143864ddecdcfd98a9bda9db5741bca945b4cc23b5324ea440e75",
-          "rgba_sha256": "a4f6e23b7b9bcc06b97ab309530889ba596e6336409ab128d3bb5fbf0187fd03",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/slurs.mscz/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -3094,12 +2758,6 @@
       }
     },
     "slurs.mscz/page-1.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/slurs.mscz/page-1.svg",
-        "svg_sha256": "42d6f93f7eb00d28b558abce7835f80d47ede8a2acd715d81f665d494f04fc27"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -3131,12 +2789,6 @@
       "png": null
     },
     "tab_grace_prebend.mscx/page-0.svg": {
-      "source": {
-        "kind": "git_commit",
-        "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-        "path": "tests/golden/windows/tab_grace_prebend.mscx/page-0.svg",
-        "svg_sha256": "89275251a6778b422a40124eb54fa6a6483e568baf07a59b765c85e97f4aea59"
-      },
       "stats": {
         "viewbox": [
           0.0,
@@ -3166,15 +2818,6 @@
         }
       },
       "png": {
-        "source": {
-          "png_sha256": "1c54259cc9034892d71819019720f51acb3a01e9e2140c31ad656da08c273380",
-          "rgba_sha256": "14194ec9576a8ae3782f42fef861e30ae86510ce29feaaedfe955fe382debc45",
-          "verification": {
-            "commit": "7b6dc2a8877c759e10cbec391c01d4790bfddd45",
-            "path": "tests/golden/windows/tab_grace_prebend.mscx/page-0.png.json",
-            "field": "sha256"
-          }
-        },
         "stats": {
           "size": [
             1191,
@@ -3281,32 +2924,20 @@
         "paths": 184,
         "total_uses": 286
       },
-      "reason": "One-time pre-4.6 fixture upgrade with complete styles. The retained engrave-4 baseline independently emits 184 paths and 286 uses after current-format reload (formerly 183 and 288); the SVG hash is also pinned in allow.json. Other page, glyph and PNG checks remain unchanged."
+      "reason": "Hash-pinned layout counts after current-format reload; other page, glyph and PNG checks remain unchanged."
     }
   ],
-  "png_capture": {
-    "version": "4.7.6",
-    "binary": "E:/OSS/musescore-mcp/build/xmake-windows/musescore-mcp.exe",
-    "binary_sha256": "3572536b01d5879359ade8cecc4f7f0b9a4a8f22c3ff99ab49a5ee16ee81e411",
-    "assets": "E:/OSS/musescore-mcp/.runtime/assets",
-    "assets_manifest": "E:/OSS/musescore-mcp/.runtime/assets-manifest.json",
-    "assets_manifest_sha256": "cc3e58e8994032da78ed047d454f7e5fcd911d9b2200f113bb2b7d7160cb8e4a",
-    "soundfont_sha256": "cfcd66d89e8386823400eca64934b14fbea7bf48ba1f00d21189af1262794ec2",
-    "procedure": "MCP score_open/score_create and score_export PNG master page 0; see scripts/check_rendered_page.py --capture-only.",
-    "ink_measure": "RGBA composited over white; pixel has ink if any RGB channel is below 250. Bounding box uses exclusive right/bottom. Grid cells store ink fraction in an 8x8 page grid.",
-    "coverage": "The golden harness exports a PNG only for master page 0; the three excerpts and slurs master page 1 are SVG-only."
-  },
   "png_exceptions": [
     {
       "issues": [
         "PNG size [1224, 1584] differs from reference [1225, 1585]",
-        "PNG ink share ratio 1.2716 outside ±10%",
+        "PNG ink share ratio 1.2716 outside \u536410%",
         "PNG grid L1 0.2764 exceeds 0.2500"
       ],
       "page": "drums_import.musicxml/page-0.png",
       "platform": "windows",
       "png_sha256": "13e77384dd6cd4cdb900068ad60905986697367f626f280db3f6117a1f8b6eeb",
-      "reason": "Individually pinned writer-precision snapshot drift; see tests/golden/output-census.json and DEFECT-ENGRAVE-015."
+      "reason": "Individually hash-pinned writer-precision snapshot drift."
     }
   ]
 }

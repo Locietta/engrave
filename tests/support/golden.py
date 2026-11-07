@@ -754,7 +754,7 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
     )
 
 
-INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
+INPUT_MANIFEST_SHA256 = "af1da6d23fa5dc0bf659fbe68c3e1a9a1b1ed1f7d5b302bcd1bde648172fc755"
 
 
 def verify_input_provenance(*, root=None, sources=None, fixture_dir=None, scenarios=None) -> list[str]:
