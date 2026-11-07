@@ -217,7 +217,6 @@ def parse_styles(sources):
 def parse_style_owners(sources):
     """{(file, style variable): {class}} for the classes that install or read a list."""
     owners = {}
-    names = {}
     for path, text in sources.items():
         defined = set(re.findall(r"\bElementStyle\s+(\w+)\s*\{", text))
         if not defined:

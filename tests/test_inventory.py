@@ -12,8 +12,9 @@ from unittest.mock import patch
 from integration.test_public_output import compare
 from support import golden as g
 from support.inventory import validate_actual, validate_baseline
+from support.paths import REPO_ROOT
 
-REPO_ROOT = Path(__file__).resolve().parent
+TEST_ROOT = REPO_ROOT / "tests"
 
 
 class InventoryMutations(unittest.TestCase):
@@ -22,8 +23,8 @@ class InventoryMutations(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.golden = self.root / "golden/windows"
-        shutil.copytree(REPO_ROOT / "data/golden/windows", self.golden)
-        shutil.copyfile(REPO_ROOT / "data/gate-inventory.json", self.root / "gate-inventory.json")
+        shutil.copytree(TEST_ROOT / "data/golden/windows", self.golden)
+        shutil.copyfile(TEST_ROOT / "data/gate-inventory.json", self.root / "gate-inventory.json")
         self.inventory = validate_baseline(self.golden)
         self.fixture = "bend.gp"
         self.names = self.inventory[self.fixture]

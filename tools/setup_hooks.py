@@ -1,7 +1,8 @@
 """Install the fork's staged format checker."""
-from pathlib import Path
 import shutil
 import subprocess
+from pathlib import Path
+
 root = Path(__file__).resolve().parents[1]
 hooks = Path(subprocess.check_output(["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-path", "hooks"], text=True).strip())
 hooks.mkdir(parents=True, exist_ok=True)
