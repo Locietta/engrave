@@ -4,7 +4,7 @@
 Runs the fork's ``engrave_output_probe``, which renders through the public API
 (``Document::render``/``render_audio``) and writes the produced artifacts, then
 compares every artifact with the stored platform golden exactly the way
-``tests/support/golden.py`` does:
+``tests/engrave_testing/golden.py`` does:
 
 * ``page-0.png.json``: ``describe_png`` (size, PIL mode, sha256 of the RGBA
   bytes) - so the pixels must equal the golden's, not just the file size;
@@ -26,7 +26,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from support.golden import (
+from engrave_testing.golden import (
     allow_accept,
     describe_audio,
     describe_pdf,
@@ -38,7 +38,7 @@ from support.golden import (
     write_json,
     write_text,
 )
-from support.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
 
 
 def probe_command(

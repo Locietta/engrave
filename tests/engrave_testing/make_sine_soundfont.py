@@ -19,7 +19,7 @@ import math
 import struct
 from pathlib import Path
 
-from support.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT
 
 
 def make_chunk(tag: str, data: bytes) -> bytes:
