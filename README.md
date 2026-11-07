@@ -7,6 +7,7 @@ The library serves as the core engraving and playback engine for the [`engrave-m
 ## Relationship to MuseScore
 
 `engrave` is a hard fork of MuseScore core (derived from upstream MuseScore 5.0 development).
+
 - **Ancestral Provenance**: The fork's upstream synchronization history terminates at `upstream-final` (syncing upstream MuseScore commit `32f0a26e5b` and framework `da3885cb`). Since that sync point, development moves forward independently.
 - **Headless Score Library**: All desktop UI, Qt bindings, user-interaction widgets, QML, cloud services, and legacy score readers prior to MuseScore 4.6 have been removed.
 - **Attribution & Disclaimer**: `engrave` acknowledges original copyright and contributions from MuseScore Limited and the MuseScore community. It is an independent library project and is not affiliated with, endorsed by, or maintained by MuseScore or Muse Group.
@@ -16,6 +17,7 @@ The library serves as the core engraving and playback engine for the [`engrave-m
 Capabilities can be queried programmatically via `Engine::capabilities()`.
 
 ### Input Formats
+
 - **MuseScore**: `.mscz` (compressed archive) and `.mscx` (uncompressed XML), versions 4.60 to 5.00. Files created with MuseScore versions prior to 4.60 (mscVersion < 460) return `ErrorCode::UNSUPPORTED`; versions above the current 5.00 format (mscVersion > 500) are rejected.
 - **MusicXML**: Uncompressed `.musicxml` / `.xml` and compressed `.mxl`.
 - **MIDI**: Standard MIDI Files (`.mid`, `.midi`, `.kar`).
@@ -23,6 +25,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 - **MNX**: W3C MNX JSON (schema 27; import only).
 
 ### Export Formats
+
 - **Score Files** (`Document::export_score`, `Document::export_score_with_warnings`):
   - **MuseScore**: `.mscz` and `.mscx` (default native version `"5.00"`). A restricted, bounded compatibility writer is available for version `"4.70"` (interoperable with MuseScore 4.7.0–4.7.6; see [WRITE470.md](engrave/WRITE470.md)).
   - **MusicXML**: Uncompressed MusicXML and compressed `.mxl`.
@@ -47,6 +50,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
 `engrave` uses the [xmake](https://xmake.io/) build system and requires a C++23 conforming compiler.
 
 ### Prerequisites
+
 - **xmake** >= 3.1.1
 - **C++23 Compiler**:
   - Windows: MSVC (Visual Studio 2022 / Build Tools 17.10+) or clang-cl
@@ -61,6 +65,7 @@ All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, lib
 ### Build Commands
 
 #### Windows
+
 ```pwsh
 # Configure with cairo prefix and release mode
 xmake f -m release --cairo_prefix=C:/path/to/cairo/prefix
@@ -70,6 +75,7 @@ xmake build engrave
 ```
 
 #### Linux
+
 ```bash
 # Configure release build (uses system cairo by default)
 xmake f -m release
@@ -79,6 +85,7 @@ xmake build engrave
 ```
 
 ### Configuration Options
+
 - `--cairo_prefix=<path>`: Custom installation prefix for the Cairo graphics library.
 - `--engrave_tests=y`: Enable development test targets (requires GoogleTest, resolved automatically).
 
@@ -99,6 +106,7 @@ Pass `<destination_dir>` to `EngineOptions::resources` when initializing the eng
 ## Public API
 
 Public headers are located under `engrave/include/engrave/`:
+
 - `engrave/engrave.h`: Umbrella include header.
 - `engrave/engine.h`: `Engine` runtime lifecycle, font registration, SoundFont configuration, and document creation/opening.
 - `engrave/document.h`: `Document` operations: layout, editing, rendering, audio synthesis, export, positions, and queries.
@@ -111,7 +119,9 @@ Public headers are located under `engrave/include/engrave/`:
 - `engrave/version.h`: Engine version information.
 
 ### Execution Model and Lifecycle Rules
+
 The engine operates on a single dedicated owner thread per process. Lifecycle rules per `engrave/include/engrave/engine.h:105`:
+
 - **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts the process only after a `create()` call has succeeded in claiming the process-global singleton (`s_engine_created` via `engine.cpp:90`). Initial validation failures due to missing resources or nonexistent font/SoundFont file paths return an error (`ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT`) before the singleton is claimed, so a subsequent `Engine::create()` call can succeed. (A font that exists on disk but fails during engine runtime loading fails after the singleton is claimed, preventing retries). Once claimed, any subsequent `Engine::create()` aborts, even after the first `Engine` has been destroyed.
 - **Open Documents at Teardown**: Destroying an `Engine` while any of its `Document` instances are still open aborts the process. All documents must be destroyed before the engine is destroyed.
 - **Owner Thread Affiliation**: Every call on an `Engine` and its `Document` instances must occur on the thread that created the engine; a call from another thread aborts.
@@ -119,6 +129,7 @@ The engine operates on a single dedicated owner thread per process. Lifecycle ru
 ## Testing
 
 Engine tests are built with xmake:
+
 ```bash
 xmake f --engrave_tests=y
 xmake build engine_tests
@@ -157,6 +168,10 @@ Shared input/baseline provenance is frozen under `tests/data`; the host reads
 these files through its submodule. `gate-inventory.json` explicitly selects the
 251 master API artifacts from the complete shared platform index. The index's
 entire payload inventory and hashes are verified before comparison.
+
+## Development
+
+For code style, naming conventions, and contribution guidelines, see [docs/code-style-guide.md](docs/code-style-guide.md).
 
 Style tools use clang-format/clang-tidy 23.1.4 on PATH:
 
