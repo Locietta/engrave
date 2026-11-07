@@ -69,7 +69,6 @@ import sys
 import zipfile
 from pathlib import Path
 
-
 from engrave_testing.composition_fixture import composition_musicxml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
