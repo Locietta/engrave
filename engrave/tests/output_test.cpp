@@ -1,5 +1,5 @@
 // The render half of the output API: page_count() and render(), compared with
-// the A2 render goldens.
+// the render goldens.
 //
 //   engrave_output_test --assets=<resources> --corpus=<file or dir>... --soundfont=<file>...
 //
@@ -178,8 +178,8 @@ TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
     EXPECT_EQ(capabilities.audio_sample_rate, 44100);
 }
 
-// The A2 golden comparison: every fixture of render_goldens.json, rendered with
-// A2's options (144 dpi, transparent PNG, no page background, all pages).
+// The render golden comparison: every fixture of render_goldens.json, rendered with
+// the options (144 dpi, transparent PNG, no page background, all pages).
 TEST(Output, RenderMatchesTheA2Goldens) {
     const nlohmann::json goldens = music::test::load_goldens().at("fixtures");
     const std::string platform = music::test::platform_name();
@@ -204,7 +204,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         for (std::size_t page = 0; page < svg->pages.size(); ++page) {
             EXPECT_EQ(music::test::sha256_hex(music::test::bytes_of(music::test::with_lf_newlines(svg->pages[page]))),
                       pages[page].get<std::string>())
-                << name << ": page " << page << " SVG differs from the A2 golden";
+                << name << ": page " << page << " SVG differs from the render golden";
         }
 
         options.format = engrave::RenderFormat::PNG;
@@ -218,7 +218,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         EXPECT_EQ(image->width, expected.at("width").get<std::uint32_t>()) << name << ": PNG width";
         EXPECT_EQ(image->height, expected.at("height").get<std::uint32_t>()) << name << ": PNG height";
         EXPECT_EQ(music::test::sha256_hex(image->rgba), expected.at("sha256").get<std::string>())
-            << name << ": the RGBA pixels differ from the A2 golden";
+            << name << ": the RGBA pixels differ from the render golden";
 
         options.format = engrave::RenderFormat::PDF;
         const auto pdf = document.render(options);

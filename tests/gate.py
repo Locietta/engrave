@@ -176,6 +176,10 @@ def main():
         cwd = a.output / name
         cwd.mkdir(exist_ok=True)
         run(name, [a.build_dir / (name + suffix), *args], cwd)
+    run("write470-excerpts", [sys.executable,
+        ROOT / "engrave/tests/test_write470_excerpts.py",
+        "--probe", a.build_dir / ("write470_probe" + suffix),
+        "--assets", a.assets, "--out", a.output / "write470-excerpts"])
     run(
         "mnx_schema",
         [

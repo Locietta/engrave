@@ -97,3 +97,7 @@ compile_commands.json
 **/.qmlls.ini
 # xmake standalone build state
 .xmake/
+
+# Local runtime captures, assets, and downloaded inputs
+.runtime/
+.upstream/

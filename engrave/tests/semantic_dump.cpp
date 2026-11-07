@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Dev tool: print the format-independent semantic dump of a score file (roadmap-engrave A0).
+// Dev tool: print the format-independent semantic dump of a score file (musical content).
 #include <filesystem>
 #include <fstream>
 #include <iostream>

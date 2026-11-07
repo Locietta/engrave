@@ -10,7 +10,7 @@
 
 namespace engrave {
 
-// Text and lyrics (A4 S7e).  The slice defines its operations here and lists them
+// Text and lyrics.  The slice defines its operations here and lists them
 // below; nothing else in the public headers changes.
 
 // Adds a text of one text style at one staff and voice of a position (a

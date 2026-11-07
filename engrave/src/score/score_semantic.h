@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Format-independent semantic dump of a score (roadmap-engrave A0).
+// Format-independent semantic dump of a score (musical content).
 #pragma once
 
 #include <nlohmann/json.hpp>

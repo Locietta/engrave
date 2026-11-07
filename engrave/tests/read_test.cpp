@@ -1,4 +1,4 @@
-// The read API: outline(), query() and get(), against the A2 score code, which walks
+// The read API: outline(), query() and get(), against the score code, which walks
 // the same score independently.
 //
 //   engrave_read_test --assets=<resources> [--corpus=<file or dir>]...

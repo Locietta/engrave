@@ -306,7 +306,7 @@ target("engrave_op_policy_test")
     end
 target_end()
 
--- The output tests: render against the A2 render goldens (render_goldens.json),
+-- The output tests: render against the render goldens (render_goldens.json),
 -- page_count and the render limits, plus the audio API: the encoders, the
 -- SoundFont list and the per-track font, the reverb switch, sink chunking and
 -- D4 (a second render in one process equals a fresh-process render, which the
@@ -412,7 +412,7 @@ target("engine_tests")
         "engrave_gp_import_test", "engrave_mnx_import_test", "engrave_output_test", "engrave_output_probe",
         "example_embedder", "engraving_playback_tests", "mpe_tests",
         "score_edit_test", "score_audio_test", "score_positions_test",
-        "excerpts_test", "archive_test", "assets_test", "semantic_dump", "engine_audio_probe", "diagnostics_test", "io_boundary_test")
+        "write470_probe", "excerpts_test", "archive_test", "assets_test", "semantic_dump", "engine_audio_probe", "diagnostics_test", "io_boundary_test")
 target_end()
 
 -- Diagnostic control flow is independent of score initialization.

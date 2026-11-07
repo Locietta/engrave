@@ -9,7 +9,7 @@
 
 namespace engrave {
 
-// Parts, staves and excerpts (A4 S7c).
+// Parts, staves and excerpts.
 
 // Adds a part from an instrument template (its id in instruments.xml) to the
 // master score, before the part the ref names, or at the end.

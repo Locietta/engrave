@@ -20,5 +20,5 @@ unverified installed directory. Runtime loading currently preserves the historic
 resource-directory contract; `--verify` is the packaging integrity check.
 
 The retired QRC lists are no longer shipped. Consumers upgrading from the frozen
-v1 host must replace QRC/resource-list generation with this installer when they
+host must replace QRC/resource-list generation with this installer when they
 update their engine pin. The public resource-directory contract is unchanged.

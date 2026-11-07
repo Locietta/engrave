@@ -1,7 +1,7 @@
 // The read API: outline(), query() and get().  They answer from the live document
 // through the handle walk (handles.h), the property catalogue (pid_support.h) and
 // the value codec, and take the music the engine itself derives - the metadata, the
-// staves, the measures, the signatures - from the A2 score code in
+// staves, the measures, the signatures - from the score code in
 // engrave/src/score/, so that a read says what the host's own tools said.
 
 #include <algorithm>
