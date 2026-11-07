@@ -249,7 +249,7 @@ target("engrave_describe_test")
     end
 target_end()
 
--- The read tests: outline, query and get against the A2 semantic dump, the metadata
+-- The read tests: outline, query and get against the semantic dump, the metadata
 -- export and the positions export, which walk the same score independently.
 target("engrave_read_test")
     set_kind("binary")
