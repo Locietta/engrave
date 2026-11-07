@@ -69,10 +69,6 @@ import sys
 import zipfile
 from pathlib import Path
 
-import numpy as np
-import pymupdf  # pinned in pixi.toml; cairo hides the volatile metadata in object streams
-import soundfile as sf
-from PIL import Image
 
 from engrave_testing.composition_fixture import composition_musicxml
 
@@ -195,6 +191,7 @@ def round_json(value):
 
 
 def image_size(data: bytes) -> dict:
+    from PIL import Image
 
     with Image.open(io.BytesIO(data)) as image:
         return {"width": image.width, "height": image.height}
@@ -205,6 +202,7 @@ def load_rounded(path: Path):
 
 
 def describe_png(path: Path) -> dict:
+    from PIL import Image
 
     with Image.open(path) as image:
         rgba = image.convert("RGBA")
@@ -217,6 +215,7 @@ def describe_png(path: Path) -> dict:
 
 
 def describe_pdf(path: Path) -> dict:
+    import pymupdf
 
     document = pymupdf.open(stream=path.read_bytes(), filetype="pdf")
     try:
@@ -246,6 +245,8 @@ def describe_pdf(path: Path) -> dict:
 
 
 def describe_audio(path: Path) -> dict:
+    import numpy as np
+    import soundfile as sf
 
     audio, rate = sf.read(path, always_2d=True)
     frames, channels = audio.shape
