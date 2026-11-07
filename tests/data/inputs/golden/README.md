@@ -1,6 +1,6 @@
 # Golden fixtures
 
-Inputs for `tests/support/golden.py` and `tests/integration/test_roundtrip.py`. Copied verbatim
+Inputs for `tests/engrave_testing/golden.py` (and host `tests/engrave_mcp_testing/golden.py`) and `tests/integration/test_roundtrip.py`. Copied verbatim
 from MuseScore test data (GPL-3.0, same license as the engine) so the goldens do
 not depend on the vendored source path.
 
