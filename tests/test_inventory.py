@@ -11,9 +11,9 @@ from unittest.mock import patch
 
 from engrave_testing import golden as g
 from engrave_testing.dependencies import validate_dependencies
-from engrave_testing.integration.test_public_output import compare
 from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
 from engrave_testing.paths import REPO_ROOT
+from engrave_testing.public_output import compare
 
 TEST_ROOT = REPO_ROOT / "tests"
 
