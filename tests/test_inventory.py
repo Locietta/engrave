@@ -9,11 +9,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from integration.test_public_output import compare
-from support import golden as g
-from support.dependencies import validate_dependencies
-from support.inventory import validate_actual, validate_allow_usage, validate_baseline
-from support.paths import REPO_ROOT
+from engrave_testing import golden as g
+from engrave_testing.dependencies import validate_dependencies
+from engrave_testing.integration.test_public_output import compare
+from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.paths import REPO_ROOT
 
 TEST_ROOT = REPO_ROOT / "tests"
 
@@ -142,7 +142,7 @@ class InventoryMutations(unittest.TestCase):
 
     def test_dependency_mismatch(self):
 
-        with patch("support.dependencies.version", return_value="wrong"):
+        with patch("engrave_testing.dependencies.version", return_value="wrong"):
             with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
                 validate_dependencies()
 

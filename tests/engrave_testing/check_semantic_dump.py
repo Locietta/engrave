@@ -32,7 +32,7 @@ insertion) order and parse_mscx in file order, so grace events are compared as a
 multiset.  Event order within one tick is likewise not a shared field.
 
 Usage:
-  python tests/support/check_semantic_dump.py [GOLDEN_ROOT] [--max-details N]
+  python tests/engrave_testing/check_semantic_dump.py [GOLDEN_ROOT] [--max-details N]
 """
 
 from __future__ import annotations
@@ -45,8 +45,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from integration.test_roundtrip import parse_mscx
-from support.paths import REPO_ROOT
+from engrave_testing.integration.test_roundtrip import parse_mscx
+from engrave_testing.paths import REPO_ROOT
 
 # Fixed, documented set of spanner types supported across both native semantic dump
 # and independent MSCX parser. Ties are compared in check_events via note "tieTo".

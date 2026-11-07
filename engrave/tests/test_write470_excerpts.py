@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from support.paths import INPUT_ROOT, REPO_ROOT
+from engrave_testing.paths import INPUT_ROOT, REPO_ROOT
 
 
 def xml(path):

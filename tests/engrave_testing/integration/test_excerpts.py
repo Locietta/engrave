@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from integration.test_export_options import canonical_notes, count_note_on_events, parse_midi_file
+from engrave_testing.integration.test_export_options import canonical_notes, count_note_on_events, parse_midi_file
 
 
 def main():

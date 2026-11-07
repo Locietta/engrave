@@ -73,7 +73,8 @@ import numpy as np
 import pymupdf  # pinned in pixi.toml; cairo hides the volatile metadata in object streams
 import soundfile as sf
 from PIL import Image
-from support.composition_fixture import composition_musicxml
+
+from engrave_testing.composition_fixture import composition_musicxml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -662,7 +663,7 @@ def silence_windows(audio: dict) -> list[bool]:
         raise GoldenFormatError(
             f"audio.json has no {SILENCE_EVIDENCE!r} silence evidence, so exact silence (and "
             "therefore whether a centroid window may be skipped) cannot be established; "
-            "recapture the baseline with the current tests/support/golden.py"
+            "recapture the baseline with the current tests/engrave_testing/golden.py"
         )
     windows = []
     for window in counts:
@@ -779,7 +780,7 @@ def verify_input_provenance(*, root=None, sources=None, fixture_dir=None, scenar
             if source.name == "created.json":
                 xml = composition_musicxml(json.loads(read_text(source))).encode("utf-8")
                 if entry.get("input_sha256") != sha256(xml) or entry.get("converter_sha256") != sha256(
-                    (root / "tests/support/composition_fixture.py").read_bytes()
+                    (root / "tests/engrave_testing/composition_fixture.py").read_bytes()
                 ):
                     issues.append(f"created input or converter changed: {name}")
         return issues

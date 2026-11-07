@@ -23,9 +23,10 @@ from unittest.mock import patch
 
 import numpy as np
 import soundfile as sf
-from support import golden as golden
-from support.make_sine_soundfont import generate_sine_soundfont
-from support.paths import REPO_ROOT
+
+from engrave_testing import golden as golden
+from engrave_testing.make_sine_soundfont import generate_sine_soundfont
+from engrave_testing.paths import REPO_ROOT
 
 
 def find_probe_binary(bin_dir: Path | None) -> Path:
@@ -224,9 +225,9 @@ def write_capture_manifest(
         "engine_commit": engine_commit,
         "binary_sha256": binary_sha,
         "soundfont_sha256": soundfont_sha,
-        "extractor_sha256": file_sha256(REPO_ROOT / "tests/support/golden.py"),
+        "extractor_sha256": file_sha256(REPO_ROOT / "tests/engrave_testing/golden.py"),
         "capture_script_sha256": file_sha256(Path(__file__)),
-        "fixture_helper_sha256": file_sha256(REPO_ROOT / "tests/support/composition_fixture.py"),
+        "fixture_helper_sha256": file_sha256(REPO_ROOT / "tests/engrave_testing/composition_fixture.py"),
         "version_proof_sha256": file_sha256(target / "version.mscx"),
         "fixture_sha256": {name: file_sha256(path) for name, path in fixtures.items()},
         "audio_sha256": {name: file_sha256(target / name / "audio.json") for name in fixtures},
@@ -271,13 +272,13 @@ def read_audio_capture(
     assert manifest.get("engine_commit") == engine_commit, f"{platform} capture engine is stale"
     assert re.fullmatch(r"[0-9a-f]{64}", manifest.get("binary_sha256", "")), manifest_path
     assert manifest.get("soundfont_sha256") == soundfont_sha, f"{platform} soundfont differs"
-    assert manifest.get("extractor_sha256") == file_sha256(REPO_ROOT / "tests/support/golden.py"), (
+    assert manifest.get("extractor_sha256") == file_sha256(REPO_ROOT / "tests/engrave_testing/golden.py"), (
         f"{platform} feature extractor is stale"
     )
     assert manifest.get("capture_script_sha256") == file_sha256(Path(__file__)), f"{platform} capture script is stale"
-    assert manifest.get("fixture_helper_sha256") == file_sha256(REPO_ROOT / "tests/support/composition_fixture.py"), (
-        f"{platform} fixture helper is stale"
-    )
+    assert manifest.get("fixture_helper_sha256") == file_sha256(
+        REPO_ROOT / "tests/engrave_testing/composition_fixture.py"
+    ), f"{platform} fixture helper is stale"
     proof = tree / "version.mscx"
     assert proof.is_file() and manifest.get("version_proof_sha256") == file_sha256(proof), (
         f"{platform} version proof missing or changed"

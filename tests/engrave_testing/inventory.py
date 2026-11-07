@@ -2,7 +2,7 @@
 
 import json
 
-from support import golden as g
+from engrave_testing import golden as g
 
 
 def validate_baseline(root):

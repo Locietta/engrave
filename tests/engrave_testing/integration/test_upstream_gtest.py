@@ -25,7 +25,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from support.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT
 
 # Exact upstream test inventory built against the pinned fork. The runner fails
 # if a suite silently loses tests (e.g. a file stops compiling into the target)

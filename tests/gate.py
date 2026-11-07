@@ -14,12 +14,12 @@ import time
 import zipfile
 from pathlib import Path
 
-from integration.test_public_output import compare, describe_audio_file, describe_render, probe_command
-from support import golden as g
-from support.dependencies import validate_dependencies
-from support.inventory import validate_actual, validate_allow_usage, validate_baseline
-from support.links import setup_link
-from support.paths import INPUT_ROOT, REPO_ROOT
+from engrave_testing import golden as g
+from engrave_testing.dependencies import validate_dependencies
+from engrave_testing.integration.test_public_output import compare, describe_audio_file, describe_render, probe_command
+from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.links import setup_link
+from engrave_testing.paths import INPUT_ROOT, REPO_ROOT
 
 
 def main():
@@ -128,7 +128,7 @@ def main():
         "sine",
         [
             sys.executable,
-            REPO_ROOT / "tests/support/make_sine_soundfont.py",
+            REPO_ROOT / "tests/engrave_testing/make_sine_soundfont.py",
             a.output / "sine.sf2",
         ],
     )
@@ -176,7 +176,7 @@ def main():
         "mnx_schema",
         [
             sys.executable,
-            REPO_ROOT / "tests/support/check_mnx_schema.py",
+            REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
             a.output / "mnx-export",
             a.engine_source / "src/importexport/mnx/tests/data/schema/mnx-schema.json",
         ],
@@ -185,7 +185,7 @@ def main():
         "playback",
         [
             sys.executable,
-            REPO_ROOT / "tests/integration/test_upstream_gtest.py",
+            REPO_ROOT / "tests/engrave_testing/integration/test_upstream_gtest.py",
             "--bin-dir",
             a.build_dir,
             "--assets",
@@ -216,7 +216,7 @@ def main():
         "excerpts",
         [
             sys.executable,
-            REPO_ROOT / "tests/integration/test_excerpts.py",
+            REPO_ROOT / "tests/engrave_testing/integration/test_excerpts.py",
             "--binary",
             a.build_dir / ("excerpts_test" + suffix),
             "--assets",
@@ -229,7 +229,7 @@ def main():
         "archives",
         [
             sys.executable,
-            REPO_ROOT / "tests/integration/test_archives.py",
+            REPO_ROOT / "tests/engrave_testing/integration/test_archives.py",
             "--binary",
             a.build_dir / ("archive_test" + suffix),
             "--output",
@@ -247,7 +247,7 @@ def main():
         "assets",
         [
             sys.executable,
-            REPO_ROOT / "tests/integration/test_assets.py",
+            REPO_ROOT / "tests/engrave_testing/integration/test_assets.py",
             "--binary",
             a.build_dir / ("assets_test" + suffix),
             "--assets",
@@ -279,7 +279,7 @@ def main():
         "engine-audio",
         [
             sys.executable,
-            REPO_ROOT / "tests/integration/test_engine_audio.py",
+            REPO_ROOT / "tests/engrave_testing/integration/test_engine_audio.py",
             "--engine-only",
             "--bin-dir",
             a.build_dir,
@@ -293,7 +293,7 @@ def main():
             a.output / "engine-audio",
         ],
     )
-    run("oracle-controls", [sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"])
+    run("oracle-controls", [sys.executable, REPO_ROOT / "tests/engrave_testing/integration/test_oracle_harness.py"])
     sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
         REPO_ROOT / "tests/data/inputs/evening.musicxml"
     ]
@@ -386,7 +386,7 @@ def main():
         raise RuntimeError("gate fixture inventory mismatch")
     run(
         "semantic-cross-check",
-        [sys.executable, REPO_ROOT / "tests/support/check_semantic_dump.py", a.output / "actual"],
+        [sys.executable, REPO_ROOT / "tests/engrave_testing/check_semantic_dump.py", a.output / "actual"],
     )
     # Entries are only expected to match on the platforms they pin.
     validate_allow_usage(allow, matched_allow, platform)
