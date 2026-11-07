@@ -25,7 +25,7 @@ import numpy as np
 import soundfile as sf
 from engrave_testing import golden as golden
 from engrave_testing.make_sine_soundfont import generate_sine_soundfont
-from engrave_testing.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT, pixi_env
 
 
 def find_probe_binary(bin_dir: Path | None) -> Path:
@@ -55,7 +55,7 @@ def find_probe_binary(bin_dir: Path | None) -> Path:
 
 def probe_env() -> dict[str, str]:
     env = os.environ.copy()
-    native_env = REPO_ROOT / ".pixi" / "envs" / "native"
+    native_env = pixi_env(REPO_ROOT)
     for extra in (native_env / "Library" / "bin", native_env / "bin"):
         if extra.is_dir():
             env["PATH"] = str(extra.resolve()) + os.pathsep + env.get("PATH", "")
