@@ -58,7 +58,7 @@ ReducedFraction quant_value_to_fraction(MidiOperations::QuantValue quant_value) 
         case MidiOperations::QuantValue::Q_256: fraction = division / 64; break;
         case MidiOperations::QuantValue::Q_512: fraction = division / 128; break;
         case MidiOperations::QuantValue::Q_1024: fraction = division / 256; break;
-        default: Q_ASSERT_X(false, "Quantize::quantValueToFraction", "Unknown quant value"); break;
+        default: assert(false); break;
     }
 
     return fraction;
@@ -164,7 +164,7 @@ ReducedFraction quant_for_len(const ReducedFraction &note_len, const ReducedFrac
 ReducedFraction quant_for_tuplet(const ReducedFraction &tuplet_len, const ReducedFraction &tuplet_ratio) {
     const auto quant = tuplet_len / tuplet_ratio.numerator();
 
-    Q_ASSERT_X(quant >= MChord::min_allowed_duration(), "Quantize::quantForTuplet", "Too small quant value");
+    assert(quant >= MChord::min_allowed_duration());
 
     if (quant >= MChord::min_allowed_duration() * 2) {
         return quant / 2;
@@ -425,7 +425,7 @@ std::pair<ReducedFraction, ReducedFraction>
 quantize_off_time_for_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
                              const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
                              const MidiTuplet::TupletData &tuplet) {
-    Q_ASSERT_X(chord_it->first < note_off_time, "Quantize::quantizeOffTimeForTuplet", "Negative or zero note length");
+    assert(chord_it->first < note_off_time);
 
     const auto tuplet_ratio = MidiTuplet::tuplet_limits(tuplet.tuplet_number).ratio;
     const auto result = find_quantized_tuplet_note_off_time(chord_it->first, note_off_time, tuplet.len, tuplet_ratio, tuplet.on_time);
@@ -449,7 +449,7 @@ quantize_off_time_for_tuplet(const ReducedFraction &note_off_time, const std::mu
 std::pair<ReducedFraction, ReducedFraction>
 quantize_off_time_for_non_tuplet(const ReducedFraction &note_off_time, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
                                  const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant) {
-    Q_ASSERT_X(chord_it->first < note_off_time, "Quantize::quantizeOffTimeForNonTuplet", "Negative or zero note length");
+    assert(chord_it->first < note_off_time);
 
     const MidiChord &chord = chord_it->second;
     const auto result = find_quantized_note_off_time(*chord_it, note_off_time, basic_quant);
@@ -557,13 +557,12 @@ bool is_tuplet_range_correct(const MidiTuplet::TupletData &tuplet, const Reduced
 
 void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, MidiChord>::iterator &chord_it,
                     const std::multimap<ReducedFraction, MidiChord> &chords) {
-    Q_ASSERT_X(note.off_time - chord_it->first >= MChord::min_allowed_duration(), "Quantize::checkOffTime", "Too small note length");
+    assert(note.off_time - chord_it->first >= MChord::min_allowed_duration());
 
     if (note.is_in_tuplet) {
         const auto &tuplet = note.tuplet->second;
 
-        Q_ASSERT_X(note.off_time >= tuplet.on_time && note.off_time <= tuplet.on_time + tuplet.len, "Quantize::checkOffTime",
-                   "Note off time is outside tuplet but should be inside");
+        assert(note.off_time >= tuplet.on_time && note.off_time <= tuplet.on_time + tuplet.len);
     } else {
         const auto &chord = chord_it->second;
 
@@ -582,7 +581,7 @@ void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, M
                 continue;
             }
 
-            Q_ASSERT_X(note.off_time <= tuplet.on_time, "Quantize::checkOffTime", "Note off time is inside next tuplet but it shouldn't");
+            assert(note.off_time <= tuplet.on_time);
             break;
         }
 
@@ -600,8 +599,7 @@ void check_off_time(const MidiNote &note, const std::multimap<ReducedFraction, M
             } else {
                 const auto &tuplet = prev->second.tuplet->second;
 
-                Q_ASSERT_X(note.off_time >= tuplet.on_time + tuplet.len, "Quantize::checkOffTime",
-                           "Note off time is inside prev tuplet but it shouldn't");
+                assert(note.off_time >= tuplet.on_time + tuplet.len);
             }
             break;
         }
@@ -720,8 +718,7 @@ void find_metrical_levels(std::vector<QuantData> &data, const std::deque<std::mu
             if (min_level == std::numeric_limits<int>::max()) {
                 d.quant_for_len /= 2;
 
-                Q_ASSERT_X(d.quant_for_len >= MChord::min_allowed_duration(), "Quantize::findMetricalLevels",
-                           "quantForLen < min allowed duration");
+                assert(d.quant_for_len >= MChord::min_allowed_duration());
 
                 continue;
             }
@@ -734,13 +731,13 @@ void find_metrical_levels(std::vector<QuantData> &data, const std::deque<std::mu
 void find_chord_range_ends(std::vector<QuantData> &data, const ReducedFraction &range_start, const ReducedFraction &range_end,
                            const ReducedFraction &bar_start, const ReducedFraction &beat_len) {
 #ifdef NDEBUG
-    Q_UNUSED(range_start);
+    (void) (range_start);
 #endif
     for (auto it = data.rbegin(); it != data.rend(); ++it) {
         QuantData &d = *it;
         d.chord_range_end = bar_start + quantize_to_small(range_end - bar_start, d.quant);
 
-        Q_ASSERT_X(d.chord->first + beat_len >= range_start, "Quantize::findChordRangeEnds", "chord on time + beatLen < rangeStart");
+        assert(d.chord->first + beat_len >= range_start);
 
         if (d.chord->first + beat_len < range_end) {
             d.chord_range_end = bar_start + quantize_to_small(d.chord->first + beat_len - bar_start, d.quant);
@@ -758,13 +755,10 @@ void find_chord_range_ends(std::vector<QuantData> &data, const ReducedFraction &
             d.chord_range_end = d.chord_range_start;
         }
 
-        Q_ASSERT_X(d.chord_range_end < range_end, "Quantize::findChordRangeEnds", "chordRangeEnd > rangeEnd");
-        Q_ASSERT_X(d.chord_range_start <= d.chord_range_end, "Quantize::findChordRangeEnds",
-                   "chordRangeStart is greater than chordRangeEnd");
-        Q_ASSERT_X(((d.chord_range_end - bar_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
-                   "chordRangeEnd - barStart is not dividable by quant");
-        Q_ASSERT_X(((d.chord_range_end - d.chord_range_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeEnds",
-                   "chordRangeEnd - chordRangeStart is not dividable by quant");
+        assert(d.chord_range_end < range_end);
+        assert(d.chord_range_start <= d.chord_range_end);
+        assert(((d.chord_range_end - bar_start) / d.quant).reduced().denominator() == 1);
+        assert(((d.chord_range_end - d.chord_range_start) / d.quant).reduced().denominator() == 1);
     }
 }
 
@@ -775,7 +769,7 @@ void find_chord_range_starts(std::vector<QuantData> &data, const ReducedFraction
         while (true) {
             d.chord_range_start = bar_start + quantize_to_large(range_start - bar_start, d.quant);
 
-            Q_ASSERT_X(d.chord->first - beat_len <= range_end, "Quantize::findChordRangeStarts", "chord on time - beatLen > rangeEnd");
+            assert(d.chord->first - beat_len <= range_end);
 
             if (d.chord->first - beat_len > range_start) {
                 d.chord_range_start = bar_start + quantize_to_large(d.chord->first - beat_len - bar_start, d.quant);
@@ -802,11 +796,10 @@ void find_chord_range_starts(std::vector<QuantData> &data, const ReducedFraction
             break;
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(not_less_than_prev(it, data), "Quantize::findChordRangeStarts", "chordRangeStart is less than previous chordRangeStart");
-        Q_ASSERT_X(d.chord_range_start >= range_start, "Quantize::findChordRangeStarts", "chordRangeStart < rangeStart");
-        Q_ASSERT_X(d.chord_range_start < range_end, "Quantize::findChordRangeStarts", "chordRangeStart >= rangeEnd");
-        Q_ASSERT_X(((d.chord_range_start - bar_start) / d.quant).reduced().denominator() == 1, "Quantize::findChordRangeStarts",
-                   "chordRangeStart - barStart is not dividable by quant");
+        assert(not_less_than_prev(it, data));
+        assert(d.chord_range_start >= range_start);
+        assert(d.chord_range_start < range_end);
+        assert(((d.chord_range_start - bar_start) / d.quant).reduced().denominator() == 1);
 #endif
     }
 }
@@ -844,7 +837,7 @@ void find_quants(std::vector<QuantData> &data, const std::deque<std::multimap<Re
             d.quant_for_len = quant_for_len(std::min(MChord::min_note_len(*chord_it), range_end - range_start), max_quant);
         }
 
-        Q_ASSERT_X(d.quant <= range_end - range_start, "Quantize::findQuants", "Quant value is larger than range interval");
+        assert(d.quant <= range_end - range_start);
 
         data.push_back(d);
     }
@@ -865,7 +858,7 @@ std::vector<QuantData> find_quant_data(const std::deque<std::multimap<ReducedFra
                                        const ReducedFraction &range_start, const ReducedFraction &range_end,
                                        const ReducedFraction &basic_quant, const ReducedFraction &bar_start,
                                        const ReducedFraction &bar_fraction) {
-    Q_ASSERT_X(!chords.empty(), "Quantize::findQuantData", "Empty chords");
+    assert(!chords.empty());
 
     std::vector<QuantData> data;
     const auto tuplet_quant = find_tuplet_quant(chords);
@@ -896,7 +889,7 @@ int find_last_chord_position(const std::vector<QuantData> &quant_data) {
         }
     }
 
-    Q_ASSERT_X(pos_index != -1, "Quantize::findLastChordPosition", "Last index was not found");
+    assert(pos_index != -1);
 
     return pos_index;
 }
@@ -956,7 +949,7 @@ void apply_dynamic_programming(std::vector<QuantData> &quant_data) {
                 }
             }
 
-            Q_ASSERT_X(min_pos != -1, "Quantize::applyDynamicProgramming", "Min pos was not found");
+            assert(min_pos != -1);
 
             p.penalty += min_penalty;
             p.prev_pos = min_pos;
@@ -969,19 +962,16 @@ void quantize_on_times_in_range(const std::deque<std::multimap<ReducedFraction, 
                                 const ReducedFraction &range_start, const ReducedFraction &range_end, const ReducedFraction &basic_quant,
                                 const ReducedFraction &bar_start, const ReducedFraction &bar_fraction) {
 #ifndef NDEBUG
-    Q_ASSERT_X(!chords.empty(), "Quantize::quantizeOnTimesInRange", "Empty chords");
-    Q_ASSERT_X(are_all_voices_same(chords), "Quantize::quantizeOnTimesInRange", "Chord voices are not the same");
-    Q_ASSERT_X(are_chords_different(chords), "Quantize::quantizeOnTimesInRange", "There are chord duplicates");
-    Q_ASSERT_X(are_tuplet_chords_consistent(chords), "Quantize::quantizeOnTimesInRange", "Tuplet and non-tuplet chords mismatch");
-    Q_ASSERT_X(are_chords_sorted_by_on_time(chords), "Quantize::quantizeOnTimesInRange", "Chords are not sorted by on time values");
+    assert(!chords.empty());
+    assert(are_all_voices_same(chords));
+    assert(are_chords_different(chords));
+    assert(are_tuplet_chords_consistent(chords));
+    assert(are_chords_sorted_by_on_time(chords));
 
-    Q_ASSERT_X(range_start != ReducedFraction(-1, 1) && range_end != ReducedFraction(-1, 1) && range_start < range_end,
-               "Quantize::quantizeOnTimesInRange", "Range start and/or range end are incorrect");
+    assert(range_start != ReducedFraction(-1, 1) && range_end != ReducedFraction(-1, 1) && range_start < range_end);
 
-    Q_ASSERT_X((chords.front()->second.is_in_tuplet) ?
-                   is_tuplet_range_correct(chords.front()->second.tuplet->second, range_start, range_end) :
-                   true,
-               "Quantize::quantizeOnTimesInRange", "Tuplet range is incorrect");
+    assert((chords.front()->second.is_in_tuplet) ? is_tuplet_range_correct(chords.front()->second.tuplet->second, range_start, range_end) :
+                                                   true);
 #endif
     std::vector<QuantData> quant_data = find_quant_data(chords, range_start, range_end, basic_quant, bar_start, bar_fraction);
     apply_dynamic_programming(quant_data);
@@ -989,7 +979,7 @@ void quantize_on_times_in_range(const std::deque<std::multimap<ReducedFraction, 
     // backward dynamic programming step - collect optimal chord positions
     int pos_index = find_last_chord_position(quant_data);
 
-    Q_ASSERT_X(quant_data.size() == chords.size(), "Quantize::quantizeOnTimesInRange", "Sizes of quant data and chords are not equal");
+    assert(quant_data.size() == chords.size());
 
     for (size_t chord_index = quant_data.size() - 1;; --chord_index) {
         const QuantPos &p = quant_data[chord_index].positions[pos_index];
@@ -1073,8 +1063,7 @@ void add_chords_from_prev_range(std::deque<std::multimap<ReducedFraction, MidiCh
     if (range_start == bar_start) { // new bar
         while (it->second.bar_index >= current_bar_index - 1) {
             if (it->second.voice == voice && it->second.bar_index == current_bar_index) {
-                Q_ASSERT_X(!it->second.is_in_tuplet, "Quantize::addChordsFromPrevRange",
-                           "Tuplet chord from previous bar belongs to the current bar");
+                assert(!it->second.is_in_tuplet);
 
                 chords_to_quant.push_front(it);
             }
@@ -1111,8 +1100,7 @@ void quantize_on_times(const std::multimap<ReducedFraction, MidiChord> &chords,
         std::deque<std::multimap<ReducedFraction, MidiChord>::const_iterator> chords_to_quant;
 
         for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
-            Q_ASSERT_X(MChord::min_note_len(*chord_it) >= MChord::min_allowed_duration(), "Quantize::quantizeOnTimes",
-                       "Note length is less than min allowed duration");
+            assert(MChord::min_note_len(*chord_it) >= MChord::min_allowed_duration());
 
             if (chord_it->second.voice > max_voice) {
                 max_voice = chord_it->second.voice;
@@ -1176,8 +1164,8 @@ void quantize_on_times(const std::multimap<ReducedFraction, MidiChord> &chords,
 void move_off_times(const ReducedFraction &old_on_time, const ReducedFraction &new_on_time, std::vector<MidiNote> &notes) {
     for (auto &note : notes) {
         if (new_on_time >= note.off_time) {
-            Q_ASSERT_X(new_on_time > old_on_time, "Quantize::moveOffTimes", "Invalid note on time or off time");
-            Q_ASSERT_X(note.off_time > old_on_time, "Quantize::moveOffTimes", "Invalid old note length");
+            assert(new_on_time > old_on_time);
+            assert(note.off_time > old_on_time);
 
             note.off_time += new_on_time - old_on_time;
         }
@@ -1210,7 +1198,7 @@ find_quantized_chords(const std::map<const std::pair<const ReducedFraction, Midi
                 }
 #ifndef NDEBUG
                 else {
-                    Q_ASSERT_X(fc.tuplet == chord.tuplet, "Quantize::findQuantizedChords", "Tuplets of merged chords are different");
+                    assert(fc.tuplet == chord.tuplet);
                 }
 #endif
             }
@@ -1245,18 +1233,18 @@ void remove_useless_tuplet_references(std::multimap<ReducedFraction, MidiChord> 
 
 void quantize_chords(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap, const ReducedFraction &basic_quant) {
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::are_tuplet_references_valid(chords), "Quantize::quantizeChords", "Some tuplet references are invalid");
-    Q_ASSERT_X(are_on_time_values_different(chords), "Quantize::quantizeChords", "Chords of the same voices have equal on time values");
-    Q_ASSERT_X(are_tuplet_chords_consistent(chords), "Quantize::quantizeChords", "There are non-tuplet chords between tuplet chords");
-    Q_ASSERT_X(MChord::are_notes_long_enough(chords), "Quantize::quantizeChords", "There are too short notes");
-    Q_ASSERT_X(MChord::are_bar_indexes_successive(chords), "Quantize::quantizeChords", "Bar indexes are not successive");
+    assert(MidiTuplet::are_tuplet_references_valid(chords));
+    assert(are_on_time_values_different(chords));
+    assert(are_tuplet_chords_consistent(chords));
+    assert(MChord::are_notes_long_enough(chords));
+    assert(MChord::are_bar_indexes_successive(chords));
 #endif
     apply_tuplet_staccato(chords); // apply staccato for tuplet off times
     std::map<const std::pair<const ReducedFraction, MidiChord> *, QuantInfo> found_on_times;
     quantize_on_times(chords, found_on_times, basic_quant, sigmap);
     auto quantized_chords = find_quantized_chords(found_on_times);
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::are_tuplet_references_valid(quantized_chords), "Quantize::quantizeChords", "Some tuplet references are invalid");
+    assert(MidiTuplet::are_tuplet_references_valid(quantized_chords));
 #endif
     quantize_off_times(quantized_chords, basic_quant);
     std::swap(chords, quantized_chords);

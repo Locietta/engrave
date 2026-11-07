@@ -1,7 +1,7 @@
 -- Tests of the engine and of the engrave library (dev-only).
 --
 --   engraving_playback_tests, mpe_tests
---       upstream's own Qt-free GoogleTest suites, compiled against the engine
+--       upstream's own GoogleTest suites, compiled against the engine
 --       and started by the harness in engrave/tests (gtest_main.cpp,
 --       test_environment.cpp), which initialises the engrave runtime;
 --   *_test, semantic_dump
@@ -14,7 +14,7 @@
 --   engrave_ops_test, engrave_op_policy_test
 --       the library's tests of handles, the catalogue, reads, edits and the
 --       edit harness, and of the policy table against the harness evidence;
---   noqt_probe, engine_audio_probe, audio_engine_link_check
+--   import_export_probe, engine_audio_probe, audio_engine_link_check
 --       dev probes of the runtime, the audio driver and the audio engine link
 --       closure.
 --
@@ -31,7 +31,7 @@ add_requires("gtest v1.17.0", {system = false, configs = {shared = false}})
 local engraving_tests_dir = path.join(source_root, "src", "engraving", "tests")
 
 -------------------------------------------------------------------------------
--- Upstream Engraving Playback unit tests (Qt-free)
+-- Upstream Engraving Playback unit tests
 -------------------------------------------------------------------------------
 
 target("engraving_playback_tests")
@@ -40,7 +40,6 @@ target("engraving_playback_tests")
     set_basename("engraving_playback_tests")
     add_deps("muse_generated", "engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
     add_defines("TEST_HAS_ENGRAVING=1")
     add_defines('ENGRAVING_TESTS_DATA_ROOT="' .. engraving_tests_dir:gsub("\\", "/") .. '"')
     add_includedirs(
@@ -78,7 +77,7 @@ target("engraving_playback_tests")
 target_end()
 
 -------------------------------------------------------------------------------
--- Upstream MPE unit tests (Qt-free)
+-- Upstream MPE unit tests
 -------------------------------------------------------------------------------
 
 target("mpe_tests")
@@ -87,7 +86,6 @@ target("mpe_tests")
     set_basename("mpe_tests")
     add_deps("muse_generated", "muse_mpe")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
     add_includedirs(
         path.join(source_root, "muse", "framework", "mpe"),
         path.join(source_root, "src"),
@@ -120,8 +118,6 @@ local function add_adapter_binary(name, file)
         set_kind("binary")
         set_default(false)
         add_deps("muse_generated", "engrave")
-        add_defines(table.unpack(ENGRAVE_DEFINES))
-        add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
         add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
         add_includedirs("$(builddir)/xmake-generated")
         add_files(path.join(tests_dir, file))
@@ -138,7 +134,7 @@ add_adapter_binary("score_audio_test", "score_audio_test.cpp")
 add_adapter_binary("score_edit_test", "score_edit_test.cpp")
 add_adapter_binary("score_positions_test", "score_positions_test.cpp")
 add_adapter_binary("semantic_dump", "semantic_dump.cpp")
-add_adapter_binary("noqt_probe", "noqt_probe.cpp")
+add_adapter_binary("import_export_probe", "import_export_probe.cpp")
 add_adapter_binary("write470_probe", "write470_probe.cpp")
 
 -- Dev-only probe used by the engine_audio lane; built explicitly.
@@ -177,8 +173,6 @@ target("engrave_handles_test")
     set_default(false)
     add_deps("engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
@@ -198,8 +192,6 @@ target("engrave_mnx_import_test")
     add_deps("engrave")
     add_packages("gtest", "mnxdom")
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
@@ -216,8 +208,6 @@ target("engrave_gp_import_test")
     set_default(false)
     add_deps("engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
@@ -237,8 +227,6 @@ target("engrave_describe_test")
     set_default(false)
     add_deps("muse_generated", "engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
@@ -257,8 +245,6 @@ target("engrave_read_test")
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
     add_deps("muse_generated", "engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
@@ -278,8 +264,6 @@ target("engrave_ops_test")
     set_default(false)
     add_deps("muse_generated", "engrave")
     add_packages("gtest")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
@@ -318,8 +302,6 @@ target("engrave_output_test")
     add_packages("gtest", "muse-zlib")
     -- The public API tests remain public-only; the injected audio failure
     -- regression also exercises the internal renderer and its lifecycle.
-    add_defines(table.unpack(ENGRAVE_DEFINES))
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
@@ -390,7 +372,6 @@ target("audio_engine_link_check")
     set_kind("binary")
     set_default(false)
     add_deps("muse_generated", "muse_audio_engine")
-    add_defines(table.unpack(ENGRAVE_DEFINES))
     add_defines(ENGRAVE_AUDIO_ENGINE.defines)
     add_includedirs(ENGRAVE_AUDIO_ENGINE.includes)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)

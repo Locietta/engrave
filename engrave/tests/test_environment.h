@@ -9,7 +9,7 @@ struct TestEnvironmentConfig {
     std::string engraving_data_dir;
 };
 
-// Discover and initialize the Qt-free test environment from command-line arguments,
+// Discover and initialize the test environment from command-line arguments,
 // environment variables, compile-time definitions, or filesystem probes.
 //
 // Recognizes and removes test runner arguments from argc/argv so GoogleTest

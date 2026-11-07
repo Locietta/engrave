@@ -7,7 +7,7 @@
 
 #include "engrave/src/render/score_render.h"
 #include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engrave/src/score/score_metadata.h"
 #include "engraving/dom/chord.h"

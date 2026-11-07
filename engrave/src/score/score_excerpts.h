@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //
-// Native excerpt helpers for the Qt-free host, adapted from
+// Native excerpt helpers for the host, adapted from
 // partitioncloud/webmscore (tag webmscore-4.7.5-1, commit
 // 8ec6401a60deac5582403e6914595d12c384d9ae):
 //   - web/main.cpp, _generateExcerpts()

@@ -1,4 +1,4 @@
--- Pinned HarfBuzz for the Qt-free engine build.
+-- Pinned HarfBuzz for the engine build.
 --
 -- Version and source URL follow muse/buildscripts/muse_deps (recipes/harfbuzz:
 -- 12.3.0, -DHB_HAVE_FREETYPE=ON -DHB_BUILD_SUBSET=OFF, static).  xmake-repo's

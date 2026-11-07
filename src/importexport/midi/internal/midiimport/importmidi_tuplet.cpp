@@ -47,7 +47,7 @@ const std::map<int, TupletLimits> &tuplets_limits() {
 const TupletLimits &tuplet_limits(int tuplet_number) {
     auto it = tuplets_limits().find(tuplet_number);
 
-    Q_ASSERT_X(it != tuplets_limits().end(), "MidiTuplet::tupletValue", "Unknown tuplet");
+    assert(it != tuplets_limits().end());
 
     return it->second;
 }
@@ -55,7 +55,7 @@ const TupletLimits &tuplet_limits(int tuplet_number) {
 const TupletInfo &tuplet_from_id(int id, const std::vector<TupletInfo> &tuplets) {
     auto it = std::find_if(tuplets.begin(), tuplets.end(), [=](const TupletInfo &t) { return t.id == id; });
 
-    Q_ASSERT_X(it != tuplets.end(), "MidiTuplet::tupletFromId", "Tuplet not found from id");
+    assert(it != tuplets.end());
 
     return *it;
 }
@@ -80,7 +80,7 @@ bool has_non_trivial_chord(const ReducedFraction &chord_on_time, const std::vect
             return false;
         }
 
-        Q_ASSERT_X(chord_on_time < tuplet_on_time, "MidiTuplet::hasNonTrivialChord", "Chord on time was not compared correctly");
+        assert(chord_on_time < tuplet_on_time);
 
         for (const auto &note : notes) {
             if (note.off_time < tuplet_on_time + tuplet_len) {
@@ -221,7 +221,7 @@ std::pair<ReducedFraction, ReducedFraction> tuplet_interval(const TupletInfo &tu
         }
     }
 
-    Q_ASSERT_X(tuplet_end > tuplet.on_time, "MidiTuplet::tupletInterval", "off time <= on time");
+    assert(tuplet_end > tuplet.on_time);
 
     return std::make_pair(tuplet.on_time, tuplet_end);
 }
@@ -263,7 +263,7 @@ std::vector<TupletData> find_tuplets_in_bar_for_duration(int voice, const Reduce
 std::vector<std::multimap<ReducedFraction, TupletData>::const_iterator>
 find_tuplets_for_time_range(int voice, const ReducedFraction &on_time, const ReducedFraction &len,
                             const std::multimap<ReducedFraction, TupletData> &tuplet_events, bool strict_comparison) {
-    Q_ASSERT_X(len >= ReducedFraction(0, 1), "MidiTuplet::findTupletForTimeRange", "Negative length of the time range");
+    assert(len >= ReducedFraction(0, 1));
 
     std::vector<std::multimap<ReducedFraction, TupletData>::const_iterator> result;
 
@@ -301,7 +301,7 @@ find_tuplet_containing_time(int voice, const ReducedFraction &time, const std::m
         return tuplet_events.end();
     }
 
-    Q_ASSERT_X(tuplets.size() == 1, "MidiTuplet::findTupletContainsTime", "More than one tuplet was found for time moment");
+    assert(tuplets.size() == 1);
 
     return tuplets.front();
 }
@@ -346,8 +346,7 @@ void split_tuplet_chord(const std::vector<TupletInfo>::iterator &last_match, std
     prev_chord.notes.erase(prev_chord.notes.begin());
     chord_event = chords.insert({on_time, new_chord});
 
-    Q_ASSERT_X(!prev_chord.notes.empty(), "MidiTuplet::splitTupletChord",
-               "Tuplets were not filtered correctly: same notes in different tuplets");
+    assert(!prev_chord.notes.empty());
 }
 
 void split_first_tuplet_chords(std::vector<TupletInfo> &tuplets, std::multimap<ReducedFraction, MidiChord> &chords) {
@@ -755,7 +754,7 @@ void add_tuplet_events(std::multimap<ReducedFraction, TupletData> &tuplet_events
             MidiChord &midi_chord = chord.second->second;
             midi_chord.tuplet = it;
 
-            Q_ASSERT_X(!midi_chord.is_in_tuplet, "MidiTuplet::addTupletEvents", "Chord is already in tuplet but it shouldn't");
+            assert(!midi_chord.is_in_tuplet);
 
             midi_chord.is_in_tuplet = true;
         }
@@ -770,7 +769,7 @@ void add_tuplet_events(std::multimap<ReducedFraction, TupletData> &tuplet_events
                 message += muse::String::number(tied_tuplet.voice) + u", chord voice = ";
                 message += muse::String::number(midi_chord.voice) + u", bar number (from 1) = ";
                 message += muse::String::number(midi_chord.bar_index + 1);
-                Q_ASSERT_X(tied_tuplet.voice == midi_chord.voice, "MidiTuplet::addTupletEvents", message.toLatin1().data());
+                assert(tied_tuplet.voice == midi_chord.voice);
 #endif
 
                 for (int j : tied_tuplet.tied_note_indexes) {
@@ -785,7 +784,7 @@ void add_tuplet_events(std::multimap<ReducedFraction, TupletData> &tuplet_events
             MidiChord &midi_chord = chord.second->second;
             for (auto &note : midi_chord.notes) {
                 if (note.off_time <= tuplet_info.on_time + tuplet_info.len) {
-                    Q_ASSERT_X(!note.is_in_tuplet, "MidiTuplet::addTupletEvents", "Note is already in tuplet but it shouldn't");
+                    assert(!note.is_in_tuplet);
 
                     note.tuplet = it;
                     note.is_in_tuplet = true;
@@ -839,7 +838,7 @@ ReducedFraction find_on_time_between_chords(const std::pair<const ReducedFractio
         }
     }
 
-    Q_ASSERT_X(chord_it != chords.end(), "MidiTuplet::findOnTimeBetweenChords", "Chord iterator was not found");
+    assert(chord_it != chords.end());
 
     if (chord_it->first < bar_start) {
         return bar_start;
@@ -858,8 +857,7 @@ ReducedFraction find_on_time_between_chords(const std::pair<const ReducedFractio
                 if (it->first < chord.first && it->second.voice == voice) {
                     const auto prev_chord_on_time = Quantize::find_min_quantized_on_time(*it, quant);
                     if (on_time < prev_chord_on_time) {
-                        Q_ASSERT_X(quant >= MChord::min_allowed_duration() * 2, "MidiTuplet::findOnTimeBetweenChords",
-                                   "Too small quantization value");
+                        assert(quant >= MChord::min_allowed_duration() * 2);
 
                         quant /= 2;
                         changed = true;
@@ -880,8 +878,7 @@ ReducedFraction find_on_time_between_chords(const std::pair<const ReducedFractio
                 }
                 const auto next_chord_on_time = Quantize::find_min_quantized_on_time(*it, quant);
                 if (on_time > next_chord_on_time) {
-                    Q_ASSERT_X(quant >= MChord::min_allowed_duration() * 2, "MidiTuplet::findOnTimeBetweenChords",
-                               "Too small quantization value");
+                    assert(quant >= MChord::min_allowed_duration() * 2);
 
                     quant /= 2;
                     changed = true;
@@ -895,7 +892,7 @@ ReducedFraction find_on_time_between_chords(const std::pair<const ReducedFractio
         }
     }
 
-    Q_ASSERT_X(on_time != ReducedFraction(-1, 1), "MidiTuplet::findOnTimeBetweenChords", "On time for chord interval was not found");
+    assert(on_time != ReducedFraction(-1, 1));
 
     return on_time;
 }
@@ -971,7 +968,7 @@ void find_tuplets(const std::multimap<ReducedFraction, MidiChord>::iterator &sta
         clean_staccato_of_non_tuplets(non_tuplets);
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(!do_tuplets_have_common_chords(tuplets), "MIDI tuplets: findTuplets", "Tuplets have common chords but they shouldn't");
+    assert(!do_tuplets_have_common_chords(tuplets));
 #endif
     const auto prev_bar_start = find_prev_bar_start(start_bar_tick, end_bar_tick - start_bar_tick);
     auto back_tied_tuplets =
@@ -979,8 +976,7 @@ void find_tuplets(const std::multimap<ReducedFraction, MidiChord>::iterator &sta
     // backTiedTuplets can be changed here (incompatible are removed)
     assign_voices(tuplets, non_tuplets, back_tied_tuplets, chords, basic_quant, start_bar_tick, bar_index);
 #ifndef NDEBUG
-    Q_ASSERT_X(are_tuplet_non_tuplet_chords_distinct(tuplets, non_tuplets), "MIDI tuplets: findTuplets",
-               "Tuplets have common chords with non-tuplets");
+    assert(are_tuplet_non_tuplet_chords_distinct(tuplets, non_tuplets));
 #endif
     add_tuplet_events(tuplet_events, tuplets, back_tied_tuplets);
     set_bar_indexes_of_next_bar_chords(tuplets, non_tuplets, bar_index);
@@ -1013,23 +1009,21 @@ void find_all_tuplets(std::multimap<ReducedFraction, TupletData> &tuplets, std::
         return;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(MChord::are_notes_long_enough(chords), "MidiTuplet::findAllTuplets", "There are too short notes");
-    Q_ASSERT_X(MChord::are_bar_indexes_set(chords), "MidiTuplet::findAllTuplets", "Not all bar indexes were set");
-    Q_ASSERT_X(MChord::are_bar_indexes_successive(chords), "MidiTuplet::findAllTuplets", "Bar indexes are not successive");
+    assert(MChord::are_notes_long_enough(chords));
+    assert(MChord::are_bar_indexes_set(chords));
+    assert(MChord::are_bar_indexes_successive(chords));
 #endif
     {
         auto start_bar_it = chords.begin();
         for (auto end_bar_it = std::next(start_bar_it); end_bar_it != chords.end(); ++end_bar_it) {
-            Q_ASSERT_X(end_bar_it->second.bar_index >= start_bar_it->second.bar_index, "MidiTuplet::findAllTuplets",
-                       "Bar indexes are not successive");
+            assert(end_bar_it->second.bar_index >= start_bar_it->second.bar_index);
 
             const int current_bar_index = start_bar_it->second.bar_index;
             if (end_bar_it->second.bar_index > current_bar_index) {
                 const size_t old_tuplet_count = tuplets.size();
                 find_tuplets(start_bar_it, end_bar_it, chords, basic_quant, tuplets, sigmap, current_bar_index);
 
-                Q_ASSERT_X(tuplets.size() >= old_tuplet_count, "MidiTuplet::findAllTuplets",
-                           "Some old tuplets were deleted that is incorrect");
+                assert(tuplets.size() >= old_tuplet_count);
 
                 if (tuplets.size() > old_tuplet_count) { // new tuplets were found
                                                          // chords at the end of the current bar
@@ -1042,9 +1036,9 @@ void find_all_tuplets(std::multimap<ReducedFraction, TupletData> &tuplets, std::
                     for (auto it = end_bar_it; it != chords.end() && it->first < end_bar_tick; ++it) {
                         if (it->second.bar_index == current_bar_index) {
 #ifndef NDEBUG
-                            Q_ASSERT_X(!next_bar_found, "MidiTuplet::findAllTuplets", "Bar indexes become not successive");
+                            assert(!next_bar_found);
 #endif
-                            Q_ASSERT_X(end_bar_it != chords.end(), "MidiTuplet::findAllTuplets", "End bar iterator cannot be incremented");
+                            assert(end_bar_it != chords.end());
 
                             ++end_bar_it;
                         }
@@ -1068,10 +1062,9 @@ void find_all_tuplets(std::multimap<ReducedFraction, TupletData> &tuplets, std::
     // check if there are not detected off times inside tuplets
     set_all_tuplet_off_times(tuplets, chords, sigmap);
 #ifndef NDEBUG
-    Q_ASSERT_X(are_all_tuplets_referenced(chords, tuplets), "MidiTuplet::findAllTuplets",
-               "Not all tuplets are referenced in chords or notes");
-    Q_ASSERT_X(MChord::are_notes_long_enough(chords), "MidiTuplet::findAllTuplets", "There are too short notes");
-    Q_ASSERT(are_all_tuplets_different(tuplets));
+    assert(are_all_tuplets_referenced(chords, tuplets));
+    assert(MChord::are_notes_long_enough(chords));
+    assert(are_all_tuplets_different(tuplets));
 #endif
 }
 }} // namespace mu::iex::midi::MidiTuplet

@@ -1,7 +1,7 @@
+#include "settings.h"
+
 #include <stdexcept>
 #include <utility>
-
-#include "settings.h"
 
 namespace muse {
 

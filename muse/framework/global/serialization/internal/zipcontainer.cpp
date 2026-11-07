@@ -1021,7 +1021,6 @@ void ZipContainer::close() {
 
     bool ok = true;
 
-    //qDebug("Zip::close writing directory, %d entries", p->fileHeaders.size());
     p->device->seek(p->start_of_directory);
     // write new directory
     for (size_t i = 0; i < p->file_headers.size(); ++i) {

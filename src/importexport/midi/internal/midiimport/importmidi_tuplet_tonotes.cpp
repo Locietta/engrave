@@ -45,7 +45,7 @@ void add_element_to_tuplet(int voice, const ReducedFraction &on_time, const Redu
     if (found_tuplets.size() > 1) {
         LOGD() << "Measure number (from 1):" << el->measure()->measure_number() + 1 << ", staff index (from 0):" << el->staff()->idx();
 
-        Q_ASSERT_X(false, "MidiTuplet::addElementToTuplet", "More than one tuplet contains specified duration");
+        assert(false);
     }
 #endif
 

@@ -116,7 +116,7 @@ BestTrack find_best_track(const std::vector<MTrack> &tracks, const std::multimap
     BestTrack best_track;
     int max_matches = 0;
 #ifndef NDEBUG
-    Q_ASSERT_X(are_equal_indexes_successive(tracks), "MidiLyrics::findBestTrack", "Equal indexes of operations are not successive");
+    assert(are_equal_indexes_successive(tracks));
 #endif
     for (size_t i = 0; i != tracks.size(); ++i) {
         if (tracks[i].mtrack->drum_track() || used_tracks.find(static_cast<int>(i)) != used_tracks.end()) {
@@ -215,7 +215,7 @@ void add_lyrics_to_score(const std::multimap<ReducedFraction, std::string> &lyri
         const ReducedFraction original_time = time_pair.second;
         const auto it = lyric_track.find(original_time);
 
-        Q_ASSERT_X(it != lyric_track.end(), "MidiLyrics::addLyricsToScore", "Lyric time not found");
+        assert(it != lyric_track.end());
 
         muse::String text = MidiCharset::convert_to_charset(it->second);
         if (original_time != ReducedFraction(0, 1) || !is_title_prefix(text)) { // not title

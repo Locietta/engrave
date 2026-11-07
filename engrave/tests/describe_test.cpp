@@ -28,7 +28,7 @@
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/api/value_codec.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"

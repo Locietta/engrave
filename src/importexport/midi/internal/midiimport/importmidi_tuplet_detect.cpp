@@ -354,7 +354,7 @@ std::vector<TupletInfo> detect_tuplets(const std::multimap<ReducedFraction, Midi
                 continue;
             }
 
-            Q_ASSERT_X(!start_div_chord_it->second.is_in_tuplet, "MIDI tuplets: findTuplets", "Tuplet chord has been already used");
+            assert(!start_div_chord_it->second.is_in_tuplet);
 
             // end iterator, as usual, point to the next - invalid chord
             auto end_div_chord_it = chords.lower_bound(end_div_time);

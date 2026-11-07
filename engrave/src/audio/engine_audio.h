@@ -190,7 +190,7 @@ struct AudioRenderRequest {
     // (soundtrackwriter.cpp:96-121 -> 133-207), so this driver no longer pumps
     // an event loop and cannot honour a timeout. A caller that needs a deadline
     // must enforce it out of process: for the synchronous export the parent's
-    // duration-derived deadline is the real limit (noqt_engine.cpp).
+    // duration-derived deadline is the real limit (engine_audio.cpp).
     std::int64_t timeout_ms = 0;
     std::function<bool()> cancelled;
 };

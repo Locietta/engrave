@@ -425,7 +425,7 @@ def check_excerpts(dump: dict[str, Any], parsed: dict[str, Any], limit: int) -> 
     dump_names = [excerpt.get("name", "") for excerpt in dump.get("excerpts", [])]
     parse_names = [excerpt.get("title", "") for excerpt in parsed.get("excerpts", [])]
     if not parse_names:
-        # The MSCX export holds the master score only (engrave/src/runtime/noqt_runtime.cpp); the
+        # The MSCX export holds the master score only (engrave/src/runtime/score_io.cpp); the
         # dump comes from the MSCZ, which also stores the excerpts. Count the captured
         # excerpt-N folders instead; without any, the field has no MSCX reference.
         folders = parsed.get("excerptFolders")

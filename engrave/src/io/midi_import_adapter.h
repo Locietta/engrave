@@ -9,7 +9,7 @@ struct MasterScore;
 } // namespace mu::engraving
 
 namespace music {
-//! Qt-free typed entry for the MIDI/KAR importer.
+//! typed entry for the MIDI/KAR importer.
 //!
 //! `bytes` is the complete Standard MIDI File (SMF 0/1) image, including
 //! karaoke lyric/text meta events.  No filesystem path or Qt type crosses this

@@ -36,7 +36,7 @@
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/state.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/chord.h"

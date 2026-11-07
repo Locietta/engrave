@@ -27,13 +27,6 @@
 #include "io/path.h"
 #include "types/val.h"
 
-//! NOTE We are gradually abandoning Qt in non-GUI classes.
-//! This settings interface is almost independent of Qt,
-//! QSettings are used only in the implementation for compatibility with current settings.
-//! Perhaps in the future this will be changed.
-
-struct QSettings;
-
 namespace muse {
 struct Settings {
     static Settings *instance();
@@ -105,7 +98,6 @@ private:
     Items read_items() const;
     void write_value(const Key &key, const Val &value);
 
-    QSettings *settings_ = nullptr;
     mutable Items items_;
     mutable Items local_settings_;
     mutable bool is_transaction_started_ = false;

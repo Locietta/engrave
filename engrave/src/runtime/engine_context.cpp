@@ -21,9 +21,9 @@
 #include "engraving/style/defaultstyle.h"
 #include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "mpe/internal/articulationprofilesrepository.h"
-#include "noqt_filesystem.h"
-#include "noqt_runtime.h"
+#include "resource_filesystem.h"
 #include "runtime_assets.h"
+#include "score_io.h"
 
 namespace music {
 using namespace muse;

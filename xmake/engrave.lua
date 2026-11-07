@@ -14,7 +14,7 @@
 --   * the engine module targets: muse_global, muse_draw, muse_mpe, engraving,
 --     the iex_* import/export modules, native_fluidsynth and
 --     muse_audio_engine, compiled via folder globs;
---   * engrave, the library: its public API in engrave/include and the Qt-free
+--   * engrave, the library: its public API in engrave/include and the native
 --     adapters behind it in engrave/src (api, runtime, io, render, audio,
 --     score), and its tests (xmake/tests.lua).
 --
@@ -141,9 +141,6 @@ target_end()
 ENGRAVE_SOURCE_ROOT = source_root
 ENGRAVE_FORK_ROOT = fork_root
 
--- Preserve the including-project interface; no engine feature defines remain.
-ENGRAVE_DEFINES = {}
-ENGRAVE_GLOBAL_DEFINES = {}
 
 ENGRAVE_INCLUDES = {
     engine("muse"),
@@ -216,7 +213,6 @@ ENGRAVE_AUDIO_INCLUDES = {
 -- Engine module targets
 ---------------------------------------------------------------------------
 local function add_engine_target_defaults()
-    add_defines(table.unpack(ENGRAVE_DEFINES))
     add_includedirs("$(builddir)/xmake-generated")
 end
 
@@ -239,7 +235,7 @@ target("muse_global")
         engine("muse/framework/global/thirdparty/kors_logger/src/*.cpp")
     )
     -- engrave/src/global implements framework services that upstream builds
-    -- from trimmed Qt sources (muse::Settings).  engraving and the other modules
+    -- such as muse::Settings. Engraving and the other modules
     -- call them, so they must link with muse_global rather than with engrave,
     -- which comes first on the link line.
     add_files(path.join(engrave_src, "global/*.cpp"))
@@ -412,7 +408,7 @@ target("muse_audio_engine")
 target_end()
 
 ---------------------------------------------------------------------------
--- engrave: the Qt-free adapters
+-- engrave: the adapters
 ---------------------------------------------------------------------------
 -- Every .cpp under engrave/src except the global/ area (compiled by
 -- muse_global) is part of the library; a new file in an area folder needs no
@@ -441,7 +437,6 @@ target("engrave")
     add_deps("muse_generated", "muse_global", "muse_draw", "muse_mpe", "engraving",
         "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
     add_engine_target_defaults()
-    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_files(path.join(engrave_src, "**.cpp|global/*.cpp"))
     add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})

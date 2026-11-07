@@ -95,7 +95,7 @@ int find_last_split_point(const std::vector<ChordSplitData> &splits) {
         }
     }
 
-    Q_ASSERT_X(split_point != -1, "LRHand::findLastSplitPoint", "Last split point was not found");
+    assert(split_point != -1);
 
     return split_point;
 }
@@ -104,7 +104,7 @@ int find_last_split_point(const std::vector<ChordSplitData> &splits) {
 
 void split_chords(const std::vector<ChordSplitData> &splits, std::multimap<ReducedFraction, MidiChord> &left_hand_chords,
                   std::multimap<ReducedFraction, MidiChord> &chords) {
-    Q_ASSERT_X(splits.size() == chords.size(), "LRHand::collectSolution", "Sizes of split data and chords don't match");
+    assert(splits.size() == chords.size());
 
     int split_point = find_last_split_point(splits);
 
@@ -169,7 +169,7 @@ int find_pitch_width_penalty(const std::vector<MidiNote> &notes, int split_point
 }
 
 bool is_octave(const std::vector<MidiNote> &notes, int beg, int end) {
-    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "LRHand::isOctave", "Invalid note indexes");
+    assert(end > 0 && beg >= 0 && end > beg);
 
     const int octave = 12;
     return end - beg == 2 && notes[end - 1].pitch - notes[beg].pitch == octave;
@@ -211,7 +211,7 @@ int find_similarity_penalty(const std::vector<MidiNote> &notes, const std::vecto
 }
 
 bool are_off_times_equal(const std::vector<MidiNote> &notes, int beg, int end) {
-    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "LRHand::areOffTimesEqual", "Invalid note indexes");
+    assert(end > 0 && beg >= 0 && end > beg);
 
     bool are_equal = true;
     const ReducedFraction first_off_time = notes[beg].off_time;
@@ -299,8 +299,8 @@ std::vector<ChordSplitData> find_splits(std::multimap<ReducedFraction, MidiChord
     for (auto it = chords.begin(); it != chords.end(); ++it) {
         const auto &notes = it->second.notes;
 #ifndef NDEBUG
-        Q_ASSERT_X(!notes.empty(), "LRHand::findSplits", "Notes are empty");
-        Q_ASSERT_X(are_notes_sorted_by_pitch_in_asc_order(notes), "LRHand::findSplits", "Notes are not sorted by pitch in ascending order");
+        assert(!notes.empty());
+        assert(are_notes_sorted_by_pitch_in_asc_order(notes));
 #endif
         const auto len = MChord::max_note_off_time(notes) - it->first;
         if (len > max_chord_len) {
@@ -332,7 +332,7 @@ std::vector<ChordSplitData> find_splits(std::multimap<ReducedFraction, MidiChord
                     }
                 }
 
-                Q_ASSERT_X(best_prev_split_point != -1, "LRHand::findSplits", "Best previous split point was not found");
+                assert(best_prev_split_point != -1);
 
                 split_try.penalty += min_penalty;
                 split_try.prev_split_point = best_prev_split_point;
@@ -366,7 +366,7 @@ void split_staff(std::multimap<int, MTrack> &tracks, std::multimap<int, MTrack>:
     MChord::sort_notes_by_pitch(chords);
     std::vector<ChordSplitData> splits = find_splits(chords);
 
-    Q_ASSERT_X(!splits.empty(), "LRHand::splitStaff", "Empty splits array");
+    assert(!splits.empty());
 
     std::multimap<ReducedFraction, MidiChord> left_hand_chords;
     split_chords(splits, left_hand_chords, chords);

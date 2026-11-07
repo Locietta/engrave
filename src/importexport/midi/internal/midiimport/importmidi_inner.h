@@ -26,24 +26,9 @@
 #include <utility>
 #include <vector>
 
+#include "engraving/types/types.h"
 #include "global/types/string.h"
 #include "importexport/midi/internal/midishared/generalmidi.h"
-
-// The MIDI importer is compiled both by the Qt application and by the Qt-free
-// native host (NO_QT_SUPPORT).  Keep the debug macros local to this module
-// instead of pulling in QtGlobal for the Qt-free build.  Release builds retain
-// the upstream behavior: assertions compile away.
-#ifndef Q_ASSERT
-#define Q_ASSERT(condition) assert(condition)
-#endif
-#ifndef Q_ASSERT_X
-#define Q_ASSERT_X(condition, where, what) assert(condition)
-#endif
-#ifndef Q_UNUSED
-#define Q_UNUSED(value) (void) (value)
-#endif
-
-#include "engraving/types/types.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
 #include "importmidi_operation.h"
@@ -163,7 +148,7 @@ bool have_intersection(const std::pair<ReducedFraction, ReducedFraction> &interv
 namespace MidiCharset {
 // Decodes a NUL-terminated MIDI meta-event payload.  The requested charset comes
 // from the optional MIDI-import operations XML; without one it is UTF-8.
-// See importmidi_inner.cpp for the Qt-free fallback policy.
+// See importmidi_inner.cpp for the fallback policy.
 muse::String convert_to_charset(const std::string &text);
 std::string default_charset();
 std::string from_uchar(const unsigned char *text);

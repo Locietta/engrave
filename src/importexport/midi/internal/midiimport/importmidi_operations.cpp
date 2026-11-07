@@ -259,7 +259,7 @@ void Data::exclude_midi_file(const std::string &file_name) { data_value.erase(fi
 bool Data::has_midi_file(const std::string &file_name) { return data_value.find(file_name) != data_value.end(); }
 
 int Data::current_track() const {
-    Q_ASSERT_X(current_track_value >= 0, "Data::currentTrack", "Invalid current track index");
+    assert(current_track_value >= 0);
 
     return current_track_value;
 }

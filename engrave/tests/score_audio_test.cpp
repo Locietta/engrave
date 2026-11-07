@@ -7,7 +7,7 @@
 #include <string>
 
 #include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/engravingproject.h"
 #include "global/io/buffer.h"
