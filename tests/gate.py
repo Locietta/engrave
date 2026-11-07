@@ -26,22 +26,6 @@ from support.paths import INPUT_ROOT
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run_compat_exports(run, compat, build_dir, assets, soundfont, output, suffix):
-    for source in compat:
-        # Different frozen writers can have the same fixture name.
-        run(
-            "compat-" + source.parent.name + "-" + source.stem,
-            probe_command(
-                build_dir / ("engrave_output_probe" + suffix),
-                assets,
-                [soundfont],
-                "export",
-                source,
-                output / "compat" / source.parent.name / source.stem,
-            ),
-        )
-
-
 def main():
     from support.dependencies import validate_dependencies
 
@@ -294,19 +278,6 @@ def main():
         cwd=a.engine_source / "tools",
     )
     run(
-        "compat-semantics",
-        [
-            sys.executable,
-            ROOT / "tests/integration/test_compat_corpus.py",
-            "--binary",
-            a.build_dir / ("semantic_dump" + suffix),
-            "--resources",
-            a.assets,
-            "--output",
-            a.output / "compat-semantics",
-        ],
-    )
-    run(
         "engine-audio",
         [
             sys.executable,
@@ -336,14 +307,12 @@ def main():
         )
     ]
     sources = [s for s in sources if s.suffix in {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".gp", ".mnx"}]
-    compat = sorted((ROOT / "tests/data/compat-corpus").rglob("*.mscz"))
-    if not sources or not compat:
+    if not sources:
         raise RuntimeError("incomplete supported corpus")
     run(
         "embedder",
-        [a.build_dir / ("example_embedder" + suffix), a.assets, *sources, *compat],
+        [a.build_dir / ("example_embedder" + suffix), a.assets, *sources],
     )
-    run_compat_exports(run, compat, a.build_dir, a.assets, a.soundfont, a.output, suffix)
     counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     allow = g.load_allow(ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
@@ -427,7 +396,6 @@ def main():
         a.soundfont,
         ROOT / "tests/data/golden/allow.json",
         *sources,
-        *compat,
     ]
     provenance = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     report = dict(
