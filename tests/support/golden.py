@@ -757,10 +757,11 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
 INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
 
 
-def verify_input_provenance(*, root=None, sources=None, fixture_dir=None) -> list[str]:
+def verify_input_provenance(*, root=None, sources=None, fixture_dir=None, scenarios=None) -> list[str]:
     """Check current inputs against main's reviewed migration pins."""
     root = ROOT if root is None else root
     fixture_dir = FIXTURE_DIR if fixture_dir is None else fixture_dir
+    scenarios = EDIT_SCENARIOS if scenarios is None else scenarios
     try:
         manifest = root / "tests/data/golden/inputs.json"
         if sha256(manifest.read_bytes()) != INPUT_MANIFEST_SHA256:
@@ -769,7 +770,7 @@ def verify_input_provenance(*, root=None, sources=None, fixture_dir=None) -> lis
         sources = {
             source.name: source for source in (fixture_files() + mnx_fixture_files() if sources is None else sources)
         }
-        sources.update({name: fixture_dir / scenario["source"] for name, scenario in EDIT_SCENARIOS.items()})
+        sources.update({name: fixture_dir / scenario["source"] for name, scenario in scenarios.items()})
         if set(pins) != set(sources):
             return ["input fixture inventory differs from reviewed pins"]
         issues = []
@@ -777,9 +778,9 @@ def verify_input_provenance(*, root=None, sources=None, fixture_dir=None) -> lis
             entry = pins[name]
             if entry["fixture_sha256"] != sha256(source.read_bytes()):
                 issues.append(f"input fixture changed: {name}")
-            if name in EDIT_SCENARIOS:
+            if name in scenarios:
                 scenario = json.dumps(
-                    EDIT_SCENARIOS[name], sort_keys=True, ensure_ascii=False, separators=(",", ":")
+                    scenarios[name], sort_keys=True, ensure_ascii=False, separators=(",", ":")
                 ).encode("utf-8")
                 if entry.get("scenario_sha256") != sha256(scenario):
                     issues.append(f"edit scenario changed: {name}")
