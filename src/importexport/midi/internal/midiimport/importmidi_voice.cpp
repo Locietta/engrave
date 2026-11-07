@@ -57,8 +57,7 @@ int voice_limit() {
     const int current_track = midi_import_operations.current_track();
     const size_t allowed_voice_count = to_int_voice_count(opers.max_voice_count.value(current_track));
 
-    Q_ASSERT_X(allowed_voice_count <= ::mu::engraving::voices, "MidiVoice::voiceLimit",
-               "Allowed voice count exceeds MuseScore Studio voice limit");
+    assert(allowed_voice_count <= ::mu::engraving::voices);
 
     return static_cast<int>(allowed_voice_count);
 }
@@ -127,8 +126,7 @@ int find_duration_count_in_group(const ReducedFraction &chord_on_time, const std
                                  const std::vector<int> &group_of_indexes, const TimeSigMap *sigmap,
                                  const std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets) {
 #ifndef NDEBUG
-    Q_ASSERT_X(are_notes_sorted_by_off_time_in_asc_order(notes, group_of_indexes), "MidiVoice::findDurationCountInGroup",
-               "Notes are not sorted by off time in ascending order");
+    assert(are_notes_sorted_by_off_time_in_asc_order(notes, group_of_indexes));
 #endif
     const auto &opers = midi_import_operations.data()->track_opers;
     const int current_track = midi_import_operations.current_track();
@@ -204,9 +202,8 @@ int find_optimal_split_point(const std::multimap<ReducedFraction, MidiChord>::it
     const auto &notes = chord_it->second.notes;
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!notes.empty(), "MidiVoice::findOptimalSplitPoint", "Notes are empty");
-    Q_ASSERT_X(are_notes_sorted_by_off_time_in_asc_order(notes), "MidiVoice::findOptimalSplitPoint",
-               "Notes are not sorted by length in ascending order");
+    assert(!notes.empty());
+    assert(are_notes_sorted_by_off_time_in_asc_order(notes));
 #endif
     int opt_split = -1;
 
@@ -225,7 +222,7 @@ int find_optimal_split_point(const std::multimap<ReducedFraction, MidiChord>::it
             }
         }
 
-        Q_ASSERT_X(opt_split != -1, "MidiVoice::findOptimalSplitPoint", "Optimal split point was not defined");
+        assert(opt_split != -1);
     } else {
         const auto off_time = notes.front().off_time;
         for (auto it = std::next(chord_it); it != chords.end(); ++it) {
@@ -477,7 +474,7 @@ VoiceSplit find_best_split(const std::multimap<ReducedFraction, MidiChord>::iter
         }
     }
 
-    Q_ASSERT_X(best_split != -1, "MidiVoice::findBestSplit", "Best split was not found");
+    assert(best_split != -1);
 
     return possible_splits[best_split];
 }
@@ -489,7 +486,7 @@ void insert_new_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::i
     MidiTuplet::TupletData new_tuplet = tuplet->second;
     new_tuplet.voice = new_voice;
 #ifndef NDEBUG
-    Q_ASSERT_X(!does_tuplet_already_exist(new_tuplet.on_time, new_voice, tuplets), "MidiVoice::addOrUpdateTuplet", "Tuplet already exists");
+    assert(!does_tuplet_already_exist(new_tuplet.on_time, new_voice, tuplets));
 #endif
     tuplet = tuplets.insert({tuplet_on_time, new_tuplet});
     inserted_tuplets.insert({tuplet_on_time, tuplet});
@@ -538,7 +535,7 @@ void split_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterat
                   std::multimap<ReducedFraction, std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator> &inserted_tuplets,
                   std::multimap<ReducedFraction, MidiChord> &chords, std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets,
                   const ReducedFraction &max_chord_length, bool allow_parallel_tuplets, bool is_this_a_chord) {
-    Q_ASSERT_X(is_in_tuplet, "MidiVoice::splitTuplet", "Tuplet chord/note is not actually in tuplet");
+    assert(is_in_tuplet);
 
     const auto old_tuplet = tuplet;
     const auto tuplet_on_time = tuplet->first;
@@ -583,8 +580,7 @@ void split_tuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterat
         }
     }
 
-    Q_ASSERT_X(allow_parallel_tuplets || !need_insert_tuplet || need_delete_old_tuplet, "MidiVoice::splitTuplet",
-               "Tuplet need to be added but the old tuplet was not deleted");
+    assert(allow_parallel_tuplets || !need_insert_tuplet || need_delete_old_tuplet);
 }
 
 bool update_chord_tuplets(
@@ -672,9 +668,7 @@ bool split_chord_to_voice(
     MidiChord &chord = chord_it->second;
     auto &notes = chord.notes;
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::is_tuplet_range_ok(*chord_it, tuplets), "MidiVoice::splitChordToVoice, before split",
-               "Tuplet chord/note is outside tuplet "
-               "or non-tuplet chord/note is inside tuplet before simplification");
+    assert(MidiTuplet::is_tuplet_range_ok(*chord_it, tuplets));
 #endif
     if (notes_to_move.size() == notes.size()) {
         // don't split chord, just move it to another voice
@@ -709,8 +703,8 @@ bool split_chord_to_voice(
         const bool success =
             update_chord_tuplets(new_chord, on_time, inserted_tuplets, chords, tuplets, max_chord_length, allow_parallel_tuplets);
         if (success) {
-            Q_ASSERT_X(!notes.empty(), "MidiVoice::splitChordToVoice", "Old chord notes are empty");
-            Q_ASSERT_X(!new_chord.notes.empty(), "MidiVoice::splitChordToVoice", "New chord notes are empty");
+            assert(!notes.empty());
+            assert(!new_chord.notes.empty());
 
             chord_it = chords.insert({on_time, new_chord});
         } else {
@@ -719,9 +713,7 @@ bool split_chord_to_voice(
         }
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::is_tuplet_range_ok(*chord_it, tuplets), "MidiVoice::splitChordToVoice, after split",
-               "Tuplet chord/note is outside tuplet "
-               "or non-tuplet chord/note is inside tuplet before simplification");
+    assert(MidiTuplet::is_tuplet_range_ok(*chord_it, tuplets));
 #endif
     return split_done;
 }
@@ -753,9 +745,7 @@ std::set<int> find_notes_to_move(const std::vector<MidiNote> &notes, int split_p
 bool do_voice_separation(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSigMap *sigmap,
                          std::multimap<ReducedFraction, MidiTuplet::TupletData> &tuplets) {
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, tuplets), "MidiVoice::doVoiceSeparation",
-               "Tuplet chord/note is outside tuplet "
-               "or non-tuplet chord/note is inside tuplet before voice separation");
+    assert(MidiTuplet::are_tuplet_ranges_ok(chords, tuplets));
 #endif
     MChord::sort_notes_by_length(chords);
     std::multimap<ReducedFraction, std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator> inserted_tuplets;
@@ -795,9 +785,7 @@ bool do_voice_separation(std::multimap<ReducedFraction, MidiChord> &chords, cons
         }
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, tuplets), "MidiVoice::doVoiceSeparation",
-               "Tuplet chord/note is outside tuplet "
-               "or non-tuplet chord/note is inside tuplet after voice separation");
+    assert(MidiTuplet::are_tuplet_ranges_ok(chords, tuplets));
 #endif
     return changed;
 }
@@ -854,7 +842,7 @@ void sort_voices_by_pitch(const std::map<int, std::vector<std::multimap<ReducedF
         }
         const auto it = voice_chords.find(old_voice);
 
-        Q_ASSERT_X(it != voice_chords.end(), "MidiVoice::sortVoicesByPitch", "Old voice not found");
+        assert(it != voice_chords.end());
 
         for (auto &chord : it->second) {
             MidiChord &c = chord->second;
@@ -883,9 +871,8 @@ void sort_voices(std::multimap<ReducedFraction, MidiChord> &chords, const TimeSi
         // then this tuplet belongs to the same bar as the chord off time;
         // same is for chord on time
 
-        Q_ASSERT_X(chord.bar_index != -1, "MidiVoice::sortVoices", "Chord bar index is undefined");
-        Q_ASSERT_X((!voice_chords.empty()) ? chord.bar_index <= max_bar_index : true, "MidiVoice::sortVoices",
-                   "Chord bar index is greater than current index");
+        assert(chord.bar_index != -1);
+        assert((!voice_chords.empty()) ? chord.bar_index <= max_bar_index : true);
 
         voice_chords[chord.voice].push_back(it);
         const int bar_index = find_bar_index_for_off_time(MChord::max_note_off_time(chord.notes), sigmap);
@@ -920,32 +907,20 @@ bool separate_voices(std::multimap<int, MTrack> &tracks, const TimeSigMap *sigma
 
         if (user_voice_count > 1 && static_cast<int>(user_voice_count) <= voice_limit()) {
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets), "MidiVoice::separateVoices",
-                       "Not all tuplets are referenced in chords or notes "
-                       "before voice separation");
-            Q_ASSERT_X(are_voices_same(mtrack.chords), "MidiVoice::separateVoices",
-                       "Different voices of chord and tuplet "
-                       "before voice separation");
+            assert(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets));
+            assert(are_voices_same(mtrack.chords));
 #endif
             if (do_voice_separation(mtrack.chords, sigmap, mtrack.tuplets)) {
                 changed = true;
             }
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets), "MidiVoice::separateVoices",
-                       "Not all tuplets are referenced in chords or notes "
-                       "after voice separation, before voice sort");
-            Q_ASSERT_X(are_voices_same(mtrack.chords), "MidiVoice::separateVoices",
-                       "Different voices of chord and tuplet "
-                       "after voice separation, before voice sort");
+            assert(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets));
+            assert(are_voices_same(mtrack.chords));
 #endif
             sort_voices(mtrack.chords, sigmap);
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets), "MidiVoice::separateVoices",
-                       "Not all tuplets are referenced in chords or notes "
-                       "after voice sort");
-            Q_ASSERT_X(are_voices_same(mtrack.chords), "MidiVoice::separateVoices",
-                       "Different voices of chord and tuplet "
-                       "after voice sort");
+            assert(MidiTuplet::are_all_tuplets_referenced(mtrack.chords, mtrack.tuplets));
+            assert(are_voices_same(mtrack.chords));
 #endif
         }
     }

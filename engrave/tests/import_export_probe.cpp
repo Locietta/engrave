@@ -4,15 +4,15 @@
 #include <iterator>
 
 #include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/engravingproject.h"
 
 // Imports a MusicXML file, lays it out and exports MusicXML and MIDI through the
-// engine context, without Qt or a desktop install.
+// engine context.
 int main(int argc, char **argv) {
     if (argc != 4) {
-        std::cerr << "Usage: noqt_probe ASSETS INPUT.musicxml OUTPUT.musicxml\n";
+        std::cerr << "Usage: import_export_probe ASSETS INPUT.musicxml OUTPUT.musicxml\n";
         return 2;
     }
     try {
@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
         std::ofstream(std::filesystem::u8path(argv[3]), std::ios::binary) << xml;
         std::ofstream(std::filesystem::u8path(std::string(argv[3]) + ".mid"), std::ios::binary) << midi;
         auto *score = project->master_score();
-        std::cout << "Qt-free import/layout/export: parts=" << score->parts().size() << " pages=" << score->npages()
-                  << " bytes=" << xml.size() << '\n';
+        std::cout << "Import/layout/export: parts=" << score->parts().size() << " pages=" << score->npages() << " bytes=" << xml.size()
+                  << '\n';
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;

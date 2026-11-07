@@ -64,7 +64,7 @@ void lengthen_note(MidiNote &note, int voice, const ReducedFraction &note_on_tim
     const auto tuplets_for_duration =
         MidiTuplet::find_tuplets_in_bar_for_duration(voice, bar_start, note.off_time, end_time - note.off_time, tuplets);
 
-    Q_ASSERT_X(note.off_time_quant != ReducedFraction(-1, 1), "Simplify::lengthenNote", "Note quant value was not set");
+    assert(note.off_time_quant != ReducedFraction(-1, 1));
 
     const auto orig_note_durations = Meter::to_duration_list(duration_start - bar_start, note.off_time - bar_start, bar_fraction,
                                                              tuplets_for_duration, Meter::DurationType::NOTE, use_dots, false);
@@ -253,18 +253,14 @@ void simplify_durations(std::multimap<int, MTrack> &tracks, const TimeSigMap *si
         if (opers.data()->track_opers.simplify_durations.value(mtrack.index_of_operation)) {
             MidiOperations::CurrentTrackSetter set_current_track{opers, mtrack.index_of_operation};
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets), "Simplify::simplifyDurations",
-                       "Tuplet chord/note is outside tuplet "
-                       "or non-tuplet chord/note is inside tuplet before simplification");
+            assert(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets));
 #endif
 
             minimize_number_of_rests(chords, sigmap, mtrack.tuplets, mtrack.mtrack->drum_track());
             // empty tuplets may appear after simplification
             MidiTuplet::remove_empty_tuplets(mtrack);
 #ifndef NDEBUG
-            Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets), "Simplify::simplifyDurations",
-                       "Tuplet chord/note is outside tuplet "
-                       "or non-tuplet chord/note is inside tuplet after simplification");
+            assert(MidiTuplet::are_tuplet_ranges_ok(chords, mtrack.tuplets));
 #endif
         }
     }

@@ -25,12 +25,6 @@
 #include <limits>
 
 #include "engraving/dom/mscore.h"
-#ifndef Q_ASSERT
-#define Q_ASSERT(condition) assert(condition)
-#endif
-#ifndef Q_ASSERT_X
-#define Q_ASSERT_X(condition, where, what) assert(condition)
-#endif
 
 namespace mu::iex::midi {
 #ifndef NDEBUG
@@ -105,8 +99,8 @@ static unsigned lcm(int a, int b) {
     const int g = std::gcd(a, b);
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(a, g), "ReducedFraction, lcm", "Division overflow");
-    Q_ASSERT_X(!is_multiplication_overflow(a / g, b), "ReducedFraction, lcm", "Multiplication overflow");
+    assert(!is_division_overflow(a, g));
+    assert(!is_multiplication_overflow(a / g, b));
 #endif
 
     const int l = (a / g) * b; // Divide first to minimize overflow risk
@@ -129,8 +123,8 @@ ReducedFraction ReducedFraction::reduced() const {
     const int tmp = std::gcd(numerator_, denominator_);
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(numerator_, tmp), "ReducedFraction::reduced", "Division overflow");
-    Q_ASSERT_X(!is_division_overflow(denominator_, tmp), "ReducedFraction::reduced", "Division overflow");
+    assert(!is_division_overflow(numerator_, tmp));
+    assert(!is_division_overflow(denominator_, tmp));
 #endif
 
     return ReducedFraction(numerator_ / tmp, denominator_ / tmp);
@@ -142,16 +136,16 @@ int ReducedFraction::ticks() const {
     int division = engraving::Constants::division * 4;
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(new_numerator, division), "ReducedFraction::ticks", "Multiplication overflow");
-    Q_ASSERT_X(!is_addition_overflow(new_numerator * division, denominator_ / 2), "ReducedFraction::ticks", "Addition overflow");
+    assert(!is_multiplication_overflow(new_numerator, division));
+    assert(!is_addition_overflow(new_numerator * division, denominator_ / 2));
 #endif
 
     const int tmp = new_numerator * division + denominator_ / 2;
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(tmp, denominator_), "ReducedFraction::ticks", "Division overflow");
-    Q_ASSERT_X(!is_multiplication_overflow(integral, division), "ReducedFraction::ticks", "Multiplication overflow");
-    Q_ASSERT_X(!is_addition_overflow(tmp / denominator_, integral * division), "ReducedFraction::ticks", "Addition overflow");
+    assert(!is_division_overflow(tmp, denominator_));
+    assert(!is_multiplication_overflow(integral, division));
+    assert(!is_addition_overflow(tmp / denominator_, integral * division));
 #endif
 
     return tmp / denominator_ + integral * division;
@@ -165,8 +159,8 @@ void ReducedFraction::reduce() {
     const int tmp = std::gcd(numerator_, denominator_);
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(numerator_, tmp), "ReducedFraction::reduce", "Division overflow");
-    Q_ASSERT_X(!is_division_overflow(denominator_, tmp), "ReducedFraction::reduce", "Division overflow");
+    assert(!is_division_overflow(numerator_, tmp));
+    assert(!is_division_overflow(denominator_, tmp));
 #endif
 
     numerator_ /= tmp;
@@ -184,12 +178,12 @@ void ReducedFraction::prevent_overflow() {
 
 int fraction_part(int lcm_part, int numerator, int denominator) {
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(lcm_part, denominator), "ReducedFraction::fractionPart", "Division overflow");
+    assert(!is_division_overflow(lcm_part, denominator));
 #endif
     const int part = lcm_part / denominator;
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(numerator, part), "ReducedFraction::fractionPart", "Multiplication overflow");
+    assert(!is_multiplication_overflow(numerator, part));
 #endif
     return numerator * part;
 }
@@ -222,8 +216,8 @@ ReducedFraction &ReducedFraction::operator*=(const ReducedFraction &val) {
     value.prevent_overflow();
 
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(numerator_, val.numerator_), "ReducedFraction::operator*=", "Multiplication overflow");
-    Q_ASSERT_X(!is_multiplication_overflow(denominator_, val.denominator_), "ReducedFraction::operator*=", "Multiplication overflow");
+    assert(!is_multiplication_overflow(numerator_, val.numerator_));
+    assert(!is_multiplication_overflow(denominator_, val.denominator_));
 #endif
     numerator_ *= val.numerator_;
     denominator_ *= val.denominator_;
@@ -233,7 +227,7 @@ ReducedFraction &ReducedFraction::operator*=(const ReducedFraction &val) {
 ReducedFraction &ReducedFraction::operator*=(int val) {
     prevent_overflow();
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(numerator_, val), "ReducedFraction::operator*=", "Multiplication overflow");
+    assert(!is_multiplication_overflow(numerator_, val));
 #endif
     numerator_ *= val;
     return *this;
@@ -244,8 +238,8 @@ ReducedFraction &ReducedFraction::operator/=(const ReducedFraction &val) {
     ReducedFraction value = val;
     value.prevent_overflow();
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(numerator_, val.denominator_), "ReducedFraction::operator/=", "Multiplication overflow");
-    Q_ASSERT_X(!is_multiplication_overflow(denominator_, val.numerator_), "ReducedFraction::operator/=", "Multiplication overflow");
+    assert(!is_multiplication_overflow(numerator_, val.denominator_));
+    assert(!is_multiplication_overflow(denominator_, val.numerator_));
 #endif
     numerator_ *= val.denominator_;
     denominator_ *= val.numerator_;
@@ -255,7 +249,7 @@ ReducedFraction &ReducedFraction::operator/=(const ReducedFraction &val) {
 ReducedFraction &ReducedFraction::operator/=(int val) {
     prevent_overflow();
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(denominator_, val), "ReducedFraction::operator/=", "Multiplication overflow");
+    assert(!is_multiplication_overflow(denominator_, val));
 #endif
     denominator_ *= val;
     return *this;
@@ -298,24 +292,20 @@ ReducedFraction to_muse_score_ticks(int tick, int old_division, bool is_division
         return ReducedFraction::from_ticks(tick);
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(tick, old_division), "ReducedFraction::toMuseScoreTicks", "Division overflow");
-    Q_ASSERT_X(!is_remainder_overflow(tick, old_division), "ReducedFraction::toMuseScoreTicks", "Remainder overflow");
+    assert(!is_division_overflow(tick, old_division));
+    assert(!is_remainder_overflow(tick, old_division));
 #endif
     const int integral = tick / old_division;
     const int remainder = tick % old_division;
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_multiplication_overflow(remainder, engraving::Constants::division), "ReducedFraction::toMuseScoreTicks",
-               "Multiplication overflow");
-    Q_ASSERT_X(!is_addition_overflow(remainder * engraving::Constants::division, old_division / 2), "ReducedFraction::toMuseScoreTicks",
-               "Addition overflow");
+    assert(!is_multiplication_overflow(remainder, engraving::Constants::division));
+    assert(!is_addition_overflow(remainder * engraving::Constants::division, old_division / 2));
 #endif
     const int tmp = remainder * engraving::Constants::division + old_division / 2;
 #ifndef NDEBUG
-    Q_ASSERT_X(!is_division_overflow(tmp, old_division), "ReducedFraction::toMuseScoreTicks", "Division overflow");
-    Q_ASSERT_X(!is_multiplication_overflow(integral, engraving::Constants::division), "ReducedFraction::toMuseScoreTicks",
-               "Multiplication overflow");
-    Q_ASSERT_X(!is_addition_overflow(tmp / old_division, integral * engraving::Constants::division), "ReducedFraction::toMuseScoreTicks",
-               "Addition overflow");
+    assert(!is_division_overflow(tmp, old_division));
+    assert(!is_multiplication_overflow(integral, engraving::Constants::division));
+    assert(!is_addition_overflow(tmp / old_division, integral * engraving::Constants::division));
 #endif
     return ReducedFraction::from_ticks(tmp / old_division + integral * engraving::Constants::division);
 }

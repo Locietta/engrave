@@ -69,7 +69,7 @@ struct TrackOp {
     }
 
     void set_value(int track_index, T value) {
-        Q_ASSERT_X(track_index >= 0, "TrackOperation", "Invalid track index");
+        assert(track_index >= 0);
 
         if (value != this->value(track_index)) {
             operation[track_index] = value;
@@ -81,7 +81,7 @@ struct TrackOp {
     bool can_redefine_default_later() const { return can_redefine_default_later_value; }
 
     void set_default_value(T value, bool input_can_redefine_default_later = true) {
-        Q_ASSERT_X(can_redefine_default_later_value, "TrackOp::setDefaultValue", "Cannot set default value");
+        assert(can_redefine_default_later_value);
 
         if (!can_redefine_default_later_value) {
             return;
@@ -129,7 +129,7 @@ struct Op {
     bool can_redefine_default_later() const { return can_redefine_default_later_value; }
 
     void set_default_value(T value, bool input_can_redefine_default_later = true) {
-        Q_ASSERT_X(can_redefine_default_later_value, "Op::setDefaultValue", "Cannot set default value");
+        assert(can_redefine_default_later_value);
 
         if (!can_redefine_default_later_value) {
             return;

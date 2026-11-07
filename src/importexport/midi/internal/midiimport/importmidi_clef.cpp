@@ -215,7 +215,7 @@ int find_pitch_penalty_for_clef(int pitch, int clef_index) {
                 return approx_pitch_penalty;
             }
             break;
-        default: Q_ASSERT_X(false, "MidiClef::pitchPenalty", "Unknown clef type"); break;
+        default: assert(false); break;
     }
     return 0;
 }
@@ -457,7 +457,7 @@ void create_clefs(Staff *staff, int index_of_operation, bool is_drum_track) {
         create_main_clef_from_average_pitch(staff, strack);
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(!does_clef_break_tie(staff), "MidiClef::createClefs", "Clef breaks the tie");
+    assert(!does_clef_break_tie(staff));
 #endif
 }
 }} // namespace mu::iex::midi::MidiClef

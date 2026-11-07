@@ -69,8 +69,8 @@ void split_chord(std::multimap<ReducedFraction, MidiChord>::iterator &chord_it, 
         }
         notes = updated_old_notes;
 
-        Q_ASSERT_X(!notes.empty(), "MidiDrum::splitChord", "Old chord notes are empty");
-        Q_ASSERT_X(!new_chord.notes.empty(), "MidiDrum::splitChord", "New chord notes are empty");
+        assert(!notes.empty());
+        assert(!new_chord.notes.empty());
 
         chord_it = chords.insert({chord_it->first, new_chord});
     }
@@ -91,9 +91,8 @@ void split_drum_voices(std::multimap<int, MTrack> &tracks) {
         // because allowedVoices == V_1 (see MidiImportOperations)
         // also, all chords should have different onTime values
 #ifndef NDEBUG
-        Q_ASSERT_X(MChord::are_on_time_values_different(chords), "MidiDrum::splitDrumVoices",
-                   "onTime values of chords are equal but should be different");
-        Q_ASSERT_X(have_non_zero_voices(chords), "MidiDrum::splitDrumVoices", "All voices of drum track should be zero here");
+        assert(MChord::are_on_time_values_different(chords));
+        assert(have_non_zero_voices(chords));
 #endif
         for (auto chord_it = chords.begin(); chord_it != chords.end(); ++chord_it) {
             auto &notes = chord_it->second.notes;
@@ -125,7 +124,7 @@ MTrack &get_new_track(std::map<int, MTrack> &new_tracks, const MTrack &drum_trac
         new_track.chords.clear();
         new_track.name = engraving::sm_drumset->name(pitch);
 
-        Q_ASSERT(new_track.tuplets.empty());
+        assert(new_track.tuplets.empty());
     }
     return new_track_it->second;
 }

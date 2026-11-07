@@ -31,7 +31,7 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/audio/score_audio.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/score.h"

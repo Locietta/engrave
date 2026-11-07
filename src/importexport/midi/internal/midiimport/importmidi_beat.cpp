@@ -302,7 +302,7 @@ void find_beat_locations(const std::multimap<ReducedFraction, MidiChord> &all_ch
             const std::vector<Meter::DivisionInfo> divs_info = {Meter::metric_divisions_of_bar(bar_fraction)};
             const auto levels = Meter::metric_levels_of_bar(bar_fraction, divs_info, beat_len);
 
-            Q_ASSERT_X((int) levels.size() == beats_in_bar, "MidiBeat::findBeatLocations", "Wrong count of bar levels");
+            assert((int) levels.size() == beats_in_bar);
 
             // beat set - first case
             MidiOperations::HumanBeatData beat_data = prepare_human_beat_data(beat_times, all_chords, ticks_per_sec, beats_in_bar);
@@ -334,13 +334,13 @@ void scale_off_times(std::vector<MidiNote> &notes, const std::set<ReducedFractio
     for (auto &note : notes) {
         int beat_count = 0; // beat count between note on time and off time
 
-        Q_ASSERT_X(on_time_beat_end_it != beats.begin(), "MidiBeat::scaleOffTimes", "End beat iterator cannot be the first beat iterator");
+        assert(on_time_beat_end_it != beats.begin());
 
         auto b_start = *std::prev(on_time_beat_end_it);
         for (auto bit = on_time_beat_end_it; bit != beats.end(); ++bit) {
             const auto &b_end = *bit;
 
-            Q_ASSERT_X(b_end > b_start, "MidiBeat::scaleOffTimes", "Beat end <= beat start for note off time that is incorrect");
+            assert(b_end > b_start);
 
             if (note.off_time >= b_start && note.off_time < b_end) {
                 const auto scale = new_beat_len / (b_end - b_start);
@@ -369,7 +369,7 @@ void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks) {
             remove_every2nd_beat(beats);
         }
 
-        Q_ASSERT_X(beats.size() > 1, "MidiBeat::adjustChordsToBeats", "Human beat count < 2");
+        assert(beats.size() > 1);
 
         const auto new_beat_len = ReducedFraction::from_ticks(engraving::Constants::division);
 
@@ -388,7 +388,7 @@ void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks) {
             for (++it; it != beats.end(); ++it) {
                 const auto &beat_end = *it;
 
-                Q_ASSERT_X(beat_end > beat_start, "MidiBeat::adjustChordsToBeats", "Beat end <= beat start that is incorrect");
+                assert(beat_end > beat_start);
 
                 const auto scale = new_beat_len / (beat_end - beat_start);
 
@@ -416,7 +416,7 @@ void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks) {
 
             std::swap(chords, new_chords);
 #ifndef NDEBUG
-            Q_ASSERT_X(MChord::are_notes_long_enough(chords), "MidiBeat::adjustChordsToBeats", "There are too short notes");
+            assert(MChord::are_notes_long_enough(chords));
 #endif
         }
     }
@@ -424,12 +424,12 @@ void adjust_chords_to_beats(std::multimap<int, MTrack> &tracks) {
 
 void update_first_last_beats(MidiOperations::HumanBeatData &beat_data, const ReducedFraction &time_sig) {
     for (int i = 0; i != beat_data.added_first_beats; ++i) {
-        Q_ASSERT_X(!beat_data.beat_set.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after first beats deletion");
+        assert(!beat_data.beat_set.empty());
 
         beat_data.beat_set.erase(beat_data.beat_set.begin());
     }
     for (int i = 0; i != beat_data.added_last_beats; ++i) {
-        Q_ASSERT_X(!beat_data.beat_set.empty(), "MidiBeat::updateFirstLastBeats", "Empty beat set after last beats deletion");
+        assert(!beat_data.beat_set.empty());
 
         beat_data.beat_set.erase(std::prev(beat_data.beat_set.end()));
     }

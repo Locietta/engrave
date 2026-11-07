@@ -1,6 +1,6 @@
 """Runner for upstream MuseScore unit tests built with GoogleTest.
 
-Executes Qt-free upstream test suites:
+Executes upstream test suites:
   - engraving_playback_tests: tests playback event rendering, playback model,
     playback context, and guitar bends rendering against the pinned fork engine.
   - mpe_tests: tests MPE single-note and multi-note articulation events and patterns.
@@ -321,7 +321,7 @@ def main():
         suites_to_run.append(("mpe_tests", bin_dir / f"mpe_tests{ext}"))
 
     print("=" * 70)
-    print("MuseScore Upstream Unit Tests (Qt-free GTest Runner)")
+    print("MuseScore Upstream Unit Tests (GTest Runner)")
     print("=" * 70)
     print(f"Binary directory:       {bin_dir}")
     print(f"Runtime assets:         {assets_dir}")

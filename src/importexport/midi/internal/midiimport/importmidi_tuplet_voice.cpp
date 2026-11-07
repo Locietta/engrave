@@ -41,8 +41,7 @@ int tuplet_voice_limit() {
     const int current_track = midi_import_operations.current_track();
     const size_t allowed_voices = MidiVoice::to_int_voice_count(opers.max_voice_count.value(current_track));
 
-    Q_ASSERT_X(allowed_voices <= engraving::voices, "MidiTuplet::tupletVoiceLimit",
-               "Allowed voice count exceeds MuseScore Studio voice limit");
+    assert(allowed_voices <= engraving::voices);
 
     // for multiple voices: one voice is reserved for non-tuplet chords
     return (allowed_voices == 1) ? 1 : static_cast<int>(allowed_voices) - 1;
@@ -60,7 +59,7 @@ std::pair<ReducedFraction, ReducedFraction> chord_interval(const std::pair<const
         off_time += Quantize::quant_for_len(MChord::min_note_len(chord), basic_quant);
     }
 
-    Q_ASSERT_X(off_time > on_time, "MidiTuplet::chordInterval", "Off time <= On time");
+    assert(off_time > on_time);
 
     return std::make_pair(on_time, off_time);
 }
@@ -173,7 +172,7 @@ void set_non_tuplet_voices(std::set<std::pair<const ReducedFraction, MidiChord> 
             }
         }
 
-        Q_ASSERT_X(best_voice >= 0, "MidiTuplet::setNonTupletVoices", "Best voice not found");
+        assert(best_voice >= 0);
 
         chord->second.voice = best_voice;
         pending_non_tuplets.erase(pending_non_tuplets.begin());
@@ -354,7 +353,7 @@ bool exclude_extra_voice_tuplets(std::vector<TupletInfo> &tuplets,
         added_count = new_non_tuplets.size();
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(are_all_elements_unique(non_tuplets), "MidiTuplet::excludeExtraVoiceTuplets", "Non unique chords in non-tuplets");
+    assert(are_all_elements_unique(non_tuplets));
 #endif
     bool excluded = (sz != tuplets.size());
     tuplets.resize(sz);
@@ -425,7 +424,7 @@ void set_voices_from_prev_bars(std::list<TiedTuplet> &back_tied_tuplets, std::ve
                                const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basic_quant,
                                const ReducedFraction &bar_start) {
 #ifdef NDEBUG
-    Q_UNUSED(pending_non_tuplets);
+    (void) (pending_non_tuplets);
 #endif
     bool loop_again = false;
     do {
@@ -463,8 +462,7 @@ void set_voices_from_prev_bars(std::list<TiedTuplet> &back_tied_tuplets, std::ve
             tuplet_intervals[tied_tuplet.voice].push_back(chord_interval(*tied_tuplet.chord, chords, basic_quant, bar_start));
             pending_tuplets.erase(tied_tuplet.tuplet_id);
 
-            Q_ASSERT_X(pending_non_tuplets.find(tied_tuplet.chord) == pending_non_tuplets.end(), "MidiTuplet::setBackTiedVoices",
-                       "Tied non-tuplet chord should not be here");
+            assert(pending_non_tuplets.find(tied_tuplet.chord) == pending_non_tuplets.end());
 
             ++it;
         }
@@ -492,7 +490,7 @@ void set_tied_chord_voice(std::list<TiedTuplet> &back_tied_tuplets, std::vector<
         // tuplet tied
         const int i = find_tuplet_with_chord(tied_tuplet.chord->second, tuplets);
 
-        Q_ASSERT_X(i != -1, "MidiTuplet::setBackTiedVoices", "Tuplet chord not found in tuplets");
+        assert(i != -1);
 
         auto it2 = std::next(back_tied_it);
         for (; it2 != back_tied_tuplets.end(); ++it2) {
@@ -698,7 +696,7 @@ std::list<TiedTuplet> find_back_tied_tuplets(const std::multimap<ReducedFraction
     const auto tuplet_chords = find_mapped_tuplet_chords(tuplets);
 
     for (size_t i = 0; i != tuplets.size(); ++i) {
-        Q_ASSERT_X(!tuplets[i].chords.empty(), "MidiTuplets::findBackTiedTuplets", "Tuplet chords are empty");
+        assert(!tuplets[i].chords.empty());
 
         auto chord_it = tuplets[i].chords.begin()->second;
         while (chord_it != chords.begin() && chord_it->first >= prev_bar_start) {
@@ -751,7 +749,7 @@ void assign_voices(std::vector<TupletInfo> &tuplets, std::list<std::multimap<Red
                    std::list<TiedTuplet> &back_tied_tuplets, const std::multimap<ReducedFraction, MidiChord> &chords,
                    const ReducedFraction &basic_quant, const ReducedFraction &bar_start, int bar_index) {
 #ifndef NDEBUG
-    Q_ASSERT_X(!have_tuplets_empty_chords(tuplets), "MIDI tuplets: assignVoices", "Empty tuplet chords");
+    assert(!have_tuplets_empty_chords(tuplets));
 #endif
     auto pending_tuplets = find_pending_tuplets(tuplets);
     auto pending_non_tuplets = find_pending_non_tuplets(non_tuplets);
@@ -777,12 +775,11 @@ void assign_voices(std::vector<TupletInfo> &tuplets, std::list<std::multimap<Red
 
     set_non_tuplet_voices(pending_non_tuplets, tuplet_intervals, tuplets, chords, basic_quant, bar_start);
 #ifndef NDEBUG
-    Q_ASSERT_X(pending_non_tuplets.empty(), "MIDI tuplets: assignVoices", "Unused non-tuplets");
-    Q_ASSERT_X(!have_tuplets_empty_chords(tuplets), "MIDI tuplets: assignVoices", "Empty tuplet chords");
-    Q_ASSERT_X(do_tuplet_chords_have_same_voice(tuplets), "MIDI tuplets: assignVoices", "Tuplet chords have different voices");
-    Q_ASSERT_X(!have_overlapping_voices(non_tuplets, tuplets, back_tied_tuplets, chords, basic_quant, bar_start),
-               "MIDI tuplets: assignVoices", "Overlapping tuplets of the same voice");
-    Q_ASSERT_X(!voice_dont_exceed_limit(non_tuplets, tuplets), "MIDI tuplets: assignVoices", "Voice exceeds the limit");
+    assert(pending_non_tuplets.empty());
+    assert(!have_tuplets_empty_chords(tuplets));
+    assert(do_tuplet_chords_have_same_voice(tuplets));
+    assert(!have_overlapping_voices(non_tuplets, tuplets, back_tied_tuplets, chords, basic_quant, bar_start));
+    assert(!voice_dont_exceed_limit(non_tuplets, tuplets));
 #endif
 }
 }} // namespace mu::iex::midi::MidiTuplet

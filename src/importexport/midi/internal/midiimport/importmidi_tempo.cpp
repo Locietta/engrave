@@ -162,7 +162,7 @@ void set_tempo(const std::multimap<int, MTrack> &tracks, Score *score) {
             MidiBeat::remove_every2nd_beat(beats);
         }
 
-        Q_ASSERT_X(beats.size() > 1, "MidiBeat::setTempo", "Human beat count < 2");
+        assert(beats.size() > 1);
 
         double average_tempo_factor = 0.0;
         int counter = 0;
@@ -173,7 +173,7 @@ void set_tempo(const std::multimap<int, MTrack> &tracks, Score *score) {
         for (++it; it != beats.end(); ++it) {
             const auto &beat_end = *it;
 
-            Q_ASSERT_X(beat_end > beat_start, "MidiBeat::detectTempoChanges", "Beat end <= beat start that is incorrect");
+            assert(beat_end > beat_start);
 
             average_tempo_factor += (new_beat_len / (beat_end - beat_start)).to_double();
             ++counter;

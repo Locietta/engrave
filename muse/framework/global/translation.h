@@ -34,6 +34,6 @@ String mtrc(const char *context, const String &key, const String &disambiguation
 
 } // namespace muse
 
-#define QT_TRANSLATE_NOOP(ctx, msg) msg
+#define MUSE_TRANSLATE_NOOP(ctx, msg) msg
 
-#define QT_TRANSLATE_NOOP_U16(ctx, msg) u##msg
+#define MUSE_TRANSLATE_NOOP_U16(ctx, msg) u##msg

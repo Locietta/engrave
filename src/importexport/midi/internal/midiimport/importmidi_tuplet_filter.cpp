@@ -210,8 +210,7 @@ bool is_in_common_indexes(int index_to_check, const std::vector<int> &selected_t
     for (size_t i = 0; i != selected_tuplets.size(); ++i) {
         const int tuplet_index = selected_tuplets[i];
 
-        Q_ASSERT_X(index_to_check != tuplet_index, "MidiTuplet::isInCommonIndexes",
-                   "Checked indexes are the same but they should be different");
+        assert(index_to_check != tuplet_index);
 
         if (index_to_check > tuplet_index) {
             const auto &indexes = tuplet_commons[tuplet_index].common_indexes;
@@ -502,15 +501,14 @@ void find_next_tuplet(std::vector<int> &selected_tuplets, ValidTuplets &valid_tu
             selected_tuplets.push_back(int(index));
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(validate_selected_tuplets(selected_tuplets.begin(), selected_tuplets.end(), tuplets), "MIDI tuplets::findNextTuplet",
-                   "Tuplets have common chords but they shouldn't");
+        assert(validate_selected_tuplets(selected_tuplets.begin(), selected_tuplets.end(), tuplets));
 #endif
 
         const auto voice_intervals = prepare_voice_intervals(selected_tuplets, tuplet_intervals);
         const auto used_first_chords = prepare_used_first_chords(selected_tuplets, tuplets);
 #ifndef NDEBUG
-        Q_ASSERT_X(are_commons_different(selected_tuplets), "MidiTuplet::findNextTuplet", "There are duplicates in selected commons");
-        Q_ASSERT_X(are_commons_uncommon(selected_tuplets, tuplet_commons), "MidiTuplet::findNextTuplet", "Incompatible selected commons");
+        assert(are_commons_different(selected_tuplets));
+        assert(are_commons_uncommon(selected_tuplets, tuplet_commons));
 #endif
 
         if (is_common_group_begins) {
@@ -582,7 +580,7 @@ void move_uncommon_tuplets_to_end(std::vector<TupletInfo> &tuplets, std::set<int
         }
     }
 
-    Q_ASSERT_X(uncommons.empty(), "MidiTuplet::moveUncommonTupletsToEnd", "Untested uncommon tuplets remaining");
+    assert(uncommons.empty());
 }
 
 std::vector<int> find_best_tuplets(const std::vector<TupletCommon> &tuplet_commons, const std::vector<TupletInfo> &tuplets,
@@ -636,15 +634,14 @@ void filter_tuplets(std::vector<TupletInfo> &tuplets, const ReducedFraction &bas
         return;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(!are_tuplet_chords_empty(tuplets), "MIDI tuplets: filterTuplets", "Tuplet has no chords but it should");
+    assert(!are_tuplet_chords_empty(tuplets));
 #endif
     remove_useless_tuplets(tuplets);
     remove_extra_tuplets(tuplets);
 
     std::set<int> uncommons = find_longest_uncommon_group(tuplets, basic_quant);
 #ifndef NDEBUG
-    Q_ASSERT_X(validate_selected_tuplets(uncommons.begin(), uncommons.end(), tuplets), "MIDI tuplets: filterTuplets",
-               "Uncommon tuplets have common chords but they shouldn't");
+    assert(validate_selected_tuplets(uncommons.begin(), uncommons.end(), tuplets));
 #endif
     size_t commons_size = tuplets.size();
     if (uncommons.size() > 1) {
@@ -655,8 +652,7 @@ void filter_tuplets(std::vector<TupletInfo> &tuplets, const ReducedFraction &bas
 
     const std::vector<int> best_indexes = find_best_tuplets(tuplet_commons, tuplets, commons_size, basic_quant);
 #ifndef NDEBUG
-    Q_ASSERT_X(validate_selected_tuplets(best_indexes.begin(), best_indexes.end(), tuplets), "MIDI tuplets: filterTuplets",
-               "Tuplets have common chords but they shouldn't");
+    assert(validate_selected_tuplets(best_indexes.begin(), best_indexes.end(), tuplets));
 #endif
     std::vector<TupletInfo> new_tuplets;
     for (int i : best_indexes) {

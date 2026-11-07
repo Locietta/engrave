@@ -3426,7 +3426,6 @@ Fraction MusicXmlParserPass1::calc_ticks(const int &int_ticks, const int &input_
     } else {
         logger_->log_error(u"illegal or uninitialized divisions", xml_reader);
     }
-    //qDebug("duration %s valid %d", muPrintable(dura.print()), dura.isValid());
 
     return dura;
 }

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  *
- * Qt-free Cairo implementation of muse::draw::IPaintProvider.
+ * Cairo implementation of muse::draw::IPaintProvider.
  *
  * The caller owns the cairo_t passed to the constructor; this class never
  * destroys it.  A cairo_t is not a QPaintDevice, so this backend keeps its own

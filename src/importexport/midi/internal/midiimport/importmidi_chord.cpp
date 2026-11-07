@@ -197,9 +197,7 @@ void remove_overlapping_notes(std::multimap<int, MTrack> &tracks) {
             continue;
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, track.second.tuplets), "MChord::removeOverlappingNotes",
-                   "Tuplet chord/note is outside tuplet "
-                   "or non-tuplet chord/note is inside tuplet before overlaps remove");
+        assert(MidiTuplet::are_tuplet_ranges_ok(chords, track.second.tuplets));
 #endif
         for (auto i1 = chords.begin(); i1 != chords.end();) {
             const auto &on_time1 = i1->first;
@@ -253,9 +251,7 @@ void remove_overlapping_notes(std::multimap<int, MTrack> &tracks) {
 
         MidiTuplet::remove_empty_tuplets(track.second);
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(chords, track.second.tuplets), "MChord::removeOverlappingNotes",
-                   "Tuplet chord/note is outside tuplet "
-                   "or non-tuplet chord/note is inside tuplet after overlaps remove");
+        assert(MidiTuplet::are_tuplet_ranges_ok(chords, track.second.tuplets));
 #endif
     }
 }
@@ -385,7 +381,7 @@ void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const
         return;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(are_notes_long_enough(chords), "MChord::collectChords", "There are too short notes");
+    assert(are_notes_long_enough(chords));
 #endif
 
     const auto &opers = midi_import_operations.data()->track_opers;
@@ -414,7 +410,7 @@ void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const
         const auto max_note_off_time = MChord::max_note_off_time(it->second.notes);
         if (it->first < current_chord_start + cur_thresh_time) {
             // this branch should not be executed when it == chords.begin()
-            Q_ASSERT_X(it != chords.begin(), "MChord: collectChords", "it == chords.begin()");
+            assert(it != chords.begin());
 
             if (it->first <= max_off_time - min_allowed_dur) {
                 // add current note to the previous chord
@@ -448,7 +444,7 @@ void collect_chords(MTrack &track, const ReducedFraction &human_tol_coeff, const
         ++it;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(are_on_time_values_different(chords), "MChord: collectChords", "onTime values of chords are equal but should be different");
+    assert(are_on_time_values_different(chords));
 #endif
 }
 
@@ -558,8 +554,8 @@ void merge_chords_with_equal_on_time_and_voice(std::multimap<int, MTrack> &track
 }
 
 int chord_average_pitch(const std::vector<MidiNote> &notes, int beg, int end) {
-    Q_ASSERT_X(!notes.empty(), "MChord::chordAveragePitch", "Empty notes");
-    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "MChord::chordAveragePitch", "Invalid note indexes");
+    assert(!notes.empty());
+    assert(end > 0 && beg >= 0 && end > beg);
 
     int sum = 0;
     for (int i = beg; i != end; ++i) {
@@ -569,7 +565,7 @@ int chord_average_pitch(const std::vector<MidiNote> &notes, int beg, int end) {
 }
 
 int chord_average_pitch(const std::vector<MidiNote> &notes) {
-    Q_ASSERT_X(!notes.empty(), "MChord::chordAveragePitch", "Empty notes");
+    assert(!notes.empty());
 
     return chord_average_pitch(notes, 0, notes.size());
 }
@@ -639,8 +635,7 @@ void set_bar_indexes(std::multimap<ReducedFraction, MidiChord> &chords, const Re
             const auto on_time = Quantize::find_quantized_chord_on_time(*it, basic_quant);
 #ifndef NDEBUG
             const auto bar_start = ReducedFraction::from_ticks(sigmap->bar2tick(bar_index, 0));
-            Q_ASSERT_X(!(it->first >= bar_start && on_time < bar_start), "MChord::setBarIndexes",
-                       "quantized on time cannot be in previous bar");
+            assert(!(it->first >= bar_start && on_time < bar_start));
 #endif
             if (on_time < end_bar_tick) {
                 it->second.bar_index = bar_index;
@@ -653,8 +648,8 @@ void set_bar_indexes(std::multimap<ReducedFraction, MidiChord> &chords, const Re
         }
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(are_bar_indexes_set(chords), "MChord::setBarIndexes", "Not all bar indexes were set");
-    Q_ASSERT_X(are_bar_indexes_successive(chords), "MChord::setBarIndexes", "Bar indexes are not successive");
+    assert(are_bar_indexes_set(chords));
+    assert(are_bar_indexes_successive(chords));
 #endif
 }
 }} // namespace mu::iex::midi::MChord

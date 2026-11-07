@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Adapted for the Qt-free native host from
+// Adapted for the native host from
 // webmscore-4.7.5-1 src/converter/internal/compat/notationmeta.cpp
 // (mu::converter::NotationMeta, Score* overload and helpers).
 //

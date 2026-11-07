@@ -159,7 +159,7 @@ separate_drum_chords_to2_voices(const std::multimap<ReducedFraction, MidiChord> 
     for (const auto &chord : chords) {
         const MidiChord &c = chord.second;
 
-        Q_ASSERT(c.voice == 0 || c.voice == 1);
+        assert(c.voice == 0 || c.voice == 1);
 
         separated_chords[c.voice].insert({chord.first, c});
     }
@@ -191,7 +191,7 @@ void find_all_tuplets_for_drums(MTrack &mtrack, TimeSigMap *sigmap, const Reduce
     for (const auto &chord : mtrack.chords) {
         const MidiChord &c = chord.second;
 
-        Q_ASSERT(c.voice == 0 || c.voice == 1);
+        assert(c.voice == 0 || c.voice == 1);
 
         chords[c.voice].insert({chord.first, c});
     }
@@ -234,7 +234,7 @@ void quantize_all_tracks(std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap,
         }
         const auto basic_quant = Quantize::quant_value_to_fraction(opers.data()->track_opers.quant_value.value(mtrack.index_of_operation));
 #ifndef NDEBUG
-        Q_ASSERT_X(MChord::is_last_tick_valid(last_tick, mtrack.chords), "quantizeAllTracks", "Last tick is less than max note off time");
+        assert(MChord::is_last_tick_valid(last_tick, mtrack.chords));
 #endif
         MChord::set_bar_indexes(mtrack.chords, basic_quant, last_tick, sigmap);
 
@@ -244,7 +244,7 @@ void quantize_all_tracks(std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap,
             MidiTuplet::find_all_tuplets(mtrack.tuplets, mtrack.chords, sigmap, basic_quant);
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(!do_notes_overlap(track.second), "quantizeAllTracks", "There are overlapping notes of the same voice that is incorrect");
+        assert(!do_notes_overlap(track.second));
 #endif
         // (4/3 of the smallest duration) tol is less sensitive
         // to on time inaccuracies than 1/2 earlier
@@ -252,9 +252,7 @@ void quantize_all_tracks(std::multimap<int, MTrack> &tracks, TimeSigMap *sigmap,
         Quantize::quantize_chords(mtrack.chords, sigmap, basic_quant);
         MidiTuplet::remove_empty_tuplets(mtrack);
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTuplet::are_tuplet_ranges_ok(mtrack.chords, mtrack.tuplets), "quantizeAllTracks",
-                   "Tuplet chord/note is outside tuplet "
-                   "or non-tuplet chord/note is inside tuplet");
+        assert(MidiTuplet::are_tuplet_ranges_ok(mtrack.chords, mtrack.tuplets));
 #endif
     }
 }
@@ -950,10 +948,9 @@ void apply_swing(std::vector<MTrack> &tracks) {
         const auto swing_type = opers.swing.value(mt.index_of_operation);
         Swing::detect_swing(mt.staff, swing_type);
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTie::are_ties_consistent(mt.staff), "applySwing", "Ties are inconsistent");
+        assert(MidiTie::are_ties_consistent(mt.staff));
 
-        Q_ASSERT_X(MidiTuplet::have_tuplets_enough_elements(mt.staff), "MTrack::convertTrack",
-                   "Tuplet has less than 2 elements or all elements are rests");
+        assert(MidiTuplet::have_tuplets_enough_elements(mt.staff));
 #endif
     }
 }
@@ -996,7 +993,7 @@ ReducedFraction find_first_chord_tick(const std::vector<MTrack> &tracks) {
         }
         const auto &chord_tick = track.chords.begin()->first;
 
-        Q_ASSERT(chord_tick >= ReducedFraction(0, 1));
+        assert(chord_tick >= ReducedFraction(0, 1));
 
         if (first_tick == ReducedFraction(0, 1) || chord_tick < first_tick) {
             first_tick = chord_tick;
@@ -1047,11 +1044,10 @@ std::vector<MTrack> convert_midi(Score *score, const MidiFile *mf) {
         MidiBeat::set_time_signature(sigmap);
     }
 
-    Q_ASSERT_X((opers.data()->track_opers.is_human_performance.value()) ?
-                   Meter::user_time_sig_to_fraction(opers.data()->track_opers.time_sig_numerator.value(),
-                                                    opers.data()->track_opers.time_sig_denominator.value()) != ReducedFraction(0, 1) :
-                   true,
-               "convertMidi", "Null time signature for human-performed MIDI file");
+    assert((opers.data()->track_opers.is_human_performance.value()) ?
+               Meter::user_time_sig_to_fraction(opers.data()->track_opers.time_sig_numerator.value(),
+                                                opers.data()->track_opers.time_sig_denominator.value()) != ReducedFraction(0, 1) :
+               true);
 
     MChord::collect_chords(tracks, {2, 1}, {1, 2});
     MidiBeat::adjust_chords_to_beats(tracks);
@@ -1064,7 +1060,7 @@ std::vector<MTrack> convert_midi(Score *score, const MidiFile *mf) {
 
     MChord::remove_overlapping_notes(tracks);
 #ifndef NDEBUG
-    Q_ASSERT_X(!do_notes_overlap(tracks), "convertMidi", "There are overlapping notes of the same voice that is incorrect");
+    assert(!do_notes_overlap(tracks));
 #endif
     LRHand::split_into_left_right_hands(tracks);
     MidiDrum::split_drum_voices(tracks);
@@ -1073,8 +1069,8 @@ std::vector<MTrack> convert_midi(Score *score, const MidiFile *mf) {
     quantize_all_tracks(tracks, sigmap, last_tick);
     MChord::remove_overlapping_notes(tracks);
 #ifndef NDEBUG
-    Q_ASSERT_X(!do_notes_overlap(tracks), "convertMidi", "There are overlapping notes of the same voice that is incorrect");
-    Q_ASSERT_X(no_too_short_notes(tracks), "convertMidi", "There are notes of length < min allowed duration");
+    assert(!do_notes_overlap(tracks));
+    assert(no_too_short_notes(tracks));
 #endif
     MChord::merge_chords_with_equal_on_time_and_voice(tracks);
     Simplify::simplify_durations_not_drums(tracks, sigmap);

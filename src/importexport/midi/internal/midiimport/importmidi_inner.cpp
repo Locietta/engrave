@@ -146,7 +146,7 @@ MidiOperations::TimeSigNumerator fraction_numerator_to_user_value(int n) {
     } else if (n == 21) {
         numerator = MidiOperations::TimeSigNumerator::TWENTY_ONE;
     } else {
-        Q_ASSERT_X(false, "Meter::fractionNumeratorToUserValue", "Unknown numerator");
+        assert(false);
     }
 
     return numerator;
@@ -166,7 +166,7 @@ MidiOperations::TimeSigDenominator fraction_denominator_to_user_value(int z) {
     } else if (z == 32) {
         denominator = MidiOperations::TimeSigDenominator::THIRTY_TWO;
     } else {
-        Q_ASSERT_X(false, "Meter::fractionDenominatorToUserValue", "Unknown denominator");
+        assert(false);
     }
 
     return denominator;
@@ -262,7 +262,7 @@ muse::String decode_with_fallback(const std::string &text, const std::string &ch
     // A real multi-codec backend (ICU or libiconv) is required for the full
     // QTextCodec surface.  Until then, never guess an arbitrary encoding:
     // prefer strict UTF-8 and otherwise preserve Latin-1/Windows-1252 bytes.
-    LOGW() << "MIDI import: unsupported charset" << charset << "in the Qt-free build; using UTF-8/Windows-1252 fallback";
+    LOGW() << "MIDI import: unsupported charset" << charset << "in the build; using UTF-8/Windows-1252 fallback";
     if (muse::UtfCodec::is_valid_utf8(text)) {
         return muse::String::from_utf8(text);
     }

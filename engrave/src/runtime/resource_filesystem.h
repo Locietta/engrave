@@ -11,7 +11,7 @@
 #include "io/ifilesystem.h"
 
 namespace music {
-// Native, Qt-free IFileSystem. Virtual ":/..." paths resolve under resourceRoot and
+// Native, IFileSystem. Virtual ":/..." paths resolve under resourceRoot and
 // are read-only. The hidden attribute cannot be set portably, so setAttribute is a no-op.
 struct NativeFileSystem final : muse::io::IFileSystem {
     explicit NativeFileSystem(std::filesystem::path resource_root);

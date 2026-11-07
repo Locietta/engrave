@@ -12,7 +12,7 @@
 #include "engrave/src/api/batch.h"
 #include "engrave/src/audio/score_audio.h"
 #include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include <engrave/document.h>
 #include <engrave/engine.h>
 

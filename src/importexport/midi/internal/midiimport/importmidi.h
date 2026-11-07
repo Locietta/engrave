@@ -14,7 +14,7 @@ struct MasterScore;
 namespace mu::iex::midi {
 //! Import a complete Standard MIDI File / Karaoke file from memory.
 //!
-//! The entry is Qt-free and performs a one-shot import: it installs a temporary
+//! The entry is and performs a one-shot import: it installs a temporary
 //! entry in the process-global MidiImportOperations data, runs the ordinary
 //! converter pipeline, and removes the entry before returning (including when
 //! a conversion exception unwinds).  No filesystem access is performed.

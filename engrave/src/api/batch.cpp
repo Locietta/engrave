@@ -11,7 +11,7 @@
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
-#include "engrave/src/runtime/noqt_runtime.h"
+#include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
