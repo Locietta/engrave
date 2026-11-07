@@ -34,7 +34,7 @@ from unittest import mock
 
 from engrave_testing import check_semantic_dump as csd
 from engrave_testing import golden as golden
-from engrave_testing.integration.test_roundtrip import PAGE_STYLE_DEFAULTS, compare_mscz_xml, parse_mscx
+from engrave_testing.mscx import PAGE_STYLE_DEFAULTS, compare_mscz_xml, parse_mscx
 from engrave_testing.paths import REPO_ROOT
 
 

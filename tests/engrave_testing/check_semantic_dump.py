@@ -45,7 +45,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from engrave_testing.integration.test_roundtrip import parse_mscx
+from engrave_testing.mscx import parse_mscx
 from engrave_testing.paths import REPO_ROOT
 
 # Fixed, documented set of spanner types supported across both native semantic dump

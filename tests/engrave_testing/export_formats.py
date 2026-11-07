@@ -1,4 +1,4 @@
-"""Independent engine validation helpers extracted from the host tests."""
+"""Shared export formats helpers."""
 
 from __future__ import annotations
 

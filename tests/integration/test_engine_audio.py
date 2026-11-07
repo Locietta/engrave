@@ -23,7 +23,6 @@ from unittest.mock import patch
 
 import numpy as np
 import soundfile as sf
-
 from engrave_testing import golden as golden
 from engrave_testing.make_sine_soundfont import generate_sine_soundfont
 from engrave_testing.paths import REPO_ROOT
