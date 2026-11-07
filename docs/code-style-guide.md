@@ -12,38 +12,53 @@ The guidelines here apply to new code and touched code where practical.
 
 ## Formatting and Linting
 
-The engine checkout does not use Pixi tasks; formatters and linters are run directly using Python scripts in `tools/`.
+The engine checkout does not use Pixi tasks; formatters and linters are run directly using Python scripts in `tools/`. Both scripts operate in engine C++ mode, targeting tracked, owned engine C++ files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, `.hxx`) under `engrave/`, `src/`, or `muse/` (excluding third-party directories).
 
 ### Formatting (`tools/format.py`)
 
-Run `python tools/format.py <paths...>` to format specific files or directories, and `python tools/format.py --check <paths...>` to verify that files comply with formatting rules without modifying them.
+`tools/format.py` formats owned engine C++ source and header files using `clang-format`.
+
+Run `python tools/format.py <paths...>` to format specific engine C++ files or directories, and `python tools/format.py --check <paths...>` to verify formatting without modifying files.
 
 Supported options:
 
-- `-l, --language <cpp|json|markdown|python|toml>`: override language detection for every input.
-- `--check`: report files that require formatting without modifying them.
-- `--engine`: format tracked owned engine C++ files.
-- `--engine-root <path>`: engine checkout location (used with `--engine`).
+- `<paths...>`: one or more files or directories to format. Only owned engine C++ files under `engrave/`, `src/`, or `muse/` are formatted; paths with no owned engine C++ files fail with an error.
+- `--check`: report files that require formatting without modifying them (exits non-zero if unformatted files are found).
+- `--engine-root <path>`: engine checkout location (defaults to repository root).
 
-Under the hood, formatters are selected by file extension:
+Commands:
 
-- `clang-format`: C/C++ source and header files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hh`, `.hpp`, `.hxx`).
-- `ruff`: Python files (`.py`, `.pyi`).
-- `prettier`: JSON, Markdown, and YAML files (`.json`, `.md`, `.yaml`, `.yml`).
-- `taplo`: TOML files (`.toml`).
+```bash
+# Check formatting across all owned engine C++ files in engrave/
+python tools/format.py --check engrave/
+
+# Format a specific engine C++ file
+python tools/format.py engrave/src/api/sniff.cpp
+```
 
 ### Linting (`tools/lint.py`)
 
-Run `python tools/lint.py [paths...]` to lint project files (`ruff` for Python, `clang-tidy` for C++).
+`tools/lint.py` checks compiled owned engine translation units against `.clang-tidy` using `clang-tidy`. It requires `compile_commands.json` in the engine root (generate via `xmake project -k compile_commands`). Automatic fixing (`--fix`) is unsupported in engine mode because shared headers require coordinated changes.
+
+Run `python tools/lint.py [paths...]` to lint compiled engine translation units matching the specified paths.
 
 Supported options:
 
-- `--engine`: check compiled owned engine translation units against `.clang-tidy`. Requires `compile_commands.json` (generate via `xmake project -k compile_commands`).
-- `--engine-root <path>`: engine checkout location (used with `--engine`).
-- `--fix`: automatically apply lint fixes where available (note: `--fix` is unsupported with `--engine`).
+- `[paths...]`: files or directories to lint (defaults to `.`). Only compiled translation units matching owned engine C++ files are checked.
 - `-j, --jobs <N>`: control linting parallelism (defaults to available CPU cores, capped at 12).
+- `--engine-root <path>`: engine checkout location (defaults to repository root).
 
-You can also run `python tools/setup_hooks.py` to install a Git pre-commit hook that checks staged blobs before commit without modifying the index.
+Commands:
+
+```bash
+# Lint compiled engine translation units matching a file
+python tools/lint.py engrave/src/api/sniff.cpp
+
+# Lint with explicit parallelism
+python tools/lint.py -j 4 engrave/src/api/sniff.cpp
+```
+
+You can also run `python tools/setup_hooks.py` to install a Git pre-commit hook (`.git/hooks/pre-commit`) that validates staged engine C++ blobs against `.clang-format` before commit without modifying the index.
 
 ## Identifier Naming
 
@@ -70,68 +85,20 @@ Headers should be grouped in the following order, with blank lines separating gr
 3. Third-party headers (`<cairo/cairo.h>`, `<ft2build.h>`, `<hb.h>`, `<nlohmann/json.hpp>`, etc.)
 4. Project headers (`muse/...`, `engraving/...`, `engrave/...`)
 
-Real example from `engrave/src/render/cairo_painter.cpp`:
+Example from `engrave/src/api/sniff.cpp`:
 
 ```cpp
-// Interface header of the current .cpp file
-#include "cairo_painter.h"
+#include "sniff.h"
 
-// std headers
 #include <algorithm>
-#include <array>
-#include <cmath>
-#include <cstdint>
-#include <cstring>
-#include <limits>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
+#include <cctype>
+#include <string_view>
 
-// 3rd party headers
-#include <cairo/cairo-ft.h>
-#include <cairo/cairo.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <hb-ft.h>
-#include <hb.h>
+#include <nlohmann/json.hpp>
 
-// project headers: muse/..., engraving/..., engrave/...
-#include "draw/internal/fontfaceutils.h"
-#include "draw/internal/ifontsdatabase.h"
-```
-
-Another example from `engrave/src/api/audio.cpp`:
-
-```cpp
-// Interface header of the current .cpp file
-#include <engrave/document.h>
-
-// std headers
-#include <cmath>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <optional>
-#include <span>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
-
-// project headers: engrave/..., engraving/...
-#include "engrave/src/api/handles.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/audio/engine_audio.h"
-#include "engrave/src/audio/score_audio.h"
-#include "engrave/src/runtime/score_io.h"
-#include "engraving/dom/excerpt.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/score.h"
-#include "engraving/engravingproject.h"
+#include "global/io/buffer.h"
+#include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/zipreader.h"
 ```
 
 ## Engine Gate Validation
