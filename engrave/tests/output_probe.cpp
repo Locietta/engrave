@@ -8,7 +8,7 @@
 //                        --out=FILE [--repeats=0] [--sample-rate=HZ]
 //
 // --render writes page-<n>.svg for every page, page-<n>.png for every page and
-// score.pdf, all with the A2 defaults (144 dpi, transparent PNG, no page
+// score.pdf, all with the export defaults (144 dpi, transparent PNG, no page
 // background). It prints one JSON object on stdout. The exit status is 0 on
 // success, 2 for a returned error (printed as "error: Code: message") and 3 for
 // an exception.

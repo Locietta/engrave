@@ -63,8 +63,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-
-
 import difflib
 import hashlib
 import json
@@ -759,8 +757,10 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
 INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
 
 
-def verify_input_provenance(*, root=ROOT, sources=None, fixture_dir=FIXTURE_DIR) -> list[str]:
+def verify_input_provenance(*, root=None, sources=None, fixture_dir=None) -> list[str]:
     """Check current inputs against main's reviewed migration pins."""
+    root = ROOT if root is None else root
+    fixture_dir = FIXTURE_DIR if fixture_dir is None else fixture_dir
     try:
         manifest = root / "tests/data/golden/inputs.json"
         if sha256(manifest.read_bytes()) != INPUT_MANIFEST_SHA256:

@@ -252,7 +252,7 @@ TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
     EXPECT_EQ(wrong_size.error().code, ErrorCode::INVALID_ARGUMENT);
 
     // A caller's integer has to fit what the engine stores; the probe of finding 3 of
-    // the A4 validation set an int style to 4294967297 and got 1 back.
+    // the edit validation set an int style to 4294967297 and got 1 back.
     for (const std::int64_t too_big : {std::int64_t{4294967297LL}, std::int64_t{1} << 32, std::int64_t{-4294967295LL}}) {
         const auto overflow = engrave::api::from_value(PType::INT, too_big);
         ASSERT_FALSE(overflow) << too_big;
