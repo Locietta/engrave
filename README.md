@@ -8,7 +8,7 @@ The library serves as the core engraving and playback engine for the [`engrave-m
 
 `engrave` is a hard fork of MuseScore core (derived from upstream MuseScore 5.0 development).
 
-- **Ancestral Provenance**: The fork's upstream synchronization history terminates at `upstream-final` (syncing upstream MuseScore commit `32f0a26e5b` and framework `da3885cb`). Since that sync point, development moves forward independently.
+- **Ancestral Provenance**: The fork is derived from upstream MuseScore core; development moves forward independently.
 - **Headless Score Library**: All desktop UI, Qt bindings, user-interaction widgets, QML, cloud services, and legacy score readers prior to MuseScore 4.6 have been removed.
 - **Attribution & Disclaimer**: `engrave` acknowledges original copyright and contributions from MuseScore Limited and the MuseScore community. It is an independent library project and is not affiliated with, endorsed by, or maintained by MuseScore or Muse Group.
 

@@ -9,9 +9,7 @@ fresh outputs. Missing and extra artifacts fail, as do unapproved differences.
 Expected bytes come from previously reviewed indexes and exact oracle/allow-list
 pins. Capturing a new output is not approval to change the baseline. Semantic
 content, audio evidence, positions, EID relationships, rendered-page statistics
-and warning checks remain independent validation lanes. Historical provenance in
-page references and compatibility corpus manifests retains its original paths
-and commits.
+and warning checks remain independent validation lanes.
 
 The host exports standalone MSCX; the engine gate also checks MSCX extracted
 from MSCZ. The reviewed archive representation is an exact `archive MSCX`

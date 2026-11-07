@@ -11,7 +11,7 @@
    - Part 2: Piano (midiProgram 1, trackId 1, instrumentId `piano`)
    - Part 3: Cello (midiProgram 43, trackId 2, instrumentId `baryton`)
 2. **MSCZ Export**: Exported as an uncompressed/compressed MSCZ archive via native MCP `score_create` and `score_export` (`format: "mscz"`).
-3. **Audio Settings Injection**: Added `audiosettings.json` at the root of the ZIP archive following the MuseScore 4 schema used by `ProjectAudioSettings` (`vendor/engrave/src/project/internal/projectaudiosettings.cpp`) and `NotationSoloMuteState` (`vendor/engrave/src/notation/internal/notationsolomutestate.cpp`):
+3. **Audio Settings Injection**: Added `audiosettings.json` at the root of the ZIP archive following the MuseScore 4 schema:
    - Root `master` object containing `volumeDb: 0.0` and `balance: 0.0`.
    - `tracks` array containing entries for each part/instrument (`partId`, `instrumentId`, `out: { volumeDb, balance }`, and `soloMuteState: { mute, solo }`).
    - Cello (`partId: "3"`, `instrumentId: "baryton"`) is set to `soloMuteState: { "mute": true, "solo": false }`.
@@ -19,6 +19,7 @@
 ### Test Purpose
 
 This fixture verifies that:
+
 - `score_open` reads the desktop mixer settings (`audiosettings.json`) from the MSCZ container.
 - `score_audio_tracks` and score metadata (`score_get`, `metadata.json`) report default mixer properties per track (`volumeDb`, `balance`, `solo`, `muted`, `forceMute`), showing Cello as `muted: true`.
 - Plain audio export (`score_export` format `wav`) renders the score with Cello silent by default.
@@ -26,11 +27,10 @@ This fixture verifies that:
 
 ## `mix_parts.mscz`
 
-`mix_parts.mscz` is an MSCZ fixture with excerpts where both the full score and individual part excerpts carry their own `audiosettings.json` settings, matching MuseScore 4's per-notation mixer layout (`notationproject.cpp:247-259`).
+`mix_parts.mscz` is an MSCZ fixture with excerpts where both the full score and individual part excerpts carry their own `audiosettings.json` settings, matching MuseScore 4's per-notation mixer layout.
 
 ### Generation Method
 
-Generated using the helper script `artifacts/trim-tests/make_mix_parts_mscz.py`:
 1. **Base Score**: Created from `tests/data/inputs/golden/created.json` ("Native Evening / 原生晚曲") with 3 parts (Violin, Piano, Cello).
 2. **Excerpts Generation**: Generated via native MCP `score_generate_excerpts` and exported to MSCZ via `score_export`.
 3. **Settings Injection**:
@@ -41,8 +41,8 @@ Generated using the helper script `artifacts/trim-tests/make_mix_parts_mscz.py`:
 ### Test Purpose
 
 This fixture verifies that:
+
 - Volume and balance are project-wide and inherited from root `audiosettings.json`.
 - Part (excerpt) exports do not inherit the full score's solo/mute:
   - Exporting excerpt 0 (Violin, `excerptId: 0`) ignores the full score's mute on Violin and renders audible audio because its own excerpt `audiosettings.json` specifies `mute: false`.
   - Exporting excerpt 2 (Cello, `excerptId: 2`) applies the excerpt's own mute, rendering silent audio despite Cello being unmuted in the root score.
-
