@@ -3,7 +3,7 @@
 // (the first is the default; a second one, when given, is the per-track
 // alternative).
 //
-// The A2 audio comparison (features within the recorded tolerances) is done by
+// The audio comparison (features within the recorded tolerances) is done by
 // the superproject's scripts/test_a4_output.py on this binary's probe; here the
 // checks are the ones a golden cannot make: each encoder writes its container,
 // the sink receives the stream in order, the SoundFont list and the per-track

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Compare engrave's public output API with the A2 goldens.
+"""Compare engrave's public output API with the platform goldens.
 
 Runs the fork's ``engrave_output_probe``, which renders through the public API
 (``Document::render``/``render_audio``) and writes the produced artifacts, then
-compares every artifact with the stored A2 golden exactly the way
+compares every artifact with the stored platform golden exactly the way
 ``tests/support/golden.py`` does:
 
 * ``page-0.png.json``: ``describe_png`` (size, PIL mode, sha256 of the RGBA

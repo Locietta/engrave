@@ -586,7 +586,7 @@ def check_sine_pitch(cents_diff: float, midi_pitch: int, detected_freq: float, e
     )
 
 def test_sine_threshold_mutations() -> None:
-    # The A0 onset and the exact pitch limit must pass; the old 5 ms / 1 cent
+    # The reference onset and the exact pitch limit must pass; the old 5 ms / 1 cent
     # limits would also have accepted the two mutations, which must now fail.
     check_sine_onset(86, 0.0, 44100, 64)
     check_sine_pitch(0.80, 60, 261.5, 261.6)
@@ -946,7 +946,7 @@ def check_midi_stream_against_reference(
     reference_events = golden["events"]
     assert golden["eventTotal"] == len(reference_events) == rule["reference_event_total"], (
         f"MIDI golden for {name} has eventTotal {golden['eventTotal']} and "
-        f"{len(reference_events)} stored events, but A0/A2 pins the 4.7.6 reference at "
+        f"{len(reference_events)} stored events, but the audio baseline pins the 4.7.6 reference at "
         f"{rule['reference_event_total']}. Do not re-baseline this file on 5.0 output; "
         "document accepted 5.0 changes in MIDI_ACCEPTED_RULES with an upstream cause"
     )

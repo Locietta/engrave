@@ -1,4 +1,4 @@
-"""Unit tests for oracle harness improvements (A2 review findings).
+"""Unit tests for oracle harness improvements (oracle review findings).
 
 Tests:
   1. Semantic checker mutations:
@@ -412,7 +412,7 @@ class TestCentroidSilenceEvidence(unittest.TestCase):
     def test_rounded_zero_rms_with_samples_still_compared(self):
         """A rounded-zero RMS is not silence: one or two nonzero samples keep the 2 Hz rule.
 
-        This is the A2 re-review case: a single 1-LSB sample stores RMS 0.0 in the 5-decimal
+        This is the silence regression case: a single 1-LSB sample stores RMS 0.0 in the 5-decimal
         envelope but the centroid moved from 11024.0 to 8011.4 Hz.
         """
         golden_audio = self.audio(11024.0, [1, 1])
