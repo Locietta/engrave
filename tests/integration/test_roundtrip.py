@@ -1,37 +1,12 @@
 """Independent engine validation helpers extracted from the host tests."""
+
 from __future__ import annotations
 
-import sys
-
-from pathlib import Path
-
-import argparse
-
-import asyncio
-
 import difflib
-
-import hashlib
-
-import json
-
-import os
-
 import re
-
-import sys
-
-import time
-
 import xml.etree.ElementTree as ET
-
 from fractions import Fraction
-
-from pathlib import Path
-
 from typing import Any
-
-from support.paths import REPO_ROOT
 
 GRACE_TAGS = (
     "acciaccatura",
@@ -44,11 +19,13 @@ GRACE_TAGS = (
     "grace32after",
 )
 
+
 def frac_to_ticks(frac_str: str | None, div: int) -> int:
     """Convert an MSCX fraction string ('N/D' or 'N') into ticks."""
     if not frac_str:
         return 0
     return int(Fraction(frac_str.strip()) * 4 * div)
+
 
 def spanner_target_tick(
     nxt: ET.Element,
@@ -64,6 +41,7 @@ def spanner_target_tick(
     target_m = m_idx + m_off
     target_start = meas_ticks[target_m][0] if target_m < len(meas_ticks) else v_tick
     return target_start + (v_tick - m_start) + f_off
+
 
 def get_spanner_props(sp: ET.Element) -> tuple[tuple[str, Any], ...]:
     """Extract placement, offset, endings, and beginText properties for supported spanners."""
@@ -87,6 +65,7 @@ def get_spanner_props(sp: ET.Element) -> tuple[tuple[str, Any], ...]:
         props["beginText"] = begin_text.strip()
     return tuple(sorted(props.items()))
 
+
 def normalize_mscx_text(text: str) -> str:
     """Normalize MSCX XML text for MSCZ round-trip text comparison."""
     text = re.sub(r"<eid>[^<]*</eid>", "<eid>0</eid>", text)
@@ -100,6 +79,7 @@ def normalize_mscx_text(text: str) -> str:
     text = re.sub(r"<([a-zA-Z0-9_]+)([^>]*)></\1>", r"<\1\2/>", text)
     return text
 
+
 PAGE_STYLE_DEFAULTS = (
     ("pageWidth", "8.26772"),
     ("pageHeight", "11.6929"),
@@ -112,6 +92,7 @@ PAGE_STYLE_DEFAULTS = (
     ("pageOddBottomMargin", "0.590551"),
 )
 
+
 def _xml_text(value: str | None, preserve: bool = False) -> str:
     # Pretty-printed MSCX uses newline-bearing whitespace between elements.
     # A space without a newline can be score text (including mixed rich text)
@@ -119,6 +100,7 @@ def _xml_text(value: str | None, preserve: bool = False) -> str:
     if not value or (not preserve and not value.strip() and ("\n" in value or "\r" in value)):
         return ""
     return value
+
 
 def _xml_value(element: ET.Element, preserve_tail: bool = False) -> tuple:
     """Represent the complete XML subtree, ignoring indentation only."""
@@ -130,6 +112,7 @@ def _xml_value(element: ET.Element, preserve_tail: bool = False) -> tuple:
         _xml_text(element.tail, preserve_tail),
         tuple(_xml_value(child, mixed) for child in element),
     )
+
 
 def compare_mscz_xml(before: str, after: str) -> list[tuple]:
     """Compare complete score XML after the narrowly documented page-style insertion.
@@ -204,6 +187,7 @@ def compare_mscz_xml(before: str, after: str) -> list[tuple]:
 
     compare(left, right, f"/{left.tag}")
     return differences
+
 
 def parse_mscx_500(root: ET.Element) -> dict[str, Any]:
     score = root.find("Score")
@@ -675,6 +659,7 @@ def parse_mscx_500(root: ET.Element) -> dict[str, Any]:
         "excerpts": excerpts,
     }
 
+
 def parse_mscx(text: str) -> dict[str, Any]:
     """Parse a MuseScore MSCX document into its semantic representation."""
     root = ET.fromstring(text)
@@ -1006,6 +991,7 @@ def parse_mscx(text: str) -> dict[str, Any]:
         "annotations": staff_annotations,
         "excerpts": excerpts,
     }
+
 
 KNOWN_LOSSES: dict[str, dict[str, tuple[str, str]]] = {
     "bend.gp": {

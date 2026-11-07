@@ -15,10 +15,6 @@ disabled tests still fail.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import json
 import os
@@ -30,8 +26,6 @@ import time
 from pathlib import Path
 
 from support.paths import REPO_ROOT
-
-ROOT = Path(__file__).resolve().parents[2]
 
 # Exact upstream test inventory built against the pinned fork. The runner fails
 # if a suite silently loses tests (e.g. a file stops compiling into the target)
@@ -51,43 +45,43 @@ def default_bin_dir() -> Path:
     if os.environ.get("ENGRAVE_MCP_BIN_DIR"):
         return Path(os.environ["ENGRAVE_MCP_BIN_DIR"]).resolve()
     candidates = (
-        ROOT / "build" / "xmake-windows",
-        ROOT / "build",
-        ROOT / "build" / "windows" / "x64" / "release",
-        ROOT / "build" / "windows" / "x64" / "debug",
-        ROOT / "build" / "linux" / "x86_64" / "release",
-        ROOT / "build" / "linux" / "x86_64" / "debug",
+        REPO_ROOT / "build" / "xmake-windows",
+        REPO_ROOT / "build",
+        REPO_ROOT / "build" / "windows" / "x64" / "release",
+        REPO_ROOT / "build" / "windows" / "x64" / "debug",
+        REPO_ROOT / "build" / "linux" / "x86_64" / "release",
+        REPO_ROOT / "build" / "linux" / "x86_64" / "debug",
     )
     for c in candidates:
         if c.is_dir():
             return c.resolve()
-    return (ROOT / "build" / "xmake-windows").resolve()
+    return (REPO_ROOT / "build" / "xmake-windows").resolve()
 
 
 def default_assets_dir() -> Path:
     if os.environ.get("ENGRAVE_MCP_RESOURCES"):
         return Path(os.environ["ENGRAVE_MCP_RESOURCES"]).resolve()
     candidates = (
-        ROOT / ".runtime" / "assets",
-        ROOT / ".." / ".runtime" / "assets",
+        REPO_ROOT / ".runtime" / "assets",
+        REPO_ROOT / ".." / ".runtime" / "assets",
     )
     for c in candidates:
         if (c / "engraving" / "instruments" / "instruments.xml").is_file():
             return c.resolve()
-    return (ROOT / ".runtime" / "assets").resolve()
+    return (REPO_ROOT / ".runtime" / "assets").resolve()
 
 
 def default_engraving_data_dir() -> Path:
     if os.environ.get("ENGRAVING_TESTS_DATA_ROOT"):
         return Path(os.environ["ENGRAVING_TESTS_DATA_ROOT"]).resolve()
     candidates = (
-        ROOT / "src" / "engraving" / "tests",
-        ROOT / ".." / "vendor" / "engrave" / "src" / "engraving" / "tests",
+        REPO_ROOT / "src" / "engraving" / "tests",
+        REPO_ROOT / ".." / "vendor" / "engrave" / "src" / "engraving" / "tests",
     )
     for c in candidates:
         if (c / "playback" / "playbackeventsrenderer_data").is_dir():
             return c.resolve()
-    return (ROOT / "src" / "engraving" / "tests").resolve()
+    return (REPO_ROOT / "src" / "engraving" / "tests").resolve()
 
 
 def parse_gtest_output(text: str) -> dict:

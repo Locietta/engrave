@@ -1,23 +1,11 @@
 """Independent engine validation helpers extracted from the host tests."""
+
 from __future__ import annotations
 
-import sys
-
-from pathlib import Path
-
-import argparse
-
-import asyncio
-
-import json
-
 import xml.etree.ElementTree as ET
-
 from fractions import Fraction
-
 from pathlib import Path
 
-from support.paths import REPO_ROOT
 
 def canonical_notes(path_or_xml: Path | str) -> tuple[list, list]:
     """Parse MusicXML and return sorted canonical notes and measure counts."""
@@ -79,6 +67,7 @@ def canonical_notes(path_or_xml: Path | str) -> tuple[list, list]:
     if not events:
         raise ValueError("MusicXML contains no notes")
     return sorted(events), measures
+
 
 def parse_midi_file(data: bytes) -> dict:
     """Parse Standard MIDI File (format 0/1) tracks and events."""
@@ -238,6 +227,7 @@ def parse_midi_file(data: bytes) -> dict:
 
     return {"format": midi_format, "division": division, "tracks": tracks}
 
+
 def count_note_on_events(midi_info: dict) -> tuple[int, list[dict]]:
     """Count note-on events with velocity > 0 across all tracks."""
     note_ons = []
@@ -246,5 +236,3 @@ def count_note_on_events(midi_info: dict) -> tuple[int, list[dict]]:
             if ev["type"] == "note_on" and ev["velocity"] > 0:
                 note_ons.append(ev)
     return len(note_ons), note_ons
-
-

@@ -3,10 +3,6 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
 import argparse
 import hashlib
 import json
@@ -20,18 +16,17 @@ from pathlib import Path
 
 from integration.test_public_output import compare, describe_audio_file, describe_render, probe_command
 from support import golden as g
+from support.dependencies import validate_dependencies
+from support.inventory import validate_actual, validate_allow_usage, validate_baseline
 from support.links import setup_link
-from support.paths import INPUT_ROOT
-
-ROOT = Path(__file__).resolve().parents[1]
+from support.paths import INPUT_ROOT, REPO_ROOT
 
 
 def main():
-    from support.dependencies import validate_dependencies
 
     validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--engine-source", type=Path, default=ROOT)
+    p.add_argument("--engine-source", type=Path, default=REPO_ROOT)
     for name in ("build-dir", "assets", "soundfont", "output"):
         p.add_argument("--" + name, type=Path, required=True)
     p.add_argument("--cairo-prefix", type=Path)
@@ -50,6 +45,9 @@ def main():
     suffix = ".exe" if platform == "windows" else ""
     if a.cairo_prefix:
         os.environ["PATH"] = str(a.cairo_prefix / "bin") + os.pathsep + os.environ.get("PATH", "")
+    os.environ["PYTHONPATH"] = os.pathsep.join(
+        (str(REPO_ROOT / "tests"), str(REPO_ROOT / "tools"), os.environ.get("PYTHONPATH", ""))
+    )
     records = []
     start = time.monotonic()
 
@@ -59,7 +57,7 @@ def main():
         with (a.output / (name + ".log")).open("wb") as log:
             r = subprocess.run(
                 command,
-                cwd=cwd or ROOT,
+                cwd=cwd or REPO_ROOT,
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 timeout=1800,
@@ -94,7 +92,7 @@ def main():
             ]
         run(name, cmd, a.engine_source)
 
-    run("comparator-mutations", [sys.executable, ROOT / "tests/test_inventory.py"])
+    run("comparator-mutations", [sys.executable, REPO_ROOT / "tests/test_inventory.py"])
     if not a.skip_build:
         config = [
             "f",
@@ -125,12 +123,12 @@ def main():
         if forbidden.search(header.read_text(encoding="utf-8")):
             raise RuntimeError(f"public header leak: {header}")
     asset = "--assets=" + str(a.assets)
-    corpus = "--corpus=" + str(ROOT / "tests/data/inputs/golden")
+    corpus = "--corpus=" + str(REPO_ROOT / "tests/data/inputs/golden")
     run(
         "sine",
         [
             sys.executable,
-            ROOT / "tests/support/make_sine_soundfont.py",
+            REPO_ROOT / "tests/support/make_sine_soundfont.py",
             a.output / "sine.sf2",
         ],
     )
@@ -140,9 +138,9 @@ def main():
         "engrave_describe_test": [
             asset,
             "--python=" + sys.executable,
-            ROOT / "tests/data/inputs",
+            REPO_ROOT / "tests/data/inputs",
         ],
-        "engrave_read_test": [asset, "--corpus=" + str(ROOT / "tests/data/inputs")],
+        "engrave_read_test": [asset, "--corpus=" + str(REPO_ROOT / "tests/data/inputs")],
         "engrave_ops_test": [asset, corpus],
         "engrave_op_policy_test": [],
         "engrave_gp_import_test": [asset],
@@ -150,7 +148,7 @@ def main():
         "engrave_output_test": [
             asset,
             corpus,
-            "--corpus=" + str(ROOT / "tests/data/inputs/audio"),
+            "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
             "--soundfont=" + str(a.soundfont),
             "--soundfont=" + str(a.output / "sine.sf2"),
         ],
@@ -165,7 +163,7 @@ def main():
         "write470-excerpts",
         [
             sys.executable,
-            ROOT / "engrave/tests/test_write470_excerpts.py",
+            REPO_ROOT / "engrave/tests/test_write470_excerpts.py",
             "--probe",
             a.build_dir / ("write470_probe" + suffix),
             "--assets",
@@ -178,7 +176,7 @@ def main():
         "mnx_schema",
         [
             sys.executable,
-            ROOT / "tests/support/check_mnx_schema.py",
+            REPO_ROOT / "tests/support/check_mnx_schema.py",
             a.output / "mnx-export",
             a.engine_source / "src/importexport/mnx/tests/data/schema/mnx-schema.json",
         ],
@@ -187,7 +185,7 @@ def main():
         "playback",
         [
             sys.executable,
-            ROOT / "tests/integration/test_upstream_gtest.py",
+            REPO_ROOT / "tests/integration/test_upstream_gtest.py",
             "--bin-dir",
             a.build_dir,
             "--assets",
@@ -218,7 +216,7 @@ def main():
         "excerpts",
         [
             sys.executable,
-            ROOT / "tests/integration/test_excerpts.py",
+            REPO_ROOT / "tests/integration/test_excerpts.py",
             "--binary",
             a.build_dir / ("excerpts_test" + suffix),
             "--assets",
@@ -231,7 +229,7 @@ def main():
         "archives",
         [
             sys.executable,
-            ROOT / "tests/integration/test_archives.py",
+            REPO_ROOT / "tests/integration/test_archives.py",
             "--binary",
             a.build_dir / ("archive_test" + suffix),
             "--output",
@@ -249,7 +247,7 @@ def main():
         "assets",
         [
             sys.executable,
-            ROOT / "tests/integration/test_assets.py",
+            REPO_ROOT / "tests/integration/test_assets.py",
             "--binary",
             a.build_dir / ("assets_test" + suffix),
             "--assets",
@@ -281,7 +279,7 @@ def main():
         "engine-audio",
         [
             sys.executable,
-            ROOT / "tests/integration/test_engine_audio.py",
+            REPO_ROOT / "tests/integration/test_engine_audio.py",
             "--engine-only",
             "--bin-dir",
             a.build_dir,
@@ -295,8 +293,10 @@ def main():
             a.output / "engine-audio",
         ],
     )
-    run("oracle-controls", [sys.executable, ROOT / "tests/integration/test_oracle_harness.py"])
-    sources = sorted((ROOT / "tests/data/inputs/golden").glob("*")) + [ROOT / "tests/data/inputs/evening.musicxml"]
+    run("oracle-controls", [sys.executable, REPO_ROOT / "tests/integration/test_oracle_harness.py"])
+    sources = sorted((REPO_ROOT / "tests/data/inputs/golden").glob("*")) + [
+        REPO_ROOT / "tests/data/inputs/evening.musicxml"
+    ]
     sources += [
         a.engine_source / "src/importexport/mnx/tests/data" / name
         for name in (
@@ -315,11 +315,10 @@ def main():
     )
     counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
-    allow = g.load_allow(ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
+    allow = g.load_allow(REPO_ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
     matched_allow = set()
-    from support.inventory import validate_actual, validate_allow_usage, validate_baseline
 
-    inventory = validate_baseline(ROOT / "tests/data/golden" / platform)
+    inventory = validate_baseline(REPO_ROOT / "tests/data/golden" / platform)
     for source in sources:
         raw = a.output / "raw" / source.name
         out = a.output / "actual" / source.name
@@ -367,12 +366,12 @@ def main():
         ]:
             g.write_json(out / name, value)
             names.append(name)
-        expected_svg = {p.name for p in (ROOT / "tests/data/golden" / platform / source.name).glob("page-*.svg")}
+        expected_svg = {p.name for p in (REPO_ROOT / "tests/data/golden" / platform / source.name).glob("page-*.svg")}
         if {n for n in names if n.endswith(".svg")} != expected_svg:
             raise RuntimeError(f"{source.name}: SVG page coverage changed")
         validate_actual(source.name, out, names, inventory)
         compare(
-            ROOT / "tests/data/golden" / platform,
+            REPO_ROOT / "tests/data/golden" / platform,
             source.name,
             out,
             names,
@@ -387,14 +386,14 @@ def main():
         raise RuntimeError("gate fixture inventory mismatch")
     run(
         "semantic-cross-check",
-        [sys.executable, ROOT / "tests/support/check_semantic_dump.py", a.output / "actual"],
+        [sys.executable, REPO_ROOT / "tests/support/check_semantic_dump.py", a.output / "actual"],
     )
     # Entries are only expected to match on the platforms they pin.
     validate_allow_usage(allow, matched_allow, platform)
     inputs = [
-        ROOT / "tests/data/golden/inputs.json",
+        REPO_ROOT / "tests/data/golden/inputs.json",
         a.soundfont,
-        ROOT / "tests/data/golden/allow.json",
+        REPO_ROOT / "tests/data/golden/allow.json",
         *sources,
     ]
     provenance = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}

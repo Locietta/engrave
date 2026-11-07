@@ -6,12 +6,6 @@ mnxdom's C++ validator implements JSON Schema draft 7 and silently skips
 Negative controls prove the validator rejects what the C++ one accepts.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-
 import argparse
 import copy
 import json
