@@ -42,7 +42,7 @@ All current MNX, edit and excerpt artifacts share the platform index.
 ``semantic.json`` (the exported MSCZ) and ``semantic-source.json`` (the fixture
 file) come from the ``semantic_dump`` dev tool next to the server binary. They
 record musical content read from the in-memory DOM, independent of the MSCX
-format version, and are the rebase oracle of roadmap-engrave A0/A2.
+format version, and provide an independent musical-content oracle.
 
 EID normalization preserves target identity through stable tokens.
 
@@ -502,15 +502,16 @@ def sanitize(text: str, roots: list[Path]) -> str:
 
 SEMANTIC_DUMP: dict = {}
 
-def semantic_dump(source: Path, dest: Path, roots, *extra: str) -> None:
+def semantic_dump(source: Path, dest: Path, roots, *extra: str, config=None) -> None:
     """Run the semantic_dump dev tool next to the server binary; errors become .error.txt."""
     if not source.is_file():
         write_text(dest.with_suffix(".error.txt"), "source export missing\n")
         return
+    config = SEMANTIC_DUMP if config is None else config
     result = subprocess.run(
         [
-            str(SEMANTIC_DUMP["binary"]),
-            str(SEMANTIC_DUMP["resources"]),
+            str(config["binary"]),
+            str(config["resources"]),
             str(source),
             *extra,
         ],
@@ -746,15 +747,15 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
 INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
 
 
-def verify_input_provenance() -> list[str]:
+def verify_input_provenance(*, root=ROOT, sources=None, fixture_dir=FIXTURE_DIR) -> list[str]:
     """Check current inputs against main's reviewed migration pins."""
     try:
-        manifest = ROOT / "tests/data/golden/inputs.json"
+        manifest = root / "tests/data/golden/inputs.json"
         if sha256(manifest.read_bytes()) != INPUT_MANIFEST_SHA256:
             return ["input provenance manifest hash mismatch"]
         pins = json.loads(read_text(manifest))["fixtures"]
-        sources = {source.name: source for source in fixture_files() + mnx_fixture_files()}
-        sources.update({name: FIXTURE_DIR / scenario["source"] for name, scenario in EDIT_SCENARIOS.items()})
+        sources = {source.name: source for source in (fixture_files() + mnx_fixture_files() if sources is None else sources)}
+        sources.update({name: fixture_dir / scenario["source"] for name, scenario in EDIT_SCENARIOS.items()})
         if set(pins) != set(sources):
             return ["input fixture inventory differs from reviewed pins"]
         issues = []
@@ -771,7 +772,7 @@ def verify_input_provenance() -> list[str]:
             if source.name == "created.json":
                 xml = composition_musicxml(json.loads(read_text(source))).encode("utf-8")
                 if entry.get("input_sha256") != sha256(xml) or entry.get("converter_sha256") != sha256(
-                    (ROOT / "tests/support/composition_fixture.py").read_bytes()
+                    (root / "tests/support/composition_fixture.py").read_bytes()
                 ):
                     issues.append(f"created input or converter changed: {name}")
         return issues
@@ -784,6 +785,7 @@ def compare_trees(
     allow: list[dict],
     output: Path,
     platform: str,
+    *, provenance_check=verify_input_provenance,
 ) -> int:
     golden_index = json.loads(read_text(golden_root / "index.json"))
     counts = {
@@ -815,7 +817,7 @@ def compare_trees(
         shutil.rmtree(diff_root)
 
     report["indexIssues"].extend(verify_golden_index(golden_root, golden_index))
-    report["indexIssues"].extend(verify_input_provenance())
+    report["indexIssues"].extend(provenance_check())
     counts["index"] = len(report["indexIssues"])
     for issue in report["indexIssues"]:
         print(f"index    {issue}")

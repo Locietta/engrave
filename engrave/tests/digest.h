@@ -1,5 +1,5 @@
 // Test helpers: SHA-256 and a PNG reader, so a render can be compared with the
-// hashes the A2 goldens recorded (scripts/golden.py: sha256 over the RGBA bytes
+// hashes the render goldens recorded (scripts/golden.py: sha256 over the RGBA bytes
 // PIL decodes, and sha256 over the SVG text).
 
 #pragma once

@@ -1,5 +1,5 @@
 // Renders one score through the public API and writes the results, so the
-// superproject's scripts/test_a4_output.py can compare them with the A2 goldens
+// superproject's scripts/test_a4_output.py can compare them with the render goldens
 // exactly as scripts/golden.py does.
 //
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --render=SCORE --out=DIR

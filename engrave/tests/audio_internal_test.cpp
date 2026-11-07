@@ -411,7 +411,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     }
 }
 
-// Same 12 x 256 x 16 input shape as the M2 review, generated without a desktop.
+// Same 12 x 256 x 16 input shape as the dense-score probe, generated without a desktop.
 TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Clock = std::chrono::steady_clock;
     const auto owner_thread = std::this_thread::get_id();

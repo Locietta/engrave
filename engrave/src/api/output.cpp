@@ -1,6 +1,6 @@
 // The output API: page_count() and render().  Both take the score through the
-// handle resolver and the page drawing through the A2 renderer in
-// engrave/src/render/, with A2's options and limits.
+// handle resolver and the page drawing through the renderer in
+// engrave/src/render/, with the options and limits.
 
 #include <format>
 #include <limits>
@@ -70,7 +70,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
         return fail(ErrorCode::INVALID_ARGUMENT,
                     std::format("the dpi must be between {} and {}, not {}", min_render_dpi, max_render_dpi, options.dpi));
     }
-    // A2's other renderers draw at 72 dpi (PDF points, SVG units) and take no dpi.
+    // the other renderers draw at 72 dpi (PDF points, SVG units) and take no dpi.
     if (options.format != RenderFormat::PNG && options.dpi != RenderOptions{}.dpi) {
         return fail(ErrorCode::INVALID_ARGUMENT, std::format("dpi applies to PNG, not to {}", to_string(options.format)));
     }

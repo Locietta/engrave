@@ -1,6 +1,6 @@
 // The audio API: audio_tracks() and render_audio().  The tracks and the default
-// mix come from the A2 score code in engrave/src/audio/ (score_audio), the mix
-// and the render from the A2 engine driver there (engine_audio).
+// mix come from the score code in engrave/src/audio/ (score_audio), the mix
+// and the render from the engine driver there (engine_audio).
 //
 // The driver encodes to a file; the public call hands the encoded stream to a
 // sink. The WAV and FLAC encoders patch their headers when the stream ends (the
@@ -72,7 +72,7 @@ bool is_lossy(AudioFormat format) { return format == AudioFormat::OPUS || format
 
 AudioMix to_mix(const music::AudioOutputParams &output) { return {output.volume_db, output.balance, output.muted, output.solo}; }
 
-// A mix value the engine accepts; the ranges are the ones the A2 host enforced.
+// A mix value the engine accepts; the ranges are the ones the host enforced.
 std::optional<Error> mix_error(std::optional<double> volume_db, std::optional<double> balance, std::string_view label) {
     if (volume_db && (!std::isfinite(*volume_db) || *volume_db < -120.0 || *volume_db > 24.0))
         return Error{ErrorCode::INVALID_ARGUMENT, std::format("{} volume_db must be finite and in [-120, 24]", label)};

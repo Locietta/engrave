@@ -115,7 +115,7 @@ enum struct RenderFormat {
 
 std::string_view to_string(RenderFormat format) noexcept;
 
-// The renderer's own bounds, the same ones the A2 host enforced: PNG takes 36 to
+// The renderer's own bounds, the same ones the host enforced: PNG takes 36 to
 // 1200 dpi, no page side may exceed 32767 pixels and no page more than 64e6
 // pixels. A page beyond them is a ResourceLimit.
 inline constexpr std::int32_t min_render_dpi = 36;
@@ -132,7 +132,7 @@ struct RenderOptions {
     // default 144 sentinel (which is ignored).
     std::int32_t dpi = 144;
     // Draw the page's own background (its colour from the score's style) in PNG
-    // and SVG; a PDF always prints it. Off by default, like A2's export.
+    // and SVG; a PDF always prints it. Off by default, like the export.
     bool background = false;
     // PNG only: leave a transparent page transparent instead of painting white
     // behind it.

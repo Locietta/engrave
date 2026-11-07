@@ -3,6 +3,11 @@
 Run capture on either host; --verify-only allows Windows artifacts to be
 transferred to the physical Linux oracle without rerunning the writer.
 """
+import sys
+
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "tests"))
+from support.paths import INPUT_ROOT, REPO_ROOT
+
 import argparse
 import hashlib
 import json
@@ -23,13 +28,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--probe', type=Path)
     ap.add_argument('--assets', type=Path)
-    ap.add_argument('--host-root', type=Path, required=True)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--oracle', type=Path)
     ap.add_argument('--verify-only', action='store_true')
     args = ap.parse_args()
-    fixtures = {'excerpts': args.host_root / 'tests/phase_b/excerpts.mscx',
-                'linked_parts': args.host_root / 'fixtures/golden/linked_parts.mscx'}
+    fixtures = {'excerpts': REPO_ROOT / 'engrave/tests/data/write470/excerpts.mscx',
+                'linked_parts': INPUT_ROOT / 'golden/linked_parts.mscx'}
     if not args.verify_only:
         args.out.mkdir(parents=True, exist_ok=False)
         for name, source in fixtures.items():

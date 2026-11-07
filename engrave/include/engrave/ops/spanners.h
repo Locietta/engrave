@@ -10,7 +10,7 @@
 
 namespace engrave {
 
-// Spanners, ties and tuplets (A4 S7d).
+// Spanners, ties and tuplets.
 
 // Adds a spanner of an element type (its name as describe() gives it: "Slur",
 // "HairPin", "Pedal", "TextLine", "Ottava", ...) from start to end. A slur spans
