@@ -80,10 +80,10 @@ def strip_code(text):
             if i + 1 < n:
                 out[i] = out[i + 1] = " "
                 i += 2
-        elif c == "\"":
+        elif c == '"':
             out[i] = " "
             i += 1
-            while i < n and text[i] != "\"":
+            while i < n and text[i] != '"':
                 if text[i] == "\\":
                     out[i] = " "
                     i += 1
@@ -188,14 +188,16 @@ def parse_properties(sources):
     definition = re.compile(
         r"^[ \t]*[\w][\w:<>,*&\s]*?\b(\w+)::(get_property|set_property)\s*\([^)]*\)\s*"
         r"(?:const\s*)?(?:noexcept\s*)?(?:override\s*)?\{",
-        re.M)
+        re.M,
+    )
     for text in sources.values():
         for match in definition.finditer(text):
             start, end = blocks(text, match.end() - 1)
             body = text[start:end]
             kind = "get" if match.group(2) == "get_property" else "set"
             entry = properties.setdefault(
-                match.group(1), {"get": set(), "set": set(), "get_forwards": True, "set_forwards": True})
+                match.group(1), {"get": set(), "set": set(), "get_forwards": True, "set_forwards": True}
+            )
             entry[kind].update(re.findall(r"case Pid::(\w+)\s*:", body))
             if not re.search(r"\w+::" + match.group(2) + r"\s*\(", body):
                 entry[kind + "_forwards"] = False
@@ -210,7 +212,8 @@ def parse_styles(sources):
         for match in definition.finditer(text):
             start, end = blocks(text, match.end() - 1)
             styles.setdefault((path, match.group(1)), set()).update(
-                re.findall(r"\{\s*Sid::\w+\s*,\s*Pid::(\w+)\s*\}", text[start:end]))
+                re.findall(r"\{\s*Sid::\w+\s*,\s*Pid::(\w+)\s*\}", text[start:end])
+            )
     return styles
 
 
@@ -225,9 +228,9 @@ def parse_style_owners(sources):
         spans = class_spans(text)
         for name, pattern in patterns.items():
             for match in pattern.finditer(text):
-                before = text[max(0, match.start() - 40):match.start()]
+                before = text[max(0, match.start() - 40) : match.start()]
                 if re.search(r"ElementStyle\s*$", before):
-                    continue                                # the definition itself
+                    continue  # the definition itself
                 owner = owner_at(spans, match.start())
                 if owner:
                     owners.setdefault((path, name), set()).add(owner)
@@ -238,7 +241,8 @@ def parse_constructor_types(sources):
     """class -> {ElementType} for classes that pass their type to the base constructor."""
     found = {}
     definition = re.compile(
-        r"^[ \t]*(\w+)::\1\s*\([^)]*\)\s*(?::[^{;]*)?\bEngravingItem\s*\(\s*ElementType::(\w+)", re.M)
+        r"^[ \t]*(\w+)::\1\s*\([^)]*\)\s*(?::[^{;]*)?\bEngravingItem\s*\(\s*ElementType::(\w+)", re.M
+    )
     for text in sources.values():
         for match in definition.finditer(text):
             found.setdefault(match.group(1), set()).add(match.group(2))
@@ -260,7 +264,8 @@ def parse_pid_names(root):
     """
     text = (root / "src" / "engraving" / "dom" / "property.cpp").read_text(encoding="utf-8")
     rows = re.findall(
-        r'\{\s*Pid::(\w+)\s*,\s*PType::\w+\s*,\s*PropertyGroup::\w+\s*,\s*(?:true|false)\s*,\s*"([^"]*)"', text)
+        r'\{\s*Pid::(\w+)\s*,\s*PType::\w+\s*,\s*PropertyGroup::\w+\s*,\s*(?:true|false)\s*,\s*"([^"]*)"', text
+    )
     xml_names = dict(rows)
     api_names = {}
     taken = set()
@@ -282,7 +287,8 @@ def build(root):
     for key, owners in style_owners.items():
         for owner in owners:
             entry = properties.setdefault(
-                owner, {"get": set(), "set": set(), "get_forwards": True, "set_forwards": True})
+                owner, {"get": set(), "set": set(), "get_forwards": True, "set_forwards": True}
+            )
             entry["get"] |= styles[key]
     for name, types in parse_constructor_types(sources).items():
         if len(types) == 1 and not classes.get(name, {}).get("types"):
@@ -367,8 +373,12 @@ def render(rows, overrides):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent,
-                        help="the engrave checkout (default: this script's repository)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent,
+        help="the engrave checkout (default: this script's repository)",
+    )
     parser.add_argument("--check", action="store_true", help="fail when the checked-in file is stale")
     args = parser.parse_args()
 
