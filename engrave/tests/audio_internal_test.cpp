@@ -470,7 +470,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         for (int trial = 0; trial < 50; ++trial) {
             bool cancelled = false;
             bool model_started = false;
-            int model_polls = 0;
+            int model_polls = 0, stage_polls = 0;
             std::latch model_start{1};
             std::atomic<bool> external{false};
             Clock::time_point requested, observed;
@@ -493,8 +493,15 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             request.output_path.assign(utf8.begin(), utf8.end());
             request.cancelled = [&] {
                 EXPECT_EQ(std::this_thread::get_id(), owner_thread);
-                if (phase == 3 && muse::audio::OfflineCancellation::phase == Phase::ENCODING) cancel();
-                if (phase == 0 && muse::audio::OfflineCancellation::phase == Phase::SEQUENCER) cancel();
+                // Arm at an existing stage marker, but return false from this poll.
+                // Only the NEXT poll may observe the request: the measured span
+                // includes engine work between polls, rather than callback cost.
+                const auto current_phase = muse::audio::OfflineCancellation::phase;
+                if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
+                    ++stage_polls == 1 + trial * 3) {
+                    cancel();
+                    return false;
+                }
                 if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL &&
                     ++model_polls == 2000 + trial * 3000 && !model_started) {
                     model_started = true;
