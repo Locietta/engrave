@@ -27,6 +27,7 @@
 #include "audio/engine/internal/offlineeventcleanup.h"
 #endif
 #include "audio/engine/internal/offlinetiming.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "global/io/iodevice.h"
@@ -870,4 +871,114 @@ TEST(AudioInternal, CancellationDuringPublicationCleansUpAndRecovers) {
                                                  "-" + std::to_string(state.audio_render_index) + ".wav");
     EXPECT_FALSE(std::filesystem::exists(intermediate));
     EXPECT_EQ(render(), baseline);
+}
+
+TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
+    using namespace muse::audio::engine;
+    using namespace muse::audio::synth;
+    using muse::midi::Event;
+
+    struct ExposedSequencer : FluidSequencer {
+        using FluidSequencer::chunk_plan_;
+        using FluidSequencer::main_stream_events_;
+        using FluidSequencer::off_stream_events_;
+    };
+
+    // 1. checked_grow enforces uint32_t bounds and throws StoreLimit.
+    EXPECT_EQ(checked_grow(0, 0), 0u);
+    EXPECT_EQ(checked_grow(10, 20), 30u);
+    EXPECT_THROW(std::ignore = checked_grow(static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1, 0), StoreLimit);
+    EXPECT_THROW(std::ignore = checked_grow(std::numeric_limits<std::uint32_t>::max(), 1), StoreLimit);
+
+    // 2. ChannelMap::init enforces k_fluid_channel_count (16) even in release builds.
+    {
+        ChannelMap channels;
+        muse::mpe::PlaybackSetupData setup;
+        EXPECT_THROW(channels.init(setup, std::nullopt, k_fluid_channel_count + 1), std::invalid_argument);
+    }
+
+    // 3. MidiTimeline + FluidSequencer slice planning, continuation merge, <= boundary, seek, and buffer reuse.
+    ExposedSequencer seq;
+    muse::mpe::PlaybackData data;
+    seq.load(data);
+
+    auto make_note = [](Event::Opcode opcode, std::uint32_t note, std::uint32_t vel) {
+        Event ev(opcode, Event::MessageType::CHANNEL_VOICE10);
+        ev.set_channel(0);
+        ev.set_note(note);
+        ev.set_velocity7(vel);
+        return ev;
+    };
+    const Event ev0 = make_note(Event::Opcode::NOTE_ON, 60, 100);
+    const Event ev1 = make_note(Event::Opcode::NOTE_OFF, 60, 0);
+    const Event ev2 = make_note(Event::Opcode::NOTE_ON, 62, 100);
+    const Event ev3 = make_note(Event::Opcode::NOTE_OFF, 62, 0);
+
+    emplace_checked(seq.main_stream_events_.events, 0ULL, ev0);
+    emplace_checked(seq.main_stream_events_.events, 0ULL, ev1);
+    emplace_checked(seq.main_stream_events_.events, 100ULL, ev2);
+    emplace_checked(seq.main_stream_events_.events, 250ULL, ev3);
+    emplace_checked(seq.off_stream_events_.events, 0ULL, ev1);
+
+    // Inactive: returns 1 slice from off_stream_events_ and clears it on next advance.
+    {
+        const auto &plan = seq.move_playback_forward(50);
+        ASSERT_EQ(plan.size(), 1u);
+        EXPECT_EQ(plan[0].at, 0ULL);
+        EXPECT_EQ(plan[0].count, 1u);
+        const auto span = seq.slice_events(plan[0]);
+        ASSERT_EQ(span.size(), 1u);
+        EXPECT_EQ(span[0].event, ev1);
+        const auto &plan2 = seq.move_playback_forward(50);
+        ASSERT_EQ(plan2.size(), 1u);
+        EXPECT_EQ(plan2[0].count, 0u);
+        EXPECT_TRUE(seq.off_stream_events_.events.empty());
+    }
+
+    // Active: continuation slice at 0 merges with timestamp 0 group; <= boundary includes 100.
+    seq.set_active(true);
+    seq.set_playback_position(0);
+    {
+        const auto &plan = seq.move_playback_forward(100);
+        ASSERT_EQ(plan.size(), 2u);
+        EXPECT_EQ(plan[0].at, 0ULL);
+        EXPECT_EQ(plan[0].first, 0u);
+        EXPECT_EQ(plan[0].count, 2u);
+        EXPECT_EQ(plan[1].at, 100ULL);
+        EXPECT_EQ(plan[1].first, 2u);
+        EXPECT_EQ(plan[1].count, 1u);
+    }
+
+    const auto reused_cap = seq.chunk_plan_.capacity();
+    // Next chunk [100..200]: no events in (100..200], returns empty continuation slice at 100.
+    {
+        const auto &plan = seq.move_playback_forward(100);
+        ASSERT_EQ(plan.size(), 1u);
+        EXPECT_EQ(plan[0].at, 100ULL);
+        EXPECT_EQ(plan[0].count, 0u);
+        EXPECT_TRUE(seq.slice_events(plan[0]).empty());
+        EXPECT_GE(seq.chunk_plan_.capacity(), reused_cap);
+    }
+
+    // Next chunk [200..250]: empty continuation at 200 + event at 250.
+    {
+        const auto &plan = seq.move_playback_forward(50);
+        ASSERT_EQ(plan.size(), 2u);
+        EXPECT_EQ(plan[0].at, 200ULL);
+        EXPECT_EQ(plan[0].count, 0u);
+        EXPECT_EQ(plan[1].at, 250ULL);
+        EXPECT_EQ(plan[1].first, 3u);
+        EXPECT_EQ(plan[1].count, 1u);
+    }
+
+    // Seek to 100: lower_bound positions cursor at index 2 (timestamp 100), so continuation merges at 100.
+    seq.set_playback_position(100);
+    EXPECT_EQ(seq.main_stream_events_.cursor, 2u);
+    {
+        const auto &plan = seq.move_playback_forward(50);
+        ASSERT_EQ(plan.size(), 1u);
+        EXPECT_EQ(plan[0].at, 100ULL);
+        EXPECT_EQ(plan[0].first, 2u);
+        EXPECT_EQ(plan[0].count, 1u);
+    }
 }
