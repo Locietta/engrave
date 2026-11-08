@@ -23,6 +23,14 @@
 -- own tree.  It supplies zlib and the cairo headers and library directory
 -- (the fork's xmake.lua does so for the standalone build).
 
+option("engrave_playback_harness")
+    set_default(false)
+    set_description("Test-only playback identity capture and measurement hooks")
+option_end()
+if has_config("engrave_playback_harness") then
+    add_defines("ENGRAVE_PLAYBACK_HARNESS")
+end
+
 local fork_root = path.directory(os.scriptdir())
 local source_root = path.absolute(ENGRAVE_SOURCE_ROOT or fork_root)
 
