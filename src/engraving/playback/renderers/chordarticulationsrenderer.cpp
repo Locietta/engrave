@@ -88,6 +88,9 @@ void ChordArticulationsRenderer::render_chord_with_grace_chords(const Chord *cho
             render_chord(pair.first, pair.second, result);
         }
         render_chord(chord, grace_chord_ctx.principal_chord_ctx, result);
+        for (const auto &pair : grace_chord_ctx.after_grace_chord_ctx_list) {
+            render_chord(pair.first, pair.second, result);
+        }
     } else {
         render_chord(chord, grace_chord_ctx.principal_chord_ctx, result);
         for (const auto &pair : grace_chord_ctx.grace_chord_ctx_list) {

@@ -31,7 +31,10 @@ struct Chord;
 
 struct GraceChordCtx {
     RenderingContext principal_chord_ctx;
+    //! The group of the requested type
     std::vector<std::pair<const Chord *, RenderingContext>> grace_chord_ctx_list;
+    //! The after-graces when the requested type is a before-grace and the principal has both groups
+    std::vector<std::pair<const Chord *, RenderingContext>> after_grace_chord_ctx_list;
 
     static GraceChordCtx build_ctx(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx);
 };

@@ -202,11 +202,13 @@ void BendsRenderer::render_note(const Note *note, const RenderingContext &ctx, m
 }
 
 void BendsRenderer::render_grace_note(const Note *note, const GraceChordCtx &ctx, mpe::PlaybackEventList &result) {
-    for (const auto &pair : ctx.grace_chord_ctx_list) {
-        for (const Note *grace_note : pair.first->notes()) {
-            if (note == grace_note) {
-                NoteRenderer::render(note, pair.second, result);
-                return;
+    for (const auto *list : {&ctx.grace_chord_ctx_list, &ctx.after_grace_chord_ctx_list}) {
+        for (const auto &pair : *list) {
+            for (const Note *grace_note : pair.first->notes()) {
+                if (note == grace_note) {
+                    NoteRenderer::render(note, pair.second, result);
+                    return;
+                }
             }
         }
     }
