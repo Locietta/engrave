@@ -419,3 +419,42 @@ target("io_boundary_test")
     add_includedirs("$(builddir)/xmake-generated")
     add_files(path.join(tests_dir, "io_boundary_test.cpp"))
 target_end()
+
+-- Capture points are compiled only with this opt-in configuration.
+if has_config("engrave_playback_harness") then
+    add_adapter_binary("playback_probe", "playback_probe.cpp")
+    add_adapter_binary("playback_dump_test", "playback_dump_test.cpp")
+    for _, name in ipairs({"playback_probe", "playback_counting_probe"}) do
+        target(name)
+            on_config(function (target)
+                -- Full emitted command is retained in baseline logs; embed semantic build flags.
+                local mode = get_config("mode") or "unknown"
+                target:add("defines", 'ENGRAVE_PLAYBACK_BUILD_MODE="' .. mode .. '"')
+            end)
+        target_end()
+    end
+    target("playback_probe")
+        if is_plat("windows") then add_syslinks("psapi") end
+    target_end()
+    if is_plat("windows") then
+        add_adapter_binary("playback_counting_probe", "playback_probe.cpp")
+        target("playback_counting_probe")
+            add_defines("ENGRAVE_PLAYBACK_COUNTING")
+            add_files(path.join(tests_dir, "playback_allocations.cpp"))
+            add_syslinks("psapi")
+        target_end()
+    end
+end
+
+if has_config("engrave_playback_harness") then
+    for _, name in ipairs({"amc", "unordered_dense", "microsoft-proxy"}) do
+        includes(path.join(fork_root, "xmake", "packages", name .. ".lua"))
+    end
+    add_requires("amc v2.8.1", "unordered_dense v5.3.3", "microsoft-proxy 4.0.1", {system = false})
+    target("playback_container_probe")
+        set_kind("binary")
+        set_default(false)
+        add_packages("amc", "unordered_dense", "microsoft-proxy")
+        add_files(path.join(tests_dir, "playback_container_probe.cpp"))
+    target_end()
+end

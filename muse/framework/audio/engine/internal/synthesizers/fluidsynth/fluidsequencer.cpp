@@ -25,6 +25,7 @@
 #include <set>
 
 #include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/playbackcapture.h"
 #include "global/interpolation.h"
 #include "log.h"
 
@@ -91,6 +92,19 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
         add_dynamic_events(main_stream_events_, dynamics);
     }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    if (test::PlaybackCapture::synth) {
+        auto &out = *test::PlaybackCapture::synth;
+        out << "timeline " << test::PlaybackCapture::id(this) << '\n';
+        for (const auto &[at, events] : main_stream_events_) {
+            out << "group " << at.raw() << ' ' << events.size() << '\n';
+            for (const auto &event : events) {
+                const auto *words = std::get<midi::Event>(event).midi20_words();
+                out << "midi " << words[0] << ' ' << words[1] << ' ' << words[2] << ' ' << words[3] << '\n';
+            }
+        }
+    }
+#endif
     update_main_sequence_iterator();
 }
 

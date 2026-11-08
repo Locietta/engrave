@@ -28,6 +28,7 @@
 #include "audio/common/audiotypes.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinetiming.h"
+#include "audio/engine/internal/playbackcapture.h"
 #include "log.h"
 #include "sfcachedloader.h"
 
@@ -310,6 +311,13 @@ void FluidSynth::setup_sound(const PlaybackSetupData &setup_data) {
 
     auto setup_channel = [this](const midi::channel_t channel_idx, const midi::Program &program) {
         if (OfflineCancellation::requested()) return;
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (test::PlaybackCapture::synth)
+            *test::PlaybackCapture::synth << "setup " << test::PlaybackCapture::id(&sequencer_) << ' ' << +channel_idx << ' '
+                                          << program.bank << ' ' << program.program
+                                          << " interp=4 sensitivity=24 volume=100 expression=" << sequencer_.natural_expression_level()
+                                          << " cc74=0 portamento=each legato=retrigger tuning=0,0\n";
+#endif
         fluid_synth_set_interp_method(fluid_->synth, channel_idx, FLUID_INTERP_DEFAULT);
         fluid_synth_pitch_wheel_sens(fluid_->synth, channel_idx, 24);
         fluid_synth_bank_select(fluid_->synth, channel_idx, program.bank);
@@ -371,6 +379,11 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
 
     const msecs_t next_msecs = samples_to_msecs(samples_per_channel, output_spec_.sample_rate);
     const FluidSequencer::EventSequenceMap sequences = sequencer_.move_playback_forward(next_msecs);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    if (test::PlaybackCapture::synth)
+        *test::PlaybackCapture::synth << "process " << test::PlaybackCapture::id(&sequencer_) << ' ' << samples_per_channel << ' '
+                                      << sequencer_.playback_position().raw() << '\n';
+#endif
     samples_t sample_offset = 0;
 
     for (auto it = sequences.cbegin(); it != sequences.cend(); ++it) {
@@ -385,6 +398,11 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
 
         IF_ASSERT_FAILED(sample_offset + duration_in_samples <= samples_per_channel) { break; }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (test::PlaybackCapture::synth)
+            *test::PlaybackCapture::synth << "slice " << it->first.raw() << ' ' << sample_offset << ' ' << duration_in_samples << ' '
+                                          << it->second.size() << '\n';
+#endif
         if (!process_sequence(it->second, duration_in_samples, buffer + sample_offset * ::fluid_audio_channels_count)) {
             return 0;
         }

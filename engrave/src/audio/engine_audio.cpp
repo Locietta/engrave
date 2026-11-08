@@ -31,6 +31,7 @@
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
+#include "audio/engine/internal/playbackcapture.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsynth.h"
 #include "audio/engine/isoundfontrepository.h"
@@ -593,7 +594,12 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     PlaybackModel model(&state.profiles);
 #ifdef _WIN32
     // Declared before the graph: its references are gone before event cleanup.
-    DEFER { release_playback_events(model); };
+    DEFER {
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        OfflineTimer timer(OfflineTiming::current().teardown);
+#endif
+        release_playback_events(model);
+    };
 #endif
     model.set_play_repeats(request.use_repeats);
     model.set_play_chord_symbols(false);
@@ -700,6 +706,15 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     std::vector<InstrumentTrackId> ordered_track_ids(existing_track_ids.cbegin(), existing_track_ids.cend());
     std::sort(ordered_track_ids.begin(), ordered_track_ids.end());
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    for (const auto &id : ordered_track_ids) {
+        if (test::PlaybackCapture::synth)
+            *test::PlaybackCapture::synth << "track " << id.part_id.to_uint64() << ' ' << id.instrument_id.to_std_string() << '\n';
+        if (test::PlaybackCapture::track)
+            test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, model.resolve_track_playback_data(id));
+    }
+    if (test::PlaybackCapture::synth) *test::PlaybackCapture::synth << "total_frames " << total_frames << '\n';
+#endif
     auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
     for (const InstrumentTrackId &track_id : ordered_track_ids) {
         if (poll()) return abort_setup();

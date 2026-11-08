@@ -1,0 +1,189 @@
+// SPDX-License-Identifier: GPL-3.0-only
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <stdexcept>
+#include <string>
+
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinetiming.h"
+#include "audio/engine/internal/playbackcapture.h"
+#include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/score_io.h"
+#include "engrave/src/score/score_excerpts.h"
+#include "engraving/engravingproject.h"
+#include "playback_dump.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <psapi.h>
+#endif
+#ifdef ENGRAVE_PLAYBACK_COUNTING
+void install_allocation_hooks();
+#endif
+
+namespace {
+using Clock = std::chrono::steady_clock;
+
+std::string utf8(const std::filesystem::path &p) {
+    auto s = p.generic_u8string();
+    return {s.begin(), s.end()};
+}
+
+double milliseconds(Clock::time_point a, Clock::time_point b) { return std::chrono::duration<double, std::milli>(b - a).count(); }
+} // namespace
+
+int main(int argc, char **argv) {
+    try {
+        if (argc < 5)
+            throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
+                                        "[--excerpt N] [--measure] [--cancel-phase 1..4] [--cancel-poll N]");
+        using namespace muse::audio;
+        const auto dir = std::filesystem::u8path(argv[4]);
+        std::filesystem::create_directories(dir);
+        music::AudioRenderRequest request;
+        request.output_path = utf8(dir / "audio.wav");
+        int rate = 44100, cancel_phase = 0, cancel_poll = 1, mute_part = -1;
+        bool measure = false;
+        for (int i = 5; i < argc; ++i) {
+            std::string arg = argv[i];
+            const auto number = [&] {
+                if (++i >= argc) throw std::invalid_argument("missing option value");
+                return std::stoi(argv[i]);
+            };
+            if (arg == "--rate")
+                rate = number();
+            else if (arg == "--no-repeats")
+                request.use_repeats = false;
+            else if (arg == "--no-reverb")
+                request.reverb = false;
+            else if (arg == "--measure")
+                measure = true;
+            else if (arg == "--cancel-phase")
+                cancel_phase = number();
+            else if (arg == "--cancel-poll")
+                cancel_poll = number();
+            else if (arg == "--mute-part")
+                mute_part = number();
+            else if (arg == "--excerpt")
+                request.excerpt_id = number();
+            else
+                throw std::invalid_argument("unknown option: " + arg);
+        }
+        if ((rate != 44100 && rate != 48000) || cancel_phase < 0 || cancel_phase > 4 || cancel_poll < 1)
+            throw std::invalid_argument("invalid rate/cancellation option");
+        music::EngineContext context(argv[1]);
+        const auto score_path = std::filesystem::u8path(argv[3]);
+        std::ifstream input(score_path, std::ios::binary);
+        if (!input) throw std::runtime_error("cannot open score");
+        const std::string bytes{std::istreambuf_iterator<char>(input), {}};
+        auto ext = utf8(score_path.extension()).substr(1);
+        if (ext == "xml") ext = "musicxml";
+        auto project = music::load_native_score(context, bytes, ext);
+        auto *master = project->master_score();
+        std::string error;
+        if (!music::initialize_engine_audio(context.audio(), music::EngineAudioSetup{{argv[2]}, rate}, &error))
+            throw std::runtime_error(error);
+        if (request.excerpt_id >= 0) music::generate_score_excerpts(master);
+        auto tracks = music::engine_audio_tracks(master, request.excerpt_id);
+        request.tracks.resize(tracks.size());
+        for (std::size_t i = 0; i < tracks.size(); ++i)
+            if (static_cast<int>(tracks[i].part_index) == mute_part) request.tracks[i].muted = true;
+        std::ofstream a, c;
+        if (!measure) {
+            a.open(dir / "A.txt", std::ios::binary);
+            c.open(dir / "C.txt", std::ios::binary);
+            a << "legacy-mpe-v1\n";
+            c << "synth-input-v1\n";
+            test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &data) {
+                music::test::LegacyDump{a}.track(id, instrument, data);
+            };
+            test::PlaybackCapture::synth = &c;
+            std::ofstream(dir / "B.txt", std::ios::binary) << "DEFERRED: independent flat-record projection extractors arrive in step 4b\n";
+        }
+        Clock::time_point requested{}, observed{};
+        int polls = 0;
+        request.cancelled = [&] {
+            if (requested != Clock::time_point{}) {
+                if (observed == Clock::time_point{}) observed = Clock::now();
+                return true;
+            }
+            if (static_cast<int>(OfflineCancellation::phase) == cancel_phase && cancel_phase && ++polls == cancel_poll) {
+                requested = Clock::now();
+                // The following poll observes the request, including engine work between polls.
+            }
+            return false;
+        };
+#ifdef ENGRAVE_PLAYBACK_COUNTING
+        install_allocation_hooks();
+        // Allocation data cover only export, including teardown, excluding import/bootstrap/capture.
+        if (!measure) throw std::invalid_argument("counting probe requires --measure");
+        test::AllocationMetrics::enabled = true;
+#endif
+        const auto start = Clock::now();
+        const auto result = music::export_score_audio(context.audio(), master, request);
+        const auto returned = Clock::now();
+        test::AllocationMetrics::enabled = false;
+        test::PlaybackCapture::track = {};
+        test::PlaybackCapture::synth = nullptr;
+        if (!measure) {
+            a.flush();
+            c.flush();
+            if (!a || !c) throw std::runtime_error("dump write failed");
+        }
+        std::ofstream stats(dir / "metrics.txt", std::ios::binary);
+        stats.precision(12);
+        stats << "export_ms " << milliseconds(start, returned) << '\n';
+        if (cancel_phase) {
+            if (result.failure != music::AudioRenderResult::Failure::CANCELLED || observed == Clock::time_point{} ||
+                std::filesystem::exists(dir / "audio.wav"))
+                throw std::runtime_error("cancellation did not complete at requested phase");
+            stats << "request_to_observed_ms " << milliseconds(requested, observed) << "\nobserved_to_return_ms "
+                  << milliseconds(observed, returned) << "\nrequest_to_return_ms " << milliseconds(requested, returned) << '\n';
+        } else if (!result.ok)
+            throw std::runtime_error(result.error);
+#ifdef _WIN32
+        PROCESS_MEMORY_COUNTERS counters{};
+        if (!GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters)))
+            throw std::runtime_error("GetProcessMemoryInfo failed");
+        stats << "peak_working_set_bytes " << counters.PeakWorkingSetSize << '\n';
+#endif
+        const auto &t = OfflineTiming::current();
+        const double values[] = {0, t.synth, t.render, t.encode, t.setup, t.teardown, t.create, t.fonts, t.flush, t.model, t.tracks, t.aux};
+        for (unsigned i = 0; i < test::AllocationMetrics::phase_count; ++i) {
+            stats << "seconds " << test::AllocationMetrics::names[i] << ' ' << values[i] << '\n';
+            stats << "allocations " << test::AllocationMetrics::names[i];
+            for (auto &n : test::AllocationMetrics::counts[i]) stats << ' ' << n.load();
+            stats << '\n';
+        }
+        stats << "allocations total";
+        for (unsigned op = 0; op < test::AllocationMetrics::OP_COUNT; ++op) {
+            std::uint64_t total = 0;
+            for (auto &phase : test::AllocationMetrics::counts) total += phase[op].load();
+            stats << ' ' << total;
+        }
+        stats << '\n';
+        std::ofstream meta(dir / "build.txt", std::ios::binary);
+        meta << "cxx " << __cplusplus << "\nmode " << ENGRAVE_PLAYBACK_BUILD_MODE << '\n';
+#ifdef NDEBUG
+        meta << "NDEBUG 1\n";
+#else
+        meta << "NDEBUG 0\n";
+#endif
+#ifdef _WIN32
+        meta << "runtime MD\nexceptions cxx\ncompiler_switch -std:c++23preview\n";
+#endif
+#ifdef _MSC_FULL_VER
+        meta << "msvc " << _MSC_FULL_VER << '\n';
+#endif
+        meta << "rate " << rate << "\nframes " << result.frames << "\nchannels 2\nsample_format FLOAT32\n";
+        if (!stats || !meta) throw std::runtime_error("report write failed");
+        return 0;
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return 1;
+    }
+}
