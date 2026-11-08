@@ -99,11 +99,6 @@ Ret FluidSynth::init(const OutputSpec &spec) {
 
 #undef LOG_TAG
 #define LOG_TAG CLASSFUNC
-
-        if (level < FLUID_DBG) {
-            bool debugme = true;
-            (void) debugme;
-        }
     };
 
     fluid_set_log_function(FLUID_PANIC, fluid_log_out, nullptr);

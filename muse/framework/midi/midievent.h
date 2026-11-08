@@ -31,14 +31,6 @@
 
 #include "containers.h"
 
-#ifndef MU_FALLTHROUGH
-#if __has_cpp_attribute(fallthrough)
-#define MU_FALLTHROUGH() [[fallthrough]]
-#else
-#define MU_FALLTHROUGH() (void) 0
-#endif
-#endif
-
 namespace muse::midi {
 using channel_t = uint8_t;
 using tuning_t = float;
@@ -451,7 +443,7 @@ struct Event {
                     case Opcode::PITCH_BEND: return ((data_[0] & 0x7F) << 7) | ((data_[0] & 0x7F00) >> 8);
                     default: assert(false);
                 }
-                MU_FALLTHROUGH();
+                [[fallthrough]];
             case MessageType::CHANNEL_VOICE20:
                 switch (opcode()) {
                     case Opcode::POLY_PRESSURE:
@@ -467,7 +459,7 @@ struct Event {
                     case Opcode::PER_NOTE_PITCH_BEND: return data_[1];
                     default: assert(false);
                 }
-                MU_FALLTHROUGH();
+                [[fallthrough]];
             default:; //TODO
         }
 
