@@ -20,6 +20,7 @@
 
 #include "audio/common/audioerrors.h"
 #include "audio/engine/internal/export/abstractaudioencoder.h"
+#include "audio/engine/internal/nodes/eventaudionode.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlineeventrelease.h"
 #include "audio/engine/internal/offlinetiming.h"
@@ -439,6 +440,63 @@ TEST(AudioInternal, EventReleaseOwnershipAndBatches) {
     EXPECT_TRUE(release_event_batches(events, [] { return false; }));
     EXPECT_TRUE(events.empty());
     EXPECT_EQ(alias.at(0).size(), 3 * event_release_batch_size);
+}
+
+TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
+    using namespace muse;
+    using namespace muse::audio;
+    using namespace muse::audio::engine;
+
+    struct FailingFactory : IAudioFactory {
+        mutable int calls = 0;
+        bool throws = false;
+
+        AudioResourceMetaList available_input_resources() const override { return {}; }
+
+        SoundPresetList available_sound_presets(const AudioResourceMeta &) const override { return {}; }
+
+        AudioResourceMetaList available_output_resources() const override { return {}; }
+
+        RetVal<synth::ISynthesizerPtr> make_synth(TrackId, const AudioInputParams &, const PlaybackSetupData &) const override {
+            ++calls;
+            if (throws) throw std::runtime_error("injected setup failure");
+            return RetVal<synth::ISynthesizerPtr>::make_ret(Err::INVALID_SYNTH);
+        }
+
+        RetVal<synth::ISynthesizerPtr> make_default_synth(TrackId) const override {
+            ++calls;
+            return RetVal<synth::ISynthesizerPtr>::make_ret(Err::INVALID_SYNTH);
+        }
+
+        void clear_synth_sources() override {}
+
+        RetVal<AudioSourceNodePtr> make_event_source(TrackId, const mpe::PlaybackData &, const AudioInputParams &) const override {
+            return {};
+        }
+
+        FxChainPtr make_master_fx_chain(const AudioFxChain &) const override { return nullptr; }
+
+        FxChainPtr make_track_fx_chain(TrackId, const AudioFxChain &) const override { return nullptr; }
+
+        void clear_all_fx() override {}
+    };
+
+    for (bool throws : {false, true}) {
+        FailingFactory factory;
+        factory.throws = throws;
+        auto data = std::make_unique<mpe::PlaybackData>();
+        EventAudioNode node(factory, 1, *data);
+        node.set_output_spec({44100, 4096, 2});
+        if (throws)
+            EXPECT_THROW(node.apply_input_params({}), std::runtime_error);
+        else
+            node.apply_input_params({});
+        EXPECT_FALSE(node.initialized());
+        const auto calls = factory.calls;
+        data.reset();
+        node.apply_input_params({});
+        EXPECT_EQ(factory.calls, calls);
+    }
 }
 
 // Same 12 x 256 x 16 input shape as the dense-score probe, generated without a desktop.
