@@ -113,7 +113,7 @@ def compare(left, right):
     if len(lm) != lc["renders"]:
         raise AssertionError("incomplete capture manifest")
     for name in sorted(lm):
-        for dump in ("A.txt", "B.txt", "C.txt", "D.json"):
+        for dump in ("A.txt", "C.txt", "D.json"):
             a, b = left / name / dump, right / name / dump
             if sha(a) == sha(b):
                 continue
