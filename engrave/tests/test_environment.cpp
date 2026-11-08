@@ -213,7 +213,7 @@ void setup_test_environment(int *argc, char **argv) {
     setup_test_environment(config);
 }
 
-void setup_test_environment(const TestEnvironmentConfig &config) {
+void setup_test_environment([[maybe_unused]] const TestEnvironmentConfig &config) {
     muse::runtime::main_thread_id();
     muse::runtime::set_thread_name("main");
 
@@ -250,8 +250,6 @@ void setup_test_environment(const TestEnvironmentConfig &config) {
 
     s_context->engraving().configuration = configurator;
     mu::engraving::ScoreRW::set_services(&s_context->engraving());
-#else
-    (void) config;
 #endif
 }
 

@@ -199,12 +199,8 @@ void TremoloLayout::calc_is_up(TremoloTwoChord *item) {
 //   layoutTwoNotesTremolo
 //---------------------------------------------------------
 
-void TremoloLayout::layout_two_notes_tremolo(TremoloTwoChord *item, const LayoutContext &ctx, double x, double y, double h,
-                                             double spatium) {
-    UNUSED(x);
-    UNUSED(y);
-    UNUSED(h);
-    UNUSED(spatium);
+void TremoloLayout::layout_two_notes_tremolo(TremoloTwoChord *item, const LayoutContext &ctx, [[maybe_unused]] double x,
+                                             [[maybe_unused]] double y, [[maybe_unused]] double h, [[maybe_unused]] double spatium) {
 
     TremoloTwoChord::LayoutData *ldata = item->mutldata();
 

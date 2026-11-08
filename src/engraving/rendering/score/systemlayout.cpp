@@ -509,8 +509,7 @@ bool SystemLayout::should_be_justified(System *system, double cur_sys_width, dou
     return should_justify && !MScore::no_horizontal_stretch;
 }
 
-void SystemLayout::layout_system_lock_indicators(System *system, LayoutContext &ctx) {
-    UNUSED(ctx);
+void SystemLayout::layout_system_lock_indicators(System *system, [[maybe_unused]] LayoutContext &ctx) {
 
     const std::vector<SystemLockIndicator *> lock_indicators = system->system_lock_indicators();
     // In PAGE view, at most ONE lock indicator can exist per system.
@@ -1714,9 +1713,8 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
     }
 }
 
-void SystemLayout::do_layout_ties(System *system, const std::vector<Segment *> &sl, const Fraction &stick, const Fraction &etick,
-                                  LayoutContext &ctx) {
-    UNUSED(etick);
+void SystemLayout::do_layout_ties(System *system, const std::vector<Segment *> &sl, const Fraction &stick,
+                                  [[maybe_unused]] const Fraction &etick, LayoutContext &ctx) {
 
     for (Segment *s : sl) {
         for (EngravingItem *e : s->elist()) {

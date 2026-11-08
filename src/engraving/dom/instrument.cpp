@@ -457,10 +457,8 @@ void InstrChannel::set_user_bank_controller(bool val) {
 //    This works only with MuseScore General soundfont
 //---------------------------------------------------------
 
-void InstrChannel::switch_expressive(Synthesizer *synth, bool expressive, bool force /* = false */) {
-    UNUSED(synth);
-    UNUSED(expressive);
-    UNUSED(force);
+void InstrChannel::switch_expressive([[maybe_unused]] Synthesizer *synth, [[maybe_unused]] bool expressive,
+                                     [[maybe_unused]] bool force /* = false */) {
     //! TODO Needs poting to MU4
     MUSE_NOT_IMPLEMENTED;
 

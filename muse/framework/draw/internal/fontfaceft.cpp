@@ -359,10 +359,9 @@ f26dot6_t FontFaceFT::glyph_advance(glyph_idx_t idx) const {
     }
 }
 
-const GlyphImage &FontFaceFT::glyph_image(glyph_idx_t idx) const {
+const GlyphImage &FontFaceFT::glyph_image([[maybe_unused]] glyph_idx_t idx) const {
     static GlyphImage null;
 
-    UNUSED(idx);
     return null;
 }
 

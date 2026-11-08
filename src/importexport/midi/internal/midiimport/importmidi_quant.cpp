@@ -728,11 +728,8 @@ void find_metrical_levels(std::vector<QuantData> &data, const std::deque<std::mu
     }
 }
 
-void find_chord_range_ends(std::vector<QuantData> &data, const ReducedFraction &range_start, const ReducedFraction &range_end,
-                           const ReducedFraction &bar_start, const ReducedFraction &beat_len) {
-#ifdef NDEBUG
-    (void) (range_start);
-#endif
+void find_chord_range_ends(std::vector<QuantData> &data, [[maybe_unused]] const ReducedFraction &range_start,
+                           const ReducedFraction &range_end, const ReducedFraction &bar_start, const ReducedFraction &beat_len) {
     for (auto it = data.rbegin(); it != data.rend(); ++it) {
         QuantData &d = *it;
         d.chord_range_end = bar_start + quantize_to_small(range_end - bar_start, d.quant);

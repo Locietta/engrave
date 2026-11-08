@@ -600,8 +600,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     if (master.chord_list()->custom_chord_list() && !master.chord_list()->empty())
         warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion of a custom chord list is not implemented", score_id});
     if (const auto automation = master.automation_data()) {
-        for (const auto &[key, curve] : automation->curves()) {
-            (void) key;
+        for ([[maybe_unused]] const auto &[key, curve] : automation->curves()) {
             if (std::any_of(curve.begin(), curve.end(), [](const auto &point) { return !point.second.generated; }))
                 warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 cannot represent this automation curve", score_id});
         }
@@ -647,8 +646,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     // scores have no group-name behavior to project in this bounded mapping.
     for (auto *source_score : source_scores) {
         for (auto *part : source_score->parts()) {
-            for (const auto &[tick, instrument] : part->instruments()) {
-                (void) tick;
+            for ([[maybe_unused]] const auto &[tick, instrument] : part->instruments()) {
                 const auto group = instrument->group();
                 const auto matches = std::count_if(source_score->parts().begin(), source_score->parts().end(),
                                                    [&](const Part *other) { return other->instrument()->id() == instrument->id(); });

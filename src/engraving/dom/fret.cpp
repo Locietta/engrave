@@ -417,8 +417,7 @@ void FretDiagram::set_barre(int start_string, int end_string, int fret) {
 //    Add may be used in the future if we decide to add dots as default with barres.
 //---------------------------------------------------------
 
-void FretDiagram::set_barre(int string, int fret, bool add /*= false*/) {
-    UNUSED(add);
+void FretDiagram::set_barre(int string, int fret, [[maybe_unused]] bool add /*= false*/) {
 
     FretItem::Barre b = barre(fret);
     if (!b.exists()) {

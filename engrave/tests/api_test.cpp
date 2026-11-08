@@ -14,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -275,10 +276,12 @@ TEST(Open, ReportsCallerErrors) {
     expect_error(g_engine->open(g_resources), ErrorCode::INVALID_ARGUMENT);
 }
 
-TEST(Contract, SecondEngineAborts) { EXPECT_DEATH((void) engrave::Engine::create({.resources = g_resources}), "one Engine per process"); }
+TEST(Contract, SecondEngineAborts) {
+    EXPECT_DEATH(std::ignore = engrave::Engine::create({.resources = g_resources}), "one Engine per process");
+}
 
 TEST(Contract, CallFromAnotherThreadAborts) {
-    EXPECT_DEATH(std::thread([] { (void) g_engine->templates(); }).join(), "thread other than");
+    EXPECT_DEATH(std::thread([] { std::ignore = g_engine->templates(); }).join(), "thread other than");
 }
 
 TEST(Contract, EngineDestroyedBeforeItsDocumentsAborts) {

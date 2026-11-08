@@ -1229,9 +1229,8 @@ io::PathT NativeFileSystem::temporary_directory_path() const {
     return io::PathT(path_to_utf8(directory));
 }
 
-DateTime NativeFileSystem::birth_time(const io::PathT &file_path) const {
+DateTime NativeFileSystem::birth_time([[maybe_unused]] const io::PathT &file_path) const {
     // std::filesystem has no portable creation time; do not fake one.
-    (void) file_path;
     return {};
 }
 

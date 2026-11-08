@@ -127,7 +127,7 @@ void FontsDatabase::remove_font(const FontDataKey &key) {
     ++revision_;
 }
 
-void FontsDatabase::release(const FontInfo &fi) { UNUSED(fi); }
+void FontsDatabase::release([[maybe_unused]] const FontInfo &fi) {}
 
 FontDataKey FontsDatabase::actual_font(const FontDataKey &require_key, Font::Type type) const {
     if (font_info(require_key).valid()) {
