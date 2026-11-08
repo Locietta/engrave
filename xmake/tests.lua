@@ -62,6 +62,7 @@ target("engraving_playback_tests")
         path.join(engraving_tests_dir, "playback/playbackmodel_tests.cpp"),
         path.join(engraving_tests_dir, "playback/playbackcontext_tests.cpp"),
         path.join(engraving_tests_dir, "playback/bendsrenderer_tests.cpp"),
+        path.join(engraving_tests_dir, "playback/articulationprecedence_tests.cpp"),
         path.join(engraving_tests_dir, "repeat_tests.cpp"),
         path.join(engraving_tests_dir, "parts_tests.cpp"),
         path.join(engraving_tests_dir, "savehiddenparts_tests.cpp"),
