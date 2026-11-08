@@ -28,7 +28,8 @@ selects cases for diagnosis. Each capture starts fresh processes, runs both
 rates, hashes only the WAV data chunk into `D.json`, pins font/profile hashes
 and options, then removes the large WAV. Keep both directories and archived
 executables. The comparator first requires identical input manifests, then
-checks every dump byte and reports the first differing line. B is never
+checks A/C/D bytes and reports the first differing line. B is an internal
+new-binary oracle, not an old/new byte comparison, and is never
 reported as an implemented projection oracle. Corpus gaps are listed in
 [the focused fixture README](data/playback_dod/README.md).
 

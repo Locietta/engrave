@@ -35,6 +35,10 @@ class PlaybackHarnessTests(unittest.TestCase):
                 for name in ("A.txt", "B.txt", "C.txt", "D.json"):
                     (root / "case" / name).write_text("same\nsecond\n")
             compare(left, right)
+            # B compares the two extractors inside the new executable, not
+            # against an older executable that may still have a stub.
+            (right / "case/B.txt").write_text("independent projection\n")
+            compare(left, right)
             (right / "case/A.txt").write_text("same\nchanged\n")
             with self.assertRaisesRegex(AssertionError, "case/A.txt:2"):
                 compare(left, right)
