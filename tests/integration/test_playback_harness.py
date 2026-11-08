@@ -30,6 +30,7 @@ class PlaybackHarnessTests(unittest.TestCase):
             left, right = Path(temp) / "left", Path(temp) / "right"
             for root in (left, right):
                 (root / "case").mkdir(parents=True)
+                write_json(root / "complete.json", {"renders": 1, "schema": 1})
                 write_json(root / "manifest.json", {"case": {"score_sha256": "fixed"}})
                 for name in ("A.txt", "B.txt", "C.txt", "D.json"):
                     (root / "case" / name).write_text("same\nsecond\n")

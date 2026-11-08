@@ -1,9 +1,11 @@
 """Deterministic playback identity corpus; generators stay independent of scripts."""
 
+import json
 from pathlib import Path
 
 from engrave_testing import golden
 from engrave_testing.cancel_score import generate_cancel_score
+from engrave_testing.composition_fixture import composition_musicxml
 from engrave_testing.paths import REPO_ROOT
 
 FOCUSED = REPO_ROOT / "tests/data/playback_dod"
@@ -61,6 +63,11 @@ def generate_focused(destination=FOCUSED):
         + note('<tied type="start"/>')
         + note('<tied type="stop"/>')
         + '<barline location="right"><repeat direction="backward"/></barline>',
+        "swing": "<direction><direction-type><words>Swing</words></direction-type><sound><swing><first>2</first><second>1</second><swing-type>eighth</swing-type></swing></sound></direction>"
+        + note()
+        .replace("<duration>480</duration>", "<duration>240</duration>")
+        .replace("<type>quarter</type>", "<type>eighth</type>")
+        * 8,
         "cold_lyrics": note().replace("<notations>", "<lyric><text>la</text></lyric><notations>"),
         "huge_bucket": note() + note(chord=True) * 2047,
     }
@@ -68,7 +75,8 @@ def generate_focused(destination=FOCUSED):
         program = 27 if name == "harmonic_distortion" else 41 if name == "mute_pizzicato" else 1
         (destination / f"{name}.musicxml").write_text(score(body, program), encoding="utf-8", newline="\n")
 
-    # Twenty staff layers in one instrument cross the production 16-channel limit.
+    # Candidate staff-layer stress input; default imported setup disables staff channels.
+    # Channel exhaustion therefore remains an explicit coverage gap.
     body = "<backup><duration>480</duration></backup>".join(
         note().replace("<notations>", f"<staff>{staff}</staff><notations>") for staff in range(1, 21)
     )
@@ -81,13 +89,17 @@ def corpus(generated: Path):
     dense = generated / "dense.musicxml"
     generate_cancel_score(dense)
     huge = generated / "huge_track.musicxml"
-    huge.write_text(
-        score(note().replace("<duration>480</duration>", "<duration>1</duration>") * 32768),
-        encoding="utf-8",
-        newline="\n",
-    )
+    generate_cancel_score(huge, part_count=1, measure_count=2048)
     sources = golden.fixture_files() + golden.mnx_fixture_files()
-    cases = [("audio/" + p.name, p, []) for p in sources]
+    cases = []
+    for source in sources:
+        score_path = source
+        if source.suffix == ".json":
+            score_path = generated / (source.name + ".musicxml")
+            score_path.write_text(
+                composition_musicxml(json.loads(source.read_text(encoding="utf-8"))), encoding="utf-8", newline="\n"
+            )
+        cases.append(("audio/" + source.name, score_path, []))
     playback = sorted((REPO_ROOT / "src/engraving/tests/playback").rglob("*.mscx"))
     cases += [("playback/" + p.parent.name + "/" + p.stem, p, []) for p in playback]
     cases += [("focused/" + p.stem, p, []) for p in sorted(FOCUSED.glob("*.musicxml"))]
@@ -102,4 +114,5 @@ def corpus(generated: Path):
             ("excerpt", ["--excerpt", "0"]),
         )
     ]
+    assert len(cases) == len({name for name, _, _ in cases}), "duplicate corpus identity"
     return cases

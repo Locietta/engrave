@@ -98,13 +98,20 @@ def capture(exe, assets, font, output, match=None):
             write_json(output / "manifest.json", manifest)
             print(key, flush=True)
     write_json(output / "provenance.json", dict(executable_sha256=sha(exe), executable=str(exe.resolve())))
+    write_json(output / "complete.json", dict(renders=len(selected) * 2, schema=1))
 
 
 def compare(left, right):
+    lc = json.loads((left / "complete.json").read_text(encoding="utf-8"))
+    rc = json.loads((right / "complete.json").read_text(encoding="utf-8"))
+    if lc != rc or lc.get("schema") != 1:
+        raise AssertionError("capture completion metadata differs")
     lm = json.loads((left / "manifest.json").read_text(encoding="utf-8"))
     rm = json.loads((right / "manifest.json").read_text(encoding="utf-8"))
     if lm != rm:
         raise AssertionError("corpus manifest differs (input hashes/options/case inventory)")
+    if len(lm) != lc["renders"]:
+        raise AssertionError("incomplete capture manifest")
     for name in sorted(lm):
         for dump in ("A.txt", "B.txt", "C.txt", "D.json"):
             a, b = left / name / dump, right / name / dump
@@ -140,17 +147,22 @@ def percentiles(values):
     }
 
 
-def measure(exe, assets, font, output, trials, cancel_trials):
+def measure(exe, assets, font, output, trials, cancel_trials, phases=range(5)):
     assert trials > 0 and cancel_trials > 0
     output.mkdir(parents=True, exist_ok=False)
     score = output / "dense.musicxml"
     generate_cancel_score(score)
     samples = []
-    for phase in range(5):
+    for phase in phases:
         for trial in range(trials if phase == 0 else cancel_trials):
             args = ["--measure"]
             if phase:
-                args += ["--cancel-phase", str(phase), "--cancel-poll", str(1 + trial * 3)]
+                args += [
+                    "--cancel-phase",
+                    str(phase),
+                    "--cancel-poll",
+                    str(2000 + trial * 3000 if phase == 1 else 1 + trial * 3),
+                ]
             target = output / f"phase{phase}" / str(trial)
             run_probe(exe, assets, font, score, target, args)
             samples.append(dict(phase=phase, trial=trial, **metrics(target / "metrics.txt")))
@@ -158,7 +170,7 @@ def measure(exe, assets, font, output, trials, cancel_trials):
             write_json(output / "samples.json", samples)
             print(f"phase={phase} trial={trial}", flush=True)
     summary = {}
-    for phase in range(5):
+    for phase in phases:
         rows = [s for s in samples if s["phase"] == phase]
         summary[str(phase)] = {
             k: percentiles([s[k] for s in rows]) for k in rows[0] if k.endswith("_ms") or k == "peak_working_set_bytes"

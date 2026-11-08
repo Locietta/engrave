@@ -7,6 +7,12 @@
 
 #include <amc/vector.hpp>
 #include <ankerl/unordered_dense.h>
+// Clang's MSVC compatibility mode advertises this C++26 facility in C++23
+// while rejecting the keyword used by proxy 4.0.1. Exercise its ordinary
+// C++23 move fallback under that tool; the native MSVC probe is unchanged.
+#if defined(__clang__) && defined(_MSC_VER) && __cplusplus < 202400L
+#undef __cpp_trivial_relocatability
+#endif
 #include <proxy/proxy.h>
 
 namespace {
@@ -30,7 +36,8 @@ struct MoveWitness {
     }
 };
 
-PRO_DEF_MEM_DISPATCH(MemValue, value);
+// Third-party macro emits its own lowercase accessor type.
+PRO_DEF_MEM_DISPATCH(MemValue, value); // NOLINT(readability-identifier-naming)
 
 struct ValueFacade : pro::facade_builder::add_convention<MemValue, int() const>::build {};
 
