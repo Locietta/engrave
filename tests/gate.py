@@ -160,7 +160,16 @@ def main():
     for name, args in suites.items():
         cwd = a.output / name
         cwd.mkdir(exist_ok=True)
-        run(name, [a.build_dir / (name + suffix), *args], cwd)
+        binary = a.build_dir / (name + suffix)
+        if name == "engrave_output_test":
+            # Run the timing contract in a fresh process, sequentially. Earlier
+            # output tests mutate shared engine/allocator state; their process
+            # history must not become part of the dense cancellation budget.
+            timing_test = "AudioInternal.DenseScoreCancellationLatencyAndRecovery"
+            run(name, [binary, *args, "--gtest_filter=-" + timing_test], cwd)
+            run("dense-cancellation", [binary, *args, "--gtest_filter=" + timing_test], cwd)
+        else:
+            run(name, [binary, *args], cwd)
     run(
         "write470-excerpts",
         [
