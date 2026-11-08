@@ -550,7 +550,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         // Idle Windows/Linux observations are well below a millisecond; leave
         // scheduling margin while keeping responsiveness independent of teardown.
         report("request_to_observed", responsiveness, 5.0, 10.0);
-        // Windows request-to-return previously peaked at 46.3 ms. Cleanup owns
+        // Idle Windows request-to-return peaks near 46 ms. Cleanup owns
         // almost all of that span, so allow 50 ms p95 and 100 ms worst case.
         report("observed_to_return", cleanup, 50.0, 100.0);
         EXPECT_EQ(render(), baseline);

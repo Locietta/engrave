@@ -38,12 +38,4 @@
 #define MUSE_NOT_SUPPORTED LOGW() << "Not supported!!"
 #define NOT_IMPL_RETURN MUSE_NOT_IMPLEMENTED return
 
-#undef FALLTHROUGH
-
-#if __has_cpp_attribute(fallthrough)
-#define MU_FALLTHROUGH() [[fallthrough]]
-#else
-#define MU_FALLTHROUGH() (void) 0
-#endif
-
 #endif // MUSE_GLOBAL_LOG_H
