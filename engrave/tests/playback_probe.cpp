@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
             a.open(dir / "A.txt", std::ios::binary);
             c.open(dir / "C.txt", std::ios::binary);
             a << "legacy-mpe-v1\n";
-            c << "synth-input-v1\n";
+            c << "synth-input-v2\n";
             test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &data) {
                 music::test::LegacyDump{a}.track(id, instrument, data);
             };

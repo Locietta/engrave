@@ -307,28 +307,28 @@ AudioSourceType FluidSynth::type() const { return AudioSourceType::FLUID; }
 void FluidSynth::setup_sound(const PlaybackSetupData &setup_data) {
     IF_ASSERT_FAILED(fluid_->synth) { return; }
 
-    fluid_synth_activate_key_tuning(fluid_->synth, 0, 0, "standard", nullptr, true);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+#define FLUID_SETUP(function, ...) test::PlaybackCapture::setup_call(&sequencer_, #function, function, fluid_->synth, __VA_ARGS__)
+#else
+#define FLUID_SETUP(function, ...) function(fluid_->synth, __VA_ARGS__)
+#endif
+    FLUID_SETUP(fluid_synth_activate_key_tuning, 0, 0, "standard", nullptr, true);
 
     auto setup_channel = [this](const midi::channel_t channel_idx, const midi::Program &program) {
         if (OfflineCancellation::requested()) return;
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-        if (test::PlaybackCapture::synth)
-            *test::PlaybackCapture::synth << "setup " << test::PlaybackCapture::id(&sequencer_) << ' ' << +channel_idx << ' '
-                                          << program.bank << ' ' << program.program
-                                          << " interp=4 sensitivity=24 volume=100 expression=" << sequencer_.natural_expression_level()
-                                          << " cc74=0 portamento=each legato=retrigger tuning=0,0\n";
-#endif
-        fluid_synth_set_interp_method(fluid_->synth, channel_idx, FLUID_INTERP_DEFAULT);
-        fluid_synth_pitch_wheel_sens(fluid_->synth, channel_idx, 24);
-        fluid_synth_bank_select(fluid_->synth, channel_idx, program.bank);
-        fluid_synth_program_change(fluid_->synth, channel_idx, program.program);
-        fluid_synth_cc(fluid_->synth, channel_idx, 7, ::default_midi_volume);
-        fluid_synth_cc(fluid_->synth, channel_idx, muse::midi::expression_controller, sequencer_.natural_expression_level());
-        fluid_synth_cc(fluid_->synth, channel_idx, 74, 0);
-        fluid_synth_set_portamento_mode(fluid_->synth, channel_idx, FLUID_CHANNEL_PORTAMENTO_MODE_EACH_NOTE);
-        fluid_synth_set_legato_mode(fluid_->synth, channel_idx, FLUID_CHANNEL_LEGATO_MODE_RETRIGGER);
-        fluid_synth_activate_tuning(fluid_->synth, channel_idx, 0, 0, 0);
+        FLUID_SETUP(fluid_synth_set_interp_method, channel_idx, FLUID_INTERP_DEFAULT);
+        FLUID_SETUP(fluid_synth_pitch_wheel_sens, channel_idx, 24);
+        FLUID_SETUP(fluid_synth_bank_select, channel_idx, program.bank);
+        FLUID_SETUP(fluid_synth_program_change, channel_idx, program.program);
+        FLUID_SETUP(fluid_synth_cc, channel_idx, 7, ::default_midi_volume);
+        FLUID_SETUP(fluid_synth_cc, channel_idx, muse::midi::expression_controller, sequencer_.natural_expression_level());
+        FLUID_SETUP(fluid_synth_cc, channel_idx, 74, 0);
+        FLUID_SETUP(fluid_synth_set_portamento_mode, channel_idx, FLUID_CHANNEL_PORTAMENTO_MODE_EACH_NOTE);
+        FLUID_SETUP(fluid_synth_set_legato_mode, channel_idx, FLUID_CHANNEL_LEGATO_MODE_RETRIGGER);
+        FLUID_SETUP(fluid_synth_activate_tuning, channel_idx, 0, 0, 0);
     };
+
+#undef FLUID_SETUP
 
     sequencer_.set_on_channel_added(setup_channel);
 
@@ -399,9 +399,14 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
         IF_ASSERT_FAILED(sample_offset + duration_in_samples <= samples_per_channel) { break; }
 
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-        if (test::PlaybackCapture::synth)
-            *test::PlaybackCapture::synth << "slice " << it->first.raw() << ' ' << sample_offset << ' ' << duration_in_samples << ' '
-                                          << it->second.size() << '\n';
+        if (test::PlaybackCapture::synth) {
+            auto &out = *test::PlaybackCapture::synth;
+            out << "slice " << it->first.raw() << ' ' << sample_offset << ' ' << duration_in_samples << ' ' << it->second.size() << '\n';
+            for (const auto &event : it->second) {
+                const auto *words = std::get<midi::Event>(event).midi20_words();
+                out << "slice_midi " << words[0] << ' ' << words[1] << ' ' << words[2] << ' ' << words[3] << '\n';
+            }
+        }
 #endif
         if (!process_sequence(it->second, duration_in_samples, buffer + sample_offset * ::fluid_audio_channels_count)) {
             return 0;
