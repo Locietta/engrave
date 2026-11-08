@@ -47,6 +47,8 @@ struct EventAudioNode : AudioSourceNode {
 
     void clear_cache() override;
 
+    bool initialized() const { return synth_ != nullptr; }
+
 private:
     void on_mode_changed(const ProcessMode mode) override;
     void on_output_spec_changed(const OutputSpec &spec) override;

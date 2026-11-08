@@ -22,6 +22,8 @@
 
 #include "eventaudionode.h"
 
+#include <utility>
+
 #include "../offlinetiming.h"
 #include "log.h"
 
@@ -86,6 +88,8 @@ void EventAudioNode::flush() {
 const AudioInputParams &EventAudioNode::input_params() const { return params_; }
 
 void EventAudioNode::apply_input_params(const AudioInputParams &required_params) {
+    // Consume the borrow before any assertion, resolver or synth call can fail.
+    const auto *data = std::exchange(initial_data_, nullptr);
     IF_ASSERT_FAILED(output_spec_.is_valid()) { return; }
 
     if (params_.is_valid() && params_ == required_params) {
@@ -93,27 +97,26 @@ void EventAudioNode::apply_input_params(const AudioInputParams &required_params)
     }
 
     // Offline sources load once. Their MPE input may already have been released.
-    if (!initial_data_) {
+    if (!data) {
         LOGE() << "Cannot reload an offline event source";
         return;
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, initial_data_->setup_data);
+    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, data->setup_data);
 
     if (!synth.ret) {
         synth = audio_factory()->make_default_synth(track_id_);
-        IF_ASSERT_FAILED(synth.val) {
+        if (!synth.ret || !synth.val) {
             LOGE() << "Default synth not found!";
             return;
         }
     }
 
+    // Publish only a fully initialized synth. A throwing setup leaves the node failed.
+    synth.val->set_output_spec(output_spec_);
+    synth.val->setup(*data);
+    synth.val->set_mode(ProcessMode::IDLE);
     synth_ = synth.val;
-
-    synth_->set_output_spec(output_spec_);
-    synth_->setup(*initial_data_);
-    initial_data_ = nullptr;
-    synth_->set_mode(ProcessMode::IDLE);
 
     set_name(std::string("Source[") + synth_->name() + "]");
 

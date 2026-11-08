@@ -61,6 +61,7 @@ RetVal<AudioSourceNodePtr> AudioFactory::make_event_source(const TrackId track_i
     EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, track_id, playback_data);
     source->set_output_spec(spec_);
     source->apply_input_params(params);
+    if (!source->initialized()) return RetVal<AudioSourceNodePtr>::make_ret(Err::INVALID_SYNTH);
     return RetVal<AudioSourceNodePtr>::make_ok(source);
 }
 
