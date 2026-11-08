@@ -23,6 +23,9 @@
 #include "audio/engine/internal/nodes/eventaudionode.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlineeventrelease.h"
+#ifdef _WIN32
+#include "audio/engine/internal/offlineeventcleanup.h"
+#endif
 #include "audio/engine/internal/offlinetiming.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
@@ -480,21 +483,52 @@ TEST(AudioInternal, EventReleaseLargeCurves) {
     EXPECT_EQ(event.expression_ctx().expression_curve.size(), 262144);
     EXPECT_LE(maximum, 0.5);
     EXPECT_LE(fallback_ms, 0.5);
-    std::fprintf(stderr, "release_cost_ms budget=%zu eligible_points=%zu n=32 max=%.6f oversized_points=262144 fallback=%.6f\n",
-                 event_release_batch_cost, event_release_batch_cost - event_release_base_cost, maximum, fallback_ms);
     // The same graph hidden in an articulation's applied segment or its meta
     // pattern must also force fallback; neither is covered by top-level sizes.
-    ArticulationAppliedData art;
-    art.applied_pattern_segment.expression_pattern.dynamic_offset_map = event.expression_ctx().expression_curve;
-    ExpressionContext nested;
-    nested.articulations.emplace(ArticulationType::STANDARD, art);
-    EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(nested))), event_release_batch_cost);
-    art.meta.pattern.emplace(0, art.applied_pattern_segment);
-    art.applied_pattern_segment = {};
-    ExpressionContext pattern;
-    pattern.articulations.emplace(ArticulationType::STANDARD, art);
-    EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(pattern))), event_release_batch_cost);
+    {
+        ArticulationAppliedData art;
+        art.applied_pattern_segment.expression_pattern.dynamic_offset_map = event.expression_ctx().expression_curve;
+        ExpressionContext nested;
+        nested.articulations.emplace(ArticulationType::STANDARD, art);
+        EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(nested))), event_release_batch_cost);
+        art.meta.pattern.emplace(0, art.applied_pattern_segment);
+        art.applied_pattern_segment = {};
+        ExpressionContext pattern;
+        pattern.articulations.emplace(ArticulationType::STANDARD, art);
+        EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(pattern))), event_release_batch_cost);
+    }
+    ASSERT_TRUE(event.expression_ctx().expression_curve.unique());
+    const auto teardown_start = Clock::now();
+    oversized.clear();
+    const double teardown_ms = std::chrono::duration<double, std::milli>(Clock::now() - teardown_start).count();
+    std::fprintf(
+        stderr,
+        "release_cost_ms budget=%zu eligible_points=%zu n=32 max=%.6f oversized_points=262144 fallback=%.6f ordinary_teardown=%.6f\n",
+        event_release_batch_cost, event_release_batch_cost - event_release_base_cost, maximum, fallback_ms, teardown_ms);
 }
+
+#ifdef _WIN32
+TEST(AudioInternal, EventCleanupJoinsDuringUnwindWithoutDetaching) {
+    using namespace muse::audio;
+    std::array<muse::mpe::PlaybackData, 2> data;
+    for (std::size_t i = 0; i < parallel_event_cleanup_threshold; ++i) data[0].origin_events.emplace(i, muse::mpe::PlaybackEventList{});
+    data[1].origin_events[0].resize(1);
+    const auto alias = data[0].origin_events;
+    const std::array ids{0, 1};
+    EXPECT_THROW(
+        {
+            OfflineEventCleanup cleanup;
+            cleanup.prepare(ids, [&](int id) -> auto & { return data[id]; });
+            throw std::runtime_error("unwind after workers were staged");
+        },
+        std::runtime_error);
+    EXPECT_EQ(EventCleanupProgress::branch, EventCleanupProgress::Branch::PARALLEL);
+    EXPECT_EQ(data[0].origin_events.size(), parallel_event_cleanup_threshold);
+    EXPECT_FALSE(data[0].origin_events.unique());
+    EXPECT_EQ(alias.size(), parallel_event_cleanup_threshold);
+    EXPECT_TRUE(data[1].origin_events.empty());
+}
+#endif
 
 TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
     using namespace muse;
@@ -608,11 +642,15 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Phase = muse::audio::OfflineCancellation::Phase;
     const char *names[] = {"before-synthesis", "playback-model", "synthesis", "encode", "event-release"};
     for (int phase = 0; phase < 5; ++phase) {
-        std::vector<double> responsiveness, cleanup;
+        std::vector<double> responsiveness, cleanup, turnaround;
+#ifdef _WIN32
+        bool saw_parallel = false, saw_serial = false, saw_crossing = false;
+#endif
         for (int trial = 0; trial < 50; ++trial) {
             bool cancelled = false;
             bool model_started = false;
             int model_polls = 0, stage_polls = 0;
+            std::size_t armed_buckets = 0, observed_buckets = 0;
             std::latch model_start{1};
             std::atomic<bool> external{false};
             Clock::time_point requested, observed;
@@ -639,12 +677,21 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                 // Only the NEXT poll may observe the request: the measured span
                 // includes engine work between polls, rather than callback cost.
                 const auto current_phase = muse::audio::OfflineCancellation::phase;
-                if (!cancelled &&
-                    ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER) ||
-                     (phase == 4 && current_phase == Phase::EVENT_RELEASE)) &&
-                    ++stage_polls == (phase == 4 ? 1 + trial * 8 : 1 + trial * 3)) {
+                if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
+                    ++stage_polls == 1 + trial * 3) {
                     cancel();
                     return false;
+                }
+                if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE && muse::audio::EventReleaseProgress::before_batch) {
+                    const auto remaining = muse::audio::EventReleaseProgress::remaining_buckets;
+                    // Sweep by observed work, independent of the batch budget.
+                    // One trial arms exactly at the cleanup threshold before a batch.
+                    const bool arm = trial == 25 ? remaining == 16384 : remaining <= std::size_t{49152} * (50 - trial) / 50;
+                    if (arm) {
+                        armed_buckets = remaining;
+                        cancel();
+                        return false;
+                    }
                 }
                 if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL &&
                     ++model_polls == 2000 + trial * 3000 && !model_started) {
@@ -657,7 +704,10 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                 }
                 // First positive poll is the existing observable cancellation boundary.
                 // Everything after it includes synchronous graph/event cleanup.
-                if (cancelled && observed == Clock::time_point{}) observed = Clock::now();
+                if (cancelled && observed == Clock::time_point{}) {
+                    observed = Clock::now();
+                    observed_buckets = muse::audio::EventReleaseProgress::remaining_buckets;
+                }
                 return cancelled;
             };
             if (phase == 2)
@@ -680,6 +730,27 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             ASSERT_LE(observed, returned);
             responsiveness.push_back(std::chrono::duration<double, std::milli>(observed - requested).count());
             cleanup.push_back(std::chrono::duration<double, std::milli>(returned - observed).count());
+            turnaround.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
+#ifdef _WIN32
+            if (phase == 4) {
+                using Progress = muse::audio::EventCleanupProgress;
+                EXPECT_EQ(Progress::remaining_buckets, observed_buckets);
+                if (observed_buckets >= muse::audio::parallel_event_cleanup_threshold) {
+                    EXPECT_EQ(Progress::branch, Progress::Branch::PARALLEL);
+                    saw_parallel = true;
+                } else {
+                    EXPECT_EQ(Progress::branch, Progress::Branch::BELOW_THRESHOLD);
+                    saw_serial = true;
+                }
+                if (trial == 25) {
+                    EXPECT_EQ(armed_buckets, muse::audio::parallel_event_cleanup_threshold);
+                    EXPECT_LT(observed_buckets, muse::audio::parallel_event_cleanup_threshold);
+                    saw_crossing = true;
+                }
+                std::fprintf(stderr, "release_cleanup trial=%d armed=%zu observed=%zu branch=%d\n", trial, armed_buckets, observed_buckets,
+                             static_cast<int>(Progress::branch));
+            }
+#endif
             std::fprintf(stderr, "dense_cancel_sample phase=%s trial=%d request_to_observed_ms=%.6f observed_to_return_ms=%.6f\n",
                          names[phase], trial, responsiveness.back(), cleanup.back());
         }
@@ -696,6 +767,14 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         // Idle Windows request-to-return peaks near 46 ms. Cleanup owns
         // almost all of that span, so allow 50 ms p95 and 100 ms worst case.
         report("observed_to_return", cleanup, 50.0, 100.0);
+        report("request_to_return", turnaround, 50.0, 100.0);
+#ifdef _WIN32
+        if (phase == 4) {
+            EXPECT_TRUE(saw_parallel);
+            EXPECT_TRUE(saw_serial);
+            EXPECT_TRUE(saw_crossing);
+        }
+#endif
         EXPECT_EQ(render(), baseline);
     }
     // Exercise error translation and publication through the public API too.
