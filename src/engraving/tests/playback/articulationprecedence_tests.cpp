@@ -776,3 +776,72 @@ TEST(EngravingArticulationPrecedenceTests, MultibendInheritedGraceMarker) {
         delete score;
     }
 }
+
+// One-group exception (owner): a before-group that mixes an appoggiatura and an acciaccatura, with no after-graces.
+// The principal must not keep the acciaccatura marker (keyboard profile: -25% offset, 120% duration), which made it
+// sound before its graces
+TEST(EngravingArticulationPrecedenceTests, MixedBeforeGroupWithoutAfterGraces) {
+    // F4 quarter with a G4 eighth acciaccatura; add an A4 eighth appoggiatura
+    Score *score = ScoreRW::read_score(u"playback/playbackeventsrenderer_data/single_note_acciaccatura/single_note_acciaccatura.mscx");
+    ASSERT_TRUE(score);
+    const Chord *chord = find_chord(score, 0, 0);
+    ASSERT_TRUE(chord);
+    ASSERT_EQ(chord->grace_notes_before().size(), 1);
+    add_grace(score, chord, 69, NoteType::APPOGGIATURA, Constants::division / 2);
+    ASSERT_EQ(chord->grace_notes_before().size(), 2);
+    ASSERT_TRUE(chord->grace_notes_after().empty());
+
+    mpe::ArticulationProfilesRepository repository(*muse::io::file_system());
+    const ArticulationsProfilePtr profile = repository.default_profile(ArticulationFamily::KEYBOARDS);
+    ASSERT_TRUE(profile);
+    ASSERT_EQ(profile->pattern(ArticulationType::ACCIACCATURA).cbegin()->second.arrangement_pattern.timestamp_offset_value, -2500);
+    PlaybackContextPtr playback_ctx = std::make_shared<PlaybackContext>(score);
+
+    // [GIVEN] Both before types and no after type; one PRE budget for two graces: 2 x 31.25 ms
+    const ArticulationMap articulations = chord_articulations(chord, profile, playback_ctx);
+    ASSERT_TRUE(articulations.contains(ArticulationType::PRE_APPOGGIATURA));
+    ASSERT_TRUE(articulations.contains(ArticulationType::ACCIACCATURA));
+    ASSERT_FALSE(articulations.contains(ArticulationType::POST_APPOGGIATURA));
+    ASSERT_EQ(select_grace_type(articulations), ArticulationType::PRE_APPOGGIATURA);
+
+    PlaybackEventsMap result;
+    PlaybackEventsRenderer renderer;
+    renderer.render(chord, 0, profile, playback_ctx, result);
+    const std::vector<const mpe::NoteEvent *> notes = note_events(result);
+    ASSERT_EQ(notes.size(), 3);
+
+    const mpe::NoteEvent *principal = nullptr;
+    std::vector<const mpe::NoteEvent *> graces;
+    for (const mpe::NoteEvent *note : notes) {
+        if (note->pitch_ctx().nominal_pitch_level == pitch_level(PitchClass::F, 4)) {
+            principal = note;
+        } else {
+            graces.push_back(note);
+        }
+    }
+    ASSERT_TRUE(principal);
+    ASSERT_EQ(graces.size(), 2);
+
+    // [THEN] The principal plays from its nominal start, 62.5 ms, without a grace type
+    const mpe::ArrangementContext &p = principal->arrangement_ctx();
+    EXPECT_EQ(p.nominal_timestamp, 62500);
+    EXPECT_EQ(p.nominal_duration, quarter_note_duration - 62500);
+    EXPECT_EQ(p.actual_timestamp, p.nominal_timestamp);
+    EXPECT_FALSE(principal->expression_ctx().articulations.contains(ArticulationType::PRE_APPOGGIATURA));
+    EXPECT_FALSE(principal->expression_ctx().articulations.contains(ArticulationType::ACCIACCATURA));
+
+    // [THEN] Both graces carry only their own type, fill exactly the budget and have ended before the principal
+    duration_t nominal_sum = 0;
+    for (const mpe::NoteEvent *note : graces) {
+        const bool is_acciaccatura = note->pitch_ctx().nominal_pitch_level == pitch_level(PitchClass::G, 4);
+        EXPECT_TRUE(note->expression_ctx().articulations.contains(is_acciaccatura ? ArticulationType::ACCIACCATURA :
+                                                                                    ArticulationType::PRE_APPOGGIATURA));
+        EXPECT_FALSE(note->expression_ctx().articulations.contains(is_acciaccatura ? ArticulationType::PRE_APPOGGIATURA :
+                                                                                     ArticulationType::ACCIACCATURA));
+        EXPECT_LE(note->arrangement_ctx().actual_timestamp + note->arrangement_ctx().actual_duration, p.actual_timestamp);
+        nominal_sum += note->arrangement_ctx().nominal_duration;
+    }
+    EXPECT_EQ(nominal_sum, 62500);
+
+    delete score;
+}
