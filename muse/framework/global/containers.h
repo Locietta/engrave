@@ -22,12 +22,17 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
+#include <iterator>
 #include <list>
 #include <map>
+#include <ranges>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "sortedrange.h"
 
 //! NOTE useful functions for containers
 
@@ -350,27 +355,38 @@ inline auto values(const std::multimap<K, V> &mm, const K &key) -> std::vector<t
     return result;
 }
 
+//! NOTE: an associative container searches with its own upper_bound; any other key-sorted
+//! range of (key, value) entries is binary-searched on the entry key
+template <typename Container, typename Key>
+inline auto sorted_upper_bound(Container &c, const Key &k) {
+    if constexpr (requires { c.upper_bound(k); }) {
+        return c.upper_bound(k);
+    } else {
+        return std::ranges::upper_bound(c, k, std::ranges::less{}, [](const auto &entry) -> const auto & { return entry_key(entry); });
+    }
+}
+
 template <typename Container>
-inline typename Container::const_iterator find_less_or_equal(const Container &c, const typename Container::key_type &k) {
+inline std::ranges::iterator_t<const Container> find_less_or_equal(const Container &c, const sorted_key_t<Container> &k) {
     if (c.empty()) {
-        return c.cend();
+        return c.end();
     }
 
-    auto it = c.upper_bound(k);
-    if (it == c.cbegin()) {
-        return c.cend();
+    auto it = sorted_upper_bound(c, k);
+    if (it == c.begin()) {
+        return c.end();
     }
 
     return std::prev(it);
 }
 
 template <typename Container>
-inline typename Container::iterator find_less_or_equal(Container &c, const typename Container::key_type &k) {
+inline std::ranges::iterator_t<Container> find_less_or_equal(Container &c, const sorted_key_t<Container> &k) {
     if (c.empty()) {
         return c.end();
     }
 
-    auto it = c.upper_bound(k);
+    auto it = sorted_upper_bound(c, k);
     if (it == c.begin()) {
         return c.end();
     }

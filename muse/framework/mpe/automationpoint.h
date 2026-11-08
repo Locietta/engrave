@@ -28,6 +28,7 @@
 
 #include "containers.h"
 #include "realfn.h"
+#include "sortedrange.h"
 #include "types/number.h"
 #include "types/sharedmap.h"
 
@@ -135,8 +136,9 @@ inline real_t evaluate_at(const AutomationPoint &point, std::optional<real_t> pr
     return quadratic_bezier((t - point_ease->t) / remainder, bend_value, q2, this_in);
 }
 
-template <typename Key>
-inline real_t evaluate_curve_at(const AutomationCurve<Key> &curve, const typename AutomationCurve<Key>::key_type &pos) {
+//! NOTE: Curve is any key-sorted range of (key, AutomationPoint) entries (see sortedrange.h)
+template <typename Curve>
+inline real_t evaluate_curve_at(const Curve &curve, const sorted_key_t<Curve> &pos) {
     if (curve.empty()) {
         return real_t{};
     }
@@ -144,43 +146,45 @@ inline real_t evaluate_curve_at(const AutomationCurve<Key> &curve, const typenam
     auto it = find_less_or_equal(curve, pos);
     if (it == curve.end()) {
         //! NOTE: hold the first point's value backwards in time, matching standard envelope semantics
-        return curve.begin()->second.out_value;
+        return entry_value(*curve.begin()).out_value;
     }
 
-    real_t normalized = it->second.out_value;
+    real_t normalized = entry_value(*it).out_value;
     const auto next = std::next(it);
     if (next != curve.end()) {
-        const real_t t = static_cast<real_t>(pos - it->first) / static_cast<real_t>(next->first - it->first);
-        normalized = evaluate_at(next->second, it->second.out_value, t);
+        const real_t t = static_cast<real_t>(pos - entry_key(*it)) / static_cast<real_t>(entry_key(*next) - entry_key(*it));
+        normalized = evaluate_at(entry_value(*next), entry_value(*it).out_value, t);
     }
 
     return normalized;
 }
 
 //! NOTE: resamples a curve into discrete samples for consumers that can't evaluate on read
-template <typename Key, typename Callback>
-void resample_curve(const AutomationCurve<Key> &curve, Key step_interval, Callback &&on_sample) {
-    for (auto it = curve.cbegin(); it != curve.cend(); ++it) {
-        on_sample(it->first, it->second.out_value);
+template <typename Curve, typename Callback>
+void resample_curve(const Curve &curve, sorted_key_t<Curve> step_interval, Callback &&on_sample) {
+    using Key = sorted_key_t<Curve>;
+
+    for (auto it = curve.begin(); it != curve.end(); ++it) {
+        on_sample(entry_key(*it), entry_value(*it).out_value);
 
         const auto next = std::next(it);
-        if (next == curve.cend()) {
+        if (next == curve.end()) {
             continue;
         }
 
-        const real_t next_arrival = resolve_in_value(next->second, it->second.out_value);
-        const std::optional<AutomationPoint::Ease> next_ease = ease(next->second);
-        const bool is_flat = (!next_ease || next_ease->is_none()) && muse::real_is_equal(next_arrival, it->second.out_value);
+        const real_t next_arrival = resolve_in_value(entry_value(*next), entry_value(*it).out_value);
+        const std::optional<AutomationPoint::Ease> next_ease = ease(entry_value(*next));
+        const bool is_flat = (!next_ease || next_ease->is_none()) && muse::real_is_equal(next_arrival, entry_value(*it).out_value);
         if (is_flat) {
             continue;
         }
 
-        const Key interval_duration = next->first - it->first;
+        const Key interval_duration = entry_key(*next) - entry_key(*it);
         const size_t steps = std::max(size_t((interval_duration + step_interval - 1) / step_interval), size_t(1));
 
         for (size_t j = 1; j < steps; ++j) {
-            const Key t = it->first + interval_duration * j / steps;
-            const real_t normalized = evaluate_at(next->second, it->second.out_value, real_t(j) / real_t(steps));
+            const Key t = entry_key(*it) + interval_duration * j / steps;
+            const real_t normalized = evaluate_at(entry_value(*next), entry_value(*it).out_value, real_t(j) / real_t(steps));
             on_sample(t, normalized);
         }
     }
