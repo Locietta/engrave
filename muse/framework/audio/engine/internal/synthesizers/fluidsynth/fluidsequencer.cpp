@@ -55,7 +55,7 @@ std::vector<FluidSequencer::ChannelExpressionLevel> FluidSequencer::current_expr
         return result;
     }
 
-    for (const auto &[layer_idx, curve] : playback_data_.dynamics) {
+    for (const auto &[layer_idx, curve] : dynamics_) {
         if (curve.empty()) {
             continue;
         }

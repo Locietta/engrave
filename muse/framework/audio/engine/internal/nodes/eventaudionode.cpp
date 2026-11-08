@@ -32,7 +32,7 @@ using namespace muse::audio::synth;
 using namespace muse::mpe;
 
 EventAudioNode::EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data)
-    : audio_factory_(audio_factory), track_id_(track_id), playback_data_(playback_data) {}
+    : audio_factory_(audio_factory), track_id_(track_id), initial_data_(&playback_data) {}
 
 void EventAudioNode::on_mode_changed(const ProcessMode mode) {
 
@@ -92,13 +92,13 @@ void EventAudioNode::apply_input_params(const AudioInputParams &required_params)
         return;
     }
 
-    SynthCtx ctx = current_synth_ctx();
-
-    if (synth_) {
-        playback_data_ = synth_->playback_data();
+    // Offline sources load once. Their MPE input may already have been released.
+    if (!initial_data_) {
+        LOGE() << "Cannot reload an offline event source";
+        return;
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, playback_data_.setup_data);
+    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, initial_data_->setup_data);
 
     if (!synth.ret) {
         synth = audio_factory()->make_default_synth(track_id_);
@@ -110,13 +110,10 @@ void EventAudioNode::apply_input_params(const AudioInputParams &required_params)
 
     synth_ = synth.val;
 
-    setup_source();
-
-    if (ctx.is_valid()) {
-        restore_synth_ctx(ctx);
-    } else {
-        synth_->set_mode(ProcessMode::IDLE);
-    }
+    synth_->set_output_spec(output_spec_);
+    synth_->setup(*initial_data_);
+    initial_data_ = nullptr;
+    synth_->set_mode(ProcessMode::IDLE);
 
     set_name(std::string("Source[") + synth_->name() + "]");
 
@@ -163,25 +160,4 @@ void EventAudioNode::clear_cache() {
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->clear_cache();
-}
-
-EventAudioNode::SynthCtx EventAudioNode::current_synth_ctx() const {
-    if (!synth_) {
-        return SynthCtx();
-    }
-
-    return {synth_->mode(), synth_->playback_position()};
-}
-
-void EventAudioNode::restore_synth_ctx(const SynthCtx &ctx) {
-    synth_->set_playback_position(ctx.playback_position);
-    synth_->set_mode(ctx.mode);
-}
-
-void EventAudioNode::setup_source() {
-
-    IF_ASSERT_FAILED(synth_) { return; }
-
-    synth_->set_output_spec(output_spec_);
-    synth_->setup(playback_data_);
 }

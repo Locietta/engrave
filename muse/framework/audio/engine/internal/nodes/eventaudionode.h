@@ -48,27 +48,17 @@ struct EventAudioNode : AudioSourceNode {
     void clear_cache() override;
 
 private:
-    struct SynthCtx {
-        ProcessMode mode = ProcessMode::UNDEFINED;
-        TimePosition playback_position;
-
-        bool is_valid() const { return mode != ProcessMode::UNDEFINED; }
-    };
-
     void on_mode_changed(const ProcessMode mode) override;
     void on_output_spec_changed(const OutputSpec &spec) override;
 
     void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    void setup_source();
-    SynthCtx current_synth_ctx() const;
-    void restore_synth_ctx(const SynthCtx &ctx);
-
     const IAudioFactory *audio_factory() const { return &audio_factory_; }
 
     const IAudioFactory &audio_factory_;
     TrackId track_id_ = -1;
-    mpe::PlaybackData playback_data_;
+    // Borrowed only until initial setup. The export model outlives that call.
+    const mpe::PlaybackData *initial_data_;
     synth::ISynthesizerPtr synth_ = nullptr;
     AudioInputParams params_;
 };

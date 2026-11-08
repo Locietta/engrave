@@ -41,7 +41,6 @@ struct ISynthesizer {
     virtual void set_output_spec(const OutputSpec &spec) = 0;
 
     virtual void setup(const mpe::PlaybackData &playback_data) = 0;
-    virtual const mpe::PlaybackData &playback_data() const = 0;
 
     virtual const audio::AudioInputParams &params() const = 0;
 
