@@ -21,15 +21,10 @@ Tests:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import contextlib
 import copy
 import io
 import json
-import sys
 import tempfile
 import unittest
 import zipfile
@@ -37,16 +32,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from support.paths import REPO_ROOT
-
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = Path(__file__).resolve().parent
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
-
-from integration.test_roundtrip import PAGE_STYLE_DEFAULTS, compare_mscz_xml, parse_mscx
-from support import check_semantic_dump as csd
-from support import golden as golden
+from engrave_testing import check_semantic_dump as csd
+from engrave_testing import golden as golden
+from engrave_testing.mscx import PAGE_STYLE_DEFAULTS, compare_mscz_xml, parse_mscx
+from engrave_testing.paths import REPO_ROOT
 
 
 class TestRoundTripXmlControls(unittest.TestCase):
@@ -255,7 +244,7 @@ class TestCurrentGoldenInventory(unittest.TestCase):
         with zipfile.ZipFile(golden.FIXTURE_DIR / fixture) as archive:
             member = next(n for n in archive.namelist() if n.endswith(".mscx") and "/" not in n)
             archive_xml = golden.normalize_mscx(archive.read(member).decode("utf-8"))
-        policy = ROOT / "tests/data/golden/allow.json"
+        policy = REPO_ROOT / "tests/data/golden/allow.json"
         archive_entries = golden.load_allow(policy, context="engine-gate-archive")
         entry = next(e for e in archive_entries if e["fixture"] == fixture)
         self.assertEqual(golden.sha256(archive_xml.encode("utf-8")), entry["sha256"]["windows"])
@@ -263,7 +252,7 @@ class TestCurrentGoldenInventory(unittest.TestCase):
             root = Path(temporary)
             golden.write_text(
                 root / "golden" / fixture / "score.mscx",
-                golden.read_text(ROOT / "tests/data/golden/windows" / fixture / "score.mscx"),
+                golden.read_text(REPO_ROOT / "tests/data/golden/windows" / fixture / "score.mscx"),
             )
             golden.build_index(root / "golden")
             golden.write_text(root / "actual" / fixture / "score.mscx", archive_xml)
@@ -279,7 +268,7 @@ class TestCurrentGoldenInventory(unittest.TestCase):
             self.assertEqual(report["counts"]["allowed"], 0)
 
     def test_archive_form_is_not_accepted_for_host(self):
-        path = ROOT / "tests/data/golden/allow.json"
+        path = REPO_ROOT / "tests/data/golden/allow.json"
         self.assertEqual(golden.load_allow(path), [])
         entries = golden.load_allow(path, context="engine-gate-archive")
         self.assertEqual(len(entries), 25)
@@ -297,7 +286,7 @@ class TestCurrentGoldenInventory(unittest.TestCase):
 
 class TestSemanticCheckerMutations(unittest.TestCase):
     def setUp(self):
-        self.fixtures_dir = ROOT / "tests/data/golden/windows"
+        self.fixtures_dir = REPO_ROOT / "tests/data/golden/windows"
         self.hairpins_fixture = self.fixtures_dir / "hairpins_and_repeats.mscx"
         self.linked_fixture = self.fixtures_dir / "linked_parts.mscx"
 

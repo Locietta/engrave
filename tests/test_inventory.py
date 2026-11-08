@@ -1,19 +1,22 @@
 """Mutations exercise the actual gate validators and comparator."""
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 import contextlib
 import io
 import json
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
-from support.inventory import validate_baseline, validate_actual
-from support import golden as g
-from integration.test_public_output import compare
 
-ROOT = Path(__file__).resolve().parent
+from engrave_testing import golden as g
+from engrave_testing.dependencies import validate_dependencies
+from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
+from engrave_testing.paths import REPO_ROOT
+from engrave_testing.public_output import compare
+
+TEST_ROOT = REPO_ROOT / "tests"
+
 
 class InventoryMutations(unittest.TestCase):
     def setUp(self):
@@ -21,8 +24,8 @@ class InventoryMutations(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.golden = self.root / "golden/windows"
-        shutil.copytree(ROOT / "data/golden/windows", self.golden)
-        shutil.copyfile(ROOT / "data/gate-inventory.json", self.root / "gate-inventory.json")
+        shutil.copytree(TEST_ROOT / "data/golden/windows", self.golden)
+        shutil.copyfile(TEST_ROOT / "data/gate-inventory.json", self.root / "gate-inventory.json")
         self.inventory = validate_baseline(self.golden)
         self.fixture = "bend.gp"
         self.names = self.inventory[self.fixture]
@@ -42,7 +45,9 @@ class InventoryMutations(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate_actual(self.fixture, self.actual, [n for n in self.names if n != name], self.inventory)
                 with self.assertRaises(ValueError):
-                    compare(self.golden, self.fixture, self.actual, [n for n in self.names if n != name], [], "windows", {})
+                    compare(
+                        self.golden, self.fixture, self.actual, [n for n in self.names if n != name], [], "windows", {}
+                    )
                 (self.actual / name).write_bytes(data)
 
     def test_extra(self):
@@ -71,7 +76,16 @@ class InventoryMutations(unittest.TestCase):
     def test_changed_and_hash_mismatched_allow(self):
         path = self.actual / "score.musicxml"
         path.write_text("<mutated/>")
-        allow = [{"fixture": self.fixture, "output": path.name, "kind": "different", "sha256": {"windows": "0"*64}, "step": "mutation", "reason": "negative control"}]
+        allow = [
+            {
+                "fixture": self.fixture,
+                "output": path.name,
+                "kind": "different",
+                "sha256": {"windows": "0" * 64},
+                "step": "mutation",
+                "reason": "negative control",
+            }
+        ]
         for policy in ([], allow):
             counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
             with contextlib.redirect_stdout(io.StringIO()):
@@ -88,8 +102,16 @@ class InventoryMutations(unittest.TestCase):
             compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
 
     def test_stale_selected_allowance(self):
-        allow = [{"fixture": self.fixture, "output": "page-0.svg", "kind": "different",
-                  "sha256": {"windows": "0" * 64}, "step": "mutation", "reason": "control"}]
+        allow = [
+            {
+                "fixture": self.fixture,
+                "output": "page-0.svg",
+                "kind": "different",
+                "sha256": {"windows": "0" * 64},
+                "step": "mutation",
+                "reason": "control",
+            }
+        ]
         counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
         with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(ValueError, "unused"):
             compare(self.golden, self.fixture, self.actual, self.names, allow, "windows", counts)
@@ -105,24 +127,25 @@ class InventoryMutations(unittest.TestCase):
     def test_manifest_source_commit(self):
         manifest = self.root / "tests/data/golden/inputs.json"
         manifest.parent.mkdir(parents=True)
-        data = json.loads((g.ROOT / "tests/data/golden/inputs.json").read_text())
+        data = json.loads((g.REPO_ROOT / "tests/data/golden/inputs.json").read_text())
         data["source_commit"] = "0" * 40
         manifest.write_text(json.dumps(data))
-        with patch.object(g, "ROOT", self.root), self.assertRaisesRegex(ValueError, "manifest hash mismatch"):
+        with patch.object(g, "REPO_ROOT", self.root), self.assertRaisesRegex(ValueError, "manifest hash mismatch"):
             validate_baseline(self.golden)
 
     def test_full_gate_rejects_allowance_outside_inventory(self):
-        from support.inventory import validate_allow_usage
+
         allowance = [{"fixture": "unselected", "output": "unexpected", "sha256": {"windows": "0" * 64}}]
         with self.assertRaisesRegex(ValueError, "unused"):
             validate_allow_usage(allowance, set(), "windows")
         validate_allow_usage(allowance, set(), "linux")
 
     def test_dependency_mismatch(self):
-        from support.dependencies import validate_dependencies
-        with patch("support.dependencies.version", return_value="wrong"):
+
+        with patch("engrave_testing.dependencies.version", return_value="wrong"):
             with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
                 validate_dependencies()
+
 
 if __name__ == "__main__":
     unittest.main()

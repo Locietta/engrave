@@ -14,16 +14,12 @@ This enables exact, predictable recovery of pitch, onset times, and signal level
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import math
 import struct
 from pathlib import Path
 
-from support.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT
 
 
 def make_chunk(tag: str, data: bytes) -> bytes:

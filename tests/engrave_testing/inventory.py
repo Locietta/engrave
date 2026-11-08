@@ -1,7 +1,9 @@
 """Fail-closed indexed public-output inventory."""
+
 import json
-from pathlib import Path
-from support import golden as g
+
+from engrave_testing import golden as g
+
 
 def validate_baseline(root):
     index = json.loads((root / "index.json").read_text(encoding="utf8"))
@@ -14,15 +16,23 @@ def validate_baseline(root):
         raise ValueError("invalid baseline: " + repr(issues))
     return inventory
 
+
 def validate_actual(fixture, out, names, inventory):
     expected = set(inventory[fixture])
     present = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
     if set(names) != expected or present != expected or len(names) != len(expected):
-        raise ValueError(f"{fixture}: output inventory mismatch: missing={expected-present}, extra={present-expected}")
+        raise ValueError(
+            f"{fixture}: output inventory mismatch: missing={expected - present}, extra={present - expected}"
+        )
 
 
 def validate_allow_usage(allow, matched, platform, selected=None):
-    stale = [i for i, e in enumerate(allow)
-             if platform in e["sha256"] and (selected is None or (e["fixture"], e["output"]) in selected) and i not in matched]
+    stale = [
+        i
+        for i, e in enumerate(allow)
+        if platform in e["sha256"]
+        and (selected is None or (e["fixture"], e["output"]) in selected)
+        and i not in matched
+    ]
     if stale:
         raise ValueError(f"unused selected-platform allow entries: {stale}")

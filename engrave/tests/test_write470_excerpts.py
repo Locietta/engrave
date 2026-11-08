@@ -4,9 +4,6 @@ Run capture on either host; --verify-only allows Windows artifacts to be
 transferred to the physical Linux oracle without rerunning the writer.
 """
 
-import sys
-
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "tests"))
 import argparse
 import hashlib
 import json
@@ -15,7 +12,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from support.paths import INPUT_ROOT, REPO_ROOT
+from engrave_testing.paths import INPUT_ROOT, REPO_ROOT
 
 
 def xml(path):

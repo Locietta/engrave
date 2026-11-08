@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
-import asyncio
 import io
 import json
-import os
 import statistics
 import struct
 import subprocess
@@ -19,9 +13,7 @@ import zipfile
 import zlib
 from pathlib import Path
 
-from support.paths import REPO_ROOT
-
-ROOT = Path(__file__).resolve().parents[2]
+from engrave_testing.paths import REPO_ROOT
 
 
 def raw_deflate(data):
@@ -383,13 +375,11 @@ def run_probe(binary, out):
     return report
 
 
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True, help="archive_test native probe")
-    parser.add_argument("--resources", type=Path, default=ROOT / ".runtime/assets")
-    parser.add_argument("--output", type=Path, default=ROOT / "artifacts/archive-bounds")
+    parser.add_argument("--resources", type=Path, default=REPO_ROOT / ".runtime/assets")
+    parser.add_argument("--output", type=Path, default=REPO_ROOT / "artifacts/archive-bounds")
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
