@@ -127,9 +127,15 @@ The gate builds the fork's `engine_tests` target and executes the public API, im
 
 ### Running the Gate in a Fork-Only Checkout
 
-In a standalone fork checkout, `tests/gate.py` automatically prepends `tests/` and `tools/` to `PYTHONPATH` for its subprocess invocations while preserving any inherited `PYTHONPATH`.
+In a standalone fork checkout, create a virtual environment, install `tests/requirements.txt`, and install the test package in editable mode (`python -m pip install -e .` in the fork root) so `engrave_testing` is available before running `tests/gate.py` or `tests/test_inventory.py`:
 
-Run the gate:
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -r tests/requirements.txt
+.venv/bin/python -m pip install -e .
+```
+
+(Windows: `.venv/Scripts/python.exe`). Run the gate:
 
 ```bash
 python tools/install_assets.py .runtime/assets
@@ -144,7 +150,7 @@ Use a fresh output directory for each run. On Windows, use native Python/PowerSh
 To run a single integration test script directly in a fork-only checkout without an editable package install, set `PYTHONPATH` to include `tests` and `tools`:
 
 ```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font /path/to/cairo/prefix/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
 ```
 
 On Windows PowerShell:

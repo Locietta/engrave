@@ -24,8 +24,7 @@ check the complete installed directory with `python tools/install_assets.py DIR 
 The hash-pinned manifest replaces QRC staging lists. See `engrave/ASSETS.md` for the
 directory contract and `python tools/test_install_assets.py` for packaging checks.
 Fonts and SoundFonts supplied by consumers remain external; no assets are embedded
-in the library. The hard fork accepts selected upstream fixes by cherry-pick;
-Historical deletions are preserved in Git history; upstream sync tooling is retired.
+in the library. The hard fork accepts selected upstream fixes by cherry-pick.
 
 Execute the standalone closure and golden checks with `python tests/gate.py`; see
 the root README for runtime prefixes, tool versions and full arguments.

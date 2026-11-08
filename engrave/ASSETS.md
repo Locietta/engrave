@@ -16,9 +16,5 @@ remain separate and retain their existing lifetime/cache behavior.
 
 When changing an asset, update its manifest digest and size deliberately, validate
 installed bytes and run both public engine gates. Never regenerate hashes from an
-unverified installed directory. Runtime loading currently preserves the historical
-resource-directory contract; `--verify` is the packaging integrity check.
-
-The retired QRC lists are no longer shipped. Consumers upgrading from the frozen
-host must replace QRC/resource-list generation with this installer when they
-update their engine pin. The public resource-directory contract is unchanged.
+unverified installed directory. Runtime loading preserves the resource-directory
+contract; `--verify` is the packaging integrity check.
