@@ -68,10 +68,7 @@ SlurTieSegment *LaissezVib::new_slur_tie_segment() {
 
 void LaissezVib::set_end_note(Note *note) { set_end_element(note); }
 
-void LaissezVib::set_end_element(EngravingItem *e) {
-    UNUSED(e);
-    ASSERT_X("Laissez vibrer ties do not have an end note");
-}
+void LaissezVib::set_end_element([[maybe_unused]] EngravingItem *e) { ASSERT_X("Laissez vibrer ties do not have an end note"); }
 
 LaissezVibSegment::LaissezVibSegment(LaissezVib *sp) : TieSegment(ElementType::LAISSEZ_VIB_SEGMENT, sp) {}
 

@@ -274,8 +274,7 @@ std::vector<GPMasterTracks::Automation> GP67DomBuilder::read_tempo_map(XmlDomNod
     return tempo_map;
 }
 
-std::unique_ptr<GPMasterTracks> GP67DomBuilder::create_gp_master_track(XmlDomNode *metadata) {
-    UNUSED(metadata);
+std::unique_ptr<GPMasterTracks> GP67DomBuilder::create_gp_master_track([[maybe_unused]] XmlDomNode *metadata) {
     return std::make_unique<GPMasterTracks>();
 }
 

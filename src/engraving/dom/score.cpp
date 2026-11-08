@@ -2454,7 +2454,7 @@ void Score::cmd_concert_pitch_changed(bool flag) {
     }
 }
 
-static void on_focused_item_changed(EngravingItem *item) { UNUSED(item); }
+static void on_focused_item_changed([[maybe_unused]] EngravingItem *item) {}
 
 //---------------------------------------------------------
 //   deselect

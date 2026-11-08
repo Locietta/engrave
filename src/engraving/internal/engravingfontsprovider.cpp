@@ -50,7 +50,6 @@ void EngravingFontsProvider::add_external_font(const std::string &name, const st
 
 void EngravingFontsProvider::add_external_font(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
                                                std::shared_ptr<muse::io::IODevice> metadata) {
-    UNUSED(family);
     std::shared_ptr<EngravingFont> f =
         std::make_shared<EngravingFont>(font_provider_, *this, name, family, std::move(font), std::move(metadata));
     external_symbol_fonts_.emplace(muse::strings::to_lower(name), f);

@@ -2525,17 +2525,11 @@ String TextBase::get_html_end_tag(FontStyle style, VerticalAlignment v_align) {
 
 void TextBase::notify_about_text_cursor_changed() {}
 
-void TextBase::notify_about_text_inserted(int start_position, int end_position, const String &text) {
-    UNUSED(start_position);
-    UNUSED(end_position);
-    UNUSED(text);
-}
+void TextBase::notify_about_text_inserted([[maybe_unused]] int start_position, [[maybe_unused]] int end_position,
+                                          [[maybe_unused]] const String &text) {}
 
-void TextBase::notify_about_text_removed(int start_position, int end_position, const String &text) {
-    UNUSED(start_position);
-    UNUSED(end_position);
-    UNUSED(text);
-}
+void TextBase::notify_about_text_removed([[maybe_unused]] int start_position, [[maybe_unused]] int end_position,
+                                         [[maybe_unused]] const String &text) {}
 
 //---------------------------------------------------------
 //   getPropertyStyle

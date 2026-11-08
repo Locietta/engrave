@@ -578,7 +578,7 @@ public:
 
     protected:
 
-        virtual void sup_dump(std::stringstream &ss) const { UNUSED(ss); }
+        virtual void sup_dump([[maybe_unused]] std::stringstream &ss) const {}
 
 #ifndef NDEBUG
         void do_set_pos_debug_hook(double x, double y);

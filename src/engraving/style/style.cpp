@@ -335,8 +335,7 @@ void MStyle::apply_compat_style_vals(int msc_version) {
     }
 }
 
-bool MStyle::read(IODevice *device, bool ign) {
-    UNUSED(ign);
+bool MStyle::read(IODevice *device, [[maybe_unused]] bool ign) {
     XmlReader e(device);
     while (e.read_next_start_element()) {
         if (e.name() == "museScore") {

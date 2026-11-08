@@ -119,8 +119,7 @@ Fraction MusicXmlTupletState::missing_tuplet_duration(const Fraction duration) {
  Example (2): a 3:2 tuplet with a 1/4 and a 1/8 note is filled.
  */
 
-bool MusicXmlTupletState::is_tuplet_filled(const TDuration normal_type, const Fraction time_mod) {
-    UNUSED(time_mod);
+bool MusicXmlTupletState::is_tuplet_filled(const TDuration normal_type, [[maybe_unused]] const Fraction time_mod) {
     bool res = false;
     /*
     const auto normalNotes = state.normalNotes_;

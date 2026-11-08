@@ -200,8 +200,7 @@ void LyricsLayout::layout(LyricsLine *item) {
     }
 }
 
-void LyricsLayout::layout(LyricsLineSegment *item, LayoutContext &ctx) {
-    UNUSED(ctx);
+void LyricsLayout::layout(LyricsLineSegment *item, [[maybe_unused]] LayoutContext &ctx) {
 
     assert(item->is_partial_lyrics_line_segment() || item->lyrics());
 

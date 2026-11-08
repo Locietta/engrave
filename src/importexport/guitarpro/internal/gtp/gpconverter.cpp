@@ -1704,8 +1704,7 @@ void GPConverter::add_string_number(const GPNote *gpnote, Note *note) {
     note->add(f);
 }
 
-void GPConverter::add_trill(const GPNote *gpnote, Note *note) {
-    UNUSED(note);
+void GPConverter::add_trill(const GPNote *gpnote, [[maybe_unused]] Note *note) {
     if (gpnote->trill().auxillary_fret == -1) {
         return;
     }
@@ -2225,8 +2224,7 @@ void GPConverter::add_ottava(const GPBeat *gpb, ChordRest *cr) {
     }
 }
 
-void GPConverter::add_let_ring(const GPNote *gpnote, Note *note) {
-    UNUSED(note);
+void GPConverter::add_let_ring(const GPNote *gpnote, [[maybe_unused]] Note *note) {
     if (gpnote->let_ring() && current_gp_beat_) {
         current_gp_beat_->set_let_ring(true);
     }
@@ -2721,8 +2719,7 @@ void GPConverter::add_lyrics(const GPBeat *beat, ChordRest *cr, const Context &c
 }
 
 void GPConverter::clear_defected_grace_chord(ChordRestContainer &grace_ghords) {
-    for (auto [p_cr, gp_beat] : grace_ghords) {
-        UNUSED(gp_beat);
+    for ([[maybe_unused]] auto [p_cr, gp_beat] : grace_ghords) {
 
         if (!p_cr) {
             continue;

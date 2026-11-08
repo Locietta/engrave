@@ -27,10 +27,8 @@
 
 using namespace muse;
 
-static String translate(const char *context, const char *key, const char *disambiguation, int n) {
-    UNUSED(context);
-    UNUSED(disambiguation);
-    UNUSED(n);
+static String translate([[maybe_unused]] const char *context, const char *key, [[maybe_unused]] const char *disambiguation,
+                        [[maybe_unused]] int n) {
     return String::from_utf8(key);
 }
 

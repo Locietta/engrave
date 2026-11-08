@@ -27,9 +27,7 @@
 
 namespace muse::audio::fx { namespace reverb_matrices {
 template <int n>
-inline void hadamard(const float i[n], float o[n]) {
-    UNUSED(i);
-    UNUSED(o);
+inline void hadamard([[maybe_unused]] const float i[n], [[maybe_unused]] float o[n]) {
 
     // Hadamard matrix not defined for this size
     assert(false);
