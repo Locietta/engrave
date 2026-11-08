@@ -27,9 +27,6 @@ option("engrave_playback_harness")
     set_default(false)
     set_description("Test-only playback identity capture and measurement hooks")
 option_end()
-if has_config("engrave_playback_harness") then
-    add_defines("ENGRAVE_PLAYBACK_HARNESS")
-end
 
 local fork_root = path.directory(os.scriptdir())
 local source_root = path.absolute(ENGRAVE_SOURCE_ROOT or fork_root)
@@ -222,6 +219,11 @@ ENGRAVE_AUDIO_INCLUDES = {
 ---------------------------------------------------------------------------
 local function add_engine_target_defaults()
     add_includedirs("$(builddir)/xmake-generated")
+    if has_config("engrave_playback_harness") then
+        -- Target-local: reopening engrave for Cairo must not lose this define.
+        -- Export it so inline OfflineTimer definitions agree in consumers too.
+        add_defines("ENGRAVE_PLAYBACK_HARNESS", {public = true})
+    end
 end
 
 target("muse_global")

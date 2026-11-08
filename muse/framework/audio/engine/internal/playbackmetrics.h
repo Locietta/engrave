@@ -4,6 +4,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <cstdlib>
 
 namespace muse::audio::test {
 struct AllocationMetrics {
@@ -17,8 +18,11 @@ struct AllocationMetrics {
     inline static std::atomic<std::uint64_t> counts[phase_count][OP_COUNT]{};
 
     static void count(Operation op) noexcept {
-        if (enabled.load(std::memory_order_relaxed))
-            counts[phase.load(std::memory_order_relaxed)][op].fetch_add(1, std::memory_order_relaxed);
+        if (enabled.load(std::memory_order_relaxed)) {
+            const unsigned index = phase.load(std::memory_order_relaxed);
+            if (index >= phase_count) std::abort();
+            counts[index][op].fetch_add(1, std::memory_order_relaxed);
+        }
     }
 };
 } // namespace muse::audio::test
