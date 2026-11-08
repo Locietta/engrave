@@ -21,6 +21,7 @@
 #include "audio/common/audioerrors.h"
 #include "audio/engine/internal/export/abstractaudioencoder.h"
 #include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlineeventrelease.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
@@ -412,6 +413,34 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     }
 }
 
+TEST(AudioInternal, EventReleaseOwnershipAndBatches) {
+    using namespace muse::audio;
+    muse::mpe::PlaybackEventsMap events;
+    events[0].resize(3 * event_release_batch_size);
+    const auto alias = events;
+    EXPECT_FALSE(events.unique());
+    EXPECT_TRUE(release_event_batches(events, [] {
+        ADD_FAILURE() << "Aliased events must not be touched";
+        return true;
+    }));
+    EXPECT_FALSE(events.unique());
+    EXPECT_EQ(events.cbegin()->second.size(), 3 * event_release_batch_size);
+    // Drop the alias by replacing the source instead; verify the original is intact.
+    events = {};
+    EXPECT_TRUE(events.unique());
+    events[0].resize(3 * event_release_batch_size);
+    events[1].resize(event_release_batch_size);
+    int polls = 0;
+    EXPECT_FALSE(release_event_batches(events, [&] { return ++polls == 2; }));
+    EXPECT_FALSE(events.contains(1));
+    EXPECT_EQ(events.at(0).size(), 3 * event_release_batch_size);
+    EXPECT_FALSE(release_event_batches(events, [&] { return ++polls == 4; }));
+    EXPECT_EQ(events.at(0).size(), 2 * event_release_batch_size);
+    EXPECT_TRUE(release_event_batches(events, [] { return false; }));
+    EXPECT_TRUE(events.empty());
+    EXPECT_EQ(alias.at(0).size(), 3 * event_release_batch_size);
+}
+
 // Same 12 x 256 x 16 input shape as the dense-score probe, generated without a desktop.
 TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Clock = std::chrono::steady_clock;
@@ -465,8 +494,8 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     auto *master = engrave::DocumentAccess::master_score(document);
     const auto path = std::filesystem::temp_directory_path() / (prefix + ".wav");
     using Phase = muse::audio::OfflineCancellation::Phase;
-    const char *names[] = {"before-synthesis", "playback-model", "synthesis", "encode"};
-    for (int phase = 0; phase < 4; ++phase) {
+    const char *names[] = {"before-synthesis", "playback-model", "synthesis", "encode", "event-release"};
+    for (int phase = 0; phase < 5; ++phase) {
         std::vector<double> responsiveness, cleanup;
         for (int trial = 0; trial < 50; ++trial) {
             bool cancelled = false;
@@ -498,8 +527,10 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                 // Only the NEXT poll may observe the request: the measured span
                 // includes engine work between polls, rather than callback cost.
                 const auto current_phase = muse::audio::OfflineCancellation::phase;
-                if (!cancelled && ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER)) &&
-                    ++stage_polls == 1 + trial * 3) {
+                if (!cancelled &&
+                    ((phase == 3 && current_phase == Phase::ENCODING) || (phase == 0 && current_phase == Phase::SEQUENCER) ||
+                     (phase == 4 && current_phase == Phase::EVENT_RELEASE)) &&
+                    ++stage_polls == (phase == 4 ? 1 + trial * 8 : 1 + trial * 3)) {
                     cancel();
                     return false;
                 }
