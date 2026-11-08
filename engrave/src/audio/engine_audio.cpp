@@ -30,6 +30,9 @@
 #include "audio/engine/internal/nodes/trackchain.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlineeventrelease.h"
+#ifdef _WIN32
+#include "audio/engine/internal/offlineeventcleanup.h"
+#endif
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -207,41 +210,6 @@ SoundTrackFormat make_soundtrack_format(EngineAudioFormat format, const AudioRen
 
     return result;
 }
-
-#ifdef _WIN32
-// Windows benefits from parallel frees; glibc arena contention makes this slower
-// on Linux, which retains synchronous event destruction.
-// Release only value-owned playback events off-thread. Score listeners, synths,
-// codecs, SoundFonts and cancellation callbacks remain on the owner thread.
-// Join before returning: cancellation never leaves deferred cleanup behind.
-void release_playback_events(PlaybackModel &model) {
-    const auto ids = model.existing_track_id_set();
-    size_t count = 0;
-    for (const auto &id : ids) count += model.resolve_track_playback_data(id).origin_events.size();
-    if (count < 16384 || ids.size() < 2) return;
-
-    std::array<std::vector<mpe::PlaybackEventsMap>, 4> batches;
-    size_t index = 0;
-    for (const auto &id : ids) {
-        auto &events = model.resolve_track_playback_data(id).origin_events;
-        batches[index++ % batches.size()].push_back(std::move(events));
-        events = {};
-    }
-    std::array<std::thread, 3> workers;
-    size_t started = 0;
-    try {
-        for (; started < workers.size(); ++started) {
-            workers[started] = std::thread([&, i = started] { batches[i].clear(); });
-        }
-    } catch (const std::system_error &) {
-        // Resource exhaustion falls back to synchronous cleanup of the batches
-        // that were not handed to a worker.
-    }
-    for (size_t i = started; i < batches.size(); ++i) batches[i].clear();
-    for (size_t i = 0; i < started; ++i) workers[i].join();
-}
-
-#endif
 
 const char *audio_format_name(EngineAudioFormat format) {
     switch (format) {
@@ -593,13 +561,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // Sources borrow model data only while loading their MIDI sequences.
     PlaybackModel model(&state.profiles);
 #ifdef _WIN32
-    // Declared before the graph: its references are gone before event cleanup.
-    DEFER {
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-        OfflineTimer timer(OfflineTiming::current().teardown);
-#endif
-        release_playback_events(model);
-    };
+    // Declared before the graph; only staged resources are used at teardown.
+    OfflineEventCleanup event_cleanup;
 #endif
     model.set_play_repeats(request.use_repeats);
     model.set_play_chord_symbols(false);
@@ -705,6 +668,12 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // deterministic ids/mix order are needed for byte-identical exports.
     std::vector<InstrumentTrackId> ordered_track_ids(existing_track_ids.cbegin(), existing_track_ids.cend());
     std::sort(ordered_track_ids.begin(), ordered_track_ids.end());
+#ifdef _WIN32
+    event_cleanup.prepare(ordered_track_ids, [&](const auto &id) -> auto & { return model.resolve_track_playback_data(id); });
+#endif
+    EventReleaseProgress::remaining_buckets = 0;
+    for (const auto &id : ordered_track_ids)
+        EventReleaseProgress::remaining_buckets += model.resolve_track_playback_data(id).origin_events.size();
 
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     for (const auto &id : ordered_track_ids) {
@@ -782,7 +751,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     {
         OfflineCancellation::EventReleaseScope phase;
         for (const auto &id : ordered_track_ids) {
-            if (!release_event_batches(model.resolve_track_playback_data(id).origin_events, poll)) return abort_setup();
+            if (!release_event_batches(model.resolve_track_playback_data(id).origin_events, poll, &EventReleaseProgress::remaining_buckets))
+                return abort_setup();
         }
     }
 
