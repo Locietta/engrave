@@ -123,6 +123,8 @@ struct SharedMap {
 
     size_t size() const noexcept { return data_ptr_->size(); }
 
+    bool unique() const noexcept { return data_ptr_.use_count() == 1; }
+
     void insert(const PairType &pair) {
         ensure_detach();
         data_ptr_->insert(pair);

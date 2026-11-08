@@ -29,6 +29,7 @@
 #include "audio/engine/internal/nodes/signalnode.h"
 #include "audio/engine/internal/nodes/trackchain.h"
 #include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlineeventrelease.h"
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -589,8 +590,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         excerpt_selected = true;
     }
 
-    // PlaybackModel stays alive until the render has consumed the playback data
-    // streams; the audio tracks reference them.
+    // Sources borrow model data only while loading their MIDI sequences.
     PlaybackModel model(&state.profiles);
 #ifdef _WIN32
     // Declared before the graph: its references are gone before event cleanup.
@@ -776,6 +776,13 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         if (poll()) return abort_setup();
         if (!added.ret) {
             return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addTrack failed: " + added.ret.to_string());
+        }
+    }
+
+    {
+        OfflineCancellation::EventReleaseScope phase;
+        for (const auto &id : ordered_track_ids) {
+            if (!release_event_batches(model.resolve_track_playback_data(id).origin_events, poll)) return abort_setup();
         }
     }
 

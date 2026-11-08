@@ -11,8 +11,15 @@ private:
     inline static thread_local const std::function<bool()> *s_poll = nullptr;
     const std::function<bool()> *previous_;
 public:
-    enum class Phase { OTHER, PLAYBACK_MODEL, SEQUENCER, SYNTHESIS, ENCODING };
+    enum class Phase { OTHER, PLAYBACK_MODEL, SEQUENCER, SYNTHESIS, ENCODING, EVENT_RELEASE };
     inline static thread_local Phase phase = Phase::OTHER;
+
+    struct EventReleaseScope {
+    private:
+        Phase previous = std::exchange(phase, Phase::EVENT_RELEASE);
+    public:
+        ~EventReleaseScope() { phase = previous; }
+    };
 
     struct SequencerScope {
     private:

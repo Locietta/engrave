@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinetiming.h"
@@ -39,7 +41,7 @@ int main(int argc, char **argv) {
     try {
         if (argc < 5)
             throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
-                                        "[--excerpt N] [--measure] [--cancel-phase 1..4] [--cancel-poll N]");
+                                        "[--excerpt N] [--measure] [--cancel-phase 1..5] [--cancel-poll N]");
         using namespace muse::audio;
         const auto dir = std::filesystem::u8path(argv[4]);
         std::filesystem::create_directories(dir);
@@ -72,7 +74,7 @@ int main(int argc, char **argv) {
             else
                 throw std::invalid_argument("unknown option: " + arg);
         }
-        if ((rate != 44100 && rate != 48000) || cancel_phase < 0 || cancel_phase > 4 || cancel_poll < 1)
+        if ((rate != 44100 && rate != 48000) || cancel_phase < 0 || cancel_phase > 5 || cancel_poll < 1)
             throw std::invalid_argument("invalid rate/cancellation option");
         engrave::EngineOptions engine_options;
         engine_options.resources = std::filesystem::u8path(argv[1]);
@@ -105,8 +107,18 @@ int main(int argc, char **argv) {
             std::ofstream(dir / "B.txt", std::ios::binary) << "DEFERRED: independent flat-record projection extractors arrive in step 4b\n";
         }
         Clock::time_point requested{}, observed{};
+        Clock::time_point release_poll{};
+        std::vector<double> release_batches;
+        release_batches.reserve(1024);
         int polls = 0;
         request.cancelled = [&] {
+            if (measure && OfflineCancellation::phase == OfflineCancellation::Phase::EVENT_RELEASE) {
+                const auto now = Clock::now();
+                if (release_poll != Clock::time_point{}) release_batches.push_back(milliseconds(release_poll, now));
+                release_poll = now;
+            } else {
+                release_poll = {};
+            }
             if (requested != Clock::time_point{}) {
                 if (observed == Clock::time_point{}) observed = Clock::now();
                 return true;
@@ -137,6 +149,12 @@ int main(int argc, char **argv) {
         std::ofstream stats(dir / "metrics.txt", std::ios::binary);
         stats.precision(12);
         stats << "export_ms " << milliseconds(start, returned) << '\n';
+        if (!release_batches.empty()) {
+            std::sort(release_batches.begin(), release_batches.end());
+            stats << "release_batch_count " << release_batches.size() << "\nrelease_batch_p95_ms "
+                  << release_batches[(release_batches.size() * 95 - 1) / 100] << "\nrelease_batch_max_ms " << release_batches.back()
+                  << '\n';
+        }
         if (cancel_phase) {
             if (result.failure != music::AudioRenderResult::Failure::CANCELLED || observed == Clock::time_point{} ||
                 std::filesystem::exists(dir / "audio.wav"))
