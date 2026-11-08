@@ -2,12 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-
 import argparse
 import json
 import subprocess
@@ -15,7 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from integration.test_export_options import canonical_notes, count_note_on_events, parse_midi_file
+from engrave_testing.export_formats import canonical_notes, count_note_on_events, parse_midi_file
 
 
 def main():

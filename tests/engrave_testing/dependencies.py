@@ -1,4 +1,5 @@
 """Check the pinned normalization/validation environment before capturing outputs."""
+
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
@@ -17,5 +18,8 @@ def validate_dependencies():
         if actual != expected:
             issues.append(f"{name}: installed {actual}, required {expected}")
     if issues:
-        raise RuntimeError("Pinned gate dependencies differ: " + "; ".join(issues)
-                           + ". Install with python -m pip install -r tests/requirements.txt")
+        raise RuntimeError(
+            "Pinned gate dependencies differ: "
+            + "; ".join(issues)
+            + ". Install with python -m pip install -r tests/requirements.txt"
+        )

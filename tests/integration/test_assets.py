@@ -1,9 +1,5 @@
 """Validate dynamic native fonts, cache invalidation and immutable retained data."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import json
 import os
@@ -11,7 +7,7 @@ import subprocess
 import zlib
 from pathlib import Path
 
-from support.paths import REPO_ROOT
+from engrave_testing.paths import REPO_ROOT, pixi_env
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--binary", type=Path, required=True)
@@ -39,7 +35,7 @@ def fallback_fixture():
         a.font.parent / "Ubuntu-M.ttf",
         a.font.parent / "Ubuntu-B.ttf",
         a.font.parent / "DejaVuSans-Bold.ttf",
-        root / ".pixi/envs/native/fonts/Ubuntu-M.ttf",
+        pixi_env(root) / "fonts/Ubuntu-M.ttf",
         Path("C:/Windows/Fonts/arialbd.ttf"),
         Path("/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf"),
         Path("/usr/share/fonts/TTF/Ubuntu-M.ttf"),
