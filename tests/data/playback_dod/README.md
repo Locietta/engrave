@@ -21,9 +21,13 @@ Known focused coverage gaps needing constructed MPE or native-score fixtures:
 - Empty/nonempty NATURAL multi-articulation fallback in both single-note dynamics
   modes; custom-profile unit tests remain separate from default-profile exports.
 - Precisely colliding overlapping bend reset/sample times.
+- Channel exhaustion: the 20-staff candidate imports with single-note dynamics
+  disabled and uses channel 0, so it does not exhaust the budget.
 - Same-program insertion before an existing flat-map element and at a capacity
   boundary (no flat-map implementation exists yet); program override.
-- Multi-part sound flags and swing specifically combined with this focused set.
+- Multi-part sound flags specifically combined with this focused set.
+- The MusicXML swing candidate currently produces straight 250 ms nominal note
+  spacing in dump A; native swing behavior is not established by this candidate.
 - Negative-start, infinite-duration and exact-chunk-boundary synthetic events.
 - The pedal spelling does not prove overlapping sostenuto. Verify native fixture
   payloads or add constructed MPE coverage before relying on that interaction.

@@ -3,19 +3,18 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <stdexcept>
 #include <string>
 
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
+#include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/score_excerpts.h"
-#include "engraving/engravingproject.h"
 #include "playback_dump.h"
+#include <engrave/engine.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -75,15 +74,16 @@ int main(int argc, char **argv) {
         }
         if ((rate != 44100 && rate != 48000) || cancel_phase < 0 || cancel_phase > 4 || cancel_poll < 1)
             throw std::invalid_argument("invalid rate/cancellation option");
-        music::EngineContext context(argv[1]);
-        const auto score_path = std::filesystem::u8path(argv[3]);
-        std::ifstream input(score_path, std::ios::binary);
-        if (!input) throw std::runtime_error("cannot open score");
-        const std::string bytes{std::istreambuf_iterator<char>(input), {}};
-        auto ext = utf8(score_path.extension()).substr(1);
-        if (ext == "xml") ext = "musicxml";
-        auto project = music::load_native_score(context, bytes, ext);
-        auto *master = project->master_score();
+        engrave::EngineOptions engine_options;
+        engine_options.resources = std::filesystem::u8path(argv[1]);
+        engine_options.audio_sample_rate = rate;
+        engine_options.deterministic_ids = true;
+        auto engine = engrave::Engine::create(engine_options);
+        if (!engine) throw std::runtime_error(engine.error().message);
+        auto document = (*engine)->open(std::filesystem::u8path(argv[3]));
+        if (!document) throw std::runtime_error(document.error().message);
+        auto &context = engrave::DocumentAccess::context(**document);
+        auto *master = engrave::DocumentAccess::master_score(**document);
         std::string error;
         if (!music::initialize_engine_audio(context.audio(), music::EngineAudioSetup{{argv[2]}, rate}, &error))
             throw std::runtime_error(error);
