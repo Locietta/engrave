@@ -476,8 +476,8 @@ void PlaybackModel::process_segment(const int tick_position_offset, const Segmen
         }
 
         if (chord_symbol->play()) {
-            renderer_.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx_,
-                                          playback_data_map_[track_id].origin_events);
+            EventsMapSink sink{playback_data_map_[track_id].origin_events};
+            renderer_.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx_, sink);
         }
 
         collect_changes_tracks(track_id, track_changes);
@@ -534,7 +534,8 @@ void PlaybackModel::process_segment(const int tick_position_offset, const Segmen
             continue;
         }
 
-        renderer_.render(item, tick_position_offset, profile, playback_ctx_, playback_data_map_[track_id].origin_events);
+        EventsMapSink sink{playback_data_map_[track_id].origin_events};
+        renderer_.render(item, tick_position_offset, profile, playback_ctx_, sink);
 
         collect_changes_tracks(track_id, track_changes);
     }
@@ -585,7 +586,7 @@ void PlaybackModel::update_events(const int tick_from, const int tick_to, const 
 
     const ArticulationsProfilePtr metronome_profile =
         default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
-    PlaybackEventsMap &metronome_events = playback_data_map_[::mu::engraving::PlaybackModel::metronome_track_id_value].origin_events;
+    EventsMapSink metronome_sink{playback_data_map_[::mu::engraving::PlaybackModel::metronome_track_id_value].origin_events};
 
     for (const RepeatSegment *repeat_segment : repeat_list()) {
         checkpoint();
@@ -629,7 +630,7 @@ void PlaybackModel::update_events(const int tick_from, const int tick_to, const 
             }
 
             if (metronome_enabled_) {
-                renderer_.render_metronome(score_, measure, tick_position_offset, metronome_profile, metronome_events);
+                renderer_.render_metronome(score_, measure, tick_position_offset, metronome_profile, metronome_sink);
                 collect_changes_tracks(::mu::engraving::PlaybackModel::metronome_track_id_value, track_changes);
             }
         }
@@ -648,6 +649,7 @@ void PlaybackModel::reload_metronome_events() {
 
     const ArticulationsProfilePtr metronome_profile =
         default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    EventsMapSink metronome_sink{metronome_data.origin_events};
 
     for (const RepeatSegment *repeat_segment : repeat_list()) {
         checkpoint();
@@ -655,7 +657,7 @@ void PlaybackModel::reload_metronome_events() {
 
         for (const Measure *measure : repeat_segment->measure_list()) {
             checkpoint();
-            renderer_.render_metronome(score_, measure, tick_position_offset, metronome_profile, metronome_data.origin_events);
+            renderer_.render_metronome(score_, measure, tick_position_offset, metronome_profile, metronome_sink);
         }
     }
 
