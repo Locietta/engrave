@@ -11,6 +11,8 @@ xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_contai
 the explicit step-4b projection stub `B.txt`, synth input `C.txt`, a FLOAT32 WAV,
 build metadata and phase measurements. Options are `--rate 44100|48000`,
 `--no-repeats`, `--no-reverb`, `--mute-part N`, and `--excerpt N`.
+Dump C v2 records each FluidSynth setup operation through the same arguments
+used for the actual call, and each slice includes its ordered raw MIDI words.
 All capture sites are behind `ENGRAVE_PLAYBACK_HARNESS`; normal builds retain
 their original code paths. The serializer uses const legacy accessors, UTF-16
 code units for MPE strings, original-width integers and hexadecimal float bits.
