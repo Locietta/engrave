@@ -11,9 +11,11 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/ornament.h"
 #include "engraving/dom/part.h"
 #include "engraving/playback/metaparsers/chordarticulationsparser.h"
 #include "engraving/playback/playbackeventsrenderer.h"
@@ -408,4 +410,55 @@ TEST(EngravingArticulationPrecedenceTests, OverlappingBendResetCollision) {
             EXPECT_EQ(bends[1]->data(), 8192);
         }
     }
+}
+
+// Chord-articulation precedence: a rolled chord with a trill stays rolled (arpeggios first, then enum order)
+TEST(EngravingArticulationPrecedenceTests, ArpeggioOverOrnament) {
+    // F4+A4+C5 sixteenth with an arpeggio; add a trill
+    Score *score = ScoreRW::read_score(u"playback/playbackeventsrenderer_data/chord_arpeggio/chord_arpeggio.mscx");
+    ASSERT_TRUE(score);
+    Chord *chord = const_cast<Chord *>(find_chord(score, 0, 0));
+    ASSERT_TRUE(chord);
+    ASSERT_TRUE(chord->arpeggio());
+    score->start_cmd(TranslatableString::untranslatable("Articulation precedence tests"));
+    Ornament *trill = Factory::create_ornament(chord);
+    trill->set_sym_id(SymId::ORNAMENT_TRILL);
+    trill->set_track(chord->track());
+    trill->set_ownership_parent(chord);
+    score->undo_add_element(trill);
+    score->end_cmd();
+
+    ArticulationsProfilePtr profile = std::make_shared<ArticulationsProfile>();
+    for (const ArticulationType type : {ArticulationType::ARPEGGIO, ArticulationType::TRILL}) {
+        profile->set_pattern(type, blank_pattern());
+    }
+    PlaybackContextPtr playback_ctx = std::make_shared<PlaybackContext>(score);
+
+    // [GIVEN] The chord carries both, and TRILL is lower in enum order
+    const ArticulationMap articulations = chord_articulations(chord, profile, playback_ctx);
+    ASSERT_TRUE(articulations.contains(ArticulationType::ARPEGGIO));
+    ASSERT_TRUE(articulations.contains(ArticulationType::TRILL));
+    ASSERT_LT(ArticulationType::TRILL, ArticulationType::ARPEGGIO);
+
+    // [WHEN] Render the chord
+    PlaybackEventsMap result;
+    PlaybackEventsRenderer renderer;
+    renderer.render(chord, 0, profile, playback_ctx, result);
+
+    // [THEN] Three rolled notes, one per pitch, staggered by a third of the arpeggio span
+    std::vector<const mpe::NoteEvent *> notes;
+    for (const auto &pair : result) {
+        for (const PlaybackEvent &event : pair.second) {
+            notes.push_back(&std::get<mpe::NoteEvent>(event));
+        }
+    }
+    constexpr duration_t sixteenth = quarter_note_duration / 4;
+    const pitch_level_t pitches[] = {pitch_level(PitchClass::F, 4), pitch_level(PitchClass::A, 4), pitch_level(PitchClass::C, 5)};
+    ASSERT_EQ(notes.size(), 3);
+    for (size_t i = 0; i < 3; ++i) {
+        EXPECT_EQ(notes[i]->pitch_ctx().nominal_pitch_level, pitches[i]);
+        EXPECT_EQ(notes[i]->arrangement_ctx().nominal_timestamp, static_cast<timestamp_t>(i) * (sixteenth / 3));
+    }
+
+    delete score;
 }
