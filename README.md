@@ -161,7 +161,14 @@ python tests/test_inventory.py
 
 Use a fresh output directory for each run. Windows uses native Python/PowerShell and a Cairo prefix ending in `Library`; put its `bin` on `PATH`. Linux uses the native prefix with its `bin` on `PATH` and `lib` on `LD_LIBRARY_PATH`. When a prefix supplies the Conda compiler, the gate selects it; otherwise configure with the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
 
-Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install with `.venv/bin/python -m pip install -r tests/requirements.txt` (Windows: `.venv/Scripts/python.exe`). Run the commands above with that Python. All normalization and validation dependencies are exact pins matching the host `pixi.lock`. The gate rejects missing or different versions before building or capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
+Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install dependencies and the test package in editable mode:
+
+```bash
+.venv/bin/python -m pip install -r tests/requirements.txt
+.venv/bin/python -m pip install -e .
+```
+
+(Windows: `.venv/Scripts/python.exe`). Running `python -m pip install -e .` in the fork root inside the virtual environment provides `engrave_testing`, which `tests/gate.py` and `tests/test_inventory.py` import at startup (and which `tests/requirements.txt` does not supply). Run the commands above with that Python. All normalization and validation dependencies are exact pins matching the host `pixi.lock`. The gate rejects missing or different versions before building or capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
 
 Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0, Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed in the supplied native prefix on Linux. xmake 3.1.1+, MSVC 14.51+ or GCC 15.3 build the C++23 closure. No MCP SDK or desktop MuseScore installation is needed. Shared input/baseline provenance is frozen under `tests/data`; the host reads these files through its submodule. `gate-inventory.json` explicitly selects the 251 master API artifacts from the complete shared platform index. The index's entire payload inventory and hashes are verified before comparison.
 
@@ -170,7 +177,7 @@ Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0,
 To execute an individual integration script in a fork-only checkout without an editable package install, prepend `tests` and `tools` to `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font /path/to/cairo/prefix/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
 ```
 
 On Windows PowerShell:
