@@ -32,6 +32,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "sortedrange.h"
 #include "soundid.h"
 #include "types/number.h"
 #include "types/sharedhashmap.h"
@@ -83,21 +84,43 @@ constexpr inline duration_percentage_t occupied_percentage(const timestamp_t tim
     return percentage_from_factor(static_cast<float>(timestamp) / static_cast<float>(overall_duration));
 }
 
-template <typename T>
-struct ValuesCurve : public SharedMap<duration_percentage_t, T> {
-    std::pair<duration_percentage_t, T> amplitude_value_point() const {
-        auto max = std::max_element(this->cbegin(), this->cend(),
-                                    [](const auto &f, const auto &s) { return std::abs(f.second) < std::abs(s.second); });
+//! NOTE: Curve is any key-sorted range of (duration_percentage_t, value) entries (see sortedrange.h)
+template <typename Curve>
+std::pair<duration_percentage_t, sorted_value_t<Curve>> amplitude_value_point(const Curve &curve) {
+    auto max = std::max_element(curve.begin(), curve.end(),
+                                [](const auto &f, const auto &s) { return std::abs(entry_value(f)) < std::abs(entry_value(s)); });
 
-        if (max == this->cend()) {
-            static const std::pair<duration_percentage_t, T> empty{0, {}};
-            return empty;
-        }
-
-        return *max;
+    if (max == curve.end()) {
+        static const std::pair<duration_percentage_t, sorted_value_t<Curve>> empty{0, {}};
+        return empty;
     }
 
-    T max_amplitude_level() const { return amplitude_value_point().second; }
+    return {entry_key(*max), entry_value(*max)};
+}
+
+template <typename Curve>
+sorted_value_t<Curve> max_amplitude_level(const Curve &curve) {
+    return ::muse::mpe::amplitude_value_point(curve).second;
+}
+
+template <typename Curve>
+float velocity_fraction(const Curve &curve) {
+    auto amplitude_point = ::muse::mpe::amplitude_value_point(curve);
+    duration_percentage_t duration = amplitude_point.first;
+
+    if (duration == 0) {
+        return 1.f;
+    }
+
+    float factor = log10f(amplitude_point.second / static_cast<float>(duration));
+    return (factor + 1.f) / 2.f;
+}
+
+template <typename T>
+struct ValuesCurve : public SharedMap<duration_percentage_t, T> {
+    std::pair<duration_percentage_t, T> amplitude_value_point() const { return ::muse::mpe::amplitude_value_point(*this); }
+
+    T max_amplitude_level() const { return ::muse::mpe::max_amplitude_level(*this); }
 
     duration_percentage_t attack_phase_duration() const { return amplitude_value_point().first; }
 
@@ -105,17 +128,7 @@ struct ValuesCurve : public SharedMap<duration_percentage_t, T> {
         return this->empty() ? 0 : this->rbegin()->first - amplitude_value_point().first;
     }
 
-    float velocity_fraction() const {
-        auto amplitude_point = amplitude_value_point();
-        duration_percentage_t duration = amplitude_point.first;
-
-        if (duration == 0) {
-            return 1.f;
-        }
-
-        float factor = log10f(amplitude_point.second / static_cast<float>(duration));
-        return (factor + 1.f) / 2.f;
-    }
+    float velocity_fraction() const { return ::muse::mpe::velocity_fraction(*this); }
 };
 
 // Pitch
