@@ -22,6 +22,8 @@
 
 #include "chordarticulationsrenderer.h"
 
+#include <array>
+
 #include "arpeggiorenderer.h"
 #include "bendsrenderer.h"
 #include "gracechordcontext.h"
@@ -94,26 +96,35 @@ void ChordArticulationsRenderer::render_chord_with_grace_chords(const Chord *cho
     }
 }
 
+//! A rolled chord stays rolled: arpeggios win over ornaments and tremolo, then ascending ArticulationType
+static constexpr std::array<mpe::ArticulationType, 5> chord_articulation_precedence{
+    mpe::ArticulationType::ARPEGGIO,
+    mpe::ArticulationType::ARPEGGIO_UP,
+    mpe::ArticulationType::ARPEGGIO_DOWN,
+    mpe::ArticulationType::ARPEGGIO_STRAIGHT_UP,
+    mpe::ArticulationType::ARPEGGIO_STRAIGHT_DOWN,
+};
+
 bool ChordArticulationsRenderer::render_chord_articulations(const Chord *chord, const RenderingContext &ctx,
                                                             mpe::PlaybackEventList &result) {
-    for (const auto &pair : ctx.common_articulations) {
-        const mpe::ArticulationType type = pair.first;
+    const bool has_tremolo = chord->tremolo_single_chord() || chord->tremolo_two_chord();
+    const mpe::ArticulationType type =
+        mpe::select_articulation(ctx.common_articulations, chord_articulation_precedence, [chord, has_tremolo](mpe::ArticulationType t) {
+            return OrnamentsRenderer::is_able_to_render(t) || (TremoloRenderer::is_able_to_render(t) && has_tremolo) ||
+                   (ArpeggioRenderer::is_able_to_render(t) && chord->arpeggio());
+        });
 
-        if (OrnamentsRenderer::is_able_to_render(type)) {
-            OrnamentsRenderer::render(chord, type, ctx, result);
-            return true;
-        }
-
-        if (TremoloRenderer::is_able_to_render(type) && (chord->tremolo_single_chord() || chord->tremolo_two_chord())) {
-            TremoloRenderer::render(chord, type, ctx, result);
-            return true;
-        }
-
-        if (ArpeggioRenderer::is_able_to_render(type) && chord->arpeggio()) {
-            ArpeggioRenderer::render(chord, type, ctx, result);
-            return true;
-        }
+    if (type == mpe::ArticulationType::UNDEFINED) {
+        return false;
     }
 
-    return false;
+    if (OrnamentsRenderer::is_able_to_render(type)) {
+        OrnamentsRenderer::render(chord, type, ctx, result);
+    } else if (TremoloRenderer::is_able_to_render(type)) {
+        TremoloRenderer::render(chord, type, ctx, result);
+    } else {
+        ArpeggioRenderer::render(chord, type, ctx, result);
+    }
+
+    return true;
 }
