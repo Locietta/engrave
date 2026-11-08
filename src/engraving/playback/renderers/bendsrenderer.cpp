@@ -301,8 +301,14 @@ RenderingContext BendsRenderer::build_rendering_context(const Note *note, const 
     // Use the principal chord to build the context
     const Chord *chord = principal_chord(note->chord());
 
-    RenderingContext ctx = engraving::build_rendering_ctx(chord, initial_ctx.position_tick_offset, initial_ctx.profile,
-                                                          initial_ctx.playback_ctx, initial_ctx.common_articulations);
+    // Grace markers come only from this principal's own graces (parsed below), never from the chain's first chord
+    mpe::ArticulationMap inherited = initial_ctx.common_articulations;
+    for (const mpe::ArticulationType type : grace_type_precedence) {
+        inherited.erase(type);
+    }
+
+    RenderingContext ctx =
+        engraving::build_rendering_ctx(chord, initial_ctx.position_tick_offset, initial_ctx.profile, initial_ctx.playback_ctx, inherited);
 
     ChordArticulationsParser::build_chord_articulation_map(chord, ctx, ctx.common_articulations);
 
