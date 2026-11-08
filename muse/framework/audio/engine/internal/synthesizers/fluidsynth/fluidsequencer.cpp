@@ -86,22 +86,33 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
         on_main_stream_flushed_();
     }
 
-    add_playback_events(main_stream_events_, events, true /*isMainStream*/);
+    EventSequenceMap staged;
+    add_playback_events(staged, events, true /*isMainStream*/);
 
     if (use_dynamic_events_) {
-        add_dynamic_events(main_stream_events_, dynamics);
+        add_dynamic_events(staged, dynamics);
     }
+
+    flatten_timeline(staged, main_stream_events_);
 
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     if (test::PlaybackCapture::synth) {
         auto &out = *test::PlaybackCapture::synth;
         out << "timeline " << test::PlaybackCapture::id(this) << '\n';
-        for (const auto &[at, events] : main_stream_events_) {
-            out << "group " << at.raw() << ' ' << events.size() << '\n';
-            for (const auto &event : events) {
-                const auto *words = std::get<midi::Event>(event).midi20_words();
+        const auto &flat = main_stream_events_.events;
+        const auto total = static_cast<std::uint32_t>(flat.size());
+        for (std::uint32_t i = 0; i < total;) {
+            const mpe::timestamp_t at = flat[i].timestamp;
+            std::uint32_t j = i + 1;
+            while (j < total && flat[j].timestamp == at) {
+                ++j;
+            }
+            out << "group " << at << ' ' << (j - i) << '\n';
+            for (std::uint32_t k = i; k < j; ++k) {
+                const auto *words = flat[k].event.midi20_words();
                 out << "midi " << words[0] << ' ' << words[1] << ' ' << words[2] << ' ' << words[3] << '\n';
             }
+            i = j;
         }
     }
 #endif
@@ -109,7 +120,9 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
 }
 
 void FluidSequencer::update_off_stream_events(const mpe::PlaybackEventsMap &events) {
-    add_playback_events(off_stream_events_, events, false /*isMainStream*/);
+    EventSequenceMap staged;
+    add_playback_events(staged, events, false /*isMainStream*/);
+    flatten_timeline(staged, off_stream_events_);
     update_off_sequence_iterator();
 }
 

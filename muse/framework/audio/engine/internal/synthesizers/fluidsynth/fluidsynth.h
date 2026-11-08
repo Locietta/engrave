@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "../abstractsynthesizer.h"
@@ -89,7 +90,7 @@ private:
 
     void do_flush_sound();
 
-    bool process_sequence(const FluidSequencer::EventSequence &sequence, const samples_t samples, float *buffer);
+    bool process_sequence(std::span<const engine::TimedMidiEvent> sequence, samples_t samples, float *buffer);
     bool handle_event(const midi::Event &event);
 
     void update_expression_levels();

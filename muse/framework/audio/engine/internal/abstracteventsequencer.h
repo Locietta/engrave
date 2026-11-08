@@ -22,23 +22,100 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <map>
-#include <set>
+#include <span>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+#include <amc/vector.hpp>
 
 #include "audio/common/audiotypes.h"
+#include "midi/midievent.h"
 #include "mpe/events.h"
 #include "offlinecancellation.h"
 
 namespace muse::audio::engine {
+struct StoreLimit {
+    const char *message = "playback buffer exceeds uint32 offset limit";
+};
+
+template <class T>
+    requires std::is_trivially_copyable_v<T>
+using Buf = amc::vector<T>;
+
+template <class T = std::byte>
+constexpr std::uint32_t checked_grow(std::uint64_t size, std::uint64_t count) {
+    static_assert(std::is_trivially_copyable_v<T>);
+    constexpr std::uint64_t limit = std::numeric_limits<std::uint32_t>::max();
+    if (size > limit || count > limit - size) {
+        throw StoreLimit{};
+    }
+    const std::uint64_t total = size + count;
+    if (total > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
+        throw StoreLimit{};
+    }
+    return static_cast<std::uint32_t>(total);
+}
+
+template <class T>
+void reserve_checked(Buf<T> &buf, std::uint64_t count) {
+    buf.reserve(checked_grow<T>(0, count));
+}
+
+template <class T, class... Args>
+T &emplace_checked(Buf<T> &buf, Args &&...args) {
+    std::ignore = checked_grow<T>(buf.size(), 1);
+    return buf.emplace_back(std::forward<Args>(args)...);
+}
+
+struct TimedMidiEvent {
+    mpe::timestamp_t timestamp = 0;
+    midi::Event event;
+};
+
+static_assert(std::is_trivially_copyable_v<TimedMidiEvent>);
+static_assert(sizeof(TimedMidiEvent) == 24);
+
+struct ChunkSlice {
+    mpe::timestamp_t at = 0;
+    std::uint32_t first = 0;
+    std::uint32_t count = 0;
+};
+
+static_assert(std::is_trivially_copyable_v<ChunkSlice>);
+
+struct MidiTimeline {
+    Buf<TimedMidiEvent> events;
+    std::uint32_t cursor = 0;
+
+    void clear() {
+        events.clear();
+        cursor = 0;
+    }
+
+    bool empty() const { return events.empty(); }
+
+    void seek(const mpe::timestamp_t position) {
+        const auto it =
+            std::lower_bound(events.cbegin(), events.cend(), position,
+                             [](const TimedMidiEvent &entry, const mpe::timestamp_t target) { return entry.timestamp < target; });
+        cursor = static_cast<std::uint32_t>(it - events.cbegin());
+    }
+};
+
 template <class... Types>
 struct AbstractEventSequencer {
+    // Temporary staging container kept for step-3a build before flattening; step 3b replaces construction.
     using EventType = std::variant<Types...>;
     using EventSequence = std::vector<EventType>;
     using EventSequenceMap = std::map<msecs_t, EventSequence>;
-
-    typedef typename EventSequenceMap::const_iterator SequenceIterator;
-    typedef typename EventSequence::const_iterator EventIterator;
 
     AbstractEventSequencer() { reset_all_iterators(); }
 
@@ -52,12 +129,12 @@ struct AbstractEventSequencer {
     }
 
     void flush_offstream() {
-        if (off_stream_events_.empty()) {
-            return;
-        }
-
+        const bool had_events = off_stream_events_.cursor < off_stream_events_.events.size();
         off_stream_events_.clear();
         update_off_sequence_iterator();
+        if (!had_events) {
+            return;
+        }
 
         if (on_off_stream_flushed_) {
             on_off_stream_flushed_();
@@ -88,91 +165,127 @@ struct AbstractEventSequencer {
 
     void set_on_main_stream_flushed(OnFlushedCallback flushed) { on_main_stream_flushed_ = flushed; }
 
-    EventSequenceMap move_playback_forward(const msecs_t next_msecs) {
-
-        EventSequenceMap result;
+    void advance(const msecs_t next_msecs, Buf<ChunkSlice> &plan) {
+        plan.clear();
 
         if (!is_active_) {
-            result.emplace(offstream_position_, EventSequence());
+            if (off_stream_events_.cursor >= off_stream_events_.events.size()) {
+                off_stream_events_.clear();
+            }
+            emplace_checked(plan, ChunkSlice{offstream_position_.raw(), off_stream_events_.cursor, 0});
 
-            if (current_off_sequence_it_ == off_stream_events_.cend()) {
-                return result;
+            if (off_stream_events_.cursor >= off_stream_events_.events.size()) {
+                return;
             }
 
             offstream_position_ += next_msecs;
-            handle_off_stream(result);
-
-            return result;
+            collect_slices(off_stream_events_, offstream_position_.raw(), plan);
+            if (off_stream_events_.cursor >= off_stream_events_.events.size()) {
+                offstream_position_ = 0;
+            }
+            return;
         }
 
         // Empty sequence means to continue the previous sequence
-        result.emplace(playback_position_, EventSequence());
+        emplace_checked(plan, ChunkSlice{playback_position_.raw(), main_stream_events_.cursor, 0});
         playback_position_ += next_msecs;
 
-        if (current_main_sequence_it_ == main_stream_events_.cend()) {
-            return result;
+        if (main_stream_events_.cursor >= main_stream_events_.events.size()) {
+            return;
         }
 
-        handle_main_stream(result);
+        collect_slices(main_stream_events_, playback_position_.raw(), plan);
+    }
 
-        return result;
+    const Buf<ChunkSlice> &move_playback_forward(const msecs_t next_msecs) {
+        advance(next_msecs, chunk_plan_);
+        return chunk_plan_;
+    }
+
+    std::span<const TimedMidiEvent> slice_events(const ChunkSlice &slice) const {
+        const auto &events = is_active_ ? main_stream_events_.events : off_stream_events_.events;
+        const std::uint32_t end = checked_grow<TimedMidiEvent>(slice.first, slice.count);
+        if (end > events.size()) {
+            throw StoreLimit{"slice range exceeds timeline size"};
+        }
+        return {events.data() + slice.first, slice.count};
     }
 
 protected:
     virtual void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
     virtual void update_off_stream_events(const mpe::PlaybackEventsMap &events) = 0;
 
+    static void flatten_timeline(const EventSequenceMap &source, MidiTimeline &timeline) {
+        OfflineCancellation::SequencerScope phase;
+        timeline.clear();
+        if (OfflineCancellation::requested()) return;
+
+        std::uint64_t total_events = 0;
+        for (const auto &[_, sequence] : source) {
+            total_events = checked_grow<TimedMidiEvent>(total_events, sequence.size());
+        }
+        reserve_checked(timeline.events, total_events);
+
+        std::uint32_t batch = 0;
+        for (const auto &[at, sequence] : source) {
+            const mpe::timestamp_t timestamp = at.raw();
+            for (const EventType &item : sequence) {
+                if (++batch == 4096) {
+                    batch = 0;
+                    if (OfflineCancellation::requested()) {
+                        timeline.clear();
+                        return;
+                    }
+                }
+                emplace_checked(timeline.events, TimedMidiEvent{timestamp, std::get<midi::Event>(item)});
+            }
+        }
+    }
+
     void reset_all_iterators() {
         update_main_sequence_iterator();
         update_off_sequence_iterator();
     }
 
-    void update_main_sequence_iterator() { current_main_sequence_it_ = main_stream_events_.lower_bound(playback_position_); }
+    void update_main_sequence_iterator() { main_stream_events_.seek(playback_position_.raw()); }
 
     void update_off_sequence_iterator() {
-        current_off_sequence_it_ = off_stream_events_.cbegin();
+        if (off_stream_events_.cursor >= off_stream_events_.events.size()) {
+            off_stream_events_.clear();
+        }
         offstream_position_ = 0;
     }
 
-    void handle_main_stream(EventSequenceMap &result) {
-        while (current_main_sequence_it_ != main_stream_events_.end() && current_main_sequence_it_->first <= playback_position_) {
+    static void collect_slices(MidiTimeline &timeline, const mpe::timestamp_t limit, Buf<ChunkSlice> &plan) {
+        const auto total = static_cast<std::uint32_t>(timeline.events.size());
+        while (timeline.cursor < total && timeline.events[timeline.cursor].timestamp <= limit) {
             if (OfflineCancellation::requested()) return;
-            EventSequence &sequence = result[current_main_sequence_it_->first];
-            for (const auto &event : current_main_sequence_it_->second) {
+            const mpe::timestamp_t at = timeline.events[timeline.cursor].timestamp;
+            const std::uint32_t first = timeline.cursor;
+            while (timeline.cursor < total && timeline.events[timeline.cursor].timestamp == at) {
                 if (OfflineCancellation::requested()) return;
-                sequence.push_back(event);
+                ++timeline.cursor;
             }
-            current_main_sequence_it_ = std::next(current_main_sequence_it_);
-        }
-    }
-
-    void handle_off_stream(EventSequenceMap &result) {
-        if (off_stream_events_.empty()) {
-            return;
-        }
-
-        while (current_off_sequence_it_ != off_stream_events_.end() && current_off_sequence_it_->first <= offstream_position_) {
-            if (OfflineCancellation::requested()) return;
-            EventSequence &sequence = result[current_off_sequence_it_->first];
-            for (auto &event : current_off_sequence_it_->second) {
-                if (OfflineCancellation::requested()) return;
-                sequence.push_back(std::move(event));
+            const std::uint32_t count = timeline.cursor - first;
+            if (plan.back().at == at) {
+                if (plan.back().count == 0) {
+                    plan.back().first = first;
+                }
+                plan.back().count = checked_grow<TimedMidiEvent>(plan.back().count, count);
+                std::ignore = checked_grow<TimedMidiEvent>(plan.back().first, plan.back().count);
+            } else {
+                std::ignore = checked_grow<TimedMidiEvent>(first, count);
+                emplace_checked(plan, ChunkSlice{at, first, count});
             }
-            current_off_sequence_it_ = off_stream_events_.erase(current_off_sequence_it_);
-        }
-
-        if (current_off_sequence_it_ == off_stream_events_.end()) {
-            offstream_position_ = 0;
         }
     }
 
     mutable msecs_t playback_position_ = 0;
     mutable msecs_t offstream_position_ = 0;
 
-    SequenceIterator current_main_sequence_it_;
-    SequenceIterator current_off_sequence_it_;
-    EventSequenceMap main_stream_events_;
-    EventSequenceMap off_stream_events_;
+    MidiTimeline main_stream_events_;
+    MidiTimeline off_stream_events_;
+    Buf<ChunkSlice> chunk_plan_;
 
     // Offline loading lowers MPE events once; only dynamics are needed by seeks.
     mpe::DynamicAutomationLayers dynamics_;

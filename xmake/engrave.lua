@@ -40,12 +40,13 @@ end
 ---------------------------------------------------------------------------
 local package_dir = path.join(fork_root, "xmake", "packages")
 for _, pkg in ipairs({
-    "freetype", "harfbuzz", "flac", "lame", "opus",
+    "amc", "freetype", "harfbuzz", "flac", "lame", "opus",
     "opusenc", "fdk-aac", "pugixml", "utfcpp", "picojson", "mnx-json-schema", "mnxdom",
 }) do
     includes(path.join(package_dir, pkg .. ".lua"))
 end
 
+add_requires("amc v2.8.1", {system = false})
 add_requires("mnxdom 45bf462", {system = false})
 
 add_requires("freetype 2.14.1", {system = false, configs = {
@@ -407,6 +408,7 @@ target("native_fluidsynth")
 target("muse_audio_engine")
     set_kind("static")
     add_deps("muse_generated", "muse_global", "native_fluidsynth")
+    add_packages("amc", {public = true})
     add_packages("muse-flac", "lame", "muse-opus", "muse-opusenc", "muse-fdk-aac")
     add_engine_target_defaults()
     add_defines(ENGRAVE_AUDIO_ENGINE.defines)

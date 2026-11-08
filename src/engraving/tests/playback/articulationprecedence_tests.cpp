@@ -74,7 +74,7 @@ struct TimelineSequencer : FluidSequencer {
 
 void load_sequencer(TimelineSequencer &sequencer, const PlaybackSetupData &setup, const mpe::NoteEvent &event,
                     const bool use_dynamic_events) {
-    sequencer.init(setup, std::nullopt, use_dynamic_events, 16);
+    sequencer.init(setup, std::nullopt, use_dynamic_events, k_fluid_channel_count);
 
     PlaybackData data;
     data.setup_data = setup;
@@ -85,15 +85,9 @@ void load_sequencer(TimelineSequencer &sequencer, const PlaybackSetupData &setup
 std::vector<const midi::Event *> midi_events_at(const TimelineSequencer &sequencer, const timestamp_t timestamp,
                                                 const midi::Event::Opcode opcode) {
     std::vector<const midi::Event *> result;
-    for (const auto &[at, events] : sequencer.main_stream_events_) {
-        if (at.raw() != timestamp) {
-            continue;
-        }
-        for (const auto &event : events) {
-            const midi::Event &midi_event = std::get<midi::Event>(event);
-            if (midi_event.opcode() == opcode) {
-                result.push_back(&midi_event);
-            }
+    for (const auto &entry : sequencer.main_stream_events_.events) {
+        if (entry.timestamp == timestamp && entry.event.opcode() == opcode) {
+            result.push_back(&entry.event);
         }
     }
     return result;

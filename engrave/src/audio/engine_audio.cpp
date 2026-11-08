@@ -741,7 +741,13 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         }
 
         const std::string name = track_name(master_score, model, track_id);
-        RetVal2<TrackId, TrackParams> added = context.add_track(name, playback_data, params);
+        RetVal2<TrackId, TrackParams> added;
+        try {
+            added = context.add_track(name, playback_data, params);
+        } catch (const engine::StoreLimit &limit) {
+            if (callback_error) std::rethrow_exception(callback_error);
+            return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
+        }
         if (poll()) return abort_setup();
         if (!added.ret) {
             return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "addTrack failed: " + added.ret.to_string());
@@ -800,7 +806,17 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     soundtrack::SoundTrackWriter writer(
         device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, master_chain,
         [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
-    const Ret write_ret = writer.write();
+    Ret write_ret;
+    try {
+        write_ret = writer.write();
+    } catch (const engine::StoreLimit &limit) {
+        device.close();
+        master_chain->set_mode(ProcessMode::IDLE);
+        std::error_code remove_error;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
+        if (callback_error) std::rethrow_exception(callback_error);
+        return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
+    }
 
     // Flush before the FileSystem size check below.
     device.close();

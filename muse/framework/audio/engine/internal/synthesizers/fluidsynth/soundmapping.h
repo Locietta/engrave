@@ -25,6 +25,7 @@
 
 #include <array>
 #include <functional>
+#include <stdexcept>
 
 #include "log.h"
 #include "midi/miditypes.h"
@@ -972,12 +973,21 @@ inline constexpr std::array<mpe::ArticulationType, 10> program_articulation_prec
     mpe::ArticulationType::DISTORTION,     mpe::ArticulationType::OVERDRIVE,
 };
 
+inline constexpr midi::channel_t k_fluid_channel_count = 16;
+
+inline void check_fluid_channel_limit(const midi::channel_t max_channels) {
+    if (max_channels > k_fluid_channel_count) {
+        throw std::invalid_argument("ChannelMap exceeds FluidSynth channel limit");
+    }
+}
+
 struct ChannelMap {
     using ChannelMapping = std::pair<midi::channel_t, midi::Program>;
     using VoiceMappings = std::map<mpe::ArticulationType, ChannelMapping>;
 
     void init(const mpe::PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override,
               const midi::channel_t max_channels) {
+        check_fluid_channel_limit(max_channels);
         max_channels_ = max_channels;
         program_override_ = program_override;
         uses_staff_layers_ = setup_data.supports_single_note_dynamics;
@@ -1101,7 +1111,7 @@ private:
 
     std::map<mpe::layer_idx_t, VoiceMappings> data_;
     midi::channel_t channel_count_ = 0;
-    midi::channel_t max_channels_ = 16;
+    midi::channel_t max_channels_ = k_fluid_channel_count;
 
     bool uses_staff_layers_ = false;
     std::optional<midi::Program> program_override_;

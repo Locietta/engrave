@@ -56,8 +56,6 @@ static constexpr unsigned int fluid_audio_channels_count = ::fluid_audio_channel
 
 static constexpr bool staff_to_midiout_channel = true;
 
-static constexpr midi::channel_t midi_channel_count = 16;
-
 struct muse::audio::synth::Fluid {
     fluid_settings_t *settings = nullptr;
     fluid_synth_t *synth = nullptr;
@@ -115,7 +113,7 @@ Ret FluidSynth::init(const OutputSpec &spec) {
     fluid_settings_setint(fluid_->settings, "synth.audio-channels", ::fluid_audio_channels_pair); // 1 pair of audio channels
     fluid_settings_setint(fluid_->settings, "synth.lock-memory", 0);
     fluid_settings_setint(fluid_->settings, "synth.threadsafe-api", 0);
-    fluid_settings_setint(fluid_->settings, "synth.midi-channels", ::midi_channel_count);
+    fluid_settings_setint(fluid_->settings, "synth.midi-channels", k_fluid_channel_count);
     fluid_settings_setint(fluid_->settings, "synth.dynamic-sample-loading", 1);
     fluid_settings_setint(fluid_->settings, "synth.polyphony", 512);
 
@@ -173,11 +171,11 @@ void FluidSynth::do_flush_sound() {
             if (channel < 0) {
                 return;
             }
-            channel = channel % 16;
+            channel = channel % k_fluid_channel_count;
             lower_bound = channel;
             upper_bound = channel + 1;
         } else {
-            upper_bound = min(channel_count, 16);
+            upper_bound = min(channel_count, static_cast<int>(k_fluid_channel_count));
         }
         for (int i = lower_bound; i < upper_bound; i++) {
             muse::midi::Event e(muse::midi::Event::Opcode::CONTROL_CHANGE, muse::midi::Event::MessageType::CHANNEL_VOICE20);
@@ -232,7 +230,7 @@ bool FluidSynth::handle_event(const midi::Event &event) {
         if (::staff_to_midiout_channel && event.is_channel_voice()) {
             int staff = sequencer_.last_staff();
             if (staff >= 0) {
-                int channel = staff % 16;
+                int channel = staff % k_fluid_channel_count;
                 midi::Event me(event);
                 me.set_channel(channel);
                 midi_out_port_->send_event(me);
@@ -332,7 +330,7 @@ void FluidSynth::setup_sound(const PlaybackSetupData &setup_data) {
 
     sequencer_.set_on_channel_added(setup_channel);
 
-    sequencer_.init(setup_data, preset_, setup_data.supports_single_note_dynamics, ::midi_channel_count);
+    sequencer_.init(setup_data, preset_, setup_data.supports_single_note_dynamics, k_fluid_channel_count);
 
     for (const auto &voice : sequencer_.channels().data()) {
         for (const auto &pair : voice.second) {
@@ -376,7 +374,7 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
     }
 
     const msecs_t next_msecs = samples_to_msecs(samples_per_channel, output_spec_.sample_rate);
-    const FluidSequencer::EventSequenceMap sequences = sequencer_.move_playback_forward(next_msecs);
+    const engine::Buf<engine::ChunkSlice> &plan = sequencer_.move_playback_forward(next_msecs);
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     if (test::PlaybackCapture::synth)
         *test::PlaybackCapture::synth << "process " << test::PlaybackCapture::id(&sequencer_) << ' ' << samples_per_channel << ' '
@@ -384,13 +382,14 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
 #endif
     samples_t sample_offset = 0;
 
-    for (auto it = sequences.cbegin(); it != sequences.cend(); ++it) {
+    for (std::uint32_t i = 0; i < plan.size(); ++i) {
         if (OfflineCancellation::requested()) return 0;
+        const engine::ChunkSlice &slice = plan[i];
+        const std::span<const engine::TimedMidiEvent> events = sequencer_.slice_events(slice);
         samples_t duration_in_samples = samples_per_channel - sample_offset;
 
-        auto next_it = std::next(it);
-        if (next_it != sequences.cend()) {
-            msecs_t duration = next_it->first - it->first;
+        if (i + 1 < plan.size()) {
+            msecs_t duration = plan[i + 1].at - slice.at;
             duration_in_samples = micro_secs_to_samples(duration, output_spec_.sample_rate);
         }
 
@@ -399,14 +398,14 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
 #ifdef ENGRAVE_PLAYBACK_HARNESS
         if (test::PlaybackCapture::synth) {
             auto &out = *test::PlaybackCapture::synth;
-            out << "slice " << it->first.raw() << ' ' << sample_offset << ' ' << duration_in_samples << ' ' << it->second.size() << '\n';
-            for (const auto &event : it->second) {
-                const auto *words = std::get<midi::Event>(event).midi20_words();
+            out << "slice " << slice.at << ' ' << sample_offset << ' ' << duration_in_samples << ' ' << events.size() << '\n';
+            for (const engine::TimedMidiEvent &item : events) {
+                const auto *words = item.event.midi20_words();
                 out << "slice_midi " << words[0] << ' ' << words[1] << ' ' << words[2] << ' ' << words[3] << '\n';
             }
         }
 #endif
-        if (!process_sequence(it->second, duration_in_samples, buffer + sample_offset * ::fluid_audio_channels_count)) {
+        if (!process_sequence(events, duration_in_samples, buffer + sample_offset * ::fluid_audio_channels_count)) {
             return 0;
         }
 
@@ -416,15 +415,15 @@ samples_t FluidSynth::process(float *buffer, samples_t samples_per_channel) {
     return samples_per_channel;
 }
 
-bool FluidSynth::process_sequence(const FluidSequencer::EventSequence &sequence, const samples_t samples, float *buffer) {
+bool FluidSynth::process_sequence(const std::span<const engine::TimedMidiEvent> sequence, const samples_t samples, float *buffer) {
     OfflineCancellation::SynthesisScope synthesis_scope;
     if (!sequence.empty()) {
         tuning_.reset();
     }
 
-    for (const FluidSequencer::EventType &event : sequence) {
+    for (const engine::TimedMidiEvent &item : sequence) {
         if (OfflineCancellation::requested()) return false;
-        handle_event(std::get<midi::Event>(event));
+        handle_event(item.event);
     }
 
     if (OfflineCancellation::requested()) return false;
