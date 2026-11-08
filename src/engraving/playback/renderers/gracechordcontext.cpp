@@ -102,12 +102,51 @@ static void append_grace_chord_ctxs(const std::vector<Chord *> &grace_chords, co
     }
 }
 
-//! Graces before and after one principal: each group takes its own rule's duration; if together they exceed half
-//! the principal, both shrink proportionally to fill exactly half. The principal keeps the rest.
-static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationType before_type, const std::vector<Chord *> &after_chords,
-                                         const RenderingContext &ctx) {
-    const std::vector<Chord *> before_chords = chord->grace_notes_before(true /*filterUnplayable*/);
+//! The grace articulation a grace chord stands for (as GraceNotesMetaParser maps it)
+static ArticulationType grace_type_of(const Chord *grace_chord) {
+    switch (grace_chord->note_type()) {
+        case NoteType::ACCIACCATURA: return ArticulationType::ACCIACCATURA;
+        case NoteType::APPOGGIATURA:
+        case NoteType::GRACE4:
+        case NoteType::GRACE16:
+        case NoteType::GRACE32: return ArticulationType::PRE_APPOGGIATURA;
+        case NoteType::GRACE8_AFTER:
+        case NoteType::GRACE16_AFTER:
+        case NoteType::GRACE32_AFTER: return ArticulationType::POST_APPOGGIATURA;
+        default: return ArticulationType::UNDEFINED;
+    }
+}
 
+static void erase_grace_types(ArticulationMap &articulations, const ArticulationType keep = ArticulationType::UNDEFINED) {
+    for (const ArticulationType type : grace_type_precedence) {
+        if (type != keep) {
+            articulations.erase(type);
+        }
+    }
+}
+
+//! Lays the group out on cumulative boundaries, so the rounded durations add up to `budget` exactly. Each grace keeps
+//! only its own grace type, so another group's type cannot move it
+static void append_grace_group_ctxs(const std::vector<Chord *> &grace_chords, const duration_t budget, const duration_t notated,
+                                    const timestamp_t start, const RenderingContext &ctx, GraceChordCtxList &result) {
+    duration_t notated_so_far = 0;
+    duration_t boundary = 0;
+    for (const Chord *grace_chord : grace_chords) {
+        notated_so_far += duration_from_tempo_and_ticks(ctx.beats_per_second.val, grace_chord->duration_type_ticks().ticks());
+        const duration_t next_boundary = muse::real_round(static_cast<double>(budget) * notated_so_far / notated, 0);
+
+        RenderingContext grace_note_ctx = build_grace_rendering_ctx(ctx, start + boundary, next_boundary - boundary);
+        erase_grace_types(grace_note_ctx.common_articulations, grace_type_of(grace_chord));
+        result.emplace_back(std::make_pair(grace_chord, grace_note_ctx));
+
+        boundary = next_boundary;
+    }
+}
+
+//! Graces before and after one principal: each group takes its own rule's duration; if together they exceed half
+//! the principal, both shrink proportionally to fill exactly half. The principal keeps the rest, without any grace type.
+static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationType before_type, const std::vector<Chord *> &before_chords,
+                                         const std::vector<Chord *> &after_chords, const RenderingContext &ctx) {
     const duration_t before_notated = grace_notes_total_duration(before_chords, ctx.beats_per_second);
     const duration_t after_notated = grace_notes_total_duration(after_chords, ctx.beats_per_second);
     duration_t before_duration = std::min(grace_notes_max_available_duration(before_type, ctx, before_chords.size()), before_notated);
@@ -124,22 +163,22 @@ static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationT
         build_grace_rendering_ctx(ctx, ctx.nominal_timestamp + before_duration, ctx.nominal_duration - before_duration - after_duration),
         {},
         {}};
-    result.principal_chord_ctx.common_articulations.erase(before_type);
-    result.principal_chord_ctx.common_articulations.erase(ArticulationType::POST_APPOGGIATURA);
+    erase_grace_types(result.principal_chord_ctx.common_articulations);
 
-    append_grace_chord_ctxs(before_chords, double(before_duration) / before_notated, ctx.nominal_timestamp, ctx,
-                            result.grace_chord_ctx_list);
-    append_grace_chord_ctxs(after_chords, double(after_duration) / after_notated,
-                            ctx.nominal_timestamp + ctx.nominal_duration - after_duration, ctx, result.after_grace_chord_ctx_list);
+    append_grace_group_ctxs(before_chords, before_duration, before_notated, ctx.nominal_timestamp, ctx, result.grace_chord_ctx_list);
+    append_grace_group_ctxs(after_chords, after_duration, after_notated, ctx.nominal_timestamp + ctx.nominal_duration - after_duration, ctx,
+                            result.after_grace_chord_ctx_list);
 
     return result;
 }
 
 GraceChordCtx GraceChordCtx::build_ctx(const Chord *chord, const mpe::ArticulationType type, const RenderingContext &ctx) {
     if (is_grace_note_placed_before_principal_note(type) && ctx.common_articulations.contains(ArticulationType::POST_APPOGGIATURA)) {
+        // both groups must really exist on this chord, not only as markers in the context
+        const std::vector<Chord *> before_chords = chord->grace_notes_before(true /*filterUnplayable*/);
         const std::vector<Chord *> after_chords = chord->grace_notes_after(true /*filterUnplayable*/);
-        if (!after_chords.empty()) {
-            return build_two_group_ctx(chord, type, after_chords, ctx);
+        if (!before_chords.empty() && !after_chords.empty()) {
+            return build_two_group_ctx(chord, type, before_chords, after_chords, ctx);
         }
     }
 
