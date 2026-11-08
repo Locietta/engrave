@@ -69,35 +69,40 @@ static muse::mpe::NoteEvent build_metronome_event(const TimeSigFrac &time_sig, c
                           bps);
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render(const EngravingItem *item, const int tick_position_offset, const ArticulationsProfilePtr profile,
-                                    const PlaybackContextPtr playback_ctx, PlaybackEventsMap &result) const {
+                                    const PlaybackContextPtr playback_ctx, Sink &sink) const {
     IF_ASSERT_FAILED(item->is_chord()) { return; }
 
-    render_note_events(to_chord(item), tick_position_offset, profile, playback_ctx, result);
+    render_note_events(to_chord(item), tick_position_offset, profile, playback_ctx, sink);
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render(const EngravingItem *item, const mpe::timestamp_t actual_timestamp,
                                     const mpe::duration_t actual_duration, const mpe::dynamic_level_t actual_dynamic_level,
-                                    const PlaybackContextPtr playback_ctx, const ArticulationsProfilePtr profile,
-                                    PlaybackEventsMap &result) const {
+                                    const PlaybackContextPtr playback_ctx, const ArticulationsProfilePtr profile, Sink &sink) const {
     if (item->is_chord()) {
         const Chord *chord = to_chord(item);
-        mpe::PlaybackEventList &events = result[actual_timestamp];
+        mpe::PlaybackEventList events;
 
         for (const Note *note : chord->notes()) {
             render_fixed_note_event(note, actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, events);
         }
+
+        sink(actual_timestamp, std::move(events));
     } else if (item->is_note()) {
-        render_fixed_note_event(to_note(item), actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile,
-                                result[actual_timestamp]);
+        mpe::PlaybackEventList events;
+        render_fixed_note_event(to_note(item), actual_timestamp, actual_duration, actual_dynamic_level, playback_ctx, profile, events);
+        sink(actual_timestamp, std::move(events));
     } else {
         UNREACHABLE;
     }
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, const int ticks_position_offset,
                                                  const mpe::ArticulationsProfilePtr profile, const PlaybackContextPtr playback_ctx,
-                                                 mpe::PlaybackEventsMap &result) const {
+                                                 Sink &sink) const {
     if (!chord_symbol->is_realizable()) {
         return;
     }
@@ -113,7 +118,7 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
     int position_tick_with_offset = position_tick + ticks_position_offset;
 
     timestamp_t event_timestamp = timestamp_from_ticks(score, position_tick_with_offset);
-    PlaybackEventList &events = result[event_timestamp];
+    PlaybackEventList events;
 
     int duration_ticks = realized.get_actual_duration(position_tick_with_offset).ticks();
     duration_t duration = timestamp_from_ticks(score, position_tick_with_offset + duration_ticks) - event_timestamp;
@@ -136,11 +141,14 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
                                            playback_ctx->appliable_dynamic_level(chord_symbol->track(), position_tick_with_offset),
                                            articulations, bps));
     }
+
+    sink(event_timestamp, std::move(events));
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, const mpe::timestamp_t actual_timestamp,
                                                  const mpe::duration_t actual_duration, const mpe::dynamic_level_t actual_dynamic_level,
-                                                 const ArticulationsProfilePtr profile, mpe::PlaybackEventsMap &result) const {
+                                                 const ArticulationsProfilePtr profile, Sink &sink) const {
     if (!chord_symbol->is_realizable()) {
         return;
     }
@@ -151,7 +159,7 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
     const RealizedHarmony &realized = chord_symbol->get_realized_harmony();
     const RealizedHarmony::PitchMap &notes = realized.notes();
 
-    PlaybackEventList &events = result[actual_timestamp];
+    PlaybackEventList events;
 
     voice_layer_idx_t voice_idx = static_cast<voice_layer_idx_t>(chord_symbol->voice());
     staff_layer_idx_t staff_idx = static_cast<staff_layer_idx_t>(chord_symbol->staff_idx());
@@ -168,10 +176,13 @@ void PlaybackEventsRenderer::render_chord_symbol(const Harmony *chord_symbol, co
         events.emplace_back(mpe::NoteEvent(actual_timestamp, actual_duration, voice_idx, staff_idx, pitch_level, actual_dynamic_level,
                                            articulations, Constants::default_tempo.val));
     }
+
+    sink(actual_timestamp, std::move(events));
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_metronome(const Score *score, const Measure *measure, const int ticks_position_offset,
-                                              const muse::mpe::ArticulationsProfilePtr profile, mpe::PlaybackEventsMap &result) const {
+                                              const muse::mpe::ArticulationsProfilePtr profile, Sink &sink) const {
     IF_ASSERT_FAILED(score) { return; }
 
     int measure_start_tick = measure->tick().ticks();
@@ -192,6 +203,8 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const Measure 
         rtick = remaining_ticks + time_signature_fraction.ticks_per_measure() - measure->ticks().ticks();
     }
 
+    PlaybackEventList events;
+
     // Tempo can change mid-measure (automation point or ramp), so re-read it for every click
     // rather than reusing the tempo from the start of the measure; the click grid itself stays fixed
     for (int tick = start_tick; tick < measure_end_tick; tick += step, rtick += step) {
@@ -201,12 +214,15 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const Measure 
         BeatType beat_type = time_signature_fraction.rtick2beat_type(rtick);
         mpe::NoteEvent event = build_metronome_event(time_signature_fraction, bps.val, beat_type, event_timestamp, profile);
 
-        result[event_timestamp].emplace_back(std::move(event));
+        events.clear();
+        events.emplace_back(std::move(event));
+        sink(event_timestamp, std::move(events));
     }
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_metronome(const Score *score, const int tick, const mpe::timestamp_t actual_timestamp,
-                                              const muse::mpe::ArticulationsProfilePtr profile, mpe::PlaybackEventsMap &result) const {
+                                              const muse::mpe::ArticulationsProfilePtr profile, Sink &sink) const {
     IF_ASSERT_FAILED(score) { return; }
 
     TimeSigFrac time_signature_fraction = score->sigmap()->timesig(tick).timesig();
@@ -214,11 +230,14 @@ void PlaybackEventsRenderer::render_metronome(const Score *score, const int tick
     BeatType beat_type = score->tick2beat_type(Fraction::from_ticks(tick));
     mpe::NoteEvent event = build_metronome_event(time_signature_fraction, bps.val, beat_type, actual_timestamp, profile);
 
-    result[actual_timestamp].emplace_back(std::move(event));
+    PlaybackEventList events;
+    events.emplace_back(std::move(event));
+    sink(actual_timestamp, std::move(events));
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_count_in(const Score *score, const int start_tick, const muse::mpe::timestamp_t actual_timestamp,
-                                             const muse::mpe::ArticulationsProfilePtr profile, muse::mpe::PlaybackEventsMap &result,
+                                             const muse::mpe::ArticulationsProfilePtr profile, Sink &sink,
                                              muse::mpe::duration_t &count_in_duration) const {
     const Measure *measure = score->tick2measure(Fraction::from_ticks(start_tick));
     if (!measure) {
@@ -250,13 +269,16 @@ void PlaybackEventsRenderer::render_count_in(const Score *score, const int start
     remaining_ticks += closest_main_beat_tick - start_tick;
 
     timestamp_t event_timestamp = actual_timestamp;
+    PlaybackEventList events;
 
     for (int tick = 0; tick < end_tick; tick += step) {
         int rtick = tick % ticks_per_measure;
         BeatType beat_type = time_signature_fraction.rtick2beat_type(rtick);
         mpe::NoteEvent event = build_metronome_event(time_signature_fraction, bps.val, beat_type, event_timestamp, profile);
 
-        result[event_timestamp].emplace_back(std::move(event));
+        events.clear();
+        events.emplace_back(std::move(event));
+        sink(event_timestamp, std::move(events));
         event_timestamp += step_duration;
     }
 
@@ -266,9 +288,10 @@ void PlaybackEventsRenderer::render_count_in(const Score *score, const int start
     }
 }
 
+template <PlaybackEventSink Sink>
 void PlaybackEventsRenderer::render_note_events(const Chord *chord, const int tick_position_offset,
                                                 const mpe::ArticulationsProfilePtr profile, const PlaybackContextPtr playback_ctx,
-                                                PlaybackEventsMap &result) const {
+                                                Sink &sink) const {
     IF_ASSERT_FAILED(chord) { return; }
 
     RenderingContext ctx = engraving::build_rendering_ctx(chord, tick_position_offset, profile, playback_ctx);
@@ -283,8 +306,7 @@ void PlaybackEventsRenderer::render_note_events(const Chord *chord, const int ti
     ChordArticulationsRenderer::render(chord, ArticulationType::LAST, ctx, new_events);
 
     if (!new_events.empty()) {
-        PlaybackEventList &list = result[ctx.nominal_timestamp];
-        list.insert(list.end(), std::make_move_iterator(new_events.begin()), std::make_move_iterator(new_events.end()));
+        sink(ctx.nominal_timestamp, std::move(new_events));
     }
 }
 
@@ -328,3 +350,20 @@ void PlaybackEventsRenderer::render_fixed_note_event(const Note *note, const mpe
     NominalNoteCtx note_ctx(note, ctx);
     result.emplace_back(build_note_event(note_ctx));
 }
+
+// Sinks the renderer is used with. A new sink type adds its instantiations here
+template void PlaybackEventsRenderer::render(const EngravingItem *, const int, const ArticulationsProfilePtr, const PlaybackContextPtr,
+                                             EventsMapSink &) const;
+template void PlaybackEventsRenderer::render(const EngravingItem *, const mpe::timestamp_t, const mpe::duration_t,
+                                             const mpe::dynamic_level_t, const PlaybackContextPtr, const ArticulationsProfilePtr,
+                                             EventsMapSink &) const;
+template void PlaybackEventsRenderer::render_chord_symbol(const Harmony *, const int, const ArticulationsProfilePtr,
+                                                          const PlaybackContextPtr, EventsMapSink &) const;
+template void PlaybackEventsRenderer::render_chord_symbol(const Harmony *, const mpe::timestamp_t, const mpe::duration_t,
+                                                          const mpe::dynamic_level_t, const ArticulationsProfilePtr, EventsMapSink &) const;
+template void PlaybackEventsRenderer::render_metronome(const Score *, const Measure *, const int, const ArticulationsProfilePtr,
+                                                       EventsMapSink &) const;
+template void PlaybackEventsRenderer::render_metronome(const Score *, const int, const mpe::timestamp_t, const ArticulationsProfilePtr,
+                                                       EventsMapSink &) const;
+template void PlaybackEventsRenderer::render_count_in(const Score *, const int, const mpe::timestamp_t, const ArticulationsProfilePtr,
+                                                      EventsMapSink &, mpe::duration_t &) const;
