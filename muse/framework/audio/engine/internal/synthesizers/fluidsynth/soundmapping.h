@@ -23,6 +23,7 @@
 #ifndef MUSE_AUDIO_SOUNDMAPPING_H
 #define MUSE_AUDIO_SOUNDMAPPING_H
 
+#include <array>
 #include <functional>
 
 #include "log.h"
@@ -963,6 +964,14 @@ static const mpe::ArticulationTypeSet bend_supported_types = {
     mpe::ArticulationType::SCOOP,          mpe::ArticulationType::SLIDE_OUT_DOWN,
     mpe::ArticulationType::SLIDE_IN_ABOVE, mpe::ArticulationType::SLIDE_IN_BELOW};
 
+//! Program precedence when several mapped articulations apply to one note: technique over timbre, then
+//! ascending ArticulationType for everything unlisted
+inline constexpr std::array<mpe::ArticulationType, 10> program_articulation_precedence{
+    mpe::ArticulationType::SNAP_PIZZICATO, mpe::ArticulationType::PIZZICATO, mpe::ArticulationType::SLAP, mpe::ArticulationType::POP,
+    mpe::ArticulationType::HARMONIC,       mpe::ArticulationType::PALM_MUTE, mpe::ArticulationType::MUTE, mpe::ArticulationType::JAZZ_TONE,
+    mpe::ArticulationType::DISTORTION,     mpe::ArticulationType::OVERDRIVE,
+};
+
 struct ChannelMap {
     using ChannelMapping = std::pair<midi::channel_t, midi::Program>;
     using VoiceMappings = std::map<mpe::ArticulationType, ChannelMapping>;
@@ -1013,16 +1022,18 @@ struct ChannelMap {
             return standard_channel;
         }
 
-        for (const auto &pair : event.expression_ctx().articulations) {
-            auto search = articulation_mapping_.find(pair.first);
-            if (search == articulation_mapping_.cend()) {
-                continue;
-            }
-
-            return resolve_channel(layer_idx, search->first, search->second, standard_channel, standard_program);
+        const mpe::ArticulationType type = select_program_articulation(event.expression_ctx().articulations);
+        if (type == mpe::ArticulationType::UNDEFINED) {
+            return standard_channel;
         }
 
-        return standard_channel;
+        return resolve_channel(layer_idx, type, articulation_mapping_.at(type), standard_channel, standard_program);
+    }
+
+    //! The mapped articulation that selects the program of a multi-articulation note, or UNDEFINED if none is mapped
+    mpe::ArticulationType select_program_articulation(const mpe::ArticulationMap &articulations) const {
+        return mpe::select_articulation(articulations, program_articulation_precedence,
+                                        [this](const mpe::ArticulationType type) { return articulation_mapping_.contains(type); });
     }
 
     midi::channel_t channel_count() const { return channel_count_; }

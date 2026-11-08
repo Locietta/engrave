@@ -184,13 +184,10 @@ void BendsRenderer::render_multibend(const Note *start_note, const RenderingCont
 }
 
 void BendsRenderer::render_note(const Note *note, const RenderingContext &ctx, mpe::PlaybackEventList &result) {
-    for (const auto &pair : ctx.common_articulations) {
-        if (!muse::contains(::mu::engraving::grace_note_articulation_types, pair.first)) {
-            continue;
-        }
-
+    const mpe::ArticulationType grace_type = select_grace_type(ctx.common_articulations);
+    if (grace_type != mpe::ArticulationType::UNDEFINED) {
         // This note is either a grace note or a principal note for other grace notes
-        const GraceChordCtx grace_ctx = GraceChordCtx::build_ctx(principal_chord(note->chord()), pair.first, ctx);
+        const GraceChordCtx grace_ctx = GraceChordCtx::build_ctx(principal_chord(note->chord()), grace_type, ctx);
 
         if (note->is_grace()) {
             render_grace_note(note, grace_ctx, result);

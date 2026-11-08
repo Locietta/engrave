@@ -23,6 +23,8 @@
 #ifndef MU_ENGRAVING_DYNAMICUTILS_H
 #define MU_ENGRAVING_DYNAMICUTILS_H
 
+#include <array>
+
 #include "../types/types.h"
 #include "mpe/mpetypes.h"
 
@@ -152,6 +154,21 @@ static const muse::mpe::ArticulationTypeSet grace_note_articulation_types{
 
 inline bool is_grace_note_placed_before_principal_note(const muse::mpe::ArticulationType type) {
     return type == muse::mpe::ArticulationType::ACCIACCATURA || type == muse::mpe::ArticulationType::PRE_APPOGGIATURA;
+}
+
+//! Grace precedence when a principal carries several grace groups: before-graces win, and only the selected
+//! group is rendered. Shared by the ordinary chord and the multibend renderers so they always agree.
+inline constexpr std::array<muse::mpe::ArticulationType, 3> grace_type_precedence{
+    muse::mpe::ArticulationType::PRE_APPOGGIATURA,
+    muse::mpe::ArticulationType::ACCIACCATURA,
+    muse::mpe::ArticulationType::POST_APPOGGIATURA,
+};
+
+//! The grace type to render for these articulations, or UNDEFINED if there is none.
+inline muse::mpe::ArticulationType select_grace_type(const muse::mpe::ArticulationMap &articulations) {
+    return muse::mpe::select_articulation(articulations, grace_type_precedence, [](const muse::mpe::ArticulationType type) {
+        return grace_note_articulation_types.contains(type);
+    });
 }
 
 inline void update_articulation_boundaries(const muse::mpe::ArticulationType type, const muse::mpe::timestamp_t nominal_timestamp,

@@ -23,6 +23,8 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <map>
 #include <math.h>
 #include <stdint.h>
@@ -606,7 +608,10 @@ struct ArticulationAppliedData {
     }
 };
 
-struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppliedData> {
+//! Ordered by ascending ArticulationType, which is the canonical precedence order of every decision that
+//! iterates the map (averaging fallback, per-note emission, ornament/tremolo/arpeggio choice).
+//! SharedMap is temporary scaffolding until the playback container step.
+struct ArticulationMap : public SharedMap<ArticulationType, ArticulationAppliedData> {
     static constexpr size_t expected_size = (::muse::mpe::hundred_percent / ::muse::mpe::ten_percent) + 1;
 
     void update_occupied_range(const ArticulationType type, const duration_percentage_t input_occupied_from,
@@ -812,4 +817,30 @@ private:
     PitchPattern::PitchOffsetMap average_pitch_offset_map_;
     ExpressionPattern::DynamicOffsetMap average_dynamic_offset_map_;
 };
+
+//! Picks the accepted articulation with the lowest (rank, ArticulationType). A type's rank is its index in
+//! `precedence`; unlisted types rank after every listed one, so the order is total. Returns UNDEFINED when
+//! no articulation is accepted.
+template <std::size_t N, typename Accept>
+ArticulationType select_articulation(const ArticulationMap &articulations, const std::array<ArticulationType, N> &precedence,
+                                     Accept &&accept) {
+    ArticulationType best = ArticulationType::UNDEFINED;
+    std::size_t best_rank = N + 1;
+
+    // ascending ArticulationType, so the first type of a rank wins
+    for (const auto &pair : articulations) {
+        if (!accept(pair.first)) {
+            continue;
+        }
+
+        const std::size_t rank =
+            static_cast<std::size_t>(std::find(precedence.cbegin(), precedence.cend(), pair.first) - precedence.cbegin());
+        if (rank < best_rank) {
+            best = pair.first;
+            best_rank = rank;
+        }
+    }
+
+    return best;
+}
 } // namespace muse::mpe
