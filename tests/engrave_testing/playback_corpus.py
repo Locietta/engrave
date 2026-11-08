@@ -11,12 +11,12 @@ from engrave_testing.paths import REPO_ROOT
 FOCUSED = REPO_ROOT / "tests/data/playback_dod"
 
 
-def note(markings="", prefix="", chord=False):
+def note(markings="", prefix="", chord=False, step="C"):
     return (
         "<note>"
         + prefix
         + ("<chord/>" if chord else "")
-        + "<pitch><step>C</step><octave>4</octave></pitch>"
+        + f"<pitch><step>{step}</step><octave>4</octave></pitch>"
         + ("" if "<grace" in prefix else "<duration>480</duration>")
         + "<type>quarter</type><notations>"
         + markings
@@ -47,8 +47,8 @@ def generate_focused(destination=FOCUSED):
         + note(prefix='<grace steal-time-previous="20"/>')
         + note(),
         "arpeggio_ornament": note("<arpeggiate/><ornaments><trill-mark/></ornaments>")
-        + note(chord=True)
-        + note(chord=True),
+        + note(chord=True, step="E")
+        + note(chord=True, step="G"),
         "tremolo_ornament": note('<ornaments><tremolo type="single">3</tremolo><trill-mark/></ornaments>'),
         "harmonic_distortion": "<direction><direction-type><words>distortion</words></direction-type></direction>"
         + note("<technical><harmonic><natural/></harmonic></technical>"),
