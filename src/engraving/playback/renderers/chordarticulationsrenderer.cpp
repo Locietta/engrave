@@ -52,11 +52,10 @@ void ChordArticulationsRenderer::do_render(const EngravingItem *item, const mpe:
                                            mpe::PlaybackEventList &result) {
     IF_ASSERT_FAILED(item->is_chord()) { return; }
 
-    for (const auto &type : ctx.common_articulations) {
-        if (muse::contains(::mu::engraving::grace_note_articulation_types, type.first)) {
-            render_chord_with_grace_chords(to_chord(item), type.first, ctx, result);
-            return;
-        }
+    const mpe::ArticulationType grace_type = select_grace_type(ctx.common_articulations);
+    if (grace_type != mpe::ArticulationType::UNDEFINED) {
+        render_chord_with_grace_chords(to_chord(item), grace_type, ctx, result);
+        return;
     }
 
     render_chord(to_chord(item), ctx, result);
