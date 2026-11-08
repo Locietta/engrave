@@ -22,6 +22,8 @@
 
 #include "gracechordcontext.h"
 
+#include <algorithm>
+
 #include "playback/utils/expressionutils.h"
 
 using namespace mu::engraving;
@@ -143,10 +145,11 @@ static void append_grace_group_ctxs(const std::vector<Chord *> &grace_chords, co
     }
 }
 
-//! Graces before and after one principal: each group takes its own rule's duration; if together they exceed half
-//! the principal, both shrink proportionally to fill exactly half. The principal keeps the rest, without any grace type.
-static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationType before_type, const std::vector<Chord *> &before_chords,
-                                         const std::vector<Chord *> &after_chords, const RenderingContext &ctx) {
+//! Graces before and after one principal, or a before-group that mixes appoggiaturas and acciaccaturas (empty
+//! after-group). Each group takes its own rule's duration; if two groups together exceed half the principal, both shrink
+//! proportionally to fill exactly half. The principal keeps the rest, without any grace type.
+static GraceChordCtx build_grouped_ctx(const Chord *chord, const ArticulationType before_type, const std::vector<Chord *> &before_chords,
+                                       const std::vector<Chord *> &after_chords, const RenderingContext &ctx) {
     const duration_t before_notated = grace_notes_total_duration(before_chords, ctx.beats_per_second);
     const duration_t after_notated = grace_notes_total_duration(after_chords, ctx.beats_per_second);
     duration_t before_duration = std::min(grace_notes_max_available_duration(before_type, ctx, before_chords.size()), before_notated);
@@ -154,7 +157,7 @@ static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationT
         std::min(grace_notes_max_available_duration(ArticulationType::POST_APPOGGIATURA, ctx, after_chords.size()), after_notated);
 
     const duration_t halved_duration = 0.5 * ctx.nominal_duration;
-    if (before_duration + after_duration > halved_duration) {
+    if (!after_chords.empty() && before_duration + after_duration > halved_duration) {
         before_duration = muse::real_round(static_cast<double>(before_duration) * halved_duration / (before_duration + after_duration), 0);
         after_duration = halved_duration - before_duration;
     }
@@ -173,12 +176,21 @@ static GraceChordCtx build_two_group_ctx(const Chord *chord, const ArticulationT
 }
 
 GraceChordCtx GraceChordCtx::build_ctx(const Chord *chord, const mpe::ArticulationType type, const RenderingContext &ctx) {
-    if (is_grace_note_placed_before_principal_note(type) && ctx.common_articulations.contains(ArticulationType::POST_APPOGGIATURA)) {
-        // both groups must really exist on this chord, not only as markers in the context
+    if (is_grace_note_placed_before_principal_note(type)) {
+        // groups must really exist on this chord, not only as markers in the context
         const std::vector<Chord *> before_chords = chord->grace_notes_before(true /*filterUnplayable*/);
-        const std::vector<Chord *> after_chords = chord->grace_notes_after(true /*filterUnplayable*/);
-        if (!before_chords.empty() && !after_chords.empty()) {
-            return build_two_group_ctx(chord, type, before_chords, after_chords, ctx);
+        std::vector<Chord *> after_chords;
+        if (ctx.common_articulations.contains(ArticulationType::POST_APPOGGIATURA)) {
+            after_chords = chord->grace_notes_after(true /*filterUnplayable*/);
+        }
+
+        const auto has_type = [&before_chords](const ArticulationType type) {
+            return std::any_of(before_chords.cbegin(), before_chords.cend(), [type](const Chord *c) { return grace_type_of(c) == type; });
+        };
+        const bool mixed_before = has_type(ArticulationType::PRE_APPOGGIATURA) && has_type(ArticulationType::ACCIACCATURA);
+
+        if (!before_chords.empty() && (!after_chords.empty() || mixed_before)) {
+            return build_grouped_ctx(chord, type, before_chords, after_chords, ctx);
         }
     }
 
