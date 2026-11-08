@@ -4,11 +4,16 @@ import hashlib
 import json
 import math
 import os
+import re
 import struct
 import subprocess
 
 from engrave_testing.cancel_score import generate_cancel_score
-from engrave_testing.playback_corpus import corpus
+from engrave_testing.playback_corpus import FOCUSED, corpus
+
+
+def pinned_cases():
+    return json.loads((FOCUSED / "corpus.json").read_text(encoding="utf-8"))
 
 
 def write_json(path, value):
@@ -72,15 +77,17 @@ def run_probe(exe, assets, font, score, output, options):
         raise RuntimeError(f"probe failed ({result.returncode}): {output / 'stderr.log'}")
 
 
-def capture(exe, assets, font, output, match=None):
+def capture(exe, assets, font, output, match=None, rates=(44100, 48000)):
     output.mkdir(parents=True, exist_ok=False)
     profiles = {p.relative_to(assets).as_posix(): sha(p) for p in sorted(assets.rglob("*.json"))}
     cases = corpus(output / "generated")
+    if match is None and {n for n, _, _ in cases} != set(pinned_cases()):
+        raise AssertionError("full capture differs from pinned corpus list")
     selected = [(n, p, o) for n, p, o in cases if match is None or match in n]
     assert selected, "no cases selected"
     manifest = {}
     for name, score, options in selected:
-        for rate in (44100, 48000):
+        for rate in rates:
             key = name + f"/{rate}"
             target = output / key
             args = ["--rate", str(rate), *options]
@@ -98,10 +105,55 @@ def capture(exe, assets, font, output, match=None):
             write_json(output / "manifest.json", manifest)
             print(key, flush=True)
     write_json(output / "provenance.json", dict(executable_sha256=sha(exe), executable=str(exe.resolve())))
-    write_json(output / "complete.json", dict(renders=len(selected) * 2, schema=1))
+    write_json(
+        output / "complete.json",
+        dict(renders=len(selected) * len(rates), schema=1, diagnostic=match is not None, rates=list(rates)),
+    )
 
 
-def compare(left, right):
+def validate_dump_records(root, name):
+    for dump, required in (("A.txt", {b"track "}), ("C.txt", {b"track ", b"total_frames "})):
+        missing = set(required)
+        with (root / name / dump).open("rb") as stream:
+            for line in stream:
+                missing = {
+                    prefix for prefix in missing if not (line.startswith(prefix) and line[len(prefix) :].strip())
+                }
+                if not missing:
+                    break
+        if missing:
+            raise AssertionError(f"{root / name / dump}: structurally incomplete; missing {sorted(missing)!r}")
+
+
+def compare_bytes(a, b, name):
+    offset = 0
+    with a.open("rb") as af, b.open("rb") as bf:
+        while True:
+            av, bv = af.read(1024 * 1024), bf.read(1024 * 1024)
+            if av != bv:
+                at = next((i for i, (x, y) in enumerate(zip(av, bv)) if x != y), min(len(av), len(bv)))
+                offset += at
+                start = max(0, offset - 24)
+                af.seek(start)
+                bf.seek(start)
+                raise AssertionError(
+                    f"{name}: first byte difference at offset {offset}\n< {af.read(64)!r}\n> {bf.read(64)!r}"
+                )
+            if not av:
+                return
+            offset += len(av)
+
+
+def compare(left, right, expect_exe_sha256=None):
+    if expect_exe_sha256 is not None and len(expect_exe_sha256) != 2:
+        raise AssertionError("expected two executable SHA-256 values")
+    for root, expected in zip((left, right), expect_exe_sha256 or (None, None)):
+        provenance = json.loads((root / "provenance.json").read_text(encoding="utf-8"))
+        actual = provenance.get("executable_sha256", "")
+        if not isinstance(actual, str) or not re.fullmatch("[0-9a-fA-F]{64}", actual):
+            raise AssertionError(f"{root}: invalid executable SHA-256 provenance")
+        if expected is not None and actual.lower() != expected.lower():
+            raise AssertionError(f"{root}: executable SHA-256 {actual} != expected {expected}")
     lc = json.loads((left / "complete.json").read_text(encoding="utf-8"))
     rc = json.loads((right / "complete.json").read_text(encoding="utf-8"))
     if lc != rc or lc.get("schema") != 1:
@@ -110,20 +162,24 @@ def compare(left, right):
     rm = json.loads((right / "manifest.json").read_text(encoding="utf-8"))
     if lm != rm:
         raise AssertionError("corpus manifest differs (input hashes/options/case inventory)")
-    if len(lm) != lc["renders"]:
+    if not lm or len(lm) != lc["renders"]:
         raise AssertionError("incomplete capture manifest")
+    diagnostic = lc.get("diagnostic", False)
+    rates = lc.get("rates", (44100, 48000))
+    if not isinstance(diagnostic, bool) or not rates or any(rate not in (44100, 48000) for rate in rates):
+        raise AssertionError("invalid capture mode/rates")
+    if not diagnostic:
+        expected = {f"{name}/{rate}" for name in pinned_cases() for rate in rates}
+        if set(lm) != expected:
+            raise AssertionError("full capture case set differs from pinned corpus list")
     for name in sorted(lm):
+        validate_dump_records(left, name)
+        validate_dump_records(right, name)
         for dump in ("A.txt", "C.txt", "D.json"):
             a, b = left / name / dump, right / name / dump
-            if sha(a) == sha(b):
-                continue
-            with a.open(encoding="utf-8") as af, b.open(encoding="utf-8") as bf:
-                from itertools import zip_longest
-
-                for line, (av, bv) in enumerate(zip_longest(af, bf), 1):
-                    if av != bv:
-                        raise AssertionError(f"{name}/{dump}:{line}\n< {av!r}\n> {bv!r}")
-    print(f"PASS: {len(lm)} renders, dumps A/C/D byte-identical; B deferred")
+            compare_bytes(a, b, f"{name}/{dump}")
+    label = "DIAGNOSTIC PASS" if diagnostic else "PASS"
+    print(f"{label}: {len(lm)} renders, dumps A/C/D byte-identical; B deferred")
 
 
 def metrics(path):

@@ -24,11 +24,16 @@ python vendor/engrave/tests/integration/test_playback_dod.py measure --exe build
 ```
 
 `capture` accepts the same asset arguments and one `--exe`. `--match SUBSTRING`
-selects cases for diagnosis. Each capture starts fresh processes, runs both
+selects cases for diagnosis and labels the result DIAGNOSTIC. Full comparisons
+require exactly the names in `data/playback_dod/corpus.json`. `--rate 44100`
+limits a smoke capture to one rate. Each capture starts fresh processes, runs both
 rates, hashes only the WAV data chunk into `D.json`, pins font/profile hashes
 and options, then removes the large WAV. Keep both directories and archived
 executables. The comparator first requires identical input manifests, then
-checks A/C/D bytes and reports the first differing line. B is an internal
+checks A/C/D bytes and reports the first differing byte offset with context.
+Missing track records (A/C), total_frames (C), or provenance are rejected even
+when both captures are equally incomplete. Optional `--expect-exe-sha256 OLD NEW`
+checks each capture against its independently supplied executable hash. B is an internal
 new-binary oracle, not an old/new byte comparison, and is never
 reported as an implemented projection oracle. Corpus gaps are listed in
 [the focused fixture README](data/playback_dod/README.md).
