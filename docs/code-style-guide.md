@@ -101,21 +101,60 @@ Example from `engrave/src/api/sniff.cpp`:
 #include "global/serialization/zipreader.h"
 ```
 
-## Engine Gate Validation
+## Unused Values and Parameters
+
+Unused parameters and variables use `[[maybe_unused]]` on the declaration. Deliberately discarded `[[nodiscard]]` results use `std::ignore = expr;` (include `<tuple>`). Do not use `(void)` casts.
+
+## Python Code Style
+
+- Shared test helpers live only in the package (`engrave_testing` in the engine fork, `engrave_mcp_testing` in the host).
+- Test scripts never import other test scripts; the layout lint guard enforces this boundary.
+- Python code adheres to Ruff rules: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort), and `W` (pycodestyle warnings).
+
+## Test Layout and Gate Validation
+
+The engine fork organizes test code into dedicated directories:
+
+- `tests/integration/`: Plain executable test scripts (`test_assets.py`, `test_excerpts.py`, `test_engine_audio.py`, `test_roundtrip.py`, etc.). These scripts are executed directly and are never imported as Python modules.
+- `tests/engrave_testing/`: Shared helper package (`golden`, `paths`, `public_output`, `dependencies`, `inventory`, `links`, etc.).
+- `tests/gate.py`: Public C++ boundary gate runner.
+- `tests/test_inventory.py`: Verification suite for test inventory and comparator mutations.
+- `tests/data/`: Golden outputs, input fixtures, and platform hash allow-lists.
 
 Every engine change must be verified against the engine gate (`tests/gate.py`).
 
 The gate builds the fork's `engine_tests` target and executes the public API, import, playback, and adapter suites, asset manifest verification, MNX schema validation, independent semantic checks, and indexed public-output comparisons against pinned goldens and the platform allow-list (`tests/data/golden/allow.json`).
 
+### Running the Gate in a Fork-Only Checkout
+
+In a standalone fork checkout, `tests/gate.py` automatically prepends `tests/` and `tools/` to `PYTHONPATH` for its subprocess invocations while preserving any inherited `PYTHONPATH`.
+
 Run the gate:
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/native-prefix --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/cairo/prefix --output .runtime/gate-run
 python tests/test_inventory.py
 ```
 
 Use a fresh output directory for each run. On Windows, use native Python/PowerShell with a Cairo prefix ending in `Library` on `PATH`. On Linux, use the native prefix with `bin` on `PATH` and `lib` on `LD_LIBRARY_PATH`.
+
+### Running a Single Fork Test Script Directly
+
+To run a single integration test script directly in a fork-only checkout without an editable package install, set `PYTHONPATH` to include `tests` and `tools`:
+
+```bash
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH = "tests;tools;$env:PYTHONPATH"
+python tests/integration/test_assets.py --binary build/gate/assets_test.exe --assets .runtime/assets --font C:/Windows/Fonts/arial.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+```
+
+Alternatively, install the test package in editable mode (`pip install -e .` in a virtual environment), after which test scripts can be run directly with the environment Python without setting `PYTHONPATH`.
 
 ## Commit Messages
 
