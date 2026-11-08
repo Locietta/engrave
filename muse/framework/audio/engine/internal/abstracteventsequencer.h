@@ -46,21 +46,10 @@ struct AbstractEventSequencer {
 
     void load(const mpe::PlaybackData &data) {
 
-        playback_data_ = data;
+        dynamics_ = data.dynamics;
 
         update_main_stream_events(data.origin_events, data.dynamics);
     }
-
-    const mpe::PlaybackData &playback_data() const { return playback_data_; }
-
-    void update_main_stream() {
-        if (should_update_main_stream_events_) {
-            update_main_stream_events(playback_data_.origin_events, playback_data_.dynamics);
-            should_update_main_stream_events_ = false;
-        }
-    }
-
-    void set_update_main_stream_when_inactive(bool update) { update_main_stream_when_inactive_ = update; }
 
     void flush_offstream() {
         if (off_stream_events_.empty()) {
@@ -81,10 +70,6 @@ struct AbstractEventSequencer {
         }
 
         is_active_ = active;
-
-        if (is_active_) {
-            update_main_stream();
-        }
     }
 
     bool is_active() const { return is_active_; }
@@ -189,15 +174,12 @@ protected:
     EventSequenceMap main_stream_events_;
     EventSequenceMap off_stream_events_;
 
-    mpe::PlaybackData playback_data_;
+    // Offline loading lowers MPE events once; only dynamics are needed by seeks.
+    mpe::DynamicAutomationLayers dynamics_;
 
     bool is_active_ = false;
 
     OnFlushedCallback on_off_stream_flushed_;
     OnFlushedCallback on_main_stream_flushed_;
-
-private:
-    bool should_update_main_stream_events_ = false;
-    bool update_main_stream_when_inactive_ = false;
 };
 } // namespace muse::audio::engine
