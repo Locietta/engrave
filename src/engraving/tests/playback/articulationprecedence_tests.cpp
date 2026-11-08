@@ -20,6 +20,7 @@
 #include "engraving/playback/metaparsers/chordarticulationsparser.h"
 #include "engraving/playback/playbackeventsrenderer.h"
 #include "engraving/playback/renderers/bendsrenderer.h"
+#include "engraving/playback/renderers/gracechordcontext.h"
 #include "engraving/playback/renderingcontext.h"
 #include "engraving/playback/utils/expressionutils.h"
 #include "mpe/tests/utils/articulationutils.h"
@@ -32,7 +33,6 @@ using namespace muse::audio::synth;
 
 namespace {
 constexpr duration_t quarter_note_duration = 500000; // 4/4 at 120 BPM
-constexpr duration_t eighth_note_duration = quarter_note_duration / 2;
 
 ArticulationPattern pattern_with(PitchPattern pitch, ExpressionPattern expression) {
     ArticulationPattern pattern;
@@ -107,9 +107,9 @@ const Chord *find_chord(const Score *score, const int tick, const track_idx_t tr
     return nullptr;
 }
 
-void add_grace(Score *score, const Chord *chord, const int pitch, const NoteType type) {
+void add_grace(Score *score, const Chord *chord, const int pitch, const NoteType type, const int ticks) {
     score->start_cmd(TranslatableString::untranslatable("Articulation precedence tests"));
-    score->set_grace_note(const_cast<Chord *>(chord), pitch, type, Constants::division / 2);
+    score->set_grace_note(const_cast<Chord *>(chord), pitch, type, ticks);
     score->end_cmd();
 }
 
@@ -147,26 +147,48 @@ TEST(EngravingArticulationPrecedenceTests, GraceSelectionTable) {
     EXPECT_EQ(select_grace_type(no_graces), ArticulationType::UNDEFINED);
 }
 
-// (a) Ordinary selector: a principal with a grace before and a grace after renders only the before group
+// (a) Ordinary selector: a principal with graces before and after renders both groups. Each group takes its
+//     own rule's time; together they take at most half the principal, scaled proportionally
 TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterOneChord) {
     struct Case {
+        const char16_t *score;
         NoteType before_type;
+        int before_ticks;
         ArticulationType expected;
-        duration_t grace_duration;
+        pitch_level_t after_pitch;
+        duration_t before, after; // the principal keeps the rest
     };
 
-    // a single appoggiatura takes half the principal; an acciaccatura a 64th
-    const Case cases[] = {{NoteType::APPOGGIATURA, ArticulationType::PRE_APPOGGIATURA, eighth_note_duration},
-                          {NoteType::ACCIACCATURA, ArticulationType::ACCIACCATURA, quarter_note_duration / 16}};
+    // 4/4, 120 BPM, quarter principal, eighth after-grace (its own rule: half = 250 ms):
+    // - appoggiatura eighth (half, 250 ms): 250 + 250 > 250, scaled to 125/125, principal 250
+    // - acciaccatura (31.25 ms): 31.25 + 250 > 250, scaled to 27.778/222.222, principal 250
+    // 6/4 (compound), quarter principal, so both rules allow 2/3 = 333.333 ms:
+    // - quarter appoggiatura (333.333) + eighth after (250): scaled to 142.857/107.143, principal 250
+    const char16_t *simple = u"playback/playbackeventsrenderer_data/single_note_appoggiatura_post/single_note_appoggiatura_post.mscx";
+    const char16_t *compound = u"playback/playbackmodel_data/metronome_6_4_with_repeat/metronome_6_4_with_repeat.mscx";
+    const Case cases[] = {
+        {simple, NoteType::APPOGGIATURA, Constants::division / 2, ArticulationType::PRE_APPOGGIATURA, pitch_level(PitchClass::G, 4), 125000,
+         125000},
+        {simple, NoteType::ACCIACCATURA, Constants::division / 2, ArticulationType::ACCIACCATURA, pitch_level(PitchClass::G, 4), 27778,
+         222222},
+        {compound, NoteType::GRACE4, Constants::division, ArticulationType::PRE_APPOGGIATURA, pitch_level(PitchClass::B, 4), 142857,
+         107143},
+    };
 
     for (const Case &c : cases) {
-        // F4 quarter with a G4 eighth grace after; add an A4 grace before
-        Score *score =
-            ScoreRW::read_score(u"playback/playbackeventsrenderer_data/single_note_appoggiatura_post/single_note_appoggiatura_post.mscx");
+        // F4 quarter; the simple score already has a G4 eighth grace after. Add an A4 grace before (and a B4
+        // eighth after in the compound score)
+        Score *score = ScoreRW::read_score(c.score);
         ASSERT_TRUE(score);
         const Chord *chord = find_chord(score, 0, 0);
         ASSERT_TRUE(chord);
-        add_grace(score, chord, 69, c.before_type);
+        ASSERT_EQ(chord->notes().front()->pitch(), 65);
+        add_grace(score, chord, 69, c.before_type, c.before_ticks);
+        if (chord->grace_notes_after().empty()) {
+            add_grace(score, chord, 71, NoteType::GRACE8_AFTER, Constants::division / 2);
+        }
+        ASSERT_EQ(chord->grace_notes_before().size(), 1);
+        ASSERT_EQ(chord->grace_notes_after().size(), 1);
 
         ArticulationsProfilePtr profile = std::make_shared<ArticulationsProfile>();
         for (const ArticulationType type :
@@ -180,13 +202,14 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterOneChord) {
         ASSERT_TRUE(articulations.contains(c.expected));
         ASSERT_TRUE(articulations.contains(ArticulationType::POST_APPOGGIATURA));
         EXPECT_EQ(select_grace_type(articulations), c.expected);
+        ASSERT_EQ(build_rendering_ctx(chord, 0, profile, playback_ctx).nominal_duration, quarter_note_duration);
 
         // [WHEN] Render the chord
         PlaybackEventsMap result;
         PlaybackEventsRenderer renderer;
         renderer.render(chord, 0, profile, playback_ctx, result);
 
-        // [THEN] The before grace, then the delayed principal; the after grace is not rendered
+        // [THEN] Before grace, delayed principal, after grace; the graces fill exactly half
         std::vector<const mpe::NoteEvent *> notes;
         for (const auto &pair : result) {
             for (const PlaybackEvent &event : pair.second) {
@@ -194,30 +217,38 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterOneChord) {
             }
         }
 
-        ASSERT_EQ(notes.size(), 2);
+        ASSERT_EQ(notes.size(), 3);
+        EXPECT_EQ(c.before + c.after, quarter_note_duration / 2);
         EXPECT_EQ(notes[0]->pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::A, 4));
         EXPECT_EQ(notes[0]->arrangement_ctx().nominal_timestamp, 0);
-        EXPECT_EQ(notes[0]->arrangement_ctx().nominal_duration, c.grace_duration);
+        EXPECT_EQ(notes[0]->arrangement_ctx().nominal_duration, c.before);
         EXPECT_EQ(notes[1]->pitch_ctx().nominal_pitch_level, pitch_level(PitchClass::F, 4));
-        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_timestamp, c.grace_duration);
-        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_duration, quarter_note_duration - c.grace_duration);
+        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_timestamp, c.before);
+        EXPECT_EQ(notes[1]->arrangement_ctx().nominal_duration, quarter_note_duration - c.before - c.after);
+        EXPECT_EQ(notes[2]->pitch_ctx().nominal_pitch_level, c.after_pitch);
+        EXPECT_EQ(notes[2]->arrangement_ctx().nominal_timestamp, quarter_note_duration - c.after);
+        EXPECT_EQ(notes[2]->arrangement_ctx().nominal_duration, c.after);
 
         delete score;
     }
 }
 
-// (a) Multibend selector: adding a grace after to a bent principal keeps its bent appoggiatura in the curve
+// (a) Multibend path: a bent principal with a grace before and bent graces after. The after-graces' bend
+//     segments get their scaled durations
 TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterInMultibend) {
     Score *score = ScoreRW::read_score(u"playback/playbackeventsrenderer_data/guitar_bends/guitar_bends.mscx");
     ASSERT_TRUE(score);
 
-    // A3 at the start of bar 2: a G3 appoggiatura bends into it; give it a B3 grace after too
-    const Chord *principal = find_chord(score, 1920, 0);
+    // G3 quarter at 2880: an A3 bends into it, and it bends on into its two eighth graces after (A3, G3).
+    // Give it an unbent B3 eighth appoggiatura before
+    const Chord *principal = find_chord(score, 2880, 0);
     ASSERT_TRUE(principal);
-    ASSERT_EQ(principal->notes().front()->pitch(), 57);
+    ASSERT_EQ(principal->notes().front()->pitch(), 55);
+    ASSERT_EQ(principal->grace_notes_after().size(), 2);
+    ASSERT_TRUE(principal->notes().front()->bend_for());
+    ASSERT_TRUE(principal->grace_notes_before().empty());
+    add_grace(score, principal, 59, NoteType::APPOGGIATURA, Constants::division / 2);
     ASSERT_EQ(principal->grace_notes_before().size(), 1);
-    add_grace(score, principal, 59, NoteType::GRACE8_AFTER);
-    ASSERT_EQ(principal->grace_notes_after().size(), 1);
 
     ArticulationsProfilePtr profile = std::make_shared<ArticulationsProfile>();
     const ArticulationPattern zero_pattern = pattern_with(PitchPattern(ArticulationMap::expected_size, ten_percent, 0),
@@ -232,10 +263,26 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterInMultibend) {
     playback_ctx->update(part->track_range().start_track, part->track_range().end_track, 0, score->end_tick().ticks());
 
     // [GIVEN] The bent principal carries both grace groups
-    const ArticulationMap articulations = chord_articulations(principal, profile, playback_ctx);
-    ASSERT_TRUE(articulations.contains(ArticulationType::PRE_APPOGGIATURA));
-    ASSERT_TRUE(articulations.contains(ArticulationType::POST_APPOGGIATURA));
-    EXPECT_EQ(select_grace_type(articulations), ArticulationType::PRE_APPOGGIATURA);
+    RenderingContext principal_ctx = build_rendering_ctx(principal, 0, profile, playback_ctx);
+    ChordArticulationsParser::build_chord_articulation_map(principal, principal_ctx, principal_ctx.common_articulations);
+    ASSERT_TRUE(principal_ctx.common_articulations.contains(ArticulationType::PRE_APPOGGIATURA));
+    ASSERT_TRUE(principal_ctx.common_articulations.contains(ArticulationType::POST_APPOGGIATURA));
+    ASSERT_EQ(select_grace_type(principal_ctx.common_articulations), ArticulationType::PRE_APPOGGIATURA);
+
+    // [THEN] Before 250 and after 250 ms scale to 125 + 125: B3 125 ms, G3 from +125 for 250 ms, the two
+    //        bent after-graces 62.5 ms each at the end
+    const timestamp_t start = principal_ctx.nominal_timestamp;
+    const GraceChordCtx grace_ctx = GraceChordCtx::build_ctx(principal, ArticulationType::PRE_APPOGGIATURA, principal_ctx);
+    EXPECT_EQ(grace_ctx.principal_chord_ctx.nominal_timestamp, start + 125000);
+    EXPECT_EQ(grace_ctx.principal_chord_ctx.nominal_duration, 250000);
+    ASSERT_EQ(grace_ctx.grace_chord_ctx_list.size(), 1);
+    EXPECT_EQ(grace_ctx.grace_chord_ctx_list[0].second.nominal_timestamp, start);
+    EXPECT_EQ(grace_ctx.grace_chord_ctx_list[0].second.nominal_duration, 125000);
+    ASSERT_EQ(grace_ctx.after_grace_chord_ctx_list.size(), 2);
+    EXPECT_EQ(grace_ctx.after_grace_chord_ctx_list[0].second.nominal_timestamp, start + 375000);
+    EXPECT_EQ(grace_ctx.after_grace_chord_ctx_list[0].second.nominal_duration, 62500);
+    EXPECT_EQ(grace_ctx.after_grace_chord_ctx_list[1].second.nominal_timestamp, start + 437500);
+    EXPECT_EQ(grace_ctx.after_grace_chord_ctx_list[1].second.nominal_duration, 62500);
 
     // [WHEN] Render the multibend from its first note
     const Chord *start_chord = find_chord(score, 480, 0);
@@ -243,18 +290,18 @@ TEST(EngravingArticulationPrecedenceTests, GraceBeforeAndAfterInMultibend) {
     PlaybackEventList events;
     BendsRenderer::render(start_chord->notes().front(), build_rendering_ctx(start_chord, 0, profile, playback_ctx), events);
 
-    // [THEN] The curve is the one without the grace after (see EngravingBendsRendererTests.Multibend): the
-    //        bent G3 appoggiatura is still rendered
+    // [THEN] Relative to EngravingBendsRendererTests.Multibend (G3 at 83%, after-graces at 91% and 95% of the
+    //        3 s bend from 0.5 s), G3 moves to 3.125 s (87%) and the after-graces to 3.375 s (95%) and 3.4375 s (97%)
     ASSERT_EQ(events.size(), 1);
     PitchCurve expected_pitch_curve;
     expected_pitch_curve.emplace(0, 0);
     expected_pitch_curve.emplace(1600, 100);
     expected_pitch_curve.emplace(3300, 0);
-    expected_pitch_curve.emplace(5000, 100); // F3 -> G3 (appoggiatura)
-    expected_pitch_curve.emplace(5800, 200); // G3 (appoggiatura) -> A3
-    expected_pitch_curve.emplace(8300, 100);
-    expected_pitch_curve.emplace(9100, 200);
-    expected_pitch_curve.emplace(9500, 100);
+    expected_pitch_curve.emplace(5000, 100);
+    expected_pitch_curve.emplace(5800, 200);
+    expected_pitch_curve.emplace(8700, 100); // A3 -> G3
+    expected_pitch_curve.emplace(9500, 200); // G3 -> A3 (grace after)
+    expected_pitch_curve.emplace(9700, 100); // A3 -> G3 (grace after)
     EXPECT_EQ(std::get<mpe::NoteEvent>(events.front()).pitch_ctx().pitch_curve, expected_pitch_curve);
 
     delete score;
