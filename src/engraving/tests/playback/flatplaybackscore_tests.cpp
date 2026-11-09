@@ -167,7 +167,7 @@ struct DualFixture {
         freeze_dynamics(flat.track(id), legacy.dynamics, flat.progress);
 
         // Context events first, as apply_context_to_track_data inserts them before the walk
-        emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.Δ", 3)});
+        emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.螖", 3)});
         emit_context(0, std::vector<TextArticulationEvent>{make_text(u"mute", 3)});
         emit_context(0, std::vector<SyllableEvent>{make_syllable(u"la", 3)});
         emit_context(250000, std::vector<SoundPresetChangeEvent>{});
@@ -241,7 +241,7 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(expression[0].value, 7000);
 
     const auto &preset = std::get<SoundPresetChangeEvent>(track.cold[0].event);
-    EXPECT_EQ(preset.code, String(u"Engrave.Preset.Δ"));
+    EXPECT_EQ(preset.code, String(u"Engrave.Preset.螖"));
     EXPECT_EQ(preset.layer_idx, 3u);
     EXPECT_TRUE(std::holds_alternative<SyllableEvent>(track.cold[2].event));
 
@@ -656,7 +656,7 @@ TEST_F(FlatPlaybackModelTests, DualExecutionCarriesDistinctPresets) {
     }
     // Both presets of the first flag (in order) at tick 0, then the beat-3 flag's
     ASSERT_GE(presets.size(), 3u);
-    EXPECT_EQ(presets[0], String(u"Engrave.Preset.Δ1"));
+    EXPECT_EQ(presets[0], String(u"Engrave.Preset.螖1"));
     EXPECT_EQ(presets[1], String(u"Second.Preset"));
     EXPECT_EQ(presets.back(), String(u"Third.Preset"));
     EXPECT_TRUE(text);
@@ -769,6 +769,19 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
 
 namespace mu::engraving {
 struct PlaybackContextReleaseTestAccess {
+    static void materialization(PlaybackContext &context, const mu::engraving::AutomationCurve &curve) {
+        for (int track = 0; track < 4; ++track) {
+            context.used_tracks_.insert(track);
+            context.dynamics_curve_by_track_.emplace(track, &curve);
+            for (int i = 0; i < 50000; ++i) {
+                const int tick = i * 4 + track;
+                context.syllables_by_track_[track].emplace(tick, SyllableEvent{String(u"lyric")});
+                context.text_articulations_by_track_[track].emplace(tick, TextArticulationEvent{});
+                context.sound_presets_by_track_[track].emplace(tick, SoundPresetChangeEventList{SoundPresetChangeEvent{}});
+            }
+        }
+    }
+
     static void populate(PlaybackContext &context) {
         for (int i = 0; i < 100000; ++i) {
             context.dynamics_curve_by_track_.emplace(i, nullptr);
@@ -867,4 +880,47 @@ TEST(FlatPlaybackStoreTests, PartColdCopiesReleaseInPolledStridesEvenDuringUnwin
                 EXPECT_EQ(polls, 3u);
         }
     }
+}
+
+TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
+    auto *score = ScoreRW::read_score(u"playback/playbackcontext_data/lyrics_multiverses.mscx");
+    ASSERT_TRUE(score);
+    score->init_automation();
+    mu::engraving::AutomationCurve curve;
+    for (int i = 0; i < 200000; ++i) curve.emplace(i, mu::engraving::AutomationPoint{});
+    PlaybackContext context(score);
+    PlaybackContextReleaseTestAccess::materialization(context, curve);
+
+    struct Cancelled {};
+
+    for (int pass = 0; pass < 4; ++pass) {
+        std::vector<double> latency;
+        for (int trial = 0; trial < 30; ++trial) {
+            int polls = 0;
+            std::chrono::steady_clock::time_point requested;
+            const auto checkpoint = [&] {
+                if (++polls == 1000) requested = std::chrono::steady_clock::now();
+                if (polls == 1001) {
+                    latency.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - requested).count());
+                    throw Cancelled{};
+                }
+            };
+            EXPECT_THROW(
+                {
+                    if (pass == 0) std::ignore = context.syllables(0, 4, checkpoint);
+                    if (pass == 1) std::ignore = context.text_articulations(0, 4, checkpoint);
+                    if (pass == 2) std::ignore = context.sound_presets(0, 4, checkpoint);
+                    if (pass == 3) std::ignore = context.dynamic_level_layers(0, 4, checkpoint);
+                },
+                Cancelled);
+            EXPECT_EQ(polls, 1001);
+        }
+        std::sort(latency.begin(), latency.end());
+        ASSERT_EQ(latency.size(), 30u);
+        std::cout << "materialization pass " << pass << " request_to_observed p95_ms=" << latency[28] << " max_ms=" << latency.back()
+                  << '\n';
+        EXPECT_LE(latency[28], 5.0);
+        EXPECT_LE(latency.back(), 10.0);
+    }
+    delete score;
 }

@@ -63,16 +63,35 @@ static dynamic_level_t to_dynamic_level(double normalized_value) {
 
 template <typename ByTrackMap, typename ResultMap, typename MergeFn>
 static void collect_by_track_range(const ByTrackMap &by_track_map, const track_idx_t track_from, const track_idx_t track_to,
-                                   const Score *score, const amc::FlatSet<track_idx_t> &used_tracks, ResultMap &result, MergeFn merge) {
-    for (auto it = by_track_map.lower_bound(track_from); it != by_track_map.end() && it->first < track_to; ++it) {
-        if (!used_tracks.contains(it->first)) {
-            continue;
-        }
+                                   const Score *score, const amc::FlatSet<track_idx_t> &used_tracks, ResultMap &result,
+                                   const std::function<void()> &checkpoint, MergeFn merge) {
+    // Merge sorted track ranges; ties retain track order, then per-track emission order.
+    using Iterator = typename ByTrackMap::mapped_type::const_iterator;
 
-        for (const auto &pair : it->second) {
-            const timestamp_t timestamp = timestamp_from_ticks(score, pair.first);
-            merge(result[timestamp], pair.second);
+    struct Cursor {
+        Iterator at, end;
+    };
+
+    std::vector<Cursor> cursors;
+    for (auto it = by_track_map.lower_bound(track_from); it != by_track_map.end() && it->first < track_to; ++it) {
+        if (checkpoint) checkpoint();
+        if (used_tracks.contains(it->first) && !it->second.empty()) cursors.push_back({it->second.begin(), it->second.end()});
+    }
+    for (;;) {
+        std::size_t selected = cursors.size();
+        timestamp_t earliest = 0;
+        for (std::size_t i = 0; i < cursors.size(); ++i) {
+            if (checkpoint) checkpoint();
+            if (cursors[i].at == cursors[i].end) continue;
+            const auto timestamp = timestamp_from_ticks(score, cursors[i].at->first);
+            if (selected == cursors.size() || timestamp < earliest) {
+                selected = i;
+                earliest = timestamp;
+            }
         }
+        if (selected == cursors.size()) break;
+        merge(result[earliest], cursors[selected].at->second);
+        ++cursors[selected].at;
     }
 }
 
@@ -137,13 +156,16 @@ muse::mpe::timestamp_t PlaybackContext::find_playing_technique_timestamp(const t
     return -1;
 }
 
-muse::FlatMap<timestamp_t, SoundPresetChangeEventList> PlaybackContext::sound_presets(const track_idx_t track_from,
-                                                                                      const track_idx_t track_to) const {
+muse::FlatMap<timestamp_t, SoundPresetChangeEventList>
+PlaybackContext::sound_presets(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint) const {
     muse::FlatMap<timestamp_t, SoundPresetChangeEventList> result;
 
-    collect_by_track_range(sound_presets_by_track_, track_from, track_to, score_, used_tracks_, result,
-                           [](SoundPresetChangeEventList &list, const SoundPresetChangeEventList &events) {
-                               list.insert(list.end(), events.begin(), events.end());
+    collect_by_track_range(sound_presets_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
+                           [&](SoundPresetChangeEventList &list, const SoundPresetChangeEventList &events) {
+                               for (const auto &event : events) {
+                                   if (checkpoint) checkpoint();
+                                   list.push_back(event);
+                               }
                            });
 
     return result;
@@ -165,10 +187,11 @@ SoundPresetChangeEventList PlaybackContext::sound_presets(const track_idx_t trac
 }
 
 muse::FlatMap<timestamp_t, TextArticulationEventList> PlaybackContext::text_articulations(const track_idx_t track_from,
-                                                                                          const track_idx_t track_to) const {
+                                                                                          const track_idx_t track_to,
+                                                                                          const std::function<void()> &checkpoint) const {
     muse::FlatMap<timestamp_t, TextArticulationEventList> result;
 
-    collect_by_track_range(text_articulations_by_track_, track_from, track_to, score_, used_tracks_, result,
+    collect_by_track_range(text_articulations_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
                            [](TextArticulationEventList &list, const TextArticulationEvent &event) { list.push_back(event); });
 
     return result;
@@ -192,10 +215,11 @@ TextArticulationEvent PlaybackContext::text_articulation(const track_idx_t track
     return result;
 }
 
-muse::FlatMap<timestamp_t, SyllableEventList> PlaybackContext::syllables(const track_idx_t track_from, const track_idx_t track_to) const {
+muse::FlatMap<timestamp_t, SyllableEventList> PlaybackContext::syllables(const track_idx_t track_from, const track_idx_t track_to,
+                                                                         const std::function<void()> &checkpoint) const {
     muse::FlatMap<timestamp_t, SyllableEventList> result;
 
-    collect_by_track_range(syllables_by_track_, track_from, track_to, score_, used_tracks_, result,
+    collect_by_track_range(syllables_by_track_, track_from, track_to, score_, used_tracks_, result, checkpoint,
                            [](SyllableEventList &list, const SyllableEvent &event) { list.push_back(event); });
 
     return result;
@@ -219,7 +243,8 @@ SyllableEvent PlaybackContext::syllable(const track_idx_t track_idx, const int n
     return result;
 }
 
-DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to) const {
+DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to,
+                                                              const std::function<void()> &checkpoint) const {
     TRACEFUNC;
 
     if (!score_ || !score_->automation_data()) {
@@ -231,6 +256,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
     DynamicAutomationMap last_level_map;
 
     for (track_idx_t track_idx = track_from; track_idx < track_to; ++track_idx) {
+        if (checkpoint) checkpoint();
         const AutomationCurve *curve = dynamics_curve(track_idx);
         if (!curve || curve->empty()) {
             continue;
@@ -251,6 +277,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
             }
 
             for (const auto &[tick, point] : *curve) {
+                if (checkpoint) checkpoint();
                 hint = last_level_map.insert(hint, {expanded_timeline.utick2utime(tick) * 1000000, point.value});
             }
         }
