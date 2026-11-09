@@ -36,6 +36,10 @@ struct ReverbProcessor {
     ~ReverbProcessor();
 
     void init(const OutputSpec &spec);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    // Fail before the pointer array or either channel allocation (0, 1, 2).
+    static thread_local int fail_signal_allocation;
+#endif
 
     AudioFxType type() const;
     std::string name() const;
@@ -145,6 +149,7 @@ private:
     AudioFxParams params_;
 
     float **signal_buffers_ = nullptr;
+    audioch_t signal_buffer_channels_ = 0;
 };
 } // namespace muse::audio::fx
 
