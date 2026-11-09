@@ -22,44 +22,118 @@
 
 #include "playbackmodel.h"
 
+#include <set>
 #include <span>
 #include <stdexcept>
 #include <tuple>
 
 #include "defer.h"
-#include "dom/fret.h"
-#include "dom/harmony.h"
 #include "dom/instrument.h"
 #include "dom/masterscore.h"
 #include "dom/measure.h"
 #include "dom/measurerepeat.h"
 #include "dom/part.h"
 #include "dom/repeatlist.h"
-#include "dom/segment.h"
-#include "dom/staff.h"
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
 #include "editing/transaction/undoablecommand.h"
 #include "log.h"
+#include "playbackwalk.h"
 
 using namespace mu;
 using namespace mu::engraving;
 using namespace muse::mpe;
 
-static const String metronome_instrument_id(u"metronome");
-static const String chord_symbols_instrument_id(u"chord_symbols");
+namespace {
+//! The legacy model's walk target: the track map, with its incremental-update semantics. In the
+//! harness build a flat store may mirror it from the same walk (dual execution, test only)
+struct LegacyStore {
+    std::unordered_map<InstrumentTrackId, PlaybackData> &map;
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    PlaybackScore *flat = nullptr;
+#endif
 
-const InstrumentTrackId PlaybackModel::metronome_track_id_value = {999, ::metronome_instrument_id};
-
-static const Harmony *find_chord_symbol(const EngravingItem *item) {
-    if (item->is_harmony()) {
-        return to_harmony(item);
-    } else if (item->is_fret_diagram()) {
-        return to_fret_diagram(item)->harmony();
+    PlaybackData &track(const InstrumentTrackId &track_id) {
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (flat) {
+            flat->track(track_id);
+        }
+#endif
+        return map[track_id];
     }
 
-    return nullptr;
-}
+    bool contains(const InstrumentTrackId &track_id) const { return muse::contains(map, track_id); }
+
+    void touch(const InstrumentTrackId &track_id) { std::ignore = track(track_id); }
+
+    template <class Resolve>
+    void resolve_setup(const InstrumentTrackId &track_id, Resolve &&resolve) {
+        PlaybackSetupData &setup_data = track(track_id).setup_data;
+        resolve(setup_data);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (flat) {
+            flat->track(track_id).setup = setup_data;
+        }
+#endif
+    }
+
+    const PlaybackSetupData *find_setup(const InstrumentTrackId &track_id) const {
+        const auto it = map.find(track_id);
+        return it == map.cend() ? nullptr : &it->second.setup_data;
+    }
+
+    template <class Walk>
+    void apply_context(const InstrumentTrackId &track_id, const PlaybackPartData &data, const Walk &walk) {
+        PlaybackData &playback_data = track(track_id);
+        playback_data.dynamics = data.dynamics;
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (flat) {
+            freeze_dynamics(flat->track(track_id), data.dynamics, flat->progress);
+        }
+#endif
+
+        std::set<timestamp_t> new_event_timestamps;
+
+        const auto append_events = [&](const auto &events) {
+            for (const auto &pair : events) {
+                walk.checkpoint();
+                PlaybackEventList &list = playback_data.origin_events[pair.first];
+
+                //! NOTE: this assumes that the list has already been cleared in clearExpiredEvents
+                //! Necessary to prevent event duplication (unchanged lists should not be modified)
+                if (list.empty() || muse::contains(new_event_timestamps, pair.first)) {
+                    list.insert(list.end(), pair.second.begin(), pair.second.end());
+                    new_event_timestamps.insert(pair.first);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+                    // The seam for context events, which bypass the renderer sinks: the same list, after the legacy insert
+                    if (flat) {
+                        freeze_cold_events(flat->track(track_id), pair.first, std::span{pair.second}, flat->progress);
+                    }
+#endif
+                }
+            }
+        };
+
+        append_events(data.sound_presets);
+        append_events(data.text_articulations);
+        append_events(data.syllables);
+    }
+
+    template <class Render>
+    void emit(const InstrumentTrackId &track_id, Render &&render) {
+        PlaybackEventsMap &events = track(track_id).origin_events;
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        if (flat) {
+            DualEventsSink sink{{events}, {flat->track(track_id), flat->progress}};
+            render(sink);
+            return;
+        }
+#endif
+        EventsMapSink sink{events};
+        render(sink);
+    }
+};
+} // namespace
 
 static bool is_scoped_automation_change(const ScoreChanges &changes) {
     if (!changes.is_valid_boundary()) {
@@ -92,30 +166,40 @@ void PlaybackModel::detach_from_score() {
     listened_score_ = nullptr;
 }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
 void PlaybackModel::load(Score *score, const std::function<void()> &checkpoint_callback, PlaybackScore *flat) {
+#else
+void PlaybackModel::load(Score *score, const std::function<void()> &checkpoint_callback) {
+#endif
     TRACEFUNC;
 
     if (!score || score->measures()->empty() || !score->last_measure()) {
         return;
     }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
     // The flat store mirrors map entries as the walk creates them, so it needs a model that never loaded
     if (flat && score_) {
         throw std::logic_error("PlaybackModel: dual execution needs a model that has not loaded a score");
     }
+#endif
 
     checkpoint_ = checkpoint_callback;
+#ifdef ENGRAVE_PLAYBACK_HARNESS
     flat_ = flat;
     if (flat_) {
         // Bounded polls inside the freeze loops, through the same latched checkpoint as the walk
         flat_->progress.checkpoint = [this] { checkpoint(); };
     }
+#endif
     DEFER {
         checkpoint_ = {};
+#ifdef ENGRAVE_PLAYBACK_HARNESS
         if (flat_) {
             flat_->progress.checkpoint = {};
         }
         flat_ = nullptr;
+#endif
     };
     checkpoint();
     score_ = score;
@@ -224,9 +308,9 @@ void PlaybackModel::set_is_metronome_enabled(const bool is_enabled) {
     reload_metronome_events();
 }
 
-const InstrumentTrackId &PlaybackModel::metronome_track_id() const { return ::mu::engraving::PlaybackModel::metronome_track_id_value; }
+const InstrumentTrackId &PlaybackModel::metronome_track_id() const { return playback_metronome_track_id(); }
 
-InstrumentTrackId PlaybackModel::chord_symbols_track_id(const ID &part_id) const { return {part_id, ::chord_symbols_instrument_id}; }
+InstrumentTrackId PlaybackModel::chord_symbols_track_id(const ID &part_id) const { return playback_chord_symbols_track_id(part_id); }
 
 bool PlaybackModel::is_chord_symbols_track(const InstrumentTrackId &track_id) const {
     return track_id == chord_symbols_track_id(track_id.part_id);
@@ -334,12 +418,12 @@ PlaybackEventsMap PlaybackModel::trigger_events_for_items(const std::vector<cons
 }
 
 PlaybackEventsMap PlaybackModel::trigger_metronome(int tick) {
-    auto track_playback_data = playback_data_map_.find(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    auto track_playback_data = playback_data_map_.find(playback_metronome_track_id());
     if (track_playback_data == playback_data_map_.cend()) {
         return {};
     }
 
-    const ArticulationsProfilePtr profile = default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    const ArticulationsProfilePtr profile = default_acticulation_profile(playback_metronome_track_id());
 
     PlaybackEventsMap result;
     renderer_.render_metronome(score_, tick, 0, profile, result);
@@ -347,12 +431,12 @@ PlaybackEventsMap PlaybackModel::trigger_metronome(int tick) {
 }
 
 PlaybackEventsMap PlaybackModel::trigger_count_in(int tick, muse::mpe::duration_t &count_in_duration) {
-    auto track_playback_data = playback_data_map_.find(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    auto track_playback_data = playback_data_map_.find(playback_metronome_track_id());
     if (track_playback_data == playback_data_map_.cend()) {
         return {};
     }
 
-    const ArticulationsProfilePtr profile = default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    const ArticulationsProfilePtr profile = default_acticulation_profile(playback_metronome_track_id());
 
     PlaybackEventsMap result;
     renderer_.render_count_in(score_, tick, 0, profile, result, count_in_duration);
@@ -372,341 +456,26 @@ InstrumentTrackIdSet PlaybackModel::existing_track_id_set() const {
 
 void PlaybackModel::update(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
                            ChangedTrackIdSet *track_changes) {
-    score_->master_score()->set_expand_repeats(expand_repeats_);
-    update_setup_data();
-    update_context(track_from, track_to, tick_from, tick_to);
-    update_events(tick_from, tick_to, track_from, track_to, track_changes);
-}
-
-void PlaybackModel::update_setup_data() {
-    EID score_eid = score_->eid();
-    if (!score_eid.is_valid()) {
-        score_eid = score_->assign_new_eid();
-    }
-
-    std::string score_id = score_eid.to_std_string();
-
-    for (const Part *part : score_->parts()) {
-        checkpoint();
-        for (const auto &pair : part->instruments()) {
-            checkpoint();
-            InstrumentTrackId track_id = id_key(part->id(), pair.second->id());
-            if (!track_id.is_valid() || muse::contains(playback_data_map_, track_id)) {
-                continue;
-            }
-
-            PlaybackSetupData &setup_data = track_data(track_id).setup_data;
-            setup_resolver_.resolve_setup_data(pair.second, setup_data);
-            setup_data.score_id = score_id;
-            emit_setup(track_id, setup_data);
-        }
-
-        if (part->has_chord_symbol()) {
-            InstrumentTrackId track_id = chord_symbols_track_id(part->id());
-            PlaybackSetupData &setup_data = track_data(track_id).setup_data;
-            setup_resolver_.resolve_chord_symbols_setup_data(part->instrument(), setup_data);
-            setup_data.score_id = score_id;
-            emit_setup(track_id, setup_data);
-        }
-    }
-
-    PlaybackSetupData &metronome_setup_data = track_data(::mu::engraving::PlaybackModel::metronome_track_id_value).setup_data;
-    setup_resolver_.resolve_metronome_setup_data(metronome_setup_data);
-    metronome_setup_data.score_id = score_id;
-    emit_setup(::mu::engraving::PlaybackModel::metronome_track_id_value, metronome_setup_data);
-}
-
-PlaybackData &PlaybackModel::track_data(const InstrumentTrackId &track_id) {
-    if (flat_) {
-        flat_->track(track_id);
-    }
-    return playback_data_map_[track_id];
-}
-
-void PlaybackModel::emit_setup(const InstrumentTrackId &track_id, const PlaybackSetupData &setup_data) {
-    if (flat_) {
-        flat_->track(track_id).setup = setup_data;
-    }
-}
-
-template <typename Render>
-void PlaybackModel::emit_events(const InstrumentTrackId &track_id, Render &&render) {
-    PlaybackEventsMap &events = track_data(track_id).origin_events;
-    if (flat_) {
-        DualEventsSink sink{{events}, {flat_->track(track_id), flat_->progress}};
-        render(sink);
-        return;
-    }
-    EventsMapSink sink{events};
-    render(sink);
-}
-
-void PlaybackModel::update_context(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to) {
-    playback_ctx_->update(track_from, track_to, tick_from, tick_to, expand_repeats_, checkpoint_);
-
-    for (const Part *part : score_->parts()) {
-        checkpoint();
-        const TrackRange track_range = part->track_range();
-        if (track_to <= track_range.start_track || track_from >= track_range.end_track) {
-            continue;
-        }
-
-        InstrumentTrackIdSet track_ids = part->instrument_track_id_set();
-        if (part->has_chord_symbol()) {
-            track_ids.insert(chord_symbols_track_id(part->id()));
-        }
-
-        if (track_ids.empty()) {
-            continue;
-        }
-
-        const PartData data{playback_ctx_->dynamic_level_layers(track_range.start_track, track_range.end_track),
-                            playback_ctx_->sound_presets(track_range.start_track, track_range.end_track),
-                            playback_ctx_->text_articulations(track_range.start_track, track_range.end_track),
-                            playback_ctx_->syllables(track_range.start_track, track_range.end_track)};
-
-        for (const InstrumentTrackId &track_id : track_ids) {
-            checkpoint();
-            apply_context_to_track_data(track_id, data);
-        }
-    }
-}
-
-void PlaybackModel::apply_context_to_track_data(const InstrumentTrackId &track_id, const PartData &data) {
-    PlaybackData &playback_data = this->track_data(track_id);
-    playback_data.dynamics = data.dynamics;
-    if (flat_) {
-        freeze_dynamics(flat_->track(track_id), data.dynamics, flat_->progress);
-    }
-
-    std::set<timestamp_t> new_event_timestamps;
-
-    const auto append_events = [this, &track_id, &playback_data, &new_event_timestamps](const auto &events) {
-        for (const auto &pair : events) {
-            checkpoint();
-            PlaybackEventList &list = playback_data.origin_events[pair.first];
-
-            //! NOTE: this assumes that the list has already been cleared in clearExpiredEvents
-            //! Necessary to prevent event duplication (unchanged lists should not be modified)
-            if (list.empty() || muse::contains(new_event_timestamps, pair.first)) {
-                list.insert(list.end(), pair.second.begin(), pair.second.end());
-                new_event_timestamps.insert(pair.first);
-                // The seam for context events, which bypass the renderer sinks: the same list, after the legacy insert
-                if (flat_) {
-                    freeze_cold_events(flat_->track(track_id), pair.first, std::span{pair.second}, flat_->progress);
-                }
-            }
-        }
-    };
-
-    append_events(data.sound_presets);
-    append_events(data.text_articulations);
-    append_events(data.syllables);
-}
-
-void PlaybackModel::process_segment(const int tick_position_offset, const Segment *segment, const std::set<staff_idx_t> &staff_idx_set,
-                                    bool is_first_chord_rest_segment_of_measure, ChangedTrackIdSet *track_changes) {
-    for (const EngravingItem *item : segment->annotations()) {
-        checkpoint();
-        if (!item || !item->part()) {
-            continue;
-        }
-
-        const Harmony *chord_symbol = find_chord_symbol(item);
-        if (!chord_symbol) {
-            continue;
-        }
-
-        staff_idx_t staff_idx = item->staff_idx();
-        if (staff_idx_set.find(staff_idx) == staff_idx_set.cend()) {
-            continue;
-        }
-
-        InstrumentTrackId track_id = chord_symbols_track_id(item->part()->id());
-
-        ArticulationsProfilePtr profile = default_acticulation_profile(track_id);
-        if (!profile) {
-            LOGE() << "unsupported instrument family: " << item->part()->id();
-            continue;
-        }
-
-        if (chord_symbol->play()) {
-            emit_events(track_id, [&](auto &sink) {
-                renderer_.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx_, sink);
-            });
-        }
-
-        collect_changes_tracks(track_id, track_changes);
-    }
-
-    if (segment->is_time_tick_type()) {
-        return; // optimization: search only for annotations
-    }
-
-    for (const EngravingItem *item : segment->elist()) {
-        checkpoint();
-        if (!item || !item->is_chord_rest() || !item->part()) {
-            continue;
-        }
-
-        staff_idx_t staff_idx = item->staff_idx();
-        if (staff_idx_set.find(staff_idx) == staff_idx_set.cend()) {
-            continue;
-        }
-
-        InstrumentTrackId track_id = id_key(item);
-
-        if (!track_id.is_valid()) {
-            continue;
-        }
-
-        if (is_first_chord_rest_segment_of_measure) {
-            if (item->is_measure_repeat()) {
-                const MeasureRepeat *measure_repeat = to_measure_repeat(item);
-                const Measure *current_measure = measure_repeat->measure();
-
-                process_measure_repeat(tick_position_offset, measure_repeat, current_measure, staff_idx, track_changes);
-
-                continue;
-            } else if (item->voice() == 0) {
-                const Measure *current_measure = segment->measure();
-
-                if (current_measure->measure_repeat_count(staff_idx) > 0) {
-                    const MeasureRepeat *measure_repeat = current_measure->measure_repeat_element(staff_idx);
-
-                    process_measure_repeat(tick_position_offset, measure_repeat, current_measure, staff_idx, track_changes);
-                    continue;
-                }
-            }
-        }
-
-        if (item->is_rest_family()) {
-            continue;
-        }
-
-        ArticulationsProfilePtr profile = default_acticulation_profile(track_id);
-        if (!profile) {
-            LOGE() << "unsupported instrument family: " << item->part()->id();
-            continue;
-        }
-
-        emit_events(track_id, [&](auto &sink) { renderer_.render(item, tick_position_offset, profile, playback_ctx_, sink); });
-
-        collect_changes_tracks(track_id, track_changes);
-    }
-}
-
-void PlaybackModel::process_measure_repeat(const int tick_position_offset, const MeasureRepeat *measure_repeat,
-                                           const Measure *current_measure, const staff_idx_t staff_idx, ChangedTrackIdSet *track_changes) {
-    if (!measure_repeat || !current_measure) {
-        return;
-    }
-
-    const Measure *referring_measure = measure_repeat->referring_measure(current_measure);
-    if (!referring_measure) {
-        return;
-    }
-
-    IF_ASSERT_FAILED(referring_measure != current_measure) { return; }
-
-    int current_measure_tick = current_measure->tick().ticks();
-    int referring_measure_tick = referring_measure->tick().ticks();
-    int repeat_position_tick_offset = current_measure_tick - referring_measure_tick;
-    int tick_from = tick_position_offset + repeat_position_tick_offset;
-
-    std::set<staff_idx_t> staff_to_process_idx_set{staff_idx};
-    int chord_rest_segment_num = -1;
-
-    for (const Segment *seg = referring_measure->first(); seg; seg = seg->next()) {
-        checkpoint();
-        if (!seg->is_chord_rest_type() && !seg->is_time_tick_type()) {
-            continue;
-        }
-
-        if (seg->is_chord_rest_type()) {
-            chord_rest_segment_num++;
-        }
-
-        process_segment(tick_from, seg, staff_to_process_idx_set, chord_rest_segment_num == 0, track_changes);
-    }
-}
-
-void PlaybackModel::update_events(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
-                                  ChangedTrackIdSet *track_changes) {
-    TRACEFUNC;
-
-    std::set<staff_idx_t> staff_to_process_idx_set = score_->staff_idx_set_from_range(track_from, track_to, [](const Staff &staff) {
-        return staff.is_primary_staff(); // skip linked staves
-    });
-
-    const ArticulationsProfilePtr metronome_profile =
-        default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
-    // The metronome entry exists before the walk, as the legacy sink construction here always created it
-    std::ignore = track_data(::mu::engraving::PlaybackModel::metronome_track_id_value);
-
-    for (const RepeatSegment *repeat_segment : repeat_list()) {
-        checkpoint();
-        int tick_position_offset = repeat_segment->utick - repeat_segment->tick;
-        int repeat_start_tick = repeat_segment->tick;
-        int repeat_end_tick = repeat_segment->end_tick();
-
-        if (repeat_start_tick > tick_to || repeat_end_tick <= tick_from) {
-            continue;
-        }
-
-        for (const Measure *measure : repeat_segment->measure_list()) {
-            checkpoint();
-            int measure_start_tick = measure->tick().ticks();
-            int measure_end_tick = measure->end_tick().ticks();
-
-            if (measure_start_tick > tick_to || measure_end_tick <= tick_from) {
-                continue;
-            }
-
-            int chord_rest_segment_num = -1;
-
-            for (const Segment *segment = measure->first(); segment; segment = segment->next()) {
-                checkpoint();
-                if (!segment->is_chord_rest_type() && !segment->is_time_tick_type()) {
-                    continue;
-                }
-
-                int segment_start_tick = segment->tick().ticks();
-                int segment_end_tick = segment_start_tick + segment->ticks().ticks();
-
-                if (segment_start_tick > tick_to || segment_end_tick <= tick_from) {
-                    continue;
-                }
-
-                if (segment->is_chord_rest_type()) {
-                    chord_rest_segment_num++;
-                }
-
-                process_segment(tick_position_offset, segment, staff_to_process_idx_set, chord_rest_segment_num == 0, track_changes);
-            }
-
-            if (metronome_enabled_) {
-                emit_events(::mu::engraving::PlaybackModel::metronome_track_id_value, [&](auto &sink) {
-                    renderer_.render_metronome(score_, measure, tick_position_offset, metronome_profile, sink);
-                });
-                collect_changes_tracks(::mu::engraving::PlaybackModel::metronome_track_id_value, track_changes);
-            }
-        }
-    }
+    LegacyStore store{playback_data_map_};
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    store.flat = flat_;
+#endif
+    PlaybackWalk<LegacyStore> walk{score_,          playback_ctx_,      renderer_, setup_resolver_, profiles_repository_, checkpoint_,
+                                   expand_repeats_, metronome_enabled_, store};
+    walk.update(tick_from, tick_to, track_from, track_to, track_changes);
 }
 
 void PlaybackModel::reload_metronome_events() {
     TRACEFUNC;
 
-    PlaybackData &metronome_data = playback_data_map_[::mu::engraving::PlaybackModel::metronome_track_id_value];
+    PlaybackData &metronome_data = playback_data_map_[playback_metronome_track_id()];
     metronome_data.origin_events.clear();
 
     if (!metronome_enabled_) {
         return;
     }
 
-    const ArticulationsProfilePtr metronome_profile =
-        default_acticulation_profile(::mu::engraving::PlaybackModel::metronome_track_id_value);
+    const ArticulationsProfilePtr metronome_profile = default_acticulation_profile(playback_metronome_track_id());
     EventsMapSink metronome_sink{metronome_data.origin_events};
 
     for (const RepeatSegment *repeat_segment : repeat_list()) {
@@ -719,7 +488,7 @@ void PlaybackModel::reload_metronome_events() {
         }
     }
 
-    muse::remove(changed_track_id_set_, ::mu::engraving::PlaybackModel::metronome_track_id_value);
+    muse::remove(changed_track_id_set_, playback_metronome_track_id());
 }
 
 bool PlaybackModel::has_to_reload_tracks(const ScoreChanges &changes) const {
@@ -822,7 +591,7 @@ void PlaybackModel::clear_expired_tracks() {
             return true;
         }
 
-        if (track_id.instrument_id == ::chord_symbols_instrument_id) {
+        if (is_playback_chord_symbols_track(track_id)) {
             return !part->has_chord_symbol();
         }
 
@@ -832,7 +601,7 @@ void PlaybackModel::clear_expired_tracks() {
     auto it = playback_data_map_.cbegin();
 
     while (it != playback_data_map_.cend()) {
-        if (it->first == ::mu::engraving::PlaybackModel::metronome_track_id_value) {
+        if (it->first == playback_metronome_track_id()) {
             ++it;
             continue;
         }
@@ -878,8 +647,7 @@ void PlaybackModel::clear_expired_events(const int tick_from, const int tick_to,
 
     if (tick_from == 0 && last_measure->end_tick().ticks() == tick_to) {
         remove_events_from_range(track_from, track_to, -1 /*timestampFrom*/, -1 /*timestampTo*/, track_changes);
-        remove_track_events(::mu::engraving::PlaybackModel::metronome_track_id_value, -1 /*timestampFrom*/, -1 /*timestampTo*/,
-                            track_changes);
+        remove_track_events(playback_metronome_track_id(), -1 /*timestampFrom*/, -1 /*timestampTo*/, track_changes);
         return;
     }
 
@@ -917,8 +685,7 @@ void PlaybackModel::clear_expired_events(const int tick_from, const int tick_to,
             remove_events_from = timestamp_from_ticks(score_, measure_start_tick + tick_position_offset);
             remove_events_to = timestamp_from_ticks(score_, measure_end_tick + tick_position_offset - 1);
 
-            remove_track_events(::mu::engraving::PlaybackModel::metronome_track_id_value, remove_events_from, remove_events_to,
-                                track_changes);
+            remove_track_events(playback_metronome_track_id(), remove_events_from, remove_events_to, track_changes);
         }
     }
 }

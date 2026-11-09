@@ -79,7 +79,7 @@ void load_sequencer(TimelineSequencer &sequencer, const PlaybackSetupData &setup
     PlaybackData data;
     data.setup_data = setup;
     data.origin_events.emplace(event.arrangement_ctx().actual_timestamp, PlaybackEventList{event});
-    sequencer.load(data);
+    sequencer.load(freeze_playback_data(data));
 }
 
 std::vector<const midi::Event *> midi_events_at(const TimelineSequencer &sequencer, const timestamp_t timestamp,

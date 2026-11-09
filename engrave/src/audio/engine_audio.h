@@ -233,16 +233,17 @@ struct AudioRenderResult {
 // behavior too), so the decoded Ogg stream is 48 kHz while its duration follows
 // the engine render.
 //
-// A PlaybackModel supplies repeat-expanded MPE events for the duration of the
-// owned OfflineRenderSession. Tracks use explicit SoundFont resources and two
+// A PlaybackScoreBuilder walks the score once into a flat, repeat-expanded MPE
+// store; each track's sequencer lowers it, and the store is released before
+// synthesis. Tracks use explicit SoundFont resources and two
 // auxiliary returns (Muse Reverb and an empty return). The retained nested
 // master chains preserve the existing gain initialization and mix behavior.
 // The writer clears its additive mix buffer before each 4096-frame block,
 // finalizes the encoder, and returns through the existing public ByteSink
 // adapter (which uses a seekable temporary file for header finalization).
 //
-// The metronome and chord-symbol tracks are added when the PlaybackModel
-// reports them, but are always muted (the metronome/chord playback switches
+// The metronome and chord-symbol tracks are added when the score walk creates
+// them, but are always muted (the metronome/chord playback switches
 // are off, like PlaybackController::trackOutputParams). request.tracks is
 // indexed by the track list for the same excerpt (engine_audio_tracks);
 // tracks outside the excerpt keep neutral values but are muted as described

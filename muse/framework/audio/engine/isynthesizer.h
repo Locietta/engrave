@@ -26,6 +26,7 @@
 
 #include "audio/common/audiotypes.h"
 #include "audio/common/timeposition.h"
+#include "mpe/flatevents.h"
 
 namespace muse::audio::synth {
 struct ISynthesizer {
@@ -40,7 +41,7 @@ struct ISynthesizer {
 
     virtual void set_output_spec(const OutputSpec &spec) = 0;
 
-    virtual void setup(const mpe::PlaybackData &playback_data) = 0;
+    virtual void setup(const mpe::TrackEvents &events) = 0;
 
     virtual const audio::AudioInputParams &params() const = 0;
 

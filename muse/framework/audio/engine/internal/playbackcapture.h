@@ -10,10 +10,12 @@
 #include <type_traits>
 
 #include "mpe/events.h"
+#include "mpe/flatevents.h"
 
 namespace muse::audio::test {
 struct PlaybackCapture {
-    inline static std::function<void(std::uint64_t, const muse::String &, const mpe::PlaybackData &)> track;
+    // Dump A of each export track, from the flat store (with its per-note dumps), in export order
+    inline static std::function<void(std::uint64_t, const muse::String &, const mpe::TrackEvents &)> track;
     inline static std::ostream *synth = nullptr;
     inline static std::map<const void *, unsigned> ids;
 

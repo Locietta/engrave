@@ -120,12 +120,14 @@ struct AbstractEventSequencer {
 
     virtual ~AbstractEventSequencer() = default;
 
-    void load(const mpe::PlaybackData &data) {
-
-        dynamics_ = data.dynamics;
+    // Lowers one track of the flat MPE store; the sequencer keeps only a copy of its dynamics, and
+    // nothing borrowed from the store outlives this call
+    void load(const mpe::TrackEvents &events) {
+        dynamic_layers_ = events.dynamic_layers;
+        dynamic_points_ = events.dynamic_points;
         invalidate_chunk_plan();
 
-        update_main_stream_events(data.origin_events, data.dynamics);
+        update_main_stream_events(events);
     }
 
     void flush_offstream() { invalidate_chunk_plan(); }
@@ -201,7 +203,7 @@ struct AbstractEventSequencer {
     }
 
 protected:
-    virtual void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
+    virtual void update_main_stream_events(const mpe::TrackEvents &events) = 0;
 
     static constexpr std::uint32_t k_sort_block_size = 8192;
 
@@ -210,42 +212,50 @@ protected:
     }
 
     static bool bounded_stable_sort(MidiTimeline &timeline) {
+        const bool sorted = bounded_stable_sort_by(timeline.events, [](const TimedMidiEvent &entry) { return entry.timestamp; });
+        if (!sorted) {
+            timeline.clear();
+        }
+        return sorted;
+    }
+
+    //! The bounded stable sort of design 4.4 over any trivially copyable buffer, ordered by key(entry): each
+    //! k_sort_block_size block is stably sorted, then blocks are merged with ties to the lower block, polling
+    //! between blocks and every k_sort_block_size merge steps. Equals std::stable_sort. Returns false when
+    //! cancelled, with the buffer in an unspecified order
+    template <class T, class Key>
+    static bool bounded_stable_sort_by(Buf<T> &events, Key &&key) {
         OfflineCancellation::SequencerScope phase;
         constexpr std::uint32_t k_block_size = k_sort_block_size;
         if (OfflineCancellation::requested()) {
-            timeline.clear();
             return false;
         }
-        auto &events = timeline.events;
         const auto total = static_cast<std::uint32_t>(events.size());
         if (total <= 1) {
             return true;
         }
 
-        const auto by_timestamp = [](const TimedMidiEvent &lhs, const TimedMidiEvent &rhs) { return lhs.timestamp < rhs.timestamp; };
+        const auto by_key = [&key](const T &lhs, const T &rhs) { return key(lhs) < key(rhs); };
 
         for (std::uint32_t offset = 0; offset < total;) {
             if (offset > 0 && OfflineCancellation::requested()) {
-                timeline.clear();
                 return false;
             }
             const std::uint32_t block_end = next_sort_block_end(offset, total);
-            std::stable_sort(events.begin() + offset, events.begin() + block_end, by_timestamp);
+            std::stable_sort(events.begin() + offset, events.begin() + block_end, by_key);
             offset = block_end;
         }
 
         if (OfflineCancellation::requested()) {
-            timeline.clear();
             return false;
         }
         if (total <= k_block_size) {
             return true;
         }
 
-        Buf<TimedMidiEvent> scratch;
+        Buf<T> scratch;
         reserve_checked(scratch, total);
         if (OfflineCancellation::requested()) {
-            timeline.clear();
             return false;
         }
 
@@ -261,11 +271,10 @@ protected:
                     if (++merge_steps >= k_block_size) {
                         merge_steps = 0;
                         if (OfflineCancellation::requested()) {
-                            timeline.clear();
                             return false;
                         }
                     }
-                    if (events[j].timestamp < events[i].timestamp) {
+                    if (key(events[j]) < key(events[i])) {
                         emplace_checked(scratch, events[j++]);
                     } else {
                         emplace_checked(scratch, events[i++]);
@@ -275,7 +284,6 @@ protected:
                     if (++merge_steps >= k_block_size) {
                         merge_steps = 0;
                         if (OfflineCancellation::requested()) {
-                            timeline.clear();
                             return false;
                         }
                     }
@@ -285,7 +293,6 @@ protected:
                     if (++merge_steps >= k_block_size) {
                         merge_steps = 0;
                         if (OfflineCancellation::requested()) {
-                            timeline.clear();
                             return false;
                         }
                     }
@@ -385,8 +392,13 @@ protected:
     Buf<ChunkSlice> chunk_plan_;
     bool chunk_plan_valid_ = false;
 
-    // Offline loading lowers MPE events once; only dynamics are needed by seeks.
-    mpe::DynamicAutomationLayers dynamics_;
+    // Offline loading lowers MPE events once; only dynamics are needed by seeks (copied out of the flat store).
+    Buf<mpe::DynamicLayer> dynamic_layers_; // ascending layer
+    Buf<mpe::DynamicPoint> dynamic_points_;
+
+    std::span<const mpe::DynamicPoint> layer_points(const mpe::DynamicLayer &layer) const {
+        return mpe::checked_span(dynamic_points_, layer.points);
+    }
 
     bool is_active_ = false;
 

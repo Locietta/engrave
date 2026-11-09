@@ -52,7 +52,7 @@ struct FluidSynth : AbstractSynthesizer {
     AudioSourceType type() const override;
 
     void setup_sound(const mpe::PlaybackSetupData &setup_data) override;
-    void setup_events(const mpe::PlaybackData &playback_data) override;
+    void setup_events(const mpe::TrackEvents &events) override;
 
     void flush_sound() override; // all channels
 

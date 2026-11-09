@@ -12,14 +12,14 @@ struct OfflineRenderSession {
     ~OfflineRenderSession();
     OfflineRenderSession(const OfflineRenderSession &) = delete;
     OfflineRenderSession &operator=(const OfflineRenderSession &) = delete;
-    RetVal2<TrackId, TrackParams> add_track(const std::string &name, const mpe::PlaybackData &data, const TrackParams &params);
+    RetVal2<TrackId, TrackParams> add_track(const std::string &name, const mpe::TrackEvents &events, const TrackParams &params);
     RetVal2<TrackId, TrackParams> add_aux_track(const std::string &name, const TrackParams &params);
 
     IAudioNodePtr output() const { return master_; }
 
     void reset_sources();
 private:
-    RetVal2<TrackId, TrackParams> add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params);
+    RetVal2<TrackId, TrackParams> add(const std::string &name, const mpe::TrackEvents *data, const TrackParams &params);
     IAudioFactory &factory_;
     OutputSpec spec_;
     std::shared_ptr<Mixer> mixer_;

@@ -30,7 +30,7 @@
 namespace muse::audio::engine {
 struct EventAudioNode : AudioSourceNode {
     // audioFactory makes the synthesizer for the input params; it must outlive the node.
-    EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data);
+    EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::TrackEvents &events);
 
     void seek(const TimePosition &position, const bool flush_sound = true) override;
     void flush() override;
@@ -60,7 +60,7 @@ private:
     const IAudioFactory &audio_factory_;
     TrackId track_id_ = -1;
     // Borrowed only until initial setup. The export model outlives that call.
-    const mpe::PlaybackData *initial_data_;
+    const mpe::TrackEvents *initial_data_;
     synth::ISynthesizerPtr synth_ = nullptr;
     AudioInputParams params_;
 };

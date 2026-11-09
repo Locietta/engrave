@@ -64,6 +64,11 @@ void freeze_note(TrackEvents &track, const timestamp_t group_timestamp, const No
     record.expression_curve = freeze_curve(track, expression.expression_curve, progress);
 
     emplace_checked(track.notes, record);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    if (progress.dump_note) {
+        track.note_dumps.push_back(progress.dump_note(event));
+    }
+#endif
     progress.advance();
 }
 
@@ -144,5 +149,16 @@ void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics
         record.points.count = buffer_end(track.dynamic_points) - record.points.first;
         emplace_checked(track.dynamic_layers, record);
     }
+}
+
+TrackEvents freeze_playback_data(const PlaybackData &data) {
+    TrackEvents track;
+    FreezeProgress progress;
+    track.setup = data.setup_data;
+    freeze_dynamics(track, data.dynamics, progress);
+    for (const auto &[group, events] : data.origin_events) {
+        freeze_events(track, group, std::span{events}, progress);
+    }
+    return track;
 }
 } // namespace muse::mpe

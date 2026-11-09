@@ -340,7 +340,7 @@ void FluidSynth::setup_sound(const PlaybackSetupData &setup_data) {
     }
 }
 
-void FluidSynth::setup_events(const mpe::PlaybackData &playback_data) { sequencer_.load(playback_data); }
+void FluidSynth::setup_events(const mpe::TrackEvents &events) { sequencer_.load(events); }
 
 void FluidSynth::flush_sound() {
     sequencer_.flush_offstream();

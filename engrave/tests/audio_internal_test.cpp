@@ -559,7 +559,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
 
         void clear_synth_sources() override {}
 
-        RetVal<AudioSourceNodePtr> make_event_source(TrackId, const mpe::PlaybackData &, const AudioInputParams &) const override {
+        RetVal<AudioSourceNodePtr> make_event_source(TrackId, const mpe::TrackEvents &, const AudioInputParams &) const override {
             return {};
         }
 
@@ -573,7 +573,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
     for (bool throws : {false, true}) {
         FailingFactory factory;
         factory.throws = throws;
-        auto data = std::make_unique<mpe::PlaybackData>();
+        auto data = std::make_unique<mpe::TrackEvents>();
         EventAudioNode node(factory, 1, *data);
         node.set_output_spec({44100, 4096, 2});
         if (throws)
@@ -644,14 +644,10 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     const char *names[] = {"before-synthesis", "playback-model", "synthesis", "encode", "event-release"};
     for (int phase = 0; phase < 5; ++phase) {
         std::vector<double> responsiveness, cleanup, turnaround;
-#ifdef _WIN32
-        bool saw_parallel = false, saw_serial = false, saw_crossing = false;
-#endif
         for (int trial = 0; trial < 50; ++trial) {
             bool cancelled = false;
             bool model_started = false;
             int model_polls = 0, stage_polls = 0;
-            std::size_t armed_buckets = 0, observed_buckets = 0;
             std::latch model_start{1};
             std::atomic<bool> external{false};
             Clock::time_point requested, observed;
@@ -683,16 +679,11 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                     cancel();
                     return false;
                 }
+                // The flat store is released in one step between two polls: arm at the first, so the
+                // next poll observes the request after the release
                 if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE && muse::audio::EventReleaseProgress::before_batch) {
-                    const auto remaining = muse::audio::EventReleaseProgress::remaining_buckets;
-                    // Sweep by observed work, independent of the batch budget.
-                    // One trial arms exactly at the cleanup threshold before a batch.
-                    const bool arm = trial == 25 ? remaining == 16384 : remaining <= std::size_t{49152} * (50 - trial) / 50;
-                    if (arm) {
-                        armed_buckets = remaining;
-                        cancel();
-                        return false;
-                    }
+                    cancel();
+                    return false;
                 }
                 if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PLAYBACK_MODEL &&
                     ++model_polls == 2000 + trial * 3000 && !model_started) {
@@ -707,7 +698,6 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                 // Everything after it includes synchronous graph/event cleanup.
                 if (cancelled && observed == Clock::time_point{}) {
                     observed = Clock::now();
-                    observed_buckets = muse::audio::EventReleaseProgress::remaining_buckets;
                 }
                 return cancelled;
             };
@@ -732,26 +722,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             responsiveness.push_back(std::chrono::duration<double, std::milli>(observed - requested).count());
             cleanup.push_back(std::chrono::duration<double, std::milli>(returned - observed).count());
             turnaround.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
-#ifdef _WIN32
-            if (phase == 4) {
-                using Progress = muse::audio::EventCleanupProgress;
-                EXPECT_EQ(Progress::remaining_buckets, observed_buckets);
-                if (observed_buckets >= muse::audio::parallel_event_cleanup_threshold) {
-                    EXPECT_EQ(Progress::branch, Progress::Branch::PARALLEL);
-                    saw_parallel = true;
-                } else {
-                    EXPECT_EQ(Progress::branch, Progress::Branch::BELOW_THRESHOLD);
-                    saw_serial = true;
-                }
-                if (trial == 25) {
-                    EXPECT_EQ(armed_buckets, muse::audio::parallel_event_cleanup_threshold);
-                    EXPECT_LT(observed_buckets, muse::audio::parallel_event_cleanup_threshold);
-                    saw_crossing = true;
-                }
-                std::fprintf(stderr, "release_cleanup trial=%d armed=%zu observed=%zu branch=%d\n", trial, armed_buckets, observed_buckets,
-                             static_cast<int>(Progress::branch));
-            }
-#endif
+
             std::fprintf(stderr, "dense_cancel_sample phase=%s trial=%d request_to_observed_ms=%.6f observed_to_return_ms=%.6f\n",
                          names[phase], trial, responsiveness.back(), cleanup.back());
         }
@@ -769,13 +740,6 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         // almost all of that span, so allow 50 ms p95 and 100 ms worst case.
         report("observed_to_return", cleanup, 50.0, 100.0);
         report("request_to_return", turnaround, 50.0, 100.0);
-#ifdef _WIN32
-        if (phase == 4) {
-            EXPECT_TRUE(saw_parallel);
-            EXPECT_TRUE(saw_serial);
-            EXPECT_TRUE(saw_crossing);
-        }
-#endif
         EXPECT_EQ(render(), baseline);
     }
     // Exercise error translation and publication through the public API too.
@@ -898,8 +862,7 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
 
     // 3. MidiTimeline + FluidSequencer slice planning, continuation merge, <= boundary, seek, and buffer reuse.
     ExposedSequencer seq;
-    muse::mpe::PlaybackData data;
-    seq.load(data);
+    seq.load(muse::mpe::TrackEvents{});
 
     auto make_note = [](Event::Opcode opcode, std::uint32_t note, std::uint32_t vel) {
         Event ev(opcode, Event::MessageType::CHANNEL_VOICE10);
@@ -1139,7 +1102,7 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         const std::function<bool()> cancel_in_curve = [&] { return ++polls >= 3; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_curve);
-            seq.load(data);
+            seq.load(muse::mpe::freeze_playback_data(data));
         }
         EXPECT_EQ(polls, 3);
         EXPECT_TRUE(seq.main_stream_events_.empty());
@@ -1173,14 +1136,14 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         const std::function<bool()> cancel_in_sort = [&] { return ++polls == 5003; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_sort);
-            seq.load(data);
+            seq.load(muse::mpe::freeze_playback_data(data));
         }
         EXPECT_EQ(polls, 5003);
         EXPECT_TRUE(seq.main_stream_events_.empty());
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
 
         // Subsequent non-cancelled load recovers cleanly.
-        seq.load(data);
+        seq.load(muse::mpe::freeze_playback_data(data));
         EXPECT_EQ(seq.main_stream_events_.events.size(), 10000u);
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
     }

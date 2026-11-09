@@ -30,9 +30,6 @@
 #include "audio/engine/internal/nodes/trackchain.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlineeventrelease.h"
-#ifdef _WIN32
-#include "audio/engine/internal/offlineeventcleanup.h"
-#endif
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -47,7 +44,11 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
+#include "engraving/playback/flatplaybackscore.h"
+#ifdef ENGRAVE_PLAYBACK_HARNESS
 #include "engraving/playback/playbackmodel.h"
+#endif
+#include "engraving/playback/playbackwalk.h"
 #include "flat_playback_capture.h"
 #include "global/defer.h"
 #include "global/io/ifilesystem.h"
@@ -237,8 +238,8 @@ AudioOutputCodec audio_output_codec_of(EngineAudioFormat format) {
 // Mirrors the desktop mixer title rules in playbackcontroller.cpp:1155-1186
 // (addTrack) and resolveAuxTrackTitle() (:77-89). Translation is not available
 // in the native host, so the English labels are used verbatim.
-std::string track_name(const MasterScore *master, const PlaybackModel &model, const InstrumentTrackId &id) {
-    if (id == model.metronome_track_id()) {
+std::string track_name(const MasterScore *master, const InstrumentTrackId &id) {
+    if (id == playback_metronome_track_id()) {
         return ::music::k_metronome_track_name;
     }
 
@@ -247,7 +248,7 @@ std::string track_name(const MasterScore *master, const PlaybackModel &model, co
         return id.instrument_id.to_std_string();
     }
 
-    if (model.is_chord_symbols_track(id)) {
+    if (is_playback_chord_symbols_track(id)) {
         return std::string(::music::k_chords_track_name_prefix) + part->part_name().to_std_string();
     }
 
@@ -559,51 +560,40 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         excerpt_selected = true;
     }
 
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-    // Dual execution: the flat store outlives the model walk that fills it.
-    PlaybackScore flat_events;
-#endif
-    // Sources borrow model data only while loading their MIDI sequences.
-    PlaybackModel model(&state.profiles);
-#ifdef _WIN32
-    // Declared before the graph; only staged resources are used at teardown.
-    OfflineEventCleanup event_cleanup;
-#endif
-    model.set_play_repeats(request.use_repeats);
-    model.set_play_chord_symbols(false);
-    model.set_is_metronome_enabled(false);
+    // The export's flat MPE store, one track per walk track in id order. Sources borrow it only while
+    // loading their MIDI sequences; it is released after the track loop (design 4.4).
+    PlaybackScore playback;
+
+    // Only this private sentinel unwinds construction; callback exceptions
+    // remain latched by poll() and are rethrown by abortSetup().
+    struct CancelledModel {};
+
+    const auto checkpoint = [&] {
+        if (poll()) throw CancelledModel{};
+    };
     {
         OfflineTimer timer(OfflineTiming::current().model);
 
-        // Only this private sentinel unwinds construction; callback exceptions
-        // remain latched by poll() and are rethrown by abortSetup().
-        struct CancelledModel {};
-
         OfflineCancellation::ModelScope phase;
         try {
-            const auto checkpoint = [&] {
-                if (poll()) throw CancelledModel{};
-            };
+            PlaybackScoreBuilder builder{&state.profiles};
+            builder.play_repeats = request.use_repeats;
+            builder.metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-            model.load(master_score, checkpoint, FlatPlaybackCapture::dual ? &flat_events : nullptr);
-#else
-            model.load(master_score, checkpoint);
+            builder.dump_note = FlatPlaybackCapture::dump_note;
 #endif
+            playback = builder.build(master_score, checkpoint);
         } catch (const CancelledModel &) {
             return abort_setup();
-        }
-#ifdef ENGRAVE_PLAYBACK_HARNESS
-        catch (const engine::StoreLimit &limit) {
-            // Only the flat store throws this during load; step 4c moves the handler to production
+        } catch (const engine::StoreLimit &limit) {
+            // A flat buffer would leave the uint32 offset format
             if (callback_error) std::rethrow_exception(callback_error);
             return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
         }
-#endif
     }
     if (poll()) return abort_setup();
 
-    const InstrumentTrackIdSet existing_track_ids = model.existing_track_id_set();
-    if (existing_track_ids.empty()) {
+    if (playback.tracks.empty()) {
         return fail(AudioRenderResult::Failure::INVALID_SCORE, "score has no playable tracks");
     }
 
@@ -672,7 +662,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // updateSoloMuteStates() derives forceMute from any non-metronome solo.
     bool has_solo = false;
     for (std::size_t index = 0; index < mix_tracks.size(); ++index) {
-        if (mix_tracks[index].id == model.metronome_track_id()) {
+        if (mix_tracks[index].id == playback_metronome_track_id()) {
             continue;
         }
         if (track_params(index).solo) {
@@ -682,40 +672,39 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     }
 
     // Deterministic track order: upstream iterates the unordered track set, but
-    // deterministic ids/mix order are needed for byte-identical exports.
-    std::vector<InstrumentTrackId> ordered_track_ids(existing_track_ids.cbegin(), existing_track_ids.cend());
-    std::sort(ordered_track_ids.begin(), ordered_track_ids.end());
-#ifdef _WIN32
-    event_cleanup.prepare(ordered_track_ids, [&](const auto &id) -> auto & { return model.resolve_track_playback_data(id); });
-#endif
-    EventReleaseProgress::remaining_buckets = 0;
-    for (const auto &id : ordered_track_ids)
-        EventReleaseProgress::remaining_buckets += model.resolve_track_playback_data(id).origin_events.size();
-
+    // deterministic ids/mix order are needed for byte-identical exports. The
+    // store is sorted by id.
 #ifdef ENGRAVE_PLAYBACK_HARNESS
-    for (const auto &id : ordered_track_ids) {
+    for (const auto &[id, events] : playback.tracks) {
         if (test::PlaybackCapture::synth)
             *test::PlaybackCapture::synth << "track " << id.part_id.to_uint64() << ' ' << id.instrument_id.to_std_string() << '\n';
-        if (test::PlaybackCapture::track)
-            test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, model.resolve_track_playback_data(id));
+        if (test::PlaybackCapture::track) test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, events);
     }
     if (test::PlaybackCapture::synth) *test::PlaybackCapture::synth << "total_frames " << total_frames << '\n';
     if (FlatPlaybackCapture::projection) {
+        // The legacy model is the test oracle (design E1): a separate walk of the same score
+        PlaybackModel oracle(&state.profiles);
+        oracle.set_play_repeats(request.use_repeats);
+        oracle.set_play_chord_symbols(false);
+        oracle.set_is_metronome_enabled(false);
+        oracle.load(master_score);
+        const InstrumentTrackIdSet ids = oracle.existing_track_id_set();
+        std::vector<InstrumentTrackId> ordered(ids.cbegin(), ids.cend());
+        std::sort(ordered.begin(), ordered.end());
         FlatPlaybackCapture::LegacyTracks legacy;
-        for (const auto &id : ordered_track_ids) legacy.emplace_back(id, &model.resolve_track_playback_data(id));
-        FlatPlaybackCapture::projection(flat_events, legacy);
+        for (const auto &id : ordered) legacy.emplace_back(id, &oracle.resolve_track_playback_data(id));
+        FlatPlaybackCapture::projection(playback, legacy);
     }
 #endif
     auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
-    for (const InstrumentTrackId &track_id : ordered_track_ids) {
+    for (const auto &[track_id, events] : playback.tracks) {
         if (poll()) return abort_setup();
-        const mpe::PlaybackData &playback_data = model.resolve_track_playback_data(track_id);
-        if (!playback_data.is_valid()) {
+        if (!events.setup.is_valid()) {
             continue;
         }
 
-        const bool is_metronome = track_id == model.metronome_track_id();
-        const bool is_chord_symbols = model.is_chord_symbols_track(track_id);
+        const bool is_metronome = track_id == playback_metronome_track_id();
+        const bool is_chord_symbols = is_playback_chord_symbols_track(track_id);
 
         const auto index = mix_index.find(track_id);
         EngineAudioTrackParams mix;
@@ -762,10 +751,10 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             params.aux_sends = {AuxSendParams{static_cast<gain_t>(send), true}, AuxSendParams{0.0f, true}};
         }
 
-        const std::string name = track_name(master_score, model, track_id);
+        const std::string name = track_name(master_score, track_id);
         RetVal2<TrackId, TrackParams> added;
         try {
-            added = context.add_track(name, playback_data, params);
+            added = context.add_track(name, events, params);
         } catch (const engine::StoreLimit &limit) {
             if (callback_error) std::rethrow_exception(callback_error);
             return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
@@ -777,11 +766,15 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     }
 
     {
+        // Every sequencer has lowered its track and keeps its own copy of the dynamics, so the flat store
+        // is released before synthesis: a handful of buffer frees per track, polled before and after.
+        // (The step-2 batched release and the Windows threaded cleanup have no maps to free any more.)
         OfflineCancellation::EventReleaseScope phase;
-        for (const auto &id : ordered_track_ids) {
-            if (!release_event_batches(model.resolve_track_playback_data(id).origin_events, poll, &EventReleaseProgress::remaining_buckets))
-                return abort_setup();
-        }
+        EventReleaseProgress::before_batch = true;
+        if (poll()) return abort_setup();
+        playback = {};
+        EventReleaseProgress::before_batch = false;
+        if (poll()) return abort_setup();
     }
 
     // Aux 0 is the Muse Reverb send target; aux 1 is empty (desktop adds

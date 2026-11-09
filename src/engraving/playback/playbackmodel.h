@@ -23,7 +23,6 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <unordered_map>
 
 #include "../dom/score.h"
@@ -46,6 +45,8 @@ struct RepeatList;
 
 // Follows the committed changes of the loaded score as its changes listener
 // until it is destroyed or loads another score.
+// The export builds a flat PlaybackScore with PlaybackScoreBuilder instead; this model is kept as the
+// legacy test oracle (playback DoD design exception E1). Both run the same walk (playbackwalk.h).
 struct PlaybackModel : IScoreChangesListener {
     // profilesRepository may be null (no default articulation profiles); it must
     // outlive the model.
@@ -59,10 +60,14 @@ struct PlaybackModel : IScoreChangesListener {
 
     // Owner-thread checkpoint, called only during load. May throw to abort;
     // discard this model after an aborted load. Never reenter the engine.
-    // A non-null flat store receives, from the same walk, every track, setup, dynamics and event list
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    // Test only: a non-null flat store receives, from the same walk, every track, setup, dynamics and event list
     // the legacy map receives during this load (dual execution); it is not kept after load returns.
     // Dual execution requires a model that has not loaded a score before.
     void load(Score *score, const std::function<void()> &checkpoint = {}, PlaybackScore *flat = nullptr);
+#else
+    void load(Score *score, const std::function<void()> &checkpoint = {});
+#endif
     void reload();
 
     void set_send_events_on_score_change(const InstrumentTrackId &track_id, bool send);
@@ -106,9 +111,6 @@ private:
 
     void detach_from_score();
 
-    static const InstrumentTrackId metronome_track_id_value;
-    static const InstrumentTrackId chord_symbols_track_id_value;
-
     using ChangedTrackIdSet = InstrumentTrackIdSet;
 
     struct TickBoundaries {
@@ -121,37 +123,15 @@ private:
         track_idx_t track_to = muse::nidx;
     };
 
-    struct PartData {
-        muse::mpe::DynamicAutomationLayers dynamics;
-        std::map<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets;
-        std::map<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations;
-        std::map<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables;
-    };
-
     InstrumentTrackId id_key(const EngravingItem *item) const;
     InstrumentTrackId id_key(const std::vector<const EngravingItem *> &items) const;
     InstrumentTrackId id_key(const ID &part_id, const String &instrument_id) const;
 
-    // Every map entry the walk touches goes through here, so the flat store creates the same tracks.
-    muse::mpe::PlaybackData &track_data(const InstrumentTrackId &track_id);
-    void emit_setup(const InstrumentTrackId &track_id, const muse::mpe::PlaybackSetupData &setup_data);
-    template <typename Render>
-    void emit_events(const InstrumentTrackId &track_id, Render &&render);
-
+    // The shared score walk (playbackwalk.h) over this model's track map
     void update(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
                 ChangedTrackIdSet *track_changes = nullptr);
-    void update_setup_data();
-    void update_context(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to);
-    void apply_context_to_track_data(const InstrumentTrackId &track_id, const PartData &data);
-    void update_events(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
-                       ChangedTrackIdSet *track_changes = nullptr);
 
     void reload_metronome_events();
-
-    void process_segment(const int tick_position_offset, const Segment *segment, const std::set<staff_idx_t> &staff_idx_set,
-                         bool is_first_chord_rest_segment_of_measure, ChangedTrackIdSet *track_changes);
-    void process_measure_repeat(const int tick_position_offset, const MeasureRepeat *measure_repeat, const Measure *current_measure,
-                                const staff_idx_t staff_idx, ChangedTrackIdSet *track_changes);
 
     bool has_to_reload_tracks(const ScoreChanges &changes) const;
     bool has_to_reload_score(const ScoreChanges &changes) const;
@@ -202,7 +182,9 @@ private:
     PlaybackSetupDataResolver setup_resolver_;
 
     PlaybackContextPtr playback_ctx_;
-    PlaybackScore *flat_ = nullptr; // set only during load
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    PlaybackScore *flat_ = nullptr; // dual execution, set only during load
+#endif
     std::unordered_map<InstrumentTrackId, muse::mpe::PlaybackData> playback_data_map_;
     std::unordered_map<InstrumentTrackId, bool> send_events_on_score_change_map_;
 

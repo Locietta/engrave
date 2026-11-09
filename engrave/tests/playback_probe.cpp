@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -44,14 +45,14 @@ int main(int argc, char **argv) {
     try {
         if (argc < 5)
             throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
-                                        "[--excerpt N] [--measure] [--dual] [--corrupt-flat] [--cancel-phase 1..5] [--cancel-poll N]");
+                                        "[--excerpt N] [--measure] [--corrupt-flat] [--cancel-phase 1..5] [--cancel-poll N]");
         using namespace muse::audio;
         const auto dir = std::filesystem::u8path(argv[4]);
         std::filesystem::create_directories(dir);
         music::AudioRenderRequest request;
         request.output_path = utf8(dir / "audio.wav");
         int rate = 44100, cancel_phase = 0, cancel_poll = 1, mute_part = -1;
-        bool measure = false, dual = false, corrupt_flat = false;
+        bool measure = false, corrupt_flat = false;
         for (int i = 5; i < argc; ++i) {
             std::string arg = argv[i];
             const auto number = [&] {
@@ -66,8 +67,7 @@ int main(int argc, char **argv) {
                 request.reverb = false;
             else if (arg == "--measure")
                 measure = true;
-            else if (arg == "--dual")
-                dual = true;
+
             else if (arg == "--corrupt-flat")
                 corrupt_flat = true;
             else if (arg == "--cancel-phase")
@@ -109,11 +109,17 @@ int main(int argc, char **argv) {
             c.open(dir / "C.txt", std::ios::binary);
             a << "legacy-mpe-v1\n";
             c << "synth-input-v2\n";
-            test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &data) {
-                music::test::LegacyDump{a}.track(id, instrument, data);
+            // Dump A from the new path: each NoteEvent as the builder freezes it, then the flat track
+            music::FlatPlaybackCapture::dump_note = [](const muse::mpe::NoteEvent &event) {
+                std::ostringstream text;
+                music::test::LegacyDump{text}.note(event);
+                return text.str();
+            };
+            test::PlaybackCapture::track = [&](auto id, const auto &instrument, const auto &events) {
+                music::test::FlatDump{a}.track(id, instrument, events);
             };
             test::PlaybackCapture::synth = &c;
-            // Dump B: the flat records against an independent extractor over the legacy data, in this binary
+            // Dump B: the export's flat records against an independent extractor over the legacy oracle model, in this binary
             music::FlatPlaybackCapture::projection = [&](const mu::engraving::PlaybackScore &flat,
                                                          const music::FlatPlaybackCapture::LegacyTracks &legacy) {
                 mu::engraving::PlaybackScore copy;
@@ -155,7 +161,7 @@ int main(int argc, char **argv) {
                 }
             };
         }
-        music::FlatPlaybackCapture::dual = !measure || dual;
+
         Clock::time_point requested{}, observed{};
         Clock::time_point release_poll{};
         std::vector<double> release_batches;
@@ -192,7 +198,7 @@ int main(int argc, char **argv) {
         test::PlaybackCapture::track = {};
         test::PlaybackCapture::synth = nullptr;
         music::FlatPlaybackCapture::projection = {};
-        music::FlatPlaybackCapture::dual = false;
+        music::FlatPlaybackCapture::dump_note = {};
         if (!measure) {
             a.flush();
             c.flush();
