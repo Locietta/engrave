@@ -100,7 +100,7 @@ void FluidSequencer::update_main_stream_events(const mpe::TrackEvents &events) {
                     dedup_timeline(main_stream_events_);
     if (!ok) {
         main_stream_events_.clear();
-        update_main_sequence_iterator();
+        seek_main_timeline();
         return;
     }
 
@@ -125,7 +125,7 @@ void FluidSequencer::update_main_stream_events(const mpe::TrackEvents &events) {
         }
     }
 #endif
-    update_main_sequence_iterator();
+    seek_main_timeline();
 }
 
 const ChannelMap &FluidSequencer::channels() const { return channels_; }
