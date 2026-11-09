@@ -2,8 +2,6 @@
 #pragma once
 #include "audioresources.h"
 #include "internal/audioengineconfiguration.h"
-#include "internal/audiofactory.h"
-#include "internal/fx/fxresolver.h"
 #include "internal/synthesizers/soundfontrepository.h"
 
 namespace muse::audio::engine {
@@ -15,10 +13,7 @@ struct AudioServices {
 
     AudioEngineConfiguration &configuration() { return configuration_; }
 
-    AudioFactory &factory() { return factory_; }
 private:
     AudioEngineConfiguration configuration_;
-    fx::FxResolver fx_resolver_;
-    AudioFactory factory_;
 };
 } // namespace muse::audio::engine
