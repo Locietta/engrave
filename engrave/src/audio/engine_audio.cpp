@@ -514,10 +514,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         OfflineCancellation::ModelScope phase;
         try {
             muse::mpe::ArticulationProfileBundle profiles;
-            for (std::size_t i = 0; i < profiles.profiles.size(); ++i) {
-                profiles.profiles[i] = state.profiles.muse::mpe::ArticulationProfilesRepository::default_profile(
-                    static_cast<muse::mpe::ArticulationFamily>(i));
-            }
+            profiles.repository = &state.profiles;
             PlaybackScoreBuilder builder{std::move(profiles)};
             builder.play_repeats = request.use_repeats;
             builder.metronome_enabled = false;

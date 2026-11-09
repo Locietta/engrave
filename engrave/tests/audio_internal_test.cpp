@@ -34,9 +34,11 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "global/io/iodevice.h"
+#include "mpe/articulationprofilebundle.h"
 #include "output_fixture.h"
 
 #ifdef _WIN32
@@ -1379,3 +1381,57 @@ TEST(AudioInternal, ReverbPartialSignalAllocationDestroysAndRecovers) {
     }
 }
 #endif
+
+namespace {
+struct ProfileResourceFixture {
+    std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                 ("engrave-profile-repair-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    music::NativeFileSystem files{root};
+    muse::mpe::ArticulationProfilesRepository repository{files};
+
+    ProfileResourceFixture() { std::filesystem::create_directories(root / "mpe/resources"); }
+
+    ~ProfileResourceFixture() {
+        std::error_code error;
+        std::filesystem::remove_all(root, error);
+    }
+
+    void provide(const char *family) {
+        std::ofstream file(root / "mpe/resources" / (std::string("general_") + family + "_articulations_profile.json"));
+        file << R"({"supportedFamilies":[],"patterns":{}})";
+        ASSERT_TRUE(file.good());
+    }
+
+    muse::mpe::ArticulationProfileBundle bundle() {
+        muse::mpe::ArticulationProfileBundle result;
+        result.repository = &repository;
+        return result;
+    }
+};
+} // namespace
+
+TEST(AudioInternal, UnusedProfileCanBeRepairedBeforeNextBundleLookup) {
+    // Bundle/repository seam: no existing repository failure-injection seam exists.
+    ProfileResourceFixture resources;
+    resources.provide("keyboard");
+    const auto first = resources.bundle();
+    ASSERT_TRUE(first.default_profile(muse::mpe::ArticulationFamily::KEYBOARDS));
+    // STRINGS was absent during the first score's profile lookups.
+    resources.provide("strings");
+    const auto second = resources.bundle();
+    ASSERT_TRUE(second.default_profile(muse::mpe::ArticulationFamily::STRINGS));
+    EXPECT_EQ(first.default_profile(muse::mpe::ArticulationFamily::STRINGS),
+              second.default_profile(muse::mpe::ArticulationFamily::STRINGS));
+}
+
+TEST(AudioInternal, LookedUpProfileFailureRemainsCachedAfterRepair) {
+    ProfileResourceFixture resources;
+    const auto first = resources.bundle();
+    EXPECT_FALSE(first.default_profile(muse::mpe::ArticulationFamily::STRINGS));
+    resources.provide("strings");
+    EXPECT_FALSE(first.default_profile(muse::mpe::ArticulationFamily::STRINGS));
+    const auto second = resources.bundle();
+    EXPECT_FALSE(second.default_profile(muse::mpe::ArticulationFamily::STRINGS));
+    // The repaired file really is readable; only the default-family cache retains null.
+    EXPECT_TRUE(resources.repository.load_profile(muse::io::PathT(":/mpe/resources/general_strings_articulations_profile.json")));
+}
