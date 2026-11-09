@@ -32,11 +32,11 @@
 
 #include <amc/flatset.hpp>
 
+#include "global/flatmap.h"
 #include "log.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
-#include "mpe/flatmap.h"
 
 namespace muse::audio::synth {
 struct SoundMappingKey {
@@ -1011,10 +1011,11 @@ inline void check_fluid_channel_limit(const midi::channel_t max_channels) {
 }
 
 struct ChannelMap {
-    using ChannelMapping = std::pair<midi::channel_t, midi::Program>;
-    using VoiceMappings = mpe::FlatMap<mpe::ArticulationType, ChannelMapping>;
-    using LayerMappings = mpe::FlatMap<mpe::layer_idx_t, VoiceMappings>;
+    using ChannelMapping = FlatMapEntry<midi::channel_t, midi::Program>;
+    using VoiceMappings = FlatMap<mpe::ArticulationType, ChannelMapping>;
+    using LayerMappings = FlatMap<mpe::layer_idx_t, VoiceMappings>;
 
+    static_assert(std::is_trivially_copyable_v<ChannelMapping>);
     static_assert(VoiceMappings::is_amc_storage);
     static_assert(!LayerMappings::is_amc_storage);
 

@@ -232,6 +232,7 @@ target("muse_global")
     set_kind("static")
     add_deps("muse_generated")
     add_packages("muse-pugixml", "utfcpp", "muse-picojson")
+    add_packages("amc", {public = true})
     add_engine_target_defaults()
     add_includedirs(
         engine("muse/framework/global"),
