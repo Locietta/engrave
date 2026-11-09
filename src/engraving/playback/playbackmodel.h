@@ -28,6 +28,7 @@
 
 #include "../dom/score.h"
 #include "../types/types.h"
+#include "flatplaybackscore.h"
 #include "mpe/events.h"
 #include "mpe/iarticulationprofilesrepository.h"
 #include "playbackcontext.h"
@@ -58,7 +59,10 @@ struct PlaybackModel : IScoreChangesListener {
 
     // Owner-thread checkpoint, called only during load. May throw to abort;
     // discard this model after an aborted load. Never reenter the engine.
-    void load(Score *score, const std::function<void()> &checkpoint = {});
+    // A non-null flat store receives, from the same walk, every track, setup, dynamics and event list
+    // the legacy map receives during this load (dual execution); it is not kept after load returns.
+    // Dual execution requires a model that has not loaded a score before.
+    void load(Score *score, const std::function<void()> &checkpoint = {}, PlaybackScore *flat = nullptr);
     void reload();
 
     void set_send_events_on_score_change(const InstrumentTrackId &track_id, bool send);
@@ -128,6 +132,12 @@ private:
     InstrumentTrackId id_key(const std::vector<const EngravingItem *> &items) const;
     InstrumentTrackId id_key(const ID &part_id, const String &instrument_id) const;
 
+    // Every map entry the walk touches goes through here, so the flat store creates the same tracks.
+    muse::mpe::PlaybackData &track_data(const InstrumentTrackId &track_id);
+    void emit_setup(const InstrumentTrackId &track_id, const muse::mpe::PlaybackSetupData &setup_data);
+    template <typename Render>
+    void emit_events(const InstrumentTrackId &track_id, Render &&render);
+
     void update(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
                 ChangedTrackIdSet *track_changes = nullptr);
     void update_setup_data();
@@ -192,6 +202,7 @@ private:
     PlaybackSetupDataResolver setup_resolver_;
 
     PlaybackContextPtr playback_ctx_;
+    PlaybackScore *flat_ = nullptr; // set only during load
     std::unordered_map<InstrumentTrackId, muse::mpe::PlaybackData> playback_data_map_;
     std::unordered_map<InstrumentTrackId, bool> send_events_on_score_change_map_;
 
