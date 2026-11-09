@@ -22,10 +22,10 @@
 #ifndef MUSE_AUDIO_SOUNDFONTTYPES_H
 #define MUSE_AUDIO_SOUNDFONTTYPES_H
 
-#include <map>
 #include <string>
 #include <vector>
 
+#include "global/flatmap.h"
 #include "global/io/path.h"
 #include "global/types/uri.h"
 #include "midi/miditypes.h"
@@ -50,7 +50,7 @@ struct SoundFontMeta {
     std::vector<SoundFontPreset> presets;
 };
 
-using SoundFontsMap = std::map<SoundFontUri, SoundFontMeta>;
+using SoundFontsMap = FlatMap<SoundFontUri, SoundFontMeta>;
 
 inline const String soundfont_name_attribute(u"soundFontName");
 inline const String preset_name_attribute(u"presetName");

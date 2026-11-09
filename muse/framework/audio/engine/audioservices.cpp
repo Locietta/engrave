@@ -6,11 +6,10 @@
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-AudioServices::AudioServices(midi::IMidiOutPort *midi_out_port) : factory_(synth_resolver_, fx_resolver_) {
+AudioServices::AudioServices(AudioResources &resources, midi::IMidiOutPort *midi_out_port) : factory_(synth_resolver_, fx_resolver_) {
     fx_resolver_.register_resolver(AudioFxType::MUSE_FX, std::make_shared<fx::MuseFxResolver>());
-    auto fluid = std::make_shared<synth::FluidResolver>(sound_font_repository_, configuration_, midi_out_port);
+    auto fluid = std::make_shared<synth::FluidResolver>(resources, configuration_, midi_out_port);
     synth_resolver_.register_resolver(AudioSourceType::FLUID, fluid);
-    sound_font_repository_.set_on_sound_fonts_changed([fluid]() { fluid->refresh(); });
 }
 
-AudioServices::~AudioServices() { sound_font_repository_.set_on_sound_fonts_changed({}); }
+AudioServices::~AudioServices() = default;
