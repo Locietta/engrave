@@ -36,6 +36,7 @@ private:
     };
 
     void initialize(Track &, const TrackParams &);
+    void mix(float *, samples_t);
     static void process_track(Track &, samples_t);
     AudioResources &resources_;
     const IAudioEngineConfiguration &config_;
