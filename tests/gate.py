@@ -106,6 +106,8 @@ def main():
             a.build_dir,
             "--ccache=y",
             "--engrave_tests=y",
+            # Pinned inventories describe the harness-off build; a reused config must not keep it on.
+            "--engrave_playback_harness=n",
         ]
         if a.cairo_prefix:
             config.append("--cairo_prefix=" + str(a.cairo_prefix))
