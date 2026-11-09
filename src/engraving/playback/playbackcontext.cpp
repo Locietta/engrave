@@ -263,7 +263,7 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
         }
 
         if (curve != last_curve) {
-            last_level_map.clear();
+            last_level_map = DynamicAutomationMap{};
             last_curve = curve;
             auto hint = last_level_map.end();
 

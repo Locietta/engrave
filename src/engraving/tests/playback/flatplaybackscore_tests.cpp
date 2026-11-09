@@ -771,15 +771,16 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
 
 namespace mu::engraving {
 struct PlaybackContextReleaseTestAccess {
-    static void materialization(PlaybackContext &context, const mu::engraving::AutomationCurve &curve) {
+    static void materialization(PlaybackContext &context, const std::array<mu::engraving::AutomationCurve, 4> &curves) {
         for (int track = 0; track < 4; ++track) {
             context.used_tracks_.insert(track);
-            context.dynamics_curve_by_track_.emplace(track, &curve);
+            context.dynamics_curve_by_track_.emplace(track, &curves[track]);
             for (int i = 0; i < 50000; ++i) {
                 const int tick = i * 4 + track;
                 context.syllables_by_track_[track].emplace(tick, SyllableEvent{String(u"lyric")});
                 context.text_articulations_by_track_[track].emplace(tick, TextArticulationEvent{});
-                context.sound_presets_by_track_[track].emplace(tick, SoundPresetChangeEventList{SoundPresetChangeEvent{}});
+                // A large group requires per-event polls beyond the cursor scans.
+                if (i == 0) context.sound_presets_by_track_[track].emplace(tick, SoundPresetChangeEventList(50000));
             }
         }
     }
@@ -888,41 +889,64 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
     auto *score = ScoreRW::read_score(u"playback/playbackcontext_data/lyrics_multiverses.mscx");
     ASSERT_TRUE(score);
     score->init_automation();
-    mu::engraving::AutomationCurve curve;
-    for (int i = 0; i < 200000; ++i) curve.emplace(i, mu::engraving::AutomationPoint{});
+    std::array<mu::engraving::AutomationCurve, 4> curves;
+    for (int track = 0; track < 4; ++track) {
+        auto hint = curves[track].end();
+        for (int i = 0; i < 200000; ++i) {
+            mu::engraving::AutomationPoint point;
+            point.value.out_value = 0.1 * (track + 1);
+            hint = curves[track].insert(hint, {i, point});
+        }
+    }
     PlaybackContext context(score);
-    PlaybackContextReleaseTestAccess::materialization(context, curve);
+    PlaybackContextReleaseTestAccess::materialization(context, curves);
 
     struct Cancelled {};
 
+    using Clock = std::chrono::steady_clock;
+    const auto milliseconds = [](auto duration) { return std::chrono::duration<double, std::milli>(duration).count(); };
     for (int pass = 0; pass < 4; ++pass) {
-        std::vector<double> latency;
-        for (int trial = 0; trial < 30; ++trial) {
-            int polls = 0;
-            std::chrono::steady_clock::time_point requested;
-            const auto checkpoint = [&] {
-                if (++polls == 1000) requested = std::chrono::steady_clock::now();
-                if (polls == 1001) {
-                    latency.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - requested).count());
-                    throw Cancelled{};
-                }
-            };
-            EXPECT_THROW(
-                {
-                    if (pass == 0) std::ignore = context.syllables(0, 4, checkpoint);
-                    if (pass == 1) std::ignore = context.text_articulations(0, 4, checkpoint);
-                    if (pass == 2) std::ignore = context.sound_presets(0, 4, checkpoint);
-                    if (pass == 3) std::ignore = context.dynamic_level_layers(0, 4, checkpoint);
-                },
-                Cancelled);
-            EXPECT_EQ(polls, 1001);
+        const auto run = [&](const auto &checkpoint) {
+            if (pass == 0) std::ignore = context.syllables(0, 4, checkpoint);
+            if (pass == 1) std::ignore = context.text_articulations(0, 4, checkpoint);
+            if (pass == 2) std::ignore = context.sound_presets(0, 4, checkpoint);
+            if (pass == 3) std::ignore = context.dynamic_level_layers(0, 4, checkpoint);
+        };
+        std::size_t polls = 0, largest_at = 0;
+        double maximum = 0;
+        auto previous = Clock::now();
+        // Complete the populated pass, including every distinct curve transition.
+        run([&] {
+            const auto now = Clock::now();
+            const double interval = milliseconds(now - previous);
+            if (polls && interval > maximum) {
+                maximum = interval;
+                largest_at = polls;
+            }
+            previous = now;
+            ++polls;
+        });
+        EXPECT_GT(polls, 200000u); // Presets require more than cursor-scan polls.
+        EXPECT_LT(maximum, 2.5);
+        double return_maximum = 0;
+        for (std::size_t cancel_at : {largest_at, polls - 2}) {
+            std::size_t current = 0;
+            Clock::time_point requested;
+            bool pending = false;
+            EXPECT_THROW(run([&] {
+                             if (pending) throw Cancelled{};
+                             if (current++ == cancel_at) {
+                                 requested = Clock::now();
+                                 pending = true;
+                             }
+                         }),
+                         Cancelled);
+            ASSERT_TRUE(pending);
+            return_maximum = std::max(return_maximum, milliseconds(Clock::now() - requested));
         }
-        std::sort(latency.begin(), latency.end());
-        ASSERT_EQ(latency.size(), 30u);
-        std::cout << "materialization pass " << pass << " request_to_observed p95_ms=" << latency[28] << " max_ms=" << latency.back()
-                  << '\n';
-        EXPECT_LE(latency[28], 5.0);
-        EXPECT_LE(latency.back(), 10.0);
+        std::cout << "materialization pass " << pass << " max_checkpoint_interval_ms=" << maximum
+                  << " request_to_return_including_unwind_ms=" << return_maximum << '\n';
+        EXPECT_LT(return_maximum, 100.0);
     }
     delete score;
 }
