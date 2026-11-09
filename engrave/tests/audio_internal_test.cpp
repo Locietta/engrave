@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <latch>
@@ -30,6 +31,8 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
 #include "global/io/iodevice.h"
 #include "output_fixture.h"
 
@@ -1258,4 +1261,38 @@ TEST(AudioInternal, MidiTimelineDedupAndEqualTimeOrder) {
             EXPECT_EQ(timeline.events[i].event, expected[i].event) << "index " << i;
         }
     }
+}
+
+TEST(AudioInternal, MeasurelessScorePreservesThreeSecondSilentTail) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto *master = engrave::DocumentAccess::master_score(document);
+    master->delete_measures(master->first_measure(), master->last_measure());
+    ASSERT_EQ(master->first_measure(), nullptr);
+    engrave::AudioOptions options;
+    options.sample_rate = 44100;
+    std::vector<std::byte> bytes;
+    const auto result =
+        document.render_audio(options, [&](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
+    ASSERT_TRUE(result);
+    // RIFF chunks may include metadata; inspect the data chunk, not the header size.
+    std::size_t offset = 12;
+    const auto u32 = [&](std::size_t at) {
+        std::uint32_t value = 0;
+        for (int i = 0; i < 4; ++i) value |= std::to_integer<std::uint32_t>(bytes[at + i]) << (8 * i);
+        return value;
+    };
+    while (offset + 8 <= bytes.size()) {
+        const auto size = u32(offset + 4);
+        if (std::memcmp(bytes.data() + offset, "data", 4) == 0) {
+            ASSERT_EQ(size, 132300u * 2 * sizeof(float));
+            ASSERT_LE(offset + 8 + size, bytes.size());
+            EXPECT_TRUE(
+                std::all_of(bytes.begin() + offset + 8, bytes.begin() + offset + 8 + size, [](std::byte b) { return b == std::byte{0}; }));
+            return;
+        }
+        offset += 8 + size + (size & 1);
+    }
+    FAIL() << "missing PCM data";
 }
