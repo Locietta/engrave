@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
-#include "audio/engine/iaudioengineconfiguration.h"
+#include "audio/engine/offlinerendersettings.h"
 #include "fx/reverb/reverbprocessor.h"
 #include "nodes/fluidtracksource.h"
 #include "nodes/offlinecontrol.h"
@@ -9,7 +9,7 @@
 namespace muse::audio::engine {
 // All state belongs to this export; resources and configuration outlive it.
 struct OfflineRenderSession {
-    OfflineRenderSession(const OutputSpec &, AudioResources &, const IAudioEngineConfiguration &, MidiEventSink);
+    OfflineRenderSession(const OutputSpec &, AudioResources &, const OfflineRenderSettings &, MidiEventSink);
     ~OfflineRenderSession();
     OfflineRenderSession(const OfflineRenderSession &) = delete;
     OfflineRenderSession &operator=(const OfflineRenderSession &) = delete;
@@ -39,7 +39,7 @@ private:
     void mix(float *, samples_t);
     static void process_track(Track &, samples_t);
     AudioResources &resources_;
-    const IAudioEngineConfiguration &config_;
+    OfflineRenderSettings config_;
     MidiEventSink sink_;
     OutputSpec spec_;
     std::vector<Track> tracks_;

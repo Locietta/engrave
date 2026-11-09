@@ -22,7 +22,6 @@
 #include "audio/common/audioutils.h"
 #include "audio/common/soundfonttypes.h"
 #include "audio/engine/audioservices.h"
-#include "audio/engine/iaudioengineconfiguration.h"
 #include "audio/engine/internal/export/soundtrackwriter.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
@@ -31,6 +30,7 @@
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidtrack.h"
 #include "audio/engine/isoundfontrepository.h"
+#include "audio/engine/offlinerendersettings.h"
 #include "audio_output.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/excerpt.h"
@@ -54,6 +54,7 @@
 #include "global/types/string.h"
 #include "global/types/uri.h"
 #include "log.h"
+#include "mpe/internal/articulationprofilesrepository.h"
 #include "score_audio.h"
 
 using namespace muse;
@@ -90,9 +91,9 @@ struct MidiCapture {
 
 // Resources outlive services and every per-render graph.
 struct EngineAudio::State {
-    explicit State(const muse::mpe::IArticulationProfilesRepository &profiles) : profiles(profiles) {}
+    explicit State(const muse::mpe::ArticulationProfilesRepository &profiles) : profiles(profiles) {}
 
-    const muse::mpe::IArticulationProfilesRepository &profiles;
+    const muse::mpe::ArticulationProfilesRepository &profiles;
     MidiCapture midi_out_port;
     engine::AudioResources resources;
     std::unique_ptr<engine::AudioServices> services;
@@ -100,7 +101,7 @@ struct EngineAudio::State {
     int sample_rate_value = ::music::k_default_sample_rate;
 };
 
-EngineAudio::EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
+EngineAudio::EngineAudio(const muse::mpe::ArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
 
 EngineAudio::~EngineAudio() = default;
 
@@ -512,7 +513,12 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
         OfflineCancellation::ModelScope phase;
         try {
-            PlaybackScoreBuilder builder{&state.profiles};
+            muse::mpe::ArticulationProfileBundle profiles;
+            for (std::size_t i = 0; i < profiles.profiles.size(); ++i) {
+                profiles.profiles[i] = state.profiles.muse::mpe::ArticulationProfilesRepository::default_profile(
+                    static_cast<muse::mpe::ArticulationFamily>(i));
+            }
+            PlaybackScoreBuilder builder{std::move(profiles)};
             builder.play_repeats = request.use_repeats;
             builder.metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS
@@ -573,7 +579,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                         std::to_string(projected_bytes / (1024 * 1024)) + " MiB) exceeds the 1 GiB audio export limit");
     }
 
-    engine::OfflineRenderSession context(output_spec(state.sample_rate_value), state.resources, state.services->configuration(),
+    engine::OfflineRenderSession context(output_spec(state.sample_rate_value), state.resources,
+                                         state.services->configuration().render_settings(),
                                          [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
     configure_master(context, request);
 
