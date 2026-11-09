@@ -32,7 +32,7 @@ from engrave_testing.paths import REPO_ROOT
 # or gains a skip/disable, so the numbers in docs/dev/validation.md cannot drift
 # from what is executed. Update this table together with the pinned engine.
 EXPECTED_SUITES = {
-    "engraving_playback_tests": {"total": 245, "test_suites": 10},
+    "engraving_playback_tests": {"total": 246, "test_suites": 10},
     "mpe_tests": {"total": 24, "test_suites": 4},
 }
 # Tests that may legitimately be skipped/disabled without failing the lane. The
