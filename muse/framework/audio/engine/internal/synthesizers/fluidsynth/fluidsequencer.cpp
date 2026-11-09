@@ -199,20 +199,17 @@ bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination, const
 
         std::optional<int> last_level;
 
-        mpe::resample_curve(curve, step_interval_us, [&](mpe::timestamp_t t, muse::real_t normalized) {
-            if (cancelled) {
-                return;
-            }
+        mpe::resample_curve(curve, step_interval_us, [&](mpe::timestamp_t t, muse::real_t normalized) -> bool {
             if (++sample_steps >= k_poll_stride) {
                 sample_steps = 0;
                 if (OfflineCancellation::requested()) {
                     cancelled = true;
-                    return;
+                    return false;
                 }
             }
             const int level = expression_level(mpe::dynamic_level_from_normalized(normalized));
             if (last_level == level) {
-                return;
+                return true;
             }
             last_level = level;
 
@@ -226,6 +223,7 @@ bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination, const
                 event.set_data(level);
                 engine::emplace_checked(destination.events, engine::TimedMidiEvent{t, event});
             }
+            return true;
         });
 
         if (cancelled) {
