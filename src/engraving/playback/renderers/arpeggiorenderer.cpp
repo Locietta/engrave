@@ -24,6 +24,7 @@
 
 #include "dom/arpeggio.h"
 #include "dom/chord.h"
+#include "global/flatmap.h"
 #include "noterenderer.h"
 
 using namespace mu::engraving;
@@ -48,8 +49,8 @@ static usecs_t timestamp_offset_step(const RenderingContext &ctx, int step_count
     return std::min(offset_step, max_timestamp_offset_step);
 }
 
-static std::map<int /*pitch*/, const Note *> arpeggio_notes(const Chord *chord) {
-    std::map<int, const Note *> result;
+static muse::FlatMap<int /*pitch*/, const Note *> arpeggio_notes(const Chord *chord) {
+    muse::FlatMap<int, const Note *> result;
     for (const Note *note : chord->notes()) {
         result.emplace(note->pitch(), note);
     }
@@ -87,7 +88,7 @@ void ArpeggioRenderer::do_render(const EngravingItem *item, const mpe::Articulat
         NoteRenderer::render(note, note_ctx, result);
     };
 
-    const std::map<int, const Note *> notes = arpeggio_notes(chord);
+    const muse::FlatMap<int, const Note *> notes = arpeggio_notes(chord);
 
     if (is_direction_up(preferred_type)) {
         for (auto it = notes.begin(); it != notes.end(); ++it) {

@@ -27,6 +27,7 @@
 #include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/expressionutils.h"
+#include "playback/utils/sortedtable.h"
 #include "realfn.h"
 
 using namespace mu::engraving;
@@ -78,7 +79,7 @@ static IntervalsInfo make_intervals_info(const OrnamentInterval &below, const Or
 }
 } // namespace mu::engraving
 
-static const std::unordered_map<ArticulationType, DisclosurePattern> disclosure_rules = {
+static const auto disclosure_rules = mu::engraving::make_sorted_table<ArticulationType, DisclosurePattern>({
     {ArticulationType::TRILL,
      {/*prefixDurationTicks*/ 0,
       /*prefixPitchOffsets*/ {},
@@ -223,7 +224,7 @@ static const std::unordered_map<ArticulationType, DisclosurePattern> disclosure_
       /*suffixPitchOffsets*/ {},
       /*minSupportedNoteDurationTicks*/
       {::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks, ::mu::engraving::semiquaver_ticks}}},
-};
+});
 
 const ArticulationTypeSet &OrnamentsRenderer::supported_types() {
     static const ArticulationTypeSet types = {ArticulationType::TRILL,

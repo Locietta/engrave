@@ -22,12 +22,16 @@
 
 #include "stringssetupdataresolver.h"
 
+#include <array>
+
+#include "playback/utils/sortedtable.h"
+
 using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
 PlaybackSetupData StringsSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const std::unordered_map<std::string, mpe::PlaybackSetupData> setup_data_map = {
+    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, mpe::PlaybackSetupData>({
         {"harp", {SoundId::HARP, SoundCategory::STRINGS, {mpe::SoundSubCategory::PLUCKED}}},
         {"cavaquinho",
          {SoundId::CAVAQUINHO, SoundCategory::STRINGS, {SoundSubCategory::ACOUSTIC, SoundSubCategory::STEEL, SoundSubCategory::PLUCKED}}},
@@ -235,7 +239,7 @@ PlaybackSetupData StringsSetupDataResolver::do_resolve(const Instrument *instrum
          {SoundId::TIMPLE_CANARIO,
           SoundCategory::STRINGS,
           {SoundSubCategory::ACOUSTIC, SoundSubCategory::NYLON, SoundSubCategory::SPANISH, SoundSubCategory::PLUCKED}}},
-    };
+    });
 
     auto search = setup_data_map.find(instrument->id().to_std_string());
     if (search == setup_data_map.cend()) {
@@ -243,7 +247,7 @@ PlaybackSetupData StringsSetupDataResolver::do_resolve(const Instrument *instrum
         return empty;
     }
 
-    static const std::unordered_set<SoundId> support_primary_and_secondary_categories{SoundId::VIOLIN};
+    static constexpr auto support_primary_and_secondary_categories = mu::engraving::sorted_values<SoundId>({SoundId::VIOLIN});
 
     if (muse::contains(support_primary_and_secondary_categories, search->second.sound_id())) {
         SoundSubCategory category = instrument->is_primary() ? SoundSubCategory::PRIMARY : SoundSubCategory::SECONDARY;

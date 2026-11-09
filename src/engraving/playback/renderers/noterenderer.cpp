@@ -22,6 +22,8 @@
 
 #include "noterenderer.h"
 
+#include <ankerl/unordered_dense.h>
+
 #include "dom/arpeggio.h"
 #include "dom/note.h"
 #include "dom/staff.h"
@@ -189,7 +191,7 @@ void NoteRenderer::render_partial_tie(const Note *outgoing_note, NominalNoteCtx 
 }
 
 void NoteRenderer::render_normal_tie(const Note *first_note, NominalNoteCtx &first_note_ctx) {
-    std::unordered_set<const Note *> rendered_notes{first_note};
+    ankerl::unordered_dense::set<const Note *> rendered_notes{first_note};
 
     const RenderingContext &first_chord_ctx = first_note_ctx.chord_ctx;
     const Tie *curr_tie = first_note->tie_for();
@@ -200,7 +202,7 @@ void NoteRenderer::render_normal_tie(const Note *first_note, NominalNoteCtx &fir
             break;
         }
 
-        if (muse::contains(rendered_notes, curr_note)) {
+        if (rendered_notes.contains(curr_note)) {
             break; // prevents infinite loop
         }
 
