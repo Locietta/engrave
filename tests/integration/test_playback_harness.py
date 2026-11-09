@@ -10,7 +10,20 @@ from pathlib import Path
 from engrave_testing.playback_harness import compare, pcm_metadata, pinned_cases, write_json
 
 
-PROJECTION = b"projection-v1\ntrack 1 1:0074\ngroups 0\n"
+# A minimal capture whose dump A and dump B describe the same track, dynamics, groups and events:
+# group 0 holds a text event then a note, group 500 is an empty legacy key.
+DUMP_A = (
+    b"legacy-mpe-v1\ntrack 1 1:0074\nsetup 1 0 1:0076 0 0 0\ndynamics 1\nlayer 0 1\npoint 0 0 f64:3fd8000000000000\n"
+    b"groups 2\ngroup 0 2\nevent 2\ntext 0 0 1:0061\nevent 1\narrangement 0 0 500 450 0 0 f64:4000000000000000\n"
+    b"group 500 0\n"
+)
+PROJECTION = (
+    b"projection-v2\ntrack 1 1:0074\nsetup 1 0 1:0076 0 - -\ndynamics 1\nlayer 0 1\npoint 0 0 3fd8000000000000\n"
+    b"groups 2\ngroup 0 2\ntext 0 0 1:0061\nnote 0 0 500 450 4000000000000000 6500 3750 - 0 0\narts 1 0:0:500\n"
+    b"pitch 2 0:0 5000:-12\nexpression 0\ngroup 500 0\nend-projection 1\n"
+)
+DEFERRED_STUB = b"DEFERRED: independent flat-record projection extractors arrive in step 4b\n"
+B_FILES = ("B.txt", "B_legacy.txt")
 
 
 class PlaybackHarnessTests(unittest.TestCase):
@@ -22,17 +35,26 @@ class PlaybackHarnessTests(unittest.TestCase):
             write_json(root / "manifest.json", {"case/44100": {"score_sha256": "fixed"}})
             write_json(root / "provenance.json", {"executable_sha256": digest})
             for name, data in {
-                "A.txt": b"legacy-mpe-v1\ntrack 1 test\n",
+                "A.txt": DUMP_A,
                 "C.txt": b"synth-input-v2\ntrack 1 test\ntotal_frames 1\n",
                 "D.json": b"{}\n",
             }.items():
                 (root / "case/44100" / name).write_bytes(data)
         # The left (older) executable predates dump B; the right one carries both extractors.
-        (left / "case/44100/B.txt").write_bytes(b"DEFERRED: step 4b\n")
-        for name in ("B.txt", "B_legacy.txt"):
+        (left / "case/44100/B.txt").write_bytes(DEFERRED_STUB)
+        for name in B_FILES:
             (right / "case/44100" / name).write_bytes(PROJECTION)
         return left, right
 
+    def assert_rejected(self, files, transform, message=""):
+        """Applies transform to the named right-hand B files; the comparison must fail."""
+        with tempfile.TemporaryDirectory() as temp:
+            left, right = self.captures(temp)
+            for name in files:
+                path = right / "case/44100" / name
+                path.write_bytes(transform(path.read_bytes()))
+            with self.assertRaisesRegex(AssertionError, message):
+                compare(left, right)
     def test_pcm_hash_excludes_container_and_keeps_float_bits(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "float.wav"
@@ -63,35 +85,85 @@ class PlaybackHarnessTests(unittest.TestCase):
     def test_projection_is_required_of_the_new_executable(self):
         # B compares the two extractors inside the new executable, not against
         # an older executable that may still have a stub.
-        cases = (
-            ("deferred", "B.txt", b"DEFERRED: step 4b\n", "deferred or not a projection"),
-            ("missing", "B.txt", None, "dump B is missing"),
-            ("missing legacy", "B_legacy.txt", None, "dump B is missing"),
-            ("no track", "B.txt", b"projection-v1\n", "structurally incomplete"),
-            ("corrupted flat record", "B.txt", PROJECTION.replace(b"groups 0", b"groups 1"), "flat records vs legacy"),
-            ("crlf legacy", "B_legacy.txt", PROJECTION.replace(b"\n", b"\r\n"), "not a projection"),
-            ("crlf body", "B.txt", PROJECTION[:14] + PROJECTION[14:].replace(b"\n", b"\r\n"), "byte difference at offset 28"),
-        )
-        for label, dump, data, message in cases:
-            with self.subTest(label), tempfile.TemporaryDirectory() as temp:
+        self.assert_rejected(["B.txt"], lambda _: DEFERRED_STUB, "deferred or not a projection")
+        self.assert_rejected(B_FILES, lambda _: DEFERRED_STUB, "deferred or not a projection")
+        for name in B_FILES:
+            with self.subTest(missing=name), tempfile.TemporaryDirectory() as temp:
                 left, right = self.captures(temp)
-                path = right / "case/44100" / dump
-                if data is None:
-                    path.unlink()
-                else:
-                    path.write_bytes(data)
-                with self.assertRaisesRegex(AssertionError, message):
+                (right / "case/44100" / name).unlink()
+                with self.assertRaisesRegex(AssertionError, "dump B is missing"):
                     compare(left, right)
+        self.assert_rejected(["B.txt"], lambda b: b.replace(b"6500", b"6501"), "flat records vs legacy")
 
-    def test_left_projection_is_checked_when_present(self):
+    def test_truncated_projection_fails_closed(self):
+        # Every cut, at a line boundary or inside a line, in either file or in both identically
+        for cut in range(len(PROJECTION)):
+            for files in (["B.txt"], ["B_legacy.txt"], B_FILES):
+                with self.subTest(cut=cut, files=files):
+                    self.assert_rejected(files, lambda b, cut=cut: b[:cut])
+
+    def test_malformed_projection_fails_closed(self):
+        cases = {
+            "units length": (b"track 1 1:0074", b"track 1 1:007"),
+            "non-numeric": (b"note 0 0 500", b"note 0 x 500"),
+            "extra field": (b"expression 0\n", b"expression 0 1:2\n"),
+            "missing field": (b"text 0 0 1:0061", b"text 0 1:0061"),
+            "bits width": (b"4000000000000000", b"400000000000000"),
+            "unknown record": (b"text 0 0 1:0061", b"chord 0 0 1:0061"),
+            "item count": (b"arts 1 0:0:500", b"arts 2 0:0:500"),
+            "item shape": (b"pitch 2 0:0 5000:-12", b"pitch 2 0:0 5000"),
+            "group count": (b"groups 2", b"groups 3"),
+            "group size": (b"group 0 2", b"group 0 3"),
+            "points": (b"layer 0 1", b"layer 0 2"),
+            "explicit point": (b"point 0 0 3fd8000000000000", b"point 0 1 3fd8000000000000"),
+            "setup subs": (b"setup 1 0 1:0076 0 - -", b"setup 1 0 1:0076 1 - -"),
+            "unsorted groups": (b"group 500 0", b"group 0 0"),
+            "terminator count": (b"end-projection 1", b"end-projection 2"),
+            "no terminator": (b"end-projection 1\n", b""),
+            "data after end": (b"end-projection 1\n", b"end-projection 1\ntrack 2 0:\n"),
+            "crlf": (b"\n", b"\r\n"),
+            "blank line": (b"groups 2\n", b"groups 2\n\n"),
+        }
+        for label, (old, new) in cases.items():
+            self.assertIn(old, PROJECTION, label)
+            for files in (["B.txt"], ["B_legacy.txt"], B_FILES):
+                with self.subTest(label, files=files):
+                    self.assert_rejected(files, lambda b, old=old, new=new: b.replace(old, new))
+
+    def test_projection_must_match_dump_a_inventory(self):
+        # Well-formed and identical in both files, but not what dump A recorded
+        cases = {
+            "lost empty group": (b"groups 2", b"groups 1", b"group 500 0\n", b""),
+            "event order": (b"group 0 2\ntext 0 0 1:0061\n", b"group 0 2\n", b"expression 0\n", b"expression 0\ntext 0 0 1:0061\n"),
+            "group key": (b"group 500 0", b"group 501 0", b"", b""),
+            "dynamics": (b"layer 0 1\npoint 0 0 3fd8000000000000\n", b"layer 0 0\n", b"", b""),
+            "track": (b"track 1 1:0074", b"track 2 1:0074", b"", b""),
+        }
+        for label, (a, b, c, d) in cases.items():
+            with self.subTest(label):
+                self.assert_rejected(B_FILES, lambda p, a=a, b=b, c=c, d=d: p.replace(a, b).replace(c, d), "differs from dump A")
+
+    def test_left_projection_is_a_known_stub_or_complete(self):
         with tempfile.TemporaryDirectory() as temp:
             left, right = self.captures(temp)
-            (left / "case/44100/B.txt").write_bytes(PROJECTION)
+            compare(left, right)
+            stub = left / "case/44100/B.txt"
+            for bad in (b"DEFERRED: step 4b\n", b"", DEFERRED_STUB[:-1], PROJECTION[:40]):
+                stub.write_bytes(bad)
+                with self.assertRaisesRegex(AssertionError, "dump B"):
+                    compare(left, right)
+            stub.unlink()
+            with self.assertRaisesRegex(AssertionError, "dump B is missing"):
+                compare(left, right)
+            # A real left projection needs its legacy pair and is checked in full
+            stub.write_bytes(PROJECTION)
             with self.assertRaisesRegex(AssertionError, "dump B is missing"):
                 compare(left, right)
             (left / "case/44100/B_legacy.txt").write_bytes(PROJECTION)
             compare(left, right)
-
+            stub.write_bytes(PROJECTION.replace(b"6500", b"6501"))  # B_legacy intact
+            with self.assertRaisesRegex(AssertionError, "flat records vs legacy"):
+                compare(left, right)
     def test_newline_bytes_are_not_normalized(self):
         for dump in ("A.txt", "C.txt", "D.json"):
             with self.subTest(dump=dump), tempfile.TemporaryDirectory() as temp:

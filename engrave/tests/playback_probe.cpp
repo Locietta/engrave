@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
             if (static_cast<int>(tracks[i].part_index) == mute_part) request.tracks[i].muted = true;
         std::ofstream a, c;
         std::string projection_error;
+        bool projection_written = false;
         if (!measure) {
             a.open(dir / "A.txt", std::ios::binary);
             c.open(dir / "C.txt", std::ios::binary);
@@ -136,8 +137,15 @@ int main(int argc, char **argv) {
                 music::test::LegacyProjection legacy_projection;
                 legacy_projection.score(tracks);
                 const std::string flat_text = flat_projection.str();
-                std::ofstream(dir / "B.txt", std::ios::binary) << flat_text;
-                std::ofstream(dir / "B_legacy.txt", std::ios::binary) << legacy_projection.out;
+                const auto write = [&](const char *name, const std::string &text) {
+                    std::ofstream stream(dir / name, std::ios::binary);
+                    stream << text;
+                    stream.flush();
+                    if (!stream) projection_error = std::string("dump B write failed: ") + name;
+                };
+                write("B.txt", flat_text);
+                write("B_legacy.txt", legacy_projection.out);
+                projection_written = true;
                 if (flat_text != legacy_projection.out && projection_error.empty()) {
                     const auto at =
                         std::mismatch(flat_text.begin(), flat_text.end(), legacy_projection.out.begin(), legacy_projection.out.end())
@@ -190,7 +198,7 @@ int main(int argc, char **argv) {
             c.flush();
             if (!a || !c) throw std::runtime_error("dump write failed");
             if (!projection_error.empty()) throw std::runtime_error(projection_error);
-            if (!std::filesystem::exists(dir / "B.txt")) throw std::runtime_error("dump B was not captured");
+            if (!projection_written) throw std::runtime_error("dump B was not captured");
         }
         std::ofstream stats(dir / "metrics.txt", std::ios::binary);
         stats.precision(12);

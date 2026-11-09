@@ -125,32 +125,213 @@ def validate_dump_records(root, name):
             raise AssertionError(f"{root / name / dump}: structurally incomplete; missing {sorted(missing)!r}")
 
 
-PROJECTION_HEADER = b"projection-v1\n"
+PROJECTION_HEADER = b"projection-v2\n"
+# The step-0..4a probes wrote exactly this stub. A left capture's B must be this stub or a complete projection.
+DEFERRED_B_STUB = b"DEFERRED: independent flat-record projection extractors arrive in step 4b\n"
+EVENT_KINDS = {b"note": 1, b"text": 2, b"preset": 3, b"syllable": 4}  # PlaybackEvent variant indices, as in dump A
+
+_INT = re.compile(rb"-?[0-9]+")
+_UINT = re.compile(rb"[0-9]+")
+_HEX16 = re.compile(rb"[0-9a-f]{16}")
+_HEX8 = re.compile(rb"[0-9a-f]{8}")
+_UNITS = re.compile(rb"([0-9]+):([0-9a-f]*)")
 
 
-def projection_present(root, name):
-    """True when the capture carries a real dump B (step 4b on); older executables wrote a stub."""
-    path = root / name / "B.txt"
-    if not path.exists():
-        return False
+class _Projection:
+    """Strict reader of one dump-B file: every line, token and count, and the end terminator."""
+
+    def __init__(self, path):
+        self.path = path
+        data = path.read_bytes()
+        if not data.startswith(PROJECTION_HEADER):
+            raise AssertionError(f"{path}: dump B is deferred or not a projection ({data[:32]!r})")
+        if not data.endswith(b"\n"):
+            raise AssertionError(f"{path}: truncated dump B (no final newline)")
+        self.lines = data[len(PROJECTION_HEADER) : -1].split(b"\n") if len(data) > len(PROJECTION_HEADER) else []
+        self.index = 0
+
+    def fail(self, message):
+        raise AssertionError(f"{self.path}: line {self.index + 2}: {message}")
+
+    def peek(self):
+        if self.index >= len(self.lines):
+            self.fail("truncated dump B (missing end-projection)")
+        return self.lines[self.index]
+
+    def take(self, kind, count=None):
+        tokens = self.peek().split(b" ")
+        if tokens[0] != kind:
+            self.fail(f"expected {kind!r} record, found {self.peek()[:48]!r}")
+        if count is not None and len(tokens) - 1 != count:
+            self.fail(f"malformed {kind!r} record ({len(tokens) - 1} fields, expected {count})")
+        self.index += 1
+        return tokens[1:]
+
+    def match(self, pattern, token, what):
+        if not pattern.fullmatch(token):
+            self.fail(f"malformed {what} {token[:32]!r}")
+        return token
+
+    def number(self, token, what, signed=True):
+        return int(self.match(_INT if signed else _UINT, token, what))
+
+    def units(self, token, what):
+        m = self.match(_UNITS, token, what)
+        m = _UNITS.fullmatch(m)
+        if len(m.group(2)) != 4 * int(m.group(1)):
+            self.fail(f"{what} length does not match its code units")
+
+    def optional_bytes(self, token, what):
+        if token == b"-":
+            return
+        m = _UNITS.fullmatch(token)
+        if not m or len(m.group(2)) != 2 * int(m.group(1)):
+            self.fail(f"malformed {what} {token[:32]!r}")
+
+    def counted(self, kind, fields_per_item):
+        tokens = self.take(kind)
+        if not tokens:
+            self.fail(f"malformed {kind!r} record (no count)")
+        count = self.number(tokens[0], f"{kind!r} count", signed=False)
+        if len(tokens) - 1 != count:
+            self.fail(f"{kind!r} count {count} does not match its {len(tokens) - 1} items")
+        for item in tokens[1:]:
+            parts = item.split(b":")
+            if len(parts) != fields_per_item:
+                self.fail(f"malformed {kind!r} item {item[:32]!r}")
+            for part in parts:
+                self.number(part, f"{kind!r} item")
+
+    def event(self):
+        kind = self.peek().split(b" ")[0]
+        if kind not in EVENT_KINDS:
+            self.fail(f"unknown event record {self.peek()[:48]!r}")
+        if kind == b"note":
+            t = self.take(b"note", 10)
+            for token in t[:4] + t[5:7]:
+                self.number(token, "note field")
+            self.match(_HEX16, t[4], "note bps bits")
+            if t[7] != b"-":
+                self.match(_HEX8, t[7], "velocity override bits")
+            self.number(t[8], "staff layer", signed=False)
+            self.number(t[9], "voice layer", signed=False)
+            self.counted(b"arts", 3)
+            self.counted(b"pitch", 2)
+            self.counted(b"expression", 2)
+        elif kind == b"preset":
+            t = self.take(b"preset", 2)
+            self.number(t[0], "preset layer", signed=False)
+            self.units(t[1], "preset code")
+        else:
+            t = self.take(kind, 3)
+            self.number(t[0], "event layer", signed=False)
+            self.number(t[1], "event flags", signed=False)
+            self.units(t[2], "event text")
+        return EVENT_KINDS[kind]
+
+    def track(self):
+        line = self.peek()
+        t = self.take(b"track", 2)
+        self.number(t[0], "track part", signed=False)
+        self.units(t[1], "track instrument")
+        s = self.take(b"setup")
+        if len(s) < 6:
+            self.fail("malformed setup record")
+        self.number(s[0], "setup category")
+        if s[1] not in (b"0", b"1"):
+            self.fail("malformed setup dynamics flag")
+        self.units(s[2], "setup id")
+        subs = self.number(s[3], "setup sub-category count", signed=False)
+        if len(s) != 6 + subs:
+            self.fail("setup sub-category count does not match")
+        for token in s[4 : 4 + subs]:
+            self.units(token, "setup sub-category")
+        self.optional_bytes(s[4 + subs], "setup score id")
+        self.optional_bytes(s[5 + subs], "setup MusicXML sound id")
+        layers = []
+        for _ in range(self.number(self.take(b"dynamics", 1)[0], "dynamics count", signed=False)):
+            layer, points = (self.number(v, "layer field", signed=False) for v in self.take(b"layer", 2))
+            layers.append((layer, points))
+            for _ in range(points):
+                p = self.take(b"point")
+                if len(p) < 3:
+                    self.fail("malformed point record")
+                self.number(p[0], "point time")
+                if p[1] not in (b"0", b"1") or len(p) != (3 if p[1] == b"0" else 6):
+                    self.fail("malformed point record")
+                for token in p[2:]:
+                    self.match(_HEX16, token, "point bits")
+        groups = []
+        for _ in range(self.number(self.take(b"groups", 1)[0], "groups count", signed=False)):
+            g = self.take(b"group", 2)
+            at, count = self.number(g[0], "group key"), self.number(g[1], "group size", signed=False)
+            if groups and at <= groups[-1][0]:
+                self.fail("group keys are not strictly ascending")
+            groups.append((at, [self.event() for _ in range(count)]))
+        return (line, layers, groups)
+
+    def read(self):
+        tracks = []
+        while not self.peek().startswith(b"end-projection"):
+            tracks.append(self.track())
+        end = self.take(b"end-projection", 1)
+        if self.number(end[0], "end-projection count", signed=False) != len(tracks):
+            self.fail("end-projection count does not match the tracks")
+        if self.index != len(self.lines):
+            self.fail("data after end-projection")
+        return tracks
+
+
+def projection_inventory(path):
+    """Parses a complete dump B; any truncation, malformed record or count mismatch raises."""
+    return _Projection(path).read()
+
+
+def dump_a_inventory(path):
+    """Track/dynamics/group/event inventory of dump A, independent evidence for dump B."""
+    tracks = []
     with path.open("rb") as stream:
-        return stream.read(len(PROJECTION_HEADER)) == PROJECTION_HEADER
+        for raw in stream:
+            line = raw.rstrip(b"\n")
+            if line.startswith(b"track "):
+                tracks.append((line, [], []))
+            elif line.startswith(b"layer "):
+                fields = line.split(b" ")
+                tracks[-1][1].append((int(fields[1]), int(fields[2])))
+            elif line.startswith(b"group "):
+                fields = line.split(b" ")
+                tracks[-1][2].append((int(fields[1]), int(fields[2]), []))
+            elif line.startswith(b"event "):
+                tracks[-1][2][-1][2].append(int(line.split(b" ")[1]))
+    for _, _, groups in tracks:
+        for at, count, kinds in groups:
+            if count != len(kinds):
+                raise AssertionError(f"{path}: group {at} lists {len(kinds)} of {count} events")
+    return [(line, layers, [(at, kinds) for at, _, kinds in groups]) for line, layers, groups in tracks]
 
 
 def validate_projection(root, name):
-    """Dump B is an oracle inside one executable: flat records against the independent legacy extractor."""
+    """Dump B is an oracle inside one executable: flat records against the independent legacy extractor,
+    both complete, byte-equal, and matching dump A's track, dynamics, group and event inventory."""
     flat, legacy = root / name / "B.txt", root / name / "B_legacy.txt"
     for path in (flat, legacy):
         if not path.exists():
             raise AssertionError(f"{path}: dump B is missing")
-        with path.open("rb") as stream:
-            head = stream.read(len(PROJECTION_HEADER))
-            if head != PROJECTION_HEADER:
-                raise AssertionError(f"{path}: dump B is deferred or not a projection ({head!r})")
-            if not any(line.startswith(b"track ") and line[6:].strip() for line in stream):
-                raise AssertionError(f"{path}: structurally incomplete; missing [b'track ']")
+    inventories = [projection_inventory(path) for path in (flat, legacy)]
     compare_bytes(legacy, flat, f"{name}/B.txt (flat records vs legacy extractor)")
+    if inventories[0] != dump_a_inventory(root / name / "A.txt"):
+        raise AssertionError(f"{root / name}: dump B inventory differs from dump A")
 
+
+def left_projection(root, name):
+    """A left capture carries either the recognized pre-4b stub (False) or a complete projection (True)."""
+    path = root / name / "B.txt"
+    if not path.exists():
+        raise AssertionError(f"{path}: dump B is missing")
+    if path.stat().st_size == len(DEFERRED_B_STUB) and path.read_bytes() == DEFERRED_B_STUB:
+        return False
+    validate_projection(root, name)
+    return True
 
 def compare_bytes(a, b, name):
     offset = 0
@@ -208,8 +389,7 @@ def compare(left, right, expect_exe_sha256=None):
             compare_bytes(a, b, f"{name}/{dump}")
         # B is required of the new (right) executable; an older left one may predate it.
         validate_projection(right, name)
-        if projection_present(left, name):
-            validate_projection(left, name)
+        if left_projection(left, name):
             left_projections += 1
     label = "DIAGNOSTIC PASS" if diagnostic else "PASS"
     print(
