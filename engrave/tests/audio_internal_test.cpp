@@ -9,8 +9,10 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <latch>
 #include <memory>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -1229,17 +1231,51 @@ TEST(AudioInternal, CancelsInsideFlatSequencerPreprocessing) {
     }
 }
 
-// A death-test subprocess starts with a fresh engine and no rendered synths.
-// Cancel at the first synth event, then reuse the same SF3 cache twice and
-// explicitly tear down the engine, checking the decoder bridge is detached.
+// Uncancelled WAV of a corpus score rendered by the probe in a fresh process.
+static std::optional<std::vector<std::byte>> fresh_process_wav(std::string_view score) {
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    const auto path = std::filesystem::temp_directory_path() / ("engrave-fresh-reference-" + std::to_string(process) + ".wav");
+    std::vector<std::string> arguments{"--assets=" + music::test::g_assets.string()};
+    for (const auto &font : music::test::g_soundfonts) arguments.push_back("--soundfont=" + font.string());
+    arguments.push_back("--audio=" + music::test::corpus_file(score).string());
+    arguments.push_back("--format=wav");
+    arguments.push_back("--out=" + path.string());
+    if (music::test::run_probe(arguments) != 0) return std::nullopt;
+    std::vector<std::byte> bytes;
+    {
+        std::ifstream in(path, std::ios::binary);
+        const std::vector<char> raw{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+        bytes.resize(raw.size());
+        std::memcpy(bytes.data(), raw.data(), raw.size());
+    }
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+    return bytes;
+}
+
+// A re-executed death-test subprocess starts with a fresh engine, its own
+// runtime cache directory and no rendered synths. Cancel at the first note-on
+// FluidSynth receives (a live voice), recover twice on the same SF3 cache,
+// compare against an uncancelled fresh-process render, and explicitly tear
+// down the engine, checking the decoder bridge is detached.
 TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
+    // The default "fast" style forks on POSIX: the child would inherit the warm
+    // parent engine and clear the parent's retained cache directory on teardown.
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
     ASSERT_EXIT(([] {
                     auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
                     if (!opened) std::exit(11);
                     auto &document = **opened;
                     auto &audio = engrave::DocumentAccess::context(document).audio();
                     bool cancelled = false;
-                    music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) { cancelled = true; });
+                    music::set_engine_audio_midi_event_hook(audio, [&](const muse::midi::Event &event, uint64_t) {
+                        // Startup flushes send all-notes-off/controllers first; wait for a score note.
+                        if (event.opcode() == muse::midi::Event::Opcode::NOTE_ON) cancelled = true;
+                    });
                     engrave::AudioOptions options;
                     options.cancelled = [&] { return cancelled; };
                     int published = 0;
@@ -1254,6 +1290,9 @@ TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
                     };
                     auto first = render();
                     if (first.empty() || render() != first) std::exit(14);
+                    const auto reference = fresh_process_wav("ghost_note.mscx");
+                    if (!reference) std::exit(17);
+                    if (reference->empty() || *reference != first) std::exit(18);
                     opened->reset();
                     const auto teardown_start = std::chrono::steady_clock::now();
                     music::test::g_engine.reset();
