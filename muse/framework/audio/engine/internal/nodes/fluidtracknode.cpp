@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "eventaudionode.h"
+#include "fluidtracknode.h"
 
 #include <utility>
 
@@ -33,10 +33,11 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-EventAudioNode::EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::TrackEvents &events)
-    : audio_factory_(audio_factory), track_id_(track_id), initial_data_(&events) {}
+FluidTrackNode::FluidTrackNode(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec,
+                               MidiEventSink sink, const mpe::TrackEvents &events)
+    : resources_(resources), config_(config), default_spec_(spec), sink_(std::move(sink)), initial_data_(&events) {}
 
-void EventAudioNode::on_mode_changed(const ProcessMode mode) {
+void FluidTrackNode::on_mode_changed(const ProcessMode mode) {
 
     if (!synth_) {
         return;
@@ -46,7 +47,7 @@ void EventAudioNode::on_mode_changed(const ProcessMode mode) {
     synth_->flush_sound();
 }
 
-void EventAudioNode::on_output_spec_changed(const OutputSpec &spec) {
+void FluidTrackNode::on_output_spec_changed(const OutputSpec &spec) {
     if (!synth_) {
         return;
     }
@@ -54,7 +55,7 @@ void EventAudioNode::on_output_spec_changed(const OutputSpec &spec) {
     synth_->set_output_spec(spec);
 }
 
-void EventAudioNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+void FluidTrackNode::do_self_process(float *buffer, samples_t samples_per_channel) {
     if (!synth_) {
         return;
     }
@@ -63,7 +64,7 @@ void EventAudioNode::do_self_process(float *buffer, samples_t samples_per_channe
     synth_->process(buffer, samples_per_channel);
 }
 
-void EventAudioNode::seek(const TimePosition &position, const bool flush_sound) {
+void FluidTrackNode::seek(const TimePosition &position, const bool flush_sound) {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
@@ -78,16 +79,16 @@ void EventAudioNode::seek(const TimePosition &position, const bool flush_sound) 
     }
 }
 
-void EventAudioNode::flush() {
+void FluidTrackNode::flush() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->flush_sound();
 }
 
-const AudioInputParams &EventAudioNode::input_params() const { return params_; }
+const AudioInputParams &FluidTrackNode::input_params() const { return params_; }
 
-void EventAudioNode::apply_input_params(const AudioInputParams &required_params) {
+void FluidTrackNode::apply_input_params(const AudioInputParams &required_params) {
     // Consume the borrow before any assertion, resolver or synth call can fail.
     const auto *data = std::exchange(initial_data_, nullptr);
     IF_ASSERT_FAILED(output_spec_.is_valid()) { return; }
@@ -102,63 +103,70 @@ void EventAudioNode::apply_input_params(const AudioInputParams &required_params)
         return;
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, data->setup);
-
-    if (!synth.ret) {
-        synth = audio_factory()->make_default_synth(track_id_);
-        if (!synth.ret || !synth.val) {
+    auto selected = required_params;
+    auto found = resources_.resources.find(selected.resource_meta.id);
+    OutputSpec spec = output_spec_;
+    if (!selected.is_valid() || selected.type() != AudioSourceType::FLUID || found == resources_.resources.end()) {
+        selected = config_.default_audio_input_params();
+        found = resources_.resources.find(selected.resource_meta.id);
+        spec = default_spec_;
+        if (!selected.is_valid() || found == resources_.resources.end()) {
             LOGE() << "Default synth not found!";
             return;
         }
     }
+    auto track = std::make_unique<synth::FluidTrack>(selected, config_, sink_, resources_);
+    track->init(spec);
+    track->add_sound_fonts({found->second.path});
+    track->set_preset(found->second.preset);
 
     // Publish only a fully initialized synth. A throwing setup leaves the node failed.
-    synth.val->set_output_spec(output_spec_);
-    synth.val->setup(*data);
-    synth.val->set_mode(ProcessMode::IDLE);
-    synth_ = synth.val;
+    track->set_output_spec(output_spec_);
+    track->setup(*data);
+    track->set_mode(ProcessMode::IDLE);
+    synth_ = std::move(track);
 
     set_name(std::string("Source[") + synth_->name() + "]");
 
     params_ = synth_->params();
 }
 
-void EventAudioNode::prepare_to_play() {
+void FluidTrackNode::prepare_to_play() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->prepare_to_play();
 }
 
-bool EventAudioNode::ready_to_play() const {
+bool FluidTrackNode::ready_to_play() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
     return synth_->ready_to_play();
 }
 
-bool EventAudioNode::has_pending_chunks() const {
+bool FluidTrackNode::has_pending_chunks() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
     return synth_->has_pending_chunks();
 }
 
-void EventAudioNode::process_input() {
+void FluidTrackNode::process_input() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->process_input();
 }
 
-InputProcessingProgress EventAudioNode::input_processing_progress() const {
+InputProcessingProgress FluidTrackNode::input_processing_progress() const {
 
     IF_ASSERT_FAILED(synth_) { return {}; }
 
     return synth_->input_processing_progress();
 }
 
-void EventAudioNode::clear_cache() {
+void FluidTrackNode::clear_cache() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 

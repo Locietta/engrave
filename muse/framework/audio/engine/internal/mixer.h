@@ -24,7 +24,7 @@
 
 #include <memory>
 
-#include "iaudiofactory.h"
+#include "global/types/retval.h"
 #include "nodes/trackchain.h"
 
 namespace muse::audio {
