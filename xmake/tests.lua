@@ -101,6 +101,7 @@ target("mpe_tests")
     add_files(
         path.join(source_root, "muse", "framework/mpe/tests/singlenotearticulationstest.cpp"),
         path.join(source_root, "muse", "framework/mpe/tests/multinotearticulationstest.cpp"),
+        path.join(source_root, "muse", "framework/mpe/tests/flatmaptest.cpp"),
         path.join(tests_dir, "gtest_main.cpp"),
         path.join(tests_dir, "test_environment.cpp")
     )
