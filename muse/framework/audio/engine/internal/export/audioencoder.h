@@ -23,6 +23,8 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
+#include <utility>
 
 #include <proxy/proxy.h>
 
@@ -38,4 +40,23 @@ struct EncoderFacade : pro::facade_builder::add_convention<EncoderBegin, bool(sa
                            add_convention<EncoderEncode, size_t(samples_t, const float *)>::add_convention<EncoderEnd, Ret()>::build {};
 
 using AudioEncoder = pro::proxy<EncoderFacade>;
+
+// What encoder factories return: sole ownership of one encoder. Only a
+// std::unique_ptr converts, so raw and shared pointers are rejected at compile
+// time, and a null owner yields an empty encoder rather than an engaged proxy
+// around nullptr.
+class UniqueEncoder {
+public:
+    UniqueEncoder() = default;
+
+    template <class T>
+    UniqueEncoder(std::unique_ptr<T> owner) { // NOLINT(google-explicit-constructor): factories return unique_ptr
+        if (owner) proxy_ = std::move(owner);
+    }
+
+    AudioEncoder take() && noexcept { return std::move(proxy_); }
+
+private:
+    AudioEncoder proxy_;
+};
 } // namespace muse::audio::encode

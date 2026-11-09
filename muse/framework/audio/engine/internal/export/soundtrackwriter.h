@@ -39,7 +39,7 @@ struct SoundTrackWriter {
 
     SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
                      engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed = {},
-                     std::function<encode::AudioEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
+                     std::function<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
                      std::function<bool()> cancelled = {});
 
     Ret write();
