@@ -427,7 +427,10 @@ target_end()
 if has_config("engrave_playback_harness") then
     add_adapter_binary("playback_probe", "playback_probe.cpp")
     add_adapter_binary("playback_dump_test", "playback_dump_test.cpp")
-    for _, name in ipairs({"playback_probe", "playback_counting_probe"}) do
+    -- The counting probe exists only on Windows; declaring it elsewhere would create an empty target
+    local probe_names = {"playback_probe"}
+    if is_plat("windows") then table.insert(probe_names, "playback_counting_probe") end
+    for _, name in ipairs(probe_names) do
         target(name)
             on_config(function (target)
                 -- Full emitted command is retained in baseline logs; embed semantic build flags.
