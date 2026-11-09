@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -17,6 +18,7 @@
 #include <tuple>
 #include <vector>
 
+#include "audio/thirdparty/fluidsynth/vorbis_decode.h"
 #include <gtest/gtest.h>
 
 #include "audio/common/audioerrors.h"
@@ -319,6 +321,10 @@ TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
     ASSERT_FALSE(second.empty());
     EXPECT_NE(second, first);
     EXPECT_NE(music::engine_soundfont_uri(audio), original_uri);
+    EXPECT_EQ(render(), second);
+    ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[0]}));
+    EXPECT_EQ(render(), first);
+    EXPECT_EQ(music::engine_soundfont_uri(audio), original_uri);
     ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
 }
 
@@ -1221,4 +1227,42 @@ TEST(AudioInternal, CancelsInsideFlatSequencerPreprocessing) {
         EXPECT_TRUE(seq.main_stream_events_.empty());
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
     }
+}
+
+// A death-test subprocess starts with a fresh engine and no rendered synths.
+// Cancel at the first synth event, then reuse the same SF3 cache twice and
+// explicitly tear down the engine, checking the decoder bridge is detached.
+TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
+    ASSERT_EXIT(([] {
+                    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+                    if (!opened) std::exit(11);
+                    auto &document = **opened;
+                    auto &audio = engrave::DocumentAccess::context(document).audio();
+                    bool cancelled = false;
+                    music::set_engine_audio_midi_event_hook(audio, [&](const auto &, uint64_t) { cancelled = true; });
+                    engrave::AudioOptions options;
+                    options.cancelled = [&] { return cancelled; };
+                    int published = 0;
+                    auto failed = document.render_audio(options, [&](auto) { ++published; });
+                    if (failed || failed.error().code != engrave::ErrorCode::CANCELLED || published || !cancelled) std::exit(12);
+                    music::set_engine_audio_midi_event_hook(audio, {});
+                    auto render = [&] {
+                        std::vector<std::byte> bytes;
+                        if (!document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }))
+                            std::exit(13);
+                        return bytes;
+                    };
+                    auto first = render();
+                    if (first.empty() || render() != first) std::exit(14);
+                    opened->reset();
+                    const auto teardown_start = std::chrono::steady_clock::now();
+                    music::test::g_engine.reset();
+                    const double teardown_ms =
+                        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - teardown_start).count();
+                    std::fprintf(stderr, "engine_teardown_ms=%.6f\n", teardown_ms);
+                    if (teardown_ms > 100.0) std::exit(16);
+                    if (muse::audio::fluid::FluidVorbisDecoder::decoder) std::exit(15);
+                    std::exit(0);
+                }()),
+                ::testing::ExitedWithCode(0), "");
 }
