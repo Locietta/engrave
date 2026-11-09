@@ -25,18 +25,35 @@
 
 #include <array>
 #include <functional>
+#include <initializer_list>
 #include <span>
 #include <stdexcept>
+#include <utility>
+
+#include <amc/flatset.hpp>
 
 #include "log.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
+#include "mpe/flatmap.h"
 
 namespace muse::audio::synth {
 struct SoundMappingKey {
+    using SubCategories = amc::FlatSet<mpe::SoundSubCategory>;
+
     mpe::SoundId id = mpe::SoundId::UNDEFINED;
-    mpe::SoundSubCategories sub_categories;
+    SubCategories sub_categories;
+
+    SoundMappingKey() = default;
+
+    SoundMappingKey(const mpe::SoundId sound_id, std::initializer_list<mpe::SoundSubCategory> categories)
+        : id(sound_id), sub_categories(categories) {}
+
+    SoundMappingKey(const mpe::SoundId sound_id, const mpe::SoundSubCategories &categories)
+        : id(sound_id), sub_categories(categories.begin(), categories.end()) {}
+
+    SoundMappingKey(const mpe::SoundId sound_id, SubCategories categories) : id(sound_id), sub_categories(std::move(categories)) {}
 
     bool operator<(const SoundMappingKey &other) const {
         if (id < other.id) {
@@ -49,12 +66,18 @@ struct SoundMappingKey {
 
         return sub_categories < other.sub_categories;
     }
+
+    bool operator==(const SoundMappingKey &other) const = default;
 };
 
-using ArticulationMapping = std::map<mpe::ArticulationType, midi::Program>;
+using ArticulationMapping = mpe::FlatMap<mpe::ArticulationType, midi::Program>;
+using ProgramMapping = mpe::FlatMap<SoundMappingKey, midi::Programs>;
 
-static const auto &mapping_by_category(const mpe::SoundCategory category) {
-    static const std::map<SoundMappingKey, midi::Programs> keyboards_mappings = {
+static_assert(ArticulationMapping::is_amc_storage);
+static_assert(!ProgramMapping::is_amc_storage);
+
+static const ProgramMapping &mapping_by_category(const mpe::SoundCategory category) {
+    static const ProgramMapping keyboards_mappings = {
         {{mpe::SoundId::CELESTA, {}}, {midi::Program(0, 8)}},
         {{mpe::SoundId::CLAVICHORD, {mpe::SoundSubCategory::BAROQUE}}, {midi::Program(0, 7)}},
         {{mpe::SoundId::CLAVICHORD, {mpe::SoundSubCategory::ELECTRIC}}, {midi::Program(0, 7)}},
@@ -107,7 +130,7 @@ static const auto &mapping_by_category(const mpe::SoundCategory category) {
         {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::FX_SCI_FI}}, {midi::Program(0, 103)}},
     };
 
-    static const std::map<SoundMappingKey, midi::Programs> strings_mappings = {
+    static const ProgramMapping strings_mappings = {
         {{mpe::SoundId::HARP, {mpe::SoundSubCategory::PLUCKED}}, {midi::Program(0, 46)}},
 
         {{mpe::SoundId::GUITAR,
@@ -261,7 +284,7 @@ static const auto &mapping_by_category(const mpe::SoundCategory category) {
         {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::BOWED}}, {midi::Program(0, 92)}},
     };
 
-    static const std::map<SoundMappingKey, midi::Programs> winds_mappings = {
+    static const ProgramMapping winds_mappings = {
         {{mpe::SoundId::WINDS_GROUP, {}}, {midi::Program(0, 73)}},
         {{mpe::SoundId::PICCOLO, {}}, {midi::Program(0, 72)}},
         {{mpe::SoundId::FLUTE, {mpe::SoundSubCategory::TREBLE}}, {midi::Program(0, 72)}},
@@ -548,7 +571,7 @@ static const auto &mapping_by_category(const mpe::SoundCategory category) {
         {{mpe::SoundId::KLAXON_HORNS, {}}, {midi::Program(0, 84)}},
         {{mpe::SoundId::KAZOO, {}}, {midi::Program(0, 85)}}};
 
-    static const std::map<SoundMappingKey, midi::Programs> percussion_mappings = {
+    static const ProgramMapping percussion_mappings = {
         {{mpe::SoundId::TIMPANI, {}}, {midi::Program(0, 47)}},
         {{mpe::SoundId::ROTO_TOMS, {}}, {midi::Program(0, 117)}},
         {{mpe::SoundId::TUBAPHONE, {mpe::SoundSubCategory::METAL}}, {midi::Program(0, 12)}},
@@ -747,7 +770,7 @@ static const auto &mapping_by_category(const mpe::SoundCategory category) {
 
         {{mpe::SoundId::SYNTHESIZER, {mpe::SoundSubCategory::ELECTRIC, mpe::SoundSubCategory::PERCUSSIVE}}, {midi::Program(128, 0)}}};
 
-    static const std::map<SoundMappingKey, midi::Programs> voice_mappings = {
+    static const ProgramMapping voice_mappings = {
         {{mpe::SoundId::CHOIR, {}}, {midi::Program(0, 52)}},
         {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::SOPRANO, mpe::SoundSubCategory::BOY}}, {midi::Program(0, 52)}},
         {{mpe::SoundId::CHOIR, {mpe::SoundSubCategory::SOPRANO}}, {midi::Program(0, 52)}},
@@ -767,19 +790,23 @@ static const auto &mapping_by_category(const mpe::SoundCategory category) {
         case mpe::SoundCategory::WINDS: return winds_mappings;
         case mpe::SoundCategory::PERCUSSIONS: return percussion_mappings;
         case mpe::SoundCategory::VOICES: return voice_mappings;
-        default: static std::map<SoundMappingKey, midi::Programs> empty; return empty;
+        default: static const ProgramMapping empty; return empty;
     }
 }
 
 inline const midi::Programs &find_programs(const mpe::PlaybackSetupData &setup_data) {
-    const std::map<SoundMappingKey, midi::Programs> &mapping = mapping_by_category(setup_data.category);
+    const ProgramMapping &mapping = mapping_by_category(setup_data.category);
 
-    mpe::SoundSubCategories sub_category_set = setup_data.sound_sub_categories();
-    muse::remove(sub_category_set, mpe::SoundSubCategory::PRIMARY);
-    muse::remove(sub_category_set, mpe::SoundSubCategory::SECONDARY);
+    SoundMappingKey::SubCategories sub_category_set;
+    for (const String &sub_category : setup_data.sub_categories) {
+        const mpe::SoundSubCategory cat = mpe::sound_sub_category_from_string(sub_category);
+        if (cat != mpe::SoundSubCategory::PRIMARY && cat != mpe::SoundSubCategory::SECONDARY) {
+            sub_category_set.insert(cat);
+        }
+    }
 
     mpe::SoundId sound_id = setup_data.sound_id();
-    auto search = mapping.find({sound_id, sub_category_set});
+    auto search = mapping.find({sound_id, std::move(sub_category_set)});
 
     if (search != mapping.cend()) {
         return search->second;
@@ -930,10 +957,10 @@ inline const ArticulationMapping &articulation_sounds(const mpe::PlaybackSetupDa
     }
 
     if (setup_data.category == mpe::SoundCategory::STRINGS) {
-        static const std::unordered_set<mpe::SoundId> viol_section{mpe::SoundId::VIOL, mpe::SoundId::PARDESSUS_VIOL,
-                                                                   mpe::SoundId::VIOLA_DA_GAMBA, mpe::SoundId::VIOLONE};
+        static const amc::FlatSet<mpe::SoundId> viol_section{mpe::SoundId::VIOL, mpe::SoundId::PARDESSUS_VIOL, mpe::SoundId::VIOLA_DA_GAMBA,
+                                                             mpe::SoundId::VIOLONE};
 
-        if (muse::contains(viol_section, sound_id)) {
+        if (viol_section.contains(sound_id)) {
             return basic_viol_section;
         }
 
@@ -941,15 +968,15 @@ inline const ArticulationMapping &articulation_sounds(const mpe::PlaybackSetupDa
     }
 
     if (setup_data.category == mpe::SoundCategory::WINDS) {
-        static const std::unordered_set<mpe::SoundId> brass_section{mpe::SoundId::BUGLE,   mpe::SoundId::EUPHONIUM, mpe::SoundId::HORN,
-                                                                    mpe::SoundId::TRUMPET, mpe::SoundId::TROMBONE,  mpe::SoundId::TUBA};
+        static const amc::FlatSet<mpe::SoundId> brass_section{mpe::SoundId::BUGLE,   mpe::SoundId::EUPHONIUM, mpe::SoundId::HORN,
+                                                              mpe::SoundId::TRUMPET, mpe::SoundId::TROMBONE,  mpe::SoundId::TUBA};
 
-        if (muse::contains(brass_section, sound_id)) {
+        if (brass_section.contains(sound_id)) {
             return brass;
         }
     }
 
-    static ArticulationMapping empty;
+    static const ArticulationMapping empty;
     return empty;
 }
 
@@ -985,7 +1012,11 @@ inline void check_fluid_channel_limit(const midi::channel_t max_channels) {
 
 struct ChannelMap {
     using ChannelMapping = std::pair<midi::channel_t, midi::Program>;
-    using VoiceMappings = std::map<mpe::ArticulationType, ChannelMapping>;
+    using VoiceMappings = mpe::FlatMap<mpe::ArticulationType, ChannelMapping>;
+    using LayerMappings = mpe::FlatMap<mpe::layer_idx_t, VoiceMappings>;
+
+    static_assert(VoiceMappings::is_amc_storage);
+    static_assert(!LayerMappings::is_amc_storage);
 
     void init(const mpe::PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override,
               const midi::channel_t max_channels) {
@@ -1029,7 +1060,7 @@ struct ChannelMap {
 
     midi::channel_t channel_count() const { return channel_count_; }
 
-    const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return data_; }
+    const LayerMappings &data() const { return data_; }
 
     // Called when a new channel is mapped, before its first event; the
     // synthesizer that owns the mapping programs the channel.
@@ -1091,8 +1122,9 @@ private:
 
         for (const auto &entry : mapping) {
             if (entry.second.second == program) {
-                mapping.insert({type, entry.second});
-                return entry.second.first;
+                const ChannelMapping chosen = entry.second;
+                mapping.insert({type, chosen});
+                return chosen.first;
             }
         }
 
@@ -1114,8 +1146,9 @@ private:
 
             for (const auto &entry : other_mapping) {
                 if (entry.second.second == program) {
-                    mapping.insert({type, entry.second});
-                    return entry.second.first;
+                    const ChannelMapping chosen = entry.second;
+                    mapping.insert({type, chosen});
+                    return chosen.first;
                 }
             }
         }
@@ -1131,7 +1164,7 @@ private:
         return channel_idx;
     }
 
-    std::map<mpe::layer_idx_t, VoiceMappings> data_;
+    LayerMappings data_;
     midi::channel_t channel_count_ = 0;
     midi::channel_t max_channels_ = k_fluid_channel_count;
 
