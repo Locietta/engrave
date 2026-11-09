@@ -22,36 +22,30 @@
 
 #pragma once
 
-#include "audionode.h"
-
-namespace muse::audio {
-struct ControlTag {
-    static constexpr const char *name = "Control";
-};
-} // namespace muse::audio
+#include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-struct ControlNode : AudioNode<ControlTag> {
+struct OfflineSignal {
 
-    void set_volume(float value);
-    float volume() const;
-    void set_pan(float pan);
-    float pan() const;
-    void set_muted(bool muted);
-    bool muted() const;
+    bool is_silent() const;
 
-protected:
+    void set_output_spec(const OutputSpec &spec) {
+        if (output_spec_ == spec) return;
+        output_spec_ = spec;
+        on_output_spec_changed(spec);
+    }
 
-    void update_channel_gains();
+    void process(float *buffer, samples_t frames) { do_self_process(buffer, frames); }
 
-    void on_output_spec_changed(const OutputSpec &spec) override;
-    void do_self_process(float *buffer, samples_t samples_per_channel) override;
+private:
+    OutputSpec output_spec_;
 
-    std::vector<float> channel_gains_;
+    void on_output_spec_changed(const OutputSpec &spec);
 
-    float volume_ = 1.0f;
-    float pan_ = 0.0f;
+    void do_self_process(float *buffer, samples_t samples_per_channel);
+
+    std::vector<float> channel_peaks_;
+    bool is_silent_ = true;
 };
 
-using ControlNodePtr = std::shared_ptr<ControlNode>;
 } // namespace muse::audio::engine

@@ -20,16 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "signalnode.h"
+#include "offlinesignal.h"
 
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-bool SignalNode::is_silent() const { return is_silent_; }
+bool OfflineSignal::is_silent() const { return is_silent_; }
 
-void SignalNode::on_output_spec_changed(const OutputSpec &spec) { channel_peaks_.resize(spec.audio_channel_count, 0.f); }
+void OfflineSignal::on_output_spec_changed(const OutputSpec &spec) { channel_peaks_.resize(spec.audio_channel_count, 0.f); }
 
-void SignalNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+void OfflineSignal::do_self_process(float *buffer, samples_t samples_per_channel) {
     const audioch_t channels_count = output_spec_.audio_channel_count;
 
     for (audioch_t ch = 0; ch < channels_count; ++ch) {

@@ -25,7 +25,7 @@
 #include <functional>
 #include <vector>
 
-#include "../nodes/audionode.h"
+#include "../offlinerendersession.h"
 #include "abstractaudioencoder.h"
 #include "audio/common/audiotypes.h"
 #include "global/types/ret.h"
@@ -37,8 +37,8 @@ struct IODevice;
 namespace muse::audio::soundtrack {
 struct SoundTrackWriter {
 
-    SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration, IAudioNodePtr source,
-                     std::function<void(uint64_t)> block_completed = {},
+    SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
+                     engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed = {},
                      std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
                      std::function<bool()> cancelled = {});
 
@@ -51,7 +51,7 @@ private:
     bool poll_cancellation();
     std::function<bool()> cancelled_;
 
-    IAudioNodePtr source_;
+    engine::OfflineRenderSession *source_;
     std::function<void(uint64_t)> block_completed_;
 
     std::vector<float> interm_buffer_;

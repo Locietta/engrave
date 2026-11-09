@@ -24,18 +24,12 @@
 
 #include <optional>
 
+#include "audio/common/audiotypes.h"
 #include "audio/engine/internal/dsp/smoothlinearvalue.h"
 #include "audio/engine/iplayhead.h"
-#include "audionode.h"
-
-namespace muse::audio {
-struct AutomationControlTag {
-    static constexpr const char *name = "AutomationControl";
-};
-} // namespace muse::audio
 
 namespace muse::audio::engine {
-struct AutomationControlNode : AudioNode<AutomationControlTag> {
+struct OfflineControl {
 
     void set_playhead_position(const PlayheadPositionPtr &playhead_position);
     void set_volume(const AutomatableValue<volume_db_t> &volume);
@@ -43,13 +37,25 @@ struct AutomationControlNode : AudioNode<AutomationControlTag> {
     void set_muted(bool muted);
     bool muted() const;
 
-protected:
+    void set_output_spec(const OutputSpec &spec) {
+        if (output_spec_ == spec) return;
+        output_spec_ = spec;
+        on_output_spec_changed(spec);
+    }
+
+    void process(float *buffer, samples_t frames) {
+        if (enabled_) do_self_process(buffer, frames);
+    }
+
+private:
+    OutputSpec output_spec_;
+    bool enabled_ = true;
 
     secs_t current_pos() const;
     void update_channel_gains(secs_t pos);
 
-    void on_output_spec_changed(const OutputSpec &spec) override;
-    void do_self_process(float *buffer, samples_t samples_per_channel) override;
+    void on_output_spec_changed(const OutputSpec &spec);
+    void do_self_process(float *buffer, samples_t samples_per_channel);
 
     PlayheadPositionPtr playhead_position_;
     AutomatableValue<volume_db_t> volume_;
@@ -58,5 +64,4 @@ protected:
     std::optional<secs_t> last_gains_pos_;
 };
 
-using AutomationControlNodePtr = std::shared_ptr<AutomationControlNode>;
 } // namespace muse::audio::engine

@@ -55,7 +55,7 @@ static encode::AbstractAudioEncoderPtr create_encoder(const SoundTrackFormat &fo
 }
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
-                                   IAudioNodePtr source, std::function<void(uint64_t)> block_completed,
+                                   engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed,
                                    std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
                                    std::function<bool()> cancelled)
     : cancelled_(std::move(cancelled)), source_(std::move(source)), block_completed_(std::move(block_completed)) {
@@ -99,7 +99,6 @@ Ret SoundTrackWriter::write() {
         return false;
     }
 
-    source_->set_output_spec(encoder_ptr_->format().output_spec);
     source_->set_mode(ProcessMode::PLAYING_OFFLINE);
 
     bool finalized = false;

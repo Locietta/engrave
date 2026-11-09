@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "fluidtracknode.h"
+#include "fluidtracksource.h"
 
 #include <utility>
 
@@ -33,11 +33,11 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-FluidTrackNode::FluidTrackNode(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec,
-                               MidiEventSink sink, const mpe::TrackEvents &events)
+FluidTrackSource::FluidTrackSource(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec,
+                                   MidiEventSink sink, const mpe::TrackEvents &events)
     : resources_(resources), config_(config), default_spec_(spec), sink_(std::move(sink)), initial_data_(&events) {}
 
-void FluidTrackNode::on_mode_changed(const ProcessMode mode) {
+void FluidTrackSource::on_mode_changed(const ProcessMode mode) {
 
     if (!synth_) {
         return;
@@ -47,7 +47,7 @@ void FluidTrackNode::on_mode_changed(const ProcessMode mode) {
     synth_->flush_sound();
 }
 
-void FluidTrackNode::on_output_spec_changed(const OutputSpec &spec) {
+void FluidTrackSource::on_output_spec_changed(const OutputSpec &spec) {
     if (!synth_) {
         return;
     }
@@ -55,7 +55,7 @@ void FluidTrackNode::on_output_spec_changed(const OutputSpec &spec) {
     synth_->set_output_spec(spec);
 }
 
-void FluidTrackNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+void FluidTrackSource::do_self_process(float *buffer, samples_t samples_per_channel) {
     if (!synth_) {
         return;
     }
@@ -64,7 +64,7 @@ void FluidTrackNode::do_self_process(float *buffer, samples_t samples_per_channe
     synth_->process(buffer, samples_per_channel);
 }
 
-void FluidTrackNode::seek(const TimePosition &position, const bool flush_sound) {
+void FluidTrackSource::seek(const TimePosition &position, const bool flush_sound) {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
@@ -79,16 +79,16 @@ void FluidTrackNode::seek(const TimePosition &position, const bool flush_sound) 
     }
 }
 
-void FluidTrackNode::flush() {
+void FluidTrackSource::flush() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->flush_sound();
 }
 
-const AudioInputParams &FluidTrackNode::input_params() const { return params_; }
+const AudioInputParams &FluidTrackSource::input_params() const { return params_; }
 
-void FluidTrackNode::apply_input_params(const AudioInputParams &required_params) {
+void FluidTrackSource::apply_input_params(const AudioInputParams &required_params) {
     // Consume the borrow before any assertion, resolver or synth call can fail.
     const auto *data = std::exchange(initial_data_, nullptr);
     IF_ASSERT_FAILED(output_spec_.is_valid()) { return; }
@@ -126,47 +126,45 @@ void FluidTrackNode::apply_input_params(const AudioInputParams &required_params)
     track->set_mode(ProcessMode::IDLE);
     synth_ = std::move(track);
 
-    set_name(std::string("Source[") + synth_->name() + "]");
-
     params_ = synth_->params();
 }
 
-void FluidTrackNode::prepare_to_play() {
+void FluidTrackSource::prepare_to_play() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->prepare_to_play();
 }
 
-bool FluidTrackNode::ready_to_play() const {
+bool FluidTrackSource::ready_to_play() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
     return synth_->ready_to_play();
 }
 
-bool FluidTrackNode::has_pending_chunks() const {
+bool FluidTrackSource::has_pending_chunks() const {
 
     IF_ASSERT_FAILED(synth_) { return false; }
 
     return synth_->has_pending_chunks();
 }
 
-void FluidTrackNode::process_input() {
+void FluidTrackSource::process_input() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 
     synth_->process_input();
 }
 
-InputProcessingProgress FluidTrackNode::input_processing_progress() const {
+InputProcessingProgress FluidTrackSource::input_processing_progress() const {
 
     IF_ASSERT_FAILED(synth_) { return {}; }
 
     return synth_->input_processing_progress();
 }
 
-void FluidTrackNode::clear_cache() {
+void FluidTrackSource::clear_cache() {
 
     IF_ASSERT_FAILED(synth_) { return; }
 

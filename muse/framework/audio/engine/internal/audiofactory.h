@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../ifxresolver.h"
-#include "nodes/fxchain.h"
 
 namespace muse::audio::engine {
 struct AudioFactory {
@@ -38,9 +37,6 @@ public:
 
     void set_output_spec(const OutputSpec &spec) { spec_ = spec; }
 
-    // Make FX
-    FxChainPtr make_master_fx_chain(const AudioFxChain &fx_chain) const;
-    FxChainPtr make_track_fx_chain(const TrackId track_id, const AudioFxChain &fx_chain) const;
     void clear_all_fx();
 };
 } // namespace muse::audio::engine
