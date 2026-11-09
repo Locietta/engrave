@@ -1006,8 +1006,29 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
     struct ExposedSequencer : FluidSequencer {
         using FluidSequencer::bounded_stable_sort;
         using FluidSequencer::dedup_timeline;
+        using FluidSequencer::k_sort_block_size;
         using FluidSequencer::main_stream_events_;
+        using FluidSequencer::next_sort_block_end;
     };
+
+    // 0. Block-sort offset arithmetic near the uint32 limit terminates without wrapping (tested without allocating).
+    {
+        constexpr std::uint32_t max_u32 = std::numeric_limits<std::uint32_t>::max();
+        constexpr std::uint32_t last_aligned = max_u32 - (max_u32 % ExposedSequencer::k_sort_block_size); // 4,294,959,104
+        for (const std::uint32_t total : {last_aligned + 1u, last_aligned + 4096u, max_u32 - 1u, max_u32}) {
+            std::uint32_t offset = last_aligned - ExposedSequencer::k_sort_block_size;
+            int steps = 0;
+            while (offset < total) {
+                const std::uint32_t next = ExposedSequencer::next_sort_block_end(offset, total);
+                ASSERT_GT(next, offset);
+                ASSERT_LE(next, total);
+                offset = next;
+                ASSERT_LE(++steps, 2);
+            }
+            EXPECT_EQ(offset, total);
+            EXPECT_EQ(steps, 2);
+        }
+    }
 
     const auto make_unsorted_timeline = [](std::uint32_t count) {
         MidiTimeline timeline;
@@ -1064,7 +1085,68 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         EXPECT_EQ(timeline.cursor, 0u);
     }
 
-    // 4. End-to-end FluidSequencer::load cancellation during sort/merge/dedup leaves a cleared timeline and recovers.
+    // 4. Direct resample_curve early exit: returning false stops evaluating remaining steps and curve segments.
+    {
+        muse::mpe::AutomationCurve<muse::mpe::timestamp_t> curve;
+        curve[0] = muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ArrivalFromPrevious{}, muse::real_t(0.1)};
+        curve[30000ULL * 100000ULL] =
+            muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.9), {}}, muse::real_t(0.9)};
+        curve[30000ULL * 200000ULL] =
+            muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.2), {}}, muse::real_t(0.2)};
+        std::size_t samples = 0;
+        muse::mpe::resample_curve(curve, muse::mpe::timestamp_t{30000},
+                                  [&](muse::mpe::timestamp_t, muse::real_t) -> bool { return ++samples < 4096; });
+        EXPECT_EQ(samples, 4096u);
+    }
+
+    // 5. End-to-end FluidSequencer::load cancellation during a long dynamic curve stops resampling at the first
+    //    positive 4,096-sample poll and discards the timeline.
+    {
+        muse::mpe::PlaybackData data;
+        muse::mpe::PlaybackSetupData setup;
+        setup.supports_single_note_dynamics = true;
+
+        muse::mpe::ArrangementContext arr;
+        arr.nominal_timestamp = 0;
+        arr.actual_timestamp = 0;
+        arr.nominal_duration = 1000;
+        arr.actual_duration = 1000;
+        arr.voice_layer_index = 0;
+        muse::mpe::PitchContext pitch;
+        pitch.nominal_pitch_level = 0;
+        muse::mpe::ExpressionContext expr;
+        expr.nominal_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
+        data.origin_events[0].emplace_back(muse::mpe::NoteEvent(std::move(arr), std::move(pitch), std::move(expr)));
+
+        // Non-flat curve spanning 100,000 steps of 30,000 us (~24.4x the 4,096-sample poll stride), plus a second layer.
+        auto &curve0 = data.dynamics[0];
+        curve0[0] = muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ArrivalFromPrevious{}, muse::real_t(0.1)};
+        curve0[30000ULL * 100000ULL] =
+            muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.9), {}}, muse::real_t(0.9)};
+        auto &curve1 = data.dynamics[1];
+        curve1[0] = muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ArrivalFromPrevious{}, muse::real_t(0.2)};
+        curve1[30000ULL * 50000ULL] =
+            muse::mpe::AutomationPoint{muse::mpe::AutomationPoint::ExplicitArrival{muse::real_t(0.8), {}}, muse::real_t(0.8)};
+
+        ExposedSequencer seq;
+        seq.init(setup, muse::midi::Program{0, 0}, true, k_fluid_channel_count);
+        seq.main_stream_events_.cursor = 5;
+
+        // Poll 1: note event in add_playback_events.
+        // Poll 2: layer 0 entry in add_dynamic_events.
+        // Poll 3: first 4,096-sample poll inside resample_curve. If resample_curve did not stop, it would poll 24 more times.
+        int polls = 0;
+        const std::function<bool()> cancel_in_curve = [&] { return ++polls >= 3; };
+        {
+            muse::audio::OfflineCancellation scope(cancel_in_curve);
+            seq.load(data);
+        }
+        EXPECT_EQ(polls, 3);
+        EXPECT_TRUE(seq.main_stream_events_.empty());
+        EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
+    }
+
+    // 6. End-to-end FluidSequencer::load cancellation during sort/merge/dedup leaves a cleared timeline and recovers.
     {
         muse::mpe::PlaybackData data;
         muse::mpe::PlaybackSetupData setup;

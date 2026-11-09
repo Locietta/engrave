@@ -159,13 +159,27 @@ inline real_t evaluate_curve_at(const Curve &curve, const sorted_key_t<Curve> &p
     return normalized;
 }
 
-//! NOTE: resamples a curve into discrete samples for consumers that can't evaluate on read
+//! NOTE: resamples a curve into discrete samples for consumers that can't evaluate on read.
+//! If Callback returns bool, returning false stops resampling immediately.
 template <typename Curve, typename Callback>
 void resample_curve(const Curve &curve, sorted_key_t<Curve> step_interval, Callback &&on_sample) {
     using Key = sorted_key_t<Curve>;
+    using Result = std::invoke_result_t<Callback &, Key, real_t>;
+    static_assert(std::is_void_v<Result> || std::is_same_v<Result, bool>);
+
+    auto emit = [&](Key t, real_t normalized) -> bool {
+        if constexpr (std::is_same_v<Result, bool>) {
+            return on_sample(t, normalized);
+        } else {
+            on_sample(t, normalized);
+            return true;
+        }
+    };
 
     for (auto it = curve.begin(); it != curve.end(); ++it) {
-        on_sample(entry_key(*it), entry_value(*it).out_value);
+        if (!emit(entry_key(*it), entry_value(*it).out_value)) {
+            return;
+        }
 
         const auto next = std::next(it);
         if (next == curve.end()) {
@@ -185,7 +199,9 @@ void resample_curve(const Curve &curve, sorted_key_t<Curve> step_interval, Callb
         for (size_t j = 1; j < steps; ++j) {
             const Key t = entry_key(*it) + interval_duration * j / steps;
             const real_t normalized = evaluate_at(entry_value(*next), entry_value(*it).out_value, real_t(j) / real_t(steps));
-            on_sample(t, normalized);
+            if (!emit(t, normalized)) {
+                return;
+            }
         }
     }
 }

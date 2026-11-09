@@ -228,9 +228,15 @@ struct AbstractEventSequencer {
 protected:
     virtual void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
 
+    static constexpr std::uint32_t k_sort_block_size = 8192;
+
+    static constexpr std::uint32_t next_sort_block_end(const std::uint32_t offset, const std::uint32_t total) noexcept {
+        return offset + std::min(total - offset, k_sort_block_size);
+    }
+
     static bool bounded_stable_sort(MidiTimeline &timeline) {
         OfflineCancellation::SequencerScope phase;
-        constexpr std::uint32_t k_block_size = 8192;
+        constexpr std::uint32_t k_block_size = k_sort_block_size;
         if (OfflineCancellation::requested()) {
             timeline.clear();
             return false;
@@ -243,13 +249,14 @@ protected:
 
         const auto by_timestamp = [](const TimedMidiEvent &lhs, const TimedMidiEvent &rhs) { return lhs.timestamp < rhs.timestamp; };
 
-        for (std::uint32_t offset = 0; offset < total; offset += k_block_size) {
+        for (std::uint32_t offset = 0; offset < total;) {
             if (offset > 0 && OfflineCancellation::requested()) {
                 timeline.clear();
                 return false;
             }
-            const std::uint32_t block_end = std::min(total - offset, k_block_size) + offset;
+            const std::uint32_t block_end = next_sort_block_end(offset, total);
             std::stable_sort(events.begin() + offset, events.begin() + block_end, by_timestamp);
+            offset = block_end;
         }
 
         if (OfflineCancellation::requested()) {
