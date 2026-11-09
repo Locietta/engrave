@@ -360,12 +360,12 @@ TEST(Audio, MixedScoreOrdersEqualFreshProcesses) {
     std::array<std::vector<std::byte>, 2> fresh;
     for (std::size_t i = 0; i < paths.size(); ++i) {
         const auto out = detail::temp_file("mixed-fresh.wav");
-        music::test::g_retained_for_cleanup.push_back(out);
         std::vector<std::string> args{"--assets=" + music::test::g_assets.string(), "--audio=" + paths[i].string(), "--format=wav",
                                       "--out=" + out.string()};
         for (const auto &font : g_soundfonts) args.push_back("--soundfont=" + font.string());
         ASSERT_EQ(music::test::run_probe(args), 0);
         fresh[i] = detail::read_file(out);
+        std::filesystem::remove(out);
         ASSERT_FALSE(fresh[i].empty());
     }
     ASSERT_NE(fresh[0], fresh[1]);
