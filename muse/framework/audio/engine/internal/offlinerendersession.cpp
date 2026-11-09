@@ -28,6 +28,7 @@ OfflineRenderSession::~OfflineRenderSession() {
     tracks_.clear();
     // Account for the aux DSP teardown in the same phase as the former graph.
     reverb_.effects.clear();
+    std::vector<float>().swap(reverb_.buffer);
 }
 
 void OfflineRenderSession::initialize(Track &track, const TrackParams &params) {
