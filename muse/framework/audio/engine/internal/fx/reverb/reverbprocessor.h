@@ -28,28 +28,28 @@
 #include <utility>
 #include <vector>
 
-#include "../../../ifxprocessor.h"
+#include "audio/common/audiotypes.h"
 
 namespace muse::audio::fx {
-struct ReverbProcessor : IFxProcessor {
+struct ReverbProcessor {
     ReverbProcessor(const audio::AudioFxParams &params);
-    ~ReverbProcessor() override;
+    ~ReverbProcessor();
 
     void init(const OutputSpec &spec);
 
-    AudioFxType type() const override;
-    std::string name() const override;
-    const AudioFxParams &params() const override;
-    void set_output_spec(const OutputSpec &spec) override;
+    AudioFxType type() const;
+    std::string name() const;
+    const AudioFxParams &params() const;
+    void set_output_spec(const OutputSpec &spec);
 
-    bool active() const override;
-    void set_active(bool active) override;
+    bool active() const;
+    void set_active(bool active);
 
-    void set_mode(const ProcessMode mode) override;
+    void set_mode(const ProcessMode mode);
 
-    bool should_process_during_silence() const override;
+    bool should_process_during_silence() const;
 
-    void process(float *buffer, samples_t sample_count, samples_t playback_position_samples = 0) override;
+    void process(float *buffer, samples_t sample_count, samples_t playback_position_samples = 0);
 
 private:
     enum Params {

@@ -23,7 +23,6 @@
 #include "audio/common/soundfonttypes.h"
 #include "audio/engine/audioservices.h"
 #include "audio/engine/iaudioengineconfiguration.h"
-#include "audio/engine/internal/audiofactory.h"
 #include "audio/engine/internal/export/soundtrackwriter.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
@@ -98,7 +97,6 @@ struct EngineAudio::State {
     engine::AudioResources resources;
     std::unique_ptr<engine::AudioServices> services;
     bool services_initialized = false;
-    engine::AudioFactory *factory = nullptr;
     int sample_rate_value = ::music::k_default_sample_rate;
 };
 
@@ -344,8 +342,6 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
         state.sample_rate_value = setup.sample_rate;
         engine::AudioEngineConfiguration &configuration = state.services->configuration();
         configuration.set_config(config);
-        state.factory = &state.services->factory();
-        state.factory->set_output_spec(output_spec(state.sample_rate_value));
     }
     auto *repository = &state.resources.repository;
     const auto uris = [](const std::vector<std::string> &paths) {
@@ -432,7 +428,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     };
 
     EngineAudio::State &state = audio.state();
-    if (!state.services_initialized || !state.factory || state.resources.soundfont_id.empty()) {
+    if (!state.services_initialized || state.resources.soundfont_id.empty()) {
         return fail(AudioRenderResult::Failure::ENGINE_FAILURE, "audio engine is not initialised");
     }
     if (!master) {
@@ -577,8 +573,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                         std::to_string(projected_bytes / (1024 * 1024)) + " MiB) exceeds the 1 GiB audio export limit");
     }
 
-    engine::OfflineRenderSession context(*state.factory, output_spec(state.sample_rate_value), state.resources,
-                                         state.services->configuration(),
+    engine::OfflineRenderSession context(output_spec(state.sample_rate_value), state.resources, state.services->configuration(),
                                          [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
     configure_master(context, request);
 
