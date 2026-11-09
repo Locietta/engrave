@@ -183,10 +183,10 @@ struct PlaybackWalk {
             }
 
             PlaybackPartData data(checkpoint_callback);
-            data.dynamics = playback_ctx->dynamic_level_layers(track_range.start_track, track_range.end_track);
-            data.sound_presets = playback_ctx->sound_presets(track_range.start_track, track_range.end_track);
-            data.text_articulations = playback_ctx->text_articulations(track_range.start_track, track_range.end_track);
-            data.syllables = playback_ctx->syllables(track_range.start_track, track_range.end_track);
+            data.dynamics = playback_ctx->dynamic_level_layers(track_range.start_track, track_range.end_track, checkpoint_callback);
+            data.sound_presets = playback_ctx->sound_presets(track_range.start_track, track_range.end_track, checkpoint_callback);
+            data.text_articulations = playback_ctx->text_articulations(track_range.start_track, track_range.end_track, checkpoint_callback);
+            data.syllables = playback_ctx->syllables(track_range.start_track, track_range.end_track, checkpoint_callback);
 
             for (const InstrumentTrackId &track_id : track_ids) {
                 checkpoint();

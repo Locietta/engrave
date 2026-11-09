@@ -55,19 +55,20 @@ struct PlaybackContext {
     muse::mpe::timestamp_t find_playing_technique_timestamp(const track_idx_t track_idx, PlayingTechniqueType type,
                                                             const int start_from_tick) const;
 
-    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets(const track_idx_t track_from,
-                                                                                               const track_idx_t track_to) const;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList>
+    sound_presets(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint = {}) const;
     muse::mpe::SoundPresetChangeEventList sound_presets(const track_idx_t track_idx, const int nominal_position_tick) const;
 
-    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations(const track_idx_t track_from,
-                                                                                                   const track_idx_t track_to) const;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList>
+    text_articulations(const track_idx_t track_from, const track_idx_t track_to, const std::function<void()> &checkpoint = {}) const;
     muse::mpe::TextArticulationEvent text_articulation(const track_idx_t track_idx, const int nominal_position_tick) const;
 
-    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables(const track_idx_t track_from,
-                                                                                  const track_idx_t track_to) const;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables(const track_idx_t track_from, const track_idx_t track_to,
+                                                                                  const std::function<void()> &checkpoint = {}) const;
     muse::mpe::SyllableEvent syllable(const track_idx_t track_idx, const int nominal_position_tick) const;
 
-    muse::mpe::DynamicAutomationLayers dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to) const;
+    muse::mpe::DynamicAutomationLayers dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to,
+                                                            const std::function<void()> &checkpoint = {}) const;
 
     bool has_sound_flags(const track_idx_t track_from, const track_idx_t track_to) const;
 
