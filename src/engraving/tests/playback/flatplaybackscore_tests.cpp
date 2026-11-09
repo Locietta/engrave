@@ -4,6 +4,7 @@
 // dump B extractors; plus the renderer's sink contract.
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <chrono>
 #include <functional>
@@ -921,7 +922,7 @@ TEST(FlatPlaybackStoreTests, CancelsInsideContextMaterialization) {
             const double interval = milliseconds(now - previous);
             if (polls && interval > maximum) {
                 maximum = interval;
-                largest_at = polls;
+                largest_at = polls - 1;
             }
             previous = now;
             ++polls;
