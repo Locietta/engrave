@@ -26,6 +26,8 @@ OfflineRenderSession::~OfflineRenderSession() {
     OfflineTimer timer(OfflineTiming::current().teardown);
     set_mode(ProcessMode::IDLE);
     tracks_.clear();
+    // Account for the aux DSP teardown in the same phase as the former graph.
+    reverb_.effects.clear();
 }
 
 void OfflineRenderSession::initialize(Track &track, const TrackParams &params) {
@@ -94,7 +96,7 @@ void OfflineRenderSession::process_track(Track &track, samples_t frames) {
     track.signal.process(track.buffer.data(), frames);
 }
 
-void OfflineRenderSession::process(float *out, samples_t frames) {
+void OfflineRenderSession::mix(float *out, samples_t frames) {
     const size_t size = frames * spec_.audio_channel_count;
     // Synthesis is separate from fixed-order mixing, ready for a later worker pass.
     for (auto &track : tracks_) {
@@ -130,6 +132,11 @@ void OfflineRenderSession::process(float *out, samples_t frames) {
         }
     }
     if (has_aux2_ && OfflineCancellation::requested()) return;
+}
+
+void OfflineRenderSession::process(float *out, samples_t frames) {
+    // A cancelled mixer pull still passed through both master stages in the graph.
+    mix(out, frames);
     session_master_.process(out, frames);
     session_signal_.process(out, frames);
     outer_master_.process(out, frames);
