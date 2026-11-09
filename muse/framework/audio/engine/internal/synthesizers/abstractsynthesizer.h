@@ -38,7 +38,7 @@ struct AbstractSynthesizer : ISynthesizer {
 
     const audio::AudioInputParams &params() const override;
 
-    void setup(const mpe::PlaybackData &playback_data) override;
+    void setup(const mpe::TrackEvents &events) override;
 
     void prepare_to_play() override;
     bool ready_to_play() const override;
@@ -53,7 +53,7 @@ protected:
     const engine::IAudioEngineConfiguration *config() const { return &config_; }
 
     virtual void setup_sound(const mpe::PlaybackSetupData &setup_data) = 0;
-    virtual void setup_events(const mpe::PlaybackData &playback_data) = 0;
+    virtual void setup_events(const mpe::TrackEvents &events) = 0;
 
     msecs_t samples_to_msecs(const samples_t samples_per_channel, const samples_t sample_rate) const;
     samples_t micro_secs_to_samples(const msecs_t msec, const samples_t sample_rate) const;

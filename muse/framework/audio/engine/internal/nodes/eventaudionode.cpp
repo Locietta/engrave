@@ -33,8 +33,8 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-EventAudioNode::EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data)
-    : audio_factory_(audio_factory), track_id_(track_id), initial_data_(&playback_data) {}
+EventAudioNode::EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::TrackEvents &events)
+    : audio_factory_(audio_factory), track_id_(track_id), initial_data_(&events) {}
 
 void EventAudioNode::on_mode_changed(const ProcessMode mode) {
 
@@ -102,7 +102,7 @@ void EventAudioNode::apply_input_params(const AudioInputParams &required_params)
         return;
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, data->setup_data);
+    RetVal<synth::ISynthesizerPtr> synth = audio_factory()->make_synth(track_id_, required_params, data->setup);
 
     if (!synth.ret) {
         synth = audio_factory()->make_default_synth(track_id_);

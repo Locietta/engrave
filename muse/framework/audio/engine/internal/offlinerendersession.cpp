@@ -40,16 +40,16 @@ OfflineRenderSession::~OfflineRenderSession() {
     factory_.clear_all_fx();
 }
 
-RetVal2<TrackId, TrackParams> OfflineRenderSession::add_track(const std::string &name, const mpe::PlaybackData &data,
+RetVal2<TrackId, TrackParams> OfflineRenderSession::add_track(const std::string &name, const mpe::TrackEvents &events,
                                                               const TrackParams &params) {
-    return add(name, &data, params);
+    return add(name, &events, params);
 }
 
 RetVal2<TrackId, TrackParams> OfflineRenderSession::add_aux_track(const std::string &name, const TrackParams &params) {
     return add(name, nullptr, params);
 }
 
-RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params) {
+RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string &name, const mpe::TrackEvents *data, const TrackParams &params) {
     using Result = RetVal2<TrackId, TrackParams>;
     const TrackId id = ++last_id_;
     AudioSourceNodePtr source;

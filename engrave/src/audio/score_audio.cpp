@@ -22,7 +22,7 @@
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
-#include "engraving/playback/playbackmodel.h"
+#include "engraving/playback/playbackwalk.h"
 #include "global/io/byteview.h"
 #include "global/serialization/json.h"
 #include "global/serialization/zipreader.h"
@@ -73,9 +73,6 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
         throw std::invalid_argument("score_audio: score must not be null");
     }
 
-    // The id helpers on an unloaded model are cheap and need no playback data.
-    const mu::engraving::PlaybackModel model(nullptr);
-
     std::vector<ScoreAudioTrackInfo> result;
     std::size_t part_index = 0;
     for (const Part *part : score->parts()) {
@@ -110,7 +107,7 @@ std::vector<ScoreAudioTrackInfo> score_audio_track_info(Score *score) {
 
         if (part->has_chord_symbol()) {
             ScoreAudioTrackInfo info;
-            info.id = model.chord_symbols_track_id(part->id());
+            info.id = mu::engraving::playback_chord_symbols_track_id(part->id());
             info.part_id = part->id().to_std_string();
             info.instrument_id = info.id.instrument_id.to_std_string();
             info.part_name = part->part_name().to_std_string();

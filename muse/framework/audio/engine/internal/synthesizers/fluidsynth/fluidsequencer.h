@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "../../abstracteventsequencer.h"
@@ -53,27 +54,31 @@ struct FluidSequencer : engine::AbstractEventSequencer<midi::Event> {
     int last_staff() const;
 
 private:
-    void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) override;
+    void update_main_stream_events(const mpe::TrackEvents &events) override;
 
     using SostenutoTimeAndDurations = std::array<engine::Buf<mpe::TimestampAndDuration>, k_fluid_channel_count>;
 
-    bool add_playback_events(engine::MidiTimeline &destination, const mpe::PlaybackEventsMap &events, bool is_main_stream);
-    bool add_dynamic_events(engine::MidiTimeline &destination, const mpe::DynamicAutomationLayers &layers);
-    bool add_note_event(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event,
+    //! A note's position in (group, seq) order: its legacy group key and its index in TrackEvents::notes
+    struct NoteOrder {
+        mpe::timestamp_t group_timestamp = 0;
+        std::uint32_t index = 0;
+    };
+
+    bool add_playback_events(engine::MidiTimeline &destination, const mpe::TrackEvents &events, bool is_main_stream);
+    bool add_dynamic_events(engine::MidiTimeline &destination);
+    bool add_note_event(engine::MidiTimeline &destination, const mpe::TrackEvents &events, const mpe::NoteRecord &note,
                         SostenutoTimeAndDurations &sostenuto_time_and_durations, bool is_main_stream);
-    void add_pedal_event(engine::MidiTimeline &destination, const mpe::ArticulationMeta &meta, midi::channel_t channel_idx);
-    void add_control_change_event(engine::MidiTimeline &destination, mpe::timestamp_t timestamp, const mpe::ControllerChangeEvent &event);
+    void add_pedal_event(engine::MidiTimeline &destination, const mpe::ArticulationRecord &articulation, midi::channel_t channel_idx);
     void add_control_change(engine::MidiTimeline &destination, mpe::timestamp_t timestamp, int midi_control_idx,
                             midi::channel_t channel_idx, std::uint32_t value);
-    bool add_pitch_curve(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event, const mpe::ArticulationMeta &art_meta,
-                         midi::channel_t channel_idx);
+    bool add_pitch_curve(engine::MidiTimeline &destination, const mpe::NoteRecord &note, std::span<const mpe::CurvePoint> pitch_curve,
+                         const mpe::ArticulationRecord &articulation, midi::channel_t channel_idx);
     void add_pitch_bend(engine::MidiTimeline &destination, mpe::timestamp_t timestamp, midi::channel_t channel_idx, std::uint32_t value);
     bool add_sostenuto_events(engine::MidiTimeline &destination, const SostenutoTimeAndDurations &sostenuto_time_and_durations);
 
-    midi::channel_t resolve_channel(const mpe::NoteEvent &note_event) const;
     midi::note_idx_t note_index(mpe::pitch_level_t pitch_level) const;
-    midi::tuning_t note_tuning(const mpe::NoteEvent &note_event, int note_idx) const;
-    midi::velocity_t note_velocity(const mpe::NoteEvent &note_event) const;
+    midi::tuning_t note_tuning(mpe::pitch_level_t nominal_pitch_level, int note_idx) const;
+    midi::velocity_t note_velocity(const mpe::NoteRecord &note, std::span<const mpe::CurvePoint> expression_curve) const;
     int expression_level(mpe::dynamic_level_t dynamic_level) const;
     int pitch_bend_level(mpe::pitch_level_t pitch_level) const;
 

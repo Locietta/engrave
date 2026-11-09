@@ -834,22 +834,26 @@ private:
 //! Picks the accepted articulation with the lowest (rank, ArticulationType). A type's rank is its index in
 //! `precedence`; unlisted types rank after every listed one, so the order is total. Returns UNDEFINED when
 //! no articulation is accepted.
-template <std::size_t N, typename Accept>
-ArticulationType select_articulation(const ArticulationMap &articulations, const std::array<ArticulationType, N> &precedence,
+//! `articulations` is an ArticulationMap or any range in ascending ArticulationType whose entries
+//! articulation_type() reads (the flat ArticulationRecord, flatevents.h).
+inline ArticulationType articulation_type(const ArticulationMap::value_type &entry) { return entry.first; }
+
+template <typename Articulations, std::size_t N, typename Accept>
+ArticulationType select_articulation(const Articulations &articulations, const std::array<ArticulationType, N> &precedence,
                                      Accept &&accept) {
     ArticulationType best = ArticulationType::UNDEFINED;
     std::size_t best_rank = N + 1;
 
     // ascending ArticulationType, so the first type of a rank wins
-    for (const auto &pair : articulations) {
-        if (!accept(pair.first)) {
+    for (const auto &entry : articulations) {
+        const ArticulationType type = articulation_type(entry);
+        if (!accept(type)) {
             continue;
         }
 
-        const std::size_t rank =
-            static_cast<std::size_t>(std::find(precedence.cbegin(), precedence.cend(), pair.first) - precedence.cbegin());
+        const std::size_t rank = static_cast<std::size_t>(std::find(precedence.cbegin(), precedence.cend(), type) - precedence.cbegin());
         if (rank < best_rank) {
-            best = pair.first;
+            best = type;
             best_rank = rank;
         }
     }

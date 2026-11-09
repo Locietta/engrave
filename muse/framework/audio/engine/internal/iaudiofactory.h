@@ -48,7 +48,7 @@ struct IAudioFactory {
     // This method clears this registry.
     virtual void clear_synth_sources() = 0;
 
-    virtual RetVal<AudioSourceNodePtr> make_event_source(const TrackId track_id, const mpe::PlaybackData &playback_data,
+    virtual RetVal<AudioSourceNodePtr> make_event_source(const TrackId track_id, const mpe::TrackEvents &events,
                                                          const AudioInputParams &params) const = 0;
     // Make FX
     virtual FxChainPtr make_master_fx_chain(const AudioFxChain &fx_chain) const = 0;

@@ -25,11 +25,13 @@
 
 #include <array>
 #include <functional>
+#include <span>
 #include <stdexcept>
 
 #include "log.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"
+#include "mpe/flatevents.h"
 
 namespace muse::audio::synth {
 struct SoundMappingKey {
@@ -1009,9 +1011,45 @@ struct ChannelMap {
     }
 
     midi::channel_t resolve_channel_for_event(const mpe::NoteEvent &event) {
+        return resolve_channel_for_note(event.arrangement_ctx().staff_layer_index, event.arrangement_ctx().voice_layer_index,
+                                        event.expression_ctx().articulations);
+    }
+
+    //! The flat-record form: the note's layers and its articulations in ascending ArticulationType
+    midi::channel_t resolve_channel_for_event(const mpe::NoteRecord &note, std::span<const mpe::ArticulationRecord> articulations) {
+        return resolve_channel_for_note(note.staff_layer, note.voice_layer, articulations);
+    }
+
+    //! The mapped articulation that selects the program of a multi-articulation note, or UNDEFINED if none is mapped
+    template <class Articulations>
+    mpe::ArticulationType select_program_articulation(const Articulations &articulations) const {
+        return mpe::select_articulation(articulations, program_articulation_precedence,
+                                        [this](const mpe::ArticulationType type) { return articulation_mapping_.contains(type); });
+    }
+
+    midi::channel_t channel_count() const { return channel_count_; }
+
+    const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return data_; }
+
+    // Called when a new channel is mapped, before its first event; the
+    // synthesizer that owns the mapping programs the channel.
+    std::function<void(midi::channel_t, const midi::Program &)> on_channel_added;
+
+private:
+    static bool has_standard_articulation(const mpe::ArticulationMap &articulations) {
+        return articulations.contains(mpe::ArticulationType::STANDARD);
+    }
+
+    static bool has_standard_articulation(std::span<const mpe::ArticulationRecord> articulations) {
+        return mpe::contains_articulation(articulations, mpe::ArticulationType::STANDARD);
+    }
+
+    template <class Articulations>
+    midi::channel_t resolve_channel_for_note(const mpe::staff_layer_idx_t staff_layer, const mpe::voice_layer_idx_t voice_layer,
+                                             const Articulations &articulations) {
         //! NOTE: without single-note dynamics, voices don't need their own channel per staff
-        const mpe::staff_layer_idx_t staff_idx = uses_staff_layers_ ? event.arrangement_ctx().staff_layer_index : 0;
-        const mpe::layer_idx_t layer_idx = mpe::make_layer_idx(staff_idx, event.arrangement_ctx().voice_layer_index);
+        const mpe::staff_layer_idx_t staff_idx = uses_staff_layers_ ? staff_layer : 0;
+        const mpe::layer_idx_t layer_idx = mpe::make_layer_idx(staff_idx, voice_layer);
 
         if (program_override_.has_value()) {
             return resolve_channel(layer_idx, mpe::ArticulationType::STANDARD, program_override_.value());
@@ -1027,12 +1065,11 @@ struct ChannelMap {
         //! channels below have somewhere to fall back to once the channel budget runs out
         const midi::channel_t standard_channel = resolve_channel(layer_idx, mpe::ArticulationType::STANDARD, standard_program);
 
-        if (event.expression_ctx().articulations.contains(mpe::ArticulationType::STANDARD) ||
-            event.expression_ctx().articulations.empty() || articulation_mapping_.empty()) {
+        if (has_standard_articulation(articulations) || articulations.empty() || articulation_mapping_.empty()) {
             return standard_channel;
         }
 
-        const mpe::ArticulationType type = select_program_articulation(event.expression_ctx().articulations);
+        const mpe::ArticulationType type = select_program_articulation(articulations);
         if (type == mpe::ArticulationType::UNDEFINED) {
             return standard_channel;
         }
@@ -1040,21 +1077,6 @@ struct ChannelMap {
         return resolve_channel(layer_idx, type, articulation_mapping_.at(type), standard_channel, standard_program);
     }
 
-    //! The mapped articulation that selects the program of a multi-articulation note, or UNDEFINED if none is mapped
-    mpe::ArticulationType select_program_articulation(const mpe::ArticulationMap &articulations) const {
-        return mpe::select_articulation(articulations, program_articulation_precedence,
-                                        [this](const mpe::ArticulationType type) { return articulation_mapping_.contains(type); });
-    }
-
-    midi::channel_t channel_count() const { return channel_count_; }
-
-    const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return data_; }
-
-    // Called when a new channel is mapped, before its first event; the
-    // synthesizer that owns the mapping programs the channel.
-    std::function<void(midi::channel_t, const midi::Program &)> on_channel_added;
-
-private:
     //! Resolves the channel for a (layer, articulation) pair. Same-program articulations share a channel;
     //! once maxChannels_ is exhausted, new ones fold onto the layer's own channel (fallbackChannel/fallbackProgram)
     midi::channel_t resolve_channel(const mpe::layer_idx_t layer_idx, const mpe::ArticulationType type, const midi::Program &program,

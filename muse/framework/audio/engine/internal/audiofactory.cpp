@@ -56,9 +56,9 @@ RetVal<synth::ISynthesizerPtr> AudioFactory::make_default_synth(const TrackId tr
 
 void AudioFactory::clear_synth_sources() { synth_resolver()->clear_sources(); }
 
-RetVal<AudioSourceNodePtr> AudioFactory::make_event_source(const TrackId track_id, const mpe::PlaybackData &playback_data,
+RetVal<AudioSourceNodePtr> AudioFactory::make_event_source(const TrackId track_id, const mpe::TrackEvents &events,
                                                            const AudioInputParams &params) const {
-    EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, track_id, playback_data);
+    EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, track_id, events);
     source->set_output_spec(spec_);
     source->apply_input_params(params);
     if (!source->initialized()) return RetVal<AudioSourceNodePtr>::make_ret(Err::INVALID_SYNTH);

@@ -63,12 +63,13 @@ std::vector<FluidSequencer::ChannelExpressionLevel> FluidSequencer::current_expr
         return result;
     }
 
-    for (const auto &[layer_idx, curve] : dynamics_) {
+    for (const mpe::DynamicLayer &layer : dynamic_layers_) {
+        const std::span<const mpe::DynamicPoint> curve = layer_points(layer);
         if (curve.empty()) {
             continue;
         }
 
-        auto voice_it = channels_.data().find(layer_idx);
+        auto voice_it = channels_.data().find(layer.layer);
         if (voice_it == channels_.data().cend()) {
             continue;
         }
@@ -87,7 +88,7 @@ int FluidSequencer::natural_expression_level() const {
     return natural_exp_lvl;
 }
 
-void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) {
+void FluidSequencer::update_main_stream_events(const mpe::TrackEvents &events) {
     main_stream_events_.clear();
 
     if (on_main_stream_flushed_) {
@@ -95,8 +96,8 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
     }
 
     const bool ok = add_playback_events(main_stream_events_, events, true /*isMainStream*/) &&
-                    (!use_dynamic_events_ || add_dynamic_events(main_stream_events_, dynamics)) &&
-                    bounded_stable_sort(main_stream_events_) && dedup_timeline(main_stream_events_);
+                    (!use_dynamic_events_ || add_dynamic_events(main_stream_events_)) && bounded_stable_sort(main_stream_events_) &&
+                    dedup_timeline(main_stream_events_);
     if (!ok) {
         main_stream_events_.clear();
         update_main_sequence_iterator();
@@ -135,56 +136,63 @@ void FluidSequencer::set_on_channel_added(std::function<void(midi::channel_t, co
 
 int FluidSequencer::last_staff() const { return last_staff_; }
 
-bool FluidSequencer::add_playback_events(engine::MidiTimeline &destination, const mpe::PlaybackEventsMap &events,
-                                         const bool is_main_stream) {
+bool FluidSequencer::add_playback_events(engine::MidiTimeline &destination, const mpe::TrackEvents &events, const bool is_main_stream) {
     OfflineCancellation::SequencerScope phase;
-    constexpr std::uint32_t k_poll_stride = 4096;
     SostenutoTimeAndDurations sostenuto_time_and_durations;
 
-    std::uint32_t empty_bucket_steps = 0;
-    for (const auto &pair : events) {
-        if (pair.second.empty()) {
-            if (++empty_bucket_steps >= k_poll_stride) {
-                empty_bucket_steps = 0;
-                if (OfflineCancellation::requested()) {
-                    destination.clear();
-                    return false;
-                }
-            }
-            continue;
+    // The legacy map order is (group, seq). Notes are stored in emission (seq) order, so a stable order by
+    // group is the map order; tracks whose groups were emitted in ascending order (the usual walk) need no
+    // sort. Cold events and empty groups lower to no MIDI event and are skipped
+    const auto total = static_cast<std::uint32_t>(events.notes.size());
+    bool ascending = true;
+    for (std::uint32_t i = 1; i < total; ++i) {
+        if (events.notes[i].group_timestamp < events.notes[i - 1].group_timestamp) {
+            ascending = false;
+            break;
         }
-        for (const mpe::PlaybackEvent &event : pair.second) {
-            if (OfflineCancellation::requested()) {
-                destination.clear();
-                return false;
-            }
-            if (std::holds_alternative<mpe::NoteEvent>(event)) {
-                if (!add_note_event(destination, std::get<mpe::NoteEvent>(event), sostenuto_time_and_durations, is_main_stream)) {
-                    destination.clear();
-                    return false;
-                }
-            } else if (std::holds_alternative<mpe::ControllerChangeEvent>(event)) {
-                add_control_change_event(destination, pair.first, std::get<mpe::ControllerChangeEvent>(event));
-            }
+    }
+
+    engine::Buf<NoteOrder> order;
+    if (!ascending) {
+        engine::reserve_checked(order, total);
+        for (std::uint32_t i = 0; i < total; ++i) {
+            engine::emplace_checked(order, NoteOrder{events.notes[i].group_timestamp, i});
+        }
+        if (!bounded_stable_sort_by(order, [](const NoteOrder &entry) { return entry.group_timestamp; })) {
+            destination.clear();
+            return false;
+        }
+    }
+
+    for (std::uint32_t i = 0; i < total; ++i) {
+        if (OfflineCancellation::requested()) {
+            destination.clear();
+            return false;
+        }
+        const mpe::NoteRecord &note = events.notes[ascending ? i : order[i].index];
+        if (!add_note_event(destination, events, note, sostenuto_time_and_durations, is_main_stream)) {
+            destination.clear();
+            return false;
         }
     }
 
     return add_sostenuto_events(destination, sostenuto_time_and_durations);
 }
 
-bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination, const mpe::DynamicAutomationLayers &layers) {
+bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination) {
     OfflineCancellation::SequencerScope phase;
     constexpr mpe::timestamp_t step_interval_us = 30000;
     constexpr std::uint32_t k_poll_stride = 4096;
     std::uint32_t sample_steps = 0;
     bool cancelled = false;
 
-    for (const auto &[layer_idx, curve] : layers) {
+    for (const mpe::DynamicLayer &layer : dynamic_layers_) {
         if (OfflineCancellation::requested()) {
             destination.clear();
             return false;
         }
-        auto voice_it = channels_.data().find(layer_idx);
+        const std::span<const mpe::DynamicPoint> curve = layer_points(layer);
+        auto voice_it = channels_.data().find(layer.layer);
         if (voice_it == channels_.data().cend()) {
             continue;
         }
@@ -235,25 +243,30 @@ bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination, const
     return true;
 }
 
-bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event,
+bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe::TrackEvents &events, const mpe::NoteRecord &note,
                                     SostenutoTimeAndDurations &sostenuto_time_and_durations, const bool is_main_stream) {
-    const ArrangementContext &arrangement_ctx = note_event.arrangement_ctx();
-    const channel_t channel_idx = resolve_channel(note_event);
-    const note_idx_t note_idx = note_index(note_event.pitch_ctx().nominal_pitch_level);
-    const velocity_t velocity = note_velocity(note_event);
-    const tuning_t tuning = note_tuning(note_event, note_idx);
+    const std::span<const mpe::ArticulationRecord> articulations = events.note_articulations(note);
+    const std::span<const mpe::CurvePoint> pitch_curve = events.pitch_curve(note);
+    const channel_t channel_idx = channels_.resolve_channel_for_event(note, articulations);
+    const note_idx_t note_idx = note_index(note.nominal_pitch_level);
+    const velocity_t velocity = note_velocity(note, events.expression_curve(note));
+    const tuning_t tuning = note_tuning(note.nominal_pitch_level, note_idx);
 
     // Assumption: 1:1 mapping between staff and instrument and FluidSynth and FluidSequencer instances.
     // So staffLayerIndex is constant. It changes only when moving staffs.
-    last_staff_ = note_event.arrangement_ctx().staff_layer_index;
+    last_staff_ = note.staff_layer;
 
-    if (arrangement_ctx.has_start()) {
+    // As ArrangementContext::has_start/has_end
+    const bool has_start = note.actual_duration > 0;
+    const bool has_end = note.actual_duration != mpe::infinite_duration;
+
+    if (has_start) {
         if (use_dynamic_events_ && !is_main_stream) {
             midi::Event expression_event(Event::Opcode::CONTROL_CHANGE, Event::MessageType::CHANNEL_VOICE10);
             expression_event.set_channel(channel_idx);
             expression_event.set_index(midi::expression_controller);
-            expression_event.set_data(expression_level(note_event.expression_ctx().nominal_dynamic_level));
-            engine::emplace_checked(destination.events, engine::TimedMidiEvent{arrangement_ctx.actual_timestamp, expression_event});
+            expression_event.set_data(expression_level(note.nominal_dynamic_level));
+            engine::emplace_checked(destination.events, engine::TimedMidiEvent{note.actual_timestamp, expression_event});
         }
 
         midi::Event note_on(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE20);
@@ -262,28 +275,27 @@ bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe
         note_on.set_velocity16(velocity);
         note_on.set_pitch_note(note_idx, tuning);
 
-        engine::emplace_checked(destination.events, engine::TimedMidiEvent{arrangement_ctx.actual_timestamp, note_on});
+        engine::emplace_checked(destination.events, engine::TimedMidiEvent{note.actual_timestamp, note_on});
     }
 
-    if (arrangement_ctx.has_end()) {
+    if (has_end) {
         midi::Event note_off(Event::Opcode::NOTE_OFF, Event::MessageType::CHANNEL_VOICE20);
         note_off.set_channel(channel_idx);
         note_off.set_note(note_idx);
         note_off.set_pitch_note(note_idx, tuning);
 
-        const timestamp_t timestamp_to = arrangement_ctx.actual_timestamp + note_event.arrangement_ctx().actual_duration;
+        const timestamp_t timestamp_to = note.actual_timestamp + note.actual_duration;
         engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp_to, note_off});
     }
 
-    for (const auto &art_pair : note_event.expression_ctx().articulations) {
-        if (art_pair.first == ArticulationType::STANDARD) {
+    // The record type is also the legacy map key (freeze rejects a key that differs from its meta type)
+    for (const mpe::ArticulationRecord &meta : articulations) {
+        if (meta.type == ArticulationType::STANDARD) {
             continue;
         }
 
-        const mpe::ArticulationMeta &meta = art_pair.second.meta;
-
-        if (!note_event.pitch_ctx().pitch_curve.empty() && muse::contains(::muse::audio::synth::bend_supported_types, meta.type)) {
-            if (!add_pitch_curve(destination, note_event, meta, channel_idx)) {
+        if (!pitch_curve.empty() && muse::contains(::muse::audio::synth::bend_supported_types, meta.type)) {
+            if (!add_pitch_curve(destination, note, pitch_curve, meta, channel_idx)) {
                 return false;
             }
             continue;
@@ -299,7 +311,7 @@ bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe
                 throw std::invalid_argument("ChannelMap channel exceeds FluidSynth channel limit");
             }
             const mpe::timestamp_t timestamp =
-                arrangement_ctx.actual_timestamp + arrangement_ctx.actual_duration * 0.1; // add offset for Sostenuto to take effect
+                note.actual_timestamp + note.actual_duration * 0.1; // add offset for Sostenuto to take effect
             engine::emplace_checked(sostenuto_time_and_durations[channel_idx], TimestampAndDuration{timestamp, meta.overall_duration});
             continue;
         }
@@ -308,7 +320,7 @@ bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe
     return true;
 }
 
-void FluidSequencer::add_pedal_event(engine::MidiTimeline &destination, const mpe::ArticulationMeta &meta, const channel_t channel_idx) {
+void FluidSequencer::add_pedal_event(engine::MidiTimeline &destination, const mpe::ArticulationRecord &meta, const channel_t channel_idx) {
     //! NOTE: Endless pedals are not currently supported by SND instrument
     //! Otherwise, we will get infinite sustain
     if (use_dynamic_events_ && meta.has_start() && !meta.has_end()) {
@@ -324,28 +336,6 @@ void FluidSequencer::add_pedal_event(engine::MidiTimeline &destination, const mp
     }
 }
 
-void FluidSequencer::add_control_change_event(engine::MidiTimeline &destination, const mpe::timestamp_t timestamp,
-                                              const mpe::ControllerChangeEvent &event) {
-    const channel_t last_channel_idx = channels_.channel_count();
-
-    for (channel_t channel_idx = 0; channel_idx < last_channel_idx; ++channel_idx) {
-        switch (event.type) {
-            case mpe::ControllerChangeEvent::MODULATION:
-                add_control_change(destination, timestamp, midi::modwheel_controller, channel_idx,
-                                   static_cast<uint32_t>(event.val * 127.f));
-                break;
-            case mpe::ControllerChangeEvent::SUSTAIN_PEDAL_ON_OFF:
-                add_control_change(destination, timestamp, midi::sustain_pedal_controller, channel_idx,
-                                   static_cast<uint32_t>(event.val * 127.f));
-                break;
-            case mpe::ControllerChangeEvent::PITCH_BEND:
-                add_pitch_bend(destination, timestamp, channel_idx, static_cast<uint32_t>(event.val * 16383.f));
-                break;
-            case mpe::ControllerChangeEvent::UNDEFINED: break;
-        }
-    }
-}
-
 void FluidSequencer::add_control_change(engine::MidiTimeline &destination, const mpe::timestamp_t timestamp, const int midi_control_idx,
                                         const channel_t channel_idx, const uint32_t value) {
     midi::Event cc(Event::Opcode::CONTROL_CHANGE, Event::MessageType::CHANNEL_VOICE10);
@@ -356,28 +346,29 @@ void FluidSequencer::add_control_change(engine::MidiTimeline &destination, const
     engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp, cc});
 }
 
-bool FluidSequencer::add_pitch_curve(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event,
-                                     const mpe::ArticulationMeta &art_meta, const channel_t channel_idx) {
+bool FluidSequencer::add_pitch_curve(engine::MidiTimeline &destination, const mpe::NoteRecord &note,
+                                     const std::span<const mpe::CurvePoint> pitch_curve, const mpe::ArticulationRecord &art_meta,
+                                     const channel_t channel_idx) {
     constexpr std::uint32_t k_poll_stride = 4096;
     std::uint32_t work = 0;
 
-    const timestamp_t note_timestamp_to = note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
+    const timestamp_t note_timestamp_to = note.actual_timestamp + note.actual_duration;
     const timestamp_t pitch_bend_timestamp_to = std::min(art_meta.timestamp + art_meta.overall_duration, note_timestamp_to);
 
     add_pitch_bend(destination, pitch_bend_timestamp_to, channel_idx, 8192);
 
-    auto curr_it = note_event.pitch_ctx().pitch_curve.cbegin();
+    auto curr_it = pitch_curve.begin();
     auto next_it = std::next(curr_it);
-    auto end_it = note_event.pitch_ctx().pitch_curve.cend();
+    auto end_it = pitch_curve.end();
 
     int prev_bend_value = -1;
 
     for (; next_it != end_it; curr_it = next_it, next_it = std::next(curr_it)) {
-        const int curr_value = pitch_bend_level(curr_it->second);
-        const int next_value = pitch_bend_level(next_it->second);
+        const int curr_value = pitch_bend_level(curr_it->value);
+        const int next_value = pitch_bend_level(next_it->value);
 
-        const timestamp_t curr_time = art_meta.timestamp + art_meta.overall_duration * percentage_to_factor(curr_it->first);
-        const timestamp_t next_time = art_meta.timestamp + art_meta.overall_duration * percentage_to_factor(next_it->first);
+        const timestamp_t curr_time = art_meta.timestamp + art_meta.overall_duration * percentage_to_factor(curr_it->at);
+        const timestamp_t next_time = art_meta.timestamp + art_meta.overall_duration * percentage_to_factor(next_it->at);
 
         using namespace muse::interpolation;
         const Point curr_point{static_cast<double>(curr_time), static_cast<double>(curr_value)};
@@ -385,7 +376,7 @@ bool FluidSequencer::add_pitch_curve(engine::MidiTimeline &destination, const mp
 
         //! NOTE: Increasing this number results in fewer points being interpolated
         constexpr mpe::pitch_level_t point_weight = mpe::pitch_level_step / 25;
-        size_t point_count = std::abs(next_it->second - curr_it->second) / point_weight;
+        size_t point_count = std::abs(next_it->value - curr_it->value) / point_weight;
         point_count = std::max(point_count, size_t(1));
 
         const std::vector<Point> points = lerp(curr_point, next_point, point_count);
@@ -462,42 +453,35 @@ bool FluidSequencer::add_sostenuto_events(engine::MidiTimeline &destination,
     return true;
 }
 
-channel_t FluidSequencer::resolve_channel(const mpe::NoteEvent &note_event) const {
-    return channels_.resolve_channel_for_event(note_event);
-}
-
 note_idx_t FluidSequencer::note_index(const mpe::pitch_level_t pitch_level) const {
     float step_count = mpe::zero_pitch_level_midi_equivalent + pitch_level / static_cast<float>(mpe::pitch_level_step);
 
     return std::clamp(step_count, 0.f, 127.f);
 }
 
-tuning_t FluidSequencer::note_tuning(const mpe::NoteEvent &note_event, const int note_idx) const {
+tuning_t FluidSequencer::note_tuning(const mpe::pitch_level_t nominal_pitch_level, const int note_idx) const {
     int semitones_count = note_idx - mpe::zero_pitch_level_midi_equivalent;
 
-    mpe::pitch_level_t tuning_pitch_level = note_event.pitch_ctx().nominal_pitch_level - semitones_count * mpe::pitch_level_step;
+    mpe::pitch_level_t tuning_pitch_level = nominal_pitch_level - semitones_count * mpe::pitch_level_step;
 
     return tuning_pitch_level / static_cast<float>(mpe::pitch_level_step);
 }
 
-velocity_t FluidSequencer::note_velocity(const mpe::NoteEvent &note_event) const {
+velocity_t FluidSequencer::note_velocity(const mpe::NoteRecord &note, const std::span<const mpe::CurvePoint> expression_curve) const {
     static constexpr midi::velocity_t max_supported_velocity = std::numeric_limits<midi::velocity_t>::max();
 
-    const mpe::ExpressionContext &expression_ctx = note_event.expression_ctx();
-
-    if (expression_ctx.velocity_override.has_value()) {
-        velocity_t velocity = real_round(expression_ctx.velocity_override.value() * max_supported_velocity, 0);
+    if (note.velocity_override.has_value()) {
+        velocity_t velocity = real_round(note.velocity_override.value() * max_supported_velocity, 0);
         return std::clamp<velocity_t>(velocity, 0, max_supported_velocity);
     }
 
     if (use_dynamic_events_) {
-        float fraction = expression_ctx.expression_curve.empty() ? 0.5f : expression_ctx.expression_curve.velocity_fraction();
+        float fraction = expression_curve.empty() ? 0.5f : mpe::velocity_fraction(expression_curve);
         velocity_t result = real_round(fraction * max_supported_velocity, 0);
         return std::clamp<velocity_t>(result, 0, max_supported_velocity);
     }
 
-    dynamic_level_t dynamic_level = expression_ctx.expression_curve.empty() ? expression_ctx.nominal_dynamic_level :
-                                                                              expression_ctx.expression_curve.max_amplitude_level();
+    dynamic_level_t dynamic_level = expression_curve.empty() ? note.nominal_dynamic_level : mpe::max_amplitude_level(expression_curve);
     return expression_level(dynamic_level) << 9; // midi::Event::scaleUp(7,16)
 }
 

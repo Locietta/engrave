@@ -36,12 +36,12 @@ ProcessMode AbstractSynthesizer::mode() const { return mode_; }
 
 const AudioInputParams &AbstractSynthesizer::params() const { return params_; }
 
-void AbstractSynthesizer::setup(const mpe::PlaybackData &playback_data) {
+void AbstractSynthesizer::setup(const mpe::TrackEvents &events) {
 
-    setup_data_ = playback_data.setup_data;
+    setup_data_ = events.setup;
 
-    setup_sound(playback_data.setup_data);
-    setup_events(playback_data);
+    setup_sound(events.setup);
+    setup_events(events);
 }
 
 void AbstractSynthesizer::prepare_to_play() {}

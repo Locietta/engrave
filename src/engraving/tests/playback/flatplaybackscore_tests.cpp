@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Step 4b of the playback DoD refactor: the flat MPE store, its freeze rules, dual execution through
-// the playback model and the dump B extractors, plus the renderer's sink contract.
+// Steps 4b-4c of the playback DoD refactor: the flat MPE store, its freeze rules, the export's builder and,
+// in the harness build, dual execution through the playback model, against the legacy oracle through the
+// dump B extractors; plus the renderer's sink contract.
 
 #include <algorithm>
 #include <bit>
@@ -17,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
@@ -50,6 +52,20 @@ struct RecordingSink {
 };
 
 static_assert(PlaybackEventSink<RecordingSink>);
+
+// The same list through the legacy sink and the flat freeze, as dual execution does, without the
+// test-only DualEventsSink (so these tests also build without the harness)
+struct BothSink {
+    EventsMapSink legacy;
+    FlatEventsSink flat;
+
+    void operator()(const timestamp_t key, PlaybackEventList &&list) const {
+        flat(key, PlaybackEventList(list));
+        legacy(key, std::move(list));
+    }
+};
+
+static_assert(PlaybackEventSink<BothSink>);
 
 ArticulationAppliedData applied(const ArticulationType type, const timestamp_t timestamp, const duration_t duration) {
     return ArticulationAppliedData(ArticulationMeta(type, ArticulationPattern{}, timestamp, duration), 0, hundred_percent);
@@ -130,7 +146,7 @@ struct DualFixture {
     InstrumentTrackId id{ID(7), String(u"violin")};
 
     void emit(const timestamp_t key, PlaybackEventList list) {
-        DualEventsSink sink{{legacy.origin_events}, {flat.track(id), flat.progress}};
+        BothSink sink{{legacy.origin_events}, {flat.track(id), flat.progress}};
         sink(key, std::move(list));
     }
 
@@ -414,6 +430,44 @@ TEST(FlatPlaybackStoreTests, CorruptedFlatRecordFailsProjection) {
     }
 }
 
+// Step 4c: the sequencer lowers the records in (group, seq) order, whatever order the groups were emitted in
+TEST(FlatPlaybackStoreTests, SequencerLowersRecordsInGroupOrder) {
+    struct TimelineSequencer : muse::audio::synth::FluidSequencer {
+        using FluidSequencer::main_stream_events_;
+    };
+
+    const auto lower = [](const TrackEvents &events) {
+        TimelineSequencer sequencer;
+        sequencer.init(events.setup, std::nullopt, false, muse::audio::synth::k_fluid_channel_count);
+        sequencer.load(events);
+        std::vector<std::pair<timestamp_t, std::uint32_t>> timeline;
+        for (const auto &entry : sequencer.main_stream_events_.events) timeline.emplace_back(entry.timestamp, entry.event.note());
+        return timeline;
+    };
+    // Two groups whose notes start together: the legacy map order puts group 0's note first
+    const auto note_at = [](const pitch_level_t pitch) { return make_note(100, pitch, false); };
+
+    for (const std::uint32_t count : {1u, 6000u}) {
+        PlaybackData legacy;
+        legacy.setup_data = PlaybackSetupData(String(u"piano"), SoundCategory::KEYBOARDS, StringList{});
+        TrackEvents emitted;
+        emitted.setup = legacy.setup_data;
+        FreezeProgress progress;
+        // Emission in descending group order; each group holds one note, all at the same actual time
+        for (std::uint32_t i = 0; i < count; ++i) {
+            const timestamp_t group = static_cast<timestamp_t>(count - i) * 10;
+            const pitch_level_t pitch = static_cast<pitch_level_t>(2000 + (i % 24) * pitch_level_step);
+            PlaybackEventList list{note_at(pitch), note_at(pitch + pitch_level_step)};
+            legacy.origin_events[group].insert(legacy.origin_events[group].end(), list.begin(), list.end());
+            freeze_events(emitted, group, list, progress);
+        }
+        const auto expected = lower(freeze_playback_data(legacy));
+        const auto actual = lower(emitted);
+        ASSERT_FALSE(expected.empty());
+        EXPECT_EQ(actual, expected) << count;
+    }
+}
+
 struct FlatPlaybackModelTests : ::testing::Test {
 protected:
     void SetUp() override {
@@ -431,13 +485,8 @@ protected:
         ON_CALL(*repository_, default_profile(_)).WillByDefault(Return(profile_));
     }
 
-    // Loads with dual execution and returns the two dump B projections
-    std::pair<std::string, std::string> project(MasterScore *score, bool metronome, PlaybackScore &flat) {
-        score->init_automation();
-        PlaybackModel model(repository_.get());
-        model.set_is_metronome_enabled(metronome);
-        model.load(score, {}, &flat);
-
+    // The legacy oracle's dump B projection of a loaded model
+    static std::string legacy_projection(PlaybackModel &model) {
         const InstrumentTrackIdSet ids = model.existing_track_id_set();
         std::vector<InstrumentTrackId> ordered(ids.cbegin(), ids.cend());
         std::sort(ordered.begin(), ordered.end());
@@ -447,15 +496,39 @@ protected:
         }
         music::test::LegacyProjection legacy;
         legacy.score(tracks);
-        return {legacy.out, DualFixture::flat_projection(flat)};
+        return legacy.out;
     }
+
+    // Builds the export's flat store and, separately, loads the legacy oracle; returns both dump B projections
+    std::pair<std::string, std::string> project_built(MasterScore *score, bool metronome, PlaybackScore &flat) {
+        score->init_automation();
+        PlaybackScoreBuilder builder{repository_.get()};
+        builder.metronome_enabled = metronome;
+        flat = builder.build(score);
+        PlaybackModel model(repository_.get());
+        model.set_is_metronome_enabled(metronome);
+        model.load(score);
+        return {legacy_projection(model), DualFixture::flat_projection(flat)};
+    }
+
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    // Loads with dual execution (test only) and returns the two dump B projections
+    std::pair<std::string, std::string> project(MasterScore *score, bool metronome, PlaybackScore &flat) {
+        score->init_automation();
+        PlaybackModel model(repository_.get());
+        model.set_is_metronome_enabled(metronome);
+        model.load(score, {}, &flat);
+        return {legacy_projection(model), DualFixture::flat_projection(flat)};
+    }
+#endif
 
     ArticulationsProfilePtr profile_;
     std::shared_ptr<NiceMock<ArticulationProfilesRepositoryMock>> repository_;
 };
 
-TEST_F(FlatPlaybackModelTests, DualExecutionMatchesTheLegacyModel) {
-    const std::vector<std::pair<String, bool>> fixtures{
+namespace {
+const std::vector<std::pair<String, bool>> &model_fixtures() {
+    static const std::vector<std::pair<String, bool>> fixtures{
         {u"playback/playbackmodel_data/dynamics/dynamics.mscx", false},
         {u"playback/playbackmodel_data/spanners/spanners.mscx", false},
         {u"playback/playbackmodel_data/repeat_and_tremolo/repeat_and_tremolo.mscx", false},
@@ -466,7 +539,86 @@ TEST_F(FlatPlaybackModelTests, DualExecutionMatchesTheLegacyModel) {
         {u"playback/playbackcontext_data/lyrics_multiverses.mscx", false},
         {u"playback/playbackcontext_data/dynamics/hairpins_and_repeats.mscx", false},
     };
-    for (const auto &[path, metronome] : fixtures) {
+    return fixtures;
+}
+
+std::uint64_t record_count(const PlaybackScore &flat) {
+    std::uint64_t records = 0;
+    for (const auto &[id, track] : flat.tracks) {
+        records += track.notes.size() + track.articulations.size() + track.curve_points.size() + track.cold.size() +
+                   track.empty_groups.size() + track.dynamic_points.size();
+    }
+    return records;
+}
+} // namespace
+
+// Step 4c: the export's builder walks the score once into the flat store, with no legacy model; the
+// legacy model loaded separately is the oracle
+TEST_F(FlatPlaybackModelTests, BuilderMatchesTheLegacyOracle) {
+    for (const auto &[path, metronome] : model_fixtures()) {
+        MasterScore *score = ScoreRW::read_score(path);
+        ASSERT_TRUE(score) << path.to_std_string();
+        PlaybackScore flat;
+        const auto [legacy, projected] = project_built(score, metronome, flat);
+        std::size_t notes = 0;
+        for (const auto &[id, track] : flat.tracks) notes += track.notes.size();
+        EXPECT_GT(notes, 0u) << path.to_std_string();
+        EXPECT_NE(legacy.find("\nnote "), std::string::npos) << path.to_std_string();
+        EXPECT_EQ(projected, legacy) << path.to_std_string();
+        EXPECT_FALSE(flat.progress.checkpoint) << path.to_std_string();
+        delete score;
+    }
+}
+
+TEST_F(FlatPlaybackModelTests, BuilderCarriesDistinctPresets) {
+    const String fixture = String::from_utf8(ENGRAVING_TESTS_DATA_ROOT) + u"/../../../tests/data/playback_dod/cold_preset.mscx";
+    MasterScore *score = ScoreRW::read_score(fixture, true);
+    ASSERT_TRUE(score);
+    PlaybackScore flat;
+    const auto [legacy, projected] = project_built(score, false, flat);
+    EXPECT_EQ(projected, legacy);
+    EXPECT_NE(legacy.find("preset "), std::string::npos);
+    delete score;
+}
+
+// The builder polls the walk exactly as the legacy model does, plus one poll per FreezeProgress::k_stride records
+TEST_F(FlatPlaybackModelTests, BuilderPollsTheWalkAndTheFreeze) {
+    MasterScore *score = ScoreRW::read_score(u"playback/playbackmodel_data/spanners/spanners.mscx");
+    ASSERT_TRUE(score);
+    score->init_automation();
+    std::uint64_t legacy = 0, built = 0;
+    {
+        PlaybackModel model(repository_.get());
+        model.set_is_metronome_enabled(false);
+        model.load(score, [&legacy] { ++legacy; });
+    }
+    PlaybackScoreBuilder builder{repository_.get()};
+    const PlaybackScore flat = builder.build(score, [&built] { ++built; });
+    EXPECT_FALSE(flat.progress.checkpoint);
+    const std::uint64_t records = record_count(flat);
+    ASSERT_GT(records, 0u);
+    EXPECT_EQ(built - legacy, records / FreezeProgress::k_stride);
+
+    // A throwing checkpoint aborts the build
+    struct Cancelled {};
+
+    std::uint64_t polls = 0;
+    EXPECT_THROW(std::ignore = builder.build(score,
+                                             [&polls] {
+                                                 if (++polls == 50) throw Cancelled{};
+                                             }),
+                 Cancelled);
+    delete score;
+}
+
+TEST_F(FlatPlaybackModelTests, BuilderOfAnEmptyOrNullScoreIsEmpty) {
+    const PlaybackScoreBuilder builder{repository_.get()};
+    EXPECT_TRUE(builder.build(nullptr).tracks.empty());
+}
+
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+TEST_F(FlatPlaybackModelTests, DualExecutionMatchesTheLegacyModel) {
+    for (const auto &[path, metronome] : model_fixtures()) {
         MasterScore *score = ScoreRW::read_score(path);
         ASSERT_TRUE(score) << path.to_std_string();
         PlaybackScore flat;
@@ -535,11 +687,7 @@ TEST_F(FlatPlaybackModelTests, DualExecutionPollsInsideTheFreeze) {
     const std::uint64_t dual = polls(&flat);
     EXPECT_FALSE(flat.progress.checkpoint);
 
-    std::uint64_t records = 0;
-    for (const auto &[id, track] : flat.tracks) {
-        records += track.notes.size() + track.articulations.size() + track.curve_points.size() + track.cold.size() +
-                   track.empty_groups.size() + track.dynamic_points.size();
-    }
+    const std::uint64_t records = record_count(flat);
     ASSERT_GT(records, 0u);
     EXPECT_EQ(dual - legacy, (FreezeProgress::k_stride - 1 + records) / FreezeProgress::k_stride);
 }
@@ -553,6 +701,7 @@ TEST_F(FlatPlaybackModelTests, DualExecutionNeedsAFreshModel) {
     EXPECT_THROW(model.load(score, {}, &flat), std::logic_error);
     delete score;
 }
+#endif
 
 // The renderer emits an empty list's key (step-4a review finding 2)
 TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys) {
@@ -595,7 +744,7 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
     PlaybackData data;
     PlaybackScore flat;
     const InstrumentTrackId id{ID(1), String(u"test")};
-    DualEventsSink dual{{data.origin_events}, {flat.track(id), flat.progress}};
+    BothSink dual{{data.origin_events}, {flat.track(id), flat.progress}};
     renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, dual);
     renderer.render(chord, 1000, 2000, level, ctx, profile_, dual);
     ASSERT_EQ(flat.tracks.front().second.empty_groups.size(), 1u);
