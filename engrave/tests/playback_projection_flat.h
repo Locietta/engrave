@@ -154,8 +154,10 @@ struct FlatProjection {
     }
 
     void score(const mu::engraving::PlaybackScore &score) {
-        out << "projection-v1\n";
+        out << "projection-v2\n";
         for (const auto &[id, events] : score.tracks) track(id, events);
+        // The terminator lets a reader reject a truncated projection
+        out << "end-projection " << score.tracks.size() << '\n';
     }
 
     std::string str() const { return out.str(); }

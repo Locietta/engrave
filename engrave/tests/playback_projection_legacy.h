@@ -128,8 +128,9 @@ struct LegacyProjection {
     }
 
     void score(std::span<const LegacyProjectionTrack> tracks) {
-        put("projection-v1\n");
+        put("projection-v2\n");
         for (const auto &t : tracks) track(t);
+        put("end-projection {}\n", tracks.size());
     }
 };
 } // namespace music::test
