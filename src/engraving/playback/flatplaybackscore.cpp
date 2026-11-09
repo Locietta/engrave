@@ -2,6 +2,7 @@
 #include "flatplaybackscore.h"
 
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <span>
 
@@ -69,6 +70,38 @@ const muse::mpe::TrackEvents *PlaybackScore::find(const InstrumentTrackId &id) c
     return it == tracks.end() || it->first != id ? nullptr : &it->second;
 }
 
+void PlaybackScore::release(const std::function<void()> &checkpoint) {
+    std::exception_ptr error;
+    std::size_t remaining = 4096;
+    const auto poll = [&] {
+        if (checkpoint && !error) {
+            try {
+                checkpoint();
+            } catch (...) {
+                error = std::current_exception();
+            }
+        }
+    };
+    const auto step = [&] {
+        if (--remaining == 0) {
+            poll();
+            remaining = 4096;
+        }
+    };
+    poll();
+    for (auto &[id, events] : tracks) {
+        while (!events.cold.empty()) {
+            events.cold.pop_back();
+            step();
+        }
+    }
+    if (context) context->release(step);
+    context.reset();
+    tracks.clear();
+    poll();
+    if (error) std::rethrow_exception(error);
+}
+
 PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void()> &checkpoint) const {
     PlaybackScore result;
     if (!score || score->measures()->empty() || !score->last_measure()) {
@@ -84,13 +117,19 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
         checkpoint();
     }
 
-    const PlaybackContextPtr playback_ctx = std::make_shared<PlaybackContext>(score);
+    result.context = std::make_shared<PlaybackContext>(score);
+    const PlaybackContextPtr &playback_ctx = result.context;
     const PlaybackEventsRenderer renderer;
     PlaybackSetupDataResolver setup_resolver;
     FlatStore store{result};
     PlaybackWalk<FlatStore> walk{score,      playback_ctx, renderer,          setup_resolver, profiles_repository,
                                  checkpoint, play_repeats, metronome_enabled, store};
-    walk.update(0, score->last_measure()->end_tick().ticks(), 0, score->ntracks());
+    try {
+        walk.update(0, score->last_measure()->end_tick().ticks(), 0, score->ntracks());
+    } catch (...) {
+        result.release();
+        throw;
+    }
     result.progress.checkpoint = {};
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     result.progress.dump_note = {};
