@@ -42,7 +42,7 @@ static const muse::String playback_context_test_files_dir(u"playback/playbackcon
 static constexpr int ticks_step = 480;
 
 static void expect_levels_match(const DynamicAutomationLayers &actual_layers,
-                                const std::map<timestamp_t, dynamic_level_t> &expected_dynamics) {
+                                const muse::FlatMap<timestamp_t, dynamic_level_t> &expected_dynamics) {
     EXPECT_FALSE(actual_layers.empty());
     for (const auto &layer : actual_layers) {
         for (const auto &[timestamp, expected_level] : expected_dynamics) {
@@ -89,7 +89,7 @@ TEST_F(EngravingPlaybackContextTests, Hairpins_Repeats) {
     constexpr mpe::dynamic_level_t p = dynamic_level_from_type(mpe::DynamicType::P);
     constexpr mpe::dynamic_level_t f = dynamic_level_from_type(mpe::DynamicType::F);
 
-    std::map<timestamp_t, dynamic_level_t> expected_dynamics{
+    muse::FlatMap<timestamp_t, dynamic_level_t> expected_dynamics{
         {timestamp_from_ticks(score, 0), p},
         {timestamp_from_ticks(score, 1920), f},
     };
@@ -140,7 +140,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_MeasureRepeats) {
     const int last_tick = score->end_tick().ticks();
     ctx.update(track0_range.start_track, track0_range.end_track, 0, last_tick);
 
-    std::map<timestamp_t, dynamic_level_t> expected_dynamics{
+    muse::FlatMap<timestamp_t, dynamic_level_t> expected_dynamics{
         // 1st measure
         {timestamp_from_ticks(score, 0), dynamic_level_from_type(mpe::DynamicType::NATURAL)},
 
@@ -213,7 +213,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_OnDifferentVoices) {
     DynamicAutomationLayers actual_layers = ctx.dynamic_level_layers(track_range.start_track, track_range.end_track);
 
     // [THEN] The dynamics match the expectation
-    std::map<layer_idx_t, std::map<timestamp_t, dynamic_level_t>> expected_layers;
+    muse::FlatMap<layer_idx_t, muse::FlatMap<timestamp_t, dynamic_level_t>> expected_layers;
 
     auto add_dyn_to_all_staves_and_voices = [score, part, &expected_layers](mpe::DynamicType dyn, int tick) {
         const TrackRange track_range = part->track_range();
@@ -295,7 +295,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_Overlap) {
     constexpr mpe::dynamic_level_t ff = dynamic_level_from_type(mpe::DynamicType::FF);
     constexpr mpe::dynamic_level_t pp = dynamic_level_from_type(mpe::DynamicType::PP);
 
-    std::map<timestamp_t, dynamic_level_t> expected_dynamics{
+    muse::FlatMap<timestamp_t, dynamic_level_t> expected_dynamics{
         // 1st measure: Diminuendo ff -> pp
         {timestamp_from_ticks(score, 0), ff},
 
@@ -337,7 +337,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_Niente) {
     constexpr mpe::dynamic_level_t f = dynamic_level_from_type(mpe::DynamicType::F);
     constexpr mpe::dynamic_level_t n = dynamic_level_from_type(mpe::DynamicType::PPPPPPPPP);
 
-    std::map<timestamp_t, dynamic_level_t> expected_dynamics{
+    muse::FlatMap<timestamp_t, dynamic_level_t> expected_dynamics{
         // 1st measure: Dim. al niente with 'n' dynamic
         {timestamp_from_ticks(score, 0), f},
         {timestamp_from_ticks(score, 1920), n},
@@ -390,7 +390,7 @@ TEST_F(EngravingPlaybackContextTests, Dynamics_HairpinWithCompound) {
     constexpr int measure_ticks = 1920;
     constexpr int compound_dynamic_ticks = 384;
 
-    std::map<timestamp_t, dynamic_level_t> expected_dynamics{
+    muse::FlatMap<timestamp_t, dynamic_level_t> expected_dynamics{
         // 1st and 2nd measures: fp -> f
         {timestamp_from_ticks(score, 0 * measure_ticks), f},
         {timestamp_from_ticks(score, 0 * measure_ticks + compound_dynamic_ticks), p},
@@ -450,7 +450,7 @@ TEST_F(EngravingPlaybackContextTests, PlayTechniques) {
     // [THEN] The techniques successfully parsed
     constexpr int ticks_per_measure = 1920;
 
-    const std::map<int /*tick*/, PlayingTechniqueType> expected_types{
+    const muse::FlatMap<int /*tick*/, PlayingTechniqueType> expected_types{
         {0, PlayingTechniqueType::PIZZICATO},
         {1440, PlayingTechniqueType::OPEN},
         {ticks_per_measure * 1, PlayingTechniqueType::MUTE},
@@ -533,7 +533,7 @@ TEST_F(EngravingPlaybackContextTests, PlayTechniques_MeasureRepeats) {
     ctx.update(track_range.start_track, track_range.end_track, 0, last_tick);
 
     // [THEN] The playing technique map matches the expectation
-    std::map<int, PlayingTechniqueType> expected_types{
+    muse::FlatMap<int, PlayingTechniqueType> expected_types{
         // 1st measure
         {0, PlayingTechniqueType::NATURAL},
 
@@ -576,7 +576,7 @@ TEST_F(EngravingPlaybackContextTests, SoundFlags_TextArticulations) {
     ctx.update(track_range.start_track, track_range.end_track, 0, last_tick);
 
     // [WHEN] Get the actual articulations
-    std::map<timestamp_t, TextArticulationEventList> actual_articulations =
+    muse::FlatMap<timestamp_t, TextArticulationEventList> actual_articulations =
         ctx.text_articulations(track_range.start_track, track_range.end_track);
 
     // [THEN] Expected articulations
@@ -600,7 +600,7 @@ TEST_F(EngravingPlaybackContextTests, SoundFlags_TextArticulations) {
     espressivo.text = u"Espressivo";
     espressivo.layer_idx = second_staff_layer;
 
-    std::map<timestamp_t, TextArticulationEventList> expected_articulations{
+    muse::FlatMap<timestamp_t, TextArticulationEventList> expected_articulations{
         {timestamp_from_ticks(score, 1920), {sul_tasto1_staff, sul_tasto2_staff}},
         {timestamp_from_ticks(score, 3840), {bartok, pizz}},
         {timestamp_from_ticks(score, 7680), {espressivo}},
@@ -675,14 +675,14 @@ TEST_F(EngravingPlaybackContextTests, SoundFlags_MeasureRepeats) {
     espressivo.text = u"Espressivo";
     bartok.text = u"bartok";
 
-    std::map<timestamp_t, TextArticulationEventList> expected_articulations{
+    muse::FlatMap<timestamp_t, TextArticulationEventList> expected_articulations{
         {timestamp_from_ticks(score, 1920), {espressivo}}, // 2nd measure
         {timestamp_from_ticks(score, 3840), {bartok}},     // 3rd measure
         {timestamp_from_ticks(score, 5760), {espressivo}}, // measure repeat
         {timestamp_from_ticks(score, 7680), {bartok}},     // measure repeat
     };
 
-    std::map<timestamp_t, TextArticulationEventList> actual_articulations =
+    muse::FlatMap<timestamp_t, TextArticulationEventList> actual_articulations =
         ctx.text_articulations(track_range.start_track, track_range.end_track);
     EXPECT_EQ(expected_articulations, actual_articulations);
 
@@ -736,13 +736,13 @@ TEST_F(EngravingPlaybackContextTests, SoundFlags_CancelPlayingTechniques) {
     bartok.text = u"bartok";
     bartok.layer_idx = 0;
 
-    std::map<timestamp_t, TextArticulationEventList> expected_articulations{
+    muse::FlatMap<timestamp_t, TextArticulationEventList> expected_articulations{
         {timestamp_from_ticks(score, 1920), {ordinary}}, // 2nd measure (cancels Pizz.)
         {timestamp_from_ticks(score, 3840), {bartok}},   // 3rd measure
         {timestamp_from_ticks(score, 5760), {ordinary}}, // 4th (canceled by Arco)
     };
 
-    std::map<timestamp_t, TextArticulationEventList> actual_articulations =
+    muse::FlatMap<timestamp_t, TextArticulationEventList> actual_articulations =
         ctx.text_articulations(violin_track_range.start_track, violin_track_range.end_track);
     EXPECT_EQ(expected_articulations, actual_articulations);
 
@@ -810,7 +810,7 @@ TEST_F(EngravingPlaybackContextTests, Lyrics_Multiverses) {
         return e;
     };
 
-    const std::map<timestamp_t, SyllableEventList> expected_events{
+    const muse::FlatMap<timestamp_t, SyllableEventList> expected_events{
         // 1st verse
         {0, {make_syllable(u"Wal", true)}},
         {250000, {make_syllable(u"king")}},
@@ -835,7 +835,7 @@ TEST_F(EngravingPlaybackContextTests, Lyrics_Multiverses) {
         {6500000, {make_syllable(u"world")}},
     };
 
-    const std::map<timestamp_t, SyllableEventList> actual_events = ctx.syllables(track_range.start_track, track_range.end_track);
+    const muse::FlatMap<timestamp_t, SyllableEventList> actual_events = ctx.syllables(track_range.start_track, track_range.end_track);
     EXPECT_EQ(actual_events.size(), expected_events.size());
 
     for (const auto &pair : actual_events) {

@@ -15,8 +15,8 @@
 //! A track is created exactly where the legacy model created its map entry, so every store sees the same tracks
 
 #include <functional>
-#include <map>
-#include <set>
+
+#include <amc/flatset.hpp>
 
 #include "../dom/fret.h"
 #include "../dom/harmony.h"
@@ -28,6 +28,7 @@
 #include "../dom/segment.h"
 #include "../dom/staff.h"
 #include "../types/types.h"
+#include "global/flatmap.h"
 #include "log.h"
 #include "mpe/events.h"
 #include "mpe/iarticulationprofilesrepository.h"
@@ -51,9 +52,9 @@ inline bool is_playback_chord_symbols_track(const InstrumentTrackId &track_id) {
 //! One part's context, applied to each of the part's tracks
 struct PlaybackPartData {
     muse::mpe::DynamicAutomationLayers dynamics;
-    std::map<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets;
-    std::map<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations;
-    std::map<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations;
+    muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables;
 };
 
 template <class Store>
@@ -170,7 +171,7 @@ struct PlaybackWalk {
         }
     }
 
-    void process_segment(const int tick_position_offset, const Segment *segment, const std::set<staff_idx_t> &staff_idx_set,
+    void process_segment(const int tick_position_offset, const Segment *segment, const amc::FlatSet<staff_idx_t> &staff_idx_set,
                          bool is_first_chord_rest_segment_of_measure, ChangedTrackIdSet *track_changes) {
         for (const EngravingItem *item : segment->annotations()) {
             checkpoint();
@@ -280,7 +281,7 @@ struct PlaybackWalk {
         int repeat_position_tick_offset = current_measure_tick - referring_measure_tick;
         int tick_from = tick_position_offset + repeat_position_tick_offset;
 
-        std::set<staff_idx_t> staff_to_process_idx_set{staff_idx};
+        amc::FlatSet<staff_idx_t> staff_to_process_idx_set{staff_idx};
         int chord_rest_segment_num = -1;
 
         for (const Segment *seg = referring_measure->first(); seg; seg = seg->next()) {
@@ -301,9 +302,11 @@ struct PlaybackWalk {
                        ChangedTrackIdSet *track_changes = nullptr) {
         TRACEFUNC;
 
-        std::set<staff_idx_t> staff_to_process_idx_set = score->staff_idx_set_from_range(track_from, track_to, [](const Staff &staff) {
+        const auto dom_staves = score->staff_idx_set_from_range(track_from, track_to, [](const Staff &staff) {
             return staff.is_primary_staff(); // skip linked staves
         });
+        std::ignore = muse::checked_grow<staff_idx_t>(0, dom_staves.size());
+        amc::FlatSet<staff_idx_t> staff_to_process_idx_set(dom_staves.begin(), dom_staves.end());
 
         const muse::mpe::ArticulationsProfilePtr metronome_profile = default_articulation_profile(playback_metronome_track_id());
         // The metronome entry exists before the walk, as the legacy sink construction here always created it

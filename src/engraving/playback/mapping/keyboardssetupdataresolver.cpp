@@ -24,11 +24,13 @@
 
 #include <unordered_set>
 
+#include "playback/utils/sortedtable.h"
+
 using namespace mu::engraving;
 using namespace muse::mpe;
 
 PlaybackSetupData KeyboardsSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const std::unordered_map<std::string, PlaybackSetupData> setup_data_map = {
+    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, PlaybackSetupData>({
         {"celesta", {SoundId::CELESTA, SoundCategory::KEYBOARDS}},
         {"clavichord", {SoundId::CLAVICHORD, SoundCategory::KEYBOARDS, {SoundSubCategory::BAROQUE}}},
         {"clavinet", {SoundId::CLAVICHORD, SoundCategory::KEYBOARDS, {SoundSubCategory::ELECTRIC}}},
@@ -80,7 +82,7 @@ PlaybackSetupData KeyboardsSetupDataResolver::do_resolve(const Instrument *instr
         {"soundtrack-synth",
          {SoundId::SYNTHESIZER, SoundCategory::KEYBOARDS, {SoundSubCategory::ELECTRIC, SoundSubCategory::FX_SOUND_TRACK}}},
         {"sci-fi-synth", {SoundId::SYNTHESIZER, SoundCategory::KEYBOARDS, {SoundSubCategory::ELECTRIC, SoundSubCategory::FX_SCI_FI}}},
-    };
+    });
 
     auto search = setup_data_map.find(instrument->id().to_std_string());
     if (search == setup_data_map.cend()) {

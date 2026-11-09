@@ -23,13 +23,14 @@
 #include "percussionssetupdataresolver.h"
 
 #include "log.h"
+#include "playback/utils/sortedtable.h"
 
 using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
 PlaybackSetupData PercussionsSetupDataResolver::do_resolve(const Instrument *instrument) {
-    static const std::unordered_map<std::string, mpe::PlaybackSetupData> setup_data_map = {
+    static const auto setup_data_map = mu::engraving::make_sorted_table<std::string, mpe::PlaybackSetupData>({
         {"timpani", {SoundId::TIMPANI, SoundCategory::PERCUSSIONS}},
         {"roto-toms", {SoundId::ROTO_TOMS, SoundCategory::PERCUSSIONS}},
         {"tubaphone", {SoundId::TUBAPHONE, SoundCategory::PERCUSSIONS, {SoundSubCategory::METAL}}},
@@ -214,7 +215,7 @@ PlaybackSetupData PercussionsSetupDataResolver::do_resolve(const Instrument *ins
 
         {"percussion-synthesizer",
          {SoundId::SYNTHESIZER, SoundCategory::PERCUSSIONS, {SoundSubCategory::ELECTRIC, SoundSubCategory::PERCUSSIVE}}},
-    };
+    });
 
     auto search = setup_data_map.find(instrument->id().to_std_string());
     if (search == setup_data_map.cend()) {

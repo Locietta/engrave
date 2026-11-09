@@ -27,26 +27,27 @@
 
 #include "../types/types.h"
 #include "mpe/mpetypes.h"
+#include "playback/utils/sortedtable.h"
 
 namespace mu::engraving {
 constexpr muse::mpe::dynamic_level_t natural_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::NATURAL);
 
-inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> ordinary_dynamic_levels{
-    {DynamicType::N, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPPPPP)},
-    {DynamicType::PPPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPP)},
-    {DynamicType::PPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPP)},
-    {DynamicType::PPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPP)},
-    {DynamicType::PPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPP)},
-    {DynamicType::PP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PP)},
-    {DynamicType::P, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::P)},
-    {DynamicType::MP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MP)},
-    {DynamicType::MF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF)},
-    {DynamicType::F, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
-    {DynamicType::FF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
-    {DynamicType::FFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
-    {DynamicType::FFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFF)},
-    {DynamicType::FFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFF)},
-    {DynamicType::FFFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFFF)}};
+inline const auto ordinary_dynamic_levels = mu::engraving::make_sorted_table<DynamicType, muse::mpe::dynamic_level_t>(
+    {{DynamicType::N, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPPPPP)},
+     {DynamicType::PPPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPPP)},
+     {DynamicType::PPPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPPP)},
+     {DynamicType::PPPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPPP)},
+     {DynamicType::PPP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PPP)},
+     {DynamicType::PP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::PP)},
+     {DynamicType::P, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::P)},
+     {DynamicType::MP, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MP)},
+     {DynamicType::MF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF)},
+     {DynamicType::F, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+     {DynamicType::FF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+     {DynamicType::FFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+     {DynamicType::FFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFF)},
+     {DynamicType::FFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFF)},
+     {DynamicType::FFFFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFFFFF)}});
 
 inline bool is_ordinary_dynamic_type(const DynamicType type) {
     return ::mu::engraving::ordinary_dynamic_levels.find(type) != ::mu::engraving::ordinary_dynamic_levels.cend();
@@ -63,15 +64,15 @@ dynamic_level_from_ordinary_type(const DynamicType type,
     return def_level;
 }
 
-inline const std::unordered_map<DynamicType, muse::mpe::dynamic_level_t> single_note_dynamic_levels{
-    {DynamicType::SF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
-    {DynamicType::SFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
-    {DynamicType::SFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
-    {DynamicType::SFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
-    {DynamicType::SFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
-    {DynamicType::SFFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
-    {DynamicType::RFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
-    {DynamicType::RF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)}};
+inline const auto single_note_dynamic_levels = mu::engraving::make_sorted_table<DynamicType, muse::mpe::dynamic_level_t>(
+    {{DynamicType::SF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+     {DynamicType::SFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+     {DynamicType::SFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+     {DynamicType::SFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FF)},
+     {DynamicType::SFFF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+     {DynamicType::SFFFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::FFF)},
+     {DynamicType::RFZ, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)},
+     {DynamicType::RF, muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::F)}});
 
 inline bool is_single_note_dynamic_type(const DynamicType type) {
     return ::mu::engraving::single_note_dynamic_levels.find(type) != ::mu::engraving::single_note_dynamic_levels.cend();
@@ -95,10 +96,11 @@ struct CompoundDynamic {
     bool is_valid() const { return from != DynamicType::OTHER && to != DynamicType::OTHER; }
 };
 
-inline const std::unordered_map<DynamicType, CompoundDynamic> compound_dynamics{{DynamicType::FP, {DynamicType::F, DynamicType::P}},
-                                                                                {DynamicType::PF, {DynamicType::P, DynamicType::F}},
-                                                                                {DynamicType::SFP, {DynamicType::F, DynamicType::P}},
-                                                                                {DynamicType::SFPP, {DynamicType::F, DynamicType::PP}}};
+inline const auto compound_dynamics =
+    mu::engraving::make_sorted_table<DynamicType, CompoundDynamic>({{DynamicType::FP, {DynamicType::F, DynamicType::P}},
+                                                                    {DynamicType::PF, {DynamicType::P, DynamicType::F}},
+                                                                    {DynamicType::SFP, {DynamicType::F, DynamicType::P}},
+                                                                    {DynamicType::SFPP, {DynamicType::F, DynamicType::PP}}});
 
 inline bool is_compound_dynamic_type(const DynamicType type) {
     return ::mu::engraving::compound_dynamics.find(type) != ::mu::engraving::compound_dynamics.cend();

@@ -37,6 +37,7 @@
 #include "dom/stafftext.h"
 #include "engraving/automation/automationdata.h"
 #include "global/containers.h"
+#include "global/flatmap.h"
 #include "global/realfn.h"
 #include "log.h"
 #include "types/constants.h"
@@ -61,9 +62,9 @@ static dynamic_level_t to_dynamic_level(double normalized_value) {
 
 template <typename ByTrackMap, typename ResultMap, typename MergeFn>
 static void collect_by_track_range(const ByTrackMap &by_track_map, const track_idx_t track_from, const track_idx_t track_to,
-                                   const Score *score, const std::set<track_idx_t> &used_tracks, ResultMap &result, MergeFn merge) {
+                                   const Score *score, const amc::FlatSet<track_idx_t> &used_tracks, ResultMap &result, MergeFn merge) {
     for (auto it = by_track_map.lower_bound(track_from); it != by_track_map.end() && it->first < track_to; ++it) {
-        if (!muse::contains(used_tracks, it->first)) {
+        if (!used_tracks.contains(it->first)) {
             continue;
         }
 
@@ -135,9 +136,9 @@ muse::mpe::timestamp_t PlaybackContext::find_playing_technique_timestamp(const t
     return -1;
 }
 
-std::map<timestamp_t, SoundPresetChangeEventList> PlaybackContext::sound_presets(const track_idx_t track_from,
-                                                                                 const track_idx_t track_to) const {
-    std::map<timestamp_t, SoundPresetChangeEventList> result;
+muse::FlatMap<timestamp_t, SoundPresetChangeEventList> PlaybackContext::sound_presets(const track_idx_t track_from,
+                                                                                      const track_idx_t track_to) const {
+    muse::FlatMap<timestamp_t, SoundPresetChangeEventList> result;
 
     collect_by_track_range(sound_presets_by_track_, track_from, track_to, score_, used_tracks_, result,
                            [](SoundPresetChangeEventList &list, const SoundPresetChangeEventList &events) {
@@ -162,9 +163,9 @@ SoundPresetChangeEventList PlaybackContext::sound_presets(const track_idx_t trac
     return it->second;
 }
 
-std::map<timestamp_t, TextArticulationEventList> PlaybackContext::text_articulations(const track_idx_t track_from,
-                                                                                     const track_idx_t track_to) const {
-    std::map<timestamp_t, TextArticulationEventList> result;
+muse::FlatMap<timestamp_t, TextArticulationEventList> PlaybackContext::text_articulations(const track_idx_t track_from,
+                                                                                          const track_idx_t track_to) const {
+    muse::FlatMap<timestamp_t, TextArticulationEventList> result;
 
     collect_by_track_range(text_articulations_by_track_, track_from, track_to, score_, used_tracks_, result,
                            [](TextArticulationEventList &list, const TextArticulationEvent &event) { list.push_back(event); });
@@ -190,8 +191,8 @@ TextArticulationEvent PlaybackContext::text_articulation(const track_idx_t track
     return result;
 }
 
-std::map<timestamp_t, SyllableEventList> PlaybackContext::syllables(const track_idx_t track_from, const track_idx_t track_to) const {
-    std::map<timestamp_t, SyllableEventList> result;
+muse::FlatMap<timestamp_t, SyllableEventList> PlaybackContext::syllables(const track_idx_t track_from, const track_idx_t track_to) const {
+    muse::FlatMap<timestamp_t, SyllableEventList> result;
 
     collect_by_track_range(syllables_by_track_, track_from, track_to, score_, used_tracks_, result,
                            [](SyllableEventList &list, const SyllableEvent &event) { list.push_back(event); });
@@ -332,7 +333,7 @@ void PlaybackContext::clear(const track_idx_t track_from, const track_idx_t trac
     erase_tick_range_by_track(play_techniques_by_track_);
     erase_tick_range_by_track(multi_verse_lyrics_position_map_);
 
-    muse::remove_if(current_verse_num_by_chord_rest_, [track_from, track_to, tick_from, tick_to](const auto &pair) {
+    std::erase_if(current_verse_num_by_chord_rest_, [track_from, track_to, tick_from, tick_to](const auto &pair) {
         const track_idx_t track = pair.first->track();
         const int tick = pair.first->tick().ticks();
         return track >= track_from && track < track_to && tick >= tick_from && tick <= tick_to;
@@ -384,7 +385,7 @@ void PlaybackContext::update_sound_preset_and_text_articulation_map(const Part *
         }
 
         if (flag->apply_to_all_staves()) {
-            return !muse::contains(flags_on_segment, staff_idx);
+            return !flags_on_segment.contains(staff_idx);
         }
 
         return false;
@@ -466,7 +467,8 @@ void PlaybackContext::update_syllable_map(const TextBase *text, const int segmen
 
 void PlaybackContext::handle_segment_annotations(const Segment *segment, const int segment_position_tick, const track_idx_t track_from,
                                                  const track_idx_t track_to) {
-    std::unordered_map<const Part *, SoundFlagMap> sound_flags_by_part;
+    const auto &parts = score_->parts();
+    std::vector<SoundFlagMap> sound_flags_by_part(parts.size());
 
     for (const EngravingItem *annotation : segment->annotations()) {
         if (!annotation || !annotation->part()) {
@@ -492,15 +494,16 @@ void PlaybackContext::handle_segment_annotations(const Segment *segment, const i
         if (annotation->is_staff_text()) {
             if (const SoundFlag *flag = to_staff_text(annotation)->sound_flag()) {
                 if (sound_flag_playable(flag)) {
-                    sound_flags_by_part[annotation_part].emplace(flag->staff_idx(), flag);
+                    const auto part_index = std::find(parts.begin(), parts.end(), annotation_part) - parts.begin();
+                    sound_flags_by_part[part_index].emplace(flag->staff_idx(), flag);
                 }
             }
         }
     }
 
-    for (const auto &pair : sound_flags_by_part) {
-        const Part *part = pair.first;
-        const SoundFlagMap &flags_on_segment = pair.second;
+    for (std::size_t i = 0; i < parts.size(); ++i) {
+        const Part *part = parts[i];
+        const SoundFlagMap &flags_on_segment = sound_flags_by_part[i];
 
         if (!flags_on_segment.empty()) {
             update_sound_preset_and_text_articulation_map(part, flags_on_segment, segment_position_tick);
@@ -523,6 +526,7 @@ void PlaybackContext::handle_segment_elements(const RepeatSegment *repeat, const
         }
 
         if (item->is_chord_rest()) {
+            std::ignore = muse::checked_grow<track_idx_t>(used_tracks_.size(), 1);
             used_tracks_.insert(track);
 
             const ChordRest *chord_rest = to_chord_rest(item);
@@ -537,7 +541,9 @@ void PlaybackContext::handle_segment_elements(const RepeatSegment *repeat, const
                 current_verse_num_by_chord_rest_[chord_rest] = 0;
                 lyrics = chord_rest->lyrics(0);
                 if (chord_rest->lyrics().size() > 1) {
-                    multi_verse_lyrics_position_map_[track].insert(chord_rest->tick().ticks());
+                    auto &positions = multi_verse_lyrics_position_map_[track];
+                    std::ignore = muse::checked_grow<int>(positions.size(), 1);
+                    positions.insert(chord_rest->tick().ticks());
                 }
             } else if (has_only_one_lyrics_verse(repeat, track)) {
                 lyrics = chord_rest->lyrics(0);
@@ -568,11 +574,11 @@ static void copy_items_in_range(ItemsMap &source, const int range_start_tick, co
         new_items.insert_or_assign(tick, it->second);
     }
 
-    source.merge(std::move(new_items));
+    source.insert(new_items.begin(), new_items.end());
 }
 
 template <typename ItemsMap>
-static void copy_items_in_range(std::map<track_idx_t, ItemsMap> &source, const track_idx_t track_from, const track_idx_t track_to,
+static void copy_items_in_range(muse::FlatMap<track_idx_t, ItemsMap> &source, const track_idx_t track_from, const track_idx_t track_to,
                                 const int range_start_tick, const int range_end_tick, const int new_items_offset_tick) {
     for (auto it = source.lower_bound(track_from); it != source.end() && it->first < track_to; ++it) {
         copy_items_in_range(it->second, range_start_tick, range_end_tick, new_items_offset_tick);
@@ -676,7 +682,7 @@ template <class Container>
 void drain_context(Container &items, const std::function<void()> &step) {
     while (!items.empty()) {
         if constexpr (requires { typename Container::mapped_type; }) {
-            auto &value = items.begin()->second;
+            auto &value = std::prev(items.end())->second;
             if constexpr (requires {
                               value.begin();
                               value.erase(value.begin());
@@ -687,7 +693,7 @@ void drain_context(Container &items, const std::function<void()> &step) {
         if constexpr (requires { items.pop_back(); })
             items.pop_back();
         else
-            items.erase(items.begin());
+            items.erase(std::prev(items.end()));
         step();
     }
 }
@@ -695,12 +701,14 @@ void drain_context(Container &items, const std::function<void()> &step) {
 
 void PlaybackContext::release(const std::function<void()> &step) {
     drain_context(used_tracks_, step);
-    drain_context(dynamics_curve_by_track_, step);
+    dynamics_curve_by_track_.clear();
+    step();
     drain_context(sound_presets_by_track_, step);
     drain_context(text_articulations_by_track_, step);
     drain_context(syllables_by_track_, step);
     drain_context(play_techniques_by_track_, step);
-    drain_context(current_verse_num_by_chord_rest_, step);
+    current_verse_num_by_chord_rest_.clear();
+    step();
     drain_context(multi_verse_lyrics_position_map_, step);
 }
 } // namespace mu::engraving

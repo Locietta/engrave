@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "global/flatmap.h"
 #include "mpe/events.h"
 
 namespace mu::engraving {
@@ -43,7 +44,7 @@ private:
     };
 
     using PitchOffsets = std::vector<std::pair<muse::mpe::timestamp_t, muse::mpe::pitch_level_t>>;
-    using BendTimeFactorMap = std::map<muse::mpe::timestamp_t, BendTimeFactors>;
+    using BendTimeFactorMap = muse::FlatMap<muse::mpe::timestamp_t, BendTimeFactors>;
 
     static void render_multibend(const Note *start_note, const RenderingContext &start_note_ctx, muse::mpe::PlaybackEventList &result);
     static void render_note(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);

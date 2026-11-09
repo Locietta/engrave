@@ -23,6 +23,7 @@
 #include "chordlinemetaparser.h"
 
 #include "dom/chordline.h"
+#include "playback/utils/sortedtable.h"
 
 using namespace mu::engraving;
 using namespace muse;
@@ -52,10 +53,11 @@ void ChordLineMetaParser::do_parse(const EngravingItem *item, const RenderingCon
 }
 
 ArticulationType ChordLineMetaParser::chord_line_articulation_type(const ChordLineType chord_line_type) {
-    static const std::unordered_map<ChordLineType, ArticulationType> articulation_types = {{ChordLineType::DOIT, ArticulationType::DOIT},
-                                                                                           {ChordLineType::FALL, ArticulationType::FALL},
-                                                                                           {ChordLineType::PLOP, ArticulationType::PLOP},
-                                                                                           {ChordLineType::SCOOP, ArticulationType::SCOOP}};
+    static const auto articulation_types =
+        mu::engraving::make_sorted_table<ChordLineType, ArticulationType>({{ChordLineType::DOIT, ArticulationType::DOIT},
+                                                                           {ChordLineType::FALL, ArticulationType::FALL},
+                                                                           {ChordLineType::PLOP, ArticulationType::PLOP},
+                                                                           {ChordLineType::SCOOP, ArticulationType::SCOOP}});
 
     auto search = articulation_types.find(chord_line_type);
 

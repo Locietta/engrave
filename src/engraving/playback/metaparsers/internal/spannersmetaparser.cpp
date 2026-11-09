@@ -29,15 +29,23 @@
 #include "dom/trill.h"
 #include "playback/filters/spannerfilter.h"
 #include "playback/utils/pitchutils.h"
+#include "playback/utils/sortedtable.h"
 
 using namespace mu::engraving;
 using namespace muse;
 
 bool SpannersMetaParser::is_able_to_parse(const EngravingItem *spanner_item) {
-    static const std::unordered_set<ElementType> supported_types{
-        ElementType::SLUR,  ElementType::HAMMER_ON_PULL_OFF, ElementType::PEDAL,       ElementType::LET_RING, ElementType::PALM_MUTE,
-        ElementType::TRILL, ElementType::GLISSANDO,          ElementType::GUITAR_BEND, ElementType::VIBRATO,
-    };
+    static constexpr auto supported_types = mu::engraving::sorted_values<ElementType>({
+        ElementType::SLUR,
+        ElementType::HAMMER_ON_PULL_OFF,
+        ElementType::PEDAL,
+        ElementType::LET_RING,
+        ElementType::PALM_MUTE,
+        ElementType::TRILL,
+        ElementType::GLISSANDO,
+        ElementType::GUITAR_BEND,
+        ElementType::VIBRATO,
+    });
 
     return muse::contains(supported_types, spanner_item->type());
 }
