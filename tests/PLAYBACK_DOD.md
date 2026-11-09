@@ -7,14 +7,19 @@ xmake f -P . -y -m release -o build/xmake-windows --engrave_tests=y --engrave_pl
 xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_container_probe playback_dump_test
 ```
 
-`playback_probe ASSETS FONT SCORE OUTDIR` writes legacy full MPE `A.txt`,
+`playback_probe ASSETS FONT SCORE OUTDIR` writes full MPE `A.txt`,
 the flat-record projection `B.txt` with its independent legacy counterpart
 `B_legacy.txt`, synth input `C.txt`, a FLOAT32 WAV, build metadata and phase
 measurements. Options are `--rate 44100|48000`, `--no-repeats`, `--no-reverb`,
-`--mute-part N`, and `--excerpt N`. Captures load the model with dual execution:
-one score walk feeds the legacy map and the flat store. The probe fails when the two
-projections differ; `--corrupt-flat` alters one flat record as a negative control,
-and `--dual` enables dual execution in a `--measure` run.
+`--mute-part N`, and `--excerpt N`. Since step 4c the export builds only the flat
+store (`PlaybackScoreBuilder`, no legacy model). Dump A keeps the legacy `legacy-mpe-v1`
+format but comes from the new path: each NoteEvent is serialized when it is frozen, and
+the groups are rebuilt from the records, cold events and empty-group marks. For dump B a
+capture also loads the legacy `PlaybackModel` (the test oracle) from the same score and
+projects it with the independent extractor; the probe fails when the two projections
+differ, and `--corrupt-flat` alters one flat record as a negative control. `--measure`
+runs load no oracle. Dual execution (one walk feeding both stores) remains test-only, in
+the harness build's unit tests.
 Dump C v2 records each FluidSynth setup operation through the same arguments
 used for the actual call, and each slice includes its ordered raw MIDI words.
 All capture sites are behind `ENGRAVE_PLAYBACK_HARNESS`; normal builds retain
