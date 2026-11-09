@@ -13,9 +13,12 @@
 #include "audio/engine/internal/playbackcapture.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/audio/flat_playback_capture.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "playback_dump.h"
+#include "playback_projection_flat.h"
+#include "playback_projection_legacy.h"
 #include <engrave/engine.h>
 
 #ifdef _WIN32
@@ -41,14 +44,14 @@ int main(int argc, char **argv) {
     try {
         if (argc < 5)
             throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
-                                        "[--excerpt N] [--measure] [--cancel-phase 1..5] [--cancel-poll N]");
+                                        "[--excerpt N] [--measure] [--dual] [--corrupt-flat] [--cancel-phase 1..5] [--cancel-poll N]");
         using namespace muse::audio;
         const auto dir = std::filesystem::u8path(argv[4]);
         std::filesystem::create_directories(dir);
         music::AudioRenderRequest request;
         request.output_path = utf8(dir / "audio.wav");
         int rate = 44100, cancel_phase = 0, cancel_poll = 1, mute_part = -1;
-        bool measure = false;
+        bool measure = false, dual = false, corrupt_flat = false;
         for (int i = 5; i < argc; ++i) {
             std::string arg = argv[i];
             const auto number = [&] {
@@ -63,6 +66,10 @@ int main(int argc, char **argv) {
                 request.reverb = false;
             else if (arg == "--measure")
                 measure = true;
+            else if (arg == "--dual")
+                dual = true;
+            else if (arg == "--corrupt-flat")
+                corrupt_flat = true;
             else if (arg == "--cancel-phase")
                 cancel_phase = number();
             else if (arg == "--cancel-poll")
@@ -95,6 +102,7 @@ int main(int argc, char **argv) {
         for (std::size_t i = 0; i < tracks.size(); ++i)
             if (static_cast<int>(tracks[i].part_index) == mute_part) request.tracks[i].muted = true;
         std::ofstream a, c;
+        std::string projection_error;
         if (!measure) {
             a.open(dir / "A.txt", std::ios::binary);
             c.open(dir / "C.txt", std::ios::binary);
@@ -104,8 +112,42 @@ int main(int argc, char **argv) {
                 music::test::LegacyDump{a}.track(id, instrument, data);
             };
             test::PlaybackCapture::synth = &c;
-            std::ofstream(dir / "B.txt", std::ios::binary) << "DEFERRED: independent flat-record projection extractors arrive in step 4b\n";
+            // Dump B: the flat records against an independent extractor over the legacy data, in this binary
+            music::FlatPlaybackCapture::projection = [&](const mu::engraving::PlaybackScore &flat,
+                                                         const music::FlatPlaybackCapture::LegacyTracks &legacy) {
+                mu::engraving::PlaybackScore copy;
+                const mu::engraving::PlaybackScore *projected = &flat;
+                if (corrupt_flat) {
+                    // Negative control: one flat field changes, so the projections must differ
+                    copy = flat;
+                    for (auto &[id, track] : copy.tracks) {
+                        if (!track.notes.empty()) {
+                            track.notes[0].actual_duration += 1;
+                            projected = &copy;
+                            break;
+                        }
+                    }
+                    if (projected != &copy) projection_error = "corrupt-flat: no note record to corrupt";
+                }
+                music::test::FlatProjection flat_projection;
+                flat_projection.score(*projected);
+                std::vector<music::test::LegacyProjectionTrack> tracks;
+                for (const auto &[id, data] : legacy) tracks.push_back({id.part_id.to_uint64(), id.instrument_id, data});
+                music::test::LegacyProjection legacy_projection;
+                legacy_projection.score(tracks);
+                const std::string flat_text = flat_projection.str();
+                std::ofstream(dir / "B.txt", std::ios::binary) << flat_text;
+                std::ofstream(dir / "B_legacy.txt", std::ios::binary) << legacy_projection.out;
+                if (flat_text != legacy_projection.out && projection_error.empty()) {
+                    const auto at =
+                        std::mismatch(flat_text.begin(), flat_text.end(), legacy_projection.out.begin(), legacy_projection.out.end())
+                            .first -
+                        flat_text.begin();
+                    projection_error = "dump B mismatch: flat records differ from the legacy extractor at byte " + std::to_string(at);
+                }
+            };
         }
+        music::FlatPlaybackCapture::dual = !measure || dual;
         Clock::time_point requested{}, observed{};
         Clock::time_point release_poll{};
         std::vector<double> release_batches;
@@ -141,10 +183,14 @@ int main(int argc, char **argv) {
         test::AllocationMetrics::enabled = false;
         test::PlaybackCapture::track = {};
         test::PlaybackCapture::synth = nullptr;
+        music::FlatPlaybackCapture::projection = {};
+        music::FlatPlaybackCapture::dual = false;
         if (!measure) {
             a.flush();
             c.flush();
             if (!a || !c) throw std::runtime_error("dump write failed");
+            if (!projection_error.empty()) throw std::runtime_error(projection_error);
+            if (!std::filesystem::exists(dir / "B.txt")) throw std::runtime_error("dump B was not captured");
         }
         std::ofstream stats(dir / "metrics.txt", std::ios::binary);
         stats.precision(12);
