@@ -669,3 +669,38 @@ bool PlaybackContext::has_only_one_lyrics_verse(const RepeatSegment *repeat, con
 
     return start == end;
 }
+
+namespace mu::engraving {
+namespace {
+template <class Container>
+void drain_context(Container &items, const std::function<void()> &step) {
+    while (!items.empty()) {
+        if constexpr (requires { typename Container::mapped_type; }) {
+            auto &value = items.begin()->second;
+            if constexpr (requires {
+                              value.begin();
+                              value.erase(value.begin());
+                          }) {
+                drain_context(value, step);
+            }
+        }
+        if constexpr (requires { items.pop_back(); })
+            items.pop_back();
+        else
+            items.erase(items.begin());
+        step();
+    }
+}
+} // namespace
+
+void PlaybackContext::release(const std::function<void()> &step) {
+    drain_context(used_tracks_, step);
+    drain_context(dynamics_curve_by_track_, step);
+    drain_context(sound_presets_by_track_, step);
+    drain_context(text_articulations_by_track_, step);
+    drain_context(syllables_by_track_, step);
+    drain_context(play_techniques_by_track_, step);
+    drain_context(current_verse_num_by_chord_rest_, step);
+    drain_context(multi_verse_lyrics_position_map_, step);
+}
+} // namespace mu::engraving

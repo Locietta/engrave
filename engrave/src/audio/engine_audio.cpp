@@ -563,6 +563,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // The export's flat MPE store, one track per walk track in id order. Sources borrow it only while
     // loading their MIDI sequences; it is released after the track loop (design 4.4).
     PlaybackScore playback;
+    DEFER { playback.release(); };
 
     // Only this private sentinel unwinds construction; callback exceptions
     // remain latched by poll() and are rethrown by abortSetup().
@@ -772,7 +773,11 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         OfflineCancellation::EventReleaseScope phase;
         EventReleaseProgress::before_batch = true;
         if (poll()) return abort_setup();
-        playback = {};
+        try {
+            playback.release(checkpoint);
+        } catch (const CancelledModel &) {
+            return abort_setup();
+        }
         EventReleaseProgress::before_batch = false;
         if (poll()) return abort_setup();
     }

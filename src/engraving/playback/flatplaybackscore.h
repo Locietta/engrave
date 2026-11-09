@@ -10,6 +10,7 @@
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
 #include "mpe/iarticulationprofilesrepository.h"
+#include "playbackcontext.h"
 #include "playbackeventsink.h"
 
 namespace mu::engraving {
@@ -18,6 +19,7 @@ struct Score;
 //! NOTE: the flat playback store of one export: one TrackEvents per legacy model track, sorted by id.
 //! A track is created exactly when the legacy model creates its map entry during the shared walk
 struct PlaybackScore {
+    PlaybackContextPtr context;
     std::vector<std::pair<InstrumentTrackId, muse::mpe::TrackEvents>> tracks;
     //! Shared by every freeze of this export, so the cancellation stride spans tracks and calls
     muse::mpe::FreezeProgress progress;
@@ -25,6 +27,8 @@ struct PlaybackScore {
     //! Finds or creates the track; the reference is valid until the next track is created
     muse::mpe::TrackEvents &track(const InstrumentTrackId &id);
     const muse::mpe::TrackEvents *find(const InstrumentTrackId &id) const;
+    // Drains nontrivial owners before freeing buffers. If a poll throws, finish cleanup and rethrow.
+    void release(const std::function<void()> &checkpoint = {});
 };
 
 //! Freezes each completed list into the track's flat records; the list itself is left untouched

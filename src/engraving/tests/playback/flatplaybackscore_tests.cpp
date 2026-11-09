@@ -764,3 +764,37 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
     delete empty_chord;
     delete score;
 }
+
+TEST(FlatPlaybackStoreTests, ReleaseBoundsColdOwnersAndFinishesAfterCancellation) {
+    for (bool cancel : {false, true}) {
+        PlaybackScore score;
+        for (int t = 0; t < 4; ++t) {
+            auto &events = score.track({static_cast<std::uint64_t>(t + 1), String(u"test")});
+            for (int i = 0; i < 50000; ++i) {
+                events.cold.push_back({i, static_cast<std::uint32_t>(i), SyllableEvent{String::from_utf8(std::to_string(i))}});
+            }
+        }
+        std::size_t previous = 200000, polls = 0;
+
+        struct Cancelled {};
+
+        const auto release = [&] {
+            score.release([&] {
+                std::size_t current = 0;
+                for (const auto &[id, events] : score.tracks) current += events.cold.size();
+                EXPECT_LE(previous - current, 4096u);
+                previous = current;
+                ++polls;
+                if (cancel && polls == 3) throw Cancelled{};
+            });
+        };
+        if (cancel)
+            EXPECT_THROW(release(), Cancelled);
+        else {
+            release();
+            EXPECT_GE(polls, 50u);
+        }
+        EXPECT_TRUE(score.tracks.empty());
+        EXPECT_FALSE(score.context);
+    }
+}

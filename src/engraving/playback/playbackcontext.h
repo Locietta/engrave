@@ -41,6 +41,7 @@ struct RepeatSegment;
 
 struct PlaybackContext {
     explicit PlaybackContext(const Score *score);
+    void release(const std::function<void()> &step);
 
     muse::mpe::dynamic_level_t appliable_dynamic_level(const track_idx_t track_idx, const int nominal_position_tick) const;
 
