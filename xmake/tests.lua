@@ -455,8 +455,6 @@ if has_config("engrave_playback_harness") then
 end
 
 if has_config("engrave_playback_harness") then
-    includes(path.join(fork_root, "xmake", "packages", "microsoft-proxy.lua"))
-    add_requires("microsoft-proxy 4.0.1", {system = false})
     target("playback_container_probe")
         set_kind("binary")
         set_default(false)

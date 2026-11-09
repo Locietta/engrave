@@ -40,12 +40,13 @@ end
 ---------------------------------------------------------------------------
 local package_dir = path.join(fork_root, "xmake", "packages")
 for _, pkg in ipairs({
-    "amc", "unordered_dense", "freetype", "harfbuzz", "flac", "lame", "opus",
+    "amc", "unordered_dense", "microsoft-proxy", "freetype", "harfbuzz", "flac", "lame", "opus",
     "opusenc", "fdk-aac", "pugixml", "utfcpp", "picojson", "mnx-json-schema", "mnxdom",
 }) do
     includes(path.join(package_dir, pkg .. ".lua"))
 end
 
+add_requires("microsoft-proxy 4.0.1", {system = false})
 add_requires("amc v2.8.1", {system = false})
 add_requires("unordered_dense v5.3.3", {system = false})
 add_requires("mnxdom 45bf462", {system = false})
@@ -412,7 +413,7 @@ target("native_fluidsynth")
 target("muse_audio_engine")
     set_kind("static")
     add_deps("muse_generated", "muse_global", "native_fluidsynth")
-    add_packages("amc", "unordered_dense", {public = true})
+    add_packages("amc", "unordered_dense", "microsoft-proxy", {public = true})
     add_packages("muse-flac", "lame", "muse-opus", "muse-opusenc", "muse-fdk-aac")
     add_engine_target_defaults()
     add_defines(ENGRAVE_AUDIO_ENGINE.defines)

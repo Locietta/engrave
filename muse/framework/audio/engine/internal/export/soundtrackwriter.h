@@ -26,8 +26,8 @@
 #include <vector>
 
 #include "../offlinerendersession.h"
-#include "abstractaudioencoder.h"
 #include "audio/common/audiotypes.h"
+#include "audioencoder.h"
 #include "global/types/ret.h"
 
 namespace muse::io {
@@ -39,7 +39,7 @@ struct SoundTrackWriter {
 
     SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
                      engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed = {},
-                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
+                     std::function<encode::AudioEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},
                      std::function<bool()> cancelled = {});
 
     Ret write();
@@ -60,7 +60,7 @@ private:
     samples_t data_samples_ = 0;
     samples_t total_samples_ = 0;
 
-    encode::AbstractAudioEncoderPtr encoder_ptr_;
+    encode::AudioEncoder encoder_ptr_;
 
     std::atomic<bool> is_aborted_ = false;
 };

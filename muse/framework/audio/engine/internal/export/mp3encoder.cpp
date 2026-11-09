@@ -58,7 +58,7 @@ struct LameHandler {
 };
 
 Mp3Encoder::Mp3Encoder(const SoundTrackFormat &format, io::IODevice &dst_device)
-    : AbstractAudioEncoder(format), handler_{std::make_unique<LameHandler>(format)}, dst_device_{&dst_device} {
+    : format_(format), handler_{std::make_unique<LameHandler>(format)}, dst_device_{&dst_device} {
     DO_ASSERT(dst_device_);
 }
 

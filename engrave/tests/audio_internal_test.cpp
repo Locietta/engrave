@@ -25,7 +25,7 @@
 
 #include "audio/common/audioerrors.h"
 #include "audio/engine/internal/audioengineconfiguration.h"
-#include "audio/engine/internal/export/abstractaudioencoder.h"
+#include "audio/engine/internal/export/audioencoder.h"
 #include "audio/engine/internal/nodes/fluidtracksource.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
@@ -46,13 +46,13 @@
 
 namespace {
 
-struct FailingFinalizer final : muse::audio::encode::AbstractAudioEncoder {
+struct FailingFinalizer final {
     FailingFinalizer(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool fail_encode, int &ended)
-        : AbstractAudioEncoder(format), device_(device), fail_encode_(fail_encode), ended_(ended) {}
+        : device_(device), fail_encode_(fail_encode), ended_(ended) {}
 
-    bool begin(muse::audio::samples_t) override { return true; }
+    bool begin(muse::audio::samples_t) { return true; }
 
-    size_t encode(muse::audio::samples_t samples, const float *) override {
+    size_t encode(muse::audio::samples_t samples, const float *) {
         const std::uint8_t marker = 42;
         if (!wrote_) {
             wrote_ = true;
@@ -61,7 +61,7 @@ struct FailingFinalizer final : muse::audio::encode::AbstractAudioEncoder {
         return fail_encode_ ? 0 : static_cast<size_t>(samples);
     }
 
-    muse::Ret end() override {
+    muse::Ret end() {
         ++ended_;
         return muse::audio::make_ret(muse::audio::Err::ERROR_ENCODE, "injected finalization failure");
     }
@@ -75,20 +75,20 @@ private:
 
 // Sets cancellation inside encode/end, then attempts two distinct device writes.
 // The second write must be rejected immediately, before control returns to writer.
-struct CancellingEncoder final : muse::audio::encode::AbstractAudioEncoder {
+struct CancellingEncoder final {
     CancellingEncoder(const muse::audio::SoundTrackFormat &format, muse::io::IODevice &device, bool &cancelled, bool final, int &encoded,
                       int &writes)
-        : AbstractAudioEncoder(format), device_(device), cancelled_(cancelled), final_(final), encoded_(encoded), writes_(writes) {}
+        : device_(device), cancelled_(cancelled), final_(final), encoded_(encoded), writes_(writes) {}
 
-    bool begin(muse::audio::samples_t) override { return true; }
+    bool begin(muse::audio::samples_t) { return true; }
 
-    size_t encode(muse::audio::samples_t samples, const float *) override {
+    size_t encode(muse::audio::samples_t samples, const float *) {
         ++encoded_;
         if (!final_ && encoded_ == 2) inject();
         return samples;
     }
 
-    muse::Ret end() override {
+    muse::Ret end() {
         if (final_) inject();
         return muse::make_ok();
     }
@@ -351,19 +351,18 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     auto &audio = engrave::DocumentAccess::context(document).audio();
     auto *master = engrave::DocumentAccess::master_score(document);
 
-    struct LargeWriter final : muse::audio::encode::AbstractAudioEncoder {
+    struct LargeWriter final {
     private:
         muse::io::IODevice &device;
         bool final;
         bool &armed;
         std::vector<uint8_t> bytes = std::vector<uint8_t>(1024 * 1024, 42);
     public:
-        LargeWriter(const muse::audio::SoundTrackFormat &f, muse::io::IODevice &d, bool end, bool &a)
-            : AbstractAudioEncoder(f), device(d), final(end), armed(a) {}
+        LargeWriter(const muse::audio::SoundTrackFormat &f, muse::io::IODevice &d, bool end, bool &a) : device(d), final(end), armed(a) {}
 
-        bool begin(muse::audio::samples_t) override { return true; }
+        bool begin(muse::audio::samples_t) { return true; }
 
-        size_t encode(muse::audio::samples_t n, const float *) override {
+        size_t encode(muse::audio::samples_t n, const float *) {
             if (!final) {
                 armed = true;
                 return device.write(bytes.data(), bytes.size()) ? n : 0;
@@ -371,7 +370,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
             return n;
         }
 
-        muse::Ret end() override {
+        muse::Ret end() {
             armed = true;
             return device.write(bytes.data(), bytes.size()) ? muse::make_ok() : muse::Ret(false);
         }

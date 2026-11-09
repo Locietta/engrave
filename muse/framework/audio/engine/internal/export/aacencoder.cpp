@@ -125,7 +125,7 @@ struct AacEncoderHandler {
 } // namespace muse::audio::encode
 
 AacEncoder::AacEncoder(const SoundTrackFormat &format, io::IODevice &dst_device)
-    : AbstractAudioEncoder(format), handler_{std::make_unique<AacEncoderHandler>()}, dst_device_{&dst_device} {
+    : format_(format), handler_{std::make_unique<AacEncoderHandler>()}, dst_device_{&dst_device} {
     DO_ASSERT(dst_device_);
 }
 

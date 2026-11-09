@@ -22,21 +22,24 @@
 
 #pragma once
 
-#include "abstractaudioencoder.h"
+#include "audioencoder.h"
 
 namespace muse::io {
 struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-struct WavEncoder : AbstractAudioEncoder {
+struct WavEncoder {
     WavEncoder(const SoundTrackFormat &, io::IODevice &);
+    WavEncoder(const WavEncoder &) = delete;
+    WavEncoder &operator=(const WavEncoder &) = delete;
 
-    bool begin(samples_t total_samples_number) override;
-    size_t encode(samples_t samples_per_channel, const float *input) override;
-    Ret end() override;
+    bool begin(samples_t total_samples_number);
+    size_t encode(samples_t samples_per_channel, const float *input);
+    Ret end();
 
 private:
+    SoundTrackFormat format_;
     bool write_placeholder_header();
     bool patch_header_sizes();
 

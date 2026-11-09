@@ -40,7 +40,7 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
 
-static encode::AbstractAudioEncoderPtr create_encoder(const SoundTrackFormat &format, io::IODevice &dst_device) {
+static encode::AudioEncoder create_encoder(const SoundTrackFormat &format, io::IODevice &dst_device) {
     switch (format.type) {
         case SoundTrackType::MP3: return std::make_unique<encode::Mp3Encoder>(format, dst_device);
         case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dst_device);
@@ -56,7 +56,7 @@ static encode::AbstractAudioEncoderPtr create_encoder(const SoundTrackFormat &fo
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
                                    engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed,
-                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
+                                   std::function<encode::AudioEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
                                    std::function<bool()> cancelled)
     : cancelled_(std::move(cancelled)), source_(std::move(source)), block_completed_(std::move(block_completed)) {
     if (!source_) {
