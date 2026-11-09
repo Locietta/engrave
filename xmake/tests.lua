@@ -39,7 +39,7 @@ target("engraving_playback_tests")
     set_default(false)
     set_basename("engraving_playback_tests")
     add_deps("muse_generated", "engrave")
-    add_packages("gtest", "amc")
+    add_packages("gtest", "amc", "unordered_dense")
     add_defines("TEST_HAS_ENGRAVING=1")
     add_defines('ENGRAVING_TESTS_DATA_ROOT="' .. engraving_tests_dir:gsub("\\", "/") .. '"')
     add_includedirs(
@@ -119,7 +119,7 @@ local function add_adapter_binary(name, file)
         set_kind("binary")
         set_default(false)
         add_deps("muse_generated", "engrave")
-        add_packages("amc")
+        add_packages("amc", "unordered_dense")
         add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
         add_includedirs("$(builddir)/xmake-generated")
         add_files(path.join(tests_dir, file))
@@ -301,7 +301,7 @@ target("engrave_output_test")
     set_kind("binary")
     set_default(false)
     add_deps("engrave")
-    add_packages("gtest", "muse-zlib", "amc")
+    add_packages("gtest", "muse-zlib", "amc", "unordered_dense")
     -- The public API tests remain public-only; the injected audio failure
     -- regression also exercises the internal renderer and its lifecycle.
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
@@ -449,10 +449,8 @@ if has_config("engrave_playback_harness") then
 end
 
 if has_config("engrave_playback_harness") then
-    for _, name in ipairs({"unordered_dense", "microsoft-proxy"}) do
-        includes(path.join(fork_root, "xmake", "packages", name .. ".lua"))
-    end
-    add_requires("unordered_dense v5.3.3", "microsoft-proxy 4.0.1", {system = false})
+    includes(path.join(fork_root, "xmake", "packages", "microsoft-proxy.lua"))
+    add_requires("microsoft-proxy 4.0.1", {system = false})
     target("playback_container_probe")
         set_kind("binary")
         set_default(false)
