@@ -104,7 +104,10 @@ void PlaybackScore::release(const std::function<void()> &checkpoint) {
 
 PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void()> &checkpoint) const {
     PlaybackScore result;
-    if (!score || score->measures()->empty() || !score->last_measure()) {
+    if (!score) return result;
+    if (score->measures()->empty() || !score->last_measure()) {
+        // Legacy export creates this entry before the empty-score load returns.
+        std::ignore = result.track(playback_metronome_track_id());
         return result;
     }
 
