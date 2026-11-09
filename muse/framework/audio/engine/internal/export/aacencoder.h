@@ -24,7 +24,7 @@
 
 #include <memory>
 
-#include "abstractaudioencoder.h"
+#include "audioencoder.h"
 
 namespace muse::io {
 struct IODevice;
@@ -33,16 +33,19 @@ struct IODevice;
 namespace muse::audio::encode {
 struct AacEncoderHandler;
 
-struct AacEncoder : AbstractAudioEncoder {
+struct AacEncoder {
     AacEncoder(const SoundTrackFormat &, io::IODevice &);
+    AacEncoder(const AacEncoder &) = delete;
+    AacEncoder &operator=(const AacEncoder &) = delete;
 
-    ~AacEncoder() noexcept override;
+    ~AacEncoder() noexcept;
 
-    bool begin(samples_t total_samples_number) override;
-    size_t encode(samples_t samples_per_channel, const float *input) override;
-    Ret end() override;
+    bool begin(samples_t total_samples_number);
+    size_t encode(samples_t samples_per_channel, const float *input);
+    Ret end();
 
 private:
+    SoundTrackFormat format_;
     std::unique_ptr<AacEncoderHandler> handler_;
     io::IODevice *dst_device_ = nullptr;
 };

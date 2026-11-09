@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-#include "abstractaudioencoder.h"
+#include "audioencoder.h"
 
 struct LameHandler;
 
@@ -35,16 +35,19 @@ struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-struct Mp3Encoder : AbstractAudioEncoder {
+struct Mp3Encoder {
     Mp3Encoder(const SoundTrackFormat &, io::IODevice &);
+    Mp3Encoder(const Mp3Encoder &) = delete;
+    Mp3Encoder &operator=(const Mp3Encoder &) = delete;
 
-    ~Mp3Encoder() noexcept override;
+    ~Mp3Encoder() noexcept;
 
-    bool begin(samples_t total_samples_number) override;
-    size_t encode(samples_t samples_per_channel, const float *input) override;
-    Ret end() override;
+    bool begin(samples_t total_samples_number);
+    size_t encode(samples_t samples_per_channel, const float *input);
+    Ret end();
 
 private:
+    SoundTrackFormat format_;
     std::vector<std::uint8_t> output_buffer_;
     std::unique_ptr<LameHandler> handler_;
     io::IODevice *dst_device_ = nullptr;

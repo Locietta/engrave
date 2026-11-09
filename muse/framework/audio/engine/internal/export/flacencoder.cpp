@@ -64,7 +64,7 @@ private:
 };
 
 FlacEncoder::FlacEncoder(const SoundTrackFormat &format, io::IODevice &dst_device)
-    : AbstractAudioEncoder(format), flac_{std::make_unique<FlacHandler>(dst_device)} {}
+    : format_(format), flac_{std::make_unique<FlacHandler>(dst_device)} {}
 
 FlacEncoder::~FlacEncoder() noexcept = default;
 

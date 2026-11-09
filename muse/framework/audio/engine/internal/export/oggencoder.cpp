@@ -38,7 +38,7 @@
 using namespace muse::audio;
 using namespace muse::audio::encode;
 
-OggEncoder::OggEncoder(const SoundTrackFormat &format, io::IODevice &dst_device) : AbstractAudioEncoder(format), dst_device_{&dst_device} {
+OggEncoder::OggEncoder(const SoundTrackFormat &format, io::IODevice &dst_device) : format_(format), dst_device_{&dst_device} {
     DO_ASSERT(dst_device_);
 }
 

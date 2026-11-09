@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "abstractaudioencoder.h"
+#include "audioencoder.h"
 
 struct OggOpusEnc;
 
@@ -31,16 +31,19 @@ struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-struct OggEncoder : AbstractAudioEncoder {
+struct OggEncoder {
     OggEncoder(const SoundTrackFormat &, io::IODevice &);
+    OggEncoder(const OggEncoder &) = delete;
+    OggEncoder &operator=(const OggEncoder &) = delete;
 
-    ~OggEncoder() noexcept override;
+    ~OggEncoder() noexcept;
 
-    bool begin(samples_t total_samples_number) override;
-    size_t encode(samples_t samples_per_channel, const float *input) override;
-    Ret end() override;
+    bool begin(samples_t total_samples_number);
+    size_t encode(samples_t samples_per_channel, const float *input);
+    Ret end();
 
 private:
+    SoundTrackFormat format_;
     OggOpusEnc *opus_encoder_ = nullptr;
     io::IODevice *dst_device_ = nullptr;
 };

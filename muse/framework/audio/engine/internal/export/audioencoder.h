@@ -23,34 +23,19 @@
 #pragma once
 
 #include <cstddef>
-#include <memory>
+
+#include <proxy/proxy.h>
 
 #include "audio/common/audiotypes.h"
 #include "global/types/ret.h"
 
 namespace muse::audio::encode {
-struct AbstractAudioEncoder {
-    AbstractAudioEncoder(const AbstractAudioEncoder &) = delete;
-    AbstractAudioEncoder(AbstractAudioEncoder &&) = delete;
+PRO_DEF_MEM_DISPATCH(EncoderBegin, begin);
+PRO_DEF_MEM_DISPATCH(EncoderEncode, encode);
+PRO_DEF_MEM_DISPATCH(EncoderEnd, end);
 
-    virtual ~AbstractAudioEncoder() noexcept = default;
+struct EncoderFacade : pro::facade_builder::add_convention<EncoderBegin, bool(samples_t)>::
+                           add_convention<EncoderEncode, size_t(samples_t, const float *)>::add_convention<EncoderEnd, Ret()>::build {};
 
-    AbstractAudioEncoder &operator=(const AbstractAudioEncoder &) = delete;
-    AbstractAudioEncoder &operator=(AbstractAudioEncoder &&) = delete;
-
-    virtual bool begin(samples_t total_samples_number) = 0;
-    virtual size_t encode(samples_t samples_per_channel, const float *input) = 0;
-    // Finalization may successfully produce zero bytes; report status instead.
-    virtual Ret end() = 0;
-
-    const SoundTrackFormat &format() const { return format_; }
-
-
-protected:
-    explicit AbstractAudioEncoder(const SoundTrackFormat &format) : format_(format) {}
-
-    SoundTrackFormat format_;
-};
-
-using AbstractAudioEncoderPtr = std::unique_ptr<AbstractAudioEncoder>;
+using AudioEncoder = pro::proxy<EncoderFacade>;
 } // namespace muse::audio::encode

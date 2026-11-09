@@ -24,7 +24,7 @@
 
 #include <memory>
 
-#include "abstractaudioencoder.h"
+#include "audioencoder.h"
 
 namespace muse::io {
 struct IODevice;
@@ -33,16 +33,19 @@ struct IODevice;
 namespace muse::audio::encode {
 struct FlacHandler;
 
-struct FlacEncoder : AbstractAudioEncoder {
+struct FlacEncoder {
     FlacEncoder(const SoundTrackFormat &, io::IODevice &);
+    FlacEncoder(const FlacEncoder &) = delete;
+    FlacEncoder &operator=(const FlacEncoder &) = delete;
 
-    ~FlacEncoder() noexcept override;
+    ~FlacEncoder() noexcept;
 
-    bool begin(samples_t total_samples_number) override;
-    size_t encode(samples_t samples_per_channel, const float *input) override;
-    Ret end() override;
+    bool begin(samples_t total_samples_number);
+    size_t encode(samples_t samples_per_channel, const float *input);
+    Ret end();
 
 private:
+    SoundTrackFormat format_;
     std::unique_ptr<FlacHandler> flac_;
 };
 } // namespace muse::audio::encode

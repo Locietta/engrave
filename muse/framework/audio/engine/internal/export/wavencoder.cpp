@@ -84,7 +84,7 @@ struct WavHeader {
 };
 } // namespace
 
-WavEncoder::WavEncoder(const SoundTrackFormat &format, io::IODevice &dst_device) : AbstractAudioEncoder(format), dst_device_{&dst_device} {
+WavEncoder::WavEncoder(const SoundTrackFormat &format, io::IODevice &dst_device) : format_(format), dst_device_{&dst_device} {
     DO_ASSERT(dst_device_);
 }
 
