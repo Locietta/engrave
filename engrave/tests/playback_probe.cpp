@@ -41,7 +41,7 @@ std::string utf8(const std::filesystem::path &p) {
 double milliseconds(Clock::time_point a, Clock::time_point b) { return std::chrono::duration<double, std::milli>(b - a).count(); }
 } // namespace
 
-int main(int argc, char **argv) {
+int export_probe(int argc, char **argv, std::unique_ptr<engrave::Engine> &engine) {
     try {
         if (argc < 5)
             throw std::invalid_argument("playback_probe ASSETS FONT SCORE OUTDIR [--rate N] [--no-repeats] [--no-reverb] [--mute-part N] "
@@ -87,9 +87,12 @@ int main(int argc, char **argv) {
         engine_options.resources = std::filesystem::u8path(argv[1]);
         engine_options.audio_sample_rate = rate;
         engine_options.deterministic_ids = true;
-        auto engine = engrave::Engine::create(engine_options);
-        if (!engine) throw std::runtime_error(engine.error().message);
-        auto document = (*engine)->open(std::filesystem::u8path(argv[3]));
+        if (!engine) {
+            auto created = engrave::Engine::create(engine_options);
+            if (!created) throw std::runtime_error(created.error().message);
+            engine = std::move(*created);
+        }
+        auto document = engine->open(std::filesystem::u8path(argv[3]));
         if (!document) throw std::runtime_error(document.error().message);
         auto &context = engrave::DocumentAccess::context(**document);
         auto *master = engrave::DocumentAccess::master_score(**document);
@@ -101,6 +104,7 @@ int main(int argc, char **argv) {
         request.tracks.resize(tracks.size());
         for (std::size_t i = 0; i < tracks.size(); ++i)
             if (static_cast<int>(tracks[i].part_index) == mute_part) request.tracks[i].muted = true;
+        test::PlaybackCapture::ids.clear();
         std::ofstream a, c;
         std::string projection_error;
         bool projection_written = false;
@@ -264,4 +268,27 @@ int main(int argc, char **argv) {
         std::cerr << e.what() << '\n';
         return 1;
     }
+}
+
+// Each invocation owns fresh requests, streams and capture callbacks; the Engine survives the sequence.
+int main(int argc, char **argv) {
+    std::unique_ptr<engrave::Engine> engine;
+    std::vector<char *> args(argv, argv + argc);
+    std::vector<std::pair<char *, char *>> next;
+    for (std::size_t i = 5; i < args.size();) {
+        if (std::string_view(args[i]) == "--next") {
+            if (i + 2 >= args.size()) return 2;
+            next.emplace_back(args[i + 1], args[i + 2]);
+            args.erase(args.begin() + i, args.begin() + i + 3);
+        } else
+            ++i;
+    }
+    int result = export_probe(static_cast<int>(args.size()), args.data(), engine);
+    for (const auto &[score, output] : next) {
+        if (result) break;
+        args[3] = score;
+        args[4] = output;
+        result = export_probe(static_cast<int>(args.size()), args.data(), engine);
+    }
+    return result;
 }

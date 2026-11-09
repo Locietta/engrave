@@ -5,12 +5,12 @@ import argparse
 from pathlib import Path
 
 from engrave_testing.playback_corpus import generate_focused
-from engrave_testing.playback_harness import capture, compare, measure
+from engrave_testing.playback_harness import capture, compare, measure, mixed_score_witness
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("command", choices=("capture", "compare", "executables", "measure", "generate"))
+    p.add_argument("command", choices=("capture", "compare", "executables", "measure", "generate", "mixed"))
     p.add_argument("--exe", type=Path)
     p.add_argument("--other-exe", type=Path)
     p.add_argument("--assets", type=Path)
@@ -27,6 +27,8 @@ def main():
     a = p.parse_args()
     if a.command == "generate":
         generate_focused()
+    elif a.command == "mixed":
+        mixed_score_witness(a.exe, a.assets, a.font, a.output)
     elif a.command == "compare":
         compare(a.left, a.right, a.expect_exe_sha256)
     elif a.command == "measure":
