@@ -38,41 +38,16 @@
 #include "midi/midievent.h"
 #include "midi/miditypes.h"
 #include "mpe/events.h"
+#include "mpe/flatevents.h"
 #include "offlinecancellation.h"
 
 namespace muse::audio::engine {
-struct StoreLimit {
-    const char *message = "playback buffer exceeds uint32 offset limit";
-};
-
-template <class T>
-    requires std::is_trivially_copyable_v<T>
-using Buf = amc::vector<T>;
-
-template <class T = std::byte>
-constexpr std::uint32_t checked_grow(std::uint64_t size, std::uint64_t count) {
-    static_assert(std::is_trivially_copyable_v<T>);
-    constexpr std::uint64_t limit = std::numeric_limits<std::uint32_t>::max();
-    if (size > limit || count > limit - size) {
-        throw StoreLimit{};
-    }
-    const std::uint64_t total = size + count;
-    if (total > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
-        throw StoreLimit{};
-    }
-    return static_cast<std::uint32_t>(total);
-}
-
-template <class T>
-void reserve_checked(Buf<T> &buf, std::uint64_t count) {
-    buf.reserve(checked_grow<T>(0, count));
-}
-
-template <class T, class... Args>
-T &emplace_checked(Buf<T> &buf, Args &&...args) {
-    std::ignore = checked_grow<T>(buf.size(), 1);
-    return buf.emplace_back(std::forward<Args>(args)...);
-}
+// The checked uint32 buffer helpers are shared with the flat MPE store
+using mpe::Buf;
+using mpe::checked_grow;
+using mpe::emplace_checked;
+using mpe::reserve_checked;
+using mpe::StoreLimit;
 
 struct TimedMidiEvent {
     mpe::timestamp_t timestamp = 0;
