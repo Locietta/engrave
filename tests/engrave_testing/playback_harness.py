@@ -27,24 +27,29 @@ def sha(path):
 
 def pcm_metadata(path):
     with path.open("rb") as f:
-        assert f.read(4) == b"RIFF"
+        if f.read(4) != b"RIFF":
+            raise ValueError(f"not a RIFF file: {path}")
         f.read(4)
-        assert f.read(4) == b"WAVE"
+        if f.read(4) != b"WAVE":
+            raise ValueError(f"not a WAVE file: {path}")
         fmt = None
         while header := f.read(8):
             tag, size = struct.unpack("<4sI", header)
             if tag == b"fmt ":
                 fmt = struct.unpack("<HHIIHH", f.read(size)[:16])
             elif tag == b"data":
-                assert fmt and fmt[0] == 3 and fmt[5] == 32, fmt
+                if not fmt or fmt[0] != 3 or fmt[5] != 32 or not fmt[4]:
+                    raise ValueError(f"not FLOAT32 PCM: {fmt}")
                 digest = hashlib.sha256()
                 remaining = size
                 while remaining:
                     data = f.read(min(remaining, 1024 * 1024))
-                    assert data, "truncated PCM"
+                    if not data:
+                        raise ValueError("truncated PCM")
                     digest.update(data)
                     remaining -= len(data)
-                assert size % fmt[4] == 0
+                if size % fmt[4] != 0:
+                    raise ValueError("partial PCM frame")
                 return dict(
                     sha256=digest.hexdigest(),
                     rate=fmt[2],
@@ -453,47 +458,45 @@ def measure(exe, assets, font, output, trials, cancel_trials, phases=range(5)):
     write_json(output / "summary.json", summary)
 
 
-def mixed_score_witness(exe, assets, font, output):
-    """Two articulated, multi-part scores, fresh processes versus A/B/A and B/A/B on one Engine."""
-    from engrave_testing.playback_corpus import note, score
-
+def mixed_score_witness(exe, assets, font, output, rate=44100):
+    """Two different multipart scores: fresh processes versus A/B/A and B/A/B on one Engine."""
+    if rate not in (44100, 48000):
+        raise ValueError(f"unsupported mixed witness rate: {rate}")
     output.mkdir(parents=True, exist_ok=False)
-    scores = []
-    for name, pitch, program in (("A", "C", 41), ("B", "G", 74)):
-        xml = score(note("<articulations><staccato/></articulations>", step=pitch), program)
-        # Two independently configured parts, with dynamics, lyrics, and different articulations.
-        xml = xml.replace(
-            "</part-list>",
-            '<score-part id="P2"><part-name>Piano</part-name>'
-            '<score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument>'
-            '<midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program>'
-            "</midi-instrument></score-part></part-list>",
-        )
-        body = xml[xml.index('<part id="P1">') : xml.index("</score-partwise>")]
-        body = body.replace('id="P1"', 'id="P2"').replace("<staccato/>", "<tenuto/>")
-        body = body.replace(
-            "<note>", "<direction><direction-type><dynamics><p/></dynamics></direction-type></direction><note>", 1
-        )
-        body = body.replace("<notations>", "<lyric><text>la</text></lyric><notations>", 1)
-        xml = xml.replace("</score-partwise>", body + "</score-partwise>")
-        path = output / f"{name}.musicxml"
-        path.write_text(xml, encoding="utf-8")
-        scores.append(path)
+    scores = [FOCUSED / "mixed_score_a.mscx", FOCUSED / "mixed_score_b.musicxml"]
+    rate_options = ["--rate", str(rate)]
     for i, path in enumerate(scores):
-        run_probe(exe, assets, font, path, output / f"fresh-{i}", [])
+        run_probe(exe, assets, font, path, output / f"fresh-{i}", rate_options)
+    if (output / "fresh-0/audio.wav").read_bytes() == (output / "fresh-1/audio.wav").read_bytes():
+        raise ValueError("mixed witness scores produced identical audio")
     for order in ((0, 1, 0), (1, 0, 1)):
         name = "".join(str(i) for i in order)
         targets = [output / f"{name}-{j}" for j in range(3)]
-        options = []
+        options = list(rate_options)
         for i, target in zip(order[1:], targets[1:]):
             options += ["--next", str(scores[i].resolve()), str(target.resolve())]
         run_probe(exe, assets, font, scores[order[0]], targets[0], options)
         for i, target in zip(order, targets):
             fresh = output / f"fresh-{i}"
             for dump in ("A.txt", "C.txt", "audio.wav"):
-                assert (target / dump).read_bytes() == (fresh / dump).read_bytes(), (name, target, dump)
-            assert (target / "B.txt").read_bytes() == (target / "B_legacy.txt").read_bytes()
+                if (target / dump).read_bytes() != (fresh / dump).read_bytes():
+                    raise ValueError(f"mixed witness mismatch: {name}, {target}, {dump}")
+            if (target / "B.txt").read_bytes() != (target / "B_legacy.txt").read_bytes():
+                raise ValueError(f"mixed witness projection mismatch: {target}")
+    for target in [output / f"fresh-{i}" for i in (0, 1)] + [
+        output / f"{order}-{j}" for order in ("010", "101") for j in range(3)
+    ]:
+        actual = pcm_metadata(target / "audio.wav")["rate"]
+        if actual != rate:
+            raise ValueError(f"mixed witness rate mismatch: requested {rate}, got {actual}: {target}")
     write_json(
         output / "result.json",
-        dict(result="PASS", orders=["A/B/A", "B/A/B"], exports=8, compared=["A", "C", "PCM"], projection="B verified"),
+        dict(
+            result="PASS",
+            orders=["A/B/A", "B/A/B"],
+            exports=8,
+            rate=rate,
+            compared=["A", "C", "PCM"],
+            projection="B verified",
+        ),
     )

@@ -28,7 +28,7 @@ def main():
     if a.command == "generate":
         generate_focused()
     elif a.command == "mixed":
-        mixed_score_witness(a.exe, a.assets, a.font, a.output)
+        mixed_score_witness(a.exe, a.assets, a.font, a.output, a.rate or 44100)
     elif a.command == "compare":
         compare(a.left, a.right, a.expect_exe_sha256)
     elif a.command == "measure":

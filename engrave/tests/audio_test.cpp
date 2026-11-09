@@ -10,6 +10,7 @@
 // choice reach the renderer, the reverb switch changes the mix, options are
 // validated, and D4 holds: a second render in this process equals a fresh one.
 
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -350,6 +351,34 @@ TEST(Audio, SecondRenderEqualsAFreshProcess) {
     std::filesystem::remove(out);
     ASSERT_FALSE(fresh.empty());
     EXPECT_EQ(fresh, second.bytes) << "the second in-process render differs from a fresh-process render";
+}
+
+// Gate coverage without capture hooks: the process-wide Engine survives both orderings.
+TEST(Audio, MixedScoreOrdersEqualFreshProcesses) {
+    const auto root = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/playback_dod";
+    const std::array paths{root / "mixed_score_a.mscx", root / "mixed_score_b.musicxml"};
+    std::array<std::vector<std::byte>, 2> fresh;
+    for (std::size_t i = 0; i < paths.size(); ++i) {
+        const auto out = detail::temp_file("mixed-fresh.wav");
+        music::test::g_retained_for_cleanup.push_back(out);
+        std::vector<std::string> args{"--assets=" + music::test::g_assets.string(), "--audio=" + paths[i].string(), "--format=wav",
+                                      "--out=" + out.string()};
+        for (const auto &font : g_soundfonts) args.push_back("--soundfont=" + font.string());
+        ASSERT_EQ(music::test::run_probe(args), 0);
+        fresh[i] = detail::read_file(out);
+        ASSERT_FALSE(fresh[i].empty());
+    }
+    ASSERT_NE(fresh[0], fresh[1]);
+    for (const auto &order : {std::array{0, 1, 0}, std::array{1, 0, 1}}) {
+        for (const int i : order) {
+            SCOPED_TRACE(paths[i].string());
+            auto opened = music::test::g_engine->open(paths[i]);
+            ASSERT_TRUE(opened) << opened.error().message;
+            const auto actual = detail::render_audio(**opened, {});
+            ASSERT_FALSE(actual.bytes.empty());
+            EXPECT_EQ(actual.bytes, fresh[i]);
+        }
+    }
 }
 
 TEST(Audio, TheSoundFontListSelectsTheDefaultAndPerTrack) {
