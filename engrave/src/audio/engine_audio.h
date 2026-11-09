@@ -62,36 +62,13 @@ private:
     std::unique_ptr<State> state_;
 };
 
-// Hook for MIDI event goldens. The engine resolves a capturing IMidiOutPort and
-// FluidSynth sends every event it actually handles to it (fluidsynth.cpp:249-262,
-// after the staff % 16 channel remap), together with `frame`: the 44100 Hz
-// output-frame offset of the render chunk in which the event was handled.
-//
-// The engine does not expose an event's offset inside a chunk to an
-// IMidiOutPort, so frame is the start of the 4096-frame render chunk
-// (SoundTrackWriter's render step), not the exact sample. Consecutive events
-// handled in one chunk therefore share a frame value.
-//
-// The engine_audio_probe --midi-events JSON schema per event is
-//   { "frame": <uint64>,
-//     "opcode": <string>,
-//     "channel": <0..15>,                 // channel-voice events only
-//     "note": <0..127>, "velocity": <0..127>,   // NoteOn/NoteOff
-//     "index": <0..127>, "data": <0..127>,      // ControlChange
-//     "pitchBend": <int>,                       // PitchBend
-//     "program": <0..127> }                     // ProgramChange
-// and the probe additionally reports midiEventTotal (all captured events),
-// midiEventsTruncated and at most the first 1,000,000 entries in midiEvents.
-//
-// Events applied by FluidSynth outside handleEvent are not captured: setup-time
-// program/bank/CC7/CC11 from setupSound() (fluidsynth.cpp:338-370), and the
-// expression/pitch-bend changes from updateExpressionLevels()/
-// setPlaybackPosition() (fluidsynth.cpp:393-407, 470-505). doFlushSound()
-// (fluidsynth.cpp:166-219) does send all-notes-off/sustain/pitch-bend to the
-// port, but only for the last played staff and it returns early while no event
-// has been handled yet (lastStaff() == -1, fluidsequencer.h:52,83), so the
-// pre-render flush adds no events. An empty function disables capture. Events
-// are sent on the engine thread; the hook must not re-enter the engine.
+// MIDI golden observer: FluidTrack calls this after the legacy staff % 16 remap.
+// Frame is the beginning of the writer's 4096-frame chunk, not an intra-chunk
+// event offset. The probe retains its existing event schema and truncation limit.
+// Setup/program/expression updates outside handle_event are not captured.
+// Startup flush reports all-notes-off, sustain and pitch bend for last_staff
+// when available. An empty hook disables capture. Calls run on the engine
+// thread; the hook must not re-enter the engine.
 using EngineAudioMidiEventHook = std::function<void(const muse::midi::Event &, std::uint64_t frame)>;
 void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
 
@@ -102,7 +79,7 @@ void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHo
 // request names another index. A SoundFont's resource id is its complete basename
 // ("FluidR3Mono_GM" for ".../FluidR3Mono_GM.sf3"), matching
 // FluidSoundFontParser::parseSoundFont (fluidsoundfontparser.cpp:70) and
-// FluidResolver::refresh (fluidresolver.cpp:102-145).
+// refresh_audio_resources in audioresources.cpp.
 //
 // The sample rate is fixed here for the life of the process, like the context
 // output spec it feeds; every render the engine writes is at that rate.

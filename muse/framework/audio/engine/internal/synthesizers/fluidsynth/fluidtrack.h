@@ -20,8 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef MUSE_AUDIO_FLUIDSYNTH_H
-#define MUSE_AUDIO_FLUIDSYNTH_H
+#ifndef MUSE_AUDIO_FLUIDTRACK_H
+#define MUSE_AUDIO_FLUIDTRACK_H
 
 #include <memory>
 #include <optional>
@@ -30,10 +30,11 @@
 
 #include <amc/flatset.hpp>
 
-#include "../abstractsynthesizer.h"
+#include "../../../iaudioengineconfiguration.h"
+#include "../../midieventsink.h"
+#include "audio/common/timeposition.h"
 #include "fluidsequencer.h"
 #include "global/io/path.h"
-#include "midi/imidioutport.h"
 
 namespace muse::audio::engine {
 struct AudioResources;
@@ -43,34 +44,53 @@ namespace muse::audio::synth {
 
 struct Fluid;
 
-struct FluidSynth : AbstractSynthesizer {
-    // midiOutPort, when given, receives every event the synthesizer handles; it
-    // and config must outlive the synthesizer.
-    FluidSynth(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port,
-               engine::AudioResources &resources);
+struct FluidTrack {
+    // The observer preserves legacy staff remapping. Configuration and resources
+    // must outlive this noncopyable per-track owner.
+    FluidTrack(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config,
+               engine::MidiEventSink midi_event_sink, engine::AudioResources &resources);
+
+    ~FluidTrack();
+    FluidTrack(const FluidTrack &) = delete;
+    FluidTrack &operator=(const FluidTrack &) = delete;
+    void setup(const mpe::TrackEvents &events);
+
+    const AudioInputParams &params() const { return params_; }
+
+    void prepare_to_play() {}
+
+    bool ready_to_play() const { return true; }
+
+    bool has_pending_chunks() const { return false; }
+
+    void process_input() {}
+
+    InputProcessingProgress input_processing_progress() const { return {}; }
+
+    void clear_cache() {}
 
     Ret init(const OutputSpec &spec);
 
     Ret add_sound_fonts(const std::vector<io::PathT> &sfonts);
     void set_preset(const std::optional<midi::Program> &preset);
 
-    std::string name() const override;
-    AudioSourceType type() const override;
+    std::string name() const;
+    AudioSourceType type() const;
 
-    void setup_sound(const mpe::PlaybackSetupData &setup_data) override;
-    void setup_events(const mpe::TrackEvents &events) override;
+    void setup_sound(const mpe::PlaybackSetupData &setup_data);
+    void setup_events(const mpe::TrackEvents &events);
 
-    void flush_sound() override; // all channels
+    void flush_sound(); // all channels
 
-    TimePosition playback_position() const override;
-    void set_playback_position(const TimePosition &position) override;
+    TimePosition playback_position() const;
+    void set_playback_position(const TimePosition &position);
 
-    samples_t process(float *buffer, samples_t samples_per_channel) override;
+    samples_t process(float *buffer, samples_t samples_per_channel);
 
-    void set_mode(const ProcessMode mode) override;
-    void set_output_spec(const OutputSpec &spec) override;
+    void set_mode(const ProcessMode mode);
+    void set_output_spec(const OutputSpec &spec);
 
-    bool is_valid() const override;
+    bool is_valid() const;
 
 private:
     struct KeyTuning {
@@ -104,11 +124,19 @@ private:
     int set_controller_value(int channel, int ctrl, int value);
     int set_pitch_bend(int channel, int pitch_bend);
 
+    const engine::IAudioEngineConfiguration *config() const { return &config_; }
+
+    msecs_t samples_to_msecs(samples_t samples, samples_t rate) const;
+    samples_t micro_secs_to_samples(msecs_t duration, samples_t rate) const;
+    ProcessMode mode_ = ProcessMode::UNDEFINED;
+    mpe::PlaybackSetupData setup_data_;
+    AudioInputParams params_;
+    const engine::IAudioEngineConfiguration &config_;
     engine::AudioResources &resources_;
     OutputSpec output_spec_;
 
-    std::shared_ptr<Fluid> fluid_;
-    midi::IMidiOutPort *midi_out_port_ = nullptr;
+    std::unique_ptr<Fluid> fluid_;
+    engine::MidiEventSink midi_event_sink_ = nullptr;
 
     FluidSequencer sequencer_;
     amc::FlatSet<io::PathT> sfont_paths_;
@@ -119,7 +147,6 @@ private:
     bool flush_sound_requested_ = false;
 };
 
-using FluidSynthPtr = std::shared_ptr<FluidSynth>;
 } // namespace muse::audio::synth
 
-#endif //MUSE_AUDIO_FLUIDSYNTH_H
+#endif //MUSE_AUDIO_FLUIDTRACK_H

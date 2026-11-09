@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "offlinerendersession.h"
 
+#include "audio/common/audioerrors.h"
 #include "nodes/automationcontrolnode.h"
 #include "nodes/signalnode.h"
 #include "offlinetiming.h"
@@ -8,8 +9,9 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-OfflineRenderSession::OfflineRenderSession(IAudioFactory &factory, const OutputSpec &spec)
-    : factory_(factory), spec_(spec), mixer_(std::make_shared<Mixer>()),
+OfflineRenderSession::OfflineRenderSession(AudioFactory &factory, const OutputSpec &spec, AudioResources &resources,
+                                           const IAudioEngineConfiguration &config, MidiEventSink sink)
+    : factory_(factory), resources_(resources), config_(config), sink_(std::move(sink)), spec_(spec), mixer_(std::make_shared<Mixer>()),
       master_(std::make_shared<TrackChain>(::muse::audio::master_track_id, "Master")) {
     mixer_->init();
     auto control = std::make_shared<AutomationControlNode>();
@@ -36,7 +38,6 @@ OfflineRenderSession::~OfflineRenderSession() {
     }
     tracks_.clear();
     mixer_.reset();
-    factory_.clear_synth_sources();
     factory_.clear_all_fx();
 }
 
@@ -54,9 +55,11 @@ RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string &name,
     const TrackId id = ++last_id_;
     AudioSourceNodePtr source;
     if (data) {
-        auto made = factory_.make_event_source(id, *data, params.source);
-        if (!made.ret) return Result::make_ret(made.ret);
-        source = made.val;
+        auto node = std::make_shared<FluidTrackNode>(resources_, config_, spec_, sink_, *data);
+        node->set_output_spec(spec_);
+        node->apply_input_params(params.source);
+        if (!node->initialized()) return Result::make_ret(make_ret(Err::INVALID_SYNTH));
+        source = node;
     }
     auto control = std::make_shared<AutomationControlNode>();
     control->set_playhead_position(nullptr);

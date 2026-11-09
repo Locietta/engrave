@@ -23,44 +23,24 @@
 #pragma once
 
 #include "../ifxresolver.h"
-#include "../isynthresolver.h"
-#include "iaudiofactory.h"
+#include "nodes/fxchain.h"
 
 namespace muse::audio::engine {
-struct AudioFactory : IAudioFactory {
+struct AudioFactory {
 private:
     OutputSpec spec_;
-    synth::ISynthResolver &synth_resolver_;
     fx::IFxResolver &fx_resolver_;
-
-    synth::ISynthResolver *synth_resolver() const { return &synth_resolver_; }
 
     fx::IFxResolver *fx_resolver() const { return &fx_resolver_; }
 
 public:
-    // Both resolvers must outlive the factory.
-    AudioFactory(synth::ISynthResolver &synth_resolver, fx::IFxResolver &fx_resolver)
-        : synth_resolver_(synth_resolver), fx_resolver_(fx_resolver) {}
+    explicit AudioFactory(fx::IFxResolver &fx_resolver) : fx_resolver_(fx_resolver) {}
 
     void set_output_spec(const OutputSpec &spec) { spec_ = spec; }
 
-    // Available resources
-    AudioResourceMetaList available_input_resources() const override;
-    SoundPresetList available_sound_presets(const AudioResourceMeta &resource_meta) const override;
-    AudioResourceMetaList available_output_resources() const override;
-
-    // Make audio sources
-    RetVal<synth::ISynthesizerPtr> make_synth(const TrackId track_id, const AudioInputParams &params,
-                                              const PlaybackSetupData &setup_data) const override;
-    RetVal<synth::ISynthesizerPtr> make_default_synth(const TrackId track_id) const override;
-    void clear_synth_sources() override;
-
-    RetVal<AudioSourceNodePtr> make_event_source(const TrackId track_id, const mpe::TrackEvents &events,
-                                                 const AudioInputParams &params) const override;
-
     // Make FX
-    FxChainPtr make_master_fx_chain(const AudioFxChain &fx_chain) const override;
-    FxChainPtr make_track_fx_chain(const TrackId track_id, const AudioFxChain &fx_chain) const override;
-    void clear_all_fx() override;
+    FxChainPtr make_master_fx_chain(const AudioFxChain &fx_chain) const;
+    FxChainPtr make_track_fx_chain(const TrackId track_id, const AudioFxChain &fx_chain) const;
+    void clear_all_fx();
 };
 } // namespace muse::audio::engine

@@ -23,47 +23,10 @@
 #include "audiofactory.h"
 
 #include "audio/common/audioerrors.h"
-#include "nodes/eventaudionode.h"
 
 using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
-
-AudioResourceMetaList AudioFactory::available_input_resources() const { return synth_resolver()->resolve_available_resources(); }
-
-SoundPresetList AudioFactory::available_sound_presets(const AudioResourceMeta &resource_meta) const {
-    return synth_resolver()->resolve_available_sound_presets(resource_meta);
-}
-
-AudioResourceMetaList AudioFactory::available_output_resources() const { return fx_resolver()->resolve_available_resources(); }
-
-RetVal<synth::ISynthesizerPtr> AudioFactory::make_synth(const TrackId track_id, const AudioInputParams &params,
-                                                        const PlaybackSetupData &setup_data) const {
-    auto synth = synth_resolver()->resolve_synth(track_id, params, spec_, setup_data);
-    if (!synth) {
-        return RetVal<synth::ISynthesizerPtr>::make_ret(Err::INVALID_SYNTH);
-    }
-    return RetVal<synth::ISynthesizerPtr>::make_ok(synth);
-}
-
-RetVal<synth::ISynthesizerPtr> AudioFactory::make_default_synth(const TrackId track_id) const {
-    auto synth = synth_resolver()->resolve_default_synth(track_id);
-    if (!synth) {
-        return RetVal<synth::ISynthesizerPtr>::make_ret(Err::INVALID_SYNTH);
-    }
-    return RetVal<synth::ISynthesizerPtr>::make_ok(synth);
-}
-
-void AudioFactory::clear_synth_sources() { synth_resolver()->clear_sources(); }
-
-RetVal<AudioSourceNodePtr> AudioFactory::make_event_source(const TrackId track_id, const mpe::TrackEvents &events,
-                                                           const AudioInputParams &params) const {
-    EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, track_id, events);
-    source->set_output_spec(spec_);
-    source->apply_input_params(params);
-    if (!source->initialized()) return RetVal<AudioSourceNodePtr>::make_ret(Err::INVALID_SYNTH);
-    return RetVal<AudioSourceNodePtr>::make_ok(source);
-}
 
 FxChainPtr AudioFactory::make_master_fx_chain(const AudioFxChain &fx_chain) const {
     std::vector<IFxProcessorPtr> fxlist = fx_resolver()->resolve_master_fx_list(fx_chain, spec_);

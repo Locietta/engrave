@@ -33,9 +33,8 @@
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
-#include "audio/engine/internal/synthesizers/fluidsynth/fluidsynth.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidtrack.h"
 #include "audio/engine/isoundfontrepository.h"
-#include "audio/engine/isynthresolver.h"
 #include "audio_output.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/excerpt.h"
@@ -59,7 +58,6 @@
 #include "global/types/string.h"
 #include "global/types/uri.h"
 #include "log.h"
-#include "midi/imidioutport.h"
 #include "score_audio.h"
 
 using namespace muse;
@@ -77,31 +75,15 @@ constexpr const char *k_aux_track_name = "Aux 2";
 constexpr const char *k_metronome_track_name = "Metronome";
 constexpr const char *k_chords_track_name_prefix = "Chords.";
 
-// Capturing midi::IMidiOutPort. FluidSynth sends every event it handles (after
+// Stored MIDI observer. FluidTrack sends every event it handles (after
 // the staff -> channel remap), which is the event stream later golden tests
 // compare. The hook keeps the sink reusable by the probe and by tests.
 // renderedFrames is the number of output frames already encoded: the writer
 // reports completed frames after each chunk, so this is the start of the
 // chunk currently being rendered.
-struct CapturingMidiOutPort final : midi::IMidiOutPort {
-    midi::MidiDeviceList available_devices() const override { return {}; }
-
-    Ret connect(const midi::MidiDeviceID &) override { return make_ok(); }
-
-    void disconnect() override {}
-
-    bool is_connected() const override { return true; }
-
-    midi::MidiDeviceID device_id() const override { return "engine-capture"; }
-
-    bool supports_mid_i20_output() const override { return false; }
-
-    Ret send_event(const midi::Event &event) override {
-        if (hook) {
-            hook(event, rendered_frames);
-        }
-
-        return make_ok();
+struct MidiCapture {
+    void send_event(const midi::Event &event) {
+        if (hook) hook(event, rendered_frames);
     }
 
     EngineAudioMidiEventHook hook;
@@ -115,7 +97,7 @@ struct EngineAudio::State {
     explicit State(const muse::mpe::IArticulationProfilesRepository &profiles) : profiles(profiles) {}
 
     const muse::mpe::IArticulationProfilesRepository &profiles;
-    CapturingMidiOutPort midi_out_port;
+    MidiCapture midi_out_port;
     engine::AudioResources resources;
     std::unique_ptr<engine::AudioServices> services;
     bool services_initialized = false;
@@ -344,7 +326,7 @@ bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths,
     }
 
     // The pinned FluidSynth default sink writes parser errors to stdout, which
-    // corrupts a JSON CLI's output. FluidSynth::init() installs its own
+    // corrupts a JSON CLI's output. FluidTrack::init() installs its own
     // per-synth callbacks later, so this only covers parsing here.
     fluid_set_log_function(FLUID_PANIC, fluid_log_to_logger, nullptr);
     fluid_set_log_function(FLUID_ERR, fluid_log_to_logger, nullptr);
@@ -381,16 +363,15 @@ bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, 
     if (!validate_engine_soundfonts(soundfont_paths, error)) return false;
 
     if (!state.services_initialized) {
-        // The factory, repository and synth/effect resolvers are kept for the
-        // EngineContext lifetime; each render creates fresh synthesizer tracks.
-        state.services = std::make_unique<engine::AudioServices>(state.resources, &state.midi_out_port);
+        // Configuration and effects services live with the engine; each render
+        // creates concrete tracks borrowing its AudioResources.
+        state.services = std::make_unique<engine::AudioServices>();
         state.services_initialized = true;
         AudioEngineConfig config;
         config.use_sound_font_low_pass_filter = true;
         state.sample_rate_value = setup.sample_rate;
         engine::AudioEngineConfiguration &configuration = state.services->configuration();
         configuration.set_config(config);
-        state.services->synth_resolver().init(configuration.default_audio_input_params(), output_spec(state.sample_rate_value));
         state.factory = &state.services->factory();
         state.factory->set_output_spec(output_spec(state.sample_rate_value));
     }
@@ -624,7 +605,9 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
                         std::to_string(projected_bytes / (1024 * 1024)) + " MiB) exceeds the 1 GiB audio export limit");
     }
 
-    engine::OfflineRenderSession context(*state.factory, output_spec(state.sample_rate_value));
+    engine::OfflineRenderSession context(*state.factory, output_spec(state.sample_rate_value), state.resources,
+                                         state.services->configuration(),
+                                         [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
     std::string chain_error;
     engine::TrackChainPtr master_chain = make_master_chain(context.output(), output_spec(state.sample_rate_value), request, chain_error);
     if (!master_chain) {

@@ -22,15 +22,17 @@
 
 #pragma once
 
-#include "../iaudiofactory.h"
+#include "../synthesizers/fluidsynth/fluidtrack.h"
 #include "audio/common/audiotypes.h"
+#include "audio/engine/audioresources.h"
 #include "audiosourcenode.h"
 #include "mpe/events.h"
 
 namespace muse::audio::engine {
-struct EventAudioNode : AudioSourceNode {
-    // audioFactory makes the synthesizer for the input params; it must outlive the node.
-    EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::TrackEvents &events);
+struct FluidTrackNode : AudioSourceNode {
+    // Graph adapter; resources and configuration outlive the render session.
+    FluidTrackNode(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec, MidiEventSink sink,
+                   const mpe::TrackEvents &events);
 
     void seek(const TimePosition &position, const bool flush_sound = true) override;
     void flush() override;
@@ -55,15 +57,15 @@ private:
 
     void do_self_process(float *buffer, samples_t samples_per_channel) override;
 
-    const IAudioFactory *audio_factory() const { return &audio_factory_; }
-
-    const IAudioFactory &audio_factory_;
-    TrackId track_id_ = -1;
+    AudioResources &resources_;
+    const IAudioEngineConfiguration &config_;
+    OutputSpec default_spec_;
+    MidiEventSink sink_;
     // Borrowed only until initial setup. The export model outlives that call.
     const mpe::TrackEvents *initial_data_;
-    synth::ISynthesizerPtr synth_ = nullptr;
+    std::unique_ptr<synth::FluidTrack> synth_ = nullptr;
     AudioInputParams params_;
 };
 
-using EventAudioNodePtr = std::shared_ptr<EventAudioNode>;
+using FluidTrackNodePtr = std::shared_ptr<FluidTrackNode>;
 } // namespace muse::audio::engine
