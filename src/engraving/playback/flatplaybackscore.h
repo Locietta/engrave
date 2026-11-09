@@ -14,6 +14,8 @@ namespace mu::engraving {
 //! A track is created exactly when the legacy model creates its map entry during the shared walk
 struct PlaybackScore {
     std::vector<std::pair<InstrumentTrackId, muse::mpe::TrackEvents>> tracks;
+    //! Shared by every freeze of this export, so the cancellation stride spans tracks and calls
+    muse::mpe::FreezeProgress progress;
 
     //! Finds or creates the track; the reference is valid until the next track is created
     muse::mpe::TrackEvents &track(const InstrumentTrackId &id);
@@ -23,9 +25,10 @@ struct PlaybackScore {
 //! Freezes each completed list into the track's flat records; the list itself is left untouched
 struct FlatEventsSink {
     muse::mpe::TrackEvents &track;
+    muse::mpe::FreezeProgress &progress;
 
     void operator()(const muse::mpe::timestamp_t key, muse::mpe::PlaybackEventList &&list) const {
-        muse::mpe::freeze_events(track, key, list);
+        muse::mpe::freeze_events(track, key, list, progress);
     }
 };
 
@@ -35,7 +38,7 @@ struct DualEventsSink {
     FlatEventsSink flat;
 
     void operator()(const muse::mpe::timestamp_t key, muse::mpe::PlaybackEventList &&list) const {
-        muse::mpe::freeze_events(flat.track, key, list);
+        muse::mpe::freeze_events(flat.track, key, list, flat.progress);
         legacy(key, std::move(list));
     }
 };

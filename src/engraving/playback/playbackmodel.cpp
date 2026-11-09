@@ -106,8 +106,15 @@ void PlaybackModel::load(Score *score, const std::function<void()> &checkpoint_c
 
     checkpoint_ = checkpoint_callback;
     flat_ = flat;
+    if (flat_) {
+        // Bounded polls inside the freeze loops, through the same latched checkpoint as the walk
+        flat_->progress.checkpoint = [this] { checkpoint(); };
+    }
     DEFER {
         checkpoint_ = {};
+        if (flat_) {
+            flat_->progress.checkpoint = {};
+        }
         flat_ = nullptr;
     };
     checkpoint();
@@ -426,7 +433,7 @@ template <typename Render>
 void PlaybackModel::emit_events(const InstrumentTrackId &track_id, Render &&render) {
     PlaybackEventsMap &events = track_data(track_id).origin_events;
     if (flat_) {
-        DualEventsSink sink{{events}, {flat_->track(track_id)}};
+        DualEventsSink sink{{events}, {flat_->track(track_id), flat_->progress}};
         render(sink);
         return;
     }
@@ -469,7 +476,7 @@ void PlaybackModel::apply_context_to_track_data(const InstrumentTrackId &track_i
     PlaybackData &playback_data = this->track_data(track_id);
     playback_data.dynamics = data.dynamics;
     if (flat_) {
-        freeze_dynamics(flat_->track(track_id), data.dynamics);
+        freeze_dynamics(flat_->track(track_id), data.dynamics, flat_->progress);
     }
 
     std::set<timestamp_t> new_event_timestamps;
@@ -486,7 +493,7 @@ void PlaybackModel::apply_context_to_track_data(const InstrumentTrackId &track_i
                 new_event_timestamps.insert(pair.first);
                 // The seam for context events, which bypass the renderer sinks: the same list, after the legacy insert
                 if (flat_) {
-                    freeze_cold_events(flat_->track(track_id), pair.first, std::span{pair.second});
+                    freeze_cold_events(flat_->track(track_id), pair.first, std::span{pair.second}, flat_->progress);
                 }
             }
         }

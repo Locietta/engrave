@@ -3,6 +3,7 @@
 // the playback model and the dump B extractors, plus the renderer's sink contract.
 
 #include <algorithm>
+#include <bit>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -129,7 +130,7 @@ struct DualFixture {
     InstrumentTrackId id{ID(7), String(u"violin")};
 
     void emit(const timestamp_t key, PlaybackEventList list) {
-        DualEventsSink sink{{legacy.origin_events}, {flat.track(id)}};
+        DualEventsSink sink{{legacy.origin_events}, {flat.track(id), flat.progress}};
         sink(key, std::move(list));
     }
 
@@ -137,7 +138,7 @@ struct DualFixture {
     void emit_context(const timestamp_t key, const std::vector<Event> &events) {
         PlaybackEventList &list = legacy.origin_events[key];
         list.insert(list.end(), events.begin(), events.end());
-        freeze_cold_events(flat.track(id), key, std::span{events});
+        freeze_cold_events(flat.track(id), key, std::span{events}, flat.progress);
     }
 
     void build() {
@@ -145,7 +146,7 @@ struct DualFixture {
         legacy.setup_data.score_id = "score-1";
         flat.track(id).setup = legacy.setup_data;
         legacy.dynamics = make_dynamics();
-        freeze_dynamics(flat.track(id), legacy.dynamics);
+        freeze_dynamics(flat.track(id), legacy.dynamics, flat.progress);
 
         // Context events first, as apply_context_to_track_data inserts them before the walk
         emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.Δ", 3)});
@@ -216,10 +217,10 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     const auto pitch = track.pitch_curve(note);
     ASSERT_EQ(pitch.size(), 2u);
     EXPECT_EQ(pitch[1].at, 5000);
-    EXPECT_EQ(pitch[1].value(), -1200);
+    EXPECT_EQ(pitch[1].value, -1200);
     const auto expression = track.expression_curve(note);
     ASSERT_EQ(expression.size(), 2u);
-    EXPECT_EQ(expression[0].value(), 7000);
+    EXPECT_EQ(expression[0].value, 7000);
 
     const auto &preset = std::get<SoundPresetChangeEvent>(track.cold[0].event);
     EXPECT_EQ(preset.code, String(u"Engrave.Preset.Δ"));
@@ -232,16 +233,17 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(track.setup.id, String(u"violin"));
 
     // Dynamics are assigned, not appended
-    freeze_dynamics(fixture.flat.track(fixture.id), make_dynamics());
+    freeze_dynamics(fixture.flat.track(fixture.id), make_dynamics(), fixture.flat.progress);
     EXPECT_EQ(track.dynamic_points.size(), 4u);
 }
 
 TEST(FlatPlaybackStoreTests, FreezeRejectsEventsWithoutProducerAndKeyMismatch) {
     TrackEvents track;
+    FreezeProgress progress;
     const PlaybackEventList monostate{PlaybackEvent{}};
-    EXPECT_THROW(freeze_events(track, 0, monostate), std::logic_error);
+    EXPECT_THROW(freeze_events(track, 0, monostate, progress), std::logic_error);
     const PlaybackEventList controller{ControllerChangeEvent{}};
-    EXPECT_THROW(freeze_events(track, 0, controller), std::logic_error);
+    EXPECT_THROW(freeze_events(track, 0, controller, progress), std::logic_error);
 
     mpe::NoteEvent note = make_note(0, 6500, false);
     ExpressionContext expression = note.expression_ctx();
@@ -249,7 +251,115 @@ TEST(FlatPlaybackStoreTests, FreezeRejectsEventsWithoutProducerAndKeyMismatch) {
     ArrangementContext arrangement = note.arrangement_ctx();
     PitchContext pitch = note.pitch_ctx();
     const PlaybackEventList mismatched{mpe::NoteEvent(std::move(arrangement), std::move(pitch), std::move(expression))};
-    EXPECT_THROW(freeze_events(track, 0, mismatched), std::logic_error);
+    EXPECT_THROW(freeze_events(track, 0, mismatched, progress), std::logic_error);
+}
+
+// Design B3: curve entries keep the legacy value type, so the shared helpers see the same arithmetic on
+// every platform. percentage_t is 32-bit on MSVC and 64-bit with libstdc++; the wide cases only run there
+TEST(FlatPlaybackStoreTests, CurveValuesKeepTheLegacyTypeAndHelperResults) {
+    static_assert(std::is_same_v<decltype(max_amplitude_level(std::declval<std::span<const CurvePoint>>())), percentage_t>);
+    static_assert(std::is_same_v<decltype(amplitude_value_point(std::declval<std::span<const CurvePoint>>()).second),
+                                 decltype(std::declval<PitchCurve>().amplitude_value_point().second)>);
+
+    using Limits = std::numeric_limits<percentage_t>;
+    std::vector<std::vector<percentage_t>> cases{
+        {0, 120, -340}, {std::numeric_limits<std::int32_t>::max(), -5}, {std::numeric_limits<std::int32_t>::min() + 1, 7}};
+    if constexpr (sizeof(percentage_t) > sizeof(std::int32_t)) {
+        // Representable by the legacy curve only when percentage_t is wider than int32 (Linux)
+        const percentage_t above = static_cast<percentage_t>(std::numeric_limits<std::int32_t>::max()) + 1;
+        const percentage_t at_min = std::numeric_limits<std::int32_t>::min();
+        cases.push_back({above, 3});
+        cases.push_back({at_min, -2});
+        cases.push_back({static_cast<percentage_t>(at_min) - 1, 1});
+        cases.push_back({Limits::max() / 2, Limits::min() / 2});
+    }
+
+    for (const auto &values : cases) {
+        mpe::NoteEvent note = make_note(0, 6500, false);
+        PitchContext pitch = note.pitch_ctx();
+        ExpressionContext expression = note.expression_ctx();
+        pitch.pitch_curve = PitchCurve{};
+        expression.expression_curve = ExpressionCurve{};
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            pitch.pitch_curve.emplace(static_cast<duration_percentage_t>(i * 1000), values[i]);
+            expression.expression_curve.emplace(static_cast<duration_percentage_t>(i * 1000 + 500), values[i]);
+        }
+        const PitchCurve pitch_curve = pitch.pitch_curve;
+        const ExpressionCurve expression_curve = expression.expression_curve;
+        ArrangementContext arrangement = note.arrangement_ctx();
+        const PlaybackEventList list{mpe::NoteEvent(std::move(arrangement), std::move(pitch), std::move(expression))};
+
+        TrackEvents track;
+        FreezeProgress progress;
+        freeze_events(track, 0, list, progress);
+        ASSERT_EQ(track.notes.size(), 1u);
+        const auto flat_pitch = track.pitch_curve(track.notes[0]);
+        const auto flat_expression = track.expression_curve(track.notes[0]);
+        ASSERT_EQ(flat_pitch.size(), values.size());
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            EXPECT_EQ(flat_pitch[i].value, values[i]);
+            EXPECT_EQ(flat_expression[i].value, values[i]);
+        }
+        // The helpers the sequencer uses, on the flat span and on the legacy curve
+        EXPECT_EQ(max_amplitude_level(flat_pitch), pitch_curve.max_amplitude_level());
+        EXPECT_EQ(amplitude_value_point(flat_expression), expression_curve.amplitude_value_point());
+        EXPECT_EQ(max_amplitude_level(flat_expression), expression_curve.max_amplitude_level());
+        const float span_fraction = velocity_fraction(flat_expression);
+        const float legacy_fraction = expression_curve.velocity_fraction();
+        EXPECT_EQ(std::bit_cast<std::uint32_t>(span_fraction), std::bit_cast<std::uint32_t>(legacy_fraction));
+    }
+}
+
+// Design 4.4: the freeze loops poll every FreezeProgress::k_stride records, across calls
+TEST(FlatPlaybackStoreTests, FreezeLoopsPollWithinTheStride) {
+    constexpr std::uint32_t stride = FreezeProgress::k_stride;
+
+    struct Cancelled {};
+
+    {
+        // One large context list: a cancellation is observed after exactly one stride
+        std::vector<TextArticulationEvent> texts(stride * 2 + 10, make_text(u"t", 1));
+        TrackEvents track;
+        FreezeProgress progress;
+        progress.checkpoint = [] { throw Cancelled{}; };
+        EXPECT_THROW(freeze_cold_events(track, 0, std::span{texts}, progress), Cancelled);
+        EXPECT_EQ(track.cold.size(), stride);
+    }
+    {
+        // One large chord list: notes, articulations and curve points all count
+        PlaybackEventList list;
+        for (std::uint32_t i = 0; i < stride; ++i) list.emplace_back(make_note(0, 6500, false));
+        TrackEvents track;
+        FreezeProgress progress;
+        std::uint32_t polls = 0;
+        progress.checkpoint = [&polls] { ++polls; };
+        freeze_events(track, 0, list, progress);
+        const std::uint64_t records = track.notes.size() + track.articulations.size() + track.curve_points.size();
+        EXPECT_EQ(polls, records / stride);
+        EXPECT_EQ(progress.pending, records % stride);
+    }
+    {
+        // One layer with many automation points
+        DynamicAutomationMap curve;
+        for (std::uint32_t i = 0; i < stride + 1; ++i) curve.emplace(i, mpe::AutomationPoint{});
+        DynamicAutomationLayers layers;
+        layers.emplace(0, curve);
+        TrackEvents track;
+        FreezeProgress progress;
+        progress.checkpoint = [] { throw Cancelled{}; };
+        EXPECT_THROW(freeze_dynamics(track, layers, progress), Cancelled);
+        EXPECT_EQ(track.dynamic_points.size(), stride);
+    }
+    {
+        // The stride continues across calls: small lists still reach a poll
+        TrackEvents track;
+        FreezeProgress progress;
+        std::uint32_t polls = 0;
+        progress.checkpoint = [&polls] { ++polls; };
+        const std::vector<SyllableEvent> one{make_syllable(u"a", 0)};
+        for (std::uint32_t i = 0; i < stride * 3; ++i) freeze_cold_events(track, i, std::span{one}, progress);
+        EXPECT_EQ(polls, 3u);
+    }
 }
 
 TEST(FlatPlaybackStoreTests, RecordSpansAreChecked) {
@@ -287,7 +397,7 @@ TEST(FlatPlaybackStoreTests, CorruptedFlatRecordFailsProjection) {
         {"velocity", [](TrackEvents &t) { t.notes[1].velocity_override.reset(); }},
         {"layer", [](TrackEvents &t) { t.notes[0].voice_layer = 0; }},
         {"articulation", [](TrackEvents &t) { t.articulations[0].type = ArticulationType::ACCENT; }},
-        {"curve value", [](TrackEvents &t) { t.curve_points[1].value32 += 1; }},
+        {"curve value", [](TrackEvents &t) { t.curve_points[1].value += 1; }},
         {"curve span", [](TrackEvents &t) { t.notes[0].pitch_curve.count -= 1; }},
         {"group", [](TrackEvents &t) { t.notes[3].group_timestamp = 1; }},
         {"order", [](TrackEvents &t) { std::swap(t.notes[0].seq, t.notes[1].seq); }},
@@ -403,6 +513,37 @@ TEST_F(FlatPlaybackModelTests, DualExecutionCarriesDistinctPresets) {
     delete score;
 }
 
+// The freeze loops poll through the model's checkpoint, and the hook does not outlive load
+TEST_F(FlatPlaybackModelTests, DualExecutionPollsInsideTheFreeze) {
+    const String path = u"playback/playbackmodel_data/spanners/spanners.mscx";
+    const auto polls = [&](PlaybackScore *flat) {
+        MasterScore *score = ScoreRW::read_score(path);
+        score->init_automation();
+        std::uint64_t count = 0;
+        {
+            PlaybackModel model(repository_.get());
+            model.set_is_metronome_enabled(false);
+            model.load(score, [&count] { ++count; }, flat);
+        }
+        delete score;
+        return count;
+    };
+
+    const std::uint64_t legacy = polls(nullptr);
+    PlaybackScore flat;
+    flat.progress.pending = FreezeProgress::k_stride - 1; // the first frozen record reaches the stride
+    const std::uint64_t dual = polls(&flat);
+    EXPECT_FALSE(flat.progress.checkpoint);
+
+    std::uint64_t records = 0;
+    for (const auto &[id, track] : flat.tracks) {
+        records += track.notes.size() + track.articulations.size() + track.curve_points.size() + track.cold.size() +
+                   track.empty_groups.size() + track.dynamic_points.size();
+    }
+    ASSERT_GT(records, 0u);
+    EXPECT_EQ(dual - legacy, (FreezeProgress::k_stride - 1 + records) / FreezeProgress::k_stride);
+}
+
 TEST_F(FlatPlaybackModelTests, DualExecutionNeedsAFreshModel) {
     MasterScore *score = ScoreRW::read_score(u"playback/playbackmodel_data/repeat_range/repeat_range.mscx");
     ASSERT_TRUE(score);
@@ -454,7 +595,7 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
     PlaybackData data;
     PlaybackScore flat;
     const InstrumentTrackId id{ID(1), String(u"test")};
-    DualEventsSink dual{{data.origin_events}, {flat.track(id)}};
+    DualEventsSink dual{{data.origin_events}, {flat.track(id), flat.progress}};
     renderer.render(empty_chord, 1000, 2000, level, ctx, profile_, dual);
     renderer.render(chord, 1000, 2000, level, ctx, profile_, dual);
     ASSERT_EQ(flat.tracks.front().second.empty_groups.size(), 1u);

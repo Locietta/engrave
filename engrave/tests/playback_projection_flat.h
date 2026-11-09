@@ -44,7 +44,7 @@ struct FlatProjection {
     void points(const char *label, std::span<const muse::mpe::CurvePoint> curve) {
         out << label << ' ' << curve.size();
         for (const muse::mpe::CurvePoint &point : curve)
-            out << ' ' << static_cast<long long>(point.at) << ':' << static_cast<long long>(point.value());
+            out << ' ' << static_cast<long long>(point.at) << ':' << static_cast<long long>(point.value);
         out << '\n';
     }
 
