@@ -15,7 +15,8 @@
 #include "engrave/src/audio/engine_audio.h"
 
 int main() {
-    muse::audio::engine::AudioServices setup(nullptr);
+    muse::audio::engine::AudioResources resources;
+    muse::audio::engine::AudioServices setup(resources, nullptr);
 
     muse::audio::OutputSpec spec;
     spec.sample_rate = 44100;
