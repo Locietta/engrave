@@ -26,8 +26,9 @@
 #include "audio/common/audioerrors.h"
 #include "audio/engine/internal/audioengineconfiguration.h"
 #include "audio/engine/internal/export/abstractaudioencoder.h"
-#include "audio/engine/internal/nodes/fluidtracknode.h"
+#include "audio/engine/internal/nodes/fluidtracksource.h"
 #include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engrave/src/api/state.h"
@@ -426,6 +427,42 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     }
 }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+TEST(AudioInternal, FlatPlanConstructionFailureDestroysTracksAndRecovers) {
+    using muse::audio::engine::OfflineRenderSession;
+    using muse::audio::synth::FluidTrack;
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto render = [&] {
+        std::vector<std::byte> bytes;
+        auto result =
+            document.render_audio({}, [&](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
+        EXPECT_TRUE(result);
+        return bytes;
+    };
+    const auto baseline = render();
+    ASSERT_FALSE(baseline.empty());
+    ASSERT_EQ(FluidTrack::live_instances(), 0);
+    auto &audio = engrave::DocumentAccess::context(document).audio();
+    auto *master = engrave::DocumentAccess::master_score(document);
+    music::AudioRenderRequest request;
+    request.output_path = (std::filesystem::temp_directory_path() / "engrave-plan-fault.wav").generic_string();
+    for (int count : {0, 1}) {
+        struct Reset {
+            ~Reset() { OfflineRenderSession::fail_after_tracks = -1; }
+        } reset;
+
+        OfflineRenderSession::fail_after_tracks = count;
+        EXPECT_THROW(music::export_score_audio(audio, master, request), std::bad_alloc);
+        EXPECT_EQ(FluidTrack::live_instances(), 0);
+        OfflineRenderSession::fail_after_tracks = -1;
+        EXPECT_EQ(render(), baseline);
+        EXPECT_EQ(FluidTrack::live_instances(), 0);
+    }
+}
+#endif
+
 TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
     using namespace muse;
     using namespace muse::audio;
@@ -441,7 +478,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
                 AudioResources resources;
                 AudioEngineConfiguration config;
                 const auto events = std::make_unique<mpe::TrackEvents>();
-                FluidTrackNode node(resources, config, {44100, 4096, 2}, {}, *events);
+                FluidTrackSource node(resources, config, {44100, 4096, 2}, {}, *events);
                 node.set_output_spec({44100, 4096, 2});
                 // No resource resolves: the first apply fails after consuming the borrow.
                 node.apply_input_params({});
@@ -455,7 +492,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
                 node.apply_input_params({});
                 if (node.initialized()) return 2;
                 // Positive control: a fresh borrow with the same resources does initialize.
-                FluidTrackNode fresh(resources, config, {44100, 4096, 2}, {}, *events);
+                FluidTrackSource fresh(resources, config, {44100, 4096, 2}, {}, *events);
                 fresh.set_output_spec({44100, 4096, 2});
                 fresh.apply_input_params({});
                 return fresh.initialized() ? 0 : 3;
