@@ -1324,3 +1324,35 @@ TEST(AudioInternal, FirstRenderCancelThenRepeatedRenderAndTeardown) {
                 }()),
                 ::testing::ExitedWithCode(0), "");
 }
+
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+TEST(AudioInternal, ReverbPartialSignalAllocationDestroysAndRecovers) {
+    using muse::audio::fx::ReverbProcessor;
+
+    struct Disarm {
+        ~Disarm() { ReverbProcessor::fail_signal_allocation = -1; }
+    } disarm;
+
+    muse::audio::OutputSpec spec;
+    spec.sample_rate = 44100;
+    spec.audio_channel_count = 2;
+    spec.samples_per_channel = 4096;
+    for (int allocation = 0; allocation < 3; ++allocation) {
+        ReverbProcessor::fail_signal_allocation = allocation;
+        {
+            ReverbProcessor effect({});
+            EXPECT_THROW(effect.init(spec), std::bad_alloc);
+        }
+        ReverbProcessor effect({});
+        EXPECT_THROW(effect.init(spec), std::bad_alloc);
+        ReverbProcessor::fail_signal_allocation = -1;
+        EXPECT_NO_THROW(effect.init(spec));
+        // Exercise destruction of old buffers when a larger block is requested.
+        spec.samples_per_channel *= 2;
+        ReverbProcessor::fail_signal_allocation = allocation;
+        EXPECT_THROW(effect.init(spec), std::bad_alloc);
+        ReverbProcessor::fail_signal_allocation = -1;
+        EXPECT_NO_THROW(effect.init(spec));
+    }
+}
+#endif

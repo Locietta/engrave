@@ -25,6 +25,8 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <memory>
+#include <new>
 #include <vector>
 
 #include "allpassdispersion.h"
@@ -463,6 +465,10 @@ void ReverbProcessor::set_parameter(int32_t index, float new_value) {
     }
 }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+thread_local int ReverbProcessor::fail_signal_allocation = -1;
+#endif
+
 bool ReverbProcessor::set_format(audioch_t audio_channels_count, double sample_rate, int32_t maximum_block_size) {
     IF_ASSERT_FAILED(audio_channels_count > 0 && audio_channels_count <= 2) { return false; }
 
@@ -476,10 +482,26 @@ bool ReverbProcessor::set_format(audioch_t audio_channels_count, double sample_r
     processor_.set_format(audio_channels_count, sample_rate, maximum_block_size);
 
     if (!signal_buffers_) {
-        signal_buffers_ = new float *[processor_.audio_channels_count_value];
+        // Publish only complete storage. Sample arrays retain default (uninitialized)
+        // allocation, preserving the DSP's existing initialization and contents.
+        const auto checkpoint = [](int allocation) {
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+            if (fail_signal_allocation == allocation) throw std::bad_alloc();
+#else
+            (void) allocation;
+#endif
+        };
+        checkpoint(0);
+        auto pointers = std::make_unique<float *[]>(processor_.audio_channels_count_value);
+        std::unique_ptr<float[]> channels[2];
         for (audioch_t i = 0; i < processor_.audio_channels_count_value; ++i) {
-            signal_buffers_[i] = new float[maximum_block_size];
+            checkpoint(i + 1);
+            channels[i].reset(new float[maximum_block_size]);
+            pointers[i] = channels[i].get();
         }
+        signal_buffer_channels_ = processor_.audio_channels_count_value;
+        signal_buffers_ = pointers.release();
+        for (auto &channel : channels) channel.release();
     }
 
     d->work_buffer.set_size(2, maximum_block_size);
@@ -533,12 +555,13 @@ bool ReverbProcessor::set_format(audioch_t audio_channels_count, double sample_r
 }
 
 void ReverbProcessor::delete_signal_buffers() {
-    for (audioch_t i = 0; i < processor_.audio_channels_count_value; ++i) {
+    for (audioch_t i = 0; i < signal_buffer_channels_; ++i) {
         delete[] signal_buffers_[i];
     }
 
     delete[] signal_buffers_;
     signal_buffers_ = nullptr;
+    signal_buffer_channels_ = 0;
 }
 
 void ReverbProcessor::reset() {
