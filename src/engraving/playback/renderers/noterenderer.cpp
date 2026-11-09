@@ -91,6 +91,7 @@ bool NoteRenderer::should_render(const Note *note, const RenderingContext &ctx, 
 
         //!Note Checking whether the tied note has any multi-note articulation attached
         //!     If so, we can't ignore such note
+        // begin() detaches first; update_occupied_range uses at(), with no insertion or erase.
         for (const auto &pair : articulations) {
             if (muse::mpe::is_multi_note_articulation(pair.first) && !muse::mpe::is_ranged_articulation(pair.first)) {
                 return true;
@@ -259,6 +260,7 @@ void NoteRenderer::add_tied_note(const NominalNoteCtx &tied_note_ctx, NominalNot
         ArticulationType::STACCATISSIMO,
     };
 
+    // Insert into a different handle: COW detaches the destination and keeps this source valid.
     for (const auto &pair : tied_note_ctx.articulations) {
         if (!muse::contains(articulation_to_ignore_types, pair.first)) {
             first_note_ctx.articulations.insert(pair);
@@ -271,6 +273,7 @@ void NoteRenderer::update_articulation_boundaries(const timestamp_t note_timesta
     const timestamp_t note_timestamp_to = note_timestamp + note_duration;
     IF_ASSERT_FAILED(note_timestamp_to > 0) { return; }
 
+    // begin() detaches first; update_occupied_range uses at(), with no insertion or erase.
     for (const auto &pair : articulations) {
         const ArticulationAppliedData &articulation = pair.second;
 

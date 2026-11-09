@@ -29,12 +29,13 @@
 #include <math.h>
 #include <stdint.h>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "sortedrange.h"
 #include "soundid.h"
+#include "types/enumset.h"
 #include "types/number.h"
+#include "types/sharedflatmap.h"
 #include "types/sharedhashmap.h"
 #include "types/sharedmap.h"
 
@@ -117,7 +118,7 @@ float velocity_fraction(const Curve &curve) {
 }
 
 template <typename T>
-struct ValuesCurve : public SharedMap<duration_percentage_t, T> {
+struct ValuesCurve : public SharedFlatMap<duration_percentage_t, T> {
     std::pair<duration_percentage_t, T> amplitude_value_point() const { return ::muse::mpe::amplitude_value_point(*this); }
 
     T max_amplitude_level() const { return ::muse::mpe::max_amplitude_level(*this); }
@@ -328,7 +329,7 @@ enum class ArticulationType : signed char {
     LAST
 };
 
-using ArticulationTypeSet = std::unordered_set<ArticulationType>;
+using ArticulationTypeSet = EnumSet<ArticulationType, static_cast<size_t>(ArticulationType::LAST) + 1>;
 
 inline bool is_multi_note_articulation(const ArticulationType type) {
     static const ArticulationTypeSet multi_types{
@@ -490,7 +491,7 @@ struct ArticulationPatternSegment {
     }
 };
 
-using ArticulationPattern = SharedMap<duration_percentage_t, ArticulationPatternSegment>;
+using ArticulationPattern = SharedFlatMap<duration_percentage_t, ArticulationPatternSegment>;
 
 struct ArticulationsProfile {
     std::vector<ArticulationFamily> supported_families;
@@ -513,7 +514,7 @@ struct ArticulationsProfile {
 
     void remove_pattern(const ArticulationType type) { patterns_.erase(type); }
 
-    const SharedHashMap<ArticulationType, ArticulationPattern> &data() const { return patterns_; }
+    const SharedFlatMap<ArticulationType, ArticulationPattern> &data() const { return patterns_; }
 
     bool contains(const ArticulationType type) const { return patterns_.find(type) != patterns_.cend(); }
 
@@ -522,7 +523,7 @@ struct ArticulationsProfile {
     bool operator==(const ArticulationsProfile &other) const { return patterns_ == other.patterns_; }
 
 private:
-    SharedHashMap<ArticulationType, ArticulationPattern> patterns_;
+    SharedFlatMap<ArticulationType, ArticulationPattern> patterns_;
 };
 
 using ArticulationsProfilePtr = std::shared_ptr<ArticulationsProfile>;
@@ -623,8 +624,8 @@ struct ArticulationAppliedData {
 
 //! Ordered by ascending ArticulationType, which is the canonical precedence order of every decision that
 //! iterates the map (averaging fallback, per-note emission, ornament/tremolo/arpeggio choice).
-//! SharedMap is temporary scaffolding until the playback container step.
-struct ArticulationMap : public SharedMap<ArticulationType, ArticulationAppliedData> {
+//! Flat backing preserves the normalized precedence order.
+struct ArticulationMap : public SharedFlatMap<ArticulationType, ArticulationAppliedData> {
     static constexpr size_t expected_size = (::muse::mpe::hundred_percent / ::muse::mpe::ten_percent) + 1;
 
     void update_occupied_range(const ArticulationType type, const duration_percentage_t input_occupied_from,
@@ -731,6 +732,7 @@ private:
             !exp_pattern.dynamic_offset_map.empty() && exp_pattern.max_amplitude_level() != dynamic_level_from_type(DynamicType::NATURAL);
 
         if (has_meaningful_dynamic_offset) {
+            // begin() detaches once; the loop changes values only, never keys or size.
             auto out_it = out.dynamic_offset_map.begin();
             auto seg_it = exp_pattern.dynamic_offset_map.cbegin();
 
@@ -746,6 +748,7 @@ private:
         const bool has_meaningful_pitch_offset = !pitch_pattern.pitch_offset_map.empty() && pitch_pattern.max_amplitude_level() != 0;
 
         if (has_meaningful_pitch_offset) {
+            // begin() detaches once; the loop changes values only, never keys or size.
             auto out_it = out.pitch_offset_map.begin();
             auto seg_it = pitch_pattern.pitch_offset_map.cbegin();
 
