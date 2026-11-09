@@ -93,6 +93,7 @@ def main():
         run(name, cmd, a.engine_source)
 
     run("comparator-mutations", [sys.executable, REPO_ROOT / "tests/test_inventory.py"])
+    run("playback-witness-controls", [sys.executable, "-O", REPO_ROOT / "tests/test_playback_witness.py"])
     if not a.skip_build:
         config = [
             "f",
