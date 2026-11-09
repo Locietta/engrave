@@ -11,12 +11,11 @@
 #include "audio/engine/iaudioengineconfiguration.h"
 #include "audio/engine/internal/audiofactory.h"
 #include "audio/engine/internal/offlinerendersession.h"
-#include "audio/engine/isynthresolver.h"
 #include "engrave/src/audio/engine_audio.h"
 
 int main() {
     muse::audio::engine::AudioResources resources;
-    muse::audio::engine::AudioServices setup(resources, nullptr);
+    muse::audio::engine::AudioServices setup;
 
     muse::audio::OutputSpec spec;
     spec.sample_rate = 44100;
@@ -27,11 +26,10 @@ int main() {
     config.use_sound_font_low_pass_filter = true;
     auto configuration = &setup.configuration();
     configuration->set_config(config);
-    setup.synth_resolver().init(configuration->default_audio_input_params(), spec);
 
     auto factory = &setup.factory();
     factory->set_output_spec(spec);
-    muse::audio::engine::OfflineRenderSession session(*factory, spec);
+    muse::audio::engine::OfflineRenderSession session(*factory, spec, resources, *configuration, {});
 
     std::cout << "audio engine linked\n";
     return 0;
