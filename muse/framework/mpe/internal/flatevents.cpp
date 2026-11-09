@@ -19,19 +19,18 @@ std::uint32_t buffer_end(const Buf<T> &buf) {
 }
 
 template <class Curve>
-Span freeze_curve(TrackEvents &track, const Curve &curve) {
+Span freeze_curve(TrackEvents &track, const Curve &curve, FreezeProgress &progress) {
+    static_assert(std::is_same_v<typename Curve::mapped_type, decltype(CurvePoint::value)>, "curve values are stored unnarrowed");
     Span span{buffer_end(track.curve_points), 0};
     for (const auto &[at, value] : curve) {
-        if (value < std::numeric_limits<std::int32_t>::min() || value > std::numeric_limits<std::int32_t>::max()) {
-            throw StoreLimit{"curve value exceeds the int32 record format"};
-        }
-        emplace_checked(track.curve_points, CurvePoint{at, static_cast<std::int32_t>(value)});
+        emplace_checked(track.curve_points, CurvePoint{at, value});
+        progress.advance();
     }
     span.count = buffer_end(track.curve_points) - span.first;
     return span;
 }
 
-void freeze_note(TrackEvents &track, const timestamp_t group_timestamp, const NoteEvent &event) {
+void freeze_note(TrackEvents &track, const timestamp_t group_timestamp, const NoteEvent &event, FreezeProgress &progress) {
     const ArrangementContext &arrangement = event.arrangement_ctx();
     const PitchContext &pitch = event.pitch_ctx();
     const ExpressionContext &expression = event.expression_ctx();
@@ -57,39 +56,43 @@ void freeze_note(TrackEvents &track, const timestamp_t group_timestamp, const No
             throw std::logic_error("articulation key differs from its meta type");
         }
         emplace_checked(track.articulations, ArticulationRecord{data.meta.timestamp, data.meta.overall_duration, type});
+        progress.advance();
     }
     record.articulations.count = buffer_end(track.articulations) - record.articulations.first;
 
-    record.pitch_curve = freeze_curve(track, pitch.pitch_curve);
-    record.expression_curve = freeze_curve(track, expression.expression_curve);
+    record.pitch_curve = freeze_curve(track, pitch.pitch_curve, progress);
+    record.expression_curve = freeze_curve(track, expression.expression_curve, progress);
 
     emplace_checked(track.notes, record);
+    progress.advance();
 }
 
-void freeze_empty_group(TrackEvents &track, const timestamp_t group_timestamp) {
+void freeze_empty_group(TrackEvents &track, const timestamp_t group_timestamp, FreezeProgress &progress) {
     emplace_checked(track.empty_groups, EmptyGroup{group_timestamp, take_seq(track)});
+    progress.advance();
 }
 
 template <class Event>
-void freeze_cold(TrackEvents &track, const timestamp_t group_timestamp, const Event &event) {
+void freeze_cold(TrackEvents &track, const timestamp_t group_timestamp, const Event &event, FreezeProgress &progress) {
     track.cold.push_back(ColdEvent{group_timestamp, take_seq(track), event});
+    progress.advance();
 }
 
 template <class Event>
-void freeze_cold_list(TrackEvents &track, const timestamp_t group_timestamp, std::span<const Event> events) {
+void freeze_cold_list(TrackEvents &track, const timestamp_t group_timestamp, std::span<const Event> events, FreezeProgress &progress) {
     if (events.empty()) {
-        freeze_empty_group(track, group_timestamp);
+        freeze_empty_group(track, group_timestamp, progress);
         return;
     }
     for (const Event &event : events) {
-        freeze_cold(track, group_timestamp, event);
+        freeze_cold(track, group_timestamp, event, progress);
     }
 }
 } // namespace
 
-void freeze_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const PlaybackEvent> events) {
+void freeze_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const PlaybackEvent> events, FreezeProgress &progress) {
     if (events.empty()) {
-        freeze_empty_group(track, group_timestamp);
+        freeze_empty_group(track, group_timestamp, progress);
         return;
     }
 
@@ -98,10 +101,10 @@ void freeze_events(TrackEvents &track, const timestamp_t group_timestamp, std::s
             [&](const auto &value) {
                 using T = std::decay_t<decltype(value)>;
                 if constexpr (std::is_same_v<T, NoteEvent>) {
-                    freeze_note(track, group_timestamp, value);
+                    freeze_note(track, group_timestamp, value, progress);
                 } else if constexpr (std::is_same_v<T, TextArticulationEvent> || std::is_same_v<T, SoundPresetChangeEvent> ||
                                      std::is_same_v<T, SyllableEvent>) {
-                    freeze_cold(track, group_timestamp, value);
+                    freeze_cold(track, group_timestamp, value, progress);
                 } else if constexpr (std::is_same_v<T, std::monostate>) {
                     throw std::logic_error("flat playback store: monostate event has no producer");
                 } else {
@@ -113,19 +116,22 @@ void freeze_events(TrackEvents &track, const timestamp_t group_timestamp, std::s
     }
 }
 
-void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events) {
-    freeze_cold_list(track, group_timestamp, events);
+void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events,
+                        FreezeProgress &progress) {
+    freeze_cold_list(track, group_timestamp, events, progress);
 }
 
-void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const TextArticulationEvent> events) {
-    freeze_cold_list(track, group_timestamp, events);
+void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const TextArticulationEvent> events,
+                        FreezeProgress &progress) {
+    freeze_cold_list(track, group_timestamp, events, progress);
 }
 
-void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const SyllableEvent> events) {
-    freeze_cold_list(track, group_timestamp, events);
+void freeze_cold_events(TrackEvents &track, const timestamp_t group_timestamp, std::span<const SyllableEvent> events,
+                        FreezeProgress &progress) {
+    freeze_cold_list(track, group_timestamp, events, progress);
 }
 
-void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics) {
+void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics, FreezeProgress &progress) {
     track.dynamic_layers.clear();
     track.dynamic_points.clear();
 
@@ -133,6 +139,7 @@ void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics
         DynamicLayer record{layer, {buffer_end(track.dynamic_points), 0}};
         for (const auto &[at, point] : curve) {
             emplace_checked(track.dynamic_points, DynamicPoint{at, point});
+            progress.advance();
         }
         record.points.count = buffer_end(track.dynamic_points) - record.points.first;
         emplace_checked(track.dynamic_layers, record);

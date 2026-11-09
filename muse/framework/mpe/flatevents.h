@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <span>
@@ -71,12 +72,12 @@ struct ArticulationRecord {
     ArticulationType type = ArticulationType::UNDEFINED;
 };
 
-//! A ValuesCurve entry; value is range-checked into int32 when frozen, value() restores the curve type
+//! A ValuesCurve entry in the curve's own key and value types (design B3: no narrowing). The sorted-range
+//! helpers (amplitude_value_point, velocity_fraction, ...) therefore run on the legacy arithmetic types on
+//! every platform; percentage_t is int_fast16_t, 32-bit on MSVC and 64-bit on glibc/libstdc++
 struct CurvePoint {
     duration_percentage_t at = 0;
-    std::int32_t value32 = 0;
-
-    percentage_t value() const { return static_cast<percentage_t>(value32); }
+    percentage_t value = 0;
 };
 
 struct NoteRecord {
@@ -129,6 +130,37 @@ static_assert(std::is_trivially_copyable_v<DynamicPoint>);
 static_assert(std::is_trivially_copyable_v<DynamicLayer>);
 static_assert(std::is_trivially_copyable_v<EmptyGroup>);
 
+// The flat curve entry restores exactly the legacy curve types, whatever their platform width
+static_assert(std::is_same_v<pitch_level_t, percentage_t> && std::is_same_v<dynamic_level_t, percentage_t>);
+static_assert(std::is_same_v<PitchCurve::key_type, decltype(CurvePoint::at)>);
+static_assert(std::is_same_v<PitchCurve::mapped_type, decltype(CurvePoint::value)>);
+static_assert(std::is_same_v<ExpressionCurve::key_type, decltype(CurvePoint::at)>);
+static_assert(std::is_same_v<ExpressionCurve::mapped_type, decltype(CurvePoint::value)>);
+static_assert(std::is_same_v<sorted_key_t<std::span<const CurvePoint>>, sorted_key_t<PitchCurve>>);
+static_assert(std::is_same_v<sorted_value_t<std::span<const CurvePoint>>, sorted_value_t<PitchCurve>>);
+static_assert(std::is_same_v<sorted_value_t<std::span<const CurvePoint>>, sorted_value_t<ExpressionCurve>>);
+static_assert(sizeof(CurvePoint::value) == sizeof(percentage_t) && sizeof(CurvePoint::at) == sizeof(duration_percentage_t));
+
+//! Bounded cancellation inside the freeze loops (design 4.4): checkpoint runs after every
+//! k_stride frozen records (notes, articulations, curve points, cold events, empty groups,
+//! dynamic points), counted across calls. It may throw to abort; the store is then discarded
+struct FreezeProgress {
+    static constexpr std::uint32_t k_stride = 4096;
+
+    std::function<void()> checkpoint;
+    std::uint32_t pending = 0;
+
+    void advance() {
+        if (++pending < k_stride) {
+            return;
+        }
+        pending = 0;
+        if (checkpoint) {
+            checkpoint();
+        }
+    }
+};
+
 struct TrackEvents {
     Buf<NoteRecord> notes;
     Buf<ArticulationRecord> articulations;
@@ -161,13 +193,15 @@ private:
 //! Appends one completed per-chord list under its group key. NoteEvents become NoteRecords, text,
 //! preset and syllable events become cold events; an empty list records the empty group.
 //! monostate and ControllerChangeEvent have no producer and throw std::logic_error
-void freeze_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const PlaybackEvent> events);
+void freeze_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const PlaybackEvent> events, FreezeProgress &progress);
 
 //! Context events that the model inserts straight into the legacy map (presets, text, syllables)
-void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events);
-void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const TextArticulationEvent> events);
-void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SyllableEvent> events);
+void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SoundPresetChangeEvent> events,
+                        FreezeProgress &progress);
+void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const TextArticulationEvent> events,
+                        FreezeProgress &progress);
+void freeze_cold_events(TrackEvents &track, timestamp_t group_timestamp, std::span<const SyllableEvent> events, FreezeProgress &progress);
 
 //! Replaces the track's dynamics with a copy of the layers (an assignment, as in the legacy model)
-void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics);
+void freeze_dynamics(TrackEvents &track, const DynamicAutomationLayers &dynamics, FreezeProgress &progress);
 } // namespace muse::mpe
