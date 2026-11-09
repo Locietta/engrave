@@ -10,13 +10,12 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
-#include <map>
 #include <memory>
-#include <set>
 #include <stdexcept>
 #include <thread>
 #include <utility>
 
+#include <amc/flatset.hpp>
 #include <fluidsynth.h>
 
 #include "audio/common/audioutils.h"
@@ -39,6 +38,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/flatplaybackscore.h"
+#include "global/flatmap.h"
 #ifdef ENGRAVE_PLAYBACK_HARNESS
 #include "engraving/playback/playbackmodel.h"
 #endif
@@ -466,7 +466,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     MasterScore *master_score = master;
     // Excerpt selection mutes every master part that is absent from, or
     // invisible in, the excerpt (masternotation.cpp:748-770).
-    std::set<ID> muted_parts;
+    amc::FlatSet<ID> muted_parts;
     bool excerpt_selected = false;
     if (request.excerpt_id >= 0) {
         const std::vector<Excerpt *> &excerpts = master_score->excerpts();
@@ -589,7 +589,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // a part export it contains only the excerpt's parts, while master tracks
     // outside it keep neutral values and are muted below.
     const std::vector<EngineAudioTrackInfo> mix_tracks = engine_audio_tracks(master_score, request.excerpt_id);
-    std::map<InstrumentTrackId, std::size_t> mix_index;
+    muse::FlatMap<InstrumentTrackId, std::size_t> mix_index;
     for (std::size_t index = 0; index < mix_tracks.size(); ++index) {
         mix_index.emplace(mix_tracks[index].id, index);
     }
