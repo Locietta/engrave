@@ -119,13 +119,6 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
     update_main_sequence_iterator();
 }
 
-void FluidSequencer::update_off_stream_events(const mpe::PlaybackEventsMap &events) {
-    EventSequenceMap staged;
-    add_playback_events(staged, events, false /*isMainStream*/);
-    flatten_timeline(staged, off_stream_events_);
-    update_off_sequence_iterator();
-}
-
 const ChannelMap &FluidSequencer::channels() const { return channels_; }
 
 void FluidSequencer::set_on_channel_added(std::function<void(midi::channel_t, const midi::Program &)> on_channel_added) {

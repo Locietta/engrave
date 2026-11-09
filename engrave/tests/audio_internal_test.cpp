@@ -880,8 +880,9 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
 
     struct ExposedSequencer : FluidSequencer {
         using FluidSequencer::chunk_plan_;
+        using FluidSequencer::EventSequenceMap;
+        using FluidSequencer::flatten_timeline;
         using FluidSequencer::main_stream_events_;
-        using FluidSequencer::off_stream_events_;
     };
 
     // 1. checked_grow enforces uint32_t bounds and throws StoreLimit.
@@ -918,21 +919,15 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
     emplace_checked(seq.main_stream_events_.events, 0ULL, ev1);
     emplace_checked(seq.main_stream_events_.events, 100ULL, ev2);
     emplace_checked(seq.main_stream_events_.events, 250ULL, ev3);
-    emplace_checked(seq.off_stream_events_.events, 0ULL, ev1);
 
-    // Inactive: returns 1 slice from off_stream_events_ and clears it on next advance.
+    // Inactive: returns 1 empty continuation slice bound to TimelineStream::OFF.
     {
         const auto &plan = seq.move_playback_forward(50);
         ASSERT_EQ(plan.size(), 1u);
         EXPECT_EQ(plan[0].at, 0ULL);
-        EXPECT_EQ(plan[0].count, 1u);
-        const auto span = seq.slice_events(plan[0]);
-        ASSERT_EQ(span.size(), 1u);
-        EXPECT_EQ(span[0].event, ev1);
-        const auto &plan2 = seq.move_playback_forward(50);
-        ASSERT_EQ(plan2.size(), 1u);
-        EXPECT_EQ(plan2[0].count, 0u);
-        EXPECT_TRUE(seq.off_stream_events_.events.empty());
+        EXPECT_EQ(plan[0].count, 0u);
+        EXPECT_EQ(plan[0].stream, TimelineStream::OFF);
+        EXPECT_TRUE(seq.slice_events(plan[0]).empty());
     }
 
     // Active: continuation slice at 0 merges with timestamp 0 group; <= boundary includes 100.
@@ -944,9 +939,19 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
         EXPECT_EQ(plan[0].at, 0ULL);
         EXPECT_EQ(plan[0].first, 0u);
         EXPECT_EQ(plan[0].count, 2u);
+        EXPECT_EQ(plan[0].stream, TimelineStream::MAIN);
         EXPECT_EQ(plan[1].at, 100ULL);
         EXPECT_EQ(plan[1].first, 2u);
         EXPECT_EQ(plan[1].count, 1u);
+        EXPECT_EQ(plan[1].stream, TimelineStream::MAIN);
+
+        // Switching is_active_ while a plan is live keeps slices bound to their originating stream (MAIN).
+        seq.set_active(false);
+        const auto span0 = seq.slice_events(plan[0]);
+        ASSERT_EQ(span0.size(), 2u);
+        EXPECT_EQ(span0[0].event, ev0);
+        EXPECT_EQ(span0[1].event, ev1);
+        seq.set_active(true);
     }
 
     const auto reused_cap = seq.chunk_plan_.capacity();
@@ -971,8 +976,13 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
         EXPECT_EQ(plan[1].count, 1u);
     }
 
-    // Seek to 100: lower_bound positions cursor at index 2 (timestamp 100), so continuation merges at 100.
-    seq.set_playback_position(100);
+    // Seek to 100 invalidates any live slice plan and positions cursor at index 2 (timestamp 100).
+    {
+        const ChunkSlice stale_slice = seq.chunk_plan_[1];
+        seq.set_playback_position(100);
+        EXPECT_TRUE(seq.chunk_plan_.empty());
+        EXPECT_THROW(std::ignore = seq.slice_events(stale_slice), StoreLimit);
+    }
     EXPECT_EQ(seq.main_stream_events_.cursor, 2u);
     {
         const auto &plan = seq.move_playback_forward(50);
@@ -980,5 +990,88 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
         EXPECT_EQ(plan[0].at, 100ULL);
         EXPECT_EQ(plan[0].first, 2u);
         EXPECT_EQ(plan[0].count, 1u);
+    }
+
+    // flush_offstream and load also invalidate any live slice plan.
+    {
+        const ChunkSlice stale_slice = seq.chunk_plan_[0];
+        seq.flush_offstream();
+        EXPECT_THROW(std::ignore = seq.slice_events(stale_slice), StoreLimit);
+    }
+}
+
+TEST(AudioInternal, FlattenTimelineBoundedCancellation) {
+    using namespace muse::audio::engine;
+    using namespace muse::audio::synth;
+    using muse::midi::Event;
+
+    struct ExposedSequencer : FluidSequencer {
+        using FluidSequencer::EventSequenceMap;
+        using FluidSequencer::flatten_timeline;
+        using FluidSequencer::main_stream_events_;
+    };
+
+    const auto make_staged = [](std::size_t groups, std::size_t per_group) {
+        ExposedSequencer::EventSequenceMap staged;
+        Event ev(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE10);
+        ev.set_channel(0);
+        ev.set_note(60);
+        ev.set_velocity7(100);
+        for (std::size_t g = 0; g < groups; ++g) {
+            auto &seq = staged[muse::audio::msecs_t(static_cast<std::int64_t>(g * 10))];
+            seq.assign(per_group, ev);
+        }
+        return staged;
+    };
+
+    // 1. Cancellation during the pre-reserve totals scan (5,000 one-event groups, poll 2 fires at group 4,096).
+    {
+        auto staged = make_staged(5000, 1);
+        MidiTimeline timeline;
+        emplace_checked(timeline.events, 42ULL, Event{});
+        timeline.cursor = 1;
+
+        int polls = 0;
+        const std::function<bool()> poll_fn = [&] { return ++polls == 2; };
+        muse::audio::OfflineCancellation scope(poll_fn);
+        ExposedSequencer::flatten_timeline(staged, timeline);
+        EXPECT_EQ(polls, 2);
+        EXPECT_TRUE(timeline.empty());
+        EXPECT_EQ(timeline.cursor, 0u);
+        EXPECT_TRUE(staged.empty());
+    }
+
+    // 2. Cancellation during the copy + progressive erase loop (5,000 one-event groups, poll 4 fires after
+    //    initial check + scan poll at 4,096 + post-scan check + 4,096 copy/erase work units).
+    {
+        auto staged = make_staged(5000, 1);
+        MidiTimeline timeline;
+
+        int polls = 0;
+        const std::function<bool()> poll_fn = [&] { return ++polls == 4; };
+        muse::audio::OfflineCancellation scope(poll_fn);
+        ExposedSequencer::flatten_timeline(staged, timeline);
+        EXPECT_EQ(polls, 4);
+        EXPECT_TRUE(timeline.empty());
+        EXPECT_EQ(timeline.cursor, 0u);
+        EXPECT_TRUE(staged.empty());
+    }
+
+    // 3. Normal non-cancelled flatten after a cancelled flatten recovers cleanly and drains staged.
+    {
+        auto staged = make_staged(5000, 1);
+        MidiTimeline timeline;
+
+        int polls = 0;
+        const std::function<bool()> poll_fn = [&] {
+            ++polls;
+            return false;
+        };
+        muse::audio::OfflineCancellation scope(poll_fn);
+        ExposedSequencer::flatten_timeline(staged, timeline);
+        EXPECT_EQ(timeline.events.size(), 5000u);
+        EXPECT_EQ(timeline.cursor, 0u);
+        EXPECT_TRUE(staged.empty());
+        EXPECT_GE(polls, 5);
     }
 }

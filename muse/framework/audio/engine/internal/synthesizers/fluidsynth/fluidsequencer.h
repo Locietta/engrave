@@ -48,7 +48,6 @@ struct FluidSequencer : engine::AbstractEventSequencer<midi::Event> {
 
 private:
     void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) override;
-    void update_off_stream_events(const mpe::PlaybackEventsMap &events) override;
 
     using SostenutoTimeAndDurations = std::map<midi::channel_t, std::vector<mpe::TimestampAndDuration>>;
 
