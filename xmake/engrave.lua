@@ -272,6 +272,8 @@ target("muse_draw")
 target("muse_mpe")
     set_kind("static")
     add_deps("muse_generated", "muse_global")
+    -- The flat MPE store (mpe/flatevents.h) is built on amc vectors; producers and consumers include it.
+    add_packages("amc", {public = true})
     add_engine_target_defaults()
     add_includedirs(
         engine("muse/framework/mpe"),
