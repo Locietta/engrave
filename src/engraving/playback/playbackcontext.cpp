@@ -40,6 +40,7 @@
 #include "global/flatmap.h"
 #include "global/realfn.h"
 #include "log.h"
+#include "playbackrelease.h"
 #include "types/constants.h"
 #include "utils/arrangementutils.h"
 #include "utils/expressionutils.h"
@@ -385,7 +386,8 @@ void PlaybackContext::update_sound_preset_and_text_articulation_map(const Part *
         }
 
         if (flag->apply_to_all_staves()) {
-            return !flags_on_segment.contains(staff_idx);
+            return std::none_of(flags_on_segment.begin(), flags_on_segment.end(),
+                                [staff_idx](const auto &entry) { return entry.first == staff_idx; });
         }
 
         return false;
@@ -495,7 +497,10 @@ void PlaybackContext::handle_segment_annotations(const Segment *segment, const i
             if (const SoundFlag *flag = to_staff_text(annotation)->sound_flag()) {
                 if (sound_flag_playable(flag)) {
                     const auto part_index = std::find(parts.begin(), parts.end(), annotation_part) - parts.begin();
-                    sound_flags_by_part[part_index].emplace(flag->staff_idx(), flag);
+                    auto &flags = sound_flags_by_part[part_index];
+                    if (std::none_of(flags.begin(), flags.end(), [flag](const auto &entry) { return entry.first == flag->staff_idx(); })) {
+                        muse::emplace_checked(flags, flag->staff_idx(), flag);
+                    }
                 }
             }
         }
@@ -677,38 +682,14 @@ bool PlaybackContext::has_only_one_lyrics_verse(const RepeatSegment *repeat, con
 }
 
 namespace mu::engraving {
-namespace {
-template <class Container>
-void drain_context(Container &items, const std::function<void()> &step) {
-    while (!items.empty()) {
-        if constexpr (requires { typename Container::mapped_type; }) {
-            auto &value = std::prev(items.end())->second;
-            if constexpr (requires {
-                              value.begin();
-                              value.erase(value.begin());
-                          }) {
-                drain_context(value, step);
-            }
-        }
-        if constexpr (requires { items.pop_back(); })
-            items.pop_back();
-        else
-            items.erase(std::prev(items.end()));
-        step();
-    }
-}
-} // namespace
-
 void PlaybackContext::release(const std::function<void()> &step) {
-    drain_context(used_tracks_, step);
-    dynamics_curve_by_track_.clear();
-    step();
-    drain_context(sound_presets_by_track_, step);
-    drain_context(text_articulations_by_track_, step);
-    drain_context(syllables_by_track_, step);
-    drain_context(play_techniques_by_track_, step);
-    current_verse_num_by_chord_rest_.clear();
-    step();
-    drain_context(multi_verse_lyrics_position_map_, step);
+    drain_playback_back(used_tracks_, step);
+    drain_playback_back(dynamics_curve_by_track_, step);
+    drain_playback_back(sound_presets_by_track_, step);
+    drain_playback_back(text_articulations_by_track_, step);
+    drain_playback_back(syllables_by_track_, step);
+    drain_playback_back(play_techniques_by_track_, step);
+    drain_playback_back(current_verse_num_by_chord_rest_, step);
+    drain_playback_back(multi_verse_lyrics_position_map_, step);
 }
 } // namespace mu::engraving

@@ -34,6 +34,7 @@
 #include "mpe/iarticulationprofilesrepository.h"
 #include "playbackcontext.h"
 #include "playbackeventsrenderer.h"
+#include "playbackrelease.h"
 #include "playbacksetupdataresolver.h"
 
 namespace mu::engraving {
@@ -51,6 +52,28 @@ inline bool is_playback_chord_symbols_track(const InstrumentTrackId &track_id) {
 
 //! One part's context, applied to each of the part's tracks
 struct PlaybackPartData {
+    explicit PlaybackPartData(const std::function<void()> &checkpoint = {}) : checkpoint_(checkpoint) {}
+
+    PlaybackPartData(const PlaybackPartData &) = delete;
+    PlaybackPartData &operator=(const PlaybackPartData &) = delete;
+
+    ~PlaybackPartData() {
+        // Normal exit calls release explicitly so cancellation propagates. Unwinding must preserve its original exception.
+        try {
+            release();
+        } catch (...) {}
+    }
+
+    void release() {
+        if (sound_presets.empty() && text_articulations.empty() && syllables.empty()) return;
+        release_playback_polled(checkpoint_, [&](const auto &step) {
+            drain_playback_back(sound_presets, step);
+            drain_playback_back(text_articulations, step);
+            drain_playback_back(syllables, step);
+        });
+    }
+
+    std::function<void()> checkpoint_;
     muse::mpe::DynamicAutomationLayers dynamics;
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SoundPresetChangeEventList> sound_presets;
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::TextArticulationEventList> text_articulations;
@@ -159,15 +182,17 @@ struct PlaybackWalk {
                 continue;
             }
 
-            const PlaybackPartData data{playback_ctx->dynamic_level_layers(track_range.start_track, track_range.end_track),
-                                        playback_ctx->sound_presets(track_range.start_track, track_range.end_track),
-                                        playback_ctx->text_articulations(track_range.start_track, track_range.end_track),
-                                        playback_ctx->syllables(track_range.start_track, track_range.end_track)};
+            PlaybackPartData data(checkpoint_callback);
+            data.dynamics = playback_ctx->dynamic_level_layers(track_range.start_track, track_range.end_track);
+            data.sound_presets = playback_ctx->sound_presets(track_range.start_track, track_range.end_track);
+            data.text_articulations = playback_ctx->text_articulations(track_range.start_track, track_range.end_track);
+            data.syllables = playback_ctx->syllables(track_range.start_track, track_range.end_track);
 
             for (const InstrumentTrackId &track_id : track_ids) {
                 checkpoint();
                 store.apply_context(track_id, data, *this);
             }
+            data.release();
         }
     }
 

@@ -89,7 +89,9 @@ private:
     using PlayTechniquesMap = muse::FlatMap<int /*nominalPositionTick*/, mu::engraving::PlayingTechniqueType>;
     using PlayTechniquesByTrack = muse::FlatMap<track_idx_t, PlayTechniquesMap>;
 
-    using SoundFlagMap = muse::FlatMap<staff_idx_t, const SoundFlag *>;
+    // Flags are applied in read/insertion order, with the first flag on each staff winning.
+    // This preserves the Windows baseline when several all-staff flags compete for an unflagged staff.
+    using SoundFlagMap = muse::Buf<muse::FlatMapEntry<staff_idx_t, const SoundFlag *>>;
 
     void update_play_tech_map(const Part *part, const PlayTechAnnotation *annotation, const int segment_position_tick);
     void update_sound_preset_and_text_articulation_map(const Part *part, const SoundFlagMap &flags_on_segment,
