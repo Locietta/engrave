@@ -41,6 +41,12 @@ using namespace muse::audio;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+static thread_local int live_tracks = 0;
+
+int FluidTrack::live_instances() { return live_tracks; }
+#endif
+
 static constexpr bool fluid_debug = false;
 
 static constexpr double fluid_global_volume_gain = 4.8;
@@ -71,6 +77,9 @@ FluidTrack::FluidTrack(const AudioSourceParams &params, const engine::IAudioEngi
     : params_(params), config_(config), resources_(resources) {
     fluid_ = std::make_unique<Fluid>();
     midi_event_sink_ = std::move(midi_event_sink);
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    ++live_tracks;
+#endif
 }
 
 bool FluidTrack::is_valid() const { return fluid_->synth != nullptr; }
@@ -505,7 +514,12 @@ int FluidTrack::set_pitch_bend(int channel, int pitch_bend) {
     return fluid_synth_pitch_bend(fluid_->synth, channel, pitch_bend);
 }
 
-FluidTrack::~FluidTrack() = default;
+FluidTrack::~FluidTrack() {
+    fluid_.reset();
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    --live_tracks;
+#endif
+}
 
 void FluidTrack::setup(const mpe::TrackEvents &events) {
     setup_data_ = events.setup;

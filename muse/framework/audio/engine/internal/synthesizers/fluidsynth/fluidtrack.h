@@ -45,6 +45,9 @@ namespace muse::audio::synth {
 struct Fluid;
 
 struct FluidTrack {
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    static int live_instances();
+#endif
     // The observer preserves legacy staff remapping. Configuration and resources
     // must outlive this noncopyable per-track owner.
     FluidTrack(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config,
