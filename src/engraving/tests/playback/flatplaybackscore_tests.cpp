@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <chrono>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -765,36 +766,59 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
     delete score;
 }
 
+namespace mu::engraving {
+struct PlaybackContextReleaseTestAccess {
+    static void populate(PlaybackContext &context) {
+        auto &syllables = context.syllables_by_track_[0];
+        for (int i = 0; i < 200000; ++i) {
+            syllables.emplace(i, SyllableEvent{String::from_utf8(std::to_string(i))});
+        }
+    }
+
+    static std::size_t size(const PlaybackContext &context) {
+        std::size_t result = 0;
+        for (const auto &[track, syllables] : context.syllables_by_track_) result += syllables.size();
+        return result;
+    }
+};
+} // namespace mu::engraving
+
 TEST(FlatPlaybackStoreTests, ReleaseBoundsColdOwnersAndFinishesAfterCancellation) {
-    for (bool cancel : {false, true}) {
+    for (int cancel_at : {0, 3, 60}) {
         PlaybackScore score;
+        score.context = std::make_shared<PlaybackContext>(nullptr);
+        PlaybackContextReleaseTestAccess::populate(*score.context);
+        const std::weak_ptr<PlaybackContext> owner = score.context;
         for (int t = 0; t < 4; ++t) {
             auto &events = score.track({static_cast<std::uint64_t>(t + 1), String(u"test")});
             for (int i = 0; i < 50000; ++i) {
                 events.cold.push_back({i, static_cast<std::uint32_t>(i), SyllableEvent{String::from_utf8(std::to_string(i))}});
             }
         }
-        std::size_t previous = 200000, polls = 0;
+        std::size_t previous = 400000, polls = 0;
 
         struct Cancelled {};
 
         const auto release = [&] {
             score.release([&] {
-                std::size_t current = 0;
+                std::size_t current = score.context ? PlaybackContextReleaseTestAccess::size(*score.context) : 0;
                 for (const auto &[id, events] : score.tracks) current += events.cold.size();
                 EXPECT_LE(previous - current, 4096u);
                 previous = current;
                 ++polls;
-                if (cancel && polls == 3) throw Cancelled{};
+                if (cancel_at && polls == cancel_at) throw Cancelled{};
             });
         };
-        if (cancel)
+        const auto start = std::chrono::steady_clock::now();
+        if (cancel_at)
             EXPECT_THROW(release(), Cancelled);
         else {
             release();
-            EXPECT_GE(polls, 50u);
+            EXPECT_GE(polls, 98u);
         }
         EXPECT_TRUE(score.tracks.empty());
         EXPECT_FALSE(score.context);
+        EXPECT_TRUE(owner.expired());
+        EXPECT_LT((std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count()), 100.0);
     }
 }
