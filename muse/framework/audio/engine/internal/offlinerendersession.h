@@ -7,7 +7,7 @@
 #include "nodes/offlinesignal.h"
 
 namespace muse::audio::engine {
-// All state belongs to this export; resources and configuration outlive it.
+// All state belongs to this export; borrowed resources outlive it; render settings are owned values.
 struct OfflineRenderSession {
     OfflineRenderSession(const OutputSpec &, AudioResources &, const OfflineRenderSettings &, MidiEventSink);
     ~OfflineRenderSession();
