@@ -29,7 +29,6 @@
 #include "audio/engine/internal/nodes/signalnode.h"
 #include "audio/engine/internal/nodes/trackchain.h"
 #include "audio/engine/internal/offlinecancellation.h"
-#include "audio/engine/internal/offlineeventrelease.h"
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -771,14 +770,12 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         // is released before synthesis. Drain cold owners and the retained context in polled strides,
         // then free the flat buffers.
         OfflineCancellation::EventReleaseScope phase;
-        EventReleaseProgress::before_batch = true;
         if (poll()) return abort_setup();
         try {
             playback.release(checkpoint);
         } catch (const CancelledModel &) {
             return abort_setup();
         }
-        EventReleaseProgress::before_batch = false;
         if (poll()) return abort_setup();
     }
 

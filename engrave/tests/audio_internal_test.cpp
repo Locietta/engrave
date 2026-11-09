@@ -23,10 +23,6 @@
 #include "audio/engine/internal/export/abstractaudioencoder.h"
 #include "audio/engine/internal/nodes/eventaudionode.h"
 #include "audio/engine/internal/offlinecancellation.h"
-#include "audio/engine/internal/offlineeventrelease.h"
-#ifdef _WIN32
-#include "audio/engine/internal/offlineeventcleanup.h"
-#endif
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "engrave/src/api/state.h"
@@ -421,119 +417,6 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     }
 }
 
-TEST(AudioInternal, EventReleaseOwnershipAndBatches) {
-    using namespace muse::audio;
-    constexpr auto batch_events = event_release_batch_cost / event_release_base_cost;
-    muse::mpe::PlaybackEventsMap events;
-    events[0].resize(3 * batch_events);
-    const auto alias = events;
-    EXPECT_FALSE(events.unique());
-    EXPECT_TRUE(release_event_batches(events, [] {
-        ADD_FAILURE() << "Aliased events must not be touched";
-        return true;
-    }));
-    EXPECT_FALSE(events.unique());
-    EXPECT_EQ(events.cbegin()->second.size(), 3 * batch_events);
-    // Drop the alias by replacing the source instead; verify the original is intact.
-    events = {};
-    EXPECT_TRUE(events.unique());
-    events[0].resize(3 * batch_events);
-    events[1].resize(batch_events - 1);
-    int polls = 0;
-    EXPECT_FALSE(release_event_batches(events, [&] { return ++polls == 2; }));
-    EXPECT_FALSE(events.contains(1));
-    EXPECT_EQ(events.at(0).size(), 3 * batch_events);
-    EXPECT_FALSE(release_event_batches(events, [&] { return ++polls == 4; }));
-    EXPECT_EQ(events.at(0).size(), 2 * batch_events);
-    EXPECT_TRUE(release_event_batches(events, [] { return false; }));
-    EXPECT_TRUE(events.empty());
-    EXPECT_EQ(alias.at(0).size(), 3 * batch_events);
-}
-
-TEST(AudioInternal, EventReleaseLargeCurves) {
-    using namespace muse::audio;
-    using namespace muse::mpe;
-    using Clock = std::chrono::steady_clock;
-    const auto fill = [](PlaybackEventsMap &events, int points) {
-        ExpressionContext expression;
-        for (int i = 0; i < points; ++i) expression.expression_curve.emplace(i, i);
-        events[0].emplace_back(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(expression)));
-    };
-    double maximum = 0;
-    for (int trial = 0; trial < 32; ++trial) {
-        PlaybackEventsMap events;
-        fill(events, static_cast<int>(event_release_batch_cost - event_release_base_cost));
-        EXPECT_EQ(event_release_cost(events.cbegin()->second.back()), event_release_batch_cost);
-        Clock::time_point previous;
-        EXPECT_TRUE(release_event_batches(events, [&] {
-            const auto now = Clock::now();
-            if (previous != Clock::time_point{})
-                maximum = std::max(maximum, std::chrono::duration<double, std::milli>(now - previous).count());
-            previous = now;
-            return false;
-        }));
-        EXPECT_TRUE(events.empty());
-    }
-    PlaybackEventsMap oversized;
-    fill(oversized, 262144);
-    const auto &event = std::get<NoteEvent>(oversized.cbegin()->second.back());
-    ASSERT_TRUE(event.expression_ctx().expression_curve.unique());
-    ASSERT_GT(event_release_cost(oversized.cbegin()->second.back()), event_release_batch_cost);
-    const auto start = Clock::now();
-    EXPECT_TRUE(release_event_batches(oversized, [] { return false; }));
-    const double fallback_ms = std::chrono::duration<double, std::milli>(Clock::now() - start).count();
-    // An oversized event remains intact for ordinary teardown, never popped in a batch.
-    EXPECT_EQ(oversized.size(), 1);
-    EXPECT_EQ(event.expression_ctx().expression_curve.size(), 262144);
-    EXPECT_LE(maximum, 0.5);
-    EXPECT_LE(fallback_ms, 0.5);
-    // The same graph hidden in an articulation's applied segment or its meta
-    // pattern must also force fallback; neither is covered by top-level sizes.
-    {
-        ArticulationAppliedData art;
-        art.applied_pattern_segment.expression_pattern.dynamic_offset_map = event.expression_ctx().expression_curve;
-        ExpressionContext nested;
-        nested.articulations.emplace(ArticulationType::STANDARD, art);
-        EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(nested))), event_release_batch_cost);
-        art.meta.pattern.emplace(0, art.applied_pattern_segment);
-        art.applied_pattern_segment = {};
-        ExpressionContext pattern;
-        pattern.articulations.emplace(ArticulationType::STANDARD, art);
-        EXPECT_GT(event_release_cost(NoteEvent(ArrangementContext{}, PitchContext{}, std::move(pattern))), event_release_batch_cost);
-    }
-    ASSERT_TRUE(event.expression_ctx().expression_curve.unique());
-    const auto teardown_start = Clock::now();
-    oversized.clear();
-    const double teardown_ms = std::chrono::duration<double, std::milli>(Clock::now() - teardown_start).count();
-    std::fprintf(
-        stderr,
-        "release_cost_ms budget=%zu eligible_points=%zu n=32 max=%.6f oversized_points=262144 fallback=%.6f ordinary_teardown=%.6f\n",
-        event_release_batch_cost, event_release_batch_cost - event_release_base_cost, maximum, fallback_ms, teardown_ms);
-}
-
-#ifdef _WIN32
-TEST(AudioInternal, EventCleanupJoinsDuringUnwindWithoutDetaching) {
-    using namespace muse::audio;
-    std::array<muse::mpe::PlaybackData, 2> data;
-    for (std::size_t i = 0; i < parallel_event_cleanup_threshold; ++i) data[0].origin_events.emplace(i, muse::mpe::PlaybackEventList{});
-    data[1].origin_events[0].resize(1);
-    const auto alias = data[0].origin_events;
-    const std::array ids{0, 1};
-    EXPECT_THROW(
-        {
-            OfflineEventCleanup cleanup;
-            cleanup.prepare(ids, [&](int id) -> auto & { return data[id]; });
-            throw std::runtime_error("unwind after workers were staged");
-        },
-        std::runtime_error);
-    EXPECT_EQ(EventCleanupProgress::branch, EventCleanupProgress::Branch::PARALLEL);
-    EXPECT_EQ(data[0].origin_events.size(), parallel_event_cleanup_threshold);
-    EXPECT_FALSE(data[0].origin_events.unique());
-    EXPECT_EQ(alias.size(), parallel_event_cleanup_threshold);
-    EXPECT_TRUE(data[1].origin_events.empty());
-}
-#endif
-
 TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
     using namespace muse;
     using namespace muse::audio;
@@ -684,7 +567,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
                 }
                 // The flat store is released in one step between two polls: arm at the first, so the
                 // next poll observes the request after the release
-                if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE && muse::audio::EventReleaseProgress::before_batch) {
+                if (!cancelled && phase == 4 && current_phase == Phase::EVENT_RELEASE) {
                     cancel();
                     return false;
                 }
