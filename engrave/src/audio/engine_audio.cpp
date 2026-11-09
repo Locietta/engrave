@@ -768,8 +768,8 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
     {
         // Every sequencer has lowered its track and keeps its own copy of the dynamics, so the flat store
-        // is released before synthesis: a handful of buffer frees per track, polled before and after.
-        // (The step-2 batched release and the Windows threaded cleanup have no maps to free any more.)
+        // is released before synthesis. Drain cold owners and the retained context in polled strides,
+        // then free the flat buffers.
         OfflineCancellation::EventReleaseScope phase;
         EventReleaseProgress::before_batch = true;
         if (poll()) return abort_setup();

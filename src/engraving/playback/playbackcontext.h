@@ -71,6 +71,7 @@ struct PlaybackContext {
     void clear(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to);
 
 private:
+    friend struct PlaybackContextReleaseTestAccess;
     using SoundPresetsMap = std::map<int /*nominalPositionTick*/, muse::mpe::SoundPresetChangeEventList>;
     using SoundPresetsByTrack = std::map<track_idx_t, SoundPresetsMap>;
 
