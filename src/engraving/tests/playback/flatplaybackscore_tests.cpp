@@ -29,6 +29,7 @@
 #include "engraving/playback/flatplaybackscore.h"
 #include "engraving/playback/playbackeventsrenderer_impl.h"
 #include "engraving/playback/playbackmodel.h"
+#include "engraving/playback/playbackwalk.h"
 #include "mpe/tests/mocks/articulationprofilesrepositorymock.h"
 #include "mpe/tests/utils/articulationutils.h"
 #include "playback_projection_flat.h"
@@ -769,6 +770,11 @@ TEST_F(FlatPlaybackModelTests, RendererEmitsEmptyGroupsAndAppendsToExistingKeys)
 namespace mu::engraving {
 struct PlaybackContextReleaseTestAccess {
     static void populate(PlaybackContext &context) {
+        for (int i = 0; i < 100000; ++i) {
+            context.dynamics_curve_by_track_.emplace(i, nullptr);
+            // Opaque, distinct keys: this test only hashes and releases them, never dereferences them.
+            context.current_verse_num_by_chord_rest_.emplace(reinterpret_cast<const ChordRest *>(std::uintptr_t(i + 1) * 16), i);
+        }
         auto &syllables = context.syllables_by_track_[0];
         for (int i = 0; i < 200000; ++i) {
             syllables.emplace(i, SyllableEvent{String::from_utf8(std::to_string(i))});
@@ -776,7 +782,7 @@ struct PlaybackContextReleaseTestAccess {
     }
 
     static std::size_t size(const PlaybackContext &context) {
-        std::size_t result = 0;
+        std::size_t result = context.dynamics_curve_by_track_.size() + context.current_verse_num_by_chord_rest_.size();
         for (const auto &[track, syllables] : context.syllables_by_track_) result += syllables.size();
         return result;
     }
@@ -795,7 +801,7 @@ TEST(FlatPlaybackStoreTests, ReleaseBoundsColdOwnersAndFinishesAfterCancellation
                 events.cold.push_back({i, static_cast<std::uint32_t>(i), SyllableEvent{String::from_utf8(std::to_string(i))}});
             }
         }
-        std::size_t previous = 400000, polls = 0;
+        std::size_t previous = 600000, polls = 0;
 
         struct Cancelled {};
 
@@ -814,11 +820,51 @@ TEST(FlatPlaybackStoreTests, ReleaseBoundsColdOwnersAndFinishesAfterCancellation
             EXPECT_THROW(release(), Cancelled);
         else {
             release();
-            EXPECT_GE(polls, 98u);
+            EXPECT_GE(polls, 146u);
         }
         EXPECT_TRUE(score.tracks.empty());
         EXPECT_FALSE(score.context);
         EXPECT_TRUE(owner.expired());
         EXPECT_LT((std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count()), 100.0);
+    }
+}
+
+TEST(FlatPlaybackStoreTests, PartColdCopiesReleaseInPolledStridesEvenDuringUnwind) {
+    struct Cancelled {};
+
+    for (int cancel_at : {0, 3}) {
+        for (bool unwind : {false, true}) {
+            std::size_t previous = 0, polls = 0;
+            PlaybackPartData *live = nullptr;
+            const auto run = [&] {
+                PlaybackPartData data([&] {
+                    const std::size_t current = live->sound_presets.size() + live->text_articulations.size() + live->syllables.size();
+                    EXPECT_LE(previous - current, 4096u);
+                    previous = current;
+                    if (++polls == cancel_at) throw Cancelled{};
+                });
+                live = &data;
+                for (int i = 0; i < 50000; ++i) {
+                    data.sound_presets[i].push_back(SoundPresetChangeEvent{});
+                    data.text_articulations[i].push_back(TextArticulationEvent{});
+                    data.syllables[i].push_back(SyllableEvent{String(u"lyric")});
+                }
+                previous = 150000;
+                if (unwind) throw Cancelled{};
+                data.release();
+                EXPECT_TRUE(data.sound_presets.empty());
+                EXPECT_TRUE(data.text_articulations.empty());
+                EXPECT_TRUE(data.syllables.empty());
+            };
+            if (cancel_at || unwind)
+                EXPECT_THROW(run(), Cancelled);
+            else
+                run();
+            if (!cancel_at) {
+                EXPECT_EQ(previous, 0u);
+                EXPECT_GE(polls, 37u);
+            } else
+                EXPECT_EQ(polls, 3u);
+        }
     }
 }
