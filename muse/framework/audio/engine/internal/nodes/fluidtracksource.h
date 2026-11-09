@@ -66,7 +66,7 @@ private:
     OfflineRenderSettings config_;
     OutputSpec default_spec_;
     MidiEventSink sink_;
-    // Borrowed only until initial setup. The export model outlives that call.
+    // Borrowed only until initial setup. The export flat store outlives that call.
     const mpe::TrackEvents *initial_data_;
     std::unique_ptr<synth::FluidTrack> synth_ = nullptr;
 };
