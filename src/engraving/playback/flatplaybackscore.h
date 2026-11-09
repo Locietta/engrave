@@ -7,9 +7,9 @@
 #include <vector>
 
 #include "../types/types.h"
+#include "mpe/articulationprofilebundle.h"
 #include "mpe/events.h"
 #include "mpe/flatevents.h"
-#include "mpe/iarticulationprofilesrepository.h"
 #include "playbackcontext.h"
 #include "playbackeventsink.h"
 
@@ -61,8 +61,8 @@ static_assert(PlaybackEventSink<DualEventsSink>);
 //! Builds the flat store of one export from the shared score walk (playbackwalk.h), without the legacy
 //! model: no score listener, no incremental-update bookkeeping. Owner thread only
 struct PlaybackScoreBuilder {
-    // profiles_repository may be null (no default articulation profiles); it must outlive build()
-    const muse::mpe::IArticulationProfilesRepository *profiles_repository = nullptr;
+    // Resolved profile data, owned by this builder.
+    muse::mpe::ArticulationProfileBundle profiles;
     bool play_repeats = true;
     bool metronome_enabled = false;
 #ifdef ENGRAVE_PLAYBACK_HARNESS

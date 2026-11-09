@@ -21,23 +21,25 @@
  */
 #pragma once
 
-#include "../iaudioengineconfiguration.h"
+#include "../offlinerendersettings.h"
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-struct AudioEngineConfiguration : IAudioEngineConfiguration {
+struct AudioEngineConfiguration {
     AudioEngineConfiguration() = default;
 
-    void set_config(const AudioEngineConfig &conf) override;
+    OfflineRenderSettings render_settings() const { return {default_audio_input_params(), use_sound_font_low_pass_filter()}; }
 
-    bool auto_process_online_sounds_in_background() const override;
+    void set_config(const AudioEngineConfig &conf);
 
-    bool is_lazy_processing_of_online_sounds_enabled() const override;
-    void set_is_lazy_processing_of_online_sounds_enabled(bool enabled) override;
+    bool auto_process_online_sounds_in_background() const;
 
-    bool use_sound_font_low_pass_filter() const override;
+    bool is_lazy_processing_of_online_sounds_enabled() const;
+    void set_is_lazy_processing_of_online_sounds_enabled(bool enabled);
 
-    AudioInputParams default_audio_input_params() const override;
+    bool use_sound_font_low_pass_filter() const;
+
+    AudioInputParams default_audio_input_params() const;
 
 private:
 

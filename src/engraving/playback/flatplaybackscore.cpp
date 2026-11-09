@@ -125,7 +125,7 @@ PlaybackScore PlaybackScoreBuilder::build(Score *score, const std::function<void
     const PlaybackEventsRenderer renderer;
     PlaybackSetupDataResolver setup_resolver;
     FlatStore store{result};
-    PlaybackWalk<FlatStore> walk{score,      playback_ctx, renderer,          setup_resolver, profiles_repository,
+    PlaybackWalk<FlatStore> walk{score,      playback_ctx, renderer,          setup_resolver, &profiles,
                                  checkpoint, play_repeats, metronome_enabled, store};
     try {
         walk.update(0, score->last_measure()->end_tick().ticks(), 0, score->ntracks());

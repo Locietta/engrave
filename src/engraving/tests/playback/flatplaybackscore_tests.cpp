@@ -167,7 +167,7 @@ struct DualFixture {
         freeze_dynamics(flat.track(id), legacy.dynamics, flat.progress);
 
         // Context events first, as apply_context_to_track_data inserts them before the walk
-        emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.螖", 3)});
+        emit_context(0, std::vector<SoundPresetChangeEvent>{make_preset(u"Engrave.Preset.Δ", 3)});
         emit_context(0, std::vector<TextArticulationEvent>{make_text(u"mute", 3)});
         emit_context(0, std::vector<SyllableEvent>{make_syllable(u"la", 3)});
         emit_context(250000, std::vector<SoundPresetChangeEvent>{});
@@ -241,7 +241,7 @@ TEST(FlatPlaybackStoreTests, FreezeKeepsLegacyOrderAndFields) {
     EXPECT_EQ(expression[0].value, 7000);
 
     const auto &preset = std::get<SoundPresetChangeEvent>(track.cold[0].event);
-    EXPECT_EQ(preset.code, String(u"Engrave.Preset.螖"));
+    EXPECT_EQ(preset.code, String(u"Engrave.Preset.Δ"));
     EXPECT_EQ(preset.layer_idx, 3u);
     EXPECT_TRUE(std::holds_alternative<SyllableEvent>(track.cold[2].event));
 
@@ -485,6 +485,7 @@ protected:
         }
         repository_ = std::make_shared<NiceMock<ArticulationProfilesRepositoryMock>>();
         ON_CALL(*repository_, default_profile(_)).WillByDefault(Return(profile_));
+        profiles_.profiles.fill(profile_);
     }
 
     // The legacy oracle's dump B projection of a loaded model
@@ -504,7 +505,7 @@ protected:
     // Builds the export's flat store and, separately, loads the legacy oracle; returns both dump B projections
     std::pair<std::string, std::string> project_built(MasterScore *score, bool metronome, PlaybackScore &flat) {
         score->init_automation();
-        PlaybackScoreBuilder builder{repository_.get()};
+        PlaybackScoreBuilder builder{profiles_};
         builder.metronome_enabled = metronome;
         flat = builder.build(score);
         PlaybackModel model(repository_.get());
@@ -524,6 +525,7 @@ protected:
     }
 #endif
 
+    muse::mpe::ArticulationProfileBundle profiles_;
     ArticulationsProfilePtr profile_;
     std::shared_ptr<NiceMock<ArticulationProfilesRepositoryMock>> repository_;
 };
@@ -594,7 +596,7 @@ TEST_F(FlatPlaybackModelTests, BuilderPollsTheWalkAndTheFreeze) {
         model.set_is_metronome_enabled(false);
         model.load(score, [&legacy] { ++legacy; });
     }
-    PlaybackScoreBuilder builder{repository_.get()};
+    PlaybackScoreBuilder builder{profiles_};
     const PlaybackScore flat = builder.build(score, [&built] { ++built; });
     EXPECT_FALSE(flat.progress.checkpoint);
     const std::uint64_t records = record_count(flat);
@@ -614,7 +616,7 @@ TEST_F(FlatPlaybackModelTests, BuilderPollsTheWalkAndTheFreeze) {
 }
 
 TEST_F(FlatPlaybackModelTests, BuilderOfAnEmptyOrNullScoreIsEmpty) {
-    const PlaybackScoreBuilder builder{repository_.get()};
+    const PlaybackScoreBuilder builder{profiles_};
     EXPECT_TRUE(builder.build(nullptr).tracks.empty());
 }
 
@@ -656,7 +658,7 @@ TEST_F(FlatPlaybackModelTests, DualExecutionCarriesDistinctPresets) {
     }
     // Both presets of the first flag (in order) at tick 0, then the beat-3 flag's
     ASSERT_GE(presets.size(), 3u);
-    EXPECT_EQ(presets[0], String(u"Engrave.Preset.螖1"));
+    EXPECT_EQ(presets[0], String(u"Engrave.Preset.Δ1"));
     EXPECT_EQ(presets[1], String(u"Second.Preset"));
     EXPECT_EQ(presets.back(), String(u"Third.Preset"));
     EXPECT_TRUE(text);

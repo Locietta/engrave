@@ -460,8 +460,8 @@ void PlaybackModel::update(const int tick_from, const int tick_to, const track_i
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     store.flat = flat_;
 #endif
-    PlaybackWalk<LegacyStore> walk{score_,          playback_ctx_,      renderer_, setup_resolver_, profiles_repository_, checkpoint_,
-                                   expand_repeats_, metronome_enabled_, store};
+    PlaybackWalk<LegacyStore, muse::mpe::IArticulationProfilesRepository> walk{
+        score_, playback_ctx_, renderer_, setup_resolver_, profiles_repository_, checkpoint_, expand_repeats_, metronome_enabled_, store};
     walk.update(tick_from, tick_to, track_from, track_to, track_changes);
 }
 

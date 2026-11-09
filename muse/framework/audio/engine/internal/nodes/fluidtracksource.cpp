@@ -33,7 +33,7 @@ using namespace muse::audio::engine;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-FluidTrackSource::FluidTrackSource(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec,
+FluidTrackSource::FluidTrackSource(AudioResources &resources, const OfflineRenderSettings &config, const OutputSpec &spec,
                                    MidiEventSink sink, const mpe::TrackEvents &events)
     : resources_(resources), config_(config), default_spec_(spec), sink_(std::move(sink)), initial_data_(&events) {}
 
@@ -107,7 +107,7 @@ void FluidTrackSource::apply_input_params(const AudioInputParams &required_param
     auto found = resources_.resources.find(selected.resource_meta.id);
     OutputSpec spec = output_spec_;
     if (!selected.is_valid() || selected.type() != AudioSourceType::FLUID || found == resources_.resources.end()) {
-        selected = config_.default_audio_input_params();
+        selected = config_.default_input;
         found = resources_.resources.find(selected.resource_meta.id);
         spec = default_spec_;
         if (!selected.is_valid() || found == resources_.resources.end()) {

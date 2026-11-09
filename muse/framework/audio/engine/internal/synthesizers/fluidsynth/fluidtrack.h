@@ -30,7 +30,7 @@
 
 #include <amc/flatset.hpp>
 
-#include "../../../iaudioengineconfiguration.h"
+#include "../../../offlinerendersettings.h"
 #include "../../midieventsink.h"
 #include "audio/common/timeposition.h"
 #include "fluidsequencer.h"
@@ -50,8 +50,8 @@ struct FluidTrack {
 #endif
     // The observer preserves legacy staff remapping. Configuration and resources
     // must outlive this noncopyable per-track owner.
-    FluidTrack(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config,
-               engine::MidiEventSink midi_event_sink, engine::AudioResources &resources);
+    FluidTrack(const audio::AudioSourceParams &params, const engine::OfflineRenderSettings &config, engine::MidiEventSink midi_event_sink,
+               engine::AudioResources &resources);
 
     ~FluidTrack();
     FluidTrack(const FluidTrack &) = delete;
@@ -127,14 +127,12 @@ private:
     int set_controller_value(int channel, int ctrl, int value);
     int set_pitch_bend(int channel, int pitch_bend);
 
-    const engine::IAudioEngineConfiguration *config() const { return &config_; }
-
     msecs_t samples_to_msecs(samples_t samples, samples_t rate) const;
     samples_t micro_secs_to_samples(msecs_t duration, samples_t rate) const;
     ProcessMode mode_ = ProcessMode::UNDEFINED;
     mpe::PlaybackSetupData setup_data_;
     AudioInputParams params_;
-    const engine::IAudioEngineConfiguration &config_;
+    engine::OfflineRenderSettings config_;
     engine::AudioResources &resources_;
     OutputSpec output_spec_;
 

@@ -30,8 +30,8 @@
 #include "../types/types.h"
 #include "global/flatmap.h"
 #include "log.h"
+#include "mpe/articulationprofilebundle.h"
 #include "mpe/events.h"
-#include "mpe/iarticulationprofilesrepository.h"
 #include "playbackcontext.h"
 #include "playbackeventsrenderer.h"
 #include "playbackrelease.h"
@@ -80,7 +80,7 @@ struct PlaybackPartData {
     muse::FlatMap<muse::mpe::timestamp_t, muse::mpe::SyllableEventList> syllables;
 };
 
-template <class Store>
+template <class Store, class Profiles = muse::mpe::ArticulationProfileBundle>
 struct PlaybackWalk {
     using ChangedTrackIdSet = InstrumentTrackIdSet;
 
@@ -88,7 +88,7 @@ struct PlaybackWalk {
     const PlaybackContextPtr &playback_ctx;
     const PlaybackEventsRenderer &renderer;
     const PlaybackSetupDataResolver &setup_resolver;
-    const muse::mpe::IArticulationProfilesRepository *profiles_repository = nullptr;
+    const Profiles *profiles_repository = nullptr;
     const std::function<void()> &checkpoint_callback;
     bool expand_repeats = true;
     bool metronome_enabled = true;

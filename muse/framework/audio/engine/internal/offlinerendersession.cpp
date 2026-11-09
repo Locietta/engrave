@@ -12,7 +12,7 @@ using namespace muse::audio::engine;
 thread_local int OfflineRenderSession::fail_after_tracks = -1;
 #endif
 
-OfflineRenderSession::OfflineRenderSession(const OutputSpec &spec, AudioResources &resources, const IAudioEngineConfiguration &config,
+OfflineRenderSession::OfflineRenderSession(const OutputSpec &spec, AudioResources &resources, const OfflineRenderSettings &config,
                                            MidiEventSink sink)
     : resources_(resources), config_(config), sink_(std::move(sink)), spec_(spec) {
     session_master_.set_playhead_position(nullptr);

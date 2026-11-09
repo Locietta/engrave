@@ -72,8 +72,8 @@ struct muse::audio::synth::Fluid {
     }
 };
 
-FluidTrack::FluidTrack(const AudioSourceParams &params, const engine::IAudioEngineConfiguration &config,
-                       engine::MidiEventSink midi_event_sink, engine::AudioResources &resources)
+FluidTrack::FluidTrack(const AudioSourceParams &params, const engine::OfflineRenderSettings &config, engine::MidiEventSink midi_event_sink,
+                       engine::AudioResources &resources)
     : params_(params), config_(config), resources_(resources) {
     fluid_ = std::make_unique<Fluid>();
     midi_event_sink_ = std::move(midi_event_sink);
@@ -135,7 +135,7 @@ Ret FluidTrack::init(const OutputSpec &spec) {
 
     fluid_settings_setint(fluid_->settings, "synth.chorus.active", 0);
     fluid_settings_setint(fluid_->settings, "synth.reverb.active", 0);
-    fluid_settings_setint(fluid_->settings, "synth.iir-lowpass-filter.active", config()->use_sound_font_low_pass_filter() ? 1 : 0);
+    fluid_settings_setint(fluid_->settings, "synth.iir-lowpass-filter.active", config_.low_pass_filter ? 1 : 0);
 
     fluid_settings_setstr(fluid_->settings, "audio.sample-format", "float");
 

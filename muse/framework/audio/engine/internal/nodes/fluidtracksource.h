@@ -30,7 +30,7 @@
 namespace muse::audio::engine {
 struct FluidTrackSource {
     // Resources and configuration outlive this concrete per-track owner.
-    FluidTrackSource(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec, MidiEventSink sink,
+    FluidTrackSource(AudioResources &resources, const OfflineRenderSettings &config, const OutputSpec &spec, MidiEventSink sink,
                      const mpe::TrackEvents &events);
 
     void seek(const TimePosition &position, const bool flush_sound = true);
@@ -74,7 +74,7 @@ private:
     void do_self_process(float *buffer, samples_t samples_per_channel);
 
     AudioResources &resources_;
-    const IAudioEngineConfiguration &config_;
+    OfflineRenderSettings config_;
     OutputSpec default_spec_;
     MidiEventSink sink_;
     // Borrowed only until initial setup. The export model outlives that call.

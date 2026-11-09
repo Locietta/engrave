@@ -492,7 +492,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
                 AudioResources resources;
                 AudioEngineConfiguration config;
                 const auto events = std::make_unique<mpe::TrackEvents>();
-                FluidTrackSource node(resources, config, {44100, 4096, 2}, {}, *events);
+                FluidTrackSource node(resources, config.render_settings(), {44100, 4096, 2}, {}, *events);
                 node.set_output_spec({44100, 4096, 2});
                 // No resource resolves: the first apply fails after consuming the borrow.
                 node.apply_input_params({});
@@ -506,7 +506,7 @@ TEST(AudioInternal, FailedEventSourceDisarmsBorrow) {
                 node.apply_input_params({});
                 if (node.initialized()) return 2;
                 // Positive control: a fresh borrow with the same resources does initialize.
-                FluidTrackSource fresh(resources, config, {44100, 4096, 2}, {}, *events);
+                FluidTrackSource fresh(resources, config.render_settings(), {44100, 4096, 2}, {}, *events);
                 fresh.set_output_spec({44100, 4096, 2});
                 fresh.apply_input_params({});
                 return fresh.initialized() ? 0 : 3;

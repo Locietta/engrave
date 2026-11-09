@@ -8,8 +8,8 @@
 #include <memory>
 
 #include "audio/engine/audioservices.h"
-#include "audio/engine/iaudioengineconfiguration.h"
 #include "audio/engine/internal/offlinerendersession.h"
+#include "audio/engine/offlinerendersettings.h"
 #include "engrave/src/audio/engine_audio.h"
 
 int main() {
@@ -26,7 +26,7 @@ int main() {
     auto configuration = &setup.configuration();
     configuration->set_config(config);
 
-    muse::audio::engine::OfflineRenderSession session(spec, resources, *configuration, {});
+    muse::audio::engine::OfflineRenderSession session(spec, resources, configuration->render_settings(), {});
 
     std::cout << "audio engine linked\n";
     return 0;

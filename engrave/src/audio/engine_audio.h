@@ -24,7 +24,7 @@
 #include "midi/miditypes.h"
 
 namespace muse::mpe {
-struct IArticulationProfilesRepository;
+struct ArticulationProfilesRepository;
 } // namespace muse::mpe
 
 namespace muse::io {
@@ -46,7 +46,7 @@ namespace music {
 // the only instance and creates it idle; initialize_engine_audio() builds the
 // services on first use. profiles must outlive it.
 struct EngineAudio {
-    explicit EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles);
+    explicit EngineAudio(const muse::mpe::ArticulationProfilesRepository &profiles);
     ~EngineAudio();
 
     EngineAudio(const EngineAudio &) = delete;
