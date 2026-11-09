@@ -102,6 +102,7 @@ target("mpe_tests")
         path.join(source_root, "muse", "framework/mpe/tests/singlenotearticulationstest.cpp"),
         path.join(source_root, "muse", "framework/mpe/tests/multinotearticulationstest.cpp"),
         path.join(source_root, "muse", "framework/mpe/tests/flatmaptest.cpp"),
+        path.join(source_root, "muse", "framework/mpe/tests/sharedflatmaptest.cpp"),
         path.join(tests_dir, "gtest_main.cpp"),
         path.join(tests_dir, "test_environment.cpp")
     )

@@ -33,7 +33,7 @@ from engrave_testing.paths import REPO_ROOT
 # from what is executed. Update this table together with the pinned engine.
 EXPECTED_SUITES = {
     "engraving_playback_tests": {"total": 244, "test_suites": 10},
-    "mpe_tests": {"total": 19, "test_suites": 3},
+    "mpe_tests": {"total": 24, "test_suites": 4},
 }
 # Tests that may legitimately be skipped/disabled without failing the lane. The
 # pinned engine currently has none; list a test name here only with a reason.
