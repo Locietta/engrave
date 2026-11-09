@@ -26,18 +26,17 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <map>
 #include <span>
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <variant>
-#include <vector>
 
 #include <amc/vector.hpp>
+#include <ankerl/unordered_dense.h>
 
 #include "audio/common/audiotypes.h"
 #include "midi/midievent.h"
+#include "midi/miditypes.h"
 #include "mpe/events.h"
 #include "offlinecancellation.h"
 
@@ -83,6 +82,30 @@ struct TimedMidiEvent {
 static_assert(std::is_trivially_copyable_v<TimedMidiEvent>);
 static_assert(sizeof(TimedMidiEvent) == 24);
 
+struct CcKey {
+    midi::Event::Opcode opcode = midi::Event::Opcode::CONTROL_CHANGE;
+    midi::channel_t channel = 0;
+    std::uint8_t controller = 0;
+    std::uint32_t value = 0;
+
+    bool operator==(const CcKey &other) const = default;
+};
+
+struct CcKeyHash {
+    using is_avalanching = void;
+
+    std::uint64_t operator()(const CcKey &key) const noexcept {
+        const std::uint64_t packed = (static_cast<std::uint64_t>(key.opcode) << 48) | (static_cast<std::uint64_t>(key.channel) << 40) |
+                                     (static_cast<std::uint64_t>(key.controller) << 32) | static_cast<std::uint64_t>(key.value);
+        return ankerl::unordered_dense::hash<std::uint64_t>{}(packed);
+    }
+};
+
+inline bool is_dedup_eligible_cc(const midi::Event &event) {
+    return event.is_channel_voice() && event.opcode() == midi::Event::Opcode::CONTROL_CHANGE &&
+           event.index() != static_cast<std::uint8_t>(midi::expression_controller);
+}
+
 enum class TimelineStream : std::uint8_t {
     MAIN = 0,
     OFF = 1,
@@ -118,11 +141,6 @@ struct MidiTimeline {
 
 template <class... Types>
 struct AbstractEventSequencer {
-    // Temporary staging container kept for step-3a build before flattening; step 3b replaces construction.
-    using EventType = std::variant<Types...>;
-    using EventSequence = std::vector<EventType>;
-    using EventSequenceMap = std::map<msecs_t, EventSequence>;
-
     AbstractEventSequencer() { reset_all_iterators(); }
 
     virtual ~AbstractEventSequencer() = default;
@@ -210,57 +228,140 @@ struct AbstractEventSequencer {
 protected:
     virtual void update_main_stream_events(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
 
-    static void flatten_timeline(EventSequenceMap &source, MidiTimeline &timeline) {
+    static bool bounded_stable_sort(MidiTimeline &timeline) {
         OfflineCancellation::SequencerScope phase;
-        constexpr std::uint32_t k_poll_stride = 4096;
-        timeline.clear();
+        constexpr std::uint32_t k_block_size = 8192;
         if (OfflineCancellation::requested()) {
-            source.clear();
-            return;
+            timeline.clear();
+            return false;
+        }
+        auto &events = timeline.events;
+        const auto total = static_cast<std::uint32_t>(events.size());
+        if (total <= 1) {
+            return true;
         }
 
-        std::uint64_t total_events = 0;
-        std::uint32_t scan_steps = 0;
-        for (const auto &[_, sequence] : source) {
-            if (++scan_steps == k_poll_stride) {
-                scan_steps = 0;
-                if (OfflineCancellation::requested()) {
-                    source.clear();
-                    return;
+        const auto by_timestamp = [](const TimedMidiEvent &lhs, const TimedMidiEvent &rhs) { return lhs.timestamp < rhs.timestamp; };
+
+        for (std::uint32_t offset = 0; offset < total; offset += k_block_size) {
+            if (offset > 0 && OfflineCancellation::requested()) {
+                timeline.clear();
+                return false;
+            }
+            const std::uint32_t block_end = std::min(total - offset, k_block_size) + offset;
+            std::stable_sort(events.begin() + offset, events.begin() + block_end, by_timestamp);
+        }
+
+        if (OfflineCancellation::requested()) {
+            timeline.clear();
+            return false;
+        }
+        if (total <= k_block_size) {
+            return true;
+        }
+
+        Buf<TimedMidiEvent> scratch;
+        reserve_checked(scratch, total);
+        if (OfflineCancellation::requested()) {
+            timeline.clear();
+            return false;
+        }
+
+        std::uint32_t merge_steps = 0;
+        for (std::uint64_t width = k_block_size; width < total; width *= 2) {
+            scratch.clear();
+            for (std::uint64_t left = 0; left < total; left += 2 * width) {
+                const auto mid = static_cast<std::uint32_t>(std::min<std::uint64_t>(left + width, total));
+                const auto right = static_cast<std::uint32_t>(std::min<std::uint64_t>(left + 2 * width, total));
+                auto i = static_cast<std::uint32_t>(left);
+                std::uint32_t j = mid;
+                while (i < mid && j < right) {
+                    if (++merge_steps >= k_block_size) {
+                        merge_steps = 0;
+                        if (OfflineCancellation::requested()) {
+                            timeline.clear();
+                            return false;
+                        }
+                    }
+                    if (events[j].timestamp < events[i].timestamp) {
+                        emplace_checked(scratch, events[j++]);
+                    } else {
+                        emplace_checked(scratch, events[i++]);
+                    }
+                }
+                while (i < mid) {
+                    if (++merge_steps >= k_block_size) {
+                        merge_steps = 0;
+                        if (OfflineCancellation::requested()) {
+                            timeline.clear();
+                            return false;
+                        }
+                    }
+                    emplace_checked(scratch, events[i++]);
+                }
+                while (j < right) {
+                    if (++merge_steps >= k_block_size) {
+                        merge_steps = 0;
+                        if (OfflineCancellation::requested()) {
+                            timeline.clear();
+                            return false;
+                        }
+                    }
+                    emplace_checked(scratch, events[j++]);
                 }
             }
-            total_events = checked_grow<TimedMidiEvent>(total_events, sequence.size());
+            std::swap(events, scratch);
         }
-        if (OfflineCancellation::requested()) {
-            source.clear();
-            return;
-        }
-        reserve_checked(timeline.events, total_events);
+        return true;
+    }
 
+    static bool dedup_timeline(MidiTimeline &timeline) {
+        OfflineCancellation::SequencerScope phase;
+        constexpr std::uint32_t k_poll_stride = 4096;
+        if (OfflineCancellation::requested()) {
+            timeline.clear();
+            return false;
+        }
+        auto &events = timeline.events;
+        const auto total = static_cast<std::uint32_t>(events.size());
+        if (total <= 1) {
+            return true;
+        }
+
+        ankerl::unordered_dense::set<CcKey, CcKeyHash> seen;
+        std::uint32_t write = 0;
         std::uint32_t work = 0;
-        for (auto it = source.begin(); it != source.end();) {
-            const mpe::timestamp_t timestamp = it->first.raw();
-            for (const EventType &item : it->second) {
+
+        for (std::uint32_t bucket_start = 0; bucket_start < total;) {
+            const mpe::timestamp_t bucket_time = events[bucket_start].timestamp;
+            seen.clear();
+
+            std::uint32_t i = bucket_start;
+            for (; i < total && events[i].timestamp == bucket_time; ++i) {
                 if (++work >= k_poll_stride) {
                     work = 0;
                     if (OfflineCancellation::requested()) {
                         timeline.clear();
-                        source.clear();
-                        return;
+                        return false;
                     }
                 }
-                emplace_checked(timeline.events, TimedMidiEvent{timestamp, std::get<midi::Event>(item)});
-            }
-            it = source.erase(it);
-            if (++work >= k_poll_stride) {
-                work = 0;
-                if (OfflineCancellation::requested()) {
-                    timeline.clear();
-                    source.clear();
-                    return;
+                const midi::Event &ev = events[i].event;
+                if (is_dedup_eligible_cc(ev)) {
+                    const CcKey key{ev.opcode(), ev.channel(), ev.index(), ev.data()};
+                    if (!seen.insert(key).second) {
+                        continue;
+                    }
                 }
+                if (write != i) {
+                    events[write] = events[i];
+                }
+                ++write;
             }
+            bucket_start = i;
         }
+
+        events.resize(write);
+        return true;
     }
 
     void invalidate_chunk_plan() {

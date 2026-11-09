@@ -22,7 +22,15 @@
 
 #include "fluidsequencer.h"
 
-#include <set>
+#include <algorithm>
+#include <bitset>
+#include <cmath>
+#include <cstdint>
+#include <limits>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -86,14 +94,14 @@ void FluidSequencer::update_main_stream_events(const mpe::PlaybackEventsMap &eve
         on_main_stream_flushed_();
     }
 
-    EventSequenceMap staged;
-    add_playback_events(staged, events, true /*isMainStream*/);
-
-    if (use_dynamic_events_) {
-        add_dynamic_events(staged, dynamics);
+    const bool ok = add_playback_events(main_stream_events_, events, true /*isMainStream*/) &&
+                    (!use_dynamic_events_ || add_dynamic_events(main_stream_events_, dynamics)) &&
+                    bounded_stable_sort(main_stream_events_) && dedup_timeline(main_stream_events_);
+    if (!ok) {
+        main_stream_events_.clear();
+        update_main_sequence_iterator();
+        return;
     }
-
-    flatten_timeline(staged, main_stream_events_);
 
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     if (test::PlaybackCapture::synth) {
@@ -127,60 +135,109 @@ void FluidSequencer::set_on_channel_added(std::function<void(midi::channel_t, co
 
 int FluidSequencer::last_staff() const { return last_staff_; }
 
-void FluidSequencer::add_playback_events(EventSequenceMap &destination, const mpe::PlaybackEventsMap &events, const bool is_main_stream) {
+bool FluidSequencer::add_playback_events(engine::MidiTimeline &destination, const mpe::PlaybackEventsMap &events,
+                                         const bool is_main_stream) {
     OfflineCancellation::SequencerScope phase;
+    constexpr std::uint32_t k_poll_stride = 4096;
     SostenutoTimeAndDurations sostenuto_time_and_durations;
 
+    std::uint32_t empty_bucket_steps = 0;
     for (const auto &pair : events) {
+        if (pair.second.empty()) {
+            if (++empty_bucket_steps >= k_poll_stride) {
+                empty_bucket_steps = 0;
+                if (OfflineCancellation::requested()) {
+                    destination.clear();
+                    return false;
+                }
+            }
+            continue;
+        }
         for (const mpe::PlaybackEvent &event : pair.second) {
-            if (OfflineCancellation::requested()) return;
+            if (OfflineCancellation::requested()) {
+                destination.clear();
+                return false;
+            }
             if (std::holds_alternative<mpe::NoteEvent>(event)) {
-                add_note_event(destination, std::get<mpe::NoteEvent>(event), sostenuto_time_and_durations, is_main_stream);
+                if (!add_note_event(destination, std::get<mpe::NoteEvent>(event), sostenuto_time_and_durations, is_main_stream)) {
+                    destination.clear();
+                    return false;
+                }
             } else if (std::holds_alternative<mpe::ControllerChangeEvent>(event)) {
                 add_control_change_event(destination, pair.first, std::get<mpe::ControllerChangeEvent>(event));
             }
         }
     }
 
-    add_sostenuto_events(destination, sostenuto_time_and_durations);
+    return add_sostenuto_events(destination, sostenuto_time_and_durations);
 }
 
-void FluidSequencer::add_dynamic_events(EventSequenceMap &destination, const mpe::DynamicAutomationLayers &layers) {
+bool FluidSequencer::add_dynamic_events(engine::MidiTimeline &destination, const mpe::DynamicAutomationLayers &layers) {
+    OfflineCancellation::SequencerScope phase;
     constexpr mpe::timestamp_t step_interval_us = 30000;
+    constexpr std::uint32_t k_poll_stride = 4096;
+    std::uint32_t sample_steps = 0;
+    bool cancelled = false;
 
     for (const auto &[layer_idx, curve] : layers) {
-        if (OfflineCancellation::requested()) return;
+        if (OfflineCancellation::requested()) {
+            destination.clear();
+            return false;
+        }
         auto voice_it = channels_.data().find(layer_idx);
         if (voice_it == channels_.data().cend()) {
             continue;
         }
 
-        std::set<channel_t> channels;
+        std::bitset<k_fluid_channel_count> channels;
         for (const auto &[_, mapping] : voice_it->second) {
-            channels.insert(mapping.first);
+            if (mapping.first >= k_fluid_channel_count) {
+                throw std::invalid_argument("ChannelMap channel exceeds FluidSynth channel limit");
+            }
+            channels.set(mapping.first);
         }
 
         std::optional<int> last_level;
 
         mpe::resample_curve(curve, step_interval_us, [&](mpe::timestamp_t t, muse::real_t normalized) {
+            if (cancelled) {
+                return;
+            }
+            if (++sample_steps >= k_poll_stride) {
+                sample_steps = 0;
+                if (OfflineCancellation::requested()) {
+                    cancelled = true;
+                    return;
+                }
+            }
             const int level = expression_level(mpe::dynamic_level_from_normalized(normalized));
             if (last_level == level) {
                 return;
             }
             last_level = level;
 
-            for (const channel_t channel_idx : channels) {
+            for (channel_t channel_idx = 0; channel_idx < k_fluid_channel_count; ++channel_idx) {
+                if (!channels.test(channel_idx)) {
+                    continue;
+                }
                 midi::Event event(Event::Opcode::CONTROL_CHANGE, Event::MessageType::CHANNEL_VOICE10);
                 event.set_channel(channel_idx);
                 event.set_index(midi::expression_controller);
                 event.set_data(level);
-                destination[t].emplace_back(event);
+                engine::emplace_checked(destination.events, engine::TimedMidiEvent{t, event});
             }
         });
+
+        if (cancelled) {
+            destination.clear();
+            return false;
+        }
     }
+
+    return true;
 }
 
-void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::NoteEvent &note_event,
+bool FluidSequencer::add_note_event(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event,
                                     SostenutoTimeAndDurations &sostenuto_time_and_durations, const bool is_main_stream) {
     const ArrangementContext &arrangement_ctx = note_event.arrangement_ctx();
     const channel_t channel_idx = resolve_channel(note_event);
@@ -198,7 +255,7 @@ void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::No
             expression_event.set_channel(channel_idx);
             expression_event.set_index(midi::expression_controller);
             expression_event.set_data(expression_level(note_event.expression_ctx().nominal_dynamic_level));
-            destination[arrangement_ctx.actual_timestamp].emplace_back(std::move(expression_event));
+            engine::emplace_checked(destination.events, engine::TimedMidiEvent{arrangement_ctx.actual_timestamp, expression_event});
         }
 
         midi::Event note_on(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE20);
@@ -207,7 +264,7 @@ void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::No
         note_on.set_velocity16(velocity);
         note_on.set_pitch_note(note_idx, tuning);
 
-        destination[arrangement_ctx.actual_timestamp].emplace_back(std::move(note_on));
+        engine::emplace_checked(destination.events, engine::TimedMidiEvent{arrangement_ctx.actual_timestamp, note_on});
     }
 
     if (arrangement_ctx.has_end()) {
@@ -217,7 +274,7 @@ void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::No
         note_off.set_pitch_note(note_idx, tuning);
 
         const timestamp_t timestamp_to = arrangement_ctx.actual_timestamp + note_event.arrangement_ctx().actual_duration;
-        destination[timestamp_to].emplace_back(std::move(note_off));
+        engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp_to, note_off});
     }
 
     for (const auto &art_pair : note_event.expression_ctx().articulations) {
@@ -228,7 +285,9 @@ void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::No
         const mpe::ArticulationMeta &meta = art_pair.second.meta;
 
         if (!note_event.pitch_ctx().pitch_curve.empty() && muse::contains(::muse::audio::synth::bend_supported_types, meta.type)) {
-            add_pitch_curve(destination, note_event, meta, channel_idx);
+            if (!add_pitch_curve(destination, note_event, meta, channel_idx)) {
+                return false;
+            }
             continue;
         }
 
@@ -238,15 +297,20 @@ void FluidSequencer::add_note_event(EventSequenceMap &destination, const mpe::No
         }
 
         if (muse::contains(::muse::audio::synth::sostenuto_pedal_cc_supported_types, meta.type)) {
+            if (channel_idx >= k_fluid_channel_count) {
+                throw std::invalid_argument("ChannelMap channel exceeds FluidSynth channel limit");
+            }
             const mpe::timestamp_t timestamp =
                 arrangement_ctx.actual_timestamp + arrangement_ctx.actual_duration * 0.1; // add offset for Sostenuto to take effect
-            sostenuto_time_and_durations[channel_idx].push_back(TimestampAndDuration{timestamp, meta.overall_duration});
+            engine::emplace_checked(sostenuto_time_and_durations[channel_idx], TimestampAndDuration{timestamp, meta.overall_duration});
             continue;
         }
     }
+
+    return true;
 }
 
-void FluidSequencer::add_pedal_event(EventSequenceMap &destination, const mpe::ArticulationMeta &meta, const channel_t channel_idx) {
+void FluidSequencer::add_pedal_event(engine::MidiTimeline &destination, const mpe::ArticulationMeta &meta, const channel_t channel_idx) {
     //! NOTE: Endless pedals are not currently supported by SND instrument
     //! Otherwise, we will get infinite sustain
     if (use_dynamic_events_ && meta.has_start() && !meta.has_end()) {
@@ -262,7 +326,7 @@ void FluidSequencer::add_pedal_event(EventSequenceMap &destination, const mpe::A
     }
 }
 
-void FluidSequencer::add_control_change_event(EventSequenceMap &destination, const mpe::timestamp_t timestamp,
+void FluidSequencer::add_control_change_event(engine::MidiTimeline &destination, const mpe::timestamp_t timestamp,
                                               const mpe::ControllerChangeEvent &event) {
     const channel_t last_channel_idx = channels_.channel_count();
 
@@ -284,27 +348,21 @@ void FluidSequencer::add_control_change_event(EventSequenceMap &destination, con
     }
 }
 
-void FluidSequencer::add_control_change(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const int midi_control_idx,
+void FluidSequencer::add_control_change(engine::MidiTimeline &destination, const mpe::timestamp_t timestamp, const int midi_control_idx,
                                         const channel_t channel_idx, const uint32_t value) {
-    EventSequence &events = destination[timestamp];
-    for (const EventType &e : events) {
-        const midi::Event &midi_event = std::get<midi::Event>(e);
-        if (midi_event.opcode() == Event::Opcode::CONTROL_CHANGE && midi_event.channel() == channel_idx &&
-            midi_event.index() == static_cast<uint8_t>(midi_control_idx) && midi_event.data() == value) {
-            return;
-        }
-    }
-
     midi::Event cc(Event::Opcode::CONTROL_CHANGE, Event::MessageType::CHANNEL_VOICE10);
     cc.set_index(midi_control_idx);
     cc.set_channel(channel_idx);
     cc.set_data(value);
 
-    events.emplace_back(cc);
+    engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp, cc});
 }
 
-void FluidSequencer::add_pitch_curve(EventSequenceMap &destination, const mpe::NoteEvent &note_event, const mpe::ArticulationMeta &art_meta,
-                                     const channel_t channel_idx) {
+bool FluidSequencer::add_pitch_curve(engine::MidiTimeline &destination, const mpe::NoteEvent &note_event,
+                                     const mpe::ArticulationMeta &art_meta, const channel_t channel_idx) {
+    constexpr std::uint32_t k_poll_stride = 4096;
+    std::uint32_t work = 0;
+
     const timestamp_t note_timestamp_to = note_event.arrangement_ctx().actual_timestamp + note_event.arrangement_ctx().actual_duration;
     const timestamp_t pitch_bend_timestamp_to = std::min(art_meta.timestamp + art_meta.overall_duration, note_timestamp_to);
 
@@ -335,6 +393,13 @@ void FluidSequencer::add_pitch_curve(EventSequenceMap &destination, const mpe::N
         const std::vector<Point> points = lerp(curr_point, next_point, point_count);
 
         for (const Point &point : points) {
+            if (++work >= k_poll_stride) {
+                work = 0;
+                if (OfflineCancellation::requested()) {
+                    destination.clear();
+                    return false;
+                }
+            }
             const timestamp_t time = static_cast<timestamp_t>(std::round(point.x));
             const int bend_value = static_cast<int>(std::round(point.y));
 
@@ -345,36 +410,58 @@ void FluidSequencer::add_pitch_curve(EventSequenceMap &destination, const mpe::N
             prev_bend_value = bend_value;
         }
     }
+
+    return true;
 }
 
-void FluidSequencer::add_pitch_bend(EventSequenceMap &destination, const mpe::timestamp_t timestamp, const midi::channel_t channel_idx,
+void FluidSequencer::add_pitch_bend(engine::MidiTimeline &destination, const mpe::timestamp_t timestamp, const midi::channel_t channel_idx,
                                     const uint32_t value) {
     midi::Event event(Event::Opcode::PITCH_BEND, Event::MessageType::CHANNEL_VOICE10);
     event.set_channel(channel_idx);
     event.set_data(value);
-    destination[timestamp].push_back(event);
+    engine::emplace_checked(destination.events, engine::TimedMidiEvent{timestamp, event});
 }
 
-void FluidSequencer::add_sostenuto_events(EventSequenceMap &destination, const SostenutoTimeAndDurations &sostenuto_time_and_durations) {
-    for (const auto &channel_pair : sostenuto_time_and_durations) {
-        if (OfflineCancellation::requested()) return;
-        for (size_t i = 0; i < channel_pair.second.size(); ++i) {
-            const TimestampAndDuration &current_tn_d = channel_pair.second.at(i);
+bool FluidSequencer::add_sostenuto_events(engine::MidiTimeline &destination,
+                                          const SostenutoTimeAndDurations &sostenuto_time_and_durations) {
+    constexpr std::uint32_t k_poll_stride = 4096;
+    std::uint32_t work = 0;
+
+    for (channel_t channel_idx = 0; channel_idx < k_fluid_channel_count; ++channel_idx) {
+        const auto &channel_events = sostenuto_time_and_durations[channel_idx];
+        if (channel_events.empty()) {
+            continue;
+        }
+        if (OfflineCancellation::requested()) {
+            destination.clear();
+            return false;
+        }
+        for (size_t i = 0; i < channel_events.size(); ++i) {
+            if (++work >= k_poll_stride) {
+                work = 0;
+                if (OfflineCancellation::requested()) {
+                    destination.clear();
+                    return false;
+                }
+            }
+            const TimestampAndDuration &current_tn_d = channel_events[i];
             const timestamp_t timestamp_to = current_tn_d.timestamp + current_tn_d.duration;
 
-            add_control_change(destination, current_tn_d.timestamp, midi::sostenuto_pedal_controller, channel_pair.first, ::ctrl_on);
+            add_control_change(destination, current_tn_d.timestamp, midi::sostenuto_pedal_controller, channel_idx, ::ctrl_on);
 
-            if (i == channel_pair.second.size() - 1) {
-                add_control_change(destination, timestamp_to, midi::sostenuto_pedal_controller, channel_pair.first, ::ctrl_off);
+            if (i == channel_events.size() - 1) {
+                add_control_change(destination, timestamp_to, midi::sostenuto_pedal_controller, channel_idx, ::ctrl_off);
                 continue;
             }
 
-            const TimestampAndDuration &next_tn_d = channel_pair.second.at(i + 1);
+            const TimestampAndDuration &next_tn_d = channel_events[i + 1];
             if (timestamp_to <= next_tn_d.timestamp) { // handle potential overlap
-                add_control_change(destination, timestamp_to, midi::sostenuto_pedal_controller, channel_pair.first, ::ctrl_off);
+                add_control_change(destination, timestamp_to, midi::sostenuto_pedal_controller, channel_idx, ::ctrl_off);
             }
         }
     }
+
+    return true;
 }
 
 channel_t FluidSequencer::resolve_channel(const mpe::NoteEvent &note_event) const {

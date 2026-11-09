@@ -880,8 +880,6 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
 
     struct ExposedSequencer : FluidSequencer {
         using FluidSequencer::chunk_plan_;
-        using FluidSequencer::EventSequenceMap;
-        using FluidSequencer::flatten_timeline;
         using FluidSequencer::main_stream_events_;
     };
 
@@ -1000,78 +998,219 @@ TEST(AudioInternal, MidiTimelineSlicesAndLimits) {
     }
 }
 
-TEST(AudioInternal, FlattenTimelineBoundedCancellation) {
+TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
     using namespace muse::audio::engine;
     using namespace muse::audio::synth;
     using muse::midi::Event;
 
     struct ExposedSequencer : FluidSequencer {
-        using FluidSequencer::EventSequenceMap;
-        using FluidSequencer::flatten_timeline;
+        using FluidSequencer::bounded_stable_sort;
+        using FluidSequencer::dedup_timeline;
         using FluidSequencer::main_stream_events_;
     };
 
-    const auto make_staged = [](std::size_t groups, std::size_t per_group) {
-        ExposedSequencer::EventSequenceMap staged;
-        Event ev(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE10);
-        ev.set_channel(0);
-        ev.set_note(60);
-        ev.set_velocity7(100);
-        for (std::size_t g = 0; g < groups; ++g) {
-            auto &seq = staged[muse::audio::msecs_t(static_cast<std::int64_t>(g * 10))];
-            seq.assign(per_group, ev);
+    const auto make_unsorted_timeline = [](std::uint32_t count) {
+        MidiTimeline timeline;
+        reserve_checked(timeline.events, count);
+        for (std::uint32_t i = 0; i < count; ++i) {
+            Event ev(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE10);
+            ev.set_channel(static_cast<muse::midi::channel_t>(i % 16));
+            ev.set_note(static_cast<std::uint8_t>(i % 128));
+            ev.set_velocity7(static_cast<std::uint8_t>((i / 128) % 128));
+            const auto ts = static_cast<muse::mpe::timestamp_t>((count - i) % 97);
+            emplace_checked(timeline.events, TimedMidiEvent{ts, ev});
         }
-        return staged;
+        timeline.cursor = 7;
+        return timeline;
     };
 
-    // 1. Cancellation during the pre-reserve totals scan (5,000 one-event groups, poll 2 fires at group 4,096).
+    // 1. Cancellation between 8,192-event block sorts (20,000 events -> 3 blocks; poll 2 fires before block 1).
     {
-        auto staged = make_staged(5000, 1);
-        MidiTimeline timeline;
-        emplace_checked(timeline.events, 42ULL, Event{});
-        timeline.cursor = 1;
+        auto timeline = make_unsorted_timeline(20000);
+        int polls = 0;
+        const std::function<bool()> poll_fn = [&] { return ++polls == 2; };
+        muse::audio::OfflineCancellation scope(poll_fn);
+        EXPECT_FALSE(ExposedSequencer::bounded_stable_sort(timeline));
+        EXPECT_EQ(polls, 2);
+        EXPECT_TRUE(timeline.empty());
+        EXPECT_EQ(timeline.cursor, 0u);
+    }
+
+    // 2. Cancellation during the 8,192-output merge pass (20,000 events: poll 1 at entry, polls 2-3 before blocks 1-2,
+    //    poll 4 after block sorts, poll 5 after scratch reserve, poll 6 after 8,192 merged outputs).
+    {
+        auto timeline = make_unsorted_timeline(20000);
+        int polls = 0;
+        const std::function<bool()> poll_fn = [&] { return ++polls == 6; };
+        muse::audio::OfflineCancellation scope(poll_fn);
+        EXPECT_FALSE(ExposedSequencer::bounded_stable_sort(timeline));
+        EXPECT_EQ(polls, 6);
+        EXPECT_TRUE(timeline.empty());
+        EXPECT_EQ(timeline.cursor, 0u);
+    }
+
+    // 3. Cancellation during dedup_timeline at the 4,096-event stride (6,000 events: poll 1 at entry, poll 2 at 4,096).
+    {
+        auto timeline = make_unsorted_timeline(6000);
+        ASSERT_TRUE(ExposedSequencer::bounded_stable_sort(timeline));
+        timeline.cursor = 3;
 
         int polls = 0;
         const std::function<bool()> poll_fn = [&] { return ++polls == 2; };
         muse::audio::OfflineCancellation scope(poll_fn);
-        ExposedSequencer::flatten_timeline(staged, timeline);
+        EXPECT_FALSE(ExposedSequencer::dedup_timeline(timeline));
         EXPECT_EQ(polls, 2);
         EXPECT_TRUE(timeline.empty());
         EXPECT_EQ(timeline.cursor, 0u);
-        EXPECT_TRUE(staged.empty());
     }
 
-    // 2. Cancellation during the copy + progressive erase loop (5,000 one-event groups, poll 4 fires after
-    //    initial check + scan poll at 4,096 + post-scan check + 4,096 copy/erase work units).
+    // 4. End-to-end FluidSequencer::load cancellation during sort/merge/dedup leaves a cleared timeline and recovers.
     {
-        auto staged = make_staged(5000, 1);
-        MidiTimeline timeline;
+        muse::mpe::PlaybackData data;
+        muse::mpe::PlaybackSetupData setup;
+        setup.supports_single_note_dynamics = true;
+        for (int i = 0; i < 5000; ++i) {
+            muse::mpe::ArrangementContext arr;
+            arr.nominal_timestamp = (5000 - i) * 10;
+            arr.actual_timestamp = (5000 - i) * 10;
+            arr.nominal_duration = 100;
+            arr.actual_duration = 100;
+            muse::mpe::PitchContext pitch;
+            pitch.nominal_pitch_level = (i % 24) * muse::mpe::pitch_level_step;
+            muse::mpe::ExpressionContext expr;
+            expr.nominal_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::MF);
+            data.origin_events[arr.nominal_timestamp].emplace_back(muse::mpe::NoteEvent(std::move(arr), std::move(pitch), std::move(expr)));
+        }
 
+        ExposedSequencer seq;
+        seq.init(setup, muse::midi::Program{0, 0}, true, k_fluid_channel_count);
+
+        // 5,000 notes emit 10,000 NOTE_ON/NOTE_OFF events (> 8,192 block size).
+        // Cancel on poll 5003 (inside bounded_stable_sort after the 5,000 note polls).
         int polls = 0;
-        const std::function<bool()> poll_fn = [&] { return ++polls == 4; };
-        muse::audio::OfflineCancellation scope(poll_fn);
-        ExposedSequencer::flatten_timeline(staged, timeline);
-        EXPECT_EQ(polls, 4);
-        EXPECT_TRUE(timeline.empty());
-        EXPECT_EQ(timeline.cursor, 0u);
-        EXPECT_TRUE(staged.empty());
+        const std::function<bool()> cancel_in_sort = [&] { return ++polls == 5003; };
+        {
+            muse::audio::OfflineCancellation scope(cancel_in_sort);
+            seq.load(data);
+        }
+        EXPECT_EQ(polls, 5003);
+        EXPECT_TRUE(seq.main_stream_events_.empty());
+        EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
+
+        // Subsequent non-cancelled load recovers cleanly.
+        seq.load(data);
+        EXPECT_EQ(seq.main_stream_events_.events.size(), 10000u);
+        EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
+    }
+}
+
+TEST(AudioInternal, MidiTimelineDedupAndEqualTimeOrder) {
+    using namespace muse::audio::engine;
+    using namespace muse::audio::synth;
+    using muse::midi::Event;
+
+    struct ExposedSequencer : FluidSequencer {
+        using FluidSequencer::bounded_stable_sort;
+        using FluidSequencer::dedup_timeline;
+        using FluidSequencer::main_stream_events_;
+    };
+
+    // 1. Multi-block bounded_stable_sort (20,000 events across 3 blocks) matches std::stable_sort bit-for-bit,
+    //    preserving equal-timestamp emission order across block boundaries.
+    {
+        MidiTimeline actual;
+        std::vector<TimedMidiEvent> expected;
+        constexpr std::uint32_t total = 20000;
+        reserve_checked(actual.events, total);
+        expected.reserve(total);
+
+        for (std::uint32_t i = 0; i < total; ++i) {
+            Event ev(Event::Opcode::NOTE_ON, Event::MessageType::CHANNEL_VOICE20);
+            ev.set_channel(static_cast<muse::midi::channel_t>(i % 16));
+            ev.set_note(static_cast<std::uint8_t>(i % 128));
+            ev.set_velocity16(static_cast<std::uint16_t>(i & 0xFFFFu));
+            const auto ts = static_cast<muse::mpe::timestamp_t>((i * 37) % 53);
+            emplace_checked(actual.events, TimedMidiEvent{ts, ev});
+            expected.push_back(TimedMidiEvent{ts, ev});
+        }
+
+        ASSERT_TRUE(ExposedSequencer::bounded_stable_sort(actual));
+        std::stable_sort(expected.begin(), expected.end(),
+                         [](const TimedMidiEvent &lhs, const TimedMidiEvent &rhs) { return lhs.timestamp < rhs.timestamp; });
+
+        ASSERT_EQ(actual.events.size(), expected.size());
+        for (std::uint32_t i = 0; i < total; ++i) {
+            EXPECT_EQ(actual.events[i].timestamp, expected[i].timestamp);
+            EXPECT_EQ(actual.events[i].event, expected[i].event);
+        }
     }
 
-    // 3. Normal non-cancelled flatten after a cancelled flatten recovers cleanly and drains staged.
+    // 2. Per-bucket CC deduplication and equal-time emission order:
+    //    - Eligible CCs (sustain, sostenuto, modwheel) deduplicate on exact (opcode, channel, controller, value)
+    //      within a timestamp bucket while keeping first-seen position relative to other events.
+    //    - Eligible CCs with different channel, controller, value, or in a later timestamp bucket are kept.
+    //    - Pitch bends and late dynamics (expression_controller) are NEVER deduplicated.
     {
-        auto staged = make_staged(5000, 1);
-        MidiTimeline timeline;
-
-        int polls = 0;
-        const std::function<bool()> poll_fn = [&] {
-            ++polls;
-            return false;
+        auto make_cc = [](muse::midi::channel_t ch, int ctrl, std::uint32_t val) {
+            Event cc(Event::Opcode::CONTROL_CHANGE, Event::MessageType::CHANNEL_VOICE10);
+            cc.set_channel(ch);
+            cc.set_index(ctrl);
+            cc.set_data(val);
+            return cc;
         };
-        muse::audio::OfflineCancellation scope(poll_fn);
-        ExposedSequencer::flatten_timeline(staged, timeline);
-        EXPECT_EQ(timeline.events.size(), 5000u);
-        EXPECT_EQ(timeline.cursor, 0u);
-        EXPECT_TRUE(staged.empty());
-        EXPECT_GE(polls, 5);
+        auto make_bend = [](muse::midi::channel_t ch, std::uint32_t val) {
+            Event bend(Event::Opcode::PITCH_BEND, Event::MessageType::CHANNEL_VOICE10);
+            bend.set_channel(ch);
+            bend.set_data(val);
+            return bend;
+        };
+        auto make_note = [](Event::Opcode op, muse::midi::channel_t ch, std::uint8_t note) {
+            Event ev(op, Event::MessageType::CHANNEL_VOICE20);
+            ev.set_channel(ch);
+            ev.set_note(note);
+            ev.set_velocity16(32000);
+            return ev;
+        };
+
+        const Event note_on_a = make_note(Event::Opcode::NOTE_ON, 0, 60);
+        const Event sustain_on_ch0 = make_cc(0, muse::midi::sustain_pedal_controller, 127);
+        const Event bend_center = make_bend(0, 8192);
+        const Event sustain_on_ch1 = make_cc(1, muse::midi::sustain_pedal_controller, 127);
+        const Event sustain_off_ch0 = make_cc(0, muse::midi::sustain_pedal_controller, 0);
+        const Event sostenuto_on_ch0 = make_cc(0, muse::midi::sostenuto_pedal_controller, 127);
+        const Event expr_ch0_a = make_cc(0, muse::midi::expression_controller, 96);
+        const Event expr_ch0_b = make_cc(0, muse::midi::expression_controller, 96);
+        const Event note_on_b = make_note(Event::Opcode::NOTE_ON, 0, 64);
+
+        MidiTimeline timeline;
+        // Emit out of timestamp order across t=200 and t=100 to exercise stable sort + per-bucket dedup together.
+        emplace_checked(timeline.events, TimedMidiEvent{200, sustain_on_ch0});   // bucket 200: kept (fresh bucket)
+        emplace_checked(timeline.events, TimedMidiEvent{100, note_on_a});        // bucket 100 #0: kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, sustain_on_ch0});   // bucket 100 #1: kept (first sustain ch0=127)
+        emplace_checked(timeline.events, TimedMidiEvent{100, bend_center});      // bucket 100 #2: kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, sustain_on_ch0});   // bucket 100: duplicate sustain ch0=127 -> dropped
+        emplace_checked(timeline.events, TimedMidiEvent{100, bend_center});      // bucket 100 #3: duplicate pitch bend -> KEPT
+        emplace_checked(timeline.events, TimedMidiEvent{100, sustain_on_ch1});   // bucket 100 #4: different channel -> kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, sustain_off_ch0});  // bucket 100 #5: different value -> kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, sostenuto_on_ch0}); // bucket 100 #6: different controller -> kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, sostenuto_on_ch0}); // bucket 100: duplicate sostenuto -> dropped
+        emplace_checked(timeline.events, TimedMidiEvent{100, note_on_b});        // bucket 100 #7: kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, expr_ch0_a});       // bucket 100 #8: late dynamic -> kept
+        emplace_checked(timeline.events, TimedMidiEvent{100, expr_ch0_b});       // bucket 100 #9: duplicate late dynamic -> KEPT
+        emplace_checked(timeline.events, TimedMidiEvent{200, sustain_on_ch0});   // bucket 200: duplicate in bucket 200 -> dropped
+
+        ASSERT_TRUE(ExposedSequencer::bounded_stable_sort(timeline));
+        ASSERT_TRUE(ExposedSequencer::dedup_timeline(timeline));
+
+        const std::vector<TimedMidiEvent> expected{
+            {100, note_on_a},      {100, sustain_on_ch0},  {100, bend_center},      {100, bend_center},
+            {100, sustain_on_ch1}, {100, sustain_off_ch0}, {100, sostenuto_on_ch0}, {100, note_on_b},
+            {100, expr_ch0_a},     {100, expr_ch0_b},      {200, sustain_on_ch0},
+        };
+        ASSERT_EQ(timeline.events.size(), expected.size());
+        for (std::size_t i = 0; i < expected.size(); ++i) {
+            EXPECT_EQ(timeline.events[i].timestamp, expected[i].timestamp) << "index " << i;
+            EXPECT_EQ(timeline.events[i].event, expected[i].event) << "index " << i;
+        }
     }
 }
