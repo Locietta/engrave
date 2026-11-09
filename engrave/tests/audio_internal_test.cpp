@@ -18,6 +18,7 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "audio/thirdparty/fluidsynth/vorbis_decode.h"
@@ -246,6 +247,20 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
         }
         EXPECT_EQ(render(), expected);
     }
+
+    // Factories must hand over sole ownership: raw and shared pointers do not convert.
+    static_assert(std::is_convertible_v<std::unique_ptr<FailingFinalizer>, muse::audio::encode::UniqueEncoder>);
+    static_assert(!std::is_convertible_v<FailingFinalizer *, muse::audio::encode::UniqueEncoder>);
+    static_assert(!std::is_convertible_v<std::shared_ptr<FailingFinalizer>, muse::audio::encode::UniqueEncoder>);
+    // A null owner is an empty encoder: the export fails cleanly instead of dispatching through nullptr.
+    music::AudioRenderRequest request;
+    const auto output_utf8 = output.generic_u8string();
+    request.output_path.assign(output_utf8.begin(), output_utf8.end());
+    request.encoder_factory = [](const muse::audio::SoundTrackFormat &, muse::io::IODevice &) {
+        return std::unique_ptr<FailingFinalizer>{};
+    };
+    EXPECT_FALSE(music::export_score_audio(audio, master, request).ok);
+    EXPECT_EQ(render(), expected);
 }
 
 TEST(AudioInternal, BudgetFailureRemovesTheIntermediateAndAllowsRecovery) {
@@ -1353,6 +1368,14 @@ TEST(AudioInternal, ReverbPartialSignalAllocationDestroysAndRecovers) {
         EXPECT_THROW(effect.init(spec), std::bad_alloc);
         ReverbProcessor::fail_signal_allocation = -1;
         EXPECT_NO_THROW(effect.init(spec));
+        // A resize that fails inside process() must not leave a retry of the same
+        // block size dispatching through null signal buffers.
+        const auto larger = spec.samples_per_channel * 2;
+        std::vector<float> block(static_cast<size_t>(larger) * spec.audio_channel_count, 0.f);
+        ReverbProcessor::fail_signal_allocation = allocation;
+        EXPECT_THROW(effect.process(block.data(), larger, 0), std::bad_alloc);
+        ReverbProcessor::fail_signal_allocation = -1;
+        EXPECT_NO_THROW(effect.process(block.data(), larger, 0));
     }
 }
 #endif

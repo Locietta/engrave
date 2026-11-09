@@ -136,7 +136,7 @@ struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::WAV;
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
-    std::function<muse::audio::encode::AudioEncoder(const muse::audio::SoundTrackFormat &, muse::io::IODevice &)> encoder_factory;
+    std::function<muse::audio::encode::UniqueEncoder(const muse::audio::SoundTrackFormat &, muse::io::IODevice &)> encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
     // muted, like MasterNotation::initNotationSoloMuteState

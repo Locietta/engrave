@@ -54,9 +54,11 @@ struct SamplesFloat {
             dealloc(ch);
         }
 
+        // Size the pointer table before publishing the channel count: a throwing
+        // resize leaves the old (all-null) table and count, safe to destroy.
+        data.resize(input_num_channels);
         num_channels = input_num_channels;
         num_samples = samples;
-        data.resize(num_channels);
         for (int ch = 0; ch < num_channels; ch++) {
             alloc(ch, num_samples);
         }
@@ -287,7 +289,8 @@ void ReverbProcessor::set_mode(const ProcessMode) {}
 bool ReverbProcessor::should_process_during_silence() const { return false; }
 
 void ReverbProcessor::process(float *buffer, samples_t sample_count, samples_t) {
-    if (processor_.block_size != static_cast<int>(sample_count)) {
+    // A failed earlier resize leaves no signal buffers; retry the allocation.
+    if (processor_.block_size != static_cast<int>(sample_count) || !signal_buffers_) {
         set_format(processor_.audio_channels_count_value, processor_.sample_rate_value, sample_count);
     }
 

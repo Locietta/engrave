@@ -40,7 +40,7 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
 
-static encode::AudioEncoder create_encoder(const SoundTrackFormat &format, io::IODevice &dst_device) {
+static encode::UniqueEncoder create_encoder(const SoundTrackFormat &format, io::IODevice &dst_device) {
     switch (format.type) {
         case SoundTrackType::MP3: return std::make_unique<encode::Mp3Encoder>(format, dst_device);
         case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dst_device);
@@ -51,12 +51,12 @@ static encode::AudioEncoder create_encoder(const SoundTrackFormat &format, io::I
     }
 
     UNREACHABLE;
-    return nullptr;
+    return {};
 }
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration,
                                    engine::OfflineRenderSession *source, std::function<void(uint64_t)> block_completed,
-                                   std::function<encode::AudioEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
+                                   std::function<encode::UniqueEncoder(const SoundTrackFormat &, io::IODevice &)> encoder_factory,
                                    std::function<bool()> cancelled)
     : cancelled_(std::move(cancelled)), source_(std::move(source)), block_completed_(std::move(block_completed)) {
     if (!source_) {
@@ -81,7 +81,7 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFor
     render_step_ = output_spec.samples_per_channel;
 
     OfflineTimer timer(OfflineTiming::current().encode);
-    encoder_ptr_ = encoder_factory ? encoder_factory(format, dst_device) : create_encoder(format, dst_device);
+    encoder_ptr_ = (encoder_factory ? encoder_factory(format, dst_device) : create_encoder(format, dst_device)).take();
     if (!encoder_ptr_) {
         return;
     }
