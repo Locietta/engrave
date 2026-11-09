@@ -81,8 +81,7 @@ struct FlatMapEntry {
 };
 
 template <class K, class V, class Compare = std::less<K>>
-class FlatMap {
-public:
+struct FlatMap {
     using key_type = K;
     using mapped_type = V;
     using value_type = FlatMapEntry<K, V>;

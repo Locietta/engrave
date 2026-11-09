@@ -48,8 +48,7 @@ struct FluidTrack {
 #ifdef ENGRAVE_PLAYBACK_HARNESS
     static int live_instances();
 #endif
-    // The observer preserves legacy staff remapping. Configuration and resources
-    // must outlive this noncopyable per-track owner.
+    // The observer preserves legacy staff remapping. Resources outlive this per-track owner.
     FluidTrack(const audio::AudioSourceParams &params, const engine::OfflineRenderSettings &config, engine::MidiEventSink midi_event_sink,
                engine::AudioResources &resources);
 
@@ -58,19 +57,11 @@ struct FluidTrack {
     FluidTrack &operator=(const FluidTrack &) = delete;
     void setup(const mpe::TrackEvents &events);
 
+    ProcessMode mode() const { return mode_; }
+
+    const OutputSpec &output_spec() const { return output_spec_; }
+
     const AudioInputParams &params() const { return params_; }
-
-    void prepare_to_play() {}
-
-    bool ready_to_play() const { return true; }
-
-    bool has_pending_chunks() const { return false; }
-
-    void process_input() {}
-
-    InputProcessingProgress input_processing_progress() const { return {}; }
-
-    void clear_cache() {}
 
     Ret init(const OutputSpec &spec);
 

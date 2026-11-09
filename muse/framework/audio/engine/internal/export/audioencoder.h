@@ -45,8 +45,7 @@ using AudioEncoder = pro::proxy<EncoderFacade>;
 // std::unique_ptr converts, so raw and shared pointers are rejected at compile
 // time, and a null owner yields an empty encoder rather than an engaged proxy
 // around nullptr.
-class UniqueEncoder {
-public:
+struct UniqueEncoder {
     UniqueEncoder() = default;
 
     template <class T>

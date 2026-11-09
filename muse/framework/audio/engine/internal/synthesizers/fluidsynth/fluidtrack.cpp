@@ -141,8 +141,6 @@ Ret FluidTrack::init(const OutputSpec &spec) {
 
     create_fluid_instance();
 
-    sequencer_.set_on_off_stream_flushed([this]() { flush_sound_requested_ = true; });
-
     LOGD() << "synth inited\n";
     return true;
 }

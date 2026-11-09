@@ -50,7 +50,7 @@ using engine::TimedMidiEvent;
 using engine::TimelineStream;
 
 struct FluidSequencer {
-    FluidSequencer() { reset_all_iterators(); }
+    FluidSequencer() { seek_main_timeline(); }
 
     // Lowers one track of the flat MPE store; the sequencer keeps only a copy of its dynamics, and
     // nothing borrowed from the store outlives this call
@@ -70,7 +70,7 @@ struct FluidSequencer {
             dynamic_layers_.clear();
             dynamic_points_.clear();
             main_stream_events_.clear();
-            reset_all_iterators();
+            seek_main_timeline();
             return;
         }
 
@@ -92,14 +92,12 @@ struct FluidSequencer {
     void set_playback_position(const msecs_t new_playback_position) {
         invalidate_chunk_plan();
         playback_position_ = new_playback_position;
-        reset_all_iterators();
+        seek_main_timeline();
     }
 
     msecs_t playback_position() const { return playback_position_; }
 
     using OnFlushedCallback = std::function<void()>;
-
-    void set_on_off_stream_flushed(OnFlushedCallback flushed) { on_off_stream_flushed_ = flushed; }
 
     void set_on_main_stream_flushed(OnFlushedCallback flushed) { on_main_stream_flushed_ = flushed; }
 
@@ -304,9 +302,7 @@ protected:
         chunk_plan_valid_ = false;
     }
 
-    void reset_all_iterators() { update_main_sequence_iterator(); }
-
-    void update_main_sequence_iterator() { main_stream_events_.seek(playback_position_.raw()); }
+    void seek_main_timeline() { main_stream_events_.seek(playback_position_.raw()); }
 
     static void collect_slices(MidiTimeline &timeline, const TimelineStream stream, const mpe::timestamp_t limit, Buf<ChunkSlice> &plan) {
         const auto total = static_cast<std::uint32_t>(timeline.events.size());
@@ -348,7 +344,6 @@ protected:
 
     bool is_active_ = false;
 
-    OnFlushedCallback on_off_stream_flushed_;
     OnFlushedCallback on_main_stream_flushed_;
 
 public:

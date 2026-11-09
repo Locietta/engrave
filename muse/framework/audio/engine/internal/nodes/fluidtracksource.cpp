@@ -86,26 +86,24 @@ void FluidTrackSource::flush() {
     synth_->flush_sound();
 }
 
-const AudioInputParams &FluidTrackSource::input_params() const { return params_; }
-
 void FluidTrackSource::apply_input_params(const AudioInputParams &required_params) {
     // Consume the borrow before any assertion, resolver or synth call can fail.
     const auto *data = std::exchange(initial_data_, nullptr);
-    IF_ASSERT_FAILED(output_spec_.is_valid()) { return; }
+    IF_ASSERT_FAILED(default_spec_.is_valid()) { return; }
 
-    if (params_.is_valid() && params_ == required_params) {
+    if (synth_ && synth_->params().is_valid() && synth_->params() == required_params) {
         return;
     }
 
-    // Offline sources load once. Their MPE input may already have been released.
+    // Offline tracks load once. Their MPE input may already have been released.
     if (!data) {
-        LOGE() << "Cannot reload an offline event source";
+        LOGE() << "Cannot reload an offline track";
         return;
     }
 
     auto selected = required_params;
     auto found = resources_.resources.find(selected.resource_meta.id);
-    OutputSpec spec = output_spec_;
+    OutputSpec spec = default_spec_;
     if (!selected.is_valid() || selected.type() != AudioSourceType::FLUID || found == resources_.resources.end()) {
         selected = config_.default_input;
         found = resources_.resources.find(selected.resource_meta.id);
@@ -120,53 +118,11 @@ void FluidTrackSource::apply_input_params(const AudioInputParams &required_param
     track->add_sound_fonts({found->second.path});
     track->set_preset(found->second.preset);
 
-    // Publish only a fully initialized synth. A throwing setup leaves the node failed.
-    track->set_output_spec(output_spec_);
+    // Publish only a fully initialized synth. A throwing setup leaves the track uninitialized.
+    track->set_output_spec(default_spec_);
     track->setup(*data);
     track->set_mode(ProcessMode::IDLE);
+    // Preserve the initial adapter transition to IDLE, including its pending flush.
+    track->flush_sound();
     synth_ = std::move(track);
-
-    params_ = synth_->params();
-}
-
-void FluidTrackSource::prepare_to_play() {
-
-    IF_ASSERT_FAILED(synth_) { return; }
-
-    synth_->prepare_to_play();
-}
-
-bool FluidTrackSource::ready_to_play() const {
-
-    IF_ASSERT_FAILED(synth_) { return false; }
-
-    return synth_->ready_to_play();
-}
-
-bool FluidTrackSource::has_pending_chunks() const {
-
-    IF_ASSERT_FAILED(synth_) { return false; }
-
-    return synth_->has_pending_chunks();
-}
-
-void FluidTrackSource::process_input() {
-
-    IF_ASSERT_FAILED(synth_) { return; }
-
-    synth_->process_input();
-}
-
-InputProcessingProgress FluidTrackSource::input_processing_progress() const {
-
-    IF_ASSERT_FAILED(synth_) { return {}; }
-
-    return synth_->input_processing_progress();
-}
-
-void FluidTrackSource::clear_cache() {
-
-    IF_ASSERT_FAILED(synth_) { return; }
-
-    synth_->clear_cache();
 }
