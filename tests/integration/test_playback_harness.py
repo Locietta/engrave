@@ -10,6 +10,9 @@ from pathlib import Path
 from engrave_testing.playback_harness import compare, pcm_metadata, pinned_cases, write_json
 
 
+PROJECTION = b"projection-v1\ntrack 1 1:0074\ngroups 0\n"
+
+
 class PlaybackHarnessTests(unittest.TestCase):
     def captures(self, temp):
         left, right = Path(temp) / "left", Path(temp) / "right"
@@ -20,11 +23,14 @@ class PlaybackHarnessTests(unittest.TestCase):
             write_json(root / "provenance.json", {"executable_sha256": digest})
             for name, data in {
                 "A.txt": b"legacy-mpe-v1\ntrack 1 test\n",
-                "B.txt": b"deferred\n",
                 "C.txt": b"synth-input-v2\ntrack 1 test\ntotal_frames 1\n",
                 "D.json": b"{}\n",
             }.items():
                 (root / "case/44100" / name).write_bytes(data)
+        # The left (older) executable predates dump B; the right one carries both extractors.
+        (left / "case/44100/B.txt").write_bytes(b"DEFERRED: step 4b\n")
+        for name in ("B.txt", "B_legacy.txt"):
+            (right / "case/44100" / name).write_bytes(PROJECTION)
         return left, right
 
     def test_pcm_hash_excludes_container_and_keeps_float_bits(self):
@@ -45,10 +51,6 @@ class PlaybackHarnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             left, right = self.captures(temp)
             compare(left, right, ("0" * 64, "1" * 64))
-            # B compares the two extractors inside the new executable, not
-            # against an older executable that may still have a stub.
-            (right / "case/44100/B.txt").write_text("independent projection\n")
-            compare(left, right)
             a = right / "case/44100/A.txt"
             original = a.read_bytes()
             a.write_bytes(original + b"corruption")
@@ -57,6 +59,38 @@ class PlaybackHarnessTests(unittest.TestCase):
             a.unlink()
             with self.assertRaises(FileNotFoundError):
                 compare(left, right)
+
+    def test_projection_is_required_of_the_new_executable(self):
+        # B compares the two extractors inside the new executable, not against
+        # an older executable that may still have a stub.
+        cases = (
+            ("deferred", "B.txt", b"DEFERRED: step 4b\n", "deferred or not a projection"),
+            ("missing", "B.txt", None, "dump B is missing"),
+            ("missing legacy", "B_legacy.txt", None, "dump B is missing"),
+            ("no track", "B.txt", b"projection-v1\n", "structurally incomplete"),
+            ("corrupted flat record", "B.txt", PROJECTION.replace(b"groups 0", b"groups 1"), "flat records vs legacy"),
+            ("crlf legacy", "B_legacy.txt", PROJECTION.replace(b"\n", b"\r\n"), "not a projection"),
+            ("crlf body", "B.txt", PROJECTION[:14] + PROJECTION[14:].replace(b"\n", b"\r\n"), "byte difference at offset 28"),
+        )
+        for label, dump, data, message in cases:
+            with self.subTest(label), tempfile.TemporaryDirectory() as temp:
+                left, right = self.captures(temp)
+                path = right / "case/44100" / dump
+                if data is None:
+                    path.unlink()
+                else:
+                    path.write_bytes(data)
+                with self.assertRaisesRegex(AssertionError, message):
+                    compare(left, right)
+
+    def test_left_projection_is_checked_when_present(self):
+        with tempfile.TemporaryDirectory() as temp:
+            left, right = self.captures(temp)
+            (left / "case/44100/B.txt").write_bytes(PROJECTION)
+            with self.assertRaisesRegex(AssertionError, "dump B is missing"):
+                compare(left, right)
+            (left / "case/44100/B_legacy.txt").write_bytes(PROJECTION)
+            compare(left, right)
 
     def test_newline_bytes_are_not_normalized(self):
         for dump in ("A.txt", "C.txt", "D.json"):

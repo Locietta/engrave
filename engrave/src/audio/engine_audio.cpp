@@ -48,6 +48,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/playbackmodel.h"
+#include "flat_playback_capture.h"
 #include "global/defer.h"
 #include "global/io/ifilesystem.h"
 #include "global/io/iodevice.h"
@@ -558,6 +559,10 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
         excerpt_selected = true;
     }
 
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+    // Dual execution: the flat store outlives the model walk that fills it.
+    PlaybackScore flat_events;
+#endif
     // Sources borrow model data only while loading their MIDI sequences.
     PlaybackModel model(&state.profiles);
 #ifdef _WIN32
@@ -576,12 +581,24 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
         OfflineCancellation::ModelScope phase;
         try {
-            model.load(master_score, [&] {
+            const auto checkpoint = [&] {
                 if (poll()) throw CancelledModel{};
-            });
+            };
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+            model.load(master_score, checkpoint, FlatPlaybackCapture::dual ? &flat_events : nullptr);
+#else
+            model.load(master_score, checkpoint);
+#endif
         } catch (const CancelledModel &) {
             return abort_setup();
         }
+#ifdef ENGRAVE_PLAYBACK_HARNESS
+        catch (const engine::StoreLimit &limit) {
+            // Only the flat store throws this during load; step 4c moves the handler to production
+            if (callback_error) std::rethrow_exception(callback_error);
+            return fail(AudioRenderResult::Failure::RESOURCE_LIMIT, limit.message);
+        }
+#endif
     }
     if (poll()) return abort_setup();
 
@@ -683,6 +700,11 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
             test::PlaybackCapture::track(id.part_id.to_uint64(), id.instrument_id, model.resolve_track_playback_data(id));
     }
     if (test::PlaybackCapture::synth) *test::PlaybackCapture::synth << "total_frames " << total_frames << '\n';
+    if (FlatPlaybackCapture::projection) {
+        FlatPlaybackCapture::LegacyTracks legacy;
+        for (const auto &id : ordered_track_ids) legacy.emplace_back(id, &model.resolve_track_playback_data(id));
+        FlatPlaybackCapture::projection(flat_events, legacy);
+    }
 #endif
     auto tracks_timer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
     for (const InstrumentTrackId &track_id : ordered_track_ids) {

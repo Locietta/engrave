@@ -8,9 +8,13 @@ xmake build -P . -y -j 12 playback_probe playback_counting_probe playback_contai
 ```
 
 `playback_probe ASSETS FONT SCORE OUTDIR` writes legacy full MPE `A.txt`,
-the explicit step-4b projection stub `B.txt`, synth input `C.txt`, a FLOAT32 WAV,
-build metadata and phase measurements. Options are `--rate 44100|48000`,
-`--no-repeats`, `--no-reverb`, `--mute-part N`, and `--excerpt N`.
+the flat-record projection `B.txt` with its independent legacy counterpart
+`B_legacy.txt`, synth input `C.txt`, a FLOAT32 WAV, build metadata and phase
+measurements. Options are `--rate 44100|48000`, `--no-repeats`, `--no-reverb`,
+`--mute-part N`, and `--excerpt N`. Captures load the model with dual execution:
+one score walk feeds the legacy map and the flat store. The probe fails when the two
+projections differ; `--corrupt-flat` alters one flat record as a negative control,
+and `--dual` enables dual execution in a `--measure` run.
 Dump C v2 records each FluidSynth setup operation through the same arguments
 used for the actual call, and each slice includes its ordered raw MIDI words.
 All capture sites are behind `ENGRAVE_PLAYBACK_HARNESS`; normal builds retain
@@ -36,8 +40,9 @@ checks A/C/D bytes and reports the first differing byte offset with context.
 Missing track records (A/C), total_frames (C), or provenance are rejected even
 when both captures are equally incomplete. Optional `--expect-exe-sha256 OLD NEW`
 checks each capture against its independently supplied executable hash. B is an internal
-new-binary oracle, not an old/new byte comparison, and is never
-reported as an implemented projection oracle. Corpus gaps are listed in
+new-binary oracle, not an old/new byte comparison: the comparator requires a real
+`B.txt` and `B_legacy.txt` from the right (new) capture and byte-equal projections,
+and checks a left capture's B only when that executable wrote one. Corpus gaps are listed in
 [the focused fixture README](data/playback_dod/README.md).
 
 Use an **uncounted** `playback_probe --measure` run for performance numbers,

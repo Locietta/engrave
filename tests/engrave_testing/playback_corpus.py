@@ -102,7 +102,9 @@ def corpus(generated: Path):
         cases.append(("audio/" + source.name, score_path, []))
     playback = sorted((REPO_ROOT / "src/engraving/tests/playback").rglob("*.mscx"))
     cases += [("playback/" + p.parent.name + "/" + p.stem, p, []) for p in playback]
-    cases += [("focused/" + p.stem, p, []) for p in sorted(FOCUSED.glob("*.musicxml"))]
+    # Generated MusicXML plus hand-written native fixtures (cold_preset.mscx: sound-flag presets).
+    focused = sorted(FOCUSED.glob("*.musicxml")) + sorted(FOCUSED.glob("*.mscx"))
+    cases += [("focused/" + p.stem, p, []) for p in focused]
     cases += [("dense", dense, []), ("huge_track", huge, [])]
     options_score = FOCUSED / "repeat_tie.musicxml"
     cases += [

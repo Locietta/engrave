@@ -1,6 +1,9 @@
 # Playback identity corpus
 
 Regenerate the focused MusicXML with `tests/integration/test_playback_dod.py generate`.
+`cold_preset.mscx` is hand-written (MuseScore 4.6 format): two sound flags carry distinctive
+presets (one non-ASCII), a playing technique and a lyric share the first chord's timestamp,
+so the cold-event buffer sees presets, text and syllables in one group.
 The shared `engrave_testing.playback_corpus` module also inventories all 26 engine
 audio sources and all 78 playback MSCX sources. Dense (49,152 notes) and one-track
 inputs are generated into each capture directory instead of committing megabytes.
@@ -33,4 +36,4 @@ Known focused coverage gaps needing constructed MPE or native-score fixtures:
   payloads or add constructed MPE coverage before relying on that interaction.
 
 These are explicit gaps, not assertions that MusicXML preserved the requested
-internal event structure. Dump B is a visible stub until step 4b.
+internal event structure.

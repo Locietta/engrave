@@ -125,6 +125,33 @@ def validate_dump_records(root, name):
             raise AssertionError(f"{root / name / dump}: structurally incomplete; missing {sorted(missing)!r}")
 
 
+PROJECTION_HEADER = b"projection-v1\n"
+
+
+def projection_present(root, name):
+    """True when the capture carries a real dump B (step 4b on); older executables wrote a stub."""
+    path = root / name / "B.txt"
+    if not path.exists():
+        return False
+    with path.open("rb") as stream:
+        return stream.read(len(PROJECTION_HEADER)) == PROJECTION_HEADER
+
+
+def validate_projection(root, name):
+    """Dump B is an oracle inside one executable: flat records against the independent legacy extractor."""
+    flat, legacy = root / name / "B.txt", root / name / "B_legacy.txt"
+    for path in (flat, legacy):
+        if not path.exists():
+            raise AssertionError(f"{path}: dump B is missing")
+        with path.open("rb") as stream:
+            head = stream.read(len(PROJECTION_HEADER))
+            if head != PROJECTION_HEADER:
+                raise AssertionError(f"{path}: dump B is deferred or not a projection ({head!r})")
+            if not any(line.startswith(b"track ") and line[6:].strip() for line in stream):
+                raise AssertionError(f"{path}: structurally incomplete; missing [b'track ']")
+    compare_bytes(legacy, flat, f"{name}/B.txt (flat records vs legacy extractor)")
+
+
 def compare_bytes(a, b, name):
     offset = 0
     with a.open("rb") as af, b.open("rb") as bf:
@@ -172,14 +199,23 @@ def compare(left, right, expect_exe_sha256=None):
         expected = {f"{name}/{rate}" for name in pinned_cases() for rate in rates}
         if set(lm) != expected:
             raise AssertionError("full capture case set differs from pinned corpus list")
+    left_projections = 0
     for name in sorted(lm):
         validate_dump_records(left, name)
         validate_dump_records(right, name)
         for dump in ("A.txt", "C.txt", "D.json"):
             a, b = left / name / dump, right / name / dump
             compare_bytes(a, b, f"{name}/{dump}")
+        # B is required of the new (right) executable; an older left one may predate it.
+        validate_projection(right, name)
+        if projection_present(left, name):
+            validate_projection(left, name)
+            left_projections += 1
     label = "DIAGNOSTIC PASS" if diagnostic else "PASS"
-    print(f"{label}: {len(lm)} renders, dumps A/C/D byte-identical; B deferred")
+    print(
+        f"{label}: {len(lm)} renders, dumps A/C/D byte-identical; "
+        f"B verified in the right executable ({len(lm)}) and the left ({left_projections})"
+    )
 
 
 def metrics(path):
