@@ -25,9 +25,6 @@
 #include "audio/engine/iaudioengineconfiguration.h"
 #include "audio/engine/internal/audiofactory.h"
 #include "audio/engine/internal/export/soundtrackwriter.h"
-#include "audio/engine/internal/nodes/automationcontrolnode.h"
-#include "audio/engine/internal/nodes/signalnode.h"
-#include "audio/engine/internal/nodes/trackchain.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/offlinetiming.h"
@@ -242,32 +239,9 @@ void set_track_control(ControlParams &control, const EngineAudioTrackParams &par
     control.muted = params.muted;
 }
 
-// The public master controls wrap the neutral session master chain. Keeping
-// both chains preserves existing gain initialization and sample arithmetic.
-engine::TrackChainPtr make_master_chain(const IAudioNodePtr &context, const OutputSpec &spec, const AudioRenderRequest &request,
-                                        std::string &error) {
-    IAudioNodePtr context_node = std::dynamic_pointer_cast<IAudioNode>(context);
-    if (!context_node) {
-        error = "audio context is not an audio node";
-        return nullptr;
-    }
-
-    engine::AutomationControlNodePtr control = std::make_shared<engine::AutomationControlNode>();
-    engine::TrackChainPtr chain = std::make_shared<engine::TrackChain>(::muse::audio::master_track_id, "Master");
-
-    // Output spec and mode first: TrackChain::rebuild() pushes both into every
-    // node it adds (nodes/chainnode.h:70-80), so the control node computes its
-    // channel gains once, and only the explicit set* calls below can retarget
-    // them.
-    chain->set_output_spec(spec);
-    chain->set_mode(ProcessMode::IDLE);
-
-    chain->set_source(context_node);
-    chain->set_fx_chain(nullptr); // 5.0 has no master fx chain (audiocontext.cpp:72)
-    chain->set_control(control);
-    chain->set_signal(std::make_shared<engine::SignalNode>());
-    chain->rebuild();
-
+// Keep the outer master initialization distinct from the neutral session stage.
+void configure_master(engine::OfflineRenderSession &context, const AudioRenderRequest &request) {
+    auto *control = &context.master_control();
     // Mirrors AudioContext::onControlParamsChanged() (audiocontext.cpp:310-331)
     // but latches the result instead of smoothing to it. 4.7.6 applied the
     // master params to every chunk without any smoothing (4.7.6
@@ -285,8 +259,6 @@ engine::TrackChainPtr make_master_chain(const IAudioNodePtr &context, const Outp
     control->set_muted(false);
     control->set_playhead_position(nullptr);
     control->set_volume(master_volume);
-
-    return chain;
 }
 
 void fluid_log_to_logger(int level, const char *message, void *) {
@@ -608,13 +580,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     engine::OfflineRenderSession context(*state.factory, output_spec(state.sample_rate_value), state.resources,
                                          state.services->configuration(),
                                          [&state](const midi::Event &event) { state.midi_out_port.send_event(event); });
-    std::string chain_error;
-    engine::TrackChainPtr master_chain = make_master_chain(context.output(), output_spec(state.sample_rate_value), request, chain_error);
-    if (!master_chain) {
-        return fail(AudioRenderResult::Failure::ENGINE_FAILURE, std::move(chain_error));
-    }
-
-    DEFER { master_chain->clear(); };
+    configure_master(context, request);
 
     // The public mix is indexed by the same deterministic track list that
     // score_audio_tracks reports. Keep the list for the selected excerpt: for
@@ -791,14 +757,14 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
     soundtrack::SoundTrackWriter writer(
-        device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, master_chain,
+        device, make_soundtrack_format(request.format, request, output_spec(state.sample_rate_value)), render_secs, &context,
         [&state](uint64_t frames) { state.midi_out_port.rendered_frames = frames; }, request.encoder_factory, poll);
     Ret write_ret;
     try {
         write_ret = writer.write();
     } catch (const engine::StoreLimit &limit) {
         device.close();
-        master_chain->set_mode(ProcessMode::IDLE);
+        context.set_mode(ProcessMode::IDLE);
         std::error_code remove_error;
         std::filesystem::remove(std::filesystem::u8path(request.output_path), remove_error);
         if (callback_error) std::rethrow_exception(callback_error);
@@ -810,7 +776,7 @@ AudioRenderResult export_score_audio(EngineAudio &audio, MasterScore *master, co
 
     // Leave the graph idle, like AudioContext::doSaveSoundTrack()
     // (audiocontext.cpp:934-940).
-    master_chain->set_mode(ProcessMode::IDLE);
+    context.set_mode(ProcessMode::IDLE);
 
     if (poll()) {
         std::error_code remove_error;

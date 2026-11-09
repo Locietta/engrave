@@ -20,7 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "automationcontrolnode.h"
+#include "offlinecontrol.h"
 
 #include "../dsp/audiomathutils.h"
 
@@ -28,32 +28,30 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void AutomationControlNode::set_playhead_position(const PlayheadPositionPtr &playhead_position) {
+void OfflineControl::set_playhead_position(const PlayheadPositionPtr &playhead_position) {
     playhead_position_ = playhead_position;
     last_gains_pos_ = std::nullopt;
 }
 
-void AutomationControlNode::set_volume(const AutomatableValue<volume_db_t> &volume) {
+void OfflineControl::set_volume(const AutomatableValue<volume_db_t> &volume) {
     volume_ = volume;
     update_channel_gains(current_pos());
 }
 
-void AutomationControlNode::set_pan(const AutomatableValue<balance_t> &pan) {
+void OfflineControl::set_pan(const AutomatableValue<balance_t> &pan) {
     pan_ = pan;
     update_channel_gains(current_pos());
 }
 
-void AutomationControlNode::set_muted(bool muted) { set_enabled(!muted); }
+void OfflineControl::set_muted(bool muted) { enabled_ = !muted; }
 
-bool AutomationControlNode::muted() const { return !enabled(); }
+bool OfflineControl::muted() const { return !enabled_; }
 
-void AutomationControlNode::on_output_spec_changed(const OutputSpec &) { update_channel_gains(current_pos()); }
+void OfflineControl::on_output_spec_changed(const OutputSpec &) { update_channel_gains(current_pos()); }
 
-secs_t AutomationControlNode::current_pos() const {
-    return playhead_position_ ? playhead_position_->current_position().time() : secs_t(0.0);
-}
+secs_t OfflineControl::current_pos() const { return playhead_position_ ? playhead_position_->current_position().time() : secs_t(0.0); }
 
-void AutomationControlNode::update_channel_gains(secs_t pos) {
+void OfflineControl::update_channel_gains(secs_t pos) {
     const volume_db_t volume_db = volume_.evaluate_at(pos, ::muse::audio::volume_db_min, ::muse::audio::volume_db_max);
     const balance_t pan_value = pan_.evaluate_at(pos, ::muse::audio::balance_min, ::muse::audio::balance_max);
 
@@ -76,7 +74,7 @@ void AutomationControlNode::update_channel_gains(secs_t pos) {
     last_gains_pos_ = pos;
 }
 
-void AutomationControlNode::do_self_process(float *buffer, samples_t samples_per_channel) {
+void OfflineControl::do_self_process(float *buffer, samples_t samples_per_channel) {
     if (volume_.has_automation() || pan_.has_automation()) {
         const secs_t pos = current_pos();
         if (last_gains_pos_ != pos) {

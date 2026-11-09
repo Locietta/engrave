@@ -25,37 +25,53 @@
 #include "../synthesizers/fluidsynth/fluidtrack.h"
 #include "audio/common/audiotypes.h"
 #include "audio/engine/audioresources.h"
-#include "audiosourcenode.h"
 #include "mpe/events.h"
 
 namespace muse::audio::engine {
-struct FluidTrackNode : AudioSourceNode {
-    // Graph adapter; resources and configuration outlive the render session.
-    FluidTrackNode(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec, MidiEventSink sink,
-                   const mpe::TrackEvents &events);
+struct FluidTrackSource {
+    // Resources and configuration outlive this concrete per-track owner.
+    FluidTrackSource(AudioResources &resources, const IAudioEngineConfiguration &config, const OutputSpec &spec, MidiEventSink sink,
+                     const mpe::TrackEvents &events);
 
-    void seek(const TimePosition &position, const bool flush_sound = true) override;
-    void flush() override;
+    void seek(const TimePosition &position, const bool flush_sound = true);
+    void flush();
 
-    const AudioInputParams &input_params() const override;
-    void apply_input_params(const AudioInputParams &required_params) override;
+    const AudioInputParams &input_params() const;
+    void apply_input_params(const AudioInputParams &required_params);
 
-    void prepare_to_play() override;
-    bool ready_to_play() const override;
+    void prepare_to_play();
+    bool ready_to_play() const;
 
-    bool has_pending_chunks() const override;
-    void process_input() override;
-    InputProcessingProgress input_processing_progress() const override;
+    bool has_pending_chunks() const;
+    void process_input();
+    InputProcessingProgress input_processing_progress() const;
 
-    void clear_cache() override;
+    void clear_cache();
 
     bool initialized() const { return synth_ != nullptr; }
 
-private:
-    void on_mode_changed(const ProcessMode mode) override;
-    void on_output_spec_changed(const OutputSpec &spec) override;
+    void set_output_spec(const OutputSpec &spec) {
+        if (output_spec_ == spec) return;
+        output_spec_ = spec;
+        on_output_spec_changed(spec);
+    }
 
-    void do_self_process(float *buffer, samples_t samples_per_channel) override;
+    void process(float *buffer, samples_t frames) { do_self_process(buffer, frames); }
+
+    void set_mode(ProcessMode mode) {
+        if (mode_ == mode) return;
+        mode_ = mode;
+        on_mode_changed(mode);
+    }
+
+private:
+    OutputSpec output_spec_;
+    ProcessMode mode_ = ProcessMode::UNDEFINED;
+
+    void on_mode_changed(const ProcessMode mode);
+    void on_output_spec_changed(const OutputSpec &spec);
+
+    void do_self_process(float *buffer, samples_t samples_per_channel);
 
     AudioResources &resources_;
     const IAudioEngineConfiguration &config_;
@@ -67,5 +83,4 @@ private:
     AudioInputParams params_;
 };
 
-using FluidTrackNodePtr = std::shared_ptr<FluidTrackNode>;
 } // namespace muse::audio::engine
