@@ -131,22 +131,12 @@ void SoundFontRepository::do_add_sound_font(const SoundFontUri &uri, const Sound
 
 void SoundFontRepository::load_sound_fonts(const std::vector<SoundFontUri> &uris) {
 
-    SoundFontsMap *cache = new SoundFontsMap();
-    sound_fonts_.swap(*cache);
-
-    loading_sound_font_count_ = loading_sound_font_count_ + uris.size();
-    const size_t total = loading_sound_font_count_;
-
+    SoundFontsMap cache = std::move(sound_fonts_);
+    sound_fonts_ = {};
+    // Native loading is synchronous. Notify once after replacing the repository,
+    // including an empty selection; no callback needs to retain the old cache.
     for (const SoundFontUri &uri : uris) {
-        LOGI() << "try add sound font: " << uri.to_string();
-        do_add_sound_font(uri, cache, [this, total, cache]() {
-            --loading_sound_font_count_;
-            LOGI() << "remaining: " << loading_sound_font_count_ << ", total: " << total;
-            if (loading_sound_font_count_ == 0) {
-                delete cache;
-                notify_sound_fonts_changed();
-                LOGI() << "all added notify about sound fonts changed";
-            }
-        });
+        do_add_sound_font(uri, &cache);
     }
+    notify_sound_fonts_changed();
 }

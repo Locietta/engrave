@@ -28,20 +28,26 @@
 #include <span>
 #include <vector>
 
+#include <amc/flatset.hpp>
+
 #include "../abstractsynthesizer.h"
 #include "fluidsequencer.h"
 #include "global/io/path.h"
 #include "midi/imidioutport.h"
 
+namespace muse::audio::engine {
+struct AudioResources;
+} // namespace muse::audio::engine
+
 namespace muse::audio::synth {
-// Release cached fonts after the engine's synthesizers have been destroyed.
-void release_sound_font_cache();
+
 struct Fluid;
 
 struct FluidSynth : AbstractSynthesizer {
     // midiOutPort, when given, receives every event the synthesizer handles; it
     // and config must outlive the synthesizer.
-    FluidSynth(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port);
+    FluidSynth(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port,
+               engine::AudioResources &resources);
 
     Ret init(const OutputSpec &spec);
 
@@ -98,13 +104,14 @@ private:
     int set_controller_value(int channel, int ctrl, int value);
     int set_pitch_bend(int channel, int pitch_bend);
 
+    engine::AudioResources &resources_;
     OutputSpec output_spec_;
 
     std::shared_ptr<Fluid> fluid_;
     midi::IMidiOutPort *midi_out_port_ = nullptr;
 
     FluidSequencer sequencer_;
-    std::set<io::PathT> sfont_paths_;
+    amc::FlatSet<io::PathT> sfont_paths_;
     std::optional<midi::Program> preset_;
 
     KeyTuning tuning_;

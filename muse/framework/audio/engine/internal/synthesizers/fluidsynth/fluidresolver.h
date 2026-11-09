@@ -23,20 +23,17 @@
 #pragma once
 
 #include <optional>
-#include <unordered_map>
 
 #include "../../../iaudioengineconfiguration.h"
-#include "../../../isoundfontrepository.h"
 #include "../../../isynthresolver.h"
+#include "audio/engine/audioresources.h"
 #include "fluidsynth.h"
 
 namespace muse::audio::synth {
 struct FluidResolver : ISynthResolver::IResolver {
-    // The repository, configuration and MIDI port (optional: it receives the
+    // Resources, configuration and MIDI port (optional: it receives the
     // events every synthesizer handles) must outlive the resolver.
-    FluidResolver(const ISoundFontRepository &sound_font_repository, const engine::IAudioEngineConfiguration &config,
-                  midi::IMidiOutPort *midi_out_port);
-    ~FluidResolver() override;
+    FluidResolver(engine::AudioResources &resources, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port);
 
     ISynthesizerPtr resolve_synth(const audio::TrackId track_id, const audio::AudioInputParams &params,
                                   const OutputSpec &spec) const override;
@@ -49,17 +46,8 @@ struct FluidResolver : ISynthResolver::IResolver {
     void clear_sources() override;
 
 private:
-    FluidSynthPtr create_synth(const audio::AudioResourceId &resource_id) const;
-
-    struct SoundFontResource {
-        io::PathT path;
-        std::optional<midi::Program> preset = std::nullopt;
-        AudioResourceMeta meta;
-    };
-
-    const ISoundFontRepository &sound_font_repository_;
+    engine::AudioResources &resources_;
     const engine::IAudioEngineConfiguration &config_;
     midi::IMidiOutPort *midi_out_port_ = nullptr;
-    std::unordered_map<AudioResourceId, SoundFontResource> resources_cache_;
 };
 } // namespace muse::audio::synth

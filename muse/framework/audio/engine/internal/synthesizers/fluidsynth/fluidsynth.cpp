@@ -26,6 +26,7 @@
 
 #include "audio/common/audioerrors.h"
 #include "audio/common/audiotypes.h"
+#include "audio/engine/audioresources.h"
 #include "audio/engine/internal/offlinecancellation.h"
 #include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/playbackcapture.h"
@@ -39,8 +40,6 @@ using namespace muse::midi;
 using namespace muse::audio;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
-
-void muse::audio::synth::release_sound_font_cache() { SoundFontCache::instance()->clear_unused(); }
 
 static constexpr bool fluid_debug = false;
 
@@ -57,6 +56,7 @@ static constexpr unsigned int fluid_audio_channels_count = ::fluid_audio_channel
 static constexpr bool staff_to_midiout_channel = true;
 
 struct muse::audio::synth::Fluid {
+    FluidLoaderData loader_data;
     fluid_settings_t *settings = nullptr;
     fluid_synth_t *synth = nullptr;
 
@@ -66,8 +66,9 @@ struct muse::audio::synth::Fluid {
     }
 };
 
-FluidSynth::FluidSynth(const AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port)
-    : AbstractSynthesizer(params, config) {
+FluidSynth::FluidSynth(const AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port,
+                       engine::AudioResources &resources)
+    : AbstractSynthesizer(params, config), resources_(resources) {
     fluid_ = std::make_shared<Fluid>();
     midi_out_port_ = midi_out_port;
 }
@@ -143,7 +144,8 @@ void FluidSynth::create_fluid_instance() {
 
     fluid_sfloader_t *sfloader = new_fluid_sfloader(load_sound_font, delete_fluid_sfloader);
 
-    fluid_sfloader_set_data(sfloader, fluid_->settings);
+    fluid_->loader_data = {fluid_->settings, resources_.cache.get()};
+    fluid_sfloader_set_data(sfloader, &fluid_->loader_data);
     fluid_synth_add_sfloader(fluid_->synth, sfloader);
 }
 

@@ -22,37 +22,21 @@
 
 #include "fluidresolver.h"
 
-#include "audio/engine/internal/codecs/vorbisdecoder.h"
+#include "audio/engine/audioresources.h"
 #include "log.h"
 
 using namespace muse::audio;
 using namespace muse::audio::synth;
 
-static const AudioResourceVendor fluid_vendor_name = "Fluid";
-
-FluidResolver::FluidResolver(const ISoundFontRepository &sound_font_repository, const engine::IAudioEngineConfiguration &config,
-                             midi::IMidiOutPort *midi_out_port)
-    : sound_font_repository_(sound_font_repository), config_(config), midi_out_port_(midi_out_port) {
-
-    fluid::FluidVorbisDecoder::decoder = new codec::VorbisDecoder();
-
-    refresh();
-}
-
-FluidResolver::~FluidResolver() {
-    delete fluid::FluidVorbisDecoder::decoder;
-    fluid::FluidVorbisDecoder::decoder = nullptr;
-}
-
 ISynthesizerPtr FluidResolver::resolve_synth(const TrackId /*trackId*/, const AudioInputParams &params, const OutputSpec &spec) const {
 
-    auto search = resources_cache_.find(params.resource_meta.id);
-    if (search == resources_cache_.end()) {
+    auto search = resources_.resources.find(params.resource_meta.id);
+    if (search == resources_.resources.end()) {
         LOGE() << "Not found: " << params.resource_meta.id;
         return nullptr;
     }
 
-    FluidSynthPtr synth = std::make_shared<FluidSynth>(params, config_, midi_out_port_);
+    FluidSynthPtr synth = std::make_shared<FluidSynth>(params, config_, midi_out_port_, resources_);
     synth->init(spec);
     synth->add_sound_fonts({search->second.path});
     synth->set_preset(search->second.preset);
@@ -62,62 +46,14 @@ ISynthesizerPtr FluidResolver::resolve_synth(const TrackId /*trackId*/, const Au
 
 bool FluidResolver::has_compatible_resources(const PlaybackSetupData & /*setup*/) const { return true; }
 
-AudioResourceMetaList FluidResolver::resolve_resources() const {
+FluidResolver::FluidResolver(engine::AudioResources &resources, const engine::IAudioEngineConfiguration &config,
+                             midi::IMidiOutPort *midi_out_port)
+    : resources_(resources), config_(config), midi_out_port_(midi_out_port) {}
 
-    AudioResourceMetaList result;
-    result.reserve(resources_cache_.size());
-
-    for (const auto &pair : resources_cache_) {
-        result.push_back(pair.second.meta);
-    }
-
-    return result;
-}
+AudioResourceMetaList FluidResolver::resolve_resources() const { return audio_resource_list(resources_); }
 
 SoundPresetList FluidResolver::resolve_sound_presets(const audio::AudioResourceMeta &) const { return SoundPresetList(); }
 
-static std::string make_id(const std::string &name, int bank, int program) {
-    return name + "\\" + std::to_string(bank) + "\\" + std::to_string(program);
-}
-
-void FluidResolver::refresh() {
-
-    resources_cache_.clear();
-
-    for (const auto &pair : sound_font_repository_.sound_fonts()) {
-        const SoundFontMeta &sound_font = pair.second;
-
-        {
-            AudioResourceId id = sound_font.name;
-
-            AudioResourceMeta choose_automatic_meta;
-            choose_automatic_meta.id = id;
-            choose_automatic_meta.type = ::muse::audio::fluid_soundfont_type_name;
-            choose_automatic_meta.vendor = ::fluid_vendor_name;
-            choose_automatic_meta.attributes = {{::muse::audio::playback_setup_data_attribute, muse::mpe::generic_setup_data_string},
-                                                {::muse::audio::synth::soundfont_name_attribute, String::from_std_string(sound_font.name)}};
-
-            resources_cache_.emplace(id, SoundFontResource{sound_font.path, std::nullopt, std::move(choose_automatic_meta)});
-        }
-
-        for (const SoundFontPreset &preset : sound_font.presets) {
-            AudioResourceId id = make_id(sound_font.name, preset.program.bank, preset.program.program);
-
-            AudioResourceMeta meta;
-            meta.id = id;
-            meta.type = ::muse::audio::fluid_soundfont_type_name;
-            meta.vendor = ::fluid_vendor_name;
-            meta.attributes = {
-                {::muse::audio::playback_setup_data_attribute, muse::mpe::generic_setup_data_string},
-                {::muse::audio::synth::soundfont_name_attribute, String::from_std_string(sound_font.name)},
-                {::muse::audio::synth::preset_name_attribute, String::from_std_string(preset.name)},
-                {::muse::audio::synth::preset_bank_attribute, String::number(preset.program.bank)},
-                {::muse::audio::synth::preset_program_attribute, String::number(preset.program.program)},
-            };
-
-            resources_cache_.emplace(id, SoundFontResource{sound_font.path, preset.program, std::move(meta)});
-        }
-    }
-}
+void FluidResolver::refresh() { refresh_audio_resources(resources_); }
 
 void FluidResolver::clear_sources() {}
