@@ -123,9 +123,24 @@ struct AbstractEventSequencer {
     // Lowers one track of the flat MPE store; the sequencer keeps only a copy of its dynamics, and
     // nothing borrowed from the store outlives this call
     void load(const mpe::TrackEvents &events) {
-        dynamic_layers_ = events.dynamic_layers;
-        dynamic_points_ = events.dynamic_points;
+        OfflineCancellation::SequencerScope phase;
         invalidate_chunk_plan();
+        const auto copy = [](auto &destination, const auto &source) {
+            destination.clear();
+            mpe::reserve_checked(destination, source.size());
+            for (std::size_t i = 0; i < source.size(); ++i) {
+                if (i % 4096 == 4095 && OfflineCancellation::requested()) return false;
+                mpe::emplace_checked(destination, source[i]);
+            }
+            return true;
+        };
+        if (!copy(dynamic_layers_, events.dynamic_layers) || !copy(dynamic_points_, events.dynamic_points)) {
+            dynamic_layers_.clear();
+            dynamic_points_.clear();
+            main_stream_events_.clear();
+            reset_all_iterators();
+            return;
+        }
 
         update_main_stream_events(events);
     }

@@ -1134,14 +1134,14 @@ TEST(AudioInternal, BoundedStableSortAndDedupCancellation) {
         seq.init(setup, muse::midi::Program{0, 0}, true, k_fluid_channel_count);
 
         // 5,000 notes emit 10,000 NOTE_ON/NOTE_OFF events (> 8,192 block size).
-        // Cancel on poll 5003 (inside bounded_stable_sort after the 5,000 note polls).
+        // Cancel on poll 5004 (inside bounded_stable_sort after the 5,000 note polls).
         int polls = 0;
-        const std::function<bool()> cancel_in_sort = [&] { return ++polls == 5003; };
+        const std::function<bool()> cancel_in_sort = [&] { return ++polls == 5004; };
         {
             muse::audio::OfflineCancellation scope(cancel_in_sort);
             seq.load(muse::mpe::freeze_playback_data(data));
         }
-        EXPECT_EQ(polls, 5003);
+        EXPECT_EQ(polls, 5004);
         EXPECT_TRUE(seq.main_stream_events_.empty());
         EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
 
@@ -1295,4 +1295,47 @@ TEST(AudioInternal, MeasurelessScorePreservesThreeSecondSilentTail) {
         offset += 8 + size + (size & 1);
     }
     FAIL() << "missing PCM data";
+}
+
+TEST(AudioInternal, CancelsInsideFlatSequencerPreprocessing) {
+    struct Exposed : muse::audio::synth::FluidSequencer {
+        using FluidSequencer::main_stream_events_;
+        using FluidSequencer::dynamic_layers_;
+        using FluidSequencer::dynamic_points_;
+    };
+
+    for (int pass = 0; pass < 4; ++pass) {
+        muse::mpe::TrackEvents events;
+        if (pass < 2) {
+            for (int i = 0; i < 10000; ++i) {
+                muse::mpe::NoteRecord note;
+                note.group_timestamp = pass == 0 ? i : 10000 - i;
+                muse::mpe::emplace_checked(events.notes, note);
+            }
+        } else if (pass == 2) {
+            events.dynamic_layers.resize(10000);
+        } else {
+            events.dynamic_points.resize(10000);
+        }
+        Exposed seq;
+        seq.init({}, muse::midi::Program{0, 0}, true, muse::audio::synth::k_fluid_channel_count);
+        seq.main_stream_events_.cursor = 5;
+        int polls = 0;
+        const std::function<bool()> cancel = [&] {
+            EXPECT_EQ(muse::audio::OfflineCancellation::phase, muse::audio::OfflineCancellation::Phase::SEQUENCER);
+            ++polls;
+            // Dynamics are still being copied, and notes have not started MIDI lowering.
+            if (pass == 2) EXPECT_EQ(seq.dynamic_layers_.size(), 4095u);
+            if (pass == 3) EXPECT_EQ(seq.dynamic_points_.size(), 4095u);
+            EXPECT_TRUE(seq.main_stream_events_.empty());
+            return true;
+        };
+        {
+            muse::audio::OfflineCancellation scope(cancel);
+            seq.load(events);
+        }
+        EXPECT_EQ(polls, 1);
+        EXPECT_TRUE(seq.main_stream_events_.empty());
+        EXPECT_EQ(seq.main_stream_events_.cursor, 0u);
+    }
 }

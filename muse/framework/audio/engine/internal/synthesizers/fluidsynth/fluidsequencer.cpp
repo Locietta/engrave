@@ -146,6 +146,10 @@ bool FluidSequencer::add_playback_events(engine::MidiTimeline &destination, cons
     const auto total = static_cast<std::uint32_t>(events.notes.size());
     bool ascending = true;
     for (std::uint32_t i = 1; i < total; ++i) {
+        if (i % 4096 == 0 && OfflineCancellation::requested()) {
+            destination.clear();
+            return false;
+        }
         if (events.notes[i].group_timestamp < events.notes[i - 1].group_timestamp) {
             ascending = false;
             break;
@@ -156,6 +160,10 @@ bool FluidSequencer::add_playback_events(engine::MidiTimeline &destination, cons
     if (!ascending) {
         engine::reserve_checked(order, total);
         for (std::uint32_t i = 0; i < total; ++i) {
+            if (i % 4096 == 4095 && OfflineCancellation::requested()) {
+                destination.clear();
+                return false;
+            }
             engine::emplace_checked(order, NoteOrder{events.notes[i].group_timestamp, i});
         }
         if (!bounded_stable_sort_by(order, [](const NoteOrder &entry) { return entry.group_timestamp; })) {
