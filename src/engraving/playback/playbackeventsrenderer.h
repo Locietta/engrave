@@ -32,8 +32,9 @@ struct Score;
 struct Note;
 
 //! NOTE: every top-level function emits its completed per-chord (or per-click) event lists through
-//! a PlaybackEventSink. The sink templates are instantiated in playbackeventsrenderer.cpp; the
-//! PlaybackEventsMap overloads go through EventsMapSink
+//! a PlaybackEventSink. The sink template definitions are in playbackeventsrenderer_impl.h: a unit
+//! using another sink includes it or instantiates the sink with ENGRAVE_INSTANTIATE_PLAYBACK_EVENTS_RENDERER.
+//! The PlaybackEventsMap overloads go through EventsMapSink, instantiated in playbackeventsrenderer.cpp
 struct PlaybackEventsRenderer {
     PlaybackEventsRenderer() = default;
 
