@@ -32,7 +32,7 @@
 using namespace muse;
 using namespace muse::mpe;
 
-static const std::map<ArticulationFamily, io::PathT> default_articulation_profiles = {
+static const FlatMap<ArticulationFamily, io::PathT> default_articulation_profiles = {
     {ArticulationFamily::KEYBOARDS, io::PathT(":/mpe/resources/general_keyboard_articulations_profile.json")},
     {ArticulationFamily::STRINGS, io::PathT(":/mpe/resources/general_strings_articulations_profile.json")},
     {ArticulationFamily::WINDS, io::PathT(":/mpe/resources/general_winds_articulations_profile.json")},
@@ -67,10 +67,13 @@ static JsonObject json_object(const JsonValue &value) { return value.is_object()
 ArticulationsProfilePtr ArticulationProfilesRepository::create_new() const { return std::make_shared<ArticulationsProfile>(); }
 
 ArticulationsProfilePtr ArticulationProfilesRepository::default_profile(const ArticulationFamily family) const {
-    auto search = default_profiles_.find(family);
-
-    if (search != default_profiles_.cend()) {
-        return search->second;
+    const auto index = static_cast<size_t>(family);
+    if (index >= default_profiles_.size()) {
+        return nullptr;
+    }
+    auto &cached = default_profiles_[index];
+    if (cached.has_value()) {
+        return *cached;
     }
 
     auto path_search = ::default_articulation_profiles.find(family);
@@ -81,7 +84,7 @@ ArticulationsProfilePtr ArticulationProfilesRepository::default_profile(const Ar
     }
 
     ArticulationsProfilePtr result = load_profile(path_search->second);
-    default_profiles_.emplace(family, result);
+    cached = result;
 
     return result;
 }

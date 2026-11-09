@@ -23,6 +23,9 @@
 #ifndef MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H
 #define MUSE_MPE_ARTICULATIONPROFILESREPOSITORY_H
 
+#include <array>
+#include <optional>
+
 #include "io/ifilesystem.h"
 #include "mpe/iarticulationprofilesrepository.h"
 #include "serialization/json.h"
@@ -54,7 +57,8 @@ private:
     ExpressionPattern expression_pattern_from_json(const JsonObject &obj) const;
     JsonObject expression_pattern_to_json(const ExpressionPattern &pattern) const;
 
-    mutable std::unordered_map<ArticulationFamily, ArticulationsProfilePtr> default_profiles_;
+    // optional preserves cached load failures (a cached nullptr is still a cache hit).
+    mutable std::array<std::optional<ArticulationsProfilePtr>, static_cast<size_t>(SoundCategory::LAST)> default_profiles_;
 
     io::IFileSystem &file_system_;
 };

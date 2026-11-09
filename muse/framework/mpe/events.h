@@ -165,6 +165,7 @@ private:
         float ratio = static_cast<float>(average_pitch_range) / static_cast<float>(::muse::mpe::pitch_level_step);
         float pattern_unit_ratio = ::muse::mpe::pitch_level_step / static_cast<float>(::muse::mpe::one_percent);
 
+        // Mutable begin detaches before iteration; only values change in this loop.
         for (auto &pair : pitch_ctx_.pitch_curve) {
             pair.second = static_cast<pitch_level_t>(real_round(static_cast<float>(pair.second) * ratio * pattern_unit_ratio, 0));
         }
@@ -200,6 +201,7 @@ private:
 
         float ratio = static_cast<float>(actual_dynamic_level) / static_cast<float>(articulation_dynamic_level);
 
+        // Mutable begin detaches before iteration; only values change in this loop.
         for (auto &pair : expression_ctx_.expression_curve) {
             pair.second = static_cast<dynamic_level_t>(real_round(pair.second * ratio, 0));
         }
