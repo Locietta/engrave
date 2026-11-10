@@ -741,16 +741,23 @@ static std::optional<std::pair<int, int>> grouped_grace_window(const Note *note)
     return std::nullopt;
 }
 
+// Slide-in events (create_slide_in_note_play_events) start at the chord and are moved before its beat with the NoteEvent
+// offset. They legitimately sound before a grouped principal window, so they keep the legacy absolute placement.
+static bool is_slide_in_event(const NoteEvent &e) { return e.slide() && e.offset() > 0; }
+
 // The chord-relative [on, off) ticks of a note event. NoteEvent units are 1/1000 of the principal, which cannot hit every
-// tick of a long principal. Inside a grouped grace layout the events are rounded outward (start down, end up), so the
-// end is taken from the rounded end position and both are snapped into the exact window of the layout.
+// tick of a long principal. Inside a grouped grace layout the principal body events are rounded outward (start down, end
+// up), so the end is taken from the rounded end position and both are snapped into the exact window of the layout.
+// Slide-in events are not body events: they sound before the chord and must not be clamped into its principal window.
 static std::pair<int, int> event_ticks(const Note *note, const NoteEvent &e, int chord_ticks) {
     int on = (chord_ticks * e.ontime()) / 1000;
-    if (const auto window = grouped_grace_window(note)) {
-        int off = (chord_ticks * e.offtime()) / 1000;
-        on = std::clamp(on, window->first, window->second - 1);
-        off = std::clamp(off, on, window->second);
-        return {on, off};
+    if (!is_slide_in_event(e)) {
+        if (const auto window = grouped_grace_window(note)) {
+            int off = (chord_ticks * e.offtime()) / 1000;
+            on = std::clamp(on, window->first, window->second - 1);
+            off = std::clamp(off, on, window->second);
+            return {on, off};
+        }
     }
     return {on, on + (chord_ticks * e.len()) / 1000};
 }
