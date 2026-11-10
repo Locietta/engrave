@@ -38,6 +38,9 @@
 namespace {
 
 using engrave::Batch;
+using music::dump_json;
+using music::json_equal;
+using music::parse_json;
 using engrave::Color;
 using engrave::ElementId;
 using engrave::ErrorCode;
@@ -615,21 +618,24 @@ TEST(Evidence, EveryCaseMatchesTheCheckedInRow) {
 
         rows.push_back(engrave::harness::run_case(*g_engine, op_case, path));
     }
-    const std::string current = engrave::harness::to_json(rows).dump(2) + "\n";
+    const std::string current = dump_json(engrave::harness::to_json(rows), 2) + "\n";
     if (g_update_evidence) {
         std::ofstream(g_evidence, std::ios::binary) << current;
         return;
     }
-    const auto checked_in = nlohmann::ordered_json::parse(read_text(g_evidence), nullptr, false);
-    ASSERT_FALSE(checked_in.is_discarded()) << g_evidence.string() << " is not JSON";
-    const auto now = nlohmann::ordered_json::parse(current);
-    EXPECT_EQ(now["verdicts"], checked_in["verdicts"]);
-    for (const auto &row : now["cases"]) {
-        const auto found = std::ranges::find_if(checked_in["cases"], [&row](const auto &old) { return old["case"] == row["case"]; });
-        if (found == checked_in["cases"].end())
-            ADD_FAILURE() << row["case"] << " has no checked-in row";
+    const auto checked_in = parse_json<engrave::harness::Json>(read_text(g_evidence));
+    ASSERT_TRUE(checked_in) << g_evidence.string() << " is not JSON";
+    const auto now = parse_json<engrave::harness::Json>(current);
+    ASSERT_TRUE(now);
+    EXPECT_TRUE(json_equal(now->at("verdicts"), checked_in->at("verdicts")));
+    const auto &now_cases = now->at("cases").get_array();
+    const auto &old_cases = checked_in->at("cases").get_array();
+    for (const auto &row : now_cases) {
+        const auto found = std::ranges::find_if(old_cases, [&row](const auto &old) { return json_equal(old.at("case"), row.at("case")); });
+        if (found == old_cases.end())
+            ADD_FAILURE() << dump_json(row.at("case")) << " has no checked-in row";
         else
-            EXPECT_EQ(row, *found) << "rerun with --update-evidence once the change is understood";
+            EXPECT_TRUE(json_equal(row, *found)) << "rerun with --update-evidence once the change is understood";
     }
 }
 

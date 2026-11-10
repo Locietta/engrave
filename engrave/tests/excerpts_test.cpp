@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
             duplicate_rejected = true;
         }
         expect(duplicate_rejected, "Duplicate metadata track accepted");
-        save(out / "metadata.json", metadata.dump(2));
+        save(out / "metadata.json", music::dump_json(metadata, 2));
         auto track_project = music::load_native_score(context, fixture, "musicxml");
         auto *tracks_score = track_project->master_score();
         tracks_score->parts()[0]->set_id(muse::ID(uint64_t(10)));
@@ -220,8 +220,10 @@ int main(int argc, char **argv) {
         lower.sound_id = lower.name;
         lower.category = lower.name;
         const auto sorted = music::score_metadata(tracks_score, {upper, lower})["tracks"];
-        expect(sorted[0]["partId"] == "2" && sorted[1]["partId"] == "10", "Metadata track order is not numeric");
-        expect(sorted[0]["vendor"] == "Actual test vendor" && !sorted[0].contains("soundId") && !sorted[0].contains("category"),
+        expect(sorted[0]["partId"].get<std::string>() == "2" && sorted[1]["partId"].get<std::string>() == "10",
+               "Metadata track order is not numeric");
+        expect(sorted[0]["vendor"].get<std::string>() == "Actual test vendor" && !sorted[0].contains("soundId") &&
+                   !sorted[0].contains("category"),
                "Metadata optional resource fields mismatch");
         for (const auto &bad_part : {"99999", "18446744073709551616", "not-an-id"}) {
             auto bad = lower;

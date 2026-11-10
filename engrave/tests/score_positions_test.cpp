@@ -14,13 +14,13 @@ void expect(bool value, const char *message) {
     if (!value) throw std::runtime_error(message);
 }
 
-void check_on_page(const nlohmann::json &data) {
-    const double width = data.at("pageSize").at("width").get<double>();
-    const double height = data.at("pageSize").at("height").get<double>();
-    for (const auto &element : data.at("elements")) {
-        const double x = element.at("x").get<double>();
-        const double y = element.at("y").get<double>();
-        expect(element.at("sx").get<double>() > 0 && element.at("sy").get<double>() > 0, "Position element has zero width or height");
+void check_on_page(const music::SortedJson &data) {
+    const double width = data.at("pageSize").at("width").as<double>();
+    const double height = data.at("pageSize").at("height").as<double>();
+    for (const auto &element : data.at("elements").get_array()) {
+        const double x = element.at("x").as<double>();
+        const double y = element.at("y").as<double>();
+        expect(element.at("sx").as<double>() > 0 && element.at("sy").as<double>() > 0, "Position element has zero width or height");
         expect(x >= 0 && x < width && y >= 0 && y < height, "Position element lies outside the page");
     }
 }
@@ -75,13 +75,13 @@ int main(int argc, char **argv) {
         const auto mm_measures = music::score_positions(mm_score, false);
         expect(mm_measures.at("elements").size() == 2 && mm_measures.at("events").size() == 2,
                "Measure positions did not follow upstream multi-measure rest iteration");
-        expect(mm_measures.at("events")[0].at("position") == 0 && mm_measures.at("events")[1].at("position") == 8000,
+        expect(mm_measures.at("events")[0].at("position").as<int>() == 0 && mm_measures.at("events")[1].at("position").as<int>() == 8000,
                "Measure positions do not span the multi-measure rest in milliseconds");
         check_on_page(mm_measures);
         const auto mm_segments = music::score_positions(mm_score, true);
         expect(mm_segments.at("elements").size() == 2 && mm_segments.at("events").size() == 2,
                "Segment positions did not follow upstream multi-measure rest iteration");
-        expect(mm_segments.at("events")[0].at("position") == 0 && mm_segments.at("events")[1].at("position") == 8000,
+        expect(mm_segments.at("events")[0].at("position").as<int>() == 0 && mm_segments.at("events")[1].at("position").as<int>() == 8000,
                "Segment positions do not span the multi-measure rest in milliseconds");
         check_on_page(mm_segments);
         bool rejected = false;

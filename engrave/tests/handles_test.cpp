@@ -32,12 +32,12 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
 
 #include "engrave/src/api/batch.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/score_io.h"
 #include "engrave/src/score/export_options.h"
+#include "engrave/src/score/json.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
@@ -612,14 +612,14 @@ TEST(Handles, H1Inventory) {
     }
 
     if (g_update_inventory) {
-        nlohmann::json types = nlohmann::json::object();
+        music::SortedJson types = music::make_object<music::SortedJson>();
         // A row this run did not see is kept: the corpus a regeneration is run with is no
         // reason to forget what the walk was measured to do with a type.
         if (std::filesystem::is_regular_file(g_inventory)) {
-            const auto old = nlohmann::json::parse(read_text(g_inventory), nullptr, false);
-            if (!old.is_discarded() && old.contains("types")) {
+            const auto old = music::parse_json<music::SortedJson>(read_text(g_inventory));
+            if (old && old->contains("types")) {
                 int kept = 0;
-                for (const auto &[type, value] : old.at("types").items()) {
+                for (const auto &[type, value] : old->at("types").get_object()) {
                     types[type] = value;
                     if (!observed.contains(type)) ++kept;
                 }
@@ -627,7 +627,7 @@ TEST(Handles, H1Inventory) {
             }
         }
         for (const auto &[type, value] : observed) types[type] = value;
-        nlohmann::json document = {
+        music::SortedJson document = {
             {"note", "The id class of every element type the corpus shows or an operation can create. persisted: the "
                      "writer stores its id and a reload restores it; layout: created by layout, so the next pass hands "
                      "out a new id; address: reached through an Address instead; session: alive in memory but not "
@@ -635,18 +635,20 @@ TEST(Handles, H1Inventory) {
             {"types", types},
         };
         std::ofstream out(g_inventory, std::ios::binary);
-        out << document.dump(2) << '\n';
+        out << music::dump_json(document, 2) << '\n';
         std::printf("wrote %zu types to %s\n", observed.size(), g_inventory.string().c_str());
         return;
     }
 
     ASSERT_TRUE(std::filesystem::is_regular_file(g_inventory)) << "no " << g_inventory.string() << "; run --update-inventory";
-    const auto declared = nlohmann::json::parse(read_text(g_inventory)).at("types");
+    const auto inventory = music::parse_json<music::SortedJson>(read_text(g_inventory));
+    ASSERT_TRUE(inventory) << g_inventory.string() << " is not JSON";
+    const auto &declared = inventory->at("types");
     for (const auto &[type, value] : observed) {
         ASSERT_TRUE(declared.contains(type)) << type << " is unclassified (" << value << "); add it to " << g_inventory.string();
         EXPECT_EQ(declared.at(type).get<std::string>(), value) << "the class of " << type << " changed";
     }
-    for (const auto &[type, value] : declared.items()) {
+    for (const auto &[type, value] : declared.get_object()) {
         if (!observed.contains(type)) std::printf("note: %s is no longer in the corpus\n", type.c_str());
     }
 }

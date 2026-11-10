@@ -16,7 +16,7 @@
 namespace {
 std::unique_ptr<engrave::Engine> engine;
 std::filesystem::path data = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/project_examples";
-using Json = nlohmann::ordered_json;
+using Json = music::Json;
 
 Json events(engrave::Document &doc) { return music::semantic_dump(engrave::DocumentAccess::master_score(doc)).at("events"); }
 
@@ -25,11 +25,11 @@ Json events(engrave::Document &doc) { return music::semantic_dump(engrave::Docum
 // duration, tie, lyric and articulation semantics; byte/path equality below
 // still compares the complete event dump, including every imported rest.
 Json sounding_events(Json dump) {
-    for (auto &staff : dump)
-        for (auto &voice : staff) {
-            auto notes = Json::array();
-            for (const auto &event : voice)
-                if (event.at("kind") == "chord") notes.push_back(event);
+    for (auto &staff : dump.get_array())
+        for (auto &voice : staff.get_array()) {
+            auto notes = music::make_array<Json>();
+            for (const auto &event : voice.get_array())
+                if (event.at("kind").get<std::string>() == "chord") music::array_push(notes, event);
             voice = std::move(notes);
         }
     return dump;
@@ -50,27 +50,31 @@ TEST(MnxImport, UpstreamSemanticReferences) {
             // reader fills its leading tuplet gap. Use the MNX source's explicit
             // two 3:2 groups as the independent oracle, without changing that reader.
             const auto dump = events(**opened);
-            Json actual = Json::array();
+            Json actual = music::make_array<Json>();
             for (unsigned voice = 0; voice < 2; ++voice)
-                for (const auto &event : dump.at(0).at(voice))
-                    if (event.at("kind") == "chord")
-                        actual.push_back(Json::array({voice, event.at("tick"), event.at("ticks"), event.at("notes").at(0).at("pitch")}));
-            const Json expected = {{0, 320, 320, 74},  {0, 640, 320, 72}, {0, 960, 320, 72}, {0, 1280, 320, 69},
-                                   {0, 1600, 320, 67}, {1, 0, 320, 64},   {1, 320, 640, 65}};
-            EXPECT_EQ(actual, expected);
-            EXPECT_EQ(dump.at(0).at(0).at(0).at("kind"), "rest");
-            EXPECT_EQ(dump.at(0).at(0).at(0).at("ticks"), 320);
-            EXPECT_EQ(dump.at(0).at(1).back().at("ticks"), 960);
-            EXPECT_EQ(dump.at(0).at(0).at(2).at("notes").at(0).at("tieTo"), Json({960, 0, 72}));
+                for (const auto &event : dump[0][voice].get_array())
+                    if (event.at("kind").get<std::string>() == "chord")
+                        music::array_push(actual, music::json_array_of<Json>(voice, event.at("tick"), event.at("ticks"),
+                                                                             event.at("notes")[0].at("pitch")));
+            const Json expected =
+                music::json_array_of<Json>(music::json_array_of<Json>(0, 320, 320, 74), music::json_array_of<Json>(0, 640, 320, 72),
+                                           music::json_array_of<Json>(0, 960, 320, 72), music::json_array_of<Json>(0, 1280, 320, 69),
+                                           music::json_array_of<Json>(0, 1600, 320, 67), music::json_array_of<Json>(1, 0, 320, 64),
+                                           music::json_array_of<Json>(1, 320, 640, 65));
+            EXPECT_TRUE(music::json_equal(actual, expected));
+            EXPECT_EQ(dump[0][0][0].at("kind").get<std::string>(), "rest");
+            EXPECT_EQ(dump[0][0][0].at("ticks").as<int>(), 320);
+            EXPECT_EQ(dump[0][1].get_array().back().at("ticks").as<int>(), 960);
+            EXPECT_TRUE(music::json_equal(dump[0][0][2].at("notes")[0].at("tieTo"), music::json_array_of<Json>(960, 0, 72)));
         } else {
-            EXPECT_EQ(sounding_events(events(**opened)), sounding_events(events(**reference)));
+            EXPECT_TRUE(music::json_equal(sounding_events(events(**opened)), sounding_events(events(**reference))));
         }
         // Byte input without a name exercises JSON content detection.
         std::ifstream in(entry.path(), std::ios::binary);
         const std::string bytes{std::istreambuf_iterator<char>(in), {}};
         auto sniffed = engine->open(std::as_bytes(std::span(bytes)));
         ASSERT_TRUE(sniffed) << sniffed.error().message;
-        EXPECT_EQ(events(**opened), events(**sniffed));
+        EXPECT_TRUE(music::json_equal(events(**opened), events(**sniffed)));
     }
     EXPECT_EQ(count, 37u);
 }
@@ -78,13 +82,13 @@ TEST(MnxImport, UpstreamSemanticReferences) {
 TEST(MnxImport, IndependentSemanticOracle) {
     auto opened = engine->open(data.parent_path() / "engine/two-notes.mnx");
     ASSERT_TRUE(opened) << opened.error().message;
-    auto dump = events(**opened).at(0).at(0);
+    auto dump = events(**opened)[0][0];
     ASSERT_EQ(dump.size(), 2u);
     for (unsigned i = 0; i < 2; ++i) {
-        EXPECT_EQ(dump[i]["kind"], "chord");
-        EXPECT_EQ(dump[i]["tick"], i * 960);
-        EXPECT_EQ(dump[i]["ticks"], 960);
-        EXPECT_EQ(dump[i]["notes"][0]["pitch"], i == 0 ? 60 : 62);
+        EXPECT_EQ(dump[i].at("kind").get<std::string>(), "chord");
+        EXPECT_EQ(dump[i].at("tick").as<int>(), static_cast<int>(i * 960));
+        EXPECT_EQ(dump[i].at("ticks").as<int>(), 960);
+        EXPECT_EQ(dump[i].at("notes")[0].at("pitch").as<int>(), i == 0 ? 60 : 62);
     }
 }
 
@@ -97,24 +101,29 @@ std::filesystem::path mnx_out;
 // every chord with its pitches and every rest, each with its position and length.
 Json core_content(engrave::Document &doc) {
     const auto dump = music::semantic_dump(engrave::DocumentAccess::master_score(doc));
-    Json notes = Json::array();
-    Json rests = Json::array();
+    Json notes = music::make_array<Json>();
+    Json rests = music::make_array<Json>();
     for (size_t staff = 0; staff < dump.at("events").size(); ++staff)
-        for (size_t voice = 0; voice < dump.at("events").at(staff).size(); ++voice)
-            for (const auto &event : dump.at("events").at(staff).at(voice)) {
-                const Json position = Json::array({staff, voice, event.at("tick"), event.at("ticks")});
-                if (event.at("kind") == "rest") {
-                    rests.push_back(position);
+        for (size_t voice = 0; voice < dump.at("events")[staff].size(); ++voice)
+            for (const auto &event : dump.at("events")[staff][voice].get_array()) {
+                const Json position = music::json_array_of<Json>(staff, voice, event.at("tick"), event.at("ticks"));
+                if (event.at("kind").get<std::string>() == "rest") {
+                    music::array_push(rests, position);
                     continue;
                 }
-                if (event.at("kind") != "chord") continue;
-                Json pitches = Json::array();
-                for (const auto &note : event.at("notes")) pitches.push_back(note.at("pitch"));
+                if (event.at("kind").get<std::string>() != "chord") continue;
+                Json pitches = music::make_array<Json>();
+                for (const auto &note : event.at("notes").get_array()) music::array_push(pitches, note.at("pitch"));
                 Json chord = position;
-                chord.push_back(pitches);
-                notes.push_back(chord);
+                music::array_push(chord, pitches);
+                music::array_push(notes, chord);
             }
-    return Json{{"parts", dump.at("parts").size()}, {"measures", dump.at("measures").size()}, {"notes", notes}, {"rests", rests}};
+    Json result = music::make_object<Json>();
+    result["parts"] = dump.at("parts").size();
+    result["measures"] = dump.at("measures").size();
+    result["notes"] = std::move(notes);
+    result["rests"] = std::move(rests);
+    return result;
 }
 
 TEST(MnxExport, SchemaAndCoreRoundtrip) {
@@ -140,7 +149,7 @@ TEST(MnxExport, SchemaAndCoreRoundtrip) {
         }
         auto imported = engine->open(std::as_bytes(std::span(bytes)), {.format = engrave::Format::MNX});
         ASSERT_TRUE(imported) << imported.error().message;
-        EXPECT_EQ(core_content(**imported), before);
+        EXPECT_TRUE(music::json_equal(core_content(**imported), before));
     }
 }
 

@@ -30,9 +30,8 @@
 #include <string_view>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
 #include "engrave/src/api/batch.h"
+#include "engrave/src/score/json.h"
 #include <engrave/engrave.h>
 
 namespace mu::engraving {
@@ -41,6 +40,13 @@ struct MasterScore;
 } // namespace mu::engraving
 
 namespace engrave::harness {
+
+using music::array_push;
+using music::Json;
+using music::json_equal;
+using music::make_array;
+using music::make_object;
+using music::parse_json;
 
 // Everything about a document that an edit and its rollback can change.
 struct Fingerprint {
@@ -90,7 +96,7 @@ struct EvidenceRow {
 
 EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture);
 
-nlohmann::ordered_json to_json(const std::vector<EvidenceRow> &rows);
+Json to_json(const std::vector<EvidenceRow> &rows);
 
 // --- helpers for cases ------------------------------------------------------
 
