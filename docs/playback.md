@@ -40,10 +40,10 @@ The pipeline operates on the single dedicated engine owner thread, keeping data 
 
 The pipeline enforces strict single ownership and avoids shared ownership graphs or reference cycles:
 
-- **Engine Audio Resources (`AudioResources`)**: Process-lifetime audio resources, including loaded SoundFonts, sound preset metadata, and audio services, are owned by `EngineAudio` on the engine owner thread. Render sessions borrow these resources by reference; sessions never outlive the engine.
+- **Engine Audio Resources (`AudioResources`)**: Engine-lifetime audio resources, including loaded SoundFonts, sound preset metadata, and audio services, are owned by `EngineAudio` on the engine owner thread. Render sessions borrow these resources by reference; sessions never outlive the engine.
 - **Render Session (`OfflineRenderSession`)**: Each export creates a fresh `OfflineRenderSession`. The session owns its track list, aux bus configurations, reverb effect processors (`fx::ReverbProcessor`), and intermediate mix buffers. Render configuration parameters (`OfflineRenderSettings`) are snapshotted and owned by value.
 - **Track Synthesis (`FluidTrack`)**: Each track owns its FluidSynth synthesizer instance (`std::unique_ptr<Fluid> fluid_`), its channel mapping (`ChannelMap`), and its sequencer (`FluidSequencer`). Synthesizers are not shared across tracks or exports.
-- **Flat MPE Store (`PlaybackScore`)**: Owned by the export orchestration in `engine_audio.cpp`. Tracks borrow event slices only while lowering their MIDI sequences, after which the MPE store is released immediately via cooperative cancellation checkpoints before synthesis begins.
+- **Flat MPE Store (`PlaybackScore`)**: Owned by the export orchestration in `engine_audio.cpp`. Tracks borrow event slices only while lowering their MIDI sequences; once lowered, the flat store is released before synthesis begins, draining cold event owners and the retained playback context in polled strides during the `EVENT_RELEASE` phase before freeing the flat buffers.
 - **Encoders (`AudioEncoder`)**: Format encoders are owned exclusively through type-erased proxy wrappers (`UniqueEncoder`), which enforce sole ownership via `std::unique_ptr`.
 
 ## Flat Playback Walk and Articulation Profiles
@@ -88,15 +88,13 @@ Non-trivially copyable events stored separately in `std::vector<ColdEvent>`:
 
 ## Fixed-Order Flat Mix Plan
 
-`OfflineRenderSession` executes offline mixing in a deterministic, sequential order:
+`OfflineRenderSession` executes offline mixing in a deterministic, sequential order (`mix` in `offlinerendersession.cpp`):
 
-1. **Per-Track Synthesis**: Iterates active tracks in `tracks_`. Each track synthesizes audio into its own dedicated buffer (`track.buffer`) via `FluidTrack::process`. Muted tracks skip synthesis.
-2. **Dry Accumulation**: Synthesized track audio is summed into the master output buffer in ascending track index order.
-3. **Aux Reverb Sends**: Active aux sends scale each track's buffer and accumulate the signal into `reverb_.buffer`.
-4. **Reverb Processing**: If reverb is present and active, `reverb_.buffer` is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and summed into the master output.
-5. **Master Processing**: Master volume and pan controls apply to the mixed output.
+1. **Per-Track Synthesis**: Iterates active tracks in `tracks_`. Each non-muted track synthesizes audio into its own dedicated buffer (`track.buffer`) via `process_track` (which drives the track's source, insert effects, and level controls).
+2. **Combined Dry Accumulation and Aux Send Pass**: In a single pass over active tracks in ascending index order, non-silent track buffers are summed into the master output buffer while simultaneously scaling by active aux send amounts and accumulating into the reverb send buffer (`reverb_.buffer`).
+3. **Aux Reverb Processing and Mixdown**: If reverb is present and active (or non-silent), `reverb_.buffer` is processed through `fx::ReverbProcessor` (Muse Reverb DSP) and its wet return is summed into the master output buffer.
 
-Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs.
+Disjoint track buffers isolate synthesis state from mixing, ensuring identical floating-point summation order across runs. Cooperative cancellation is polled before synthesis, before reverb buffer zeroing, before each track's accumulation pass, and before reverb processing.
 
 ## Encoder Seam (`pro::proxy`)
 
@@ -131,9 +129,10 @@ Cancellation is polled cooperatively at bounded boundaries throughout all execut
   - Sequencer lowering and sorting: checked every 4096 copied events and 8192 merge steps.
   - Mix loop: checked before each track synthesis, before reverb processing, and after aux checks.
   - Render loop: checked before each 4096-frame block pull and before each encoder block write.
-- **Latency Limits**:
+- **Latency Design Targets**:
   - Request-to-observed latency: p95 <= 5 ms, max <= 10 ms.
   - Cleanup and return latency: p95 <= 50 ms, max <= 100 ms.
+  These bounds are design targets checked by the test harness measurement against a generated dense score (`dense.musicxml`), rather than an absolute operational guarantee across all score topologies.
 
 Cancellation unlinks and removes partial output files from disk before returning.
 
@@ -143,7 +142,7 @@ The render pipeline guarantees deterministic, byte-identical output across runs 
 
 - **Dump A**: Full MPE event dump (`A.txt`), serialized in the legacy text schema from the flat store records.
 - **Dump B**: Flat-record projection (`B.txt`), compared against an independent legacy oracle projection (`B_legacy.txt`) loaded from `PlaybackModel` within the same binary.
-- **Dump C**: Synthesizer input dump (`C.txt`), capturing every FluidSynth API call, channel configuration, and ordered raw MIDI event word.
+- **Dump C**: Synthesizer input dump (`C.txt`), capturing instrumented FluidSynth setup operations (such as channel configurations, SoundFont loads, and program selections) and the ordered raw MIDI event slices delivered to the synthesizer.
 - **Dump D**: PCM hash (`D.json`), SHA-256 hash of the decoded 32-bit float WAV audio chunk.
 
 ### Verifying with `test_playback_dod.py`
@@ -171,15 +170,17 @@ python tests/integration/test_playback_dod.py capture \
     --font /path/to/FluidR3Mono_GM.sf3 \
     --output .runtime/capture-run
 
-# Run allocation and cancellation timing measurements
+# Run cancellation timing and export performance measurements (uncounted probe)
 python tests/integration/test_playback_dod.py measure \
-    --exe build/gate/playback_counting_probe.exe \
+    --exe build/gate/playback_probe.exe \
     --assets .runtime/assets \
     --font /path/to/FluidR3Mono_GM.sf3 \
-    --output .runtime/playback-counts \
+    --output .runtime/playback-measurements \
     --trials 7 \
     --cancel-trials 20
 ```
+
+> **Note**: Timing and cancellation measurements require the uncounted `playback_probe.exe`. The separate `playback_counting_probe.exe` is used strictly for allocation tracking, as hooked allocator interception introduces measurement overhead.
 
 ## Deliberate Music-Behaviour Rules
 
@@ -199,10 +200,10 @@ The pipeline enforces deliberate precedence and normalization rules to resolve a
 
 ## Known Limitations
 
-- **Cancellation Bounds**: The measured cancellation bounds (request-to-observed <= 10 ms, cleanup <= 100 ms) are verified against the standard test corpus. Extremely large single memory allocations or third-party codec internal encode calls (such as long Vorbis/FLAC compression blocks) execute outside engine checkpoints and can extend a poll interval.
+- **Cancellation Targets and Harness Coverage**: The cancellation latency targets (request-to-observed <= 10 ms, cleanup <= 100 ms) are checked by `test_playback_dod.py measure` against a synthetic generated dense score (`dense.musicxml`). The measurement harness reports percentile distributions without enforcing pass/fail assertion limits, and its scheduled-poll samples test cooperative polling intervals rather than modeling arbitrary asynchronous interruption during unpolled stages. Exceptionally large individual memory allocations, unpolled score routines, or third-party codec internal calls (such as long Vorbis or FLAC compression frames) execute outside engine checkpoints and can dominate a poll interval.
 
 ## Future Directions
 
-- **Parallel Per-Track Synthesis**: The separation of per-track buffers in `OfflineRenderSession` allows track synthesis loops to run concurrently across worker threads before the sequential dry/reverb mix pass, once thread safety in FluidSynth logging and soundfont instance loading is addressed.
+- **Parallel Per-Track Synthesis**: While per-track scratch buffers in `OfflineRenderSession` are disjoint and the dry/send accumulation order is deterministic, concurrent track synthesis is not ready and requires a comprehensive threading assessment. FluidSynth is compiled with `NO_THREADS` (`add_defines("NO_THREADS", "NO_GLIB", "EXTERN_VORBIS_SUPPORT")` in `xmake/engrave.lua`), soundfonts share a mutable `SoundFontCache` in `AudioResources`, sample decompression relies on a shared process-global decoder pointer (`FluidVorbisDecoder::decoder`), and soundfont file streaming uses a thread-local bridge (`file_cache_bridge`). These shared state and loader mechanisms must be assessed and redesigned before track rendering can run concurrently across threads.
 - **Encode Overlap**: Pipelining the synchronous 4096-frame PCM block synthesis with an asynchronous encoding queue, overlapping audio rendering with codec compression.
 - **Releasing the Owner Thread**: Detaching the offline render session from the single engine owner thread by snapshotting score properties, duration, and track configurations at the start of export, allowing long exports to run on background worker threads without blocking interactive score operations.
