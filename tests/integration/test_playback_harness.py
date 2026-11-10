@@ -9,7 +9,6 @@ from pathlib import Path
 
 from engrave_testing.playback_harness import compare, pcm_metadata, pinned_cases, write_json
 
-
 # A minimal capture whose dump A and dump B describe the same track, dynamics, groups and events:
 # group 0 holds a text event then a note, group 500 is an empty legacy key.
 DUMP_A = (
@@ -55,6 +54,7 @@ class PlaybackHarnessTests(unittest.TestCase):
                 path.write_bytes(transform(path.read_bytes()))
             with self.assertRaisesRegex(AssertionError, message):
                 compare(left, right)
+
     def test_pcm_hash_excludes_container_and_keeps_float_bits(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "float.wav"
@@ -134,14 +134,21 @@ class PlaybackHarnessTests(unittest.TestCase):
         # Well-formed and identical in both files, but not what dump A recorded
         cases = {
             "lost empty group": (b"groups 2", b"groups 1", b"group 500 0\n", b""),
-            "event order": (b"group 0 2\ntext 0 0 1:0061\n", b"group 0 2\n", b"expression 0\n", b"expression 0\ntext 0 0 1:0061\n"),
+            "event order": (
+                b"group 0 2\ntext 0 0 1:0061\n",
+                b"group 0 2\n",
+                b"expression 0\n",
+                b"expression 0\ntext 0 0 1:0061\n",
+            ),
             "group key": (b"group 500 0", b"group 501 0", b"", b""),
             "dynamics": (b"layer 0 1\npoint 0 0 3fd8000000000000\n", b"layer 0 0\n", b"", b""),
             "track": (b"track 1 1:0074", b"track 2 1:0074", b"", b""),
         }
         for label, (a, b, c, d) in cases.items():
             with self.subTest(label):
-                self.assert_rejected(B_FILES, lambda p, a=a, b=b, c=c, d=d: p.replace(a, b).replace(c, d), "differs from dump A")
+                self.assert_rejected(
+                    B_FILES, lambda p, a=a, b=b, c=c, d=d: p.replace(a, b).replace(c, d), "differs from dump A"
+                )
 
     def test_left_projection_is_a_known_stub_or_complete(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -164,6 +171,7 @@ class PlaybackHarnessTests(unittest.TestCase):
             stub.write_bytes(PROJECTION.replace(b"6500", b"6501"))  # B_legacy intact
             with self.assertRaisesRegex(AssertionError, "flat records vs legacy"):
                 compare(left, right)
+
     def test_newline_bytes_are_not_normalized(self):
         for dump in ("A.txt", "C.txt", "D.json"):
             with self.subTest(dump=dump), tempfile.TemporaryDirectory() as temp:
