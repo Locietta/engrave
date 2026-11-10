@@ -42,7 +42,8 @@ presence and typed DOM reads were identical except where listed below.
 - Exceptions raised by the JSON layer are `json_schema::parse_error`,
   `out_of_range` and `type_error` (derived from `std::invalid_argument` and
   `std::out_of_range`); their messages lack nlohmann's
-  `[json.exception.*.NNN]` prefix, and parse error messages are glaze's.
+  `[json.exception.*.NNN]` prefix, and parse error messages are glaze's
+  (line, column, cause and the offending text, located by `glz::validate_json`).
 - `hasValidDocumentRoot` on `"mnx": {}` (no version) returns false; the
   original read a missing key through nlohmann's const `operator[]`, which is
   undefined behaviour.
@@ -54,6 +55,8 @@ presence and typed DOM reads were identical except where listed below.
   so the validator's `"type": "integer"` check accepts it; and a nonzero
   value below the double range (`1e-324`) is a parse error, where nlohmann
   rounded it to zero. Neither form occurs in MNX written by real tools.
+- Parsing rejects a document followed by a NUL byte and nesting deeper
+  than glaze's limit (256 levels); nlohmann accepted both.
 - A malformed schema (not instance) can raise a different exception type, for
   example a non-string `type` or a boolean `maxLength`. The MNX schema has
   none of these.
