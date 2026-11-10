@@ -22,13 +22,12 @@
 
 #include "mnxexporter.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/score.h"
-#include "global/appinfo.h"
-#include "global/io/path.h"
 #include "global/log.h"
 #include "global/translation.h"
 #include "internal/shared/mnxtypesconv.h"
@@ -52,12 +51,13 @@ EID MnxExporter::get_or_assign_eid(EngravingObject *item) {
 //   mnxEventFromCR
 //---------------------------------------------------------
 
-std::optional<mnx::sequence::Event> MnxExporter::mnx_event_from_cr(const engraving::ChordRest *cr) {
-    auto pointer = muse::value(cr_to_mnx_event_, cr);
-    if (!pointer.empty()) {
-        return mnx::sequence::Event(mnx_document().root(), pointer);
+model::Event *MnxExporter::mnx_event_from_cr(const engraving::ChordRest *cr) {
+    const auto it = cr_to_mnx_event_.find(cr);
+    if (it == cr_to_mnx_event_.end()) {
+        return nullptr;
     }
-    return std::nullopt;
+    const auto event = events_by_id_.find(it->second);
+    return event == events_by_id_.end() ? nullptr : event->second;
 }
 
 //---------------------------------------------------------
@@ -85,11 +85,11 @@ std::pair<size_t, int> MnxExporter::mnx_part_staff_from_staff_idx(engraving::sta
 //   mnxFermataFromFermata
 //---------------------------------------------------------
 
-mnx::Fermata MnxExporter::mnx_fermata_from_fermata(const Fermata *fermata) {
-    mnx::Fermata result;
-    result.set_or_clear_duration(to_mnx_fermata_duration(fermata->fermata_type()));
-    result.set_or_clear_symbol(to_mnx_fermata_symbol(fermata->sym_id()));
-    result.set_or_clear_orient(to_mnx_orientation(fermata->placement()));
+model::Fermata MnxExporter::mnx_fermata_from_fermata(const Fermata *fermata) {
+    model::Fermata result;
+    set_unless_default(result.duration, to_mnx_fermata_duration(fermata->fermata_type()), model::FermataDuration::AUTO);
+    set_unless_default(result.symbol, to_mnx_fermata_symbol(fermata->sym_id()), model::FermataSymbol::NORMAL);
+    set_unless_default(result.orient, to_mnx_orientation(fermata->placement()), model::Orientation::AUTO);
     return result;
 }
 
@@ -103,7 +103,7 @@ std::optional<MnxChordTargetPosition> MnxExporter::mnx_chord_target_position(con
     IF_ASSERT_FAILED(chord && measure) { return std::nullopt; }
 
     auto position_from_tick = [measure](const Fraction &tick) {
-        return MnxChordTargetPosition{to_mnx_fraction_value(tick - measure->tick()).reduced(), std::nullopt};
+        return MnxChordTargetPosition{to_mnx_fraction((tick - measure->tick()).reduced()), std::nullopt};
     };
 
     if (!chord->is_grace()) {
@@ -140,36 +140,9 @@ std::optional<MnxChordTargetPosition> MnxExporter::mnx_chord_target_position(con
 //---------------------------------------------------------
 
 muse::Ret MnxExporter::export_mnx() {
-    LOGI() << "MNX export started: schema version=" << mnx_document_.mnx().version();
-    // Header
-    auto client = mnx_document_.mnx().ensure_mnxdom().ensure_client();
-    muse::String version = muse::appinfo::version().to_string();
-    const muse::String revision = muse::appinfo::revision();
-    if (!revision.is_empty()) {
-        version += u" rev. " + revision;
-    }
-    client.set_name("engrave");
-    client.set_version(version.to_std_string());
-    if (score_ && score_->master_score()) {
-        IFileInfoProviderPtr file_info = score_->master_score()->file_info();
-        if (file_info) {
-            const muse::io::PathT file_name = file_info->file_name();
-            const std::string format = muse::io::suffix(file_name);
-            if (!format.empty() || !file_name.empty()) {
-                auto source = mnx_document_.mnx().ensure_mnxdom().ensure_source();
-                if (!format.empty()) {
-                    source.set_format(format);
-                }
-                if (!file_name.empty()) {
-                    source.set_filename(file_name.to_std_string());
-                }
-            }
-        }
-    }
-
+    LOGI() << "MNX export started: schema version=" << root_.mnx.version;
     if (export_beams_) {
-        mnx::MnxMetaData::Support support = mnx_document_.mnx().ensure_support();
-        support.set_useBeams(true);
+        ensure(root_.mnx.support).use_beams = true;
     }
 
     create_global();

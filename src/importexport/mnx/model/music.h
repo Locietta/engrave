@@ -28,6 +28,11 @@ struct SpelledPitch {
     bool operator==(const SpelledPitch &) const = default;
 };
 
+// Diatonic step index with C = 0 through B = 6 (the schema lists steps A to G).
+int step_index(Step step);
+// The step at a diatonic index, taken modulo 7.
+Step step_at(int index);
+
 SpelledPitch spelled(const Pitch &pitch);
 // Whether two pitches sound the same (identical or enharmonically equivalent in 12-EDO).
 bool same_pitch(const Pitch &lhs, const Pitch &rhs);

@@ -342,33 +342,8 @@ target("iex_musicxml")
     )
     add_files(engine("src/importexport/musicxml/**.cpp"))
 
--- The MNX object model and its schema validator: mnxdom and
--- pboettch/json-schema-validator, vendored and ported from nlohmann::json to
--- glaze (see src/importexport/mnx/thirdparty/README.md).  Their headers are
--- included as <mnxdom/...> and <json-schema-validator/...>.
-local mnx_thirdparty = engine("src/importexport/mnx/thirdparty")
-
-target("json_schema_validator")
-    set_kind("static")
-    add_packages("glaze", {public = true})
-    add_includedirs(mnx_thirdparty, {public = true})
-    add_files(path.join(mnx_thirdparty, "json-schema-validator/*.cpp"))
-
-target("mnxdom")
-    set_kind("static")
-    add_deps("json_schema_validator", {public = true})
-    if is_plat("windows") then add_cxxflags("/Zc:preprocessor", "/bigobj") end
-    add_defines('MNXDOM_VERSION="3.1.0"', 'MNXDOM_GIT_COMMIT="45bf46221c00411e968c851ff9a1be4e202af5c2"',
-        'MNXDOM_BUILD_ID="engrave"', {public = true})
-    -- The embedded schema: mnx-schema.json.h holds its bytes and a zero end.
-    -- Upstream compiles with its source root on the include path.
-    add_includedirs(path.join(mnx_thirdparty, "mnxdom"))
-    add_rules("utils.bin2c", {extensions = {".json"}})
-    add_files(engine("src/importexport/mnx/model/mnx-schema.json"))
-    add_files(path.join(mnx_thirdparty, "mnxdom/**.cpp"))
-
 -- The engine's MNX document model, generated from the MNX schema (docs/mnx.md).
--- Its headers are included as "model/...".
+-- Its headers are included as "model/...". glaze reads and writes it.
 target("mnx_model")
     set_kind("static")
     add_packages("glaze", "unordered_dense", {public = true})
@@ -379,8 +354,7 @@ target("mnx_model")
 
 target("iex_mnx")
     set_kind("static")
-    add_deps("mnxdom", "mnx_model", {public = true})
-    if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
+    add_deps("mnx_model", {public = true})
     add_deps("muse_generated", "engraving")
     add_engine_target_defaults()
     add_includedirs(

@@ -236,8 +236,13 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
     }
     music::ScoreProject project;
     try {
-        project = *format == Format::MNX ? open_mnx(*impl_->state.context, bytes) :
-                                           music::load_native_score(*impl_->state.context, bytes, backend_name(*format));
+        if (*format == Format::MNX) {
+            auto opened = open_mnx(*impl_->state.context, bytes);
+            if (!opened) return fail(ErrorCode::INVALID_INPUT, std::format("cannot read the data as MNX: {}", opened.error()));
+            project = *std::move(opened);
+        } else {
+            project = music::load_native_score(*impl_->state.context, bytes, backend_name(*format));
+        }
     } catch (const music::UnsupportedScoreVersion &error) {
         return fail(ErrorCode::UNSUPPORTED, error.what());
     } catch (const std::bad_alloc &) {

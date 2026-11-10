@@ -11,6 +11,7 @@
 #include "engrave/src/score/score_semantic.h"
 #include "engraving/dom/masterscore.h"
 #include "importexport/mnx/internal/export/mnxexporter.h"
+#include "model/document.h"
 #include <engrave/engrave.h>
 
 namespace {
@@ -92,9 +93,8 @@ TEST(MnxImport, IndependentSemanticOracle) {
     }
 }
 
-// Optional directory for the exported MNX files; the host engine gate validates
-// them against the draft 2020-12 schema, which mnxdom's draft-7 validator only
-// partly enforces.
+// Optional directory for the exported MNX files; the engine gate also validates
+// them with an independent draft 2020-12 schema validator.
 std::filesystem::path mnx_out;
 
 // Compare the importer-supported core independently of engraving/layout details:
@@ -138,10 +138,10 @@ TEST(MnxExport, SchemaAndCoreRoundtrip) {
         mu::iex::mnxio::MnxExporter exporter(engrave::DocumentAccess::master_score(**opened));
         const auto result = exporter.export_mnx();
         ASSERT_TRUE(result) << result.to_string();
-        const auto &document = exporter.mnx_document();
-        // Uses mnxdom's embedded schema and the vendored json-schema-validator.
-        ASSERT_TRUE(mnx::validation::schemaValidate(document));
-        const std::string bytes = json_schema::dump(*document.root());
+        const std::string bytes = mu::iex::mnxio::model::write_document(exporter.document());
+        // The written document must read back and pass the semantic rules.
+        const auto reloaded = mu::iex::mnxio::model::load_document(bytes);
+        ASSERT_TRUE(reloaded) << reloaded.error().message;
         if (!mnx_out.empty()) {
             std::ofstream out(mnx_out / (std::string(fixture) + ".mnx"), std::ios::binary);
             out << bytes;

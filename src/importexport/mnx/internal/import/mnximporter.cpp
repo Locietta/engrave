@@ -21,8 +21,10 @@
  */
 #include "mnximporter.h"
 
+#include <algorithm>
 #include <array>
 #include <exception>
+#include <string_view>
 #include <vector>
 
 #include "engraving/dom/barline.h"
@@ -49,6 +51,8 @@
 #include "engraving/types/symnames.h"
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
+#include "model/layout.h"
+#include "model/music.h"
 
 using namespace mu::engraving;
 
@@ -74,9 +78,22 @@ int mensur_striche_final_span_to(int lines) {
 //   Build a MuseScore Drumset from an MNX part kit definition.
 //---------------------------------------------------------
 
-static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &doc,
+static const model::Sound *find_sound(const model::Root &root, std::string_view sound_id) {
+    if (!root.global.sounds) {
+        return nullptr;
+    }
+    for (const auto &[id, sound] : *root.global.sounds) {
+        if (id == sound_id) {
+            return &sound;
+        }
+    }
+    return nullptr;
+}
+
+static Drumset *create_drumset(const model::Root &root, size_t part_idx,
                                std::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
-    if (!mnx_part.kit()) {
+    const model::Part &mnx_part = root.parts[part_idx];
+    if (!mnx_part.kit) {
         return nullptr;
     }
 
@@ -86,24 +103,23 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
         drumset->drum(i) = DrumInstrument(String(), NoteHeadGroup::HEAD_INVALID, 0, DirectionV::AUTO);
     }
 
-    const auto sounds = doc.global().sounds();
     const StaffType *perc_staff_type = StaffType::preset(StaffTypes::PERC_DEFAULT);
     /// @todo If MNX gains explicit staff type info, use it here instead of PERC_DEFAULT.
     const int middle_line = perc_staff_type ? perc_staff_type->middle_line() : 4;
-    const size_t part_idx = mnx_part.calcArrayIndex();
-    const auto kit = mnx_part.kit().value();
 
     struct KitEntry {
         std::string id;
-        mnx::part::KitComponent component;
+        const model::KitComponent *component = nullptr;
         int midi_pitch = -1;
     };
 
     std::vector<KitEntry> kit_entries;
-    kit_entries.reserve(kit.size());
-    for (const auto &[kit_id, kit_component] : kit) {
-        kit_entries.push_back({kit_id, kit_component, -1});
+    kit_entries.reserve(mnx_part.kit->size());
+    for (const auto &[kit_id, kit_component] : *mnx_part.kit) {
+        kit_entries.push_back({kit_id, &kit_component, -1});
     }
+    // Fallback pitches are handed out in kit id order, as the JSON object order used to give.
+    std::ranges::stable_sort(kit_entries, {}, &KitEntry::id);
 
     std::array<bool, ::mu::engraving::drum_instruments> used_pitches{};
     const auto find_fallback_pitch = [&used_pitches]() -> int {
@@ -115,10 +131,9 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
         return -1;
     };
     for (auto &entry : kit_entries) {
-        if (entry.component.sound() && sounds && sounds->contains(entry.component.sound().value())) {
-            const auto sound = sounds->at(entry.component.sound().value());
-            if (const auto midi_number = sound.midiNumber()) {
-                entry.midi_pitch = static_cast<int>(midi_number.value());
+        if (entry.component->sound) {
+            if (const model::Sound *sound = find_sound(root, *entry.component->sound); sound && sound->midi_number) {
+                entry.midi_pitch = *sound->midi_number;
             }
         }
 
@@ -131,7 +146,7 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
         if (pitch_is_valid(entry.midi_pitch)) {
             continue;
         }
-        int fallback_pitch = default_drumset ? default_drumset->default_pitch_for_line(middle_line - entry.component.staffPosition()) : -1;
+        int fallback_pitch = default_drumset ? default_drumset->default_pitch_for_line(middle_line - entry.component->staff_position) : -1;
         if (!pitch_is_valid(fallback_pitch) || used_pitches[fallback_pitch]) {
             fallback_pitch = find_fallback_pitch();
         }
@@ -157,13 +172,12 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
         String shortcut = has_default ? default_drumset->shortcut(entry.midi_pitch) : String();
 
         String name;
-        if (entry.component.name()) {
-            name = String::from_std_string(entry.component.name().value());
+        if (entry.component->name) {
+            name = String::from_std_string(*entry.component->name);
         }
-        if (name.is_empty() && entry.component.sound() && sounds && sounds->contains(entry.component.sound().value())) {
-            const auto sound = sounds->at(entry.component.sound().value());
-            if (const auto sound_name = sound.name()) {
-                name = String::from_std_string(sound_name.value());
+        if (name.is_empty() && entry.component->sound) {
+            if (const model::Sound *sound = find_sound(root, *entry.component->sound); sound && sound->name) {
+                name = String::from_std_string(*sound->name);
             }
         }
         if (name.is_empty()) {
@@ -171,7 +185,7 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
             name = String(u"Percussion note");
         }
 
-        int line = middle_line - entry.component.staffPosition();
+        int line = middle_line - entry.component->staff_position;
         drumset->drum(entry.midi_pitch) = DrumInstrument(name, notehead, line, stem_direction, -1, -1, voice, shortcut);
         if (notehead == NoteHeadGroup::HEAD_CUSTOM && has_default) {
             for (int type = 0; type < static_cast<int>(NoteHeadType::HEAD_TYPES); ++type) {
@@ -185,15 +199,17 @@ static Drumset *create_drumset(const mnx::Part &mnx_part, const mnx::Document &d
 
 //---------------------------------------------------------
 //   loadInstrument
-//   Populate a MuseScore Instrument from an MNX part definition.
+//   Populate a MuseScore Instrument from an MNX part definition. Returns the part's
+//   transposition with the keyFifthsFlipAt value MuseScore can represent.
 //---------------------------------------------------------
 
-static void load_instrument(mnx::Document &doc, Part *part, mnx::Part &mnx_part, Instrument *instrument,
-                            std::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
+static std::optional<model::PartTransposition> load_instrument(const model::Root &root, size_t part_idx, Part *part, Instrument *instrument,
+                                                               std::map<std::pair<size_t, std::string>, int> &kit_component_to_midi) {
+    const model::Part &mnx_part = root.parts[part_idx];
     // Initialize drumset
-    if (mnx_part.kit().has_value()) {
+    if (mnx_part.kit) {
         instrument->set_use_drumset(true);
-        Drumset *drumset = create_drumset(mnx_part, doc, kit_component_to_midi);
+        Drumset *drumset = create_drumset(root, part_idx, kit_component_to_midi);
         if (drumset) {
             instrument->set_drumset(drumset);
             instrument->channel(0)->set_bank(128);
@@ -209,19 +225,22 @@ static void load_instrument(mnx::Document &doc, Part *part, mnx::Part &mnx_part,
 
     // Transposition
     // MNX transposition has opposite signs.
-    if (const std::optional<mnx::part::PartTransposition> mnx_transp = mnx_part.transposition()) {
-        instrument->set_transpose(Interval(-mnx_transp->interval().staffDistance(), -mnx_transp->interval().halfSteps()));
-        const auto key_fifths_flip = mnx_transp->keyFifthsFlipAt();
-        part->set_prefer_sharp_flat(to_muse_score_prefer_sharp_flat(key_fifths_flip.value_or(0)));
-        const Interval mnx_transpose(mnx_transp->interval().staffDistance(), mnx_transp->interval().halfSteps());
-        const int updated_flip_at = to_mnx_key_fifths_flip_value(part->prefer_sharp_flat(), mnx_transpose);
-        if (key_fifths_flip && key_fifths_flip.value() != updated_flip_at) {
-            LOGW() << "MNX keyFifthsFlipAt value (" << key_fifths_flip.value() << ") cannot be imported for part (" << part->part_name()
-                   << "). Using (" << updated_flip_at << ") instead.";
-        }
-        auto mnx_transposition = mnx_part.ensure_transposition(mnx_transp->interval());
-        mnx_transposition.set_keyFifthsFlipAt(updated_flip_at);
+    if (!mnx_part.transposition) {
+        return std::nullopt;
     }
+    model::PartTransposition transposition = *mnx_part.transposition;
+    const model::Interval &interval = transposition.interval;
+    instrument->set_transpose(Interval(-interval.staff_distance, -interval.half_steps));
+    const auto key_fifths_flip = transposition.key_fifths_flip_at;
+    part->set_prefer_sharp_flat(to_muse_score_prefer_sharp_flat(key_fifths_flip.value_or(0)));
+    const Interval mnx_transpose(interval.staff_distance, interval.half_steps);
+    const int updated_flip_at = to_mnx_key_fifths_flip_value(part->prefer_sharp_flat(), mnx_transpose);
+    if (key_fifths_flip && key_fifths_flip.value() != updated_flip_at) {
+        LOGW() << "MNX keyFifthsFlipAt value (" << key_fifths_flip.value() << ") cannot be imported for part (" << part->part_name()
+               << "). Using (" << updated_flip_at << ") instead.";
+    }
+    transposition.key_fifths_flip_at = updated_flip_at;
+    return transposition;
 }
 
 //---------------------------------------------------------
@@ -229,8 +248,8 @@ static void load_instrument(mnx::Document &doc, Part *part, mnx::Part &mnx_part,
 //   Map MNX part/staff numbers to MuseScore staff indices.
 //---------------------------------------------------------
 
-staff_idx_t MnxImporter::mnx_part_staff_to_staff_idx(const mnx::Part &mnx_part, int staff_num) {
-    staff_idx_t idx = muse::value(mnx_part_staff_to_staff_, std::make_pair(mnx_part.calcArrayIndex(), staff_num), muse::nidx);
+staff_idx_t MnxImporter::mnx_part_staff_to_staff_idx(size_t part_index, int staff_num) {
+    staff_idx_t idx = muse::value(mnx_part_staff_to_staff_, std::make_pair(part_index, staff_num), muse::nidx);
     IF_ASSERT_FAILED(idx != muse::nidx) { throw std::logic_error("Unmapped staff encountered"); }
     return idx;
 }
@@ -240,14 +259,10 @@ staff_idx_t MnxImporter::mnx_part_staff_to_staff_idx(const mnx::Part &mnx_part, 
 //   Resolve MNX layout staff sources to MuseScore staff indices.
 //---------------------------------------------------------
 
-staff_idx_t MnxImporter::mnx_layout_staff_to_staff_idx(const mnx::layout::Staff &mnx_staff) {
-    const auto sources = mnx_staff.sources();
-    for (const auto &source : sources) {
-        if (const auto part = mnx_document().getEntityMap().tryGet<mnx::Part>(source.part())) {
-            return mnx_part_staff_to_staff_idx(part.value(), source.staff());
-        } else {
-            LOGE() << "Staff source points to invalid part\"" << source.part() << "\" " << source.pointer().to_string();
-            LOGE() << source.dump(2);
+staff_idx_t MnxImporter::mnx_layout_staff_to_staff_idx(const model::Staff &mnx_staff) {
+    for (const auto &source : mnx_staff.sources) {
+        if (const auto part = index().find_part(source.part)) {
+            return mnx_part_staff_to_staff_idx(*part, source.staff_or_default());
         }
     }
     return muse::nidx;
@@ -284,13 +299,12 @@ Measure *MnxImporter::mnx_measure_to_measure(const size_t mnx_meas_idx) {
 //   Look up a MuseScore ChordRest by MNX event id.
 //---------------------------------------------------------
 
-engraving::ChordRest *MnxImporter::mnx_event_id_to_cr(const std::string &event_id) {
-    const auto &doc_mapping = mnx_document().getEntityMap();
-    const auto event = doc_mapping.tryGet<mnx::sequence::Event>(event_id);
-    if (!event.has_value()) {
+engraving::ChordRest *MnxImporter::mnx_event_id_to_cr(std::string_view event_id) {
+    const model::EventEntry *entry = index().find_event(event_id);
+    if (!entry) {
         return nullptr;
     }
-    return muse::value(mnx_event_to_cr_, event->pointer().to_string());
+    return muse::value(mnx_event_to_cr_, entry->event);
 }
 
 //---------------------------------------------------------
@@ -298,13 +312,14 @@ engraving::ChordRest *MnxImporter::mnx_event_id_to_cr(const std::string &event_i
 //   Look up a MuseScore Note by MNX note id.
 //---------------------------------------------------------
 
-engraving::Note *MnxImporter::mnx_note_id_to_note(const std::string &note_id) {
-    const auto &doc_mapping = mnx_document().getEntityMap();
-    const auto note = doc_mapping.tryGet<mnx::sequence::NoteBase>(note_id);
-    if (!note.has_value()) {
-        return nullptr;
+engraving::Note *MnxImporter::mnx_note_id_to_note(std::string_view note_id) {
+    if (const auto *note = index().find_note(note_id)) {
+        return muse::value(mnx_note_to_note_, note->note);
     }
-    return muse::value(mnx_note_to_note_, note->pointer().to_string());
+    if (const auto *kit_note = index().find_kit_note(note_id)) {
+        return muse::value(mnx_kit_note_to_note_, kit_note->note);
+    }
+    return nullptr;
 }
 
 //---------------------------------------------------------
@@ -328,14 +343,13 @@ void MnxImporter::set_and_style_property(EngravingObject *e, Pid id, PropertyVal
 //   Convert an MNX measure-relative position to absolute tick.
 //---------------------------------------------------------
 
-Fraction MnxImporter::mnx_measure_pos_to_tick(const mnx::MeasureRhythmicPosition &meas_pos) {
-    const auto global_meas = mnx_document().getEntityMap().get<mnx::global::Measure>(meas_pos.measure());
-    const size_t meas_idx = global_meas.calcArrayIndex();
+Fraction MnxImporter::mnx_measure_pos_to_tick(const model::MeasureRhythmicPosition &meas_pos) {
+    const size_t meas_idx = index().measure_ids.at(meas_pos.measure);
     const Fraction meas_tick = muse::value(mnx_meas_to_tick_, meas_idx, Fraction(-1, 1));
     IF_ASSERT_FAILED(meas_tick.positive()) {
         throw std::logic_error("MNX global measure at " + std::to_string(meas_idx) + " was not mapped.");
     }
-    return meas_tick + to_muse_score_r_tick(meas_pos.position());
+    return meas_tick + to_muse_score_r_tick(meas_pos.position);
 }
 
 //---------------------------------------------------------
@@ -355,7 +369,7 @@ void MnxImporter::import_settings() {
 //   Create a MuseScore staff from an MNX part/staff entry.
 //---------------------------------------------------------
 
-void MnxImporter::create_staff(Part *part, const mnx::Part &mnx_part, int staff_num) {
+void MnxImporter::create_staff(Part *part, size_t part_index, int staff_num) {
     Staff *staff = Factory::create_staff(part);
     if (part->instrument()->use_drumset() && !staff->is_drum_staff(Fraction(0, 1))) {
         /// @todo If MNX gains explicit staff type/line-count info, use it here.
@@ -364,8 +378,8 @@ void MnxImporter::create_staff(Part *part, const mnx::Part &mnx_part, int staff_
         staff->clef_list().set_clef(0, ClefTypeList(ClefType::PERC2, ClefType::PERC2));
     }
     score_->append_staff(staff);
-    mnx_part_staff_to_staff_.emplace(std::make_pair(mnx_part.calcArrayIndex(), staff_num), staff->idx());
-    staff_to_mnx_part_.emplace(staff->idx(), mnx_part.calcArrayIndex());
+    mnx_part_staff_to_staff_.emplace(std::make_pair(part_index, staff_num), staff->idx());
+    staff_to_mnx_part_.emplace(staff->idx(), part_index);
 }
 
 //---------------------------------------------------------
@@ -374,11 +388,13 @@ void MnxImporter::create_staff(Part *part, const mnx::Part &mnx_part, int staff_
 //---------------------------------------------------------
 
 void MnxImporter::import_parts() {
-    for (mnx::Part mnx_part : mnx_document().parts()) {
+    part_transpositions_.clear();
+    for (size_t part_index = 0; part_index < root().parts.size(); ++part_index) {
+        const model::Part &mnx_part = root().parts[part_index];
         Part *part = new Part(score_);
         /// @todo a better way to find the instrument, perhaps by part name or else some future mnx enhancement
         const InstrumentTemplate *it = [&]() {
-            if (mnx_part.kit()) {
+            if (mnx_part.kit) {
                 return search_template(u"drumset");
             }
             return search_template(u"piano");
@@ -386,11 +402,11 @@ void MnxImporter::import_parts() {
         if (it) {
             part->init_from_instr_template(it);
         }
-        part->set_long_name(String::from_std_string(mnx_part.name_or("")));
-        part->set_short_name(String::from_std_string(mnx_part.shortName_or("")));
-        load_instrument(mnx_document(), part, mnx_part, part->instrument(), mnx_kit_component_to_midi_);
-        for (int staff_num = 1; staff_num <= mnx_part.staves(); staff_num++) {
-            create_staff(part, mnx_part, staff_num);
+        part->set_long_name(String::from_std_string(mnx_part.name.value_or("")));
+        part->set_short_name(String::from_std_string(mnx_part.short_name.value_or("")));
+        part_transpositions_.push_back(load_instrument(root(), part_index, part, part->instrument(), mnx_kit_component_to_midi_));
+        for (int staff_num = 1; staff_num <= mnx_part.staves_or_default(); staff_num++) {
+            create_staff(part, part_index, staff_num);
         }
         score_->append_part(part);
     }
@@ -404,50 +420,37 @@ void MnxImporter::import_parts() {
 void MnxImporter::import_brackets() {
     group_barline_overrides_.clear();
 
-    auto full_score_layout = mnx_document().findFullScoreLayout();
+    const model::SystemLayout *full_score_layout = model::full_score_layout(root());
     if (!full_score_layout) {
         LOGI() << "Unable to find full score layout. Using default layout from parts.";
     }
-    const auto layout_spans = [&]() {
-        if (full_score_layout) {
-            if (const auto &layout_spans = mnx::util::buildLayoutSpans(full_score_layout.value())) {
-                return layout_spans.value();
-            }
-            full_score_layout = std::nullopt;
-        }
-        return mnx::util::buildDefaultLayoutSpans(mnx_document().parts());
-    }();
-
-    std::optional<std::vector<mnx::layout::Staff>> layout_staves;
+    const auto layout_spans = full_score_layout ? model::layout_spans(*full_score_layout) : model::default_layout_spans(root());
+    std::vector<const model::Staff *> layout_staves;
     if (full_score_layout) {
-        layout_staves = mnx::util::flattenLayoutStaves(full_score_layout.value());
-        IF_ASSERT_FAILED(layout_staves) {
-            LOGE() << "Layout staves for full score layout were invalid.";
-            return;
-        }
+        layout_staves = model::flatten_staves(*full_score_layout);
     }
     for (const auto &span : layout_spans) {
-        BracketType brt = to_muse_score_bracket_type(span.symbol.value_or(mnx::LayoutSymbol::NoSymbol));
-        if (brt == BracketType::NO_BRACKET && span.startIndex >= span.endIndex) {
+        BracketType brt = to_muse_score_bracket_type(span.symbol.value_or(model::StaffSymbol::NO_SYMBOL));
+        if (brt == BracketType::NO_BRACKET && span.start >= span.end) {
             continue;
         }
         const staff_idx_t staff_idx =
-            layout_staves ? mnx_layout_staff_to_staff_idx(layout_staves->at(span.startIndex)) : static_cast<staff_idx_t>(span.startIndex);
+            full_score_layout ? mnx_layout_staff_to_staff_idx(*layout_staves.at(span.start)) : static_cast<staff_idx_t>(span.start);
         if (staff_idx == muse::nidx) {
-            LOGE() << "Staff not found for span starting at " << span.startIndex << " and ending at " << span.endIndex << ".";
+            LOGE() << "Staff not found for span starting at " << span.start << " and ending at " << span.end << ".";
             continue;
         }
         BracketItem *bi = Factory::create_bracket_item(score_->dummy());
         bi->set_bracket_type(brt);
-        const int group_span = static_cast<int>(span.endIndex - span.startIndex + 1);
+        const int group_span = static_cast<int>(span.end - span.start + 1);
         bi->set_bracket_span(group_span);
         bi->set_column(size_t(span.depth));
         EditStaffBrackets::add_bracket(score_, staff_idx, bi);
-        if (group_span <= 1 || span.kind != mnx::util::LayoutSpan::Kind::Group) {
+        if (group_span <= 1 || span.kind != model::LayoutSpan::Kind::GROUP) {
             continue;
         }
-        const mnx::StaffGroupBarlineOverride group_override = span.barlineOverride;
-        if (group_override == mnx::StaffGroupBarlineOverride::None) {
+        const model::BarlineOverride group_override = span.barline;
+        if (group_override == model::BarlineOverride::NONE) {
             continue;
         }
         const staff_idx_t end_staff = staff_idx + static_cast<staff_idx_t>(group_span - 1);
@@ -473,12 +476,12 @@ void MnxImporter::import_brackets() {
             if (idx < override_span.start_staff || idx >= override_span.end_staff) {
                 continue;
             }
-            if (override_span.barline_override == mnx::StaffGroupBarlineOverride::Unified) {
+            if (override_span.barline_override == model::BarlineOverride::UNIFIED) {
                 local_span = true;
             }
             const size_t group_size = static_cast<size_t>(override_span.end_staff - override_span.start_staff + 1);
             if (priority > group_size) {
-                mensur_striche = override_span.barline_override == mnx::StaffGroupBarlineOverride::Mensurstrich;
+                mensur_striche = override_span.barline_override == model::BarlineOverride::MENSURSTRICH;
                 priority = group_size;
             }
         }
@@ -503,7 +506,7 @@ void MnxImporter::import_brackets() {
 
     // Hide trailing barline segment on final staff of standalone mensurstrich groups.
     for (const auto &override_span : group_barline_overrides_) {
-        if (override_span.barline_override != mnx::StaffGroupBarlineOverride::Mensurstrich) {
+        if (override_span.barline_override != model::BarlineOverride::MENSURSTRICH) {
             continue;
         }
         Staff *final_staff = score_->staff(override_span.end_staff);
@@ -534,9 +537,8 @@ void MnxImporter::create_key_sig(engraving::Measure *measure, int key_fifths) {
         if (!score()->style().style_b(Sid::CONCERT_PITCH)) {
             const size_t mnx_part_index = muse::value(staff_to_mnx_part_, idx, muse::nidx);
             IF_ASSERT_FAILED(mnx_part_index != muse::nidx) { throw std::logic_error("Staff " + std::to_string(idx) + " is not mapped."); }
-            const mnx::Part mnx_part = mnx_document().parts().at(mnx_part_index);
-            if (const std::optional<mnx::part::PartTransposition> &part_transposition = mnx_part.transposition()) {
-                int transp_fifths = part_transposition->calcTransposedKey(mnx::KeySignature::make(key_fifths)).fifths;
+            if (const auto &part_transposition = part_transpositions_.at(mnx_part_index)) {
+                int transp_fifths = model::transposed_key(*part_transposition, key_fifths);
                 const Key transp_key = to_muse_score_key(transp_fifths);
                 if (transp_key != Key::INVALID) {
                     key_sig_event.set_key(transp_key);
@@ -562,10 +564,13 @@ void MnxImporter::create_key_sig(engraving::Measure *measure, int key_fifths) {
 //   Create MuseScore time signatures from MNX data.
 //---------------------------------------------------------
 
-void MnxImporter::create_time_sig(engraving::Measure *measure, const mnx::TimeSignature &time_sig) {
-    const Fraction sig_fraction = to_muse_score_fraction(time_sig);
+// The time signature as written: 6/8 stays 6/8 rather than reducing to 3/4.
+static Fraction time_sig_fraction(const model::Time &time_sig) { return Fraction(time_sig.count, static_cast<int>(time_sig.unit)); }
+
+void MnxImporter::create_time_sig(engraving::Measure *measure, const model::Time &time_sig) {
+    const Fraction sig_fraction = time_sig_fraction(time_sig);
     // setSig is the only way in; TimeSig has no public setTimeSigType.
-    const TimeSigType sig_type = to_muse_score_time_sig_type(time_sig.display());
+    const TimeSigType sig_type = to_muse_score_time_sig_type(time_sig.display);
     for (track_idx_t track_idx = 0; track_idx < score_->ntracks(); track_idx += ::mu::engraving::voices) {
         Segment *seg = measure->get_segment_r(SegmentType::TIME_SIG, Fraction(0, 1));
         TimeSig *ts = Factory::create_time_sig(seg);
@@ -580,8 +585,8 @@ void MnxImporter::create_time_sig(engraving::Measure *measure, const mnx::TimeSi
 //   Create MuseScore barlines matching the MNX barline type.
 //---------------------------------------------------------
 
-void MnxImporter::set_barline(engraving::Measure *measure, const mnx::global::Barline &barline) {
-    const mnx::BarlineType mnx_blt = barline.type();
+void MnxImporter::set_barline(engraving::Measure *measure, const model::Barline &barline) {
+    const model::BarlineType mnx_blt = barline.type;
     BarLineType blt = to_muse_score_bar_line_type(mnx_blt);
     Segment *bls = measure->get_segment_r(SegmentType::END_BAR_LINE, measure->ticks());
 
@@ -594,23 +599,23 @@ void MnxImporter::set_barline(engraving::Measure *measure, const mnx::global::Ba
             if (idx < override_span.start_staff || idx > override_span.end_staff) {
                 continue;
             }
-            if (override_span.barline_override == mnx::StaffGroupBarlineOverride::Unified) {
+            if (override_span.barline_override == model::BarlineOverride::UNIFIED) {
                 local_span = true;
             }
             const size_t group_size = static_cast<size_t>(override_span.end_staff - override_span.start_staff + 1);
             if (priority > group_size) {
-                mensur_striche = override_span.barline_override == mnx::StaffGroupBarlineOverride::Mensurstrich;
+                mensur_striche = override_span.barline_override == model::BarlineOverride::MENSURSTRICH;
                 mensur_last = mensur_striche && idx == override_span.end_staff;
                 priority = group_size;
             }
         }
-        const bool local_tick = mnx_blt == mnx::BarlineType::Tick;
-        const bool local_short = mnx_blt == mnx::BarlineType::Short;
+        const bool local_tick = mnx_blt == model::BarlineType::TICK;
+        const bool local_short = mnx_blt == model::BarlineType::SHORT;
         mensur_striche = mensur_striche && !local_span && !local_tick && !local_short;
 
         BarLine *bl = Factory::create_bar_line(bls);
         bl->set_track(staff2track(idx));
-        bl->set_visible(mnx_blt != mnx::BarlineType::NoBarline);
+        bl->set_visible(mnx_blt != model::BarlineType::NO_BARLINE);
         bl->set_generated(false);
         bl->set_bar_line_type(blt);
         bl->set_span_staff(!local_tick && !local_short && (local_span || mensur_striche));
@@ -639,17 +644,13 @@ void MnxImporter::set_barline(engraving::Measure *measure, const mnx::global::Ba
 //   Create MuseScore volta (ending) spanning measures.
 //---------------------------------------------------------
 
-void MnxImporter::create_volta(engraving::Measure *measure, const mnx::global::Ending &ending) {
+void MnxImporter::create_volta(engraving::Measure *measure, const model::Ending &ending) {
     constexpr track_idx_t volta_track_idx = 0; /// @todo more options as indicated by mnx spec.
 
+    // build_index checks that the ending fits in the score.
     Measure *end_measure = measure;
-    for (int countdown = ending.duration() - 1; countdown > 0; countdown--) {
-        Measure *next = end_measure->next_measure();
-        if (!next) {
-            LOGW() << "Ending at " << ending.pointer().to_string() << " specifies non-existent end measure.";
-            LOGW() << ending.dump(2);
-        }
-        end_measure = next;
+    for (int countdown = ending.duration - 1; countdown > 0 && end_measure->next_measure(); countdown--) {
+        end_measure = end_measure->next_measure();
     }
 
     Volta *volta = Factory::create_volta(score_->dummy());
@@ -657,8 +658,8 @@ void MnxImporter::create_volta(engraving::Measure *measure, const mnx::global::E
     volta->set_tick(measure->tick());
     volta->set_tick2(end_measure->end_tick());
     volta->set_visible(true);
-    if (const auto &numbers = ending.numbers()) {
-        volta->set_endings(numbers->toStdVector());
+    if (const auto &numbers = ending.numbers) {
+        volta->set_endings(*numbers);
         // use default MuseScore ending text format, based on observed defaults in 4.6.x
         String text;
         for (int number : *numbers) {
@@ -670,18 +671,16 @@ void MnxImporter::create_volta(engraving::Measure *measure, const mnx::global::E
         text += u".";
         volta->set_text(text);
     }
-    volta->set_volta_type(ending.open() ? Volta::Type::OPEN : Volta::Type::CLOSED);
+    volta->set_volta_type(ending.open_or_default() ? Volta::Type::OPEN : Volta::Type::CLOSED);
     score_->add_element(volta);
 }
 
 //---------------------------------------------------------
 //   createJumpOrMarker
-//   MuseScore does not allow jumps or markers to be assigned to a measure location.
-//   Passed in for completeness to the MNX spec but currently unused by engraving.
 //---------------------------------------------------------
 
-void MnxImporter::create_jump_or_marker(engraving::Measure *measure, const mnx::FractionValue &, std::variant<JumpType, MarkerType> type,
-                                        const std::optional<std::string> glyph_name) {
+void MnxImporter::create_jump_or_marker(engraving::Measure *measure, std::variant<JumpType, MarkerType> type,
+                                        const std::optional<std::string> &glyph_name) {
     constexpr track_idx_t cur_track_idx = 0; /// @todo more options as offered by new versions of mnx spec.
 
     const ElementType element_type = std::holds_alternative<JumpType>(type) ? ElementType::JUMP : ElementType::MARKER;
@@ -726,25 +725,25 @@ void MnxImporter::create_jump_or_marker(engraving::Measure *measure, const mnx::
 //   Create MuseScore tempo text from an MNX tempo element.
 //---------------------------------------------------------
 
-void MnxImporter::create_tempo_mark(engraving::Measure *measure, const mnx::global::Tempo &tempo) {
+void MnxImporter::create_tempo_mark(engraving::Measure *measure, const model::Tempo &tempo) {
     /// @todo more options as offered by new versions of mnx spec.
     constexpr track_idx_t cur_track_idx = 0;
 
     Fraction r_tick(0, 1);
-    if (const auto &location = tempo.location()) {
-        r_tick = to_muse_score_fraction(location->fraction());
+    if (const auto &location = tempo.location) {
+        r_tick = to_muse_score_r_tick(*location);
     }
     Segment *s = measure->get_chord_rest_or_time_tick_segment(measure->tick() + r_tick);
 
     TempoText *item = Factory::create_tempo_text(s);
     item->set_track(cur_track_idx);
 
-    Fraction note_value_in_quarters = to_muse_score_fraction(tempo.value()) / Fraction(1, 4);
-    const double bps = (note_value_in_quarters.to_double() * tempo.bpm()) / 60.0;
+    Fraction note_value_in_quarters = to_muse_score_fraction(model::duration_of(tempo.value)) / Fraction(1, 4);
+    const double bps = (note_value_in_quarters.to_double() * tempo.bpm) / 60.0;
     item->set_tempo(bps);
 
-    String tempo_text = TempoText::duration2tempo_text_string(to_muse_score_duration(tempo.value()));
-    tempo_text += String(u" = %1").arg(tempo.bpm());
+    String tempo_text = TempoText::duration2tempo_text_string(to_muse_score_duration(tempo.value));
+    tempo_text += String(u" = %1").arg(tempo.bpm);
     item->set_xml_text(tempo_text);
 
     s->add(item);
@@ -762,74 +761,75 @@ void MnxImporter::import_global_measures() {
 
     // pass 1 creates the measures as it goes
     int last_display_num = 0;
-    for (const mnx::global::Measure &mnx_measure : mnx_document().global().measures()) {
-        const bool is_first = mnx_measure.calcArrayIndex() == 0;
+    const auto &global_measures = root().global.measures;
+    for (size_t measure_index = 0; measure_index < global_measures.size(); ++measure_index) {
+        const model::MeasureGlobal &mnx_measure = global_measures[measure_index];
+        const bool is_first = measure_index == 0;
         Measure *measure = Factory::create_measure(score_);
         Fraction tick(score_->last() ? score_->last()->end_tick() : Fraction(0, 1));
         measure->set_tick(tick);
-        if (const std::optional<mnx::TimeSignature> &mnx_time_sig = mnx_measure.time()) {
-            Fraction this_time_sig = to_muse_score_fraction(mnx_time_sig.value());
+        if (const auto &mnx_time_sig = mnx_measure.time) {
+            Fraction this_time_sig = time_sig_fraction(*mnx_time_sig);
             if (!this_time_sig.identical(curr_time_sig)) {
                 score_->sigmap()->add(tick.ticks(), this_time_sig);
                 curr_time_sig = this_time_sig;
             }
-            create_time_sig(measure, mnx_time_sig.value());
+            create_time_sig(measure, *mnx_time_sig);
         }
         measure->set_timesig(curr_time_sig);
         measure->set_ticks(curr_time_sig);
 
-        if (const std::optional<mnx::KeySignature> &key_sig = mnx_measure.key(); key_sig || is_first) {
-            const int key_fifths = key_sig ? key_sig->fifths() : 0;
+        if (const auto &key_sig = mnx_measure.key; key_sig || is_first) {
+            const int key_fifths = key_sig ? key_sig->fifths : 0;
             create_key_sig(measure, key_fifths);
         }
-        if (const std::optional<mnx::global::Barline> &barline = mnx_measure.barline()) {
-            set_barline(measure, barline.value());
+        if (const auto &barline = mnx_measure.barline) {
+            set_barline(measure, *barline);
         }
-        if (mnx_measure.repeatStart()) {
+        if (mnx_measure.repeat_start) {
             measure->set_repeat_start(true);
         }
-        if (const std::optional<mnx::global::RepeatEnd> &rpt = mnx_measure.repeatEnd()) {
+        if (const auto &rpt = mnx_measure.repeat_end) {
             measure->set_repeat_end(true);
-            if (const std::optional<int> n_times = rpt->times()) {
-                measure->set_repeat_count(n_times.value());
+            if (const auto n_times = rpt->times) {
+                measure->set_repeat_count(*n_times);
             }
         }
-        if (const std::optional<mnx::global::Fine> &fine = mnx_measure.fine()) {
-            create_jump_or_marker(measure, fine->location().fraction(), MarkerType::FINE);
+        if (mnx_measure.fine) {
+            create_jump_or_marker(measure, MarkerType::FINE);
         }
-        if (const std::optional<mnx::global::Jump> &jump = mnx_measure.jump()) {
-            create_jump_or_marker(measure, jump->location().fraction(), to_muse_score_jump_type(jump->type()));
+        if (const auto &jump = mnx_measure.jump) {
+            create_jump_or_marker(measure, to_muse_score_jump_type(jump->type));
         }
-        if (const std::optional<mnx::global::Segno> &segno = mnx_measure.segno()) {
-            create_jump_or_marker(measure, segno->location().fraction(), MarkerType::SEGNO, segno->glyph());
+        if (const auto &segno = mnx_measure.segno) {
+            create_jump_or_marker(measure, MarkerType::SEGNO, segno->glyph);
         }
-        if (const std::optional<mnx::Array<mnx::global::Tempo>> &tempos = mnx_measure.tempos()) {
-            for (const auto &tempo : tempos.value()) {
+        if (const auto &tempos = mnx_measure.tempos) {
+            for (const auto &tempo : *tempos) {
                 create_tempo_mark(measure, tempo);
             }
         }
-        if (const std::optional<mnx::Fermata> &mnx_fermata = mnx_measure.fermata()) {
+        if (const auto &mnx_fermata = mnx_measure.fermata) {
             Segment *const segment = measure->get_segment_r(SegmentType::END_BAR_LINE, measure->ticks());
-            add_fermata(segment, mnx_fermata.value(), 0);
+            add_fermata(segment, *mnx_fermata, 0);
         }
 
         /// @todo MNX currently offers no way to exclude a measure from having
         /// a measure number.
-        int curr_display_num = mnx_measure.calcVisibleNumber();
+        int curr_display_num = mnx_measure.number.value_or(static_cast<int>(measure_index) + 1);
         if (curr_display_num != last_display_num + 1) {
             measure->set_measure_number_offset(curr_display_num - last_display_num - 1);
         }
         last_display_num = curr_display_num;
 
         score_->measures()->append(measure);
-        mnx_meas_to_tick_.emplace(mnx_measure.calcArrayIndex(), tick);
+        mnx_meas_to_tick_.emplace(measure_index, tick);
     }
 
     // pass 2 for items that require all measures to exist already
-    for (const mnx::global::Measure &mnx_measure : mnx_document().global().measures()) {
-        Measure *measure = mnx_measure_to_measure(mnx_measure.calcArrayIndex());
-        if (const std::optional<mnx::global::Ending> &ending = mnx_measure.ending()) {
-            create_volta(measure, ending.value());
+    for (size_t measure_index = 0; measure_index < global_measures.size(); ++measure_index) {
+        if (const auto &ending = global_measures[measure_index].ending) {
+            create_volta(mnx_measure_to_measure(measure_index), *ending);
         }
     }
 }
@@ -839,16 +839,15 @@ void MnxImporter::import_global_measures() {
 //   Import clefs for a part's staves within a measure.
 //---------------------------------------------------------
 
-void MnxImporter::create_clefs(const mnx::Part &mnx_part, const mnx::Array<mnx::part::PositionedClef> &mnx_clefs,
-                               engraving::Measure *measure) {
+void MnxImporter::create_clefs(size_t part_index, const std::vector<model::PositionedClef> &mnx_clefs, engraving::Measure *measure) {
     /// @todo honor the MNX clef glyph if MuseScore ever allows it.
-    for (const mnx::part::PositionedClef &mnx_clef : mnx_clefs) {
-        staff_idx_t staff_idx = mnx_part_staff_to_staff_idx(mnx_part, mnx_clef.staff());
+    for (const model::PositionedClef &mnx_clef : mnx_clefs) {
+        staff_idx_t staff_idx = mnx_part_staff_to_staff_idx(part_index, mnx_clef.staff_or_default());
         Fraction r_tick{};
-        if (const std::optional<mnx::RhythmicPosition> &position = mnx_clef.position()) {
-            r_tick = to_muse_score_fraction(position->fraction()).reduced();
+        if (const auto &position = mnx_clef.position) {
+            r_tick = to_muse_score_r_tick(*position).reduced();
         }
-        ClefType clef_type = to_muse_score_clef_type(mnx_clef.clef());
+        ClefType clef_type = to_muse_score_clef_type(mnx_clef.clef);
         if (clef_type != ClefType::INVALID) {
             const bool is_header = !measure->prev_measure() && r_tick.is_zero();
             Segment *clef_seg = measure->get_segment_r(is_header ? SegmentType::HEADER_CLEF : SegmentType::CLEF, r_tick);
@@ -859,7 +858,7 @@ void MnxImporter::create_clefs(const mnx::Part &mnx_part, const mnx::Array<mnx::
             clef->set_generated(false);
             clef_seg->add(clef);
         } else {
-            LOGE() << "Unsupported clef encountered at " << mnx_clef.pointer().to_string();
+            LOGE() << "Unsupported clef in part " << part_index << " at measure " << measure->measure_index();
         }
     }
 }
@@ -870,23 +869,17 @@ void MnxImporter::create_clefs(const mnx::Part &mnx_part, const mnx::Array<mnx::
 //---------------------------------------------------------
 
 void MnxImporter::import_mnx() {
-    // Malformed input makes the lookup helpers throw, and NotationMnxReader catches that to
-    // report a failed import. TransactionManager::transaction() runs endTransaction() only on
-    // the normal path, and Transaction is a non-owning handle with no destructor, so an
-    // exception escaping this callback would leave the score holding an open transaction.
-    // Keep it inside, let the transaction close, then rethrow for the reader to handle.
+    // The document was validated when it was loaded, so importing it reports no input errors.
+    // TransactionManager::transaction() runs endTransaction() only on the normal path, and
+    // Transaction is a non-owning handle with no destructor, so an unexpected exception (an
+    // engine bug or an allocation failure) escaping this callback would leave the score holding
+    // an open transaction. Keep it inside, let the transaction close, then rethrow.
     std::exception_ptr failure;
     score_->transaction_manager()->transaction(muse::TranslatableString::untranslatable("MNX import"), [&](Transaction &) {
         try {
-            if (!mnx_document_.hasEntityMap()) {
-                auto policies = mnx::EntityMapPolicies();
-                policies.ottavasRespectGraceTargets = false; // MuseScore can't target grace notes with ottavas
-                policies.ottavasRespectVoiceTargets = false; // MuseScore can't target voices with ottavas
-                mnx_document_.buildEntityMap(policies);
-            }
-            if (const auto &support = mnx_document_.mnx().support()) {
-                use_beams_ = support->useBeams();
-                use_accidental_display_ = support->useAccidentalDisplay();
+            if (const auto &support = root().mnx.support) {
+                use_beams_ = support->use_beams_or_default();
+                use_accidental_display_ = support->use_accidental_display_or_default();
             }
             import_settings();
             import_parts();

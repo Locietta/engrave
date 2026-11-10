@@ -15,6 +15,9 @@
 
 namespace mu::iex::mnxio::model {
 
+// The MNX schema version, the last segment of the schema $id.
+inline constexpr int schema_version = 27;
+
 enum struct AccidentalEnclosureSymbol {
     PARENTHESES,
     BRACKETS,

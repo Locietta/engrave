@@ -22,7 +22,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <set>
 #include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -63,17 +66,18 @@ namespace mu::iex::mnxio {
 //   export accidental details into accidentalDisplay
 //---------------------------------------------------------
 
-static void export_accidental_details(mnx::sequence::Note &mnx_note, const Note *note) {
+static void export_accidental_details(model::Note &mnx_note, const Note *note) {
     if (Accidental *acc = note->accidental()) {
         bool force = acc->role() == AccidentalRole::USER;
         const AccidentalBracket bracket = acc->bracket();
         if (force || bracket != AccidentalBracket::NONE) {
-            auto acc_disp = mnx_note.ensure_accidentalDisplay(acc->visible());
-            acc_disp.set_force(force);
+            auto &acc_disp = ensure(mnx_note.accidental_display);
+            acc_disp.show = acc->visible();
+            acc_disp.force = force;
             if (bracket != AccidentalBracket::NONE) {
-                auto mnx_acci_bracket = bracket == AccidentalBracket::PARENTHESIS ? mnx::AccidentalEnclosureSymbol::Parentheses :
-                                                                                    mnx::AccidentalEnclosureSymbol::Brackets;
-                auto enclosure = acc_disp.ensure_enclosure(mnx_acci_bracket);
+                acc_disp.enclosure = model::AccidentalEnclosure{.symbol = bracket == AccidentalBracket::PARENTHESIS ?
+                                                                              model::AccidentalEnclosureSymbol::PARENTHESES :
+                                                                              model::AccidentalEnclosureSymbol::BRACKETS};
             }
         }
     }
@@ -126,7 +130,7 @@ static int calc_written_diatonic_delta(const Note *note) {
 //   export lyrics on a chord/rest into mnxEvent
 //---------------------------------------------------------
 
-static void create_lyrics(mnx::sequence::Event &mnx_event, const ChordRest *cr, std::set<std::string> &lyric_line_ids) {
+static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, std::set<std::string> &lyric_line_ids) {
     IF_ASSERT_FAILED(cr) { return; }
 
     const auto lyrics = cr->lyrics();
@@ -134,14 +138,15 @@ static void create_lyrics(mnx::sequence::Event &mnx_event, const ChordRest *cr, 
         return;
     }
 
-    auto mnx_lyrics = mnx_event.ensure_lyrics();
-    auto mnx_lines = mnx_lyrics.ensure_lines();
+    auto &mnx_lines = ensure(ensure(mnx_event.lyrics).lines);
 
     for (const auto &lyric : lyrics) {
         const std::string line_id = std::to_string(lyric->verse() + 1);
         lyric_line_ids.insert(line_id);
-        auto mnx_line = mnx_lines.append(line_id, lyric->plain_text().to_std_string());
-        mnx_line.set_type(to_mnx_lyric_line_type(lyric->syllabic()));
+        model::EventLyricLine mnx_line;
+        mnx_line.text = lyric->plain_text().to_std_string();
+        set_unless_default(mnx_line.type, to_mnx_lyric_line_type(lyric->syllabic()), model::EventLyricLineType::WHOLE);
+        mnx_lines.emplace_back(line_id, std::move(mnx_line));
         /// @todo export styled text when supported by MNX.
         /// @todo export word extension span when supported by MNX.
     }
@@ -152,36 +157,40 @@ static void create_lyrics(mnx::sequence::Event &mnx_event, const ChordRest *cr, 
 //   export a single marking from an Articulation instance
 //---------------------------------------------------------
 
-static std::optional<mnx::sequence::EventMarkingBase> create_marking(const Articulation *a, mnx::sequence::EventMarkings mnx_markings) {
-    const SymId sym = a->sym_id();
+static void create_marking(const Articulation *a, model::EventMarkings &mnx_markings) {
+    const model::Orientation orient = to_mnx_orientation(a->anchor());
+    auto mark = [&](auto &marking) { set_unless_default(ensure(marking).orient, orient, model::Orientation::AUTO); };
+    auto bow = [&](model::UpDown direction) {
+        auto &bow_direction = ensure(mnx_markings.bow_direction);
+        bow_direction.direction = direction;
+        set_unless_default(bow_direction.orient, orient, model::Orientation::AUTO);
+    };
 
-    switch (sym) {
+    switch (a->sym_id()) {
         case SymId::ARTIC_ACCENT_ABOVE:
-        case SymId::ARTIC_ACCENT_BELOW: return mnx_markings.ensure_accent();
+        case SymId::ARTIC_ACCENT_BELOW: mark(mnx_markings.accent); break;
         case SymId::STRINGS_DOWN_BOW:
-        case SymId::STRINGS_DOWN_BOW_TURNED: return mnx_markings.ensure_bowDirection(mnx::MarkingUpDown::Down);
+        case SymId::STRINGS_DOWN_BOW_TURNED: bow(model::UpDown::DOWN); break;
         case SymId::STRINGS_UP_BOW:
-        case SymId::STRINGS_UP_BOW_TURNED: return mnx_markings.ensure_bowDirection(mnx::MarkingUpDown::Up);
+        case SymId::STRINGS_UP_BOW_TURNED: bow(model::UpDown::UP); break;
         case SymId::ARTIC_SOFT_ACCENT_ABOVE:
-        case SymId::ARTIC_SOFT_ACCENT_BELOW: return mnx_markings.ensure_softAccent();
+        case SymId::ARTIC_SOFT_ACCENT_BELOW: mark(mnx_markings.soft_accent); break;
         case SymId::ARTIC_STACCATO_ABOVE:
-        case SymId::ARTIC_STACCATO_BELOW: return mnx_markings.ensure_staccato();
+        case SymId::ARTIC_STACCATO_BELOW: mark(mnx_markings.staccato); break;
         case SymId::ARTIC_STACCATISSIMO_ABOVE:
-        case SymId::ARTIC_STACCATISSIMO_BELOW: return mnx_markings.ensure_staccatissimo();
+        case SymId::ARTIC_STACCATISSIMO_BELOW: mark(mnx_markings.staccatissimo); break;
         case SymId::ARTIC_STACCATISSIMO_STROKE_ABOVE:
-        case SymId::ARTIC_STACCATISSIMO_STROKE_BELOW: return mnx_markings.ensure_spiccato();
+        case SymId::ARTIC_STACCATISSIMO_STROKE_BELOW: mark(mnx_markings.spiccato); break;
         case SymId::ARTIC_STRESS_ABOVE:
-        case SymId::ARTIC_STRESS_BELOW: return mnx_markings.ensure_stress();
+        case SymId::ARTIC_STRESS_BELOW: mark(mnx_markings.stress); break;
         case SymId::ARTIC_UNSTRESS_ABOVE:
-        case SymId::ARTIC_UNSTRESS_BELOW: return mnx_markings.ensure_unstress();
+        case SymId::ARTIC_UNSTRESS_BELOW: mark(mnx_markings.unstress); break;
         case SymId::ARTIC_MARCATO_ABOVE:
-        case SymId::ARTIC_MARCATO_BELOW: return mnx_markings.ensure_strongAccent();
+        case SymId::ARTIC_MARCATO_BELOW: mark(mnx_markings.strong_accent); break;
         case SymId::ARTIC_TENUTO_ABOVE:
-        case SymId::ARTIC_TENUTO_BELOW: return mnx_markings.ensure_tenuto();
+        case SymId::ARTIC_TENUTO_BELOW: mark(mnx_markings.tenuto); break;
         default: break;
     }
-
-    return std::nullopt;
 }
 
 //---------------------------------------------------------
@@ -207,7 +216,7 @@ void static process_annotations(EventType &mnx_event, ChordRest *cr) {
             if (ann->is_fermata()) {
                 const Fermata *fermata = to_fermata(ann);
                 IF_ASSERT_FAILED(fermata) { continue; }
-                mnx_event.set_fermata(MnxExporter::mnx_fermata_from_fermata(fermata));
+                mnx_event.fermata = MnxExporter::mnx_fermata_from_fermata(fermata);
                 /// @note MNX currently can only store one barline fermata per measure stack.
                 /// To keep the loop clean for future expansion, this code deliberately
                 /// exports the last one found. We can revisit this if/when MNX provides
@@ -223,35 +232,30 @@ void static process_annotations(EventType &mnx_event, ChordRest *cr) {
 //   tremolo
 //---------------------------------------------------------
 
-void MnxExporter::create_markings(mnx::sequence::Event &mnx_event, ChordRest *cr) {
+void MnxExporter::create_markings(model::Event &mnx_event, ChordRest *cr) {
     IF_ASSERT_FAILED(cr) { return; }
 
     if (cr->is_chord()) {
         const Chord *chord = to_chord(cr);
         for (Articulation *a : chord->articulations()) {
             IF_ASSERT_FAILED(a) { continue; }
-            auto mnx_markings = mnx_event.ensure_markings();
-            if (auto marking = create_marking(a, mnx_markings)) {
-                marking->set_or_clear_orient(to_mnx_orientation(a->anchor()));
-            }
+            create_marking(a, ensure(mnx_event.markings));
         }
 
         if (const TremoloSingleChord *trem = chord->tremolo_single_chord()) {
             const int marks = int(trem->tremolo_type()) - int(TremoloType::R8) + 1;
             DO_ASSERT(marks > 0);
             if (marks > 0) {
-                auto mnx_markings = mnx_event.ensure_markings();
-                mnx_markings.ensure_tremolo(marks);
+                ensure(mnx_event.markings).tremolo = model::TremoloSingle{.marks = marks};
             }
         }
     }
 
     if (Breath *breath = cr->has_breath_mark()) {
-        auto mnx_markings = mnx_event.ensure_markings();
-        auto mnx_breath = mnx_markings.ensure_breath();
-        mnx_breath.set_or_clear_orient(to_mnx_orientation(breath->placement()));
+        auto &mnx_breath = ensure(ensure(mnx_event.markings).breath);
+        set_unless_default(mnx_breath.orient, to_mnx_orientation(breath->placement()), model::Orientation::AUTO);
         if (const auto breath_sym = to_mnx_breath_mark_sym(breath->sym_id())) {
-            mnx_breath.set_symbol(breath_sym.value());
+            mnx_breath.symbol = breath_sym.value();
         }
     }
 
@@ -312,7 +316,7 @@ static ChordRest *first_tuplet_chord_rest(const Tuplet *tuplet) {
 //   emits MNX ties for the given note
 //---------------------------------------------------------
 
-void MnxExporter::create_ties(mnx::sequence::NoteBase &mnx_note, Note *note) {
+void MnxExporter::create_ties(std::optional<std::vector<model::Tie>> &mnx_ties, Note *note) {
     IF_ASSERT_FAILED(note) { return; }
 
     auto append_tie = [&](Note *target_note, const Tie *dir_tie, bool is_cross_jump) {
@@ -321,36 +325,38 @@ void MnxExporter::create_ties(mnx::sequence::NoteBase &mnx_note, Note *note) {
             return;
         }
 
-        auto mnx_tie = mnx_note.ensure_ties().append();
-        mnx_tie.set_target(get_or_assign_eid(target_note).to_std_string());
+        model::Tie mnx_tie;
+        mnx_tie.target = model::Id(get_or_assign_eid(target_note).to_std_string());
         if (is_cross_jump) {
-            mnx_tie.set_targetType(mnx::TieTargetType::CrossJump);
+            mnx_tie.target_type = model::TieTargetType::CROSS_JUMP;
         } else {
             const Fraction expected_tick = note->tick() + note->chord()->ticks();
             if (target_note->tick() == expected_tick) {
                 if (target_note->track() == note->track()) {
-                    mnx_tie.set_targetType(mnx::TieTargetType::NextNote);
+                    mnx_tie.target_type = model::TieTargetType::NEXT_NOTE;
                 } else {
-                    mnx_tie.set_targetType(mnx::TieTargetType::CrossVoice);
+                    mnx_tie.target_type = model::TieTargetType::CROSS_VOICE;
                 }
             } else {
-                mnx_tie.set_targetType(mnx::TieTargetType::Arpeggio);
+                mnx_tie.target_type = model::TieTargetType::ARPEGGIO;
             }
         }
 
         if (dir_tie && dir_tie->slur_direction() != DirectionV::AUTO) {
-            mnx_tie.set_side(dir_tie->up() ? mnx::SlurTieSide::Up : mnx::SlurTieSide::Down);
+            mnx_tie.side = dir_tie->up() ? model::SlurSide::UP : model::SlurSide::DOWN;
         }
+        ensure(mnx_ties).push_back(std::move(mnx_tie));
     };
 
     Tie *tie_for = note->tie_for();
     if (tie_for && !tie_for->is_partial_tie()) {
         if (tie_for->is_laissez_vib()) {
-            auto mnx_tie = mnx_note.ensure_ties().append();
-            mnx_tie.set_lv(true);
+            model::Tie mnx_tie;
+            mnx_tie.lv = true;
             if (tie_for->slur_direction() != DirectionV::AUTO) {
-                mnx_tie.set_side(tie_for->up() ? mnx::SlurTieSide::Up : mnx::SlurTieSide::Down);
+                mnx_tie.side = tie_for->up() ? model::SlurSide::UP : model::SlurSide::DOWN;
             }
+            ensure(mnx_ties).push_back(std::move(mnx_tie));
             return;
         } else {
             append_tie(tie_for->end_note(), tie_for, false);
@@ -377,39 +383,39 @@ void MnxExporter::create_ties(mnx::sequence::NoteBase &mnx_note, Note *note) {
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::create_notes(mnx::sequence::Event &mnx_event, ChordRest *chord_rest) {
-    using MnxNote = mnx::sequence::Note;
-    using MnxKitNote = mnx::sequence::KitNote;
-
+bool MnxExporter::create_notes(model::Event &mnx_event, ChordRest *chord_rest) {
     IF_ASSERT_FAILED(chord_rest->is_chord()) { return false; }
 
-    auto append_kit_note = [&](mnx::Array<MnxKitNote> &mnx_kit_notes, Note *note) -> bool {
+    auto append_kit_note = [&](std::vector<model::KitNote> &mnx_kit_notes, Note *note) -> bool {
         const int pitch = note->pitch();
         if (!pitch_is_valid(pitch)) {
             LOGW() << "Skipping kit note with invalid MIDI pitch: " << pitch;
             return false;
         }
-        const std::string kit_id = "drum-midi-" + std::to_string(pitch);
-        auto mnx_kit_note = mnx_kit_notes.append(kit_id);
-        mnx_kit_note.set_id(get_or_assign_eid(note).to_std_string());
-        create_ties(mnx_kit_note, note);
+        model::KitNote mnx_kit_note;
+        mnx_kit_note.kit_component = model::Id("drum-midi-" + std::to_string(pitch));
+        mnx_kit_note.id = model::Id(get_or_assign_eid(note).to_std_string());
+        create_ties(mnx_kit_note.ties, note);
+        mnx_kit_notes.push_back(std::move(mnx_kit_note));
         return true;
     };
 
-    auto append_note = [&](mnx::Array<MnxNote> &mnx_notes, Note *note) -> bool {
+    auto append_note = [&](std::vector<model::Note> &mnx_notes, Note *note) -> bool {
         const auto pitch = to_mnx_pitch(note);
         if (!pitch) {
             LOGW() << "Skipping note with unsupported pitch.";
             return false;
         }
-        auto mnx_note = mnx_notes.append(*pitch);
-        mnx_note.set_id(get_or_assign_eid(note).to_std_string());
-        create_ties(mnx_note, note);
+        model::Note mnx_note;
+        mnx_note.pitch = *pitch;
+        mnx_note.id = model::Id(get_or_assign_eid(note).to_std_string());
+        create_ties(mnx_note.ties, note);
         export_accidental_details(mnx_note, note);
         const int delta = calc_written_diatonic_delta(note);
         if (delta != 0) {
-            mnx_note.ensure_written().set_diatonicDelta(delta);
+            mnx_note.written = model::Written{.diatonic_delta = delta};
         }
+        mnx_notes.push_back(std::move(mnx_note));
         return true;
     };
 
@@ -423,7 +429,7 @@ bool MnxExporter::create_notes(mnx::sequence::Event &mnx_event, ChordRest *chord
     const Staff *staff = chord->staff();
     const bool is_drumset = staff && staff->is_drum_staff(chord->tick());
     if (is_drumset) {
-        auto mnx_kit_notes = mnx_event.ensure_kitNotes();
+        auto &mnx_kit_notes = ensure(mnx_event.kit_notes);
         bool has_note = false;
         for (Note *note : chord_notes) {
             has_note = append_kit_note(mnx_kit_notes, note) || has_note;
@@ -435,7 +441,7 @@ bool MnxExporter::create_notes(mnx::sequence::Event &mnx_event, ChordRest *chord
         return true;
     }
 
-    auto mnx_notes = mnx_event.ensure_notes();
+    auto &mnx_notes = ensure(mnx_event.notes);
     bool has_note = false;
     for (Note *note : chord_notes) {
         has_note = append_note(mnx_notes, note) || has_note;
@@ -454,27 +460,32 @@ bool MnxExporter::create_notes(mnx::sequence::Event &mnx_event, ChordRest *chord
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::create_rest(mnx::sequence::Event &mnx_event, ChordRest *chord_rest) {
+// The staff position of a laid-out rest, if it has one.
+static std::optional<int> rest_staff_position(const Rest *rest) {
+    const Staff *staff = rest->staff();
+    if (!staff || !rest->ldata() || !rest->ldata()->is_set_pos()) {
+        LOGW() << "Skipping MNX rest staffPosition export; missing layout position or staff.";
+        return std::nullopt;
+    }
+    const double line_dist = staff->line_distance(rest->tick());
+    const double staff_step = line_dist * rest->spatium() * 0.5; // half-space
+    if (staff_step <= 0.0) {
+        LOGW() << "Skipping MNX rest staffPosition export; invalid staff step.";
+        return std::nullopt;
+    }
+    const int middle_line = staff->middle_line(rest->tick());
+    const double y = rest->pos().y();
+    const int line_index = static_cast<int>(std::lround(y / staff_step));
+    return middle_line - line_index;
+}
+
+bool MnxExporter::create_rest(model::Event &mnx_event, ChordRest *chord_rest) {
     IF_ASSERT_FAILED(chord_rest->is_rest()) { return false; }
-    auto mnx_rest = mnx_event.ensure_rest();
+    auto &mnx_rest = ensure(mnx_event.rest);
 
     if (export_rest_positions_) {
         if (Rest *rest = to_rest(chord_rest)) {
-            const Staff *staff = rest->staff();
-            if (staff && rest->ldata() && rest->ldata()->is_set_pos()) {
-                const double line_dist = staff->line_distance(rest->tick());
-                const double staff_step = line_dist * rest->spatium() * 0.5; // half-space
-                if (staff_step > 0.0) {
-                    const int middle_line = staff->middle_line(rest->tick());
-                    const double y = rest->pos().y();
-                    const int line_index = static_cast<int>(std::lround(y / staff_step));
-                    mnx_rest.set_staffPosition(middle_line - line_index);
-                } else {
-                    LOGW() << "Skipping MNX rest staffPosition export; invalid staff step.";
-                }
-            } else {
-                LOGW() << "Skipping MNX rest staffPosition export; missing layout position or staff.";
-            }
+            mnx_rest.staff_position = rest_staff_position(rest);
         }
     }
 
@@ -502,11 +513,11 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
     /// This work is deferred on the chance that it may become much simpler if
     /// MuseScore also implements beams across system breaks.
 
-    auto mnx_beams = ctx.mnx_measure.ensure_beams();
+    auto &mnx_beams = ensure(ctx.mnx_measure.beams);
 
     enum class BeamAction { BEGIN, CONTINUE, END, FORWARD_HOOK, BACKWARD_HOOK };
 
-    auto append_beam_level = [&](auto &&self, mnx::Array<mnx::part::Beam> &mnx_beam_array, const std::vector<ChordRest *> &beam_elements,
+    auto append_beam_level = [&](auto &&self, std::vector<model::Beam> &mnx_beam_array, const std::vector<ChordRest *> &beam_elements,
                                  size_t start_idx, size_t end_idx, int level) -> void {
         auto beam_action_for_level = [&](size_t idx) -> std::optional<BeamAction> {
             int prev_beams = -1;
@@ -563,14 +574,15 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
             return BeamAction::CONTINUE;
         };
 
+        // Beams are referred to by index: appending to the array moves its elements.
         struct BeamRange {
-            mnx::part::Beam beam;
+            size_t beam = 0;
             size_t start_idx = 0;
             size_t end_idx = 0;
         };
 
         std::optional<size_t> current_start;
-        std::optional<mnx::part::Beam> current_beam;
+        std::optional<size_t> current_beam;
         std::vector<BeamRange> ranges;
 
         for (size_t idx = start_idx; idx <= end_idx; ++idx) {
@@ -578,24 +590,24 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
             if (!action) {
                 continue;
             }
-            const std::string event_id = get_or_assign_eid(beam_elements[idx]).to_std_string();
+            const model::Id event_id(get_or_assign_eid(beam_elements[idx]).to_std_string());
 
             if (action == BeamAction::BEGIN) {
-                current_beam = mnx_beam_array.append();
+                current_beam = mnx_beam_array.size();
+                mnx_beam_array.emplace_back();
                 current_start = idx;
-                current_beam->events().push_back(event_id);
+                mnx_beam_array[*current_beam].events.push_back(event_id);
             } else if (action == BeamAction::CONTINUE) {
                 IF_ASSERT_FAILED(current_beam) { continue; }
-                current_beam->events().push_back(event_id);
+                mnx_beam_array[*current_beam].events.push_back(event_id);
             } else if (action == BeamAction::END) {
                 IF_ASSERT_FAILED(current_beam && current_start) { continue; }
-                current_beam->events().push_back(event_id);
+                mnx_beam_array[*current_beam].events.push_back(event_id);
                 ranges.push_back(BeamRange{current_beam.value(), current_start.value(), idx});
                 current_beam.reset();
                 current_start.reset();
             } else if (action == BeamAction::FORWARD_HOOK || action == BeamAction::BACKWARD_HOOK) {
-                auto hook_beam = mnx_beam_array.append();
-                hook_beam.events().push_back(event_id);
+                mnx_beam_array.emplace_back().events.push_back(event_id);
                 /// @note For now, we do not set leave hook direction auto, because the user cannot override it.
                 /// If we ever need to we can base it on BeamAction::ForwardHook & BeamAction::BackwardHook.
             }
@@ -612,8 +624,7 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
             if (!has_nested) {
                 continue;
             }
-            auto nested = range.beam.ensure_beams();
-            self(self, nested, beam_elements, range.start_idx, range.end_idx, level + 1);
+            self(self, ensure(mnx_beam_array[range.beam].beams), beam_elements, range.start_idx, range.end_idx, level + 1);
         }
     };
 
@@ -626,7 +637,8 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportContext &ctx, ChordRest *chord_rest) {
+template <class Content>
+bool MnxExporter::append_event(Content &content, ExportContext &ctx, ChordRest *chord_rest) {
     const TDuration duration = chord_rest->duration_type();
     IF_ASSERT_FAILED(duration.type() != DurationType::V_MEASURE) {
         LOGW() << "appendEvent received V_MEASURE duration; full-measure rests must be exported via sequence.fullMeasure.";
@@ -636,11 +648,13 @@ bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportCon
 
     if (is_rest && (!chord_rest->visible() || to_rest(chord_rest)->is_gap())) {
         /// @todo Revisit doing this for `!visible()` if MNX adds support for explicit rest visibility.
-        const Fraction gap_ticks = chord_rest->ticks();
-        const mnx::FractionValue gap_duration(static_cast<mnx::FractionValue::NumType>(gap_ticks.numerator()),
-                                              static_cast<mnx::FractionValue::NumType>(gap_ticks.denominator()));
-        content.appendSpace(gap_duration);
-        return true;
+        if constexpr (std::is_same_v<Content, std::vector<model::SequenceItem>>) {
+            content.emplace_back(model::Space{.duration = to_mnx_fraction(chord_rest->ticks())});
+            return true;
+        } else {
+            LOGW() << "Skipping a gap inside a grace note or tremolo, which MNX cannot hold.";
+            return false;
+        }
     }
 
     const auto note_value = to_mnx_note_value(duration);
@@ -648,15 +662,17 @@ bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportCon
         LOGW() << "Skipping ChordRest with unsupported MNX duration type: " << static_cast<int>(duration.type());
         return false;
     }
-    auto mnx_event = content.appendEvent(note_value->base, note_value->dots);
+    model::Event mnx_event;
+    mnx_event.duration = *note_value;
 
-    mnx_event.set_id(get_or_assign_eid(chord_rest).to_std_string());
+    const std::string event_id = get_or_assign_eid(chord_rest).to_std_string();
+    mnx_event.id = model::Id(event_id);
     create_lyrics(mnx_event, chord_rest, lyric_line_ids_);
     create_markings(mnx_event, chord_rest);
     if (chord_rest->staff_move() != 0) {
         const int cross_staff = ctx.mnx_part_staff + chord_rest->staff_move();
         if (cross_staff >= 1 && cross_staff <= static_cast<int>(ctx.part->nstaves())) {
-            mnx_event.set_staff(cross_staff);
+            mnx_event.staff = cross_staff;
         } else {
             LOGW() << "Skipping cross staff to staff not contained within part.";
         }
@@ -667,8 +683,7 @@ bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportCon
             stem_dir = to_chord(chord_rest)->stem_direction();
         }
         if (stem_dir != DirectionV::AUTO) {
-            using MnxDir = mnx::StemDirection;
-            mnx_event.set_stemDirection(stem_dir == DirectionV::UP ? MnxDir::Up : MnxDir::Down);
+            mnx_event.stem_direction = stem_dir == DirectionV::UP ? model::StemDirection::UP : model::StemDirection::DOWN;
         }
     }
     /// @note slurs are created in exportSpanners
@@ -676,12 +691,11 @@ bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportCon
     const bool success = is_rest ? create_rest(mnx_event, chord_rest) : create_notes(mnx_event, chord_rest);
 
     if (success) {
-        cr_to_mnx_event_.emplace(chord_rest, mnx_event.pointer());
+        content.emplace_back(std::move(mnx_event));
+        cr_to_mnx_event_.emplace(chord_rest, event_id);
         if (export_beams_) {
             create_beam(ctx, chord_rest);
         }
-    } else {
-        content.erase(content.size() - 1);
     }
 
     return success;
@@ -692,7 +706,7 @@ bool MnxExporter::append_event(mnx::sequence::SequenceContent content, ExportCon
 //   emit a grace container and recurse into its content
 //---------------------------------------------------------
 
-void MnxExporter::append_grace(mnx::sequence::SequenceContent content, ExportContext &ctx, GraceNotesGroup &grace_notes) {
+void MnxExporter::append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, GraceNotesGroup &grace_notes) {
     if (grace_notes.empty()) {
         return;
     }
@@ -706,8 +720,8 @@ void MnxExporter::append_grace(mnx::sequence::SequenceContent content, ExportCon
             ++end;
         }
 
-        auto mnx_grace = content.appendGrace();
-        mnx_grace.set_slash(slash);
+        model::Grace mnx_grace;
+        mnx_grace.slash = slash;
         /// @todo Grace note playback type has no obvious mapping from MuseScore. Revisit as appropriate.
 
         std::vector<ChordRest *> grace_chord_rests;
@@ -716,7 +730,8 @@ void MnxExporter::append_grace(mnx::sequence::SequenceContent content, ExportCon
             grace_chord_rests.push_back(grace_notes[i]);
         }
 
-        append_content(mnx_grace.content(), ctx, grace_chord_rests, ContentContext::GRACE);
+        append_content(mnx_grace.content, ctx, grace_chord_rests, ContentContext::GRACE);
+        content.emplace_back(std::move(mnx_grace));
         start = end;
     }
 }
@@ -744,8 +759,8 @@ const Tuplet *MnxExporter::find_top_tuplet(ChordRest *chord_rest, const ExportCo
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::append_tuplet(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chord_rests,
-                                  size_t idx, ChordRest *chord_rest, const Tuplet *tuplet) {
+size_t MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                  const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest, const Tuplet *tuplet) {
     IF_ASSERT_FAILED(tuplet) { return idx; }
 
     std::vector<ChordRest *> tuplet_chord_rests;
@@ -777,16 +792,17 @@ size_t MnxExporter::append_tuplet(mnx::sequence::SequenceContent content, Export
         }
     }
 
-    auto inner = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.numerator()), *base_note_value);
-    auto outer = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.denominator()), *base_note_value);
-    auto mnx_tuplet = content.appendTuplet(inner, outer);
-    mnx_tuplet.set_or_clear_showNumber(to_mnx_tuplet_number_type(tuplet->number_type()));
-    mnx_tuplet.set_or_clear_bracket(to_mnx_tuplet_bracket_type(tuplet->bracket_type()));
+    model::Tuplet mnx_tuplet;
+    mnx_tuplet.inner = model::NoteValueQuantity{.duration = *base_note_value, .multiple = ratio.numerator()};
+    mnx_tuplet.outer = model::NoteValueQuantity{.duration = *base_note_value, .multiple = ratio.denominator()};
+    set_unless_default(mnx_tuplet.show_number, to_mnx_tuplet_number_type(tuplet->number_type()), model::TupletDisplaySetting::INNER);
+    set_unless_default(mnx_tuplet.bracket, to_mnx_tuplet_bracket_type(tuplet->bracket_type()), model::YesNoAuto::AUTO);
     /// @todo add `showValue` if MuseScore supports showing note values on tuplet relation text.
 
     ctx.tuplet_stack.push_back(tuplet);
-    append_content(mnx_tuplet.content(), ctx, tuplet_chord_rests, ContentContext::TUPLET);
+    append_content(mnx_tuplet.content, ctx, tuplet_chord_rests, ContentContext::TUPLET);
     ctx.tuplet_stack.pop_back();
+    content.emplace_back(std::move(mnx_tuplet));
     const ChordRest *last_tuplet_cr = tuplet_chord_rests.back();
     if (last_tuplet_cr && last_tuplet_cr->is_chord()) {
         if (ctx.grace_after_emitted.insert(last_tuplet_cr).second) {
@@ -802,8 +818,8 @@ size_t MnxExporter::append_tuplet(mnx::sequence::SequenceContent content, Export
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::append_tremolo(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chord_rests,
-                                   size_t idx, ChordRest *chord_rest) {
+size_t MnxExporter::append_tremolo(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                   const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest) {
     Chord *chord = chord_rest->is_chord() ? to_chord(chord_rest) : nullptr;
     const TremoloTwoChord *tremolo = chord ? chord->tremolo_two_chord() : nullptr;
     IF_ASSERT_FAILED(chord && tremolo) {
@@ -853,15 +869,17 @@ size_t MnxExporter::append_tremolo(mnx::sequence::SequenceContent content, Expor
         return idx;
     }
 
-    auto outer = mnx::NoteValueQuantity::make(2, *tremolo_note_value);
-    auto mnx_tremolo = content.appendMultiNoteTremolo(marks, outer);
+    model::MultiNoteTremolo mnx_tremolo;
+    mnx_tremolo.marks = marks;
+    mnx_tremolo.outer = model::NoteValueQuantity{.duration = *tremolo_note_value, .multiple = 2};
     /// @todo Perhaps export tremolo individual duration if MNX provides clarity about it.
 
     std::vector<ChordRest *> tremolo_chord_rests{chord_rest, chord2};
     if (ctx.grace_before_emitted.insert(chord_rest).second) {
         append_grace(content, ctx, chord->grace_notes_before());
     }
-    append_content(mnx_tremolo.content(), ctx, tremolo_chord_rests, ContentContext::TREMOLO);
+    append_content(mnx_tremolo.content, ctx, tremolo_chord_rests, ContentContext::TREMOLO);
+    content.emplace_back(std::move(mnx_tremolo));
     if (ctx.grace_after_emitted.insert(chord2).second) {
         append_grace(content, ctx, chord2->grace_notes_after());
     }
@@ -873,8 +891,12 @@ size_t MnxExporter::append_tremolo(mnx::sequence::SequenceContent content, Expor
 //   walk chord/rest events into MNX content
 //---------------------------------------------------------
 
-void MnxExporter::append_content(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chord_rests,
+template <class Content>
+void MnxExporter::append_content(Content &content, ExportContext &ctx, const std::vector<ChordRest *> &chord_rests,
                                  ContentContext context) {
+    // Grace notes and tremolos hold events only; tuplets, tremolos and grace notes go in sequence
+    // and tuplet content.
+    constexpr bool full_content = std::is_same_v<Content, std::vector<model::SequenceItem>>;
     for (size_t idx = 0; idx < chord_rests.size(); ++idx) {
         ChordRest *chord_rest = chord_rests[idx];
         IF_ASSERT_FAILED(chord_rest) {
@@ -891,48 +913,54 @@ void MnxExporter::append_content(mnx::sequence::SequenceContent content, ExportC
 
         const bool in_tremolo = context == ContentContext::TREMOLO;
 
-        if (!in_grace) {
-            if (chord_rest->tuplet()) {
-                const Tuplet *top_most = find_top_tuplet(chord_rest, ctx);
-                if (top_most && first_tuplet_chord_rest(top_most) == chord_rest) {
-                    const size_t last_idx = append_tuplet(content, ctx, chord_rests, idx, chord_rest, top_most);
-                    if (last_idx >= idx) {
-                        idx = last_idx;
-                        continue;
-                    }
-                    IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTuplet."; }
-                }
-            }
-            if (chord_rest->is_chord() && to_chord(chord_rest)->tremolo_two_chord()) {
-                if (!in_tremolo) {
-                    const Chord *chord = to_chord(chord_rest);
-                    const TremoloTwoChord *tremolo = chord->tremolo_two_chord();
-                    if (tremolo && tremolo->chord1() == chord_rest) {
-                        const size_t last_idx = append_tremolo(content, ctx, chord_rests, idx, chord_rest);
+        if constexpr (full_content) {
+            if (!in_grace) {
+                if (chord_rest->tuplet()) {
+                    const Tuplet *top_most = find_top_tuplet(chord_rest, ctx);
+                    if (top_most && first_tuplet_chord_rest(top_most) == chord_rest) {
+                        const size_t last_idx = append_tuplet(content, ctx, chord_rests, idx, chord_rest, top_most);
                         if (last_idx >= idx) {
                             idx = last_idx;
                             continue;
                         }
-                        IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTremolo."; }
+                        IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTuplet."; }
+                    }
+                }
+                if (chord_rest->is_chord() && to_chord(chord_rest)->tremolo_two_chord()) {
+                    if (!in_tremolo) {
+                        const Chord *chord = to_chord(chord_rest);
+                        const TremoloTwoChord *tremolo = chord->tremolo_two_chord();
+                        if (tremolo && tremolo->chord1() == chord_rest) {
+                            const size_t last_idx = append_tremolo(content, ctx, chord_rests, idx, chord_rest);
+                            if (last_idx >= idx) {
+                                idx = last_idx;
+                                continue;
+                            }
+                            IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTremolo."; }
+                        }
                     }
                 }
             }
-        }
 
-        // Tremolos manage their own grace content. Grace notes cannot have grace notes.
-        // Tuplet boundaries are handled via graceBeforeEmitted/graceAfterEmitted in appendTuplet.
-        if (!in_tremolo && !in_grace && chord_rest->is_chord()) {
-            if (ctx.grace_before_emitted.insert(chord_rest).second) {
-                append_grace(content, ctx, to_chord(chord_rest)->grace_notes_before());
+            // Tremolos manage their own grace content. Grace notes cannot have grace notes.
+            // Tuplet boundaries are handled via graceBeforeEmitted/graceAfterEmitted in appendTuplet.
+            if (!in_tremolo && !in_grace && chord_rest->is_chord()) {
+                if (ctx.grace_before_emitted.insert(chord_rest).second) {
+                    append_grace(content, ctx, to_chord(chord_rest)->grace_notes_before());
+                }
             }
         }
 
         const bool event_appended = append_event(content, ctx, chord_rest);
 
-        if (event_appended && !in_tremolo && !in_grace && chord_rest->is_chord()) {
-            if (ctx.grace_after_emitted.insert(chord_rest).second) {
-                append_grace(content, ctx, to_chord(chord_rest)->grace_notes_after());
+        if constexpr (full_content) {
+            if (event_appended && !in_tremolo && !in_grace && chord_rest->is_chord()) {
+                if (ctx.grace_after_emitted.insert(chord_rest).second) {
+                    append_grace(content, ctx, to_chord(chord_rest)->grace_notes_after());
+                }
             }
+        } else {
+            std::ignore = event_appended;
         }
     }
 }
@@ -941,10 +969,10 @@ void MnxExporter::append_content(mnx::sequence::SequenceContent content, ExportC
 //   createSequences
 //---------------------------------------------------------
 
-void MnxExporter::create_sequences(const Part *part, const Measure *measure, mnx::part::Measure &mnx_measure) {
+void MnxExporter::create_sequences(const Part *part, const Measure *measure, model::PartMeasure &mnx_measure) {
     const size_t staves = part->nstaves();
     const track_idx_t part_start_track = part->track_range().start_track;
-    auto mnx_sequences = mnx_measure.sequences();
+    auto &mnx_sequences = mnx_measure.sequences;
 
     for (size_t staff_idx = 0; staff_idx < staves; ++staff_idx) {
         for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
@@ -963,11 +991,11 @@ void MnxExporter::create_sequences(const Part *part, const Measure *measure, mnx
                 continue;
             }
 
-            auto mnx_sequence = mnx_sequences.append();
+            auto &mnx_sequence = mnx_sequences.emplace_back();
             if (staves > 1) {
-                mnx_sequence.set_staff(static_cast<int>(staff_idx + 1));
+                mnx_sequence.staff = static_cast<int>(staff_idx + 1);
             }
-            mnx_sequence.set_voice(make_mnx_voice_id_from_track(mnx_sequence.staff(), cur_track_idx));
+            mnx_sequence.voice = make_mnx_voice_id_from_track(mnx_sequence.staff_or_default(), cur_track_idx);
 
             if (chord_rests.size() == 1) {
                 ChordRest *only_cr = chord_rests.front();
@@ -975,32 +1003,23 @@ void MnxExporter::create_sequences(const Part *part, const Measure *measure, mnx
                     Rest *rest = to_rest(only_cr);
                     if (rest->duration_type().is_measure()) {
                         if (rest->visible() && !rest->is_gap()) {
-                            auto full_measure = mnx_sequence.ensure_fullMeasure();
-                            if (export_rest_positions_ && rest->staff() && rest->ldata() && rest->ldata()->is_set_pos()) {
-                                const double line_dist = rest->staff()->line_distance(rest->tick());
-                                const double staff_step = line_dist * rest->spatium() * 0.5; // half-space
-                                if (staff_step > 0.0) {
-                                    const int middle_line = rest->staff()->middle_line(rest->tick());
-                                    const double y = rest->pos().y();
-                                    const int line_index = static_cast<int>(std::lround(y / staff_step));
-                                    full_measure.set_staffPosition(middle_line - line_index);
-                                } else {
-                                    LOGW() << "Skipping MNX fullMeasure staffPosition export; invalid staff step.";
-                                }
+                            auto &full_measure = ensure(mnx_sequence.full_measure);
+                            if (export_rest_positions_) {
+                                full_measure.staff_position = rest_staff_position(rest);
                             }
                             process_annotations(full_measure, rest);
                         } else {
                             /// @todo If MNX adds explicit rest visibility, export hidden (non-gap) full-measure rests; keep omitting gap rests.
                             // Hidden/gap measure rests should not generate a sequence.
-                            mnx_sequences.erase(mnx_sequences.size() - 1);
+                            mnx_sequences.pop_back();
                         }
                         continue;
                     }
                 }
             }
 
-            ExportContext ctx(part, measure, mnx_measure, static_cast<staff_idx_t>(staff_idx), voice, mnx_sequence.staff());
-            append_content(mnx_sequence.content(), ctx, chord_rests, ContentContext::SEQUENCE);
+            ExportContext ctx(part, measure, mnx_measure, static_cast<staff_idx_t>(staff_idx), voice, mnx_sequence.staff_or_default());
+            append_content(mnx_sequence.content, ctx, chord_rests, ContentContext::SEQUENCE);
         }
     }
 
@@ -1008,10 +1027,11 @@ void MnxExporter::create_sequences(const Part *part, const Measure *measure, mnx
     // Keep a solitary full-measure sequence only when the full measure rest
     // carries additional information, such as a staff position or fermata.
     if (mnx_sequences.size() == 1) {
-        auto only_sequence = mnx_sequences.at(0);
-        const auto full_measure = only_sequence.fullMeasure();
-        if (full_measure && only_sequence.content().empty() && full_measure->empty()) {
-            mnx_sequences.erase(0);
+        const auto &only_sequence = mnx_sequences.front();
+        const auto &full_measure = only_sequence.full_measure;
+        if (full_measure && only_sequence.content.empty() && !full_measure->id && !full_measure->fermata && !full_measure->staff_position &&
+            !full_measure->visual_duration) {
+            mnx_sequences.clear();
         }
     }
 }

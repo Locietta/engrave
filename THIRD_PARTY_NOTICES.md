@@ -136,9 +136,8 @@ build dependencies are explicitly marked as such.
 | **dtl** | `src/engraving/thirdparty/dtl/` | Tatsuhiko Kubo (https://github.com/cubicdaiya/dtl) | 3-Clause BSD License |
 | **IntervalTree** | `src/engraving/thirdparty/intervaltree/` | Erik Garrison (https://github.com/ekg/intervaltree) | MIT License |
 | **BeatRoot** | `src/importexport/midi/thirdparty/beatroot/` | Simon Dixon & Chris Cannam, Queen Mary Univ. of London | GNU General Public License v2.0 or later (`GPL-2.0-or-later`) |
-| **mnxdom** | `src/importexport/mnx/thirdparty/mnxdom/` | Robert Patterson (https://github.com/rpatters1/mnxdom) | MIT License |
+| **mnxdom (adapted)** | `src/importexport/mnx/thirdparty/music_theory/`, parts of `src/importexport/mnx/model/` | Robert Patterson (https://github.com/rpatters1/mnxdom) | MIT License |
 | **W3C MNX schema** | `src/importexport/mnx/model/mnx-schema.json` | W3C Music Notation Community Group (https://github.com/w3c-cg/mnx) | W3C Software and Document License |
-| **JSON schema validator** | `src/importexport/mnx/thirdparty/json-schema-validator/` | Patrick Boettcher (https://github.com/pboettch/json-schema-validator) | MIT License |
 
 ### Component Details and Notices
 
@@ -173,19 +172,15 @@ build dependencies are explicitly marked as such.
 - **License**: GNU General Public License version 2 or later (`GPL-2.0-or-later`), located at `src/importexport/midi/thirdparty/beatroot/COPYING`.
 - **Citation Request**: If used for public, commercial, or academic purposes, the authors request citation and attribution (see `src/importexport/midi/thirdparty/beatroot/README.txt`).
 
-#### mnxdom (`src/importexport/mnx/thirdparty/mnxdom/`)
+#### mnxdom (adapted) (`src/importexport/mnx/thirdparty/music_theory/`, `src/importexport/mnx/model/`)
 - **Author**: Copyright (C) 2025 Robert Patterson.
-- **Version**: commit `45bf46221c00411e968c851ff9a1be4e202af5c2` (3.1.0), ported from nlohmann::json to glaze (see `src/importexport/mnx/thirdparty/README.md`).
-- **License**: MIT License, located at `src/importexport/mnx/thirdparty/mnxdom/LICENSE`.
+- **Version**: commit `45bf46221c00411e968c851ff9a1be4e202af5c2` (3.1.0).
+- **Contents**: `music_theory.hpp` unchanged; the semantic rules, entity mapping, sequence walk and layout helpers of the engine's MNX model (`index.cpp`, `walk.cpp`, `layout.cpp`, `music.cpp`) are adapted from mnxdom's sources.
+- **License**: MIT License; the notice is at the top of `src/importexport/mnx/thirdparty/music_theory/music_theory.hpp`.
 
 #### W3C MNX schema (`src/importexport/mnx/model/mnx-schema.json`)
-- **Origin**: W3C MNX commit `46fbe9393067221ee83ef08de209cb3c4edf0d8d`, as recorded by mnxdom.
+- **Origin**: W3C MNX commit `46fbe9393067221ee83ef08de209cb3c4edf0d8d`, as recorded by mnxdom; `tools/mnx_codegen.py` generates the engine's MNX model from it.
 - **License**: W3C Software and Document License.
-
-#### JSON schema validator (`src/importexport/mnx/thirdparty/json-schema-validator/`)
-- **Author**: Copyright (C) 2016-2019 Patrick Boettcher.
-- **Version**: commit `40af3ec39670e768fc3f01f935140af311d71024`, ported from nlohmann::json to glaze (see `src/importexport/mnx/thirdparty/README.md`).
-- **License**: MIT License, located at `src/importexport/mnx/thirdparty/json-schema-validator/LICENSE`.
 
 ---
 
@@ -206,7 +201,7 @@ The standalone `xmake` build compiles the following third-party dependencies fro
 | **utfcpp** | 4.1.1 | Boost Software License 1.0 | UTF-8 conversion routines |
 | **picojson** | commit 111c9be | 2-Clause BSD License | JSON parsing for audio settings and styles |
 | **zlib** (conda-forge, Pixi) | 1.3.2 | zlib License | Compression for MSCZ and MXL zip archives |
-| **glaze** | 9.1.0 | MIT License | JSON DOM and parsing for the engine's metadata, semantic dumps, positions, sniffing and MNX |
+| **glaze** | 9.1.0 | MIT License | JSON DOM and parsing for the engine's metadata, semantic dumps, positions and sniffing, and reading and writing MNX |
 | **proxy** (ngcpp/proxy) | 4.1.0 | MIT License | Type-erased audio encoder seam |
 | **amc** | 2.8.1 | MIT License | Small-buffer vectors in the playback store |
 | **unordered_dense** | 5.3.3 | MIT License | Hash maps in the playback store |

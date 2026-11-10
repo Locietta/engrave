@@ -232,6 +232,16 @@ private:
             index_.time_from[m] = time;
             index_.key_from[m] = key;
             if (measure.number && *measure.number < 0) error(at(pointer, "number"), "A measure number must not be negative.");
+            for (std::size_t i = 0; i < items(measure.tempos).size(); ++i)
+                if (const auto &location = (*measure.tempos)[i].location)
+                    check_position(*location, at(at(pointer, "tempos", i), "location"));
+            if (measure.fine) check_position(measure.fine->location, at(pointer, "fine/location"));
+            if (measure.jump) check_position(measure.jump->location, at(pointer, "jump/location"));
+            if (measure.segno) check_position(measure.segno->location, at(pointer, "segno/location"));
+            if (measure.ending &&
+                (measure.ending->duration < 1 || m + static_cast<std::size_t>(measure.ending->duration) > measures.size()))
+                error(at(pointer, "ending/duration"), std::format("An ending of {} measures does not fit in the remaining {} measures.",
+                                                                  measure.ending->duration, measures.size() - m));
         }
     }
 

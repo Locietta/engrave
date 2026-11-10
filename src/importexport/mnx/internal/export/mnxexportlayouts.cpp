@@ -31,6 +31,7 @@
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "mnxexporter.h"
+#include "model/layout.h"
 
 using namespace mu::engraving;
 
@@ -198,7 +199,7 @@ static void build_group_nodes(const std::vector<LayoutGroupSpan> &groups, std::v
 //   appendLayoutStaff
 //---------------------------------------------------------
 
-static void append_layout_staff(LayoutBuildContext &ctx, mnx::layout::LayoutContent content, size_t staff_idx) {
+static void append_layout_staff(LayoutBuildContext &ctx, std::vector<model::SystemLayoutItem> &content, size_t staff_idx) {
     Staff *staff = ctx.staves->at(staff_idx);
     if (!staff) {
         LOGW() << "Skipping layout staff " << staff_idx << " with null staff.";
@@ -213,10 +214,9 @@ static void append_layout_staff(LayoutBuildContext &ctx, mnx::layout::LayoutCont
     }
     const auto [part_index, staff_num] = it->second;
     std::string part_id;
-    const mnx::Document &document = ctx.exporter->mnx_document();
-    if (part_index < document.parts().size()) {
-        const auto mnx_part = document.parts()[part_index];
-        if (const auto id = mnx_part.id()) {
+    const model::Root &document = ctx.exporter->document();
+    if (part_index < document.parts.size()) {
+        if (const auto &id = document.parts[part_index].id) {
             part_id = *id;
         }
     }
@@ -230,9 +230,9 @@ static void append_layout_staff(LayoutBuildContext &ctx, mnx::layout::LayoutCont
         LOGW() << "Skipping layout staff " << staff_idx << " with no part id.";
         return;
     }
-    auto mnx_staff = content.appendStaff();
-    auto source = mnx_staff.sources().append(part_id);
-    source.set_staff(staff_num);
+    model::Staff mnx_staff;
+    mnx_staff.sources.push_back(model::StaffSource{.part = model::Id(part_id), .staff = staff_num});
+    content.emplace_back(std::move(mnx_staff));
 }
 
 //---------------------------------------------------------
@@ -273,9 +273,9 @@ static bool is_single_part_group(const LayoutBuildContext &ctx, const LayoutGrou
 //   calcGroupBarlineOverride
 //---------------------------------------------------------
 
-static mnx::StaffGroupBarlineOverride calc_group_barline_override(const LayoutBuildContext &ctx, const LayoutGroupSpan &span) {
+static model::BarlineOverride calc_group_barline_override(const LayoutBuildContext &ctx, const LayoutGroupSpan &span) {
     if (span.end <= span.start || span.end >= ctx.staff_count) {
-        return mnx::StaffGroupBarlineOverride::None;
+        return model::BarlineOverride::NONE;
     }
 
     bool all_connected = true;
@@ -293,19 +293,19 @@ static mnx::StaffGroupBarlineOverride calc_group_barline_override(const LayoutBu
     }
 
     if (!all_connected) {
-        return mnx::StaffGroupBarlineOverride::None;
+        return model::BarlineOverride::NONE;
     }
     if (all_mensurstrich) {
-        return mnx::StaffGroupBarlineOverride::Mensurstrich;
+        return model::BarlineOverride::MENSURSTRICH;
     }
-    return mnx::StaffGroupBarlineOverride::Unified;
+    return model::BarlineOverride::UNIFIED;
 }
 
 //---------------------------------------------------------
 //   buildContent
 //---------------------------------------------------------
 
-static void build_content(LayoutBuildContext &ctx, mnx::layout::LayoutContent content, size_t start, size_t end,
+static void build_content(LayoutBuildContext &ctx, std::vector<model::SystemLayoutItem> &content, size_t start, size_t end,
                           const std::vector<size_t> &children) {
     size_t staff_idx = start;
     size_t child_pos = 0;
@@ -316,24 +316,23 @@ static void build_content(LayoutBuildContext &ctx, mnx::layout::LayoutContent co
         }
         if (child_pos < children.size() && nodes[children[child_pos]].span.start == staff_idx) {
             const LayoutGroupNode &node = nodes[children[child_pos]];
-            auto mnx_group = content.appendGroup();
+            model::StaffGroup mnx_group;
+            model::StaffGroupBarlineStyle style = model::StaffGroupBarlineStyle::INDIVIDUAL;
             switch (calc_group_barline_override(ctx, node.span)) {
-                case mnx::StaffGroupBarlineOverride::None:
-                    mnx_group.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Individual);
+                case model::BarlineOverride::NONE: style = model::StaffGroupBarlineStyle::INDIVIDUAL; break;
+                case model::BarlineOverride::UNIFIED:
+                    style = is_single_part_group(ctx, node.span) ? model::StaffGroupBarlineStyle::INSTRUMENT :
+                                                                   model::StaffGroupBarlineStyle::UNIFIED;
                     break;
-                case mnx::StaffGroupBarlineOverride::Unified:
-                    mnx_group.set_or_clear_barlineStyle(is_single_part_group(ctx, node.span) ? mnx::StaffGroupBarlineStyle::Instrument :
-                                                                                               mnx::StaffGroupBarlineStyle::Unified);
-                    break;
-                case mnx::StaffGroupBarlineOverride::Mensurstrich:
-                    mnx_group.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Mensurstrich);
-                    break;
+                case model::BarlineOverride::MENSURSTRICH: style = model::StaffGroupBarlineStyle::MENSURSTRICH; break;
             }
-            const mnx::LayoutSymbol symbol = to_mnx_layout_symbol(node.span.type);
-            if (symbol != mnx::LayoutSymbol::NoSymbol) {
-                mnx_group.set_symbol(symbol);
+            set_unless_default(mnx_group.barline_style, style, model::StaffGroupBarlineStyle::INSTRUMENT);
+            const model::StaffSymbol symbol = to_mnx_layout_symbol(node.span.type);
+            if (symbol != model::StaffSymbol::NO_SYMBOL) {
+                mnx_group.symbol = symbol;
             }
-            build_content(ctx, mnx_group.content(), node.span.start, node.span.end, node.children);
+            build_content(ctx, mnx_group.content, node.span.start, node.span.end, node.children);
+            content.emplace_back(std::move(mnx_group));
             staff_idx = node.span.end + 1;
             ++child_pos;
         } else {
@@ -348,9 +347,9 @@ static void build_content(LayoutBuildContext &ctx, mnx::layout::LayoutContent co
 //---------------------------------------------------------
 
 void MnxExporter::create_layout(const std::vector<Staff *> &staves, const std::string &layout_id) {
-    auto mnx_layout = mnx_document_.ensure_layouts().append();
+    auto &mnx_layout = ensure(root_.layouts).emplace_back();
     if (!layout_id.empty()) {
-        mnx_layout.set_id(layout_id);
+        mnx_layout.id = model::Id(layout_id);
     }
 
     const size_t staff_count = staves.size();
@@ -370,6 +369,6 @@ void MnxExporter::create_layout(const std::vector<Staff *> &staves, const std::s
     ctx.staff_count = staff_count;
     ctx.nodes = &nodes;
 
-    build_content(ctx, mnx_layout.content(), 0, staff_count - 1, root_children);
+    build_content(ctx, mnx_layout.content, 0, staff_count - 1, root_children);
 }
 } // namespace mu::iex::mnxio

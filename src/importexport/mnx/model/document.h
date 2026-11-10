@@ -6,7 +6,9 @@
 #include <expected>
 #include <string>
 #include <string_view>
+#include <vector>
 
+#include "index.h"
 #include "mnx_model.h"
 
 namespace mu::iex::mnxio::model {
@@ -24,5 +26,22 @@ std::expected<Root, ReadError> read_document(std::string_view text);
 
 // Writes a document as compact JSON, omitting absent optional members.
 std::string write_document(const Root &root);
+
+// A document that passed reading and indexing, with its index and the warnings found. Its
+// index points into `root`: move a Document, but do not copy it or change `root`.
+struct Document {
+    Root root;
+    Index index;
+    std::vector<Diagnostic> warnings;
+};
+
+// Why a text could not be loaded: a read error, or the semantic errors build_index found,
+// one per line as "<pointer>: <message>".
+struct LoadError {
+    std::string message;
+};
+
+// Reads and indexes an MNX document.
+std::expected<Document, LoadError> load_document(std::string_view text, const IndexOptions &options = {});
 
 } // namespace mu::iex::mnxio::model

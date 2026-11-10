@@ -60,10 +60,7 @@ are no longer vendored in this directory.
 
 - File format: `.json`
 - Origin: MNX Working Group (W3)
-- Source in tests:
-  - Loaded at runtime via `MNX_W3C_EXAMPLES_PATH` exported by the `mnxdom` CMake target.
-- Maintenance:
-  - Update by refreshing the fetched W3C source used by `mnxdom`.
+- The engine tests do not use them; the exporter tests start from `mscx_reference_examples/`.
 
 ### `mscx_reference_examples/`
 Reference MuseScore files corresponding to the official MNX W3 examples.
@@ -74,14 +71,12 @@ Reference MuseScore files corresponding to the official MNX W3 examples.
   - Enable visual and behavioral comparison between imported MNX content and
     known-good MuseScore scores.
 - Maintenance:
-  - These files are expected to be refreshed alongside updates to the W3C examples loaded via `MNX_W3C_EXAMPLES_PATH`.
   - Coverage may be partial and is expected to grow over time.
 
 ## Update Policy
 
 - Custom `.mnx` test cases evolve alongside project development.
-- The fetched W3C examples used by `mnxdom` should be updated when the MNX schema or official examples change.
-- `mscx_reference_examples/` should be refreshed alongside those W3C example updates.
+- `mscx_reference_examples/` should be refreshed when the official MNX examples change.
 - `project_examples/` should be refreshed when schema changes require regenerating project MNX/MSCX pairs.
 - `project_sources/` are retained to ensure reproducibility of MNX files used for project tests.
 
