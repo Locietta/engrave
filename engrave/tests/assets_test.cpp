@@ -8,7 +8,8 @@
 #include <thread>
 
 #include <ft2build.h>
-#include <nlohmann/json.hpp>
+
+#include "engrave/src/score/json.h"
 #include FT_FREETYPE_H
 
 #include "draw/internal/ifontsengine.h"
@@ -167,20 +168,20 @@ int main(int argc, char **argv) {
         expect(thread_rejected && engine_thread_rejected, "Font service accepted wrong thread");
         const auto active = assets.fonts();
         expect(active.back().content_hash == info.content_hash, "Font fingerprint changed");
-        nlohmann::json result = {{"status", "passed"},
-                                 {"family", family},
-                                 {"id", info.id},
-                                 {"contentHash", info.content_hash},
-                                 {"cachedPath", info.path},
-                                 {"before", before},
-                                 {"after", after},
-                                 {"bold", info.bold},
-                                 {"boldOnlyFamily", bold_only_family},
-                                 {"boldAdvance", bold_advance},
-                                 {"sourceBytes", bytes.size()},
-                                 {"immutableCopy", true},
-                                 {"caseInsensitive", true},
-                                 {"wrongThreadRejected", true}};
+        music::SortedJson result = {{"status", "passed"},
+                                    {"family", family},
+                                    {"id", info.id},
+                                    {"contentHash", info.content_hash},
+                                    {"cachedPath", info.path},
+                                    {"before", before},
+                                    {"after", after},
+                                    {"bold", info.bold},
+                                    {"boldOnlyFamily", bold_only_family},
+                                    {"boldAdvance", bold_advance},
+                                    {"sourceBytes", bytes.size()},
+                                    {"immutableCopy", true},
+                                    {"caseInsensitive", true},
+                                    {"wrongThreadRejected", true}};
         if (argc == 5) {
             const auto sound_bytes = read(std::filesystem::u8path(argv[4]));
             const auto sound_input = out / "mutable-input.sf2";
@@ -219,11 +220,11 @@ int main(int argc, char **argv) {
             });
             wrong.join();
             expect(wrong_thread, "SoundFont accepted wrong owner thread");
-            result["soundfont"] = {{"cachedPath", sound.path},
-                                   {"contentHash", sound.content_hash},
-                                   {"sourceBytes", sound_bytes.size()},
-                                   {"invalidRejected", true},
-                                   {"immutableCopy", true}};
+            result["soundfont"] = music::SortedJson{{"cachedPath", sound.path},
+                                                    {"contentHash", sound.content_hash},
+                                                    {"sourceBytes", sound_bytes.size()},
+                                                    {"invalidRejected", true},
+                                                    {"immutableCopy", true}};
         }
         if (argc == 5) {
             auto &audio = context.audio();
@@ -271,10 +272,10 @@ int main(int argc, char **argv) {
         result["shutdownCleanup"] = true;
         result["leaseDeferredCleanup"] = true;
         std::ofstream report(out / "evidence.json");
-        report << result.dump(2);
+        report << music::dump_json(result, 2);
         report.close();
         expect(bool(report), "Cannot write evidence");
-        std::cout << result.dump() << '\n';
+        std::cout << music::dump_json(result) << '\n';
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;

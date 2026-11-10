@@ -120,7 +120,8 @@ def main():
         xmake("configure", config)
         xmake("build", ["build", "-P", ".", "-y", "-j" + str(a.jobs), "engine_tests"])
     forbidden = re.compile(
-        r'\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bQt\b|\bQ[A-Z]\w*\b|#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/)'
+        r'\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|'
+        r'#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/|glaze/)'
     )
     for header in (a.engine_source / "engrave/include/engrave").rglob("*.h"):
         if forbidden.search(header.read_text(encoding="utf-8")):

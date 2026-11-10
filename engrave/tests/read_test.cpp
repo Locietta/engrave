@@ -37,10 +37,10 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
+#include "engrave/src/score/json.h"
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
@@ -199,7 +199,7 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
         auto reopened = g_engine->open(result->bytes, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
         auto actual = music::semantic_dump(&master_of(**reopened));
-        for (const char *key : {"parts", "measures", "events"}) EXPECT_EQ(actual[key], expected[key]) << key;
+        for (const char *key : {"parts", "measures", "events"}) EXPECT_TRUE(music::json_equal(actual[key], expected[key])) << key;
         EXPECT_TRUE(actual["excerpts"].empty());
         options.capture.max_bytes = result->bytes.size() - 1;
         const auto limited = document->export_score_with_warnings(options);
@@ -667,7 +667,7 @@ private:
 // One element of the comparison, as a line so that a difference prints readably.
 using Row = std::string;
 
-const char *type_name(const nlohmann::json &kind) {
+const char *type_name(const music::Json &kind) {
     const std::string value = kind.get<std::string>();
     if (value == "chord") return "Chord";
     if (value == "rest") return "Rest";
@@ -683,28 +683,28 @@ Row note_row(int tick, std::size_t staff, std::size_t voice, int pitch) {
     return std::format("Note tick={} staff={} voice={} pitch={}", tick, staff, voice, pitch);
 }
 
-std::string value_text(const nlohmann::json &value) { return value.is_string() ? value.get<std::string>() : value.dump(); }
+std::string value_text(const music::Json &value) { return value.is_string() ? value.get<std::string>() : music::dump_json(value); }
 
 // The rows the semantic dump reports for one score body.
-void oracle_rows(const nlohmann::json &body, std::multiset<Row> &rows) {
-    const nlohmann::json &events = body.at("events");
+void oracle_rows(const music::Json &body, std::multiset<Row> &rows) {
+    const music::Json &events = body.at("events");
     for (std::size_t staff = 0; staff < events.size(); ++staff) {
         for (std::size_t voice = 0; voice < events[staff].size(); ++voice) {
-            for (const nlohmann::json &item : events[staff][voice]) {
-                const int tick = item.at("tick").get<int>();
-                const int ticks = item.at("ticks").get<int>();
+            for (const music::Json &item : events[staff][voice].get_array()) {
+                const int tick = item.at("tick").as<int>();
+                const int ticks = item.at("ticks").as<int>();
                 rows.insert(event_row(type_name(item.at("kind")), tick, staff, voice, ticks));
                 if (!item.contains("notes")) continue;
-                for (const nlohmann::json &note : item.at("notes")) {
-                    rows.insert(note_row(tick, staff, voice, note.at("pitch").get<int>()));
+                for (const music::Json &note : item.at("notes").get_array()) {
+                    rows.insert(note_row(tick, staff, voice, note.at("pitch").as<int>()));
                 }
             }
         }
     }
-    for (const nlohmann::json &signature : body.at("signatures")) {
+    for (const music::Json &signature : body.at("signatures").get_array()) {
         const std::string type = signature.at("type").get<std::string>();
-        const int tick = signature.at("tick").get<int>();
-        const std::size_t staff = signature.at("staff").get<std::size_t>();
+        const int tick = signature.at("tick").as<int>();
+        const std::size_t staff = signature.at("staff").as<std::size_t>();
         if (type == "Clef") {
             // The clef token depends on the score's concert pitch setting; the tick and
             // the staff are what the walk has to agree on.
@@ -983,8 +983,8 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
         auto selected = engrave::select_score(master_of(*document), excerpt);
         ASSERT_TRUE(selected);
         const auto legacy = music::score_positions(*selected, kind == engrave::PositionKind::SEGMENT);
-        EXPECT_DOUBLE_EQ(positions->page_width, legacy.at("pageSize").at("width").get<double>());
-        EXPECT_DOUBLE_EQ(positions->page_height, legacy.at("pageSize").at("height").get<double>());
+        EXPECT_DOUBLE_EQ(positions->page_width, legacy.at("pageSize").at("width").as<double>());
+        EXPECT_DOUBLE_EQ(positions->page_height, legacy.at("pageSize").at("height").as<double>());
         EXPECT_NEAR(positions->page_width, 9921.2598, 0.1);
         EXPECT_NEAR(positions->page_height, 14031.4961, 0.1);
         ASSERT_EQ(positions->elements.size(), legacy.at("elements").size());
@@ -995,19 +995,19 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
             EXPECT_EQ(element.id, static_cast<int>(i));
             EXPECT_GE(element.page, 0);
             EXPECT_LT(element.page, *pages);
-            EXPECT_DOUBLE_EQ(element.x, expected.at("x").get<double>());
-            EXPECT_DOUBLE_EQ(element.y, expected.at("y").get<double>());
-            EXPECT_DOUBLE_EQ(element.sx, expected.at("sx").get<double>());
-            EXPECT_DOUBLE_EQ(element.sy, expected.at("sy").get<double>());
-            EXPECT_EQ(element.page, expected.at("page").get<int>());
+            EXPECT_DOUBLE_EQ(element.x, expected.at("x").as<double>());
+            EXPECT_DOUBLE_EQ(element.y, expected.at("y").as<double>());
+            EXPECT_DOUBLE_EQ(element.sx, expected.at("sx").as<double>());
+            EXPECT_DOUBLE_EQ(element.sy, expected.at("sy").as<double>());
+            EXPECT_EQ(element.page, expected.at("page").as<int>());
             if (kind == engrave::PositionKind::SEGMENT) {
                 EXPECT_EQ(element.x, std::trunc(element.x));
                 EXPECT_EQ(element.y, std::trunc(element.y));
             }
         }
         for (std::size_t i = 0; i < positions->events.size(); ++i) {
-            EXPECT_EQ(positions->events[i].elid, legacy.at("events")[i].at("elid").get<int>());
-            EXPECT_EQ(positions->events[i].position, legacy.at("events")[i].at("position").get<int>());
+            EXPECT_EQ(positions->events[i].elid, legacy.at("events")[i].at("elid").as<int>());
+            EXPECT_EQ(positions->events[i].position, legacy.at("events")[i].at("position").as<int>());
         }
     }
     EXPECT_EQ(document->revision(), revision);
@@ -1268,7 +1268,7 @@ TEST(Read, MatchesTheSemanticOracle) {
         auto document = open_path(path);
         if (!document) continue;
         SCOPED_TRACE(path.string());
-        const nlohmann::json dump = music::semantic_dump(&master_of(*document));
+        const music::Json dump = music::semantic_dump(&master_of(*document));
 
         const auto outline = document->outline();
         ASSERT_TRUE(outline) << outline.error().message;
@@ -1286,7 +1286,7 @@ TEST(Read, MatchesTheSemanticOracle) {
         // one's body under its name, in master order.  Two excerpts of one part name are
         // told apart by their order, which both lists keep.
         std::size_t next = 0;
-        for (const nlohmann::json &listed : dump.at("excerpts")) {
+        for (const music::Json &listed : dump.at("excerpts").get_array()) {
             if (!listed.contains("score")) continue;
             const std::string name = listed.at("name").get<std::string>();
             while (next < outline->excerpts.size() && outline->excerpts[next].name != name) ++next;
@@ -1317,7 +1317,7 @@ TEST(Read, OutlineDescribesTheScore) {
         if (!document) continue;
         SCOPED_TRACE(path.string());
         MasterScore &master = master_of(*document);
-        const nlohmann::json metadata = music::score_metadata(&master, std::vector<music::ScoreMetadataTrack>{});
+        const auto metadata = music::score_metadata(&master, std::vector<music::ScoreMetadataTrack>{});
         const auto outline = document->outline();
         ASSERT_TRUE(outline) << outline.error().message;
 
@@ -1328,15 +1328,15 @@ TEST(Read, OutlineDescribesTheScore) {
         EXPECT_EQ(outline->poet, metadata.at("poet").get<std::string>());
         EXPECT_EQ(outline->timesig, metadata.at("timesig").get<std::string>());
         EXPECT_EQ(outline->mscore_version, metadata.at("mscoreVersion").get<std::string>());
-        EXPECT_EQ(outline->file_version, metadata.at("fileVersion").get<int>());
-        EXPECT_EQ(outline->pages, metadata.at("pages").get<int>());
-        EXPECT_EQ(outline->measure_count, metadata.at("measures").get<int>());
-        EXPECT_EQ(outline->key, metadata.at("keysig").get<int>());
-        EXPECT_EQ(outline->duration, metadata.at("duration").get<double>());
+        EXPECT_EQ(outline->file_version, metadata.at("fileVersion").as<int>());
+        EXPECT_EQ(outline->pages, metadata.at("pages").as<int>());
+        EXPECT_EQ(outline->measure_count, metadata.at("measures").as<int>());
+        EXPECT_EQ(outline->key, metadata.at("keysig").as<int>());
+        EXPECT_EQ(outline->duration, metadata.at("duration").as<double>());
 
         // Parts and staves are named as the metadata names them, and every id it hands
         // out resolves.
-        const nlohmann::json &parts = metadata.at("parts");
+        const auto &parts = metadata.at("parts");
         ASSERT_EQ(outline->parts.size(), parts.size());
         for (std::size_t i = 0; i < outline->parts.size(); ++i) {
             const engrave::PartInfo &part = outline->parts[i];
@@ -1367,11 +1367,11 @@ TEST(Read, OutlineDescribesTheScore) {
         // tick and staff.  The dump's clefs are left out: a clef change is an element
         // of its own that a query reports, and the outline covers time, key and tempo.
         std::multiset<std::string> expected;
-        for (const nlohmann::json &signature : music::semantic_dump(&master).at("signatures")) {
+        for (const music::Json &signature : music::semantic_dump(&master).at("signatures").get_array()) {
             const std::string type = signature.at("type").get<std::string>();
             if (type == "Clef") continue;
             expected.insert(
-                std::format("{} tick={} staff={}", type, signature.at("tick").get<int>(), signature.at("staff").get<std::size_t>()));
+                std::format("{} tick={} staff={}", type, signature.at("tick").as<int>(), signature.at("staff").as<std::size_t>()));
         }
         std::multiset<std::string> actual;
         for (const engrave::SignatureInfo &signature : outline->signatures) {
@@ -1382,10 +1382,10 @@ TEST(Read, OutlineDescribesTheScore) {
 
         // The tempo markings are the dump's annotations of that type.
         std::multiset<std::string> expected_tempi;
-        for (const nlohmann::json &annotation : music::semantic_dump(&master).at("annotations")) {
+        for (const music::Json &annotation : music::semantic_dump(&master).at("annotations").get_array()) {
             if (annotation.at("type").get<std::string>() != "Tempo") continue;
-            expected_tempi.insert(std::format("tick={} bpm={} text={}", annotation.at("tick").get<int>(),
-                                              annotation.at("bpm").get<double>(), annotation.at("text").get<std::string>()));
+            expected_tempi.insert(std::format("tick={} bpm={} text={}", annotation.at("tick").as<int>(), annotation.at("bpm").as<double>(),
+                                              annotation.at("text").get<std::string>()));
         }
         std::multiset<std::string> actual_tempi;
         for (const engrave::SignatureInfo &signature : outline->signatures) {

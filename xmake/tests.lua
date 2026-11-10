@@ -330,6 +330,7 @@ target("engrave_output_probe")
     set_kind("binary")
     set_default(false)
     add_deps("engrave")
+    add_includedirs(source_root)
     add_files(path.join(tests_dir, "output_probe.cpp"))
     if is_plat("windows") then
         add_files(utf8_manifest)

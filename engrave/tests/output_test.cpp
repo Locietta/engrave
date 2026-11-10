@@ -28,9 +28,9 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
 
 #include "digest.h"
+#include "engrave/src/score/json.h"
 #include "output_fixture.h"
 #include <engrave/engrave.h>
 
@@ -119,13 +119,16 @@ std::vector<std::byte> with_lf_newlines(const std::vector<std::byte> &data) {
     return result;
 }
 
-nlohmann::json load_goldens() {
+music::SortedJson load_goldens() {
     std::filesystem::path path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests" / golden_file_name;
     const char *env = std::getenv("ENGRAVE_RENDER_GOLDENS");
     if (env) path = std::filesystem::u8path(env);
     std::ifstream file(path, std::ios::binary);
     if (!file) throw std::runtime_error("cannot read the render goldens in '" + path.string() + "'");
-    return nlohmann::json::parse(file);
+    const std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    auto goldens = music::parse_json<music::SortedJson>(text);
+    if (!goldens) throw std::runtime_error("the render goldens are not JSON");
+    return std::move(*goldens);
 }
 
 struct OpenedScore {
@@ -181,19 +184,19 @@ TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
 // The render golden comparison: every fixture of render_goldens.json, rendered with
 // the options (144 dpi, transparent PNG, no page background, all pages).
 TEST(Output, RenderMatchesTheA2Goldens) {
-    const nlohmann::json goldens = music::test::load_goldens().at("fixtures");
+    const music::SortedJson goldens = music::test::load_goldens().at("fixtures");
     const std::string platform = music::test::platform_name();
     int compared = 0;
-    for (const auto &[name, platforms] : goldens.items()) {
+    for (const auto &[name, platforms] : goldens.get_object()) {
         if (!platforms.contains(platform)) continue;
         music::test::OpenedScore opened = music::test::open(name);
         ASSERT_TRUE(opened.document) << "the corpus has no " << name << " (pass --corpus=<directory>)";
         engrave::Document &document = *opened.document;
-        const nlohmann::json &golden = platforms.at(platform);
+        const auto &golden = platforms.at(platform);
 
         const auto count = document.page_count();
         ASSERT_TRUE(count) << name << ": " << count.error().message;
-        EXPECT_EQ(*count, golden.at("pdf").get<std::int32_t>()) << name << ": page count";
+        EXPECT_EQ(*count, golden.at("pdf").as<std::int32_t>()) << name << ": page count";
 
         engrave::RenderOptions options;
         options.format = engrave::RenderFormat::SVG;
@@ -214,9 +217,9 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         std::string error;
         const auto image = music::test::decode_png(music::test::bytes_of(png->pages.front()), error);
         ASSERT_TRUE(image) << name << ": " << error;
-        const nlohmann::json &expected = golden.at("png");
-        EXPECT_EQ(image->width, expected.at("width").get<std::uint32_t>()) << name << ": PNG width";
-        EXPECT_EQ(image->height, expected.at("height").get<std::uint32_t>()) << name << ": PNG height";
+        const auto &expected = golden.at("png");
+        EXPECT_EQ(image->width, expected.at("width").as<std::uint32_t>()) << name << ": PNG width";
+        EXPECT_EQ(image->height, expected.at("height").as<std::uint32_t>()) << name << ": PNG height";
         EXPECT_EQ(music::test::sha256_hex(image->rgba), expected.at("sha256").get<std::string>())
             << name << ": the RGBA pixels differ from the render golden";
 

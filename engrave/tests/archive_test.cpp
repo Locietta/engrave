@@ -5,8 +5,7 @@
 #include <iterator>
 #include <stdexcept>
 
-#include <nlohmann/json.hpp>
-
+#include "engrave/src/score/json.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 
@@ -27,7 +26,8 @@ int main(int argc, char **argv) {
         output.write(extracted.const_char(), static_cast<std::streamsize>(extracted.size()));
         output.close();
         if (!output) throw std::runtime_error("Cannot write extracted test result");
-        std::cout << nlohmann::json{{"exists", exists}, {"error", error}, {"size", extracted.size()}, {"buffer_size", buffer.size()}}.dump()
+        std::cout << music::dump_json(music::SortedJson{
+                         {"exists", exists}, {"error", error}, {"size", extracted.size()}, {"buffer_size", buffer.size()}})
                   << '\n';
         return 0;
     } catch (const std::exception &error) {

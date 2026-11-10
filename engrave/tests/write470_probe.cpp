@@ -4,8 +4,7 @@
 #include <fstream>
 #include <string>
 
-#include <nlohmann/json.hpp>
-
+#include "engrave/src/score/json.h"
 #include <engrave/engrave.h>
 
 int main(int argc, char **argv) {
@@ -53,13 +52,13 @@ int main(int argc, char **argv) {
     if (std::string(argv[5]) != "default") options.native_version = argv[5];
     auto result = (*document)->export_score_with_warnings(options);
     const auto &warnings = result ? result->warnings : result.error().export_warnings;
-    nlohmann::json json = nlohmann::json::array();
+    music::SortedJson json = music::make_array<music::SortedJson>();
     for (const auto &warning : warnings) {
-        nlohmann::json value{{"code", warning.code}, {"message", warning.message}};
-        if (warning.object) value["object"] = {{"kind", warning.object->kind}, {"id", warning.object->id}};
-        json.push_back(std::move(value));
+        music::SortedJson value{{"code", warning.code}, {"message", warning.message}};
+        if (warning.object) value["object"] = music::SortedJson{{"kind", warning.object->kind}, {"id", warning.object->id}};
+        music::array_push(json, std::move(value));
     }
-    std::fprintf(stdout, "%s\n", json.dump().c_str());
+    std::fprintf(stdout, "%s\n", music::dump_json(json).c_str());
     if (!result) {
         std::fprintf(stderr, "%s: %s\n", std::string(engrave::to_string(result.error().code)).c_str(), result.error().message.c_str());
         return 2;

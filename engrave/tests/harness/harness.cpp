@@ -373,7 +373,7 @@ Fingerprint fingerprint(Document &document) {
     const auto saved = document.export_score({.format = Format::MSCZ});
     if (!saved) throw std::runtime_error("fingerprint: the save failed: " + saved.error().message);
     print.files = mscz_files(*saved);
-    print.semantic = music::semantic_dump(&master).dump(1);
+    print.semantic = music::dump_json(music::semantic_dump(&master), 1);
     for (const LiveId &entry : live_ids(master)) {
         print.ids.push_back(std::format("{} {} {}/{}/{}", to_string(entry.id), entry.object->type_name(), entry.placement.score,
                                         entry.placement.tick, entry.placement.track));
@@ -386,7 +386,8 @@ Fingerprint fingerprint(Document &document) {
     int index = 0;
     for (Score *score : master.score_list()) {
         if (score->npages() > 0)
-            print.layout.push_back(std::format("score {} pages {} {}", index, score->npages(), music::score_positions(score, true).dump()));
+            print.layout.push_back(
+                std::format("score {} pages {} {}", index, score->npages(), music::dump_json(music::score_positions(score, true))));
         ++index;
     }
     print.externals = externals(master);
@@ -501,34 +502,37 @@ EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesyste
     return row;
 }
 
-nlohmann::ordered_json to_json(const std::vector<EvidenceRow> &rows) {
+Json to_json(const std::vector<EvidenceRow> &rows) {
     std::vector<const EvidenceRow *> sorted;
     for (const EvidenceRow &row : rows) sorted.push_back(&row);
     std::ranges::sort(sorted, {}, [](const EvidenceRow *row) { return std::tie(row->op, row->name); });
 
     // An operation is as safe as its weakest case; the policies are ordered from strong to weak.
     std::map<std::string, api::Policy> weakest;
-    nlohmann::ordered_json list = nlohmann::ordered_json::array();
+    Json list = make_array<Json>();
     for (const EvidenceRow *row : sorted) {
         const auto [entry, added] = weakest.try_emplace(row->op, row->verdict);
         if (!added) entry->second = std::max(entry->second, row->verdict);
         const std::string verdict(api::to_string(row->verdict));
-        list.push_back({{"op", row->op},
-                        {"case", row->name},
-                        {"fixture", row->fixture},
-                        {"pushes", row->pushes},
-                        {"c1", row->c1},
-                        {"c2", row->c2},
-                        {"c3_unwind", row->c3_unwind},
-                        {"c4_unwind", row->c4_unwind},
-                        {"c3_snapshot", row->c3_snapshot},
-                        {"c4_snapshot", row->c4_snapshot},
-                        {"r4", row->r4},
-                        {"verdict", verdict}});
+        array_push(list, Json{{"op", row->op},
+                              {"case", row->name},
+                              {"fixture", row->fixture},
+                              {"pushes", row->pushes},
+                              {"c1", row->c1},
+                              {"c2", row->c2},
+                              {"c3_unwind", row->c3_unwind},
+                              {"c4_unwind", row->c4_unwind},
+                              {"c3_snapshot", row->c3_snapshot},
+                              {"c4_snapshot", row->c4_snapshot},
+                              {"r4", row->r4},
+                              {"verdict", verdict}});
     }
-    nlohmann::ordered_json verdicts = nlohmann::ordered_json::object();
+    Json verdicts = make_object<Json>();
     for (const auto &[op, policy] : weakest) verdicts[op] = api::to_string(policy);
-    return {{"verdicts", verdicts}, {"cases", list}};
+    Json result = make_object<Json>();
+    result["verdicts"] = std::move(verdicts);
+    result["cases"] = std::move(list);
+    return result;
 }
 
 MasterScore &master_of(Document &document) { return *DocumentAccess::master_score(document); }

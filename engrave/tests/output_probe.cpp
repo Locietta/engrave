@@ -24,8 +24,7 @@
 #include <string_view>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
+#include "engrave/src/score/json.h"
 #include <engrave/engrave.h>
 
 #ifdef _WIN32
@@ -200,21 +199,21 @@ int main(int argc, char **argv) {
                                                 std::pair{engrave::PositionKind::SEGMENT, "segmentPositions.json"}}) {
                 const auto positions = (*document)->positions(kind);
                 if (!positions) throw std::runtime_error(positions.error().message);
-                nlohmann::json result;
-                result["page_size"] = {{"width", positions->page_width}, {"height", positions->page_height}};
-                result["elements"] = nlohmann::json::array();
-                result["events"] = nlohmann::json::array();
+                music::SortedJson result = music::make_object<music::SortedJson>();
+                result["page_size"] = music::SortedJson{{"width", positions->page_width}, {"height", positions->page_height}};
+                result["elements"] = music::make_array<music::SortedJson>();
+                result["events"] = music::make_array<music::SortedJson>();
                 for (const auto &element : positions->elements)
-                    result["elements"].push_back({{"id", element.id},
-                                                  {"x", element.x},
-                                                  {"y", element.y},
-                                                  {"sx", element.sx},
-                                                  {"sy", element.sy},
-                                                  {"page", element.page}});
+                    music::array_push(result["elements"], music::SortedJson{{"id", element.id},
+                                                                            {"x", element.x},
+                                                                            {"y", element.y},
+                                                                            {"sx", element.sx},
+                                                                            {"sy", element.sy},
+                                                                            {"page", element.page}});
                 for (const auto &event : positions->events)
-                    result["events"].push_back({{"elid", event.elid}, {"position", event.position}});
+                    music::array_push(result["events"], music::SortedJson{{"elid", event.elid}, {"position", event.position}});
                 std::ofstream file(out / filename, std::ios::binary | std::ios::trunc);
-                file << result.dump();
+                file << music::dump_json(result);
                 if (!file) throw std::runtime_error("cannot write positions");
             }
             return 0;

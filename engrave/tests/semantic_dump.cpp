@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
         auto project = music::load_native_score(context, bytes, format);
         auto *master = project->master_score();
         if (generate) music::generate_score_excerpts(master);
-        std::cout << music::semantic_dump(master).dump(1) << '\n';
+        std::cout << music::dump_json(music::semantic_dump(master), 1) << '\n';
         return 0;
     } catch (const std::exception &error) {
         std::cerr << "semantic_dump: " << error.what() << '\n';

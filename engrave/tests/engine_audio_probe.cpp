@@ -26,11 +26,10 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/score_io.h"
+#include "engrave/src/score/json.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/engravingproject.h"
@@ -43,7 +42,7 @@
 
 namespace {
 namespace fs = std::filesystem;
-using Json = nlohmann::json;
+using Json = music::SortedJson;
 
 constexpr std::size_t k_max_score_bytes = 8 * 1024 * 1024;
 
@@ -207,7 +206,7 @@ Json midi_event_json(const muse::midi::Event &event) {
 } // namespace
 
 int main(int argc, char **argv) {
-    Json out = Json::object();
+    Json out = music::make_object<Json>();
     out["ok"] = false;
 
     if (argc < 5) {
@@ -269,7 +268,7 @@ int main(int argc, char **argv) {
         std::string bootstrap_error;
         const bool engine_ready = music::initialize_engine_audio(context.audio(), soundfont, &bootstrap_error);
         out["engineSeconds"] = seconds_since(engine_start);
-        out["soundfont"] = {
+        out["soundfont"] = Json{
             {"path", soundfont},
             {"resourceId", music::engine_soundfont_resource_id(context.audio())},
             {"uri", music::engine_soundfont_uri(context.audio())},
@@ -344,9 +343,9 @@ int main(int argc, char **argv) {
         out["bytes"] = result.bytes;
         out["ok"] = result.ok;
         out["error"] = result.error;
-        out["tracks"] = Json::array();
+        out["tracks"] = music::make_array<Json>();
         for (const music::EngineAudioTrackInfo &track : tracks) {
-            out["tracks"].push_back(track_json(track));
+            music::array_push(out["tracks"], track_json(track));
         }
         out["midiEventTotal"] = midi_event_count;
         out["midiEventsTruncated"] = midi_event_count > midi_events.size();
@@ -362,6 +361,6 @@ int main(int argc, char **argv) {
         out["peakWorkingSetMiB"] = peak_working_set_bytes() / (1024.0 * 1024.0);
     }
 
-    std::cout << out.dump(2) << '\n';
+    std::cout << music::dump_json(out, 2) << '\n';
     return out["ok"].get<bool>() ? 0 : 1;
 }
