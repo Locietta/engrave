@@ -84,6 +84,13 @@ constexpr int max_octave = 20;
 constexpr int max_diatonic_delta = 7;
 constexpr int max_interval_steps = 70;
 constexpr int max_fifths = 30;
+constexpr int max_denominator = 1 << 16;
+constexpr int max_numerator = 1 << 26;
+constexpr int max_time_count = 1024;
+constexpr int max_measure_number = 1 << 20;
+constexpr int max_staff_position = 1024;
+// The length of a score in whole notes; MuseScore ticks (1920 per whole note) must fit an int.
+constexpr std::int64_t max_score_length = 1000000;
 
 // |value| > limit, without std::abs (which overflows for INT_MIN).
 constexpr bool beyond(int value, int limit) { return value < -limit || value > limit; }
@@ -130,12 +137,18 @@ struct PendingGrace {
     std::uint32_t event;
 };
 
-class Builder {
-public:
+struct Builder {
     Builder(const Root &root, const IndexOptions &options) : root_(root), options_(options) {}
 
     std::expected<Indexed, std::vector<Diagnostic>> run() {
         index_measures();
+        {
+            Rational length;
+            for (std::uint32_t m = 0; m < root_.global.measures.size() && length.is_bounded(); ++m)
+                length += measure_length(root_, index_, m);
+            if (length > Rational(max_score_length))
+                error("/global/measures", std::format("The score is longer than {} whole notes.", max_score_length));
+        }
         index_lyric_lines();
         for (std::uint32_t p = 0; p < root_.parts.size(); ++p) index_part(p);
         index_layouts();
@@ -196,6 +209,8 @@ private:
         if (fraction.denominator <= 0 || fraction.numerator < 0)
             error(pointer, std::format("Fraction [{}, {}] must have a non-negative numerator and a positive denominator.",
                                        fraction.numerator, fraction.denominator));
+        else if (fraction.denominator > max_denominator || fraction.numerator > max_numerator)
+            error(pointer, std::format("Fraction [{}, {}] is too fine or too large.", fraction.numerator, fraction.denominator));
     }
 
     // Position fractions are checked here, so a valid position converts to a Rational safely.
@@ -241,8 +256,9 @@ private:
             const std::string pointer = at("/global", "measures", m);
             if (add_id(measure.id, pointer)) index_.measure_ids.emplace(*measure.id, m);
             if (measure.time) {
-                if (measure.time->count < 1)
-                    error(at(pointer, "time/count"), std::format("A time signature needs a positive count, not {}.", measure.time->count));
+                if (measure.time->count < 1 || measure.time->count > max_time_count)
+                    error(at(pointer, "time/count"),
+                          std::format("A time signature count is 1 to {}, not {}.", max_time_count, measure.time->count));
                 else
                     time = m;
             }
@@ -255,7 +271,8 @@ private:
                 error(at(pointer, "repeatEnd/times"), "A repeat is played at least once.");
             index_.time_from[m] = time;
             index_.key_from[m] = key;
-            if (measure.number && *measure.number < 0) error(at(pointer, "number"), "A measure number must not be negative.");
+            if (measure.number && (*measure.number < 0 || *measure.number > max_measure_number))
+                error(at(pointer, "number"), std::format("A measure number is 0 to {}.", max_measure_number));
             for (std::size_t i = 0; i < items(measure.tempos).size(); ++i) {
                 const auto &tempo = (*measure.tempos)[i];
                 const std::string tempo_pointer = at(pointer, "tempos", i);
@@ -601,6 +618,8 @@ private:
             error(at(pointer, "staves"), std::format("A part has 1 to {} staves, not {}.", max_staves, staves));
         check_unique_keys(part.kit, at(pointer, "kit"));
         for (const auto &[component_id, component] : items(part.kit)) {
+            if (beyond(component.staff_position, max_staff_position))
+                error(at(at(at(pointer, "kit"), key_token(component_id)), "staffPosition"), "The staff position is out of range.");
             if (!component.sound) continue;
             const auto &sounds = items(root_.global.sounds);
             const bool defined = std::ranges::any_of(sounds, [&](const auto &entry) { return entry.first == *component.sound; });
@@ -671,7 +690,7 @@ private:
         }
     }
 
-    void validate_ties(const std::vector<Tie> &ties, const std::string &pointer, std::uint32_t part, const Note *note,
+    void validate_ties(const std::vector<Tie> &ties, const std::string &pointer, std::uint32_t part, const Event *owner, const Note *note,
                        const KitNote *kit_note) {
         for (std::size_t t = 0; t < ties.size(); ++t) {
             const auto &tie = ties[t];
@@ -691,6 +710,7 @@ private:
                     continue;
                 }
                 if (index_.events[target->event].part != part) error(tie_pointer, "Tie points to a note in a different part.");
+                if (index_.events[target->event].event == owner) error(tie_pointer, "Tie points to a note of its own event.");
                 if (!same_pitch(note->pitch, target->note->pitch)) error(tie_pointer, "Tie points to a note with a different pitch.");
             } else {
                 const auto *target = index_.find_kit_note(*tie.target);
@@ -699,6 +719,7 @@ private:
                     continue;
                 }
                 if (index_.events[target->event].part != part) error(tie_pointer, "Tie points to a note in a different part.");
+                if (index_.events[target->event].event == owner) error(tie_pointer, "Tie points to a note of its own event.");
                 if (target->note->kit_component != kit_note->kit_component) error(tie_pointer, "Tie points to a different kit component.");
             }
         }
@@ -738,7 +759,7 @@ private:
                     error(at(note_pointer, "pitch/alter"),
                           std::format("Note \"{}\" has alteration value {}. MNX files are limited to +/-3.", id_or(note), alter));
                 if (note.staff) check_staff(entry.part, *note.staff, at(note_pointer, "staff"));
-                validate_ties(items(note.ties), note_pointer, entry.part, &note, nullptr);
+                validate_ties(items(note.ties), note_pointer, entry.part, &event, &note, nullptr);
             }
             const auto &kit_notes = items(event.kit_notes);
             for (std::size_t n = 0; n < kit_notes.size(); ++n) {
@@ -749,7 +770,7 @@ private:
                     error(note_pointer, std::format("Kit note has kit element {} that is not defined in the part's kit.",
                                                     std::string(kit_note.kit_component)));
                 if (kit_note.staff) check_staff(entry.part, *kit_note.staff, at(note_pointer, "staff"));
-                validate_ties(items(kit_note.ties), note_pointer, entry.part, nullptr, &kit_note);
+                validate_ties(items(kit_note.ties), note_pointer, entry.part, &event, nullptr, &kit_note);
             }
             if (event.lyrics) check_unique_keys(event.lyrics->lines, at(pointer, "lyrics/lines"));
             if (check_lyric_lines && event.lyrics) {
@@ -765,6 +786,8 @@ private:
                 const auto *target = index_.find_event(slur.target);
                 if (!target)
                     error(at(slur_pointer, "target"), std::format("Slur target \"{}\" is not an event.", std::string(slur.target)));
+                else if (target->measure < entry.measure || (target->measure == entry.measure && target->start < entry.start))
+                    error(at(slur_pointer, "target"), "A slur cannot end before it starts.");
                 if (slur.end_note) {
                     const auto *end = index_.find_note(*slur.end_note);
                     if (!target || !end || index_.events[end->event].event != target->event)

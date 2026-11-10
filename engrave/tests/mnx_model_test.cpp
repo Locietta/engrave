@@ -286,6 +286,25 @@ TEST(MnxIndex, RejectsValuesTheImporterCannotHandle) {
     EXPECT_TRUE(contains(semantic_errors(tempo), "/global/measures/0/tempos/0/location/fraction"));
 }
 
+TEST(MnxIndex, RejectsDegenerateTiesSlursAndSizes) {
+    // A tie to a note of its own event, and a slur that ends before it starts.
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(
+            R"({"duration": {"base": "whole"}, "notes": [{"id": "n", "pitch": {"step": "C", "octave": 4}, "ties": [{"target": "n"}]}]})")),
+        "/parts/0/measures/0/sequences/0/content/0/notes/0/ties/0"));
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(
+            R"({"id": "a", "duration": {"base": "half"}, "rest": {}}, {"id": "b", "duration": {"base": "half"}, "rest": {}, "slurs": [{"target": "a"}]})")),
+        "/parts/0/measures/0/sequences/0/content/1/slurs/0/target"));
+    // A huge time signature and a needlessly fine position.
+    std::string time(minimal);
+    time.replace(time.find("\"count\": 4"), 10, "\"count\": 2000000");
+    time.replace(time.find('%'), 1, "");
+    EXPECT_TRUE(contains(semantic_errors(time), "/global/measures/0/time/count"));
+    EXPECT_TRUE(contains(semantic_errors(with_content(R"({"type": "space", "duration": [2147483646, 2147483647]})")),
+                         "/parts/0/measures/0/sequences/0/content/0/duration"));
+}
+
 TEST(MnxIndex, OttavaShiftsCoverTheirSpan) {
     const auto root = parse(R"({
       "mnx": {"version": 1},

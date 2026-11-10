@@ -6,6 +6,7 @@
 #include <expected>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "index.h"
@@ -33,6 +34,14 @@ struct Document {
     Root root;
     Index index;
     std::vector<Diagnostic> warnings;
+
+    Document(Root root_in, Index index_in, std::vector<Diagnostic> warnings_in)
+        : root(std::move(root_in)), index(std::move(index_in)), warnings(std::move(warnings_in)) {}
+
+    Document(Document &&) = default;
+    Document &operator=(Document &&) = default;
+    Document(const Document &) = delete;
+    Document &operator=(const Document &) = delete;
 };
 
 // Why a text could not be loaded: a read error, or the semantic errors build_index found,

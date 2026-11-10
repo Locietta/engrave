@@ -75,7 +75,10 @@ which `Engine::open` still catches as a last resort.
   errors.
 - `build_index` rejects what the importer cannot handle safely though the
   schema allows it: staff numbers outside the part, more than 64 staves, zero
-  or negative denominators and multiples, non-positive time signature counts,
+  or negative denominators and multiples, fractions finer than 1/65536 or
+  above 2^26, time signature counts outside 1 to 1024, scores longer than a
+  million whole notes, measure numbers above 2^20, staff positions beyond
+  ±1024, ties to a note of their own event, slurs that end before they start,
   tempos, repeat counts and measure repeats below 1, negative measure numbers, endings and
   multimeasure rests past the last measure, more than 16 dots, sub-beam
   events outside their parent beam, beams across parts, octaves beyond ±20,
@@ -83,6 +86,10 @@ which `Engine::open` still catches as a last resort.
   intervals beyond 70 steps. Durations and positions whose exact value needs
   more than 31-bit terms are rejected, which keeps every later rational
   operation within 64 bits.
+- The importer imports nothing from the measures a measure repeat covers (the
+  repeat replaces their content), imports the events of a tuplet MuseScore
+  cannot represent without the tuplet, and spells a gap that no single note
+  value fits with several rests.
 - An ottava that ends at the end of a measure without its own time signature
   uses the time signature in effect (mnxdom used a whole note), and without
   any time signature a measure is 4/4 for layout changes as for durations.
