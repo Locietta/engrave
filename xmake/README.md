@@ -1,6 +1,7 @@
 # Native engine build
 
-Configure with `xmake f -P . -y -m release --cairo_prefix=PREFIX`, then
+Install the Pixi environment (cairo, zlib) with `pixi install --locked`, configure with
+`xmake f -P . -y -m release`, then
 `xmake build -P . -y -j8`. The ordinary build contains eleven production libraries.
 Native score, MusicXML/MXL, MIDI, Guitar Pro/PowerTab and MNX imports and the MNX
 exporter are compiled; all audio encoders, including AAC, are always enabled. Native score saves omit thumbnails and serialize excerpts sequentially.

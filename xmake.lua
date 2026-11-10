@@ -8,8 +8,8 @@
 -- file the engrave-mcp superproject includes from its pinned vendor/engrave
 -- submodule (or --engine_source checkout).  Everything here is what a build
 -- of the engine *as a project* needs but a library must not impose on its
--- consumer: project identity, languages, package policies, the pinned zlib,
--- and the platform feature macros and toolchain flags the engine translation
+-- consumer: project identity, languages, package policies and the platform
+-- feature macros and toolchain flags the engine translation
 -- units were configured with.
 
 set_project("engrave")
@@ -25,52 +25,10 @@ set_policy("package.install_locally", true)
 set_policy("package.precompiled", false)
 
 -- The engine's third-party libraries are required by xmake/engrave.lua, which
--- also registers the pinned package repository (xmake/packages).
+-- also registers the pinned package repository (xmake/packages).  cairo and
+-- zlib come from this checkout's Pixi environment (pixi.toml; run
+-- `pixi install` once).
 includes("xmake/engrave.lua")
-
--- zlib: the engine's zip container includes <zlib.h>.  The superproject takes
--- zlib from its native environment; a bare checkout gets the pinned package.
--- It is declared here, not in engrave.lua, because a consumer's zlib choice
--- must stay the consumer's (the superproject's exports are byte-pinned to the
--- pixi zlib it has always used).
-add_requires("zlib 1.3.1", {system = false})
-add_packages("zlib")
-
--- cairo: engrave's page renderer links it.  Like zlib it is the consumer's
--- choice (the superproject's PDF and PNG goldens are pinned to its pixi cairo).
--- A bare checkout uses the system cairo, or the install prefix given with
--- --cairo_prefix (<prefix>/include/cairo, <prefix>/lib), e.g. a conda env's
--- Library directory on Windows, where no system cairo exists.  Only engrave
--- sees the prefix's headers, so its other libraries (zlib, freetype) never
--- replace the pinned ones in the engine targets.
-option("cairo_prefix")
-    set_default("")
-    set_showmenu(true)
-    set_description("cairo install prefix (default: the system cairo)")
-option_end()
-
-local cairo_prefix = get_config("cairo_prefix")
-if cairo_prefix and cairo_prefix ~= "" then
-    cairo_prefix = path.absolute(cairo_prefix)
-    target("engrave")
-        add_sysincludedirs(path.join(cairo_prefix, "include"), path.join(cairo_prefix, "include", "cairo"))
-        add_linkdirs(path.join(cairo_prefix, "lib"), {public = true})
-        if not is_plat("windows") then
-            -- The prefix's cairo is a shared library, so every binary that links the
-            -- engine needs its directory at run time.  Without this, a host with no
-            -- system cairo (cachy) starts such a binary in the loader instead: exit
-            -- 127, "libcairo.so.2: cannot open shared object file", unless the caller
-            -- sets LD_LIBRARY_PATH.  A static library's rpathdirs are exported to the
-            -- targets that depend on it, which is what puts the path in each binary.
-            add_rpathdirs(path.join(cairo_prefix, "lib"))
-        end
-    target_end()
-else
-    add_requires("cairo", {system = true})
-    target("engrave")
-        add_packages("cairo", {public = true})
-    target_end()
-end
 
 -- Native platform/toolchain configuration.
 if is_plat("windows") then
@@ -79,12 +37,6 @@ if is_plat("windows") then
     add_defines("WIN32", "WIN32_LEAN_AND_MEAN", "NOGDI", "NOMINMAX", "_USE_MATH_DEFINES", "_UNICODE", "UNICODE")
     add_cxflags("/utf-8", "/Zc:__cplusplus", {tools = {"cl", "clang_cl"}})
     add_cflags("/utf-8", {tools = {"cl", "clang_cl"}})
-elseif is_plat("macosx") then
-    add_cxflags("-fPIC", "-pthread")
-    add_ldflags("-pthread")
-elseif is_plat("linux") then
-    add_cxflags("-fPIC", "-pthread")
-    add_ldflags("-pthread")
 else
     add_cxflags("-fPIC", "-pthread")
     add_ldflags("-pthread")

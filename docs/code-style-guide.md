@@ -151,18 +151,18 @@ python -m venv .venv
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/cairo/prefix --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/gate-run
 python tests/test_inventory.py
 ```
 
-Use a fresh output directory for each run. On Windows, use native Python/PowerShell with a Cairo prefix ending in `Library` on `PATH`. On Linux, use the native prefix with `bin` on `PATH` and `lib` on `LD_LIBRARY_PATH`.
+Use a fresh output directory for each run. The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`) and puts its `bin` on `PATH`.
 
 ### Running a Single Fork Test Script Directly
 
 To run a single integration test script directly in a fork-only checkout without an editable package install, set `PYTHONPATH` to include `tests` and `tools`:
 
 ```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font /path/to/cairo/prefix/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font .pixi/envs/default/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
 ```
 
 On Windows PowerShell:

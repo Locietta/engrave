@@ -56,37 +56,30 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
   - Windows: MSVC (Visual Studio 2022 / Build Tools 17.10+) or clang-cl
   - Linux: GCC 13+ or Clang 16+
 - **Python** 3 and **Git** (for asset installation and manifest verification)
-- **Cairo**:
-  - Linux: Install the system development package (e.g. `libcairo2-dev` on Ubuntu/Debian, `cairo-devel` on Fedora, `cairo` on Arch/CachyOS).
-  - Windows: Provide the cairo install prefix using `--cairo_prefix=<path>` (e.g. pointing to a directory with `include/cairo` and `lib/cairo.lib`, such as a conda or pixi environment).
+- **[Pixi](https://pixi.sh/)**: cairo and zlib are the conda-forge builds pinned in `pixi.toml` / `pixi.lock`. Run `pixi install --locked` once; `xmake/engrave.lua` requires them as `pixi::cairo` and `pixi::zlib` through the Pixi package manager in `xmake/modules`. A project that includes `xmake/engrave.lua` provides them from its own `pixi.toml`. Windows binaries need `.pixi/envs/default/Library/bin` on `PATH` at run time; Linux binaries carry the environment's library directory as their run path.
 
-All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, glaze) are built from pinned source recipes in `xmake/packages/`, an xmake package repository (`packages/<letter>/<name>/xmake.lua`, patches beside their recipe) that `xmake/engrave.lua` registers as `engrave-pinned` and that takes precedence over xmake-repo. `glaze` is the engine's JSON library; `nlohmann-json` reaches the build only as a private dependency of `mnxdom` / `mnx-json-schema` for MNX import.
+All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, glaze, proxy, amc, unordered_dense) are built from pinned source recipes in `xmake/packages/`, an xmake package repository (`packages/<letter>/<name>/xmake.lua`, patches beside their recipe) that `xmake/engrave.lua` registers as `engrave-pinned` and that takes precedence over xmake-repo. `glaze` is the engine's JSON library; `nlohmann-json` reaches the build only as a private dependency of `mnxdom` / `mnx-json-schema` for MNX import.
 
 ### Build Commands
 
 #### Windows
 
 ```pwsh
-# Configure with cairo prefix and release mode
-xmake f -m release --cairo_prefix=C:/path/to/cairo/prefix
-
-# Build the engrave library target
+pixi install --locked
+xmake f -m release
 xmake build engrave
 ```
 
 #### Linux
 
 ```bash
-# Configure release build (uses system cairo by default)
+pixi install --locked
 xmake f -m release
-
-# Build the engrave library target
 xmake build engrave
 ```
 
 ### Configuration Options
 
-- `--cairo_prefix=<path>`: Custom installation prefix for the Cairo graphics library.
 - `--engrave_tests=y`: Enable development test targets (requires GoogleTest, resolved automatically).
 
 ## Asset Installation
@@ -155,11 +148,11 @@ In a fork-only checkout, `tests/gate.py` automatically prepends `tests/` and `to
 
 ```bash
 python tools/install_assets.py .runtime/assets
-python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --cairo-prefix /path/to/cairo/prefix --output .runtime/gate-run
+python tests/gate.py --build-dir build/gate --assets .runtime/assets --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/gate-run
 python tests/test_inventory.py
 ```
 
-Use a fresh output directory for each run. Windows uses native Python/PowerShell and a Cairo prefix ending in `Library`; put its `bin` on `PATH`. Linux uses the native prefix with its `bin` on `PATH` and `lib` on `LD_LIBRARY_PATH`. When a prefix supplies the Conda compiler, the gate selects it; otherwise configure with the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
+Use a fresh output directory for each run. The gate builds against the Pixi environment of `--pixi-manifest` (default: this checkout's `pixi.toml`), installing it with `pixi install --locked`, and puts its `bin` on `PATH`. When that environment supplies the Conda compiler (Linux), the gate selects it; otherwise xmake uses the system compiler. The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock. `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion can fail on Windows; failures are retained and must not be reported as a pass.
 
 Create a new virtual environment with Python 3.13 (`python -m venv .venv`), then install dependencies and the test package in editable mode:
 
@@ -177,7 +170,7 @@ Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0,
 To execute an individual integration script in a fork-only checkout without an editable package install, prepend `tests` and `tools` to `PYTHONPATH`:
 
 ```bash
-PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font /path/to/cairo/prefix/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
+PYTHONPATH="tests:tools${PYTHONPATH:+:$PYTHONPATH}" python tests/integration/test_assets.py --binary build/gate/assets_test --assets .runtime/assets --font .pixi/envs/default/fonts/DejaVuSans.ttf --soundfont /path/to/FluidR3Mono_GM.sf3 --output .runtime/test-assets
 ```
 
 On Windows PowerShell:
@@ -191,7 +184,7 @@ Alternatively, install the `engrave-testing` package in editable mode within the
 
 ### Continuous Integration
 
-`.github/workflows/ci.yml` runs on pushes to `main`, pull requests and manual dispatch. A `python-checks` job installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py` and `tests/test_playback_witness.py` (also with `python -O`). A `build-test` job on Windows (MSVC from the `windows-latest` Visual Studio 2026 image, conda-forge cairo from Pixi) and Linux (`ubuntu-26.04`, GCC 15, system cairo) configures `xmake f -m release --engrave_tests=y`, builds the unit-test targets, installs and verifies the runtime assets, and runs the same suites and arguments as `tests/gate.py` except `engrave_output_test`: `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_op_policy_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` with its MNX schema check, `diagnostics_test` and `io_boundary_test`, then the upstream `engraving_playback_tests` and `mpe_tests` through `tests/integration/test_upstream_gtest.py`. `example_embedder` is built as the public-header leak check. CI does not run the full gate, the golden comparisons, the audio corpus or anything that needs a SoundFont (`engrave_output_test`, `engine_audio`, the render goldens); those stay manual on the Windows and Linux hosts. Formatting and naming lint are not part of CI.
+`.github/workflows/ci.yml` runs on pushes to `main`, pull requests and manual dispatch. A `python-checks` job installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py` and `tests/test_playback_witness.py` (also with `python -O`). A `build-test` job on Windows (MSVC from the `windows-latest` Visual Studio 2026 image, and Linux (`ubuntu-26.04`, GCC 15), both with the conda-forge cairo and zlib from `pixi.lock`, configures `xmake f -m release --engrave_tests=y`, builds the unit-test targets, installs and verifies the runtime assets, and runs the same suites and arguments as `tests/gate.py` except `engrave_output_test`: `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_op_policy_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` with its MNX schema check, `diagnostics_test` and `io_boundary_test`, then the upstream `engraving_playback_tests` and `mpe_tests` through `tests/integration/test_upstream_gtest.py`. `example_embedder` is built as the public-header leak check. CI does not run the full gate, the golden comparisons, the audio corpus or anything that needs a SoundFont (`engrave_output_test`, `engine_audio`, the render goldens); those stay manual on the Windows and Linux hosts. Formatting and naming lint are not part of CI.
 
 ## Development
 

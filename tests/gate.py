@@ -18,7 +18,7 @@ from engrave_testing import golden as g
 from engrave_testing.dependencies import validate_dependencies
 from engrave_testing.inventory import validate_actual, validate_allow_usage, validate_baseline
 from engrave_testing.links import setup_link
-from engrave_testing.paths import INPUT_ROOT, REPO_ROOT
+from engrave_testing.paths import INPUT_ROOT, REPO_ROOT, pixi_env
 from engrave_testing.public_output import compare, describe_audio_file, describe_render, probe_command
 
 
@@ -29,7 +29,11 @@ def main():
     p.add_argument("--engine-source", type=Path, default=REPO_ROOT)
     for name in ("build-dir", "assets", "soundfont", "output"):
         p.add_argument("--" + name, type=Path, required=True)
-    p.add_argument("--cairo-prefix", type=Path)
+    p.add_argument(
+        "--pixi-manifest",
+        type=Path,
+        help="pixi.toml whose default environment provides cairo and zlib (default: the engine source's)",
+    )
     p.add_argument("--mutex-wrapper", type=Path)
     p.add_argument("--jobs", type=int, default=8)
     p.add_argument("--skip-build", action="store_true", help="diagnostic rerun only")
@@ -43,8 +47,18 @@ def main():
     a.output.mkdir(parents=True, exist_ok=True)
     platform = "windows" if sys.platform == "win32" else "linux"
     suffix = ".exe" if platform == "windows" else ""
-    if a.cairo_prefix:
-        os.environ["PATH"] = str(a.cairo_prefix / "bin") + os.pathsep + os.environ.get("PATH", "")
+    manifest = a.pixi_manifest or a.engine_source / "pixi.toml"
+    native = pixi_env(manifest.parent)
+    if platform == "windows":
+        native = native / "Library"
+    # xmake's pixi:: package manager must resolve this workspace, not one
+    # inherited from an enclosing `pixi run` (whose CONDA_PREFIX it prefers).
+    os.environ["PIXI_PROJECT_MANIFEST"] = str(manifest)
+    for name in ("CONDA_PREFIX", "PIXI_ENVIRONMENT_NAME"):
+        os.environ.pop(name, None)
+    # The binaries load the environment's shared libraries (cairo, zlib) at run
+    # time: Windows through PATH, Linux through the run path xmake links in.
+    os.environ["PATH"] = str(native / "bin") + os.pathsep + os.environ.get("PATH", "")
     os.environ["PYTHONPATH"] = os.pathsep.join(
         (str(REPO_ROOT / "tests"), str(REPO_ROOT / "tools"), os.environ.get("PYTHONPATH", ""))
     )
@@ -95,6 +109,7 @@ def main():
     run("comparator-mutations", [sys.executable, REPO_ROOT / "tests/test_inventory.py"])
     run("playback-witness-controls", [sys.executable, "-O", REPO_ROOT / "tests/test_playback_witness.py"])
     if not a.skip_build:
+        run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
         config = [
             "f",
             "-P",
@@ -109,18 +124,15 @@ def main():
             # Pinned inventories describe the harness-off build; a reused config must not keep it on.
             "--engrave_playback_harness=n",
         ]
-        if a.cairo_prefix:
-            config.append("--cairo_prefix=" + str(a.cairo_prefix))
-        if platform == "linux" and a.cairo_prefix and (a.cairo_prefix / "bin/x86_64-conda-linux-gnu-gcc").is_file():
-            prefix = a.cairo_prefix
+        if platform == "linux" and (native / "bin/x86_64-conda-linux-gnu-gcc").is_file():
             config += [
-                "--cc=" + str(prefix / "bin/x86_64-conda-linux-gnu-gcc"),
-                "--cxx=" + str(prefix / "bin/x86_64-conda-linux-gnu-g++"),
+                "--cc=" + str(native / "bin/x86_64-conda-linux-gnu-gcc"),
+                "--cxx=" + str(native / "bin/x86_64-conda-linux-gnu-g++"),
             ]
         xmake("configure", config)
         xmake("build", ["build", "-P", ".", "-y", "-j" + str(a.jobs), "engine_tests"])
     forbidden = re.compile(
-        r'\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|'
+        r"\bmuse::|\bmu::|\bkors\b|\bnlohmann\b|\bglz::|\bQt\b|\bQ[A-Z]\w*\b|"
         r'#\s*include\s*[<"](?:muse/|framework/|engraving/|nlohmann/|glaze/)'
     )
     for header in (a.engine_source / "engrave/include/engrave").rglob("*.h"):
@@ -253,7 +265,9 @@ def main():
         Path("C:/Windows/Fonts/arial.ttf")
         if platform == "windows"
         else (
-            a.cairo_prefix / "fonts/DejaVuSans.ttf" if a.cairo_prefix else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
+            native / "fonts/DejaVuSans.ttf"
+            if (native / "fonts/DejaVuSans.ttf").is_file()
+            else Path("/usr/share/fonts/TTF/DejaVuSans.ttf")
         )
     )
     run(

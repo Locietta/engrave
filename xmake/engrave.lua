@@ -20,8 +20,7 @@
 --
 -- The including project may set ENGRAVE_SOURCE_ROOT to build the engine
 -- sources from a checkout other than this one; the fork itself builds from its
--- own tree.  It supplies zlib and the cairo headers and library directory
--- (the fork's xmake.lua does so for the standalone build).
+-- own tree.  The including project's pixi.toml must provide cairo and zlib.
 
 option("engrave_playback_harness")
     set_default(false)
@@ -45,6 +44,26 @@ end
 ---------------------------------------------------------------------------
 -- Third-party dependencies
 ---------------------------------------------------------------------------
+
+-- cairo and zlib come from the including project's Pixi environment (conda-
+-- forge builds, pinned by its pixi.lock: the PDF/PNG goldens and the archive
+-- bytes depend on them).  xmake has no Pixi package manager of its own; the
+-- pixi:: one lives in xmake/modules and has to be registered before any
+-- pixi:: requirement is loaded, which the option check below does.
+add_moduledirs(path.join(fork_root, "xmake", "modules"))
+option("__pixi_package_manager")
+    set_showmenu(false)
+    on_check(function (option)
+        import("package.manager.pixi.register")()
+        option:enable(true)
+    end)
+option_end()
+-- conda's cairo also ships cairo-static, cairo-gobject and
+-- cairo-script-interpreter libraries, and its zlib four .lib names on
+-- Windows: link only the shared cairo and z.
+add_requires("pixi::cairo", {alias = "cairo", configs = {links = "cairo"}})
+add_requires("pixi::zlib", {alias = "zlib", configs = {links = "z"}})
+
 add_requires("ngcpp-proxy 4.1.0", {system = false})
 add_requires("amc v2.8.1", {system = false})
 add_requires("unordered_dense v5.3.3", {system = false})
@@ -233,7 +252,9 @@ target("muse_global")
     set_kind("static")
     add_deps("muse_generated")
     add_packages("pugixml", "utfcpp", "picojson")
-    add_packages("amc", "unordered_dense", {public = true})
+    -- The zip container (serialization/internal/zipcontainer.cpp) is built on
+    -- zlib; every library and test that links muse_global links it too.
+    add_packages("amc", "unordered_dense", "zlib", {public = true})
     add_engine_target_defaults()
     add_includedirs(
         engine("muse/framework/global"),
@@ -458,9 +479,8 @@ target("engrave")
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_files(path.join(engrave_src, "**.cpp|global/*.cpp"))
     add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
-    -- cairo renders pages (render/); its headers and library directory come
-    -- from the including project, like zlib.
-    add_links("cairo", {public = true})
+    -- cairo renders pages (render/).
+    add_packages("cairo", {public = true})
     if not is_plat("windows") then
         add_links("m", {public = true})
     end
