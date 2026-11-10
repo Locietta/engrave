@@ -631,8 +631,14 @@ void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mod
         if (!position) {
             return;
         }
-        const model::IdPair span{.end = model::Id(get_or_assign_eid(bottom_note).to_std_string()),
-                                 .start = model::Id(get_or_assign_eid(top_note).to_std_string())};
+        // MNX spans an upward arpeggio and a non-arpeggio from the lower note to the higher one;
+        // the others run from the top note down.
+        const model::Id top_id(get_or_assign_eid(top_note).to_std_string());
+        const model::Id bottom_id(get_or_assign_eid(bottom_note).to_std_string());
+        const ArpeggioType arpeggio_type = arpeggio->arpeggio_type();
+        const bool upward =
+            arpeggio_type == ArpeggioType::UP || arpeggio_type == ArpeggioType::UP_STRAIGHT || arpeggio_type == ArpeggioType::BRACKET;
+        const model::IdPair span{.end = upward ? top_id : bottom_id, .start = upward ? bottom_id : top_id};
 
         switch (arpeggio->arpeggio_type()) {
             case ArpeggioType::NORMAL: {
@@ -970,11 +976,11 @@ bool MnxExporter::create_parts() {
 
     export_spanners();
 
-    if (!lyric_line_ids_.empty()) {
+    if (!lyric_verses_.empty()) {
         /// @todo line metadata if MNX spec expands to include anything we can export.
         auto &mnx_line_order = ensure(ensure(root_.global.lyrics).line_order);
-        for (const auto &line_id : lyric_line_ids_) {
-            mnx_line_order.push_back(line_id);
+        for (const int verse : lyric_verses_) {
+            mnx_line_order.push_back(std::to_string(verse));
         }
     }
 

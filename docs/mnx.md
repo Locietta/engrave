@@ -65,8 +65,9 @@ which `Engine::open` still catches as a last resort.
   `4.0`, `5e-1` and values beyond 32 bits are rejected, while an exponent form
   of an integer (`1e2`) is read as that integer. JSON Schema counts `4.0` as an
   integer.
-- `null` for an optional member reads as an absent member; a repeated object
-  key keeps its last value.
+- `null` for an optional member reads as an absent member. A repeated key keeps
+  its last value in a fixed object and is an error in a map (kit, sounds,
+  lyric lines, line metadata).
 - The contents of comments (`_c`) and vendor extensions (`_x`) are skipped
   without type checks, and the exporter writes neither (mnxdom wrote its own
   provenance under `_x.mnxdom`).

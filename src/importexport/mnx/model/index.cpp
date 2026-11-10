@@ -183,6 +183,15 @@ private:
         return added;
     }
 
+    // A JSON object read as key/value pairs; MNX gives each key one meaning, so a repeat is an error.
+    template <class T>
+    void check_unique_keys(const std::optional<std::vector<std::pair<std::string, T>>> &map, const std::string &pointer) {
+        if (!map) return;
+        ankerl::unordered_dense::set<std::string_view> keys;
+        for (const auto &[key, _] : *map)
+            if (!keys.insert(key).second) error(at(pointer, key_token(key)), std::format("Key \"{}\" appears more than once.", key));
+    }
+
     void check_fraction(const Fraction &fraction, const std::string &pointer) {
         if (fraction.denominator <= 0 || fraction.numerator < 0)
             error(pointer, std::format("Fraction [{}, {}] must have a non-negative numerator and a positive denominator.",
@@ -545,6 +554,8 @@ private:
                         error(at("/global/lyrics/lineMetadata", key_token(line)), std::format("ID \"{}\" not found in line order", line));
             }
         }
+        check_unique_keys(root_.global.sounds, "/global/sounds");
+        if (root_.global.lyrics) check_unique_keys(root_.global.lyrics->line_metadata, "/global/lyrics/lineMetadata");
         for (const auto &[sound_id, sound] : items(root_.global.sounds)) {
             if (sound.midi_number && (*sound.midi_number < 0 || *sound.midi_number > 127))
                 error(at("/global/sounds", key_token(sound_id)), std::format("Invalid midi number: {}", *sound.midi_number));
@@ -588,6 +599,7 @@ private:
         const int staves = part.staves_or_default();
         if (staves < 1 || staves > max_staves)
             error(at(pointer, "staves"), std::format("A part has 1 to {} staves, not {}.", max_staves, staves));
+        check_unique_keys(part.kit, at(pointer, "kit"));
         for (const auto &[component_id, component] : items(part.kit)) {
             if (!component.sound) continue;
             const auto &sounds = items(root_.global.sounds);
@@ -739,6 +751,7 @@ private:
                 if (kit_note.staff) check_staff(entry.part, *kit_note.staff, at(note_pointer, "staff"));
                 validate_ties(items(kit_note.ties), note_pointer, entry.part, nullptr, &kit_note);
             }
+            if (event.lyrics) check_unique_keys(event.lyrics->lines, at(pointer, "lyrics/lines"));
             if (check_lyric_lines && event.lyrics) {
                 for (const auto &[line, _] : items(event.lyrics->lines))
                     if (!lyric_lines.contains(line))
