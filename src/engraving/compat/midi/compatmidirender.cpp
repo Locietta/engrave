@@ -179,6 +179,18 @@ void CompatMidiRender::create_play_events(const Score *score, const CompatMidiRe
     // don't change event list if type is PlayEventType::User
 }
 
+static bool grace_notes_after_contain_bend(const std::vector<Chord *> &grace_notes_after) {
+    return std::any_of(grace_notes_after.begin(), grace_notes_after.end(), [](const Chord *grace_chord) {
+        for (Note *note : grace_chord->notes()) {
+            if (note->bend_back()) {
+                return true;
+            }
+        }
+
+        return false;
+    });
+}
+
 //---------------------------------------------------------
 //   renderChord
 //    ontime and trailtime in 1/1000 of duration
@@ -228,6 +240,12 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
         CompatMidiRender::render_chord_articulation(context, chord, ell, gate_time, (double) ontime / NoteEvent::note_length, tremolo);
     }
 
+    const std::vector<Chord *> grace_notes_after = chord->grace_notes_after(true);
+    const bool renders_grace_notes_after = !grace_notes_after.empty() && !grace_notes_after_contain_bend(grace_notes_after);
+    // With an after-group, ontime and trailtime are independent budgets and both shorten the principal. Without one,
+    // keep the legacy before-only convention where trailtime already includes ontime, leaving its events unchanged.
+    const int principal_length = NoteEvent::note_length - trailtime - (renders_grace_notes_after ? ontime : 0);
+
     // Check each note and apply gateTime
     for (size_t i : get_notes_indexes_to_render(chord)) {
         mu::engraving::Note *note = chord->notes()[i];
@@ -240,7 +258,7 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
         // If we are here then we still need to render the note.
         // Render its body if necessary and apply gateTime.
         if (el->empty() && chord->tremolo_chord_type() != TremoloChordType::TREMOLO_SECOND_CHORD) {
-            el->push_back(NoteEvent(0, ontime, 1000 - trailtime,
+            el->push_back(NoteEvent(0, ontime, principal_length,
                                     !note->ghost() ? NoteEvent::default_velocity_multiplier : NoteEvent::ghost_velocity_multiplier));
 
             Glissando *gl = CompatMidiRender::back_glissando(note);
@@ -525,15 +543,6 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
     if (CompatMidiRendererInternal::grace_notes_merged(chord)) {
         return;
     }
-    // if there are graceNotesBefore and also graceNotesAfter, and the before grace notes are
-    // not ACCIACCATURA, then the total time of all of them will be 50% of the time of the main note.
-    // if the before grace notes are ACCIACCATURA then the grace notes after (if there are any).
-    // get 50% of the time of the main note.
-    // this is achieved by the two floating point weights: weighta and weightb whose total is 1.0
-    // assuring that all the grace notes get the same duration, and their total is 50%.
-    // exception is if the note is dotted or double-dotted; see below.
-    float weighta = float(na) / (nb + na);
-
     int grace_duration = 0;
     bool drumset = (CompatMidiRender::get_drumset(chord) != nullptr);
     const double ticks_per_second = score->multiplied_tempo(tick).val * Constants::division;
@@ -559,16 +568,37 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
         if (grace_chord->note_type() == NoteType::ACCIACCATURA || grace_bend) {
             ontime = 0;
             grace_duration = 0;
-            weighta = 1.0;
         } else {
             const double grace_time_ms = (grace_chord->actual_ticks().ticks() / ticks_per_second) * 1000;
 
             // 1000 occurs below as a unit for ontime
             ontime = std::min(500, static_cast<int>((grace_time_ms / chord_time_ms) * 1000));
             grace_duration = ontime / nb;
-            weighta = 1.0;
             trailtime += ontime;
         }
+    }
+
+    const bool grace_bend_after = grace_notes_after_contain_bend(gna);
+    if (!grace_bend_after && na) {
+        if (chord->dots() == 1) {
+            trailtime = 667;
+        } else if (chord->dots() == 2) {
+            trailtime = 571;
+        } else {
+            trailtime = 500;
+        }
+    }
+
+    // Each group first takes its own rule's duration. If a nonzero before-group and an after-group exceed half the
+    // principal together, scale both proportionally to 500 per-mille. Match playback's rounding by rounding the
+    // before-group and giving the after-group the integer complement. An acciaccatura before takes zero time here,
+    // so it leaves the after-group unchanged. A single group always keeps its existing timing.
+    if (ontime > 0 && !grace_bend_after && na && ontime + trailtime > 500) {
+        const int total_grace_time = ontime + trailtime;
+        const int scaled_ontime = (ontime * 500 + total_grace_time / 2) / total_grace_time;
+        ontime = scaled_ontime;
+        trailtime = 500 - scaled_ontime;
+        grace_duration = ontime / nb;
     }
 
     for (int i = 0, on = 0; i < nb; ++i) {
@@ -588,24 +618,7 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
         on += grace_duration;
     }
 
-    bool grace_bend_after = std::any_of(gna.begin(), gna.end(), [](const Chord *grace_chord) {
-        for (Note *note : grace_chord->notes()) {
-            if (note->bend_back()) {
-                return true;
-            }
-        }
-
-        return false;
-    });
-
     if (!grace_bend_after && na) {
-        if (chord->dots() == 1) {
-            trailtime = floor(667 * weighta);
-        } else if (chord->dots() == 2) {
-            trailtime = floor(571 * weighta);
-        } else {
-            trailtime = floor(500 * weighta);
-        }
         int grace_duration1 = trailtime / na;
         int on = 1000 - trailtime;
         for (int i = 0; i < na; ++i) {
