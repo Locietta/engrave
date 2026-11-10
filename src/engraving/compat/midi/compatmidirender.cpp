@@ -1,6 +1,8 @@
 #include "compatmidirender.h"
 
 #include <cmath>
+#include <cstdint>
+#include <optional>
 #include <tuple>
 
 #include "dom/arpeggio.h"
@@ -20,6 +22,7 @@
 #include "dom/repeatlist.h"
 #include "dom/score.h"
 #include "dom/segment.h"
+#include "dom/sig.h"
 #include "dom/slur.h"
 #include "dom/staff.h"
 #include "dom/swing.h"
@@ -191,6 +194,137 @@ static bool grace_notes_after_contain_bend(const std::vector<Chord *> &grace_not
     });
 }
 
+static bool grace_notes_before_contain_bend_start(const std::vector<Chord *> &grace_notes_before) {
+    return std::any_of(grace_notes_before.begin(), grace_notes_before.end(), [](const Chord *grace_chord) {
+        const auto &notes = grace_chord->notes();
+        return std::any_of(notes.begin(), notes.end(), [](const Note *note) { return note->is_grace_bend_start(); });
+    });
+}
+
+//---------------------------------------------------------
+//   Grouped grace timing: a principal with BOTH a before-group and an after-group.
+//
+//   Mirrors the audio rule (playback/renderers/gracechordcontext.cpp, build_grouped_ctx): each group takes its own rule's
+//   duration from its total notated duration and its articulation rule; if together they exceed half the principal, both
+//   shrink proportionally to fill exactly half; the principal keeps the rest. All arithmetic is in principal ticks (the
+//   audio code does the same in time units). A principal with a single group never enters this path and keeps the
+//   legacy per-mille arithmetic below.
+//---------------------------------------------------------
+
+namespace {
+struct GroupedGraceTiming {
+    int before_ticks = 0;   // duration of the before-group, from the principal's start
+    int after_ticks = 0;    // duration of the after-group, ending at the principal's end
+    int before_notated = 0; // summed notated durations, to split each group in proportion
+    int after_notated = 0;
+    int ontime = 0;    // before_ticks as a per-mille start offset of the principal
+    int trailtime = 0; // after_ticks as a per-mille trailing gap of the principal
+};
+} // namespace
+
+static int rounded_division(std::int64_t numerator, std::int64_t denominator) {
+    return static_cast<int>((numerator + denominator / 2) / denominator);
+}
+
+// The smallest per-mille value that the exporter (`ticks * value / 1000`) turns into at least tick_count ticks. Exact when
+// the principal is at most 1000 ticks, so adjacent boundaries meet without gap or overlap; longer principals cannot resolve
+// every tick and are off by under principal_ticks / 1000 ticks.
+static int permille_for_ticks(int tick_count, int principal_ticks) {
+    return (tick_count * NoteEvent::note_length + principal_ticks - 1) / principal_ticks;
+}
+
+static int grace_notes_notated_ticks(const std::vector<Chord *> &grace_chords) {
+    int result = 0;
+    for (const Chord *grace_chord : grace_chords) {
+        result += grace_chord->duration_type_ticks().ticks();
+    }
+    return result;
+}
+
+// std::nullopt unless the grouped rule applies. Bent graces and drumset flams keep their legacy timing even with both
+// groups, and so does a chord whose trill or articulation already plays the graces.
+static std::optional<GroupedGraceTiming> grouped_grace_timing(Chord *chord, bool drumset, const std::vector<Chord *> &grace_notes_before,
+                                                              const std::vector<Chord *> &grace_notes_after) {
+    if (grace_notes_before.empty() || grace_notes_after.empty() || drumset || grace_notes_after_contain_bend(grace_notes_after) ||
+        grace_notes_before_contain_bend_start(grace_notes_before) || CompatMidiRendererInternal::grace_notes_merged(chord)) {
+        return std::nullopt;
+    }
+    const int principal_ticks = chord->actual_ticks().ticks();
+    if (principal_ticks <= 0) {
+        return std::nullopt;
+    }
+
+    // grace_notes_max_available_duration: an after-group and a lone appoggiatura take half the principal (two thirds in
+    // compound time above a quaver); any other before-group takes half a demisemiquaver per grace, at most half. As in
+    // the audio code, a mixed before-group counts as appoggiatura, which wins over acciaccatura.
+    const int half = principal_ticks / 2;
+    const bool compound =
+        chord->score()->sigmap()->timesig(chord->tick().ticks()).timesig().is_compound() && principal_ticks > Constants::division / 2;
+    const int appoggiatura_limit = compound ? 2 * principal_ticks / 3 : half;
+    const bool before_has_appoggiatura = std::any_of(grace_notes_before.begin(), grace_notes_before.end(), [](const Chord *grace_chord) {
+        return grace_chord->note_type() != NoteType::ACCIACCATURA;
+    });
+    const int count_before = static_cast<int>(grace_notes_before.size());
+    const int before_limit = before_has_appoggiatura && count_before == 1 ?
+                                 appoggiatura_limit :
+                                 std::min((::mu::engraving::thirty_second_ticks / 2) * count_before, half);
+
+    GroupedGraceTiming timing;
+    timing.before_notated = grace_notes_notated_ticks(grace_notes_before);
+    timing.after_notated = grace_notes_notated_ticks(grace_notes_after);
+    timing.before_ticks = std::min(before_limit, timing.before_notated);
+    timing.after_ticks = std::min(appoggiatura_limit, timing.after_notated);
+    if (timing.before_ticks + timing.after_ticks > half) {
+        timing.before_ticks = rounded_division(std::int64_t(timing.before_ticks) * half, timing.before_ticks + timing.after_ticks);
+        timing.after_ticks = half - timing.before_ticks;
+    }
+    timing.ontime = permille_for_ticks(timing.before_ticks, principal_ticks);
+    timing.trailtime = permille_for_ticks(timing.after_ticks, principal_ticks);
+    return timing;
+}
+
+// Lays one group out on cumulative boundaries inside its budget (append_grace_group_ctxs in the audio code), so the
+// graces are adjacent and exactly fill start_tick .. start_tick + budget_ticks.
+static void set_grouped_grace_events(const std::vector<Chord *> &grace_chords, int budget_ticks, int notated_ticks, int start_tick,
+                                     int principal_ticks) {
+    int notated_so_far = 0;
+    int boundary = 0;
+    for (Chord *grace_chord : grace_chords) {
+        notated_so_far += grace_chord->duration_type_ticks().ticks();
+        const int next_boundary = rounded_division(std::int64_t(budget_ticks) * notated_so_far, notated_ticks);
+        const int on = permille_for_ticks(start_tick + boundary, principal_ticks);
+        const int len = permille_for_ticks(next_boundary - boundary, principal_ticks);
+
+        std::vector<NoteEventList> events;
+        for (size_t i = 0; i < grace_chord->notes().size(); ++i) {
+            NoteEventList note_events;
+            note_events.push_back(NoteEvent(0, on, len));
+            events.push_back(note_events);
+        }
+        if (grace_chord->play_event_type() == PlayEventType::AUTO) {
+            grace_chord->set_note_event_lists(events);
+        }
+        boundary = next_boundary;
+    }
+}
+
+static const Drumset *chord_drumset(const Chord *chord) {
+    if (chord->staff() && chord->staff()->is_drum_staff(chord->tick())) {
+        return chord->staff()->part()->instrument(chord->tick())->drumset();
+    }
+    return nullptr;
+}
+
+// Also used by the event collector (compatmidirenderinternal.cpp), which must not move acciaccaturas before the beat when
+// the grouped timing places them on it.
+bool grace_groups_share_principal(Chord *chord) {
+    const std::vector<Chord *> grace_notes_before = chord->grace_notes_before(true); // copies: the chord reuses these vectors
+    const std::vector<Chord *> grace_notes_after = chord->grace_notes_after(true);
+    return grouped_grace_timing(chord, chord_drumset(chord) != nullptr, grace_notes_before, grace_notes_after).has_value();
+}
+
+static void render_arpeggio_impl(Chord *chord, std::vector<NoteEventList> &ell, int ontime, int principal_end_tick);
+
 //---------------------------------------------------------
 //   renderChord
 //    ontime and trailtime in 1/1000 of duration
@@ -208,6 +342,31 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
     std::vector<NoteEventList> ell(notes.size(), NoteEventList());
 
     bool arpeggio = false;
+
+    // With both grace groups, ontime carries the before-group's duration (plus any swing shift) and trailtime the
+    // after-group's, as create_grace_notes_play_events left them. The principal then spans from the before-group's end
+    // to the after-group's start, so the swing shift (which only moves the start) never eats into its length. A
+    // single group keeps the legacy convention, where trailtime already includes the before-group.
+    const std::vector<Chord *> grace_notes_before = chord->grace_notes_before(true);
+    const std::vector<Chord *> grace_notes_after = chord->grace_notes_after(true);
+    const std::optional<GroupedGraceTiming> grouped =
+        grouped_grace_timing(chord, CompatMidiRender::get_drumset(chord) != nullptr, grace_notes_before, grace_notes_after);
+    int principal_length = NoteEvent::note_length - trailtime;
+    int principal_end_tick = -1; // -1: legacy, the principal runs to the end of the chord
+    if (grouped) {
+        const int principal_ticks = chord->actual_ticks().ticks();
+        // trailtime may have grown (adjust_trailtime) beyond the after-group's own budget; that only shortens the principal
+        const int extra_trailtime = std::max(0, trailtime - grouped->trailtime);
+        principal_end_tick = std::max(grouped->before_ticks,
+                                      principal_ticks - grouped->after_ticks - extra_trailtime * principal_ticks / NoteEvent::note_length);
+        const int span = principal_end_tick - grouped->before_ticks;
+        principal_length = permille_for_ticks(span, principal_ticks);
+        // Swing moves the principal inside its own span, as playback does (NoteRenderer::apply_swing_if_need scales the
+        // swing shift by the principal's reduced nominal duration, which the gate time then shortens). The shift passed in
+        // is a per-mille of the whole chord, so the principal stays between the two groups.
+        const int swing_shift = std::max(0, ontime - grouped->ontime);
+        ontime = permille_for_ticks(grouped->before_ticks + span * swing_shift / NoteEvent::note_length, principal_ticks);
+    }
 
     /// when note has glissando or slide from note, tremolo should be shortened
     int base_length = NoteEvent::note_length - ontime - trailtime;
@@ -229,7 +388,7 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
     bool tremolo = false;
 
     if (chord->arpeggio() && chord->arpeggio()->play_arpeggio()) {
-        CompatMidiRender::render_arpeggio(chord, ell, ontime);
+        render_arpeggio_impl(chord, ell, ontime, principal_end_tick);
         arpeggio = true;
     } else {
         if (chord->tremolo_type() != TremoloType::INVALID_TREMOLO) {
@@ -239,12 +398,6 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
 
         CompatMidiRender::render_chord_articulation(context, chord, ell, gate_time, (double) ontime / NoteEvent::note_length, tremolo);
     }
-
-    const std::vector<Chord *> grace_notes_after = chord->grace_notes_after(true);
-    const bool renders_grace_notes_after = !grace_notes_after.empty() && !grace_notes_after_contain_bend(grace_notes_after);
-    // With an after-group, ontime and trailtime are independent budgets and both shorten the principal. Without one,
-    // keep the legacy before-only convention where trailtime already includes ontime, leaving its events unchanged.
-    const int principal_length = NoteEvent::note_length - trailtime - (renders_grace_notes_after ? ontime : 0);
 
     // Check each note and apply gateTime
     for (size_t i : get_notes_indexes_to_render(chord)) {
@@ -290,7 +443,9 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
 //   renderArpeggio
 //---------------------------------------------------------
 
-void CompatMidiRender::render_arpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime) {
+// principal_end_tick: when set (grouped grace timing), the tick of the principal at which every arpeggiated note ends,
+// so the after-group can start there; -1 keeps the legacy end at the end of the chord.
+static void render_arpeggio_impl(Chord *chord, std::vector<NoteEventList> &ell, int ontime, int principal_end_tick) {
     int notes = int(chord->notes().size());
     int l = 64;
     while (l && (l * notes > chord->up_note()->play_ticks())) {
@@ -316,9 +471,18 @@ void CompatMidiRender::render_arpeggio(Chord *chord, std::vector<NoteEventList> 
         int ot = (l * j * 1000) / chord->up_note()->play_ticks() * tempo_ratio * chord->arpeggio()->stretch();
         ot = std::clamp(ot + ontime, ot, 1000);
 
-        events->push_back(NoteEvent(0, ot, 1000 - ot));
+        int length = 1000 - ot;
+        if (principal_end_tick >= 0) {
+            const int principal_ticks = chord->actual_ticks().ticks();
+            length = permille_for_ticks(std::max(0, principal_end_tick - principal_ticks * ot / NoteEvent::note_length), principal_ticks);
+        }
+        events->push_back(NoteEvent(0, ot, length));
         j++;
     }
+}
+
+void CompatMidiRender::render_arpeggio(Chord *chord, std::vector<NoteEventList> &ell, int ontime) {
+    render_arpeggio_impl(chord, ell, ontime, -1);
 }
 
 //---------------------------------------------------------
@@ -543,6 +707,27 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
     if (CompatMidiRendererInternal::grace_notes_merged(chord)) {
         return;
     }
+    // Both groups present: share half the principal as in playback (see grouped_grace_timing). Everything below is the
+    // legacy path for a single group, bent graces and drumset flams, and stays as it was.
+    if (const std::optional<GroupedGraceTiming> grouped =
+            grouped_grace_timing(chord, CompatMidiRender::get_drumset(chord) != nullptr, gnb, gna)) {
+        const int principal_ticks = chord->actual_ticks().ticks();
+        ontime = grouped->ontime;
+        trailtime = grouped->trailtime;
+        set_grouped_grace_events(gnb, grouped->before_ticks, grouped->before_notated, 0, principal_ticks);
+        set_grouped_grace_events(gna, grouped->after_ticks, grouped->after_notated, principal_ticks - grouped->after_ticks,
+                                 principal_ticks);
+        return;
+    }
+    // if there are graceNotesBefore and also graceNotesAfter, and the before grace notes are
+    // not ACCIACCATURA, then the total time of all of them will be 50% of the time of the main note.
+    // if the before grace notes are ACCIACCATURA then the grace notes after (if there are any).
+    // get 50% of the time of the main note.
+    // this is achieved by the two floating point weights: weighta and weightb whose total is 1.0
+    // assuring that all the grace notes get the same duration, and their total is 50%.
+    // exception is if the note is dotted or double-dotted; see below.
+    float weighta = float(na) / (nb + na);
+
     int grace_duration = 0;
     bool drumset = (CompatMidiRender::get_drumset(chord) != nullptr);
     const double ticks_per_second = score->multiplied_tempo(tick).val * Constants::division;
@@ -568,37 +753,16 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
         if (grace_chord->note_type() == NoteType::ACCIACCATURA || grace_bend) {
             ontime = 0;
             grace_duration = 0;
+            weighta = 1.0;
         } else {
             const double grace_time_ms = (grace_chord->actual_ticks().ticks() / ticks_per_second) * 1000;
 
             // 1000 occurs below as a unit for ontime
             ontime = std::min(500, static_cast<int>((grace_time_ms / chord_time_ms) * 1000));
             grace_duration = ontime / nb;
+            weighta = 1.0;
             trailtime += ontime;
         }
-    }
-
-    const bool grace_bend_after = grace_notes_after_contain_bend(gna);
-    if (!grace_bend_after && na) {
-        if (chord->dots() == 1) {
-            trailtime = 667;
-        } else if (chord->dots() == 2) {
-            trailtime = 571;
-        } else {
-            trailtime = 500;
-        }
-    }
-
-    // Each group first takes its own rule's duration. If a nonzero before-group and an after-group exceed half the
-    // principal together, scale both proportionally to 500 per-mille. Match playback's rounding by rounding the
-    // before-group and giving the after-group the integer complement. An acciaccatura before takes zero time here,
-    // so it leaves the after-group unchanged. A single group always keeps its existing timing.
-    if (ontime > 0 && !grace_bend_after && na && ontime + trailtime > 500) {
-        const int total_grace_time = ontime + trailtime;
-        const int scaled_ontime = (ontime * 500 + total_grace_time / 2) / total_grace_time;
-        ontime = scaled_ontime;
-        trailtime = 500 - scaled_ontime;
-        grace_duration = ontime / nb;
     }
 
     for (int i = 0, on = 0; i < nb; ++i) {
@@ -618,7 +782,16 @@ void CompatMidiRender::create_grace_notes_play_events(const Score *score, const 
         on += grace_duration;
     }
 
+    const bool grace_bend_after = grace_notes_after_contain_bend(gna);
+
     if (!grace_bend_after && na) {
+        if (chord->dots() == 1) {
+            trailtime = floor(667 * weighta);
+        } else if (chord->dots() == 2) {
+            trailtime = floor(571 * weighta);
+        } else {
+            trailtime = floor(500 * weighta);
+        }
         int grace_duration1 = trailtime / na;
         int on = 1000 - trailtime;
         for (int i = 0; i < na; ++i) {
@@ -1014,6 +1187,9 @@ int CompatMidiRender::adjust_trailtime(int trailtime, Chord *current_chord, Chor
         return trailtime;
     }
 
+    // Grouped graces sit on the beat, so they take nothing from this chord (grace_groups_share_principal refills the
+    // chord's grace vectors, hence it runs before the reference below is taken)
+    const bool next_graces_on_beat = grace_groups_share_principal(next_chord);
     const std::vector<Chord *> &grace_before_chords = next_chord->grace_notes_before();
     std::vector<Chord *> grace_notes_before_bar;
 
@@ -1021,7 +1197,7 @@ int CompatMidiRender::adjust_trailtime(int trailtime, Chord *current_chord, Chor
         return std::any_of(ch->notes().begin(), ch->notes().end(), [](Note *n) { return n->is_grace_bend_start(); });
     });
 
-    if (!has_grace_bend) {
+    if (!has_grace_bend && !next_graces_on_beat) {
         std::copy_if(grace_before_chords.begin(), grace_before_chords.end(), std::back_inserter(grace_notes_before_bar),
                      [](Chord *ch) { return ch->note_type() == NoteType::ACCIACCATURA; });
     }
@@ -1144,13 +1320,7 @@ bool CompatMidiRender::is_glissando_valid(Glissando *glissando) {
     return to_note(start_item)->string() == to_note(end_item)->string();
 }
 
-const Drumset *CompatMidiRender::get_drumset(const Chord *chord) {
-    if (chord->staff() && chord->staff()->is_drum_staff(chord->tick())) {
-        const Drumset *ds = chord->staff()->part()->instrument(chord->tick())->drumset();
-        return ds;
-    }
-    return nullptr;
-}
+const Drumset *CompatMidiRender::get_drumset(const Chord *chord) { return chord_drumset(chord); }
 
 //---------------------------------------------------------
 // totalTiedNoteTicks
