@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // The engine's JSON DOM and text serialization.
 //
-// glaze is used as the in-memory generic DOM; the text writer lives here so the
-// engine's own output stays byte-identical to the captures in tests/data/golden
-// (object ordering, double formatting and string escaping included).
+// glaze is used as the in-memory generic DOM and as the writer; this header
+// only fixes the writer options the engine relies on (valid JSON string
+// escaping and the indentation widths its callers pass to dump_json).
 #pragma once
 
 #include <cstdint>
@@ -15,8 +15,7 @@
 
 #include <glaze/json/generic.hpp>
 #include <glaze/json/read.hpp>
-
-#include "engrave/src/score/json_number.h"
+#include <glaze/json/write.hpp>
 
 namespace music {
 
@@ -128,105 +127,42 @@ bool json_equal(const glz::generic_json<glz::num_mode::u64, MapType> &left, cons
 
 namespace json_detail {
 
-inline void append_string(std::string &out, std::string_view text) {
-    static constexpr char hex[] = "0123456789abcdef";
-    out.push_back('"');
-    for (const unsigned char c : text) {
-        switch (c) {
-            case '"': out += "\\\""; break;
-            case '\\': out += "\\\\"; break;
-            case '\b': out += "\\b"; break;
-            case '\t': out += "\\t"; break;
-            case '\n': out += "\\n"; break;
-            case '\f': out += "\\f"; break;
-            case '\r': out += "\\r"; break;
-            default:
-                if (c <= 0x1f) {
-                    out += "\\u00";
-                    out.push_back(hex[c >> 4]);
-                    out.push_back(hex[c & 0xF]);
-                } else {
-                    out.push_back(static_cast<char>(c));
-                }
-                break;
-        }
-    }
-    out.push_back('"');
-}
+// Control characters have no two-byte escape, so glaze needs this opt-in to
+// write them as \uXXXX instead of emitting an invalid JSON string.
+struct CompactOpts : glz::opts {
+    bool escape_control_characters = true;
+};
 
-inline void append_indent(std::string &out, int indent, int depth) {
-    out.push_back('\n');
-    out.append(static_cast<std::size_t>(indent) * static_cast<std::size_t>(depth), ' ');
-}
+template <uint8_t Width>
+struct PrettyOpts : glz::opts {
+    bool prettify = true;
+    char indentation_char = ' ';
+    uint8_t indentation_width = Width;
+    bool escape_control_characters = true;
+};
 
-template <template <class> class MapType>
-void append_value(std::string &out, const glz::generic_json<glz::num_mode::u64, MapType> &value, int indent, int depth) {
-    if (value.template holds<std::nullptr_t>()) {
-        out += "null";
-        return;
-    }
-    if (value.template holds<bool>()) {
-        out += value.template get<bool>() ? "true" : "false";
-        return;
-    }
-    if (value.template holds<uint64_t>()) {
-        out += std::to_string(value.template get<uint64_t>());
-        return;
-    }
-    if (value.template holds<int64_t>()) {
-        out += std::to_string(value.template get<int64_t>());
-        return;
-    }
-    if (value.template holds<double>()) {
-        out += json_number::format_double(value.template get<double>());
-        return;
-    }
-    if (value.template holds<std::string>()) {
-        append_string(out, value.template get<std::string>());
-        return;
-    }
-    const bool pretty = indent >= 0;
-    if (value.is_array()) {
-        const auto &array = value.get_array();
-        out.push_back('[');
-        for (std::size_t i = 0; i < array.size(); ++i) {
-            if (i) out.push_back(',');
-            if (pretty) append_indent(out, indent, depth + 1);
-            append_value(out, array[i], indent, depth + 1);
-        }
-        if (pretty && !array.empty()) append_indent(out, indent, depth);
-        out.push_back(']');
-        return;
-    }
-    if (value.is_object()) {
-        const auto &object = value.get_object();
-        out.push_back('{');
-        bool first = true;
-        for (const auto &[key, item] : object) {
-            if (!first) out.push_back(',');
-            first = false;
-            if (pretty) append_indent(out, indent, depth + 1);
-            append_string(out, key);
-            out.push_back(':');
-            if (pretty) out.push_back(' ');
-            append_value(out, item, indent, depth + 1);
-        }
-        if (pretty && !object.empty()) append_indent(out, indent, depth);
-        out.push_back('}');
-        return;
-    }
-    out += "null";
+template <class J, class Opts>
+std::string write_with(const J &value) {
+    auto text = glz::write<Opts{}>(value);
+    return text ? std::move(*text) : std::string{};
 }
 
 } // namespace json_detail
 
-// Serialize the DOM; indent < 0 is the compact form, 0..n the indented form
-// (json::dump with the negative/zero-based indent argument).
+// Serialize the DOM; indent < 0 is the compact form, otherwise the number of
+// spaces per level of the old dump(indent) argument.
 template <template <class> class MapType>
 std::string dump_json(const glz::generic_json<glz::num_mode::u64, MapType> &value, int indent = -1) {
-    std::string out;
-    json_detail::append_value(out, value, indent, 0);
-    return out;
+    using J = glz::generic_json<glz::num_mode::u64, MapType>;
+    if (indent < 0) return json_detail::write_with<J, json_detail::CompactOpts>(value);
+    switch (indent) {
+        case 0: return json_detail::write_with<J, json_detail::PrettyOpts<0>>(value);
+        case 1: return json_detail::write_with<J, json_detail::PrettyOpts<1>>(value);
+        case 2: return json_detail::write_with<J, json_detail::PrettyOpts<2>>(value);
+        case 3: return json_detail::write_with<J, json_detail::PrettyOpts<3>>(value);
+        case 4: return json_detail::write_with<J, json_detail::PrettyOpts<4>>(value);
+        default: return json_detail::write_with<J, json_detail::PrettyOpts<2>>(value);
+    }
 }
 
 } // namespace music
