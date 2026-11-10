@@ -493,7 +493,7 @@ void MnxExporter::create_ottava(const Ottava *ottava) {
 void MnxExporter::export_spanners() {
     // All content exists now, so its events have their final addresses.
     events_by_id_.clear();
-    const auto index_events = [this](this const auto &self, auto &events) -> void {
+    const auto index_events = [this](const auto &self, auto &events) -> void {
         for (auto &item : events) {
             if constexpr (std::is_same_v<std::decay_t<decltype(item)>, model::Event>) {
                 if (item.id) events_by_id_.emplace(std::string(*item.id), &item);
@@ -504,7 +504,7 @@ void MnxExporter::export_spanners() {
                             if (value.id) events_by_id_.emplace(std::string(*value.id), &value);
                         } else if constexpr (std::is_same_v<T, model::Space>) {
                         } else {
-                            self(value.content);
+                            self(self, value.content);
                         }
                     },
                     item);
@@ -514,7 +514,7 @@ void MnxExporter::export_spanners() {
     for (auto &part : root_.parts) {
         for (auto &measure : part.measures) {
             for (auto &sequence : measure.sequences) {
-                index_events(sequence.content);
+                index_events(index_events, sequence.content);
             }
         }
     }

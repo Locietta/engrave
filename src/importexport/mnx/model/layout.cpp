@@ -44,25 +44,25 @@ std::optional<std::vector<StaffKey>> staff_keys(const Staff &staff) {
 
 std::vector<const Staff *> flatten_staves(const SystemLayout &layout) {
     std::vector<const Staff *> staves;
-    const auto walk = [&](this const auto &self, const std::vector<SystemLayoutItem> &content) -> void {
+    const auto walk = [&](const auto &self, const std::vector<SystemLayoutItem> &content) -> void {
         for (const auto &item : content) {
             if (const auto *group = std::get_if<StaffGroup>(&item))
-                self(group->content);
+                self(self, group->content);
             else
                 staves.push_back(&std::get<Staff>(item));
         }
     };
-    walk(layout.content);
+    walk(walk, layout.content);
     return staves;
 }
 
 bool is_part_group(const StaffGroup &group) {
     std::optional<std::string> part;
     bool mixed = false;
-    const auto walk = [&](this const auto &self, const std::vector<SystemLayoutItem> &content) -> void {
+    const auto walk = [&](const auto &self, const std::vector<SystemLayoutItem> &content) -> void {
         for (const auto &item : content) {
             if (const auto *inner = std::get_if<StaffGroup>(&item)) {
-                self(inner->content);
+                self(self, inner->content);
                 continue;
             }
             for (const auto &source : std::get<Staff>(item).sources) {
@@ -73,7 +73,7 @@ bool is_part_group(const StaffGroup &group) {
             }
         }
     };
-    walk(group.content);
+    walk(walk, group.content);
     return part && !mixed;
 }
 
@@ -96,7 +96,7 @@ std::vector<LayoutSpan> layout_spans(const SystemLayout &layout) {
     std::vector<Tagged> tagged;
     std::size_t staff_index = 0;
     // Returns the first and last staff index under `content`, if it has staves.
-    const auto walk = [&](this const auto &self, const std::vector<SystemLayoutItem> &content,
+    const auto walk = [&](const auto &self, const std::vector<SystemLayoutItem> &content,
                           std::size_t depth) -> std::optional<std::pair<std::size_t, std::size_t>> {
         std::optional<std::size_t> first;
         std::optional<std::size_t> last;
@@ -117,7 +117,7 @@ std::vector<LayoutSpan> layout_spans(const SystemLayout &layout) {
                 continue;
             }
             const auto &group = std::get<StaffGroup>(item);
-            const auto range = self(group.content, depth + 1);
+            const auto range = self(self, group.content, depth + 1);
             if (!range) continue; // a group without staves
             LayoutSpan span;
             span.kind = LayoutSpan::Kind::GROUP;
@@ -134,7 +134,7 @@ std::vector<LayoutSpan> layout_spans(const SystemLayout &layout) {
         if (!first) return std::nullopt;
         return std::pair{*first, *last};
     };
-    std::ignore = walk(layout.content, 0);
+    std::ignore = walk(walk, layout.content, 0);
     std::ranges::stable_sort(tagged, [](const Tagged &a, const Tagged &b) {
         if (a.span.start != b.span.start) return a.span.start < b.span.start;
         if (a.span.depth != b.span.depth) return a.span.depth < b.span.depth;
