@@ -1,7 +1,7 @@
 {
  "annotations": [
   {
-   "bpm": 100.0,
+   "bpm": 100,
    "subtype": "Tempo",
    "text": " = 100",
    "tick": 0,
@@ -499,7 +499,7 @@
  "tempoMap": [
   [
    0,
-   100.0
+   100
   ]
  ]
 }
