@@ -31,6 +31,11 @@ option_end()
 local fork_root = path.directory(os.scriptdir())
 local source_root = path.absolute(ENGRAVE_SOURCE_ROOT or fork_root)
 
+-- The pinned xmake-repository packages (glaze) live under <fork>/xmake/packages.
+-- This file is the engine's build interface, so the repository is registered
+-- here as well: the host project includes only this file, not xmake.lua.
+add_repositories("engrave-pinned xmake", {rootdir = fork_root})
+
 local function engine(...)
     return path.join(source_root, ...)
 end
@@ -49,6 +54,7 @@ end
 add_requires("microsoft-proxy 4.0.1", {system = false})
 add_requires("amc v2.8.1", {system = false})
 add_requires("unordered_dense v5.3.3", {system = false})
+add_requires("glaze 9.1.0", {system = false})
 add_requires("mnxdom 45bf462", {system = false})
 
 add_requires("freetype 2.14.1", {system = false, configs = {
@@ -450,6 +456,7 @@ end
 target("engrave")
     set_kind("static")
     add_packages("muse-pugixml")
+    add_packages("glaze", {public = true})
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "muse_global", "muse_draw", "muse_mpe", "engraving",
         "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
