@@ -136,7 +136,6 @@ build dependencies are explicitly marked as such.
 | **dtl** | `src/engraving/thirdparty/dtl/` | Tatsuhiko Kubo (https://github.com/cubicdaiya/dtl) | 3-Clause BSD License |
 | **IntervalTree** | `src/engraving/thirdparty/intervaltree/` | Erik Garrison (https://github.com/ekg/intervaltree) | MIT License |
 | **BeatRoot** | `src/importexport/midi/thirdparty/beatroot/` | Simon Dixon & Chris Cannam, Queen Mary Univ. of London | GNU General Public License v2.0 or later (`GPL-2.0-or-later`) |
-| **Grisu2 double formatting** | `engrave/src/score/json_number.h` | Florian Loitsch's reference implementation (http://florian.loitsch.com/publications), adapted | MIT License |
 
 ### Component Details and Notices
 
