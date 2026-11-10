@@ -104,3 +104,6 @@ compile_commands.json
 .worktrees/
 
 *.egg-info/
+
+# Pixi environment (pixi.toml provides cairo and zlib)
+.pixi/

@@ -90,10 +90,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # nasm: the LAME recipe; libcairo2-dev: the page renderer (system
-          # cairo, the Linux default); fonts-dejavu-core: renderer fallback
-          # font. cmake, ninja, make and autotools ship with the image.
-          sudo apt-get install -y --no-install-recommends nasm libcairo2-dev pkg-config ccache fonts-dejavu-core
+          # nasm: the LAME recipe; fonts-dejavu-core: renderer fallback font.
+          # cmake, ninja, make and autotools ship with the image; cairo and
+          # zlib come from the Pixi environment.
+          sudo apt-get install -y --no-install-recommends nasm ccache fonts-dejavu-core
           g++ --version
 
       - name: Install Windows build dependencies
@@ -115,31 +115,21 @@ jobs:
           python -m pip install -r tests/requirements.txt
           python -m pip install -e .
 
-      # Windows has no system cairo: provide the same conda-forge release the
-      # host pins (pixi.lock), exactly as the README describes for
-      # --cairo_prefix.
-      - name: Install pixi (cairo provider)
-        if: runner.os == 'Windows'
+      # cairo and zlib: the conda-forge builds pinned by pixi.lock, which
+      # xmake/engrave.lua requires as pixi::cairo and pixi::zlib.
+      - name: Install the Pixi environment (cairo, zlib)
         uses: prefix-dev/setup-pixi@v0
         with:
           pixi-version: v0.84.1
-          run-install: false
-          cache: false
+          locked: true
+          cache: true
 
-      - name: Provide cairo (Windows)
+      - name: Put the Pixi DLLs on PATH (Windows)
         if: runner.os == 'Windows'
         run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          pixi init --channel conda-forge "$env:RUNNER_TEMP/cairo-env"
-          pixi add --manifest-path "$env:RUNNER_TEMP/cairo-env/pixi.toml" cairo=1.18.6
-          $prefix = (Resolve-Path "$env:RUNNER_TEMP/cairo-env/.pixi/envs/default/Library").Path
-          foreach ($path in "include/cairo/cairo.h", "lib/cairo.lib", "bin") {
-            if (-not (Test-Path (Join-Path $prefix $path))) { throw "cairo prefix lacks $path" }
-          }
-          "CAIRO_PREFIX=$prefix" >> $env:GITHUB_ENV
-          # The test binaries load the conda cairo DLLs at run time.
-          Join-Path $prefix "bin" >> $env:GITHUB_PATH
+          # The test binaries load the conda cairo and zlib DLLs at run time
+          # (Linux binaries carry the environment's lib directory as run path).
+          Join-Path $PWD ".pixi/envs/default/Library/bin" >> $env:GITHUB_PATH
 
       # Packages are built from source into <build dir>/.packages
       # (package.install_locally); cache them on the recipes and build files.
@@ -169,7 +159,6 @@ jobs:
             '--ccache=y', "--ccachedir=$env:CCACHE_DIR",
             '--engrave_tests=y', '--engrave_playback_harness=n'
           )
-          if ($env:CAIRO_PREFIX) { $config += "--cairo_prefix=$env:CAIRO_PREFIX" }
           xmake @config
 
       - name: Save xmake package cache

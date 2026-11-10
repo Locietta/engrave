@@ -4,9 +4,9 @@
 #include <memory>
 #include <stdexcept>
 
-#include <cairo-pdf.h>
-#include <cairo-svg.h>
-#include <cairo.h>
+#include <cairo/cairo-pdf.h>
+#include <cairo/cairo-svg.h>
+#include <cairo/cairo.h>
 
 #include "cairo_painter.h"
 #include "draw/painter.h"

@@ -1,0 +1,18 @@
+# Native libraries the standalone engine build takes from conda-forge.
+#
+# xmake/engrave.lua requires them as pixi::cairo and pixi::zlib.  The pins
+# (version and build) are the ones the engrave-mcp superproject locks: the
+# PDF/PNG render goldens and the archive bytes depend on these builds.  Run
+# `pixi install --locked` once before configuring xmake.
+[workspace]
+name = "engrave"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64"]
+
+[target.win-64.dependencies]
+cairo = { version = "==1.18.6", build = "h477c42c_0" }
+zlib = { version = "==1.3.2", build = "hfd05255_3" }
+
+[target.linux-64.dependencies]
+cairo = { version = "==1.18.6", build = "h3c89d7e_0" }
+zlib = { version = "==1.3.2", build = "h25fd6f3_3" }
