@@ -7,9 +7,11 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -71,16 +73,47 @@ void merge_object(J &target, const J &source) {
     for (const auto &[key, value] : source.get_object()) target[key] = value;
 }
 
+namespace json_detail {
+
+// nlohmann rejected trailing content and skipped one leading UTF-8 BOM; glaze
+// needs both behaviours opted in explicitly.
+struct ReadOpts : glz::opts {
+    bool validate_trailing_whitespace = true;
+};
+
+inline std::string_view without_bom(std::string_view text) {
+    if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xEF && static_cast<unsigned char>(text[1]) == 0xBB &&
+        static_cast<unsigned char>(text[2]) == 0xBF) {
+        text.remove_prefix(3);
+    }
+    return text;
+}
+
+} // namespace json_detail
+
+template <class J>
+std::expected<J, glz::error_ctx> parse_json_expected(std::string_view text) {
+    text = json_detail::without_bom(text);
+    J value{};
+    glz::context context{};
+    const auto error = glz::read<json_detail::ReadOpts{}>(value, text, context);
+    if (error) return std::unexpected(error);
+    return value;
+}
+
 // Non-throwing parse: std::nullopt where json::parse(text, nullptr, false)
 // returned a discarded value.
 template <class J>
 std::optional<J> parse_json(std::string_view text) {
-    auto parsed = glz::read_json<J>(text);
+    auto parsed = parse_json_expected<J>(text);
     if (!parsed) return std::nullopt;
     return std::optional<J>(std::move(*parsed));
 }
 
-// Deep equality; the ordering map of the two DOMs must be the same.
+// Deep equality; both DOMs must use the same ordering map.
+template <template <class> class MapType>
+inline constexpr bool insertion_ordered_map = std::same_as<MapType<int>, glz::ordered_small_map<int>>;
+
 template <template <class> class MapType>
 bool json_equal(const glz::generic_json<glz::num_mode::u64, MapType> &left, const glz::generic_json<glz::num_mode::u64, MapType> &right) {
     using J = glz::generic_json<glz::num_mode::u64, MapType>;
@@ -116,11 +149,22 @@ bool json_equal(const glz::generic_json<glz::num_mode::u64, MapType> &left, cons
         const auto &a = left.get_object();
         const auto &b = right.get_object();
         if (a.size() != b.size()) return false;
-        for (const auto &[key, value] : a) {
-            const auto found = b.find(key);
-            if (found == b.end() || !json_equal<MapType>(value, found->second)) return false;
+        if constexpr (insertion_ordered_map<MapType>) {
+            // Insertion order is semantic for ordered_json: the harness evidence
+            // compares the same members in the same positions.
+            auto a_it = a.begin();
+            auto b_it = b.begin();
+            for (; a_it != a.end(); ++a_it, ++b_it) {
+                if (a_it->first != b_it->first || !json_equal<MapType>(a_it->second, b_it->second)) return false;
+            }
+            return true;
+        } else {
+            for (const auto &[key, value] : a) {
+                const auto found = b.find(key);
+                if (found == b.end() || !json_equal<MapType>(value, found->second)) return false;
+            }
+            return true;
         }
-        return true;
     }
     return false;
 }

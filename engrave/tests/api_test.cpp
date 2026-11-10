@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 
 #include "engrave/src/api/sniff.h"
+#include "engrave/src/score/json.h"
 #include <engrave/engrave.h>
 
 namespace {
@@ -1018,6 +1019,29 @@ TEST(Contract, EngineDestroyedBeforeItsDocumentsAborts) {
             g_engine.reset();
         },
         "while Documents were open");
+}
+
+TEST(JsonHelpers, ParseMatchesTheOldWireRules) {
+    using music::Json;
+    const auto value = music::parse_json<Json>(R"({"a":1,"b":[true,null]})");
+    ASSERT_TRUE(value);
+    EXPECT_EQ(value->at("a").as<int>(), 1);
+    EXPECT_FALSE(music::parse_json<Json>(R"({"a":1} garbage)"));
+    EXPECT_FALSE(music::parse_json<Json>(R"({"a":1}{"b":2})"));
+    EXPECT_TRUE(music::parse_json<Json>("{\"a\":1} \n\t"));
+    const auto bom_value = music::parse_json<Json>("\xEF\xBB\xBF{\"a\":1}");
+    ASSERT_TRUE(bom_value);
+    EXPECT_TRUE(music::json_equal(*bom_value, Json{{"a", 1}}));
+    EXPECT_FALSE(music::parse_json<Json>("\xEF\xBB\xBF"));
+}
+
+TEST(JsonHelpers, OrderedEqualityComparesMembersInPosition) {
+    const music::Json ordered_a{{"x", 1}, {"y", 2}};
+    const music::Json ordered_b{{"y", 2}, {"x", 1}};
+    EXPECT_FALSE(music::json_equal(ordered_a, ordered_b));
+    const music::SortedJson sorted_a{{"x", 1}, {"y", 2}};
+    const music::SortedJson sorted_b{{"y", 2}, {"x", 1}};
+    EXPECT_TRUE(music::json_equal(sorted_a, sorted_b));
 }
 
 } // namespace

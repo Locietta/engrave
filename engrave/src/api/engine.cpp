@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iterator>
 #include <new>
+#include <stdexcept>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/mnx.h"
@@ -202,10 +203,12 @@ std::vector<TemplateInfo> Engine::templates() const {
     std::ifstream file(root / "categories.json", std::ios::binary);
     if (!file) return {};
     const std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-    const auto categories = music::parse_json<music::Json>(text);
-    if (!categories || !categories->is_array()) return {};
+    const auto parsed = music::parse_json_expected<music::Json>(text);
+    if (!parsed) throw std::runtime_error("templates/categories.json: " + glz::format_error(parsed.error(), text));
+    if (!parsed->is_array()) throw std::runtime_error("templates/categories.json: expected a JSON array");
+    const auto &categories = *parsed;
     std::vector<TemplateInfo> result;
-    for (const auto &category : categories->get_array()) {
+    for (const auto &category : categories.get_array()) {
         for (const auto &entry : category.at("files").get_array()) {
             const auto mscx = root / path_from_utf8(entry.get<std::string>());
             std::string id = template_id(mscx);
