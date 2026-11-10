@@ -411,14 +411,14 @@ private:
                 const auto [it, added] = index_.beams.try_emplace(event, BeamEntry{&beam, 0});
                 if (!added) error(at(pointer, "beams", b), std::format("ID \"{}\" already exists in another beam.", std::string(event)));
             }
-            const auto walk_levels = [&](this const auto &self, const Beam &level_beam, int level) -> void {
+            const auto walk_levels = [&](const auto &self, const Beam &level_beam, int level) -> void {
                 if (!level_beam.events.empty()) {
                     auto &entry = index_.beams[level_beam.events.front()];
                     entry.start_level = entry.start_level == 0 ? level : std::min(entry.start_level, level);
                 }
-                for (const auto &child : items(level_beam.beams)) self(child, level + 1);
+                for (const auto &child : items(level_beam.beams)) self(self, child, level + 1);
             };
-            walk_levels(beam, 1);
+            walk_levels(walk_levels, beam, 1);
         }
     }
 
