@@ -2,7 +2,7 @@
 // Format-independent semantic dump of a score (musical content).
 #pragma once
 
-#include <nlohmann/json.hpp>
+#include "engrave/src/score/json.h"
 
 namespace mu::engraving {
 struct MasterScore;
@@ -17,6 +17,6 @@ namespace music {
 // generated (layout-created header clefs, courtesy signatures) are skipped.
 // Requires the owner thread; the score is not modified, except that
 // repeatList() is rebuilt with repeats expanded.
-nlohmann::ordered_json semantic_dump(mu::engraving::MasterScore *score);
+Json semantic_dump(mu::engraving::MasterScore *score);
 
 } // namespace music

@@ -24,7 +24,7 @@
 // webmscore-4.7.5-1 src/converter/internal/compat/notationmeta.cpp
 // (mu::converter::NotationMeta). The JSON field schema and the
 // title/composer recognition heuristics are preserved; QJson*/QString are
-// replaced by nlohmann::json and muse::String/std::string.
+// replaced by the engine's JSON DOM and muse::String/std::string.
 
 #pragma once
 
@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
+#include "engrave/src/score/json.h"
 
 namespace mu::engraving {
 struct Score;
@@ -76,11 +76,11 @@ struct ScoreMetadataTrack {
 // has no audiosettings.json context, so it reports neutral output values and
 // marks chord-symbol pseudo tracks muted. Returns an empty object when score
 // is null.
-nlohmann::json score_metadata(mu::engraving::Score *score);
+SortedJson score_metadata(mu::engraving::Score *score);
 
 // Emits score metadata with "tracks" populated from explicit track descriptors and
 // mix parameters. Returns an empty object when score is null.
-nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks);
+SortedJson score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks);
 
 // Same JSON as score_metadata(score), with "tracks" built from the supplied
 // descriptors. Every descriptor must reference an existing part in score and
@@ -96,7 +96,7 @@ nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<Sco
 // Throws std::invalid_argument for a malformed/unknown part ID, an unknown
 // instrument ID, a duplicate pair, or non-empty tracks with a null score.
 // Excerpts are handled as documented for the base overload.
-nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks);
+SortedJson score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks);
 
 // Upstream webmscore titleFilenameSafe(), converted to UTF-8 std::string:
 //   title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')

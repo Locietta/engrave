@@ -7,7 +7,7 @@
 #include <functional>
 #include <utility>
 
-#include <nlohmann/json.hpp>
+#include "engrave/src/score/json.h"
 
 namespace mu::engraving {
 struct Score;
@@ -16,7 +16,7 @@ struct Score;
 namespace music {
 // Layout coordinates use the upstream 1200-DPI units; event times are milliseconds.
 // Requires a laid-out score and execution on its owner thread. IDs are local to this result.
-nlohmann::json score_positions(mu::engraving::Score *score, bool segments);
+SortedJson score_positions(mu::engraving::Score *score, bool segments);
 
 struct PositionVisitor {
     std::function<void(int, double, double, double, double, int)> element;

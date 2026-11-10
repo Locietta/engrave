@@ -21,7 +21,6 @@
 namespace music {
 namespace {
 using namespace mu::engraving;
-using Json = nlohmann::json;
 
 int checked_int(double value) {
     if (!std::isfinite(value) || value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
@@ -120,20 +119,26 @@ std::pair<double, double> visit_score_positions(mu::engraving::Score *score, boo
     return {page->width(), page->height()};
 }
 
-nlohmann::json score_positions(mu::engraving::Score *score, bool segments) {
-    Json elements = Json::array();
-    Json events = Json::array();
+SortedJson score_positions(mu::engraving::Score *score, bool segments) {
+    SortedJson elements = make_array<SortedJson>();
+    SortedJson events = make_array<SortedJson>();
     const PositionVisitor visitor{
         [&](int id, double x, double y, double width, double height, int page) {
             if (segments) {
-                elements.push_back(
-                    {{"id", id}, {"x", static_cast<int>(x)}, {"y", static_cast<int>(y)}, {"sx", width}, {"sy", height}, {"page", page}});
+                array_push(
+                    elements,
+                    SortedJson{
+                        {"id", id}, {"x", static_cast<int>(x)}, {"y", static_cast<int>(y)}, {"sx", width}, {"sy", height}, {"page", page}});
             } else {
-                elements.push_back({{"id", id}, {"x", x}, {"y", y}, {"sx", width}, {"sy", height}, {"page", page}});
+                array_push(elements, SortedJson{{"id", id}, {"x", x}, {"y", y}, {"sx", width}, {"sy", height}, {"page", page}});
             }
         },
-        [&](int id, int time) { events.push_back({{"elid", id}, {"position", time}}); }};
+        [&](int id, int time) { array_push(events, SortedJson{{"elid", id}, {"position", time}}); }};
     const auto [width, height] = visit_score_positions(score, segments, visitor, true);
-    return {{"pageSize", {{"width", width}, {"height", height}}}, {"elements", std::move(elements)}, {"events", std::move(events)}};
+    SortedJson result = make_object<SortedJson>();
+    result["pageSize"] = SortedJson{{"width", width}, {"height", height}};
+    result["elements"] = std::move(elements);
+    result["events"] = std::move(events);
+    return result;
 }
 } // namespace music
