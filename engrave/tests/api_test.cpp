@@ -6,10 +6,12 @@
 // re-run main in a child process, which creates its own.
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
@@ -68,6 +70,105 @@ std::string exported(engrave::Document &document, Format format) {
     auto bytes = document.export_score({.format = format});
     EXPECT_TRUE(bytes) << bytes.error().message;
     return bytes ? text_of(*bytes) : std::string{};
+}
+
+struct ExportedMidiNote {
+    int pitch;
+    int on;
+    int off = -1;
+};
+
+std::uint32_t midi_varint(const std::string &data, size_t &position) {
+    std::uint32_t value = 0;
+    unsigned char byte = 0;
+    do {
+        byte = static_cast<unsigned char>(data[position++]);
+        value = (value << 7) | (byte & 0x7f);
+    } while (byte & 0x80);
+    return value;
+}
+
+std::vector<ExportedMidiNote> exported_midi_notes(bool before, bool after) {
+    const auto grace_chord = [](std::string_view type, int pitch) {
+        return "<Chord><durationType>eighth</durationType><" + std::string(type) + "/><Note><pitch>" + std::to_string(pitch) +
+               "</pitch></Note></Chord>";
+    };
+    std::string xml = "<museScore version=\"5.00\"><Score><Division>480</Division>"
+                      "<Part><Staff><StaffType group=\"pitched\"/></Staff><Instrument id=\"piano\"><Channel><program "
+                      "value=\"0\"/></Channel></Instrument></Part>"
+                      "<Staff id=\"1\"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>";
+    if (before) xml += grace_chord("appoggiatura", 67);
+    if (after) xml += grace_chord("grace8after", 69);
+    xml += "<Chord><durationType>quarter</durationType><Note><pitch>65</pitch></Note></Chord>"
+           "</voice></Measure></Staff></Score></museScore>";
+    auto document = g_engine->open(bytes_of(xml), {.format = Format::MSCX});
+    EXPECT_TRUE(document) << document.error().message;
+    if (!document) return {};
+    const std::string midi = exported(**document, Format::MIDI);
+
+    std::vector<ExportedMidiNote> notes;
+    const auto byte_at = [&midi](size_t position) { return static_cast<unsigned char>(midi[position]); };
+    const int track_count = (byte_at(10) << 8) | byte_at(11);
+    size_t track_position = 14;
+    for (int track = 0; track < track_count; ++track) {
+        const std::uint32_t length = (std::uint32_t(byte_at(track_position + 4)) << 24) |
+                                     (std::uint32_t(byte_at(track_position + 5)) << 16) |
+                                     (std::uint32_t(byte_at(track_position + 6)) << 8) | byte_at(track_position + 7);
+        size_t position = track_position + 8;
+        const size_t end = position + length;
+        track_position = end;
+        int tick = 0;
+        int running_status = 0;
+        std::map<int, size_t> active;
+        while (position < end) {
+            tick += static_cast<int>(midi_varint(midi, position));
+            const int lead = byte_at(position);
+            if (lead == 0xff) {
+                position += 2;
+                const auto size = midi_varint(midi, position);
+                position += size;
+                running_status = 0;
+                continue;
+            }
+            if (lead == 0xf0 || lead == 0xf7) {
+                ++position;
+                const auto size = midi_varint(midi, position);
+                position += size;
+                running_status = 0;
+                continue;
+            }
+            if (lead & 0x80) {
+                running_status = lead;
+                ++position;
+            }
+            const int command = running_status & 0xf0;
+            if (command == 0xc0 || command == 0xd0) {
+                ++position;
+                continue;
+            }
+            const int pitch = byte_at(position++);
+            const int velocity = byte_at(position++);
+            if (command == 0x90 && velocity > 0) {
+                active[pitch] = notes.size();
+                notes.push_back({pitch, tick});
+            } else if (command == 0x80 || (command == 0x90 && velocity == 0)) {
+                const auto found = active.find(pitch);
+                if (found != active.end()) {
+                    notes[found->second].off = tick;
+                    active.erase(found);
+                }
+            }
+        }
+    }
+    std::sort(notes.begin(), notes.end(),
+              [](const auto &left, const auto &right) { return std::tie(left.on, left.pitch) < std::tie(right.on, right.pitch); });
+    return notes;
+}
+
+void expect_midi_note(const ExportedMidiNote &note, int pitch, int on, int off) {
+    EXPECT_EQ(note.pitch, pitch);
+    EXPECT_EQ(note.on, on);
+    EXPECT_EQ(note.off, off);
 }
 
 TEST(Values, FractionsCompareByValueAndKeepWrittenTerms) {
@@ -172,6 +273,26 @@ TEST(Export, WritesEachExportFormat) {
     EXPECT_TRUE(exported(*document, Format::MIDI).starts_with("MThd"));
     EXPECT_NE(exported(*document, Format::MUSIC_XML).find("<score-partwise"), std::string::npos);
     EXPECT_EQ(document->revision(), 1u);
+}
+
+TEST(Export, GraceGroupsShareHalfWithoutChangingSingleGroupTiming) {
+    const auto both = exported_midi_notes(true, true);
+    ASSERT_EQ(both.size(), 3u);
+    expect_midi_note(both[0], 67, 0, 119);   // appoggiatura before: 120 ticks
+    expect_midi_note(both[1], 65, 120, 359); // principal: a positive 240 ticks
+    expect_midi_note(both[2], 69, 360, 479); // grace after: 120 ticks
+    EXPECT_GT(both[1].off - both[1].on + 1, 0);
+    EXPECT_EQ((both[0].off - both[0].on + 1) + (both[2].off - both[2].on + 1), 240);
+
+    const auto before = exported_midi_notes(true, false);
+    ASSERT_EQ(before.size(), 2u);
+    expect_midi_note(before[0], 67, 0, 239);
+    expect_midi_note(before[1], 65, 240, 479);
+
+    const auto after = exported_midi_notes(false, true);
+    ASSERT_EQ(after.size(), 2u);
+    expect_midi_note(after[0], 65, 0, 239);
+    expect_midi_note(after[1], 69, 240, 479);
 }
 
 TEST(Export, RejectsFormatsTheEngineDoesNotWrite) {
