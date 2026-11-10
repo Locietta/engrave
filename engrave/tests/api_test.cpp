@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <set>
@@ -88,19 +89,48 @@ std::uint32_t midi_varint(const std::string &data, size_t &position) {
     return value;
 }
 
-std::vector<ExportedMidiNote> exported_midi_notes(bool before, bool after) {
-    const auto grace_chord = [](std::string_view type, int pitch) {
-        return "<Chord><durationType>eighth</durationType><" + std::string(type) + "/><Note><pitch>" + std::to_string(pitch) +
-               "</pitch></Note></Chord>";
-    };
-    std::string xml = "<museScore version=\"5.00\"><Score><Division>480</Division>"
-                      "<Part><Staff><StaffType group=\"pitched\"/></Staff><Instrument id=\"piano\"><Channel><program "
-                      "value=\"0\"/></Channel></Instrument></Part>"
-                      "<Staff id=\"1\"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>";
-    if (before) xml += grace_chord("appoggiatura", 67);
-    if (after) xml += grace_chord("grace8after", 69);
-    xml += "<Chord><durationType>quarter</durationType><Note><pitch>65</pitch></Note></Chord>"
-           "</voice></Measure></Staff></Score></museScore>";
+std::string midi_grace_chord(std::string_view type, std::string_view duration, int pitch) {
+    return "<Chord><durationType>" + std::string(duration) + "</durationType><" + std::string(type) + "/><Note><pitch>" +
+           std::to_string(pitch) + "</pitch></Note></Chord>";
+}
+
+std::string midi_principal_chord(std::string_view duration, const std::vector<int> &pitches, int dots = 0, bool arpeggio = false) {
+    // <dots> must precede <durationType>: the reader fixes the chord's length when it reads durationType
+    std::string chord = "<Chord>";
+    if (dots) chord += "<dots>" + std::to_string(dots) + "</dots>";
+    chord += "<durationType>" + std::string(duration) + "</durationType>";
+    for (int pitch : pitches) chord += "<Note><pitch>" + std::to_string(pitch) + "</pitch></Note>";
+    if (arpeggio) chord += "<Arpeggio><subtype>0</subtype></Arpeggio>";
+    return chord + "</Chord>";
+}
+
+struct MidiScoreOptions {
+    bool swing = false;
+    bool drumset = false;
+    int beats = 4;
+    int beat_unit = 4;
+};
+
+std::vector<ExportedMidiNote> exported_midi_notes(const std::string &chords, MidiScoreOptions options = {}) {
+    const bool swing = options.swing;
+    const bool drumset = options.drumset;
+    std::string xml = "<museScore version=\"5.00\"><Score><Division>480</Division><Part><Staff><StaffType group=\"";
+    xml += drumset ? "percussion" : "pitched";
+    xml += "\"/></Staff>";
+    if (drumset) {
+        xml += "<Instrument id=\"drums\"><useDrumset>1</useDrumset>";
+        for (int pitch : {36, 38, 40}) {
+            xml += "<Drum pitch=\"" + std::to_string(pitch) +
+                   "\"><head>normal</head><line>0</line><voice>0</voice><name>Drum</name><stem>1</stem></Drum>";
+        }
+        xml += "<Channel><program value=\"0\"/></Channel></Instrument>";
+    } else {
+        xml += "<Instrument id=\"piano\"><Channel><program value=\"0\"/></Channel></Instrument>";
+    }
+    xml += "</Part><Staff id=\"1\"><Measure><voice><TimeSig><sigN>" + std::to_string(options.beats) + "</sigN><sigD>" +
+           std::to_string(options.beat_unit) + "</sigD></TimeSig>";
+    if (swing) xml += "<SystemText><swing unit=\"eighth\" ratio=\"75\"/><style>tempo</style><text>Swing</text></SystemText>";
+    xml += chords + "</voice></Measure></Staff></Score></museScore>";
     auto document = g_engine->open(bytes_of(xml), {.format = Format::MSCX});
     EXPECT_TRUE(document) << document.error().message;
     if (!document) return {};
@@ -276,23 +306,271 @@ TEST(Export, WritesEachExportFormat) {
 }
 
 TEST(Export, GraceGroupsShareHalfWithoutChangingSingleGroupTiming) {
-    const auto both = exported_midi_notes(true, true);
+    const auto grace_before = midi_grace_chord("appoggiatura", "eighth", 67);
+    const auto grace_after = midi_grace_chord("grace8after", "eighth", 69);
+    const auto principal = midi_principal_chord("quarter", {65});
+    const auto both = exported_midi_notes(grace_before + grace_after + principal);
     ASSERT_EQ(both.size(), 3u);
     expect_midi_note(both[0], 67, 0, 119);   // appoggiatura before: 120 ticks
     expect_midi_note(both[1], 65, 120, 359); // principal: a positive 240 ticks
-    expect_midi_note(both[2], 69, 360, 479); // grace after: 120 ticks
+    expect_midi_note(both[2], 69, 360, 479); // appoggiatura after: 120 ticks
     EXPECT_GT(both[1].off - both[1].on + 1, 0);
     EXPECT_EQ((both[0].off - both[0].on + 1) + (both[2].off - both[2].on + 1), 240);
 
-    const auto before = exported_midi_notes(true, false);
+    // Single groups: the ticks of the unchanged legacy code
+    const auto before = exported_midi_notes(grace_before + principal);
     ASSERT_EQ(before.size(), 2u);
     expect_midi_note(before[0], 67, 0, 239);
     expect_midi_note(before[1], 65, 240, 479);
 
-    const auto after = exported_midi_notes(false, true);
+    const auto after = exported_midi_notes(grace_after + principal);
     ASSERT_EQ(after.size(), 2u);
     expect_midi_note(after[0], 65, 0, 239);
     expect_midi_note(after[1], 69, 240, 479);
+}
+
+TEST(Export, GraceGroupsUseAudioNotatedDurationRules) {
+    // Short graces keep their notated length: sixteenths on a quarter take 120 ticks each side, not a fixed half
+    const auto short_before = midi_grace_chord("appoggiatura", "16th", 67);
+    const auto short_after = midi_grace_chord("grace16after", "16th", 69);
+    const auto quarter = midi_principal_chord("quarter", {65});
+    const auto short_graces = exported_midi_notes(short_before + short_after + quarter);
+    ASSERT_EQ(short_graces.size(), 3u);
+    expect_midi_note(short_graces[0], 67, 0, 119);
+    expect_midi_note(short_graces[1], 65, 120, 359);
+    expect_midi_note(short_graces[2], 69, 360, 479);
+
+    // Single sixteenth groups: legacy ticks
+    const auto short_before_only = exported_midi_notes(short_before + quarter);
+    ASSERT_EQ(short_before_only.size(), 2u);
+    expect_midi_note(short_before_only[0], 67, 0, 119);
+    expect_midi_note(short_before_only[1], 65, 120, 479);
+    const auto short_after_only = exported_midi_notes(short_after + quarter);
+    ASSERT_EQ(short_after_only.size(), 2u);
+    expect_midi_note(short_after_only[0], 65, 0, 239);
+    expect_midi_note(short_after_only[1], 69, 240, 479);
+
+    // Dotted quarter (720 ticks): eighths want 240 each, over half (360), so both shrink to 180
+    const auto eighth_before = midi_grace_chord("appoggiatura", "eighth", 67);
+    const auto eighth_after = midi_grace_chord("grace8after", "eighth", 69);
+    const auto dotted_quarter = midi_principal_chord("quarter", {65}, 1);
+    const auto dotted = exported_midi_notes(eighth_before + eighth_after + dotted_quarter);
+    ASSERT_EQ(dotted.size(), 3u);
+    expect_midi_note(dotted[0], 67, 0, 179);
+    expect_midi_note(dotted[1], 65, 180, 539);
+    expect_midi_note(dotted[2], 69, 540, 719);
+
+    // Dotted sixteenths fit within half: they keep their 120 ticks and the principal keeps the rest
+    const auto dotted_short = exported_midi_notes(short_before + short_after + dotted_quarter);
+    ASSERT_EQ(dotted_short.size(), 3u);
+    expect_midi_note(dotted_short[0], 67, 0, 119);
+    expect_midi_note(dotted_short[1], 65, 120, 599);
+    expect_midi_note(dotted_short[2], 69, 600, 719);
+
+    // Dotted principal, single groups: legacy ticks
+    const auto dotted_before_only = exported_midi_notes(eighth_before + dotted_quarter);
+    ASSERT_EQ(dotted_before_only.size(), 2u);
+    expect_midi_note(dotted_before_only[0], 67, 0, 238);
+    expect_midi_note(dotted_before_only[1], 65, 239, 718);
+    const auto dotted_after_only = exported_midi_notes(eighth_after + dotted_quarter);
+    ASSERT_EQ(dotted_after_only.size(), 2u);
+    expect_midi_note(dotted_after_only[0], 65, 0, 238);
+    expect_midi_note(dotted_after_only[1], 69, 239, 718);
+
+    // An acciaccatura before takes half a demisemiquaver (30 ticks) and the after-group the rest of the shared half:
+    // 30 + 240 > 240, so they shrink to 27 and 213. It no longer exports at zero length. Here the chord starts the
+    // measure; mid-score the exporter still moves acciaccatura events before the beat (see the exporter's grace offset).
+    const auto acciaccatura = exported_midi_notes(midi_grace_chord("acciaccatura", "eighth", 67) + eighth_after + quarter);
+    ASSERT_EQ(acciaccatura.size(), 3u);
+    expect_midi_note(acciaccatura[0], 67, 0, 26);
+    expect_midi_note(acciaccatura[1], 65, 27, 266);
+    expect_midi_note(acciaccatura[2], 69, 267, 479);
+
+    // Acciaccatura alone: legacy, zero length (played before the beat)
+    const auto acciaccatura_only = exported_midi_notes(midi_grace_chord("acciaccatura", "eighth", 67) + quarter);
+    ASSERT_EQ(acciaccatura_only.size(), 2u);
+    expect_midi_note(acciaccatura_only[0], 65, 0, 479);
+    expect_midi_note(acciaccatura_only[1], 67, 0, 0);
+
+    // The appoggiatura limit is two thirds of a dotted quarter in 6/8, half of it in 4/4: with a quarter after-grace
+    // the shares differ (120/240 against 144/216)
+    const auto quarter_after = midi_grace_chord("grace8after", "quarter", 69);
+    const auto compound = exported_midi_notes(eighth_before + quarter_after + dotted_quarter, {.beats = 6, .beat_unit = 8});
+    ASSERT_EQ(compound.size(), 3u);
+    expect_midi_note(compound[0], 67, 0, 119);
+    expect_midi_note(compound[1], 65, 120, 479);
+    expect_midi_note(compound[2], 69, 480, 719);
+    const auto simple = exported_midi_notes(eighth_before + quarter_after + dotted_quarter);
+    ASSERT_EQ(simple.size(), 3u);
+    expect_midi_note(simple[0], 67, 0, 143);
+    expect_midi_note(simple[1], 65, 144, 503);
+    expect_midi_note(simple[2], 69, 504, 719);
+}
+
+TEST(Export, GraceGroupsUseCumulativeMidiTickBoundaries) {
+    const auto before_group = [] {
+        std::string chords;
+        for (int pitch : {67, 68, 70}) chords += midi_grace_chord("grace16", "16th", pitch);
+        return chords;
+    }();
+    const auto after_group = [] {
+        std::string chords;
+        for (int pitch : {71, 72, 74}) chords += midi_grace_chord("grace16after", "16th", pitch);
+        return chords;
+    }();
+    const auto quarter = midi_principal_chord("quarter", {65});
+
+    // Three graces each side: budgets 90 and 240 shrink to 65 and 175. Every boundary is a whole tick, so the graces
+    // and the principal are adjacent (the old per-grace integer division left 3 ticks between the last grace and the
+    // principal)
+    const auto notes = exported_midi_notes(before_group + after_group + quarter);
+    ASSERT_EQ(notes.size(), 7u);
+    expect_midi_note(notes[0], 67, 0, 21);
+    expect_midi_note(notes[1], 68, 22, 42);
+    expect_midi_note(notes[2], 70, 43, 64);
+    expect_midi_note(notes[3], 65, 65, 304);
+    expect_midi_note(notes[4], 74, 305, 362); // grace_notes_after lists the after-group in reverse order
+    expect_midi_note(notes[5], 72, 363, 421);
+    expect_midi_note(notes[6], 71, 422, 479);
+    for (size_t i = 1; i < notes.size(); ++i) {
+        EXPECT_EQ(notes[i].on, notes[i - 1].off + 1) << "note " << i;
+    }
+
+    // Single groups: legacy ticks, including the legacy rounding gaps
+    const auto before_only = exported_midi_notes(before_group + quarter);
+    ASSERT_EQ(before_only.size(), 4u);
+    expect_midi_note(before_only[0], 67, 0, 38);
+    expect_midi_note(before_only[1], 68, 39, 77);
+    expect_midi_note(before_only[2], 70, 79, 117);
+    expect_midi_note(before_only[3], 65, 120, 479);
+    const auto after_only = exported_midi_notes(after_group + quarter);
+    ASSERT_EQ(after_only.size(), 4u);
+    expect_midi_note(after_only[0], 65, 0, 239);
+    expect_midi_note(after_only[1], 74, 240, 318);
+    expect_midi_note(after_only[2], 72, 319, 397);
+    expect_midi_note(after_only[3], 71, 399, 477);
+
+    // A dotted half is longer than 1000 ticks; here the budgets still land on whole ticks
+    const auto dotted_half = exported_midi_notes(before_group + midi_grace_chord("grace16after", "16th", 71) +
+                                                 midi_grace_chord("grace16after", "16th", 72) + midi_principal_chord("half", {65}, 1));
+    ASSERT_EQ(dotted_half.size(), 6u);
+    expect_midi_note(dotted_half[0], 67, 0, 29);
+    expect_midi_note(dotted_half[1], 68, 30, 59);
+    expect_midi_note(dotted_half[2], 70, 60, 89);
+    expect_midi_note(dotted_half[3], 65, 90, 1199);
+    expect_midi_note(dotted_half[4], 72, 1200, 1319);
+    expect_midi_note(dotted_half[5], 71, 1320, 1439);
+}
+
+TEST(Export, GraceGroupsShortenArpeggioAtAfterBoundary) {
+    const auto before = midi_grace_chord("appoggiatura", "eighth", 71);
+    const auto after = midi_grace_chord("grace8after", "eighth", 72);
+    const auto arpeggio = midi_principal_chord("quarter", {60, 64, 67}, 0, true);
+
+    // Every arpeggiated note stops where the after-group begins (the old end ran to 478, over the after-grace)
+    const auto both = exported_midi_notes(before + after + arpeggio);
+    ASSERT_EQ(both.size(), 5u);
+    expect_midi_note(both[0], 71, 0, 119);
+    expect_midi_note(both[1], 60, 120, 359);
+    expect_midi_note(both[2], 64, 183, 359);
+    expect_midi_note(both[3], 67, 247, 359);
+    expect_midi_note(both[4], 72, 360, 479);
+
+    // Single groups: legacy ticks
+    const auto before_only = exported_midi_notes(before + arpeggio);
+    ASSERT_EQ(before_only.size(), 4u);
+    expect_midi_note(before_only[0], 71, 0, 239);
+    expect_midi_note(before_only[1], 60, 240, 479);
+    expect_midi_note(before_only[2], 64, 303, 478);
+    expect_midi_note(before_only[3], 67, 367, 478);
+    const auto after_only = exported_midi_notes(after + arpeggio);
+    ASSERT_EQ(after_only.size(), 4u);
+    expect_midi_note(after_only[0], 60, 0, 479);
+    expect_midi_note(after_only[1], 64, 63, 478);
+    expect_midi_note(after_only[2], 67, 127, 478);
+    expect_midi_note(after_only[3], 72, 240, 479);
+}
+
+TEST(Export, SwingKeepsGraceBudgetsSeparate) {
+    const auto eighth_before = midi_grace_chord("appoggiatura", "eighth", 67);
+    const auto eighth_after = midi_grace_chord("grace8after", "eighth", 69);
+    const auto first = midi_principal_chord("eighth", {60});
+    const auto second = midi_principal_chord("eighth", {65});
+
+    // After-group only on a swung off-beat eighth: the swing shift must not remove the principal (it did when the
+    // whole of ontime was subtracted whenever an after-group existed). Legacy ticks.
+    const auto after_only = exported_midi_notes(first + eighth_after + second, {.swing = true});
+    ASSERT_EQ(after_only.size(), 3u);
+    expect_midi_note(after_only[0], 60, 0, 359);
+    expect_midi_note(after_only[1], 65, 360, 419);
+    expect_midi_note(after_only[2], 69, 360, 479);
+
+    // Before-group only: legacy ticks (the swing shift adds to the before-group's budget, pushing the principal out)
+    const auto before_only = exported_midi_notes(first + eighth_before + second, {.swing = true});
+    ASSERT_EQ(before_only.size(), 3u);
+    expect_midi_note(before_only[0], 60, 0, 359);
+    expect_midi_note(before_only[1], 67, 240, 359);
+    expect_midi_note(before_only[2], 65, 480, 539);
+
+    // Both groups: each takes 60 of the 120 ticks they share, leaving the principal a 120-tick span (60..179). As in
+    // playback, swing acts on the principal alone, inside that span: the 500 per mille shift moves its start by half
+    // the span (60 ticks) and the swing gate time halves its length, so it ends at 419, strictly between the groups.
+    // The grace groups themselves are not swung (the legacy exporter never swung them either).
+    const auto both = exported_midi_notes(first + eighth_before + eighth_after + second, {.swing = true});
+    ASSERT_EQ(both.size(), 4u);
+    expect_midi_note(both[0], 60, 0, 359);
+    expect_midi_note(both[1], 67, 240, 299);
+    expect_midi_note(both[2], 65, 360, 419);
+    expect_midi_note(both[3], 69, 420, 479);
+    EXPECT_GT(both[2].on, both[1].off);
+    EXPECT_LT(both[2].off, both[3].on);
+}
+
+TEST(Export, GraceGroupsStayOnTheBeatMidScore) {
+    const auto previous = midi_principal_chord("quarter", {60});
+    const auto quarter = midi_principal_chord("quarter", {65});
+    const auto acciaccatura = midi_grace_chord("acciaccatura", "eighth", 67);
+    const auto after = midi_grace_chord("grace8after", "eighth", 69);
+
+    // Both groups: the acciaccatura is on the beat (480) with its 27-tick share, the principal and after-group follow
+    // and the previous chord keeps its full length. Nothing moves before the beat.
+    const auto both = exported_midi_notes(previous + acciaccatura + after + quarter);
+    ASSERT_EQ(both.size(), 4u);
+    expect_midi_note(both[0], 60, 0, 479);
+    expect_midi_note(both[1], 67, 480, 506);
+    expect_midi_note(both[2], 65, 507, 746);
+    expect_midi_note(both[3], 69, 747, 959);
+
+    // Acciaccatura alone keeps its pre-beat placement: the previous chord is cut short at 239 and the zero-length
+    // acciaccatura sounds across 240..479
+    const auto only = exported_midi_notes(previous + acciaccatura + quarter);
+    ASSERT_EQ(only.size(), 3u);
+    expect_midi_note(only[0], 60, 0, 239);
+    expect_midi_note(only[1], 67, 240, 479);
+    expect_midi_note(only[2], 65, 480, 959);
+}
+
+TEST(Export, DrumFlamsKeepLegacyTimingWithAfterGraces) {
+    const auto flam_before = midi_grace_chord("appoggiatura", "eighth", 36);
+    const auto flam_after = midi_grace_chord("grace8after", "eighth", 40);
+    const auto principal = midi_principal_chord("quarter", {38});
+
+    // The 15 ms flam path never enters the grouped scaling: with both groups the ticks stay legacy
+    const auto both = exported_midi_notes(flam_before + flam_after + principal, {.drumset = true});
+    ASSERT_EQ(both.size(), 3u);
+    expect_midi_note(both[0], 36, 0, 13);
+    expect_midi_note(both[1], 38, 14, 373);
+    expect_midi_note(both[2], 40, 360, 479);
+
+    const auto before_only = exported_midi_notes(flam_before + principal, {.drumset = true});
+    ASSERT_EQ(before_only.size(), 2u);
+    expect_midi_note(before_only[0], 36, 0, 13);
+    expect_midi_note(before_only[1], 38, 14, 493);
+
+    const auto after_only = exported_midi_notes(flam_after + principal, {.drumset = true});
+    ASSERT_EQ(after_only.size(), 2u);
+    expect_midi_note(after_only[0], 38, 0, 239);
+    expect_midi_note(after_only[1], 40, 240, 479);
 }
 
 TEST(Export, RejectsFormatsTheEngineDoesNotWrite) {

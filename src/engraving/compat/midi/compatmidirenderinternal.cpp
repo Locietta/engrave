@@ -1029,6 +1029,9 @@ static void render_harmony(EventsHolder &events, Measure const *m, Harmony *h, i
     }
 }
 
+// Defined in compatmidirender.cpp: a principal with both a before- and an after-group lays them out on the beat
+bool grace_groups_share_principal(Chord *chord);
+
 void CompatMidiRendererInternal::collect_grace_before_chord_events(Chord *chord, Chord *prev_chord, EventsHolder &events,
                                                                    double velo_multiplier, Staff *st, int tick_offset,
                                                                    PitchWheelRenderer &pitch_wheel_renderer, MidiInstrumentEffect effect) {
@@ -1041,8 +1044,13 @@ void CompatMidiRendererInternal::collect_grace_before_chord_events(Chord *chord,
     int grace_tick_sum = 0;
     int grace_tick_offset = 0;
 
+    // With both groups the acciaccaturas get their own slot after the beat (as in playback), so no pre-beat shift
+    const bool grouped_on_beat = grace_groups_share_principal(chord);
+
     size_t acciacatura_grace_size = grace_notes_before_bar.size();
-    if (acciacatura_grace_size > 0) {
+    if (grouped_on_beat) {
+        // grace_tick_sum and grace_tick_offset stay 0
+    } else if (acciacatura_grace_size > 0) {
         grace_tick_sum = grace_notes_before_bar[0]->ticks().ticks();
         if (prev_chord) {
             grace_tick_sum = std::min(prev_chord->ticks().ticks() / 2, grace_tick_sum);
