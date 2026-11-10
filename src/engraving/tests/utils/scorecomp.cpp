@@ -114,7 +114,7 @@ bool ScoreComp::save_compare_score(Score *score, const String &save_name, const 
     if (!ScoreRW::save_score(score, save_name)) {
         return false;
     }
-    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, save_name);
+    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, ScoreRW::scratch_path(save_name));
 }
 
 bool ScoreComp::save_compare_mime_data(muse::ByteArray mime_data, const muse::String &save_name,
@@ -122,7 +122,7 @@ bool ScoreComp::save_compare_mime_data(muse::ByteArray mime_data, const muse::St
     if (!ScoreRW::save_mime_data(mime_data, save_name)) {
         return false;
     }
-    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, save_name);
+    return ScoreComp::compare_files(ScoreRW::root_path() + u"/" + compare_with_local_path, ScoreRW::scratch_path(save_name));
 }
 
 bool ScoreComp::compare_files(const String &full_path1, const String &full_path2) {

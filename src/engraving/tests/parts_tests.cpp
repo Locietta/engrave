@@ -1330,7 +1330,7 @@ TEST_F(EngravingPartsTests, deleteLinkedRestsRemovesEmptySegments) {
         check(1);
         ASSERT_TRUE(ScoreRW::save_score(score, u"delete-linked-rests-test.mscx"));
         delete score;
-        score = ScoreRW::read_score(u"delete-linked-rests-test.mscx", true);
+        score = ScoreRW::read_score(ScoreRW::scratch_path(u"delete-linked-rests-test.mscx"), true);
         ASSERT_TRUE(score);
         ASSERT_EQ(score->excerpts().size(), 1u);
         part = score->excerpts().front()->excerpt_score();
