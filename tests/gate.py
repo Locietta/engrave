@@ -112,6 +112,9 @@ def main():
         run("pixi-install", ["pixi", "install", "--locked", "--manifest-path", manifest])
         config = [
             "f",
+            # -c: the Pixi manifest is no xmake option, so a reused config would
+            # keep the previous environment's cached cairo and zlib.
+            "-c",
             "-P",
             ".",
             "-y",

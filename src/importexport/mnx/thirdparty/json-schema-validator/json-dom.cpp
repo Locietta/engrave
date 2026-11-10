@@ -397,7 +397,13 @@ json parse(std::string_view text) {
     json value{};
     glz::context context{};
     const auto error = glz::read<ReadOpts{}>(value, buffer, context);
-    if (error) throw parse_error("parse error: " + glz::format_error(error, buffer));
+    if (error) {
+        // Reading into the generic DOM reports a failure at the start of the
+        // value it was building (often the document root); glaze's validator
+        // locates the offending byte.
+        const auto located = glz::validate_json(buffer);
+        throw parse_error("parse error: " + glz::format_error(located ? located : error, buffer));
+    }
     return value;
 }
 
