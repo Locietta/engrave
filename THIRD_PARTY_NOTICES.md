@@ -136,6 +136,7 @@ build dependencies are explicitly marked as such.
 | **dtl** | `src/engraving/thirdparty/dtl/` | Tatsuhiko Kubo (https://github.com/cubicdaiya/dtl) | 3-Clause BSD License |
 | **IntervalTree** | `src/engraving/thirdparty/intervaltree/` | Erik Garrison (https://github.com/ekg/intervaltree) | MIT License |
 | **BeatRoot** | `src/importexport/midi/thirdparty/beatroot/` | Simon Dixon & Chris Cannam, Queen Mary Univ. of London | GNU General Public License v2.0 or later (`GPL-2.0-or-later`) |
+| **Grisu2 double formatting** | `engrave/src/score/json_number.h` | Florian Loitsch's reference implementation (http://florian.loitsch.com/publications), adapted | MIT License |
 
 ### Component Details and Notices
 
@@ -188,11 +189,12 @@ The standalone `xmake` build resolves and compiles the following third-party dep
 | **pugixml** | 1.15 | MIT License | XML parsing (MusicXML, MSCX, metadata) |
 | **utfcpp** | 4.1.1 | Boost Software License 1.0 | UTF-8 conversion routines |
 | **picojson** | commit 111c9be | 2-Clause BSD License | JSON parsing for audio settings and styles |
-| **mnxdom** | commit 45bf462 | MIT License | W3C MNX score representation |
+| **mnxdom** | commit 45bf462 | MIT License | W3C MNX score representation (brings `nlohmann_json` privately) |
 | **mnx-json-schema** | commit 40af3ec (`pboettch/json-schema-validator`) | MIT License | JSON schema validator for MNX |
 | **zlib** | 1.3.1 | zlib License | Compression for MSCZ and MXL zip archives |
-| **nlohmann_json** | 3.12.0 | MIT License | JSON parser for asset manifests and templates |
+| **glaze** | 9.1.0 | MIT License | JSON DOM and parsing for the engine's metadata, semantic dumps, positions and sniffing |
 | **cairo** | System / external prefix | LGPL-2.1 / MPL-1.1 | Vector (PDF/SVG) and raster (PNG) rendering |
 | **GoogleTest** (opt-in tests) | 1.17.0 | BSD-3-Clause | Unit test execution |
 
 *Note: The licenses in section 3 apply to external upstream packages fetched at build time, not in-tree files. The `mnx-json-schema` recipe builds `pboettch/json-schema-validator` (MIT); the W3C MNX JSON schema itself is vendored for test validation under `src/importexport/mnx/tests/data/schema/` (W3C Software and Document License).*
+

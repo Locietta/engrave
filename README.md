@@ -60,7 +60,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
   - Linux: Install the system development package (e.g. `libcairo2-dev` on Ubuntu/Debian, `cairo-devel` on Fedora, `cairo` on Arch/CachyOS).
   - Windows: Provide the cairo install prefix using `--cairo_prefix=<path>` (e.g. pointing to a directory with `include/cairo` and `lib/cairo.lib`, such as a conda or pixi environment).
 
-All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, nlohmann-json) are managed and built from source recipes in `xmake/packages/`.
+All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, glaze) are managed and built from source recipes in `xmake/packages/`. `glaze` is the engine's JSON library, pinned in `xmake/packages/g/glaze` and resolved through the `engrave-pinned` xmake repository; `nlohmann-json` reaches the build only as a private dependency of `mnxdom` / `mnx-json-schema` for MNX import.
 
 ### Build Commands
 
@@ -216,3 +216,4 @@ Third-party directories are excluded. Run these tools from the fork root.
 `engrave` is free software licensed under the **GNU General Public License version 3.0 (GPLv3)**. See [LICENSE.txt](LICENSE.txt).
 
 Bundled font families and third-party components are licensed under their respective terms (including GNU FreeFont with embedding exception, MScore with font exception, SIL Open Font License 1.1, LGPL 2.1, MIT, and BSD). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete attribution and license inventory.
+
