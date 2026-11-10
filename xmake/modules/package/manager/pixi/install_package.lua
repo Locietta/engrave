@@ -16,7 +16,10 @@ import("core.base.option")
 import("lib.detect.find_tool")
 import("package.manager.pixi.utils", {alias = "pixi_utils"})
 
--- Add a missing conda package to a Pixi workspace and install its environment.
+-- Install the workspace's locked environment.  engrave changes the upstream
+-- adapter here: it never runs `pixi add`, so a missing or incomplete
+-- environment is restored from pixi.lock instead of rewriting the manifest
+-- and re-solving the lock.  A package absent from the manifest stays missing.
 function main(name, opt)
     opt = opt or {}
     assert(pixi_utils.is_host_target(opt),
@@ -27,17 +30,7 @@ function main(name, opt)
         raise("pixi not found!")
     end
 
-    local configs = opt.configs or {}
-    local spec = name
-    if opt.require_version and opt.require_version:find(".", 1, true) then
-        spec = spec .. "=" .. opt.require_version
-    end
-
-    local argv = {"add", spec}
-    if configs.feature then
-        table.insert(argv, "--feature")
-        table.insert(argv, configs.feature)
-    end
+    local argv = {"install", "--locked", "--environment", pixi_utils.environment(opt)}
     if option.get("verbose") then
         table.insert(argv, "-v")
     end

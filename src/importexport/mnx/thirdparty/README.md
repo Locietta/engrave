@@ -49,6 +49,11 @@ presence and typed DOM reads were identical except where listed below.
 - `dump` formats doubles with the shortest round-trip representation
   (`std::to_chars`), where nlohmann uses Grisu2; the two can differ in rare
   digits. Invalid UTF-8 in strings is written through instead of throwing.
+- Number kinds come from glaze's parser: an integer written in exponent
+  form (`1e0`, `4e0`) is stored as an integer, where nlohmann stored a float,
+  so the validator's `"type": "integer"` check accepts it; and a nonzero
+  value below the double range (`1e-324`) is a parse error, where nlohmann
+  rounded it to zero. Neither form occurs in MNX written by real tools.
 - A malformed schema (not instance) can raise a different exception type, for
   example a non-string `type` or a boolean `maxLength`. The MNX schema has
   none of these.

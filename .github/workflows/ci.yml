@@ -254,4 +254,4 @@ jobs:
         run: >
           python tests/engrave_testing/check_mnx_schema.py
           "$env:RUNNER_TEMP/mnx-export"
-          src/importexport/mnx/tests/data/schema/mnx-schema.json
+          src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json
