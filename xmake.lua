@@ -25,8 +25,12 @@ set_policy("package.install_locally", true)
 set_policy("package.precompiled", false)
 
 -- The engine's third-party libraries (freetype, harfbuzz, flac, lame, opus,
--- opusenc, fdk-aac, pugixml, utfcpp, picojson) are declared by
--- xmake/engrave.lua together with their pinned recipes.
+-- opusenc, fdk-aac, pugixml, utfcpp, picojson, glaze) are declared by
+-- xmake/engrave.lua together with their pinned recipes.  The pinned
+-- xmake-repository packages (glaze) are found through this repository; the
+-- rootdir is this checkout because the host build includes the engine build
+-- from vendor/engrave as well.
+add_repositories("engrave-pinned xmake", {rootdir = os.scriptdir()})
 includes("xmake/engrave.lua")
 
 -- zlib: the engine's zip container includes <zlib.h>.  The superproject takes
@@ -38,11 +42,10 @@ includes("xmake/packages/zlib.lua")
 add_requires("muse-zlib 1.3.1", {system = false})
 add_packages("muse-zlib")
 
--- nlohmann/json: engrave's score/ headers use it, and so does the code that
--- includes them, so both must see one copy: the consumer's (the superproject
--- has the pixi 3.12.0).  A bare checkout gets the same release from xmake-repo.
-add_requires("nlohmann_json v3.12.0", {system = false})
-add_packages("nlohmann_json")
+-- glaze: the engine's JSON DOM and parsing library.  It is header-only and
+-- reaches every consumer (the host included) as a public package of the
+-- engrave target.
+add_requires("glaze 9.1.0", {system = false})
 
 -- cairo: engrave's page renderer links it.  Like zlib it is the consumer's
 -- choice (the superproject's PDF and PNG goldens are pinned to its pixi cairo).
