@@ -22,6 +22,8 @@
 
 #include <algorithm>
 
+#include <mnxdom/mnxdom.h>
+
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
@@ -35,12 +37,6 @@
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "mnximporter.h"
-
-#ifdef MNXDOM_SYSTEM
-#include <mnxdom/mnxdom.h>
-#else
-#include "mnxdom.h"
-#endif
 
 using namespace mu::engraving;
 

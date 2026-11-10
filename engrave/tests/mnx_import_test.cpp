@@ -139,9 +139,9 @@ TEST(MnxExport, SchemaAndCoreRoundtrip) {
         const auto result = exporter.export_mnx();
         ASSERT_TRUE(result) << result.to_string();
         const auto &document = exporter.mnx_document();
-        // Uses mnxdom's embedded schema and the pinned mnx-json-schema validator.
+        // Uses mnxdom's embedded schema and the vendored json-schema-validator.
         ASSERT_TRUE(mnx::validation::schemaValidate(document));
-        const std::string bytes = document.root()->dump();
+        const std::string bytes = json_schema::dump(*document.root());
         if (!mnx_out.empty()) {
             std::ofstream out(mnx_out / (std::string(fixture) + ".mnx"), std::ios::binary);
             out << bytes;

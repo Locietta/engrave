@@ -24,6 +24,8 @@
 #include <stack>
 #include <vector>
 
+#include <mnxdom/mnxdom.h>
+
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/barline.h"
@@ -63,12 +65,6 @@
 #include "internal/shared/mnxtypesconv.h"
 #include "log.h"
 #include "mnximporter.h"
-
-#ifdef MNXDOM_SYSTEM
-#include <mnxdom/mnxdom.h>
-#else
-#include "mnxdom.h"
-#endif
 
 using namespace mu::engraving;
 
