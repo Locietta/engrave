@@ -14,7 +14,7 @@
    "type": "RehearsalMark"
   },
   {
-   "bpm": 90.0,
+   "bpm": 90,
    "subtype": "Tempo",
    "text": " = 90",
    "tick": 0,
@@ -2653,7 +2653,7 @@
  "tempoMap": [
   [
    0,
-   90.0
+   90
   ]
  ]
 }
