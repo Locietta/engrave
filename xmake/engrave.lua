@@ -68,7 +68,6 @@ add_requires("ngcpp-proxy 4.1.0", {system = false})
 add_requires("amc v2.8.1", {system = false})
 add_requires("unordered_dense v5.3.3", {system = false})
 add_requires("glaze 9.1.0", {system = false})
-add_requires("mnxdom 45bf462", {system = false})
 
 add_requires("freetype 2.14.1", {system = false, configs = {
     zlib = false, png = false, bzip2 = false, woff2 = false, harfbuzz = false}})
@@ -343,9 +342,34 @@ target("iex_musicxml")
     )
     add_files(engine("src/importexport/musicxml/**.cpp"))
 
+-- The MNX object model and its schema validator: mnxdom and
+-- pboettch/json-schema-validator, vendored and ported from nlohmann::json to
+-- glaze (see src/importexport/mnx/thirdparty/README.md).  Their headers are
+-- included as <mnxdom/...> and <json-schema-validator/...>.
+local mnx_thirdparty = engine("src/importexport/mnx/thirdparty")
+
+target("json_schema_validator")
+    set_kind("static")
+    add_packages("glaze", {public = true})
+    add_includedirs(mnx_thirdparty, {public = true})
+    add_files(path.join(mnx_thirdparty, "json-schema-validator/*.cpp"))
+
+target("mnxdom")
+    set_kind("static")
+    add_deps("json_schema_validator", {public = true})
+    if is_plat("windows") then add_cxxflags("/Zc:preprocessor", "/bigobj") end
+    add_defines('MNXDOM_VERSION="3.1.0"', 'MNXDOM_GIT_COMMIT="45bf46221c00411e968c851ff9a1be4e202af5c2"',
+        'MNXDOM_BUILD_ID="engrave"', {public = true})
+    -- The embedded schema: mnx-schema.json.h holds its bytes and a zero end.
+    -- Upstream compiles with its source root on the include path.
+    add_includedirs(path.join(mnx_thirdparty, "mnxdom"))
+    add_rules("utils.bin2c", {extensions = {".json"}})
+    add_files(path.join(mnx_thirdparty, "mnxdom/schema/mnx-schema.json"))
+    add_files(path.join(mnx_thirdparty, "mnxdom/**.cpp"))
+
 target("iex_mnx")
     set_kind("static")
-    add_packages("mnxdom", {public = true})
+    add_deps("mnxdom", {public = true})
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "engraving")
     add_engine_target_defaults()

@@ -203,7 +203,7 @@ def main():
             sys.executable,
             REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
             a.output / "mnx-export",
-            a.engine_source / "src/importexport/mnx/tests/data/schema/mnx-schema.json",
+            a.engine_source / "src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json",
         ],
     )
     run(

@@ -25,11 +25,8 @@
 #include <unordered_set>
 #include <vector>
 
-#ifdef MNXDOM_SYSTEM
 #include <mnxdom/mnxdom.h>
-#else
-#include "mnxdom.h"
-#endif
+
 #include "engraving/types/types.h"
 #include "types/ret.h"
 

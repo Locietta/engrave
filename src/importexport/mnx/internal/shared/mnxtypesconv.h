@@ -26,17 +26,13 @@
 #include <utility>
 #include <vector>
 
+#include <mnxdom/mnxdom.h>
+
 #include "engraving/dom/chord.h"
 #include "engraving/dom/ottava.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/types/types.h"
-
-#ifdef MNXDOM_SYSTEM
-#include <mnxdom/mnxdom.h>
-#else
-#include "mnxdom.h"
-#endif
 
 namespace mu::engraving {
 struct Interval;
