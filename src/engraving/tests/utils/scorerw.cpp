@@ -97,14 +97,19 @@ String ScoreRW::scratch_path(const String &name) {
 
     std::filesystem::path &dir = scratch_dir();
     if (dir.empty()) {
-        static std::random_device entropy;
-        std::error_code ec;
-        dir = std::filesystem::temp_directory_path(ec) / ("engrave-score-rw-" + std::to_string(entropy()) + std::to_string(entropy()));
+        // Throws if no temp directory is available rather than falling back to the cwd. create_directory returns
+        // false when the name already exists, so each process reserves a directory of its own.
+        const std::filesystem::path temp = std::filesystem::temp_directory_path();
+        std::random_device entropy;
+        std::filesystem::path candidate;
+        do {
+            candidate = temp / ("engrave-score-rw-" + std::to_string(entropy()) + std::to_string(entropy()));
+        } while (!std::filesystem::create_directory(candidate));
+        dir = candidate;
     }
 
-    std::error_code ec;
     const std::filesystem::path full = dir / file;
-    std::filesystem::create_directories(full.parent_path(), ec);
+    std::filesystem::create_directories(full.parent_path());
     const auto utf8 = full.generic_u8string();
     return String::from_std_string(std::string(utf8.begin(), utf8.end()));
 }
