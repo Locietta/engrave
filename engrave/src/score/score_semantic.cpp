@@ -39,7 +39,7 @@
 #include "engraving/types/typesconv.h"
 
 using namespace mu::engraving;
-using json = nlohmann::ordered_json;
+using json = music::Json;
 
 namespace music {
 namespace {
@@ -131,7 +131,7 @@ json measure_element_json(const EngravingItem *item) {
         case ElementType::LAYOUT_BREAK:
             // LayoutBreak is a system-level break (line/page/section); track is not
             // meaningful (-1 in 4.7.6 vs 0 in 5.0).
-            out.erase("track");
+            erase_key(out, "track");
             break;
         case ElementType::STAFFTYPE_CHANGE:
             // StaffTypeChange is staff-level; track identifies the affected staff.
@@ -146,7 +146,7 @@ json measure_element_json(const EngravingItem *item) {
         default:
             // Other system-level elements without a meaningful staff omit track.
             if (item->system_flag() && !item->flag(ElementFlag::ON_STAFF)) {
-                out.erase("track");
+                erase_key(out, "track");
             }
             break;
     }
@@ -179,16 +179,16 @@ json note_json(const Note *note) {
             out["tieTo"] = nullptr; // partial tie (e.g. into a volta)
         }
     }
-    json fingerings = json::array();
-    json elements = json::array(); // symbols, bends, note-attached text, ...
+    json fingerings = make_array<json>();
+    json elements = make_array<json>(); // symbols, bends, note-attached text, ...
     for (const EngravingItem *e : const_cast<Note *>(note)->el()) {
         if (e->is_fingering()) {
-            fingerings.push_back(str(to_text_base(e)->plain_text()));
+            array_push(fingerings, str(to_text_base(e)->plain_text()));
         } else if (!e->generated()) {
             json item = text_item(e);
-            item.erase("tick");
-            item.erase("track");
-            elements.push_back(item);
+            erase_key(item, "tick");
+            erase_key(item, "track");
+            array_push(elements, item);
         }
     }
     if (!fingerings.empty()) {
@@ -215,33 +215,33 @@ json chord_rest_json(const ChordRest *cr) {
     if (cr->is_chord()) {
         const Chord *chord = to_chord(cr);
         out["grace"] = grace_kind(chord->note_type());
-        json notes = json::array();
+        json notes = make_array<json>();
         for (const Note *note : chord->notes()) {
-            notes.push_back(note_json(note));
+            array_push(notes, note_json(note));
         }
         out["notes"] = notes;
-        json articulations = json::array();
+        json articulations = make_array<json>();
         for (const Articulation *a : chord->articulations()) {
-            articulations.push_back(str(TConv::to_xml(a->sym_id())));
+            array_push(articulations, str(TConv::to_xml(a->sym_id())));
         }
         if (!articulations.empty()) {
             out["articulations"] = articulations;
         }
         // Chord lines, arpeggios, tremolos, stems set by the user.
-        json elements = json::array();
+        json elements = make_array<json>();
         for (const EngravingItem *e : const_cast<Chord *>(chord)->el()) {
             if (!e->generated()) {
-                elements.push_back(str(TConv::to_xml(e->type())) + ":" + subtype(e));
+                array_push(elements, str(TConv::to_xml(e->type())) + ":" + subtype(e));
             }
         }
         if (chord->arpeggio()) {
-            elements.push_back("Arpeggio:" + subtype(chord->arpeggio()));
+            array_push(elements, "Arpeggio:" + subtype(chord->arpeggio()));
         }
         if (chord->tremolo_single_chord()) {
-            elements.push_back("TremoloSingleChord:" + subtype(chord->tremolo_single_chord()));
+            array_push(elements, "TremoloSingleChord:" + subtype(chord->tremolo_single_chord()));
         }
         if (chord->tremolo_two_chord()) {
-            elements.push_back("TremoloTwoChord:" + subtype(chord->tremolo_two_chord()));
+            array_push(elements, "TremoloTwoChord:" + subtype(chord->tremolo_two_chord()));
         }
         if (!elements.empty()) {
             out["elements"] = elements;
@@ -252,9 +252,9 @@ json chord_rest_json(const ChordRest *cr) {
     } else if (!to_rest(cr)->visible()) {
         out["visible"] = false;
     }
-    json lyrics = json::array();
+    json lyrics = make_array<json>();
     for (const Lyrics *l : cr->lyrics()) {
-        lyrics.push_back({l->verse(), str(l->plain_text())});
+        array_push(lyrics, json{l->verse(), str(l->plain_text())});
     }
     if (!lyrics.empty()) {
         out["lyrics"] = lyrics;
@@ -295,16 +295,14 @@ json part_json(const Part *part) {
     out["instrumentId"] = str(part->instrument_id());
     out["show"] = part->show();
     const Interval transpose = part->instrument()->transpose();
-    out["transpose"] = {transpose.chromatic, transpose.diatonic};
-    json staves = json::array();
+    out["transpose"] = json_array_of<json>(transpose.chromatic, transpose.diatonic);
+    json staves = make_array<json>();
     for (const Staff *staff : part->staves()) {
         const StaffType *type = staff->staff_type(Fraction(0, 1));
-        staves.push_back({
-            {"index", static_cast<int>(staff->idx())},
-            {"group", staff_group(type->group())},
-            {"lines", type->lines()},
-            {"invisible", type->invisible()},
-        });
+        array_push(staves, json{{"index", static_cast<int>(staff->idx())},
+                                {"group", staff_group(type->group())},
+                                {"lines", type->lines()},
+                                {"invisible", type->invisible()}});
     }
     out["staves"] = staves;
     return out;
@@ -313,8 +311,11 @@ json part_json(const Part *part) {
 // Annotation and spanner containers keep insertion order, which a save and
 // reload does not preserve; order by position, then by content.
 void sort_items(json &items) {
-    std::sort(items.begin(), items.end(), [](const json &a, const json &b) {
-        const auto key = [](const json &v) { return std::make_tuple(v.value("tick", 0), v.value("track", 0), v.dump()); };
+    auto &values = items.get_array();
+    std::sort(values.begin(), values.end(), [](const json &a, const json &b) {
+        const auto key = [](const json &v) {
+            return std::make_tuple(json_value<int>(v, "tick", 0), json_value<int>(v, "track", 0), dump_json(v));
+        };
         return key(a) < key(b);
     });
 }
@@ -322,20 +323,20 @@ void sort_items(json &items) {
 // Musical content of one score (master or excerpt).
 json score_body(Score *score) {
     json out;
-    json parts = json::array();
+    json parts = make_array<json>();
     for (const Part *part : score->parts()) {
-        parts.push_back(part_json(part));
+        array_push(parts, part_json(part));
     }
     out["parts"] = parts;
 
-    json measures = json::array();
-    json signatures = json::array(); // clefs, key and time signatures per staff
-    json events = json::array();     // [staff][voice] -> chord/rest list
-    json annotations = json::array();
-    json segment_elements = json::array();
+    json measures = make_array<json>();
+    json signatures = make_array<json>(); // clefs, key and time signatures per staff
+    json events = make_array<json>();     // [staff][voice] -> chord/rest list
+    json annotations = make_array<json>();
+    json segment_elements = make_array<json>();
     const size_t nstaves = score->nstaves();
     for (size_t s = 0; s < nstaves; ++s) {
-        events.push_back(json::array({json::array(), json::array(), json::array(), json::array()}));
+        array_push(events, json_array_of<json>(make_array<json>(), make_array<json>(), make_array<json>(), make_array<json>()));
     }
 
     for (const Measure *m = score->first_measure(); m; m = m->next_measure()) {
@@ -349,22 +350,22 @@ json score_body(Score *score) {
             // 5.0 renamed the "irregular" measure flag (Pid::IRREGULAR) to this.
             measure["irregular"] = true;
         }
-        json elements = json::array();
+        json elements = make_array<json>();
         for (const EngravingItem *e : const_cast<Measure *>(m)->el()) {
             if (!e->generated()) {
-                elements.push_back(measure_element_json(e));
+                array_push(elements, measure_element_json(e));
             }
         }
         if (!elements.empty()) {
             sort_items(elements);
             measure["elements"] = elements;
         }
-        measures.push_back(measure);
+        array_push(measures, measure);
 
         for (const Segment *seg = m->first(); seg; seg = seg->next()) {
             for (const EngravingItem *a : seg->annotations()) {
                 if (!a->generated()) {
-                    annotations.push_back(text_item(a));
+                    array_push(annotations, text_item(a));
                 }
             }
             for (size_t track = 0; track < nstaves * ::mu::engraving::voices; ++track) {
@@ -378,33 +379,35 @@ json score_body(Score *score) {
                     json &voice = events[staff][track % ::mu::engraving::voices];
                     if (cr->is_chord()) {
                         for (const Chord *g : to_chord(cr)->grace_notes_before()) {
-                            voice.push_back(chord_rest_json(g));
+                            array_push(voice, chord_rest_json(g));
                         }
                     }
-                    voice.push_back(chord_rest_json(cr));
+                    array_push(voice, chord_rest_json(cr));
                     if (cr->is_chord()) {
                         for (const Chord *g : to_chord(cr)->grace_notes_after()) {
-                            voice.push_back(chord_rest_json(g));
+                            array_push(voice, chord_rest_json(g));
                         }
                     }
                 } else if (e->is_clef()) {
-                    signatures.push_back({{"type", "Clef"},
-                                          {"tick", seg->tick().ticks()},
-                                          {"staff", staff},
-                                          {"value", str(TConv::to_xml(to_clef(e)->clef_type()))}});
+                    array_push(signatures, json{{"type", "Clef"},
+                                                {"tick", seg->tick().ticks()},
+                                                {"staff", staff},
+                                                {"value", str(TConv::to_xml(to_clef(e)->clef_type()))}});
                 } else if (e->is_key_sig()) {
                     const KeySig *k = to_key_sig(e);
-                    signatures.push_back({{"type", "KeySig"},
-                                          {"tick", seg->tick().ticks()},
-                                          {"staff", staff},
-                                          {"value", static_cast<int>(k->concert_key())},
-                                          {"key", static_cast<int>(k->key())}});
+                    array_push(signatures, json{{"type", "KeySig"},
+                                                {"tick", seg->tick().ticks()},
+                                                {"staff", staff},
+                                                {"value", static_cast<int>(k->concert_key())},
+                                                {"key", static_cast<int>(k->key())}});
                 } else if (e->is_time_sig()) {
-                    signatures.push_back(
-                        {{"type", "TimeSig"}, {"tick", seg->tick().ticks()}, {"staff", staff}, {"value", fraction(to_time_sig(e)->sig())}});
+                    array_push(signatures, json{{"type", "TimeSig"},
+                                                {"tick", seg->tick().ticks()},
+                                                {"staff", staff},
+                                                {"value", fraction(to_time_sig(e)->sig())}});
                 } else {
                     // Breaths, user barlines, ambitus, ...
-                    segment_elements.push_back(text_item(e));
+                    array_push(segment_elements, text_item(e));
                 }
             }
         }
@@ -416,11 +419,11 @@ json score_body(Score *score) {
     out["annotations"] = annotations;
     out["segmentElements"] = segment_elements;
 
-    json spanners = json::array();
+    json spanners = make_array<json>();
     for (const auto &entry : score->spanner_map().map()) {
         const Spanner *sp = entry.second;
         if (!sp->generated()) {
-            spanners.push_back(spanner_json(sp));
+            array_push(spanners, spanner_json(sp));
         }
     }
     sort_items(spanners);
@@ -433,7 +436,7 @@ json score_body(Score *score) {
 json semantic_dump(MasterScore *score) {
     json out;
     out["schema"] = 1;
-    json meta = json::object();
+    json meta = make_object<json>();
     for (const auto &[name, value] : score->meta_tags()) {
         if (name != u"creationDate" && name != u"platform") {
             meta[str(name)] = str(value);
@@ -444,34 +447,34 @@ json semantic_dump(MasterScore *score) {
     // 5.0 derives tempo from an automation curve; the flattened timeline is the
     // replacement for the 4.x TempoMap it replaced: one point per tempo marking,
     // per resampled gradual-change step and per pause, keyed by score tick.
-    json tempo = json::array();
+    json tempo = make_array<json>();
     for (const TempoTimePoint &point : score->tempo_timeline(false).points()) {
-        tempo.push_back({point.utick, std::round(point.bps * 60.0 * 1e4) / 1e4});
+        array_push(tempo, json{point.utick, std::round(point.bps * 60.0 * 1e4) / 1e4});
     }
     out["tempoMap"] = tempo;
 
     score->set_expand_repeats(true);
-    json playback = json::array();
+    json playback = make_array<json>();
     for (const RepeatSegment *rs : score->repeat_list()) {
-        playback.push_back({rs->tick, rs->len(), rs->utick});
+        array_push(playback, json{rs->tick, rs->len(), rs->utick});
     }
     out["playbackOrder"] = playback;
 
-    out.update(score_body(score));
+    merge_object(out, score_body(score));
 
-    json excerpts = json::array();
+    json excerpts = make_array<json>();
     for (const Excerpt *excerpt : score->excerpts()) {
         json e;
         e["name"] = str(excerpt->name());
-        json part_ids = json::array();
+        json part_ids = make_array<json>();
         for (const Part *p : excerpt->parts()) {
-            part_ids.push_back(p->id().to_std_string());
+            array_push(part_ids, p->id().to_std_string());
         }
         e["partIds"] = part_ids;
         if (Score *es = excerpt->excerpt_score()) {
             e["score"] = score_body(es);
         }
-        excerpts.push_back(e);
+        array_push(excerpts, e);
     }
     out["excerpts"] = excerpts;
     return out;

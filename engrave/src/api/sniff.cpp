@@ -4,8 +4,7 @@
 #include <cctype>
 #include <string_view>
 
-#include <nlohmann/json.hpp>
-
+#include "engrave/src/score/json.h"
 #include "global/io/buffer.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipreader.h"
@@ -66,8 +65,8 @@ std::optional<Format> sniff_format(const std::string &data) {
     if (text.starts_with("\xEF\xBB\xBF")) text.remove_prefix(3);
     const auto first = text.find_first_not_of(" \t\r\n");
     if (first != std::string_view::npos && text[first] == '{') {
-        auto json = nlohmann::json::parse(text, nullptr, false);
-        if (json.is_object() && json.contains("mnx") && json["mnx"].is_object()) return Format::MNX;
+        const auto parsed = music::parse_json<music::Json>(text);
+        if (parsed && parsed->is_object() && parsed->contains("mnx") && parsed->at("mnx").is_object()) return Format::MNX;
     }
     if (head.starts_with("MThd")) return Format::MIDI;
     if (auto format = sniff_xml(data)) return format;

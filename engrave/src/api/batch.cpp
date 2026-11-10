@@ -230,7 +230,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     std::optional<Snapshot> snapshot;
     if (policy == Policy::SNAPSHOT) {
         snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz", music::ExportOptions{}, {}),
-                            music::semantic_dump(&master).dump(1),
+                            music::dump_json(music::semantic_dump(&master), 1),
                             id_list(master),
                             {}};
         for (const mu::engraving::Score *score : master.score_list())
@@ -394,7 +394,7 @@ void BatchGuard::restore(const Snapshot &snapshot) {
 // what a difference costs, so the harness's own notion of the score's content is used.
 bool BatchGuard::same_score(const Snapshot &snapshot) {
     MasterScore &master = context_.master();
-    return music::semantic_dump(&master).dump(1) == snapshot.semantic && id_list(master) == snapshot.ids;
+    return music::dump_json(music::semantic_dump(&master), 1) == snapshot.semantic && id_list(master) == snapshot.ids;
 }
 
 } // namespace api

@@ -442,7 +442,7 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
     // The metadata is the engine's own derivation (title recognition, the tempo and
     // time signature summary, the page and measure counts); only the track list is
     // left out, because it is the audio engine's.
-    const nlohmann::json metadata = music::score_metadata(&score, std::vector<music::ScoreMetadataTrack>{});
+    const music::SortedJson metadata = music::score_metadata(&score, std::vector<music::ScoreMetadataTrack>{});
     const auto text = [&metadata](const char *key) { return metadata.at(key).get<std::string>(); };
     outline.title = text("title");
     outline.subtitle = text("subtitle");
@@ -450,11 +450,11 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
     outline.poet = text("poet");
     outline.timesig = text("timesig");
     outline.mscore_version = text("mscoreVersion");
-    outline.file_version = metadata.at("fileVersion").get<std::int32_t>();
-    outline.pages = metadata.at("pages").get<std::int32_t>();
-    outline.measure_count = metadata.at("measures").get<std::int32_t>();
-    outline.key = metadata.at("keysig").get<std::int32_t>();
-    outline.duration = metadata.at("duration").get<double>();
+    outline.file_version = metadata.at("fileVersion").as<std::int32_t>();
+    outline.pages = metadata.at("pages").as<std::int32_t>();
+    outline.measure_count = metadata.at("measures").as<std::int32_t>();
+    outline.key = metadata.at("keysig").as<std::int32_t>();
+    outline.duration = metadata.at("duration").as<double>();
 
     fill_parts(outline, score);
     fill_measures(outline, score);

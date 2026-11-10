@@ -5,9 +5,8 @@
 #include <cstdio>
 #include <format>
 #include <fstream>
+#include <iterator>
 #include <new>
-
-#include <nlohmann/json.hpp>
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/mnx.h"
@@ -16,6 +15,7 @@
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/runtime_assets.h"
 #include "engrave/src/runtime/version.h"
+#include "engrave/src/score/json.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/text.h"
@@ -201,9 +201,12 @@ std::vector<TemplateInfo> Engine::templates() const {
     const auto root = impl_->state.resources / "templates";
     std::ifstream file(root / "categories.json", std::ios::binary);
     if (!file) return {};
+    const std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    const auto categories = music::parse_json<music::Json>(text);
+    if (!categories || !categories->is_array()) return {};
     std::vector<TemplateInfo> result;
-    for (const auto &category : nlohmann::json::parse(file)) {
-        for (const auto &entry : category.at("files")) {
+    for (const auto &category : categories->get_array()) {
+        for (const auto &entry : category.at("files").get_array()) {
             const auto mscx = root / path_from_utf8(entry.get<std::string>());
             std::string id = template_id(mscx);
             std::string title = id;

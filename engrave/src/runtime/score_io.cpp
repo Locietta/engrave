@@ -224,8 +224,9 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = select_score(project->master_score(), options.excerpt_id);
-    if (format == "metadata") return score_metadata(score).dump();
-    if (format == "measurePositions" || format == "segmentPositions") return score_positions(score, format == "segmentPositions").dump();
+    if (format == "metadata") return music::dump_json(score_metadata(score));
+    if (format == "measurePositions" || format == "segmentPositions")
+        return music::dump_json(score_positions(score, format == "segmentPositions"));
     if (format == "svg" || format == "png" || format == "pdf") return render_score(context, score, format, options);
 
     ByteArray data;

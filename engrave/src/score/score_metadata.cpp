@@ -26,7 +26,7 @@
 //
 // The JSON field schema and the title/composer recognition heuristics are kept
 // identical to the upstream implementation. QJsonArray/QJsonObject are replaced
-// by nlohmann::json arrays/objects and QString by muse::String/std::string. The
+// by the engine's JSON arrays/objects and QString by muse::String/std::string. The
 // notation/audio-settings dependency: track descriptions come from
 // score_audio_track_info(), which lists every InstrumentTrackId and the
 // chord-symbol pseudo track.
@@ -64,7 +64,6 @@
 
 namespace music {
 namespace {
-using Json = nlohmann::json;
 using namespace mu::engraving;
 
 std::string bool_to_string(bool b) { return b ? "true" : "false"; }
@@ -309,8 +308,8 @@ bool parse_part_id(const std::string &text, std::uint64_t &value) {
     return true;
 }
 
-Json track_json(const InstrumentTrackId &id, const MetadataTrack &track) {
-    Json json_track = Json::object();
+SortedJson track_json(const InstrumentTrackId &id, const MetadataTrack &track) {
+    SortedJson json_track = make_object<SortedJson>();
     json_track["instrumentId"] = id.instrument_id.to_std_string();
     json_track["partId"] = id.part_id.to_std_string();
     json_track["type"] = track.type;
@@ -335,9 +334,9 @@ Json track_json(const InstrumentTrackId &id, const MetadataTrack &track) {
     return json_track;
 }
 
-Json tracks_json_array(const Score *score, const std::vector<MetadataTrack> &tracks) {
-    Json json_tracks_array = Json::array();
-    std::map<InstrumentTrackId, Json> sorted_json_tracks;
+SortedJson tracks_json_array(const Score *score, const std::vector<MetadataTrack> &tracks) {
+    SortedJson json_tracks_array = make_array<SortedJson>();
+    std::map<InstrumentTrackId, SortedJson> sorted_json_tracks;
 
     for (const MetadataTrack &track : tracks) {
         std::uint64_t part_id_value = 0;
@@ -369,7 +368,7 @@ Json tracks_json_array(const Score *score, const std::vector<MetadataTrack> &tra
                                         "'");
         }
 
-        const auto inserted = sorted_json_tracks.emplace(*match, Json::object());
+        const auto inserted = sorted_json_tracks.emplace(*match, make_object<SortedJson>());
         if (!inserted.second) {
             throw std::invalid_argument("score_metadata: duplicate track for part '" + track.part_id + "' and instrument '" +
                                         track.instrument_id + "'");
@@ -378,16 +377,16 @@ Json tracks_json_array(const Score *score, const std::vector<MetadataTrack> &tra
     }
 
     for (const auto &entry : sorted_json_tracks) {
-        json_tracks_array.push_back(entry.second);
+        array_push(json_tracks_array, entry.second);
     }
 
     return json_tracks_array;
 }
 
-Json parts_json_array(const Score *score) {
-    Json json_parts_array = Json::array();
+SortedJson parts_json_array(const Score *score) {
+    SortedJson json_parts_array = make_array<SortedJson>();
     for (const Part *part : score->parts()) {
-        Json json_part = Json::object();
+        SortedJson json_part = make_object<SortedJson>();
         json_part["id"] = part->id().to_std_string();
         muse::String name = part->long_name();
         json_part["name"] = name.replace(u"\n", u"").to_std_string();
@@ -401,14 +400,14 @@ Json parts_json_array(const Score *score) {
         json_part["hasTabStaff"] = bool_to_string(part->has_tab_staff());
         json_part["hasDrumStaff"] = bool_to_string(part->has_drum_staff());
         json_part["isVisible"] = bool_to_string(part->show());
-        json_parts_array.push_back(json_part);
+        array_push(json_parts_array, json_part);
     }
 
     return json_parts_array;
 }
 
-Json page_format_json(const MStyle &style) {
-    Json format = Json::object();
+SortedJson page_format_json(const MStyle &style) {
+    SortedJson format = make_object<SortedJson>();
     // Upstream stores round(...) as a QJson double; QJsonDocument serializes a
     // whole value without a fractional part, so int keeps the existing output.
     format["height"] = static_cast<int>(std::round(style.style_d(Sid::PAGE_HEIGHT) * ::mu::engraving::inch));
@@ -429,19 +428,19 @@ void find_text_by_type(TextStyleType text_style_type, std::vector<muse::String> 
     }
 }
 
-Json type_data_json(Score *score) {
-    Json types_data = Json::object();
+SortedJson type_data_json(Score *score) {
+    SortedJson types_data = make_object<SortedJson>();
     static const std::vector<std::pair<std::string, TextStyleType>> names_types_list{{"titles", TextStyleType::TITLE},
                                                                                      {"subtitles", TextStyleType::SUBTITLE},
                                                                                      {"composers", TextStyleType::COMPOSER},
                                                                                      {"poets", TextStyleType::LYRICIST}};
 
     for (const auto &name_type : names_types_list) {
-        Json type_data = Json::array();
+        SortedJson type_data = make_array<SortedJson>();
         std::vector<muse::String> type_text_strings;
         score->scan_elements([&](EngravingItem *item) { find_text_by_type(name_type.second, type_text_strings, item); });
         for (const auto &type_str : type_text_strings) {
-            type_data.push_back(type_str.to_std_string());
+            array_push(type_data, type_str.to_std_string());
         }
         types_data[name_type.first] = type_data;
     }
@@ -449,8 +448,8 @@ Json type_data_json(Score *score) {
     return types_data;
 }
 
-Json excerpts_json_array(const Score *score) {
-    Json json_excerpts_array = Json::array();
+SortedJson excerpts_json_array(const Score *score) {
+    SortedJson json_excerpts_array = make_array<SortedJson>();
 
     const MasterScore *master = score->master_score();
     if (!master) {
@@ -472,21 +471,21 @@ Json excerpts_json_array(const Score *score) {
             continue;
         }
 
-        Json json_excerpt = Json::object();
+        SortedJson json_excerpt = make_object<SortedJson>();
         json_excerpt["id"] = static_cast<int>(i);
         json_excerpt["title"] = e->name().to_std_string();
         json_excerpt["parts"] = parts_json_array(part);
 
-        json_excerpts_array.push_back(json_excerpt);
+        array_push(json_excerpts_array, json_excerpt);
     }
 
     return json_excerpts_array;
 }
 
-Json metadata_tracks_json_array(const std::vector<ScoreMetadataTrack> &tracks) {
-    Json json_tracks_array = Json::array();
+SortedJson metadata_tracks_json_array(const std::vector<ScoreMetadataTrack> &tracks) {
+    SortedJson json_tracks_array = make_array<SortedJson>();
     for (const ScoreMetadataTrack &track : tracks) {
-        Json json_track = Json::object();
+        SortedJson json_track = make_object<SortedJson>();
         json_track["trackId"] = track.track_id;
         json_track["partId"] = track.part_id;
         json_track["instrumentId"] = track.instrument_id;
@@ -499,13 +498,13 @@ Json metadata_tracks_json_array(const std::vector<ScoreMetadataTrack> &tracks) {
         json_track["solo"] = track.solo;
         json_track["muted"] = track.muted;
         json_track["forceMute"] = track.force_mute;
-        json_tracks_array.push_back(std::move(json_track));
+        array_push(json_tracks_array, std::move(json_track));
     }
     return json_tracks_array;
 }
 
-Json make_score_metadata_json(Score *score, Json json_tracks) {
-    Json json = Json::object();
+SortedJson make_score_metadata_json(Score *score, SortedJson json_tracks) {
+    SortedJson json = make_object<SortedJson>();
 
     json["title"] = title(score);
     json["subtitle"] = subtitle(score);
@@ -537,30 +536,30 @@ Json make_score_metadata_json(Score *score, Json json_tracks) {
 }
 } // namespace
 
-nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks) {
+SortedJson score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks) {
     if (!score) {
-        return nlohmann::json::object();
+        return make_object<SortedJson>();
     }
     return make_score_metadata_json(score, metadata_tracks_json_array(tracks));
 }
 
-nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks) {
+SortedJson score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks) {
     if (!score) {
         if (!tracks.empty()) {
             throw std::invalid_argument("score_metadata: cannot validate tracks without a score");
         }
-        return nlohmann::json::object();
+        return make_object<SortedJson>();
     }
 
     // Validate and build the tracks before doing any other work, so an invalid
     // descriptor cannot produce a partially populated result.
-    Json json_tracks = tracks_json_array(score, tracks);
+    SortedJson json_tracks = tracks_json_array(score, tracks);
     return make_score_metadata_json(score, std::move(json_tracks));
 }
 
-nlohmann::json score_metadata(mu::engraving::Score *score) {
+SortedJson score_metadata(mu::engraving::Score *score) {
     if (!score) {
-        return nlohmann::json::object();
+        return make_object<SortedJson>();
     }
     std::vector<ScoreMetadataTrack> tracks;
     const auto infos = score_audio_track_info(score);
