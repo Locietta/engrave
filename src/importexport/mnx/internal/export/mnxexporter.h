@@ -145,7 +145,7 @@ private:
     ankerl::unordered_dense::map<std::string, model::Event *> events_by_id_;        // built after the content is complete
     std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> staff_to_part_staff_;
     std::vector<engraving::Staff *> exported_staves_;
-    std::set<std::string> lyric_line_ids_; // this could be (ordered) map if we ever support lyric line metadata.
+    std::set<int> lyric_verses_; // 1-based verses with lyrics; the lyric line ids, in verse order
 
     bool export_beams_{true};
     bool export_rest_positions_{false};

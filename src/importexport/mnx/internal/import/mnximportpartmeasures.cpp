@@ -731,11 +731,8 @@ ChordRest *MnxImporter::import_event(const model::Event &event, track_idx_t cur_
     import_markings(event, cr, to_muse_score_fraction(start_tick + actual_duration), measure);
     if (entry.container != model::EventContainer::GRACE) {
         segment->add(cr);
-        if (!active_tuplets.empty()) {
-            DO_ASSERT(active_tuplets.top());
-            if (active_tuplets.top()) {
-                active_tuplets.top()->add(cr);
-            }
+        if (!active_tuplets.empty() && active_tuplets.top()) {
+            active_tuplets.top()->add(cr);
         }
         if (active_tremolo) {
             active_tremolo->add(cr);
@@ -798,15 +795,13 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
                 active_tuplets.push(nullptr);
                 return model::WalkControl::SKIP_CHILDREN;
             }
-            if (Tuplet *t = create_tuplet(*mnx_tuplet, measure, cur_track_idx, ctx.elapsed)) {
-                if (!active_tuplets.empty()) {
-                    DO_ASSERT(active_tuplets.top());
-                    if (active_tuplets.top()) {
-                        active_tuplets.top()->add(t); // reparent tuplet
-                    }
-                }
-                active_tuplets.push(t);
+            // A tuplet MuseScore cannot represent stays on the stack as null, so on_after_item
+            // pops its own entry; its events are imported without a tuplet.
+            Tuplet *t = create_tuplet(*mnx_tuplet, measure, cur_track_idx, ctx.elapsed);
+            if (t && !active_tuplets.empty() && active_tuplets.top()) {
+                active_tuplets.top()->add(t); // reparent tuplet
             }
+            active_tuplets.push(t);
         } else if (const auto *mnx_tremolo = std::get_if<model::MultiNoteTremolo>(&item)) {
             if (mnx_tremolo->content.size() != 2) {
                 LOGE() << "Tremolo in measure " << measure->measure_index() << " has " << mnx_tremolo->content.size()

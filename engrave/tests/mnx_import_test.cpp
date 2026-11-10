@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -151,6 +153,37 @@ TEST(MnxExport, SchemaAndCoreRoundtrip) {
         ASSERT_TRUE(imported) << imported.error().message;
         EXPECT_TRUE(music::json_equal(core_content(**imported), before));
     }
+}
+
+// Every project example, and a percussion score with notes its drumset does not define,
+// re-export to a document that loads again.
+TEST(MnxExport, ProjectExamplesExportLoadableDocuments) {
+    std::vector<std::filesystem::path> inputs;
+    for (const auto &entry : std::filesystem::directory_iterator(data))
+        if (entry.path().extension() == ".mnx") inputs.push_back(entry.path());
+    inputs.push_back(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/named_noteheads_perc.musicxml");
+    unsigned count = 0;
+    for (const auto &path : inputs) {
+        SCOPED_TRACE(path.filename().string());
+        auto opened = engine->open(path);
+        ASSERT_TRUE(opened) << opened.error().message;
+        mu::iex::mnxio::MnxExporter exporter(engrave::DocumentAccess::master_score(**opened));
+        ASSERT_TRUE(exporter.export_mnx());
+        const auto reloaded = mu::iex::mnxio::model::load_document(mu::iex::mnxio::model::write_document(exporter.document()));
+        EXPECT_TRUE(reloaded) << (reloaded ? std::string() : reloaded.error().message);
+        ++count;
+    }
+    EXPECT_GE(count, 30U);
+}
+
+// A tuplet MuseScore cannot represent is imported without it (it used to unbalance the importer).
+TEST(MnxImport, UnrepresentableTuplet) {
+    const std::string input =
+        R"({"mnx":{"version":1},"global":{"measures":[{"time":{"count":4,"unit":4}}]},"parts":[{"measures":[{"sequences":[
+        {"content":[{"type":"tuplet","inner":{"multiple":2,"duration":{"base":"quarter"}},"outer":{"multiple":1,"duration":{"base":"quarter","dots":5}},
+        "content":[{"duration":{"base":"quarter"},"notes":[{"pitch":{"step":"C","octave":5}}]},{"duration":{"base":"quarter"},"notes":[{"pitch":{"step":"D","octave":5}}]}]},
+        {"duration":{"base":"half"},"rest":{}},{"duration":{"base":"128th"},"rest":{}}]}]}]}]})";
+    EXPECT_TRUE(engine->open(std::as_bytes(std::span(input)), {.format = engrave::Format::MNX}));
 }
 
 TEST(MnxImport, InvalidInputAndRecovery) {

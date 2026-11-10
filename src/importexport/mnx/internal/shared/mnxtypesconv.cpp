@@ -669,8 +669,9 @@ std::optional<model::OttavaAmount> to_mnx_ottava_amount(OttavaType ottava_type) 
     return muse::key(::mu::iex::mnxio::ottava_type_table, ottava_type, std::optional<model::OttavaAmount>{});
 }
 
+// As written, unreduced (mnxdom kept 2/8 as 2/8).
 Fraction to_muse_score_r_tick(const model::RhythmicPosition &position) {
-    return to_muse_score_fraction(model::Rational(position.fraction));
+    return Fraction(position.fraction.numerator, position.fraction.denominator);
 }
 
 namespace {

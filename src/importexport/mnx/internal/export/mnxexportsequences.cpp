@@ -47,6 +47,7 @@
 #include "engraving/dom/rest.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stafftype.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/tremolosinglechord.h"
@@ -130,7 +131,7 @@ static int calc_written_diatonic_delta(const Note *note) {
 //   export lyrics on a chord/rest into mnxEvent
 //---------------------------------------------------------
 
-static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, std::set<std::string> &lyric_line_ids) {
+static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, std::set<int> &lyric_verses) {
     IF_ASSERT_FAILED(cr) { return; }
 
     const auto lyrics = cr->lyrics();
@@ -142,10 +143,14 @@ static void create_lyrics(model::Event &mnx_event, const ChordRest *cr, std::set
 
     for (const auto &lyric : lyrics) {
         const std::string line_id = std::to_string(lyric->verse() + 1);
-        lyric_line_ids.insert(line_id);
+        if (std::ranges::any_of(mnx_lines, [&](const auto &entry) { return entry.first == line_id; })) {
+            LOGW() << "Skipping a second lyric in verse " << line_id << " of one event.";
+            continue;
+        }
+        lyric_verses.insert(lyric->verse() + 1);
         model::EventLyricLine mnx_line;
         mnx_line.text = lyric->plain_text().to_std_string();
-        set_unless_default(mnx_line.type, to_mnx_lyric_line_type(lyric->syllabic()), model::EventLyricLineType::WHOLE);
+        mnx_line.type = to_mnx_lyric_line_type(lyric->syllabic());
         mnx_lines.emplace_back(line_id, std::move(mnx_line));
         /// @todo export styled text when supported by MNX.
         /// @todo export word extension span when supported by MNX.
@@ -392,8 +397,26 @@ bool MnxExporter::create_notes(model::Event &mnx_event, ChordRest *chord_rest) {
             LOGW() << "Skipping kit note with invalid MIDI pitch: " << pitch;
             return false;
         }
+        const std::string kit_id = "drum-midi-" + std::to_string(pitch);
+        // A note the drumset does not define still needs a kit component (and its sound) to refer to.
+        auto &kit = ensure(root_.parts.at(mnx_part_staff_from_staff_idx(note->staff_idx()).first).kit);
+        if (std::ranges::none_of(kit, [&](const auto &entry) { return entry.first == kit_id; })) {
+            const StaffType *staff_type = note->staff()->staff_type(note->tick());
+            model::KitComponent component;
+            component.name = "Percussion note";
+            component.staff_position = (staff_type ? staff_type->middle_line() : 4) - note->line();
+            component.sound = model::Id(kit_id);
+            kit.emplace_back(kit_id, std::move(component));
+            auto &sounds = ensure(root_.global.sounds);
+            if (std::ranges::none_of(sounds, [&](const auto &entry) { return entry.first == kit_id; })) {
+                model::Sound sound;
+                sound.name = "Percussion note";
+                sound.midi_number = pitch;
+                sounds.emplace_back(kit_id, std::move(sound));
+            }
+        }
         model::KitNote mnx_kit_note;
-        mnx_kit_note.kit_component = model::Id("drum-midi-" + std::to_string(pitch));
+        mnx_kit_note.kit_component = model::Id(kit_id);
         mnx_kit_note.id = model::Id(get_or_assign_eid(note).to_std_string());
         create_ties(mnx_kit_note.ties, note);
         mnx_kit_notes.push_back(std::move(mnx_kit_note));
@@ -509,6 +532,12 @@ void MnxExporter::create_beam(ExportContext &ctx, ChordRest *chord_rest) {
         return;
     }
     IF_ASSERT_FAILED(elements.front()->measure() == ctx.measure) { return; }
+    // MNX beams cannot contain the events of a multi-note tremolo; MNX readers beam each
+    // tremolo on its own.
+    const auto in_tremolo = [](const ChordRest *cr) { return cr->is_chord() && to_chord(cr)->tremolo_two_chord(); };
+    if (std::ranges::any_of(elements, in_tremolo)) {
+        return;
+    }
     /// @todo Handle beams that cross system breaks, rather than just mirroring layout segments.
     /// This work is deferred on the chance that it may become much simpler if
     /// MuseScore also implements beams across system breaks.
@@ -667,7 +696,7 @@ bool MnxExporter::append_event(Content &content, ExportContext &ctx, ChordRest *
 
     const std::string event_id = get_or_assign_eid(chord_rest).to_std_string();
     mnx_event.id = model::Id(event_id);
-    create_lyrics(mnx_event, chord_rest, lyric_line_ids_);
+    create_lyrics(mnx_event, chord_rest, lyric_verses_);
     create_markings(mnx_event, chord_rest);
     if (chord_rest->staff_move() != 0) {
         const int cross_staff = ctx.mnx_part_staff + chord_rest->staff_move();
