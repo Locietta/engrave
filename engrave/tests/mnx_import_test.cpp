@@ -186,6 +186,35 @@ TEST(MnxImport, UnrepresentableTuplet) {
     EXPECT_TRUE(engine->open(std::as_bytes(std::span(input)), {.format = engrave::Format::MNX}));
 }
 
+// Valid documents with content MuseScore cannot represent as written import without failing:
+// content under a measure repeat, a space-only tuplet inside a tuplet, a three-event tremolo,
+// and a gap no single note value spells.
+TEST(MnxImport, UnrepresentableContentImports) {
+    const auto open = [](const std::string &content, const std::string &measure_extra = "") {
+        // The case goes in the second measure, so a measure repeat there has a measure to repeat.
+        const std::string input = R"({"mnx":{"version":1},"global":{"measures":[{"time":{"count":4,"unit":4}},{}]},"parts":[{"measures":[)"
+                                  R"({"sequences":[]},{)" +
+                                  measure_extra + R"("sequences":[{"content":[)" + content + R"(]}]}]}]})";
+        auto opened = engine->open(std::as_bytes(std::span(input)), {.format = engrave::Format::MNX});
+        EXPECT_TRUE(opened) << (opened ? std::string() : opened.error().message) << "\n" << input;
+    };
+    const std::string chord =
+        R"({"id":"e1","duration":{"base":"quarter"},"notes":[{"id":"n1","pitch":{"step":"C","octave":4}},{"id":"n2","pitch":{"step":"E","octave":4}}]})";
+    const std::string rest3 = R"({"duration":{"base":"half","dots":1},"rest":{}})";
+    open(chord + "," + rest3,
+         R"("measureRepeat":{"number":1},"arpeggios":[{"position":{"fraction":[0,1]},"span":{"start":"n1","end":"n2"}}],)");
+    open(
+        R"({"type":"tuplet","inner":{"duration":{"base":"eighth"},"multiple":3},"outer":{"duration":{"base":"quarter"},"multiple":1},"content":[)"
+        R"({"duration":{"base":"eighth"},"rest":{}},{"type":"tuplet","inner":{"duration":{"base":"16th"},"multiple":3},"outer":{"duration":{"base":"eighth"},"multiple":1},)"
+        R"("content":[{"type":"space","duration":[3,16]}]},{"duration":{"base":"eighth"},"rest":{}}]},)" +
+        rest3);
+    open(
+        R"({"type":"tremolo","marks":2,"outer":{"duration":{"base":"16th"},"multiple":3},"content":[)"
+        R"({"duration":{"base":"eighth","dots":1},"notes":[{"pitch":{"step":"C","octave":4}}]},{"duration":{"base":"eighth","dots":1},"notes":[{"pitch":{"step":"D","octave":4}}]},)"
+        R"({"duration":{"base":"eighth","dots":1},"notes":[{"pitch":{"step":"E","octave":4}}]}]},{"type":"space","duration":[13,16]})");
+    open(R"({"type":"space","duration":[5,8]},{"duration":{"base":"quarter","dots":1},"rest":{}})");
+}
+
 TEST(MnxImport, InvalidInputAndRecovery) {
     for (const std::string input :
          {"{", "{}", "{\"mnx\":{\"version\":27}}", "{\"mnx\":{\"version\":27},\"global\":{\"measures\":[]},\"parts\":[]}"}) {

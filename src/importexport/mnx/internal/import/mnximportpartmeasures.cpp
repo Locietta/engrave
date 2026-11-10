@@ -503,21 +503,27 @@ void MnxImporter::import_rest_properties([[maybe_unused]] const model::Rest &mnx
 
 Rest *MnxImporter::emit_gap_rest(Measure *measure, track_idx_t cur_track_idx, const model::Rational &start_tick,
                                  const model::Rational &duration, Tuplet *tuplet_to_add) {
-    Segment *segment = measure->get_segment_r(SegmentType::CHORD_REST, to_muse_score_fraction(start_tick));
-    TDuration d(to_muse_score_fraction(duration));
-    if (!d.is_valid()) {
-        return nullptr;
+    // A gap that no single note value spells (5/8, say) becomes several gap rests.
+    Rest *first = nullptr;
+    Fraction tick = to_muse_score_fraction(start_tick);
+    for (const TDuration &d : to_duration_list(to_muse_score_fraction(duration), true)) {
+        if (!d.is_valid()) {
+            break;
+        }
+        Segment *segment = measure->get_segment_r(SegmentType::CHORD_REST, tick);
+        Rest *rest = Factory::create_rest(segment, d);
+        rest->set_duration_type(d);
+        rest->set_gap(true);
+        rest->set_track(cur_track_idx);
+        rest->set_ticks(rest->actual_duration_type().fraction());
+        segment->add(rest);
+        if (tuplet_to_add) {
+            tuplet_to_add->add(rest);
+        }
+        first = first ? first : rest;
+        tick += d.fraction();
     }
-    Rest *rest = Factory::create_rest(segment, d);
-    rest->set_duration_type(d);
-    rest->set_gap(true);
-    rest->set_track(cur_track_idx);
-    rest->set_ticks(rest->actual_duration_type().fraction());
-    segment->add(rest);
-    if (tuplet_to_add) {
-        tuplet_to_add->add(rest);
-    }
-    return rest;
+    return first;
 }
 
 //---------------------------------------------------------
@@ -581,8 +587,9 @@ void MnxImporter::create_tremolo(const model::MultiNoteTremolo &mnx_tremolo, Mea
     const model::Rational start_tick2 = start_tick + (end_tick - start_tick) / model::Rational(2);
     engraving::Chord *c1 = measure->find_chord(measure->tick() + to_muse_score_fraction(start_tick), cur_track_idx);
     engraving::Chord *c2 = measure->find_chord(measure->tick() + to_muse_score_fraction(start_tick2), cur_track_idx);
-    IF_ASSERT_FAILED(c1 && c2 && c1->ticks() == c2->ticks()) {
-        LOGE() << "Unable to import tremolo at tick " << to_muse_score_fraction(start_tick).to_string() << " of measure "
+    // Rests, or events of different lengths, cannot form a MuseScore two-chord tremolo.
+    if (!c1 || !c2 || c1->ticks() != c2->ticks()) {
+        LOGW() << "Unable to import tremolo at tick " << to_muse_score_fraction(start_tick).to_string() << " of measure "
                << measure->measure_index();
         return;
     }
@@ -786,18 +793,17 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
             return model::WalkControl::SKIP_CHILDREN;
         } else if (const auto *mnx_tuplet = std::get_if<model::Tuplet>(&item)) {
             if (tuplet_has_only_spaces_and_graces(*mnx_tuplet)) {
-                // MuseScore does not like Tuplets that contain only gap Rests,
-                // so replace the entire thing with a single gap rest.
-                TDuration base_len = to_muse_score_duration(mnx_tuplet->outer.duration);
-                const Fraction total = base_len.fraction() * mnx_tuplet->outer.multiple;
-                DO_ASSERT(active_tuplets.empty());
-                emit_gap_rest(measure, cur_track_idx, ctx.elapsed, to_rational(total.reduced()), nullptr);
+                // MuseScore does not like Tuplets that contain only gap Rests, so replace the
+                // entire thing with gap rests of its outer length, in the enclosing tuplet if any.
+                emit_gap_rest(measure, cur_track_idx, ctx.elapsed, model::duration_of(mnx_tuplet->outer),
+                              active_tuplets.empty() ? nullptr : active_tuplets.top());
                 active_tuplets.push(nullptr);
                 return model::WalkControl::SKIP_CHILDREN;
             }
             // A tuplet MuseScore cannot represent stays on the stack as null, so on_after_item
-            // pops its own entry; its events are imported without a tuplet.
-            Tuplet *t = create_tuplet(*mnx_tuplet, measure, cur_track_idx, ctx.elapsed);
+            // pops its own entry; its events, and any tuplet inside it, are imported without one.
+            const bool inside_unrepresentable = !active_tuplets.empty() && !active_tuplets.top();
+            Tuplet *t = inside_unrepresentable ? nullptr : create_tuplet(*mnx_tuplet, measure, cur_track_idx, ctx.elapsed);
             if (t && !active_tuplets.empty() && active_tuplets.top()) {
                 active_tuplets.top()->add(t); // reparent tuplet
             }
@@ -841,8 +847,16 @@ bool MnxImporter::import_non_grace_events(const model::Sequence &sequence, const
     };
     hooks.on_after_item = [&](const model::SequenceItem &item, model::WalkContext &ctx) {
         if (std::holds_alternative<model::Tuplet>(item)) {
+            Tuplet *tuplet = active_tuplets.top();
             active_tuplets.pop();
-        } else if (const auto *mnx_tremolo = std::get_if<model::MultiNoteTremolo>(&item)) {
+            // A tuplet whose events could all not be imported would leave an empty tuplet behind.
+            if (tuplet && tuplet->elements().empty()) {
+                if (Tuplet *parent = tuplet->tuplet()) {
+                    parent->remove(tuplet);
+                }
+                delete tuplet;
+            }
+        } else if (const auto *mnx_tremolo = std::get_if<model::MultiNoteTremolo>(&item); mnx_tremolo && mnx_tremolo->content.size() == 2) {
             const model::Rational start_time = ctx.elapsed - model::duration_of(mnx_tremolo->outer) * ctx.ratio;
             create_tremolo(*mnx_tremolo, measure, cur_track_idx, start_time, ctx.elapsed);
         }
@@ -1295,8 +1309,8 @@ void MnxImporter::create_beams(const model::PartMeasure &mnx_measure) {
                 }
             }
             ChordRest *cr = mnx_event_id_to_cr(event_id);
-            IF_ASSERT_FAILED(cr) {
-                LOGE() << "encountered unmapped event " << std::string(event_id) << " in a beam";
+            if (!cr) { // the event was skipped, e.g. a voice MuseScore has no room for
+                LOGW() << "skipping unmapped event " << std::string(event_id) << " in a beam";
                 continue;
             }
             beam_elements.push_back(cr);
@@ -1340,8 +1354,8 @@ void MnxImporter::create_arpeggios(size_t part_index, const model::PartMeasure &
         const std::string span_end(span.end);
         Note *note_start = mnx_note_id_to_note(span.start);
         Note *note_end = mnx_note_id_to_note(span.end);
-        IF_ASSERT_FAILED(note_start && note_end) {
-            LOGE() << "Start note " << span_start << " or end note " << span_end << " not mapped.";
+        if (!note_start || !note_end) { // an endpoint was skipped
+            LOGW() << "Start note " << span_start << " or end note " << span_end << " not mapped.";
             return;
         }
         const auto mnx_part_index_for_note = [this](const Note *note) -> std::optional<size_t> {
@@ -1467,8 +1481,8 @@ void MnxImporter::process_sequence_pass2(const model::Sequence &sequence, const 
         if (event.notes) {
             for (const auto &mnx_note : *event.notes) {
                 Note *note = muse::value(mnx_note_to_note_, &mnx_note);
-                IF_ASSERT_FAILED(note) {
-                    LOGE() << "note of event " << index().entry(event).pointer << " is not mapped";
+                if (!note) { // the note was skipped
+                    LOGW() << "note of event " << index().entry(event).pointer << " is not mapped";
                     continue;
                 }
                 create_accidentals(mnx_note, note, measure);
@@ -1480,8 +1494,8 @@ void MnxImporter::process_sequence_pass2(const model::Sequence &sequence, const 
         if (event.kit_notes) {
             for (const auto &kit_note : *event.kit_notes) {
                 Note *note = muse::value(mnx_kit_note_to_note_, &kit_note);
-                IF_ASSERT_FAILED(note) {
-                    LOGE() << "kit note of event " << index().entry(event).pointer << " is not mapped";
+                if (!note) { // the note was skipped
+                    LOGW() << "kit note of event " << index().entry(event).pointer << " is not mapped";
                     continue;
                 }
                 if (kit_note.ties) {
@@ -1493,6 +1507,22 @@ void MnxImporter::process_sequence_pass2(const model::Sequence &sequence, const 
     };
 
     model::walk_sequence(sequence, bar_length, hooks);
+}
+
+// The measures of a part that measure repeats MuseScore can show (1, 2 or 4 measures) cover.
+static std::vector<bool> measures_under_repeats(const model::Part &part) {
+    std::vector<bool> covered(part.measures.size(), false);
+    for (size_t measure_index = 0; measure_index < part.measures.size(); ++measure_index) {
+        const auto &repeat = part.measures[measure_index].measure_repeat;
+        if (!repeat || (repeat->number != 1 && repeat->number != 2 && repeat->number != 4)) {
+            continue;
+        }
+        for (size_t covered_index = measure_index;
+             covered_index < std::min(part.measures.size(), measure_index + static_cast<size_t>(repeat->number)); ++covered_index) {
+            covered[covered_index] = true;
+        }
+    }
+    return covered;
 }
 
 //---------------------------------------------------------
@@ -1562,13 +1592,25 @@ void MnxImporter::create_measure_repeats(size_t part_index) {
 void MnxImporter::import_part_measures() {
     lyric_line_usage_.clear();
     part_measure_sequence_tracks_.clear();
-    // build_index guarantees each part has one measure per global measure.
+    // build_index guarantees each part has one measure per global measure. A measure repeat
+    // replaces the content of the measures it covers, so that content is not imported: the
+    // repeat would remove chords pass2 still refers to.
+    std::vector<std::vector<bool>> repeated(root().parts.size());
+    for (size_t part_index = 0; part_index < root().parts.size(); ++part_index) {
+        repeated[part_index] = measures_under_repeats(root().parts[part_index]);
+    }
     // pass1: create ChordRests and clefs
     for (size_t part_index = 0; part_index < root().parts.size(); ++part_index) {
         const model::Part &mnx_part = root().parts[part_index];
         for (size_t measure_index = 0; measure_index < mnx_part.measures.size(); ++measure_index) {
             Measure *measure = mnx_measure_to_measure(measure_index);
-            import_sequences(part_index, measure_index, measure);
+            if (repeated[part_index][measure_index]) {
+                for (int staff_num = 1; staff_num <= mnx_part.staves_or_default(); staff_num++) {
+                    measure->check_measure(mnx_part_staff_to_staff_idx(part_index, staff_num));
+                }
+            } else {
+                import_sequences(part_index, measure_index, measure);
+            }
             if (const auto &mnx_clefs = mnx_part.measures[measure_index].clefs) {
                 create_clefs(part_index, *mnx_clefs, measure);
             }
@@ -1586,9 +1628,12 @@ void MnxImporter::import_part_measures() {
             const model::PartMeasure &part_measure = mnx_part.measures[measure_index];
             Measure *measure = mnx_measure_to_measure(measure_index);
             const model::Rational bar_length = model::measure_length(root(), index(), static_cast<std::uint32_t>(measure_index));
-            create_arpeggios(part_index, part_measure);
             create_dynamics(part_index, measure_index, measure);
             create_ottavas(part_index, part_measure, measure);
+            if (repeated[part_index][measure_index]) {
+                continue;
+            }
+            create_arpeggios(part_index, part_measure);
             create_beams(part_measure);
             for (const auto &sequence : part_measure.sequences) {
                 process_sequence_pass2(sequence, bar_length, measure);

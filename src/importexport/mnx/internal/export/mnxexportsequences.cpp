@@ -760,7 +760,9 @@ void MnxExporter::append_grace(std::vector<model::SequenceItem> &content, Export
         }
 
         append_content(mnx_grace.content, ctx, grace_chord_rests, ContentContext::GRACE);
-        content.emplace_back(std::move(mnx_grace));
+        if (!mnx_grace.content.empty()) {
+            content.emplace_back(std::move(mnx_grace));
+        }
         start = end;
     }
 }
@@ -788,9 +790,10 @@ const Tuplet *MnxExporter::find_top_tuplet(ChordRest *chord_rest, const ExportCo
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, ExportContext &ctx,
-                                  const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest, const Tuplet *tuplet) {
-    IF_ASSERT_FAILED(tuplet) { return idx; }
+std::optional<size_t> MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                                 const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest,
+                                                 const Tuplet *tuplet) {
+    IF_ASSERT_FAILED(tuplet) { return std::nullopt; }
 
     std::vector<ChordRest *> tuplet_chord_rests;
     size_t last_tuplet_idx = idx;
@@ -811,7 +814,7 @@ size_t MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, Exp
         if (!tuplet_chord_rests.empty()) {
             LOGW() << "Skipping tuplet with unsupported MNX base note value or ratio.";
         }
-        return idx;
+        return std::nullopt;
     }
 
     if (chord_rest->is_chord()) {
@@ -831,7 +834,9 @@ size_t MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, Exp
     ctx.tuplet_stack.push_back(tuplet);
     append_content(mnx_tuplet.content, ctx, tuplet_chord_rests, ContentContext::TUPLET);
     ctx.tuplet_stack.pop_back();
-    content.emplace_back(std::move(mnx_tuplet));
+    if (!mnx_tuplet.content.empty()) {
+        content.emplace_back(std::move(mnx_tuplet));
+    }
     const ChordRest *last_tuplet_cr = tuplet_chord_rests.back();
     if (last_tuplet_cr && last_tuplet_cr->is_chord()) {
         if (ctx.grace_after_emitted.insert(last_tuplet_cr).second) {
@@ -847,41 +852,41 @@ size_t MnxExporter::append_tuplet(std::vector<model::SequenceItem> &content, Exp
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::append_tremolo(std::vector<model::SequenceItem> &content, ExportContext &ctx,
-                                   const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest) {
+std::optional<size_t> MnxExporter::append_tremolo(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                                  const std::vector<ChordRest *> &chord_rests, size_t idx, ChordRest *chord_rest) {
     Chord *chord = chord_rest->is_chord() ? to_chord(chord_rest) : nullptr;
     const TremoloTwoChord *tremolo = chord ? chord->tremolo_two_chord() : nullptr;
     IF_ASSERT_FAILED(chord && tremolo) {
         LOGW() << "Skipping ChordRest that is not part of a tremolo.";
-        return idx;
+        return std::nullopt;
     }
 
     IF_ASSERT_FAILED(tremolo->chord1() == chord_rest) {
         LOGW() << "Skipping tremolo with unexpected first chord.";
-        return idx;
+        return std::nullopt;
     }
 
     Chord *chord2 = tremolo->chord2();
     IF_ASSERT_FAILED(chord2) {
         LOGW() << "Skipping tremolo with missing second chord.";
-        return idx;
+        return std::nullopt;
     }
 
     if (!chord->grace_notes_after().empty() || !chord2->grace_notes_before().empty()) {
         LOGW() << "Skipping tremolo with grace notes inside tremolo content.";
-        return idx;
+        return std::nullopt;
     }
 
     if (idx + 1 >= chord_rests.size() || chord_rests[idx + 1] != chord2) {
         LOGW() << "Skipping tremolo with non-adjacent chord events.";
-        return idx;
+        return std::nullopt;
     }
 
     const TremoloType tremolo_type = tremolo->tremolo_type();
     const int marks = static_cast<int>(tremolo_type) - static_cast<int>(TremoloType::C8) + 1;
     if (marks <= 0) {
         LOGW() << "Skipping tremolo with unsupported tremolo type.";
-        return idx;
+        return std::nullopt;
     }
 
     TDuration tremolo_duration = tremolo->duration_type();
@@ -890,12 +895,12 @@ size_t MnxExporter::append_tremolo(std::vector<model::SequenceItem> &content, Ex
     }
     if (!tremolo_duration.is_valid()) {
         LOGW() << "Skipping 2-note tremolo with invalide duration typew.";
-        return idx;
+        return std::nullopt;
     }
     const auto tremolo_note_value = to_mnx_note_value(tremolo_duration);
     if (!tremolo_note_value) {
         LOGW() << "Skipping tremolo with unsupported MNX duration type.";
-        return idx;
+        return std::nullopt;
     }
 
     model::MultiNoteTremolo mnx_tremolo;
@@ -908,7 +913,9 @@ size_t MnxExporter::append_tremolo(std::vector<model::SequenceItem> &content, Ex
         append_grace(content, ctx, chord->grace_notes_before());
     }
     append_content(mnx_tremolo.content, ctx, tremolo_chord_rests, ContentContext::TREMOLO);
-    content.emplace_back(std::move(mnx_tremolo));
+    if (mnx_tremolo.content.size() == 2) {
+        content.emplace_back(std::move(mnx_tremolo));
+    }
     if (ctx.grace_after_emitted.insert(chord2).second) {
         append_grace(content, ctx, chord2->grace_notes_after());
     }
@@ -947,12 +954,11 @@ void MnxExporter::append_content(Content &content, ExportContext &ctx, const std
                 if (chord_rest->tuplet()) {
                     const Tuplet *top_most = find_top_tuplet(chord_rest, ctx);
                     if (top_most && first_tuplet_chord_rest(top_most) == chord_rest) {
-                        const size_t last_idx = append_tuplet(content, ctx, chord_rests, idx, chord_rest, top_most);
-                        if (last_idx >= idx) {
-                            idx = last_idx;
+                        // Without a tuplet container the chord/rest is exported on its own below.
+                        if (const auto last_idx = append_tuplet(content, ctx, chord_rests, idx, chord_rest, top_most)) {
+                            idx = *last_idx;
                             continue;
                         }
-                        IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTuplet."; }
                     }
                 }
                 if (chord_rest->is_chord() && to_chord(chord_rest)->tremolo_two_chord()) {
@@ -960,12 +966,10 @@ void MnxExporter::append_content(Content &content, ExportContext &ctx, const std
                         const Chord *chord = to_chord(chord_rest);
                         const TremoloTwoChord *tremolo = chord->tremolo_two_chord();
                         if (tremolo && tremolo->chord1() == chord_rest) {
-                            const size_t last_idx = append_tremolo(content, ctx, chord_rests, idx, chord_rest);
-                            if (last_idx >= idx) {
-                                idx = last_idx;
+                            if (const auto last_idx = append_tremolo(content, ctx, chord_rests, idx, chord_rest)) {
+                                idx = *last_idx;
                                 continue;
                             }
-                            IF_ASSERT_FAILED(last_idx < idx) { LOGW() << "Invalid index returned by appendTremolo."; }
                         }
                     }
                 }

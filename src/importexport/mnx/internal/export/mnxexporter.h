@@ -118,11 +118,14 @@ private:
                         ContentContext context);
     void append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, engraving::GraceNotesGroup &grace_notes);
     void create_beam(ExportContext &ctx, engraving::ChordRest *chord_rest);
-    size_t append_tuplet(std::vector<model::SequenceItem> &content, ExportContext &ctx,
-                         const std::vector<engraving::ChordRest *> &chord_rests, size_t idx, engraving::ChordRest *chord_rest,
-                         const engraving::Tuplet *tuplet);
-    size_t append_tremolo(std::vector<model::SequenceItem> &content, ExportContext &ctx,
-                          const std::vector<engraving::ChordRest *> &chord_rests, size_t idx, engraving::ChordRest *chord_rest);
+    // These return the index of the last chord/rest they consumed, or nothing when the container
+    // cannot be exported (the chord/rest is then exported on its own).
+    std::optional<size_t> append_tuplet(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                        const std::vector<engraving::ChordRest *> &chord_rests, size_t idx,
+                                        engraving::ChordRest *chord_rest, const engraving::Tuplet *tuplet);
+    std::optional<size_t> append_tremolo(std::vector<model::SequenceItem> &content, ExportContext &ctx,
+                                         const std::vector<engraving::ChordRest *> &chord_rests, size_t idx,
+                                         engraving::ChordRest *chord_rest);
     template <class Content>
     bool append_event(Content &content, ExportContext &ctx, engraving::ChordRest *chord_rest);
     bool create_rest(model::Event &mnx_event, engraving::ChordRest *chord_rest);
