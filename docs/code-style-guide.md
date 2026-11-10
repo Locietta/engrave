@@ -19,7 +19,7 @@ For code that is rewritten or newly written in the engine (the audio/playback pi
   - `amc` containers (`amc v2.8.1`, e.g. `amc::FlatSet` from `<amc/flatset.hpp>` or `amc::vector` from `<amc/vector.hpp>`).
   - `ankerl::unordered_dense` (`unordered_dense v5.3.3` via `<ankerl/unordered_dense.h>`) for lookup-only hash tables or sets.
 - **No Boost**: Boost is not part of the engine dependencies and must not be introduced.
-- **No new nlohmann/json usage**: While `nlohmann_json v3.12.0` is wired in the build for score import/export compatibility, do not introduce new `nlohmann::json` dependencies into new engine subsystems.
+- **JSON via glaze**: Build and parse JSON with `glaze` (pinned in `xmake/packages/g/glaze`), through the engine's `engrave/src/score/json.h` aliases and writer. Do not include or use `nlohmann/json.hpp` in engine code: `nlohmann_json` is only the private dependency of the third-party `mnxdom` / `mnx-json-schema` packages, and public headers (`engrave/include/engrave`) must stay free of every JSON library.
 
 The remaining guidelines here apply to all new and touched code across the engine.
 
@@ -95,7 +95,7 @@ Headers should be grouped in the following order, with blank lines separating gr
 
 1. Interface header of the current `.cpp` file
 2. Standard library headers (`<algorithm>`, `<vector>`, `<string>`, etc.)
-3. Third-party headers (`<cairo/cairo.h>`, `<ft2build.h>`, `<hb.h>`, `<nlohmann/json.hpp>`, etc.)
+3. Third-party headers (`<cairo/cairo.h>`, `<ft2build.h>`, `<hb.h>`, `<glaze/json/generic.hpp>`, etc.)
 4. Project headers (`muse/...`, `engraving/...`, `engrave/...`)
 
 Example from `engrave/src/api/sniff.cpp`:
@@ -107,8 +107,7 @@ Example from `engrave/src/api/sniff.cpp`:
 #include <cctype>
 #include <string_view>
 
-#include <nlohmann/json.hpp>
-
+#include "engrave/src/score/json.h"
 #include "global/io/buffer.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipreader.h"
@@ -190,3 +189,4 @@ refactor(render): align cairo painter pen transform with upstream geometry
 - Normalizes point coordinate transformations before rasterization.
 - Verifies visual output against golden rendering baselines.
 ```
+
