@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// The MNX document model: every MNX test input reads and round-trips, and reading rejects
-// schema violations with a located error.
+// The MNX document model: every MNX test input reads, round-trips and indexes; reading rejects
+// schema violations with a located error, and indexing rejects semantic ones.
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -11,6 +11,8 @@
 #include <gtest/gtest.h>
 
 #include "model/document.h"
+#include "model/index.h"
+#include "model/layout.h"
 
 namespace model = mu::iex::mnxio::model;
 
@@ -146,6 +148,156 @@ TEST(MnxModel, ErrorsAreLocated) {
     EXPECT_EQ(text.substr(result.error().offset, 5), "bogus") << result.error().message;
     EXPECT_TRUE(result.error().message.starts_with("6:")) << result.error().message;
     EXPECT_NE(result.error().message.find("unknown_key"), std::string::npos) << result.error().message;
+}
+
+namespace {
+
+model::Root parse(std::string_view text) {
+    auto root = model::read_document(text);
+    EXPECT_TRUE(root) << root.error().message;
+    return root ? *std::move(root) : model::Root{};
+}
+
+// Expects indexing to fail and returns the error pointers.
+std::vector<std::string> semantic_errors(std::string_view text) {
+    const auto root = parse(text);
+    const auto indexed = model::build_index(root);
+    EXPECT_FALSE(indexed) << text;
+    std::vector<std::string> pointers;
+    if (!indexed)
+        for (const auto &d : indexed.error())
+            if (d.severity == model::Severity::ERROR) pointers.push_back(d.pointer);
+    return pointers;
+}
+
+bool contains(const std::vector<std::string> &pointers, std::string_view pointer) {
+    return std::ranges::find(pointers, pointer) != pointers.end();
+}
+
+} // namespace
+
+TEST(MnxIndex, TestInputsIndexWithoutErrors) {
+    for (const auto &path : inputs()) {
+        SCOPED_TRACE(path.string());
+        const auto root = model::read_document(read_file(path));
+        ASSERT_TRUE(root);
+        const auto indexed = model::build_index(*root);
+        if (!indexed) {
+            for (const auto &d : indexed.error()) ADD_FAILURE() << d.pointer << ": " << d.message;
+        }
+    }
+}
+
+TEST(MnxIndex, EventTimingFollowsTupletsAndGraces) {
+    const auto root = parse(with_content(R"(
+        {"type": "grace", "content": [
+            {"id": "g1", "duration": {"base": "16th"}, "notes": [{"pitch": {"step": "D", "octave": 4}}]},
+            {"id": "g2", "duration": {"base": "16th"}, "notes": [{"pitch": {"step": "E", "octave": 4}}]}]},
+        {"id": "q", "duration": {"base": "quarter"}, "notes": [{"pitch": {"step": "C", "octave": 4}}]},
+        {"type": "tuplet", "inner": {"duration": {"base": "eighth"}, "multiple": 3}, "outer": {"duration": {"base": "quarter"}, "multiple": 1},
+         "content": [{"id": "t1", "duration": {"base": "eighth"}, "rest": {}}, {"id": "t2", "duration": {"base": "eighth"}, "rest": {}},
+                     {"id": "t3", "duration": {"base": "eighth"}, "rest": {}}]},
+        {"type": "space", "duration": [1, 4]},
+        {"id": "last", "duration": {"base": "quarter"}, "rest": {}})"));
+    const auto indexed = model::build_index(root);
+    ASSERT_TRUE(indexed);
+    const auto &index = indexed->index;
+    const auto event = [&](std::string_view id) { return *index.find_event(id); };
+    EXPECT_EQ(event("g1").grace_index, 2U);
+    EXPECT_EQ(event("g2").grace_index, 1U);
+    EXPECT_EQ(event("g2").container, model::EventContainer::GRACE);
+    EXPECT_EQ(event("g2").duration, model::Rational(0));
+    EXPECT_EQ(event("q").start, model::Rational(0));
+    EXPECT_EQ(event("q").grace_index, 0U);
+    EXPECT_EQ(event("t1").start, model::Rational(1, 4));
+    EXPECT_EQ(event("t2").start, model::Rational(1, 3));
+    EXPECT_EQ(event("t3").duration, model::Rational(1, 12));
+    EXPECT_EQ(event("t3").container, model::EventContainer::TUPLET);
+    EXPECT_EQ(event("last").start, model::Rational(3, 4));
+    EXPECT_EQ(event("last").pointer, "/parts/0/measures/0/sequences/0/content/4");
+    // Only the missing clef is reported, as a warning.
+    ASSERT_EQ(indexed->warnings.size(), 1U);
+    EXPECT_EQ(indexed->warnings[0].severity, model::Severity::WARNING);
+}
+
+TEST(MnxIndex, RejectsSemanticErrors) {
+    const std::string note = R"("notes": [{"pitch": {"step": "C", "octave": 4}}])";
+    // Content longer than the bar, and a tuplet whose content overflows its inner value.
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(R"({"duration": {"base": "whole"}, "rest": {}}, {"duration": {"base": "quarter"}, "rest": {}})")),
+        "/parts/0/measures/0/sequences/0"));
+    EXPECT_TRUE(contains(semantic_errors(with_content(R"({"type": "tuplet", "inner": {"duration": {"base": "eighth"}, "multiple": 3},
+        "outer": {"duration": {"base": "quarter"}, "multiple": 1}, "content": [{"duration": {"base": "half"}, "rest": {}}]})")),
+                         "/parts/0/measures/0/sequences/0/content/0"));
+    // Duplicate ids, a staff the part does not have, and a tie to a missing note.
+    EXPECT_TRUE(
+        contains(semantic_errors(with_content(
+                     R"({"id": "a", "duration": {"base": "half"}, "rest": {}}, {"id": "a", "duration": {"base": "half"}, "rest": {}})")),
+                 "/parts/0/measures/0/sequences/0/content/1"));
+    EXPECT_TRUE(contains(semantic_errors(with_content(R"({"duration": {"base": "whole"}, "staff": 2, "rest": {}})")),
+                         "/parts/0/measures/0/sequences/0/content/0/staff"));
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(
+            R"({"duration": {"base": "whole"}, "notes": [{"pitch": {"step": "C", "octave": 4}, "ties": [{"target": "nowhere"}]}]})")),
+        "/parts/0/measures/0/sequences/0/content/0/notes/0/ties/0/target"));
+    // An event that is neither a rest nor has notes, and a zero denominator.
+    EXPECT_TRUE(contains(semantic_errors(with_content(R"({"duration": {"base": "whole"}})")), "/parts/0/measures/0/sequences/0/content/0"));
+    EXPECT_TRUE(contains(semantic_errors(with_content(R"({"type": "space", "duration": [1, 0]})")),
+                         "/parts/0/measures/0/sequences/0/content/0/duration"));
+    // A beam naming an event that does not exist.
+    std::string beam(minimal);
+    beam.replace(beam.find("\"sequences\""), 0, R"("beams": [{"events": ["x", "y"]}], )");
+    beam.replace(beam.find('%'), 1, R"({"id": "x", "duration": {"base": "eighth"}, )" + note + "}");
+    EXPECT_TRUE(contains(semantic_errors(beam), "/parts/0/measures/0/beams/0"));
+}
+
+TEST(MnxIndex, OttavaShiftsCoverTheirSpan) {
+    const auto root = parse(R"({
+      "mnx": {"version": 1},
+      "global": {"measures": [{"id": "m1", "time": {"count": 2, "unit": 4}}, {"id": "m2"}]},
+      "parts": [{"measures": [
+        {"clefs": [{"clef": {"sign": "G", "staffPosition": -2}}],
+         "ottavas": [{"value": 1, "position": {"fraction": [1, 4]}, "end": {"measure": "m1", "position": {"fraction": [2, 4]}}}],
+         "sequences": [{"content": [{"id": "a", "duration": {"base": "quarter"}, "notes": [{"pitch": {"step": "C", "octave": 5}}]},
+                                    {"id": "b", "duration": {"base": "quarter"}, "notes": [{"pitch": {"step": "C", "octave": 5}}]}]}]},
+        {"sequences": [{"content": [{"id": "c", "duration": {"base": "half"}, "notes": [{"pitch": {"step": "C", "octave": 5}}]}]}]}]}]
+    })");
+    const auto indexed = model::build_index(root);
+    ASSERT_TRUE(indexed) << indexed.error().front().message;
+    EXPECT_EQ(indexed->index.find_event("a")->ottava_shift, 0);
+    EXPECT_EQ(indexed->index.find_event("b")->ottava_shift, -1);
+    EXPECT_EQ(indexed->index.find_event("c")->ottava_shift, 0);
+    EXPECT_EQ(model::current_time(root, indexed->index, 1)->count, 2); // inherited from m1
+}
+
+TEST(MnxLayout, SpansOfNestedGroupsAndDefaults) {
+    const auto root = parse(R"({
+      "mnx": {"version": 1},
+      "global": {"measures": [{}]},
+      "parts": [{"id": "P1", "name": "Flute", "measures": [{"sequences": []}]},
+                {"id": "P2", "name": "Piano", "staves": 2, "measures": [{"sequences": []}]}],
+      "layouts": [{"id": "full", "content": [
+        {"type": "staff", "sources": [{"part": "P1"}]},
+        {"type": "group", "symbol": "brace", "content": [
+          {"type": "staff", "sources": [{"part": "P2", "staff": 1}]},
+          {"type": "staff", "sources": [{"part": "P2", "staff": 2}]}]}]}]
+    })");
+    const auto *layout = model::full_score_layout(root);
+    ASSERT_NE(layout, nullptr);
+    const auto spans = model::layout_spans(*layout);
+    ASSERT_EQ(spans.size(), 4U);
+    EXPECT_EQ(spans[0].kind, model::LayoutSpan::Kind::STAFF);
+    EXPECT_EQ(spans[1].kind, model::LayoutSpan::Kind::GROUP); // the group sorts before its first staff
+    EXPECT_EQ(spans[1].start, 1U);
+    EXPECT_EQ(spans[1].end, 2U);
+    EXPECT_EQ(spans[1].depth, 0U);                                // a root-level group
+    EXPECT_EQ(spans[1].barline, model::BarlineOverride::UNIFIED); // instrument style, one part
+    EXPECT_EQ(spans[2].depth, 2U);
+    const auto defaults = model::default_layout_spans(root);
+    ASSERT_EQ(defaults.size(), 4U);
+    EXPECT_EQ(defaults[0].label, "Flute");
+    EXPECT_EQ(defaults[1].symbol, model::StaffSymbol::BRACE);
+    EXPECT_FALSE(defaults[2].label.has_value());
 }
 
 int main(int argc, char **argv) {

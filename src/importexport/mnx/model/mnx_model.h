@@ -173,23 +173,23 @@ enum struct Orientation {
     AUTO,
 };
 
-enum struct OttavaAmount {
-    OCTAVE_UP,
-    TWO_OCTAVES_UP,
-    OCTAVE_DOWN,
-    TWO_OCTAVES_DOWN,
-    THREE_OCTAVES_UP,
-    THREE_OCTAVES_DOWN,
+enum struct OttavaAmount : int {
+    OCTAVE_UP = 1,
+    TWO_OCTAVES_UP = 2,
+    OCTAVE_DOWN = -1,
+    TWO_OCTAVES_DOWN = -2,
+    THREE_OCTAVES_UP = 3,
+    THREE_OCTAVES_DOWN = -3,
 };
 
-enum struct OttavaAmountOrZero {
-    OCTAVE_UP,
-    TWO_OCTAVES_UP,
-    OCTAVE_DOWN,
-    TWO_OCTAVES_DOWN,
-    THREE_OCTAVES_UP,
-    THREE_OCTAVES_DOWN,
-    NONE,
+enum struct OttavaAmountOrZero : int {
+    OCTAVE_UP = 1,
+    TWO_OCTAVES_UP = 2,
+    OCTAVE_DOWN = -1,
+    TWO_OCTAVES_DOWN = -2,
+    THREE_OCTAVES_UP = 3,
+    THREE_OCTAVES_DOWN = -3,
+    NONE = 0,
 };
 
 enum struct RelativeDynamicValue {
@@ -255,15 +255,15 @@ enum struct TimeSignatureDisplay {
     CUT,
 };
 
-enum struct TimeSignatureUnit {
-    WHOLE,
-    HALF,
-    QUARTER,
-    EIGHTH,
-    N16TH,
-    N32ND,
-    N64TH,
-    N128TH,
+enum struct TimeSignatureUnit : int {
+    WHOLE = 1,
+    HALF = 2,
+    QUARTER = 4,
+    EIGHTH = 8,
+    N16TH = 16,
+    N32ND = 32,
+    N64TH = 64,
+    N128TH = 128,
 };
 
 enum struct TremoloTag {
@@ -408,14 +408,19 @@ struct Ending {
     int duration{};
     std::optional<std::vector<int>> numbers;
     std::optional<bool> open;
+    bool open_or_default() const { return open.value_or(false); }
 };
 
 struct Fermata {
     std::optional<Id> id;
     std::optional<FermataDuration> duration;
+    FermataDuration duration_or_default() const { return duration.value_or(FermataDuration::AUTO); }
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
     std::optional<UpDownAuto> pointing;
+    UpDownAuto pointing_or_default() const { return pointing.value_or(UpDownAuto::AUTO); }
     std::optional<FermataSymbol> symbol;
+    FermataSymbol symbol_or_default() const { return symbol.value_or(FermataSymbol::NORMAL); }
 };
 
 struct RhythmicPosition {
@@ -462,6 +467,7 @@ struct NoteValue {
     std::optional<Id> id;
     NoteValueBase base{};
     std::optional<int> dots;
+    int dots_or_default() const { return dots.value_or(0); }
 };
 
 struct Tempo {
@@ -510,6 +516,7 @@ struct Global {
 struct StaffGroup {
     std::optional<Id> id;
     std::optional<StaffGroupBarlineStyle> barline_style;
+    StaffGroupBarlineStyle barline_style_or_default() const { return barline_style.value_or(StaffGroupBarlineStyle::INSTRUMENT); }
     std::vector<SystemLayoutItem> content;
     std::optional<std::string> label;
     std::optional<StaffSymbol> symbol;
@@ -522,6 +529,7 @@ struct StaffSource {
     std::optional<StaffLabelref> labelref;
     Id part;
     std::optional<int> staff;
+    int staff_or_default() const { return staff.value_or(1); }
     std::optional<StemDirection> stem;
     std::optional<std::string> voice;
 };
@@ -543,7 +551,9 @@ struct SystemLayout {
 struct Support {
     std::optional<Id> id;
     std::optional<bool> use_accidental_display;
+    bool use_accidental_display_or_default() const { return use_accidental_display.value_or(false); }
     std::optional<bool> use_beams;
+    bool use_beams_or_default() const { return use_beams.value_or(false); }
 };
 
 struct Mnx {
@@ -567,7 +577,9 @@ struct IdPair {
 struct Arpeggio {
     std::optional<Id> id;
     std::optional<bool> arrow;
+    bool arrow_or_default() const { return arrow.value_or(false); }
     std::optional<UpDownAuto> direction;
+    UpDownAuto direction_or_default() const { return direction.value_or(UpDownAuto::AUTO); }
     RhythmicPosition position;
     IdPair span;
 };
@@ -584,7 +596,9 @@ struct Clef {
     std::optional<SimpleColor> color;
     std::optional<std::string> glyph;
     std::optional<OttavaAmountOrZero> octave;
+    OttavaAmountOrZero octave_or_default() const { return octave.value_or(OttavaAmountOrZero::NONE); }
     std::optional<bool> show_octave;
+    bool show_octave_or_default() const { return show_octave.value_or(true); }
     ClefSign sign{};
     int staff_position{};
 };
@@ -594,6 +608,7 @@ struct PositionedClef {
     Clef clef;
     std::optional<RhythmicPosition> position;
     std::optional<int> staff;
+    int staff_or_default() const { return staff.value_or(1); }
 };
 
 struct MeasureRhythmicPosition {
@@ -605,10 +620,13 @@ struct MeasureRhythmicPosition {
 struct DynamicGroup {
     std::optional<Id> id;
     std::optional<DynamicPrefix> accent_prefix;
+    DynamicPrefix accent_prefix_or_default() const { return accent_prefix.value_or(DynamicPrefix::S); }
     std::optional<DynamicSuffix> accent_suffix;
+    DynamicSuffix accent_suffix_or_default() const { return accent_suffix.value_or(DynamicSuffix::Z); }
     std::optional<MeasureRhythmicPosition> end;
     std::optional<std::vector<std::string>> glyphs;
     std::optional<MultiStaffOrientation> orient;
+    MultiStaffOrientation orient_or_default() const { return orient.value_or(MultiStaffOrientation::AUTO); }
     RhythmicPosition position;
     std::optional<std::string> prefix;
     std::optional<RelativeDynamicValue> relative_value;
@@ -627,6 +645,7 @@ struct MeasureRepeatCounter {
     std::optional<Id> id;
     int count{};
     std::optional<MultiStaffOrientation> orient;
+    MultiStaffOrientation orient_or_default() const { return orient.value_or(MultiStaffOrientation::AUTO); }
 };
 
 struct MeasureRepeat {
@@ -647,8 +666,10 @@ struct Ottava {
     std::optional<Id> id;
     MeasureRhythmicPosition end;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
     RhythmicPosition position;
     std::optional<int> staff;
+    int staff_or_default() const { return staff.value_or(1); }
     OttavaAmount value{};
     std::optional<std::string> voice;
 };
@@ -660,6 +681,7 @@ struct PerformOptions {
 struct Tie {
     std::optional<Id> id;
     std::optional<bool> lv;
+    bool lv_or_default() const { return lv.value_or(false); }
     std::optional<SlurSide> side;
     std::optional<Id> target;
     std::optional<TieTargetType> target_type;
@@ -677,6 +699,7 @@ struct EventLyricLine {
     std::optional<Id> id;
     std::string text;
     std::optional<EventLyricLineType> type;
+    EventLyricLineType type_or_default() const { return type.value_or(EventLyricLineType::WHOLE); }
 };
 
 struct Lyrics {
@@ -687,65 +710,78 @@ struct Lyrics {
 struct Accent {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct BowDirection {
     std::optional<Id> id;
     UpDown direction{};
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct BreathMark {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
     std::optional<std::string> symbol;
 };
 
 struct SoftAccent {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct Spiccato {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct Staccatissimo {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct Staccato {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct StressMarking {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct StrongAccent {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
     std::optional<UpDownAuto> pointing;
+    UpDownAuto pointing_or_default() const { return pointing.value_or(UpDownAuto::AUTO); }
 };
 
 struct Tenuto {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct TremoloSingle {
     std::optional<Id> id;
     int marks{};
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct UnstressMarking {
     std::optional<Id> id;
     std::optional<Orientation> orient;
+    Orientation orient_or_default() const { return orient.value_or(Orientation::AUTO); }
 };
 
 struct EventMarkings {
@@ -773,12 +809,14 @@ struct AccidentalDisplay {
     std::optional<Id> id;
     std::optional<AccidentalEnclosure> enclosure;
     std::optional<bool> force;
+    bool force_or_default() const { return force.value_or(false); }
     bool show{};
 };
 
 struct Pitch {
     std::optional<Id> id;
     std::optional<int> alter;
+    int alter_or_default() const { return alter.value_or(0); }
     int octave{};
     Step step{};
 };
@@ -786,6 +824,7 @@ struct Pitch {
 struct Written {
     std::optional<Id> id;
     std::optional<int> diatonic_delta;
+    int diatonic_delta_or_default() const { return diatonic_delta.value_or(0); }
 };
 
 struct Note {
@@ -834,7 +873,9 @@ struct Grace {
     std::optional<std::string> color;
     std::vector<Event> content;
     std::optional<GraceType> grace_type;
+    GraceType grace_type_or_default() const { return grace_type.value_or(GraceType::STEAL_PREVIOUS); }
     std::optional<bool> slash;
+    bool slash_or_default() const { return slash.value_or(true); }
     GraceTag type{};
 };
 
@@ -847,12 +888,15 @@ struct NoteValueQuantity {
 struct Tuplet {
     std::optional<Id> id;
     std::optional<YesNoAuto> bracket;
+    YesNoAuto bracket_or_default() const { return bracket.value_or(YesNoAuto::AUTO); }
     std::vector<SequenceItem> content;
     NoteValueQuantity inner;
     std::optional<Orientation> orient;
     NoteValueQuantity outer;
     std::optional<TupletDisplaySetting> show_number;
+    TupletDisplaySetting show_number_or_default() const { return show_number.value_or(TupletDisplaySetting::INNER); }
     std::optional<TupletDisplaySetting> show_value;
+    TupletDisplaySetting show_value_or_default() const { return show_value.value_or(TupletDisplaySetting::NO_NUMBER); }
     std::optional<int> staff;
     TupletTag type{};
 };
@@ -885,6 +929,7 @@ struct Sequence {
     std::optional<FullMeasureRest> full_measure;
     std::optional<Orientation> orient;
     std::optional<int> staff;
+    int staff_or_default() const { return staff.value_or(1); }
     std::optional<std::string> voice;
 };
 
@@ -911,6 +956,7 @@ struct PartTransposition {
     Interval interval;
     std::optional<int> key_fifths_flip_at;
     std::optional<bool> prefers_written_pitches;
+    bool prefers_written_pitches_or_default() const { return prefers_written_pitches.value_or(false); }
 };
 
 struct Part {
@@ -921,6 +967,7 @@ struct Part {
     std::optional<std::string> short_name;
     std::optional<std::string> smufl_font;
     std::optional<int> staves;
+    int staves_or_default() const { return staves.value_or(1); }
     std::optional<PartTransposition> transposition;
 };
 
@@ -957,6 +1004,7 @@ struct Score {
     std::string name;
     std::optional<std::vector<Page>> pages;
     std::optional<bool> use_written;
+    bool use_written_or_default() const { return use_written.value_or(false); }
 };
 
 struct Root {

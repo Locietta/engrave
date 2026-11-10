@@ -36,6 +36,49 @@ INTEGER_ENUM_NAMES = {
 }
 INTEGER_ENUM_NAMES["ottava-amount-or-zero"] = {0: "NONE", **INTEGER_ENUM_NAMES["ottava-amount"]}
 SKIPPED_KEYS = ("_c", "_x")
+# Defaults the MNX specification gives optional properties; each gets a `<name>_or_default()`
+# accessor. Keyed by (definition, property); values are C++ expressions.
+DEFAULTS = {
+    ("support", "useAccidentalDisplay"): "false",
+    ("support", "useBeams"): "false",
+    ("dynamic-group", "orient"): "MultiStaffOrientation::AUTO",
+    ("dynamic-group", "accentPrefix"): "DynamicPrefix::S",
+    ("dynamic-group", "accentSuffix"): "DynamicSuffix::Z",
+    ("fermata", "duration"): "FermataDuration::AUTO",
+    ("fermata", "orient"): "Orientation::AUTO",
+    ("fermata", "pointing"): "UpDownAuto::AUTO",
+    ("fermata", "symbol"): "FermataSymbol::NORMAL",
+    ("note-value", "dots"): "0",
+    ("staff-source", "staff"): "1",
+    ("staff-group", "barlineStyle"): "StaffGroupBarlineStyle::INSTRUMENT",
+    ("ending", "open"): "false",
+    ("arpeggio", "arrow"): "false",
+    ("arpeggio", "direction"): "UpDownAuto::AUTO",
+    ("clef", "octave"): "OttavaAmountOrZero::NONE",
+    ("clef", "showOctave"): "true",
+    ("ottava", "orient"): "Orientation::AUTO",
+    ("ottava", "staff"): "1",
+    ("measure-repeat-counter", "orient"): "MultiStaffOrientation::AUTO",
+    ("part-transposition", "prefersWrittenPitches"): "false",
+    ("positioned-clef", "staff"): "1",
+    ("part", "staves"): "1",
+    ("score", "useWritten"): "false",
+    ("accidental-display", "force"): "false",
+    ("written", "diatonicDelta"): "0",
+    ("pitch", "alter"): "0",
+    ("tie", "lv"): "false",
+    ("event-lyric-line", "type"): "EventLyricLineType::WHOLE",
+    ("grace", "graceType"): "GraceType::STEAL_PREVIOUS",
+    ("grace", "slash"): "true",
+    ("tuplet", "bracket"): "YesNoAuto::AUTO",
+    ("tuplet", "showNumber"): "TupletDisplaySetting::INNER",
+    ("tuplet", "showValue"): "TupletDisplaySetting::NO_NUMBER",
+    ("sequence", "staff"): "1",
+    ("strong-accent", "pointing"): "UpDownAuto::AUTO",
+}
+for marking in ("accent", "bow-direction", "breath-mark", "soft-accent", "spiccato", "staccatissimo", "staccato",
+                "stress-marking", "strong-accent", "tenuto", "tremolo-single", "unstress-marking"):
+    DEFAULTS[(marking, "orient")] = "Orientation::AUTO"
 CPP_KEYWORDS = {"default", "class", "operator", "union", "template", "new", "delete", "register", "signed", "unsigned"}
 NAMESPACE = "mu::iex::mnxio::model"
 
@@ -166,9 +209,10 @@ class Generator:
         w(f"namespace {NAMESPACE} {{")
         w("")
         for name, values in sorted(self.enums.items()):
-            w(f"enum struct {name} {{")
-            for _, constant in values:
-                w(f"    {constant},")
+            integral = isinstance(values[0][0], int)
+            w(f"enum struct {name}{' : int' if integral else ''} {{")
+            for value, constant in values:
+                w(f"    {constant}{f' = {value}' if integral else ''},")
             w("};")
             w("")
         for name in self.order:
@@ -179,6 +223,7 @@ class Generator:
             w(f"using {alias} = std::variant<{', '.join(camel(a) for a in self.alternatives(list_name))}>;")
         w("")
         scalar = {"int", "bool", "double"} | set(self.enums)
+        used_defaults = set()
         for name in self.order:
             members = self.structs[name]
             if members is None:
@@ -189,8 +234,13 @@ class Generator:
                     w(f"    {cpp} {snake(key)}{'{}' if cpp in scalar else ''};")
                 else:
                     w(f"    std::optional<{cpp}> {snake(key)};")
+                    if (name, key) in DEFAULTS:
+                        w(f"    {cpp} {snake(key)}_or_default() const {{ return {snake(key)}.value_or({DEFAULTS[(name, key)]}); }}")
+                        used_defaults.add((name, key))
             w("};")
             w("")
+        if set(DEFAULTS) - used_defaults:
+            raise ValueError(f"defaults for missing optional properties: {sorted(set(DEFAULTS) - used_defaults)}")
         w(f"}} // namespace {NAMESPACE}")
         w("")
         for name, values in sorted(self.enums.items()):
