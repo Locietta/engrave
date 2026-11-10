@@ -124,6 +124,23 @@ std::string midi_principal_chord(std::string_view duration, const std::vector<in
     return chord + "</Chord>";
 }
 
+std::string midi_glissando_start_chord(int pitch) {
+    return "<Chord><durationType>quarter</durationType><Note><eid>AAAAAAAAAAA_AAAAAAAAAAA</eid><pitch>" + std::to_string(pitch) +
+           "</pitch></Note></Chord>";
+}
+
+std::string midi_glissando_end_chord(int pitch) {
+    return "<Chord><durationType>quarter</durationType><Note><eid>BBBBBBBBBBB_BBBBBBBBBBB</eid><Glissando><startElement>"
+           "AAAAAAAAAAA_AAAAAAAAAAA</startElement><endElement>BBBBBBBBBBB_BBBBBBBBBBB</endElement><eid>CCCCCCCCCCC_CCCCCCCCCCC"
+           "</eid><track>0</track><diagonal>1</diagonal></Glissando><pitch>" +
+           std::to_string(pitch) + "</pitch></Note></Chord>";
+}
+
+std::string midi_chord_line_chord(std::string_view duration, int pitch, int subtype) {
+    return "<Chord><durationType>" + std::string(duration) + "</durationType><Note><ChordLine><subtype>" + std::to_string(subtype) +
+           "</subtype></ChordLine><pitch>" + std::to_string(pitch) + "</pitch></Note></Chord>";
+}
+
 struct MidiScoreOptions {
     bool swing = false;
     bool drumset = false;
@@ -712,6 +729,76 @@ TEST(Export, GraceGroupsKeepEveryArpeggioPitchWithinPrincipal) {
     expect_midi_note(after_only[4], 72, 240, 479);
     expect_midi_note(after_only[5], 67, 255, 478);
     expect_midi_note(after_only[6], 69, 319, 478);
+}
+
+TEST(Export, GraceGroupsFitGlissandoIntoPrincipal) {
+    const auto before = midi_grace_chord("appoggiatura", "eighth", 40);
+    const auto after = midi_grace_chord("grace8after", "eighth", 80);
+    const auto gliss_start = midi_glissando_start_chord(60);
+    const auto gliss_end = midi_glissando_end_chord(72);
+
+    // The glissando's own sequence spans the chord, but the grouped principal only owns 120..359. Mapping the sequence
+    // proportionally onto that window keeps every pitch: the old grouped filter dropped 65..71 because they started past
+    // the after-group's boundary (360).
+    const auto notes = exported_midi_notes(before + after + gliss_start + gliss_end);
+    ASSERT_EQ(notes.size(), 15u);
+    expect_midi_note(notes[0], 40, 0, 119);
+    expect_midi_note(notes[1], 60, 120, 274);
+    expect_midi_note(notes[2], 61, 275, 281);
+    expect_midi_note(notes[3], 62, 281, 287);
+    expect_midi_note(notes[4], 63, 288, 295);
+    expect_midi_note(notes[5], 64, 295, 302);
+    expect_midi_note(notes[6], 65, 302, 309);
+    expect_midi_note(notes[7], 66, 309, 315);
+    expect_midi_note(notes[8], 67, 316, 323);
+    expect_midi_note(notes[9], 68, 323, 330);
+    expect_midi_note(notes[10], 69, 330, 336);
+    expect_midi_note(notes[11], 70, 337, 343);
+    expect_midi_note(notes[12], 71, 344, 359);
+    expect_midi_note(notes[13], 80, 360, 479);
+    expect_midi_note(notes[14], 72, 480, 959);
+    for (const auto &note : notes) {
+        EXPECT_GT(note.off - note.on, 0) << "pitch " << note.pitch;
+    }
+
+    // Single groups: legacy ticks, where the glissando keeps its own span over the chord
+    const auto before_only = exported_midi_notes(before + gliss_start + gliss_end);
+    ASSERT_EQ(before_only.size(), 14u);
+    expect_midi_note(before_only[0], 40, 0, 239);
+    expect_midi_note(before_only[1], 60, 240, 399);
+    expect_midi_note(before_only[12], 71, 472, 478);
+    expect_midi_note(before_only[13], 72, 480, 959);
+}
+
+TEST(Export, GraceGroupsKeepSlideInAndOutAroundThePrincipal) {
+    const auto before = midi_grace_chord("appoggiatura", "eighth", 40);
+    const auto after = midi_grace_chord("grace8after", "eighth", 80);
+    const auto first = midi_principal_chord("quarter", {55});
+    // ChordLine 3 slides up into the note from below: its pitches sound before the chord's beat, not inside the principal
+    const auto slide_in = midi_chord_line_chord("quarter", 60, 3);
+    // ChordLine 1 slides away below the note at the principal's end
+    const auto slide_out = midi_chord_line_chord("quarter", 60, 1);
+
+    const auto slide_in_notes = exported_midi_notes(first + before + after + slide_in);
+    ASSERT_EQ(slide_in_notes.size(), 7u);
+    expect_midi_note(slide_in_notes[0], 55, 0, 419);
+    expect_midi_note(slide_in_notes[1], 63, 420, 438);
+    expect_midi_note(slide_in_notes[2], 62, 440, 458);
+    expect_midi_note(slide_in_notes[3], 61, 460, 478);
+    expect_midi_note(slide_in_notes[4], 40, 480, 599);
+    expect_midi_note(slide_in_notes[5], 60, 600, 839);
+    expect_midi_note(slide_in_notes[6], 80, 840, 959);
+
+    // The outgoing slide stays inside the principal and ends where the after-group begins
+    const auto slide_out_notes = exported_midi_notes(first + before + after + slide_out);
+    ASSERT_EQ(slide_out_notes.size(), 7u);
+    expect_midi_note(slide_out_notes[0], 55, 0, 479);
+    expect_midi_note(slide_out_notes[1], 40, 480, 599);
+    expect_midi_note(slide_out_notes[2], 60, 600, 779);
+    expect_midi_note(slide_out_notes[3], 59, 780, 798);
+    expect_midi_note(slide_out_notes[4], 58, 799, 818);
+    expect_midi_note(slide_out_notes[5], 57, 819, 838);
+    expect_midi_note(slide_out_notes[6], 80, 840, 959);
 }
 
 TEST(Export, TiesFollowTheGroupedPrincipalIntervals) {

@@ -319,6 +319,43 @@ static void set_grouped_grace_events(const std::vector<Chord *> &grace_chords, c
     }
 }
 
+// A glissando's events cover the chord from its first pitch to the chord's end. With both grace groups the principal only
+// owns [ontime, principal_end_pm), so map the sequence's own span proportionally onto that window: every pitch keeps a
+// positive length and the last one ends where the principal does. Without this the grouped filter below dropped every
+// event that started past the window (the upper half of an outgoing glissando). after_tremolo skips the events that
+// render_tremolo already placed in the same window.
+static void fit_grouped_glissando(NoteEventList &events, int ontime, int principal_end_pm, bool after_tremolo) {
+    size_t first = 0;
+    if (after_tremolo) {
+        while (first < events.size() && !events[first].slide()) {
+            ++first;
+        }
+    }
+    if (first >= events.size()) {
+        return;
+    }
+
+    int begin = events[first].ontime();
+    int finish = begin;
+    for (size_t k = first; k < events.size(); ++k) {
+        begin = std::min(begin, events[k].ontime());
+        finish = std::max(finish, events[k].offtime());
+    }
+    if (finish <= begin || principal_end_pm <= ontime) {
+        return;
+    }
+
+    const int span = finish - begin;
+    const int window = principal_end_pm - ontime;
+    for (size_t k = first; k < events.size(); ++k) {
+        NoteEvent &event = events[k];
+        const int on = ontime + static_cast<int>(std::int64_t(event.ontime() - begin) * window / span);
+        const int off = ontime + static_cast<int>((std::int64_t(event.offtime() - begin) * window + span - 1) / span);
+        event.set_ontime(on);
+        event.set_len(std::max(1, off - on));
+    }
+}
+
 static void render_arpeggio_impl(Chord *chord, std::vector<NoteEventList> &ell, int ontime, int principal_end_pm);
 //---------------------------------------------------------
 //   renderChord
@@ -424,6 +461,10 @@ std::vector<NoteEventList> CompatMidiRender::render_chord(const CompatMidiRender
     for (size_t i : get_notes_indexes_to_render(chord)) {
         mu::engraving::Note *note = chord->notes()[i];
         NoteEventList *el = &ell[i];
+
+        if (grouped && !arpeggio && CompatMidiRender::note_is_glissando_start(note)) {
+            fit_grouped_glissando(*el, ontime, principal_end_pm, chord->tremolo_type() != TremoloType::INVALID_TREMOLO);
+        }
 
         const size_t events_before_slide = el->size();
         CompatMidiRender::create_slide_out_note_play_events(note, el, ontime, tremolo);
