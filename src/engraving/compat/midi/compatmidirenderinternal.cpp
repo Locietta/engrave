@@ -30,6 +30,7 @@
 #include <cmath>
 
 #include "compat/midi/event.h"
+#include "compatmidigrace.h"
 #include "compatmidirender.h"
 #include "dom/accidental.h"
 #include "dom/arpeggio.h"
@@ -705,8 +706,64 @@ int grace_bend_duration(const Chord *chord) {
     return grace_duration;
 }
 
-static int calculate_tie_length(const Note *note) {
-    int tie_len = 0;
+// The chord-relative tick window [begin, end) that the grouped grace layout gives this note's chord: the principal
+// between the two groups, or the slot of one grace. std::nullopt for every other chord, and for chords whose events the
+// user has edited.
+static std::optional<std::pair<int, int>> grouped_grace_window(const Note *note) {
+    Chord *chord = note->chord();
+    if (!chord || chord->play_event_type() != PlayEventType::AUTO) {
+        return std::nullopt;
+    }
+    if (!chord->is_grace()) {
+        if (const auto layout = grouped_grace_layout(chord)) {
+            return std::make_pair(layout->principal_begin(), layout->principal_end());
+        }
+        return std::nullopt;
+    }
+
+    Chord *principal = to_chord(chord->ownership_parent());
+    const auto layout = grouped_grace_layout(principal);
+    if (!layout) {
+        return std::nullopt;
+    }
+    const std::vector<Chord *> before = principal->grace_notes_before(true); // copies: the chord reuses these vectors
+    const std::vector<Chord *> after = principal->grace_notes_after(true);
+    for (size_t k = 0; k < before.size(); ++k) {
+        if (before[k] == chord) {
+            return std::make_pair(layout->before_bounds[k], layout->before_bounds[k + 1]);
+        }
+    }
+    for (size_t k = 0; k < after.size(); ++k) {
+        if (after[k] == chord) {
+            return std::make_pair(layout->after_bounds[k], layout->after_bounds[k + 1]);
+        }
+    }
+    return std::nullopt;
+}
+
+// The chord-relative [on, off) ticks of a note event. NoteEvent units are 1/1000 of the principal, which cannot hit every
+// tick of a long principal. Inside a grouped grace layout the events are rounded outward (start down, end up), so the
+// end is taken from the rounded end position and both are snapped into the exact window of the layout.
+static std::pair<int, int> event_ticks(const Note *note, const NoteEvent &e, int chord_ticks) {
+    int on = (chord_ticks * e.ontime()) / 1000;
+    if (const auto window = grouped_grace_window(note)) {
+        int off = (chord_ticks * e.offtime()) / 1000;
+        on = std::clamp(on, window->first, window->second - 1);
+        off = std::clamp(off, on, window->second);
+        return {on, off};
+    }
+    return {on, on + (chord_ticks * e.len()) / 1000};
+}
+
+struct TieLength {
+    int length = 0;                 // the legacy sum of the continuation lengths
+    std::optional<int> grouped_end; // set when a grouped chord is in the chain: the chain's exact end, in ticks after the first note
+};
+
+static TieLength calculate_tie_length(const Note *note) {
+    TieLength result;
+    bool grouped_chain = grouped_grace_window(note).has_value();
+    int chain_end = 0;
 
     const Note *n = note;
     while (n) {
@@ -731,11 +788,21 @@ static int calculate_tie_length(const Note *note) {
         const NoteEventList &nel = n->play_events();
 
         if (!nel.empty() && (!n->chord()->is_grace())) {
-            tie_len += nel[0].len() * n->chord()->actual_ticks().ticks() / NoteEvent::note_length;
+            const int chord_ticks = n->chord()->actual_ticks().ticks();
+            result.length += nel[0].len() * chord_ticks / NoteEvent::note_length;
+
+            // Where this continuation really ends: its own start in the chain plus its (snapped) event. The legacy sum
+            // above adds lengths as if every continuation began where the one before ended, which a grouped chord's
+            // before-group and after-group break.
+            grouped_chain = grouped_chain || grouped_grace_window(n).has_value();
+            chain_end = (n->tick() - note->tick()).ticks() + event_ticks(n, nel[0], chord_ticks).second;
         }
     }
 
-    return tie_len;
+    if (grouped_chain) {
+        result.grouped_end = chain_end;
+    }
+    return result;
 }
 
 //---------------------------------------------------------
@@ -761,7 +828,7 @@ static void collect_note(EventsHolder &events, const Note *note, const CollectNo
         return MidiInstrumentEffect::NONE;
     };
 
-    int tie_len = calculate_tie_length(note);
+    const TieLength tie = calculate_tie_length(note);
     if (chord->is_grace()) {
         assert(!CompatMidiRendererInternal::grace_notes_merged(
             chord)); // this function should not be called on a grace note if grace notes are merged
@@ -812,8 +879,9 @@ static void collect_note(EventsHolder &events, const Note *note, const CollectNo
         }
 
         int p = std::clamp(note->ppitch() + e.pitch() + note->harmonic_pitch_offset(), 0, 127);
-        int on = tick1 + (ticks * e.ontime()) / 1000;
-        int off = on + (ticks * e.len()) / 1000 - 1;
+        const auto [event_on, event_off] = event_ticks(note, e, ticks);
+        int on = tick1 + event_on;
+        int off = tick1 + event_off - 1;
 
         if (note->dead_note()) {
             const double ticks_per_second = chord->score()->multiplied_tempo(chord->tick()).val * Constants::division;
@@ -824,7 +892,9 @@ static void collect_note(EventsHolder &events, const Note *note, const CollectNo
             }
         } else {
             if ((note->tie_for() || bend_for) && i == nels - 1) {
-                off += tie_len;
+                // With a grouped chord in the chain the continuations are not back to back (graces sit between them), so
+                // the last event ends where the chain really ends
+                off = tie.grouped_end ? std::max(off, tick1 + *tie.grouped_end - 1) : off + tie.length;
             }
 
             if (note_params.let_ring_note && let_ring_should_apply(e, note)) {
@@ -1028,9 +1098,6 @@ static void render_harmony(EventsHolder &events, Measure const *m, Harmony *h, i
         events[channel].emplace(off_time, ev);
     }
 }
-
-// Defined in compatmidirender.cpp: a principal with both a before- and an after-group lays them out on the beat
-bool grace_groups_share_principal(Chord *chord);
 
 void CompatMidiRendererInternal::collect_grace_before_chord_events(Chord *chord, Chord *prev_chord, EventsHolder &events,
                                                                    double velo_multiplier, Staff *st, int tick_offset,
