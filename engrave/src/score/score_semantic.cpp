@@ -174,7 +174,7 @@ json note_json(const Note *note) {
         if (tie->type() == ElementType::LAISSEZ_VIB) {
             out["laissezVib"] = true;
         } else if (const Note *end = tie->end_note()) {
-            out["tieTo"] = {end->tick().ticks(), static_cast<int>(end->track()), end->pitch()};
+            out["tieTo"] = json_array_of<json>(end->tick().ticks(), static_cast<int>(end->track()), end->pitch());
         } else {
             out["tieTo"] = nullptr; // partial tie (e.g. into a volta)
         }
