@@ -255,6 +255,7 @@ void setup_test_environment([[maybe_unused]] const TestEnvironmentConfig &config
 
 void teardown_test_environment() {
 #if defined(TEST_HAS_ENGRAVING)
+    mu::engraving::ScoreRW::clear_scratch();
     mu::engraving::ScoreRW::set_services(nullptr);
     s_context.reset();
 #endif

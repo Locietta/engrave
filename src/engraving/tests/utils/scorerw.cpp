@@ -22,6 +22,11 @@
 
 #include "scorerw.h"
 
+#include <filesystem>
+#include <random>
+#include <string>
+#include <system_error>
+
 #include "engraving/compat/mscxcompat.h"
 #include "engraving/compat/scoreaccess.h"
 #include "engraving/dom/factory.h"
@@ -76,8 +81,46 @@ MasterScore *ScoreRW::read_score(const String &name, bool is_absolute_path, Impo
     return score;
 }
 
+namespace {
+std::filesystem::path &scratch_dir() {
+    static std::filesystem::path dir;
+    return dir;
+}
+} // namespace
+
+String ScoreRW::scratch_path(const String &name) {
+    const std::string utf8_name = name.to_std_string();
+    const std::filesystem::path file(std::u8string(utf8_name.begin(), utf8_name.end()));
+    if (file.is_absolute()) {
+        return name;
+    }
+
+    std::filesystem::path &dir = scratch_dir();
+    if (dir.empty()) {
+        static std::random_device entropy;
+        std::error_code ec;
+        dir = std::filesystem::temp_directory_path(ec) / ("engrave-score-rw-" + std::to_string(entropy()) + std::to_string(entropy()));
+    }
+
+    std::error_code ec;
+    const std::filesystem::path full = dir / file;
+    std::filesystem::create_directories(full.parent_path(), ec);
+    const auto utf8 = full.generic_u8string();
+    return String::from_std_string(std::string(utf8.begin(), utf8.end()));
+}
+
+void ScoreRW::clear_scratch() {
+    std::filesystem::path &dir = scratch_dir();
+    if (!dir.empty()) {
+        std::error_code ec;
+        std::filesystem::remove_all(dir, ec);
+        dir.clear();
+    }
+}
+
 bool ScoreRW::save_score(Score *score, const String &name) {
-    File::remove(name);
+    const String path = scratch_path(name);
+    File::remove(path);
 
     auto output = Buffer::opened(IODevice::WRITE_ONLY);
     if (!rw::RWRegister::writer()->write_score(score, &output)) {
@@ -85,13 +128,14 @@ bool ScoreRW::save_score(Score *score, const String &name) {
     }
     output.close();
 
-    return File::write_file(name, output.data());
+    return File::write_file(path, output.data());
 }
 
 bool ScoreRW::save_score(Score *score, const String &name, ExportFunc export_func) {
-    File::remove(name);
+    const String full_path = scratch_path(name);
+    File::remove(full_path);
 
-    muse::io::PathT path = name;
+    muse::io::PathT path = full_path;
     Err rv = export_func(score, path);
 
     if (rv != Err::NO_ERROR) {
@@ -120,4 +164,6 @@ EngravingItem *ScoreRW::write_read_element(EngravingItem *element) {
     return element;
 }
 
-bool ScoreRW::save_mime_data(muse::ByteArray mime_data, const String &save_name) { return File::write_file(save_name, mime_data); }
+bool ScoreRW::save_mime_data(muse::ByteArray mime_data, const String &save_name) {
+    return File::write_file(scratch_path(save_name), mime_data);
+}
