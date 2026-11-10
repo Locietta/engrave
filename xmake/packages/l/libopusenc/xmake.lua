@@ -13,7 +13,7 @@
 -- ope_comments_create() ("<opus version>, libopusenc 0.2.1"), which is what the
 -- fork patched into its vendored copy.  So the fork patch is obsolete, not
 -- lost, and the OpusTags bytes are unchanged.
-package("muse-opusenc")
+package("libopusenc")
     set_homepage("https://opus-codec.org/")
     set_description("Opus Ogg encoder library, 0.2.1")
     set_license("BSD-3-Clause")
@@ -21,18 +21,18 @@ package("muse-opusenc")
     add_urls("https://github.com/xiph/libopusenc/archive/v$(version).tar.gz")
     add_versions("0.2.1", "56952a926ff962c62a468b43cc8506c069bda767cade4dc92824b74edd570d68")
 
-    add_deps("muse-opus")
+    add_deps("libopus")
 
     add_links("opusenc")
     add_linkdirs("lib")
     add_includedirs("include", "include/opus")
     -- Public header lands in include/opus and the engine includes both
     -- <opus/opusenc.h> and "opusenc.h"; opusenc.h itself includes <opus.h>,
-    -- which muse-opus exports as include/opus.
+    -- which libopus exports as include/opus.
     add_defines("OUTSIDE_SPEEX", "RANDOM_PREFIX=opusenc_prefix")
 
     on_install(function (package)
-        local opus = package:dep("muse-opus")
+        local opus = package:dep("libopus")
         local opus_include = opus:installdir("include/opus")
         if not os.isdir(opus_include) then
             opus_include = opus:installdir("include")

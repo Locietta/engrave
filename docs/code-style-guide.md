@@ -11,7 +11,7 @@ The engine is a hard fork of MuseScore core and preserves upstream MuseScore mus
 For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply:
 
 - **No virtual functions**: Do not introduce `virtual` member functions, abstract base classes, or vtable hierarchies in new or refactored engine code.
-- **Runtime seams via Microsoft proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use Microsoft proxy (`pro::proxy` 4.0.1, available via `<proxy/proxy.h>`), rather than virtual interfaces.
+- **Runtime seams via proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use proxy (`pro::proxy` from ngcpp/proxy 4.1.0, available via `<proxy/proxy.h>`), rather than virtual interfaces.
 - **Separate data from behaviour**: Keep data definitions as plain data structures (`struct`), operating on them using free functions or dedicated systems rather than monolithic stateful classes.
 - **Data-oriented layouts**: Structure storage around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
 - **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in runtime paths. Instead, use:

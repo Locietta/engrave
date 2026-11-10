@@ -6,7 +6,7 @@
 -- exports only its include/ root, while opusenc.h includes <opus.h>; this recipe
 -- uses the upstream CMake build (which selects the RTCD/SIMD kernels per
 -- architecture) and exports both include roots.
-package("muse-opus")
+package("libopus")
     set_homepage("https://opus-codec.org/")
     set_description("Opus audio codec, 1.5.2")
     set_license("BSD-3-Clause")

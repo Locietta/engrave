@@ -6,7 +6,7 @@
 -- module.  This recipe keeps the version and builds the same single
 -- translation unit, but as a small static library through xmake itself, so the
 -- package needs no CMake/Ninja bootstrap environment of its own.
-package("muse-pugixml")
+package("pugixml")
     set_homepage("https://pugixml.org/")
     set_description("Light-weight XML parser with XPath, 1.15")
     set_license("MIT")

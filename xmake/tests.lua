@@ -304,7 +304,7 @@ target("engrave_output_test")
     set_kind("binary")
     set_default(false)
     add_deps("engrave")
-    add_packages("gtest", "muse-zlib", "amc", "unordered_dense")
+    add_packages("gtest", "zlib", "amc", "unordered_dense")
     -- The public API tests remain public-only; the injected audio failure
     -- regression also exercises the internal renderer and its lifecycle.
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
@@ -459,7 +459,7 @@ if has_config("engrave_playback_harness") then
     target("playback_container_probe")
         set_kind("binary")
         set_default(false)
-        add_packages("amc", "unordered_dense", "microsoft-proxy")
+        add_packages("amc", "unordered_dense", "ngcpp-proxy")
         add_files(path.join(tests_dir, "playback_container_probe.cpp"))
     target_end()
 end

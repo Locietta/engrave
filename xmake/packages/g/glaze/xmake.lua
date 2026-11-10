@@ -1,8 +1,4 @@
 -- Pinned glaze: header-only JSON/reflection library.
---
--- The repository layout (xmake/packages/g/glaze/xmake.lua) is what
--- add_repositories("engrave-pinned xmake", ...) in xmake/engrave.lua resolves;
--- the flat recipes beside this directory are still included directly.
 package("glaze")
     set_kind("library", {headeronly = true})
     set_homepage("https://github.com/stephenberry/glaze")

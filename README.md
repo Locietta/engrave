@@ -60,7 +60,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
   - Linux: Install the system development package (e.g. `libcairo2-dev` on Ubuntu/Debian, `cairo-devel` on Fedora, `cairo` on Arch/CachyOS).
   - Windows: Provide the cairo install prefix using `--cairo_prefix=<path>` (e.g. pointing to a directory with `include/cairo` and `lib/cairo.lib`, such as a conda or pixi environment).
 
-All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, glaze) are managed and built from source recipes in `xmake/packages/`. `glaze` is the engine's JSON library, pinned in `xmake/packages/g/glaze` and resolved through the `engrave-pinned` xmake repository; `nlohmann-json` reaches the build only as a private dependency of `mnxdom` / `mnx-json-schema` for MNX import.
+All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, glaze) are built from pinned source recipes in `xmake/packages/`, an xmake package repository (`packages/<letter>/<name>/xmake.lua`, patches beside their recipe) that `xmake/engrave.lua` registers as `engrave-pinned` and that takes precedence over xmake-repo. `glaze` is the engine's JSON library; `nlohmann-json` reaches the build only as a private dependency of `mnxdom` / `mnx-json-schema` for MNX import.
 
 ### Build Commands
 

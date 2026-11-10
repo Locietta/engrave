@@ -1,4 +1,4 @@
--- Local reduced header-only recipe, following utfcpp.lua's pinning convention.
+-- Local reduced header-only recipe, following the utfcpp recipe's pinning convention.
 -- Provenance: upstream tagged release martinus/unordered_dense@v5.3.3; archive SHA-256
 -- measured from codeload.github.com on 2026-11-08. No xmake-repo patches.
 package("unordered_dense")
