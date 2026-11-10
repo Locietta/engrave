@@ -67,7 +67,7 @@ struct NoteEntry {
 
 struct BeamEntry {
     const Beam *beam = nullptr; // the top-level beam containing the event
-    int start_level = 0;        // the deepest-first level of the beam that starts at the event, 0 if none
+    int start_level = 0;        // the shallowest beam level (1 = primary) that starts at the event, 0 if none
 };
 
 template <class Value>

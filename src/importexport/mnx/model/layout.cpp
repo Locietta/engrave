@@ -23,7 +23,7 @@ std::optional<std::vector<StaffKey>> staff_keys(const Staff &staff) {
         const StaffKey key{source.part, source.staff_or_default()};
         auto it = std::ranges::find(states, key, &State::key);
         if (it == states.end()) {
-            states.push_back({key});
+            states.push_back(State{.key = key});
             it = states.end() - 1;
         }
         ++it->count;
