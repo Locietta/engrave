@@ -77,8 +77,16 @@ function prefixdir(pixi, opt)
     local environment_name = environment(opt)
     local active_environment = os.getenv("PIXI_ENVIRONMENT_NAME")
     local active_prefix = os.getenv("CONDA_PREFIX")
-    if active_prefix and active_environment == environment_name and os.isdir(active_prefix) then
-        return active_prefix
+    -- The active environment (inside `pixi run`) is used only when it belongs
+    -- to the selected workspace; another workspace's environment must not
+    -- stand in for this one's pins.
+    local manifest_path = manifest(opt)
+    if active_prefix and active_environment == environment_name and os.isdir(active_prefix) and manifest_path then
+        local workspace = path.translate(path.directory(manifest_path)):lower()
+        local prefix = path.translate(path.absolute(active_prefix)):lower()
+        if prefix:startswith(workspace .. path.sep()) then
+            return active_prefix
+        end
     end
 
     local info = try {function ()

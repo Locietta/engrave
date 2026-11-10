@@ -376,6 +376,7 @@ json &get_or_create(json &root, const json_pointer &pointer) {
         } else if (node->is_array()) {
             auto &array = node->get_array();
             const std::size_t index = token == "-" ? array.size() : array_index(token);
+            if (index >= array.max_size()) throw out_of_range("array index " + token + " is out of range");
             if (index >= array.size()) array.resize(index + 1);
             node = &array[index];
         } else {
@@ -390,10 +391,13 @@ json parse(std::string_view text) {
         static_cast<unsigned char>(text[2]) == 0xBF) {
         text.remove_prefix(3);
     }
+    // glaze reads a null-terminated buffer; a string_view (Document::create's
+    // bounded data) need not be one, so parse an owned copy.
+    const std::string buffer(text);
     json value{};
     glz::context context{};
-    const auto error = glz::read<ReadOpts{}>(value, text, context);
-    if (error) throw parse_error("parse error: " + glz::format_error(error, text));
+    const auto error = glz::read<ReadOpts{}>(value, buffer, context);
+    if (error) throw parse_error("parse error: " + glz::format_error(error, buffer));
     return value;
 }
 
