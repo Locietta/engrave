@@ -1,0 +1,268 @@
+name: CI
+
+# Build and unit-test lane for the engrave engine fork.
+#
+# Runs on Windows (MSVC) and Linux (GCC 15): configures the documented release
+# build with tests enabled, builds the unit-test closure, and runs the C++ unit
+# test binaries plus the fast Python checks. The engine gate (tests/gate.py),
+# the golden comparisons and the audio corpus stay manual: they need the
+# SoundFont and the full `engine_tests` build, and are validated by hand on the
+# physical Windows and Linux hosts (see README.md, "Testing").
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The build requires xmake >= 3.1.1; 3.1.2 is the release the recipes were
+  # last exercised with.
+  XMAKE_VERSION: "3.1.2"
+  # tests/requirements.txt pins the validation closure for Python 3.13.
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  python-checks:
+    name: python-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: tests/requirements.txt
+
+      - name: Install the pinned validation closure
+        run: |
+          python -m pip install -r tests/requirements.txt
+          python -m pip install -e .
+
+      - name: Asset installer checks
+        run: python tools/test_install_assets.py
+
+      - name: Golden comparator and inventory mutations
+        run: python tests/test_inventory.py
+
+      - name: Playback witness controls
+        run: |
+          python tests/test_playback_witness.py
+          python -O tests/test_playback_witness.py
+
+  build-test:
+    name: build-test (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # windows-latest is the Windows Server 2025 + Visual Studio 2026 image
+          # (MSVC 14.51); the project needs MSVC 14.51+ for C++23.
+          - name: windows-msvc
+            runner: windows-latest
+          # ubuntu-latest (24.04) ships GCC 13.2 only; 26.04 ships GCC 15.2,
+          # the closest system compiler to the validated GCC 15.3.
+          - name: linux-gcc15
+            runner: ubuntu-26.04
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      BUILD_DIR: build/ci
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          # nasm: the LAME recipe; libcairo2-dev: the page renderer (system
+          # cairo, the Linux default); fonts-dejavu-core: renderer fallback
+          # font. cmake, ninja, make and autotools ship with the image.
+          sudo apt-get install -y --no-install-recommends nasm libcairo2-dev pkg-config ccache fonts-dejavu-core
+          g++ --version
+
+      - name: Install Windows build dependencies
+        if: runner.os == 'Windows'
+        run: choco install ccache --no-progress -y
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: ${{ env.XMAKE_VERSION }}
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: tests/requirements.txt
+
+      - name: Install the pinned validation closure
+        run: |
+          python -m pip install -r tests/requirements.txt
+          python -m pip install -e .
+
+      # Windows has no system cairo: provide the same conda-forge release the
+      # host pins (pixi.lock), exactly as the README describes for
+      # --cairo_prefix.
+      - name: Install pixi (cairo provider)
+        if: runner.os == 'Windows'
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          pixi-version: v0.84.1
+          run-install: false
+          cache: false
+
+      - name: Provide cairo (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          pixi init --channel conda-forge "$env:RUNNER_TEMP/cairo-env"
+          pixi add --manifest-path "$env:RUNNER_TEMP/cairo-env/pixi.toml" cairo=1.18.6
+          $prefix = (Resolve-Path "$env:RUNNER_TEMP/cairo-env/.pixi/envs/default/Library").Path
+          foreach ($path in "include/cairo/cairo.h", "lib/cairo.lib", "bin") {
+            if (-not (Test-Path (Join-Path $prefix $path))) { throw "cairo prefix lacks $path" }
+          }
+          "CAIRO_PREFIX=$prefix" >> $env:GITHUB_ENV
+          # The test binaries load the conda cairo DLLs at run time.
+          Join-Path $prefix "bin" >> $env:GITHUB_PATH
+
+      # Packages are built from source into <build dir>/.packages
+      # (package.install_locally); cache them on the recipes and build files.
+      - name: Restore xmake package cache
+        id: packages
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.BUILD_DIR }}/.packages
+          key: xmake-packages-${{ matrix.name }}-${{ hashFiles('xmake.lua', 'xmake/**') }}
+          restore-keys: xmake-packages-${{ matrix.name }}-
+
+      - name: Restore compiler cache
+        id: ccache
+        uses: actions/cache/restore@v6
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.name }}-
+
+      - name: Configure (release, tests enabled)
+        id: configure
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $config = @(
+            'f', '-P', '.', '-y', '-m', 'release', '-o', $env:BUILD_DIR,
+            '--ccache=y', "--ccachedir=$env:CCACHE_DIR",
+            '--engrave_tests=y', '--engrave_playback_harness=n'
+          )
+          if ($env:CAIRO_PREFIX) { $config += "--cairo_prefix=$env:CAIRO_PREFIX" }
+          xmake @config
+
+      - name: Save xmake package cache
+        if: ${{ !cancelled() && steps.configure.outcome == 'success' && steps.packages.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.BUILD_DIR }}/.packages
+          key: xmake-packages-${{ matrix.name }}-${{ hashFiles('xmake.lua', 'xmake/**') }}
+
+      # The unit-test closure only: the targets the gate runs as suites, the
+      # upstream gtest binaries and the public-header leak test. The full
+      # engine_tests closure (output tests, probes, semantic_dump) is the
+      # manual gate's.
+      - name: Build unit-test targets
+        id: build
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $targets = @(
+            'engrave_api_test', 'engrave_handles_test', 'engrave_describe_test',
+            'engrave_read_test', 'engrave_ops_test', 'engrave_op_policy_test',
+            'engrave_gp_import_test', 'engrave_mnx_import_test',
+            'diagnostics_test', 'io_boundary_test',
+            'engraving_playback_tests', 'mpe_tests', 'example_embedder'
+          )
+          xmake build -P . -y -j 4 @targets
+
+      - name: Save compiler cache
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.name }}-${{ github.sha }}
+
+      - name: Install runtime assets and verify the manifest
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $assets = Join-Path $env:RUNNER_TEMP 'assets'
+          python tools/install_assets.py $assets
+          python tools/install_assets.py $assets --verify
+
+      - name: Run C++ unit tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ext = $IsWindows ? '.exe' : ''
+          $root = $PWD.Path
+          $build = Join-Path $root $env:BUILD_DIR
+          $assets = Join-Path $env:RUNNER_TEMP 'assets'
+          $data = Join-Path $root 'tests/data/inputs'
+          $python = (Get-Command python).Source
+          $mnxOut = Join-Path $env:RUNNER_TEMP 'mnx-export'
+          # Same arguments as tests/gate.py, minus engrave_output_test (needs
+          # SoundFonts and the render goldens; part of the manual gate).
+          $suites = [ordered]@{
+            engrave_api_test       = @("--assets=$assets")
+            engrave_handles_test   = @("--assets=$assets", "--corpus=$data/golden")
+            engrave_describe_test  = @("--assets=$assets", "--python=$python", $data)
+            engrave_read_test      = @("--assets=$assets", "--corpus=$data")
+            engrave_ops_test       = @("--assets=$assets", "--corpus=$data/golden")
+            engrave_op_policy_test = @()
+            engrave_gp_import_test = @("--assets=$assets")
+            engrave_mnx_import_test = @("--assets=$assets", "--mnx-out=$mnxOut")
+            diagnostics_test       = @()
+            io_boundary_test       = @()
+          }
+          $failed = @()
+          foreach ($name in $suites.Keys) {
+            $work = Join-Path $env:RUNNER_TEMP "suites/$name"
+            New-Item -ItemType Directory -Force $work | Out-Null
+            Write-Host "::group::$name"
+            Push-Location $work
+            & (Join-Path $build "$name$ext") @($suites[$name])
+            $code = $LASTEXITCODE
+            Pop-Location
+            Write-Host '::endgroup::'
+            if ($code -ne 0) {
+              Write-Host "::error title=$name::exited with code $code"
+              $failed += $name
+            }
+          }
+          if ($failed) { throw "failed suites: $($failed -join ', ')" }
+
+      - name: Run upstream gtest suites (engraving playback, MPE)
+        run: >
+          python tests/integration/test_upstream_gtest.py
+          --bin-dir "$env:BUILD_DIR"
+          --assets "$env:RUNNER_TEMP/assets"
+          --engraving-data src/engraving/tests
+          --output "$env:RUNNER_TEMP/gtest"
+
+      - name: Validate exported MNX against the schema
+        run: >
+          python tests/engrave_testing/check_mnx_schema.py
+          "$env:RUNNER_TEMP/mnx-export"
+          src/importexport/mnx/tests/data/schema/mnx-schema.json

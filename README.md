@@ -189,6 +189,10 @@ python tests/integration/test_assets.py --binary build/gate/assets_test.exe --as
 
 Alternatively, install the `engrave-testing` package in editable mode within the virtual environment (`pip install -e .`), allowing test scripts to run directly without specifying `PYTHONPATH`.
 
+### Continuous Integration
+
+`.github/workflows/ci.yml` runs on pushes to `main`, pull requests and manual dispatch. A `python-checks` job installs `tests/requirements.txt` and `pip install -e .`, then runs `tools/test_install_assets.py`, `tests/test_inventory.py` and `tests/test_playback_witness.py` (also with `python -O`). A `build-test` job on Windows (MSVC from the `windows-latest` Visual Studio 2026 image, conda-forge cairo from Pixi) and Linux (`ubuntu-26.04`, GCC 15, system cairo) configures `xmake f -m release --engrave_tests=y`, builds the unit-test targets, installs and verifies the runtime assets, and runs the same suites and arguments as `tests/gate.py` except `engrave_output_test`: `engrave_api_test`, `engrave_handles_test`, `engrave_describe_test`, `engrave_read_test`, `engrave_ops_test`, `engrave_op_policy_test`, `engrave_gp_import_test`, `engrave_mnx_import_test` with its MNX schema check, `diagnostics_test` and `io_boundary_test`, then the upstream `engraving_playback_tests` and `mpe_tests` through `tests/integration/test_upstream_gtest.py`. `example_embedder` is built as the public-header leak check. CI does not run the full gate, the golden comparisons, the audio corpus or anything that needs a SoundFont (`engrave_output_test`, `engine_audio`, the render goldens); those stay manual on the Windows and Linux hosts. Formatting and naming lint are not part of CI.
+
 ## Development
 
 - [docs/code-style-guide.md](docs/code-style-guide.md): Code style, naming conventions, and contribution guidelines.
