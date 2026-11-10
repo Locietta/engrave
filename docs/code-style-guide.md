@@ -6,9 +6,22 @@ If not specified here, follow the code style of the existing code around the cod
 
 ## Scope and Upstream Code
 
-The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Existing upstream code is not rewritten simply to fit this guide: virtual-heavy object models, inheritance hierarchies, and existing error-handling patterns stay as they are.
+The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Untouched upstream code is not rewritten simply to fit this guide: virtual-heavy object models, inheritance hierarchies, and existing error-handling patterns stay as they are.
 
-The guidelines here apply to new code and touched code where practical.
+For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply:
+
+- **No virtual functions**: Do not introduce `virtual` member functions, abstract base classes, or vtable hierarchies in new or refactored engine code.
+- **Runtime seams via Microsoft proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use Microsoft proxy (`pro::proxy` 4.0.1, available via `<proxy/proxy.h>`), rather than virtual interfaces.
+- **Separate data from behaviour**: Keep data definitions as plain data structures (`struct`), operating on them using free functions or dedicated systems rather than monolithic stateful classes.
+- **Data-oriented layouts**: Structure storage around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
+- **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in runtime paths. Instead, use:
+  - The fork's `FlatMap` (`muse/framework/global/flatmap.h`) or sorted vectors for ordered key-value data.
+  - `amc` containers (`amc v2.8.1`, e.g. `amc::FlatSet` from `<amc/flatset.hpp>` or `amc::vector` from `<amc/vector.hpp>`).
+  - `ankerl::unordered_dense` (`unordered_dense v5.3.3` via `<ankerl/unordered_dense.h>`) for lookup-only hash tables or sets.
+- **No Boost**: Boost is not part of the engine dependencies and must not be introduced.
+- **No new nlohmann/json usage**: While `nlohmann_json v3.12.0` is wired in the build for score import/export compatibility, do not introduce new `nlohmann::json` dependencies into new engine subsystems.
+
+The remaining guidelines here apply to all new and touched code across the engine.
 
 ## Formatting and Linting
 

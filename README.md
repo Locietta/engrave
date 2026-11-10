@@ -191,7 +191,8 @@ Alternatively, install the `engrave-testing` package in editable mode within the
 
 ## Development
 
-For code style, naming conventions, and contribution guidelines, see [docs/code-style-guide.md](docs/code-style-guide.md).
+- [docs/code-style-guide.md](docs/code-style-guide.md): Code style, naming conventions, and contribution guidelines.
+- [docs/playback.md](docs/playback.md): Offline audio render pipeline and synthesis architecture.
 
 Style tools use clang-format/clang-tidy 23.1.4 on PATH:
 
