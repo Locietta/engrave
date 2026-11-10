@@ -6,8 +6,8 @@
 -- (muse/framework/audio/engine/internal/export/aacencoder.cpp:28-29), while the
 -- upstream CMake install puts them in include/fdk-aac and xmake-repo exports
 -- only include/. Building it here also keeps every audio encoder on the same
--- "pinned source, project recipe" footing (see flac.lua, opus.lua).
-package("muse-fdk-aac")
+-- "pinned source, project recipe" footing (see libflac, libopus).
+package("fdk-aac")
     set_homepage("https://sourceforge.net/projects/opencore-amr/")
     set_description("Fraunhofer FDK AAC codec library, 2.0.3")
     set_license("Apache-2.0")

@@ -7,7 +7,7 @@
 -- used, instead of driving meson/ninja, so the compile set stays reviewable
 -- and the build needs no external build tool.  HAVE_FREETYPE enables hb-ft.cc
 -- (muse_draw uses hb_ft_font_create); the subsetter stays out, as in muse_deps.
-package("muse-harfbuzz")
+package("harfbuzz")
     set_homepage("https://harfbuzz.github.io/")
     set_description("Text shaping library, 12.3.0 amalgamation with FreeType support")
     set_license("MIT")
@@ -16,7 +16,7 @@ package("muse-harfbuzz")
     add_versions("12.3.0", "8660ebd3c27d9407fc8433b5d172bafba5f0317cb0bb4339f28e5370c93d42b7")
 
     -- muse_deps builds freetype static without png/zlib/bzip2/brotli; the same
-    -- require (same configs) is declared in xmake.lua so one freetype instance
+    -- require (same configs) is declared in xmake/engrave.lua so one freetype instance
     -- serves both and the two require sites do not install it twice.
     add_deps("freetype", {configs = {
         zlib = false, png = false, bzip2 = false, woff2 = false, harfbuzz = false}})

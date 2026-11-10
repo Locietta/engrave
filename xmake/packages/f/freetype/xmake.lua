@@ -9,7 +9,7 @@
 -- already installed (verified against xmake's download cache).
 --
 -- The selected version is the one muse_deps pins; the project builds it static
--- with PNG/bzip2/zlib/harfbuzz/woff2 disabled (see add_requires in xmake.lua).
+-- with PNG/bzip2/zlib/harfbuzz/woff2 disabled (see add_requires in xmake/engrave.lua).
 package("freetype")
     set_homepage("https://www.freetype.org")
     set_description("A freely available software library to render fonts.")

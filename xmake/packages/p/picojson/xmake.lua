@@ -9,9 +9,9 @@
 -- patched file - not xmake-repo's v1.3.0 release - is what keeps JSON output
 -- byte-stable.
 --
--- The patch is kept in xmake/packages/patches/ (copied verbatim from
+-- The patch is kept in patches/ beside this recipe (copied verbatim from
 -- muse_deps@39c897ed, sha256 ff34859b5796e91638cf4fddc3dc4fb65eff5a2a4523aa41f7c86ab522442bd6).
-package("muse-picojson")
+package("picojson")
     set_homepage("https://github.com/kazuho/picojson")
     set_description("JSON parser/serializer, muse_deps master pin with the deterministic-number patch")
     set_license("BSD-2-Clause")
@@ -21,7 +21,7 @@ package("muse-picojson")
     add_urls("https://github.com/kazuho/picojson/archive/$(version).tar.gz")
     add_versions("111c9be", "671f89832a17e9e71398f80c0a326afa2ebe81f4c26d5a9992e1fcd0888ae151")
     add_patches("111c9be",
-        path.join(os.scriptdir(), "patches", "picojson-0001-deterministic-number-serialization.patch"),
+        path.join(os.scriptdir(), "patches", "0001-deterministic-number-serialization.patch"),
         "ff34859b5796e91638cf4fddc3dc4fb65eff5a2a4523aa41f7c86ab522442bd6")
 
     add_includedirs("include/picojson")

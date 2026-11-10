@@ -98,7 +98,7 @@ Disjoint track buffers isolate synthesis state from mixing, ensuring identical f
 
 ## Encoder Seam (`pro::proxy`)
 
-Format encoders are decoupled from the render loop using Microsoft proxy (`pro::proxy` 4.0.1) instead of virtual inheritance:
+Format encoders are decoupled from the render loop using proxy (`pro::proxy`, ngcpp/proxy 4.1.0, the continuation of the archived microsoft/proxy) instead of virtual inheritance:
 
 - **Facade Convention (`EncoderFacade`)**:
   ```cpp

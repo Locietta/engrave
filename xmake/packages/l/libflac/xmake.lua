@@ -10,7 +10,7 @@
 -- WITH_OGG=OFF matches the baseline: the 4.7.6 in-tree build configured
 -- FLAC with OGG_FOUND=0 / FLAC__HAS_OGG=0, and the encoder never writes
 -- Ogg FLAC.  Dropping it also keeps libogg out of the dependency set.
-package("muse-flac")
+package("libflac")
     set_homepage("https://xiph.org/flac/")
     set_description("Free Lossless Audio Codec, 1.4.3 with the C++ interface")
     set_license("BSD-3-Clause")

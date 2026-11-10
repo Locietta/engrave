@@ -11,7 +11,7 @@
 -- The archive is built static (the engine build must not depend on a zlib DLL);
 -- zlib's CMake build always produces both the shared and the static target, so
 -- the recipe installs both and consumers link the static one.
-package("muse-zlib")
+package("zlib")
     set_homepage("https://zlib.net/")
     set_description("A massively spiffy yet delicately unobtrusive compression library.")
     set_license("Zlib")

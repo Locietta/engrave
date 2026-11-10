@@ -31,9 +31,11 @@ option_end()
 local fork_root = path.directory(os.scriptdir())
 local source_root = path.absolute(ENGRAVE_SOURCE_ROOT or fork_root)
 
--- The pinned xmake-repository packages (glaze) live under <fork>/xmake/packages.
--- This file is the engine's build interface, so the repository is registered
--- here as well: the host project includes only this file, not xmake.lua.
+-- Every pinned third-party recipe lives in <fork>/xmake/packages, laid out as
+-- an xmake package repository (packages/<letter>/<name>/xmake.lua).  The
+-- repository is searched before xmake-repo, so these pins shadow its packages
+-- of the same name.  This file is the engine's build interface, so the
+-- repository is registered here: the host project includes only this file.
 add_repositories("engrave-pinned xmake", {rootdir = fork_root})
 
 local function engine(...)
@@ -43,15 +45,7 @@ end
 ---------------------------------------------------------------------------
 -- Third-party dependencies
 ---------------------------------------------------------------------------
-local package_dir = path.join(fork_root, "xmake", "packages")
-for _, pkg in ipairs({
-    "amc", "unordered_dense", "microsoft-proxy", "freetype", "harfbuzz", "flac", "lame", "opus",
-    "opusenc", "fdk-aac", "pugixml", "utfcpp", "picojson", "mnx-json-schema", "mnxdom",
-}) do
-    includes(path.join(package_dir, pkg .. ".lua"))
-end
-
-add_requires("microsoft-proxy 4.0.1", {system = false})
+add_requires("ngcpp-proxy 4.1.0", {system = false})
 add_requires("amc v2.8.1", {system = false})
 add_requires("unordered_dense v5.3.3", {system = false})
 add_requires("glaze 9.1.0", {system = false})
@@ -59,15 +53,15 @@ add_requires("mnxdom 45bf462", {system = false})
 
 add_requires("freetype 2.14.1", {system = false, configs = {
     zlib = false, png = false, bzip2 = false, woff2 = false, harfbuzz = false}})
-add_requires("muse-harfbuzz 12.3.0", {system = false})
-add_requires("muse-flac 1.4.3", {system = false})
+add_requires("harfbuzz 12.3.0", {system = false})
+add_requires("libflac 1.4.3", {system = false})
 add_requires("lame 3.100", {system = false})
-add_requires("muse-opus 1.5.2", {system = false})
-add_requires("muse-opusenc 0.2.1", {system = false})
-add_requires("muse-fdk-aac 2.0.3", {system = false})
-add_requires("muse-pugixml 1.15", {system = false})
+add_requires("libopus 1.5.2", {system = false})
+add_requires("libopusenc 0.2.1", {system = false})
+add_requires("fdk-aac 2.0.3", {system = false})
+add_requires("pugixml 1.15", {system = false})
 add_requires("utfcpp v4.1.1", {system = false})
-add_requires("muse-picojson 111c9be", {system = false})
+add_requires("picojson 111c9be", {system = false})
 
 ---------------------------------------------------------------------------
 -- Generated version/provenance header
@@ -238,7 +232,7 @@ end
 target("muse_global")
     set_kind("static")
     add_deps("muse_generated")
-    add_packages("muse-pugixml", "utfcpp", "muse-picojson")
+    add_packages("pugixml", "utfcpp", "picojson")
     add_packages("amc", "unordered_dense", {public = true})
     add_engine_target_defaults()
     add_includedirs(
@@ -266,7 +260,7 @@ target("muse_global")
 target("muse_draw")
     set_kind("static")
     add_deps("muse_generated", "muse_global")
-    add_packages("freetype", "muse-harfbuzz", {public = true})
+    add_packages("freetype", "harfbuzz", {public = true})
     add_engine_target_defaults()
     add_includedirs(
         engine("muse/framework/draw"),
@@ -419,8 +413,8 @@ target("native_fluidsynth")
 target("muse_audio_engine")
     set_kind("static")
     add_deps("muse_generated", "muse_global", "native_fluidsynth")
-    add_packages("amc", "unordered_dense", "microsoft-proxy", {public = true})
-    add_packages("muse-flac", "lame", "muse-opus", "muse-opusenc", "muse-fdk-aac")
+    add_packages("amc", "unordered_dense", "ngcpp-proxy", {public = true})
+    add_packages("libflac", "lame", "libopus", "libopusenc", "fdk-aac")
     add_engine_target_defaults()
     add_defines(ENGRAVE_AUDIO_ENGINE.defines)
     add_includedirs(ENGRAVE_AUDIO_ENGINE.includes)
@@ -455,7 +449,7 @@ end
 
 target("engrave")
     set_kind("static")
-    add_packages("muse-pugixml")
+    add_packages("pugixml")
     add_packages("glaze", {public = true})
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "muse_global", "muse_draw", "muse_mpe", "engraving",
