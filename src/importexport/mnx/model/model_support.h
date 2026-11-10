@@ -26,13 +26,13 @@ struct Fraction {
 struct Id : std::string {
     using std::string::string;
 
-    Id(std::string value) : std::string(std::move(value)) {}
+    explicit Id(std::string value) : std::string(std::move(value)) {}
 };
 
 struct SimpleColor : std::string {
     using std::string::string;
 
-    SimpleColor(std::string value) : std::string(std::move(value)) {}
+    explicit SimpleColor(std::string value) : std::string(std::move(value)) {}
 };
 
 // ^[\x21-\x7E]{1,256}$
@@ -58,6 +58,7 @@ namespace detail {
 struct ReadOpts : glz::opts {
     bool validate_skipped = true;
     bool validate_trailing_whitespace = true;
+    bool error_on_missing_array_elements = true; // a fraction has exactly two elements
 };
 
 inline constexpr ReadOpts read_opts{{.error_on_unknown_keys = true, .error_on_missing_keys = true}};

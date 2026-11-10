@@ -78,6 +78,15 @@ Rational measure_length(const Root &root, const Index &index, std::uint32_t meas
 namespace {
 
 constexpr int max_dots = 16; // keeps duration arithmetic far from overflow
+constexpr int max_staves = 64;
+// Bounds that keep pitch and transposition arithmetic (music_theory.hpp loops over them) small.
+constexpr int max_octave = 20;
+constexpr int max_diatonic_delta = 7;
+constexpr int max_interval_steps = 70;
+constexpr int max_fifths = 30;
+
+// |value| > limit, without std::abs (which overflows for INT_MIN).
+constexpr bool beyond(int value, int limit) { return value < -limit || value > limit; }
 
 // A JSON pointer token for an object key (RFC 6901 escaping).
 std::string key_token(std::string_view key) {
@@ -228,13 +237,23 @@ private:
                 else
                     time = m;
             }
-            if (measure.key) key = m;
+            if (measure.key) {
+                key = m;
+                if (beyond(measure.key->fifths, max_fifths))
+                    error(at(pointer, "key/fifths"), std::format("A key has at most {} fifths, not {}.", max_fifths, measure.key->fifths));
+            }
+            if (measure.repeat_end && measure.repeat_end->times && *measure.repeat_end->times < 1)
+                error(at(pointer, "repeatEnd/times"), "A repeat is played at least once.");
             index_.time_from[m] = time;
             index_.key_from[m] = key;
             if (measure.number && *measure.number < 0) error(at(pointer, "number"), "A measure number must not be negative.");
-            for (std::size_t i = 0; i < items(measure.tempos).size(); ++i)
-                if (const auto &location = (*measure.tempos)[i].location)
-                    check_position(*location, at(at(pointer, "tempos", i), "location"));
+            for (std::size_t i = 0; i < items(measure.tempos).size(); ++i) {
+                const auto &tempo = (*measure.tempos)[i];
+                const std::string tempo_pointer = at(pointer, "tempos", i);
+                if (tempo.location) check_position(*tempo.location, at(tempo_pointer, "location"));
+                if (tempo.bpm < 1) error(at(tempo_pointer, "bpm"), std::format("A tempo needs a positive bpm, not {}.", tempo.bpm));
+                check_note_value(tempo.value, at(tempo_pointer, "value"));
+            }
             if (measure.fine) check_position(measure.fine->location, at(pointer, "fine/location"));
             if (measure.jump) check_position(measure.jump->location, at(pointer, "jump/location"));
             if (measure.segno) check_position(measure.segno->location, at(pointer, "segno/location"));
@@ -259,6 +278,7 @@ private:
         int staff;
         std::optional<std::string> voice;
         std::vector<std::uint32_t> pending_grace;
+        bool out_of_range = false;
     };
 
     void flush_grace(Walk &walk) {
@@ -267,7 +287,23 @@ private:
         walk.pending_grace.clear();
     }
 
-    void index_event(Walk &walk, const Event &event, const std::string &pointer, EventContainer container, Rational start, Rational ratio) {
+    // A computed duration or position, if it is bounded (see Rational). Otherwise the sequence is
+    // reported once and the value replaced by zero, so later arithmetic stays defined.
+    Rational bounded(Walk &walk, const Rational &value, const std::string &pointer) {
+        if (value.is_bounded()) return value;
+        if (!walk.out_of_range) error(pointer, "Durations or positions in this sequence are too large to represent.");
+        walk.out_of_range = true;
+        return Rational();
+    }
+
+    // The length of an event's note value, if it is valid (an invalid one is reported).
+    std::optional<Rational> note_length(const Event &event, const std::string &pointer) {
+        if (!check_note_value(event.duration, at(pointer, "duration"))) return std::nullopt;
+        return duration_of(event.duration);
+    }
+
+    void index_event(Walk &walk, const Event &event, const std::string &pointer, EventContainer container, Rational start,
+                     Rational duration) {
         const auto entry_index = static_cast<std::uint32_t>(index_.events.size());
         EventEntry entry;
         entry.event = &event;
@@ -276,7 +312,7 @@ private:
         entry.sequence = walk.sequence;
         entry.container = container;
         entry.start = start;
-        entry.duration = check_note_value(event.duration, at(pointer, "duration")) ? duration_of(event.duration) * ratio : Rational();
+        entry.duration = duration;
         entry.pointer = pointer;
         index_.events.push_back(std::move(entry));
         index_.event_of.emplace(&event, entry_index);
@@ -303,7 +339,8 @@ private:
         }
     }
 
-    // Returns the nominal (unscaled) length of the content, for duration checks.
+    // Returns the nominal (unscaled) length of the content, for duration checks. Every value it
+    // computes is bounded (see bounded()).
     Rational walk_content(Walk &walk, const std::vector<SequenceItem> &content, const std::string &pointer, EventContainer container,
                           Rational &elapsed, Rational ratio) {
         Rational nominal;
@@ -312,54 +349,65 @@ private:
             std::visit(
                 [&]<class T>(const T &item) {
                     if constexpr (std::is_same_v<T, Event>) {
-                        index_event(walk, item, item_pointer, container, elapsed, ratio);
-                        const Rational length = index_.events.back().duration;
-                        elapsed += length;
-                        if (check_note_value(item.duration, at(item_pointer, "duration"))) nominal += duration_of(item.duration);
+                        const auto length = note_length(item, item_pointer);
+                        const Rational duration = length ? bounded(walk, *length * ratio, item_pointer) : Rational();
+                        index_event(walk, item, item_pointer, container, elapsed, duration);
+                        elapsed = bounded(walk, elapsed + duration, item_pointer);
+                        if (length) nominal = bounded(walk, nominal + *length, item_pointer);
                     } else if constexpr (std::is_same_v<T, Grace>) {
-                        for (std::size_t e = 0; e < item.content.size(); ++e)
-                            index_event(walk, item.content[e], at(item_pointer, "content", e), EventContainer::GRACE, elapsed, Rational());
+                        for (std::size_t e = 0; e < item.content.size(); ++e) {
+                            const std::string event_pointer = at(item_pointer, "content", e);
+                            std::ignore = note_length(item.content[e], event_pointer);
+                            index_event(walk, item.content[e], event_pointer, EventContainer::GRACE, elapsed, Rational());
+                        }
                     } else if constexpr (std::is_same_v<T, Tuplet>) {
                         const bool inner_ok = check_quantity(item.inner, at(item_pointer, "inner"));
                         const bool outer_ok = check_quantity(item.outer, at(item_pointer, "outer"));
                         if (item.staff) check_staff(walk.part, *item.staff, at(item_pointer, "staff"));
                         if (!inner_ok || !outer_ok) return;
-                        const Rational tuplet = tuplet_ratio(item);
-                        const Rational inner =
-                            walk_content(walk, item.content, item_pointer, EventContainer::TUPLET, elapsed, ratio * tuplet);
-                        if (inner > duration_of(item.inner))
+                        const Rational inner_length = bounded(walk, duration_of(item.inner), item_pointer);
+                        const Rational outer_length = bounded(walk, duration_of(item.outer), item_pointer);
+                        if (inner_length == Rational() || outer_length == Rational()) return;
+                        const Rational tuplet = bounded(walk, outer_length / inner_length, item_pointer);
+                        const Rational child_ratio = bounded(walk, ratio * tuplet, item_pointer);
+                        const Rational inner = walk_content(walk, item.content, item_pointer, EventContainer::TUPLET, elapsed, child_ratio);
+                        if (inner > inner_length)
                             error(item_pointer, "Entries in content array add up to more than the expected value.");
-                        else if (inner < duration_of(item.inner))
+                        else if (inner < inner_length)
                             error(item_pointer, "Entries in content array add up to less than the expected value.");
-                        nominal += inner * tuplet;
+                        nominal = bounded(walk, nominal + outer_length, item_pointer);
                     } else if constexpr (std::is_same_v<T, MultiNoteTremolo>) {
                         if (!check_quantity(item.outer, at(item_pointer, "outer"))) return;
                         const int multiple = item.outer.multiple;
                         if (multiple < 2) error(item_pointer, std::format("Multi-note tremolo has {} events.", multiple));
                         if (item.marks < 1) error(at(item_pointer, "marks"), "A tremolo needs at least one mark.");
+                        if (item.individual_duration) check_note_value(*item.individual_duration, at(item_pointer, "individualDuration"));
                         const Rational start = elapsed;
-                        const Rational outer = duration_of(item.outer);
+                        const Rational outer = bounded(walk, duration_of(item.outer), item_pointer);
+                        const Rational expected = bounded(walk, outer * Rational(multiple), item_pointer);
+                        const Rational child_ratio = bounded(walk, ratio / Rational(multiple), item_pointer);
                         Rational inner;
                         for (std::size_t e = 0; e < item.content.size(); ++e) {
                             const auto &event = item.content[e];
-                            index_event(walk, event, at(item_pointer, "content", e), EventContainer::TREMOLO, elapsed,
-                                        ratio / Rational(multiple));
-                            elapsed += index_.events.back().duration;
-                            if (check_note_value(event.duration, at(item_pointer, "content", e) + "/duration"))
-                                inner += duration_of(event.duration);
+                            const std::string event_pointer = at(item_pointer, "content", e);
+                            const auto length = note_length(event, event_pointer);
+                            const Rational duration = length ? bounded(walk, *length * child_ratio, event_pointer) : Rational();
+                            index_event(walk, event, event_pointer, EventContainer::TREMOLO, elapsed, duration);
+                            elapsed = bounded(walk, elapsed + duration, event_pointer);
+                            if (length) inner = bounded(walk, inner + *length, event_pointer);
                         }
-                        if (inner > outer * Rational(multiple))
+                        if (inner > expected)
                             error(item_pointer, "Entries in content array add up to more than the expected value.");
-                        else if (inner < outer * Rational(multiple))
+                        else if (inner < expected)
                             error(item_pointer, "Entries in content array add up to less than the expected value.");
                         // The tremolo always spans its outer value, whatever its events add up to.
-                        elapsed = start + outer * ratio;
-                        nominal += outer;
+                        elapsed = bounded(walk, start + bounded(walk, outer * ratio, item_pointer), item_pointer);
+                        nominal = bounded(walk, nominal + outer, item_pointer);
                     } else if constexpr (std::is_same_v<T, Space>) {
                         check_fraction(item.duration, at(item_pointer, "duration"));
-                        if (item.duration.denominator <= 0) return;
-                        elapsed += Rational(item.duration) * ratio;
-                        nominal += Rational(item.duration);
+                        if (item.duration.denominator <= 0 || item.duration.numerator < 0) return;
+                        elapsed = bounded(walk, elapsed + bounded(walk, Rational(item.duration) * ratio, item_pointer), item_pointer);
+                        nominal = bounded(walk, nominal + Rational(item.duration), item_pointer);
                     }
                 },
                 content[i]);
@@ -390,7 +438,7 @@ private:
             for (std::uint32_t s = 0; s < measure.sequences.size(); ++s) {
                 const auto &sequence = measure.sequences[s];
                 const std::string sequence_pointer = at(measure_pointer, "sequences", s);
-                Walk walk{p, m, s, sequence.staff_or_default(), sequence.voice, {}};
+                Walk walk{p, m, s, sequence.staff_or_default(), sequence.voice, {}, false};
                 Rational elapsed;
                 if (sequence.full_measure) elapsed = measure_length(root_, index_, m);
                 const Rational nominal =
@@ -411,10 +459,11 @@ private:
                 const auto [it, added] = index_.beams.try_emplace(event, BeamEntry{&beam, 0});
                 if (!added) error(at(pointer, "beams", b), std::format("ID \"{}\" already exists in another beam.", std::string(event)));
             }
+            // validate_beams reports a sub-beam event that is not in its parent beam.
             const auto walk_levels = [&](const auto &self, const Beam &level_beam, int level) -> void {
                 if (!level_beam.events.empty()) {
-                    auto &entry = index_.beams[level_beam.events.front()];
-                    entry.start_level = entry.start_level == 0 ? level : std::min(entry.start_level, level);
+                    if (const auto it = index_.beams.find(level_beam.events.front()); it != index_.beams.end())
+                        it->second.start_level = it->second.start_level == 0 ? level : std::min(it->second.start_level, level);
                 }
                 for (const auto &child : items(level_beam.beams)) self(self, child, level + 1);
             };
@@ -537,7 +586,8 @@ private:
             error(pointer, std::format("Part contains a different number of measures ({}) than are defined globally ({}).",
                                        part.measures.size(), global_count));
         const int staves = part.staves_or_default();
-        if (staves < 1) error(pointer, std::format("Part contains no staves ({}).", staves));
+        if (staves < 1 || staves > max_staves)
+            error(at(pointer, "staves"), std::format("A part has 1 to {} staves, not {}.", max_staves, staves));
         for (const auto &[component_id, component] : items(part.kit)) {
             if (!component.sound) continue;
             const auto &sounds = items(root_.global.sounds);
@@ -546,7 +596,14 @@ private:
                 error(at(at(pointer, "kit"), key_token(component_id)),
                       std::format("Sound ID {} is not defined in global.sounds.", std::string(*component.sound)));
         }
-        if (!part.measures.empty() && !part.kit && staves >= 1) {
+        if (const auto &transposition = part.transposition) {
+            const auto &interval = transposition->interval;
+            if (beyond(interval.staff_distance, max_interval_steps) || beyond(interval.half_steps, 2 * max_interval_steps))
+                error(at(pointer, "transposition/interval"), "The transposition interval is too large.");
+            if (transposition->key_fifths_flip_at && beyond(*transposition->key_fifths_flip_at, max_fifths))
+                error(at(pointer, "transposition/keyFifthsFlipAt"), std::format("keyFifthsFlipAt is at most {} fifths.", max_fifths));
+        }
+        if (!part.measures.empty() && !part.kit && staves >= 1 && staves <= max_staves) {
             std::vector<bool> has_clef(static_cast<std::size_t>(staves) + 1, false);
             for (const auto &clef : items(part.measures[0].clefs)) {
                 const int staff = clef.staff_or_default();
@@ -554,10 +611,12 @@ private:
                 if (staff >= 1 && staff <= staves && at_start) has_clef[static_cast<std::size_t>(staff)] = true;
             }
             // The importer gives such a staff a default clef, so this does not block the import.
+            std::string missing;
             for (int staff = 1; staff <= staves; ++staff)
-                if (!has_clef[static_cast<std::size_t>(staff)])
-                    warning(at(pointer, "measures", 0),
-                            std::format("Missing clef at the beginning of staff {} in part {} (first measure).", staff, id_or(part)));
+                if (!has_clef[static_cast<std::size_t>(staff)]) missing += std::format("{}{}", missing.empty() ? "" : ", ", staff);
+            if (!missing.empty())
+                warning(at(pointer, "measures", 0),
+                        std::format("Missing clef at the beginning of staff {} in part {} (first measure).", missing, id_or(part)));
         }
         validate_measure_repeats(p);
         for (std::uint32_t m = 0; m < part_measure_count_[p]; ++m) {
@@ -574,6 +633,8 @@ private:
                 const auto &sequence = measure.sequences[s];
                 const std::string sequence_pointer = at(measure_pointer, "sequences", s);
                 check_staff(p, sequence.staff_or_default(), at(sequence_pointer, "staff"));
+                if (sequence.full_measure && sequence.full_measure->visual_duration)
+                    check_note_value(*sequence.full_measure->visual_duration, at(sequence_pointer, "fullMeasure/visualDuration"));
                 if (sequence.full_measure && !sequence.content.empty())
                     error(sequence_pointer,
                           std::format("Sequence \"{}\" has full measure rest but content is not empty.", id_or(sequence)));
@@ -585,7 +646,7 @@ private:
                               std::format("Voice \"{}\" already exists at {}.", *sequence.voice, it->second));
                 }
             }
-            validate_beams(items(measure.beams), at(measure_pointer, "beams"), m, 1);
+            validate_beams(items(measure.beams), at(measure_pointer, "beams"), p, m, 1, nullptr);
             validate_dynamics(p, items(measure.dynamics), at(measure_pointer, "dynamics"));
             const auto &arpeggios = items(measure.arpeggios);
             for (std::size_t a = 0; a < arpeggios.size(); ++a)
@@ -657,7 +718,11 @@ private:
                 const auto &note = notes[n];
                 const std::string note_pointer = at(pointer, "notes", n);
                 const int alter = note.pitch.alter_or_default();
-                if (std::abs(alter) > 3)
+                if (beyond(note.pitch.octave, max_octave))
+                    error(at(note_pointer, "pitch/octave"), std::format("Octave {} is out of range.", note.pitch.octave));
+                if (note.written && beyond(note.written->diatonic_delta_or_default(), max_diatonic_delta))
+                    error(at(note_pointer, "written/diatonicDelta"), std::format("diatonicDelta is at most {}.", max_diatonic_delta));
+                if (alter < -3 || alter > 3)
                     error(at(note_pointer, "pitch/alter"),
                           std::format("Note \"{}\" has alteration value {}. MNX files are limited to +/-3.", id_or(note), alter));
                 if (note.staff) check_staff(entry.part, *note.staff, at(note_pointer, "staff"));
@@ -703,7 +768,9 @@ private:
         }
     }
 
-    void validate_beams(const std::vector<Beam> &beams, const std::string &pointer, std::uint32_t measure, int depth) {
+    // `parent` is the beam a level of sub-beams belongs to; its events must contain theirs.
+    void validate_beams(const std::vector<Beam> &beams, const std::string &pointer, std::uint32_t part, std::uint32_t measure, int depth,
+                        const Beam *parent) {
         ankerl::unordered_dense::set<std::string> seen;
         for (std::size_t b = 0; b < beams.size(); ++b) {
             const auto &beam = beams[b];
@@ -727,6 +794,9 @@ private:
                     error(beam_pointer, std::format("Beam event \"{}\" is not an event.", std::string(id)));
                     continue;
                 }
+                if (entry->part != part) error(beam_pointer, std::format("Beam event \"{}\" is in another part.", std::string(id)));
+                if (parent && !std::ranges::contains(parent->events, id))
+                    error(beam_pointer, std::format("Sub-beam event \"{}\" is not in its parent beam.", std::string(id)));
                 if (first && entry->measure != current_measure)
                     error(beam_pointer, "First event in beam is not in the same measure as the beam.");
                 else if (entry->measure < current_measure)
@@ -758,7 +828,7 @@ private:
             }
             if (beam.direction && beam.events.size() != 1)
                 error(beam_pointer, "Beam specifies a hook direction but contains more than one event.");
-            validate_beams(items(beam.beams), at(beam_pointer, "beams"), measure, depth + 1);
+            validate_beams(items(beam.beams), at(beam_pointer, "beams"), part, measure, depth + 1, &beam);
         }
     }
 

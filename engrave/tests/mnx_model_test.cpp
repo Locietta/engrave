@@ -251,6 +251,41 @@ TEST(MnxIndex, RejectsSemanticErrors) {
     EXPECT_TRUE(contains(semantic_errors(beam), "/parts/0/measures/0/beams/0"));
 }
 
+TEST(MnxIndex, RejectsValuesTheImporterCannotHandle) {
+    // A fraction has exactly two elements.
+    rejection(with_content(R"({"type": "space", "duration": [1]})"));
+    // A sub-beam names only events of its parent beam.
+    std::string beams(minimal);
+    beams.replace(beams.find("\"sequences\""), 0, R"("beams": [{"events": ["a", "b"], "beams": [{"events": ["c"]}]}], )");
+    beams.replace(beams.find('%'), 1,
+                  R"({"id": "a", "duration": {"base": "16th"}, "rest": {}}, {"id": "b", "duration": {"base": "16th"}, "rest": {}},
+        {"id": "c", "duration": {"base": "16th"}, "rest": {}}, {"duration": {"base": "half"}, "rest": {}},
+        {"duration": {"base": "eighth"}, "rest": {}}, {"duration": {"base": "16th"}, "rest": {}})");
+    EXPECT_TRUE(contains(semantic_errors(beams), "/parts/0/measures/0/beams/0/beams/0"));
+    // Durations whose sum cannot be represented.
+    EXPECT_FALSE(
+        semantic_errors(with_content(R"({"type": "space", "duration": [1, 2147483647]}, {"type": "space", "duration": [1, 2147483629]},
+        {"type": "space", "duration": [1, 2147483587]}, {"duration": {"base": "quarter"}, "rest": {}})"))
+            .empty());
+    // Absurd staff counts, octaves and diatonic deltas, and a tempo at an invalid position.
+    std::string staves(minimal);
+    staves.replace(staves.find("\"measures\": [{\"sequences\""), 0, R"("staves": 10000000, )");
+    staves.replace(staves.find('%'), 1, R"({"duration": {"base": "whole"}, "rest": {}})");
+    EXPECT_TRUE(contains(semantic_errors(staves), "/parts/0/staves"));
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(R"({"duration": {"base": "whole"}, "notes": [{"pitch": {"step": "C", "octave": 2147483647}}]})")),
+        "/parts/0/measures/0/sequences/0/content/0/notes/0/pitch/octave"));
+    EXPECT_TRUE(contains(
+        semantic_errors(with_content(
+            R"({"duration": {"base": "whole"}, "notes": [{"pitch": {"step": "C", "octave": 4}, "written": {"diatonicDelta": 2147483647}}]})")),
+        "/parts/0/measures/0/sequences/0/content/0/notes/0/written/diatonicDelta"));
+    std::string tempo(minimal);
+    tempo.replace(tempo.find("\"time\""), 0,
+                  R"("tempos": [{"bpm": 120, "value": {"base": "quarter"}, "location": {"fraction": [1, 0]}}], )");
+    tempo.replace(tempo.find('%'), 1, R"({"duration": {"base": "whole"}, "rest": {}})");
+    EXPECT_TRUE(contains(semantic_errors(tempo), "/global/measures/0/tempos/0/location/fraction"));
+}
+
 TEST(MnxIndex, OttavaShiftsCoverTheirSpan) {
     const auto root = parse(R"({
       "mnx": {"version": 1},

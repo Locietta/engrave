@@ -59,16 +59,29 @@ error. A missing initial clef is a warning: the importer gives the staff a
 default clef. Exceptions remain only for engine bugs and allocation failures,
 which `Engine::open` still catches as a last resort.
 
-## Deliberate departures from the schema
+## Deliberate departures from the schema and from mnxdom
 
-- Integers must be written as JSON integers in the `int` range: `4.0`, `1e0`
-  and values beyond 32 bits are rejected (JSON Schema counts `4.0` as an
-  integer).
-- `null` for an optional member reads as an absent member.
+- Integers must be JSON numbers with an integral value in the `int` range:
+  `4.0`, `5e-1` and values beyond 32 bits are rejected, while an exponent form
+  of an integer (`1e2`) is read as that integer. JSON Schema counts `4.0` as an
+  integer.
+- `null` for an optional member reads as an absent member; a repeated object
+  key keeps its last value.
 - The contents of comments (`_c`) and vendor extensions (`_x`) are skipped
   without type checks, and the exporter writes neither (mnxdom wrote its own
   provenance under `_x.mnxdom`).
-- `build_index` also rejects what the importer cannot handle safely though the
-  schema allows it: staff numbers outside the part, zero or negative
-  denominators and multiples, non-positive time signature counts, endings past
-  the last measure, and more than 16 dots.
+- mnxdom's validator ignored `unevaluatedProperties`; unknown members are now
+  errors.
+- `build_index` rejects what the importer cannot handle safely though the
+  schema allows it: staff numbers outside the part, more than 64 staves, zero
+  or negative denominators and multiples, non-positive time signature counts,
+  tempos, repeat counts and measure repeats below 1, negative measure numbers, endings and
+  multimeasure rests past the last measure, more than 16 dots, sub-beam
+  events outside their parent beam, beams across parts, octaves beyond ±20,
+  `diatonicDelta` beyond ±7, keys beyond ±30 fifths and transposition
+  intervals beyond 70 steps. Durations and positions whose exact value needs
+  more than 31-bit terms are rejected, which keeps every later rational
+  operation within 64 bits.
+- An ottava that ends at the end of a measure without its own time signature
+  uses the time signature in effect (mnxdom used a whole note), and without
+  any time signature a measure is 4/4 for layout changes as for durations.
