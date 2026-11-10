@@ -374,6 +374,7 @@ target("mnx_model")
     add_packages("glaze", "unordered_dense", {public = true})
     if is_plat("windows") then add_cxxflags("/bigobj") end
     add_includedirs(engine("src/importexport/mnx"), {public = true})
+    add_includedirs(engine("src/importexport/mnx/thirdparty")) -- <music_theory/music_theory.hpp>
     add_files(engine("src/importexport/mnx/model/*.cpp"))
 
 target("iex_mnx")
