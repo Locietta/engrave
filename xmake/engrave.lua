@@ -364,12 +364,21 @@ target("mnxdom")
     -- Upstream compiles with its source root on the include path.
     add_includedirs(path.join(mnx_thirdparty, "mnxdom"))
     add_rules("utils.bin2c", {extensions = {".json"}})
-    add_files(path.join(mnx_thirdparty, "mnxdom/schema/mnx-schema.json"))
+    add_files(engine("src/importexport/mnx/model/mnx-schema.json"))
     add_files(path.join(mnx_thirdparty, "mnxdom/**.cpp"))
+
+-- The engine's MNX document model, generated from the MNX schema (docs/mnx.md).
+-- Its headers are included as "model/...".
+target("mnx_model")
+    set_kind("static")
+    add_packages("glaze", "unordered_dense", {public = true})
+    if is_plat("windows") then add_cxxflags("/bigobj") end
+    add_includedirs(engine("src/importexport/mnx"), {public = true})
+    add_files(engine("src/importexport/mnx/model/*.cpp"))
 
 target("iex_mnx")
     set_kind("static")
-    add_deps("mnxdom", {public = true})
+    add_deps("mnxdom", "mnx_model", {public = true})
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "engraving")
     add_engine_target_defaults()
