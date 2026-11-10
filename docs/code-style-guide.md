@@ -19,7 +19,7 @@ For code that is rewritten or newly written in the engine (the audio/playback pi
   - `amc` containers (`amc v2.8.1`, e.g. `amc::FlatSet` from `<amc/flatset.hpp>` or `amc::vector` from `<amc/vector.hpp>`).
   - `ankerl::unordered_dense` (`unordered_dense v5.3.3` via `<ankerl/unordered_dense.h>`) for lookup-only hash tables or sets.
 - **No Boost**: Boost is not part of the engine dependencies and must not be introduced.
-- **JSON via glaze**: Build and parse JSON with `glaze` (pinned in `xmake/packages/g/glaze`), through the engine's `engrave/src/score/json.h` aliases and writer. nlohmann::json is not a dependency (the vendored mnxdom and json-schema-validator are ported to glaze), and public headers (`engrave/include/engrave`) must stay free of every JSON library.
+- **JSON via glaze**: Build and parse JSON with `glaze` (pinned in `xmake/packages/g/glaze`), through the engine's `engrave/src/score/json.h` aliases and writer. nlohmann::json is not a dependency (MNX is read and written by the engine's own glaze model, `docs/mnx.md`), and public headers (`engrave/include/engrave`) must stay free of every JSON library.
 
 The remaining guidelines here apply to all new and touched code across the engine.
 

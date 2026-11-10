@@ -22,7 +22,9 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <unordered_set>
+#include <variant>
 
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/chord.h"
@@ -59,7 +61,7 @@ namespace mu::iex::mnxio {
 //   exportDrumsetKit
 //---------------------------------------------------------
 
-void MnxExporter::export_drumset_kit(const Part *part, const Instrument *instrument, mnx::Part &mnx_part) {
+void MnxExporter::export_drumset_kit(const Part *part, const Instrument *instrument, model::Part &mnx_part) {
     IF_ASSERT_FAILED(part && instrument) { return; }
     IF_ASSERT_FAILED(instrument->use_drumset()) { return; }
 
@@ -77,8 +79,8 @@ void MnxExporter::export_drumset_kit(const Part *part, const Instrument *instrum
     }
     const int middle_line = staff_type ? staff_type->middle_line() : 4;
 
-    auto mnx_kit = mnx_part.ensure_kit();
-    auto mnx_sounds = mnx_document_.global().ensure_sounds();
+    auto &mnx_kit = ensure(mnx_part.kit);
+    auto &mnx_sounds = ensure(root_.global.sounds);
 
     for (int pitch = 0; pitch < ::mu::engraving::drum_instruments; ++pitch) {
         if (!drumset->is_valid(pitch)) {
@@ -89,19 +91,22 @@ void MnxExporter::export_drumset_kit(const Part *part, const Instrument *instrum
         const int line = drumset->line(pitch);
         const int staff_position = middle_line - line;
 
-        auto kit_component = mnx_kit.append(kit_id, staff_position);
+        model::KitComponent kit_component;
+        kit_component.staff_position = staff_position;
         String name = drumset->name(pitch);
         if (name.is_empty()) {
             name = String(u"Percussion note");
         }
-        kit_component.set_name(name.to_std_string());
+        kit_component.name = name.to_std_string();
 
         const std::string sound_id = "drum-midi-" + std::to_string(pitch);
-        kit_component.set_sound(sound_id);
-        if (!mnx_sounds.contains(sound_id)) {
-            auto sound = mnx_sounds.append(sound_id);
-            sound.set_name(name.to_std_string());
-            sound.set_midiNumber(pitch);
+        kit_component.sound = model::Id(sound_id);
+        mnx_kit.emplace_back(kit_id, std::move(kit_component));
+        if (std::ranges::none_of(mnx_sounds, [&](const auto &entry) { return entry.first == sound_id; })) {
+            model::Sound sound;
+            sound.name = name.to_std_string();
+            sound.midi_number = pitch;
+            mnx_sounds.emplace_back(sound_id, std::move(sound));
         }
     }
 }
@@ -111,7 +116,7 @@ void MnxExporter::export_drumset_kit(const Part *part, const Instrument *instrum
 //   export clefs for a single measure
 //---------------------------------------------------------
 
-static void append_clefs_for_measure(const Part *part, const Measure *measure, mnx::part::Measure &mnx_measure) {
+static void append_clefs_for_measure(const Part *part, const Measure *measure, model::PartMeasure &mnx_measure) {
     if (part && part->instrument() && part->instrument()->use_drumset()) {
         /// @todo Export percussion and tab staves/clefs when MNX supports them.
         return;
@@ -120,7 +125,6 @@ static void append_clefs_for_measure(const Part *part, const Measure *measure, m
     const bool is_first_measure = (measure->prev_measure() == nullptr);
     const size_t staves = part->nstaves();
     const TrackRange track_range = part->track_range();
-    std::optional<mnx::Array<mnx::part::PositionedClef>> mnx_clefs;
 
     constexpr SegmentType cleft_types = SegmentType::CLEF | SegmentType::HEADER_CLEF;
     for (Segment *segment = measure->first(cleft_types); segment; segment = segment->next(cleft_types)) {
@@ -139,24 +143,22 @@ static void append_clefs_for_measure(const Part *part, const Measure *measure, m
                 continue;
             }
 
-            const auto required = to_mnx_clef(clef->clef_type());
-            if (!required) {
+            const auto mnx_clef_value = to_mnx_clef(clef->clef_type());
+            if (!mnx_clef_value) {
                 LOGW() << "Skipping nsupported clef type in MNX export: " << int(clef->clef_type());
                 continue;
             }
 
-            if (!mnx_clefs) {
-                mnx_clefs = mnx_measure.ensure_clefs();
-            }
-
-            auto mnx_clef = mnx_clefs->append(required->clefSign, required->staffPosition, required->octaveAdjustment);
+            model::PositionedClef mnx_clef;
+            mnx_clef.clef = *mnx_clef_value;
             if (staves > 1) {
                 const size_t staff_idx = (track - track_range.start_track) / ::mu::engraving::voices;
-                mnx_clef.set_staff(static_cast<int>(staff_idx + 1));
+                mnx_clef.staff = static_cast<int>(staff_idx + 1);
             }
             if (r_tick.is_not_zero()) {
-                mnx_clef.ensure_position(mnx::FractionValue(r_tick.numerator(), r_tick.denominator()));
+                mnx_clef.position = model::RhythmicPosition{.fraction = to_mnx_fraction(r_tick)};
             }
+            ensure(mnx_measure.clefs).push_back(std::move(mnx_clef));
         }
     }
 }
@@ -219,29 +221,29 @@ static const ChordRest *find_first_chord_rest(const Slur *s) {
     }
 }
 
-static mnx::MultiStaffOrientation mnx_multi_staff_orient_from_direction(const EngravingItem *item) {
+static model::MultiStaffOrientation mnx_multi_staff_orient_from_direction(const EngravingItem *item) {
     switch (item->get_property(Pid::DIRECTION).value<DirectionV>()) {
-        case DirectionV::UP: return mnx::MultiStaffOrientation::Above;
-        case DirectionV::DOWN: return mnx::MultiStaffOrientation::Below;
+        case DirectionV::UP: return model::MultiStaffOrientation::ABOVE;
+        case DirectionV::DOWN: return model::MultiStaffOrientation::BELOW;
         case DirectionV::AUTO:
             if (item->part()->staves().size() > 1) {
                 if (item->get_property(Pid::CENTER_BETWEEN_STAVES) == AutoOnOff::ON) {
-                    return mnx::MultiStaffOrientation::Between;
+                    return model::MultiStaffOrientation::BETWEEN;
                 }
             }
     }
 
-    return mnx::MultiStaffOrientation::Auto;
+    return model::MultiStaffOrientation::AUTO;
 }
 
-static void export_mnx_voice_assignment(mnx::part::DynamicGroupBase &mnx_dynamic, int mnx_staff_num, VoiceAssignment voice_assignment,
+static void export_mnx_voice_assignment(model::DynamicGroup &mnx_dynamic, int mnx_staff_num, VoiceAssignment voice_assignment,
                                         track_idx_t cur_track_idx) {
     switch (voice_assignment) {
         case VoiceAssignment::CURRENT_VOICE_ONLY:
-            mnx_dynamic.set_staff(mnx_staff_num);
-            mnx_dynamic.set_voice(make_mnx_voice_id_from_track(mnx_dynamic.staff_or(1), cur_track_idx));
+            mnx_dynamic.staff = mnx_staff_num;
+            mnx_dynamic.voice = make_mnx_voice_id_from_track(mnx_staff_num, cur_track_idx);
             break;
-        case VoiceAssignment::ALL_VOICE_IN_STAFF: mnx_dynamic.set_staff(mnx_staff_num); break;
+        case VoiceAssignment::ALL_VOICE_IN_STAFF: mnx_dynamic.staff = mnx_staff_num; break;
         case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT: break;
     }
 }
@@ -261,7 +263,7 @@ void MnxExporter::create_volta(const Volta *volta) {
     }
 
     const size_t mnx_measure_index = mnx_measure_index_from_measure(start_measure);
-    auto mnx_measure = mnx_document().global().measures().at(mnx_measure_index);
+    auto &mnx_measure = root_.global.measures.at(mnx_measure_index);
 
     const Fraction end_tick = volta->tick2() - Fraction::eps();
     Measure *end_measure = start_measure->score()->tick2measure(end_tick);
@@ -288,14 +290,12 @@ void MnxExporter::create_volta(const Volta *volta) {
         return;
     }
 
-    auto mnx_ending = mnx_measure.ensure_ending(duration);
-    mnx_ending.set_open(volta->volta_type() == Volta::Type::OPEN);
+    auto &mnx_ending = ensure(mnx_measure.ending);
+    mnx_ending.duration = duration;
+    mnx_ending.open = volta->volta_type() == Volta::Type::OPEN;
     const std::vector<int> endings = volta->endings();
     if (!endings.empty()) {
-        auto mnx_numbers = mnx_ending.ensure_numbers();
-        for (int ending : endings) {
-            mnx_numbers.push_back(ending);
-        }
+        mnx_ending.numbers = endings;
     }
 }
 
@@ -317,14 +317,16 @@ void MnxExporter::create_slur(const Slur *s) {
 
     if (const ChordRest *start_cr = find_first_chord_rest(s)) {
         const ChordRest *end_cr = start_cr == s->start_element() ? to_chord_rest(s->end_element()) : to_chord_rest(s->start_element());
-        auto mnx_event = mnx_event_from_cr(start_cr);
-        auto end_event = end_cr ? mnx_event_from_cr(end_cr) : std::nullopt;
+        model::Event *mnx_event = mnx_event_from_cr(start_cr);
+        model::Event *end_event = end_cr ? mnx_event_from_cr(end_cr) : nullptr;
         if (mnx_event && end_event) {
-            auto mnx_slur = mnx_event->ensure_slurs().append(end_cr->eid().to_std_string());
-            mnx_slur.set_lineType(to_mnx_slur_line_type(s->style_type()));
+            model::Slur mnx_slur;
+            mnx_slur.target = model::Id(end_cr->eid().to_std_string());
+            mnx_slur.line_type = to_mnx_slur_line_type(s->style_type());
             if (s->slur_direction() != DirectionV::AUTO) {
-                mnx_slur.set_side(s->up() ? mnx::SlurTieSide::Up : mnx::SlurTieSide::Down);
+                mnx_slur.side = s->up() ? model::SlurSide::UP : model::SlurSide::DOWN;
             }
+            ensure(mnx_event->slurs).push_back(std::move(mnx_slur));
             /// @todo export side and sideEnd in opposite directions, if/when MuseScore supports it.
             /// @todo endNote and startNote are not supported by MuseScore (yet?)
         }
@@ -374,29 +376,32 @@ void MnxExporter::create_hairpin(const Hairpin *hairpin) {
 
     const size_t mnx_measure_index = mnx_measure_index_from_measure(start_measure);
     const auto [mnx_part_idx, mnx_staff_num] = mnx_part_staff_from_staff_idx(start_staff->idx());
-    auto mnx_part = mnx_document().parts().at(mnx_part_idx);
-    auto mnx_measure = mnx_part.measures().at(mnx_measure_index);
+    auto &mnx_measure = root_.parts.at(mnx_part_idx).measures.at(mnx_measure_index);
 
     const Fraction start_offset = hairpin->tick() - start_measure->tick();
     const Fraction end_offset = hairpin->tick2() - end_measure->tick();
     const std::string end_measure_id = get_or_assign_eid(const_cast<Measure *>(end_measure)).to_std_string();
 
-    auto mnx_hairpin = mnx_measure.ensure_dynamics().appendGradual(
-        hairpin->hairpin_type() == HairpinType::CRESC_HAIRPIN ? mnx::DynamicWedgeType::Increasing : mnx::DynamicWedgeType::Decreasing,
-        to_mnx_fraction_value(start_offset).reduced(),
-        mnx::MeasureRhythmicPosition::make(end_measure_id, to_mnx_fraction_value(end_offset).reduced()));
+    model::DynamicGroup mnx_hairpin;
+    mnx_hairpin.type = model::DynamicGroupType::GRADUAL;
+    mnx_hairpin.wedge_type =
+        hairpin->hairpin_type() == HairpinType::CRESC_HAIRPIN ? model::WedgeType::INCREASING : model::WedgeType::DECREASING;
+    mnx_hairpin.position = model::RhythmicPosition{.fraction = to_mnx_fraction(start_offset.reduced())};
+    mnx_hairpin.end = model::MeasureRhythmicPosition{.measure = model::Id(end_measure_id),
+                                                     .position = {.fraction = to_mnx_fraction(end_offset.reduced())}};
 
     if (end_staff && end_staff->idx() != start_staff->idx()) {
         const auto [mnx_end_part_idx, mnx_end_staff_num] = mnx_part_staff_from_staff_idx(end_staff->idx());
         if (mnx_end_part_idx == mnx_part_idx) {
-            mnx_hairpin.set_staffEnd(mnx_end_staff_num);
+            mnx_hairpin.staff_end = mnx_end_staff_num;
         } else {
             LOGW() << "Hairpin ends in a different part and will be exported using the start staff/voice only.";
         }
     }
 
-    mnx_hairpin.set_or_clear_orient(mnx_multi_staff_orient_from_direction(hairpin));
+    set_unless_default(mnx_hairpin.orient, mnx_multi_staff_orient_from_direction(hairpin), model::MultiStaffOrientation::AUTO);
     export_mnx_voice_assignment(mnx_hairpin, mnx_staff_num, hairpin->voice_assignment(), hairpin->track());
+    ensure(mnx_measure.dynamics).push_back(std::move(mnx_hairpin));
 }
 
 //---------------------------------------------------------
@@ -412,7 +417,7 @@ void MnxExporter::create_ottava(const Ottava *ottava) {
         return;
     }
 
-    const std::optional<mnx::OttavaAmount> amount = to_mnx_ottava_amount(ottava->ottava_type());
+    const std::optional<model::OttavaAmount> amount = to_mnx_ottava_amount(ottava->ottava_type());
     if (!amount) {
         LOGW() << "Skipping unsupported ottava type in MNX export: " << int(ottava->ottava_type());
         return;
@@ -454,13 +459,14 @@ void MnxExporter::create_ottava(const Ottava *ottava) {
     const Part *part = staff->part();
     const auto [mnx_part_idx, mnx_staff_num] = mnx_part_staff_from_staff_idx(staff->idx());
     const size_t mnx_measure_index = mnx_measure_index_from_measure(start_measure);
-    auto mnx_part = mnx_document().parts().at(mnx_part_idx);
-    auto mnx_measure = mnx_part.measures().at(mnx_measure_index);
+    auto &mnx_measure = root_.parts.at(mnx_part_idx).measures.at(mnx_measure_index);
     const std::string end_measure_id = get_or_assign_eid(const_cast<Measure *>(end_measure)).to_std_string();
 
-    auto mnx_ottava = mnx_measure.ensure_ottavas().append(
-        amount.value(), to_mnx_fraction_value(start_offset).reduced(),
-        mnx::MeasureRhythmicPosition::make(end_measure_id, to_mnx_fraction_value(end_offset).reduced()));
+    model::Ottava mnx_ottava;
+    mnx_ottava.value = amount.value();
+    mnx_ottava.position = model::RhythmicPosition{.fraction = to_mnx_fraction(start_offset.reduced())};
+    mnx_ottava.end = model::MeasureRhythmicPosition{.measure = model::Id(end_measure_id),
+                                                    .position = {.fraction = to_mnx_fraction(end_offset.reduced())}};
 
     // toChord only asserts in debug builds, so the type has to be checked first: an ottava
     // ending on a rest would otherwise yield a bogus Chord* and read past it here.
@@ -468,13 +474,14 @@ void MnxExporter::create_ottava(const Ottava *ottava) {
         const Chord *end_c = to_chord(ottava->end_element());
         if (!end_c->grace_notes_before().empty()) {
             // Ensure grace notes before the end of the ottava are included.
-            mnx_ottava.end().position().set_graceIndex(0);
+            mnx_ottava.end.position.grace_index = 0;
         }
     }
 
     if (part && part->nstaves() > 1) {
-        mnx_ottava.set_staff(mnx_staff_num);
+        mnx_ottava.staff = mnx_staff_num;
     }
+    ensure(mnx_measure.ottavas).push_back(std::move(mnx_ottava));
 
     /// @todo map track-specific ottava to ottava.voice() if MuseScore decides to implements it.
 }
@@ -484,6 +491,33 @@ void MnxExporter::create_ottava(const Ottava *ottava) {
 //---------------------------------------------------------
 
 void MnxExporter::export_spanners() {
+    // All content exists now, so its events have their final addresses.
+    events_by_id_.clear();
+    const auto index_events = [this](this const auto &self, auto &events) -> void {
+        for (auto &item : events) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(item)>, model::Event>) {
+                if (item.id) events_by_id_.emplace(std::string(*item.id), &item);
+            } else {
+                std::visit(
+                    [&]<class T>(T &value) {
+                        if constexpr (std::is_same_v<T, model::Event>) {
+                            if (value.id) events_by_id_.emplace(std::string(*value.id), &value);
+                        } else if constexpr (std::is_same_v<T, model::Space>) {
+                        } else {
+                            self(value.content);
+                        }
+                    },
+                    item);
+            }
+        }
+    };
+    for (auto &part : root_.parts) {
+        for (auto &measure : part.measures) {
+            for (auto &sequence : measure.sequences) {
+                index_events(sequence.content);
+            }
+        }
+    }
     const SpannerMap::IntervalList &spanners =
         score_->spanner_map().find_overlapping(score_->first_measure()->tick().ticks(), score_->last_measure()->end_tick().ticks());
 
@@ -507,7 +541,7 @@ void MnxExporter::export_spanners() {
 //   emit MNX measure-level arpeggios and non-arpeggios
 //---------------------------------------------------------
 
-void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mnx::part::Measure &mnx_measure) {
+void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, model::PartMeasure &mnx_measure) {
     IF_ASSERT_FAILED(part && measure) { return; }
 
     const TrackRange track_range = part->track_range();
@@ -547,10 +581,12 @@ void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mnx
         return bottom_chord;
     };
 
-    auto set_mnx_grace_index = [](mnx::part::ArpeggioBase &item, const MnxChordTargetPosition &position) {
+    auto mnx_position = [](const MnxChordTargetPosition &position) {
+        model::RhythmicPosition result{.fraction = position.fraction};
         if (position.grace_index) {
-            item.position().set_graceIndex(position.grace_index.value());
+            result.grace_index = static_cast<int>(position.grace_index.value());
         }
+        return result;
     };
 
     auto process_arpeggio = [&](Chord *chord) {
@@ -595,34 +631,30 @@ void MnxExporter::create_arpeggios(const Part *part, const Measure *measure, mnx
         if (!position) {
             return;
         }
-        const mnx::IdPair::Required span =
-            mnx::IdPair::make(get_or_assign_eid(top_note).to_std_string(), get_or_assign_eid(bottom_note).to_std_string());
+        const model::IdPair span{.end = model::Id(get_or_assign_eid(bottom_note).to_std_string()),
+                                 .start = model::Id(get_or_assign_eid(top_note).to_std_string())};
 
         switch (arpeggio->arpeggio_type()) {
             case ArpeggioType::NORMAL: {
-                auto mnx_arpeggio = mnx_measure.ensure_arpeggios().append(position->fraction, span);
-                set_mnx_grace_index(mnx_arpeggio, *position);
+                ensure(mnx_measure.arpeggios).push_back(model::Arpeggio{.position = mnx_position(*position), .span = span});
                 break;
             }
             case ArpeggioType::UP:
             case ArpeggioType::UP_STRAIGHT: {
-                auto mnx_arpeggio = mnx_measure.ensure_arpeggios().append(position->fraction, span);
-                mnx_arpeggio.set_arrow(true);
-                mnx_arpeggio.set_direction(mnx::MarkingUpDownAuto::Up);
-                set_mnx_grace_index(mnx_arpeggio, *position);
+                ensure(mnx_measure.arpeggios)
+                    .push_back(model::Arpeggio{
+                        .arrow = true, .direction = model::UpDownAuto::UP, .position = mnx_position(*position), .span = span});
                 break;
             }
             case ArpeggioType::DOWN:
             case ArpeggioType::DOWN_STRAIGHT: {
-                auto mnx_arpeggio = mnx_measure.ensure_arpeggios().append(position->fraction, span);
-                mnx_arpeggio.set_arrow(true);
-                mnx_arpeggio.set_direction(mnx::MarkingUpDownAuto::Down);
-                set_mnx_grace_index(mnx_arpeggio, *position);
+                ensure(mnx_measure.arpeggios)
+                    .push_back(model::Arpeggio{
+                        .arrow = true, .direction = model::UpDownAuto::DOWN, .position = mnx_position(*position), .span = span});
                 break;
             }
             case ArpeggioType::BRACKET: {
-                auto mnx_non_arpeggio = mnx_measure.ensure_nonArpeggios().append(position->fraction, span);
-                set_mnx_grace_index(mnx_non_arpeggio, *position);
+                ensure(mnx_measure.non_arpeggios).push_back(model::NonArpeggio{.position = mnx_position(*position), .span = span});
                 break;
             }
             default: LOGW() << "Skipping unsupported arpeggio type: " << static_cast<int>(arpeggio->arpeggio_type()); break;
@@ -690,7 +722,7 @@ static bool split_dynamic_text(const Dynamic *dynamic, String &prefix, std::vect
 //   export a dynamic text annotation
 //---------------------------------------------------------
 
-static void create_dynamic(const Dynamic *dynamic, const Fraction &r_tick, int mnx_staff_num, mnx::part::Measure &mnx_measure) {
+static void create_dynamic(const Dynamic *dynamic, const Fraction &r_tick, int mnx_staff_num, model::PartMeasure &mnx_measure) {
     IF_ASSERT_FAILED(dynamic) { return; }
 
     String prefix{};
@@ -748,44 +780,41 @@ static void create_dynamic(const Dynamic *dynamic, const Fraction &r_tick, int m
         return;
     }
 
-    auto mnx_dynamic = [&]() -> mnx::part::DynamicGroupBase {
-        using DynRelVal = mnx::DynamicRelativeValue;
-        if (is_relative) {
-            auto rel_value = saw_increase ? DynRelVal::Louder : DynRelVal::Softer;
-            auto dyn = mnx_measure.ensure_dynamics().appendRelative(rel_value, to_mnx_fraction_value(r_tick));
-            if (mapping.value) {
-                dyn.set_value(mapping.value.value());
-            }
-            return dyn;
-        } else if (mapping.is_accent) {
-            auto dyn = mnx_measure.ensure_dynamics().appendAccent(mapping.value.value(), to_mnx_fraction_value(r_tick));
-            // accentPrefix and accentSuffix default to "s" and "z", so anything else must be
-            // written out. set_or_clear_ omits them when they match, as the MNX examples do.
-            dyn.set_or_clear_accentPrefix(mapping.accent_prefix);
-            dyn.set_or_clear_accentSuffix(mapping.accent_suffix);
-            if (mapping.residual_value) {
-                dyn.set_residualValue(mapping.residual_value.value());
-            }
-            return dyn;
-        }
-        return mnx_measure.ensure_dynamics().appendImmediate(mapping.value.value(), to_mnx_fraction_value(r_tick));
-    }();
+    model::DynamicGroup mnx_dynamic;
+    mnx_dynamic.position = model::RhythmicPosition{.fraction = to_mnx_fraction(r_tick)};
+    if (is_relative) {
+        mnx_dynamic.type = model::DynamicGroupType::RELATIVE;
+        mnx_dynamic.relative_value = saw_increase ? model::RelativeDynamicValue::LOUDER : model::RelativeDynamicValue::SOFTER;
+        mnx_dynamic.value = mapping.value;
+    } else if (mapping.is_accent) {
+        mnx_dynamic.type = model::DynamicGroupType::ACCENT;
+        mnx_dynamic.value = mapping.value;
+        // accentPrefix and accentSuffix default to "s" and "z", so anything else must be
+        // written out; they are omitted when they match, as the MNX examples do.
+        set_unless_default(mnx_dynamic.accent_prefix, mapping.accent_prefix, model::DynamicPrefix::S);
+        set_unless_default(mnx_dynamic.accent_suffix, mapping.accent_suffix, model::DynamicSuffix::Z);
+        mnx_dynamic.residual_value = mapping.residual_value;
+    } else {
+        mnx_dynamic.type = model::DynamicGroupType::IMMEDIATE;
+        mnx_dynamic.value = mapping.value;
+    }
 
     if (!prefix.empty()) {
-        mnx_dynamic.set_prefix(prefix.to_std_string());
+        mnx_dynamic.prefix = prefix.to_std_string();
     }
     if (!suffix.empty()) {
-        mnx_dynamic.set_suffix(suffix.to_std_string());
+        mnx_dynamic.suffix = suffix.to_std_string();
     }
     if (!sym_ids.empty()) {
-        auto mnx_glyphs = mnx_dynamic.ensure_glyphs();
+        auto &mnx_glyphs = ensure(mnx_dynamic.glyphs);
         for (const SymId sym : sym_ids) {
             mnx_glyphs.push_back(SymNames::name_for_sym_id(sym).ascii());
         }
     }
 
-    mnx_dynamic.set_or_clear_orient(mnx_multi_staff_orient_from_direction(dynamic));
+    set_unless_default(mnx_dynamic.orient, mnx_multi_staff_orient_from_direction(dynamic), model::MultiStaffOrientation::AUTO);
     export_mnx_voice_assignment(mnx_dynamic, mnx_staff_num, dynamic->voice_assignment(), dynamic->track());
+    ensure(mnx_measure.dynamics).push_back(std::move(mnx_dynamic));
 }
 
 //---------------------------------------------------------
@@ -793,7 +822,7 @@ static void create_dynamic(const Dynamic *dynamic, const Fraction &r_tick, int m
 //   export dynamics, staff text, etc. for a single measure
 //---------------------------------------------------------
 
-static void export_text_annotations(const Part *part, const Measure *measure, mnx::part::Measure &mnx_measure) {
+static void export_text_annotations(const Part *part, const Measure *measure, model::PartMeasure &mnx_measure) {
     const size_t staves = part->nstaves();
     const track_idx_t part_start_track = part->track_range().start_track;
     constexpr SegmentType time_segments = SegmentType::DURATION;
@@ -822,7 +851,7 @@ static void export_text_annotations(const Part *part, const Measure *measure, mn
 
 // Returns true if the measure belongs to a measure repeat group, in which case its content
 // is represented by the repeat rather than by sequences.
-static bool export_measure_repeat(const Part *part, const Measure *measure, mnx::part::Measure &mnx_measure) {
+static bool export_measure_repeat(const Part *part, const Measure *measure, model::PartMeasure &mnx_measure) {
     /// @todo Export MeasureRepeat counter, displayNumber, and staffPosition. MuseScore keeps
     /// none of them per element: the counter comes from the repeat's place in the run,
     /// whether `number` is drawn is fixed for 2- and 4-bar repeats and score-wide styled for
@@ -846,7 +875,7 @@ static bool export_measure_repeat(const Part *part, const Measure *measure, mnx:
 
     // The group is declared on its first measure; the rest are continuations.
     if (measure->measure_repeat_count(staff_idx) == 1) {
-        mnx_measure.ensure_measureRepeat(num_measures);
+        mnx_measure.measure_repeat = model::MeasureRepeat{.number = num_measures};
     }
     return true;
 }
@@ -860,7 +889,7 @@ bool MnxExporter::create_parts() {
         return false;
     }
 
-    auto mnx_parts = mnx_document_.parts();
+    auto &mnx_parts = root_.parts;
     staff_to_part_staff_.clear();
     exported_staves_.clear();
     bool has_part = false;
@@ -882,32 +911,33 @@ bool MnxExporter::create_parts() {
             continue;
         }
 
-        auto mnx_part = mnx_parts.append();
-        mnx_part.set_id(get_or_assign_eid(part).to_std_string());
+        const size_t mnx_part_index = mnx_parts.size();
+        auto &mnx_part = mnx_parts.emplace_back();
+        mnx_part.id = model::Id(get_or_assign_eid(part).to_std_string());
         has_part = true;
 
         const String long_name = part->long_name();
         if (!long_name.is_empty()) {
-            mnx_part.set_name(long_name.to_std_string());
+            mnx_part.name = long_name.to_std_string();
         }
 
         const String short_name = part->short_name();
         if (!short_name.is_empty()) {
-            mnx_part.set_shortName(short_name.to_std_string());
+            mnx_part.short_name = short_name.to_std_string();
         }
 
-        mnx_part.set_or_clear_staves(static_cast<int>(part->nstaves()));
+        set_unless_default(mnx_part.staves, static_cast<int>(part->nstaves()), 1);
 
         const Instrument *instrument = part->instrument();
         if (instrument) {
             const Interval transpose = instrument->transpose();
             if (!transpose.is_zero()) {
                 const Interval mnx_transpose(-transpose.diatonic, -transpose.chromatic);
-                auto mnx_transposition =
-                    mnx_part.ensure_transposition(mnx::Interval::make(mnx_transpose.diatonic, mnx_transpose.chromatic));
+                auto &mnx_transposition = ensure(mnx_part.transposition);
+                mnx_transposition.interval =
+                    model::Interval{.half_steps = mnx_transpose.chromatic, .staff_distance = mnx_transpose.diatonic};
                 const PreferSharpFlat prefer = part->prefer_sharp_flat();
-                const int flip_at = to_mnx_key_fifths_flip_value(prefer, mnx_transpose);
-                mnx_transposition.set_keyFifthsFlipAt(flip_at);
+                mnx_transposition.key_fifths_flip_at = to_mnx_key_fifths_flip_value(prefer, mnx_transpose);
             }
             if (instrument->use_drumset()) {
                 export_drumset_kit(part, instrument, mnx_part);
@@ -916,14 +946,14 @@ bool MnxExporter::create_parts() {
 
         for (staff_idx_t s = 0; s < part->nstaves(); ++s) {
             if (const Staff *staff = part->staff(s)) {
-                staff_to_part_staff_.emplace(staff->idx(), std::make_pair(mnx_part.calcArrayIndex(), static_cast<int>(s + 1)));
+                staff_to_part_staff_.emplace(staff->idx(), std::make_pair(mnx_part_index, static_cast<int>(s + 1)));
                 exported_staves_.push_back(score_->staff(staff->idx()));
             }
         }
 
-        auto mnx_measures = mnx_part.measures();
+        auto &mnx_measures = mnx_part.measures;
         for (const Measure *measure = score_->first_measure(); measure; measure = measure->next_measure()) {
-            auto mnx_measure = mnx_measures.append();
+            auto &mnx_measure = mnx_measures.emplace_back();
 
             append_clefs_for_measure(part, measure, mnx_measure);
             // A measure repeat stands in for the measure's content, so the sequences stay
@@ -941,9 +971,8 @@ bool MnxExporter::create_parts() {
     export_spanners();
 
     if (!lyric_line_ids_.empty()) {
-        auto mnx_lyrics_global = mnx_document().global().ensure_lyrics();
         /// @todo line metadata if MNX spec expands to include anything we can export.
-        auto mnx_line_order = mnx_lyrics_global.ensure_lineOrder();
+        auto &mnx_line_order = ensure(ensure(root_.global.lyrics).line_order);
         for (const auto &line_id : lyric_line_ids_) {
             mnx_line_order.push_back(line_id);
         }

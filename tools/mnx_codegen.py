@@ -107,6 +107,7 @@ class Generator:
     def __init__(self, schema):
         self.defs = schema["$defs"]
         self.root = schema["$ref"].split("/")[-1]
+        self.version = int(re.search(r"/(\d+)$", schema["$id"]).group(1))
         self.structs = {}  # def name -> [(key, cpp type, required)], None for variant lists
         self.enums = {}  # C++ name -> [(json value, constant)]
         self.checked_enums = set()  # enums read through detail::read_enum
@@ -207,6 +208,9 @@ class Generator:
         w('#include "model_support.h"')
         w("")
         w(f"namespace {NAMESPACE} {{")
+        w("")
+        w("// The MNX schema version, the last segment of the schema $id.")
+        w(f"inline constexpr int schema_version = {self.version};")
         w("")
         for name, values in sorted(self.enums.items()):
             integral = isinstance(values[0][0], int)

@@ -1,9 +1,9 @@
 """Validate exported MNX files against the MNX JSON schema (draft 2020-12).
 
-mnxdom's C++ validator implements JSON Schema draft 7 and silently skips
-2020-12 keywords, so the engine gate checks the files that
-`engrave_mnx_import_test --mnx-out=DIR` writes with a full 2020-12 validator.
-Negative controls prove the validator rejects what the C++ one accepts.
+The engine's MNX model enforces the schema through its generated types; the
+engine gate also checks the files that `engrave_mnx_import_test --mnx-out=DIR`
+writes with an independent full 2020-12 validator. Negative controls prove the
+validator rejects invalid documents.
 """
 
 import argparse

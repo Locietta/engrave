@@ -90,6 +90,10 @@ int flag_count(NoteValueBase base) {
     }
 }
 
+int step_index(Step step) { return static_cast<int>(to_theory(step)); }
+
+Step step_at(int index) { return from_theory(static_cast<music_theory::NoteName>(((index % 7) + 7) % 7)); }
+
 SpelledPitch spelled(const Pitch &pitch) { return {pitch.step, pitch.octave, pitch.alter_or_default()}; }
 
 bool same_pitch(const Pitch &lhs, const Pitch &rhs) {

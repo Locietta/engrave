@@ -11,14 +11,17 @@
 #include "importexport/mnx/internal/import/mnximporter.h"
 
 namespace engrave {
-music::ScoreProject open_mnx(music::EngineContext &context, const std::string &bytes) {
-    auto doc = mnx::Document::create(bytes.data(), bytes.size());
-    if (!mnx::validation::schemaValidate(doc) || doc.global().measures().empty() || doc.parts().empty())
-        throw std::invalid_argument("Invalid MNX schema or empty score");
+std::expected<music::ScoreProject, std::string> open_mnx(music::EngineContext &context, const std::string &bytes) {
+    // MuseScore cannot target grace notes or voices with ottavas.
+    const mu::iex::mnxio::model::IndexOptions options{.ottavas_respect_grace_targets = false, .ottavas_respect_voice_targets = false};
+    auto doc = mu::iex::mnxio::model::load_document(bytes, options);
+    if (!doc) return std::unexpected(std::move(doc.error().message));
+    if (doc->root.global.measures.empty() || doc->root.parts.empty())
+        return std::unexpected(std::string("the score has no measures or no parts"));
     mu::engraving::ScoreLoad loading;
     auto owned = mu::engraving::EngravingProject::create(context.engraving());
     owned->set_file_info_provider(std::make_shared<mu::engraving::LocalFileInfoProvider>("Untitled.mnx"));
-    mu::iex::mnxio::MnxImporter importer(owned->master_score(), std::move(doc));
+    mu::iex::mnxio::MnxImporter importer(owned->master_score(), *std::move(doc));
     importer.import_mnx();
     auto &project = *owned;
 
