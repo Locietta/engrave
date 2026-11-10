@@ -54,6 +54,12 @@ jobs:
       - name: Golden comparator and inventory mutations
         run: python tests/test_inventory.py
 
+      - name: MNX model is generated from the schema
+        run: >
+          python tools/mnx_codegen.py --check
+          src/importexport/mnx/model/mnx-schema.json
+          src/importexport/mnx/model/mnx_model.h
+
       - name: Playback witness controls
         run: |
           python tests/test_playback_witness.py
@@ -180,7 +186,7 @@ jobs:
           $targets = @(
             'engrave_api_test', 'engrave_handles_test', 'engrave_describe_test',
             'engrave_read_test', 'engrave_ops_test', 'engrave_op_policy_test',
-            'engrave_gp_import_test', 'engrave_mnx_import_test',
+            'engrave_gp_import_test', 'engrave_mnx_import_test', 'engrave_mnx_model_test',
             'diagnostics_test', 'io_boundary_test',
             'engraving_playback_tests', 'mpe_tests', 'example_embedder'
           )
@@ -222,6 +228,7 @@ jobs:
             engrave_op_policy_test = @()
             engrave_gp_import_test = @("--assets=$assets")
             engrave_mnx_import_test = @("--assets=$assets", "--mnx-out=$mnxOut")
+            engrave_mnx_model_test = @()
             diagnostics_test       = @()
             io_boundary_test       = @()
           }
@@ -254,4 +261,4 @@ jobs:
         run: >
           python tests/engrave_testing/check_mnx_schema.py
           "$env:RUNNER_TEMP/mnx-export"
-          src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json
+          src/importexport/mnx/model/mnx-schema.json

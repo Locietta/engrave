@@ -137,7 +137,7 @@ build dependencies are explicitly marked as such.
 | **IntervalTree** | `src/engraving/thirdparty/intervaltree/` | Erik Garrison (https://github.com/ekg/intervaltree) | MIT License |
 | **BeatRoot** | `src/importexport/midi/thirdparty/beatroot/` | Simon Dixon & Chris Cannam, Queen Mary Univ. of London | GNU General Public License v2.0 or later (`GPL-2.0-or-later`) |
 | **mnxdom** | `src/importexport/mnx/thirdparty/mnxdom/` | Robert Patterson (https://github.com/rpatters1/mnxdom) | MIT License |
-| **W3C MNX schema** | `src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json` | W3C Music Notation Community Group (https://github.com/w3c-cg/mnx) | W3C Software and Document License |
+| **W3C MNX schema** | `src/importexport/mnx/model/mnx-schema.json` | W3C Music Notation Community Group (https://github.com/w3c-cg/mnx) | W3C Software and Document License |
 | **JSON schema validator** | `src/importexport/mnx/thirdparty/json-schema-validator/` | Patrick Boettcher (https://github.com/pboettch/json-schema-validator) | MIT License |
 
 ### Component Details and Notices
@@ -178,7 +178,7 @@ build dependencies are explicitly marked as such.
 - **Version**: commit `45bf46221c00411e968c851ff9a1be4e202af5c2` (3.1.0), ported from nlohmann::json to glaze (see `src/importexport/mnx/thirdparty/README.md`).
 - **License**: MIT License, located at `src/importexport/mnx/thirdparty/mnxdom/LICENSE`.
 
-#### W3C MNX schema (`src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json`)
+#### W3C MNX schema (`src/importexport/mnx/model/mnx-schema.json`)
 - **Origin**: W3C MNX commit `46fbe9393067221ee83ef08de209cb3c4edf0d8d`, as recorded by mnxdom.
 - **License**: W3C Software and Document License.
 

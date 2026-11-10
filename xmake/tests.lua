@@ -189,6 +189,21 @@ target("engrave_handles_test")
     end
 target_end()
 
+-- The MNX document model: schema enforcement and round trips over the MNX test inputs.
+target("engrave_mnx_model_test")
+    set_kind("binary")
+    set_default(false)
+    add_deps("mnx_model")
+    add_packages("gtest")
+    add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
+    add_files(path.join(tests_dir, "mnx_model_test.cpp"))
+    if is_plat("windows") then
+        add_files(utf8_manifest)
+    else
+        add_links("m")
+    end
+target_end()
+
 -- MNX import of upstream's examples against their MSCX references, and MNX
 -- export of reference scores: schema validation plus re-import of the core content.
 target("engrave_mnx_import_test")
@@ -396,7 +411,7 @@ target("engine_tests")
     set_default(false)
     add_deps("engrave_api_test", "engrave_handles_test", "engrave_describe_test",
         "engrave_read_test", "engrave_ops_test", "engrave_op_policy_test",
-        "engrave_gp_import_test", "engrave_mnx_import_test", "engrave_output_test", "engrave_output_probe",
+        "engrave_gp_import_test", "engrave_mnx_import_test", "engrave_mnx_model_test", "engrave_output_test", "engrave_output_probe",
         "example_embedder", "engraving_playback_tests", "mpe_tests",
         "score_edit_test", "score_audio_test", "score_positions_test",
         "write470_probe", "excerpts_test", "archive_test", "assets_test", "semantic_dump", "engine_audio_probe", "diagnostics_test", "io_boundary_test")

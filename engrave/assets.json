@@ -8,8 +8,8 @@
     },
     "THIRD_PARTY_NOTICES.md": {
       "source": "THIRD_PARTY_NOTICES.md",
-      "sha256": "eed54a5f299d46ec80705dfb97dd3b28724d26c4d021bc11ecfff4c5d4c22d63",
-      "size": 16667
+      "sha256": "4a6024d2cd02e85c6452c34fe502d72696e48708c9a1ac40e2ebf2fa94e55bfc",
+      "size": 16629
     },
     "data/harmony_to_diagram.xml": {
       "source": "src/engraving/data/harmony_to_diagram.xml",

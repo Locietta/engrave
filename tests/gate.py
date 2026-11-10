@@ -164,6 +164,7 @@ def main():
         "engrave_op_policy_test": [],
         "engrave_gp_import_test": [asset],
         "engrave_mnx_import_test": [asset, "--mnx-out=" + str(a.output / "mnx-export")],
+        "engrave_mnx_model_test": [],
         "engrave_output_test": [
             asset,
             corpus,
@@ -206,7 +207,7 @@ def main():
             sys.executable,
             REPO_ROOT / "tests/engrave_testing/check_mnx_schema.py",
             a.output / "mnx-export",
-            a.engine_source / "src/importexport/mnx/thirdparty/mnxdom/schema/mnx-schema.json",
+            a.engine_source / "src/importexport/mnx/model/mnx-schema.json",
         ],
     )
     run(

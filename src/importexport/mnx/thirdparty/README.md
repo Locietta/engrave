@@ -6,7 +6,7 @@ nlohmann::json to glaze so the engine has a single JSON library.
 | Directory | Upstream | Pinned commit | License |
 |---|---|---|---|
 | `mnxdom/` | https://github.com/rpatters1/mnxdom (3.1.0) | `45bf46221c00411e968c851ff9a1be4e202af5c2` | MIT (`mnxdom/LICENSE`) |
-| `mnxdom/schema/mnx-schema.json` | W3C MNX, as recorded by mnxdom (`third_party/w3c-mnx`) | W3C MNX `46fbe9393067221ee83ef08de209cb3c4edf0d8d`; SHA-256 `71cce118e2bb4d17d42790db2574e84e2b7ba0f0be020c866f71b8f89b638fb8` | W3C Software and Document License |
+| `../model/mnx-schema.json` | W3C MNX, as recorded by mnxdom (`third_party/w3c-mnx`) | W3C MNX `46fbe9393067221ee83ef08de209cb3c4edf0d8d`; SHA-256 `71cce118e2bb4d17d42790db2574e84e2b7ba0f0be020c866f71b8f89b638fb8` | W3C Software and Document License |
 | `json-schema-validator/` | https://github.com/pboettch/json-schema-validator | `40af3ec39670e768fc3f01f935140af311d71024` | MIT (`json-schema-validator/LICENSE`) |
 
 Only the library sources are vendored: upstream tests, examples, CMake and
