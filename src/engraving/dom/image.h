@@ -26,7 +26,7 @@
 #include "draw/types/pixmap.h"
 
 namespace muse::draw {
-struct IImageProvider;
+
 struct Pixmap;
 struct SvgRenderer;
 } // namespace muse::draw

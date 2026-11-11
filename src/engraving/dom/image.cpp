@@ -23,7 +23,6 @@
 #include "image.h"
 
 #include "../editing/editdata.h"
-#include "draw/iimageprovider.h" // IWYU pragma: keep
 #include "draw/svgrenderer.h"
 #include "draw/types/pixmap.h"
 #include "imageStore.h"
@@ -276,13 +275,6 @@ void Image::init() {
     if (image_type_ == ImageType::SVG && !svg_doc_) {
         if (store_item_) {
             svg_doc_ = new SvgRenderer(store_item_->buffer());
-        }
-    } else if (image_type_ == ImageType::RASTER && !raster_doc_) {
-        if (store_item_) {
-            raster_doc_ = score()->services().image_provider->create_pixmap(store_item_->buffer());
-            if (!raster_doc_->is_null()) {
-                dirty_ = true;
-            }
         }
     }
     if (size_.is_null()) {

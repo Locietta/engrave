@@ -5,10 +5,6 @@
 
 #include <memory>
 
-namespace muse::draw {
-struct IImageProvider;
-} // namespace muse::draw
-
 namespace mu::engraving {
 struct EngravingConfiguration;
 struct EngravingContextConfiguration;
@@ -25,10 +21,6 @@ struct EngravingServices {
     std::shared_ptr<EngravingFontsProvider> engraving_fonts;
     std::shared_ptr<EngravingContextConfiguration> context_configuration;
     std::shared_ptr<rendering::score::ScoreRenderer> renderer;
-    // Raster image codec and thumbnails. The engine has none: it rejects scores
-    // with raster images when they are opened, so the paths that need it are
-    // not reached.
-    std::shared_ptr<muse::draw::IImageProvider> image_provider;
     // Null until the palette score exists (it is built with these services).
 };
 } // namespace mu::engraving
