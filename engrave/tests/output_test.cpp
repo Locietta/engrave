@@ -441,6 +441,46 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     EXPECT_NE(as_text(after_render->document).find("PetalumaScript"), std::string::npos);
 }
 
+TEST(RuntimeAssets, BoldOnlyFamilyDrawingMatchesLayout) {
+    using namespace music::test;
+    // Ubuntu is a pinned transitive dependency of Cairo in pixi.lock.
+    const auto fonts = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / ".pixi/envs/default/fonts";
+    ASSERT_TRUE(std::filesystem::is_regular_file(fonts / "Ubuntu-M.ttf"));
+    std::ifstream input(corpus_file("linked_parts.mscx"), std::ios::binary);
+    ASSERT_TRUE(input);
+    std::string xml((std::istreambuf_iterator<char>(input)), {});
+    const auto frame = xml.find("<height>10</height>");
+    ASSERT_NE(frame, std::string::npos);
+    xml.insert(frame, "<Text><style>title</style><text><font face=\"Ubuntu\"/>MMMWWWiii012345</text></Text>");
+    auto opened = g_engine->open(std::as_bytes(std::span(xml.data(), xml.size())), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto text_width = [&] {
+        const auto result = document.query({.types = {"Text"}, .layout_boxes = true});
+        if (!result || result->elements.empty() || !result->elements.front().box) return 0.0;
+        return result->elements.front().box->width;
+    };
+    const double before_width = text_width();
+    ASSERT_GT(before_width, 0.0);
+    engrave::RenderOptions pdf;
+    pdf.format = engrave::RenderFormat::PDF;
+    const auto before = document.render(pdf);
+    ASSERT_TRUE(before);
+    EXPECT_EQ(as_text(before->document).find("Ubuntu-Medium"), std::string::npos);
+    ASSERT_TRUE(g_engine->add_font(fonts / "Ubuntu-M.ttf"));
+    const auto registered = g_engine->runtime_fonts();
+    const auto medium = std::find_if(registered.begin(), registered.end(), [](const auto &font) { return font.family == "Ubuntu"; });
+    ASSERT_NE(medium, registered.end());
+    ASSERT_TRUE(medium->bold);
+    ASSERT_FALSE(medium->italic);
+    EXPECT_NE(text_width(), before_width);
+    const auto after = document.render(pdf);
+    ASSERT_TRUE(after);
+    // Ordinary score text has UNKNOWN type; drawing must use the same
+    // registered Medium face as layout's regular-family fallback.
+    EXPECT_NE(as_text(after->document).find("Ubuntu-Medium"), std::string::npos);
+}
+
 TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
     const auto source = music::test::g_assets / "fonts/edwin/Edwin-Roman.otf";
 #ifdef _WIN32
