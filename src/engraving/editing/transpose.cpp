@@ -36,7 +36,7 @@
 #include "editenharmonicspelling.h"
 #include "editfretboarddiagram.h"
 #include "editkeysig.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "transaction/transaction.h"
 

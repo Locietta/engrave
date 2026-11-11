@@ -23,7 +23,7 @@
 #include "slurtie.h"
 
 #include "../rendering/iscorerenderer.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "note.h"
 #include "page.h"

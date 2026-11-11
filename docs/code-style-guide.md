@@ -6,7 +6,7 @@ If not specified here, follow the code style of the existing code around the cod
 
 ## Scope and Upstream Code
 
-The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Untouched upstream code is not rewritten simply to fit this guide: virtual-heavy object models, inheritance hierarchies, and existing error-handling patterns stay as they are.
+The engine is a hard fork of MuseScore core and preserves upstream MuseScore music algorithms, data structures, and object models. Untouched upstream code is not rewritten simply to fit this guide: music-domain inheritance hierarchies and existing error-handling patterns stay as they are. Dependency-injection interfaces with one production implementation are removed when touched; tests use concrete configuration data. Closed implementation sets use `std::variant` or enum dispatch, and only genuinely open runtime seams use proxy.
 
 For code that is rewritten or newly written in the engine (the audio/playback pipeline described in [docs/playback.md](playback.md) is the first example), the following architectural rules apply:
 

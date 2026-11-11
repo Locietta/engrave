@@ -24,10 +24,10 @@
 
 #include "chordrest.h"
 #include "containers.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "factory.h"
 #include "fret.h"
 #include "harppedaldiagram.h"
-#include "iengravingconfiguration.h"
 #include "instrchange.h"
 #include "instrtemplate.h"
 #include "linkedobjects.h"

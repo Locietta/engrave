@@ -187,7 +187,7 @@ static void set_pitch_by_ottava_type(mu::engraving::Note *note, mu::engraving::O
 
 static std::unordered_map<uint64_t, mu::engraving::StringData> string_datas;
 
-const std::shared_ptr<IEngravingConfiguration> &GPConverter::engraving_configuration() const { return score_value->configuration(); }
+const std::shared_ptr<EngravingConfiguration> &GPConverter::engraving_configuration() const { return score_value->configuration(); }
 
 GPConverter::GPConverter(Score *score, std::unique_ptr<GPDomModel> &&gp_dom) : score_value(score), gp_dom_value(std::move(gp_dom)) {
     drum_extension = {

@@ -133,12 +133,12 @@
 #include "dynamicslayout.h"
 #include "editing/editchord.h"
 #include "editing/navigation.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "global/realfn.h"
 #include "global/types/number.h"
 #include "guitarbendlayout.h"
 #include "harmonylayout.h"
 #include "horizontalspacing.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "iengravingfont.h"
 #include "infrastructure/ld_access.h"
 #include "infrastructure/rtti.h"

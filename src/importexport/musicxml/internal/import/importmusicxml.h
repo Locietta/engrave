@@ -32,12 +32,12 @@ struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-struct IMusicXmlConfiguration;
+struct MusicXmlConfiguration;
 
 engraving::Err import_music_xmlfrom_buffer(engraving::Score *score, const muse::String &, const muse::ByteArray &data,
-                                           const IMusicXmlConfiguration &configuration);
+                                           const MusicXmlConfiguration &configuration);
 engraving::Err import_compressed_music_xml(engraving::MasterScore *score, const muse::String &name, bool force_mode,
-                                           const IMusicXmlConfiguration &configuration);
+                                           const MusicXmlConfiguration &configuration);
 engraving::Err import_music_xml(engraving::MasterScore *score, const muse::String &name, bool force_mode,
-                                const IMusicXmlConfiguration &configuration);
+                                const MusicXmlConfiguration &configuration);
 } // namespace mu::iex::musicxml

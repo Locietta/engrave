@@ -118,7 +118,7 @@
 #include "engraving/dom/utils.h"
 #include "engraving/dom/volta.h"
 #include "engraving/dom/whammybar.h"
-#include "engraving/iengravingconfiguration.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "engraving/rw/xmlwriter.h"
 #include "engraving/style/style.h"
 #include "engraving/types/symnames.h"
@@ -127,7 +127,7 @@
 #include "global/realfn.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipwriter.h"
-#include "imusicxmlconfiguration.h"
+#include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "io/buffer.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
@@ -313,10 +313,10 @@ typedef std::map<const Instrument *, int> MusicXmlInstrumentMap;
 // The configuration of the export in progress. ExportMusicXml binds it for its
 // lifetime because the static position helpers reach it without an exporter;
 // exports run one at a time on the engine's owner thread.
-static const IMusicXmlConfiguration *s_export_configuration = nullptr;
+static const MusicXmlConfiguration *s_export_configuration = nullptr;
 
 struct ExportMusicXml {
-    ExportMusicXml(Score *s, const IMusicXmlConfiguration &configuration) : configuration_(configuration) {
+    ExportMusicXml(Score *s, const MusicXmlConfiguration &configuration) : configuration_(configuration) {
         assert(!s_export_configuration);
         s_export_configuration = &configuration;
         sh_.set_export_layout(configuration.export_layout());
@@ -332,7 +332,7 @@ struct ExportMusicXml {
     ExportMusicXml(const ExportMusicXml &) = delete;
     ExportMusicXml &operator=(const ExportMusicXml &) = delete;
 
-    static const IMusicXmlConfiguration *configuration() { return s_export_configuration; }
+    static const MusicXmlConfiguration *configuration() { return s_export_configuration; }
 
     void write(muse::io::IODevice *dev);
     void credits(XmlWriter &xml);
@@ -417,7 +417,7 @@ private:
 
     Score *score_ = nullptr;
     XmlWriter xml_;
-    const IMusicXmlConfiguration &configuration_;
+    const MusicXmlConfiguration &configuration_;
     SlurHandler sh_;
     GlissandoHandler gh_;
     Fraction tick_;
@@ -4266,8 +4266,7 @@ void ExportMusicXml::rest(Rest *rest, staff_idx_t staff, const std::vector<Lyric
 //   directionTag
 //---------------------------------------------------------
 
-static void direction_tag(const IMusicXmlConfiguration &configuration, XmlWriter &xml, Attributes &attr,
-                          EngravingItem const *const el = 0) {
+static void direction_tag(const MusicXmlConfiguration &configuration, XmlWriter &xml, Attributes &attr, EngravingItem const *const el = 0) {
     attr.do_attr(xml, false);
     String tag_name = u"direction";
     if (el) {
@@ -6841,8 +6840,8 @@ void ExportMusicXml::identification(XmlWriter &xml, Score const *const score) {
     xml.tag("supports", {{"element", "beam"}, {"type", "yes"}});
     // set support for print new-page and new-system to match user preference
     // for MusicXmlExportBreaks::MANUAL support is "no" because "yes" breaks Finale NotePad import
-    IMusicXmlConfiguration::MusicXmlExportBreaksType breaks_type = configuration()->export_breaks_type();
-    if (configuration()->export_layout() && breaks_type == IMusicXmlConfiguration::MusicXmlExportBreaksType::ALL) {
+    MusicXmlConfiguration::MusicXmlExportBreaksType breaks_type = configuration()->export_breaks_type();
+    if (configuration()->export_layout() && breaks_type == MusicXmlConfiguration::MusicXmlExportBreaksType::ALL) {
         xml.tag("supports", {{"element", "print"}, {"attribute", "new-page"}, {"type", "yes"}, {"value", "yes"}});
         xml.tag("supports", {{"element", "print"}, {"attribute", "new-system"}, {"type", "yes"}, {"value", "yes"}});
     } else {
@@ -7033,15 +7032,15 @@ void ExportMusicXml::print(const Measure *const m, const int part_nr, const int 
 
     XmlWriter::Attributes attributes;
 
-    IMusicXmlConfiguration::MusicXmlExportBreaksType export_breaks_type = configuration()->export_breaks_type();
+    MusicXmlConfiguration::MusicXmlExportBreaksType export_breaks_type = configuration()->export_breaks_type();
     if (!mpc.score_start) {
-        if (export_breaks_type == IMusicXmlConfiguration::MusicXmlExportBreaksType::ALL) {
+        if (export_breaks_type == MusicXmlConfiguration::MusicXmlExportBreaksType::ALL) {
             if (mpc.page_start) {
                 attributes.push_back({"new-page", "yes"});
             } else if (mpc.system_start) {
                 attributes.push_back({"new-system", "yes"});
             }
-        } else if (export_breaks_type == IMusicXmlConfiguration::MusicXmlExportBreaksType::MANUAL) {
+        } else if (export_breaks_type == MusicXmlConfiguration::MusicXmlExportBreaksType::MANUAL) {
             if (mpc.page_start && prev_page_break) {
                 attributes.push_back({"new-page", "yes"});
             } else if (mpc.system_start && (prev_meas_line_break || prev_meas_section_break)) {
@@ -7055,8 +7054,8 @@ void ExportMusicXml::print(const Measure *const m, const int part_nr, const int 
 
     if (mpc.page_start) {
         bool export_page_no =
-            export_breaks_type == IMusicXmlConfiguration::MusicXmlExportBreaksType::ALL ||
-            (export_breaks_type == IMusicXmlConfiguration::MusicXmlExportBreaksType::MANUAL && mpc.page_start && prev_page_break);
+            export_breaks_type == MusicXmlConfiguration::MusicXmlExportBreaksType::ALL ||
+            (export_breaks_type == MusicXmlConfiguration::MusicXmlExportBreaksType::MANUAL && mpc.page_start && prev_page_break);
         if (export_page_no && mpc.write_page_no) {
             attributes.push_back({"page-number", mpc.page_number});
         }
@@ -8458,13 +8457,13 @@ void ExportMusicXml::write(muse::io::IODevice *dev) {
  Return false on error.
  */
 
-bool save_xml(Score *score, IODevice *device, const IMusicXmlConfiguration &configuration) {
+bool save_xml(Score *score, IODevice *device, const MusicXmlConfiguration &configuration) {
     ExportMusicXml em(score, configuration);
     em.write(device);
     return true;
 }
 
-bool save_xml(Score *score, const String &name, const IMusicXmlConfiguration &configuration) {
+bool save_xml(Score *score, const String &name, const MusicXmlConfiguration &configuration) {
     auto buf = Buffer::opened(IODevice::WRITE_ONLY);
 
     bool res = save_xml(score, &buf, configuration) && !buf.has_error();
@@ -8495,7 +8494,7 @@ bool save_xml(Score *score, const String &name, const IMusicXmlConfiguration &co
 //     </rootfiles>
 // </container>
 
-static void write_mxl_archive(Score *score, muse::ZipWriter &zip, const String &filename, const IMusicXmlConfiguration &configuration) {
+static void write_mxl_archive(Score *score, muse::ZipWriter &zip, const String &filename, const MusicXmlConfiguration &configuration) {
     auto cbuf = Buffer::opened(IODevice::READ_WRITE);
 
     XmlWriter xml(&cbuf);
@@ -8528,7 +8527,7 @@ static void write_mxl_archive(Score *score, muse::ZipWriter &zip, const String &
     }
 }
 
-bool save_mxl(Score *score, IODevice *device, const IMusicXmlConfiguration &configuration) {
+bool save_mxl(Score *score, IODevice *device, const MusicXmlConfiguration &configuration) {
     muse::ZipWriter zip(device);
 
     //anonymized filename since we don't know the actual one here
@@ -8539,7 +8538,7 @@ bool save_mxl(Score *score, IODevice *device, const IMusicXmlConfiguration &conf
     return true;
 }
 
-bool save_mxl(Score *score, const String &name, const IMusicXmlConfiguration &configuration) {
+bool save_mxl(Score *score, const String &name, const MusicXmlConfiguration &configuration) {
     auto out_buf = Buffer::opened(IODevice::WRITE_ONLY);
     muse::ZipWriter zip(&out_buf);
 

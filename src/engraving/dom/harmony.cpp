@@ -29,8 +29,8 @@
 #include "chordlist.h"
 #include "containers.h"
 #include "draw/fontmetrics.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "fret.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "linkedobjects.h"
 #include "log.h"
 #include "measure.h"

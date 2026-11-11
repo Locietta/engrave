@@ -33,8 +33,8 @@
 #include "bracket.h"
 #include "bracketitem.h"
 #include "chordrest.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "factory.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "measure.h"
 #include "mscore.h"

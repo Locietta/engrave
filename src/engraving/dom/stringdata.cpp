@@ -26,7 +26,7 @@
 
 #include "chord.h"
 #include "defer.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "note.h"
 #include "part.h"
 #include "segment.h"

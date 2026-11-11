@@ -28,9 +28,9 @@
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
-#include "../iengravingconfiguration.h" // IWYU pragma: keep
 #include "accidental.h"
 #include "chord.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "note.h"
 #include "part.h"

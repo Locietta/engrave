@@ -103,7 +103,7 @@ const char *const GuitarPro::errmsg[] = {
 //   GuitarPro
 //---------------------------------------------------------
 
-const std::shared_ptr<IEngravingConfiguration> &GuitarPro::engraving_configuration() const { return score->configuration(); }
+const std::shared_ptr<EngravingConfiguration> &GuitarPro::engraving_configuration() const { return score->configuration(); }
 
 GuitarPro::GuitarPro(MasterScore *s, int v) {
     score = s;

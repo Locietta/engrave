@@ -20,7 +20,7 @@ struct EngravingServices;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-struct IMusicXmlConfiguration;
+struct MusicXmlConfiguration;
 } // namespace mu::iex::musicxml
 
 namespace music {
@@ -51,7 +51,7 @@ struct EngineContext {
     // a service before they create scores.
     mu::engraving::EngravingServices &engraving() const;
     const muse::mpe::IArticulationProfilesRepository &articulation_profiles() const;
-    const mu::iex::musicxml::IMusicXmlConfiguration &music_xml() const;
+    const mu::iex::musicxml::MusicXmlConfiguration &music_xml() const;
 
 private:
     struct Impl;

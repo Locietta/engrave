@@ -16,7 +16,7 @@
 #include "engrave/src/runtime/engine_context.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/engravingservices.h"
-#include "mocks/engravingconfigurationmock.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "utils/scorerw.h"
 #endif
 
@@ -57,7 +57,7 @@ std::string normalize_path(const std::filesystem::path &p) {
 }
 
 #if defined(TEST_HAS_ENGRAVING)
-static const mu::engraving::IEngravingConfiguration::DebuggingOptions s_debug_opt{};
+static const mu::engraving::EngravingConfiguration::DebuggingOptions s_debug_opt{};
 #endif
 
 } // namespace
@@ -237,17 +237,13 @@ void setup_test_environment([[maybe_unused]] const TestEnvironmentConfig &config
     // 3. Configure ScoreRW root path for resolving relative test score paths (e.g. playback/...)
     mu::engraving::ScoreRW::set_root_path(muse::String::from_std_string(config.engraving_data_dir));
 
-    // 4. Register mock engraving configuration matching upstream engraving/tests/environment.cpp
-    using ECMock = ::testing::NiceMock<mu::engraving::EngravingConfigurationMock>;
-    auto configurator = std::shared_ptr<ECMock>(new ECMock(), [](ECMock *) {});
-    // Lives for the whole process like upstream's test environment; never deleted on purpose.
-    ::testing::Mock::AllowLeak(configurator.get());
-    ON_CALL(*configurator, displayed_default_color(::testing::_)).WillByDefault(::testing::Return(muse::draw::Color::black));
-    ON_CALL(*configurator, default_color()).WillByDefault(::testing::Return(muse::draw::Color::black));
-    ON_CALL(*configurator, debugging_options()).WillByDefault(::testing::ReturnRef(::music::test::s_debug_opt));
-    ON_CALL(*configurator, allow_reading_images_from_outside_mscz()).WillByDefault(::testing::Return(true));
+    // Configure the context-owned service directly; no mock or leaked service.
+    auto &configurator = *s_context->engraving().configuration;
+    configurator.set_displayed_default_color(muse::draw::Color::black, false);
+    configurator.set_displayed_default_color(muse::draw::Color::black, true);
+    configurator.set_debugging_options(::music::test::s_debug_opt);
+    configurator.read_external_images = true;
 
-    s_context->engraving().configuration = configurator;
     mu::engraving::ScoreRW::set_services(&s_context->engraving());
 #endif
 }

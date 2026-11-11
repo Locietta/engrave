@@ -23,7 +23,7 @@
 #include "stafftype.h"
 
 #include "draw/fontmetrics.h"
-#include "iengravingconfiguration.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "mscore.h"
 #include "score.h"
 #include "staff.h"

@@ -145,7 +145,7 @@
 #include "../compat/compatutils.h"
 #include "../compat/tremolocompat.h"
 #include "../xmlreader.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "readcontext.h"
 

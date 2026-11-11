@@ -71,7 +71,7 @@
 #include "engraving/rw/xmlwriter.h"
 #include "engraving/types/constants.h"
 #include "global/io/buffer.h"
-#include "importexport/musicxml/imusicxmlconfiguration.h"
+#include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "serialization/xmlstreamreader.h"
 #include <engrave/engrave.h>
 #include <engrave/testing/write470.h>
@@ -2321,10 +2321,10 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
 TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     auto seed = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(seed);
-    auto &config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).music_xml());
+    auto &config = const_cast<mu::iex::musicxml::MusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).music_xml());
 
     struct RestoreInference {
-        mu::iex::musicxml::IMusicXmlConfiguration &config;
+        mu::iex::musicxml::MusicXmlConfiguration &config;
         bool previous;
 
         ~RestoreInference() { config.set_infer_text_type_override(previous); }
