@@ -5,8 +5,8 @@
 #include <stdexcept>
 
 #include "draw/fontmetrics.h"
-#include "draw/internal/ifontsdatabase.h"
 #include "engrave/src/audio/engine_audio.h"
+#include "engrave/src/runtime/fonts_database.h"
 #include "engraving/dom/drumset.h"
 #include "engraving/dom/figuredbass.h"
 #include "engraving/dom/instrtemplate.h"
@@ -33,7 +33,7 @@ using namespace mu::engraving;
 namespace {
 // The built-in text, music and tablature faces and their defaults (upstream's
 // EngravingModule::onInit).
-void register_builtin_fonts(IFontsDatabase &fdb, EngravingFontsProvider &engraving_fonts) {
+void register_builtin_fonts(music::RuntimeFontsDatabase &fdb, EngravingFontsProvider &engraving_fonts) {
     // Text
     fdb.add_font(FontDataKey(u"Edwin", false, false), ":/fonts/edwin/Edwin-Roman.otf");
     fdb.add_font(FontDataKey(u"Edwin", false, true), ":/fonts/edwin/Edwin-Italic.otf");
@@ -205,7 +205,7 @@ EngineAudio &EngineContext::audio() const { return *impl_->audio; }
 
 RuntimeAssets &EngineContext::assets() const { return *impl_->assets; }
 
-IFontsDatabase &EngineContext::fonts_database() const { return impl_->assets->fonts_database(); }
+music::RuntimeFontsDatabase &EngineContext::fonts_database() const { return impl_->assets->fonts_database(); }
 
 EngravingServices &EngineContext::engraving() const { return impl_->engraving; }
 

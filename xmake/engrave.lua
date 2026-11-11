@@ -240,6 +240,7 @@ ENGRAVE_AUDIO_INCLUDES = {
 ---------------------------------------------------------------------------
 local function add_engine_target_defaults()
     add_includedirs("$(builddir)/xmake-generated")
+    add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
     if has_config("engrave_playback_harness") then
         -- Target-local: reopening engrave for Cairo must not lose this define.
         -- Export it so inline OfflineTimer definitions agree in consumers too.

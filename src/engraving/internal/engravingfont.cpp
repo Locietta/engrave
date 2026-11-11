@@ -23,6 +23,7 @@
 
 #include "../style/styledef.h"
 #include "dom/mscore.h"
+#include "draw/internal/fontprovider.h"
 #include "draw/painter.h"
 #include "engraving/dom/mscore.h"
 #include "engravingfontsprovider.h"

@@ -8,7 +8,6 @@ struct IFileSystem;
 } // namespace muse::io
 
 namespace muse::draw {
-struct IFontsDatabase;
 } // namespace muse::draw
 
 namespace muse::mpe {
@@ -24,6 +23,7 @@ struct MusicXmlConfiguration;
 } // namespace mu::iex::musicxml
 
 namespace music {
+struct RuntimeFontsDatabase;
 struct RuntimeAssets;
 struct EngineAudio;
 
@@ -46,7 +46,7 @@ struct EngineContext {
     muse::io::IFileSystem &file_system() const;
     RuntimeAssets &assets() const;
     EngineAudio &audio() const;
-    muse::draw::IFontsDatabase &fonts_database() const;
+    music::RuntimeFontsDatabase &fonts_database() const;
     // The services every score of this engine is built with. Tests may replace
     // a service before they create scores.
     mu::engraving::EngravingServices &engraving() const;

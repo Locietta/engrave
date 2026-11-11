@@ -8,6 +8,9 @@
 
 namespace muse::draw {
 struct FontFace {
+    FontFace(const FontFace &) = delete;
+    FontFace &operator=(const FontFace &) = delete;
+
     template <typename T, typename... Args>
     explicit FontFace(std::in_place_type_t<T> type, Args &&...args) : face_(type, std::forward<Args>(args)...) {}
 

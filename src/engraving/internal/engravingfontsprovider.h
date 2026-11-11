@@ -26,7 +26,6 @@
 #include <string>
 #include <vector>
 
-#include "engraving/internal/engravingfont.h"
 #include "engravingfont.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"

@@ -10,12 +10,12 @@
 #include <vector>
 
 namespace muse::draw {
-struct IFontsDatabase;
-struct IFontsEngine;
 struct FontProvider;
 } // namespace muse::draw
 
 namespace music {
+struct RuntimeFontsDatabase;
+struct RuntimeFontsEngine;
 
 struct RuntimeFontInfo {
     int id = 0;
@@ -46,8 +46,8 @@ struct RuntimeAssets {
     RuntimeAssets(const RuntimeAssets &) = delete;
     RuntimeAssets &operator=(const RuntimeAssets &) = delete;
 
-    muse::draw::IFontsDatabase &fonts_database();
-    muse::draw::IFontsEngine &fonts_engine();
+    music::RuntimeFontsDatabase &fonts_database();
+    RuntimeFontsEngine &fonts_engine();
     muse::draw::FontProvider &font_provider();
 
     // Owner-thread final shutdown, after scores and background jobs have been

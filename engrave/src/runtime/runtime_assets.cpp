@@ -29,9 +29,9 @@
 #include "draw/internal/fontprovider.h"
 #include "draw/internal/fontsdatabase.h"
 #include "draw/internal/fontsengine.h"
-#include "draw/internal/ifontsdatabase.h"
-#include "draw/internal/ifontsengine.h"
 #include "draw/types/fontstypes.h"
+#include "fonts_database.h"
+#include "fonts_engine_proxy.h"
 #include "global/io/path.h"
 
 namespace music {
@@ -280,48 +280,6 @@ void validate_sound_font_header(const std::vector<std::uint8_t> &bytes, const st
     }
 }
 
-struct FontRecord {
-    RuntimeFontInfo info;
-    draw::FontDataKey key;
-    std::shared_ptr<const muse::ByteArray> bytes;
-};
-
-using ActiveTable = std::vector<FontRecord>;
-
-const FontRecord *find_record(const ActiveTable &table, const draw::FontDataKey &key) {
-    for (const FontRecord &record : table) {
-        // FontDataKey equality: case-insensitive family, exact bold/italic.
-        if (record.key == key) {
-            return &record;
-        }
-    }
-    return nullptr;
-}
-
-const FontRecord *find_regular_family_fallback(const ActiveTable &table, const draw::FontDataKey &key) {
-    // Families such as Ubuntu ship a Medium face that FreeType flags as bold,
-    // so a regular query has no exact record. Upstream/desktop resolves by
-    // family and the closest available style; choose an upright face of the
-    // requested family when the exact regular style is absent. Bold/italic
-    // queries keep exact-key semantics (no synthetic styling is invented).
-    if (key.bold() || key.italic()) {
-        return nullptr;
-    }
-    const FontRecord *italic = nullptr;
-    for (const FontRecord &record : table) {
-        if (record.key.family() != key.family()) {
-            continue;
-        }
-        if (!record.key.italic()) {
-            return &record;
-        }
-        if (!italic) {
-            italic = &record;
-        }
-    }
-    return italic;
-}
-
 struct SoundFontRecord {
     RuntimeSoundFontInfo info;
     std::size_t size = 0;
@@ -337,186 +295,20 @@ std::string content_fingerprint(const std::vector<std::uint8_t> &bytes) {
 
 // The owner thread and the installed/shut-down state, shared by the asset store
 // and the fonts-engine proxy it hands to the draw layer.
-struct OwnerState {
-    std::thread::id owner = std::this_thread::get_id();
-    bool installed = true;
 
-    void check() const {
-        if (!installed) {
-            throw std::runtime_error("Runtime font services are not installed");
-        }
-        if (std::this_thread::get_id() != owner) {
-            throw std::runtime_error("Runtime font services called from a non-owner thread");
-        }
-    }
-};
-
-std::unique_ptr<draw::FontsEngine> create_engine(draw::IFontsDatabase &database) {
+std::unique_ptr<draw::FontsEngine> create_engine(music::RuntimeFontsDatabase &database) {
     auto engine = std::make_unique<draw::FontsEngine>(database);
     engine->init();
     return engine;
 }
 
-struct RuntimeFontsDatabase final : draw::FontsDatabase {
-    RuntimeFontsDatabase(std::shared_ptr<CacheStore> cache_store, std::shared_ptr<const ActiveTable> active)
-        : cache_store_(std::move(cache_store)), active_(std::move(active)) {}
-
-    ~RuntimeFontsDatabase() override = default;
-
-    void publish(std::shared_ptr<const ActiveTable> active) noexcept { active_.swap(active); }
-
-    std::shared_ptr<const ActiveTable> active_table() const { return active_; }
-
-    const std::shared_ptr<CacheStore> &cache_store() const { return cache_store_; }
-
-    draw::FontDataKey actual_font(const draw::FontDataKey &require_key, draw::Font::Type type) const override {
-        if (const FontRecord *exact = find_record(*active_, require_key)) {
-            return exact->key;
-        }
-
-        const draw::FontDataKey base_key = draw::FontsDatabase::actual_font(require_key, type);
-        if (const FontRecord *overridden = find_record(*active_, base_key)) {
-            return overridden->key;
-        }
-
-        // Built-in families keep priority; only a family the upstream database
-        // cannot provide at all falls back to its registered runtime face.
-        // FontsEngine normalises Undefined/Unknown to Text before querying, so
-        // this fallback must not apply to symbol/music faces.
-        if (type == draw::Font::Type::TEXT && base_key.family() != require_key.family()) {
-            if (const FontRecord *fallback = find_regular_family_fallback(*active_, require_key)) {
-                return fallback->key;
-            }
-        }
-
-        // Only the upstream database's own default fallback is accepted here
-        // when no registered face can represent the requested family.
-        return base_key;
-    }
-
-    std::vector<draw::FontDataKey> substitution_fonts(const draw::FontDataKey &require_key) const override {
-        std::vector<draw::FontDataKey> result = draw::FontsDatabase::substitution_fonts(require_key);
-        // 5.0 keys the substitution list by family instead of by font type, so
-        // the 4.7.6 rule "every registered runtime face is a text fallback" has
-        // no type to gate on. Keep the registered faces as extra glyph-fallback
-        // candidates: the primary face is always tried first, so this only
-        // changes codepoints it cannot render (for example CJK text in a score
-        // that names a Latin-only family).
-        result.reserve(result.size() + active_->size());
-        for (const FontRecord &record : *active_) {
-            if (std::find(result.begin(), result.end(), record.key) == result.end()) {
-                result.push_back(record.key);
-            }
-        }
-        return result;
-    }
-
-    draw::FontData font_data(const draw::FontDataKey &require_key, draw::Font::Type type) const override {
-        const draw::FontDataKey actual_key = actual_font(require_key, type);
-        if (const FontRecord *record = find_record(*active_, actual_key)) {
-            draw::FontData data;
-            data.key = record->key;
-            data.data = *record->bytes;
-            return data;
-        }
-        return draw::FontsDatabase::font_data(require_key, type);
-    }
-
-private:
-    std::shared_ptr<CacheStore> cache_store_;
-    std::shared_ptr<const ActiveTable> active_;
-};
-
-struct FontsEngineProxy final : draw::IFontsEngine {
-    FontsEngineProxy(const OwnerState &owner, std::shared_ptr<CacheStore> cache_store, std::unique_ptr<draw::FontsEngine> engine)
-        : owner_(owner), cache_store_(std::move(cache_store)), engine_(std::move(engine)) {}
-
-    ~FontsEngineProxy() override {
-        engine_.reset();
-        cache_store_.reset();
-    }
-
-    // The caller has already checked ownership and prepared the new engine.
-    // Replacing the engine drops every upstream cached face, so replacements
-    // and reactivations cannot keep using the old face.
-    void set_engine(std::unique_ptr<draw::FontsEngine> engine) noexcept { engine_ = std::move(engine); }
-
-    // The render cache is optional (FontRenderCache is a no-op without a
-    // directory); forward it so a caller can opt in.
-    void set_render_cache_dir_path(const muse::io::PathT &path, const std::string &revision = std::string()) override {
-        owner_.check();
-        if (!engine_) {
-            throw std::runtime_error("Runtime font engine is not initialized");
-        }
-        engine_->set_render_cache_dir_path(path, revision);
-    }
-
-    void clear_loaded_faces() override {
-        owner_.check();
-        if (engine_) {
-            engine_->clear_loaded_faces();
-        }
-    }
-
-    double line_spacing(const draw::Font &f) const override { return engine()->line_spacing(f); }
-
-    double x_height(const draw::Font &f) const override { return engine()->x_height(f); }
-
-    double height(const draw::Font &f) const override { return engine()->height(f); }
-
-    double cap_height(const draw::Font &f) const override { return engine()->cap_height(f); }
-
-    double ascent(const draw::Font &f) const override { return engine()->ascent(f); }
-
-    double descent(const draw::Font &f) const override { return engine()->descent(f); }
-
-    double underline_pos(const draw::Font &f) const override { return engine()->underline_pos(f); }
-
-    double line_width(const draw::Font &f) const override { return engine()->line_width(f); }
-
-    double strike_out_pos(const draw::Font &f) const override { return engine()->strike_out_pos(f); }
-
-    bool in_font(const draw::Font &f, char32_t ucs4) const override { return engine()->in_font(f, ucs4); }
-
-    double horizontal_advance(const draw::Font &f, const char32_t &ch) const override { return engine()->horizontal_advance(f, ch); }
-
-    double horizontal_advance(const draw::Font &f, const std::u32string &text) const override {
-        return engine()->horizontal_advance(f, text);
-    }
-
-    muse::RectF bounding_rect(const draw::Font &f, const char32_t &ch) const override { return engine()->bounding_rect(f, ch); }
-
-    muse::RectF bounding_rect(const draw::Font &f, const std::u32string &text) const override { return engine()->bounding_rect(f, text); }
-
-    muse::RectF tight_bounding_rect(const draw::Font &f, const std::u32string &text) const override {
-        return engine()->tight_bounding_rect(f, text);
-    }
-
-    std::vector<draw::GlyphImage> render(const draw::Font &f, const std::u32string &text) const override {
-        return engine()->render(f, text);
-    }
-
-private:
-    const draw::FontsEngine *engine() const {
-        owner_.check();
-        if (!engine_) {
-            throw std::runtime_error("Runtime font engine is not initialized");
-        }
-        return engine_.get();
-    }
-
-    const OwnerState &owner_;
-    std::shared_ptr<CacheStore> cache_store_;
-    std::unique_ptr<draw::FontsEngine> engine_;
-};
-
 } // namespace
 
 struct RuntimeAssets::Impl {
-    OwnerState owner;
+    RuntimeFontsOwner owner;
     std::shared_ptr<CacheStore> cache_store;
     std::unique_ptr<RuntimeFontsDatabase> database;
-    std::unique_ptr<FontsEngineProxy> proxy_engine;
+    std::unique_ptr<RuntimeFontsEngine> proxy_engine;
     std::unique_ptr<draw::FontProvider> provider;
     int next_font_id = 1;
     std::vector<FontRecord> retained_fonts;
@@ -571,8 +363,8 @@ RuntimeAssets::RuntimeAssets(const std::filesystem::path &cache_root) : impl_(st
         std::filesystem::create_directories(cache_root, error);
     }
     impl_->cache_store = std::make_shared<CacheStore>(cache_root);
-    impl_->database = std::make_unique<RuntimeFontsDatabase>(impl_->cache_store, std::make_shared<ActiveTable>());
-    impl_->proxy_engine = std::make_unique<FontsEngineProxy>(impl_->owner, impl_->cache_store, create_engine(*impl_->database));
+    impl_->database = std::make_unique<RuntimeFontsDatabase>(std::make_shared<ActiveTable>());
+    impl_->proxy_engine = std::make_unique<RuntimeFontsEngine>(impl_->owner, impl_->cache_store, create_engine(*impl_->database));
     impl_->provider = std::make_unique<draw::FontProvider>(*impl_->database, *impl_->proxy_engine);
 }
 
@@ -585,9 +377,9 @@ RuntimeAssets::~RuntimeAssets() {
     }
 }
 
-draw::IFontsDatabase &RuntimeAssets::fonts_database() { return *impl_->database; }
+music::RuntimeFontsDatabase &RuntimeAssets::fonts_database() { return *impl_->database; }
 
-draw::IFontsEngine &RuntimeAssets::fonts_engine() { return *impl_->proxy_engine; }
+RuntimeFontsEngine &RuntimeAssets::fonts_engine() { return *impl_->proxy_engine; }
 
 draw::FontProvider &RuntimeAssets::font_provider() { return *impl_->provider; }
 
@@ -597,7 +389,7 @@ void RuntimeAssets::shutdown() {
     // Release the face cache and retained files explicitly; leases keep the
     // cache directory until the last one is released.
     impl_->proxy_engine->set_engine(nullptr);
-    impl_->database->cache_store()->shutdown();
+    impl_->cache_store->shutdown();
     impl_->retained_fonts.clear();
     impl_->retained_sound_fonts.clear();
     impl_->owner.installed = false;
@@ -605,7 +397,7 @@ void RuntimeAssets::shutdown() {
 
 std::shared_ptr<const void> RuntimeAssets::retain() {
     impl_->owner.check();
-    return std::make_shared<ResourceLease>(impl_->database->cache_store());
+    return std::make_shared<ResourceLease>(impl_->cache_store);
 }
 
 RuntimeFontInfo RuntimeAssets::add_font(const std::string &source_path) {
@@ -640,7 +432,7 @@ RuntimeFontInfo RuntimeAssets::add_font(const std::string &source_path) {
     static std::atomic<std::uint64_t> file_sequence{0};
     const std::string file_name =
         "font_" + std::to_string(font_id) + "_" + std::to_string(file_sequence.fetch_add(1, std::memory_order_relaxed)) + ".ttf";
-    const std::filesystem::path destination = d.database->cache_store()->dir() / file_name;
+    const std::filesystem::path destination = d.cache_store->dir() / file_name;
     TempFileGuard cache_file_guard(destination);
 
     {
@@ -734,7 +526,7 @@ RuntimeSoundFontInfo RuntimeAssets::freeze_sound_font(const std::string &source_
     if (d.retained_resource_bytes() > ::music::k_max_retained_bytes - bytes.size()) {
         throw std::runtime_error("Retained runtime resource bytes exceed the 256 MiB limit");
     }
-    const auto destination = d.database->cache_store()->dir() / ("soundfont_" + std::to_string(d.retained_sound_fonts.size()) + ".sf2");
+    const auto destination = d.cache_store->dir() / ("soundfont_" + std::to_string(d.retained_sound_fonts.size()) + ".sf2");
     TempFileGuard guard(destination);
     {
         std::ofstream output(destination, std::ios::binary | std::ios::trunc);
