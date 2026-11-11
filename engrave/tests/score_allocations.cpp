@@ -111,6 +111,7 @@ void install_allocation_hooks() {
         }
     }
     if (installed != 15) throw std::runtime_error("malloc/realloc/free/calloc imports not all hooked");
+    const std::uint64_t bytes_before = Metrics::bytes;
     Metrics::enabled = true;
     auto volatile malloc_entry = &std::malloc;
     auto volatile realloc_entry = &std::realloc;
@@ -132,13 +133,16 @@ void install_allocation_hooks() {
     auto *aligned = ::operator new(64, std::align_val_t{64});
     ::operator delete(aligned, std::align_val_t{64});
     Metrics::enabled = false;
+    // Exact counts and bytes: malloc(16) and new(16) reach count_malloc, realloc(32),
+    // calloc(2, 16), aligned new(64); free, the calloc free and delete reach count_free.
     if (Metrics::counts[0][Metrics::OP_NEW] != 2 || Metrics::counts[0][Metrics::OP_DELETE] != 2 ||
-        Metrics::counts[0][Metrics::OP_MALLOC] < 2 || Metrics::counts[0][Metrics::OP_REALLOC] != 1 ||
-        Metrics::counts[0][Metrics::OP_FREE] < 3 || Metrics::counts[0][Metrics::OP_CALLOC] != 1 ||
-        Metrics::counts[0][Metrics::OP_ALIGNED_NEW] != 1)
+        Metrics::counts[0][Metrics::OP_MALLOC] != 2 || Metrics::counts[0][Metrics::OP_REALLOC] != 1 ||
+        Metrics::counts[0][Metrics::OP_FREE] != 3 || Metrics::counts[0][Metrics::OP_CALLOC] != 1 ||
+        Metrics::counts[0][Metrics::OP_ALIGNED_NEW] != 1 || Metrics::bytes - bytes_before != 160)
         throw std::runtime_error("allocation hook self-check failed");
     for (auto &phase : Metrics::counts)
         for (auto &count : phase) count = 0;
+    Metrics::bytes = 0;
 }
 
 void *operator new(std::size_t n) {
