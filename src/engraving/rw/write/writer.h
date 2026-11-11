@@ -26,7 +26,7 @@
 #include <variant>
 #include <vector>
 
-#include "../compat/writescorehook.h"
+#include "engraving/compat/writescorehook.h"
 #include "engraving/rw/xmlwriter.h"
 #include "global/io/iodevice.h"
 #include "global/types/bytearray.h"
