@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Native runtime-font adapter for the pinned MuseScore draw interfaces:
-//   src/framework/draw/internal/ifontsdatabase.h
-//   src/framework/draw/internal/ifontsengine.h
+// Native runtime font services and retained asset storage.
 #include "runtime_assets.h"
 
 #include <algorithm>

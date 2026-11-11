@@ -60,7 +60,7 @@ struct ReadContext {
     void set_score(Score *score);
 
     const MStyle &style() const;
-    std::shared_ptr<EngravingFontsProvider> engraving_fonts() const;
+    EngravingFontsProvider *engraving_fonts() const;
 
     bool paste_mode() const { return paste_mode_value; }
 

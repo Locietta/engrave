@@ -377,13 +377,8 @@ std::vector<GlyphImage> FontsEngine::render(const Font &f, const std::u32string 
     return images;
 }
 
-void FontsEngine::set_font_face_factory(const FontFaceFactory &f) { font_face_factory_ = f; }
-
-FontFace *FontsEngine::create_font_face(const FontData &font_data, Font::Type type) const {
+FontFace *FontsEngine::create_font_face(const FontData &font_data) const {
     const FontDataKey &data_key = font_data.key;
-    if (font_face_factory_) {
-        return font_face_factory_(data_key, type);
-    }
 
     if (is_ftx(font_data.data)) {
         LOGE() << "XT font face backend is disabled: " << data_key.family().id();
@@ -413,7 +408,7 @@ FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_da
     loaded_key.type = type;
     loaded_key.pixel_size = input_loaded_pixel_size;
 
-    FontFace *face = create_font_face(font_data, type);
+    FontFace *face = create_font_face(font_data);
     IF_ASSERT_FAILED(face) { return nullptr; }
 
     if (!face->load(loaded_key, font_data, is_symbol_mode)) {

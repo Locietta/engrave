@@ -17,10 +17,10 @@ struct ScoreRenderer;
 // The engine services a score uses. The engine context owns the only instance
 // and outlives every score built with it; scores keep a reference.
 struct EngravingServices {
-    std::shared_ptr<EngravingConfiguration> configuration;
-    std::shared_ptr<EngravingFontsProvider> engraving_fonts;
-    std::shared_ptr<EngravingContextConfiguration> context_configuration;
-    std::shared_ptr<rendering::score::ScoreRenderer> renderer;
-    // Null until the palette score exists (it is built with these services).
+    // Borrowed from the context; null only during initialization or teardown.
+    EngravingConfiguration *configuration = nullptr;
+    EngravingFontsProvider *engraving_fonts = nullptr;
+    EngravingContextConfiguration *context_configuration = nullptr;
+    rendering::score::ScoreRenderer *renderer = nullptr;
 };
 } // namespace mu::engraving

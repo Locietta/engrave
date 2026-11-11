@@ -256,13 +256,13 @@ private:
 public:
     const EngravingServices &services() const { return services_; }
 
-    const std::shared_ptr<EngravingConfiguration> &configuration() const { return services_.configuration; }
+    EngravingConfiguration *configuration() const { return services_.configuration; }
 
-    const std::shared_ptr<EngravingFontsProvider> &engraving_fonts() const { return services_.engraving_fonts; }
+    EngravingFontsProvider *engraving_fonts() const { return services_.engraving_fonts; }
 
-    const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const { return services_.context_configuration; }
+    EngravingContextConfiguration *context_configuration() const { return services_.context_configuration; }
 
-    const std::shared_ptr<rendering::score::ScoreRenderer> &renderer() const { return services_.renderer; }
+    rendering::score::ScoreRenderer *renderer() const { return services_.renderer; }
 
     Score(const Score &) = delete;
     Score &operator=(const Score &) = delete;

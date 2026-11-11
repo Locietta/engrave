@@ -27,7 +27,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-std::shared_ptr<EngravingConfiguration> WriteContext::configuration() const { return score_->configuration(); }
+EngravingConfiguration *WriteContext::configuration() const { return score_->configuration(); }
 
 bool WriteContext::can_write(const EngravingItem *) const { return true; }
 

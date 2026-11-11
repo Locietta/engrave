@@ -149,7 +149,7 @@ private:
     void add_capos();
     int capo_fret(const mu::engraving::Part *part) const;
 
-    const std::shared_ptr<mu::engraving::EngravingConfiguration> &engraving_configuration() const;
+    mu::engraving::EngravingConfiguration *engraving_configuration() const;
 
     mu::engraving::Score *score_value;
     std::unique_ptr<GPDomModel> gp_dom_value;

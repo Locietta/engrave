@@ -161,9 +161,9 @@ public:
     //! (e.g. measures are placed on systems, but not owned by them).
     virtual EngravingItem *layout_parent() const;
 
-    const std::shared_ptr<EngravingConfiguration> &configuration() const;
-    const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const;
-    const std::shared_ptr<rendering::score::ScoreRenderer> &renderer() const;
+    EngravingConfiguration *configuration() const;
+    EngravingContextConfiguration *context_configuration() const;
+    rendering::score::ScoreRenderer *renderer() const;
 
     EngravingItem *find_ancestor(ElementType t);
     const EngravingItem *find_ancestor(ElementType t) const;
