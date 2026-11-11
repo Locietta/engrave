@@ -2225,13 +2225,7 @@ void TWrite::write(const Note *item, XmlWriter &xml, WriteContext &ctx) {
     }
 
     if (Tie *tie_back = item->tie_back_non_partial()) {
-        Note *tie_start_note = tie_back->start_note();
-        const std::optional<Fraction> &first_clipboard_tick = ctx.first_clipboard_tick();
-        bool tie_start_out_of_range =
-            first_clipboard_tick.has_value() && tie_start_note && tie_start_note->tick() < first_clipboard_tick.value();
-        if (!tie_start_out_of_range) {
-            TWrite::write_item(tie_back, xml, ctx);
-        }
+        TWrite::write_item(tie_back, xml, ctx);
     }
 
     if ((item->chord() == 0 || item->chord()->play_event_type() != PlayEventType::AUTO) && !item->play_events().empty()) {

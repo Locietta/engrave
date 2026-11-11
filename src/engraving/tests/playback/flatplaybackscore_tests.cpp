@@ -17,7 +17,6 @@
 #include <utility>
 #include <vector>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
@@ -36,9 +35,6 @@
 #include "playback_projection_flat.h"
 #include "playback_projection_legacy.h"
 #include "utils/scorerw.h"
-
-using ::testing::Return;
-using ::testing::_;
 
 using namespace mu::engraving;
 using namespace muse;

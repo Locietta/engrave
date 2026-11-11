@@ -131,8 +131,6 @@ struct Selection {
 
     bool is_single() const { return (state_ == SelState::LIST) && (el_.size() == 1); }
 
-    bool elements_selected(const ElementTypeSet &types) const;
-
     void add(EngravingItem *);
     void deselect_all();
     void remove(EngravingItem *);
@@ -144,8 +142,6 @@ struct Selection {
     Measure *find_measure() const;
     MeasureBase *start_measure_base() const;
     MeasureBase *end_measure_base() const;
-    std::vector<System *> selected_systems() const;
-    std::vector<Page *> pages_containing_selection() const;
     void update();
     void update_state();
     void dump();
@@ -171,7 +167,6 @@ struct Selection {
     void set_active_segment(Segment *s) { active_segment_ = s; }
 
     ChordRest *active_cr() const;
-    bool is_start_active() const;
     bool is_end_active() const;
     ChordRest *current_cr() const;
     Fraction tick_start() const;
@@ -189,7 +184,6 @@ struct Selection {
 
     void set_active_track(track_idx_t v) { active_track_ = v; }
 
-    bool can_copy() const;
     void update_selected_elements();
     bool measure_base_range(MeasureBase **mb1, MeasureBase **mb2) const;
     void extend_range_selection(ChordRest *cr);

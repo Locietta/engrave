@@ -23,7 +23,6 @@
 #include <cmath>
 #include <memory>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "engraving/dom/chord.h"
@@ -34,9 +33,6 @@
 #include "mpe/internal/articulationprofilesrepository.h"
 #include "mpe/tests/utils/articulationutils.h"
 #include "utils/scorerw.h"
-
-using ::testing::Return;
-using ::testing::_;
 
 using namespace mu::engraving;
 using namespace muse::mpe;

@@ -75,7 +75,6 @@ struct Writer {
     static void write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::WriteScoreHook &hook);
 
 private:
-    void write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool, bool);
     void do_write_item(const EngravingItem *item, XmlWriter &xml);
 };
 } // namespace mu::engraving::write

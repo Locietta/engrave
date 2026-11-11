@@ -59,10 +59,6 @@ static constexpr double ui_icons_default_font_size = 12.0;
 
 static constexpr int max_staves = 4;
 
-static constexpr char mime_symbol_format[] = "application/musescore/symbol";
-static constexpr char mime_symbol_list_format[] = "application/musescore/symbollist";
-static constexpr char mime_staff_list_format[] = "application/musescore/stafflist";
-
 static constexpr int invalid_string_index = -1; // no ordinal for a physical string (0 = topmost in instrument)
 static constexpr int invalid_fret_index = -1;   // no ordinal for a fret
 
