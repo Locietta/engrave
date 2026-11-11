@@ -27,17 +27,20 @@
 #include <optional>
 
 #include "engrave/src/runtime/resource_filesystem.h"
-#include "mpe/iarticulationprofilesrepository.h"
+#include "io/path.h"
+#include "mpe/mpetypes.h"
 #include "serialization/json.h"
 
 namespace muse::mpe {
-struct ArticulationProfilesRepository : IArticulationProfilesRepository {
+struct ArticulationProfilesRepository {
+    std::optional<ArticulationsProfilePtr> default_profile_override;
+
     explicit ArticulationProfilesRepository(io::NativeFileSystem &file_system) : file_system_(file_system) {}
 
-    ArticulationsProfilePtr create_new() const override;
-    ArticulationsProfilePtr default_profile(const ArticulationFamily family) const override;
-    ArticulationsProfilePtr load_profile(const io::PathT &path) const override;
-    void save_profile(const io::PathT &path, const ArticulationsProfilePtr profile_ptr) override;
+    ArticulationsProfilePtr create_new() const;
+    ArticulationsProfilePtr default_profile(const ArticulationFamily family) const;
+    ArticulationsProfilePtr load_profile(const io::PathT &path) const;
+    void save_profile(const io::PathT &path, const ArticulationsProfilePtr profile_ptr);
 
 private:
     io::NativeFileSystem *file_system() const { return &file_system_; }

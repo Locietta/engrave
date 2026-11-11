@@ -67,6 +67,7 @@ static JsonObject json_object(const JsonValue &value) { return value.is_object()
 ArticulationsProfilePtr ArticulationProfilesRepository::create_new() const { return std::make_shared<ArticulationsProfile>(); }
 
 ArticulationsProfilePtr ArticulationProfilesRepository::default_profile(const ArticulationFamily family) const {
+    if (default_profile_override) return *default_profile_override;
     const auto index = static_cast<size_t>(family);
     if (index >= default_profiles_.size()) {
         return nullptr;

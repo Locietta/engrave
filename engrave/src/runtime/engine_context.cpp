@@ -210,7 +210,7 @@ music::RuntimeFontsDatabase &EngineContext::fonts_database() const { return impl
 
 EngravingServices &EngineContext::engraving() const { return impl_->engraving; }
 
-const mpe::IArticulationProfilesRepository &EngineContext::articulation_profiles() const { return *impl_->articulation_profiles; }
+const mpe::ArticulationProfilesRepository &EngineContext::articulation_profiles() const { return *impl_->articulation_profiles; }
 
 const mu::iex::musicxml::MusicXmlConfiguration &EngineContext::music_xml() const { return *impl_->music_xml; }
 } // namespace music
