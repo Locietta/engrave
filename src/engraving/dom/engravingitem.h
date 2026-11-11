@@ -122,6 +122,11 @@ enum class KerningType : unsigned char {
     ALLOW_COLLISION,
 };
 
+// The default stacking order of an element type. Saved scores store z only when it
+// differs from this default, so the value is pinned to the ElementType ordinals of
+// ea2b00ee48 (times 100) and must not move when enumerators are added or deleted.
+int default_z(ElementType type);
+
 //-------------------------------------------------------------------
 //    @@ EngravingItem
 ///     \brief Base class of score layout elements

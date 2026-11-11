@@ -28,6 +28,8 @@
 #include "engravingitem.h"
 
 #include <cmath>
+#include <cstddef>
+#include <iterator>
 
 #include "../editing/addremoveelement.h"
 #include "../editing/editdata.h"
@@ -77,6 +79,183 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 namespace mu::engraving {
+namespace {
+// ElementType -> its ordinal at ea2b00ee48, in current enumerator order. A deleted
+// enumerator loses its row; a new one needs a fresh value that no saved default uses.
+struct LegacyZ {
+    ElementType type;
+    int ordinal;
+};
+
+constexpr LegacyZ legacy_z[] = {
+    {ElementType::INVALID, 0},
+    {ElementType::BRACKET_ITEM, 1},
+    {ElementType::PART, 2},
+    {ElementType::SHARED_PART, 3},
+    {ElementType::STAFF, 4},
+    {ElementType::SCORE, 5},
+    {ElementType::TEXT, 6},
+    {ElementType::LAYOUT_BREAK, 7},
+    {ElementType::MEASURE_NUMBER, 8},
+    {ElementType::MMREST_RANGE, 9},
+    {ElementType::INSTRUMENT_NAME, 10},
+    {ElementType::BAR_LINE, 11},
+    {ElementType::STAFF_LINES, 12},
+    {ElementType::SYSTEM_DIVIDER, 13},
+    {ElementType::SLUR, 14},
+    {ElementType::SLUR_SEGMENT, 15},
+    {ElementType::TIE, 16},
+    {ElementType::TIE_SEGMENT, 17},
+    {ElementType::LAISSEZ_VIB, 18},
+    {ElementType::LAISSEZ_VIB_SEGMENT, 19},
+    {ElementType::PARTIAL_TIE, 20},
+    {ElementType::PARTIAL_TIE_SEGMENT, 21},
+    {ElementType::STEM_SLASH, 22},
+    {ElementType::ARPEGGIO, 23},
+    {ElementType::CHORD_BRACKET, 24},
+    {ElementType::ACCIDENTAL, 25},
+    {ElementType::LEDGER_LINE, 26},
+    {ElementType::STEM, 27},
+    {ElementType::HOOK, 28},
+    {ElementType::NOTE, 29},
+    {ElementType::CLEF, 30},
+    {ElementType::KEYSIG, 31},
+    {ElementType::AMBITUS, 32},
+    {ElementType::TIMESIG, 33},
+    {ElementType::REST, 34},
+    {ElementType::MMREST, 35},
+    {ElementType::DEAD_SLAPPED, 36},
+    {ElementType::SYMBOL, 37},
+    {ElementType::BREATH, 38},
+    {ElementType::MEASURE_REPEAT, 39},
+    {ElementType::ARTICULATION, 40},
+    {ElementType::ORNAMENT, 41},
+    {ElementType::FERMATA, 42},
+    {ElementType::CHORDLINE, 43},
+    {ElementType::DYNAMIC, 44},
+    {ElementType::EXPRESSION, 45},
+    {ElementType::BEAM, 46},
+    {ElementType::LYRICS, 47},
+    {ElementType::FIGURED_BASS, 48},
+    {ElementType::FIGURED_BASS_ITEM, 49},
+    {ElementType::MARKER, 50},
+    {ElementType::JUMP, 51},
+    {ElementType::FINGERING, 52},
+    {ElementType::TUPLET, 53},
+    {ElementType::TEMPO_TEXT, 54},
+    {ElementType::STAFF_TEXT, 55},
+    {ElementType::SYSTEM_TEXT, 56},
+    {ElementType::STAVE_SHARING_LABEL, 57},
+    {ElementType::SOUND_FLAG, 58},
+    {ElementType::PLAY_COUNT_TEXT, 59},
+    {ElementType::PLAYTECH_ANNOTATION, 60},
+    {ElementType::CAPO, 61},
+    {ElementType::STRING_TUNINGS, 62},
+    {ElementType::TRIPLET_FEEL, 63},
+    {ElementType::REHEARSAL_MARK, 64},
+    {ElementType::INSTRUMENT_CHANGE, 65},
+    {ElementType::STAFFTYPE_CHANGE, 66},
+    {ElementType::FRET_DIAGRAM, 67},
+    {ElementType::HARMONY, 68},
+    {ElementType::HARP_DIAGRAM, 69},
+    {ElementType::BEND, 70},
+    {ElementType::TREMOLOBAR, 71},
+    {ElementType::VOLTA, 72},
+    {ElementType::VOLTA_SEGMENT, 73},
+    {ElementType::HAIRPIN, 74},
+    {ElementType::HAIRPIN_SEGMENT, 75},
+    {ElementType::OTTAVA, 76},
+    {ElementType::OTTAVA_SEGMENT, 77},
+    {ElementType::TRILL, 78},
+    {ElementType::TRILL_SEGMENT, 79},
+    {ElementType::LET_RING, 80},
+    {ElementType::LET_RING_SEGMENT, 81},
+    {ElementType::GRADUAL_TEMPO_CHANGE, 82},
+    {ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT, 83},
+    {ElementType::VIBRATO, 84},
+    {ElementType::VIBRATO_SEGMENT, 85},
+    {ElementType::PALM_MUTE, 86},
+    {ElementType::PALM_MUTE_SEGMENT, 87},
+    {ElementType::WHAMMY_BAR, 88},
+    {ElementType::WHAMMY_BAR_SEGMENT, 89},
+    {ElementType::RASGUEADO, 90},
+    {ElementType::RASGUEADO_SEGMENT, 91},
+    {ElementType::HARMONIC_MARK, 92},
+    {ElementType::HARMONIC_MARK_SEGMENT, 93},
+    {ElementType::PICK_SCRAPE, 94},
+    {ElementType::PICK_SCRAPE_SEGMENT, 95},
+    {ElementType::TEXTLINE, 96},
+    {ElementType::TEXTLINE_SEGMENT, 97},
+    {ElementType::PEDAL, 98},
+    {ElementType::PEDAL_SEGMENT, 99},
+    {ElementType::LYRICSLINE, 100},
+    {ElementType::LYRICSLINE_SEGMENT, 101},
+    {ElementType::PARTIAL_LYRICSLINE, 102},
+    {ElementType::PARTIAL_LYRICSLINE_SEGMENT, 103},
+    {ElementType::GLISSANDO, 104},
+    {ElementType::GLISSANDO_SEGMENT, 105},
+    {ElementType::NOTELINE, 106},
+    {ElementType::NOTELINE_SEGMENT, 107},
+    {ElementType::STAFF_VISIBILITY_INDICATOR, 108},
+    {ElementType::SYSTEM_LOCK_INDICATOR, 109},
+    {ElementType::SPACER, 110},
+    {ElementType::STAFF_STATE, 111},
+    {ElementType::NOTEHEAD, 112},
+    {ElementType::NOTEDOT, 113},
+    {ElementType::IMAGE, 114},
+    {ElementType::MEASURE, 115},
+    {ElementType::SELECTION, 116},
+    {ElementType::SHADOW_NOTE, 118},
+    {ElementType::TAB_DURATION_SYMBOL, 119},
+    {ElementType::FSYMBOL, 120},
+    {ElementType::PAGE, 121},
+    {ElementType::PAGE_LOCK_INDICATOR, 122},
+    {ElementType::TEXTLINE_BASE, 123},
+    {ElementType::BRACKET, 124},
+    {ElementType::SEGMENT, 125},
+    {ElementType::SYSTEM, 126},
+    {ElementType::CHORD, 127},
+    {ElementType::HBOX, 128},
+    {ElementType::VBOX, 129},
+    {ElementType::TBOX, 130},
+    {ElementType::FBOX, 131},
+    {ElementType::ACTION_ICON, 132},
+    {ElementType::BAGPIPE_EMBELLISHMENT, 133},
+    {ElementType::STICKING, 134},
+    {ElementType::GRACE_NOTES_GROUP, 135},
+    {ElementType::GUITAR_BEND, 136},
+    {ElementType::GUITAR_BEND_SEGMENT, 137},
+    {ElementType::GUITAR_BEND_HOLD, 138},
+    {ElementType::GUITAR_BEND_HOLD_SEGMENT, 139},
+    {ElementType::GUITAR_BEND_TEXT, 140},
+    {ElementType::TREMOLO_TWOCHORD, 141},
+    {ElementType::TREMOLO_SINGLECHORD, 142},
+    {ElementType::TIME_TICK_ANCHOR, 143},
+    {ElementType::PARENTHESIS, 144},
+    {ElementType::HAMMER_ON_PULL_OFF, 145},
+    {ElementType::HAMMER_ON_PULL_OFF_SEGMENT, 146},
+    {ElementType::HAMMER_ON_PULL_OFF_TEXT, 147},
+    {ElementType::TAPPING, 148},
+    {ElementType::TAPPING_HALF_SLUR, 149},
+    {ElementType::TAPPING_HALF_SLUR_SEGMENT, 150},
+    {ElementType::TAPPING_TEXT, 151},
+    {ElementType::ROOT_ITEM, 152},
+    {ElementType::DUMMY, 153},
+};
+
+constexpr bool legacy_z_matches_enum() {
+    for (std::size_t i = 0; i < std::size(legacy_z); ++i) {
+        if (legacy_z[i].type != static_cast<ElementType>(i)) return false;
+    }
+    return true;
+}
+
+static_assert(std::size(legacy_z) == static_cast<std::size_t>(ElementType::MAXTYPE), "every ElementType needs a pinned z order");
+static_assert(legacy_z_matches_enum(), "legacy_z rows must follow ElementType order");
+} // namespace
+
+int default_z(ElementType type) { return legacy_z[static_cast<std::size_t>(type)].ordinal * 100; }
+
 EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingObject(type, parent) {
     flags_ = f;
     color_ = configuration()->default_color();
@@ -375,7 +554,7 @@ void EngravingItem::set_track(track_idx_t val) {
 
 int EngravingItem::z() const {
     if (z_ == -1) {
-        z_ = int(type()) * 100;
+        z_ = default_z(type());
     }
     return z_;
 }
@@ -1480,7 +1659,7 @@ PropertyValue EngravingItem::property_default(Pid pid) const {
             return 0.0_sp;
         }
         case Pid::AUTOPLACE: return true;
-        case Pid::Z: return int(type()) * 100;
+        case Pid::Z: return default_z(type());
         case Pid::POSITION_LINKED_TO_MASTER: return true;
         case Pid::APPEARANCE_LINKED_TO_MASTER: return true;
         case Pid::EXCLUDE_FROM_OTHER_PARTS: return false;
