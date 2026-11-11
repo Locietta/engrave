@@ -84,7 +84,7 @@ void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHo
 //
 // Returns false and fills `error` (when not null) if the engine was already
 // initialised at a different rate, a path is not .sf2/.sf3, the
-// native runtime/IFileSystem is missing, a font cannot be parsed, or a parsed
+// native runtime/NativeFileSystem is missing, a font cannot be parsed, or a parsed
 // font does not show up as an engine input resource. A failed replacement
 // attempts to restore the previous repository. Failure during initial service
 // construction does not promise that a retry is safe.

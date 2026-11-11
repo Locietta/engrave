@@ -10,6 +10,7 @@
 
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsequencer.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/soundmapping.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/guitarbend.h"
@@ -25,7 +26,6 @@
 #include "engraving/playback/renderers/gracechordcontext.h"
 #include "engraving/playback/renderingcontext.h"
 #include "engraving/playback/utils/expressionutils.h"
-#include "global/io/ifilesystem.h"
 #include "mpe/internal/articulationprofilesrepository.h"
 #include "mpe/tests/utils/articulationutils.h"
 #include "utils/scorerw.h"

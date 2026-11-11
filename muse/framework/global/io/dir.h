@@ -22,8 +22,8 @@
 #ifndef MUSE_IO_DIR_H
 #define MUSE_IO_DIR_H
 
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "global/types/retval.h"
-#include "ifilesystem.h"
 #include "ioenums.h"
 #include "path.h"
 

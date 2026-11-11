@@ -17,8 +17,8 @@
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/fonts_engine_proxy.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "engrave/src/runtime/runtime_assets.h"
-#include "global/io/ifilesystem.h"
 #include <engrave/engine.h>
 
 namespace {

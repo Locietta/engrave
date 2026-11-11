@@ -19,7 +19,7 @@
 
 using namespace muse;
 using namespace muse::io;
-using music::NativeFileSystem;
+using muse::io::NativeFileSystem;
 namespace fs = std::filesystem;
 
 namespace {
@@ -943,7 +943,7 @@ RetVal<io::paths_t> NativeFileSystem::scan_files(const io::PathT &root_dir, cons
     return result;
 }
 
-void NativeFileSystem::set_attribute(const io::PathT &, io::IFileSystem::Attribute) const {
+void NativeFileSystem::set_attribute(const io::PathT &, io::NativeFileSystem::Attribute) const {
     // Hidden attributes have no portable std::filesystem equivalent, so this is a no-op.
 }
 

@@ -27,8 +27,8 @@
 #include "dom/mscore.h"
 #include "dom/page.h"
 #include "dom/text.h"
+#include "engraving/infrastructure/localfileinfoprovider.h"
 #include "global/appinfo.h"
-#include "ifileinfoprovider.h"
 #include "tlayout.h"
 
 using namespace mu::engraving;
@@ -297,7 +297,7 @@ TextBlock HeaderFooterLayout::replace_text_macros(LayoutContext &ctx, const Page
                         }
                     } break;
                     case 'm': {
-                        IFileInfoProviderPtr file_info = page->score()->master_score()->file_info();
+                        LocalFileInfoProviderPtr file_info = page->score()->master_score()->file_info();
                         if (file_info->is_newly_created()) {
                             new_fragments.back().text += String(u"HH:mm:ss");
                         } else {
@@ -305,7 +305,7 @@ TextBlock HeaderFooterLayout::replace_text_macros(LayoutContext &ctx, const Page
                         }
                     } break;
                     case 'M': {
-                        IFileInfoProviderPtr file_info = page->score()->master_score()->file_info();
+                        LocalFileInfoProviderPtr file_info = page->score()->master_score()->file_info();
                         if (file_info->is_newly_created()) {
                             new_fragments.back().text += String(u"YYYY-MM-DD");
                         } else {

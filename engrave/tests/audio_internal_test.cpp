@@ -1386,7 +1386,7 @@ namespace {
 struct ProfileResourceFixture {
     std::filesystem::path root = std::filesystem::temp_directory_path() /
                                  ("engrave-profile-repair-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-    music::NativeFileSystem files{root};
+    muse::io::NativeFileSystem files{root};
     muse::mpe::ArticulationProfilesRepository repository{files};
 
     ProfileResourceFixture() { std::filesystem::create_directories(root / "mpe/resources"); }

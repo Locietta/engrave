@@ -22,26 +22,32 @@
 
 #pragma once
 
-#include "ifileinfoprovider.h"
-#include "io/ifilesystem.h"
+#include <memory>
+
+#include "engrave/src/runtime/resource_filesystem.h"
+#include "io/path.h"
+#include "types/datetime.h"
 
 namespace mu::engraving {
-struct LocalFileInfoProvider : IFileInfoProvider {
+struct LocalFileInfoProvider {
+
     explicit LocalFileInfoProvider(const muse::io::PathT &file_path);
 
-    bool saved() const override;
+    bool saved() const;
 
-    muse::io::PathT path() const override;
-    muse::io::PathT file_name(bool including_extension = true) const override;
-    muse::io::PathT absolute_dir_path() const override;
+    muse::io::PathT path() const;
+    muse::io::PathT file_name(bool including_extension = true) const;
+    muse::io::PathT absolute_dir_path() const;
 
-    muse::String display_name() const override;
+    muse::String display_name() const;
 
-    muse::DateTime birth_time() const override;
-    muse::DateTime last_modified() const override;
-    bool is_newly_created() const override;
+    muse::DateTime birth_time() const;
+    muse::DateTime last_modified() const;
+    bool is_newly_created() const;
 
 private:
     muse::io::PathT path_;
 };
+
+using LocalFileInfoProviderPtr = std::shared_ptr<LocalFileInfoProvider>;
 } // namespace mu::engraving

@@ -41,10 +41,10 @@
 #ifdef ENGRAVE_PLAYBACK_HARNESS
 #include "engraving/playback/playbackmodel.h"
 #endif
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "engraving/playback/playbackwalk.h"
 #include "flat_playback_capture.h"
 #include "global/defer.h"
-#include "global/io/ifilesystem.h"
 #include "global/io/iodevice.h"
 #include "global/io/ioretcodes.h"
 #include "global/io/path.h"
@@ -292,7 +292,7 @@ bool validate_engine_soundfonts(const std::vector<std::string> &soundfont_paths,
 
     // Uri::fromLocalFile() resolves the absolute path through the engine's file system.
     if (!io::file_system()) {
-        return fail("native runtime (IFileSystem) is not initialised; create the EngineContext first");
+        return fail("native runtime (NativeFileSystem) is not initialised; create the EngineContext first");
     }
 
     // The pinned FluidSynth default sink writes parser errors to stdout, which

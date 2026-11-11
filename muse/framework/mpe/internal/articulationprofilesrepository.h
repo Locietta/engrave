@@ -26,13 +26,13 @@
 #include <array>
 #include <optional>
 
-#include "io/ifilesystem.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "mpe/iarticulationprofilesrepository.h"
 #include "serialization/json.h"
 
 namespace muse::mpe {
 struct ArticulationProfilesRepository : IArticulationProfilesRepository {
-    explicit ArticulationProfilesRepository(io::IFileSystem &file_system) : file_system_(file_system) {}
+    explicit ArticulationProfilesRepository(io::NativeFileSystem &file_system) : file_system_(file_system) {}
 
     ArticulationsProfilePtr create_new() const override;
     ArticulationsProfilePtr default_profile(const ArticulationFamily family) const override;
@@ -40,7 +40,7 @@ struct ArticulationProfilesRepository : IArticulationProfilesRepository {
     void save_profile(const io::PathT &path, const ArticulationsProfilePtr profile_ptr) override;
 
 private:
-    io::IFileSystem *file_system() const { return &file_system_; }
+    io::NativeFileSystem *file_system() const { return &file_system_; }
 
     std::vector<ArticulationFamily> supported_families_from_json(const JsonArray &array) const;
     JsonArray supported_families_to_json(const std::vector<ArticulationFamily> &families) const;
@@ -60,7 +60,7 @@ private:
     // optional preserves cached load failures (a cached nullptr is still a cache hit).
     mutable std::array<std::optional<ArticulationsProfilePtr>, static_cast<size_t>(SoundCategory::LAST)> default_profiles_;
 
-    io::IFileSystem &file_system_;
+    io::NativeFileSystem &file_system_;
 };
 } // namespace muse::mpe
 

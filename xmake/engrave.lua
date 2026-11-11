@@ -274,6 +274,7 @@ target("muse_global")
     -- call them, so they must link with muse_global rather than with engrave,
     -- which comes first on the link line.
     add_files(path.join(engrave_src, "global/*.cpp"))
+    add_files(path.join(engrave_src, "runtime/resource_filesystem.cpp"))
     if is_plat("linux") then
         add_syslinks("dl", "pthread", {public = true})
     end
@@ -486,7 +487,7 @@ target("engrave")
         "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
     add_engine_target_defaults()
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
-    add_files(path.join(engrave_src, "**.cpp|global/*.cpp"))
+    add_files(path.join(engrave_src, "**.cpp|global/*.cpp|runtime/resource_filesystem.cpp"))
     add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
     -- cairo renders pages (render/).
     add_packages("cairo", {public = true})

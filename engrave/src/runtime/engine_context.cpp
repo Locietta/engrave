@@ -27,6 +27,7 @@
 
 namespace music {
 using namespace muse;
+using muse::io::NativeFileSystem;
 using namespace muse::draw;
 using namespace mu::engraving;
 
@@ -199,7 +200,7 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
 
 EngineContext::~EngineContext() { impl_->teardown(); }
 
-io::IFileSystem &EngineContext::file_system() const { return *impl_->file_system; }
+io::NativeFileSystem &EngineContext::file_system() const { return *impl_->file_system; }
 
 EngineAudio &EngineContext::audio() const { return *impl_->audio; }
 
