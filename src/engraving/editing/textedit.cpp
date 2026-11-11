@@ -62,7 +62,7 @@ ChangeTextProperties::ChangeTextProperties(const TextCursor *tc, Pid prop_id, co
     : TextEditUndoableCommand(*tc) {
     property_id_ = prop_id;
     property_val_ = prop_val;
-    flags_ = flags_;
+    flags_ = flags;
     if (property_id_ == Pid::FONT_STYLE) {
         existing_style_ = static_cast<FontStyle>(cursor().text()->get_property(prop_id).to_int());
     }
