@@ -31,7 +31,6 @@
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "global/appinfo.h"
-#include "global/io/buffer.h"
 #include "log.h"
 #include "staffwrite.h"
 #include "twrite.h"
@@ -247,87 +246,4 @@ void Writer::write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t strac
 void Writer::do_write_item(const EngravingItem *item, XmlWriter &xml) {
     WriteContext ctx(item->score(), /* clipboardMode = */ true);
     TWrite::write_item(item, xml, ctx);
-}
-
-muse::ByteArray Writer::write_staff_selection(Score *score, const SelectionFilter &filter, staff_idx_t staff_start, staff_idx_t staff_end,
-                                              const Fraction &tick_start, const Fraction &tick_end, Segment *start_segment,
-                                              Segment *end_segment) {
-    auto buffer = io::Buffer::opened(io::IODevice::WRITE_ONLY);
-    XmlWriter xml(&buffer);
-
-    xml.start_document();
-
-    Fraction ticks = tick_end - tick_start;
-    int staves = static_cast<int>(staff_end - staff_start);
-
-    XmlWriter::Attributes staff_list_attributes = {
-        {"version", (MScore::test_mode ? "2.00" : Constants::msc_version_str)},
-        {"tick", tick_start.to_string()},
-        {"len", ticks.to_string()},
-        {"staff", staff_start},
-        {"staves", staves},
-    };
-
-    // Note: canCopy() ensures that the whole selection has a single time stretch ratio.
-    Fraction time_stretch = score->staff(staff_start)->time_stretch(tick_start);
-    if (time_stretch != Fraction(1, 1)) {
-        staff_list_attributes.push_back({"timeStretch", time_stretch.to_string()});
-    }
-
-    xml.start_element("StaffList", staff_list_attributes);
-
-    WriteContext ctx(score, /* clipboardMode = */ true);
-    ctx.set_filter(filter);
-    ctx.set_first_clipboard_tick(tick_start);
-
-    for (staff_idx_t staff_idx = staff_start; staff_idx < staff_end; ++staff_idx) {
-        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
-        track_idx_t end_track = start_track + ::mu::engraving::voices;
-
-        xml.start_element("Staff", {{"id", staff_idx}});
-
-        Staff *staff = score->staff(staff_idx);
-        Part *part = staff->part();
-        Interval interval = part->instrument(start_segment->tick())->transpose();
-        if (interval.chromatic) {
-            xml.tag("transposeChromatic", interval.chromatic);
-        }
-        if (interval.diatonic) {
-            xml.tag("transposeDiatonic", interval.diatonic);
-        }
-        write_segments(xml, ctx, start_track, end_track, start_segment, end_segment, false, false);
-        xml.end_element();
-    }
-
-    TWrite::write_score_spanners(score, staff2track(staff_start), staff2track(staff_end), start_segment, end_segment, xml, ctx);
-
-    xml.end_element();
-    xml.flush();
-    return buffer.data();
-}
-
-muse::ByteArray Writer::write_symbol_list_selection(track_idx_t from_track, track_idx_t to_track,
-                                                    const std::vector<SelectedSymbol> &symbols) {
-    auto buffer = io::Buffer::opened(io::IODevice::WRITE_ONLY);
-    XmlWriter xml(&buffer);
-
-    xml.start_document();
-
-    xml.start_element("SymbolList", {{"version", Constants::msc_version_str}, {"fromtrack", from_track}, {"totrack", to_track}});
-
-    track_idx_t curr_track = muse::nidx;
-    for (const SelectedSymbol &symbol : symbols) {
-        if (curr_track != symbol.track) {
-            xml.tag("trackOffset", static_cast<int>(symbol.track - from_track));
-            curr_track = symbol.track;
-        }
-        xml.tag("tickOffset", symbol.tick_offset);
-        xml.tag("segDelta", symbol.seg_delta);
-        do_write_item(symbol.element, xml);
-    }
-
-    xml.end_element();
-    xml.flush();
-    buffer.close();
-    return buffer.data();
 }

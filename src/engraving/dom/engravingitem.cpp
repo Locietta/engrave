@@ -42,7 +42,6 @@
 #include "iengravingconfiguration.h"
 #include "iengravingfont.h"
 #include "internal/engravingcontextconfiguration.h"
-#include "io/buffer.h"
 #include "linkedobjects.h"
 #include "log.h"
 #include "masterscore.h"
@@ -57,7 +56,7 @@
 #include "rendering/score/chordlayout.h"
 #include "rendering/score/tlayout.h"
 #include "rootitem.h"
-#include "rw/rwregister.h"
+#include "rw/xmlreader.h"
 #include "score.h"
 #include "segment.h"
 #include "shape.h"
@@ -973,30 +972,6 @@ void EngravingItem::dump() const {
          type_name(), ldata->pos().x(), ldata->pos().y(), ldata->bbox().x(), ldata->bbox().y(), ldata->bbox().width(),
          ldata->bbox().height(), page_bounding_rect().x(), page_bounding_rect().y(), page_bounding_rect().width(),
          page_bounding_rect().height(), ownership_parent());
-}
-
-//---------------------------------------------------------
-//   mimeData
-//---------------------------------------------------------
-
-muse::ByteArray EngravingItem::mime_data(const PointF &drag_offset) const {
-    auto buffer = Buffer::opened(IODevice::WRITE_ONLY);
-    XmlWriter xml(&buffer);
-
-    xml.start_element("EngravingItem");
-    if (is_note()) {
-        xml.tag_fraction("duration", to_note(this)->chord()->ticks());
-    }
-    if (!drag_offset.is_null()) {
-        xml.tag_point("dragOffset", drag_offset);
-    }
-
-    rw::RWRegister::writer()->write_item(this, xml);
-
-    xml.end_element();
-    xml.flush();
-    buffer.close();
-    return buffer.data();
 }
 
 //---------------------------------------------------------

@@ -113,17 +113,6 @@ void SpannerSegment::spatium_changed(double ov, double nv) {
 }
 
 //---------------------------------------------------------
-//   mimeData
-//---------------------------------------------------------
-
-muse::ByteArray SpannerSegment::mime_data(const PointF &drag_offset) const {
-    if (drag_offset.is_null()) { // where is dragOffset used?
-        return spanner()->mime_data(drag_offset);
-    }
-    return EngravingItem::mime_data(drag_offset);
-}
-
-//---------------------------------------------------------
 //   propertyDelegate
 //---------------------------------------------------------
 
