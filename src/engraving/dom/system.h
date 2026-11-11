@@ -198,8 +198,6 @@ public:
     EngravingItem *next_segment_element() override;
     EngravingItem *prev_segment_element() override;
 
-    double top_distance(staff_idx_t staff_idx, const SkylineLine &) const;
-    double bottom_distance(staff_idx_t staff_idx, const SkylineLine &) const;
     double min_top() const;
     double min_bottom() const;
     double spacer_distance(bool up) const;
