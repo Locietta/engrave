@@ -34,7 +34,6 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 void Paint::paint_score(Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
-    TRACEFUNC;
     if (!score) {
         return;
     }
@@ -214,7 +213,6 @@ SizeF Paint::page_size_inch(const Score *score, const IScoreRenderer::ScorePaint
 }
 
 void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintOptions &opt) {
-    TRACEFUNC;
     if (item->ldata()->is_skip_draw()) {
         return;
     }
@@ -227,7 +225,6 @@ void Paint::paint_item(Painter &painter, const EngravingItem *item, const PaintO
 }
 
 void Paint::paint_items(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
-    TRACEFUNC;
     std::vector<EngravingItem *> sorted_items(items.begin(), items.end());
 
     std::sort(sorted_items.begin(), sorted_items.end(), mu::engraving::element_less_than);

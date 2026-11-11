@@ -318,8 +318,6 @@ void MasterScore::update(bool reset_cmd_state, bool layout_all_parts) {
         return;
     }
 
-    TRACEFUNC;
-
     delete_postponed(cmd_state_);
 
     if (cmd_state_.layout_range()) {

@@ -24,18 +24,18 @@
 
 #include <functional>
 
-#include "audio/engine/isoundfontrepository.h"
+#include "audio/common/soundfonttypes.h"
 
 namespace muse::audio::synth {
-struct SoundFontRepository : ISoundFontRepository {
-    void load_sound_fonts(const std::vector<SoundFontUri> &uris) override;
-    void add_sound_font(const SoundFontUri &uri) override;
-    void add_sound_font_data(const SoundFontUri &uri, const ByteArray &data) override;
+struct SoundFontRepository {
+    void load_sound_fonts(const std::vector<SoundFontUri> &uris);
+    void add_sound_font(const SoundFontUri &uri);
+    void add_sound_font_data(const SoundFontUri &uri, const ByteArray &data);
 
-    bool is_sound_font_loaded(const std::string &name) const override;
-    bool is_loading_sound_fonts() const override;
+    bool is_sound_font_loaded(const std::string &name) const;
+    bool is_loading_sound_fonts() const;
 
-    const SoundFontsMap &sound_fonts() const override;
+    const SoundFontsMap &sound_fonts() const;
 
     // Called synchronously after the SoundFonts changed, where upstream sent
     // soundFontsChanged; the audio services refresh the synth resolvers here.

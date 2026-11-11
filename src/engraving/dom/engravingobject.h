@@ -95,7 +95,6 @@ struct InstrumentChange;
 struct InstrumentName;
 struct Jump;
 struct KeySig;
-struct Lasso;
 struct LayoutBreak;
 struct LaissezVib;
 struct LaissezVibSegment;
@@ -493,7 +492,6 @@ public:
     CONVERT(is_part, PART)
     CONVERT(is_shared_part, SHARED_PART)
     CONVERT(is_bagpipe_embellishment, BAGPIPE_EMBELLISHMENT)
-    CONVERT(is_lasso, LASSO)
     CONVERT(is_sticking, STICKING)
     CONVERT(is_grace_notes_group, GRACE_NOTES_GROUP)
     CONVERT(is_string_tunings, STRING_TUNINGS)
@@ -782,7 +780,6 @@ CONVERT(BracketItem, to_bracket_item, is_bracket_item)
 CONVERT(Staff, to_staff, is_staff)
 CONVERT(Part, to_part, is_part)
 CONVERT(SharedPart, to_shared_part, is_shared_part)
-CONVERT(Lasso, to_lasso, is_lasso)
 CONVERT(BagpipeEmbellishment, to_bagpipe_embellishment, is_bagpipe_embellishment)
 CONVERT(Sticking, to_sticking, is_sticking)
 CONVERT(GraceNotesGroup, to_grace_notes_group, is_grace_notes_group)

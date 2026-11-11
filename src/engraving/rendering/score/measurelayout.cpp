@@ -377,7 +377,6 @@ void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
 }
 
 void MeasureLayout::get_next_measure(LayoutContext &ctx) {
-    TRACEFUNC;
     LAYOUT_CALL();
 
     move_to_next_measure(ctx);

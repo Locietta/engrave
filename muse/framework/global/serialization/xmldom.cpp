@@ -271,7 +271,6 @@ XmlDomAttribute XmlDomElement::attribute(const char *name) const {
 XmlDomDocument::XmlDomDocument() { xml_ = std::make_shared<XmlDomImplData>(); }
 
 void XmlDomDocument::set_content(const ByteArray &data) {
-    TRACEFUNC;
 
     xml_->doc.reset();
     xml_->result = xml_->doc.load_buffer(data.const_data(), data.size());

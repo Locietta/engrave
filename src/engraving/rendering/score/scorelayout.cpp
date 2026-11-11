@@ -46,7 +46,6 @@ public:
 };
 
 void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction &et) {
-    TRACEFUNC;
 
     CmdStateLocker cmd_state_locker(score);
     LayoutContext ctx(score);

@@ -37,7 +37,6 @@ using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
 bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write::WriteContext *ctx) {
-    TRACEFUNC;
 
     IF_ASSERT_FAILED(msc_writer.is_opened()) { return false; }
 

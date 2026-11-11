@@ -55,7 +55,6 @@ struct IEngravingConfiguration {
     virtual void reset_displayed_default_colors() = 0;
 
     virtual Color indicator_icon_inverted_selection_color() const = 0;
-    virtual Color lasso_color() const = 0;
     virtual Color warning_color() const = 0;
     virtual Color warning_selected_color() const = 0;
     virtual Color critical_color() const = 0;

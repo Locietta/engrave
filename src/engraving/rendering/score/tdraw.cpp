@@ -62,7 +62,6 @@
 #include "dom/jump.h"
 #include "dom/keysig.h"
 #include "dom/laissezvib.h"
-#include "dom/lasso.h"
 #include "dom/layoutbreak.h"
 #include "dom/ledgerline.h"
 #include "dom/letring.h"
@@ -210,7 +209,6 @@ void TDraw::draw_item(const EngravingItem *item, Painter *painter, const PaintOp
 
         case ElementType::KEYSIG: draw(item_cast<const KeySig *>(item), painter, opt); break;
         case ElementType::LAISSEZ_VIB_SEGMENT: draw(item_cast<const LaissezVibSegment *>(item), painter, opt); break;
-        case ElementType::LASSO: draw(item_cast<const Lasso *>(item), painter, opt); break;
         case ElementType::LAYOUT_BREAK: draw(item_cast<const LayoutBreak *>(item), painter, opt); break;
         case ElementType::LEDGER_LINE: draw(item_cast<const LedgerLine *>(item), painter, opt); break;
         case ElementType::LET_RING_SEGMENT: draw(item_cast<const LetRingSegment *>(item), painter, opt); break;
@@ -1871,16 +1869,6 @@ void TDraw::draw(const LaissezVibSegment *item, muse::draw::Painter *painter, co
     } else {
         draw(static_cast<const TieSegment *>(item), painter, opt);
     }
-}
-
-void TDraw::draw(const Lasso *item, Painter *painter, const PaintOptions &) {
-    TRACE_DRAW_ITEM;
-    const Lasso::LayoutData *ldata = item->ldata();
-    painter->set_brush(Brush(item->configuration()->lasso_color()));
-    // always 2 pixel width
-    double w = 2.0 / painter->world_transform().m11() * item->context_configuration()->gui_scaling();
-    painter->set_pen(Pen(item->configuration()->selection_color(), w));
-    painter->draw_rect(ldata->bbox());
 }
 
 void TDraw::draw(const LayoutBreak *item, Painter *painter, const PaintOptions &opt) {

@@ -50,7 +50,6 @@
 #include "editmeasures.h"
 #include "editparentheses.h"
 #include "editstaff.h"
-#include "imimedata.h"
 #include "io/buffer.h"
 #include "log.h"
 #include "noteinput.h"
@@ -277,7 +276,6 @@ void Paste::paste_symbols(Transaction &, XmlReader &e, ChordRest *dst) {
 }
 
 bool Paste::repeat_list_selection(Transaction &tx, Score *score) {
-    TRACEFUNC;
 
     InputState &is = score->input_state();
 

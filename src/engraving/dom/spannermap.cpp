@@ -41,7 +41,6 @@ SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { dirty_ = true; }
 //---------------------------------------------------------
 
 void SpannerMap::update() const {
-    TRACEFUNC;
     IntervalList regular_intervals;
     IntervalList collision_free_intervals;
 

@@ -28,7 +28,6 @@
 #include "audio/engine/internal/playbackcapture.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
 #include "audio/engine/internal/synthesizers/fluidsynth/fluidtrack.h"
-#include "audio/engine/isoundfontrepository.h"
 #include "audio/engine/offlinerendersettings.h"
 #include "audio_output.h"
 #include "engrave/src/score/score_excerpts.h"

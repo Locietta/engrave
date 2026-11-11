@@ -953,7 +953,6 @@ void SlurTieLayout::adjust_end_points(SlurSegment *slur_seg) {
 
 void SlurTieLayout::avoid_collisions(SlurSegment *slur_seg, PointF &pp1, PointF &p2, PointF &p3, PointF &p4,
                                      Transform &to_system_coordinates, double &slur_angle) {
-    TRACEFUNC;
     Slur *slur = slur_seg->slur();
     double spatium = slur_seg->spatium();
     double slur_length = std::abs(p2.x() / spatium);

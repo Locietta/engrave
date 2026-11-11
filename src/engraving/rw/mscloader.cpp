@@ -67,7 +67,6 @@ static RetVal<IReaderPtr> make_reader(int version, bool ignore_version_error) {
 }
 
 Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader, rw::ReadInOutData *in_out, bool ignore_version_error) {
-    TRACEFUNC;
 
     using namespace mu::engraving;
 

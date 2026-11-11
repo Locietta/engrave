@@ -1196,7 +1196,6 @@ void ChordLayout::layout_articulations3(Chord *item, Slur *slur, LayoutContext &
 
 //! May be called again when the chord is added to or removed from a beam.
 void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
-    TRACEFUNC;
 
     LAYOUT_CALL() << "chord: " << item->eid();
 
@@ -2173,7 +2172,6 @@ void ChordLayout::calculate_chord_offsets(Segment *segment, staff_idx_t staff_id
 //---------------------------------------------------------
 
 void ChordLayout::layout_chords1(LayoutContext &ctx, Segment *segment, staff_idx_t staff_idx) {
-    TRACEFUNC;
     LAYOUT_CALL() << LAYOUT_ITEM_INFO(segment);
 
     const Staff *staff = ctx.dom().staff(staff_idx);

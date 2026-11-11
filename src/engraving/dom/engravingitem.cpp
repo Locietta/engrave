@@ -1524,8 +1524,7 @@ bool EngravingItem::is_printable() const {
         case ElementType::TBOX:
         case ElementType::FBOX:
         case ElementType::SPACER:
-        case ElementType::SHADOW_NOTE:
-        case ElementType::LASSO: return false;
+        case ElementType::SHADOW_NOTE: return false;
         default: return true;
     }
 }

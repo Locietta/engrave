@@ -363,8 +363,6 @@ static const std::array element_types{
          TranslatableString("engraving", "Measure(s)", nullptr, 1)},
     Item{ElementType::SELECTION, "Selection", TranslatableString("engraving", "selection(s)", nullptr, 1),
          TranslatableString("engraving", "Selection(s)", nullptr, 1)},
-    Item{ElementType::LASSO, "Lasso", TranslatableString("engraving", "lasso(s)", nullptr, 1),
-         TranslatableString("engraving", "Lasso(s)", nullptr, 1)},
     Item{ElementType::SHADOW_NOTE, "ShadowNote", TranslatableString("engraving", "shadow note(s)", nullptr, 1),
          TranslatableString("engraving", "Shadow note(s)", nullptr, 1)},
     Item{ElementType::TAB_DURATION_SYMBOL, "TabDurationSymbol", TranslatableString("engraving", "tab duration symbol(s)", nullptr, 1),

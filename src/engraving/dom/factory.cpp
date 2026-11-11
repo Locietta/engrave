@@ -296,7 +296,6 @@ EngravingItem *Factory::do_create_item(ElementType type, DummyParentOr<Engraving
         case ElementType::LEDGER_LINE:
         case ElementType::STAFF_LINES:
         case ElementType::SELECTION:
-        case ElementType::LASSO:
         case ElementType::SHADOW_NOTE:
         case ElementType::SEGMENT:
         case ElementType::SYSTEM:

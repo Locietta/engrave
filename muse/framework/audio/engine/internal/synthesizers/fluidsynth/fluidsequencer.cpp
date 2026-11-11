@@ -48,7 +48,6 @@ static constexpr uint32_t ctrl_off = 0;
 
 void FluidSequencer::init(const PlaybackSetupData &setup_data, const std::optional<midi::Program> &program_override,
                           bool use_dynamic_events, const channel_t max_channels) {
-    TRACEFUNC;
 
     channels_.init(setup_data, program_override, max_channels);
     use_dynamic_events_ = use_dynamic_events;

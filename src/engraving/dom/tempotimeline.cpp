@@ -36,7 +36,6 @@ using namespace mu::engraving;
 static constexpr int min_tempo_resample_steps = 8;
 
 static TempoValues resample_tempo_values(const AutomationCurve &tempo_curve) {
-    TRACEFUNC;
 
     // No tempo markings at all - hold the default tempo
     if (tempo_curve.empty()) {
@@ -129,7 +128,6 @@ void TempoTimeline::rebuild(const AutomationCurve &tempo_curve, const PausesMap 
 }
 
 void TempoTimeline::rebuild(const TempoValues &tempo_values, const PausesMap &pauses) {
-    TRACEFUNC;
 
     points_.clear();
     pauses_ = pauses;

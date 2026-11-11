@@ -157,7 +157,6 @@ static void write_point(const AutomationPoint &point, muse::JsonObject &obj) {
 }
 
 void AutomationRW::read(AutomationData &data, const muse::ByteArray &json) {
-    TRACEFUNC;
 
     if (json.empty()) {
         return;
@@ -197,7 +196,6 @@ void AutomationRW::read(AutomationData &data, const muse::ByteArray &json) {
 }
 
 muse::ByteArray AutomationRW::write(const AutomationData &data, bool write_generated) {
-    TRACEFUNC;
 
     muse::JsonArray root_array;
     for (const auto &[key, curve] : data.curves()) {

@@ -153,7 +153,6 @@ void ChangeStyleValues::flip() {
 //---------------------------------------------------------
 
 bool EditStyle::load_style(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign, bool overlap) {
-    TRACEFUNC;
 
     if (!dev.open(muse::io::IODevice::READ_ONLY)) {
         LOGE() << "The style data is not available.";
