@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: GPL-3.0-only
  *
- * Cairo implementation of muse::draw::IPaintProvider.
+ * Cairo implementation of muse::draw::CairoPainter.
  *
  * Text uses the font bytes actually registered in music::RuntimeFontsDatabase.  FreeType
  * memory faces are cached for the process lifetime, Cairo FT font faces are

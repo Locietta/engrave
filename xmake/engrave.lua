@@ -282,7 +282,7 @@ target("muse_global")
 target("muse_draw")
     set_kind("static")
     add_deps("muse_generated", "muse_global")
-    add_packages("freetype", "harfbuzz", {public = true})
+    add_packages("freetype", "harfbuzz", "cairo", {public = true})
     add_engine_target_defaults()
     add_includedirs(
         engine("muse/framework/draw"),
@@ -292,6 +292,7 @@ target("muse_draw")
         engine("muse/framework/global")
     )
     add_files(engine("muse/framework/draw/**.cpp"))
+    add_files(path.join(engrave_src, "render/cairo_painter.cpp"))
 
 target("muse_mpe")
     set_kind("static")
@@ -487,10 +488,8 @@ target("engrave")
         "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
     add_engine_target_defaults()
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
-    add_files(path.join(engrave_src, "**.cpp|global/*.cpp|runtime/resource_filesystem.cpp"))
+    add_files(path.join(engrave_src, "**.cpp|global/*.cpp|runtime/resource_filesystem.cpp|render/cairo_painter.cpp"))
     add_includedirs(ENGRAVE_PUBLIC_INCLUDES, {public = true})
-    -- cairo renders pages (render/).
-    add_packages("cairo", {public = true})
     if not is_plat("windows") then
         add_links("m", {public = true})
     end

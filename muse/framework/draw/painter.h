@@ -24,8 +24,8 @@
 
 #include <stack>
 
+#include "engrave/src/render/cairo_painter.h"
 #include "global/types/string.h"
-#include "ipaintprovider.h"
 #include "types/color.h"
 #include "types/drawtypes.h"
 #include "types/font.h"
@@ -37,12 +37,12 @@ struct QPaintDevice;
 
 namespace muse::draw {
 struct Painter {
-    Painter(IPaintProviderPtr provider, const std::string &name);
+    Painter(CairoPainterPtr provider, const std::string &name);
 
     ~Painter();
 
-    IPaintProviderPtr provider() const;
-    void set_provider(const IPaintProviderPtr &p, bool reinit = true);
+    CairoPainterPtr provider() const;
+    void set_provider(const CairoPainterPtr &p, bool reinit = true);
 
     bool is_active() const;
     bool end_draw();
@@ -136,7 +136,7 @@ struct Painter {
 
     //! NOTE Provider for tests.
     //! We're not ready to use DI (ModuleIoC) here yet
-    static IPaintProviderPtr extended;
+    static CairoPainterPtr extended;
 
 private:
 
@@ -160,7 +160,7 @@ private:
 
     bool end_target(bool end_draw);
 
-    IPaintProviderPtr provider_;
+    CairoPainterPtr provider_;
     std::string name_;
     std::stack<State> states_;
 };

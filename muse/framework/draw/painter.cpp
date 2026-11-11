@@ -28,10 +28,10 @@
 using namespace muse;
 using namespace muse::draw;
 
-IPaintProviderPtr Painter::extended;
+CairoPainterPtr Painter::extended;
 bool PainterItemMarker::enabled = true;
 
-Painter::Painter(IPaintProviderPtr provider, const std::string &name) : provider_(provider), name_(name) { init(); }
+Painter::Painter(CairoPainterPtr provider, const std::string &name) : provider_(provider), name_(name) { init(); }
 
 Painter::~Painter() { end_target(false); }
 
@@ -50,9 +50,9 @@ void Painter::init() {
     states_.push(std::move(st));
 }
 
-IPaintProviderPtr Painter::provider() const { return provider_; }
+CairoPainterPtr Painter::provider() const { return provider_; }
 
-void Painter::set_provider(const IPaintProviderPtr &p, bool reinit) {
+void Painter::set_provider(const CairoPainterPtr &p, bool reinit) {
     provider_ = p;
     if (reinit) {
         init();
