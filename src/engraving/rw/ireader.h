@@ -81,8 +81,6 @@ struct IReader {
 
     //! NOTE Needs refactoring - reading should be separated from insertion
     //! (we read the elements into some structure, then inserted them)
-    virtual bool paste_staff(XmlReader &e, Segment *dst, staff_idx_t dst_staff, Fraction scale) = 0;
-    virtual void paste_symbols(XmlReader &e, ChordRest *dst) = 0;
 
     // compat
     virtual void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml) = 0;

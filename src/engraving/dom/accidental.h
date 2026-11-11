@@ -264,9 +264,6 @@ public:
 
     SymId sym_id() const;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &) override;
     PropertyValue property_default(Pid property_id) const override;

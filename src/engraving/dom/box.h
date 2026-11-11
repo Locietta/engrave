@@ -38,8 +38,6 @@ struct Box : MeasureBase {
 public:
     Box(const ElementType &type, Score *parent);
 
-    virtual bool accept_drop(EditData &) const override;
-    virtual EngravingItem *drop(Transaction &tx, EditData &) override;
     virtual void add(EngravingItem *e) override;
     virtual double absolute_from_spatium(const Spatium &val) const override;
 
@@ -161,8 +159,6 @@ public:
     PropertyValue property_default(Pid) const override;
     bool set_property(Pid property_id, const PropertyValue &) override;
 
-    bool accept_drop(EditData &) const override;
-
     Spatium padding_to_notation_above() const { return padding_to_notation_above_; }
 
     Spatium padding_to_notation_below() const { return padding_to_notation_below_; }
@@ -258,12 +254,10 @@ public:
 
     TBox *clone() const override { return new TBox(*this); }
 
-    EngravingItem *drop(Transaction &tx, EditData &) override;
     void add(EngravingItem *e) override;
     void remove(EngravingItem *el) override;
 
     PropertyValue property_default(Pid) const override;
-
 
 private:
     Text *text_ = nullptr;

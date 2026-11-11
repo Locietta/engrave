@@ -104,27 +104,6 @@ void Bracket::set_staff_span(size_t a, size_t b) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Bracket::accept_drop(EditData &data) const { return data.drop_element->type() == ElementType::BRACKET; }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *Bracket::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    Bracket *b = 0;
-    if (e->is_bracket()) {
-        b = to_bracket(e);
-        undo_change_property(Pid::SYSTEM_BRACKET, int(b->bracket_type()));
-    }
-    delete e;
-    return this;
-}
-
-//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 

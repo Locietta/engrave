@@ -413,11 +413,4 @@ String TempoText::tempo_info() const {
     return info;
 }
 
-void TempoText::commit_text() {
-    if (follow_text_) {
-        update_tempo();
-    }
-
-    TextBase::commit_text();
-}
 } // namespace mu::engraving

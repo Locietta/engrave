@@ -40,9 +40,6 @@ public:
 
     KeySig *clone() const override { return new KeySig(*this); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     double mag() const override;
 
     void set_key(Key concert_key, Key transposed_key);

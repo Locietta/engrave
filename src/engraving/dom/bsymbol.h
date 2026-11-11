@@ -45,8 +45,6 @@ public:
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     Align align() const { return align_; }
 

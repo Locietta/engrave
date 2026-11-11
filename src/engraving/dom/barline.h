@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../editing/elementeditdata.h"
 #include "engravingitem.h"
 
 namespace mu::engraving {
@@ -82,8 +81,6 @@ public:
     void set_track(track_idx_t t) override;
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     Segment *segment() const { return to_segment(ownership_parent()); }
 

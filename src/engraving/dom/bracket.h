@@ -88,9 +88,6 @@ public:
 
     Color color() const override { return bi_->color(); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &) override;
     PropertyValue property_default(Pid) const override;

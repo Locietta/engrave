@@ -91,8 +91,6 @@ public:
 
     //!Note Unfortunately we have no FEATHERED_BEAM_MODE for now int BeamMode enum, so we'll handle this locally
     void set_as_feathered(const bool slower);
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     double grow_left() const { return grow_left_; }
 

@@ -25,7 +25,6 @@
 #include <cmath>
 
 #include "../editing/editfretboarddiagram.h"
-#include "../editing/elementeditdata.h"
 #include "factory.h"
 #include "fret.h"
 #include "harmony.h"
@@ -185,61 +184,8 @@ HBox::HBox(Score *parent) : Box(ElementType::HBOX, parent) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Box::accept_drop(EditData &data) const {
-    if (data.drop_element->flag(ElementFlag::ON_STAFF)) {
-        return false;
-    }
-    if (MScore::debug_mode) {
-        LOGD("<%s>", data.drop_element->type_name());
-    }
-    ElementType t = data.drop_element->type();
-    switch (t) {
-        case ElementType::TEXT:
-        case ElementType::STAFF_TEXT:
-        case ElementType::IMAGE:
-        case ElementType::SYMBOL: return true;
-
-        case ElementType::BAR_LINE: return is_h_box();
-        default: break;
-    }
-    return MeasureBase::accept_drop(data);
-}
-
-//---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
-
-EngravingItem *Box::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    if (e->flag(ElementFlag::ON_STAFF)) {
-        return 0;
-    }
-    if (MScore::debug_mode) {
-        LOGD("<%s>", e->type_name());
-    }
-    switch (e->type()) {
-        case ElementType::STAFF_TEXT: {
-            Text *text = Factory::create_text(this, TextStyleType::FRAME);
-            text->set_xml_text(to_staff_text(e)->xml_text());
-            score()->undo_add_element(text);
-            delete e;
-            return text;
-        }
-
-        case ElementType::TEXT:
-        case ElementType::IMAGE:
-        case ElementType::SYMBOL:
-            e->set_ownership_parent(this);
-            score()->undo_add_element(e);
-            return e;
-        default: break;
-    }
-
-    return MeasureBase::drop(tx, data);
-}
 
 void Box::manage_exclusion_from_parts(bool exclude) {
     // manage Layout Breaks - remove old ones first
@@ -435,19 +381,6 @@ bool VBox::set_property(Pid property_id, const PropertyValue &v) {
 //---------------------------------------------------------
 //   startDragGrip
 //---------------------------------------------------------
-
-bool VBox::accept_drop(EditData &data) const {
-    const EngravingItem *e = data.drop_element;
-    IF_ASSERT_FAILED(e) { return false; }
-    if (e->is_layout_break()) {
-        const LayoutBreakType type = to_layout_break(e)->layout_break_type();
-        if (type == LayoutBreakType::LINE) {
-            return false;
-        }
-    }
-
-    return Box::accept_drop(data);
-}
 
 //---------------------------------------------------------
 //   add
@@ -674,21 +607,6 @@ TBox::~TBox() { delete text_; }
 void TBox::scan_elements(std::function<void(EngravingItem *)> func) {
     text_->scan_elements(func);
     Box::scan_elements(func);
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *TBox::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    switch (e->type()) {
-        case ElementType::TEXT:
-            text_->undo_change_property(Pid::TEXT, to_text(e)->xml_text());
-            delete e;
-            return text_;
-        default: return VBox::drop(tx, data);
-    }
 }
 
 //---------------------------------------------------------

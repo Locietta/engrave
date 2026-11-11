@@ -317,29 +317,8 @@ public:
     void undo_add_element(EngravingItem *element, bool add_to_linked_staves = true);
 
     static ElementType read_type(XmlReader &node, PointF *, Fraction *);
-    static EngravingItem *read_mime_data(Score *score, const muse::ByteArray &data, PointF *, Fraction *);
 
     virtual muse::ByteArray mime_data(const PointF &drag_offset = PointF()) const;
-
-    /**
- muse::Return true if this element accepts a drop at canvas relative \a pos
- of given element \a type and \a subtype.
-
- Reimplemented by elements that accept drops. Used to change cursor shape while
- dragging to indicate drop targets.
-*/
-    virtual bool accept_drop(EditData &) const { return false; }
-
-    /**
- Handle a dropped element at canvas relative \a pos of given element
- \a type and \a subtype. muse::Returns dropped element if any.
- The ownership of element in DropData is transferred to the called
- element (if not used, element has to be deleted).
- The returned element will be selected if not in note edit mode.
-
- Reimplemented by elements that accept drops.
-*/
-    virtual EngravingItem *drop(Transaction &, EditData &) { return 0; }
 
     mutable bool item_discovered = false; // helper flag for bsp
 

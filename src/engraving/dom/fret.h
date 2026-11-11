@@ -214,9 +214,6 @@ public:
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void scan_elements(std::function<void(EngravingItem *)> func) override;
 
     void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;

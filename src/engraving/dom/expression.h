@@ -44,9 +44,6 @@ public:
 
     double compute_dynamic_expression_distance(const Dynamic *snapped_dyn) const;
 
-    bool accept_drop(EditData &ed) const override;
-    EngravingItem *drop(Transaction &tx, EditData &ed) override;
-
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &v) override;
     void map_properties_from_old_expressions(StaffText *staff_text);

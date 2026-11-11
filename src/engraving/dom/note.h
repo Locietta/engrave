@@ -330,9 +330,6 @@ public:
 
     void setup_after_read(const Fraction &tick, bool paste_mode);
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     bool hidden() const { return hidden_; }
 
     void set_hidden(bool val) { hidden_ = val; }

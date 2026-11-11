@@ -939,31 +939,6 @@ void FretDiagram::remove(EngravingItem *e) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool FretDiagram::accept_drop(EditData &data) const { return data.drop_element->is_harmony(); }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *FretDiagram::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    if (e->is_harmony()) {
-        Harmony *h = to_harmony(e);
-        h->set_ownership_parent(ownership_parent());
-        h->set_track(track());
-        score()->undo_add_element(h);
-    } else {
-        LOGW("FretDiagram: cannot drop <%s>\n", e->type_name());
-        delete e;
-        e = 0;
-    }
-    return e;
-}
-
-//---------------------------------------------------------
 //   scanElements
 //---------------------------------------------------------
 

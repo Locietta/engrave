@@ -25,7 +25,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../editing/elementeditdata.h"
 #include "chord.h"
 #include "containers.h"
 #include "groups.h"
@@ -354,22 +353,6 @@ void Beam::trigger_layout() const {
         elements_.back()->trigger_layout();
     }
 }
-
-//---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Beam::accept_drop(EditData &data) const {
-    EngravingItem *e = data.drop_element;
-
-    return false;
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *Beam::drop(Transaction &, EditData &) { return nullptr; }
 
 //---------------------------------------------------------
 //   beamPos

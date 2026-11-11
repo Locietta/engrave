@@ -131,9 +131,6 @@ public:
 
     virtual void move_ticks(const Fraction &diff) { set_tick(tick() + diff); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 

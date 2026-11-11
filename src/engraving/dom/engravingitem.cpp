@@ -34,7 +34,6 @@
 #include "../editing/addremoveelement.h"
 #include "../editing/editdata.h"
 #include "../editing/editproperty.h"
-#include "../editing/elementeditdata.h"
 #include "../editing/navigation.h"
 #include "chord.h"
 #include "containers.h"
@@ -1054,23 +1053,6 @@ ElementType EngravingItem::read_type(XmlReader &e, PointF *drag_offset, Fraction
 //---------------------------------------------------------
 //   readMimeData
 //---------------------------------------------------------
-
-EngravingItem *EngravingItem::read_mime_data(Score *score, const muse::ByteArray &data, PointF *drag_offset, Fraction *duration) {
-    XmlReader e(data);
-
-    const ElementType type = EngravingItem::read_type(e, drag_offset, duration);
-    if (type == ElementType::INVALID) {
-        LOGD("cannot read type");
-        return nullptr;
-    }
-
-    EngravingItem *el = Factory::create_item(type, score->dummy(), false);
-    if (el) {
-        rw::RWRegister::reader()->read_item(el, e);
-    }
-
-    return el;
-}
 
 //---------------------------------------------------------
 //   add

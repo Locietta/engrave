@@ -24,7 +24,6 @@
 
 #include <cmath>
 
-#include "../editing/elementeditdata.h"
 #include "draw/types/transform.h"
 #include "dynamic.h"
 #include "measure.h"
@@ -95,39 +94,6 @@ HairpinSegment::HairpinSegment(Hairpin *sp)
     : TextLineBaseSegment(ElementType::HAIRPIN_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
     end_text_->set_text_style_type(property_default(Pid::TEXT_STYLE).value<TextStyleType>());
-}
-
-bool HairpinSegment::accept_drop(EditData &data) const {
-    EngravingItem *e = data.drop_element;
-    if (e->is_dynamic()) {
-        return true;
-    }
-    return false;
-}
-
-EngravingItem *HairpinSegment::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    if (!e->is_dynamic()) {
-        return nullptr;
-    }
-
-    if (EngravingItem *item = ldata()->item_snapped_after()) {
-        if (item->is_dynamic()) {
-            return item->drop(tx, data);
-        }
-    }
-
-    Fraction end_tick = hairpin()->tick2();
-    Measure *measure = score()->tick2measure(end_tick);
-    Segment *segment = measure->get_chord_rest_or_time_tick_segment(end_tick);
-
-    Dynamic *d = to_dynamic(e->clone());
-    d->set_track(hairpin()->track());
-    d->set_ownership_parent(segment);
-    d->set_voice_assignment(hairpin()->voice_assignment());
-    score()->undo_add_element(d);
-
-    return d;
 }
 
 void HairpinSegment::set_property_flags(Pid id, PropertyFlags f) {

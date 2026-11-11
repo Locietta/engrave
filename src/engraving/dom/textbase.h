@@ -141,8 +141,6 @@ struct TextCursor {
     bool has_selection() const { return (select_line_ != row_) || (select_column_ != column_); }
 
     void clear_selection();
-    void end_edit();
-    void start_edit();
 
     bool editing() const { return editing_; }
 
@@ -193,8 +191,9 @@ struct TextCursor {
 
     RectF cursor_rect() const;
     RectF cursor_canvas_rect() const;
-    bool move_position(TextCursor::MoveOperation op, TextCursor::MoveMode mode = TextCursor::MoveMode::MOVE_ANCHOR, int count = 1);
     void select_word();
+
+    bool move_position(TextCursor::MoveOperation op, TextCursor::MoveMode mode = TextCursor::MoveMode::MOVE_ANCHOR, int count = 1);
 
     void move_cursor_to_end() { move_position(TextCursor::MoveOperation::END); }
 
@@ -354,8 +353,6 @@ public:
     String plain_text() const;
     void reset_formatting();
 
-    void insert_text(const String &);
-
     double line_spacing() const;
     double line_height() const;
     virtual double base_line() const override;
@@ -380,10 +377,6 @@ public:
 
     virtual bool allow_time_anchor() const override { return has_parent_segment(); }
 
-    void move_position(TextCursor::MoveOperation);
-
-    bool delete_selected_text();
-
     void select_all();
     void select(SelectTextType);
 
@@ -391,14 +384,9 @@ public:
 
     void set_primed(bool primed) { primed_ = primed; }
 
-    virtual void paste(const String &txt);
-
     RectF page_rectangle() const;
 
     const Shape &high_res_shape() const { return ldata()->high_res_shape.value(); }
-
-    virtual bool accept_drop(EditData &) const override;
-    virtual EngravingItem *drop(Transaction &tx, EditData &) override;
 
     friend struct TextBlock;
     friend struct TextFragment;
@@ -415,8 +403,6 @@ public:
 
     bool in_hex_state() const { return hex_state_ >= 0; }
 
-    void end_hex_state();
-
     muse::draw::Font font() const;
     muse::draw::FontMetrics font_metrics() const;
 
@@ -428,7 +414,6 @@ public:
     void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     Sid get_property_style(Pid) const override;
     void style_changed() override;
-    void edit_insert_text(TextCursor *, const String &);
 
     TextCursor *cursor() const { return cursor_; }
 
@@ -575,11 +560,8 @@ protected:
     TextBase(const ElementType &type, EngravingObject *parent, ElementFlags);
     TextBase(const TextBase &);
 
-    void insert_sym(SymId id);
     void prepare_format(const String &token, TextCursor &cursor);
     bool prepare_format(const String &token, CharFormat &format);
-
-    virtual void commit_text();
 
     bool layout_to_parent_width_ = false;
 

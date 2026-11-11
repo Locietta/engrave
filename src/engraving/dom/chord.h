@@ -156,8 +156,6 @@ public:
     double mag() const override;
     double note_head_width() const;
 
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void set_color(const Color &c) override;
     void set_stem_direction(DirectionV d);
 

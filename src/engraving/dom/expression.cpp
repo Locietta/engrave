@@ -60,26 +60,6 @@ double Expression::compute_dynamic_expression_distance(const Dynamic *snapped_dy
     return distance;
 }
 
-bool Expression::accept_drop(EditData &ed) const { return ed.drop_element->is_dynamic() || TextBase::accept_drop(ed); }
-
-EngravingItem *Expression::drop(Transaction &tx, EditData &ed) {
-    EngravingItem *item = ed.drop_element;
-    if (item->is_dynamic()) {
-        Dynamic *snapped_dyn = snapped_dynamic();
-        if (snapped_dyn) {
-            return snapped_dyn->drop(tx, ed);
-        }
-
-        item->set_track(track());
-        item->set_ownership_parent(segment());
-        score()->undo_add_element(item);
-        item->undo_change_property(Pid::PLACEMENT, placement(), PropertyFlags::UNSTYLED);
-        return item;
-    }
-
-    return TextBase::drop(tx, ed);
-}
-
 PropertyValue Expression::get_property(Pid property_id) const {
     switch (property_id) {
         case Pid::SNAP_TO_DYNAMICS: return snap_to_dynamics_value;

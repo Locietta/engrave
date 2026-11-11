@@ -1128,46 +1128,8 @@ String Harmony::generate_screen_reader_info() const {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Harmony::accept_drop(EditData &data) const {
-    EngravingItem *e = data.drop_element;
-    if (e->is_fret_diagram()) {
-        return true;
-    } else if (e->is_symbol() || e->is_f_symbol()) {
-        // symbols can be added in edit mode
-        if (data.get_data(this)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    return false;
-}
-
-//---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
-
-EngravingItem *Harmony::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    if (e->is_fret_diagram()) {
-        FretDiagram *fd = to_fret_diagram(e);
-        fd->set_ownership_parent(ownership_parent());
-        fd->set_track(track());
-        score()->undo_add_element(fd);
-    } else if (e->is_symbol() || e->is_f_symbol()) {
-        TextBase::drop(tx, data);
-        renderer()->layout_text1(this);
-        e = 0; // cannot select
-    } else {
-        LOGW("Harmony: cannot drop <%s>\n", e->type_name());
-        delete e;
-        e = 0;
-    }
-    return e;
-}
 
 void Harmony::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::FONT_STYLE || id == Pid::FONT_FACE || id == Pid::FONT_SIZE) {

@@ -23,7 +23,6 @@
 #include "image.h"
 
 #include "../editing/editdata.h"
-#include "../editing/elementeditdata.h"
 #include "draw/iimageprovider.h" // IWYU pragma: keep
 #include "draw/svgrenderer.h"
 #include "draw/types/pixmap.h"

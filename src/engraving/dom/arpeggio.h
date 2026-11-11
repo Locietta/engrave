@@ -57,9 +57,6 @@ public:
 
     Chord *chord() const { return (Chord *) ownership_parent(); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void reset() override;
 
     int span() const { return span_; }

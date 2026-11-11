@@ -71,9 +71,6 @@ private:
 
     Sid get_property_style(Pid) const override;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void set_property_flags(Pid id, PropertyFlags f) override;
 
     bool draw_circled_tip_ = false;
