@@ -29,6 +29,7 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/api/value_codec.h"
 #include "engrave/src/runtime/score_io.h"
+#include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -356,6 +357,19 @@ TEST(Describe, StylesCoverEveryStyleId) {
     EXPECT_GT(with_value, 200) << "styles with a default value";
     EXPECT_TRUE(names.contains("spatium"));
     EXPECT_TRUE(names.contains("pageWidth"));
+}
+
+// The writer omits z when it equals the default, so a default that moves with the
+// ElementType ordinals silently drops or changes saved stacking values. The defaults
+// stay at the ordinals of ea2b00ee48, around and after the deleted LASSO slot (117).
+TEST(Describe, DefaultStackingOrderIsPinned) {
+    using mu::engraving::default_z;
+    EXPECT_EQ(default_z(ElementType::INVALID), 0);
+    EXPECT_EQ(default_z(ElementType::HOOK), 2800);
+    EXPECT_EQ(default_z(ElementType::SELECTION), 11600);
+    EXPECT_EQ(default_z(ElementType::SHADOW_NOTE), 11800);
+    EXPECT_EQ(default_z(ElementType::CHORD), 12700);
+    EXPECT_EQ(default_z(ElementType::DUMMY), 15300);
 }
 
 TEST(Corpus, EveryPropertyOfEveryCorpusTypeReads) {
