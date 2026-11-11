@@ -22,6 +22,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -356,6 +357,14 @@ struct FontCache {
         const CacheKey request_key = std::make_pair(requested, font.type());
 
         std::lock_guard<std::mutex> lock(mutex_);
+        const auto active = db.active_table();
+        if (active != active_) {
+            // A published registry can change both fallback resolution and the
+            // bytes selected for an existing family/style. Only request aliases
+            // expire; resolved faces remain alive for Cairo surfaces using them.
+            by_request_.clear();
+            active_ = active;
+        }
         auto request_it = by_request_.find(request_key);
         if (request_it != by_request_.end()) {
             return request_it->second;
@@ -367,7 +376,8 @@ struct FontCache {
                                      requested.family().id().to_std_string() + "'");
         }
 
-        const CacheKey actual_key = std::make_pair(font_data.key, font.type());
+        const music::FontRecord *record = music::find_record(*active, font_data.key);
+        const ActualKey actual_key(font_data.key, font.type(), record ? record->bytes : nullptr);
         auto actual_it = by_actual_.find(actual_key);
         if (actual_it != by_actual_.end()) {
             by_request_[request_key] = actual_it->second;
@@ -421,10 +431,14 @@ struct FontCache {
 
 private:
     using CacheKey = std::pair<FontDataKey, Font::Type>;
+    // Retain immutable runtime byte identity so replacements get new faces,
+    // reactivation reuses old faces, and an identity can never be recycled.
+    using ActualKey = std::tuple<FontDataKey, Font::Type, std::shared_ptr<const muse::ByteArray>>;
 
+    std::shared_ptr<const music::ActiveTable> active_;
     FT_Library ft_library_ = nullptr;
     std::mutex mutex_;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> by_actual_;
+    std::map<ActualKey, std::shared_ptr<FtFaceEntry>> by_actual_;
     std::map<CacheKey, std::shared_ptr<FtFaceEntry>> by_request_;
 };
 

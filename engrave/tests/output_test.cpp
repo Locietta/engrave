@@ -411,6 +411,11 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     const double excerpt_before = text_width(excerpt);
     ASSERT_GT(master_before, 0.0);
     ASSERT_GT(excerpt_before, 0.0);
+    engrave::RenderOptions pdf;
+    pdf.format = engrave::RenderFormat::PDF;
+    const auto before_render = document.render(pdf);
+    ASSERT_TRUE(before_render);
+    EXPECT_EQ(as_text(before_render->document).find("PetalumaScript"), std::string::npos);
     const auto revision = document.revision();
     const auto missing = g_engine->add_font(g_assets / "missing-font.ttf");
     ASSERT_FALSE(missing);
@@ -429,6 +434,11 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     EXPECT_NE(text_width({}), master_before);
     EXPECT_NE(text_width(excerpt), excerpt_before);
     EXPECT_EQ(document.revision(), revision);
+    const auto after_render = document.render(pdf);
+    ASSERT_TRUE(after_render);
+    // Cairo embeds the selected face's PostScript name in the PDF. Checking
+    // that name tests drawing independently of layout metrics and PDF bytes.
+    EXPECT_NE(as_text(after_render->document).find("PetalumaScript"), std::string::npos);
 }
 
 TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
