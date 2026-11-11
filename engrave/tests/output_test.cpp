@@ -1,7 +1,7 @@
 // The render half of the output API: page_count() and render(), compared with
 // the render goldens.
 //
-//   engrave_output_test --assets=<resources> --corpus=<file or dir>... --soundfont=<file>...
+//   engrave_output_test --assets=<resources> --corpus=<file or dir>... --soundfont=<file>... [--native-fonts=<dir>]
 //
 // The comparison and its limits (what each layer proves) are in
 // render_goldens.json and in the slice report:
@@ -50,6 +50,9 @@ std::vector<std::filesystem::path> g_soundfonts;
 std::vector<std::filesystem::path> g_retained_for_cleanup;
 std::filesystem::path g_assets;
 std::filesystem::path g_self;
+// The fonts directory of the Pixi environment that provides Cairo (--native-fonts=);
+// by default the engine checkout's own environment.
+std::filesystem::path g_native_fonts = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / ".pixi/envs/default/fonts";
 
 std::filesystem::path corpus_file(std::string_view name) {
     for (const auto &path : g_corpus) {
@@ -444,8 +447,8 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
 TEST(RuntimeAssets, RuntimeFamilyDrawingMatchesLayoutAcrossReplacements) {
     using namespace music::test;
     // Ubuntu is a pinned transitive dependency of Cairo in pixi.lock.
-    const auto fonts = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / ".pixi/envs/default/fonts";
-    ASSERT_TRUE(std::filesystem::is_regular_file(fonts / "Ubuntu-M.ttf"));
+    const auto &fonts = g_native_fonts;
+    ASSERT_TRUE(std::filesystem::is_regular_file(fonts / "Ubuntu-M.ttf")) << "pass --native-fonts=<pixi env>/fonts";
     std::ifstream input(corpus_file("linked_parts.mscx"), std::ios::binary);
     ASSERT_TRUE(input);
     std::string xml((std::istreambuf_iterator<char>(input)), {});
@@ -614,6 +617,8 @@ int main(int argc, char **argv) {
             collect(std::filesystem::path(argument.substr(9)));
         } else if (argument.starts_with("--soundfont=")) {
             music::test::g_soundfonts.push_back(std::filesystem::path(argument.substr(12)));
+        } else if (argument.starts_with("--native-fonts=")) {
+            music::test::g_native_fonts = std::filesystem::path(argument.substr(15));
         }
     }
     if (music::test::g_soundfonts.empty()) {

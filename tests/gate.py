@@ -49,6 +49,7 @@ def main():
     suffix = ".exe" if platform == "windows" else ""
     manifest = a.pixi_manifest or a.engine_source / "pixi.toml"
     native = pixi_env(manifest.parent)
+    native_fonts = native / "fonts"  # the environment root's fonts/ on every platform
     if platform == "windows":
         native = native / "Library"
     # xmake's pixi:: package manager must resolve this workspace, not one
@@ -171,6 +172,7 @@ def main():
             "--corpus=" + str(REPO_ROOT / "tests/data/inputs/audio"),
             "--soundfont=" + str(a.soundfont),
             "--soundfont=" + str(a.output / "sine.sf2"),
+            "--native-fonts=" + str(native_fonts),
         ],
         "diagnostics_test": [],
         "io_boundary_test": [],
