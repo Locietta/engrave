@@ -22,6 +22,8 @@
 
 #include "style.h"
 
+#include <string_view>
+
 #include "compat/pageformat.h"
 #include "defaultstyle.h"
 #include "dom/mscore.h"
@@ -369,237 +371,238 @@ bool MStyle::is_valid(IODevice *device) {
 
 void MStyle::read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook, int msc_version) {
     TRACEFUNC;
+    using namespace std::string_view_literals;
 
     while (e.read_next_start_element()) {
-        const AsciiStringView tag(e.name());
+        const std::string_view tag(e.name());
 
-        if (tag == "TextStyle") {
+        if (tag == "TextStyle"sv) {
             //readTextStyle206(this, e);        // obsolete
             e.read_text();
-        } else if (tag == "ottavaHook") { // obsolete, for 3.0dev bw. compatibility, should be removed in final release
+        } else if (tag == "ottavaHook"sv) { // obsolete, for 3.0dev bw. compatibility, should be removed in final release
             double y = std::abs(e.read_double());
             set(Sid::OTTAVA_HOOK_ABOVE, y);
             set(Sid::OTTAVA_HOOK_BELOW, -y);
-        } else if (tag == "Spatium" || tag == "spatium") {
+        } else if (tag == "Spatium"sv || tag == "spatium"sv) {
             set(Sid::SPATIUM, e.read_double() * ::mu::engraving::dpmm);
-        } else if (tag == "page-layout") { // obsolete
+        } else if (tag == "page-layout"sv) { // obsolete
             compat::read_page_format206(this, e);
-        } else if (tag == "displayInConcertPitch") {
+        } else if (tag == "displayInConcertPitch"sv) {
             set(Sid::CONCERT_PITCH, e.read_bool());
-        } else if (tag == "ChordList") {
+        } else if (tag == "ChordList"sv) {
             if (read_chord_list_hook) {
                 read_chord_list_hook->read(e);
             }
-        } else if (tag == "lyricsDashMaxLegth") { // pre-3.6 typo
+        } else if (tag == "lyricsDashMaxLegth"sv) { // pre-3.6 typo
             set(Sid::LYRICS_DASH_MAX_LENGTH, Spatium(e.read_double()));
-        } else if (tag == "dontHidStavesInFirstSystm") { // pre-3.6.3/4.0 typo
+        } else if (tag == "dontHidStavesInFirstSystm"sv) { // pre-3.6.3/4.0 typo
             set(Sid::DONT_HIDE_STAVES_IN_FIRST_SYSTEM, e.read_bool());
-        } else if (tag == "minSpreadSpread") { // pre-4.4 typo
+        } else if (tag == "minSpreadSpread"sv) { // pre-4.4 typo
             set(Sid::MIN_STAFF_SPREAD, Spatium(e.read_double()));
-        } else if (tag == "maxSpreadSpread") { // pre-4.4 typo
+        } else if (tag == "maxSpreadSpread"sv) { // pre-4.4 typo
             set(Sid::MAX_STAFF_SPREAD, Spatium(e.read_double()));
-        } else if (tag == "beamDistance") { // beamDistance maps to useWideBeams in 4.0
+        } else if (tag == "beamDistance"sv) { // beamDistance maps to useWideBeams in 4.0
             set(Sid::USE_WIDE_BEAMS, e.read_double() > 0.75);
-        } else if (tag == "hairpinWidth") { // pre-4.4 typo
+        } else if (tag == "hairpinWidth"sv) { // pre-4.4 typo
             set(Sid::HAIRPIN_LINE_WIDTH, Spatium(e.read_double()));
-        } else if (tag == "chordSymbolPosAbove") { // pre-4.4 typo
+        } else if (tag == "chordSymbolPosAbove"sv) { // pre-4.4 typo
             set(Sid::CHORD_SYMBOL_A_POS_ABOVE, e.read_point());
-        } else if (tag == "chordSymbolPosBelow") { // pre-4.4 typo
+        } else if (tag == "chordSymbolPosBelow"sv) { // pre-4.4 typo
             set(Sid::CHORD_SYMBOL_A_POS_BELOW, e.read_point());
-        } else if (tag == "dontHidStavesInFirstSystm") { // pre-3.6.3/4.0 typo
+        } else if (tag == "dontHidStavesInFirstSystm"sv) { // pre-3.6.3/4.0 typo
             set(Sid::DONT_HIDE_STAVES_IN_FIRST_SYSTEM, e.read_bool());
-        } else if (tag == "firstSystemInsNameVisibility") { // pre-4.4 typo
+        } else if (tag == "firstSystemInsNameVisibility"sv) { // pre-4.4 typo
             set(Sid::FIRST_SYSTEM_INST_NAME_VISIBILITY, e.read_int());
-        } else if ((tag == "articulationMinDistance" || tag == "propertyDistanceHead" || tag == "propertyDistanceStem" ||
-                    tag == "propertyDistance" || tag == "bracketDistance") &&
+        } else if ((tag == "articulationMinDistance"sv || tag == "propertyDistanceHead"sv || tag == "propertyDistanceStem"sv ||
+                    tag == "propertyDistance"sv || tag == "bracketDistance"sv) &&
                    msc_version < 400) {
             // Ignoring pre-4.0 articulation style and brackets distance settings. Using the new defaults instead
             e.skip_current_element();
-        } else if (tag == "pedalListStyle") { // pre-3.6.3/4.0 typo
+        } else if (tag == "pedalListStyle"sv) { // pre-3.6.3/4.0 typo
             set(Sid::PEDAL_LINE_STYLE, TConv::from_xml(e.read_ascii_text(), LineType::SOLID));
-        } else if (tag == "chordlineThickness" && msc_version < 410) {
+        } else if (tag == "chordlineThickness"sv && msc_version < 410) {
             // Ignoring pre-4.1 value as it was wrong (it wasn't user-editable anyway)
             e.skip_current_element();
-        } else if (tag == "pedalText" && msc_version < 420) {
+        } else if (tag == "pedalText"sv && msc_version < 420) {
             // Ignore old default
             String ped_text = e.read_text();
             if (!ped_text.empty()) {
                 set(Sid::PEDAL_TEXT, ped_text);
             }
-        } else if (tag == "pedalContinueText" && msc_version < 420) {
+        } else if (tag == "pedalContinueText"sv && msc_version < 420) {
             // Ignore old default
             String ped_cont_text = e.read_text();
             if (!ped_cont_text.empty()) {
                 set(Sid::PEDAL_TEXT, ped_cont_text);
             }
-        } else if (tag == "ArpeggioNoteDistance") { // pre-4.4 typo
+        } else if (tag == "ArpeggioNoteDistance"sv) { // pre-4.4 typo
             set(Sid::ARPEGGIO_NOTE_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "ArpeggioAccidentalDistance") { // pre-4.4 typo
+        } else if (tag == "ArpeggioAccidentalDistance"sv) { // pre-4.4 typo
             set(Sid::ARPEGGIO_ACCIDENTAL_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "ArpeggioAccidentalDistanceMin") { // pre-4.4 typo
+        } else if (tag == "ArpeggioAccidentalDistanceMin"sv) { // pre-4.4 typo
             set(Sid::ARPEGGIO_ACCIDENTAL_DISTANCE_MIN, Spatium(e.read_double()));
-        } else if (tag == "ArpeggioLineWidth") { // pre-x.4 typo
+        } else if (tag == "ArpeggioLineWidth"sv) { // pre-x.4 typo
             set(Sid::ARPEGGIO_LINE_WIDTH, Spatium(e.read_double()));
-        } else if (tag == "ArpeggioHookLen") { // pre-x.4 typo
+        } else if (tag == "ArpeggioHookLen"sv) { // pre-x.4 typo
             set(Sid::ARPEGGIO_HOOK_LEN, Spatium(e.read_double()));
-        } else if (tag == "ArpeggioHiddenInStdIfTab") { // pre-x.4 typo
+        } else if (tag == "ArpeggioHiddenInStdIfTab"sv) { // pre-x.4 typo
             set(Sid::ARPEGGIO_HIDDEN_IN_STD_IF_TAB, e.read_bool());
-        } else if ((tag == "slurEndWidth" || tag == "slurMidWidth" || tag == "slurDottedWidth" || tag == "slurMinDistance") &&
+        } else if ((tag == "slurEndWidth"sv || tag == "slurMidWidth"sv || tag == "slurDottedWidth"sv || tag == "slurMinDistance"sv) &&
                    msc_version < 430) {
             // Pre-4.3 scores used identical style values for slurs and ties.
             // When opening older scores, use the same values for both.
             double val_value = e.read_double();
-            if (tag == "slurEndWidth") {
+            if (tag == "slurEndWidth"sv) {
                 set(Sid::TIE_END_WIDTH, Spatium(val_value));
                 set(Sid::SLUR_END_WIDTH, Spatium(val_value));
-            } else if (tag == "slurMidWidth") {
+            } else if (tag == "slurMidWidth"sv) {
                 set(Sid::TIE_MID_WIDTH, Spatium(val_value));
                 set(Sid::SLUR_MID_WIDTH, Spatium(val_value));
-            } else if (tag == "slurDottedWidth") {
+            } else if (tag == "slurDottedWidth"sv) {
                 set(Sid::TIE_DOTTED_WIDTH, Spatium(val_value));
                 set(Sid::SLUR_DOTTED_WIDTH, Spatium(val_value));
-            } else if (tag == "slurMinDistance") {
+            } else if (tag == "slurMinDistance"sv) {
                 set(Sid::TIE_MIN_DISTANCE, Spatium(val_value));
                 set(Sid::SLUR_MIN_DISTANCE, Spatium(val_value));
             }
-        } else if (tag == "measureNumberOffset" && msc_version < 440) { // pre-4.4 typo
+        } else if (tag == "measureNumberOffset"sv && msc_version < 440) { // pre-4.4 typo
             set(Sid::MEASURE_NUMBER_POS_ABOVE, PointF(e.read_point()));
-        } else if (tag == "measureNumberPosAbove" && msc_version < 440) { // pre-4.4 typo
+        } else if (tag == "measureNumberPosAbove"sv && msc_version < 440) { // pre-4.4 typo
             set(Sid::MM_REST_RANGE_POS_ABOVE, PointF(e.read_point()));
-        } else if (tag == "ottavaTextAlign") {
+        } else if (tag == "ottavaTextAlign"sv) {
             // Pre-x.x (?) scores used identical style values for Above and Below
             // apparently the old default was "VCENTER",
             // so better ignore and take the new defaults
-            e.skip_current_element();             // obsolete
-        } else if (tag == "tremoloStrokeStyle") { // pre-4.4 typo
+            e.skip_current_element();               // obsolete
+        } else if (tag == "tremoloStrokeStyle"sv) { // pre-4.4 typo
             set(Sid::TREMOLO_STYLE, e.read_int());
-        } else if (tag == "systemFontFace") { // pre-4.4 typo
+        } else if (tag == "systemFontFace"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FONT_FACE, e.read_text());
-        } else if (tag == "systemFontSize") { // pre-4.4 typo
+        } else if (tag == "systemFontSize"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FONT_SIZE, e.read_double());
-        } else if (tag == "systemFontSpatiumDependent") { // pre-4.4 typo
+        } else if (tag == "systemFontSpatiumDependent"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FONT_SPATIUM_DEPENDENT, bool(e.read_int()));
-        } else if (tag == "systemFontStyle") { // pre-4.4 typo
+        } else if (tag == "systemFontStyle"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FONT_STYLE, e.read_int());
-        } else if (tag == "systemAlign") { // pre-4.4 typo
+        } else if (tag == "systemAlign"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_ALIGN, TConv::from_xml(e.read_text(), Align()));
-        } else if (tag == "systemOffsetType") { // pre-4.4 typo
+        } else if (tag == "systemOffsetType"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_OFFSET_TYPE, e.read_int());
-        } else if (tag == "systemPlacement") { // pre-4.4 typo
+        } else if (tag == "systemPlacement"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_PLACEMENT, PlacementV(e.read_text().to_int()));
-        } else if (tag == "systemPosAbove") { // pre-4.4 typo
+        } else if (tag == "systemPosAbove"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_POS_ABOVE, PointF(e.read_point()));
-        } else if (tag == "systemPosBelow") { // pre-4.4 typo
+        } else if (tag == "systemPosBelow"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_POS_BELOW, PointF(e.read_point()));
-        } else if (tag == "systemMinDistance") { // pre-4.4 typo
+        } else if (tag == "systemMinDistance"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_MIN_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "systemFrameType") { // pre-4.4 typo
+        } else if (tag == "systemFrameType"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_TYPE, e.read_int());
-        } else if (tag == "systemFramePadding") { // pre-4.4 typo
+        } else if (tag == "systemFramePadding"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_PADDING, e.read_double());
-        } else if (tag == "systemFrameWidth") { // pre-4.4 typo
+        } else if (tag == "systemFrameWidth"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_WIDTH, e.read_double());
-        } else if (tag == "systemFrameRound") { // pre-4.4 typo
+        } else if (tag == "systemFrameRound"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_ROUND, e.read_double());
-        } else if (tag == "systemFrameFgColor") { // pre-4.4 typo
+        } else if (tag == "systemFrameFgColor"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_FG_COLOR, e.read_color());
-        } else if (tag == "systemFrameBgColor") { // pre-4.4 typo
+        } else if (tag == "systemFrameBgColor"sv) { // pre-4.4 typo
             set(Sid::SYSTEM_TEXT_FRAME_BG_COLOR, e.read_color());
-        } else if (tag == "staffFontFace") { // pre-4.4 typo
+        } else if (tag == "staffFontFace"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FONT_FACE, e.read_text());
-        } else if (tag == "staffFontSize") { // pre-4.4 typo
+        } else if (tag == "staffFontSize"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FONT_SIZE, e.read_double());
-        } else if (tag == "staffFontSpatiumDependent") { // pre-4.4 typo
+        } else if (tag == "staffFontSpatiumDependent"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FONT_SPATIUM_DEPENDENT, e.read_bool());
-        } else if (tag == "staffFontStyle") { // pre-4.4 typo
+        } else if (tag == "staffFontStyle"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FONT_STYLE, e.read_int());
-        } else if (tag == "staffAlign") { // pre-4.4 typo
+        } else if (tag == "staffAlign"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_ALIGN, TConv::from_xml(e.read_text(), Align()));
-        } else if (tag == "staffOffsetType") { // pre-4.4 typo
+        } else if (tag == "staffOffsetType"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_OFFSET_TYPE, e.read_int());
-        } else if (tag == "staffPlacement") { // pre-4.4 typo
+        } else if (tag == "staffPlacement"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_PLACEMENT, PlacementV(e.read_text().to_int()));
-        } else if (tag == "staffTextPosAbove" // pre-4.4 typo, certainly before 3.6, even before 3.5
-                   && msc_version <= 410) {   // so we might test for < 302, however version_ seems set to 410 here?!?
+        } else if (tag == "staffTextPosAbove"sv // pre-4.4 typo, certainly before 3.6, even before 3.5
+                   && msc_version <= 410) {     // so we might test for < 302, however version_ seems set to 410 here?!?
             double staff_text_pos_above_y = e.read_double();
             set(Sid::STAFF_TEXT_POS_ABOVE, PointF(0.0, staff_text_pos_above_y));
-        } else if (tag == "staffPosAbove") { // pre-4.4 typo
+        } else if (tag == "staffPosAbove"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_POS_ABOVE, e.read_point());
-        } else if (tag == "staffPosBelow") { // pre-4.4 typo
+        } else if (tag == "staffPosBelow"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_POS_BELOW, e.read_point());
-        } else if (tag == "staffTextMinDistance" // pre-4.4 typo, certainly before 3.6, even before 3.5
-                   && msc_version <= 410) {      // so we might test for < 302, however version_ seems set to 410 here?!?
+        } else if (tag == "staffTextMinDistance"sv // pre-4.4 typo, certainly before 3.6, even before 3.5
+                   && msc_version <= 410) {        // so we might test for < 302, however version_ seems set to 410 here?!?
             set(Sid::STAFF_TEXT_MIN_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "staffMinDistance") { // pre-4.4 typo
+        } else if (tag == "staffMinDistance"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_MIN_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "staffFrameType") { // pre-4.4 typo
+        } else if (tag == "staffFrameType"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_TYPE, e.read_int());
-        } else if (tag == "staffFramePadding") { // pre-4.4 typo
+        } else if (tag == "staffFramePadding"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_PADDING, e.read_double());
-        } else if (tag == "staffFrameWidth") { // pre-4.4 typo
+        } else if (tag == "staffFrameWidth"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_WIDTH, e.read_double());
-        } else if (tag == "staffFrameRound") { // pre-4.4 typo
+        } else if (tag == "staffFrameRound"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_ROUND, e.read_double());
-        } else if (tag == "staffFrameFgColor") { // pre-4.4 typo
+        } else if (tag == "staffFrameFgColor"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_FG_COLOR, e.read_color());
-        } else if (tag == "staffFrameBgColor") { // pre-4.4 typo
+        } else if (tag == "staffFrameBgColor"sv) { // pre-4.4 typo
             set(Sid::STAFF_TEXT_FRAME_BG_COLOR, e.read_color());
-        } else if (tag == "dymanicsShowTabCommon") { // pre-4.4 typo in gp-style.mss
+        } else if (tag == "dymanicsShowTabCommon"sv) { // pre-4.4 typo in gp-style.mss
             set(Sid::DYNAMICS_SHOW_TAB_COMMON, bool(e.read_int()));
-        } else if (tag == "tupletOufOfStaff") {
+        } else if (tag == "tupletOufOfStaff"sv) {
             set(Sid::TUPLET_OUT_OF_STAFF, bool(e.read_int()));
-        } else if (tag == "pedalBeginTextOffset" || tag == "letRingBeginTextOffset" || tag == "palmMuteBeginTextOffset" ||
-                   tag == "defaultFontSpatiumDependent" || tag == "usePre_3_6_defaults") {
+        } else if (tag == "pedalBeginTextOffset"sv || tag == "letRingBeginTextOffset"sv || tag == "palmMuteBeginTextOffset"sv ||
+                   tag == "defaultFontSpatiumDependent"sv || tag == "usePre_3_6_defaults"sv) {
             e.skip_current_element(); // obsolete
-        } else if (tag == "articulationAnchorDefault" && msc_version < 410) {
+        } else if (tag == "articulationAnchorDefault"sv && msc_version < 410) {
             set(Sid::ARTICULATION_ANCHOR_DEFAULT, (int) compat::CompatUtils::translate_to_new_articulation_anchor(e.read_int()));
-        } else if (tag == "articulationAnchorLuteFingering" && msc_version < 410) {
+        } else if (tag == "articulationAnchorLuteFingering"sv && msc_version < 410) {
             set(Sid::ARTICULATION_ANCHOR_LUTE_FINGERING, (int) compat::CompatUtils::translate_to_new_articulation_anchor(e.read_int()));
-        } else if (tag == "articulationAnchorOther" && msc_version < 410) {
+        } else if (tag == "articulationAnchorOther"sv && msc_version < 410) {
             set(Sid::ARTICULATION_ANCHOR_OTHER, (int) compat::CompatUtils::translate_to_new_articulation_anchor(e.read_int()));
-        } else if (tag == "lineEndToSystemEndDistance") { // renamed in 4.5
+        } else if (tag == "lineEndToSystemEndDistance"sv) { // renamed in 4.5
             set(Sid::LINE_END_TO_BARLINE_DISTANCE, Spatium(e.read_double()));
-        } else if (tag == "useStandardNoteNames") { // These settings were collapsed into one enum in 4.6
+        } else if (tag == "useStandardNoteNames"sv) { // These settings were collapsed into one enum in 4.6
             if (e.read_bool()) {
                 set(Sid::CHORD_SYMBOL_SPELLING, NoteSpellingType::STANDARD);
             }
-        } else if (tag == "useGermanNoteNames") {
+        } else if (tag == "useGermanNoteNames"sv) {
             if (e.read_bool()) {
                 set(Sid::CHORD_SYMBOL_SPELLING, NoteSpellingType::GERMAN);
             }
-        } else if (tag == "useFullGermanNoteNames") {
+        } else if (tag == "useFullGermanNoteNames"sv) {
             if (e.read_bool()) {
                 set(Sid::CHORD_SYMBOL_SPELLING, NoteSpellingType::GERMAN_PURE);
             }
-        } else if (tag == "useSolfeggioNoteNames") {
+        } else if (tag == "useSolfeggioNoteNames"sv) {
             if (e.read_bool()) {
                 set(Sid::CHORD_SYMBOL_SPELLING, NoteSpellingType::SOLFEGGIO);
             }
-        } else if (tag == "useFrenchNoteNames") {
+        } else if (tag == "useFrenchNoteNames"sv) {
             if (e.read_bool()) {
                 set(Sid::CHORD_SYMBOL_SPELLING, NoteSpellingType::FRENCH);
             }
-        } else if (tag == "chordModifierAdjust" && msc_version < 460) {
+        } else if (tag == "chordModifierAdjust"sv && msc_version < 460) {
             set(Sid::CHORD_MODIFIER_ADJUST, compat::CompatUtils::convert_chord_ext_mod_units(e.read_double()));
-        } else if (tag == "chordExtensionAdjust" && msc_version < 460) {
+        } else if (tag == "chordExtensionAdjust"sv && msc_version < 460) {
             set(Sid::CHORD_EXTENSION_ADJUST, compat::CompatUtils::convert_chord_ext_mod_units(e.read_double()));
-        } else if (tag == "chordDescriptionFile" && msc_version < 460) {
+        } else if (tag == "chordDescriptionFile"sv && msc_version < 460) {
             AsciiStringView val = e.read_ascii_text();
             if (val == "chords_std.xml") {
                 set(Sid::CHORD_DESCRIPTION_FILE, String(u"chords_legacy.xml"));
             } else {
                 set(Sid::CHORD_DESCRIPTION_FILE, String::from_ascii(val.ascii()));
             }
-        } else if (tag == "chordStyle" && msc_version < 460) {
+        } else if (tag == "chordStyle"sv && msc_version < 460) {
             AsciiStringView val = e.read_ascii_text();
             if (val == "std") {
                 set(Sid::CHORD_STYLE, ChordStylePreset::LEGACY);
             } else {
                 set(Sid::CHORD_STYLE, TConv::from_xml(val, ChordStylePreset::STANDARD));
             }
-        } else if (tag == "fretFrets" && msc_version < 460) {
+        } else if (tag == "fretFrets"sv && msc_version < 460) {
             e.skip_current_element();
-        } else if (tag == "measureNumberHPlacement" && msc_version < 460) {
+        } else if (tag == "measureNumberHPlacement"sv && msc_version < 460) {
             // Before 460 PlacementH was used instead of AlignH, and was written as integer.
             // We can't directly map the integer to AlignH because it's enumerated differently.
             PlacementH h_placement = PlacementH(e.read_int());
@@ -612,7 +615,7 @@ void MStyle::read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook,
                 // In this case it was assumed to be centered on the measure
                 set(Sid::MEASURE_NUMBER_ALIGN_TO_BARLINE, false);
             }
-        } else if (tag == "mmRestRangeHPlacement" && msc_version < 460) {
+        } else if (tag == "mmRestRangeHPlacement"sv && msc_version < 460) {
             // Before 460 PlacementH was used instead of AlignH, and was written as integer.
             // We can't directly map the integer to AlignH because it's enumerated differently.
             PlacementH h_placement = PlacementH(e.read_int());
@@ -620,11 +623,11 @@ void MStyle::read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook,
                              h_placement == PlacementH::CENTER ? AlignH::HCENTER :
                                                                  AlignH::RIGHT;
             set(Sid::MM_REST_RANGE_H_PLACEMENT, h_align);
-        } else if (tag == "measureNumberAllStaves" || tag == "measureNumberAllStaffs" /*old typo*/) {
+        } else if (tag == "measureNumberAllStaves"sv || tag == "measureNumberAllStaffs"sv /*old typo*/) {
             bool all_staves = e.read_bool();
             set(Sid::MEASURE_NUMBER_PLACEMENT_MODE,
                 all_staves ? MeasureNumberPlacement::ON_ALL_STAVES : MeasureNumberPlacement::ABOVE_SYSTEM);
-        } else if (String s_tag = String::from_ascii(tag.ascii()); msc_version < 470 && s_tag.contains(u"FrameRound")) {
+        } else if (String s_tag = String::from_ascii(tag.data()); msc_version < 470 && s_tag.contains(u"FrameRound")) {
             auto i = std::find_if(StyleDef::style_values.begin(), StyleDef::style_values.end(),
                                   [&](const StyleDef::StyleValue &s) { return s.xml_name == tag; });
             if (i != StyleDef::style_values.end()) {

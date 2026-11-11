@@ -33,6 +33,7 @@ struct Metrics {
     }
 };
 
+#ifndef ENGRAVE_PROBE_NO_HOOKS
 namespace {
 auto original_malloc = &std::malloc;
 auto original_realloc = &std::realloc;
@@ -98,6 +99,7 @@ void install_allocation_hooks() {
             if (std::strcmp(name, "calloc") == 0) {
                 original_calloc = reinterpret_cast<decltype(original_calloc)>(slots->u1.Function);
                 replacement = reinterpret_cast<ULONG_PTR>(&count_calloc);
+                installed |= 8;
             }
             if (!replacement) continue;
             DWORD previous = 0, ignored = 0;
@@ -108,22 +110,32 @@ void install_allocation_hooks() {
                 throw std::runtime_error("IAT protection restore failed");
         }
     }
-    if (installed != 7) throw std::runtime_error("malloc/realloc/free imports not all hooked");
+    if (installed != 15) throw std::runtime_error("malloc/realloc/free/calloc imports not all hooked");
     Metrics::enabled = true;
-    auto *p = count_malloc(16);
+    auto volatile malloc_entry = &std::malloc;
+    auto volatile realloc_entry = &std::realloc;
+    auto volatile calloc_entry = &std::calloc;
+    auto volatile free_entry = &std::free;
+    auto *p = malloc_entry(16);
     if (!p) throw std::bad_alloc();
-    auto *q = count_realloc(p, 32);
+    auto *q = realloc_entry(p, 32);
     if (!q) {
         count_free(p);
         throw std::bad_alloc();
     }
-    count_free(q);
+    free_entry(q);
+    auto *zeroed = calloc_entry(2, 16);
+    if (!zeroed) throw std::bad_alloc();
+    free_entry(zeroed);
     auto *object = ::operator new(16);
     ::operator delete(object);
+    auto *aligned = ::operator new(64, std::align_val_t{64});
+    ::operator delete(aligned, std::align_val_t{64});
     Metrics::enabled = false;
-    if (Metrics::counts[0][Metrics::OP_NEW] != 1 || Metrics::counts[0][Metrics::OP_DELETE] != 1 ||
+    if (Metrics::counts[0][Metrics::OP_NEW] != 2 || Metrics::counts[0][Metrics::OP_DELETE] != 2 ||
         Metrics::counts[0][Metrics::OP_MALLOC] < 2 || Metrics::counts[0][Metrics::OP_REALLOC] != 1 ||
-        Metrics::counts[0][Metrics::OP_FREE] < 2)
+        Metrics::counts[0][Metrics::OP_FREE] < 3 || Metrics::counts[0][Metrics::OP_CALLOC] != 1 ||
+        Metrics::counts[0][Metrics::OP_ALIGNED_NEW] != 1)
         throw std::runtime_error("allocation hook self-check failed");
     for (auto &phase : Metrics::counts)
         for (auto &count : phase) count = 0;
@@ -197,6 +209,8 @@ void operator delete(void *p, std::align_val_t a, const std::nothrow_t &) noexce
 
 void operator delete[](void *p, std::align_val_t a, const std::nothrow_t &) noexcept { ::operator delete(p, a); }
 
+#endif // ENGRAVE_PROBE_NO_HOOKS
+
 // Counts requested allocation bytes (realloc counts its full requested size),
 // not live/peak heap size. External DLL allocations are excluded. Engine setup
 // is outside each sample; render ensures layout and captures all SVG pages.
@@ -206,7 +220,9 @@ int main(int argc, char **argv) {
         return 2;
     }
     try {
+#ifndef ENGRAVE_PROBE_NO_HOOKS
         install_allocation_hooks();
+#endif
         auto engine = engrave::Engine::create({.resources = argv[1]});
         if (!engine) throw std::runtime_error(engine.error().message);
         constexpr const char *files[] = {"golden/layout_elements.mscx",
