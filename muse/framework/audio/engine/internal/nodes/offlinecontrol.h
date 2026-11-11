@@ -25,13 +25,13 @@
 #include <optional>
 
 #include "audio/common/audiotypes.h"
+#include "audio/common/timeposition.h"
 #include "audio/engine/internal/dsp/smoothlinearvalue.h"
-#include "audio/engine/iplayhead.h"
 
 namespace muse::audio::engine {
 struct OfflineControl {
 
-    void set_playhead_position(const PlayheadPositionPtr &playhead_position);
+    void set_playhead_position(const TimePosition *playhead_position);
     void set_volume(const AutomatableValue<volume_db_t> &volume);
     void set_pan(const AutomatableValue<balance_t> &pan);
     void set_muted(bool muted);
@@ -57,7 +57,8 @@ private:
     void on_output_spec_changed(const OutputSpec &spec);
     void do_self_process(float *buffer, samples_t samples_per_channel);
 
-    PlayheadPositionPtr playhead_position_;
+    // Borrowed position data; current offline callers pass null.
+    const TimePosition *playhead_position_ = nullptr;
     AutomatableValue<volume_db_t> volume_;
     AutomatableValue<balance_t> pan_;
     std::vector<dsp::SmoothLinearValue<float>> channel_gains_;

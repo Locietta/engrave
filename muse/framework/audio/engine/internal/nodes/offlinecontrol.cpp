@@ -28,7 +28,7 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void OfflineControl::set_playhead_position(const PlayheadPositionPtr &playhead_position) {
+void OfflineControl::set_playhead_position(const TimePosition *playhead_position) {
     playhead_position_ = playhead_position;
     last_gains_pos_ = std::nullopt;
 }
@@ -49,7 +49,7 @@ bool OfflineControl::muted() const { return !enabled_; }
 
 void OfflineControl::on_output_spec_changed(const OutputSpec &) { update_channel_gains(current_pos()); }
 
-secs_t OfflineControl::current_pos() const { return playhead_position_ ? playhead_position_->current_position().time() : secs_t(0.0); }
+secs_t OfflineControl::current_pos() const { return playhead_position_ ? playhead_position_->time() : secs_t(0.0); }
 
 void OfflineControl::update_channel_gains(secs_t pos) {
     const volume_db_t volume_db = volume_.evaluate_at(pos, ::muse::audio::volume_db_min, ::muse::audio::volume_db_max);
