@@ -441,7 +441,7 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     EXPECT_NE(as_text(after_render->document).find("PetalumaScript"), std::string::npos);
 }
 
-TEST(RuntimeAssets, BoldOnlyFamilyDrawingMatchesLayout) {
+TEST(RuntimeAssets, RuntimeFamilyDrawingMatchesLayoutAcrossReplacements) {
     using namespace music::test;
     // Ubuntu is a pinned transitive dependency of Cairo in pixi.lock.
     const auto fonts = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / ".pixi/envs/default/fonts";
@@ -479,6 +479,41 @@ TEST(RuntimeAssets, BoldOnlyFamilyDrawingMatchesLayout) {
     // Ordinary score text has UNKNOWN type; drawing must use the same
     // registered Medium face as layout's regular-family fallback.
     EXPECT_NE(as_text(after->document).find("Ubuntu-Medium"), std::string::npos);
+
+    // Regular and Light share the same family/bold/italic key but have distinct
+    // bytes and PostScript names. A request-only invalidation cannot fix this:
+    // the resolved-face cache also has to distinguish their retained identity.
+    int regular_id = 0;
+    double regular_width = 0;
+    for (const bool light : {false, true, false}) {
+        SCOPED_TRACE(light ? "Ubuntu Light" : "Ubuntu Regular");
+        ASSERT_TRUE(g_engine->add_font(fonts / (light ? "Ubuntu-L.ttf" : "Ubuntu-R.ttf")));
+        const auto snapshot = g_engine->runtime_fonts();
+        const auto selected = std::find_if(snapshot.begin(), snapshot.end(),
+                                           [](const auto &font) { return font.family == "Ubuntu" && !font.bold && !font.italic; });
+        ASSERT_NE(selected, snapshot.end());
+        const double width = text_width();
+        if (light) {
+            EXPECT_NE(selected->id, regular_id);
+            EXPECT_NE(width, regular_width);
+        } else if (regular_id == 0) {
+            regular_id = selected->id;
+            regular_width = width;
+        } else {
+            EXPECT_EQ(selected->id, regular_id);
+            EXPECT_EQ(width, regular_width);
+        }
+        const auto rendered = document.render(pdf);
+        ASSERT_TRUE(rendered);
+        const auto text = as_text(rendered->document);
+        EXPECT_NE(text.find("Ubuntu"), std::string::npos);
+        EXPECT_EQ(text.find("Ubuntu-Medium"), std::string::npos);
+        if (light) {
+            EXPECT_NE(text.find("Ubuntu-Light"), std::string::npos);
+        } else {
+            EXPECT_EQ(text.find("Ubuntu-Light"), std::string::npos);
+        }
+    }
 }
 
 TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
