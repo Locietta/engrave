@@ -213,17 +213,6 @@ void System::remove_last_measure() {
     }
 }
 
-EngravingItemList System::accessible_children() const {
-    // The measures are owned by the score and the spanner segments by their spanner,
-    // but it is the system that places them, so the system is where the accessibility
-    // tree finds them.
-    EngravingItemList children = EngravingItem::accessible_children();
-    children.insert(children.end(), ml_.begin(), ml_.end());
-    children.insert(children.end(), spanner_segments_.begin(), spanner_segments_.end());
-
-    return children;
-}
-
 //---------------------------------------------------------
 //   vbox
 //    a system can only contain one vertical frame

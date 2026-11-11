@@ -54,12 +54,12 @@
 #include "glissando.h"
 #include "guitarbend.h"
 #include "harmony.h"
-#include "iengravingconfiguration.h"        // IWYU pragma: keep
-#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "iengravingfont.h"
 #include "imageStore.h"
 #include "instrchange.h"
 #include "instrtemplate.h"
+#include "internal/engravingcontextconfiguration.h" // IWYU pragma: keep
 #include "key.h"
 #include "keysig.h"
 #include "linkedobjects.h"

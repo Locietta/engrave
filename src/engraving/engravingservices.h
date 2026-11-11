@@ -11,7 +11,7 @@ struct IImageProvider;
 
 namespace mu::engraving {
 struct IEngravingConfiguration;
-struct IEngravingContextConfiguration;
+struct EngravingContextConfiguration;
 struct IEngravingFontsProvider;
 
 namespace rendering {
@@ -23,7 +23,7 @@ struct IScoreRenderer;
 struct EngravingServices {
     std::shared_ptr<IEngravingConfiguration> configuration;
     std::shared_ptr<IEngravingFontsProvider> engraving_fonts;
-    std::shared_ptr<IEngravingContextConfiguration> context_configuration;
+    std::shared_ptr<EngravingContextConfiguration> context_configuration;
     std::shared_ptr<rendering::IScoreRenderer> renderer;
     // Raster image codec and thumbnails. The engine has none: it rejects scores
     // with raster images when they are opened, so the paths that need it are

@@ -67,12 +67,6 @@ System *Beam::system() const {
 
 EngravingItem *Beam::layout_parent() const { return system(); }
 
-EngravingItem *Beam::accessible_parent_item() const {
-    // The system a beam is drawn on does not own it and cannot list it, so in the
-    // accessibility tree the beam stays where it is parked: on the dummy.
-    return score()->dummy()->root_item();
-}
-
 //---------------------------------------------------------
 //   Beam
 //---------------------------------------------------------

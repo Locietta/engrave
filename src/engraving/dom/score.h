@@ -264,7 +264,7 @@ public:
 
     const std::shared_ptr<IEngravingFontsProvider> &engraving_fonts() const { return services_.engraving_fonts; }
 
-    const std::shared_ptr<IEngravingContextConfiguration> &context_configuration() const { return services_.context_configuration; }
+    const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const { return services_.context_configuration; }
 
     const std::shared_ptr<rendering::IScoreRenderer> &renderer() const { return services_.renderer; }
 

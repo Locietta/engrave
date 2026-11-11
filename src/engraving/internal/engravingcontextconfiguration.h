@@ -22,13 +22,9 @@
 
 #pragma once
 
-#include "../iengravingcontextconfiguration.h"
-
 namespace mu::engraving {
-struct EngravingContextConfiguration : IEngravingContextConfiguration {
+struct EngravingContextConfiguration {
 
-    double gui_scaling() const override;
-
-    bool is_accessible_enabled() const override;
+    double gui_scaling() const;
 };
 } // namespace mu::engraving

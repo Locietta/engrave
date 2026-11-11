@@ -82,7 +82,6 @@ public:
     //! Detach from the current system's segment list and attach to the given one.
     void move_to_system(System *s);
     EngravingItem *layout_parent() const override;
-    EngravingItem *accessible_parent_item() const override;
 
     //! A segment is owned by its spanner; a system merely places it, see
     //! setSystem()/moveToSystem(). This overload hides EngravingItem::setOwnershipParent,
@@ -238,7 +237,6 @@ public:
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
     virtual void removed() override;
-    EngravingItemList accessible_children() const override;
 
     virtual void scan_elements(std::function<void(EngravingItem *)>) override {}
 

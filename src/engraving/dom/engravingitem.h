@@ -49,7 +49,7 @@ struct IScoreRenderer;
 
 namespace mu::engraving {
 struct IEngravingConfiguration;
-struct IEngravingContextConfiguration;
+struct EngravingContextConfiguration;
 
 struct Transaction;
 
@@ -162,7 +162,7 @@ public:
     virtual EngravingItem *layout_parent() const;
 
     const std::shared_ptr<IEngravingConfiguration> &configuration() const;
-    const std::shared_ptr<IEngravingContextConfiguration> &context_configuration() const;
+    const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const;
     const std::shared_ptr<rendering::IScoreRenderer> &renderer() const;
 
     EngravingItem *find_ancestor(ElementType t);
@@ -405,21 +405,6 @@ public:
     virtual EngravingItem *prev_element();         // selects the next score element, (notes, rests etc. as well as articulation etc.)
     virtual EngravingItem *next_segment_element(); //< Used for navigation
     virtual EngravingItem *prev_segment_element(); //< next-element and prev-element command
-
-    bool accessible_enabled() const;
-    void set_accessible_enabled(bool enabled);
-
-    //! Parent in the accessibility hierarchy: the layout parent when placed; the head of
-    //! the tree the unattached objects form when attached to nothing; null in between,
-    //! i.e. while attached to something that does not place it.
-    virtual EngravingItem *accessible_parent_item() const;
-    //! Children in the accessibility hierarchy: the items that name this one as their
-    //! accessibleParentItem(). Those are the children it owns, unless ownership and
-    //! placement diverge, in which case the item that places them lists them instead.
-    virtual EngravingItemList accessible_children() const;
-
-    //  if the screen-reader needs a special string (see note for example)
-    // used to return info that will be appended to accessibleInfo
 
     virtual String format_bars_and_beats() const;
 
@@ -693,8 +678,6 @@ protected:
 private:
 
     friend struct Factory;
-
-    bool accessible_enabled_ = false;
 
     PointF offset_; // offset from reference position, set by autoplace or user
 
