@@ -1965,7 +1965,7 @@ bool EngravingItem::is_user_modified() const {
         PropertyValue default_value = property_default(pid);
 
         if (property_type(pid) == PType::ABSOLUTE) {
-            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don鈥檛 care spatium diffs that small
+            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don’t care spatium diffs that small
                 return true;
             }
         } else {
