@@ -218,7 +218,7 @@ bool allowed(std::string_view parent, std::string_view child) {
     if (parent == "museScore") return one_of(child, {"programVersion", "programRevision", "Score"});
     if (parent == "museScore/Score")
         return one_of(child, {"eid", "name", "open", "Score", "Division", "Style", "showInvisible", "showUnprintable", "showFrames",
-                              "showMargins", "metaTag", "Part", "Staff"});
+                              "showMargins", "layoutMode", "metaTag", "Part", "Staff"});
     if (parent == "museScore/Score/Part") return one_of(child, {"eid", "Staff", "Instrument", "show"});
     if (parent == "museScore/Score/Part/Staff") return one_of(child, {"eid", "linkedTo", "StaffType", "barLineSpan", "bracket"});
     if (parent == "museScore/Score/Part/Staff/StaffType") return child == "name";
