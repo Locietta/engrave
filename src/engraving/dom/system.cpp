@@ -33,7 +33,6 @@
 #include "bracket.h"
 #include "bracketitem.h"
 #include "chordrest.h"
-#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "factory.h"
 #include "log.h"
 #include "measure.h"
@@ -784,38 +783,6 @@ EngravingItem *System::prev_segment_element() {
         }
     }
     return re;
-}
-
-//---------------------------------------------------------
-//   topDistance
-//    return minimum distance to the above south skyline
-//---------------------------------------------------------
-
-double System::top_distance(staff_idx_t staff_idx, const SkylineLine &s) const {
-    assert(!vbox());
-    assert(!s.is_north());
-    // in continuous view, we only build a partial skyline for performance reasons
-    // this means we cannot expect the minDistance calculation to produce meaningful results
-    // so just give up on autoplace for spanners in continuous view
-    // (or any other calculations that rely on this value)
-    if (score()->line_mode() && !configuration()->min_distance_for_partial_skyline_calculated()) {
-        return 0.0;
-    }
-    return s.min_distance(staff(staff_idx)->skyline().north());
-}
-
-//---------------------------------------------------------
-//   bottomDistance
-//---------------------------------------------------------
-
-double System::bottom_distance(staff_idx_t staff_idx, const SkylineLine &s) const {
-    assert(!vbox());
-    assert(s.is_north());
-    // see note on topDistance() above
-    if (score()->line_mode() && !configuration()->min_distance_for_partial_skyline_calculated()) {
-        return 0.0;
-    }
-    return staff(staff_idx)->skyline().south().min_distance(s);
 }
 
 //---------------------------------------------------------
