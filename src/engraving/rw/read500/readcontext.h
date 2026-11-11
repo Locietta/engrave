@@ -75,10 +75,6 @@ struct ReadContext {
 
     bool should_skip_property(Pid pid) const { return muse::contains(properties_to_skip_, pid); }
 
-    bool force_page_mode() const { return force_page_mode_; }
-
-    void set_force_page_mode(bool v) { force_page_mode_ = v; }
-
     DummyParent *dummy() const;
 
     Staff *staff(staff_idx_t n);
@@ -150,7 +146,6 @@ private:
     Score *score_ = nullptr;
 
     bool paste_mode_value = false; // modifies read behaviour on paste operation
-    bool force_page_mode_ = false;
 
     Fraction tick_value{Fraction(0, 1)};
     Fraction tick_offset_value{Fraction(0, 1)};

@@ -170,7 +170,6 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
         if (!reader.image_file_names().empty())
             throw std::invalid_argument("Embedded score images are not yet supported by the native backend");
         engraving::rw::ReadInOutData inout;
-        inout.force_page_mode = true;
         const auto loaded = project->load_mscz(reader, &inout, false);
         if (loaded.code() == static_cast<int>(engraving::Err::FILE_TOO_OLD)) throw UnsupportedScoreVersion(loaded.to_string());
         check(loaded);
@@ -206,7 +205,6 @@ ScoreProject load_native_score_dir(const EngineContext &context, const std::stri
     engraving::MscReader reader(params);
     check(reader.open());
     engraving::rw::ReadInOutData inout;
-    inout.force_page_mode = true;
     check(project->load_mscz(reader, &inout, false));
     finish_load(*project);
     return project;

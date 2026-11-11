@@ -808,7 +808,7 @@ public:
 
     bool line_mode() const { return layout_options_.is_mode(LayoutMode::LINE); }
 
-    bool linear_mode() const { return layout_options_.is_linear_mode(); }
+    bool linear_mode() const { return false; }
 
     // ----
 

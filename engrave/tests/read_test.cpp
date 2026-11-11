@@ -136,6 +136,40 @@ TEST(Read, UnknownActionIconIsSkipped) {
     }
 }
 
+TEST(Read, NativeViewModesRenderAsPagesAndRoundTrip) {
+    auto baseline = g_engine->open(as_bytes(read_text(write470_fixture())));
+    ASSERT_TRUE(baseline);
+    auto expected = (*baseline)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected);
+    auto baseline_saved = (*baseline)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(baseline_saved);
+    auto baseline_reopened = g_engine->open(*baseline_saved);
+    ASSERT_TRUE(baseline_reopened);
+    auto expected_reopened = (*baseline_reopened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(expected_reopened);
+    for (const std::string version : {"4.60", "5.00"}) {
+        for (const std::string mode : {"line", "system"}) {
+            std::string fixture = read_text(write470_fixture());
+            fixture.replace(fixture.find("4.70"), 4, version);
+            fixture.insert(fixture.find("<Score>") + 7, "<layoutMode>" + mode + "</layoutMode>");
+            auto document = g_engine->open(as_bytes(fixture));
+            ASSERT_TRUE(document) << document.error().message;
+            auto rendered = (*document)->render({.format = engrave::RenderFormat::SVG});
+            ASSERT_TRUE(rendered) << rendered.error().message;
+            EXPECT_EQ(rendered->pages, expected->pages);
+            auto saved = (*document)->export_score({.format = engrave::Format::MSCX});
+            ASSERT_TRUE(saved);
+            const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
+            EXPECT_NE(xml.find("<layoutMode>" + mode + "</layoutMode>"), std::string::npos);
+            auto reopened = g_engine->open(*saved);
+            ASSERT_TRUE(reopened);
+            auto again = (*reopened)->render({.format = engrave::RenderFormat::SVG});
+            ASSERT_TRUE(again);
+            EXPECT_EQ(again->pages, expected_reopened->pages);
+        }
+    }
+}
+
 TEST(Read, InstrumentLabelNumberFlags500) {
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/upstream-label/show-number-short-500.mscx";
     const std::string fixture = read_text(path);

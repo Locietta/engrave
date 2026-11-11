@@ -29,9 +29,7 @@
 #include "layoutcontext.h"
 #include "log.h"
 #include "pagelayout.h"
-#include "scorehorizontalviewlayout.h"
 #include "scorepageviewlayout.h"
-#include "scoreverticalviewlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
@@ -55,7 +53,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     assert(!(stick == Fraction(-1, 1) && etick == Fraction(-1, 1)));
 
     // Check empty score
-    if (!score->last() || (ctx.conf().is_linear_mode() && !score->first_measure())) {
+    if (!score->last()) {
         LOGD() << "empty score";
         muse::delete_all(score->systems());
         score->systems().clear();
@@ -77,13 +75,7 @@ void ScoreLayout::layout_range(Score *score, const Fraction &st, const Fraction 
     ctx.mut_state().set_is_layout_all(is_layout_all);
 
     // Init context and layout
-    switch (ctx.conf().view_mode()) {
-        case LayoutMode::PAGE:
-        case LayoutMode::FLOAT: ScorePageViewLayout::layout_page_view(score, ctx, stick, etick); break;
-        case LayoutMode::LINE:
-        case LayoutMode::HORIZONTAL_FIXED: ScoreHorizontalViewLayout::layout_horizontal_view(score, ctx, stick, etick); break;
-        case LayoutMode::SYSTEM: ScoreVerticalViewLayout::layout_vertical_view(score, ctx, stick, etick); break;
-    }
+    ScorePageViewLayout::layout_page_view(score, ctx, stick, etick);
 
     //LOGDA() << DumpLayoutData::dump(score);
 }

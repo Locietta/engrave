@@ -2838,7 +2838,7 @@ ChordRest *Measure::first_chord_rest(track_idx_t track) const {
 //   userStretch
 //-------------------------------------------------------------------
 
-double Measure::user_stretch() const { return score()->layout_options().is_mode(LayoutMode::FLOAT) ? 1.0 : user_stretch_; }
+double Measure::user_stretch() const { return user_stretch_; }
 
 //---------------------------------------------------------
 //   nextElementStaff

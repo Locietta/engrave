@@ -106,8 +106,6 @@ void ScoreRenderer::layout_stem(Chord *item) {
 }
 
 bool ScoreRenderer::score_has_timestamp_headers_footers(const Score *score) const {
-    if (score->layout_mode() != LayoutMode::PAGE && score->layout_mode() != LayoutMode::FLOAT) {
-        return false;
-    }
+
     return HeaderFooterLayout::score_has_timestamp_headers_footers(score);
 }
