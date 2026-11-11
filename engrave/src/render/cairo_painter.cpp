@@ -354,7 +354,10 @@ struct FontCache {
             throw std::runtime_error("CairoPainter: text drawing requires a non-empty font family");
         }
 
-        const CacheKey request_key = std::make_pair(requested, font.type());
+        // Match FontsEngine's interpretation of ordinary score text before
+        // resolving a registered family's regular-style fallback.
+        const Font::Type type = font.type() == Font::Type::UNDEFINED || font.type() == Font::Type::UNKNOWN ? Font::Type::TEXT : font.type();
+        const CacheKey request_key = std::make_pair(requested, type);
 
         std::lock_guard<std::mutex> lock(mutex_);
         const auto active = db.active_table();
@@ -370,14 +373,14 @@ struct FontCache {
             return request_it->second;
         }
 
-        const FontData font_data = db.font_data(requested, font.type());
+        const FontData font_data = db.font_data(requested, type);
         if (!font_data.valid()) {
             throw std::runtime_error("CairoPainter: music::RuntimeFontsDatabase returned no font data for family '" +
                                      requested.family().id().to_std_string() + "'");
         }
 
         const music::FontRecord *record = music::find_record(*active, font_data.key);
-        const ActualKey actual_key(font_data.key, font.type(), record ? record->bytes : nullptr);
+        const ActualKey actual_key(font_data.key, type, record ? record->bytes : nullptr);
         auto actual_it = by_actual_.find(actual_key);
         if (actual_it != by_actual_.end()) {
             by_request_[request_key] = actual_it->second;
