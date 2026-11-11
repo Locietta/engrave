@@ -25,8 +25,10 @@
 
 namespace muse::draw {
 struct FontFaceDU {
-    FontFaceDU(FontFaceFT *origin);
-    ~FontFaceDU();
+    FontFaceDU(const FontFaceDU &) = delete;
+    FontFaceDU &operator=(const FontFaceDU &) = delete;
+    FontFaceDU() = default;
+    ~FontFaceDU() = default;
 
     bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode);
 
@@ -53,6 +55,6 @@ struct FontFaceDU {
     const GlyphImage &glyph_image(glyph_idx_t idx) const;
 
 private:
-    FontFaceFT *origin_ = nullptr;
+    FontFaceFT origin_;
 };
 } // namespace muse::draw

@@ -29,6 +29,8 @@ struct GlyphMetrics;
 struct SymbolMetrics;
 
 struct FontFaceFT {
+    FontFaceFT(const FontFaceFT &) = delete;
+    FontFaceFT &operator=(const FontFaceFT &) = delete;
 
     FontFaceFT();
     ~FontFaceFT();
