@@ -26,7 +26,6 @@
 #include <set>
 #include <stdexcept>
 
-#include "../../iengravingfont.h"
 #include "../../infrastructure/rtti.h"
 #include "../../style/textstyle.h"
 #include "../../types/symnames.h"
@@ -148,6 +147,7 @@
 #include "dom/whammybar.h"
 #include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingfont.h"
 #include "log.h"
 #include "types/types.h"
 #include "writecontext.h"

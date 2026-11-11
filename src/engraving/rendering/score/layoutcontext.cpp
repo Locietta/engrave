@@ -54,7 +54,7 @@ bool LayoutConfiguration::is_printing_mode() const {
     return score()->printing();
 }
 
-std::shared_ptr<const IEngravingFont> LayoutConfiguration::engraving_font() const {
+std::shared_ptr<const EngravingFont> LayoutConfiguration::engraving_font() const {
     IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->engraving_font();
 }
@@ -370,7 +370,7 @@ LayoutContext::~LayoutContext() {}
 
 bool LayoutContext::is_valid() const { return score_ != nullptr; }
 
-IEngravingFontPtr LayoutContext::engraving_font() const {
+EngravingFontPtr LayoutContext::engraving_font() const {
     IF_ASSERT_FAILED(score_) { return nullptr; }
     return score_->engraving_font();
 }

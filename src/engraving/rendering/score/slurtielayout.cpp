@@ -44,8 +44,8 @@
 #include "draw/types/transform.h"
 #include "editing/editchord.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingfont.h"
 #include "global/stringutils.h"
-#include "iengravingfont.h"
 #include "log.h"
 #include "stemlayout.h"
 #include "tlayout.h"

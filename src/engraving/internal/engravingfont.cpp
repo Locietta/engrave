@@ -25,6 +25,7 @@
 #include "dom/mscore.h"
 #include "draw/painter.h"
 #include "engraving/dom/mscore.h"
+#include "engravingfontsprovider.h"
 #include "io/file.h"
 #include "log.h"
 #include "serialization/json.h"
@@ -41,12 +42,12 @@ using namespace mu::engraving;
 // ScoreFont
 // =============================================
 
-EngravingFont::EngravingFont(IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
+EngravingFont::EngravingFont(FontProvider &font_provider, const EngravingFontsProvider &engraving_fonts, const std::string &name,
                              const std::string &family, const PathT &file_path, const PathT &metadata_path)
     : EngravingFont(font_provider, engraving_fonts, name, family, std::make_shared<File>(file_path),
                     std::make_shared<File>(metadata_path)) {}
 
-EngravingFont::EngravingFont(IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
+EngravingFont::EngravingFont(FontProvider &font_provider, const EngravingFontsProvider &engraving_fonts, const std::string &name,
                              const std::string &family, std::shared_ptr<IODevice> font, std::shared_ptr<IODevice> metadata)
     : font_provider_(&font_provider), engraving_fonts_(&engraving_fonts), symbols_(static_cast<size_t>(SymId::LAST_SYM) + 1), name_(name),
       family_(family), font_device_(std::move(font)), metadata_device_(std::move(metadata)) {}

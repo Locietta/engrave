@@ -21,8 +21,8 @@
  */
 #pragma once
 
+#include "draw/types/fontstypes.h"
 #include "global/types/bytearray.h"
-#include "types/fontstypes.h"
 
 namespace muse::draw {
 using f26dot6_t = long; // A signed 26.6 fixed-point type used for vectorial pixel coordinates.
@@ -39,32 +39,4 @@ struct ShapedGlyph {
     uint32_t cluster = 0;
 };
 
-struct IFontFace {
-
-    virtual ~IFontFace() = default;
-
-    virtual bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) = 0;
-
-    virtual const FaceKey &key() const = 0;
-    virtual bool is_symbol_mode() const = 0;
-
-    virtual f26dot6_t leading() const = 0;
-    virtual f26dot6_t ascent() const = 0;
-    virtual f26dot6_t descent() const = 0;
-    virtual f26dot6_t x_height() const = 0;
-    virtual f26dot6_t cap_height() const = 0;
-
-    virtual f26dot6_t underline_pos() const = 0;
-    virtual f26dot6_t line_width() const = 0;
-
-    virtual std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const = 0;
-    virtual glyph_idx_t glyph_index(char32_t ucs4) const = 0;
-    virtual glyph_idx_t glyph_index(const std::string &glyph_name) const = 0;
-    virtual char32_t find_char_code(glyph_idx_t idx) const = 0; // for tests
-
-    virtual FBBox glyph_bbox(glyph_idx_t idx) const = 0;
-    virtual f26dot6_t glyph_advance(glyph_idx_t idx) const = 0;
-
-    virtual const GlyphImage &glyph_image(glyph_idx_t idx) const = 0;
-};
 } // namespace muse::draw

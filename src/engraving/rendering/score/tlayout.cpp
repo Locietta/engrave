@@ -134,12 +134,12 @@
 #include "editing/editchord.h"
 #include "editing/navigation.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingfont.h"
 #include "global/realfn.h"
 #include "global/types/number.h"
 #include "guitarbendlayout.h"
 #include "harmonylayout.h"
 #include "horizontalspacing.h"
-#include "iengravingfont.h"
 #include "infrastructure/ld_access.h"
 #include "infrastructure/rtti.h"
 #include "log.h"
@@ -644,7 +644,7 @@ void TLayout::layout_arpeggio(const Arpeggio *item, Arpeggio::LayoutData *ldata,
     LD_CONDITION(parent_chord->up_note()->ldata()->is_set_pos());
     LD_CONDITION(parent_chord->down_note()->ldata()->is_set_pos());
 
-    auto symbol_line = [](const std::shared_ptr<const IEngravingFont> &f, Arpeggio::LayoutData *data, SymId end, SymId fill) {
+    auto symbol_line = [](const std::shared_ptr<const EngravingFont> &f, Arpeggio::LayoutData *data, SymId end, SymId fill) {
         data->symbols.clear();
 
         double w = data->bottom - data->top;
@@ -664,7 +664,7 @@ void TLayout::layout_arpeggio(const Arpeggio *item, Arpeggio::LayoutData *ldata,
     ldata->set_mag(item->staff() ? item->staff()->staff_mag(item->tick()) : item->mag());
     ldata->mag_s = conf.mag_s(ldata->mag());
 
-    std::shared_ptr<const IEngravingFont> font = conf.engraving_font();
+    std::shared_ptr<const EngravingFont> font = conf.engraving_font();
     switch (item->arpeggio_type()) {
         case ArpeggioType::NORMAL: {
             symbol_line(font, ldata, SymId::WIGGLE_ARPEGGIATO_UP, SymId::WIGGLE_ARPEGGIATO_UP);
@@ -935,7 +935,7 @@ void TLayout::layout_bar_line(const BarLine *item, BarLine::LayoutData *ldata, c
     ldata->y1 = spatium * .5 * item->span_from();
     ldata->y2 = spatium * .5 * (8.0 + item->span_to());
 
-    const IEngravingFontPtr font = ctx.engraving_font();
+    const EngravingFontPtr font = ctx.engraving_font();
     const double mag_s = ctx.conf().mag_s(ldata->mag());
 
     double w = bar_line_width(item, ctx.conf().style(), font->width(SymId::REPEAT_DOT, mag_s)) * ldata->mag();
@@ -5742,7 +5742,7 @@ void TLayout::layout_time_sig(const TimeSig *item, TimeSig::LayoutData *ldata, c
     double yoff = spatium * (num_of_lines - 1) * .5 * line_dist;
 
     // C and Ccut are placed at the middle of the staff: use yoff directly
-    IEngravingFontPtr font = ctx.engraving_font();
+    EngravingFontPtr font = ctx.engraving_font();
     ScaleF scale = item->scale();
     SizeF mag(item->mag_s() * scale);
     TimeSigStyle time_sig_style = item->time_sig_style();
@@ -5997,7 +5997,7 @@ void TLayout::layout_trill_segment(TrillSegment *item, LayoutContext &ctx) {
 
 void TLayout::fill_trill_segment_shape(const TrillSegment *item, TrillSegment::LayoutData *ldata, const LayoutConfiguration &conf) {
     LAYOUT_CALL_ITEM(item);
-    std::shared_ptr<const IEngravingFont> font = conf.engraving_font();
+    std::shared_ptr<const EngravingFont> font = conf.engraving_font();
     Shape s = font->shape(item->symbols(), item->mag_s());
     Accidental *accidental = item->trill()->accidental();
     if (accidental && accidental->visible() && item->is_single_begin_type()) {

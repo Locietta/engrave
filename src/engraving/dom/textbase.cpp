@@ -27,8 +27,8 @@
 #include "anchors.h"
 #include "box.h"
 #include "draw/fontmetrics.h"
+#include "engraving/internal/engravingfont.h"
 #include "harppedaldiagram.h"
-#include "iengravingfont.h"
 #include "instrumentname.h"
 #include "log.h"
 #include "measure.h"
@@ -1588,7 +1588,7 @@ void TextBase::create_blocks(LayoutData *ldata) const {
                     if (id != SymId::NO_SYM) {
                         CharFormat fmt = *cursor.format(); // save format
 
-                        const std::shared_ptr<IEngravingFont> score_font = score()->engraving_font();
+                        const std::shared_ptr<EngravingFont> score_font = score()->engraving_font();
                         char32_t code = static_cast<char32_t>(' ');
                         if (id != SymId::SPACE) {
                             code = score_font->is_valid(id) ? score_font->sym_code(id) :

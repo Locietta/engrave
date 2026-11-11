@@ -25,13 +25,13 @@
 
 #include <memory>
 
-#include "../iengravingfontsprovider.h"
 #include "bsymbol.h"
 #include "draw/types/font.h"
+#include "engraving/internal/engravingfontsprovider.h"
 
 namespace mu::engraving {
 struct Segment;
-struct IEngravingFont;
+struct EngravingFont;
 
 //---------------------------------------------------------
 //   @@ Symbol
@@ -53,11 +53,11 @@ public:
 
     Symbol *clone() const override { return new Symbol(*this); }
 
-    void set_sym(SymId s, const std::shared_ptr<IEngravingFont> &sf = nullptr);
+    void set_sym(SymId s, const std::shared_ptr<EngravingFont> &sf = nullptr);
 
     SymId sym() const { return sym_; }
 
-    const std::shared_ptr<IEngravingFont> &score_font() const { return score_font_; }
+    const std::shared_ptr<EngravingFont> &score_font() const { return score_font_; }
 
     double symbols_size() const { return symbols_size_; }
 
@@ -81,7 +81,7 @@ public:
 
 protected:
     SymId sym_ = SymId::NO_SYM;
-    std::shared_ptr<IEngravingFont> score_font_ = nullptr;
+    std::shared_ptr<EngravingFont> score_font_ = nullptr;
     double symbols_size_ = 1.0;
     double sym_angle_ = 0.0;
 };

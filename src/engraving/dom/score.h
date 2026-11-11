@@ -114,7 +114,7 @@ struct RepeatList;
 struct RepeatSegmentInfo;
 struct Rest;
 struct Score;
-struct IEngravingFont;
+struct EngravingFont;
 struct Segment;
 struct Slur;
 struct Spanner;
@@ -261,7 +261,7 @@ public:
 
     const std::shared_ptr<EngravingConfiguration> &configuration() const { return services_.configuration; }
 
-    const std::shared_ptr<IEngravingFontsProvider> &engraving_fonts() const { return services_.engraving_fonts; }
+    const std::shared_ptr<EngravingFontsProvider> &engraving_fonts() const { return services_.engraving_fonts; }
 
     const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const { return services_.context_configuration; }
 
@@ -855,9 +855,9 @@ public:
     ChordRest *find_chord_rest_ending_before_tick_in_track(const Fraction &tick, track_idx_t track_idx) const;
     void insert_time(const Fraction &tick_pos, const Fraction &tick_len, const std::vector<RepeatSegmentInfo> &old_segments);
 
-    std::shared_ptr<IEngravingFont> engraving_font() const { return engraving_font_; }
+    std::shared_ptr<EngravingFont> engraving_font() const { return engraving_font_; }
 
-    void set_engraving_font(std::shared_ptr<IEngravingFont> f) { engraving_font_ = f; }
+    void set_engraving_font(std::shared_ptr<EngravingFont> f) { engraving_font_ = f; }
 
     std::vector<staff_idx_t> unique_staves() const;
 
@@ -1006,7 +1006,7 @@ private:
     String mscore_version_;
     int mscore_revision_ = 0;
 
-    std::shared_ptr<IEngravingFont> engraving_font_ = nullptr;
+    std::shared_ptr<EngravingFont> engraving_font_ = nullptr;
 
     int page_number_offset_ = 0; // Offset for page numbers.
 

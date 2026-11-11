@@ -27,11 +27,11 @@
 #include <vector>
 
 #include "../../dom/mscore.h"
-#include "../../iengravingfont.h"
 #include "../../style/style.h"
 #include "../../types/fraction.h"
 #include "../../types/types.h"
 #include "../layoutoptions.h"
+#include "engraving/internal/engravingfont.h"
 
 #define LAYOUT_CALL_CLEAR()
 #define LAYOUT_CALL_BEGIN(name, info)
@@ -100,7 +100,7 @@ struct LayoutConfiguration {
     double max_system_distance() const;
     bool is_show_instrument_names() const;
 
-    std::shared_ptr<const IEngravingFont> engraving_font() const;
+    std::shared_ptr<const EngravingFont> engraving_font() const;
 
     const MStyle &style() const;
 
@@ -373,7 +373,7 @@ struct LayoutContext : IGetScoreInternal {
     bool is_valid() const;
 
     // Conf
-    IEngravingFontPtr engraving_font() const;
+    EngravingFontPtr engraving_font() const;
 
     const LayoutConfiguration &conf() const { return configuration_; }
 

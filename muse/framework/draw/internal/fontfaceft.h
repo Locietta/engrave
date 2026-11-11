@@ -21,41 +21,41 @@
  */
 #pragma once
 
-#include "ifontface.h"
+#include "fontfacetypes.h"
 
 namespace muse::draw {
 struct FData;
 struct GlyphMetrics;
 struct SymbolMetrics;
 
-struct FontFaceFT : IFontFace {
+struct FontFaceFT {
 
     FontFaceFT();
     ~FontFaceFT();
 
-    bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) override;
+    bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode);
 
-    const FaceKey &key() const override;
-    bool is_symbol_mode() const override;
+    const FaceKey &key() const;
+    bool is_symbol_mode() const;
 
-    f26dot6_t leading() const override;
-    f26dot6_t ascent() const override;
-    f26dot6_t descent() const override;
-    f26dot6_t x_height() const override;
-    f26dot6_t cap_height() const override;
+    f26dot6_t leading() const;
+    f26dot6_t ascent() const;
+    f26dot6_t descent() const;
+    f26dot6_t x_height() const;
+    f26dot6_t cap_height() const;
 
-    f26dot6_t underline_pos() const override;
-    f26dot6_t line_width() const override;
+    f26dot6_t underline_pos() const;
+    f26dot6_t line_width() const;
 
-    std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const override;
-    glyph_idx_t glyph_index(char32_t ucs4) const override;
-    glyph_idx_t glyph_index(const std::string &glyph_name) const override;
-    char32_t find_char_code(glyph_idx_t idx) const override;
+    std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const;
+    glyph_idx_t glyph_index(char32_t ucs4) const;
+    glyph_idx_t glyph_index(const std::string &glyph_name) const;
+    char32_t find_char_code(glyph_idx_t idx) const;
 
-    FBBox glyph_bbox(glyph_idx_t idx) const override;
-    f26dot6_t glyph_advance(glyph_idx_t idx) const override;
+    FBBox glyph_bbox(glyph_idx_t idx) const;
+    f26dot6_t glyph_advance(glyph_idx_t idx) const;
 
-    const GlyphImage &glyph_image(glyph_idx_t idx) const override;
+    const GlyphImage &glyph_image(glyph_idx_t idx) const;
 
 private:
 

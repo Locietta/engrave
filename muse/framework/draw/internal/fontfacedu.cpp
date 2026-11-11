@@ -42,7 +42,7 @@ static const DummyGlyph &dummy_glyph() {
     return g;
 }
 
-FontFaceDU::FontFaceDU(IFontFace *origin) : origin_(origin) {}
+FontFaceDU::FontFaceDU(FontFaceFT *origin) : origin_(origin) {}
 
 FontFaceDU::~FontFaceDU() { delete origin_; }
 

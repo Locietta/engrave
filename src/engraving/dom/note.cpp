@@ -45,11 +45,11 @@
 #include "chordline.h"
 #include "drumset.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingfont.h"
 #include "factory.h"
 #include "fingering.h"
 #include "glissando.h"
 #include "guitarbend.h"
-#include "iengravingfont.h"
 #include "laissezvib.h"
 #include "linkedobjects.h"
 #include "log.h"

@@ -21,9 +21,8 @@
  */
 #include "fontsengine.h"
 
+#include "fontface.h"
 #include "fontfacedu.h"
-#include "fontfaceft.h"
-#include "ifontface.h"
 #include "log.h"
 
 using namespace muse;
@@ -56,9 +55,9 @@ static inline RectF scale_rect(const RectF &r, double scale) {
     return RectF(r.x() * scale, r.y() * scale, r.width() * scale, r.height() * scale);
 }
 
-static const IFontFace *find_subtitution_font(char32_t ch, const std::vector<IFontFace *> &subtitution_faces) {
-    const IFontFace *founded = nullptr;
-    for (const IFontFace *sub_face : subtitution_faces) {
+static const FontFace *find_subtitution_font(char32_t ch, const std::vector<FontFace *> &subtitution_faces) {
+    const FontFace *founded = nullptr;
+    for (const FontFace *sub_face : subtitution_faces) {
         if (sub_face->glyph_index(ch) != 0) {
             founded = sub_face;
         }
@@ -85,7 +84,7 @@ bool FontsEngine::RequireFace::is_symbol_mode() const { return face ? face->is_s
 
 double FontsEngine::RequireFace::pixel_scale() const { return pixel_scale_for(face); }
 
-double FontsEngine::RequireFace::pixel_scale_for(const IFontFace *loaded_face) const {
+double FontsEngine::RequireFace::pixel_scale_for(const FontFace *loaded_face) const {
     if (!loaded_face) {
         return 0.0;
     }
@@ -107,7 +106,7 @@ void FontsEngine::clear_loaded_faces() {
     }
     required_faces_.clear();
 
-    for (IFontFace *f : loaded_faces_) {
+    for (FontFace *f : loaded_faces_) {
         delete f;
     }
     loaded_faces_.clear();
@@ -200,7 +199,7 @@ double FontsEngine::horizontal_advance(const Font &f, const std::u32string &text
 
     std::vector<FontFaceTextBlock> font_face_blocks = split_text_by_font_faces(rf, text_block);
     for (const FontFaceTextBlock &ff_block : font_face_blocks) {
-        const IFontFace *font_face = ff_block.face;
+        const FontFace *font_face = ff_block.face;
         if (!font_face) {
             if (is_zero_advance_text(ff_block.text.text, ff_block.text.lenght)) {
                 continue;
@@ -250,7 +249,7 @@ RectF FontsEngine::bounding_rect(const Font &f, const std::u32string &text) cons
 
     std::vector<FontFaceTextBlock> font_face_blocks = split_text_by_font_faces(rf, text_block);
     for (const FontFaceTextBlock &ff_block : font_face_blocks) {
-        const IFontFace *font_face = ff_block.face;
+        const FontFace *font_face = ff_block.face;
         if (!font_face) {
             if (is_zero_advance_text(ff_block.text.text, ff_block.text.lenght)) {
                 continue;
@@ -318,7 +317,7 @@ RectF FontsEngine::tight_bounding_rect(const Font &f, const std::u32string &text
 
     std::vector<FontFaceTextBlock> font_face_blocks = split_text_by_font_faces(rf, text_block);
     for (const FontFaceTextBlock &ff_block : font_face_blocks) {
-        const IFontFace *font_face = ff_block.face;
+        const FontFace *font_face = ff_block.face;
         if (!font_face) {
             if (is_zero_advance_text(ff_block.text.text, ff_block.text.lenght)) {
                 continue;
@@ -380,26 +379,23 @@ std::vector<GlyphImage> FontsEngine::render(const Font &f, const std::u32string 
 
 void FontsEngine::set_font_face_factory(const FontFaceFactory &f) { font_face_factory_ = f; }
 
-IFontFace *FontsEngine::create_font_face(const FontData &font_data, Font::Type type) const {
+FontFace *FontsEngine::create_font_face(const FontData &font_data, Font::Type type) const {
     const FontDataKey &data_key = font_data.key;
     if (font_face_factory_) {
         return font_face_factory_(data_key, type);
     }
 
-    IFontFace *origin = nullptr;
     if (is_ftx(font_data.data)) {
         LOGE() << "XT font face backend is disabled: " << data_key.family().id();
         return nullptr;
-    } else {
-        origin = new FontFaceFT();
     }
 
-    return new FontFaceDU(origin);
+    return new FontFace(std::in_place_type<FontFaceDU>, new FontFaceFT());
 }
 
-IFontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int input_loaded_pixel_size,
-                                                     bool is_symbol_mode) const {
-    for (IFontFace *face : loaded_faces_) {
+FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int input_loaded_pixel_size,
+                                                    bool is_symbol_mode) const {
+    for (FontFace *face : loaded_faces_) {
         if (face->key().data_key == actual_data_key && face->key().type == type && face->key().pixel_size == input_loaded_pixel_size &&
             face->is_symbol_mode() == is_symbol_mode) {
             return face;
@@ -417,7 +413,7 @@ IFontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_d
     loaded_key.type = type;
     loaded_key.pixel_size = input_loaded_pixel_size;
 
-    IFontFace *face = create_font_face(font_data, type);
+    FontFace *face = create_font_face(font_data, type);
     IF_ASSERT_FAILED(face) { return nullptr; }
 
     if (!face->load(loaded_key, font_data, is_symbol_mode)) {
@@ -430,7 +426,7 @@ IFontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_d
     return face;
 }
 
-IFontFace *FontsEngine::sdf_font_face_for(const IFontFace *layout_face) const {
+FontFace *FontsEngine::sdf_font_face_for(const FontFace *layout_face) const {
     if (!layout_face) {
         return nullptr;
     }
@@ -474,7 +470,7 @@ FontsEngine::RequireFace *FontsEngine::font_face(const Font &f, bool is_symbol_m
     const int loaded_pixel_size_value = is_ftx(database_.font_data(actual_data_key, require_key.type).data) ?
                                             static_cast<int>(::loaded_pixel_size_constant) :
                                             require_key.pixel_size;
-    IFontFace *face = font_face_by_actual_data_key(actual_data_key, require_key.type, loaded_pixel_size_value, is_symbol_mode);
+    FontFace *face = font_face_by_actual_data_key(actual_data_key, require_key.type, loaded_pixel_size_value, is_symbol_mode);
     if (!face) {
         return nullptr;
     }
@@ -491,7 +487,7 @@ FontsEngine::RequireFace *FontsEngine::font_face(const Font &f, bool is_symbol_m
         const int subtitution_loaded_pixel_size = is_ftx(database_.font_data(actual_subtitution_data_key, require_key.type).data) ?
                                                       static_cast<int>(::loaded_pixel_size_constant) :
                                                       require_key.pixel_size;
-        IFontFace *subtitution_face =
+        FontFace *subtitution_face =
             font_face_by_actual_data_key(actual_subtitution_data_key, require_key.type, subtitution_loaded_pixel_size, is_symbol_mode);
         if (subtitution_face) {
             new_font->subtitution_faces.push_back(subtitution_face);
@@ -508,9 +504,9 @@ std::vector<FontsEngine::FontFaceTextBlock> FontsEngine::split_text_by_font_face
 
     FontFaceTextBlock txt_block;
     txt_block.text.text = &text.text[0];
-    const IFontFace *current = nullptr;
+    const FontFace *current = nullptr;
     for (int i = 0; i < text.lenght; ++i) {
-        const IFontFace *new_face = nullptr;
+        const FontFace *new_face = nullptr;
         if (rf->face->glyph_index(text.text[i]) != 0) {
             new_face = rf->face;
         } else {

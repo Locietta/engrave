@@ -70,7 +70,7 @@ std::shared_ptr<EngravingFont> EngravingFontsProvider::do_font_by_name(const std
     return nullptr;
 }
 
-IEngravingFontPtr EngravingFontsProvider::font_by_name(const std::string &name) const {
+EngravingFontPtr EngravingFontsProvider::font_by_name(const std::string &name) const {
     std::shared_ptr<EngravingFont> font = do_font_by_name(name);
     if (!font) {
         font = do_fallback_font();
@@ -80,8 +80,8 @@ IEngravingFontPtr EngravingFontsProvider::font_by_name(const std::string &name) 
     return font;
 }
 
-std::vector<IEngravingFontPtr> EngravingFontsProvider::fonts() const {
-    std::vector<IEngravingFontPtr> fs;
+std::vector<EngravingFontPtr> EngravingFontsProvider::fonts() const {
+    std::vector<EngravingFontPtr> fs;
     for (const std::shared_ptr<EngravingFont> &f : symbol_fonts_) {
         std::string name_lo = muse::strings::to_lower(f->name());
         if (external_symbol_fonts_.find(name_lo) == external_symbol_fonts_.end()) {
@@ -108,13 +108,13 @@ std::shared_ptr<EngravingFont> EngravingFontsProvider::do_fallback_font() const 
     return fallback_.font;
 }
 
-IEngravingFontPtr EngravingFontsProvider::fallback_font() const {
+EngravingFontPtr EngravingFontsProvider::fallback_font() const {
     std::shared_ptr<EngravingFont> font = do_fallback_font();
     font->ensure_load();
     return font;
 }
 
-bool EngravingFontsProvider::is_fallback_font(const IEngravingFont *f) const { return do_fallback_font().get() == f; }
+bool EngravingFontsProvider::is_fallback_font(const EngravingFont *f) const { return do_fallback_font().get() == f; }
 
 void EngravingFontsProvider::clear_external_fonts() { external_symbol_fonts_.clear(); }
 

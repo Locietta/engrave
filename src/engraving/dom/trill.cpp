@@ -28,8 +28,8 @@
 #include "accidental.h"
 #include "chord.h"
 #include "clef.h"
+#include "engraving/internal/engravingfont.h"
 #include "factory.h"
-#include "iengravingfont.h"
 #include "measure.h"
 #include "ornament.h"
 #include "score.h"
@@ -69,7 +69,7 @@ void TrillSegment::symbol_line(SymId start, SymId fill) {
     double x2 = pos2().x();
     double w = x2 - x1;
     double mag = mag_s();
-    IEngravingFontPtr f = score()->engraving_font();
+    EngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -88,7 +88,7 @@ void TrillSegment::symbol_line(SymId start, SymId fill, SymId end) {
     double x2 = pos2().x();
     double w = x2 - x1;
     double mag = mag_s();
-    IEngravingFontPtr f = score()->engraving_font();
+    EngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);

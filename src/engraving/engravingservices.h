@@ -12,7 +12,7 @@ struct IImageProvider;
 namespace mu::engraving {
 struct EngravingConfiguration;
 struct EngravingContextConfiguration;
-struct IEngravingFontsProvider;
+struct EngravingFontsProvider;
 
 namespace rendering {
 struct IScoreRenderer;
@@ -22,7 +22,7 @@ struct IScoreRenderer;
 // and outlives every score built with it; scores keep a reference.
 struct EngravingServices {
     std::shared_ptr<EngravingConfiguration> configuration;
-    std::shared_ptr<IEngravingFontsProvider> engraving_fonts;
+    std::shared_ptr<EngravingFontsProvider> engraving_fonts;
     std::shared_ptr<EngravingContextConfiguration> context_configuration;
     std::shared_ptr<rendering::IScoreRenderer> renderer;
     // Raster image codec and thumbnails. The engine has none: it rejects scores

@@ -22,8 +22,8 @@
 #ifndef MUSE_DRAW_FONTMETRICS_H
 #define MUSE_DRAW_FONTMETRICS_H
 
+#include "draw/internal/fontprovider.h"
 #include "global/types/string.h"
-#include "ifontprovider.h"
 #include "types/font.h"
 #include "types/geometry.h"
 
@@ -34,7 +34,7 @@ struct FontMetrics {
     // FontMetrics is a value type constructed throughout layout without an owner
     // to carry a provider, so EngineContext binds its font provider here for its
     // lifetime; null outside it.
-    static void set_provider(IFontProvider *provider);
+    static void set_provider(FontProvider *provider);
 
     double line_spacing() const;
     double x_height() const;
@@ -68,7 +68,7 @@ struct FontMetrics {
     static double cap_height(const Font &f);
 
 private:
-    static IFontProvider *font_provider();
+    static FontProvider *font_provider();
 
     Font font_;
 };

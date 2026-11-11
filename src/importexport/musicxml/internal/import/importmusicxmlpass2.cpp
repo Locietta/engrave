@@ -94,8 +94,8 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/engravingerrors.h"
-#include "engraving/iengravingfont.h"
-#include "engraving/iengravingfontsprovider.h"
+#include "engraving/internal/engravingfont.h"
+#include "engraving/internal/engravingfontsprovider.h"
 #include "engraving/rendering/iscorerenderer.h"
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/types/symnames.h"
@@ -719,7 +719,7 @@ static void set_part_instruments(MusicXmlLogger *logger, const XmlStreamReader *
  characters are preserved as-is.
  */
 namespace xmlpass2 {
-static String text2syms(const String &t, const IEngravingFontsProvider &fonts, bool is_dolet = false) {
+static String text2syms(const String &t, const EngravingFontsProvider &fonts, bool is_dolet = false) {
     //QTime time;
     //time.start();
 
@@ -727,7 +727,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts, b
     // note that this takes about 1 msec on a Core i5,
     // caching does not gain much
 
-    IEngravingFontPtr sf = fonts.fallback_font();
+    EngravingFontPtr sf = fonts.fallback_font();
     std::map<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
 
@@ -793,7 +793,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts, b
 
 namespace xmlpass2 {
 static String next_part_of_formatted_string(XmlStreamReader &e, const MusicXmlConfiguration &configuration,
-                                            const IEngravingFontsProvider &fonts, bool is_dolet = false) {
+                                            const EngravingFontsProvider &fonts, bool is_dolet = false) {
     //String lang       = e.attribute(String("xml:lang"), "it");
     String font_weight = e.attribute("font-weight");
     String font_size = e.attribute("font-size");

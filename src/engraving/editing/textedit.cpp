@@ -29,7 +29,7 @@
 #include "../dom/symbol.h"
 #include "../dom/utils.h"
 #include "../rendering/iscorerenderer.h"
-#include "iengravingfont.h"
+#include "engraving/internal/engravingfont.h"
 #include "log.h"
 #include "navigation.h"
 #include "transaction/transaction.h"

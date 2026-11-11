@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "../types/fontstypes.h"
+#include "draw/types/fontstypes.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"
 
