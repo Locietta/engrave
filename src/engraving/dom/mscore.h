@@ -151,63 +151,29 @@ struct MScoreError {
 //---------------------------------------------------------
 
 struct MScore {
-private:
-    static int h_raster_value, v_raster_value;
-    static bool vertical_orientation_value;
-
-public:
-
     static MsError error;
     static bool error_is_warning;
 
-    static void register_ui_types();
+    static constexpr bool vertical_orientation() { return false; }
 
-    static double h_raster() { return h_raster_value; }
+    static constexpr bool warn_pitch_range = true;
+    static constexpr bool warn_guitar_bends = true;
+    static constexpr int pedal_events_min_ticks = 1;
 
-    static double v_raster() { return v_raster_value; }
-
-    static void set_h_raster(int val) { h_raster_value = val; }
-
-    static void set_v_raster(int val) { v_raster_value = val; }
-
-    static void set_nudge_step(double val) { nudge_step = val; }
-
-    static void set_nudge_step10(double val) { nudge_step10 = val; }
-
-    static void set_nudge_step50(double val) { nudge_step50 = val; }
-
-    static bool vertical_orientation() { return vertical_orientation_value; }
-
-    static void set_vertical_orientation(bool val) { vertical_orientation_value = val; }
-
-    static bool warn_pitch_range;
-    static bool warn_guitar_bends;
-    static int pedal_events_min_ticks;
-
-    static double nudge_step;
-    static double nudge_step10;
-    static double nudge_step50;
-
-    // #ifndef NDEBUG
-    static bool no_horizontal_stretch;
-    static bool no_vertical_stretch;
-    static bool use_fallback_font;
-    // #endif
-    static bool debug_mode;
+    static constexpr bool no_horizontal_stretch = false;
+    static constexpr bool no_vertical_stretch = false;
+    static constexpr bool use_fallback_font = true;
+    static constexpr bool debug_mode = false;
     static bool test_mode;
-    static bool test_write_style_to_score;
+    static constexpr bool test_write_style_to_score = true;
 
-    static bool save_template_mode;
-    static bool no_gui;
+    static constexpr bool save_template_mode = false;
 
-    static bool no_images;
+    static constexpr bool no_images = false;
 
-    static bool pdf_printing;
-    static bool svg_printing;
-
-    static double vertical_page_gap;
-    static double horizontal_page_gap_even;
-    static double horizontal_page_gap_odd;
+    static constexpr double vertical_page_gap = 0.35 * ::mu::engraving::dpmm;
+    static constexpr double horizontal_page_gap_even = 0.07 * ::mu::engraving::dpmm;
+    static constexpr double horizontal_page_gap_odd = 3.5 * ::mu::engraving::dpmm;
 
     static void set_error(MsError e, bool warning = false) {
         error = e;

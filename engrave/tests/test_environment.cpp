@@ -233,7 +233,6 @@ void setup_test_environment([[maybe_unused]] const TestEnvironmentConfig &config
 
     // 2. Set MScore test flags
     mu::engraving::MScore::test_mode = true;
-    mu::engraving::MScore::no_gui = true;
 
     // 3. Configure ScoreRW root path for resolving relative test score paths (e.g. playback/...)
     mu::engraving::ScoreRW::set_root_path(muse::String::from_std_string(config.engraving_data_dir));

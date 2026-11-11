@@ -185,14 +185,8 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
                                        d.configuration->default_page_size());
         StaffType::init_staff_types(d.configuration->default_color());
 
-        MScore::warn_pitch_range = true;
-        MScore::warn_guitar_bends = true;
-        MScore::pedal_events_min_ticks = 1;
         Drumset::init_drumset();
         FiguredBass::read_config_file(String());
-        MScore::set_nudge_step(0.1);    // cursor key (default 0.1)
-        MScore::set_nudge_step10(1.0);  // Ctrl + cursor key (default 1.0)
-        MScore::set_nudge_step50(0.01); // Alt  + cursor key (default 0.01)
 
         d.music_xml->init();
 
