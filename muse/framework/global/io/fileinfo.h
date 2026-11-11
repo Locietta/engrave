@@ -23,8 +23,8 @@
 #define MUSE_IO_FILEINFO_H
 
 #include "dir.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "global/types/string.h"
-#include "ifilesystem.h"
 
 namespace muse::io {
 struct FileInfo {

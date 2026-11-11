@@ -114,9 +114,9 @@ MasterScore::~MasterScore() {
 //   fileInfo
 //---------------------------------------------------------
 
-IFileInfoProviderPtr MasterScore::file_info() const { return file_info_provider_; }
+LocalFileInfoProviderPtr MasterScore::file_info() const { return file_info_provider_; }
 
-void MasterScore::set_file_info_provider(IFileInfoProviderPtr file_info_provider) { file_info_provider_ = file_info_provider; }
+void MasterScore::set_file_info_provider(LocalFileInfoProviderPtr file_info_provider) { file_info_provider_ = file_info_provider; }
 
 String MasterScore::name() const { return file_info()->display_name(); }
 

@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include "ifilesystem.h"
+#include "engrave/src/runtime/resource_filesystem.h"
 #include "iodevice.h"
 #include "path.h"
 

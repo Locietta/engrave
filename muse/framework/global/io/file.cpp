@@ -30,12 +30,12 @@ using namespace muse;
 using namespace muse::io;
 
 namespace {
-IFileSystem *s_file_system = nullptr;
+NativeFileSystem *s_file_system = nullptr;
 } // namespace
 
-IFileSystem *muse::io::file_system() { return s_file_system; }
+NativeFileSystem *muse::io::file_system() { return s_file_system; }
 
-void muse::io::set_file_system(IFileSystem *file_system) { s_file_system = file_system; }
+void muse::io::set_file_system(NativeFileSystem *file_system) { s_file_system = file_system; }
 
 File::File(const PathT &file_path) : file_path_(file_path) { set_meta("file_path", file_path_.to_std_string()); }
 

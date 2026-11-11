@@ -51,9 +51,9 @@ EngravingProject::~EngravingProject() { delete master_score_; }
 
 void EngravingProject::init(const MStyle &style) { master_score_ = new MasterScore(services_, style, weak_from_this()); }
 
-IFileInfoProviderPtr EngravingProject::file_info_provider() const { return master_score_->file_info(); }
+LocalFileInfoProviderPtr EngravingProject::file_info_provider() const { return master_score_->file_info(); }
 
-void EngravingProject::set_file_info_provider(IFileInfoProviderPtr file_info_provider) {
+void EngravingProject::set_file_info_provider(LocalFileInfoProviderPtr file_info_provider) {
     master_score_->set_file_info_provider(file_info_provider);
 }
 

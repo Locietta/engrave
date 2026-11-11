@@ -23,9 +23,9 @@
 
 #include <memory>
 
+#include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engravingservices.h"
 #include "global/types/ret.h"
-#include "infrastructure/ifileinfoprovider.h"
 #include "infrastructure/mscreader.h"
 #include "infrastructure/mscwriter.h"
 #include "types/types.h"
@@ -59,8 +59,8 @@ struct EngravingProject : std::enable_shared_from_this<EngravingProject> {
     static std::shared_ptr<EngravingProject> create(const EngravingServices &services);
     static std::shared_ptr<EngravingProject> create(const MStyle &style, const EngravingServices &services);
 
-    IFileInfoProviderPtr file_info_provider() const;
-    void set_file_info_provider(IFileInfoProviderPtr file_info_provider);
+    LocalFileInfoProviderPtr file_info_provider() const;
+    void set_file_info_provider(LocalFileInfoProviderPtr file_info_provider);
 
     String app_version() const;
     int msc_version() const;

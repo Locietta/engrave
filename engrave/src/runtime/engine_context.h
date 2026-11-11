@@ -4,7 +4,7 @@
 #include <string>
 
 namespace muse::io {
-struct IFileSystem;
+struct NativeFileSystem;
 } // namespace muse::io
 
 namespace muse::draw {
@@ -43,7 +43,7 @@ struct EngineContext {
     EngineContext(const EngineContext &) = delete;
     EngineContext &operator=(const EngineContext &) = delete;
 
-    muse::io::IFileSystem &file_system() const;
+    muse::io::NativeFileSystem &file_system() const;
     RuntimeAssets &assets() const;
     EngineAudio &audio() const;
     music::RuntimeFontsDatabase &fonts_database() const;

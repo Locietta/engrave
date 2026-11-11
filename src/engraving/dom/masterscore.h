@@ -26,7 +26,7 @@
 #include <memory>
 
 #include "../infrastructure/eidregister.h"
-#include "../infrastructure/ifileinfoprovider.h"
+#include "engraving/infrastructure/localfileinfoprovider.h"
 #include "instrument.h"
 #include "score.h"
 
@@ -218,8 +218,8 @@ public:
 
     MeasureBase *insert_measure(MeasureBase *before_measure = nullptr, const InsertMeasureOptions &options = InsertMeasureOptions());
 
-    IFileInfoProviderPtr file_info() const;
-    void set_file_info_provider(IFileInfoProviderPtr file_info_provider);
+    LocalFileInfoProviderPtr file_info() const;
+    void set_file_info_provider(LocalFileInfoProviderPtr file_info_provider);
 
     String name() const override;
 
@@ -282,6 +282,6 @@ private:
 
     // FIXME: Move to EngravingProject
     // We can't yet, because project_ is not set on every MasterScore
-    IFileInfoProviderPtr file_info_provider_;
+    LocalFileInfoProviderPtr file_info_provider_;
 };
 } // namespace mu::engraving
