@@ -22,8 +22,8 @@
 
 #include "slurtie.h"
 
-#include "../rendering/iscorerenderer.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/rendering/score/scorerenderer.h"
 #include "log.h"
 #include "note.h"
 #include "page.h"

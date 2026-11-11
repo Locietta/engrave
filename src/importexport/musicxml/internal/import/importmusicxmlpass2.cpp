@@ -96,7 +96,7 @@
 #include "engraving/engravingerrors.h"
 #include "engraving/internal/engravingfont.h"
 #include "engraving/internal/engravingfontsprovider.h"
-#include "engraving/rendering/iscorerenderer.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"

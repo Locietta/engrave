@@ -22,11 +22,11 @@
 
 #include "pagelockindicator.h"
 
+#include "engraving/rendering/score/scorerenderer.h"
 #include "measure.h"
 #include "measurebase.h"
 #include "page.h"
 #include "rangelock.h"
-#include "rendering/iscorerenderer.h"
 #include "system.h"
 
 namespace mu::engraving {

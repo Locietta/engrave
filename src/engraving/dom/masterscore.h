@@ -109,8 +109,8 @@ public:
 
     TimeSigMap *sigmap() const override { return sigmap_; }
 
-    void add_changes_listener(IScoreChangesListener *listener);
-    void remove_changes_listener(IScoreChangesListener *listener);
+    void add_changes_listener(PlaybackModel *listener);
+    void remove_changes_listener(PlaybackModel *listener);
     void notify_changes(const ScoreChanges &changes);
 
     AutomationDataConstPtr automation_data() const override;
@@ -264,7 +264,7 @@ private:
     std::vector<Excerpt *> excerpts_;
     std::vector<PartChannelSettingsLink> playback_settings_links_;
     Score *playback_score_ = nullptr;
-    std::vector<IScoreChangesListener *> changes_listeners_;
+    std::vector<PlaybackModel *> changes_listeners_;
 
     bool read_only_ = false;
 

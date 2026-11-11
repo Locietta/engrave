@@ -14,9 +14,9 @@ struct EngravingConfiguration;
 struct EngravingContextConfiguration;
 struct EngravingFontsProvider;
 
-namespace rendering {
-struct IScoreRenderer;
-} // namespace rendering
+namespace rendering::score {
+struct ScoreRenderer;
+} // namespace rendering::score
 
 // The engine services a score uses. The engine context owns the only instance
 // and outlives every score built with it; scores keep a reference.
@@ -24,7 +24,7 @@ struct EngravingServices {
     std::shared_ptr<EngravingConfiguration> configuration;
     std::shared_ptr<EngravingFontsProvider> engraving_fonts;
     std::shared_ptr<EngravingContextConfiguration> context_configuration;
-    std::shared_ptr<rendering::IScoreRenderer> renderer;
+    std::shared_ptr<rendering::score::ScoreRenderer> renderer;
     // Raster image codec and thumbnails. The engine has none: it rejects scores
     // with raster images when they are opened, so the paths that need it are
     // not reached.

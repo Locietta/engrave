@@ -33,7 +33,7 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void Paint::paint_score(Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
+void Paint::paint_score(Painter *painter, Score *score, const ScoreRenderer::ScorePaintOptions &opt) {
     if (!score) {
         return;
     }
@@ -188,7 +188,7 @@ SizeF Paint::page_size_inch(const Score *score) {
     return SizeF(score->style().style_d(Sid::PAGE_WIDTH), score->style().style_d(Sid::PAGE_HEIGHT));
 }
 
-SizeF Paint::page_size_inch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
+SizeF Paint::page_size_inch(const Score *score, const ScoreRenderer::ScorePaintOptions &opt) {
     if (!score) {
         return SizeF();
     }

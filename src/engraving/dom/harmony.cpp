@@ -25,11 +25,11 @@
 #include "../editing/transaction/transaction.h"
 #include "../editing/transaction/undostack.h"
 #include "../editing/transpose.h"
-#include "../rendering/iscorerenderer.h"
 #include "chordlist.h"
 #include "containers.h"
 #include "draw/fontmetrics.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/rendering/score/scorerenderer.h"
 #include "fret.h"
 #include "linkedobjects.h"
 #include "log.h"

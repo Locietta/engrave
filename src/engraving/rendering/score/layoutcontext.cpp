@@ -38,7 +38,7 @@ using namespace mu::engraving::rendering::score;
 // LayoutConfiguration
 // ================================================
 
-LayoutConfiguration::LayoutConfiguration(IGetScoreInternal *s) : get_score_(s) {}
+LayoutConfiguration::LayoutConfiguration(LayoutContext *s) : get_score_(s) {}
 
 const Score *LayoutConfiguration::score() const {
     const Score *score = get_score_->score();
@@ -92,7 +92,7 @@ bool LayoutConfiguration::is_show_instrument_names() const { return score()->sho
 // DomAccessor
 // ================================================
 
-DomAccessor::DomAccessor(IGetScoreInternal *s) : get_score_(s) {}
+DomAccessor::DomAccessor(LayoutContext *s) : get_score_(s) {}
 
 const Score *DomAccessor::score() const { return get_score_->score(); }
 

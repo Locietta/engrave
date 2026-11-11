@@ -50,6 +50,7 @@
 #include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "excerpt.h"
 #include "factory.h"
 #include "fret.h"
@@ -76,7 +77,6 @@
 #include "partialtie.h"
 #include "pitchspelling.h"
 #include "rehearsalmark.h"
-#include "rendering/iscorerenderer.h"
 #include "repeatlist.h"
 #include "rest.h"
 #include "scoreorder.h"

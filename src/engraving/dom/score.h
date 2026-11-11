@@ -221,10 +221,7 @@ struct ScoreChanges {
 // A cache that follows the committed changes of a master score (the playback
 // model). MasterScore calls it synchronously, in registration order, when a
 // transaction commits or an undo/redo completes.
-struct IScoreChangesListener {
-    virtual ~IScoreChangesListener() = default;
-    virtual void on_score_changes(const ScoreChanges &changes) = 0;
-};
+struct PlaybackModel;
 
 //---------------------------------------------------------------------------------------
 //   @@ Score
@@ -265,7 +262,7 @@ public:
 
     const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const { return services_.context_configuration; }
 
-    const std::shared_ptr<rendering::IScoreRenderer> &renderer() const { return services_.renderer; }
+    const std::shared_ptr<rendering::score::ScoreRenderer> &renderer() const { return services_.renderer; }
 
     Score(const Score &) = delete;
     Score &operator=(const Score &) = delete;
