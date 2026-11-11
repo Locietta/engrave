@@ -24,9 +24,9 @@
 
 #include <variant>
 
-#include "../iengravingfontsprovider.h"
 #include "../types/types.h"
 #include "draw/fontmetrics.h"
+#include "engraving/internal/engravingfontsprovider.h"
 #include "engravingitem.h"
 #include "property.h"
 

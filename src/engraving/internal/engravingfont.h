@@ -24,10 +24,9 @@
 #include <memory>
 #include <unordered_map>
 
-#include "draw/ifontprovider.h"
+#include "draw/internal/fontprovider.h"
 #include "draw/types/geometry.h"
-#include "iengravingfont.h"
-#include "iengravingfontsprovider.h"
+#include "global/types/string.h"
 #include "infrastructure/shape.h"
 #include "infrastructure/smufl.h"
 #include "io/iodevice.h"
@@ -45,48 +44,52 @@ struct Painter;
 
 namespace mu::engraving {
 struct Shape;
+struct EngravingFontsProvider;
+struct EngravingFont;
+using EngravingFontPtr = std::shared_ptr<EngravingFont>;
 
-struct EngravingFont : IEngravingFont {
-    EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
+struct EngravingFont {
+
+    EngravingFont(muse::draw::FontProvider &font_provider, const EngravingFontsProvider &engraving_fonts, const std::string &name,
                   const std::string &family, const muse::io::PathT &file_path, const muse::io::PathT &metadata_path);
-    EngravingFont(muse::draw::IFontProvider &font_provider, const IEngravingFontsProvider &engraving_fonts, const std::string &name,
+    EngravingFont(muse::draw::FontProvider &font_provider, const EngravingFontsProvider &engraving_fonts, const std::string &name,
                   const std::string &family, std::shared_ptr<muse::io::IODevice> font, std::shared_ptr<muse::io::IODevice> metadata);
     EngravingFont(const EngravingFont &other);
 
-    const std::string &name() const override;
-    const std::string &family() const override;
+    const std::string &name() const;
+    const std::string &family() const;
 
-    std::unordered_map<Sid, PropertyValue> engraving_defaults() const override;
+    std::unordered_map<Sid, PropertyValue> engraving_defaults() const;
     double text_enclosure_thickness();
 
-    char32_t sym_code(SymId id) const override;
-    SymId from_code(char32_t code) const override;
-    String to_string(SymId id) const override;
+    char32_t sym_code(SymId id) const;
+    SymId from_code(char32_t code) const;
+    String to_string(SymId id) const;
 
-    bool is_valid(SymId id) const override;
+    bool is_valid(SymId id) const;
 
-    RectF bbox(SymId id, double mag) const override;
-    RectF bbox(SymId id, const SizeF &) const override;
-    RectF bbox(const SymIdList &s, double mag) const override;
-    RectF bbox(const SymIdList &s, const SizeF &mag) const override;
-    Shape shape(const SymIdList &s, double mag) const override;
-    Shape shape(const SymIdList &s, const SizeF &mag) const override;
-    Shape shape_with_cutouts(SymId id, double mag) override;
-    Shape shape_with_cutouts(SymId id, const SizeF &mag) override;
+    RectF bbox(SymId id, double mag) const;
+    RectF bbox(SymId id, const SizeF &) const;
+    RectF bbox(const SymIdList &s, double mag) const;
+    RectF bbox(const SymIdList &s, const SizeF &mag) const;
+    Shape shape(const SymIdList &s, double mag) const;
+    Shape shape(const SymIdList &s, const SizeF &mag) const;
+    Shape shape_with_cutouts(SymId id, double mag);
+    Shape shape_with_cutouts(SymId id, const SizeF &mag);
 
-    double width(SymId id, double mag) const override;
-    double width(const SymIdList &, double mag) const override;
-    double height(SymId id, double mag) const override;
-    double advance(SymId id, double mag) const override;
+    double width(SymId id, double mag) const;
+    double width(const SymIdList &, double mag) const;
+    double height(SymId id, double mag) const;
+    double advance(SymId id, double mag) const;
 
-    PointF smufl_anchor(SymId sym_id, SmuflAnchorId anchor_id, double mag) const override;
+    PointF smufl_anchor(SymId sym_id, SmuflAnchorId anchor_id, double mag) const;
 
     // Draw
-    void draw(SymId id, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const override;
-    void draw(SymId id, muse::draw::Painter *p, const SizeF &mag, const PointF &pos, const double angle = 0) const override;
+    void draw(SymId id, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const;
+    void draw(SymId id, muse::draw::Painter *p, const SizeF &mag, const PointF &pos, const double angle = 0) const;
 
-    void draw(const SymIdList &ids, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const override;
-    void draw(const SymIdList &ids, muse::draw::Painter *p, const SizeF &mag, const PointF &pos, const double angle = 0) const override;
+    void draw(const SymIdList &ids, muse::draw::Painter *p, double mag, const PointF &pos, const double angle = 0) const;
+    void draw(const SymIdList &ids, muse::draw::Painter *p, const SizeF &mag, const PointF &pos, const double angle = 0) const;
 
     void ensure_load();
 
@@ -121,12 +124,12 @@ private:
 
     bool use_fallback_font(SymId id) const;
 
-    muse::draw::IFontProvider *font_provider() const { return font_provider_; }
+    muse::draw::FontProvider *font_provider() const { return font_provider_; }
 
-    const IEngravingFontsProvider *engraving_fonts() const { return engraving_fonts_; }
+    const EngravingFontsProvider *engraving_fonts() const { return engraving_fonts_; }
 
-    muse::draw::IFontProvider *font_provider_ = nullptr;
-    const IEngravingFontsProvider *engraving_fonts_ = nullptr;
+    muse::draw::FontProvider *font_provider_ = nullptr;
+    const EngravingFontsProvider *engraving_fonts_ = nullptr;
     bool loaded_ = false;
     std::vector<Sym> symbols_;
     mutable muse::draw::Font font_;

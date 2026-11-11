@@ -21,12 +21,19 @@
  */
 #pragma once
 
-#include "../ifontprovider.h"
+#include <memory>
+
+#include "draw/types/font.h"
+#include "draw/types/geometry.h"
+#include "global/io/iodevice.h"
+#include "global/io/path.h"
+#include "global/types/string.h"
 #include "ifontsdatabase.h"
 #include "ifontsengine.h"
 
 namespace muse::draw {
-struct FontProvider : IFontProvider {
+struct FontProvider {
+
 private:
     IFontsDatabase &database_;
     IFontsEngine &engine_;
@@ -34,29 +41,29 @@ private:
 public:
     FontProvider(IFontsDatabase &database, IFontsEngine &engine) : database_(database), engine_(engine) {}
 
-    int add_symbol_font(const String &family, const io::PathT &path) override;
-    int add_symbol_font(const String &family, std::shared_ptr<io::IODevice> device) override;
+    int add_symbol_font(const String &family, const io::PathT &path);
+    int add_symbol_font(const String &family, std::shared_ptr<io::IODevice> device);
 
-    double line_spacing(const Font &f) const override;
-    double x_height(const Font &f) const override;
-    double height(const Font &f) const override;
-    double cap_height(const Font &f) const override;
-    double ascent(const Font &f) const override;
-    double descent(const Font &f) const override;
+    double line_spacing(const Font &f) const;
+    double x_height(const Font &f) const;
+    double height(const Font &f) const;
+    double cap_height(const Font &f) const;
+    double ascent(const Font &f) const;
+    double descent(const Font &f) const;
 
-    double underline_pos(const Font &f) const override;
-    double line_width(const Font &f) const override;
-    double strike_out_pos(const Font &f) const override;
+    double underline_pos(const Font &f) const;
+    double line_width(const Font &f) const;
+    double strike_out_pos(const Font &f) const;
 
-    bool in_font(const Font &f, char32_t ucs4) const override;
+    bool in_font(const Font &f, char32_t ucs4) const;
 
     // Text
-    double horizontal_advance(const Font &f, const String &string) const override;
-    double horizontal_advance(const Font &f, char32_t ucs4) const override;
+    double horizontal_advance(const Font &f, const String &string) const;
+    double horizontal_advance(const Font &f, char32_t ucs4) const;
 
-    RectF bounding_rect(const Font &f, const String &string) const override;
-    RectF bounding_rect(const Font &f, char32_t ucs4) const override;
+    RectF bounding_rect(const Font &f, const String &string) const;
+    RectF bounding_rect(const Font &f, char32_t ucs4) const;
 
-    RectF tight_bounding_rect(const Font &f, const String &string) const override;
+    RectF tight_bounding_rect(const Font &f, const String &string) const;
 };
 } // namespace muse::draw

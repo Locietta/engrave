@@ -1469,7 +1469,7 @@ void MusicXmlParserPass1::identification() {
  Convert SMuFL code points to MuseScore <sym>...</sym>
  */
 
-static String text2syms(const String &t, const IEngravingFontsProvider &fonts) {
+static String text2syms(const String &t, const EngravingFontsProvider &fonts) {
     //QTime time;
     //time.start();
 
@@ -1477,7 +1477,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts) {
     // note that this takes about 1 msec on a Core i5,
     // caching does not gain much
 
-    IEngravingFontPtr sf = fonts.fallback_font();
+    EngravingFontPtr sf = fonts.fallback_font();
     std::map<String, SymId> map;
     size_t max_string_size = 0; // maximum string size found
 
@@ -1539,7 +1539,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts) {
  */
 
 static String next_part_of_formatted_string(XmlStreamReader &e, const MusicXmlConfiguration &configuration,
-                                            const IEngravingFontsProvider &fonts) {
+                                            const EngravingFontsProvider &fonts) {
     //String lang       = e.attribute(String("xml:lang"), "it");
     String font_weight = e.attribute("font-weight");
     String font_size = e.attribute("font-size");

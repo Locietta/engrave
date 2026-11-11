@@ -25,12 +25,12 @@ using namespace muse;
 using namespace muse::draw;
 
 namespace {
-IFontProvider *s_provider = nullptr;
+FontProvider *s_provider = nullptr;
 } // namespace
 
-void FontMetrics::set_provider(IFontProvider *provider) { s_provider = provider; }
+void FontMetrics::set_provider(FontProvider *provider) { s_provider = provider; }
 
-IFontProvider *FontMetrics::font_provider() { return s_provider; }
+FontProvider *FontMetrics::font_provider() { return s_provider; }
 
 FontMetrics::FontMetrics(const Font &font) : font_(font) {}
 

@@ -23,10 +23,10 @@
 
 #include <string>
 
+#include "draw/types/font.h"
+#include "draw/types/fontstypes.h"
+#include "draw/types/geometry.h"
 #include "global/io/path.h"
-#include "types/font.h"
-#include "types/fontstypes.h"
-#include "types/geometry.h"
 
 namespace muse::draw {
 struct IFontsEngine {

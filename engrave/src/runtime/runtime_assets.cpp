@@ -589,7 +589,7 @@ draw::IFontsDatabase &RuntimeAssets::fonts_database() { return *impl_->database;
 
 draw::IFontsEngine &RuntimeAssets::fonts_engine() { return *impl_->proxy_engine; }
 
-draw::IFontProvider &RuntimeAssets::font_provider() { return *impl_->provider; }
+draw::FontProvider &RuntimeAssets::font_provider() { return *impl_->provider; }
 
 void RuntimeAssets::shutdown() {
     if (!impl_->owner.installed) return;

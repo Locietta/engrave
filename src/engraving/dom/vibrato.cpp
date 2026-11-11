@@ -23,7 +23,7 @@
 
 #include <cmath>
 
-#include "iengravingfont.h"
+#include "engraving/internal/engravingfont.h"
 #include "log.h"
 #include "score.h"
 #include "system.h"
@@ -45,7 +45,7 @@ void VibratoSegment::symbol_line(SymId start, SymId fill) {
     double x2 = pos2().x();
     double w = x2 - x1;
     double mag = mag_s();
-    IEngravingFontPtr f = score()->engraving_font();
+    EngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);
@@ -64,7 +64,7 @@ void VibratoSegment::symbol_line(SymId start, SymId fill, SymId end) {
     double x2 = pos2().x();
     double w = x2 - x1;
     double mag = mag_s();
-    IEngravingFontPtr f = score()->engraving_font();
+    EngravingFontPtr f = score()->engraving_font();
 
     symbols_.clear();
     symbols_.push_back(start);

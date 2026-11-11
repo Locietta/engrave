@@ -12,7 +12,7 @@
 namespace muse::draw {
 struct IFontsDatabase;
 struct IFontsEngine;
-struct IFontProvider;
+struct FontProvider;
 } // namespace muse::draw
 
 namespace music {
@@ -48,7 +48,7 @@ struct RuntimeAssets {
 
     muse::draw::IFontsDatabase &fonts_database();
     muse::draw::IFontsEngine &fonts_engine();
-    muse::draw::IFontProvider &font_provider();
+    muse::draw::FontProvider &font_provider();
 
     // Owner-thread final shutdown, after scores and background jobs have been
     // destroyed. Releases cached faces; retained files survive outstanding leases.

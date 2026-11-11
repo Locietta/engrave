@@ -29,7 +29,7 @@
 #include "dom/connector.h"
 #include "dom/interval.h"
 #include "dom/location.h"
-#include "iengravingfontsprovider.h"
+#include "engraving/internal/engravingfontsprovider.h"
 
 namespace mu::engraving {
 struct Beam;
@@ -60,7 +60,7 @@ struct ReadContext {
     void set_score(Score *score);
 
     const MStyle &style() const;
-    std::shared_ptr<IEngravingFontsProvider> engraving_fonts() const;
+    std::shared_ptr<EngravingFontsProvider> engraving_fonts() const;
 
     bool paste_mode() const { return paste_mode_value; }
 

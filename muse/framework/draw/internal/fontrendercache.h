@@ -25,8 +25,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "draw/types/fontstypes.h"
 #include "global/io/path.h"
-#include "types/fontstypes.h"
 
 namespace muse::draw {
 struct FontRenderCache {

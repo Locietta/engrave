@@ -29,7 +29,7 @@
 #include "ifontsengine.h"
 
 namespace muse::draw {
-struct IFontFace;
+struct FontFace;
 
 struct FontsEngine : IFontsEngine {
 private:
@@ -69,7 +69,7 @@ public:
     std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const override;
 
     // For dev
-    using FontFaceFactory = std::function<IFontFace *(const FontDataKey &data_key, Font::Type type)>;
+    using FontFaceFactory = std::function<FontFace *(const FontDataKey &data_key, Font::Type type)>;
     void set_font_face_factory(const FontFaceFactory &f);
 
 private:
@@ -81,31 +81,31 @@ private:
 
     struct FontFaceTextBlock {
         TextBlock text;
-        const IFontFace *face = nullptr;
+        const FontFace *face = nullptr;
     };
 
     struct RequireFace {
-        IFontFace *face = nullptr; // real loaded face
-        std::vector<IFontFace *> subtitution_faces;
+        FontFace *face = nullptr; // real loaded face
+        std::vector<FontFace *> subtitution_faces;
         FaceKey require_key;         // require face
         FontDataKey actual_data_key; // resolved face
 
         bool is_symbol_mode() const;
         double pixel_scale() const;
-        double pixel_scale_for(const IFontFace *loaded_face) const;
+        double pixel_scale_for(const FontFace *loaded_face) const;
     };
 
-    IFontFace *create_font_face(const FontData &font_data, Font::Type type) const;
+    FontFace *create_font_face(const FontData &font_data, Font::Type type) const;
     RequireFace *font_face(const Font &f, bool is_symbol_mode = false) const;
-    IFontFace *font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int loaded_pixel_size,
-                                            bool is_symbol_mode) const;
-    IFontFace *sdf_font_face_for(const IFontFace *layout_face) const;
+    FontFace *font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int loaded_pixel_size,
+                                           bool is_symbol_mode) const;
+    FontFace *sdf_font_face_for(const FontFace *layout_face) const;
 
     std::vector<FontFaceTextBlock> split_text_by_font_faces(const RequireFace *rf, const TextBlock &text) const;
 
     FontFaceFactory font_face_factory_;
 
-    mutable std::vector<IFontFace *> loaded_faces_;
+    mutable std::vector<FontFace *> loaded_faces_;
     mutable std::vector<RequireFace *> required_faces_;
 
     mutable FontRenderCache render_cache_;

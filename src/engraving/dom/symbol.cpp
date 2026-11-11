@@ -23,7 +23,7 @@
 #include "symbol.h"
 
 #include "draw/fontmetrics.h"
-#include "iengravingfont.h"
+#include "engraving/internal/engravingfont.h"
 #include "image.h"
 #include "log.h"
 #include "score.h"
@@ -52,7 +52,7 @@ Symbol::Symbol(const Symbol &s) : BSymbol(s) {
     sym_angle_ = s.sym_angle_;
 }
 
-void Symbol::set_sym(SymId s, const std::shared_ptr<IEngravingFont> &sf) {
+void Symbol::set_sym(SymId s, const std::shared_ptr<EngravingFont> &sf) {
     sym_ = s;
 
     if (sf.get()) {
