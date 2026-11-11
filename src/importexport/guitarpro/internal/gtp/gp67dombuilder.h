@@ -5,14 +5,16 @@
 
 #include "gpdommodel.h"
 #include "gptrack.h"
-#include "igpdombuilder.h"
+#include "serialization/xmldom.h"
 
 namespace mu::iex::guitarpro {
-struct GP67DomBuilder : IGPDomBuilder {
-    GP67DomBuilder();
+struct GP67DomBuilder {
 
-    void build_gp_dom_model(muse::XmlDomElement *dom_elem) override;
-    std::unique_ptr<GPDomModel> get_gp_dom_model() override;
+    enum class Version { GP6, GP7 };
+    explicit GP67DomBuilder(Version version);
+
+    void build_gp_dom_model(muse::XmlDomElement *dom_elem);
+    std::unique_ptr<GPDomModel> get_gp_dom_model();
 
 protected:
 
@@ -30,7 +32,7 @@ protected:
     void break_lyrics_on_beats_if_need();
     bool is_lyrics_on_beats() const;
 
-    virtual std::pair<int, std::unique_ptr<GPTrack>> create_gp_track(muse::XmlDomNode *track_node, muse::XmlDomNode *version_node) = 0;
+    std::pair<int, std::unique_ptr<GPTrack>> create_gp_track(muse::XmlDomNode *track_node, muse::XmlDomNode *version_node);
 
     std::unique_ptr<GPMasterTracks> create_gp_master_track(muse::XmlDomNode *metadata);
     std::unique_ptr<GPMasterBar> create_gp_master_bar(muse::XmlDomNode *master_bar_node);
@@ -67,6 +69,19 @@ protected:
     std::unordered_map<int, std::shared_ptr<GPBeat>> beats_value;
     std::unordered_map<int, std::unique_ptr<GPVoice>> voices;
     std::unordered_map<int, std::unique_ptr<GPBar>> bars_value;
+
+    Version version_;
+
+    std::pair<int, std::unique_ptr<GPTrack>> create_gp6_track(muse::XmlDomNode *track_node, muse::XmlDomNode *version_node);
+    void set_up_instrument(muse::XmlDomNode *track_child_node, GPTrack *track);
+    GPTrack::SoundAutomation read_rse_pick_up(muse::XmlDomNode &rse_node) const;
+
+    std::pair<int, std::unique_ptr<GPTrack>> create_gp7_track(muse::XmlDomNode *track_node, muse::XmlDomNode *version_node);
+
+    int read_midi_channel(muse::XmlDomNode *track_child_node) const;
+    int read_midi_programm(muse::XmlDomNode *track_child_node) const;
+    GPTrack::Sound read_sounds(muse::XmlDomNode *track_child_node) const;
+    GPTrack::SoundAutomation read_track_automation(muse::XmlDomNode *automation_node) const;
 
     std::unique_ptr<GPDomModel> gp_dom;
 };

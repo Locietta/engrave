@@ -1,13 +1,13 @@
-#include "gp6dombuilder.h"
-
 #include <set>
 
 #include "global/log.h"
+#include "gp67dombuilder.h"
 
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::create_gp_track(XmlDomNode *track_node, [[maybe_unused]] XmlDomNode *version_node) {
+std::pair<int, std::unique_ptr<GPTrack>> GP67DomBuilder::create_gp6_track(XmlDomNode *track_node,
+                                                                          [[maybe_unused]] XmlDomNode *version_node) {
     static const std::set<String> s_unused_nodes = {
         u"Color", // we don't use icon color for the tracks
         u"SystemsDefaultLayout",
@@ -67,7 +67,7 @@ std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::create_gp_track(XmlDomNo
     return std::make_pair(track_idx, std::move(track));
 }
 
-void GP6DomBuilder::set_up_instrument(XmlDomNode *track_child_node, GPTrack *track) {
+void GP67DomBuilder::set_up_instrument(XmlDomNode *track_child_node, GPTrack *track) {
     String ref = track_child_node->to_element().attribute("ref").value();
     track->set_instrument(ref);
     if (ref.ends_with(u"-gs") || ref.starts_with(u'2')) { // grand staff
@@ -82,7 +82,7 @@ void GP6DomBuilder::set_up_instrument(XmlDomNode *track_child_node, GPTrack *tra
     }
 }
 
-GPTrack::SoundAutomation GP6DomBuilder::read_rse_pick_up(XmlDomNode &bank_changes_node) const {
+GPTrack::SoundAutomation GP67DomBuilder::read_rse_pick_up(XmlDomNode &bank_changes_node) const {
     GPTrack::SoundAutomation result;
 
     result.bar = bank_changes_node.to_element().attribute("barIndex").value().to_int();

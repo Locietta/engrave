@@ -82,12 +82,12 @@ bool MscWriter::is_opened() const { return writer_ ? writer_->is_opened() : fals
 
 bool MscWriter::has_error() const { return writer_ ? writer_->has_error() : had_error_; }
 
-MscWriter::IWriter *MscWriter::writer() const {
+MscWriter::Writer *MscWriter::writer() const {
     if (!writer_) {
         switch (params_.mode) {
-            case MscIoMode::ZIP: writer_ = new ZipFileWriter(); break;
-            case MscIoMode::DIR: writer_ = new DirWriter(); break;
-            case MscIoMode::XML_FILE: writer_ = new XmlFileWriter(); break;
+            case MscIoMode::ZIP: writer_ = new Writer(std::in_place_type<ZipFileWriter>); break;
+            case MscIoMode::DIR: writer_ = new Writer(std::in_place_type<DirWriter>); break;
+            case MscIoMode::XML_FILE: writer_ = new Writer(std::in_place_type<XmlFileWriter>); break;
             case MscIoMode::UNKNOWN: UNREACHABLE; break;
         }
     }

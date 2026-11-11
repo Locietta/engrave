@@ -69,12 +69,12 @@ bool MscReader::is_opened() const { return reader_ ? reader_->is_opened() : fals
 
 bool MscReader::is_container() const { return reader_ ? reader_->is_container() : false; }
 
-MscReader::IReader *MscReader::reader() const {
+MscReader::Reader *MscReader::reader() const {
     if (!reader_) {
         switch (params_.mode) {
-            case MscIoMode::ZIP: reader_ = new ZipFileReader(); break;
-            case MscIoMode::DIR: reader_ = new DirReader(); break;
-            case MscIoMode::XML_FILE: reader_ = new XmlFileReader(); break;
+            case MscIoMode::ZIP: reader_ = new Reader(std::in_place_type<ZipFileReader>); break;
+            case MscIoMode::DIR: reader_ = new Reader(std::in_place_type<DirReader>); break;
+            case MscIoMode::XML_FILE: reader_ = new Reader(std::in_place_type<XmlFileReader>); break;
             case MscIoMode::UNKNOWN: UNREACHABLE; break;
         }
     }

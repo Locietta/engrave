@@ -28,7 +28,7 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stringtunings.h"
-#include "gtp/gp7dombuilder.h"
+#include "gtp/gp67dombuilder.h"
 #include "importgtp.h"
 #include "log.h"
 #include "serialization/zipreader.h"
@@ -124,5 +124,7 @@ GuitarPro::GPProperties GuitarPro7::read_properties(ByteArray *data) {
     return properties;
 }
 
-std::unique_ptr<IGPDomBuilder> GuitarPro7::create_gp_dom_builder() const { return std::make_unique<GP7DomBuilder>(); }
+std::unique_ptr<GP67DomBuilder> GuitarPro7::create_gp_dom_builder() const {
+    return std::make_unique<GP67DomBuilder>(GP67DomBuilder::Version::GP7);
+}
 } // namespace mu::iex::guitarpro

@@ -8,7 +8,7 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-GP67DomBuilder::GP67DomBuilder() { gp_dom = std::make_unique<GPDomModel>(); }
+GP67DomBuilder::GP67DomBuilder(Version version) : version_(version) { gp_dom = std::make_unique<GPDomModel>(); }
 
 void GP67DomBuilder::build_gp_dom_model(XmlDomElement *dom_elem) {
     XmlDomNode revision;
@@ -853,7 +853,6 @@ void GP67DomBuilder::read_note_x_properties(const XmlDomNode &properties_node, G
 }
 
 void GP67DomBuilder::read_note_properties(XmlDomNode *properties_node, GPNote *note) {
-    std::unordered_set<std::unique_ptr<INoteProperty>> properties;
 
     auto property_node = properties_node->first_child();
 
@@ -943,7 +942,6 @@ void GP67DomBuilder::read_note_properties(XmlDomNode *properties_node, GPNote *n
         property_node = property_node.next_sibling();
     }
 
-    note->add_properties(std::move(properties));
     return;
 }
 
@@ -1366,5 +1364,11 @@ std::vector<GPMasterBar::Direction> GP67DomBuilder::read_repeats_jumps(XmlDomNod
     }
 
     return repeats_jumps;
+}
+} // namespace mu::iex::guitarpro
+
+namespace mu::iex::guitarpro {
+std::pair<int, std::unique_ptr<GPTrack>> GP67DomBuilder::create_gp_track(muse::XmlDomNode *track_node, muse::XmlDomNode *version_node) {
+    return version_ == Version::GP6 ? create_gp6_track(track_node, version_node) : create_gp7_track(track_node, version_node);
 }
 } // namespace mu::iex::guitarpro

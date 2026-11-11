@@ -1,13 +1,12 @@
-#include "gp7dombuilder.h"
-
 #include <vector>
 
 #include "global/log.h"
+#include "gp67dombuilder.h"
 
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack>> GP7DomBuilder::create_gp_track(XmlDomNode *track_node, XmlDomNode *version_node) {
+std::pair<int, std::unique_ptr<GPTrack>> GP67DomBuilder::create_gp7_track(XmlDomNode *track_node, XmlDomNode *version_node) {
     static const std::set<String> s_unused = {u"Color",
                                               u"SystemsDefautLayout",
                                               u"SystemsLayout",
@@ -97,19 +96,19 @@ std::pair<int, std::unique_ptr<GPTrack>> GP7DomBuilder::create_gp_track(XmlDomNo
     return std::make_pair(track_idx, std::move(track));
 }
 
-int GP7DomBuilder::read_midi_channel(XmlDomNode *track_child_node) const {
+int GP67DomBuilder::read_midi_channel(XmlDomNode *track_child_node) const {
     int channel = track_child_node->first_child_element("PrimaryChannel").text().to_int();
 
     return channel;
 }
 
-int GP7DomBuilder::read_midi_programm(XmlDomNode *track_child_node) const {
+int GP67DomBuilder::read_midi_programm(XmlDomNode *track_child_node) const {
     int programm = track_child_node->first_child().first_child_element("MIDI").first_child_element("Program").text().to_int();
 
     return programm;
 }
 
-GPTrack::Sound GP7DomBuilder::read_sounds(XmlDomNode *sound_node) const {
+GPTrack::Sound GP67DomBuilder::read_sounds(XmlDomNode *sound_node) const {
     GPTrack::Sound result;
 
     result.programm = sound_node->first_child_element("MIDI").first_child_element("Program").text().to_int();
@@ -121,7 +120,7 @@ GPTrack::Sound GP7DomBuilder::read_sounds(XmlDomNode *sound_node) const {
     return result;
 }
 
-GPTrack::SoundAutomation GP7DomBuilder::read_track_automation(XmlDomNode *automation_node) const {
+GPTrack::SoundAutomation GP67DomBuilder::read_track_automation(XmlDomNode *automation_node) const {
     GPTrack::SoundAutomation result;
 
     String type = automation_node->first_child_element("Type").text();

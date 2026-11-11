@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <utility>
+#include <variant>
 
 #include "io/iodevice.h"
 #include "io/path.h"
@@ -72,68 +74,88 @@ struct MscReader {
 
 private:
 
-    struct IReader {
-        virtual ~IReader() = default;
-
-        virtual muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) = 0;
-        virtual void close() = 0;
-        virtual bool is_opened() const = 0;
-        //! NOTE In the case of reading from a directory,
-        //! it may happen that we are not reading a container (a directory with a certain structure),
-        //! but only one file among others (`.mscx` from MU 3.x)
-        virtual bool is_container() const = 0;
-        virtual muse::StringList file_list() const = 0;
-        virtual bool file_exists(const muse::String &file_name) const = 0;
-        virtual muse::ByteArray file_data(const muse::String &file_name) const = 0;
-    };
-
-    struct ZipFileReader : public IReader {
-        ~ZipFileReader() override;
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool is_container() const override;
-        muse::StringList file_list() const override;
-        bool file_exists(const muse::String &file_name) const override;
-        muse::ByteArray file_data(const muse::String &file_name) const override;
+    struct ZipFileReader {
+        ~ZipFileReader();
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool is_container() const;
+        muse::StringList file_list() const;
+        bool file_exists(const muse::String &file_name) const;
+        muse::ByteArray file_data(const muse::String &file_name) const;
     private:
         muse::io::IODevice *device_ = nullptr;
         bool self_device_owner_ = false;
         muse::ZipReader *zip_ = nullptr;
     };
 
-    struct DirReader : public IReader {
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool is_container() const override;
-        muse::StringList file_list() const override;
-        bool file_exists(const muse::String &file_name) const override;
-        muse::ByteArray file_data(const muse::String &file_name) const override;
+    struct DirReader {
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool is_container() const;
+        muse::StringList file_list() const;
+        bool file_exists(const muse::String &file_name) const;
+        muse::ByteArray file_data(const muse::String &file_name) const;
     private:
         muse::io::PathT root_path_;
     };
 
-    struct XmlFileReader : public IReader {
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool is_container() const override;
-        muse::StringList file_list() const override;
-        bool file_exists(const muse::String &file_name) const override;
-        muse::ByteArray file_data(const muse::String &file_name) const override;
+    struct XmlFileReader {
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool is_container() const;
+        muse::StringList file_list() const;
+        bool file_exists(const muse::String &file_name) const;
+        muse::ByteArray file_data(const muse::String &file_name) const;
     private:
         muse::io::IODevice *device_ = nullptr;
         bool self_device_owner_ = false;
     };
 
-    IReader *reader() const;
+    struct Reader {
+        template <typename T>
+        explicit Reader(std::in_place_type_t<T> type) : implementation(type) {}
+
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) {
+            return std::visit([&](auto &backend) -> muse::Ret { return backend.open(device, file_path); }, implementation);
+        }
+
+        void close() {
+            return std::visit([&](auto &backend) -> void { return backend.close(); }, implementation);
+        }
+
+        bool is_opened() const {
+            return std::visit([&](auto &backend) -> bool { return backend.is_opened(); }, implementation);
+        }
+
+        bool is_container() const {
+            return std::visit([&](auto &backend) -> bool { return backend.is_container(); }, implementation);
+        }
+
+        muse::StringList file_list() const {
+            return std::visit([&](auto &backend) -> muse::StringList { return backend.file_list(); }, implementation);
+        }
+
+        bool file_exists(const muse::String &file_name) const {
+            return std::visit([&](auto &backend) -> bool { return backend.file_exists(file_name); }, implementation);
+        }
+
+        muse::ByteArray file_data(const muse::String &file_name) const {
+            return std::visit([&](auto &backend) -> muse::ByteArray { return backend.file_data(file_name); }, implementation);
+        }
+
+        std::variant<ZipFileReader, DirReader, XmlFileReader> implementation;
+    };
+
+    Reader *reader() const;
     bool file_exists(const muse::String &file_name) const;
     muse::ByteArray file_data(const muse::String &file_name) const;
 
     muse::String main_file_name() const;
 
     Params params_;
-    mutable IReader *reader_ = nullptr;
+    mutable Reader *reader_ = nullptr;
 };
 } // namespace mu::engraving

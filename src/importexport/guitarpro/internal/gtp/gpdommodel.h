@@ -15,7 +15,6 @@
 #include "gpscore.h"
 #include "gptrack.h"
 #include "gpvoice.h"
-#include "inoteproperty.h"
 
 namespace mu::iex::guitarpro {
 struct GPDomModel {
