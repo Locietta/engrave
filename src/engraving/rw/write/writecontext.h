@@ -25,7 +25,6 @@
 
 #include "containers.h"
 #include "engraving/dom/score.h"
-#include "engraving/dom/select.h"
 
 namespace mu::engraving::write {
 struct WriteRange {
@@ -86,8 +85,6 @@ struct WriteContext {
 
     void set_first_clipboard_tick(const Fraction &v) { first_clipboard_tick_value = v; }
 
-    void set_filter(const SelectionFilter &f) { filter = f; }
-
     bool can_write(const EngravingItem *) const;
     bool can_write_note_idx(size_t note_idx, size_t total_notes_in_chord) const;
     bool can_write_voice(track_idx_t track) const;
@@ -102,8 +99,8 @@ struct WriteContext {
         return cur_tick_value == c.cur_tick_value && tick_diff_value == c.tick_diff_value && cur_track_value == c.cur_track_value &&
                track_diff_value == c.track_diff_value && clipboardmode_value == c.clipboardmode_value &&
                standalone_value == c.standalone_value && inline_style_value == c.inline_style_value &&
-               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links && filter == c.filter &&
-               range_value == c.range_value && first_clipboard_tick_value == c.first_clipboard_tick_value;
+               inline_excerpts_value == c.inline_excerpts_value && standalone_links == c.standalone_links && range_value == c.range_value &&
+               first_clipboard_tick_value == c.first_clipboard_tick_value;
     }
 
     inline bool operator!=(const WriteContext &c) const { return !this->operator==(c); }
@@ -124,7 +121,6 @@ private:
     std::map<const void *, EID> standalone_links;
 
     std::optional<WriteRange> range_value;
-    std::optional<SelectionFilter> filter;
     std::optional<Fraction> first_clipboard_tick_value;
 };
 } // namespace mu::engraving::write

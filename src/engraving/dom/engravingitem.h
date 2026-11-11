@@ -318,8 +318,6 @@ public:
 
     static ElementType read_type(XmlReader &node, PointF *, Fraction *);
 
-    virtual muse::ByteArray mime_data(const PointF &drag_offset = PointF()) const;
-
     mutable bool item_discovered = false; // helper flag for bsp
 
     void scan_elements(std::function<void(EngravingItem *)> func) override;

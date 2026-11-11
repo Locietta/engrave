@@ -114,8 +114,6 @@ public:
 
     real_t &rypos2() { return p2_.ry(); }
 
-    muse::ByteArray mime_data(const PointF &drag_offset) const override;
-
     void spatium_changed(double ov, double nv) override;
 
     PropertyValue get_property(Pid id) const override;

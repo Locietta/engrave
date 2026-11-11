@@ -34,8 +34,6 @@ namespace mu::engraving {
 struct Score;
 struct EngravingItem;
 struct Segment;
-struct SelectionFilter;
-struct SelectedSymbol;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
@@ -49,13 +47,6 @@ struct IWriter {
     virtual ~IWriter() = default;
 
     virtual bool write_score(Score *score, muse::io::IODevice *device, WriteInOutData *out = nullptr) = 0;
-
-    virtual muse::ByteArray write_staff_selection(Score *score, const SelectionFilter &filter, staff_idx_t staff_start,
-                                                  staff_idx_t staff_end, const Fraction &tick_start, const Fraction &tick_end,
-                                                  Segment *start_segment, Segment *end_segment) = 0;
-
-    virtual muse::ByteArray write_symbol_list_selection(track_idx_t from_track, track_idx_t to_track,
-                                                        const std::vector<SelectedSymbol> &symbols) = 0;
 
     using Supported = std::variant<std::monostate>;
 

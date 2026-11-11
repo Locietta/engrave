@@ -86,17 +86,6 @@ enum class SelState : char {
     // is selected
 };
 
-//---------------------------------------------------------
-//   SelectedSymbol
-//---------------------------------------------------------
-
-struct SelectedSymbol {
-    track_idx_t track = muse::nidx;
-    int tick_offset = 0;
-    int seg_delta = 0;
-    EngravingItem *element = nullptr;
-};
-
 //-------------------------------------------------------------------
 //   Selection
 //    For SelState::LIST state only visible elements can be selected
@@ -160,8 +149,6 @@ struct Selection {
     void update();
     void update_state();
     void dump();
-    String mime_type() const;
-    muse::ByteArray mime_data() const;
 
     Segment *start_segment() const { return start_segment_; }
 
@@ -211,8 +198,6 @@ struct Selection {
     bool range_contains_multi_note_chords() const;
 
 private:
-    muse::ByteArray staff_mime_data() const;
-    muse::ByteArray symbol_list_mime_data() const;
     SelectionFilter selection_filter() const;
 
     bool can_select(const EngravingItem *e) const { return selection_filter().can_select(e); }
