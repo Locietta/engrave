@@ -11,7 +11,7 @@ namespace muse::draw {
 } // namespace muse::draw
 
 namespace muse::mpe {
-struct IArticulationProfilesRepository;
+struct ArticulationProfilesRepository;
 } // namespace muse::mpe
 
 namespace mu::engraving {
@@ -50,7 +50,7 @@ struct EngineContext {
     // The services every score of this engine is built with. Tests may replace
     // a service before they create scores.
     mu::engraving::EngravingServices &engraving() const;
-    const muse::mpe::IArticulationProfilesRepository &articulation_profiles() const;
+    const muse::mpe::ArticulationProfilesRepository &articulation_profiles() const;
     const mu::iex::musicxml::MusicXmlConfiguration &music_xml() const;
 
 private:

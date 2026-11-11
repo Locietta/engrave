@@ -29,7 +29,7 @@
 #include "../types/types.h"
 #include "flatplaybackscore.h"
 #include "mpe/events.h"
-#include "mpe/iarticulationprofilesrepository.h"
+#include "mpe/internal/articulationprofilesrepository.h"
 #include "playbackcontext.h"
 #include "playbackeventsrenderer.h"
 #include "playbacksetupdataresolver.h"
@@ -50,7 +50,7 @@ struct RepeatList;
 struct PlaybackModel {
     // profilesRepository may be null (no default articulation profiles); it must
     // outlive the model.
-    explicit PlaybackModel(const muse::mpe::IArticulationProfilesRepository *profiles_repository)
+    explicit PlaybackModel(const muse::mpe::ArticulationProfilesRepository *profiles_repository)
         : profiles_repository_(profiles_repository) {}
 
     ~PlaybackModel();
@@ -107,7 +107,7 @@ struct PlaybackModel {
     void on_score_changes(const ScoreChanges &changes);
 
 private:
-    const muse::mpe::IArticulationProfilesRepository *profiles_repository() const { return profiles_repository_; }
+    const muse::mpe::ArticulationProfilesRepository *profiles_repository() const { return profiles_repository_; }
 
     void detach_from_score();
 
@@ -163,7 +163,7 @@ private:
     static void apply_tied_notes_tick_boundaries(const Note *note, TickBoundaries &tick_boundaries);
     static void apply_tie_tick_boundaries(const Tie *tie, TickBoundaries &tick_boundaries);
 
-    const muse::mpe::IArticulationProfilesRepository *profiles_repository_ = nullptr;
+    const muse::mpe::ArticulationProfilesRepository *profiles_repository_ = nullptr;
     std::function<void()> checkpoint_;
 
     void checkpoint() const {

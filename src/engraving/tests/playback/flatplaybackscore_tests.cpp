@@ -31,13 +31,12 @@
 #include "engraving/playback/playbackeventsrenderer_impl.h"
 #include "engraving/playback/playbackmodel.h"
 #include "engraving/playback/playbackwalk.h"
-#include "mpe/tests/mocks/articulationprofilesrepositorymock.h"
+#include "mpe/internal/articulationprofilesrepository.h"
 #include "mpe/tests/utils/articulationutils.h"
 #include "playback_projection_flat.h"
 #include "playback_projection_legacy.h"
 #include "utils/scorerw.h"
 
-using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::_;
 
@@ -484,8 +483,8 @@ protected:
                                             ArticulationType::ACCENT, ArticulationType::TREMOLO32ND, ArticulationType::PIZZICATO}) {
             profile_->set_pattern(type, pattern);
         }
-        repository_ = std::make_shared<NiceMock<ArticulationProfilesRepositoryMock>>();
-        ON_CALL(*repository_, default_profile(_)).WillByDefault(Return(profile_));
+        repository_ = std::make_shared<ArticulationProfilesRepository>(*muse::io::file_system());
+        repository_->default_profile_override = profile_;
         profiles_.profiles.fill(profile_);
     }
 
@@ -528,7 +527,7 @@ protected:
 
     muse::mpe::ArticulationProfileBundle profiles_;
     ArticulationsProfilePtr profile_;
-    std::shared_ptr<NiceMock<ArticulationProfilesRepositoryMock>> repository_;
+    std::shared_ptr<ArticulationProfilesRepository> repository_;
 };
 
 namespace {
