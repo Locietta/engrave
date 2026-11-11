@@ -77,7 +77,7 @@ struct Font {
     };
 
     void set_family(const FontFamily &family, Type type);
-    FontFamily family() const;
+    const FontFamily &family() const;
     Type type() const;
 
     double point_size_f() const;

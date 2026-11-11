@@ -131,3 +131,22 @@ TEST(PropertyValue, EveryEnumRetainsItsTag) {
     check_enum<InstrumentNamesFormat>(PType::INSTRUMENT_NAMES_FORMAT);
     check_enum<InstrumentLabelVisibility>(PType::INSTRUMENT_LABEL_VISIBILITY);
 }
+
+TEST(StringValue, IndependentStorageAndMoves) {
+    String original(u"a long string beyond the short buffer");
+    char16_t &first = original[0];
+    String copy = original;
+    first = u'A';
+    EXPECT_EQ(copy, u"a long string beyond the short buffer");
+    copy.append(copy);
+    EXPECT_EQ(original, u"A long string beyond the short buffer");
+    EXPECT_EQ(copy.size(), 2 * original.size());
+    String moved = std::move(copy);
+    copy = u"reused";
+    EXPECT_EQ(copy, u"reused");
+    EXPECT_EQ(moved.size(), 2 * original.size());
+    String empty;
+    empty.append(u'x');
+    EXPECT_EQ(empty, u"x");
+    std::printf("sizeof(String)=%zu sizeof(PropertyValue)=%zu\n", sizeof(String), sizeof(PropertyValue));
+}

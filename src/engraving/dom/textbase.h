@@ -104,7 +104,7 @@ struct CharFormat {
 
     double font_size() const { return font_size_; }
 
-    String font_family() const { return font_family_; }
+    const String &font_family() const { return font_family_; }
 
     void set_valign(VerticalAlignment val) { valign_ = val; }
 
