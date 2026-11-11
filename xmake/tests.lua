@@ -477,3 +477,7 @@ if has_config("engrave_playback_harness") then
         add_files(path.join(tests_dir, "playback_container_probe.cpp"))
     target_end()
 end
+
+if is_plat("windows") then
+    add_adapter_binary("score_allocations", "score_allocations.cpp")
+end
