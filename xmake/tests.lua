@@ -480,4 +480,9 @@ end
 
 if is_plat("windows") then
     add_adapter_binary("score_allocations", "score_allocations.cpp")
+    add_adapter_binary("score_timing", "score_allocations.cpp")
+    target("score_timing")
+        add_defines("ENGRAVE_PROBE_NO_HOOKS")
+        add_ldflags("/MAP:$(builddir)/score_timing.map", {force = true})
+    target_end()
 end
