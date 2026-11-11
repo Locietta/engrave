@@ -61,15 +61,5 @@ bool PropertyValue::operator==(const PropertyValue &v) const {
         return muse::real_is_equal(v.value<double>(), value<double>());
     }
 
-    assert(data_);
-    if (!data_) {
-        return false;
-    }
-
-    assert(v.data_);
-    if (!v.data_) {
-        return false;
-    }
-
-    return v.type_ == type_ && v.data_->equal(data_.get());
+    return v.type_ == type_ && v.data_ == data_;
 }

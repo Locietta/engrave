@@ -250,7 +250,7 @@ target("engrave_describe_test")
     add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
-    add_files(path.join(tests_dir, "describe_test.cpp"))
+    add_files(path.join(tests_dir, "describe_test.cpp"), path.join(tests_dir, "propertyvalue_test.cpp"))
     if is_plat("windows") then
         add_files(utf8_manifest)
     end

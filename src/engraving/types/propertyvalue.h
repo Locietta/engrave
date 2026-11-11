@@ -23,6 +23,7 @@
 
 #include <cassert>
 #include <memory>
+#include <variant>
 
 #include "../types/symid.h"
 #include "../types/types.h"
@@ -137,6 +138,27 @@ enum class PType : unsigned char {
 
 struct PropertyValue {
     PropertyValue() = default;
+
+    PropertyValue(const PropertyValue &) = default;
+
+    PropertyValue &operator=(const PropertyValue &v) {
+        if (this != &v) {
+            PropertyValue copy(v);
+            *this = std::move(copy);
+        }
+        return *this;
+    }
+
+    PropertyValue(PropertyValue &&v) noexcept : type_(v.type_), data_(std::move(v.data_)) { v.type_ = PType::UNDEFINED; }
+
+    PropertyValue &operator=(PropertyValue &&v) noexcept {
+        if (this != &v) {
+            data_ = std::move(v.data_);
+            type_ = v.type_;
+            v.type_ = PType::UNDEFINED;
+        }
+        return *this;
+    }
 
     // Base
     PropertyValue(bool v) : type_(PType::BOOL), data_(make_data<bool>(v)) {}
@@ -310,7 +332,7 @@ struct PropertyValue {
 
     PType type() const;
 
-    bool is_enum() const { return data_ ? data_->is_enum() : false; }
+    bool is_enum() const { return type_ != PType::UNDEFINED && std::holds_alternative<EnumValue>(data_); }
 
     template <typename T>
     T value() const {
@@ -318,12 +340,12 @@ struct PropertyValue {
             return T();
         }
 
-        assert(data_);
-        if (!data_) {
-            return T();
+        if constexpr (std::is_enum_v<T>) {
+            if constexpr (requires { enum_type(T{}); }) {
+                if (type_ == enum_type(T{})) return static_cast<T>(std::get<EnumValue>(data_).value);
+            }
         }
-
-        Arg<T> *at = get<T>();
+        const T *at = get<T>();
         if (!at) {
             //! HACK Temporary hack for int to enum
             if constexpr (std::is_enum<T>::value) {
@@ -334,8 +356,8 @@ struct PropertyValue {
 
             //! HACK Temporary hack for enum to int
             if constexpr (std::is_same<T, int>::value) {
-                if (data_->is_enum()) {
-                    return data_->enum_to_int();
+                if (is_enum()) {
+                    return std::get<EnumValue>(data_).value;
                 }
             }
 
@@ -361,9 +383,9 @@ struct PropertyValue {
             //! HACK Temporary hack for real to Spatium
             if constexpr (std::is_same<T, Spatium>::value) {
                 if (PType::REAL == type_) {
-                    Arg<double> *srv = get<double>();
+                    const double *srv = get<double>();
                     assert(srv);
-                    return srv ? Spatium(srv->v) : Spatium();
+                    return srv ? Spatium(*srv) : Spatium();
                 }
             }
 
@@ -393,7 +415,7 @@ struct PropertyValue {
         if (!at) {
             return T();
         }
-        return at->v;
+        return *at;
     }
 
     bool to_bool() const { return value<bool>(); }
@@ -415,53 +437,186 @@ struct PropertyValue {
 
 
 private:
-    struct IArg {
-        virtual ~IArg() = default;
+    // Only the path exceeds the inline budget. Copies own independent paths.
+    struct PathValue {
+        std::unique_ptr<PainterPath> value;
 
-        virtual bool equal(const IArg *a) const = 0;
+        explicit PathValue(const PainterPath &v) : value(std::make_unique<PainterPath>(v)) {}
 
-        virtual bool is_enum() const = 0;
-        virtual int enum_to_int() const = 0;
-    };
+        PathValue(const PathValue &v) : value(v.value ? std::make_unique<PainterPath>(*v.value) : nullptr) {}
 
-    template <typename T>
-    struct Arg : public IArg {
-        T v;
+        PathValue(PathValue &&) noexcept = default;
 
-        Arg(const T &v) : IArg(), v(v) {}
-
-        bool equal(const IArg *a) const override {
-            assert(a);
-            const Arg<T> *at = dynamic_cast<const Arg<T> *>(a);
-            assert(at);
-            return at ? at->v == v : false;
-        }
-
-        //! HACK Temporary hack for enum to int
-        bool is_enum() const override { return std::is_enum<T>::value; }
-
-        int enum_to_int() const override {
-            if constexpr (std::is_enum<T>::value) {
-                return static_cast<int>(v);
-            } else {
-                return -1;
+        PathValue &operator=(const PathValue &v) {
+            if (this != &v) {
+                auto copy = PathValue(v);
+                value.swap(copy.value);
             }
+            return *this;
         }
+
+        PathValue &operator=(PathValue &&) noexcept = default;
+
+        bool operator==(const PathValue &v) const { return value && v.value ? *value == *v.value : bool(value) == bool(v.value); }
     };
 
+    struct EnumValue {
+        int value;
+        bool operator==(const EnumValue &) const = default;
+    };
+
+    using Storage = std::variant<std::monostate, EnumValue, bool, int, std::vector<int>, size_t, double, String, PointF, PairF, SizeF,
+                                 PathValue, ScaleF, Spatium, Color, Align, Fraction, DurationTypeWithDots, PitchValues, BeatsPerSecond,
+                                 GroupNodes, OrnamentInterval>;
+
+    static constexpr PType enum_type(SymId) { return PType::SYMID; }
+
+    static constexpr PType enum_type(OrnamentStyle) { return PType::ORNAMENT_STYLE; }
+
+    static constexpr PType enum_type(GlissandoStyle) { return PType::GLISS_STYLE; }
+
+    static constexpr PType enum_type(GlissandoType) { return PType::GLISS_TYPE; }
+
+    static constexpr PType enum_type(AlignH) { return PType::ALIGN_H; }
+
+    static constexpr PType enum_type(PlacementV) { return PType::PLACEMENT_V; }
+
+    static constexpr PType enum_type(PlacementH) { return PType::PLACEMENT_H; }
+
+    static constexpr PType enum_type(TextPlace) { return PType::TEXT_PLACE; }
+
+    static constexpr PType enum_type(DirectionV) { return PType::DIRECTION_V; }
+
+    static constexpr PType enum_type(DirectionH) { return PType::DIRECTION_H; }
+
+    static constexpr PType enum_type(Orientation) { return PType::ORIENTATION; }
+
+    static constexpr PType enum_type(SharedLabelOrientation) { return PType::SHARED_LABEL_ORIENTATION; }
+
+    static constexpr PType enum_type(BeamMode) { return PType::BEAM_MODE; }
+
+    static constexpr PType enum_type(AccidentalRole) { return PType::ACCIDENTAL_ROLE; }
+
+    static constexpr PType enum_type(TiePlacement) { return PType::TIE_PLACEMENT; }
+
+    static constexpr PType enum_type(TieDotsPlacement) { return PType::TIE_DOTS_PLACEMENT; }
+
+    static constexpr PType enum_type(TimeSigPlacement) { return PType::TIMESIG_PLACEMENT; }
+
+    static constexpr PType enum_type(TimeSigStyle) { return PType::TIMESIG_STYLE; }
+
+    static constexpr PType enum_type(TimeSigVSMargin) { return PType::TIMESIG_MARGIN; }
+
+    static constexpr PType enum_type(NoteSpellingType) { return PType::NOTE_SPELLING_TYPE; }
+
+    static constexpr PType enum_type(ChordStylePreset) { return PType::CHORD_PRESET_TYPE; }
+
+    static constexpr PType enum_type(ParenthesesMode) { return PType::PARENTHESES_MODE; }
+
+    static constexpr PType enum_type(RepeatPlayCountPreset) { return PType::PLAY_COUNT_PRESET; }
+
+    static constexpr PType enum_type(ChangeMethod) { return PType::CHANGE_METHOD; }
+
+    static constexpr PType enum_type(LayoutBreakType) { return PType::LAYOUTBREAK_TYPE; }
+
+    static constexpr PType enum_type(VeloType) { return PType::VELO_TYPE; }
+
+    static constexpr PType enum_type(BarLineType) { return PType::BARLINE_TYPE; }
+
+    static constexpr PType enum_type(NoteHeadType) { return PType::NOTEHEAD_TYPE; }
+
+    static constexpr PType enum_type(NoteHeadScheme) { return PType::NOTEHEAD_SCHEME; }
+
+    static constexpr PType enum_type(NoteHeadGroup) { return PType::NOTEHEAD_GROUP; }
+
+    static constexpr PType enum_type(ClefType) { return PType::CLEF_TYPE; }
+
+    static constexpr PType enum_type(ClefToBarlinePosition) { return PType::CLEF_TO_BARLINE_POS; }
+
+    static constexpr PType enum_type(DynamicType) { return PType::DYNAMIC_TYPE; }
+
+    static constexpr PType enum_type(DynamicSpeed) { return PType::DYNAMIC_SPEED; }
+
+    static constexpr PType enum_type(LineType) { return PType::LINE_TYPE; }
+
+    static constexpr PType enum_type(HookType) { return PType::HOOK_TYPE; }
+
+    static constexpr PType enum_type(KeyMode) { return PType::KEY_MODE; }
+
+    static constexpr PType enum_type(TextStyleType) { return PType::TEXT_STYLE; }
+
+    static constexpr PType enum_type(PlayingTechniqueType) { return PType::PLAYTECH_TYPE; }
+
+    static constexpr PType enum_type(GradualTempoChangeType) { return PType::TEMPOCHANGE_TYPE; }
+
+    static constexpr PType enum_type(SlurStyleType) { return PType::SLUR_STYLE_TYPE; }
+
+    static constexpr PType enum_type(NoteLineEndPlacement) { return PType::NOTELINE_PLACEMENT_TYPE; }
+
+    static constexpr PType enum_type(ActionIconType) { return PType::ACTION_TYPE; }
+
+    static constexpr PType enum_type(OrnamentShowAccidental) { return PType::ORNAMENT_SHOW_ACCIDENTAL; }
+
+    static constexpr PType enum_type(LyricsDashSystemStart) { return PType::LYRICS_DASH_SYSTEM_START_TYPE; }
+
+    static constexpr PType enum_type(PartialSpannerDirection) { return PType::PARTIAL_SPANNER_DIRECTION; }
+
+    static constexpr PType enum_type(LHTappingSymbol) { return PType::LH_TAPPING_SYMBOL; }
+
+    static constexpr PType enum_type(RHTappingSymbol) { return PType::RH_TAPPING_SYMBOL; }
+
+    static constexpr PType enum_type(VibratoType) { return PType::VIBRATO_LINE_TYPE; }
+
+    static constexpr PType enum_type(VoiceAssignment) { return PType::VOICE_ASSIGNMENT; }
+
+    static constexpr PType enum_type(AutoOnOff) { return PType::AUTO_ON_OFF; }
+
+    static constexpr PType enum_type(AutoCustomHide) { return PType::AUTO_CUSTOM_HIDE; }
+
+    static constexpr PType enum_type(MarkerType) { return PType::MARKER_TYPE; }
+
+    static constexpr PType enum_type(MeasureNumberPlacement) { return PType::MEASURE_NUMBER_PLACEMENT; }
+
+    static constexpr PType enum_type(CapoParams::TransposeMode) { return PType::CAPO_TRANSPOSE_MODE; }
+
+    static constexpr PType enum_type(InstrumentNamesAlign) { return PType::INSTRUMENT_NAMES_ALIGN; }
+
+    static constexpr PType enum_type(InstrumentNamesFormat) { return PType::INSTRUMENT_NAMES_FORMAT; }
+
+    static constexpr PType enum_type(InstrumentLabelVisibility) { return PType::INSTRUMENT_LABEL_VISIBILITY; }
+
     template <typename T>
-    inline std::shared_ptr<IArg> make_data(const T &v) const {
-        return std::shared_ptr<IArg>(new Arg<T>(v));
+    static Storage make_data(const T &v) {
+        if constexpr (std::is_enum_v<T>)
+            return EnumValue{static_cast<int>(v)};
+        else if constexpr (std::is_same_v<T, PainterPath>)
+            return PathValue(v);
+        else
+            return v;
+    }
+
+    template <typename T, typename... Ts>
+    static constexpr bool stored_type(std::variant<Ts...> *) {
+        return (std::is_same_v<T, Ts> || ...);
     }
 
     template <typename T>
-    inline Arg<T> *get() const {
-        return dynamic_cast<Arg<T> *>(data_.get());
+    const T *get() const {
+        if constexpr (std::is_same_v<T, PainterPath>) {
+            const auto *path = std::get_if<PathValue>(&data_);
+            return path ? path->value.get() : nullptr;
+        } else if constexpr (stored_type<T>(static_cast<Storage *>(nullptr))) {
+            return std::get_if<T>(&data_);
+        } else {
+            return nullptr;
+        }
     }
 
     PType type_ = PType::UNDEFINED;
-    std::shared_ptr<IArg> data_ = nullptr;
+    Storage data_;
 };
+
+static_assert(sizeof(PropertyValue) <= 48, "Keep PropertyValue inline, including a future 32-byte String");
 } // namespace mu::engraving
 
 inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const mu::engraving::PropertyValue &) {
