@@ -43,7 +43,7 @@ struct WriteContext {
 
     WriteContext(const Score *s, bool clipboard_mode = false) : score_(s), clipboardmode_value(clipboard_mode) {}
 
-    std::shared_ptr<EngravingConfiguration> configuration() const;
+    EngravingConfiguration *configuration() const;
 
     Fraction cur_tick() const { return cur_tick_value; }
 

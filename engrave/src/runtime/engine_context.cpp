@@ -118,12 +118,12 @@ void register_builtin_fonts(music::RuntimeFontsDatabase &fdb, EngravingFontsProv
 struct EngineContext::Impl {
     std::unique_ptr<NativeFileSystem> file_system;
     std::unique_ptr<RuntimeAssets> assets;
-    std::shared_ptr<EngravingFontsProvider> engraving_fonts;
-    std::shared_ptr<EngravingConfiguration> configuration;
-    std::shared_ptr<rendering::score::ScoreRenderer> renderer;
+    std::unique_ptr<EngravingFontsProvider> engraving_fonts;
+    std::unique_ptr<EngravingConfiguration> configuration;
+    std::unique_ptr<rendering::score::ScoreRenderer> renderer;
     std::unique_ptr<mpe::ArticulationProfilesRepository> articulation_profiles;
     std::unique_ptr<mu::iex::musicxml::MusicXmlConfiguration> music_xml;
-    std::shared_ptr<EngravingContextConfiguration> context_configuration;
+    std::unique_ptr<EngravingContextConfiguration> context_configuration;
     EngravingServices engraving;
 
     std::unique_ptr<EngineAudio> audio;
@@ -167,17 +167,17 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
         d.assets = std::make_unique<RuntimeAssets>(std::filesystem::u8path(cache_root));
         FontMetrics::set_provider(&d.assets->font_provider());
 
-        d.engraving_fonts = std::make_shared<EngravingFontsProvider>(d.assets->font_provider());
-        d.configuration = std::make_shared<EngravingConfiguration>();
-        d.renderer = std::make_shared<rendering::score::ScoreRenderer>();
+        d.engraving_fonts = std::make_unique<EngravingFontsProvider>(d.assets->font_provider());
+        d.configuration = std::make_unique<EngravingConfiguration>();
+        d.renderer = std::make_unique<rendering::score::ScoreRenderer>();
         d.articulation_profiles = std::make_unique<mpe::ArticulationProfilesRepository>(*d.file_system);
         d.audio = std::make_unique<EngineAudio>(*d.articulation_profiles);
         d.music_xml = std::make_unique<mu::iex::musicxml::MusicXmlConfiguration>();
-        d.context_configuration = std::make_shared<EngravingContextConfiguration>();
-        d.engraving.configuration = d.configuration;
-        d.engraving.engraving_fonts = d.engraving_fonts;
-        d.engraving.context_configuration = d.context_configuration;
-        d.engraving.renderer = d.renderer;
+        d.context_configuration = std::make_unique<EngravingContextConfiguration>();
+        d.engraving.configuration = d.configuration.get();
+        d.engraving.engraving_fonts = d.engraving_fonts.get();
+        d.engraving.context_configuration = d.context_configuration.get();
+        d.engraving.renderer = d.renderer.get();
 
         register_builtin_fonts(d.assets->fonts_database(), *d.engraving_fonts);
 

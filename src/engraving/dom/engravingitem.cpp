@@ -305,13 +305,11 @@ EngravingItem *EngravingItem::ownership_parent_item() const {
 
 EngravingItem *EngravingItem::layout_parent() const { return ownership_parent_item(); }
 
-const std::shared_ptr<EngravingConfiguration> &EngravingItem::configuration() const { return score()->configuration(); }
+EngravingConfiguration *EngravingItem::configuration() const { return score()->configuration(); }
 
-const std::shared_ptr<EngravingContextConfiguration> &EngravingItem::context_configuration() const {
-    return score()->context_configuration();
-}
+EngravingContextConfiguration *EngravingItem::context_configuration() const { return score()->context_configuration(); }
 
-const std::shared_ptr<rendering::score::ScoreRenderer> &EngravingItem::renderer() const { return score()->renderer(); }
+rendering::score::ScoreRenderer *EngravingItem::renderer() const { return score()->renderer(); }
 
 //---------------------------------------------------------
 //   spatiumChanged

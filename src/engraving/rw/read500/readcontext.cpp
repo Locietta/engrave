@@ -49,7 +49,7 @@ void ReadContext::set_score(Score *score) { score_ = score; }
 
 const MStyle &ReadContext::style() const { return score()->style(); }
 
-std::shared_ptr<EngravingFontsProvider> ReadContext::engraving_fonts() const { return score()->engraving_fonts(); }
+EngravingFontsProvider *ReadContext::engraving_fonts() const { return score()->engraving_fonts(); }
 
 String ReadContext::mscore_version() const { return score_->mscore_version(); }
 

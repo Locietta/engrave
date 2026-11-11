@@ -127,7 +127,7 @@ struct GpBar {
 //---------------------------------------------------------
 
 struct GuitarPro {
-    const std::shared_ptr<mu::engraving::EngravingConfiguration> &engraving_configuration() const;
+    mu::engraving::EngravingConfiguration *engraving_configuration() const;
 
 protected:
 
