@@ -81,10 +81,6 @@ struct WriteContext {
 
     bool inline_excerpts() const { return inline_excerpts_value; }
 
-    bool can_write(const EngravingItem *) const;
-    bool can_write_note_idx(size_t note_idx, size_t total_notes_in_chord) const;
-    bool can_write_voice(track_idx_t track) const;
-
     bool should_write_range() const { return range_value.has_value(); }
 
     const std::optional<WriteRange> &range() const { return range_value; }

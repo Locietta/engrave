@@ -28,9 +28,3 @@ using namespace mu::engraving;
 using namespace mu::engraving::write;
 
 EngravingConfiguration *WriteContext::configuration() const { return score_->configuration(); }
-
-bool WriteContext::can_write(const EngravingItem *) const { return true; }
-
-bool WriteContext::can_write_note_idx(size_t, size_t) const { return true; }
-
-bool WriteContext::can_write_voice(track_idx_t) const { return true; }

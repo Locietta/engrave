@@ -44,9 +44,6 @@ ConnectorInfoWriter::ConnectorInfoWriter(XmlWriter &xml, WriteContext *ctx, cons
 void ConnectorInfoWriter::write() {
     XmlWriter &xml = *xml_;
     WriteContext &ctx = *ctx_;
-    if (!ctx.can_write(connector_value)) {
-        return;
-    }
     xml.start_element(tag_name(), {{"type", connector_value->type_name()}});
     if (is_start()) {
         TWrite::write_item(connector_value, xml, ctx);
