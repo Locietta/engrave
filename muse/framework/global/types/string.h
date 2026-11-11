@@ -23,7 +23,6 @@
 #define MUSE_GLOBAL_STRING_H
 
 #include <cstring>
-#include <memory>
 #include <regex>
 #include <string>
 #include <string_view>
@@ -415,20 +414,11 @@ struct String {
     inline size_t hash() const { return std::hash<std::u16string>{}(const_str()); }
 
 private:
-    struct Mutator;
-    const std::u16string &const_str() const;
-    Mutator mut_str(bool do_detach = true);
-    void detach();
+    const std::u16string &const_str() const { return data_; }
+
     void do_args(std::u16string &out, const std::vector<std::u16string_view> &args) const;
 
-    std::shared_ptr<std::u16string> data_;
-
-#ifdef MUSE_STRING_DEBUG_HACK
-    //! HACK On MacOS with clang there are problems with debugging - the value of the std::u16string is not visible.
-    //! This is hack for debugging on MacOS
-    void updateDebugView();
-    std::string dview;
-#endif
+    std::u16string data_;
 };
 
 struct StringList : std::vector<String> {

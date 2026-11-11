@@ -45,7 +45,7 @@ void Font::set_family(const FontFamily &family, Type type) {
     type_ = type;
 }
 
-Font::FontFamily Font::family() const { return family_; }
+const Font::FontFamily &Font::family() const { return family_; }
 
 Font::Type Font::type() const { return type_; }
 

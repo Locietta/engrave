@@ -239,104 +239,28 @@ void UtfCodec::replace_invalid(std::string_view src, std::string &dst) {
 // String
 // ============================
 
-String::String() { data_ = std::make_shared<std::u16string>(); }
+String::String() = default;
 
-String::String(const char16_t *str) {
-    data_ = std::make_shared<std::u16string>(str ? str : u"");
-#ifdef MUSE_STRING_DEBUG_HACK
-    updateDebugView();
-#endif
-}
+String::String(const char16_t *str) : data_(str ? str : u"") {}
 
-String::String(const Char &ch) {
-    data_ = std::make_shared<std::u16string>();
-    *data_.get() += ch.unicode();
-#ifdef MUSE_STRING_DEBUG_HACK
-    updateDebugView();
-#endif
-}
+String::String(const Char &ch) : data_(1, ch.unicode()) {}
 
 String::String(const Char *unicode, size_t size) {
     if (!unicode) {
-        data_ = std::make_shared<std::u16string>();
+        data_.clear();
         return;
     }
 
     static_assert(sizeof(Char) == sizeof(char16_t));
     const char16_t *str = reinterpret_cast<const char16_t *>(unicode);
     if (size == muse::nidx) {
-        data_ = std::make_shared<std::u16string>(str);
+        data_ = str;
     } else {
-        data_ = std::make_shared<std::u16string>(str, size);
-    }
-
-#ifdef MUSE_STRING_DEBUG_HACK
-    updateDebugView();
-#endif
-}
-
-#ifdef MUSE_STRING_DEBUG_HACK
-void String::updateDebugView() {
-    try {
-        dview = to_std_string();
-    } catch (const std::exception &e) {
-        dview = "exception: " + std::string(e.what());
+        data_.assign(str, size);
     }
 }
 
-#endif
-
-const std::u16string &String::const_str() const { return *data_.get(); }
-
-struct String::Mutator {
-    std::u16string &s;
-    String *self = nullptr;
-
-    Mutator(std::u16string &s, String *self) : s(s), self(self) {}
-
-    ~Mutator() {
-#ifdef MUSE_STRING_DEBUG_HACK
-        self->updateDebugView();
-#endif
-    }
-
-    operator std::u16string &() { return s; }
-
-    void reserve(size_t n) { s.reserve(n); }
-
-    void resize(size_t n) { s.resize(n); }
-
-    void clear() { s.clear(); }
-
-    void push_back(char16_t c) { s.push_back(c); }
-
-    void insert(size_t p, const std::u16string &v) { s.insert(p, v); }
-
-    void erase(size_t p, size_t n) { s.erase(p, n); }
-
-    std::u16string &operator=(const std::u16string &v) { return s.operator=(v); }
-
-    std::u16string &operator=(const char16_t *v) { return s.operator=(v); }
-
-    std::u16string &operator=(const char16_t v) { return s.operator=(v); }
-
-    std::u16string &operator+=(const std::u16string &v) { return s.operator+=(v); }
-
-    std::u16string &operator+=(const char16_t *v) { return s.operator+=(v); }
-
-    std::u16string &operator+=(const char16_t v) { return s.operator+=(v); }
-
-    char16_t &operator[](size_t i) { return s.operator[](i); }
-};
-
-String::Mutator String::mut_str(bool do_detach) {
-    if (do_detach) {
-        detach();
-    }
-    return Mutator(*data_.get(), this);
-}
-
-void String::reserve(size_t i) { mut_str().reserve(i); }
+void String::reserve(size_t i) { data_.reserve(i); }
 
 bool String::is_equal_ignore_case(const String &s) const {
     const std::u16string_view a{const_str()};
@@ -382,49 +306,37 @@ bool String::operator==(const char *s) const {
     return true;
 }
 
-void String::detach() {
-    if (!data_) {
-        return;
-    }
-
-    if (data_.use_count() == 1) {
-        return;
-    }
-
-    data_ = std::make_shared<std::u16string>(*data_);
-}
-
 String &String::operator=(const char16_t *str) {
-    mut_str() = str;
+    data_ = str;
     return *this;
 }
 
 String &String::operator+=(const char16_t *s) {
-    mut_str() += s;
+    data_ += s;
     return *this;
 }
 
 char16_t String::operator[](size_t i) const { return const_str()[i]; }
 
-char16_t &String::operator[](size_t i) { return mut_str()[i]; }
+char16_t &String::operator[](size_t i) { return data_[i]; }
 
 String &String::append(Char ch) {
-    mut_str() += ch.unicode();
+    data_ += ch.unicode();
     return *this;
 }
 
 String &String::append(const String &s) {
-    mut_str() += s.const_str();
+    data_ += s.const_str();
     return *this;
 }
 
 String &String::prepend(Char ch) {
-    mut_str() = ch.unicode() + const_str();
+    data_ = ch.unicode() + const_str();
     return *this;
 }
 
 String &String::prepend(const String &s) {
-    mut_str() = s.const_str() + const_str();
+    data_ = s.const_str() + const_str();
     return *this;
 }
 
@@ -441,7 +353,7 @@ String String::from_utf16_le(const ByteArray &data) {
 
     String u16;
     u16.reserve(len / 2);
-    String::Mutator mut = u16.mut_str();
+    std::u16string &mut = u16.data_;
 
     const uint8_t *d = data.const_data();
     size_t start = 0;
@@ -472,7 +384,7 @@ String String::from_utf16_be(const ByteArray &data) {
 
     String u16;
     u16.reserve(len / 2);
-    String::Mutator mut = u16.mut_str();
+    std::u16string &mut = u16.data_;
 
     const uint8_t *d = data.const_data();
     size_t start = 0;
@@ -499,7 +411,7 @@ String String::from_utf8(const char *str) {
 
 String String::from_utf8(const std::string_view str) {
     String s;
-    UtfCodec::utf8to16(str, s.mut_str());
+    UtfCodec::utf8to16(str, s.data_);
     return s;
 }
 
@@ -508,7 +420,7 @@ String String::from_utf8(const ByteArray &data) {
         return String();
     }
     String s;
-    UtfCodec::utf8to16(std::string_view(data.const_char(), data.size()), s.mut_str());
+    UtfCodec::utf8to16(std::string_view(data.const_char(), data.size()), s.data_);
     return s;
 }
 
@@ -530,7 +442,7 @@ String String::from_ascii(const char *str, size_t size) {
 
     size = (size == muse::nidx) ? std::strlen(str) : size;
     String s;
-    std::u16string &data = s.mut_str();
+    std::u16string &data = s.data_;
     data.resize(size);
     for (size_t i = 0; i < size; ++i) {
         data[i] = Char::from_ascii(str[i]).unicode();
@@ -559,7 +471,7 @@ ByteArray String::to_ascii(bool *ok) const {
 
 String String::from_std_string(const std::string &str) {
     String s;
-    UtfCodec::utf8to16(std::string_view(str), s.mut_str());
+    UtfCodec::utf8to16(std::string_view(str), s.data_);
     return s;
 }
 
@@ -583,7 +495,7 @@ String String::from_ucs4(const char32_t *str, size_t size) {
     UtfCodec::utf32to8(v32, s8);
 
     String s;
-    UtfCodec::utf8to16(s8, s.mut_str());
+    UtfCodec::utf8to16(s8, s.data_);
     return s;
 }
 
@@ -613,7 +525,7 @@ std::wstring String::to_std_w_string() const {
 
 const String String::from_std_w_string(const std::wstring &str) {
     String s;
-    s.mut_str().resize(str.size());
+    s.data_.resize(str.size());
 
     static_assert(sizeof(wchar_t) >= sizeof(char16_t));
 
@@ -628,7 +540,7 @@ size_t String::size() const { return const_str().size(); }
 
 bool String::empty() const { return const_str().empty(); }
 
-void String::clear() { mut_str().clear(); }
+void String::clear() { data_.clear(); }
 
 Char String::at(size_t i) const {
     IF_ASSERT_FAILED(i < size()) { return Char(); }
@@ -848,7 +760,7 @@ StringList String::split(const std::regex &re, SplitBehavior behavior) const {
         }
 
         String sub;
-        UtfCodec::utf8to16(s, sub.mut_str());
+        UtfCodec::utf8to16(s, sub.data_);
         out.push_back(std::move(sub));
     }
 
@@ -869,7 +781,7 @@ StringList String::search(const std::regex &re, std::initializer_list<int> match
             continue;
         }
         String sub;
-        UtfCodec::utf8to16(s, sub.mut_str());
+        UtfCodec::utf8to16(s, sub.data_);
         out.push_back(std::move(sub));
     }
 
@@ -900,8 +812,7 @@ String &String::replace(const String &before, const String &after) {
     if (before == after) {
         return *this;
     }
-    Mutator h = mut_str();
-    std::u16string &str = h.s;
+    std::u16string &str = data_;
     size_t start_pos = 0;
     while ((start_pos = str.find(before.const_str(), start_pos)) != std::string::npos) {
         str.replace(start_pos, before.size(), after.const_str());
@@ -911,8 +822,7 @@ String &String::replace(const String &before, const String &after) {
 }
 
 String &String::replace(char16_t before, char16_t after) {
-    Mutator h = mut_str();
-    std::u16string &str = h.s;
+    std::u16string &str = data_;
     for (size_t i = 0; i < str.size(); ++i) {
         if (str.at(i) == before) {
             str[i] = after;
@@ -929,8 +839,7 @@ String &String::replace(const std::regex &re, const String &after) {
     UtfCodec::utf16to8(std::u16string_view(const_str()), origin_u8);
     std::string replased_u8 = std::regex_replace(origin_u8, re, after_u8);
 
-    Mutator h = mut_str();
-    std::u16string &sefl = h.s;
+    std::u16string &sefl = data_;
     sefl.clear();
     UtfCodec::utf8to16(std::string_view(replased_u8), sefl);
     return *this;
@@ -944,18 +853,18 @@ String &String::replace(const std::wregex &re, const String &after) {
     originw = to_std_w_string();
     std::wstring replacedw = std::regex_replace(originw, re, afterw);
 
-    mut_str().clear();
-    mut_str().resize(replacedw.size());
+    data_.clear();
+    data_.resize(replacedw.size());
 
     for (size_t i = 0; i < replacedw.size(); ++i) {
-        mut_str()[i] = static_cast<char16_t>(replacedw.at(i));
+        data_[i] = static_cast<char16_t>(replacedw.at(i));
     }
 
     return *this;
 }
 
 String &String::insert(size_t position, const String &str) {
-    mut_str().insert(position, str.const_str());
+    data_.insert(position, str.const_str());
     return *this;
 }
 
@@ -964,13 +873,13 @@ String &String::remove(const Char &ch) { return remove(ch.unicode()); }
 String &String::remove(char16_t ch) {
     auto it = const_str().find(ch);
     if (it != std::u16string::npos) {
-        mut_str().erase(it, 1);
+        data_.erase(it, 1);
     }
     return *this;
 }
 
 String &String::remove(size_t position, size_t n) {
-    mut_str().erase(position, n);
+    data_.erase(position, n);
     return *this;
 }
 
@@ -982,7 +891,7 @@ void String::chop(size_t n) {
     remove(size() - n);
 }
 
-void String::truncate(size_t position) { mut_str().resize(position); }
+void String::truncate(size_t position) { data_.resize(position); }
 
 static constexpr bool is1_to9(char16_t chr) { return u'1' <= chr && chr <= '9'; }
 
@@ -1035,35 +944,33 @@ void String::do_args(std::u16string &out, const std::vector<std::u16string_view>
 
 String String::arg(const String &val) const {
     String s;
-    do_args(s.mut_str(), {std::u16string_view(val.const_str())});
+    do_args(s.data_, {std::u16string_view(val.const_str())});
     return s;
 }
 
 String String::arg(const String &val1, const String &val2) const {
     String s;
-    do_args(s.mut_str(), {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str())});
+    do_args(s.data_, {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str())});
     return s;
 }
 
 String String::arg(const String &val1, const String &val2, const String &val3) const {
     String s;
-    do_args(s.mut_str(),
-            {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()), std::u16string_view(val3.const_str())});
+    do_args(s.data_, {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()), std::u16string_view(val3.const_str())});
     return s;
 }
 
 String String::arg(const String &val1, const String &val2, const String &val3, const String &val4) const {
     String s;
-    do_args(s.mut_str(), {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()),
-                          std::u16string_view(val3.const_str()), std::u16string_view(val4.const_str())});
+    do_args(s.data_, {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()), std::u16string_view(val3.const_str()),
+                      std::u16string_view(val4.const_str())});
     return s;
 }
 
 String String::arg(const String &val1, const String &val2, const String &val3, const String &val4, const String &val5) const {
     String s;
-    do_args(s.mut_str(),
-            {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()), std::u16string_view(val3.const_str()),
-             std::u16string_view(val4.const_str()), std::u16string_view(val5.const_str())});
+    do_args(s.data_, {std::u16string_view(val1.const_str()), std::u16string_view(val2.const_str()), std::u16string_view(val3.const_str()),
+                      std::u16string_view(val4.const_str()), std::u16string_view(val5.const_str())});
     return s;
 }
 
@@ -1072,7 +979,7 @@ String String::mid(size_t pos, size_t count) const {
     if (pos > size()) {
         return s;
     }
-    s.mut_str() = const_str().substr(pos, count);
+    s.data_ = const_str().substr(pos, count);
     return s;
 }
 
@@ -1082,7 +989,7 @@ String String::right(size_t n) const { return mid(size() - n); }
 
 String String::trimmed() const {
     String s = *this;
-    trim_helper(s.mut_str());
+    trim_helper(s.data_);
     return s;
 }
 
@@ -1137,7 +1044,7 @@ String String::decode_xml_entities(const String &input_src) {
 String String::to_lower() const {
     //! TODO
     String s = *this;
-    std::u16string &us = s.mut_str();
+    std::u16string &us = s.data_;
     std::transform(us.begin(), us.end(), us.begin(), [](char16_t c) { return Char::to_lower(c); });
     return s;
 }
@@ -1145,7 +1052,7 @@ String String::to_lower() const {
 String String::to_upper() const {
     //! TODO
     String s = *this;
-    std::u16string &us = s.mut_str();
+    std::u16string &us = s.data_;
     std::transform(us.begin(), us.end(), us.begin(), [](char16_t c) { return Char::to_upper(c); });
     return s;
 }
