@@ -237,12 +237,6 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
     xml.end_element(); // score
 }
 
-void Writer::write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t strack, track_idx_t etrack, Segment *sseg, Segment *eseg,
-                            bool write_system_elements, bool force_time_sig) {
-    ctx.set_cur_track(strack);
-    TWrite::write_segments(xml, ctx, strack, etrack, sseg, eseg, write_system_elements, force_time_sig);
-}
-
 void Writer::do_write_item(const EngravingItem *item, XmlWriter &xml) {
     WriteContext ctx(item->score(), /* clipboardMode = */ true);
     TWrite::write_item(item, xml, ctx);

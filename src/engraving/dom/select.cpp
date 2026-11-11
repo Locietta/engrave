@@ -125,8 +125,6 @@ Fraction Selection::tick_end() const {
     }
 }
 
-bool Selection::is_start_active() const { return active_segment() && active_segment()->tick() == tick_start(); }
-
 bool Selection::is_end_active() const { return active_segment() && active_segment()->tick() == tick_end(); }
 
 EngravingItem *Selection::element() const { return ((state() != SelState::RANGE) && (el_.size() == 1)) ? el_[0] : 0; }
@@ -383,51 +381,6 @@ MeasureBase *Selection::end_measure_base() const {
         mb = to_measure(mb)->covering_mm_rest_or_this();
     }
     return mb;
-}
-
-std::vector<System *> Selection::selected_systems() const {
-    EngravingItem *el = element();
-    if (el && (el->is_system_lock_indicator() || el->is_page_lock_indicator() /*TODO: || el->isStaffVisibilityIndicator*/)) {
-        return {const_cast<System *>(to_indicator_icon(el)->system())};
-    }
-
-    const MeasureBase *start_mb = start_measure_base();
-    const MeasureBase *end_mb = end_measure_base();
-    if (!start_mb || !end_mb) {
-        return {};
-    }
-
-    std::vector<System *> systems;
-    for (const MeasureBase *mb = start_mb; mb && mb->is_before_or_equal(end_mb); mb = mb->next_mm()) {
-        if (!mb->is_measure() && !mb->is_h_box()) {
-            continue;
-        }
-        System *sys = mb->system();
-        IF_ASSERT_FAILED(sys) { continue; }
-        if (systems.empty() || sys != systems.back()) {
-            systems.push_back(sys);
-        }
-    }
-
-    return systems;
-}
-
-std::vector<Page *> mu::engraving::Selection::pages_containing_selection() const {
-    EngravingItem *el = element();
-    if (el && (el->is_page_lock_indicator())) {
-        return {const_cast<Page *>(to_page_lock_indicator(el)->page())};
-    }
-
-    std::vector<System *> systems = selected_systems();
-    std::vector<Page *> pages;
-    for (System *system : systems) {
-        Page *page = system->page();
-        if (page && std::find(pages.begin(), pages.end(), page) == pages.end()) {
-            pages.push_back(page);
-        }
-    }
-
-    return pages;
 }
 
 void Selection::deselect_all() {
@@ -1109,154 +1062,6 @@ std::vector<Note *> Selection::note_list(track_idx_t sel_track) const {
 }
 
 //---------------------------------------------------------
-//   checkStartForPartialCopy
-//     return no error if element is NOT a tuplet or is start of a tuplet/tremolo
-//     return error if element is part of a tuplet/tremolo, but not the start
-//---------------------------------------------------------
-
-static MsError check_start_for_partial_copy(EngravingItem *e) {
-    if (!e || !e->is_chord_rest()) {
-        return MsError::MS_NO_ERROR;
-    }
-
-    const ChordRest *cr = to_chord_rest(e);
-    if (cr->tuplet()) {
-        // check that complete tuplet is selected, all the way up to top level
-        Tuplet *tuplet = cr->tuplet();
-        while (tuplet) {
-            if (tuplet->elements().front() != e) {
-                return MsError::SOURCE_PARTIAL_TUPLET;
-            }
-            e = tuplet;
-            tuplet = tuplet->tuplet();
-        }
-    }
-
-    if (cr->is_chord()) {
-        const Chord *chord = to_chord(cr);
-        const TremoloTwoChord *ttc = chord ? chord->tremolo_two_chord() : nullptr;
-        if (ttc && ttc->chord2() == chord) {
-            return MsError::SOURCE_PARTIAL_TREMOLO;
-        }
-    }
-
-    return MsError::MS_NO_ERROR;
-}
-
-//---------------------------------------------------------
-//   checkEndForPartialCopy
-//     return no error if element is NOT a tuplet or is end of a tuplet/tremolo
-//     return error if element is part of a tuplet/tremolo, but not the end
-//---------------------------------------------------------
-
-static MsError check_end_for_partial_copy(EngravingItem *e, const Fraction &end_tick) {
-    if (!e || !e->is_chord_rest()) {
-        return MsError::MS_NO_ERROR;
-    }
-
-    const ChordRest *cr = to_chord_rest(e);
-    if (cr->tuplet()) {
-        // check that complete tuplet is selected, all the way up to top level
-        Tuplet *tuplet = cr->tuplet();
-        while (tuplet) {
-            if (tuplet->elements().back() != e) {
-                return MsError::SOURCE_PARTIAL_TUPLET;
-            }
-            e = tuplet;
-            tuplet = tuplet->tuplet();
-        }
-        // also check that the selection extends to the end of the top-level tuplet
-        tuplet = to_tuplet(e);
-        if (tuplet->end_tick() > end_tick) {
-            return MsError::SOURCE_PARTIAL_TUPLET;
-        }
-    }
-
-    if (cr->is_chord()) {
-        const Chord *chord = to_chord(cr);
-        const TremoloTwoChord *ttc = chord ? chord->tremolo_two_chord() : nullptr;
-        if (ttc && ttc->chord1() == chord) {
-            return MsError::SOURCE_PARTIAL_TREMOLO;
-        }
-    }
-
-    return MsError::MS_NO_ERROR;
-}
-
-//---------------------------------------------------------
-//   canCopy
-//    return false if range selection intersects a tuplet
-//    or a tremolo, or a local time signature, or only part
-//    of a measure repeat group
-//---------------------------------------------------------
-
-bool Selection::can_copy() const {
-    if (state_ != SelState::RANGE) {
-        return true;
-    }
-
-    Fraction end_tick = end_segment_ ? end_segment_->tick() : score_->last_segment()->tick();
-    Fraction time_stretch(1, 0);
-
-    for (staff_idx_t staff_idx = staff_start_; staff_idx != staff_end_; ++staff_idx) {
-        for (voice_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
-            track_idx_t track = staff_idx * ::mu::engraving::voices + voice;
-            if (!can_select_voice(track)) {
-                continue;
-            }
-
-            // check first cr in track within selection
-            ChordRest *check = start_segment_->next_chord_rest(track);
-            if (check && check->tick() < end_tick) {
-                const MsError err = check_start_for_partial_copy(check);
-                if (err != MsError::MS_NO_ERROR) {
-                    MScore::set_error(err);
-                    return false;
-                }
-            }
-
-            if (!end_segment_) {
-                continue;
-            }
-
-            // find last segment in the selection.
-            // Note that _endSegment is the first segment after the selection
-
-            Segment *end_segment_selection = start_segment_;
-            while (end_segment_selection->next_cr(track) && (end_segment_selection->next_cr(track)->tick() < end_segment_->tick())) {
-                end_segment_selection = end_segment_selection->next_cr(track);
-            }
-
-            const MsError err = check_end_for_partial_copy(end_segment_selection->element(track), end_tick);
-            if (err != MsError::MS_NO_ERROR) {
-                MScore::set_error(err);
-                return false;
-            }
-        }
-
-        // Check that all selected measures have the same time stretch - allows copy/paste within a local time signature,
-        // but don't yet support it between differing local time signatures.
-        for (Measure *m = start_segment_->measure(); m && m->tick() < end_tick; m = m->next_measure()) {
-            Fraction m_time_stretch = score_->staff(staff_idx)->time_stretch(m->tick());
-            if (!time_stretch.is_valid()) {
-                time_stretch = m_time_stretch;
-            } else if (time_stretch != m_time_stretch) {
-                return false;
-            }
-        }
-
-        // check if selection starts or ends partway through measure repeat group
-        const ChordRest *first_cr = first_chord_rest();
-        const ChordRest *last_cr = last_chord_rest();
-        if ((first_cr && first_cr->measure()->is_measure_repeat_group_with_prev_m(staff_idx)) ||
-            (last_cr && last_cr->measure()->is_measure_repeat_group_with_next_m(staff_idx))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-//---------------------------------------------------------
 //   measureBaseRange
 //    return false if no measure range selected
 //---------------------------------------------------------
@@ -1354,16 +1159,6 @@ std::vector<Note *> Selection::unique_notes(track_idx_t track, bool tied) const 
         }
     }
     return l;
-}
-
-bool Selection::elements_selected(const ElementTypeSet &types) const {
-    for (const EngravingItem *element : el_) {
-        if (muse::contains(types, element->type())) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 //---------------------------------------------------------

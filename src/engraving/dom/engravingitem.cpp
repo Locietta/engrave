@@ -973,39 +973,6 @@ void EngravingItem::dump() const {
 }
 
 //---------------------------------------------------------
-//   readType
-//    return new position of QDomElement in e
-//---------------------------------------------------------
-
-ElementType EngravingItem::read_type(XmlReader &e, PointF *drag_offset, Fraction *duration) {
-    while (e.read_next_start_element()) {
-        if (e.name() == "EngravingItem") {
-            while (e.read_next_start_element()) {
-                const AsciiStringView tag = e.name();
-                if (tag == "dragOffset") {
-                    *drag_offset = e.read_point();
-                } else if (tag == "duration") {
-                    *duration = e.read_fraction();
-                } else {
-                    ElementType type = TConv::from_xml(tag, ElementType::INVALID);
-                    if (type == ElementType::INVALID) {
-                        break;
-                    }
-                    return type;
-                }
-            }
-        } else {
-            e.unknown();
-        }
-    }
-    return ElementType::INVALID;
-}
-
-//---------------------------------------------------------
-//   readMimeData
-//---------------------------------------------------------
-
-//---------------------------------------------------------
 //   add
 //---------------------------------------------------------
 
