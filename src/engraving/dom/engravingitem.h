@@ -734,8 +734,6 @@ using ElementPtr = std::shared_ptr<EngravingItem>;
 //---------------------------------------------------------
 
 struct ElementList : std::vector<EngravingItem *> {
-private:
-    OBJECT_ALLOCATOR(engraving, ElementList)
 public:
     ElementList() {}
 

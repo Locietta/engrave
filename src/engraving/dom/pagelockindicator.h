@@ -29,7 +29,6 @@ struct RangeLock;
 
 struct PageLockIndicator : IndicatorIcon {
 private:
-    OBJECT_ALLOCATOR(engraving, PageLockIndicator)
     DECLARE_CLASSOF(ElementType::PAGE_LOCK_INDICATOR)
 
 public:

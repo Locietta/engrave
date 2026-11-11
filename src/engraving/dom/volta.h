@@ -37,7 +37,6 @@ struct Measure;
 
 struct VoltaSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, VoltaSegment)
     DECLARE_CLASSOF(ElementType::VOLTA_SEGMENT)
 
 public:
@@ -57,7 +56,6 @@ public:
 
 struct Volta final : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Volta)
     DECLARE_CLASSOF(ElementType::VOLTA)
 
 public:

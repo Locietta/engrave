@@ -38,7 +38,6 @@ enum class TremoloBarType : unsigned char { DIP = 0, DIVE, RELEASE_UP, INVERTED_
 
 struct TremoloBar final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, TremoloBar)
     DECLARE_CLASSOF(ElementType::TREMOLOBAR)
 
 public:

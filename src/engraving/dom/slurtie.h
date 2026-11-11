@@ -87,8 +87,6 @@ struct SlurTie;
 //---------------------------------------------------------
 
 struct SlurTieSegment : SpannerSegment {
-private:
-    OBJECT_ALLOCATOR(engraving, SlurTieSegment)
 
 public:
 
@@ -140,8 +138,6 @@ protected:
 //-------------------------------------------------------------------
 
 struct SlurTie : Spanner {
-private:
-    OBJECT_ALLOCATOR(engraving, SlurTie)
 
 public:
     SlurTie(const ElementType &type, EngravingObject *parent);

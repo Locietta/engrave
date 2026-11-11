@@ -36,7 +36,6 @@ namespace mu::engraving {
 
 struct StaffLines final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, StaffLines)
     DECLARE_CLASSOF(ElementType::STAFF_LINES)
 
 public:

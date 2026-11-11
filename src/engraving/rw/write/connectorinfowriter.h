@@ -40,8 +40,6 @@ namespace mu::engraving::write {
 struct WriteContext;
 
 struct ConnectorInfoWriter : ConnectorInfo {
-private:
-    OBJECT_ALLOCATOR(engraving, ConnectorInfoWriter)
 
 public:
     ConnectorInfoWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const EngravingItem *connector, int track = -1,
@@ -66,8 +64,6 @@ private:
 //-----------------------------------------------------------------------------
 
 struct SpannerWriter : ConnectorInfoWriter {
-private:
-    OBJECT_ALLOCATOR(engraving, SpannerWriter)
 protected:
     const char *tag_name() const override { return "Spanner"; }
 public:

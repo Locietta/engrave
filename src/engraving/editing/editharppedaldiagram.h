@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct ChangeHarpPedalState : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeHarpPedalState)
     HarpPedalDiagram *diagram;
     std::array<PedalPosition, ::mu::engraving::harp_string_no> pedal_state_value;
 
@@ -45,7 +44,6 @@ public:
 
 struct ChangeSingleHarpPedal : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeSingleHarpPedal)
 
     HarpPedalDiagram *diagram;
     HarpStringType type;

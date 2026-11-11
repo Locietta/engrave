@@ -27,7 +27,6 @@
 namespace mu::engraving {
 struct PlayCountText final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, PlayCountText)
     DECLARE_CLASSOF(ElementType::PLAY_COUNT_TEXT)
 
 public:

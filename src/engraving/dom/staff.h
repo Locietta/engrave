@@ -54,8 +54,6 @@ enum class Key : signed char;
 //---------------------------------------------------------
 
 struct Staff final : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, Staff)
 
 public:
     Staff *clone() const override;

@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct ChangeMetaTags : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMetaTags)
 
     Score *score = nullptr;
     std::map<String, String> meta_tags;
@@ -45,7 +44,6 @@ public:
 
 struct ChangeMetaText : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMetaText)
 
     Score *score = nullptr;
     String id;
@@ -63,7 +61,6 @@ public:
 
 struct ChangeScoreOrder : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeScoreOrder)
 
     Score *score = nullptr;
     ScoreOrder order;
@@ -79,7 +76,6 @@ public:
 
 struct ChangePageNumberOffset : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangePageNumberOffset)
 
     Score *score = nullptr;
     int page_offset = 0;

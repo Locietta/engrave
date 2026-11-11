@@ -40,7 +40,6 @@ using namespace mu::engraving;
 
 struct AddSystemLock : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddSystemLock)
 
     const RangeLock *system_lock_;
 public:
@@ -74,7 +73,6 @@ public:
 
 struct RemoveSystemLock : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveSystemLock)
 
     const RangeLock *system_lock_;
 public:

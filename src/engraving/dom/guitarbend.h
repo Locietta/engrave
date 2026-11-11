@@ -49,7 +49,6 @@ enum class ActionIconType : signed char;
 
 struct GuitarBend final : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, GuitarBend)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND)
 
     M_PROPERTY2(DirectionV, direction, set_direction, DirectionV::AUTO)
@@ -193,7 +192,6 @@ struct GuitarBendText; // forward decl
 
 struct GuitarBendSegment final : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, GuitarBendSegment)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_SEGMENT)
 
 public:
@@ -259,7 +257,6 @@ private:
 
 struct GuitarBendHold final : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, GuitarBendHold)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_HOLD)
 
 public:
@@ -289,7 +286,6 @@ protected:
 
 struct GuitarBendHoldSegment final : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, GuitarBendHoldSegment)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_HOLD_SEGMENT)
 
 public:
@@ -332,7 +328,6 @@ private:
 
 struct GuitarBendText final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, GuitarBendText)
     DECLARE_CLASSOF(ElementType::GUITAR_BEND_TEXT)
 
 public:

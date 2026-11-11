@@ -25,8 +25,6 @@
 
 #include <unordered_map>
 
-#include "global/allocator.h"
-
 namespace mu::engraving {
 struct EngravingItem;
 
@@ -35,8 +33,6 @@ struct EngravingItem;
 //---------------------------------------------------------
 
 struct ElementMap : std::unordered_map<EngravingItem *, EngravingItem *> {
-private:
-    OBJECT_ALLOCATOR(engraving, ElementMap)
 public:
     ElementMap() {}
 

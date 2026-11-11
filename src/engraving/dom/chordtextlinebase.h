@@ -31,8 +31,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct ChordTextLineBase : TextLineBase {
-private:
-    OBJECT_ALLOCATOR(engraving, ChordTextLineBase)
 public:
     ChordTextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
 

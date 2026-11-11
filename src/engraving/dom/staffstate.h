@@ -38,7 +38,6 @@ enum class StaffStateType : char { INSTRUMENT, TYPE, VISIBLE, INVISIBLE };
 
 struct StaffState final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, StaffState)
     DECLARE_CLASSOF(ElementType::STAFF_STATE)
 
 public:

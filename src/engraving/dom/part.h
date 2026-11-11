@@ -60,7 +60,6 @@ struct TrackRange {
 
 struct Part : EngravingObject {
 private:
-    OBJECT_ALLOCATOR(engraving, Part)
     DECLARE_CLASSOF(ElementType::PART)
 
 public:

@@ -32,7 +32,6 @@ namespace mu::engraving {
 
 struct SystemText : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, SystemText)
     DECLARE_CLASSOF(ElementType::SYSTEM_TEXT)
 
 public:

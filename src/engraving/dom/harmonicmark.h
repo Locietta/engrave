@@ -34,7 +34,6 @@ struct HarmonicMark;
 
 struct HarmonicMarkSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, HarmonicMarkSegment)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct HarmonicMark final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, HarmonicMark)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK)
 
 public:

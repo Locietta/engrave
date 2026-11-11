@@ -77,7 +77,6 @@ private:
 
 struct NoteHead final : Symbol {
 private:
-    OBJECT_ALLOCATOR(engraving, NoteHead)
     DECLARE_CLASSOF(ElementType::NOTEHEAD)
 
 public:
@@ -129,7 +128,6 @@ static const int invalid_line = -10000;
 
 struct Note final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Note)
     DECLARE_CLASSOF(ElementType::NOTE)
 
 public:

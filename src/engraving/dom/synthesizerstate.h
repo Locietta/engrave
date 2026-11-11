@@ -25,7 +25,6 @@
 
 #include <list>
 
-#include "global/allocator.h"
 #include "types/string.h"
 
 namespace mu::engraving {
@@ -52,8 +51,6 @@ struct IdValue {
 //---------------------------------------------------------
 
 struct SynthesizerGroup : std::list<IdValue> {
-private:
-    OBJECT_ALLOCATOR(engraving, SynthesizerGroup)
 
 public:
     const muse::String &name() const { return name_; }
@@ -73,8 +70,6 @@ private:
 //---------------------------------------------------------
 
 struct SynthesizerState : std::list<SynthesizerGroup> {
-private:
-    OBJECT_ALLOCATOR(engraving, SynthesizerState)
 
 public:
     SynthesizerState(std::initializer_list<SynthesizerGroup> l) { insert(end(), l.begin(), l.end()); }

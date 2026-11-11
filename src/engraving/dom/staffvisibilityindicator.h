@@ -27,7 +27,6 @@
 namespace mu::engraving {
 struct StaffVisibilityIndicator : IndicatorIcon {
 private:
-    OBJECT_ALLOCATOR(engraving, StaffVisibilityIndicator)
     DECLARE_CLASSOF(ElementType::STAFF_VISIBILITY_INDICATOR)
 
 public:

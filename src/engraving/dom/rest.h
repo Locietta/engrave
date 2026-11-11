@@ -63,7 +63,6 @@ private:
 
 struct Rest : ChordRest {
 private:
-    OBJECT_ALLOCATOR(engraving, Rest)
     DECLARE_CLASSOF(ElementType::REST)
 
 public:

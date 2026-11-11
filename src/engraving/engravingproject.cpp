@@ -23,7 +23,6 @@
 
 #include "dom/masterscore.h"
 #include "dom/part.h"
-#include "global/allocator.h"
 #include "log.h"
 #include "rw/inoutdata.h"
 #include "rw/mscloader.h"
@@ -46,17 +45,9 @@ std::shared_ptr<EngravingProject> EngravingProject::create(const MStyle &style, 
     return p;
 }
 
-EngravingProject::EngravingProject(const EngravingServices &services) : services_(services) { muse::ObjectAllocator::used(); }
+EngravingProject::EngravingProject(const EngravingServices &services) : services_(services) {}
 
-EngravingProject::~EngravingProject() {
-    delete master_score_;
-
-    muse::ObjectAllocator::unused();
-
-    // muse::AllocatorsRegister::instance()->printStatistic("=== Destroy engraving project ===");
-    //! NOTE At the moment, the allocator is working as leak detector. No need to do cleanup, at the moment it can lead to crashes
-    // AllocatorsRegister::instance()->cleanupAll("engraving");
-}
+EngravingProject::~EngravingProject() { delete master_score_; }
 
 void EngravingProject::init(const MStyle &style) { master_score_ = new MasterScore(services_, style, weak_from_this()); }
 

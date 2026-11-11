@@ -34,7 +34,6 @@ struct PickScrape;
 
 struct PickScrapeSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, PickScrapeSegment)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct PickScrape final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, PickScrape)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE)
 
 public:

@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct AddElement : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddElement)
 
     EngravingItem *element = nullptr;
 
@@ -53,7 +52,6 @@ public:
 
 struct RemoveElement : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveElement)
 
     EngravingItem *element = nullptr;
 
@@ -73,7 +71,6 @@ public:
 
 struct ChangeElement : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeElement)
 
     EngravingItem *old_element = nullptr;
     EngravingItem *new_element = nullptr;
@@ -90,7 +87,6 @@ public:
 
 struct ChangeParent : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeParent)
 
     EngravingItem *element = nullptr;
     EngravingItem *parent = nullptr;
@@ -108,7 +104,6 @@ public:
 
 struct ChangeSegmentParent : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeSegmentParent)
 
     Segment *segment = nullptr;
     Measure *parent = nullptr;
@@ -126,7 +121,6 @@ public:
 
 struct LinkUnlink : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, LinkUnlink)
 
     bool must_delete{false};
 
@@ -144,8 +138,6 @@ public:
 };
 
 struct Unlink : LinkUnlink {
-private:
-    OBJECT_ALLOCATOR(engraving, Unlink)
 public:
     Unlink(EngravingObject *);
 
@@ -158,8 +150,6 @@ public:
 };
 
 struct Link : LinkUnlink {
-private:
-    OBJECT_ALLOCATOR(engraving, Link)
 public:
     Link(EngravingObject *, EngravingObject *);
 

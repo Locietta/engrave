@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct MoveTremolo : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, MoveTremolo)
 
     Score *score = nullptr;
     Fraction chord1_tick;

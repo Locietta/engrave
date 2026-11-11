@@ -33,7 +33,6 @@ namespace mu::engraving {
 
 struct Sticking final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Sticking)
     DECLARE_CLASSOF(ElementType::STICKING)
 
     PropertyValue property_default(Pid id) const override;

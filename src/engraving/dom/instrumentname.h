@@ -38,7 +38,6 @@ struct SysStaff;
 
 struct InstrumentName final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, InstrumentName)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_NAME)
 
 public:

@@ -34,7 +34,6 @@ struct TieJumpPoint;
 
 struct TieSegment : SlurTieSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, TieSegment)
     DECLARE_CLASSOF(ElementType::TIE_SEGMENT)
 
 public:
@@ -85,7 +84,6 @@ private:
 
 struct Tie : SlurTie {
 private:
-    OBJECT_ALLOCATOR(engraving, Tie)
     DECLARE_CLASSOF(ElementType::TIE)
 
 public:

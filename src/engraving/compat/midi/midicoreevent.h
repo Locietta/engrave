@@ -25,8 +25,6 @@
 
 #include <cstdint>
 
-#include "global/allocator.h"
-
 namespace mu::engraving {
 struct PitchWheelSpecs {
     //! @note amplitude of the pitch wheel in semitones
@@ -157,8 +155,6 @@ enum CntrType {
 //---------------------------------------------------------
 
 struct MidiCoreEvent {
-private:
-    OBJECT_ALLOCATOR(engraving, MidiCoreEvent)
 protected:
     uint8_t type_value = 0;
     uint8_t channel_value = 0;

@@ -35,7 +35,6 @@ struct Chord;
 
 struct TremoloTwoChord final : BeamBase {
 private:
-    OBJECT_ALLOCATOR(engraving, TremoloTwoChord)
     DECLARE_CLASSOF(ElementType::TREMOLO_TWOCHORD)
 
 public:

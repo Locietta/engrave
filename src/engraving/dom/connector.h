@@ -26,7 +26,6 @@
 #include <climits>
 
 #include "../types/types.h"
-#include "global/allocator.h"
 #include "location.h"
 
 namespace mu::engraving {
@@ -44,8 +43,6 @@ struct Score;
 //---------------------------------------------------------
 
 struct ConnectorInfo {
-private:
-    OBJECT_ALLOCATOR(engraving, ConnectorInfo)
 
 public:
     ConnectorInfo(const EngravingItem *current, int track = -1, Fraction = {-1, 1});

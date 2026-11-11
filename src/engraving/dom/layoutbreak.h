@@ -35,7 +35,6 @@ struct Transaction;
 //---------------------------------------------------------
 struct LayoutBreak final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, LayoutBreak)
     DECLARE_CLASSOF(ElementType::LAYOUT_BREAK)
 
 public:

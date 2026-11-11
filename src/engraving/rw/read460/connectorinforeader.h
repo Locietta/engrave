@@ -39,8 +39,6 @@ namespace mu::engraving::read460 {
 struct ReadContext;
 
 struct ConnectorInfoReader final : ConnectorInfo {
-private:
-    OBJECT_ALLOCATOR(engraving, ConnectorInfoReader)
 
 public:
     ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track = -1);

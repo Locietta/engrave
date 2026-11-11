@@ -35,7 +35,6 @@ struct Clef;
 
 struct InstrumentChange final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, InstrumentChange)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_CHANGE)
 
 public:

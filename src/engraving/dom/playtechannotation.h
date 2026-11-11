@@ -29,7 +29,6 @@
 namespace mu::engraving {
 struct PlayTechAnnotation final : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, PlayTechAnnotation)
     DECLARE_CLASSOF(ElementType::PLAYTECH_ANNOTATION)
 
 public:

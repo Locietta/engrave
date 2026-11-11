@@ -32,7 +32,6 @@ namespace mu::engraving {
 
 struct Text final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Text)
     DECLARE_CLASSOF(ElementType::TEXT)
 
 public:

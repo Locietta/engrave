@@ -28,7 +28,6 @@ struct AccidentalState;
 
 struct Ornament final : Articulation {
 private:
-    OBJECT_ALLOCATOR(engraving, Ornament)
     DECLARE_CLASSOF(ElementType::ORNAMENT)
 
 public:

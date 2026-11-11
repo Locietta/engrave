@@ -61,8 +61,6 @@ constexpr bool operator&(Repeat t1, Repeat t2) { return static_cast<int>(t1) & s
 //---------------------------------------------------------
 
 struct MeasureBase : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, MeasureBase)
 
 public:
 

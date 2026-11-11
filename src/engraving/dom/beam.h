@@ -48,7 +48,6 @@ struct TremAnchor {
 
 struct Beam final : BeamBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Beam)
     DECLARE_CLASSOF(ElementType::BEAM)
 
 public:

@@ -35,7 +35,6 @@ struct Chord;
 
 struct StemSlash final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, StemSlash)
     DECLARE_CLASSOF(ElementType::STEM_SLASH)
 
 public:

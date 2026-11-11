@@ -726,8 +726,6 @@ int Transpose::transpose_tpc(int tpc, Interval interval, bool use_double_sharps_
 
 namespace {
 struct TransposeHarmony : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, TransposeHarmony)
 
 public:
     TransposeHarmony(Harmony *harmony, Interval interval, bool use_double_sharps_flats)
@@ -774,8 +772,6 @@ void Transpose::do_undo_transpose_harmony(Harmony *harmony, Interval interval, b
 
 namespace {
 struct TransposeHarmonyDiatonic : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, TransposeHarmonyDiatonic)
 
 public:
     TransposeHarmonyDiatonic(Harmony *harmony, int interval, bool use_double_sharps_flats, bool transpose_keys)

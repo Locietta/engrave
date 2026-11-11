@@ -49,7 +49,6 @@ struct EditStaffBrackets {
 
 struct RemoveBracket : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveBracket)
 
     Staff *staff = nullptr;
     size_t level = 0;
@@ -68,7 +67,6 @@ public:
 
 struct AddBracket : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddBracket)
 
     Staff *staff = nullptr;
     size_t level = 0;

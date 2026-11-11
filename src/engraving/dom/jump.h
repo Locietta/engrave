@@ -40,7 +40,6 @@ namespace mu::engraving {
 
 struct Jump final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Jump)
     DECLARE_CLASSOF(ElementType::JUMP)
 
 public:

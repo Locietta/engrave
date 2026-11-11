@@ -30,7 +30,6 @@
 namespace mu::engraving {
 struct AddExcerpt : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddExcerpt)
 
     Excerpt *excerpt = nullptr;
     bool delete_excerpt = false;
@@ -50,7 +49,6 @@ public:
 
 struct RemoveExcerpt : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveExcerpt)
 
     Excerpt *excerpt = nullptr;
     size_t index = muse::nidx;
@@ -71,7 +69,6 @@ public:
 
 struct SwapExcerpt : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, SwapExcerpt)
 
     MasterScore *score = nullptr;
     int pos1 = 0;
@@ -89,7 +86,6 @@ public:
 
 struct ChangeExcerptTitle : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeExcerptTitle)
 
     Excerpt *excerpt = nullptr;
     String title;
@@ -105,7 +101,6 @@ public:
 
 struct AddPartToExcerpt : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddPartToExcerpt)
 
     Excerpt *excerpt_ = nullptr;
     Part *part_ = nullptr;

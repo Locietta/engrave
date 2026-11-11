@@ -1784,7 +1784,6 @@ void TextBase::set_size(const double &val) { cursor_->set_format(FormatId::FONT_
 
 struct XmlNesting : std::stack<String> {
 private:
-    OBJECT_ALLOCATOR(engraving, XmlNesting)
 
     String *s_value;
 

@@ -162,7 +162,6 @@ private:
 
 struct Measure final : MeasureBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Measure)
     DECLARE_CLASSOF(ElementType::MEASURE)
 
 public:

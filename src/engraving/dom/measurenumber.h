@@ -32,7 +32,6 @@ namespace mu::engraving {
 
 struct MeasureNumber : MeasureNumberBase {
 private:
-    OBJECT_ALLOCATOR(engraving, MeasureNumber)
     DECLARE_CLASSOF(ElementType::MEASURE_NUMBER)
 
 public:

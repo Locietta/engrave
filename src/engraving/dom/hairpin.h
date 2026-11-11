@@ -37,7 +37,6 @@ enum class HairpinType : signed char { INVALID = -1, CRESC_HAIRPIN, DIM_HAIRPIN,
 
 struct HairpinSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, HairpinSegment)
     DECLARE_CLASSOF(ElementType::HAIRPIN_SEGMENT)
 
 public:
@@ -90,7 +89,6 @@ private:
 
 struct Hairpin final : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Hairpin)
     DECLARE_CLASSOF(ElementType::HAIRPIN)
 
 public:

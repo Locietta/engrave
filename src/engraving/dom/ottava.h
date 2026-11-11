@@ -72,7 +72,6 @@ struct Ottava;
 
 struct OttavaSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, OttavaSegment)
     DECLARE_CLASSOF(ElementType::OTTAVA_SEGMENT)
 
     void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
@@ -99,7 +98,6 @@ private:
 
 struct Ottava final : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Ottava)
     DECLARE_CLASSOF(ElementType::OTTAVA)
 
 public:

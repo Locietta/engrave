@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct ChordBracket final : Arpeggio {
 private:
-    OBJECT_ALLOCATOR(engraving, ChordBracket)
     DECLARE_CLASSOF(ElementType::CHORD_BRACKET)
 
 public:

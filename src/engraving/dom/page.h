@@ -47,7 +47,6 @@ struct MeasureBase;
 
 struct Page final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Page)
     DECLARE_CLASSOF(ElementType::PAGE)
 
 public:

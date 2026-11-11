@@ -35,7 +35,6 @@ struct Note;
 
 struct Fingering final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Fingering)
     DECLARE_CLASSOF(ElementType::FINGERING)
 
 public:

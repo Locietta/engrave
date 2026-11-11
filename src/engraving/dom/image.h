@@ -46,7 +46,6 @@ enum class ImageType : char { NONE, RASTER, SVG };
 
 struct Image final : BSymbol {
 private:
-    OBJECT_ALLOCATOR(engraving, Image)
     DECLARE_CLASSOF(ElementType::IMAGE)
 
 public:

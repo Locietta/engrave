@@ -28,8 +28,6 @@
 
 namespace mu::engraving {
 struct LinkedObjects : std::list<EngravingObject *> {
-private:
-    OBJECT_ALLOCATOR(engraving, LinkedObjects)
 
 public:
     bool contains(const EngravingObject *o) const;

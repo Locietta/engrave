@@ -198,8 +198,6 @@ private:
 //---------------------------------------------------------
 
 struct ChannelListener : Listener<InstrChannel::Prop> {
-private:
-    OBJECT_ALLOCATOR(engraving, ChannelListener)
 public:
     virtual void property_changed(InstrChannel::Prop property) = 0;
 
@@ -460,8 +458,6 @@ private:
 //---------------------------------------------------------
 
 struct InstrumentList : std::map<const int, Instrument *> {
-private:
-    OBJECT_ALLOCATOR(engraving, InstrumentList)
 
 public:
     InstrumentList() {}

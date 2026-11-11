@@ -29,7 +29,6 @@ struct RangeLock;
 
 struct SystemLockIndicator : IndicatorIcon {
 private:
-    OBJECT_ALLOCATOR(engraving, SystemLockIndicator)
     DECLARE_CLASSOF(ElementType::SYSTEM_LOCK_INDICATOR)
 
 public:

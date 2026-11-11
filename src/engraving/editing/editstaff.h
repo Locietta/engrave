@@ -30,7 +30,6 @@
 namespace mu::engraving {
 struct InsertStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertStaff)
 
     Staff *staff = nullptr;
     staff_idx_t ridx = muse::nidx;
@@ -48,7 +47,6 @@ public:
 
 struct RemoveStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveStaff)
 
     Staff *staff = nullptr;
     staff_idx_t ridx = muse::nidx;
@@ -67,7 +65,6 @@ public:
 
 struct AddSystemObjectStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddSystemObjectStaff)
 
     Staff *staff = nullptr;
 
@@ -83,7 +80,6 @@ public:
 
 struct RemoveSystemObjectStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveSystemObjectStaff)
 
     Staff *staff = nullptr;
 
@@ -99,7 +95,6 @@ public:
 
 struct InsertMStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertMStaff)
 
     Measure *measure = nullptr;
     MStaff *mstaff = nullptr;
@@ -117,7 +112,6 @@ public:
 
 struct RemoveMStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveMStaff)
 
     Measure *measure = nullptr;
     MStaff *mstaff = nullptr;
@@ -135,7 +129,6 @@ public:
 
 struct InsertStaves : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertStaves)
 
     Measure *measure = nullptr;
     staff_idx_t a = muse::nidx;
@@ -153,7 +146,6 @@ public:
 
 struct RemoveStaves : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveStaves)
 
     Measure *measure = nullptr;
     staff_idx_t a = muse::nidx;
@@ -171,7 +163,6 @@ public:
 
 struct SortStaves : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, SortStaves)
 
     Score *score = nullptr;
     std::vector<staff_idx_t> list;
@@ -193,7 +184,6 @@ public:
 
 struct ChangeStaff : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeStaff)
 
     Staff *staff = nullptr;
 
@@ -224,7 +214,6 @@ public:
 
 struct ChangeStaffType : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeStaffType)
 
     Staff *staff = nullptr;
     StaffType staff_type;
@@ -242,7 +231,6 @@ public:
 
 struct ChangeMStaffProperties : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMStaffProperties)
 
     Measure *measure = nullptr;
     staff_idx_t staff_idx = 0;
@@ -261,7 +249,6 @@ public:
 
 struct ChangeMStaffHideIfEmpty : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMStaffHideIfEmpty)
 
     Measure *measure = nullptr;
     staff_idx_t staff_idx = 0;

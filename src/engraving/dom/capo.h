@@ -27,7 +27,6 @@
 namespace mu::engraving {
 struct Capo final : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Capo)
     DECLARE_CLASSOF(ElementType::CAPO)
 
 public:

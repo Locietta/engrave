@@ -25,7 +25,6 @@
 
 #include <map>
 
-#include "global/allocator.h"
 #include "key.h"
 
 namespace mu::engraving {
@@ -36,8 +35,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct KeyList : std::map<const int, KeySigEvent> {
-private:
-    OBJECT_ALLOCATOR(engraving, KeyList)
 public:
     KeyList() {}
 

@@ -30,7 +30,6 @@
 #include "../style/styledef.h"
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
-#include "global/allocator.h"
 
 namespace mu::engraving {
 struct Accidental;

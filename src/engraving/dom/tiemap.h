@@ -33,8 +33,6 @@ struct Tie;
 //---------------------------------------------------------
 
 struct TieMap : ElementMap {
-private:
-    OBJECT_ALLOCATOR(engraving, TieMap)
 public:
     TieMap() {}
 

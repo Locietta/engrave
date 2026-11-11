@@ -31,7 +31,6 @@ struct Segment;
 
 struct MeasureRepeat final : Rest {
 private:
-    OBJECT_ALLOCATOR(engraving, MeasureRepeat)
     DECLARE_CLASSOF(ElementType::MEASURE_REPEAT)
 
 public:

@@ -90,7 +90,6 @@ struct FiguredBass;
 
 struct FiguredBassItem final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, FiguredBassItem)
     DECLARE_CLASSOF(ElementType::FIGURED_BASS_ITEM)
 
 public:
@@ -234,7 +233,6 @@ struct FiguredBassFont {
 
 struct FiguredBass final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, FiguredBass)
     DECLARE_CLASSOF(ElementType::FIGURED_BASS)
 
 public:

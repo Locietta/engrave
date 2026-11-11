@@ -52,7 +52,6 @@ private:
 
 struct ChangeVelocity : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeVelocity)
 
     Note *note = nullptr;
     int user_velocity = 0;
@@ -69,7 +68,6 @@ public:
 
 struct ChangeNoteEventList : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeNoteEventList)
 
     Note *note = nullptr;
     NoteEventList new_events;
@@ -85,7 +83,6 @@ public:
 
 struct ChangeNoteEvent : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeNoteEvent)
 
     Note *note = nullptr;
     NoteEvent *old_event = nullptr;
@@ -102,7 +99,6 @@ public:
 
 struct ChangeChordPlayEventType : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeChordPlayEventType)
 
     Chord *chord = nullptr;
     PlayEventType petype;

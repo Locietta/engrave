@@ -229,7 +229,6 @@ private:
 
 struct Harmony final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Harmony)
     DECLARE_CLASSOF(ElementType::HARMONY)
 
 public:

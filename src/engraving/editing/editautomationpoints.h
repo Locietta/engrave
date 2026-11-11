@@ -26,15 +26,12 @@
 
 #include "engraving/automation/automationtypes.h"
 #include "engraving/dom/score.h"
-#include "global/allocator.h"
 #include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct ScoreAutomationController;
 
 struct EditAutomationPoints : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, EditAutomationPoints)
 
 public:
     EditAutomationPoints(Score *score, ScoreAutomationController *controller, const AutomationCurveKey &key,

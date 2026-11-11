@@ -45,8 +45,6 @@ struct BeamFragment {
 enum class ChordBeamAnchorType : unsigned char { START, END, MIDDLE };
 
 struct BeamSegment {
-private:
-    OBJECT_ALLOCATOR(engraving, BeamSegment)
 public:
     LineF line;
     int level = 0;
@@ -64,7 +62,6 @@ public:
 
 struct BeamBase : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, BeamBase)
     DECLARE_CLASSOF(ElementType::INVALID) // dummy
 
     M_PROPERTY2(int, cross_staff_move, set_cross_staff_move, 0)

@@ -34,7 +34,6 @@ enum class TabBeamGrid : char { NONE = 0, INITIAL, MEDIALFINAL, NUM_OF };
 
 struct TabDurationSymbol final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, TabDurationSymbol)
     DECLARE_CLASSOF(ElementType::TAB_DURATION_SYMBOL)
 
 public:

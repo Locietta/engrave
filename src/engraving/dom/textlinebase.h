@@ -37,8 +37,6 @@ struct TextLineBase;
 //---------------------------------------------------------
 
 struct TextLineBaseSegment : LineSegment {
-private:
-    OBJECT_ALLOCATOR(engraving, TextLineBaseSegment)
 
 public:
     TextLineBaseSegment(const ElementType &type, TextLineBase *, ElementFlags f = ElementFlag::NOTHING);
@@ -89,7 +87,6 @@ protected:
 
 struct TextLineBase : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, TextLineBase)
 
     M_PROPERTY(bool, line_visible, set_line_visible)
     M_PROPERTY2(HookType, begin_hook_type, set_begin_hook_type, HookType::NONE)

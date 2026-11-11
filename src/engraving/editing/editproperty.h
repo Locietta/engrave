@@ -30,8 +30,6 @@
 
 namespace mu::engraving {
 struct ChangeProperty : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, ChangeProperty)
 protected:
     EngravingObject *element = nullptr;
     Pid id;
@@ -64,7 +62,6 @@ public:
 
 struct ChangeBracketProperty : ChangeProperty {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeBracketProperty)
 
     Staff *staff = nullptr;
     size_t level = 0;
@@ -80,7 +77,6 @@ public:
 
 struct ChangeTextLineProperty : ChangeProperty {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeTextLineProperty)
 
     void flip() override;
 

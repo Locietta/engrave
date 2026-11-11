@@ -33,8 +33,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct MeasureNumberBase : TextBase {
-private:
-    OBJECT_ALLOCATOR(engraving, MeasureNumberBase)
 public:
     MeasureNumberBase(const ElementType &type, DummyParentOr<Measure> parent, TextStyleType = TextStyleType::DEFAULT);
     MeasureNumberBase(const MeasureNumberBase &other);

@@ -324,7 +324,6 @@ private:
 
 struct TextBase : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, TextBase)
 
     M_PROPERTY2(bool, is_text_linked_to_master, set_text_linked_to_master, true)
 

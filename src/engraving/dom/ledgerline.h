@@ -39,7 +39,6 @@ struct Chord;
 
 struct LedgerLine final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, LedgerLine)
     DECLARE_CLASSOF(ElementType::LEDGER_LINE)
 
 public:

@@ -24,7 +24,6 @@
 
 #include <vector>
 
-#include "global/allocator.h"
 #include "global/types/string.h"
 #include "transaction/undoablecommand.h"
 
@@ -44,7 +43,6 @@ struct EditTie {
 
 struct ChangeTieJumpPointActive : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeTieJumpPointActive)
 
     TieJumpPointList *jump_point_list_ = nullptr;
     muse::String id_;

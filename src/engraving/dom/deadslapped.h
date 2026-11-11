@@ -33,7 +33,6 @@ namespace mu::engraving {
 
 struct DeadSlapped : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, DeadSlapped)
     DECLARE_CLASSOF(ElementType::DEAD_SLAPPED)
 
 public:

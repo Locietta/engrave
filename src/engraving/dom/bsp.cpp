@@ -34,8 +34,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct InsertItemBspTreeVisitor : BspTreeVisitor {
-private:
-    OBJECT_ALLOCATOR(engraving, InsertItemBspTreeVisitor)
 public:
     EngravingItem *item;
 
@@ -47,8 +45,6 @@ public:
 //---------------------------------------------------------
 
 struct RemoveItemBspTreeVisitor : BspTreeVisitor {
-private:
-    OBJECT_ALLOCATOR(engraving, RemoveItemBspTreeVisitor)
 public:
     EngravingItem *item;
 
@@ -60,8 +56,6 @@ public:
 //---------------------------------------------------------
 
 struct FindItemBspTreeVisitor : BspTreeVisitor {
-private:
-    OBJECT_ALLOCATOR(engraving, FindItemBspTreeVisitor)
 public:
     std::vector<EngravingItem *> found_items;
 

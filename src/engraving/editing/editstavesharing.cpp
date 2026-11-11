@@ -40,7 +40,6 @@ namespace {
 
 struct ConnectSharedPart : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ConnectSharedPart)
 
     SharedPart *shared_part = nullptr;
     Part *origin_part = nullptr;
@@ -58,7 +57,6 @@ public:
 
 struct DisconnectSharedPart : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, DisconnectSharedPart)
 
     SharedPart *shared_part = nullptr;
     Part *origin_part = nullptr;

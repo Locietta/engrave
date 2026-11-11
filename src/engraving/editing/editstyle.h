@@ -31,7 +31,6 @@ struct Transaction;
 
 struct ChangeStyle : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeStyle)
 
     Score *score = nullptr;
     MStyle style;
@@ -51,8 +50,6 @@ public:
 };
 
 struct ChangeStyleValues : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, ChangeStyleValues)
 
 public:
     ChangeStyleValues(Score *s, std::unordered_map<Sid, PropertyValue> values) : score_(s), values_(std::move(values)) {}

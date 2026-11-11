@@ -36,7 +36,6 @@ struct Rest;
 
 struct NoteDot final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, NoteDot)
     DECLARE_CLASSOF(ElementType::NOTEDOT)
 
 public:

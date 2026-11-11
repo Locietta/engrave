@@ -29,7 +29,6 @@
 namespace mu::engraving {
 struct StringTunings final : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, StringTunings)
     DECLARE_CLASSOF(ElementType::STRING_TUNINGS)
 
 public:
