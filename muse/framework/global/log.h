@@ -28,8 +28,6 @@
 
 #include "thirdparty/kors_logger/src/log_base.h" // IWYU pragma: export
 
-#include "profiler.h" // IWYU pragma: export
-
 // The logger's generic macros collide with Ret::Code enumerators.
 #undef NOT_IMPLEMENTED
 #undef NOT_SUPPORTED

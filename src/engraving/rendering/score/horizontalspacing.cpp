@@ -49,7 +49,6 @@ using namespace mu::engraving::rendering::score;
 
 double HorizontalSpacing::compute_spacing_for_full_system(System *system, double stretch_reduction, double squeeze_factor,
                                                           bool override_min_measure_width) {
-    TRACEFUNC;
 
     if (system->score()->all_staves_invisible()) {
         return 0.0;
@@ -90,7 +89,6 @@ double HorizontalSpacing::compute_spacing_for_full_system(System *system, double
 }
 
 double HorizontalSpacing::update_spacing_for_last_added_measure(System *system, bool start_of_continuous_layout_region) {
-    TRACEFUNC;
 
     if (system->score()->all_staves_invisible()) {
         return 0.0;
@@ -132,7 +130,6 @@ double HorizontalSpacing::update_spacing_for_last_added_measure(System *system, 
 }
 
 void HorizontalSpacing::squeeze_system_to_fit(System *system, double &cur_sys_width, double target_sys_width) {
-    TRACEFUNC;
 
     Measure *first_measure = system->first_measure();
     if (!first_measure) {

@@ -1094,7 +1094,6 @@ void collect_chords_overlapping_rests(Segment *segment, staff_idx_t staff_idx, s
 }
 
 std::vector<EngravingItem *> collect_system_objects(const Score *score, const std::vector<Staff *> &staves) {
-    TRACEFUNC;
 
     std::vector<EngravingItem *> result;
 
@@ -1777,7 +1776,6 @@ bool note_is_before(const Note *n1, const Note *n2) {
 }
 
 void update_percussion_notes(Chord *c, const Drumset *drumset) {
-    TRACEFUNC;
     for (Chord *ch : c->grace_notes()) {
         update_percussion_notes(ch, drumset);
     }

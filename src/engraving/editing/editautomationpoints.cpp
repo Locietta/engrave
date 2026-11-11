@@ -109,7 +109,6 @@ EditAutomationPoints::EditAutomationPoints(Score *score, ScoreAutomationControll
 std::optional<ChangedRange> EditAutomationPoints::changed_range() const { return changed_range_; }
 
 void EditAutomationPoints::flip() {
-    TRACEFUNC;
 
     IF_ASSERT_FAILED(score_ && controller_ && controller_->automation_data()) { return; }
 

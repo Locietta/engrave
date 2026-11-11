@@ -121,7 +121,6 @@ bool midi_input_trace = false;
 bool midi_output_trace = false;
 
 static void mark_instruments_as_primary(std::vector<Part *> &parts) {
-    TRACEFUNC;
 
     std::unordered_map<String /*instrumentId*/, int /*count*/> instrument_count;
 
@@ -383,7 +382,6 @@ void Score::add_measure(MeasureBase *m, MeasureBase *pos) {
 */
 
 void Score::update_ticks_and_time_sig_map() {
-    TRACEFUNC;
 
     Fraction tick = Fraction(0, 1);
     Measure *fm = first_measure();
@@ -3289,94 +3287,6 @@ void Score::remap_brackets_and_barlines() {
 }
 
 //---------------------------------------------------------
-//   lassoSelect
-//---------------------------------------------------------
-
-void Score::lasso_select(const RectF &bbox) {
-    select(0, SelectType::SINGLE, 0);
-    RectF fr(bbox.normalized());
-    for (Page *page : pages()) {
-        RectF pr(page->ldata()->bbox());
-        RectF frr(fr.translated(-page->pos()));
-        if (pr.right() < frr.left()) {
-            continue;
-        }
-        if (pr.left() > frr.right()) {
-            break;
-        }
-
-        std::vector<EngravingItem *> items = page->items(frr);
-        std::vector<EngravingItem *> items_to_select;
-
-        for (EngravingItem *item : items) {
-            if (frr.contains(item->page_bounding_rect())) {
-                if (!item->is_measure() && item->selectable()) {
-                    items_to_select.push_back(item);
-                }
-            }
-        }
-
-        select(items_to_select, SelectType::ADD, 0);
-    }
-}
-
-//---------------------------------------------------------
-//   lassoSelectEnd
-//---------------------------------------------------------
-
-void Score::lasso_select_end() {
-    int note_rest_count = 0;
-    Segment *start_segment = 0;
-    Segment *end_segment = 0;
-    staff_idx_t start_staff = 0x7fffffff;
-    staff_idx_t end_staff = 0;
-    const ChordRest *end_cr = 0;
-
-    if (selection_.elements().empty()) {
-        selection_.set_state(SelState::NONE);
-        set_update_all();
-        return;
-    }
-    selection_.set_state(SelState::LIST);
-
-    for (const EngravingItem *e : selection_.elements()) {
-        if (!e->is_note() && !e->is_rest()) {
-            continue;
-        }
-        ++note_rest_count;
-        if (e->is_note()) {
-            e = to_note(e)->chord();
-        }
-        Segment *seg = to_chord_rest(e)->segment();
-        if ((start_segment == 0) || (*seg < *start_segment)) {
-            start_segment = seg;
-        }
-        if ((end_segment == 0) || (*seg > *end_segment)) {
-            end_segment = seg;
-            end_cr = to_chord_rest(e);
-        }
-        staff_idx_t idx = e->staff_idx();
-        if (idx < start_staff) {
-            start_staff = idx;
-        }
-        if (idx > end_staff) {
-            end_staff = idx;
-        }
-    }
-    if (note_rest_count > 0) {
-        end_segment = end_cr->next_segment_after_cr(SegmentType::CHORD_REST | SegmentType::END_BAR_LINE | SegmentType::CLEF);
-
-        selection_.set_range(start_segment, end_segment, start_staff, end_staff + 1);
-
-        if (!selection_.is_range()) {
-            selection_.set_state(SelState::RANGE);
-        }
-        selection_.update_selected_elements();
-    }
-    set_update_all();
-}
-
-//---------------------------------------------------------
 //   addLyrics
 //---------------------------------------------------------
 
@@ -3427,7 +3337,6 @@ BeatsPerSecond Score::multiplied_tempo_at_utick(int utick) const {
 //---------------------------------------------------------
 
 void Score::cmd_select_all() {
-    TRACEFUNC;
 
     if (measures_.size() == 0) {
         return;
@@ -3444,7 +3353,6 @@ void Score::cmd_select_all() {
 //---------------------------------------------------------
 
 void Score::cmd_select_section() {
-    TRACEFUNC;
 
     Segment *s = selection_.start_segment();
     if (s == 0) {
@@ -4600,14 +4508,9 @@ bool Score::auto_layout_enabled() const { return is_open(); }
 //    do a complete (re-) layout
 //---------------------------------------------------------
 
-void Score::do_layout() {
-    TRACEFUNC;
-
-    do_layout_range(Fraction(0, 1), Fraction(-1, 1));
-}
+void Score::do_layout() { do_layout_range(Fraction(0, 1), Fraction(-1, 1)); }
 
 void Score::do_layout_range(const Fraction &st, const Fraction &et) {
-    TRACEFUNC;
 
     Fraction start = st;
     Fraction end = et;

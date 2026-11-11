@@ -219,8 +219,6 @@ void Excerpt::update_tracks_mapping() {
 
     TracksMap tracks;
 
-    TRACEFUNC;
-
     for (const Staff *staff : score->staves()) {
         const Staff *master_staff = master_score()->staff_by_id(staff->id());
         if (!master_staff) {
@@ -248,7 +246,6 @@ void Excerpt::update_tracks_mapping() {
 }
 
 void Excerpt::set_voice_visible(Staff *staff, voice_idx_t voice_index, bool visible) {
-    TRACEFUNC;
 
     if (!staff) {
         return;

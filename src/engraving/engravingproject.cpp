@@ -75,7 +75,6 @@ bool EngravingProject::read_only() const { return master_score_->read_only(); }
 void EngravingProject::set_master_score(MasterScore *score) { master_score_ = score; }
 
 Ret EngravingProject::setup_master_score(bool force_mode) {
-    TRACEFUNC;
 
     master_score_->update_padding_tables();
     for (Score *s : master_score_->score_list()) {
@@ -95,7 +94,6 @@ Ret EngravingProject::setup_master_score(bool force_mode) {
 MasterScore *EngravingProject::master_score() const { return master_score_; }
 
 Ret EngravingProject::load_mscz(const MscReader &msc, rw::ReadInOutData *data, bool ignore_version_error) {
-    TRACEFUNC;
 
     MScore::set_error(MsError::MS_NO_ERROR);
 
@@ -104,7 +102,6 @@ Ret EngravingProject::load_mscz(const MscReader &msc, rw::ReadInOutData *data, b
 }
 
 bool EngravingProject::write_mscz(MscWriter &writer, const write::WriteContext *ctx) {
-    TRACEFUNC;
 
     MscSaver saver;
     return saver.write_mscz(master_score_, writer, ctx);
@@ -112,8 +109,4 @@ bool EngravingProject::write_mscz(MscWriter &writer, const write::WriteContext *
 
 bool EngravingProject::is_corrupted_upon_loading() const { return is_corrupted_upon_loading_; }
 
-Ret EngravingProject::check_corrupted() const {
-    TRACEFUNC;
-
-    return master_score_->sanity_check();
-}
+Ret EngravingProject::check_corrupted() const { return master_score_->sanity_check(); }

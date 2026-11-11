@@ -246,7 +246,6 @@ private:
     static void draw(const KeySig *item, muse::draw::Painter *painter, const PaintOptions &opt);
 
     static void draw(const LaissezVibSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
-    static void draw(const Lasso *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const LayoutBreak *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const LedgerLine *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const LetRingSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);

@@ -1170,7 +1170,6 @@ bool FretDiagram::is_custom(const String &harmony_name_for_compare) const {
 }
 
 void FretDiagram::read_harmony_to_diagram_file(const muse::io::PathT &file_path) const {
-    TRACEFUNC;
 
     muse::io::File file(file_path);
     if (!file.open()) {

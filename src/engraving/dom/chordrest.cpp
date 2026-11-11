@@ -1162,7 +1162,6 @@ bool ChordRest::has_following_jump_item() const {
 }
 
 bool ChordRest::has_preceding_jump_item() const {
-    TRACEFUNC;
     const Segment *seg = segment();
     const Measure *measure = seg->measure();
 

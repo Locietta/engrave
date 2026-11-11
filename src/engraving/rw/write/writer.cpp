@@ -43,7 +43,6 @@ using namespace mu::engraving::write;
 Writer::Writer() {}
 
 bool Writer::write_score(Score *score, io::IODevice *device, rw::WriteInOutData *inout) {
-    TRACEFUNC;
 
     XmlWriter xml(device);
     WriteContext ctx(score);
@@ -81,7 +80,6 @@ bool Writer::write_score(Score *score, io::IODevice *device, rw::WriteInOutData 
 }
 
 void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::WriteScoreHook &hook) {
-    TRACEFUNC;
 
     xml.start_element(score);
 

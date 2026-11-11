@@ -98,7 +98,6 @@ static void collect_by_track_range(const ByTrackMap &by_track_map, const track_i
 PlaybackContext::PlaybackContext(const Score *score) : score_(score) {}
 
 dynamic_level_t PlaybackContext::appliable_dynamic_level(const track_idx_t track_idx, const int nominal_position_tick) const {
-    TRACEFUNC;
 
     const AutomationCurve *curve = dynamics_curve(track_idx);
     if (!curve) {
@@ -245,7 +244,6 @@ SyllableEvent PlaybackContext::syllable(const track_idx_t track_idx, const int n
 
 DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t track_from, const track_idx_t track_to,
                                                               const std::function<void()> &checkpoint) const {
-    TRACEFUNC;
 
     if (!score_ || !score_->automation_data()) {
         return {};
@@ -290,7 +288,6 @@ DynamicAutomationLayers PlaybackContext::dynamic_level_layers(const track_idx_t 
 
 void PlaybackContext::update(const track_idx_t track_from, const track_idx_t track_to, const int tick_from, const int tick_to,
                              bool expand_repeats, const std::function<void()> &checkpoint) {
-    TRACEFUNC;
 
     IF_ASSERT_FAILED(score_) { return; }
 

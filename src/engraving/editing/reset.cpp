@@ -75,7 +75,6 @@ static void reset_text_properties(EngravingItem *e) {
 }
 
 void Reset::reset_to_default_layout(Transaction &tx, Score *score) {
-    TRACEFUNC;
 
     StyleIdSet dont_reset_these_styles{Sid::LYRICS_PLACEMENT,
                                        Sid::REPEAT_BAR_TIPS,
@@ -206,14 +205,9 @@ void Reset::reset_to_default_layout(Transaction &tx, Score *score) {
     EditSystemLocks::undo_remove_all_locks(tx, score);
 }
 
-void Reset::reset_text_style_overrides(Score *score) {
-    TRACEFUNC;
-
-    score->scan_elements(reset_text_properties);
-}
+void Reset::reset_text_style_overrides(Score *score) { score->scan_elements(reset_text_properties); }
 
 void Reset::reset_all_styles(Transaction &, Score *score, const StyleIdSet &except_these_ones) {
-    TRACEFUNC;
 
     int begin_idx = int(Sid::NOSTYLE) + 1;
     int end_idx = int(Sid::STYLES);
@@ -236,7 +230,6 @@ void Reset::reset_all_styles(Transaction &, Score *score, const StyleIdSet &exce
 //---------------------------------------------------------
 
 void Reset::reset_measures_layout(Transaction &, Score *score) {
-    TRACEFUNC;
 
     std::vector<EngravingItem *> items_to_remove;
 
@@ -271,8 +264,4 @@ void Reset::reset_measures_layout(Transaction &, Score *score) {
     }
 }
 
-void Reset::reset_all_positions(Transaction &, Score *score) {
-    TRACEFUNC;
-
-    score->scan_elements(reset_element_position);
-}
+void Reset::reset_all_positions(Transaction &, Score *score) { score->scan_elements(reset_element_position); }

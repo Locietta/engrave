@@ -130,7 +130,6 @@ Ret MasterScore::sanity_check() {
 }
 
 Ret Score::sanity_check_local() {
-    TRACEFUNC;
 
     StringList errors;
     int m_number = 1;

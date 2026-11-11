@@ -96,7 +96,6 @@ using namespace mu::engraving::rendering::score;
 //---------------------------------------------------------
 
 System *SystemLayout::collect_system(LayoutContext &ctx) {
-    TRACEFUNC;
 
     if (!ctx.state().cur_measure()) {
         return nullptr;
@@ -1179,7 +1178,6 @@ void SystemLayout::layout_fret_diagrams(const ElementsToLayout &elements, System
 }
 
 void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
-    TRACEFUNC;
 
     if (ctx.dom().nstaves() == 0) {
         return;
@@ -2085,7 +2083,6 @@ void SystemLayout::layout_system(System *system, LayoutContext &ctx, double lead
 //---------------------------------------------------------
 
 void SystemLayout::layout2(System *system, LayoutContext &ctx) {
-    TRACEFUNC;
     LAYOUT_CALL() << LAYOUT_ITEM_INFO(system);
 
     Box *vb = system->vbox();
@@ -2301,7 +2298,6 @@ double SystemLayout::min_vert_space_for_cross_staff_beams(System *system, staff_
 }
 
 void SystemLayout::restore_layout2(System *system, LayoutContext &ctx) {
-    TRACEFUNC;
     if (system->vbox()) {
         return;
     }
@@ -2350,7 +2346,6 @@ void SystemLayout::set_measure_height(System *system, double height, const Layou
 //---------------------------------------------------------
 
 double SystemLayout::min_distance(const System *top, const System *bottom, const LayoutContext &ctx) {
-    TRACEFUNC;
 
     const LayoutConfiguration &conf = ctx.conf();
     const DomAccessor &dom = ctx.dom();

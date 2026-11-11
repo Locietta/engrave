@@ -54,10 +54,6 @@
 #include "synthesizerstate.h"
 #include "tuplet.h"
 
-namespace mu::engraving {
-struct IMimeData;
-} // namespace mu::engraving
-
 namespace mu::engraving::read114 {
 struct Read114;
 } // namespace mu::engraving::read114
@@ -682,9 +678,6 @@ public:
     void update_braces_and_barlines(Part *part, size_t index);
     void set_brackets_and_barlines();
     void remap_brackets_and_barlines();
-
-    void lasso_select(const RectF &);
-    void lasso_select_end();
 
     Page *search_page(const PointF &) const;
     std::vector<System *> search_system(const PointF &p, bool include_measureless_systems = true, const System *preferred_system = nullptr,

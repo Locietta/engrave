@@ -44,7 +44,6 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 void MaskLayout::compute_masks(LayoutContext &ctx, Page *page) {
-    TRACEFUNC;
 
     bool mask_barlines = ctx.conf().style_b(Sid::MASK_BARLINES_FOR_TEXT);
     bool mask_slurs = ctx.conf().style_b(Sid::MASK_SLURS);
@@ -123,7 +122,6 @@ void MaskLayout::compute_barline_masks(const Segment *barline_sement, const Syst
 }
 
 void MaskLayout::mask_barline_for_text(BarLine *barline, const std::vector<TextBase *> &all_system_text) {
-    TRACEFUNC;
 
     PointF barline_pos = barline->page_pos();
     Shape barline_shape = barline->shape().translated(barline_pos);
@@ -208,7 +206,6 @@ void MaskLayout::cleanup_mask(const Shape &item_shape, Shape &mask, double min_f
 }
 
 std::vector<TextBase *> MaskLayout::collect_all_system_text(const System *system) {
-    TRACEFUNC;
 
     std::vector<TextBase *> all_text;
 
@@ -363,7 +360,6 @@ void MaskLayout::mask_tab_string_lines_for_frets(StaffLines *staff_lines, const 
 }
 
 void MaskLayout::compute_slur_tie_masks(SlurTieSegment *slur_tie_segment) {
-    TRACEFUNC;
 
     Spanner *spanner = slur_tie_segment->spanner();
     const Segment *start_seg = spanner->start_segment();

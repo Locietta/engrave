@@ -54,7 +54,6 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 void BeamLayout::layout(Beam *item, const LayoutContext &ctx) {
-    TRACEFUNC;
 
     Beam::LayoutData *ldata = item->mutldata();
     // all of the beam layout code depends on _elements being in order by tick
@@ -292,7 +291,6 @@ void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
 }
 
 void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chord_rests, SpannerSegmentType, int frag) {
-    TRACEFUNC;
 
     BeamTremoloLayout::setup_l_data(item, item->mutldata(), ctx);
     Chord *start_chord = nullptr;
@@ -602,7 +600,6 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
 }
 
 void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
-    TRACEFUNC;
 
     for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
         const Staff *stf = ctx.dom().staff(track2staff(track));

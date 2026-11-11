@@ -318,7 +318,6 @@ void ScoreAutomationController::ensure_initialized(Score *score) {
 }
 
 void ScoreAutomationController::insert_time(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &old_segments) {
-    TRACEFUNC;
 
     const int diff = len.ticks();
     if (!score_ || !automation_data_ || automation_data_->is_empty() || diff == 0) {
@@ -437,7 +436,6 @@ void ScoreAutomationController::edit_points(const AutomationCurveKey &key, Autom
 }
 
 void ScoreAutomationController::update(const UpdateRequest &request, const AutomationCurveMap &curves) {
-    TRACEFUNC;
 
     if (!score_) {
         return;
@@ -567,7 +565,6 @@ void ScoreAutomationController::update(const UpdateRequest &request, const Autom
 }
 
 void ScoreAutomationController::fill_no_repeat_tempo_curve(const AutomationCurve &tempo_curve, AutomationCurve &no_repeat_tempo_curve) {
-    TRACEFUNC;
 
     const RepeatList &repeat_list = score_->expanded_repeat_list();
 
@@ -582,7 +579,6 @@ void ScoreAutomationController::fill_no_repeat_tempo_curve(const AutomationCurve
 }
 
 void ScoreAutomationController::mirror_authored_points_to_repeats(UpdateContext &ctx) {
-    TRACEFUNC;
 
     for (auto &[key, curve] : ctx.curves) {
         if (curve.empty()) {
@@ -615,7 +611,6 @@ void ScoreAutomationController::mirror_authored_points_to_repeats(UpdateContext 
 void ScoreAutomationController::copy_curves_for_rebuild(const AutomationCurveMap &curves, const StaffRange &range,
                                                         utick_t clear_from_u_tick, bool include_tempo, bool include_dynamics,
                                                         AutomationCurveMap &dest_curves) {
-    TRACEFUNC;
 
     for (const auto &[key, curve] : curves) {
         const bool is_dynamics = key.type == AutomationType::DYNAMICS;
@@ -649,7 +644,6 @@ void ScoreAutomationController::copy_curves_for_rebuild(const AutomationCurveMap
 }
 
 void ScoreAutomationController::add_segment_points(const Segment *segment, int tick_offset, const StaffRange &range, UpdateContext &ctx) {
-    TRACEFUNC;
 
     double fermata_stretch = 0.0;
     const Fermata *fermata = nullptr;
@@ -680,7 +674,6 @@ void ScoreAutomationController::add_segment_points(const Segment *segment, int t
 }
 
 void ScoreAutomationController::add_dynamic_points(const Dynamic *dynamic, int tick_offset, const StaffRange &range, UpdateContext &ctx) {
-    TRACEFUNC;
 
     if (!dynamic->play_dynamic()) {
         return;
@@ -786,7 +779,6 @@ void ScoreAutomationController::add_dynamic_points(const DynamicInfo &info, cons
 
 void ScoreAutomationController::add_spanner_points(const Score *score, int repeat_start_tick, int repeat_end_tick, int tick_offset,
                                                    const StaffRange &range, UpdateContext &ctx) {
-    TRACEFUNC;
 
     const SpannerMap &spanner_map = score->spanner_map();
     if (spanner_map.empty()) {
@@ -919,7 +911,6 @@ void ScoreAutomationController::add_hairpin_points(const HairpinInfo &info, cons
 }
 
 void ScoreAutomationController::fill_voice_curves_from_base(UpdateContext &ctx) {
-    TRACEFUNC;
 
     for (auto &[key, curve] : ctx.curves) {
         if (!key.voice_idx().has_value()) {
@@ -942,8 +933,6 @@ void ScoreAutomationController::collect_measure_repeats(const Segment *segment, 
         return;
     }
 
-    TRACEFUNC;
-
     for (staff_idx_t staff_idx = range.from; staff_idx <= range.to; ++staff_idx) {
         const EngravingItem *item = segment->element(staff2track(staff_idx));
         if (!item || !item->is_measure_repeat()) {
@@ -955,7 +944,6 @@ void ScoreAutomationController::collect_measure_repeats(const Segment *segment, 
 }
 
 void ScoreAutomationController::add_measure_repeat_points(UpdateContext &ctx) {
-    TRACEFUNC;
 
     if (ctx.measure_repeats.empty()) {
         return;
@@ -1392,7 +1380,6 @@ std::vector<AutomationCurveKey> ScoreAutomationController::resolve_keys(const En
 }
 
 void ScoreAutomationController::mirror_edits_to_repeats(const AutomationCurveKey &key, AutomationPointEdits &edits) {
-    TRACEFUNC;
 
     const RepeatList &repeat_list = score_->expanded_repeat_list();
     if (repeat_list.size() <= 1) {

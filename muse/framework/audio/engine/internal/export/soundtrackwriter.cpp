@@ -92,7 +92,6 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFor
 }
 
 Ret SoundTrackWriter::write() {
-    TRACEFUNC;
 
     if (poll_cancellation()) return make_ret(Ret::Code::CANCEL);
     if (!source_ || !encoder_ptr_) {
@@ -134,7 +133,6 @@ bool SoundTrackWriter::poll_cancellation() {
 void SoundTrackWriter::abort() { is_aborted_ = true; }
 
 Ret SoundTrackWriter::write_streaming() {
-    TRACEFUNC;
     if (total_samples_ == 0) {
         LOGI() << "No audio to export";
         return make_ret(Err::NO_AUDIO_TO_EXPORT);

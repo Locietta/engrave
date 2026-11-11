@@ -41,14 +41,6 @@ TEST(Diagnostics, AssertionsEvaluateOnceAndRetainReleaseRecovery) {
 #endif
 }
 
-TEST(Diagnostics, DisabledScopedTimerDoesNotEvaluateLabel) {
-#ifndef ENGRAVE_PROFILE
-    int calls = 0;
-    TRACEFUNC_C((++calls, "scope"))
-    EXPECT_EQ(calls, 0);
-#endif
-}
-
 TEST(Diagnostics, DisabledAssertionMessagesRemainLazy) {
 #ifdef NDEBUG
     auto *logger = muse::logger::Logger::instance();

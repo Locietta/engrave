@@ -153,7 +153,6 @@ const std::map<Sid, Sid> CompatUtils::align_vals_to_convert{
 };
 
 void CompatUtils::do_compatibility_conversions(MasterScore *master_score) {
-    TRACEFUNC;
 
     if (!master_score) {
         return;
@@ -192,7 +191,6 @@ void CompatUtils::do_compatibility_conversions(MasterScore *master_score) {
 }
 
 void CompatUtils::replace_staff_text_with_play_technique_annotation(MasterScore *score) {
-    TRACEFUNC;
 
     //! NOTE: Before MU4, they were available in the Staff Text Properties dialog (Change Channel page)
     static const std::unordered_map<muse::String, PlayingTechniqueType> text_to_play_technique_type{
@@ -275,7 +273,6 @@ void CompatUtils::replace_staff_text_with_play_technique_annotation(MasterScore 
 }
 
 void CompatUtils::assign_initial_part_to_excerpts(const std::vector<Excerpt *> &excerpts) {
-    TRACEFUNC;
 
     std::set<ID> assigned_part_id_set;
 
@@ -656,7 +653,6 @@ void CompatUtils::reset_stem_lengths_for_two_note_trems(MasterScore *master_scor
 }
 
 void CompatUtils::replace_staff_text_with_capo(MasterScore *score) {
-    TRACEFUNC;
 
     std::set<StaffTextBase *> old_capo_set;
 
@@ -717,7 +713,6 @@ void CompatUtils::replace_staff_text_with_capo(MasterScore *score) {
 }
 
 void CompatUtils::add_missing_init_key_for_transposing_instrument(MasterScore *score) {
-    TRACEFUNC;
 
     for (Part *part : score->parts()) {
         Instrument *instrument = part->instrument();

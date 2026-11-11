@@ -54,7 +54,6 @@ XmlStreamReader::XmlStreamReader(const ByteArray &data) {
 XmlStreamReader::~XmlStreamReader() { delete xml_; }
 
 void XmlStreamReader::set_data(const ByteArray &input_data) {
-    TRACEFUNC;
 
     xml_->doc.reset();
     xml_->custom_err.clear();

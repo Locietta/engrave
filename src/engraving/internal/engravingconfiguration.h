@@ -50,7 +50,6 @@ struct EngravingConfiguration : IEngravingConfiguration {
     void reset_displayed_default_colors() override;
 
     Color indicator_icon_inverted_selection_color() const override;
-    Color lasso_color() const override;
     Color warning_color() const override;
     Color warning_selected_color() const override;
     Color critical_color() const override;

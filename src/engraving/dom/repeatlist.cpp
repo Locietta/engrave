@@ -720,7 +720,6 @@ void RepeatList::perform_jump(std::vector<RepeatListElementList>::const_iterator
 /// \brief RepeatList::unwind
 ///
 void RepeatList::unwind() {
-    TRACEFUNC;
 
     muse::delete_all(*this);
     clear();

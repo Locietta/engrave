@@ -285,7 +285,7 @@ TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
 
 TEST(Describe, ListsEveryImplementedTypeWithSortedProps) {
     const auto types = g_engine->describe();
-    EXPECT_EQ(types.size(), 150u) << "the TConv element types that a class declares";
+    EXPECT_EQ(types.size(), 149u) << "the TConv element types that a class declares";
     std::set<std::string> names;
     for (const auto &type : types) {
         EXPECT_TRUE(names.insert(type.type).second) << "duplicate type " << type.type;

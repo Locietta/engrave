@@ -171,7 +171,6 @@ void PlaybackModel::load(Score *score, const std::function<void()> &checkpoint_c
 #else
 void PlaybackModel::load(Score *score, const std::function<void()> &checkpoint_callback) {
 #endif
-    TRACEFUNC;
 
     if (!score || score->measures()->empty() || !score->last_measure()) {
         return;
@@ -237,8 +236,6 @@ void PlaybackModel::reload() {
         return;
     }
 
-    TRACEFUNC;
-
     const int track_from = 0;
     const size_t track_to = score_->ntracks();
 
@@ -275,8 +272,6 @@ void PlaybackModel::send_events_for_changed_tracks() {
     if (changed_track_id_set_.empty()) {
         return;
     }
-
-    TRACEFUNC;
 
     for (const InstrumentTrackId &track_id : changed_track_id_set_) {
         send_events(track_id);
@@ -466,7 +461,6 @@ void PlaybackModel::update(const int tick_from, const int tick_to, const track_i
 }
 
 void PlaybackModel::reload_metronome_events() {
-    TRACEFUNC;
 
     PlaybackData &metronome_data = playback_data_map_[playback_metronome_track_id()];
     metronome_data.origin_events.clear();
@@ -634,7 +628,6 @@ void mu::engraving::PlaybackModel::remove_events_from_range(const track_idx_t tr
 
 void PlaybackModel::clear_expired_events(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
                                          ChangedTrackIdSet *track_changes) {
-    TRACEFUNC;
 
     if (!score_) {
         return;

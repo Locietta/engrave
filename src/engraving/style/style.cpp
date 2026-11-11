@@ -370,7 +370,6 @@ bool MStyle::is_valid(IODevice *device) {
 }
 
 void MStyle::read(XmlReader &e, compat::ReadChordListHook *read_chord_list_hook, int msc_version) {
-    TRACEFUNC;
     using namespace std::string_view_literals;
 
     while (e.read_next_start_element()) {

@@ -67,7 +67,6 @@ SymId SymNames::sym_id_by_user_name(const String &user_name) {
 }
 
 void SymNames::load_name_to_sym_id_hash() {
-    TRACEFUNC; // Should be called 0 or 1 times.
 
     for (size_t i = 0; i < ::mu::engraving::SymNames::s_sym_names.size(); ++i) {
         s_name_to_sym_id_hash.insert({::mu::engraving::SymNames::s_sym_names[i], static_cast<SymId>(i)});

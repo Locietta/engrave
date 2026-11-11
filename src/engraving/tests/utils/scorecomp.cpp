@@ -126,7 +126,6 @@ bool ScoreComp::save_compare_mime_data(muse::ByteArray mime_data, const muse::St
 }
 
 bool ScoreComp::compare_files(const String &full_path1, const String &full_path2) {
-    TRACEFUNC;
 
     RetVal<ByteArray> rv1 = muse::io::file_system()->read_file(full_path1);
     if (!rv1.ret) {

@@ -31,7 +31,6 @@ struct ByteArray;
 
 namespace mu::engraving {
 struct ChordRest;
-struct IMimeData;
 struct Score;
 struct Segment;
 struct Transaction;

@@ -199,8 +199,6 @@ Color EngravingConfiguration::indicator_icon_inverted_selection_color() const {
     return color;
 }
 
-Color EngravingConfiguration::lasso_color() const { return "#00323200"; }
-
 Color EngravingConfiguration::warning_color() const { return "#808000"; }
 
 Color EngravingConfiguration::warning_selected_color() const { return "#565600"; }

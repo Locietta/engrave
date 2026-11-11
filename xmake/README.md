@@ -17,8 +17,7 @@ test-enabled build. Gate runners must pass that option when configuring this che
 `muse/framework/global/appinfo.cpp`, which backs the public capabilities version
 accessor. There is no generated framework feature header. Native platform guards
 use compiler definitions such as `_WIN32`; no `Q_OS_WIN` alias or `kors_profiler`
-dependency remains. Diagnostics use the small logger sink and optional
-`ENGRAVE_PROFILE` scoped timers.
+dependency remains. Diagnostics use the small logger sink.
 
 Install runtime assets from this checkout with `python tools/install_assets.py DIR`;
 check the complete installed directory with `python tools/install_assets.py DIR --verify`.

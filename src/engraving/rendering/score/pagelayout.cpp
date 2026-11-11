@@ -115,7 +115,6 @@ void PageLayout::get_next_page(LayoutContext &ctx) {
 //---------------------------------------------------------
 
 void PageLayout::collect_page(LayoutContext &ctx) {
-    TRACEFUNC;
 
     Page *page = ctx.mut_state().page();
     const LayoutConfiguration &conf = ctx.conf();
@@ -539,7 +538,6 @@ void PageLayout::layout_artic_and_fingering_on_cross_staff_beams(LayoutContext &
 //---------------------------------------------------------
 
 void PageLayout::layout_page(LayoutContext &ctx, Page *page, double rest_height, double footer_padding, bool squeeze_to_fit) {
-    TRACEFUNC;
     if (rest_height < 0.0 && !squeeze_to_fit) {
         LOGN("restHeight < 0.0: %f\n", rest_height);
         rest_height = 0;

@@ -221,20 +221,3 @@ void assertion_failure(std::string_view msg, const char *file, int line) {
     std::fprintf(stderr, "ASSERT FAILED: %.*s    %s:%d\n", int(msg.size()), msg.data(), file, line);
 }
 } // namespace muse::diagnostics
-
-// SPDX-License-Identifier: GPL-3.0-only
-#include "profiler.h"
-#ifdef ENGRAVE_PROFILE
-#include <chrono>
-#include <cstdio>
-
-namespace muse::profiler {
-static long long now() {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
-Scope::Scope(const char *name) : m_name(name), m_start(now()) {}
-
-Scope::~Scope() { std::fprintf(stderr, "TIMER: %s %lld ns\n", m_name, now() - m_start); }
-} // namespace muse::profiler
-#endif

@@ -182,7 +182,6 @@ enum class ElementType : unsigned char {
     IMAGE,
     MEASURE,
     SELECTION,
-    LASSO,
     SHADOW_NOTE,
     TAB_DURATION_SYMBOL,
     FSYMBOL,

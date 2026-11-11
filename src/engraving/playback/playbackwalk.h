@@ -325,7 +325,6 @@ struct PlaybackWalk {
 
     void update_events(const int tick_from, const int tick_to, const track_idx_t track_from, const track_idx_t track_to,
                        ChangedTrackIdSet *track_changes = nullptr) {
-        TRACEFUNC;
 
         const auto dom_staves = score->staff_idx_set_from_range(track_from, track_to, [](const Staff &staff) {
             return staff.is_primary_staff(); // skip linked staves

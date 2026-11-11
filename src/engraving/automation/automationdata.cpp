@@ -111,7 +111,6 @@ const AutomationCurve &AutomationData::curve(const AutomationCurveKey &key) cons
 bool AutomationData::is_empty() const { return curve_map_.empty(); }
 
 void AutomationData::set_curves(const AutomationCurveMap &curves) {
-    TRACEFUNC;
 
     if (curve_map_.empty() && !curves.empty()) {
         curve_map_ = curves;
@@ -148,7 +147,6 @@ void AutomationData::set_curves(const AutomationCurveMap &curves) {
 }
 
 void AutomationData::replace_curves(const AutomationCurveMap &curves) {
-    TRACEFUNC;
 
     if (curve_map_.empty() && !curves.empty()) {
         curve_map_ = curves;
@@ -188,7 +186,6 @@ void AutomationData::replace_curves(const AutomationCurveMap &curves) {
 }
 
 void AutomationData::edit_points(const AutomationCurveKey &key, const AutomationPointEdits &edits) {
-    TRACEFUNC;
 
     if (edits.empty()) {
         return;

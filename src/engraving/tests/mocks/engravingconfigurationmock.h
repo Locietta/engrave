@@ -47,7 +47,6 @@ struct EngravingConfigurationMock : IEngravingConfiguration {
     MOCK_METHOD(void, reset_displayed_default_colors, (), (override));
 
     MOCK_METHOD(Color, indicator_icon_inverted_selection_color, (), (const, override));
-    MOCK_METHOD(Color, lasso_color, (), (const, override));
     MOCK_METHOD(Color, warning_color, (), (const, override));
     MOCK_METHOD(Color, warning_selected_color, (), (const, override));
     MOCK_METHOD(Color, critical_color, (), (const, override));

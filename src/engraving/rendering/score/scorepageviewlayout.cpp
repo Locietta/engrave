@@ -162,7 +162,6 @@ void ScorePageViewLayout::prepare_score(Score *score, const LayoutContext &ctx) 
 }
 
 void ScorePageViewLayout::layout_page_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
-    TRACEFUNC;
 
     // initLayoutContext moves the tail of Score::systems() into the layout's list of
     // reusable systems; the layout then re-collects them, deletes them or hands them
@@ -284,7 +283,6 @@ void ScorePageViewLayout::layout_finished(Score *score, LayoutContext &ctx) {
 }
 
 void ScorePageViewLayout::layout_headers_footers(LayoutContext &ctx) {
-    TRACEFUNC;
 
     LAYOUT_CALL_CLEAR();
     LAYOUT_CALL();
