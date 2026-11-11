@@ -110,7 +110,7 @@ void ShadowNote::draw_articulations(Painter *painter) const {
     double y01 = -notehead_height * .5;
     double y02 = -y01;
     if (has_stem()) {
-        // Stem set at 3.5 spatium in SingleDraw::draw(const ShadowNote* item ...
+        // Stem set at 3.5 spatium
         if (up) {
             y02 = ms * 3.5;
         } else {

@@ -3939,7 +3939,6 @@ void TLayout::fill_note_shape(const Note *item, Note::LayoutData *ldata) {
         }
     }
 
-    // This method is also called from SingleLayout, where `part` may be nullptr
     Part *part = item->part();
     if (part && part->instrument()->has_strings()) {
         GuitarBend *bend = item->bend_for();
