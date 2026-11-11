@@ -69,3 +69,19 @@ The inventory understates this compile dependency; the allowed undo-capture-only
 scope avoids a broader GUI-command extraction. No enum or persisted value changes.
 
 Undo-capture validation: Windows release engine_tests compiled; all nine requested public suites (output filtered) and upstream engraving/MPE executed successfully. Full gate, audio corpus, timing and Linux not run.
+
+MScore raster/nudge storage and setters, no_gui, svg_printing and the empty
+register_ui_types are removed (no consumers). pdf_printing was read only to save
+and restore its own value around rendering; paint writes it, but no rendering
+branch reads it. Score::printing and paint options remain the actual rendering
+controls. Fixed stretch/font/debug/image/template/style-write flags, page gaps
+and orientation are constexpr. Warning flags and pedal minimum become constexpr
+at their EngineContext-initialized values (true, true, 1), preserving the public
+engine lifecycle. The pre-EngineContext zero-initialization was not a public API
+state. error, error_is_warning and test_mode stay mutable as requested.
+Inventory candidates no_images, save_template_mode and test_write_style_to_score
+have reachable reads: native readers/mscloader/BoxLayout, Writer metadata, and
+compat::WriteScoreHook respectively; they are constants, not deleted behavior.
+No enumerators or persisted numeric defaults change.
+
+MScore validation: Windows release engine_tests compiled; all nine requested public suites (177 tests, output filtered) and upstream engraving/MPE (246 + 24 tests) executed successfully, as for both preceding commits. Full gate, audio corpus, timing and Linux not run.

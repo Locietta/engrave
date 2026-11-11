@@ -90,17 +90,14 @@ std::string render_score(const EngineContext &engine, mu::engraving::Score *scor
         check(cairo_status(context.get()));
     }
     auto provider = std::make_shared<muse::draw::CairoPainter>(context.get(), engine.fonts_database(), dpi);
-    const bool was_printing = score->printing(), was_pdf = MScore::pdf_printing;
+    const bool was_printing = score->printing();
 
     struct Restore {
         Score *score;
-        bool printing, pdf;
+        bool printing;
 
-        ~Restore() {
-            score->set_printing(printing);
-            MScore::pdf_printing = pdf;
-        }
-    } restore{score, was_printing, was_pdf};
+        ~Restore() { score->set_printing(printing); }
+    } restore{score, was_printing};
 
     {
         muse::draw::Painter painter(provider, "native-export");

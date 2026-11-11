@@ -64,7 +64,6 @@ void Paint::paint_score(Painter *painter, Score *score, const IScoreRenderer::Sc
     }
 
     // Setup score draw system
-    mu::engraving::MScore::pdf_printing = opt.is_printing;
 
     const bool was_printing = score->printing();
     score->set_printing(opt.is_printing);
