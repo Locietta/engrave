@@ -24,7 +24,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "draw/internal/fontprovider.h"
+#include "draw/types/font.h"
 #include "draw/types/geometry.h"
 #include "global/types/string.h"
 #include "infrastructure/shape.h"
@@ -39,6 +39,7 @@ struct JsonObject;
 } // namespace muse
 
 namespace muse::draw {
+struct FontProvider;
 struct Painter;
 } // namespace muse::draw
 

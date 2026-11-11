@@ -22,51 +22,55 @@
 #pragma once
 
 #include <functional>
+#include <string>
 #include <vector>
 
+#include "draw/types/font.h"
+#include "draw/types/fontstypes.h"
+#include "draw/types/geometry.h"
+#include "engrave/src/runtime/fonts_database.h"
 #include "fontrendercache.h"
-#include "ifontsdatabase.h"
-#include "ifontsengine.h"
+#include "global/io/path.h"
 
 namespace muse::draw {
 struct FontFace;
 
-struct FontsEngine : IFontsEngine {
+struct FontsEngine {
 private:
-    IFontsDatabase &database_;
+    music::RuntimeFontsDatabase &database_;
     mutable uint64_t database_revision_ = 0;
 
 public:
-    explicit FontsEngine(IFontsDatabase &database) : database_(database) {}
+    explicit FontsEngine(music::RuntimeFontsDatabase &database) : database_(database) {}
 
     ~FontsEngine();
 
     void init();
-    void set_render_cache_dir_path(const io::PathT &path, const std::string &revision = std::string()) override;
-    void clear_loaded_faces() override;
+    void set_render_cache_dir_path(const io::PathT &path, const std::string &revision = std::string());
+    void clear_loaded_faces();
 
-    double line_spacing(const Font &f) const override;
-    double x_height(const Font &f) const override;
-    double height(const Font &f) const override;
-    double cap_height(const Font &f) const override;
-    double ascent(const Font &f) const override;
-    double descent(const Font &f) const override;
+    double line_spacing(const Font &f) const;
+    double x_height(const Font &f) const;
+    double height(const Font &f) const;
+    double cap_height(const Font &f) const;
+    double ascent(const Font &f) const;
+    double descent(const Font &f) const;
 
-    double underline_pos(const Font &f) const override;
-    double line_width(const Font &f) const override;
-    double strike_out_pos(const Font &f) const override;
+    double underline_pos(const Font &f) const;
+    double line_width(const Font &f) const;
+    double strike_out_pos(const Font &f) const;
 
-    bool in_font(const Font &f, char32_t ucs4) const override;
+    bool in_font(const Font &f, char32_t ucs4) const;
 
-    double horizontal_advance(const Font &f, const char32_t &ch) const override;
-    double horizontal_advance(const Font &f, const std::u32string &text) const override;
+    double horizontal_advance(const Font &f, const char32_t &ch) const;
+    double horizontal_advance(const Font &f, const std::u32string &text) const;
 
-    RectF bounding_rect(const Font &f, const char32_t &ch) const override;
-    RectF bounding_rect(const Font &f, const std::u32string &text) const override;
-    RectF tight_bounding_rect(const Font &f, const std::u32string &text) const override;
+    RectF bounding_rect(const Font &f, const char32_t &ch) const;
+    RectF bounding_rect(const Font &f, const std::u32string &text) const;
+    RectF tight_bounding_rect(const Font &f, const std::u32string &text) const;
 
     // For draw
-    std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const override;
+    std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const;
 
     // For dev
     using FontFaceFactory = std::function<FontFace *(const FontDataKey &data_key, Font::Type type)>;

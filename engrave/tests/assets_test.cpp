@@ -12,11 +12,11 @@
 #include "engrave/src/score/json.h"
 #include FT_FREETYPE_H
 
-#include "draw/internal/ifontsengine.h"
 #include "draw/types/font.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/fonts_engine_proxy.h"
 #include "engrave/src/runtime/runtime_assets.h"
 #include "global/io/ifilesystem.h"
 #include <engrave/engine.h>
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         auto document = std::move(*opened);
         auto &context = engrave::DocumentAccess::context(*document);
         music::RuntimeAssets &assets = context.assets();
-        muse::draw::IFontsEngine *engine = &assets.fonts_engine();
+        music::RuntimeFontsEngine *engine = &assets.fonts_engine();
         muse::draw::Font font(muse::draw::Font::FontFamily(family), muse::draw::Font::Type::TEXT);
         font.set_point_size_f(12);
         const std::u32string sample = U"MMMWWWiii012345";

@@ -19,8 +19,11 @@
 struct _cairo;
 typedef struct _cairo cairo_t;
 
+namespace music {
+struct RuntimeFontsDatabase;
+} // namespace music
+
 namespace muse::draw {
-struct IFontsDatabase;
 
 struct CairoPainter final : IPaintProvider {
     /*! deviceDpi is the logical DPI of the Cairo target (the value
@@ -36,7 +39,7 @@ struct CairoPainter final : IPaintProvider {
      *  cairo_destroy().  The cairo_t must outlive the CairoPainter.  Text is
      *  drawn with the font bytes of fontsDatabase, which must outlive it too.
      */
-    CairoPainter(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi = 1200.0);
+    CairoPainter(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi = 1200.0);
     ~CairoPainter() override;
 
     CairoPainter(const CairoPainter &) = delete;

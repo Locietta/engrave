@@ -25,21 +25,21 @@
 
 #include "draw/types/font.h"
 #include "draw/types/geometry.h"
+#include "engrave/src/runtime/fonts_database.h"
+#include "engrave/src/runtime/fonts_engine_proxy.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"
 #include "global/types/string.h"
-#include "ifontsdatabase.h"
-#include "ifontsengine.h"
 
 namespace muse::draw {
 struct FontProvider {
 
 private:
-    IFontsDatabase &database_;
-    IFontsEngine &engine_;
+    music::RuntimeFontsDatabase &database_;
+    music::RuntimeFontsEngine &engine_;
 
 public:
-    FontProvider(IFontsDatabase &database, IFontsEngine &engine) : database_(database), engine_(engine) {}
+    FontProvider(music::RuntimeFontsDatabase &database, music::RuntimeFontsEngine &engine) : database_(database), engine_(engine) {}
 
     int add_symbol_font(const String &family, const io::PathT &path);
     int add_symbol_font(const String &family, std::shared_ptr<io::IODevice> device);

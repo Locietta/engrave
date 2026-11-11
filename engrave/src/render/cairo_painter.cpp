@@ -3,7 +3,7 @@
  *
  * Cairo implementation of muse::draw::IPaintProvider.
  *
- * Text uses the font bytes actually registered in IFontsDatabase.  FreeType
+ * Text uses the font bytes actually registered in music::RuntimeFontsDatabase.  FreeType
  * memory faces are cached for the process lifetime, Cairo FT font faces are
  * created on top of them, and HarfBuzz performs shaping so glyph advances and
  * mark offsets are honoured.
@@ -34,7 +34,7 @@
 #include <hb.h>
 
 #include "draw/internal/fontfaceutils.h"
-#include "draw/internal/ifontsdatabase.h"
+#include "engrave/src/runtime/fonts_database.h"
 
 namespace muse::draw {
 namespace {
@@ -347,7 +347,7 @@ struct FtFaceEntry {
 };
 
 struct FontCache {
-    std::shared_ptr<FtFaceEntry> get(const Font &font, const IFontsDatabase &db) {
+    std::shared_ptr<FtFaceEntry> get(const Font &font, const music::RuntimeFontsDatabase &db) {
         const FontDataKey requested = data_key_for_font(font);
         if (!requested.valid()) {
             throw std::runtime_error("CairoPainter: text drawing requires a non-empty font family");
@@ -363,7 +363,7 @@ struct FontCache {
 
         const FontData font_data = db.font_data(requested, font.type());
         if (!font_data.valid()) {
-            throw std::runtime_error("CairoPainter: IFontsDatabase returned no font data for family '" +
+            throw std::runtime_error("CairoPainter: music::RuntimeFontsDatabase returned no font data for family '" +
                                      requested.family().id().to_std_string() + "'");
         }
 
@@ -495,7 +495,7 @@ struct CairoPainter::Impl {
     };
 
     cairo_t *cr = nullptr;
-    const IFontsDatabase &fonts;
+    const music::RuntimeFontsDatabase &fonts;
     double dpi = 1200.0;
     bool active = true;
     State state;
@@ -506,7 +506,7 @@ struct CairoPainter::Impl {
     bool base_clip_known = true;
     std::map<unsigned int, CachedSurface> surfaces;
 
-    Impl(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi);
+    Impl(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi);
     ~Impl();
 
     bool is_active() const;
@@ -578,7 +578,7 @@ private:
 
 // --------------------------------------------------------------- lifecycle
 
-CairoPainter::Impl::Impl(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi)
+CairoPainter::Impl::Impl(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi)
     : cr(context), fonts(fonts_database), dpi(device_dpi) {
     if (!cr) {
         throw std::invalid_argument("CairoPainter: cairo_t context must not be null");
@@ -1930,7 +1930,7 @@ void CairoPainter::Impl::draw_tiled_pixmap(const RectF &rect, const Pixmap &pm, 
 
 // -------------------------------------------------------- CairoPainter glue
 
-CairoPainter::CairoPainter(cairo_t *context, const IFontsDatabase &fonts_database, double device_dpi)
+CairoPainter::CairoPainter(cairo_t *context, const music::RuntimeFontsDatabase &fonts_database, double device_dpi)
     : impl_(std::make_unique<Impl>(context, fonts_database, device_dpi)) {}
 
 CairoPainter::~CairoPainter() = default;

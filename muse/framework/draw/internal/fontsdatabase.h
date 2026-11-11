@@ -21,29 +21,32 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <vector>
 
-#include "ifontsdatabase.h"
+#include "draw/types/fontstypes.h"
+#include "global/io/iodevice.h"
+#include "global/io/path.h"
 
 namespace muse::draw {
-struct FontsDatabase : IFontsDatabase {
+struct FontsDatabase {
     FontsDatabase() = default;
 
-    void set_default_font(Font::Type type, const FontDataKey &key) override;
-    void insert_substitution(const String &f1, const String &substitute_name) override;
-    void remove_substitutions(const String &f1, const std::vector<String> &substitute_names) override;
+    void set_default_font(Font::Type type, const FontDataKey &key);
+    void insert_substitution(const String &f1, const String &substitute_name);
+    void remove_substitutions(const String &f1, const std::vector<String> &substitute_names);
 
-    int add_font(const FontDataKey &key, const io::PathT &path) override;
-    int add_font(const FontDataKey &key, std::shared_ptr<io::IODevice> device) override;
-    void remove_font(const FontDataKey &key) override;
+    int add_font(const FontDataKey &key, const io::PathT &path);
+    int add_font(const FontDataKey &key, std::shared_ptr<io::IODevice> device);
+    void remove_font(const FontDataKey &key);
 
-    FontDataKey actual_font(const FontDataKey &require_key, Font::Type type) const override;
-    std::vector<FontDataKey> substitution_fonts(const FontDataKey &require_key) const override;
-    FontData font_data(const FontDataKey &require_key, Font::Type type) const override;
+    FontDataKey actual_font(const FontDataKey &require_key, Font::Type type) const;
+    std::vector<FontDataKey> substitution_fonts(const FontDataKey &require_key) const;
+    FontData font_data(const FontDataKey &require_key, Font::Type type) const;
 
-    uint64_t revision() const override;
+    uint64_t revision() const;
 
 private:
 
