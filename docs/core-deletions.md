@@ -45,3 +45,14 @@ values. Padding entries are assigned by symbolic type, and EID generation does
 not use ElementType. Native XML and public queries use type names. Numeric type
 codes in factory/MusicXML debug diagnostics can change with the internal enum;
 no additional score-format or rendering arithmetic dependency was found.
+
+
+Accessibility plumbing is removed: Factory flags, EngravingItem flags and the
+accessibility hierarchy virtuals have no consumers. The single implementation of
+IEngravingContextConfiguration is now the concrete EngravingContextConfiguration;
+gui_scaling remains because DebugPaint uses it. Factory name lookup retains its
+previous true diagnostics argument to TConv::from_xml. Public describe/query text
+(type names, descriptions and format_bars_and_beats) is retained.
+This step changes no enumerators, legacy_z rows or persisted numeric values.
+
+Accessibility validation: Windows release engine_tests compiled; the requested API/read/edit/policy/describe/handles/MNX/GP and filtered output suites, plus upstream engraving/MPE suites, executed successfully. Full gate, audio corpus, timing and Linux were not run (requested scope).

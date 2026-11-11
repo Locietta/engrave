@@ -44,13 +44,6 @@ EngravingItem *Page::layout_parent() const {
     return nullptr;
 }
 
-EngravingItem *Page::accessible_parent_item() const {
-    // Above the visual hierarchy sits the root item, which exists only to head the
-    // accessibility tree. A page that is not in the score belongs to the dummy's tree,
-    // which the base implementation finds.
-    return ownership_parent() ? score()->root_item() : EngravingItem::accessible_parent_item();
-}
-
 Page::~Page() {
     for (System *s : systems_) {
         if (s->page() == this) {
@@ -100,15 +93,6 @@ std::vector<EngravingItem *> Page::items(const PointF &point) {
 void Page::append_system(System *s) {
     s->set_page(this);
     systems_.push_back(s);
-}
-
-EngravingItemList Page::accessible_children() const {
-    // The systems are owned by the score, but it is the page that places them, so the
-    // page is where the accessibility tree finds them.
-    EngravingItemList children = EngravingItem::accessible_children();
-    children.insert(children.end(), systems_.begin(), systems_.end());
-
-    return children;
 }
 
 //---------------------------------------------------------

@@ -40,8 +40,8 @@
 #include "dummyparent.h"
 #include "factory.h"
 #include "iengravingconfiguration.h"
-#include "iengravingcontextconfiguration.h"
 #include "iengravingfont.h"
+#include "internal/engravingcontextconfiguration.h"
 #include "io/buffer.h"
 #include "linkedobjects.h"
 #include "log.h"
@@ -271,8 +271,6 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
     exclude_vertical_align_ = e.exclude_vertical_align_;
     item_discovered = false;
 
-    accessible_enabled_ = e.accessible_enabled_;
-
     if (e.left_parenthesis_) {
         left_parenthesis_ = e.left_parenthesis_->clone();
         left_parenthesis_->set_ownership_parent(this);
@@ -297,26 +295,6 @@ EngravingItem::~EngravingItem() {
     delete layout_data_;
 }
 
-bool EngravingItem::accessible_enabled() const { return accessible_enabled_; }
-
-void EngravingItem::set_accessible_enabled(bool enabled) { accessible_enabled_ = enabled; }
-
-EngravingItem *EngravingItem::accessible_parent_item() const {
-    if (EngravingItem *p = layout_parent()) {
-        return p;
-    }
-
-    if (ownership_parent()) {
-        // attached to something, but not placed anywhere: in neither tree
-        return nullptr;
-    }
-
-    // not attached to anything: head of the tree those objects form
-    return score() && score()->dummy() ? score()->dummy()->root_item() : nullptr;
-}
-
-EngravingItemList EngravingItem::accessible_children() const { return children_items(); }
-
 EngravingItem *EngravingItem::ownership_parent_item() const {
     EngravingObject *p = ownership_parent();
     if (p && p->is_engraving_item()) {
@@ -330,7 +308,7 @@ EngravingItem *EngravingItem::layout_parent() const { return ownership_parent_it
 
 const std::shared_ptr<IEngravingConfiguration> &EngravingItem::configuration() const { return score()->configuration(); }
 
-const std::shared_ptr<IEngravingContextConfiguration> &EngravingItem::context_configuration() const {
+const std::shared_ptr<EngravingContextConfiguration> &EngravingItem::context_configuration() const {
     return score()->context_configuration();
 }
 

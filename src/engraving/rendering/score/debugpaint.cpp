@@ -22,7 +22,7 @@
 #include "debugpaint.h"
 
 #include "iengravingconfiguration.h"
-#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
+#include "internal/engravingcontextconfiguration.h" // IWYU pragma: keep
 
 //#include "accessibility/accessibleitem.h"
 #include "dom/measure.h"

@@ -129,9 +129,9 @@
 #include "draw/fontmetrics.h"
 #include "draw/svgrenderer.h"
 #include "editing/navigation.h"
-#include "iengravingconfiguration.h"        // IWYU pragma: keep
-#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "infrastructure/rtti.h"
+#include "internal/engravingcontextconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "rendering/paintoptions.h"
 #include "stemlayout.h"

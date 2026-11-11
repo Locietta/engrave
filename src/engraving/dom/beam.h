@@ -68,7 +68,6 @@ public:
     //! The system it is drawn on is that of its first chord/rest.
     System *system() const;
     EngravingItem *layout_parent() const override;
-    EngravingItem *accessible_parent_item() const override;
 
     const std::vector<ChordRest *> &elements() const { return elements_; }
 

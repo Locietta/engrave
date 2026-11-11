@@ -29,22 +29,4 @@ using namespace mu::engraving;
 
 RootItem::RootItem(Score *score, Kind kind) : EngravingItem(ElementType::ROOT_ITEM, score), kind_(kind) {}
 
-EngravingItemList RootItem::accessible_children() const {
-    switch (kind_) {
-        case Kind::SCORE: {
-            EngravingItemList children = EngravingItem::accessible_children();
-            // The pages are owned by the score, but this is the top of the accessibility
-            // tree, so this is where they are listed.
-            children.insert(children.end(), score()->pages().begin(), score()->pages().end());
-            return children;
-        }
-        case Kind::DUMMY:
-            // The objects parked on the dummy are not part of the score, so they form a
-            // tree of their own, headed by this.
-            return score()->dummy()->children_items();
-    }
-
-    return EngravingItemList();
-}
-
 void RootItem::init() {}

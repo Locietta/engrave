@@ -245,7 +245,7 @@ double SystemHeaderLayout::total_bracket_offset(LayoutContext &ctx) {
             size_t span = last_staff - first_staff + 1;
             if (span > 1 || (bi->bracket_span() == span) ||
                 (span == 1 && ctx.conf().style_b(Sid::ALWAYS_SHOW_BRACKETS_WHEN_EMPTY_STAVES_ARE_HIDDEN))) {
-                Bracket *dummy_br = Factory::create_bracket(ctx.mut_dom().dummy_parent(), /*isAccessibleEnabled=*/false);
+                Bracket *dummy_br = Factory::create_bracket(ctx.mut_dom().dummy_parent());
                 dummy_br->set_bracket_item(bi);
                 dummy_br->set_staff_span(first_staff, last_staff);
                 dummy_br->mutldata()->bracket_height.set_value(3.5 * dummy_br->spatium() * 2); // default

@@ -38,8 +38,8 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 TextLineBaseSegment::TextLineBaseSegment(const ElementType &type, TextLineBase *sp, ElementFlags f) : LineSegment(type, sp, f) {
-    text_ = Factory::create_text(this, TextStyleType::DEFAULT, false);
-    end_text_ = Factory::create_text(this, TextStyleType::DEFAULT, false);
+    text_ = Factory::create_text(this, TextStyleType::DEFAULT);
+    end_text_ = Factory::create_text(this, TextStyleType::DEFAULT);
     text_->set_flag(ElementFlag::MOVABLE, false);
     end_text_->set_flag(ElementFlag::MOVABLE, false);
 }

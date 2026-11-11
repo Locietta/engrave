@@ -68,18 +68,6 @@ void SpannerSegment::set_ownership_parent(Spanner *spanner) { EngravingItem::set
 
 EngravingItem *SpannerSegment::layout_parent() const { return system_; }
 
-EngravingItem *SpannerSegment::accessible_parent_item() const {
-    // Not placed on a system yet, so it is the spanner that lists it;
-    // see Spanner::accessibleChildren().
-    if (!system_) {
-        if (EngravingItem *owner = ownership_parent_item()) {
-            return owner;
-        }
-    }
-
-    return EngravingItem::accessible_parent_item();
-}
-
 //---------------------------------------------------------
 //   mag
 //---------------------------------------------------------
@@ -450,15 +438,6 @@ void Spanner::removed() {
     for (SpannerSegment *seg : unused_segments_) {
         seg->move_to_system(nullptr);
     }
-}
-
-EngravingItemList Spanner::accessible_children() const {
-    // A segment that is placed on a system belongs to that system in the accessibility
-    // tree, even though this spanner is what owns it.
-    EngravingItemList children = EngravingItem::accessible_children();
-    muse::remove_if(children, [](EngravingItem *item) { return item->is_spanner_segment() && to_spanner_segment(item)->system(); });
-
-    return children;
 }
 
 //---------------------------------------------------------

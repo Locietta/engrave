@@ -53,8 +53,8 @@ Ambitus::Ambitus(DummyParentOr<Segment> parent) : EngravingItem(ElementType::AMB
     top_tpc_ = Tpc::TPC_INVALID;
     bottom_tpc_ = Tpc::TPC_INVALID;
 
-    top_accidental_ = Factory::create_accidental(this, false);
-    bottom_accidental_ = Factory::create_accidental(this, false);
+    top_accidental_ = Factory::create_accidental(this);
+    bottom_accidental_ = Factory::create_accidental(this);
 }
 
 Ambitus::Ambitus(const Ambitus &a) : EngravingItem(a) {

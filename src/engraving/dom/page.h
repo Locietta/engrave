@@ -59,7 +59,6 @@ public:
     void set_ownership_parent(Score *score);
 
     EngravingItem *layout_parent() const override;
-    EngravingItem *accessible_parent_item() const override;
 
     const std::vector<System *> &systems() const { return systems_; }
 
@@ -86,7 +85,6 @@ public:
     double rm() const;
 
     void scan_elements(std::function<void(EngravingItem *)> func) override;
-    EngravingItemList accessible_children() const override;
 
     std::vector<EngravingItem *> items(const RectF &r);
     std::vector<EngravingItem *> items(const PointF &p);

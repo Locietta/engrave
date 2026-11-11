@@ -41,9 +41,6 @@ public:
     void init();
 
     //! The top of a tree has no parent within it.
-    EngravingItem *accessible_parent_item() const override { return nullptr; }
-
-    EngravingItemList accessible_children() const override;
 
     EngravingItem *clone() const override { return nullptr; }
 
