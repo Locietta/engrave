@@ -385,7 +385,7 @@ FontFace *FontsEngine::create_font_face(const FontData &font_data) const {
         return nullptr;
     }
 
-    return new FontFace(std::in_place_type<FontFaceDU>, new FontFaceFT());
+    return new FontFace(std::in_place_type<FontFaceDU>);
 }
 
 FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int input_loaded_pixel_size,
