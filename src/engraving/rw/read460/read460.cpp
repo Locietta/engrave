@@ -306,28 +306,6 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
     return true;
 }
 
-bool Read460::prepare_paste_duration_element(Score *score, const Fraction &tick, const Fraction &ticks, const track_idx_t track) {
-    Measure *destination_measure = score->undo_get_measure(tick);
-    IF_ASSERT_FAILED(destination_measure) { return false; }
-
-    Segment *paste_destination_seg = destination_measure->undo_get_segment(SegmentType::CHORD_REST, tick);
-    IF_ASSERT_FAILED(paste_destination_seg) { return false; }
-
-    // First make a gap for as long as we need...
-    IF_ASSERT_FAILED(score->make_gap_voice(paste_destination_seg, track, ticks, tick, /*deleteAnnotations*/ false)) { return false; }
-
-    // And shorten any segments that overlap with our destination...
-    if (Segment *left_seg = score->tick2left_segment(tick)) {
-        ChordRest *prev_cr = left_seg->next_chord_rest(track, /*backwards*/ true, /*stopAtMeasureBoundary*/ true);
-        if (prev_cr && prev_cr->end_tick() > tick) {
-            NoteInput::truncate_chord_rest(score->transaction_manager()->current_or_dummy_transaction(), score, prev_cr, tick,
-                                           /*fillWithRest*/ false);
-        }
-    }
-
-    return true;
-}
-
 void Read460::read_tremolo_compat(compat::TremoloCompat *tc, XmlReader &xml) {
     ReadContext ctx(static_cast<EngravingObject *>(tc->parent)->score());
     ctx.set_paste_mode(true);

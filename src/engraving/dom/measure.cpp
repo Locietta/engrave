@@ -1238,21 +1238,6 @@ RectF Measure::staff_page_bounding_rect(staff_idx_t staff_idx) const {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-/**
- Return true if an EngravingItem of type \a type can be dropped on a Measure
-*/
-
-//---------------------------------------------------------
-//   drop
-///   Drop element.
-///   Handle a dropped element at position \a pos of given
-///   element \a type and \a subtype.
-//---------------------------------------------------------
-
-//---------------------------------------------------------
 //   adjustToLen
 //    change actual measure len, adjust elements to
 //    new len

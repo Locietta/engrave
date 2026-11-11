@@ -122,11 +122,9 @@ constexpr Pair add_pairs[] = {
     // EditChord::toggleArticulation (editing/editchord.cpp:97-101) sets the symbol,
     // the parent and the track, then adds the articulation to the chord.
     {"Chord", "Articulation"},
-    // The reader and the paste code attach a fermata to its segment
-    // (rw/read500/read500.cpp:705-720 and :966-971: track, ownership parent, add).
+    // The reader attaches a fermata to its segment (track, ownership parent, add).
     {"Segment", "Fermata"},
-    // Score::addText's DYNAMICS case (editing/edit.cpp:783-791), and rw/read500's
-    // paste path, which attaches a Dynamic to its segment.
+    // Score::addText's DYNAMICS case (editing/edit.cpp), which attaches a Dynamic to its segment.
     {"Segment", "Dynamic"},
     // Score::addText's STAFF case (editing/edit.cpp:763-771), and the reader's
     // StaffText (rw/read500/measureread.cpp:487-...).

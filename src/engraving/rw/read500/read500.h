@@ -40,7 +40,6 @@ struct Read500 : rw::IReader {
     void read_tremolo_compat(compat::TremoloCompat *item, XmlReader &xml) override;
 
 private:
-    bool prepare_paste_duration_element(Score *score, const Fraction &tick, const Fraction &ticks, const track_idx_t track);
     void do_read_item(EngravingItem *item, XmlReader &xml) override;
 };
 } // namespace mu::engraving::read500
