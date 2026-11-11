@@ -113,7 +113,6 @@ struct RehearsalMark;
 struct RepeatList;
 struct RepeatSegmentInfo;
 struct Rest;
-struct RootItem;
 struct Score;
 struct IEngravingFont;
 struct Segment;
@@ -283,8 +282,6 @@ public:
     static bool is_alive(const Score *score);
 
     void scan_elements(std::function<void(EngravingItem *)> func) override;
-
-    RootItem *root_item() const { return root_item_; }
 
     DummyParent *dummy() const { return dummy_; }
 
@@ -639,8 +636,6 @@ public:
     const InputState &input_state() const { return is_; }
 
     InputState &input_state() { return is_; }
-
-    void set_input_state(const InputState &st) { is_ = st; }
 
     void spatium_changed(double old_value, double new_value);
     void style_changed() override;
@@ -1066,7 +1061,6 @@ private:
     Selection selection_;
     SelectionFilter selection_filter_;
 
-    RootItem *root_item_ = nullptr;
     DummyParent *dummy_ = nullptr;
     LayoutOptions layout_options_;
 

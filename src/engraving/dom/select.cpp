@@ -935,7 +935,7 @@ void Selection::set_range_ticks(const Fraction &tick1, const Fraction &tick2, st
 
 void Selection::update() {
     for (EngravingItem *e : el_) {
-        e->set_selected(true); // also tells accessibility that e has focus
+        e->set_selected(true);
     }
 
     ChordRest *cr = active_cr();
@@ -969,7 +969,7 @@ void Selection::update() {
         return;
     }
 
-    to_select_again->set_selected(true); // HACK: select it again so accessibility thinks it has focus
+    to_select_again->set_selected(true);
 
     update_state();
 }
@@ -1017,7 +1017,7 @@ bool Selection::range_is_valid() const {
 
 //---------------------------------------------------------
 //   updateState
-///   update selection and input state
+///   update selection state and current position
 //---------------------------------------------------------
 
 void Selection::update_state() {

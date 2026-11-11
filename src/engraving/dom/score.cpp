@@ -79,7 +79,6 @@
 #include "rendering/iscorerenderer.h"
 #include "repeatlist.h"
 #include "rest.h"
-#include "rootitem.h"
 #include "scoreorder.h"
 #include "segment.h"
 #include "select.h"
@@ -154,11 +153,7 @@ Score::Score(const EngravingServices &services) : EngravingObject(ElementType::S
     file_division_ = Constants::division;
     style_ = DefaultStyle::default_style();
 
-    root_item_ = new RootItem(this, RootItem::Kind::SCORE);
-    root_item_->init();
-
     dummy_ = new DummyParent(this);
-    dummy_->init();
 
     update_padding_tables();
 }
@@ -260,9 +255,6 @@ Score::~Score() {
     master_score_ = nullptr;
 
     image_store.clear_unused();
-
-    delete root_item_;
-    root_item_ = nullptr;
 
     // last: everything that is deleted above may park children on it on its way out
     delete dummy_;
