@@ -22,15 +22,15 @@
 #ifndef MU_ENGRAVING_RWREGISTER_H
 #define MU_ENGRAVING_RWREGISTER_H
 
-#include "ireader.h"
-#include "iwriter.h"
+#include "reader.h"
+#include "write/writer.h"
 
 namespace mu::engraving::rw {
 struct RWRegister {
 
-    static IReaderPtr reader(int version = -1);
+    static ReaderPtr reader(int version = -1);
 
-    static IWriterPtr writer();
+    static std::unique_ptr<write::Writer> writer();
 };
 } // namespace mu::engraving::rw
 

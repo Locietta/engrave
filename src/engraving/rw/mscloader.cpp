@@ -45,25 +45,25 @@ using namespace muse::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
-static RetVal<IReaderPtr> make_reader(int version, bool ignore_version_error) {
+static RetVal<ReaderPtr> make_reader(int version, bool ignore_version_error) {
     if (version < 460) {
-        return RetVal<IReaderPtr>(make_ret(Err::FILE_TOO_OLD));
+        return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_OLD));
     }
     if (!ignore_version_error) {
         if (version > Constants::msc_version) {
-            return RetVal<IReaderPtr>(make_ret(Err::FILE_TOO_NEW));
+            return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_NEW));
         }
 
         if (version < 114) {
-            return RetVal<IReaderPtr>(make_ret(Err::FILE_TOO_OLD));
+            return RetVal<ReaderPtr>(make_ret(Err::FILE_TOO_OLD));
         }
 
         if (version == 300) {
-            return RetVal<IReaderPtr>(make_ret(Err::FILE_OLD300_FORMAT));
+            return RetVal<ReaderPtr>(make_ret(Err::FILE_OLD300_FORMAT));
         }
     }
 
-    return RetVal<IReaderPtr>::make_ok(RWRegister::reader(version));
+    return RetVal<ReaderPtr>::make_ok(RWRegister::reader(version));
 }
 
 Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader, rw::ReadInOutData *in_out, bool ignore_version_error) {
@@ -167,7 +167,7 @@ Ret MscLoader::load_mscz(MasterScore *master_score, const MscReader &msc_reader,
             ReadInOutData part_read_in_data;
             part_read_in_data.links = in_out->links;
 
-            RetVal<IReaderPtr> reader = make_reader(master_score->msc_version(), ignore_version_error);
+            RetVal<ReaderPtr> reader = make_reader(master_score->msc_version(), ignore_version_error);
             if (!reader.ret) {
                 ret = reader.ret;
                 break;
@@ -224,7 +224,7 @@ Ret MscLoader::read_master_score(MasterScore *score, XmlReader &e, bool ignore_v
                            "written by MuseScore " + version.to_std_string() + "; scores from before MuseScore 4.6 are not supported");
             }
 
-            RetVal<IReaderPtr> reader = make_reader(score->msc_version(), ignore_version_error);
+            RetVal<ReaderPtr> reader = make_reader(score->msc_version(), ignore_version_error);
             if (!reader.ret) {
                 return reader.ret;
             }

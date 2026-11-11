@@ -69,7 +69,7 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
 #include "engraving/types/symid.h"
-#include "gtp/gp6dombuilder.h"
+#include "gtp/gp67dombuilder.h"
 #include "gtp/gpconverter.h"
 #include "importgtp.h"
 #include "log.h"
@@ -246,7 +246,9 @@ const std::map<std::string, std::string> GuitarPro6::instrument_mapping = {
     {"whstl", "tin-whistle"},
     {"xlphn", "xylophone"}};
 
-std::unique_ptr<IGPDomBuilder> GuitarPro6::create_gp_dom_builder() const { return std::make_unique<GP6DomBuilder>(); }
+std::unique_ptr<GP67DomBuilder> GuitarPro6::create_gp_dom_builder() const {
+    return std::make_unique<GP67DomBuilder>(GP67DomBuilder::Version::GP6);
+}
 
 //---------------------------------------------------------
 //   readBit

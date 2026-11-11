@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <utility>
+#include <variant>
 
 #include "io/iodevice.h"
 #include "io/path.h"
@@ -67,47 +69,37 @@ struct MscWriter {
 
 private:
 
-    struct IWriter {
-        virtual ~IWriter() = default;
-
-        virtual muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) = 0;
-        virtual void close() = 0;
-        virtual bool is_opened() const = 0;
-        virtual bool has_error() const = 0;
-        virtual bool add_file_data(const muse::String &file_name, const muse::ByteArray &data) = 0;
-    };
-
-    struct ZipFileWriter : public IWriter {
-        ~ZipFileWriter() override;
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool has_error() const override;
-        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data) override;
+    struct ZipFileWriter {
+        ~ZipFileWriter();
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool has_error() const;
+        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data);
 
     private:
         muse::io::IODevice *device_ = nullptr;
         muse::ZipWriter *zip_ = nullptr;
     };
 
-    struct DirWriter : public IWriter {
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool has_error() const override;
-        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data) override;
+    struct DirWriter {
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool has_error() const;
+        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data);
     private:
         muse::io::PathT root_path_;
         bool has_error_ = false;
     };
 
-    struct XmlFileWriter : public IWriter {
-        ~XmlFileWriter() override;
-        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) override;
-        void close() override;
-        bool is_opened() const override;
-        bool has_error() const override;
-        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data) override;
+    struct XmlFileWriter {
+        ~XmlFileWriter();
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path);
+        void close();
+        bool is_opened() const;
+        bool has_error() const;
+        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data);
     private:
         muse::io::IODevice *device_ = nullptr;
         muse::TextStream *stream_ = nullptr;
@@ -121,7 +113,34 @@ private:
         void add_file(const muse::String &file);
     };
 
-    IWriter *writer() const;
+    struct Writer {
+        template <typename T>
+        explicit Writer(std::in_place_type_t<T> type) : implementation(type) {}
+
+        muse::Ret open(muse::io::IODevice *device, const muse::io::PathT &file_path) {
+            return std::visit([&](auto &backend) -> muse::Ret { return backend.open(device, file_path); }, implementation);
+        }
+
+        void close() {
+            return std::visit([&](auto &backend) -> void { return backend.close(); }, implementation);
+        }
+
+        bool is_opened() const {
+            return std::visit([&](auto &backend) -> bool { return backend.is_opened(); }, implementation);
+        }
+
+        bool has_error() const {
+            return std::visit([&](auto &backend) -> bool { return backend.has_error(); }, implementation);
+        }
+
+        bool add_file_data(const muse::String &file_name, const muse::ByteArray &data) {
+            return std::visit([&](auto &backend) -> bool { return backend.add_file_data(file_name, data); }, implementation);
+        }
+
+        std::variant<ZipFileWriter, DirWriter, XmlFileWriter> implementation;
+    };
+
+    Writer *writer() const;
 
     bool add_file_data(const muse::String &file_name, const muse::ByteArray &data);
 
@@ -131,7 +150,7 @@ private:
     muse::String main_file_name() const;
 
     Params params_;
-    mutable IWriter *writer_ = nullptr;
+    mutable Writer *writer_ = nullptr;
     Meta meta_;
     bool had_error_ = false;
 };

@@ -22,9 +22,13 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "../types/types.h"
+#include "read460/read460.h"
+#include "read500/read500.h"
 #include "types/ret.h"
 #include "xmlreader.h"
 
@@ -54,10 +58,13 @@ struct TremoloCompat;
 namespace mu::engraving::rw {
 struct ReadInOutData;
 
-struct IReader {
-    virtual ~IReader() = default;
+struct Reader {
+    template <typename T>
+    explicit Reader(std::in_place_type_t<T> type) : implementation_(type) {}
 
-    virtual muse::Ret read_score_file(Score *score, XmlReader &xml, rw::ReadInOutData *out) = 0;
+    muse::Ret read_score_file(Score *score, XmlReader &xml, rw::ReadInOutData *out) {
+        return std::visit([&](auto &reader) -> muse::Ret { return reader.read_score_file(score, xml, out); }, implementation_);
+    }
 
     using Supported =
         std::variant<std::monostate, Accidental *, ChordRest *, Harmony *, Spanner *, StaffTypeChange *, Symbol *, Text *, Tuplet *>;
@@ -83,11 +90,17 @@ struct IReader {
     //! (we read the elements into some structure, then inserted them)
 
     // compat
-    virtual void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml) = 0;
+    void read_tremolo_compat(engraving::compat::TremoloCompat *item, XmlReader &xml) {
+        return std::visit([&](auto &reader) -> void { return reader.read_tremolo_compat(item, xml); }, implementation_);
+    }
 
 private:
-    virtual void do_read_item(EngravingItem *item, XmlReader &xml) = 0;
+    void do_read_item(EngravingItem *item, XmlReader &xml) {
+        return std::visit([&](auto &reader) -> void { return reader.do_read_item(item, xml); }, implementation_);
+    }
+
+    std::variant<read460::Read460, read500::Read500> implementation_;
 };
 
-using IReaderPtr = std::shared_ptr<IReader>;
+using ReaderPtr = std::shared_ptr<Reader>;
 } // namespace mu::engraving::rw

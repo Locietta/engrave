@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include "../ireader.h"
+#include "../readertypes.h"
 
 namespace mu::engraving {
 struct Score;
@@ -31,15 +31,16 @@ struct XmlReader;
 namespace mu::engraving::read500 {
 struct ReadContext;
 
-struct Read500 : rw::IReader {
+struct Read500 {
 
-    muse::Ret read_score_file(Score *score, XmlReader &e, rw::ReadInOutData *data) override;
+    muse::Ret read_score_file(Score *score, XmlReader &e, rw::ReadInOutData *data);
 
     static bool read_score_tag(Score *score, XmlReader &e, ReadContext &ctx);
 
-    void read_tremolo_compat(compat::TremoloCompat *item, XmlReader &xml) override;
+    void read_tremolo_compat(compat::TremoloCompat *item, XmlReader &xml);
 
 private:
-    void do_read_item(EngravingItem *item, XmlReader &xml) override;
+    friend struct rw::Reader;
+    void do_read_item(EngravingItem *item, XmlReader &xml);
 };
 } // namespace mu::engraving::read500

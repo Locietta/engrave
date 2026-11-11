@@ -5,7 +5,6 @@
 #include <memory>
 #include <unordered_set>
 
-#include "inoteproperty.h"
 #include <global/types/string.h>
 
 namespace mu::iex::guitarpro {
@@ -56,8 +55,6 @@ struct GPNote {
         int auxillary_fret{-1};
         int speed{-1};
     };
-
-    void add_properties(std::unordered_set<std::unique_ptr<INoteProperty>> &&pr) { properties_value.swap(pr); }
 
     void set_tie_type(GPNote::TieType t) { tie = t; }
 
@@ -170,14 +167,11 @@ struct GPNote {
 
     int id() const { return id_value; }
 
-    const std::unordered_set<std::unique_ptr<INoteProperty>> &properties() const { return properties_value; }
-
     static constexpr int invalid_accidental = -10;
 
 private:
     int id_value{-1};
     TieType tie{TieType::NONE};
-    std::unordered_set<std::unique_ptr<INoteProperty>> properties_value;
     MidiPitch midi_pitch_value;
 
     int accidental_value = ::mu::iex::guitarpro::GPNote::invalid_accidental;

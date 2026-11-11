@@ -31,8 +31,8 @@
 #include "engraving/engravingerrors.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "engraving/types/types.h"
-#include "gtp/igpdombuilder.h"
 #include "guitarbendimport/guitarbendimporter.h"
+#include "importexport/guitarpro/internal/gtp/gp67dombuilder.h"
 #include "io/iodevice.h"
 #include "types/bytearray.h"
 #include "types/string.h"
@@ -306,7 +306,7 @@ protected:
     void add_pop(Note *);
     bool create_tuning_string(int strings, int tuning[]); // returns useFlats
 
-    virtual std::unique_ptr<IGPDomBuilder> create_gp_dom_builder() const { return nullptr; }
+    virtual std::unique_ptr<GP67DomBuilder> create_gp_dom_builder() const { return nullptr; }
 
     void init_dynamics(size_t staves_num);
     void add_tunings();
@@ -477,7 +477,7 @@ protected:
     const static std::map<std::string, std::string> instrument_mapping;
     void read_gpif(muse::ByteArray *data);
 
-    virtual std::unique_ptr<IGPDomBuilder> create_gp_dom_builder() const override;
+    virtual std::unique_ptr<GP67DomBuilder> create_gp_dom_builder() const override;
 
 public:
     GuitarPro6(mu::engraving::MasterScore *s) : GuitarPro(s, 6) {}
@@ -489,7 +489,7 @@ public:
 
 struct GuitarPro7 : GuitarPro6 {
 private:
-    virtual std::unique_ptr<IGPDomBuilder> create_gp_dom_builder() const override;
+    virtual std::unique_ptr<GP67DomBuilder> create_gp_dom_builder() const override;
 
 public:
     GuitarPro7(mu::engraving::MasterScore *s) : GuitarPro6(s, 7) {}

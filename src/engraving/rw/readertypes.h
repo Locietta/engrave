@@ -19,19 +19,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef MU_IMPORTEXPORT_IGPDOMBUILDER_H
-#define MU_IMPORTEXPORT_IGPDOMBUILDER_H
+#pragma once
 
 #include <memory>
+#include <variant>
 
-#include "gpdommodel.h"
-#include "serialization/xmldom.h"
+#include "../types/types.h"
+#include "types/ret.h"
+#include "xmlreader.h"
 
-namespace mu::iex::guitarpro {
-struct IGPDomBuilder {
-    virtual ~IGPDomBuilder() = default;
-    virtual void build_gp_dom_model(muse::XmlDomElement *dom_elem) = 0;
-    virtual std::unique_ptr<GPDomModel> get_gp_dom_model() = 0;
-};
-} // namespace mu::iex::guitarpro
-#endif // MU_IMPORTEXPORT_IGPDOMBUILDER_H
+namespace mu::engraving {
+struct Score;
+struct EngravingItem;
+
+struct Accidental;
+struct ChordRest;
+struct Harmony;
+struct Segment;
+struct Spanner;
+struct StaffTypeChange;
+struct Symbol;
+struct Text;
+struct Tuplet;
+
+struct Chord;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
+} // namespace mu::engraving
+
+namespace mu::engraving::compat {
+struct TremoloCompat;
+} // namespace mu::engraving::compat
+
+namespace mu::engraving::rw {
+struct ReadInOutData;
+struct Reader;
+
+} // namespace mu::engraving::rw
