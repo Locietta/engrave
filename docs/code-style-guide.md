@@ -13,6 +13,7 @@ For code that is rewritten or newly written in the engine (the audio/playback pi
 - **No virtual functions**: Do not introduce `virtual` member functions, abstract base classes, or vtable hierarchies in new or refactored engine code.
 - **Runtime seams via proxy**: When a runtime polymorphic seam is genuinely required (such as format-specific encoders), use proxy (`pro::proxy` from ngcpp/proxy 4.1.0, available via `<proxy/proxy.h>`), rather than virtual interfaces.
 - **Separate data from behaviour**: Keep data definitions as plain data structures (`struct`), operating on them using free functions or dedicated systems rather than monolithic stateful classes.
+- **Value semantics without sharing**: Value types own their data. Do not add copy-on-write, reference-counted buffers or lazily allocated boxes (`muse::String` holds its UTF-16 text by value; `PropertyValue` stores its alternatives inline and boxes only `PainterPath`, with deep copies). Avoid copies on hot paths by returning references or views, not by sharing ownership.
 - **Data-oriented layouts**: Structure storage around contiguous, cache-friendly flat arrays (`amc::vector`, `std::span`) and index/offset references rather than deep pointer graphs or `std::shared_ptr` ownership trees.
 - **No standard associative node containers**: Do not use `std::map`, `std::unordered_map`, `std::set`, or `std::unordered_set` in runtime paths. Instead, use:
   - The fork's `FlatMap` (`muse/framework/global/flatmap.h`) or sorted vectors for ordered key-value data.
