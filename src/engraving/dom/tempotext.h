@@ -110,7 +110,6 @@ public:
     static constexpr double default_sym_size_ratio = 5.0 / 3.0;
 
 protected:
-    void commit_text() override;
 
     void undo_change_property(Pid id, const PropertyValue &, PropertyFlags ps) override;
 

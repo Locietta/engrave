@@ -24,7 +24,6 @@
 
 #include "../editing/editdata.h"
 #include "../editing/editnote.h"
-#include "../editing/elementeditdata.h"
 #include "../editing/navigation.h"
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"

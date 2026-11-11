@@ -123,22 +123,6 @@ void TextCursor::clear_selection() {
     select_column_ = column_;
 }
 
-void TextCursor::start_edit() {
-    set_row(0);
-    set_column(0);
-    clear_selection();
-    editing_ = true;
-    visible_ = true;
-}
-
-void TextCursor::end_edit() {
-    set_row(0);
-    set_column(0);
-    clear_selection();
-    editing_ = false;
-    visible_ = false;
-}
-
 //---------------------------------------------------------
 //   init
 //---------------------------------------------------------
@@ -2021,20 +2005,6 @@ RectF TextBase::page_rectangle() const {
         return RectF(x, y, w, h);
     }
     return page_bounding_rect();
-}
-
-//---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool TextBase::accept_drop(EditData &data) const {
-    // do not accept the drop if this text element is not being edited
-    ElementEditDataPtr eed = data.get_data(this);
-    if (!eed || eed->type() != EditDataType::TEXT_EDIT_DATA) {
-        return false;
-    }
-    ElementType type = data.drop_element->type();
-    return type == ElementType::SYMBOL || type == ElementType::FSYMBOL;
 }
 
 //--------------------------------------------------------

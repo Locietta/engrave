@@ -83,46 +83,6 @@ void TimeSig::set_sig(const Fraction &f, TimeSigType st) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool TimeSig::accept_drop(EditData &data) const { return data.drop_element->is_time_sig(); }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *TimeSig::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    if (e->is_time_sig()) {
-        // change timesig applies to all staves, can't simply set subtype
-        // for this one only
-        // ownership of e is transferred to EditTimeSig::addTimeSig
-
-        if (tick() != measure()->end_tick()) {
-            EditTimeSig::add_time_sig(tx, score(), measure(), staff_idx(), to_time_sig(e), false);
-            return nullptr;
-        }
-
-        // This is a timesig at the end of a measure.
-        if (*to_time_sig(e) == *this) {
-            delete e;
-            return nullptr;
-        }
-
-        if (!measure()->next_measure()) {
-            return nullptr;
-        }
-
-        // Apply change to next measure
-        EditTimeSig::add_time_sig(tx, score(), measure()->next_measure(), staff_idx(), to_time_sig(e), false);
-        return nullptr;
-    }
-    delete e;
-    return nullptr;
-}
-
-//---------------------------------------------------------
 //   setNumeratorString
 //    setSig() has to be called first
 //---------------------------------------------------------

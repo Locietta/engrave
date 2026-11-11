@@ -268,39 +268,6 @@ HairpinSegment *Dynamic::find_snap_before_hairpin_across_system_break() const {
     return nullptr;
 }
 
-bool Dynamic::accept_drop(EditData &ed) const {
-    ElementType dropped_type = ed.drop_element->type();
-    return dropped_type == ElementType::DYNAMIC || dropped_type == ElementType::EXPRESSION || dropped_type == ElementType::HAIRPIN;
-}
-
-EngravingItem *Dynamic::drop(Transaction &tx, EditData &ed) {
-    EngravingItem *item = ed.drop_element;
-
-    if (item->is_hairpin()) {
-        EditHairpin::add_hairpin_to_dynamic(tx, score(), to_hairpin(item), this);
-        return item;
-    }
-
-    if (item->is_dynamic()) {
-        Dynamic *dynamic = to_dynamic(item);
-        undo_change_property(Pid::DYNAMIC_TYPE, dynamic->dynamic_type());
-        undo_change_property(Pid::TEXT, dynamic->xml_text());
-        delete dynamic;
-        ed.drop_element = this;
-        return this;
-    }
-
-    if (item->is_expression()) {
-        item->set_track(track());
-        item->set_ownership_parent(segment());
-        to_expression(item)->set_voice_assignment(voice_assignment());
-        score()->undo_add_element(item);
-        return item;
-    }
-
-    return nullptr;
-}
-
 int Dynamic::dynamic_velocity(DynamicType t) { return ::mu::engraving::Dynamic::dyn_list[int(t)].velocity; }
 
 TranslatableString Dynamic::subtype_user_name() const {

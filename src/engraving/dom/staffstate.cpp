@@ -75,18 +75,7 @@ String StaffState::staff_state_type_name() const {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool StaffState::accept_drop(EditData &) const { return false; }
-
-//---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem *StaffState::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    score()->undo_change_element(this, e);
-    return e;
-}
 } // namespace mu::engraving

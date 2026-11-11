@@ -51,9 +51,6 @@ public:
 
     LayoutBreakType layout_break_type() const { return layout_break_type_; }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     MeasureBase *measure() const { return (MeasureBase *) ownership_parent(); }
 
     double pause() const { return pause_; }

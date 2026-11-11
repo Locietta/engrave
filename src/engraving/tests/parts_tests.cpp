@@ -316,13 +316,16 @@ MasterScore *EngravingPartsTests::do_add_breath() {
     Segment *s = m->tick2segment(Fraction(1, 4));
     Chord *chord = to_chord(s->element(0));
     Note *note = chord->up_note();
-    EditData dd;
     Breath *b = Factory::create_breath(score->dummy());
     b->set_sym_id(SymId::BREATH_MARK_COMMA);
-    dd.drop_element = b;
 
-    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
-                                              [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
+    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &) {
+        b->set_track(note->track());
+        b->set_pos(PointF());
+        b->set_placement(b->track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
+        b->set_ownership_parent(m->undo_get_segment(SegmentType::BREATH, chord->end_tick()));
+        score->undo_add_element(b);
+    }); // does layout
 
     return score;
 }
@@ -448,13 +451,14 @@ MasterScore *EngravingPartsTests::do_add_fingering() {
     Segment *s = m->tick2segment(Fraction(1, 4));
     Chord *chord = to_chord(s->element(0));
     Note *note = chord->up_note();
-    EditData dd;
     Fingering *b = Factory::create_fingering(note);
     b->set_xml_text("3");
-    dd.drop_element = b;
 
-    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
-                                              [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
+    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &) {
+        b->set_track(note->track());
+        b->set_ownership_parent(note);
+        score->undo_add_element(b);
+    }); // does layout
     return score;
 }
 
@@ -582,13 +586,14 @@ MasterScore *EngravingPartsTests::do_add_symbol() {
     Segment *s = m->tick2segment(Fraction(1, 4));
     Chord *chord = to_chord(s->element(0));
     Note *note = chord->up_note();
-    EditData dd;
     Symbol *b = new Symbol(note);
     b->set_sym(SymId::G_CLEF);
-    dd.drop_element = b;
 
-    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
-                                              [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
+    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &) {
+        b->set_track(note->track());
+        b->set_ownership_parent(note);
+        score->undo_add_element(b);
+    }); // does layout
     return score;
 }
 
@@ -716,13 +721,15 @@ MasterScore *EngravingPartsTests::do_add_chordline() {
     Segment *s = m->tick2segment(Fraction(1, 4));
     Chord *chord = to_chord(s->element(0));
     Note *note = chord->up_note();
-    EditData dd;
     ChordLine *b = Factory::create_chord_line(chord);
     b->set_chord_line_type(ChordLineType::FALL);
-    dd.drop_element = b;
 
-    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
-                                              [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
+    score->transaction_manager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &) {
+        b->set_track(note->track());
+        b->set_note(note);
+        b->set_ownership_parent(chord);
+        score->undo_add_element(b);
+    }); // does layout
     return score;
 }
 

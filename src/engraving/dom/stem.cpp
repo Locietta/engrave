@@ -23,7 +23,6 @@
 
 #include <cmath>
 
-#include "../editing/elementeditdata.h"
 #include "chord.h"
 #include "hook.h"
 #include "log.h"
@@ -56,30 +55,6 @@ PointF Stem::flag_position() const { return pos() + PointF(ldata()->bbox().left(
 void Stem::reset() {
     undo_change_property(Pid::USER_LEN, 0.0_sp);
     EngravingItem::reset();
-}
-
-bool Stem::accept_drop(EditData &data) const {
-    const EngravingItem *e = data.drop_element;
-    switch (e->type()) {
-        case ElementType::TREMOLO_SINGLECHORD: return item_cast<const TremoloSingleChord *>(e)->tremolo_type() <= TremoloType::R256;
-        default: break;
-    }
-
-    return false;
-}
-
-EngravingItem *Stem::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    Chord *ch = chord();
-
-    switch (e->type()) {
-        case ElementType::TREMOLO_SINGLECHORD:
-            item_cast<TremoloSingleChord *>(e)->set_ownership_parent(ch);
-            undo_add_element(e);
-            return e;
-        default: delete e; break;
-    }
-    return 0;
 }
 
 PropertyValue Stem::get_property(Pid property_id) const {

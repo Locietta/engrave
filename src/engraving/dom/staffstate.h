@@ -54,9 +54,6 @@ public:
 
     String staff_state_type_name() const;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     Instrument *instrument() const { return instrument_; }
 
     void set_instrument(const Instrument *i) { *instrument_ = *i; }

@@ -108,9 +108,6 @@ public:
 
     void set_play_dynamic(bool v) { play_dynamic_ = v; }
 
-    bool accept_drop(EditData &ed) const override;
-    EngravingItem *drop(Transaction &tx, EditData &ed) override;
-
     static int dynamic_velocity(DynamicType t);
 
     static const std::vector<Dyn> &dynamic_list() { return ::mu::engraving::Dynamic::dyn_list; }

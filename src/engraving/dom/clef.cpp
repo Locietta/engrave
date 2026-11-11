@@ -111,45 +111,6 @@ double Clef::mag() const {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Clef::accept_drop(EditData &data) const {
-    return data.drop_element->is_clef() || (/*!generated() &&*/ data.drop_element->is_ambitus());
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *Clef::drop(Transaction &tx, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    Clef *c = 0;
-    if (e->is_clef()) {
-        Clef *clef = to_clef(e);
-        ClefType stype = clef->clef_type();
-        if (clef_type() != stype) {
-            EditClef::undo_change_clef(tx, score(), staff(), this, stype);
-            c = this;
-        }
-    } else if (e->is_ambitus()) {
-        /*if (!generated())*/
-        {
-            Measure *meas = measure();
-            Segment *segm = meas->get_segment(SegmentType::AMBITUS, meas->tick());
-            if (segm->element(track())) {
-                score()->undo_remove_element(segm->element(track()));
-            }
-            Ambitus *r = Factory::create_ambitus(segm);
-            r->set_track(track());
-            score()->undo_add_element(r);
-        }
-    }
-    delete e;
-    return c;
-}
-
-//---------------------------------------------------------
 //   setSmall
 //---------------------------------------------------------
 

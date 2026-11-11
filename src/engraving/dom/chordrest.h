@@ -60,8 +60,6 @@ public:
 
     virtual void scan_elements(std::function<void(EngravingItem *)> func) override;
 
-    bool accept_drop(EditData &) const override;
-    virtual EngravingItem *drop(Transaction &tx, EditData &) override;
     virtual void undo_unlink() override;
 
     virtual Segment *segment() const { return (Segment *) ownership_parent(); }

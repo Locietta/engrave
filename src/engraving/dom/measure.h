@@ -315,9 +315,6 @@ public:
 
     void sort_staves(std::vector<staff_idx_t> &dst);
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     int repeat_count() const { return repeat_count_; }
 
     void set_repeat_count(int val) { repeat_count_ = val; }

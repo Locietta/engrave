@@ -97,34 +97,6 @@ void BSymbol::remove(EngravingItem *e) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool BSymbol::accept_drop(EditData &data) const { return data.drop_element->is_symbol() || data.drop_element->is_image(); }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *BSymbol::drop(Transaction &, EditData &data) {
-    EngravingItem *el = data.drop_element;
-    if (el->is_symbol() || el->is_image()) {
-        el->set_ownership_parent(this);
-        PointF p = data.pos - page_bounding_rect().top_left() - data.drag_offset;
-        if (p == PointF()) {
-            // offset position so newly added child is visible
-            p = PointF(width(), height());
-        }
-        el->set_offset(p);
-        score()->undo_add_element(el);
-        return el;
-    } else {
-        delete el;
-    }
-    return 0;
-}
-
-//---------------------------------------------------------
 //   pagePos
 //---------------------------------------------------------
 

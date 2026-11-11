@@ -37,8 +37,6 @@ struct Read460 : rw::IReader {
 
     static bool read_score_tag(Score *score, XmlReader &e, ReadContext &ctx);
 
-    bool paste_staff(XmlReader &e, Segment *dst, staff_idx_t dst_staff, Fraction scale) override;
-    void paste_symbols(XmlReader &e, ChordRest *dst) override;
     void read_tremolo_compat(compat::TremoloCompat *item, XmlReader &xml) override;
 
 private:

@@ -54,9 +54,6 @@ public:
 
     Lyrics *clone() const override { return new Lyrics(*this); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     Segment *segment() const { return to_segment(ownership_parent()->ownership_parent()); }
 
     Measure *measure() const { return to_measure(ownership_parent()->ownership_parent()->ownership_parent()); }
@@ -105,7 +102,6 @@ public:
     bool allow_time_anchor() const override { return false; }
 
     using EngravingObject::undo_change_property;
-    void paste(const String &txt) override;
 
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &) override;

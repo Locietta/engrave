@@ -150,90 +150,14 @@ bool Lyrics::is_melisma() const {
 }
 
 //---------------------------------------------------------
-//   paste
-//---------------------------------------------------------
-
-void Lyrics::paste(const String &txt) {
-    if (txt.starts_with('<') && txt.contains('>')) {
-        TextBase::paste(txt);
-        return;
-    }
-
-    String regex = String(u"[^\\S") + Char(0xa0) + Char(0x202F) + u"]+";
-    StringList sl = txt.split(std::regex(regex.to_std_string()), muse::SKIP_EMPTY_PARTS);
-    if (sl.empty()) {
-        return;
-    }
-
-    StringList hyph = sl.at(0).split(u'-');
-    score()->start_cmd(TranslatableString("undoableAction", "Paste lyrics"));
-
-    delete_selected_text();
-
-    if (hyph.size() > 1) {
-        score()->undo(new InsertText(cursor(), hyph[0]));
-        hyph.remove_at(0);
-        sl[0] = hyph.join(u"-");
-    } else if (sl.size() > 1 && sl[1] == u"-") {
-        score()->undo(new InsertText(cursor(), sl[0]));
-        sl.remove_at(0);
-        sl.remove_at(0);
-    } else if (sl[0].starts_with(u"_")) {
-        sl[0].remove(0, 1);
-        if (sl[0].is_empty()) {
-            sl.remove_at(0);
-        }
-    } else if (sl[0].contains(u"_")) {
-        size_t p = sl[0].index_of(u'_');
-        score()->undo(new InsertText(cursor(), sl[0]));
-        sl[0] = sl[0].mid(p + 1);
-        if (sl[0].is_empty()) {
-            sl.remove_at(0);
-        }
-    } else if (sl.size() > 1 && sl[1] == "_") {
-        score()->undo(new InsertText(cursor(), sl[0]));
-        sl.remove_at(0);
-        sl.remove_at(0);
-    } else {
-        score()->undo(new InsertText(cursor(), sl[0]));
-        sl.remove_at(0);
-    }
-
-    score()->end_cmd();
-}
-
-//---------------------------------------------------------
 //   endTick
 //---------------------------------------------------------
 
 Fraction Lyrics::end_tick() const { return segment()->tick() + ticks(); }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Lyrics::accept_drop(EditData &data) const { return data.drop_element->is_text() || TextBase::accept_drop(data); }
-
-//---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
-
-EngravingItem *Lyrics::drop(Transaction &tx, EditData &data) {
-    ElementType type = data.drop_element->type();
-    if (type == ElementType::SYMBOL || type == ElementType::FSYMBOL) {
-        TextBase::drop(tx, data);
-        return 0;
-    }
-    if (!data.drop_element->is_text()) {
-        delete data.drop_element;
-        data.drop_element = 0;
-        return 0;
-    }
-    Text *e = to_text(data.drop_element);
-    e->set_ownership_parent(this);
-    score()->undo_add_element(e);
-    return e;
-}
 
 void Lyrics::adjust_previous() {
     Lyrics *prev = Navigation::prev_lyrics(to_lyrics(this));

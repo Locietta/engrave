@@ -85,9 +85,6 @@ public:
     void scan_elements(std::function<void(EngravingItem *)> func) override;
     void set_track(track_idx_t val) override;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     bool is_gap() const { return gap_; }
 
     virtual void set_gap(bool v) { gap_ = v; }

@@ -26,7 +26,6 @@
 #include <functional>
 #include <stdexcept>
 
-#include "../editing/elementeditdata.h"
 #include "../style/style.h"
 #include "../types/constants.h"
 #include "../types/typesconv.h"

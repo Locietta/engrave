@@ -300,9 +300,6 @@ public:
 
     String generate_screen_reader_info() const;
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     void undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     using EngravingObject::undo_change_property;
     PropertyValue get_property(Pid property_id) const override;

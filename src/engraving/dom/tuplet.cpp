@@ -22,7 +22,6 @@
 
 #include "tuplet.h"
 
-#include "../editing/elementeditdata.h"
 #include "beam.h"
 #include "chord.h"
 #include "engravingitem.h"

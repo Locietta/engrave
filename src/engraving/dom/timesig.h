@@ -88,9 +88,6 @@ public:
 
     int denominator_stretch() const { return stretch_.denominator(); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     Segment *segment() const { return (Segment *) ownership_parent(); }
 
     Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }

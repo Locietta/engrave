@@ -22,7 +22,6 @@
 
 #include "arpeggio.h"
 
-#include "../editing/elementeditdata.h"
 #include "../types/typesconv.h"
 #include "accidental.h"
 #include "chord.h"
@@ -188,37 +187,6 @@ void Arpeggio::rebase_end_anchor(AnchorRebaseDirection direction) {
 void Arpeggio::spatium_changed(double old_value, double new_value) {
     user_len1_ *= (new_value / old_value);
     user_len2_ *= (new_value / old_value);
-}
-
-//---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Arpeggio::accept_drop(EditData &data) const {
-    return data.drop_element->type() == ElementType::ARPEGGIO || data.drop_element->type() == ElementType::CHORD_BRACKET;
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *Arpeggio::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    switch (e->type()) {
-        case ElementType::ARPEGGIO:
-        case ElementType::CHORD_BRACKET: {
-            Arpeggio *a = to_arpeggio(e);
-            if (ownership_parent()) {
-                score()->undo_remove_element(this);
-            }
-            a->set_track(track());
-            a->set_ownership_parent(ownership_parent());
-            score()->undo_add_element(a);
-        }
-            return e;
-        default: delete e; break;
-    }
-    return 0;
 }
 
 //---------------------------------------------------------

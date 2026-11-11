@@ -103,9 +103,6 @@ public:
 
     Measure *measure() const { return (Measure *) ownership_parent()->ownership_parent(); }
 
-    bool accept_drop(EditData &) const override;
-    EngravingItem *drop(Transaction &tx, EditData &) override;
-
     bool is_small() const { return is_small_; }
 
     void set_small(bool val);

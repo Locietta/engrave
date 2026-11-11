@@ -22,7 +22,6 @@
 
 #include "slurtie.h"
 
-#include "../editing/elementeditdata.h"
 #include "../rendering/iscorerenderer.h"
 #include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"

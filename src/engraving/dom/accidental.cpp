@@ -382,35 +382,6 @@ AccidentalType Accidental::value2subtype(AccidentalVal v) {
 }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool Accidental::accept_drop(EditData &data) const {
-    const EngravingItem *e = data.drop_element;
-
-    if (e->is_accidental()) {
-        return note();
-    }
-
-    return false;
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *Accidental::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    switch (e->type()) {
-        case ElementType::ACCIDENTAL: EditNote::change_accidental(score(), note(), to_accidental(e)->accidental_type()); break;
-
-        default: break;
-    }
-    delete e;
-    return nullptr;
-}
-
-//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 

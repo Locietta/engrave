@@ -60,38 +60,6 @@ KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
 double KeySig::mag() const { return staff() ? staff()->staff_mag(this) : 1.0; }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool KeySig::accept_drop(EditData &data) const { return data.drop_element->is_key_sig(); }
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *KeySig::drop(Transaction &tx, EditData &data) {
-    KeySig *ks = to_key_sig(data.drop_element);
-    if (!ks->is_key_sig()) {
-        delete ks;
-        return 0;
-    }
-    KeySigEvent k = ks->key_sig_event();
-    delete ks;
-    if (data.modifiers & CONTROL_MODIFIER) {
-        // apply only to this stave
-        if (!(k == key_sig_event())) {
-            EditKeySig::undo_change_key_sig(tx, score(), staff(), tick(), k);
-        }
-    } else {
-        // apply to all staves:
-        for (Staff *s : score()->master_score()->staves()) {
-            EditKeySig::undo_change_key_sig(tx, score(), s, tick(), k);
-        }
-    }
-    return this;
-}
-
-//---------------------------------------------------------
 //   setKey
 //---------------------------------------------------------
 

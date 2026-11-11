@@ -88,24 +88,6 @@ char16_t LayoutBreak::icon_code() const {
 void LayoutBreak::set_layout_break_type(LayoutBreakType val) { layout_break_type_ = val; }
 
 //---------------------------------------------------------
-//   acceptDrop
-//---------------------------------------------------------
-
-bool LayoutBreak::accept_drop(EditData &data) const {
-    return data.drop_element->is_layout_break() && to_layout_break(data.drop_element)->layout_break_type() != layout_break_type();
-}
-
-//---------------------------------------------------------
-//   drop
-//---------------------------------------------------------
-
-EngravingItem *LayoutBreak::drop(Transaction &, EditData &data) {
-    EngravingItem *e = data.drop_element;
-    score()->undo_change_element(this, e);
-    return e;
-}
-
-//---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
