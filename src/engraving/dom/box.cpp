@@ -26,7 +26,6 @@
 
 #include "../editing/editfretboarddiagram.h"
 #include "../editing/elementeditdata.h"
-#include "actionicon.h"
 #include "factory.h"
 #include "fret.h"
 #include "harmony.h"
@@ -202,16 +201,7 @@ bool Box::accept_drop(EditData &data) const {
         case ElementType::STAFF_TEXT:
         case ElementType::IMAGE:
         case ElementType::SYMBOL: return true;
-        case ElementType::ACTION_ICON:
-            switch (to_action_icon(data.drop_element)->action_type()) {
-                case ActionIconType::VFRAME:
-                case ActionIconType::TFRAME:
-                case ActionIconType::FFRAME:
-                case ActionIconType::HFRAME:
-                case ActionIconType::MEASURE: return true;
-                default: break;
-            }
-            break;
+
         case ElementType::BAR_LINE: return is_h_box();
         default: break;
     }
@@ -238,17 +228,6 @@ EngravingItem *Box::drop(Transaction &tx, EditData &data) {
             delete e;
             return text;
         }
-
-        case ElementType::ACTION_ICON:
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::VFRAME: score()->insert_box(ElementType::VBOX, this); break;
-                case ActionIconType::TFRAME: score()->insert_box(ElementType::TBOX, this); break;
-                case ActionIconType::FFRAME: score()->insert_box(ElementType::FBOX, this); break;
-                case ActionIconType::HFRAME: score()->insert_box(ElementType::HBOX, this); break;
-                case ActionIconType::MEASURE: score()->insert_measure(ElementType::MEASURE, this); break;
-                default: break;
-            }
-            break;
 
         case ElementType::TEXT:
         case ElementType::IMAGE:
@@ -414,13 +393,7 @@ void VBox::add(EngravingItem *e) {
             return;
         }
     }
-    if (e->is_action_icon()) {
-        const ActionIconType type = to_action_icon(e)->action_type();
-        if (type == ActionIconType::SYSTEM_LOCK) {
-            LOGW("Cannot add %s", e->type_name());
-            return;
-        }
-    }
+
     Box::add(e);
 }
 
@@ -472,12 +445,7 @@ bool VBox::accept_drop(EditData &data) const {
             return false;
         }
     }
-    if (e->is_action_icon()) {
-        const ActionIconType type = to_action_icon(e)->action_type();
-        if (type == ActionIconType::SYSTEM_LOCK) {
-            return false;
-        }
-    }
+
     return Box::accept_drop(data);
 }
 

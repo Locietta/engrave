@@ -286,7 +286,7 @@ TEST(ValueCodec, RejectsWhatDoesNotFitTheType) {
 
 TEST(Describe, ListsEveryImplementedTypeWithSortedProps) {
     const auto types = g_engine->describe();
-    EXPECT_EQ(types.size(), 149u) << "the TConv element types that a class declares";
+    EXPECT_EQ(types.size(), 147u) << "the TConv element types that a class declares";
     std::set<std::string> names;
     for (const auto &type : types) {
         EXPECT_TRUE(names.insert(type.type).second) << "duplicate type " << type.type;
@@ -367,7 +367,8 @@ TEST(Describe, DefaultStackingOrderIsPinned) {
     EXPECT_EQ(default_z(ElementType::INVALID), 0);
     EXPECT_EQ(default_z(ElementType::HOOK), 2800);
     EXPECT_EQ(default_z(ElementType::SELECTION), 11600);
-    EXPECT_EQ(default_z(ElementType::SHADOW_NOTE), 11800);
+    EXPECT_EQ(default_z(ElementType::TAB_DURATION_SYMBOL), 11900);
+    EXPECT_EQ(default_z(ElementType::BAGPIPE_EMBELLISHMENT), 13300);
     EXPECT_EQ(default_z(ElementType::CHORD), 12700);
     EXPECT_EQ(default_z(ElementType::DUMMY), 15300);
 }

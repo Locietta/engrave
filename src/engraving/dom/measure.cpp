@@ -39,7 +39,6 @@
 #include "../editing/navigation.h"
 #include "../editing/transaction/transaction.h"
 #include "accidental.h"
-#include "actionicon.h"
 #include "anchors.h"
 #include "barline.h"
 #include "beam.h"
@@ -1294,26 +1293,6 @@ bool Measure::accept_drop(EditData &data) const {
 
         case ElementType::STRING_TUNINGS: return can_add_string_tunings(staff_idx);
 
-        case ElementType::ACTION_ICON:
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::VFRAME:
-                case ActionIconType::HFRAME:
-                case ActionIconType::TFRAME:
-                case ActionIconType::FFRAME:
-                case ActionIconType::MEASURE: {
-                    const Measure *m = is_mm_rest() ? mm_rest_first() : this;
-                    for (staff_idx_t staff_idx_loop = 0; staff_idx_loop < score()->nstaves(); ++staff_idx_loop) {
-                        if (m->is_measure_repeat_group_with_prev_m(staff_idx_loop)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                case ActionIconType::STAFF_TYPE_CHANGE: return can_add_staff_type_change(staff_idx);
-                default: break;
-            }
-            break;
-
         default: break;
     }
     return MeasureBase::accept_drop(data);
@@ -1542,29 +1521,6 @@ EngravingItem *Measure::drop(Transaction &tx, EditData &data) {
             EditMeasureRepeat::add_measure_repeat(tx, score(), this, num_measures, staff_idx);
             break;
         }
-        case ElementType::ACTION_ICON:
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::VFRAME: return score()->insert_box(ElementType::VBOX, this);
-                case ActionIconType::HFRAME: return score()->insert_box(ElementType::HBOX, this);
-                case ActionIconType::TFRAME: return score()->insert_box(ElementType::TBOX, this);
-                case ActionIconType::FFRAME: {
-                    Score::InsertMeasureOptions options;
-                    options.clone_box_to_all_parts = false;
-                    return score()->insert_box(ElementType::FBOX, this, options);
-                }
-                case ActionIconType::MEASURE: score()->insert_measure(ElementType::MEASURE, this); break;
-                case ActionIconType::STAFF_TYPE_CHANGE: {
-                    if (!can_add_staff_type_change(staff_idx)) {
-                        return nullptr;
-                    }
-                    EngravingItem *stc = Factory::create_staff_type_change(this);
-                    stc->set_track(track_zero_voice(data.track));
-                    score()->undo_add_element(stc);
-                    break;
-                }
-                default: return MeasureBase::drop(tx, data);
-            }
-            break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             e->set_ownership_parent(this);

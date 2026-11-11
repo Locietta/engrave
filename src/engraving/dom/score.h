@@ -132,8 +132,6 @@ struct Tuplet;
 struct UndoableCommand;
 struct UndoStack;
 
-struct ShadowNote;
-
 struct Interval;
 struct NoteVal;
 struct ShowAnchors;
@@ -289,8 +287,6 @@ public:
     RootItem *root_item() const { return root_item_; }
 
     DummyParent *dummy() const { return dummy_; }
-
-    ShadowNote *shadow_note() const;
 
     void rebuild_bsp_tree();
 
@@ -1073,8 +1069,6 @@ private:
     RootItem *root_item_ = nullptr;
     DummyParent *dummy_ = nullptr;
     LayoutOptions layout_options_;
-
-    ShadowNote *shadow_note_ = nullptr;
 
     PaddingTables padding_tables_;
     double minimum_padding_unit_ = 0.0;

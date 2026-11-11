@@ -39,7 +39,6 @@ void PassLayoutIndependentItems::scan(EngravingItem *item, LayoutContext &ctx) {
     //! NOTE These items are independent
     switch (item->type()) {
         case ElementType::ACCIDENTAL:
-        case ElementType::ACTION_ICON:
         case ElementType::AMBITUS:
         case ElementType::BREATH:
         case ElementType::CLEF:

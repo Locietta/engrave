@@ -23,7 +23,6 @@
 
 #include "defer.h"
 #include "dom/accidental.h"
-#include "dom/actionicon.h"
 #include "dom/ambitus.h"
 #include "dom/anchors.h"
 #include "dom/arpeggio.h"
@@ -90,7 +89,6 @@
 #include "dom/rehearsalmark.h"
 #include "dom/rest.h"
 #include "dom/score.h"
-#include "dom/shadownote.h"
 #include "dom/slur.h"
 #include "dom/soundflag.h"
 #include "dom/spacer.h"
@@ -155,7 +153,6 @@ using namespace muse::draw;
 void TDraw::draw_item(const EngravingItem *item, Painter *painter, const PaintOptions &opt) {
     switch (item->type()) {
         case ElementType::ACCIDENTAL: draw(item_cast<const Accidental *>(item), painter, opt); break;
-        case ElementType::ACTION_ICON: draw(item_cast<const ActionIcon *>(item), painter, opt); break;
         case ElementType::AMBITUS: draw(item_cast<const Ambitus *>(item), painter, opt); break;
         case ElementType::ARPEGGIO: draw(item_cast<const Arpeggio *>(item), painter, opt); break;
         case ElementType::CHORD_BRACKET: draw(item_cast<const ChordBracket *>(item), painter, opt); break;
@@ -242,7 +239,6 @@ void TDraw::draw_item(const EngravingItem *item, Painter *painter, const PaintOp
         case ElementType::REHEARSAL_MARK: draw(item_cast<const RehearsalMark *>(item), painter, opt); break;
         case ElementType::REST: draw(item_cast<const Rest *>(item), painter, opt); break;
 
-        case ElementType::SHADOW_NOTE: draw(item_cast<const ShadowNote *>(item), painter, opt); break;
         case ElementType::SLUR_SEGMENT: draw(item_cast<const SlurSegment *>(item), painter, opt); break;
         case ElementType::SPACER: draw(item_cast<const Spacer *>(item), painter, opt); break;
         case ElementType::STAFF_LINES: draw(item_cast<const StaffLines *>(item), painter, opt); break;
@@ -301,13 +297,6 @@ void TDraw::draw(const Accidental *item, Painter *painter, const PaintOptions &o
     for (const Accidental::LayoutData::Sym &e : item->ldata()->syms) {
         item->draw_symbol(e.sym, painter, PointF(e.x, e.y));
     }
-}
-
-void TDraw::draw(const ActionIcon *item, Painter *painter, const PaintOptions &) {
-    TRACE_DRAW_ITEM;
-    const ActionIcon::LayoutData *ldata = item->ldata();
-    painter->set_font(item->icon_font());
-    painter->draw_text(ldata->bbox(), muse::draw::ALIGN_CENTER, muse::draw::TEXT_DONT_CLIP, Char(item->icon()));
 }
 
 void TDraw::draw(const Ambitus *item, Painter *painter, const PaintOptions &opt) {
@@ -2268,104 +2257,6 @@ void TDraw::draw_debug_gap_rest(const Rest *item, muse::draw::Painter *painter) 
 }
 
 //! NOTE May be removed later (should be only single mode)
-void TDraw::draw(const ShadowNote *item, Painter *painter, const PaintOptions &) {
-    TRACE_DRAW_ITEM;
-
-    if (!item->visible() || !item->is_valid()) {
-        return;
-    }
-
-    PointF ap(item->page_pos());
-    painter->translate(ap);
-    double lw = item->style().style_absolute(Sid::STEM_WIDTH) * item->mag();
-    Pen pen(item->color(), lw, PenStyle::SOLID_LINE, PenCapStyle::FLAT_CAP);
-    painter->set_pen(pen);
-
-    bool up = item->compute_up();
-
-    // Draw the accidental
-    SymId acc = Accidental::subtype2symbol(item->accidental_type());
-    if (acc != SymId::NO_SYM) {
-        PointF pos_acc;
-        pos_acc.rx() -= item->sym_width(acc) + item->style().style_absolute(Sid::ACCIDENTAL_NOTE_DISTANCE) * item->mag();
-        item->draw_symbol(acc, painter, pos_acc);
-    }
-
-    // Draw the notehead
-    item->draw_symbol(item->notehead_symbol(), painter);
-
-    // Draw the dots
-    double sp = item->spatium();
-    double sp2 = sp / 2;
-    double notehead_width = item->sym_width(item->notehead_symbol());
-
-    PointF pos_dot;
-    if (item->duration().dots() > 0) {
-        double d = item->style().style_absolute(Sid::DOT_NOTE_DISTANCE) * item->mag();
-        double dd = item->style().style_absolute(Sid::DOT_DOT_DISTANCE) * item->mag();
-        pos_dot.rx() += (notehead_width + d);
-
-        if (item->is_rest()) {
-            pos_dot.ry() += Rest::get_dotline(item->duration().type()) * sp2;
-        } else {
-            pos_dot.ry() -= (item->line_index() % 2 == 0 ? sp2 : 0);
-        }
-
-        if (item->has_flag() && up) {
-            pos_dot.rx() = std::max(pos_dot.x(), notehead_width + item->sym_bbox(item->flag_sym()).right());
-        }
-
-        for (int i = 0; i < item->duration().dots(); i++) {
-            pos_dot.rx() += dd * i;
-            item->draw_symbol(SymId::AUGMENTATION_DOT, painter, pos_dot);
-            pos_dot.rx() -= dd * i;
-        }
-    }
-
-    // Draw stem and flag
-    if (item->has_stem()) {
-        double x = item->sym_smufl_anchor(item->notehead_symbol(), up ? SmuflAnchorId::STEM_UP_SE : SmuflAnchorId::STEM_DOWN_NW).x();
-        x += up ? -0.5 * lw : 0.5 * lw;
-        double y1 = item->sym_smufl_anchor(item->notehead_symbol(), up ? SmuflAnchorId::STEM_UP_SE : SmuflAnchorId::STEM_DOWN_NW).y();
-        double y2 = (up ? -3.5 : 3.5) * sp;
-
-        if (item->has_flag()) {
-            SymId flag = item->flag_sym();
-            item->draw_symbol(flag, painter, PointF(x - (lw / 2), y2));
-            y2 += item->sym_smufl_anchor(flag, up ? SmuflAnchorId::STEM_UP_NW : SmuflAnchorId::STEM_DOWN_SW).y();
-        }
-        painter->draw_line(LineF(x, y1, x, y2));
-    }
-
-    // Draw ledger lines if needed
-    if (item->ledger_lines_visible()) {
-        double extra_len = item->style().style_s(Sid::LEDGER_LINE_LENGTH).val() * sp;
-        double x1 = -extra_len;
-        double x2 = notehead_width + extra_len;
-        double y_offset = item->staff_offset_y();
-        double step = sp2 * item->staff_type()->line_distance().val();
-
-        lw = item->style().style_absolute(Sid::LEDGER_LINE_WIDTH) * item->mag();
-        pen.set_width_f(lw);
-        painter->set_pen(pen);
-
-        const int top_line = -2 + y_offset / step;
-        for (int i = top_line; i >= item->line_index(); i -= 2) {
-            double y = step * (i - item->line_index());
-            painter->draw_line(LineF(x1, y, x2, y));
-        }
-        int l = item->staff_type()->lines() * 2 + y_offset / step; // first ledger line below staff
-        for (int i = l; i <= item->line_index(); i += 2) {
-            double y = step * (i - item->line_index());
-            painter->draw_line(LineF(x1, y, x2, y));
-        }
-    }
-
-    item->draw_articulations(painter);
-
-    painter->translate(-ap);
-}
-
 void TDraw::draw(const SlurSegment *item, Painter *painter, const PaintOptions &opt) {
     TRACE_DRAW_ITEM;
 

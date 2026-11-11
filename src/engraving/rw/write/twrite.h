@@ -30,7 +30,6 @@ struct EngravingItem;
 struct ElementList;
 
 struct Accidental;
-struct ActionIcon;
 struct Ambitus;
 struct Arpeggio;
 struct Articulation;
@@ -178,7 +177,6 @@ struct TWrite {
     static void write_items(const ElementList &items, XmlWriter &xml, WriteContext &ctx);
 
     static void write(const Accidental *item, XmlWriter &xml, WriteContext &ctx);
-    static void write(const ActionIcon *item, XmlWriter &xml, WriteContext &ctx);
     static void write(const Ambitus *item, XmlWriter &xml, WriteContext &ctx);
     static void write(const Arpeggio *item, XmlWriter &xml, WriteContext &ctx);
     static void write(const ChordBracket *item, XmlWriter &xml, WriteContext &ctx);

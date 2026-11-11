@@ -25,7 +25,6 @@
 
 namespace mu::engraving {
 struct Accidental;
-struct ActionIcon;
 struct Ambitus;
 struct Arpeggio;
 struct Articulation;
@@ -126,7 +125,6 @@ struct RasgueadoSegment;
 struct RehearsalMark;
 struct Rest;
 
-struct ShadowNote;
 struct SLine;
 struct Slur;
 struct Spacer;
@@ -191,7 +189,6 @@ struct TDraw {
 
 private:
     static void draw(const Accidental *item, muse::draw::Painter *painter, const PaintOptions &opt);
-    static void draw(const ActionIcon *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const Ambitus *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const Arpeggio *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const ChordBracket *item, muse::draw::Painter *painter, const PaintOptions &opt);
@@ -280,7 +277,6 @@ private:
     static void draw(const Rest *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw_debug_gap_rest(const Rest *item, muse::draw::Painter *painter);
 
-    static void draw(const ShadowNote *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const SlurSegment *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const Spacer *item, muse::draw::Painter *painter, const PaintOptions &opt);
     static void draw(const StaffLines *item, muse::draw::Painter *painter, const PaintOptions &opt);

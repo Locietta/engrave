@@ -24,7 +24,6 @@
 
 #include "../editing/editpagelocks.h"
 #include "../editing/editsystemlocks.h"
-#include "actionicon.h"
 #include "box.h"
 #include "factory.h"
 #include "layoutbreak.h"
@@ -167,19 +166,6 @@ bool MeasureBase::accept_drop(EditData &data) const {
         return true;
     }
 
-    if (e->is_action_icon()) {
-        switch (to_action_icon(e)->action_type()) {
-            case ActionIconType::PAGE_LOCK: {
-                LayoutMode layout_mode = score()->layout_mode();
-                return layout_mode == LayoutMode::PAGE;
-            }
-            case ActionIconType::SYSTEM_LOCK: {
-                LayoutMode layout_mode = score()->layout_mode();
-                return layout_mode == LayoutMode::PAGE || layout_mode == LayoutMode::SYSTEM;
-            }
-            default: break;
-        }
-    }
     return false;
 }
 
@@ -244,13 +230,7 @@ EngravingItem *MeasureBase::drop(Transaction &tx, EditData &data) {
         mb->cleanup_layout_breaks(true);
         return b;
     }
-    if (e->is_action_icon()) {
-        switch (to_action_icon(e)->action_type()) {
-            case ActionIconType::SYSTEM_LOCK: EditSystemLocks::make_into_system(tx, score(), system()->first(), this); break;
-            case ActionIconType::PAGE_LOCK: EditPageLocks::make_into_page(tx, score(), page()->first_measure_base(), this); break;
-            default: LOGD("MeasureBase: cannot drop %s here", e->type_name()); break;
-        }
-    }
+
     delete e;
     return nullptr;
 }

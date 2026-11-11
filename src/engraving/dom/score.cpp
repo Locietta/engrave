@@ -83,7 +83,6 @@
 #include "scoreorder.h"
 #include "segment.h"
 #include "select.h"
-#include "shadownote.h"
 #include "sig.h"
 #include "slur.h"
 #include "staff.h"
@@ -162,9 +161,6 @@ Score::Score(const EngravingServices &services) : EngravingObject(ElementType::S
     dummy_->init();
 
     update_padding_tables();
-
-    shadow_note_ = new ShadowNote(this);
-    shadow_note_->set_visible(false);
 }
 
 Score::Score(MasterScore *parent, bool force_part_style /* = true */) : Score{parent->services()} {
@@ -264,9 +260,6 @@ Score::~Score() {
     master_score_ = nullptr;
 
     image_store.clear_unused();
-
-    delete shadow_note_;
-    shadow_note_ = nullptr;
 
     delete root_item_;
     root_item_ = nullptr;
@@ -4376,8 +4369,6 @@ bool Score::all_staves_invisible() const {
 
     return true;
 }
-
-ShadowNote *Score::shadow_note() const { return shadow_note_; }
 
 void Score::rebuild_bsp_tree() {
     for (Page *page : pages()) {

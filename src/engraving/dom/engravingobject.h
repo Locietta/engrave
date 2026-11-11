@@ -33,7 +33,6 @@
 
 namespace mu::engraving {
 struct Accidental;
-struct ActionIcon;
 struct Ambitus;
 struct Arpeggio;
 struct Articulation;
@@ -197,7 +196,6 @@ struct Volta;
 struct VoltaSegment;
 struct WhammyBar;
 struct WhammyBarSegment;
-struct ShadowNote;
 
 struct LinkedObjects;
 
@@ -436,7 +434,6 @@ public:
     CONVERT(is_pedal_segment, PEDAL_SEGMENT)
     CONVERT(is_ottava_segment, OTTAVA_SEGMENT)
     CONVERT(is_ledger_line, LEDGER_LINE)
-    CONVERT(is_action_icon, ACTION_ICON)
     CONVERT(is_volta_segment, VOLTA_SEGMENT)
     CONVERT(is_note_line, NOTELINE)
     CONVERT(is_note_line_segment, NOTELINE_SEGMENT)
@@ -496,7 +493,6 @@ public:
     CONVERT(is_string_tunings, STRING_TUNINGS)
     CONVERT(is_time_tick_anchor, TIME_TICK_ANCHOR)
     CONVERT(is_parenthesis, PARENTHESIS)
-    CONVERT(is_shadow_note, SHADOW_NOTE)
     CONVERT(is_hammer_on_pull_off, HAMMER_ON_PULL_OFF)
     CONVERT(is_hammer_on_pull_off_segment, HAMMER_ON_PULL_OFF_SEGMENT)
     CONVERT(is_hammer_on_pull_off_text, HAMMER_ON_PULL_OFF_TEXT)
@@ -734,7 +730,6 @@ CONVERT(Pedal, to_pedal, is_pedal)
 CONVERT(PedalSegment, to_pedal_segment, is_pedal_segment)
 CONVERT(OttavaSegment, to_ottava_segment, is_ottava_segment)
 CONVERT(LedgerLine, to_ledger_line, is_ledger_line)
-CONVERT(ActionIcon, to_action_icon, is_action_icon)
 CONVERT(Volta, to_volta, is_volta)
 CONVERT(VoltaSegment, to_volta_segment, is_volta_segment)
 CONVERT(NoteLine, to_note_line, is_note_line)
@@ -791,7 +786,6 @@ CONVERT(PartialTie, to_partial_tie, is_partial_tie)
 CONVERT(PartialLyricsLine, to_partial_lyrics_line, is_partial_lyrics_line)
 CONVERT(PartialLyricsLineSegment, to_partial_lyrics_line_segment, is_partial_lyrics_line_segment)
 CONVERT(Parenthesis, to_parenthesis, is_parenthesis)
-CONVERT(ShadowNote, to_shadow_note, is_shadow_note)
 CONVERT(HammerOnPullOff, to_hammer_on_pull_off, is_hammer_on_pull_off)
 CONVERT(HammerOnPullOffSegment, to_hammer_on_pull_off_segment, is_hammer_on_pull_off_segment)
 CONVERT(HammerOnPullOffText, to_hammer_on_pull_off_text, is_hammer_on_pull_off_text)

@@ -22,7 +22,7 @@
 
 /**
  \file
- Implementation of classes Note and ShadowNote.
+ Implementation of class Note.
 */
 
 #include "note.h"
@@ -37,7 +37,6 @@
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
 #include "accidental.h"
-#include "actionicon.h"
 #include "articulation.h"
 #include "bagpembell.h"
 #include "barline.h"
@@ -1618,30 +1617,7 @@ bool Note::accept_drop(EditData &data) const {
         case ElementType::FIGURED_BASS:
         case ElementType::LYRICS: return true;
         case ElementType::BAGPIPE_EMBELLISHMENT: return note_type() == NoteType::NORMAL;
-        case ElementType::ACTION_ICON: {
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::ACCIACCATURA:
-                case ActionIconType::APPOGGIATURA:
-                case ActionIconType::GRACE4:
-                case ActionIconType::GRACE16:
-                case ActionIconType::GRACE32:
-                case ActionIconType::GRACE8_AFTER:
-                case ActionIconType::GRACE16_AFTER:
-                case ActionIconType::GRACE32_AFTER:
-                case ActionIconType::PARENTHESES:
-                case ActionIconType::STANDARD_BEND:
-                case ActionIconType::PRE_BEND:
-                case ActionIconType::GRACE_NOTE_BEND:
-                case ActionIconType::SLIGHT_BEND:
-                case ActionIconType::DIVE:
-                case ActionIconType::PRE_DIVE:
-                case ActionIconType::DIP:
-                case ActionIconType::SCOOP:
-                case ActionIconType::NOTE_ANCHORED_LINE: return true;
-                default: break;
-            }
-            break;
-        }
+
         default:
             if (e->is_spanner()) {
                 return e->type() != ElementType::TIE && e->type() != ElementType::PARTIAL_TIE;
@@ -1720,83 +1696,6 @@ EngravingItem *Note::drop(Transaction &tx, EditData &data) {
                 }
             }
         } break;
-
-        case ElementType::ACTION_ICON: {
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::ACCIACCATURA: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::ACCIACCATURA, Constants::division / 2);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::APPOGGIATURA: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::APPOGGIATURA, Constants::division / 2);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE4: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE4, Constants::division);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE16: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE16, Constants::division / 4);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE32: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE32, Constants::division / 8);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE8_AFTER: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE8_AFTER, Constants::division / 2);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE16_AFTER: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE16_AFTER, Constants::division / 4);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case ActionIconType::GRACE32_AFTER: {
-                    Note *note = score()->set_grace_note(ch, pitch(), NoteType::GRACE32_AFTER, Constants::division / 8);
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-
-                case ActionIconType::PARENTHESES: {
-                    EditParentheses::add_parentheses_to_notes(tx, {this});
-                    break;
-                }
-                case ActionIconType::STANDARD_BEND:
-                case ActionIconType::SLIGHT_BEND:
-                case ActionIconType::DIVE:
-                case ActionIconType::DIP:
-                case ActionIconType::SCOOP:
-                    score()->add_guitar_bend(GuitarBend::bend_type_from_action_icon(to_action_icon(e)->action_type()), this);
-                    break;
-                case ActionIconType::PRE_BEND:
-                case ActionIconType::GRACE_NOTE_BEND:
-                case ActionIconType::PRE_DIVE: {
-                    GuitarBendType type = GuitarBend::bend_type_from_action_icon(to_action_icon(e)->action_type());
-                    GuitarBend *guitar_bend = score()->add_guitar_bend(type, this);
-                    if (!guitar_bend) {
-                        break;
-                    }
-                    Note *note = guitar_bend->start_note();
-                    IF_ASSERT_FAILED(note) {
-                        LOGE() << "not valid start note of the bend";
-                        break;
-                    }
-
-                    score()->select(note, SelectType::SINGLE, 0);
-                    break;
-                }
-                case mu::engraving::ActionIconType::NOTE_ANCHORED_LINE: score()->add_note_line();
-                default: break;
-            }
-            return ch->drop(tx, data);
-        }
 
         case ElementType::GUITAR_BEND: {
             GuitarBend *new_guitar_bend = score()->add_guitar_bend(to_guitar_bend(e)->bend_type(), this);
