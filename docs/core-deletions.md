@@ -56,3 +56,16 @@ previous true diagnostics argument to TConv::from_xml. Public describe/query tex
 This step changes no enumerators, legacy_z rows or persisted numeric values.
 
 Accessibility validation: Windows release engine_tests compiled; the requested API/read/edit/policy/describe/handles/MNX/GP and filtered output suites, plus upstream engraving/MPE suites, executed successfully. Full gate, audio corpus, timing and Linux were not run (requested scope).
+
+UndoableTransaction no longer captures or restores selection/input snapshots or
+exposes their unused accessors. Selection and command undo/redo are unchanged;
+the existing deselect_all before command replay remains. InputState itself stays:
+removing the Score member requires extracting the mixed note-input, deletion and
+navigation cluster (cmd.cpp, edit.cpp, noteinput.cpp, edittie.cpp, edittuplet.cpp).
+Public EnterNotes -> set_note_rest_at, SetDuration -> change_c_rlen and
+AddTuplet -> add_tuplet use explicit targets; AddTie constructs its tie directly.
+Those paths are preserved, including transitive calls into mixed editing files.
+The inventory understates this compile dependency; the allowed undo-capture-only
+scope avoids a broader GUI-command extraction. No enum or persisted value changes.
+
+Undo-capture validation: Windows release engine_tests compiled; all nine requested public suites (output filtered) and upstream engraving/MPE executed successfully. Full gate, audio corpus, timing and Linux not run.
