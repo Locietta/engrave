@@ -211,5 +211,5 @@ EngravingServices &EngineContext::engraving() const { return impl_->engraving; }
 
 const mpe::IArticulationProfilesRepository &EngineContext::articulation_profiles() const { return *impl_->articulation_profiles; }
 
-const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::music_xml() const { return *impl_->music_xml; }
+const mu::iex::musicxml::MusicXmlConfiguration &EngineContext::music_xml() const { return *impl_->music_xml; }
 } // namespace music

@@ -48,7 +48,7 @@ struct IScoreRenderer;
 } // namespace mu::engraving::rendering
 
 namespace mu::engraving {
-struct IEngravingConfiguration;
+struct EngravingConfiguration;
 struct EngravingContextConfiguration;
 
 struct Transaction;
@@ -161,7 +161,7 @@ public:
     //! (e.g. measures are placed on systems, but not owned by them).
     virtual EngravingItem *layout_parent() const;
 
-    const std::shared_ptr<IEngravingConfiguration> &configuration() const;
+    const std::shared_ptr<EngravingConfiguration> &configuration() const;
     const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const;
     const std::shared_ptr<rendering::IScoreRenderer> &renderer() const;
 

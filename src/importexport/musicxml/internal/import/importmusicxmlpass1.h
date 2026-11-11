@@ -132,12 +132,12 @@ bool is_likely_subtitle_text(const muse::String &text, const bool case_insensiti
 //---------------------------------------------------------
 
 struct MusicXmlLogger;
-struct IMusicXmlConfiguration;
+struct MusicXmlConfiguration;
 
 struct MusicXmlParserPass1 {
-    MusicXmlParserPass1(engraving::Score *score, const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger);
+    MusicXmlParserPass1(engraving::Score *score, const MusicXmlConfiguration &configuration, MusicXmlLogger *logger);
 
-    const IMusicXmlConfiguration *configuration() const { return &configuration_; }
+    const MusicXmlConfiguration *configuration() const { return &configuration_; }
 
     void init_part_state(const muse::String &part_id);
     engraving::Err parse(const muse::ByteArray &data);
@@ -262,7 +262,7 @@ private:
     PartMap part_map_;                                                             // TODO merge into MusicXmlPart ??
     std::map<muse::String, MusicXmlInstruments> instruments_;                      // instruments for each part, mapped on part id
     engraving::Score *score_ = nullptr;                                            // MuseScore score
-    const IMusicXmlConfiguration &configuration_;
+    const MusicXmlConfiguration &configuration_;
     MusicXmlLogger *logger_ = nullptr; // Error logger
     muse::String errors_;              // Errors to present to the user
     bool has_beaming_info_ = false;    // Whether the score supports or contains beaming info

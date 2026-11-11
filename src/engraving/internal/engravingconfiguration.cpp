@@ -266,11 +266,11 @@ Color EngravingConfiguration::invisible_color() const { return color_from_value(
 
 Color EngravingConfiguration::unlinked_color() const { return color_from_value(settings()->value(::unlinked_color)); }
 
-const IEngravingConfiguration::DebuggingOptions &EngravingConfiguration::debugging_options() const { return debugging_options_; }
+const EngravingConfiguration::DebuggingOptions &EngravingConfiguration::debugging_options() const { return debugging_options_; }
 
 void EngravingConfiguration::set_debugging_options(const DebuggingOptions &options) { debugging_options_ = options; }
 
-bool EngravingConfiguration::allow_reading_images_from_outside_mscz() const { return false; }
+bool EngravingConfiguration::allow_reading_images_from_outside_mscz() const { return read_external_images; }
 
 bool EngravingConfiguration::guitar_pro_import_experimental() const {
     // The experimental Guitar Pro import is a desktop preference the engine does not offer.

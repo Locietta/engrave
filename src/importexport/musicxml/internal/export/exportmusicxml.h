@@ -30,10 +30,10 @@ struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-struct IMusicXmlConfiguration;
+struct MusicXmlConfiguration;
 
-bool save_mxl(engraving::Score *, muse::io::IODevice *, const IMusicXmlConfiguration &configuration);
-bool save_mxl(engraving::Score *score, const muse::String &name, const IMusicXmlConfiguration &configuration);
-bool save_xml(engraving::Score *, muse::io::IODevice *, const IMusicXmlConfiguration &configuration);
-bool save_xml(engraving::Score *, const muse::String &, const IMusicXmlConfiguration &configuration);
+bool save_mxl(engraving::Score *, muse::io::IODevice *, const MusicXmlConfiguration &configuration);
+bool save_mxl(engraving::Score *score, const muse::String &name, const MusicXmlConfiguration &configuration);
+bool save_xml(engraving::Score *, muse::io::IODevice *, const MusicXmlConfiguration &configuration);
+bool save_xml(engraving::Score *, const muse::String &, const MusicXmlConfiguration &configuration);
 } // namespace mu::iex::musicxml

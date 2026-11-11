@@ -21,7 +21,7 @@
  */
 #include "debugpaint.h"
 
-#include "iengravingconfiguration.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "internal/engravingcontextconfiguration.h" // IWYU pragma: keep
 
 //#include "accessibility/accessibleitem.h"

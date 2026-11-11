@@ -22,7 +22,7 @@
 
 #include "layoutbreak.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "measurebase.h"
 #include "score.h"

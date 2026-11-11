@@ -247,7 +247,7 @@ typedef std::map<engraving::String, std::pair<engraving::String, engraving::Dura
 
 struct MusicXmlParserLyric {
     MusicXmlParserLyric(const LyricNumberHandler lyric_number_handler, muse::XmlStreamReader &e, engraving::Score *score,
-                        const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff);
+                        const MusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff);
 
     std::set<engraving::Lyrics *> extended_lyrics() const { return extended_lyrics_; }
 
@@ -262,7 +262,7 @@ private:
     const LyricNumberHandler lyric_number_handler_;
     muse::XmlStreamReader &e_;
     const engraving::Score *score_ = nullptr; // the score
-    const IMusicXmlConfiguration &configuration_;
+    const MusicXmlConfiguration &configuration_;
     MusicXmlLogger *logger_ = nullptr;                      // Error logger
     std::map<int, engraving::Lyrics *> numbered_lyrics_;    // lyrics with valid number
     std::set<engraving::Lyrics *> extended_lyrics_;         // lyrics with the extend flag set
@@ -452,7 +452,7 @@ private:
 struct MusicXmlParserPass2 {
     MusicXmlParserPass2(engraving::Score *score, MusicXmlParserPass1 &pass1, MusicXmlLogger *logger);
 
-    const IMusicXmlConfiguration *configuration() const { return pass1_.configuration(); }
+    const MusicXmlConfiguration *configuration() const { return pass1_.configuration(); }
 
     engraving::Err parse(const muse::ByteArray &data);
 
@@ -603,7 +603,7 @@ struct MusicXmlParserDirection {
     MusicXmlParserDirection(muse::XmlStreamReader &e, engraving::Score *score, MusicXmlParserPass1 &pass1, MusicXmlParserPass2 &pass2,
                             MusicXmlLogger *logger);
 
-    const IMusicXmlConfiguration *configuration() const { return pass1_.configuration(); }
+    const MusicXmlConfiguration *configuration() const { return pass1_.configuration(); }
 
     void direction(const muse::String &part_id, engraving::Measure *measure, const engraving::Fraction &tick, MusicXmlSpannerMap &spanners,
                    DelayedDirectionsList &delayed_directions, InferredFingeringsList &inferred_fingerings, HarmonyMap &harmony_map,

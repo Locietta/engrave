@@ -29,7 +29,7 @@
 #include "engraving/dom/measurebase.h"
 #include "engraving/dom/stringdata.h"
 #include "engraving/engravingerrors.h"
-#include "engraving/iengravingconfiguration.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "engraving/types/types.h"
 #include "gtp/igpdombuilder.h"
 #include "guitarbendimport/guitarbendimporter.h"
@@ -127,7 +127,7 @@ struct GpBar {
 //---------------------------------------------------------
 
 struct GuitarPro {
-    const std::shared_ptr<mu::engraving::IEngravingConfiguration> &engraving_configuration() const;
+    const std::shared_ptr<mu::engraving::EngravingConfiguration> &engraving_configuration() const;
 
 protected:
 

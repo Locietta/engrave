@@ -53,7 +53,7 @@ namespace mu::iex::musicxml {
 //   importMusicXmlfromBuffer
 //---------------------------------------------------------
 
-Err import_music_xmlfrom_buffer(Score *score, const String & /*name*/, const ByteArray &data, const IMusicXmlConfiguration &configuration) {
+Err import_music_xmlfrom_buffer(Score *score, const String & /*name*/, const ByteArray &data, const MusicXmlConfiguration &configuration) {
     MusicXmlLogger logger;
     logger.set_logging_level(MusicXmlLogger::Level::MXML_ERROR); // errors only
     //logger.setLoggingLevel(MusicXmlLogger::Level::MXML_INFO);
@@ -148,7 +148,7 @@ static bool extract_rootfile(const String &name, ByteArray &data) {
  */
 
 static Err do_validate_and_import(Score *score, const String &name, const ByteArray &data, bool force_mode,
-                                  const IMusicXmlConfiguration &configuration) {
+                                  const MusicXmlConfiguration &configuration) {
     Err res;
 
     if (!force_mode) {
@@ -170,7 +170,7 @@ static Err do_validate_and_import(Score *score, const String &name, const ByteAr
 //    return Err::File* errors
 //---------------------------------------------------------
 
-Err import_music_xml(MasterScore *score, const String &name, bool force_mode, const IMusicXmlConfiguration &configuration) {
+Err import_music_xml(MasterScore *score, const String &name, bool force_mode, const MusicXmlConfiguration &configuration) {
     ScoreLoad sl; // suppress warnings for undo push/pop
 
     //LOGD("importMusicXml(%p, %s)", score, muPrintable(name));
@@ -202,7 +202,7 @@ Err import_music_xml(MasterScore *score, const String &name, bool force_mode, co
  Import compressed MusicXML file \a name into the Score.
  */
 
-Err import_compressed_music_xml(MasterScore *score, const String &name, bool force_mode, const IMusicXmlConfiguration &configuration) {
+Err import_compressed_music_xml(MasterScore *score, const String &name, bool force_mode, const MusicXmlConfiguration &configuration) {
     //LOGD("importCompressedMusicXml(%p, %s)", score, muPrintable(name));
 
     if (!io::File::exists(name)) {

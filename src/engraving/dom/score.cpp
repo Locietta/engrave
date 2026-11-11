@@ -48,13 +48,13 @@
 #include "editing/transaction/transaction.h"
 #include "editing/transaction/undostack.h"
 #include "editing/transpose.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "excerpt.h"
 #include "factory.h"
 #include "fret.h"
 #include "glissando.h"
 #include "guitarbend.h"
 #include "harmony.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "iengravingfont.h"
 #include "imageStore.h"
 #include "instrchange.h"

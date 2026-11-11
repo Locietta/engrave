@@ -31,7 +31,7 @@
 #include "chord.h"
 #include "containers.h"
 #include "dynamic.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "measure.h"
 #include "note.h"

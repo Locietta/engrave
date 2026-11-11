@@ -53,8 +53,8 @@
 #include "dom/tremolotwochord.h"
 #include "dom/utils.h"
 #include "editing/editkeysig.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "horizontalspacing.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "layoutcontext.h"
 #include "log.h"
 #include "mmrestlayout.h"

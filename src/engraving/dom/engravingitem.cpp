@@ -38,8 +38,8 @@
 #include "chord.h"
 #include "containers.h"
 #include "dummyparent.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "factory.h"
-#include "iengravingconfiguration.h"
 #include "iengravingfont.h"
 #include "internal/engravingcontextconfiguration.h"
 #include "linkedobjects.h"
@@ -305,7 +305,7 @@ EngravingItem *EngravingItem::ownership_parent_item() const {
 
 EngravingItem *EngravingItem::layout_parent() const { return ownership_parent_item(); }
 
-const std::shared_ptr<IEngravingConfiguration> &EngravingItem::configuration() const { return score()->configuration(); }
+const std::shared_ptr<EngravingConfiguration> &EngravingItem::configuration() const { return score()->configuration(); }
 
 const std::shared_ptr<EngravingContextConfiguration> &EngravingItem::context_configuration() const {
     return score()->context_configuration();
@@ -1967,7 +1967,7 @@ bool EngravingItem::is_user_modified() const {
         PropertyValue default_value = property_default(pid);
 
         if (property_type(pid) == PType::ABSOLUTE) {
-            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don’t care spatium diffs that small
+            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don鈥檛 care spatium diffs that small
                 return true;
             }
         } else {

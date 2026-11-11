@@ -100,7 +100,7 @@
 #include "engraving/rendering/score/tlayout.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/typesconv.h"
-#include "importexport/musicxml/imusicxmlconfiguration.h"
+#include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
 #include "importmusicxmlnotepitch.h"
@@ -792,7 +792,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts, b
 // TODO: probably should be shared between pass 1 and 2
 
 namespace xmlpass2 {
-static String next_part_of_formatted_string(XmlStreamReader &e, const IMusicXmlConfiguration &configuration,
+static String next_part_of_formatted_string(XmlStreamReader &e, const MusicXmlConfiguration &configuration,
                                             const IEngravingFontsProvider &fonts, bool is_dolet = false) {
     //String lang       = e.attribute(String("xml:lang"), "it");
     String font_weight = e.attribute("font-weight");
@@ -8079,7 +8079,7 @@ void MusicXmlParserPass2::backup(Fraction &dura) {
 //---------------------------------------------------------
 
 MusicXmlParserLyric::MusicXmlParserLyric(const LyricNumberHandler lyric_number_handler, XmlStreamReader &e, Score *score,
-                                         const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff)
+                                         const MusicXmlConfiguration &configuration, MusicXmlLogger *logger, bool is_voice_staff)
     : lyric_number_handler_(lyric_number_handler), e_(e), score_(score), configuration_(configuration), logger_(logger),
       is_voice_staff_(is_voice_staff) {
     // nothing

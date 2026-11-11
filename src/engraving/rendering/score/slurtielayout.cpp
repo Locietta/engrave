@@ -43,8 +43,8 @@
 #include "dom/tremolotwochord.h"
 #include "draw/types/transform.h"
 #include "editing/editchord.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "global/stringutils.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "iengravingfont.h"
 #include "log.h"
 #include "stemlayout.h"

@@ -138,7 +138,7 @@
 #include "../read500/tread.h"
 #include "../xmlreader.h"
 #include "connectorinforeader.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
 #include "readcontext.h"
 

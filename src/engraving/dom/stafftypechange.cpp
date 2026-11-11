@@ -22,7 +22,7 @@
 
 #include "stafftypechange.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "measure.h"
 #include "score.h"
 #include "staff.h"

@@ -44,7 +44,7 @@
 #include "engraving/style/style.h"
 #include "engraving/style/textstyle.h"
 #include "engraving/types/symnames.h"
-#include "importexport/musicxml/imusicxmlconfiguration.h"
+#include "importexport/musicxml/internal/musicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
 #include "log.h"
@@ -343,7 +343,7 @@ static void copy_overlap_data(VoiceOverlapDetector &vod, VoiceList &vc_lst) {
 //   MusicXmlParserPass1
 //---------------------------------------------------------
 
-MusicXmlParserPass1::MusicXmlParserPass1(Score *score, const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger)
+MusicXmlParserPass1::MusicXmlParserPass1(Score *score, const MusicXmlConfiguration &configuration, MusicXmlLogger *logger)
     : divs_(0), score_(score), configuration_(configuration), logger_(logger), has_beaming_info_(false) {
     // nothing
 }
@@ -1538,7 +1538,7 @@ static String text2syms(const String &t, const IEngravingFontsProvider &fonts) {
  Read the next part of a MusicXML formatted string and convert to MuseScore internal encoding.
  */
 
-static String next_part_of_formatted_string(XmlStreamReader &e, const IMusicXmlConfiguration &configuration,
+static String next_part_of_formatted_string(XmlStreamReader &e, const MusicXmlConfiguration &configuration,
                                             const IEngravingFontsProvider &fonts) {
     //String lang       = e.attribute(String("xml:lang"), "it");
     String font_weight = e.attribute("font-weight");
@@ -1715,7 +1715,7 @@ static bool is_harp_pedal_style(const TextStyleType tid) {
  */
 
 static void update_styles(Score *score, const String &word_family, const String &word_size, const String &lyric_family,
-                          const String &lyric_size, const IMusicXmlConfiguration &configuration) {
+                          const String &lyric_size, const MusicXmlConfiguration &configuration) {
     const double dbl_word_size = word_size.to_double();   // note conversion error results in value 0.0
     const double dbl_lyric_size = lyric_size.to_double(); // but avoid comparing (double) floating point number with exact value later
     const double epsilon = 0.001;                         // use epsilon instead

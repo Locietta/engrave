@@ -259,7 +259,7 @@ private:
 public:
     const EngravingServices &services() const { return services_; }
 
-    const std::shared_ptr<IEngravingConfiguration> &configuration() const { return services_.configuration; }
+    const std::shared_ptr<EngravingConfiguration> &configuration() const { return services_.configuration; }
 
     const std::shared_ptr<IEngravingFontsProvider> &engraving_fonts() const { return services_.engraving_fonts; }
 

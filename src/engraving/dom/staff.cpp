@@ -29,9 +29,9 @@
 #include "clef.h"
 #include "cleflist.h"
 #include "containers.h"
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "excerpt.h"
 #include "factory.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "instrtemplate.h"
 #include "linkedobjects.h"
 #include "masterscore.h"

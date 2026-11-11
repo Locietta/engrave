@@ -25,7 +25,7 @@
 #include <climits>
 
 #include "../editing/editsoundflag.h"
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "linkedobjects.h"
 #include "mscore.h"
 #include "score.h"

@@ -10,7 +10,7 @@ struct IImageProvider;
 } // namespace muse::draw
 
 namespace mu::engraving {
-struct IEngravingConfiguration;
+struct EngravingConfiguration;
 struct EngravingContextConfiguration;
 struct IEngravingFontsProvider;
 
@@ -21,7 +21,7 @@ struct IScoreRenderer;
 // The engine services a score uses. The engine context owns the only instance
 // and outlives every score built with it; scores keep a reference.
 struct EngravingServices {
-    std::shared_ptr<IEngravingConfiguration> configuration;
+    std::shared_ptr<EngravingConfiguration> configuration;
     std::shared_ptr<IEngravingFontsProvider> engraving_fonts;
     std::shared_ptr<EngravingContextConfiguration> context_configuration;
     std::shared_ptr<rendering::IScoreRenderer> renderer;

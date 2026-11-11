@@ -5,7 +5,7 @@
 #include "../continiouselementsbuilder.h"
 #include "../guitarbendimport/guitarbendimporter.h"
 #include "engraving/dom/stringdata.h"
-#include "engraving/iengravingconfiguration.h"
+#include "engraving/internal/engravingconfiguration.h"
 #include "engraving/types/fraction.h"
 #include "gpbar.h"
 #include "gpbeat.h"
@@ -149,7 +149,7 @@ private:
     void add_capos();
     int capo_fret(const mu::engraving::Part *part) const;
 
-    const std::shared_ptr<mu::engraving::IEngravingConfiguration> &engraving_configuration() const;
+    const std::shared_ptr<mu::engraving::EngravingConfiguration> &engraving_configuration() const;
 
     mu::engraving::Score *score_value;
     std::unique_ptr<GPDomModel> gp_dom_value;
