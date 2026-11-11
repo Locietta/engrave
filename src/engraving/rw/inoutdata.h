@@ -46,7 +46,6 @@ struct ReadInOutData {
     ReadLinks links;
     std::optional<double> overridden_spatium = std::nullopt;
     PropertyIdSet properties_to_skip;
-    bool force_page_mode = false;
 
     // out
     SettingsCompat settings_compat;

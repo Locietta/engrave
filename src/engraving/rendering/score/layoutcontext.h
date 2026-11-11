@@ -77,13 +77,14 @@ private:
 struct LayoutConfiguration {
     LayoutConfiguration(IGetScoreInternal *s);
 
-    LayoutMode view_mode() const { return options().mode; }
+    // Native files retain their view mode; engraving always uses page geometry.
+    LayoutMode view_mode() const { return LayoutMode::PAGE; }
 
-    bool is_mode(LayoutMode m) const { return options().is_mode(m); }
+    bool is_mode(LayoutMode m) const { return m == LayoutMode::PAGE; }
 
     bool is_line_mode() const { return is_mode(LayoutMode::LINE); }
 
-    bool is_linear_mode() const { return options().is_linear_mode(); }
+    bool is_linear_mode() const { return false; }
 
     bool is_float_mode() const { return is_mode(LayoutMode::FLOAT); }
 

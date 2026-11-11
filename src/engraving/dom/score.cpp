@@ -621,9 +621,6 @@ void Score::set_is_open(bool open) { is_open_ = open; }
 //---------------------------------------------------------
 
 Page *Score::search_page(const PointF &p) const {
-    if (layout_mode() == LayoutMode::LINE) {
-        return pages_.empty() ? nullptr : pages_.front();
-    }
 
     for (Page *page : pages_) {
         RectF r = page->ldata()->bbox().translated(page->pos());

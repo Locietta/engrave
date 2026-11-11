@@ -35,6 +35,7 @@ Capabilities can be queried programmatically via `Engine::capabilities()`.
   - **PDF**: Multi-page vector document.
   - **PNG**: High-resolution raster images per page (36 to 1200 DPI; transparent or score-styled background).
   - **SVG**: Scalable vector graphics per page.
+  - Layout always uses pages; native `layoutMode` values are preserved on read/write.
   - Inclusive page range selection (`first_page` to `last_page`).
 - **Audio Synthesis** (`Document::render_audio` via FluidSynth):
   - Encoders: **WAV** (16, 24, 32-bit float), **FLAC** (16, 24-bit), **Opus** (in Ogg container, 48 kHz), **MP3** (128 kbps default, 32–512 kbps), **AAC** (128 kbps, ADTS).
