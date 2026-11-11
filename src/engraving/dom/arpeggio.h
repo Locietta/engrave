@@ -37,7 +37,6 @@ enum class AnchorRebaseDirection : unsigned char { UP, DOWN };
 
 struct Arpeggio : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Arpeggio)
     DECLARE_CLASSOF(ElementType::ARPEGGIO)
 
 public:

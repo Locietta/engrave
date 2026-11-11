@@ -111,7 +111,6 @@ constexpr SegmentType operator~(const SegmentType &t) { return static_cast<Segme
 
 struct Segment final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Segment)
     DECLARE_CLASSOF(ElementType::SEGMENT)
 
 protected:

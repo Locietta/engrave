@@ -32,7 +32,6 @@ namespace mu::engraving {
 
 struct RehearsalMark final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, RehearsalMark)
     DECLARE_CLASSOF(ElementType::REHEARSAL_MARK)
 
 public:

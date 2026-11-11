@@ -29,7 +29,6 @@ enum class MMRestRangeBracketType : unsigned char { BRACKETS, PARENTHESES, NONE 
 
 struct MMRestRange : MeasureNumberBase {
 private:
-    OBJECT_ALLOCATOR(engraving, MMRestRange)
     DECLARE_CLASSOF(ElementType::MMREST_RANGE)
 
     /// Bracketing: [18-24], (18-24) or 18-24

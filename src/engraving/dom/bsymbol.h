@@ -35,8 +35,6 @@ struct Transaction;
 //---------------------------------------------------------
 
 struct BSymbol : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, BSymbol)
 public:
 
     Segment *segment() const { return (Segment *) ownership_parent(); }

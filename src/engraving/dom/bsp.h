@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "../types/types.h"
-#include "global/allocator.h"
 #include "types/string.h"
 
 namespace mu::engraving {
@@ -98,8 +97,6 @@ public:
 //---------------------------------------------------------
 
 struct BspTreeVisitor {
-private:
-    OBJECT_ALLOCATOR(engraving, BspTreeVisitor)
 public:
     virtual ~BspTreeVisitor() {}
 

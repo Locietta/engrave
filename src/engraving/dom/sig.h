@@ -26,7 +26,6 @@
 #include <map>
 
 #include "../types/types.h"
-#include "global/allocator.h"
 
 namespace mu::engraving {
 int ticks_beat(int n);
@@ -50,8 +49,6 @@ enum class BeatType : unsigned char {
 //-------------------------------------------------------------------
 
 struct TimeSigFrac : Fraction {
-private:
-    OBJECT_ALLOCATOR(engraving, TimeSigFrac)
 public:
     using Fraction::Fraction;
 
@@ -156,8 +153,6 @@ private:
 //---------------------------------------------------------
 
 struct TimeSigMap : std::map<int, SigEvent> {
-private:
-    OBJECT_ALLOCATOR(engraving, TimeSigMap)
 
 public:
     TimeSigMap() {}

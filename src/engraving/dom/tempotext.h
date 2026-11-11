@@ -43,7 +43,6 @@ enum class TempoTextType : signed char {
 
 struct TempoText final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, TempoText)
     DECLARE_CLASSOF(ElementType::TEMPO_TEXT)
 
 public:

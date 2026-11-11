@@ -33,7 +33,6 @@ struct GradualTempoChangeSegment;
 
 struct GradualTempoChange : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, GradualTempoChange)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE)
 
 public:
@@ -82,7 +81,6 @@ private:
 
 struct GradualTempoChangeSegment : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, GradualTempoChangeSegment)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT)
 
 public:

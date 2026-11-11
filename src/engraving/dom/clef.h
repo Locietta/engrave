@@ -91,7 +91,6 @@ struct ClefInfo {
 
 struct Clef final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Clef)
     DECLARE_CLASSOF(ElementType::CLEF)
 
 public:

@@ -45,7 +45,6 @@ struct BreathType {
 
 struct Breath final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Breath)
     DECLARE_CLASSOF(ElementType::BREATH)
 
 public:

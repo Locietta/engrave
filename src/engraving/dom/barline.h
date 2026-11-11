@@ -64,7 +64,6 @@ struct BarLineTableItem {
 
 struct BarLine final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, BarLine)
     DECLARE_CLASSOF(ElementType::BAR_LINE)
 
 public:

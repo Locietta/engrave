@@ -48,7 +48,6 @@ enum class TimeSigType : unsigned char {
 
 struct TimeSig final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, TimeSig)
     DECLARE_CLASSOF(ElementType::TIMESIG)
 
     M_PROPERTY2(bool, is_courtesy, set_is_courtesy, false)

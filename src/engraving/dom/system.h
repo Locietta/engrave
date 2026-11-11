@@ -108,7 +108,6 @@ private:
 
 struct System final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, System)
     DECLARE_CLASSOF(ElementType::SYSTEM)
 
 public:

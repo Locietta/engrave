@@ -34,7 +34,6 @@ struct WhammyBar;
 
 struct WhammyBarSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, WhammyBarSegment)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct WhammyBar final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, WhammyBar)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR)
 
 public:

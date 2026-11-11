@@ -44,7 +44,6 @@ struct Spanner;
 
 struct Tuplet final : DurationElement {
 private:
-    OBJECT_ALLOCATOR(engraving, Tuplet)
     DECLARE_CLASSOF(ElementType::TUPLET)
 
 public:

@@ -42,7 +42,6 @@ struct Note;
 
 struct ChordLine final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, ChordLine)
     DECLARE_CLASSOF(ElementType::CHORDLINE)
 
 public:

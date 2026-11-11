@@ -34,7 +34,6 @@ struct PalmMute;
 
 struct PalmMuteSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, PalmMuteSegment)
     DECLARE_CLASSOF(ElementType::PALM_MUTE_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct PalmMute final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, PalmMute)
     DECLARE_CLASSOF(ElementType::PALM_MUTE)
 
 public:

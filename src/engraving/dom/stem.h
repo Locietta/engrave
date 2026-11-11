@@ -30,7 +30,6 @@ struct Transaction;
 
 struct Stem final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Stem)
     DECLARE_CLASSOF(ElementType::STEM)
 
 public:

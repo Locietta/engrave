@@ -26,7 +26,6 @@
 #include <map>
 
 #include "../../types/types.h"
-#include "global/allocator.h"
 
 /**
  \file
@@ -73,8 +72,6 @@ private:
 typedef std::vector<std::pair<Fraction, Fraction>> EndPointsVector;
 
 struct VelocityMap : std::multimap<Fraction, VelocityEvent> {
-private:
-    OBJECT_ALLOCATOR(engraving, VelocityMap)
 public:
     VelocityMap() {}
 

@@ -34,7 +34,6 @@ struct Chord;
 
 struct TremoloSingleChord final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, TremoloSingleChord)
     DECLARE_CLASSOF(ElementType::TREMOLO_SINGLECHORD)
 
 public:

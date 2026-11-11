@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct ChangeClefType : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeClefType)
 
     Clef *clef = nullptr;
     ClefType concert_clef;

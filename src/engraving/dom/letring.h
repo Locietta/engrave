@@ -34,7 +34,6 @@ struct LetRing;
 
 struct LetRingSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, LetRingSegment)
     DECLARE_CLASSOF(ElementType::LET_RING_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct LetRing final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, LetRing)
     DECLARE_CLASSOF(ElementType::LET_RING)
 
 public:

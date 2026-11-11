@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct StaffText final : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, StaffText)
     DECLARE_CLASSOF(ElementType::STAFF_TEXT)
 
 public:

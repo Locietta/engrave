@@ -38,7 +38,6 @@ enum class GlissandoType : unsigned char;
 
 struct GlissandoSegment final : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, GlissandoSegment)
     DECLARE_CLASSOF(ElementType::GLISSANDO_SEGMENT)
 
 public:
@@ -57,7 +56,6 @@ public:
 
 struct Glissando final : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, Glissando)
     DECLARE_CLASSOF(ElementType::GLISSANDO)
 
     M_PROPERTY(String, text, set_text)

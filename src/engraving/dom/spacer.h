@@ -41,7 +41,6 @@ enum class SpacerType : char { UP, DOWN, FIXED };
 
 struct Spacer final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Spacer)
     DECLARE_CLASSOF(ElementType::SPACER)
 
 public:

@@ -31,8 +31,6 @@ struct Score;
 //! that hierarchy - nothing is laid out inside it - and exists only to head an
 //! accessibility tree; see EngravingItem::accessibleChildren().
 struct RootItem : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, RootItem)
 public:
     //! Which tree this one heads: the score's own, or the one formed by the objects
     //! parked on the dummy, which are not part of the score.

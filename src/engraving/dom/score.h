@@ -257,7 +257,6 @@ struct IScoreChangesListener {
 
 struct Score : EngravingObject {
 private:
-    OBJECT_ALLOCATOR(engraving, Score)
     DECLARE_CLASSOF(ElementType::SCORE)
 
 public:

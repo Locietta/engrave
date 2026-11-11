@@ -39,8 +39,6 @@ struct Tuplet;
 //---------------------------------------------------------
 
 struct DurationElement : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, DurationElement)
 public:
     ~DurationElement();
 

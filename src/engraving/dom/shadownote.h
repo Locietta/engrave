@@ -39,7 +39,6 @@ namespace mu::engraving {
 
 struct ShadowNote final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, ShadowNote)
     DECLARE_CLASSOF(ElementType::SHADOW_NOTE)
 
 public:

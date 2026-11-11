@@ -33,8 +33,6 @@ struct Score;
 //! the score and nothing is laid out in it - it is not even an item; it only keeps
 //! unattached objects reachable, and heads the accessibility tree they form.
 struct DummyParent : EngravingObject {
-private:
-    OBJECT_ALLOCATOR(engraving, DummyParent)
 public:
     DummyParent(Score *score);
     ~DummyParent();

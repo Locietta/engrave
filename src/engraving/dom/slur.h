@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "global/allocator.h"
 #include "slurtie.h"
 
 namespace mu::engraving {
@@ -33,7 +32,6 @@ namespace mu::engraving {
 
 struct SlurSegment : SlurTieSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, SlurSegment)
     DECLARE_CLASSOF(ElementType::SLUR_SEGMENT)
 
     M_PROPERTY2(double, extra_height, set_extra_height, 0.0)
@@ -66,7 +64,6 @@ protected:
 
 struct Slur : SlurTie {
 private:
-    OBJECT_ALLOCATOR(engraving, Slur)
     DECLARE_CLASSOF(ElementType::SLUR)
 
 public:

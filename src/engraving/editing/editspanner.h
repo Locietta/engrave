@@ -38,7 +38,6 @@ struct EditSpanner {
 
 struct ChangeSpannerElements : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeSpannerElements)
 
     Spanner *spanner = nullptr;
     EngravingItem *start_element = nullptr;
@@ -56,7 +55,6 @@ public:
 
 struct ChangeStartEndSpanner : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeStartEndSpanner)
 
     Spanner *spanner = nullptr;
     EngravingItem *start = nullptr;

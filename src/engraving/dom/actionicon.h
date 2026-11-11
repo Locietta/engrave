@@ -31,7 +31,6 @@ namespace mu::engraving {
 //! Dummy element, used for drag&drop
 struct ActionIcon final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, ActionIcon)
     DECLARE_CLASSOF(ElementType::ACTION_ICON)
 
 public:

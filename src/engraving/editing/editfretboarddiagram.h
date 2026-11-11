@@ -50,7 +50,6 @@ private:
 
 struct FretDataChange : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, FretDataChange)
 
     FretDiagram *diagram_ = nullptr;
     FretUndoData undo_data_;
@@ -71,7 +70,6 @@ public:
 
 struct FretDot : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, FretDot)
 
     FretDiagram *diagram = nullptr;
     int string = 0;
@@ -94,7 +92,6 @@ public:
 
 struct FretMarker : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, FretMarker)
 
     FretDiagram *diagram = nullptr;
     int string = 0;
@@ -114,7 +111,6 @@ public:
 
 struct FretBarre : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, FretBarre)
 
     FretDiagram *diagram = nullptr;
     int string = 0;
@@ -136,7 +132,6 @@ public:
 
 struct FretClear : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, FretClear)
 
     FretDiagram *diagram = nullptr;
     FretUndoData undo_data;
@@ -154,7 +149,6 @@ public:
 
 struct AddFretDiagramToFretBox : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddFretDiagramToFretBox)
 
     FretDiagram *fret_diagram_ = nullptr;
     size_t idx_ = muse::nidx;
@@ -172,7 +166,6 @@ public:
 
 struct RemoveFretDiagramFromFretBox : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveFretDiagramFromFretBox)
 
     FretDiagram *fret_diagram_ = nullptr;
     size_t idx_ = muse::nidx;

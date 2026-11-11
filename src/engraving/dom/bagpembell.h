@@ -58,7 +58,6 @@ struct BagpipeNoteInfo {
 
 struct BagpipeEmbellishment final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, BagpipeEmbellishment)
     DECLARE_CLASSOF(ElementType::BAGPIPE_EMBELLISHMENT)
 
 public:

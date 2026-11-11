@@ -39,8 +39,6 @@ struct ChannelActions {
 //---------------------------------------------------------
 
 struct StaffTextBase : TextBase {
-private:
-    OBJECT_ALLOCATOR(engraving, StaffTextBase)
 
 public:
     StaffTextBase(const ElementType &type, DummyParentOr<Segment> parent, TextStyleType tid, ElementFlags = ElementFlag::ON_STAFF);

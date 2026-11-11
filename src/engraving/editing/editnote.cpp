@@ -52,7 +52,6 @@ using namespace mu::engraving;
 
 struct ChangePitch : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangePitch)
 
     Note *note = nullptr;
     int pitch = 0;
@@ -100,7 +99,6 @@ public:
 
 struct ChangeFretting : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeFretting)
 
     Note *note = nullptr;
     int pitch = 0;

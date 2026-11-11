@@ -38,7 +38,6 @@ enum class InstrumentNameType : char;
 
 struct Bracket final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Bracket)
     DECLARE_CLASSOF(ElementType::BRACKET)
 
 public:

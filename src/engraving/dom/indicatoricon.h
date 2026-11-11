@@ -27,8 +27,6 @@
 
 namespace mu::engraving {
 struct IndicatorIcon : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, IndicatorIcon)
 
 public:
     IndicatorIcon(const ElementType &type, DummyParentOr<System> parent, ElementFlags = ElementFlag::NOTHING);

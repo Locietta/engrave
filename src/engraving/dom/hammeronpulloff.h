@@ -27,7 +27,6 @@
 namespace mu::engraving {
 struct HammerOnPullOffText final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, HammerOnPullOffText)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF_TEXT)
 
 public:
@@ -71,7 +70,6 @@ private:
 
 struct HammerOnPullOffSegment final : SlurSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, HammerOnPullOffSegment)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF_SEGMENT)
 
 public:
@@ -116,7 +114,6 @@ private:
 
 struct HammerOnPullOff final : Slur {
 private:
-    OBJECT_ALLOCATOR(engraving, HammerOnPullOff)
     DECLARE_CLASSOF(ElementType::HAMMER_ON_PULL_OFF)
 
 public:

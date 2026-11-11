@@ -32,7 +32,6 @@ struct Transaction;
 
 struct KeySig final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, KeySig)
     DECLARE_CLASSOF(ElementType::KEYSIG)
 
     M_PROPERTY2(bool, is_courtesy, set_is_courtesy, false)

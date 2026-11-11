@@ -95,7 +95,6 @@ std::set<SymId> flip_articulations(const std::set<SymId> &articulation_symbol_id
 
 struct Articulation : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Articulation)
     DECLARE_CLASSOF(ElementType::ARTICULATION)
 
 public:

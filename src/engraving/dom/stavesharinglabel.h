@@ -26,7 +26,6 @@
 namespace mu::engraving {
 struct StaveSharingLabel final : StaffTextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, StaveSharingLabel)
     DECLARE_CLASSOF(ElementType::STAVE_SHARING_LABEL)
 
 public:

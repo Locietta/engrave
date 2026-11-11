@@ -82,8 +82,6 @@ private:
 };
 
 struct MasterScore : Score {
-private:
-    OBJECT_ALLOCATOR(engraving, MasterScore)
 
 public:
 

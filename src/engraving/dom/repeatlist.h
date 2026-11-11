@@ -26,7 +26,6 @@
 #include <set>
 #include <vector>
 
-#include "global/allocator.h"
 #include "types/string.h"
 
 namespace mu::engraving {
@@ -42,8 +41,6 @@ using RepeatListElementList = std::vector<RepeatListElement *>;
 //---------------------------------------------------------
 
 struct RepeatSegment {
-private:
-    OBJECT_ALLOCATOR(engraving, RepeatSegment)
 public:
     int tick; // start tick
     int utick;
@@ -88,8 +85,6 @@ struct RepeatSegmentInfo {
 //---------------------------------------------------------
 
 struct RepeatList : std::vector<RepeatSegment *> {
-private:
-    OBJECT_ALLOCATOR(engraving, RepeatList)
 
 public:
     RepeatList(Score *s);

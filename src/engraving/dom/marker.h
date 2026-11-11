@@ -34,7 +34,6 @@ namespace mu::engraving {
 
 struct Marker final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Marker)
     DECLARE_CLASSOF(ElementType::MARKER)
 
 public:

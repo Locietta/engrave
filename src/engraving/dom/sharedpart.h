@@ -30,7 +30,6 @@ std::string dump(const SharedTrackMap &map);
 
 struct SharedPart final : Part {
 private:
-    OBJECT_ALLOCATOR(engraving, SharedPart)
     DECLARE_CLASSOF(ElementType::SHARED_PART)
 
 public:

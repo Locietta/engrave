@@ -34,7 +34,6 @@ struct Vibrato;
 
 struct VibratoSegment final : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, VibratoSegment)
     DECLARE_CLASSOF(ElementType::VIBRATO_SEGMENT)
 
 public:
@@ -63,7 +62,6 @@ private:
 
 struct Vibrato final : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, Vibrato)
     DECLARE_CLASSOF(ElementType::VIBRATO)
 
 public:

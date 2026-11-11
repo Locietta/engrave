@@ -34,7 +34,6 @@ struct Pedal;
 
 struct PedalSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, PedalSegment)
     DECLARE_CLASSOF(ElementType::PEDAL_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct Pedal final : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Pedal)
     DECLARE_CLASSOF(ElementType::PEDAL)
 
     Sid get_property_style(Pid) const override;

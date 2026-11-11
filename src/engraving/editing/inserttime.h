@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct InsertTime : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertTime)
 
     Score *score = nullptr;
     Fraction tick;
@@ -48,7 +47,6 @@ public:
 
 struct InsertTimeUnmanagedSpanner : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertTimeUnmanagedSpanner)
 
     Score *score = nullptr;
     Fraction tick;

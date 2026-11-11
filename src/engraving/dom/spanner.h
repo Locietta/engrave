@@ -37,8 +37,6 @@ struct Spanner;
 //---------------------------------------------------------
 
 struct SpannerSegment : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, SpannerSegment)
 
 public:
 
@@ -183,8 +181,6 @@ private:
 //----------------------------------------------------------------------------------
 
 struct Spanner : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, Spanner)
 public:
     enum class Anchor : unsigned char { SEGMENT, MEASURE, CHORDREST, NOTE };
 

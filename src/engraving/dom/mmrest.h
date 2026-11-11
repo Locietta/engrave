@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct MMRest final : Rest {
 private:
-    OBJECT_ALLOCATOR(engraving, MMRest)
     DECLARE_CLASSOF(ElementType::MMREST)
 
 public:

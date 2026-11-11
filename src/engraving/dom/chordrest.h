@@ -50,7 +50,6 @@ enum class SegmentType;
 
 struct ChordRest : DurationElement {
 private:
-    OBJECT_ALLOCATOR(engraving, ChordRest)
     DECLARE_CLASSOF(ElementType::INVALID) // dummy
 
 public:

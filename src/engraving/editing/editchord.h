@@ -53,7 +53,6 @@ private:
 
 struct ChangeChordStaffMove : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeChordStaffMove)
 
     ChordRest *chord_rest = nullptr;
     int staff_move = 0;
@@ -70,7 +69,6 @@ public:
 
 struct SwapCR : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, SwapCR)
 
     ChordRest *cr1 = nullptr;
     ChordRest *cr2 = nullptr;
@@ -87,7 +85,6 @@ public:
 
 struct ChangeSpanArpeggio : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeSpanArpeggio)
 
     Chord *chord_ = nullptr;
     Arpeggio *span_arpeggio_ = nullptr;
@@ -102,7 +99,6 @@ public:
 
 struct AddNoteParenthesisInfo : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddNoteParenthesisInfo)
 
     void redo() override;
     void undo() override;
@@ -121,7 +117,6 @@ public:
 
 struct RemoveNoteParenthesisInfo : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveNoteParenthesisInfo)
 
     void redo() override;
     void undo() override;
@@ -140,7 +135,6 @@ public:
 
 struct RemoveSingleNoteParentheses : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemoveSingleNoteParentheses)
 
     Chord *chord_ = nullptr;
     Note *note_ = nullptr;

@@ -32,7 +32,6 @@ struct TappingText;
 
 struct Tapping : Articulation {
 private:
-    OBJECT_ALLOCATOR(engraving, Tapping)
     DECLARE_CLASSOF(ElementType::TAPPING)
 
 public:
@@ -85,7 +84,6 @@ private:
 
 struct TappingHalfSlurSegment : SlurSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, TappingHalfSlurSegment)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR_SEGMENT)
 
 public:
@@ -99,7 +97,6 @@ public:
 
 struct TappingHalfSlur : Slur {
 private:
-    OBJECT_ALLOCATOR(engraving, TappingHalfSlur)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR)
 
     bool is_half_slur_above() const { return is_half_slur_above_; }
@@ -125,7 +122,6 @@ private:
 
 struct TappingText final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, TappingText)
     DECLARE_CLASSOF(ElementType::TAPPING_TEXT)
 
 public:

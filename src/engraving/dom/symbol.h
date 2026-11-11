@@ -42,7 +42,6 @@ struct IEngravingFont;
 
 struct Symbol : BSymbol {
 private:
-    OBJECT_ALLOCATOR(engraving, Symbol)
     DECLARE_CLASSOF(ElementType::SYMBOL)
 
 public:
@@ -94,7 +93,6 @@ protected:
 
 struct FSymbol final : BSymbol {
 private:
-    OBJECT_ALLOCATOR(engraving, FSymbol)
     DECLARE_CLASSOF(ElementType::FSYMBOL)
 
 public:

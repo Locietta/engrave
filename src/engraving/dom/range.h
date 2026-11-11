@@ -27,7 +27,6 @@
 
 #include "../types/fraction.h"
 #include "../types/types.h"
-#include "global/allocator.h"
 
 namespace mu::engraving {
 struct EngravingItem;
@@ -51,8 +50,6 @@ struct Volta;
 //---------------------------------------------------------
 
 struct TrackList : std::vector<EngravingItem *> {
-private:
-    OBJECT_ALLOCATOR(engraving, TrackList)
 
 public:
     typedef std::map<Chord *, Chord *> ClonedChordMap;

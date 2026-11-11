@@ -34,8 +34,6 @@ struct Transaction;
 //---------------------------------------------------------
 
 struct Box : MeasureBase {
-private:
-    OBJECT_ALLOCATOR(engraving, Box)
 
 public:
     Box(const ElementType &type, Score *parent);
@@ -118,7 +116,6 @@ private:
 
 struct HBox final : Box {
 private:
-    OBJECT_ALLOCATOR(engraving, HBox)
     DECLARE_CLASSOF(ElementType::HBOX)
 
 public:
@@ -148,7 +145,6 @@ private:
 
 struct VBox : Box {
 private:
-    OBJECT_ALLOCATOR(engraving, VBox)
     DECLARE_CLASSOF(ElementType::VBOX)
 
 public:
@@ -186,7 +182,6 @@ private:
 
 struct FBox : VBox {
 private:
-    OBJECT_ALLOCATOR(engraving, FBox)
     DECLARE_CLASSOF(ElementType::FBOX)
 
 public:
@@ -250,7 +245,6 @@ struct Text;
 
 struct TBox : VBox {
 private:
-    OBJECT_ALLOCATOR(engraving, TBox)
     DECLARE_CLASSOF(ElementType::TBOX)
 
 public:

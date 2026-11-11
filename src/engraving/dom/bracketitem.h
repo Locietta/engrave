@@ -35,8 +35,6 @@ struct Factory;
 //---------------------------------------------------------
 
 struct BracketItem final : EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, BracketItem)
 
 public:
     EngravingItem *clone() const override;

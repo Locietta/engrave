@@ -37,7 +37,6 @@ struct LyricsLine;
 
 struct Lyrics final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Lyrics)
     DECLARE_CLASSOF(ElementType::LYRICS)
 
 public:
@@ -143,7 +142,6 @@ private:
 
 struct LyricsLine : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, LyricsLine)
     DECLARE_CLASSOF(ElementType::LYRICSLINE)
 
 public:
@@ -188,7 +186,6 @@ protected:
 
 struct LyricsLineSegment : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, LyricsLineSegment)
     DECLARE_CLASSOF(ElementType::LYRICSLINE_SEGMENT)
 
 public:
@@ -237,7 +234,6 @@ protected:
 
 struct PartialLyricsLine final : LyricsLine {
 private:
-    OBJECT_ALLOCATOR(engraving, PartialLyricsLine)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE)
 
 public:
@@ -285,7 +281,6 @@ private:
 
 struct PartialLyricsLineSegment final : LyricsLineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, PartialLyricsLineSegment)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE_SEGMENT)
 
 public:

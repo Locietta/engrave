@@ -29,7 +29,6 @@ struct NoteLine;
 
 struct NoteLineSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, NoteLineSegment)
     DECLARE_CLASSOF(ElementType::NOTELINE_SEGMENT)
 
 public:
@@ -44,7 +43,6 @@ public:
 
 struct NoteLine final : TextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, NoteLine)
     DECLARE_CLASSOF(ElementType::NOTELINE)
 
 public:

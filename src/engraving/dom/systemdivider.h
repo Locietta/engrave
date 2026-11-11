@@ -33,7 +33,6 @@ enum class SystemDividerType : unsigned char { LEFT, RIGHT };
 
 struct SystemDivider final : Symbol {
 private:
-    OBJECT_ALLOCATOR(engraving, SystemDivider)
     DECLARE_CLASSOF(ElementType::SYSTEM_DIVIDER)
 
 public:

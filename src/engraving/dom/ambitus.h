@@ -35,7 +35,6 @@ struct Factory;
 
 struct Ambitus final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Ambitus)
     DECLARE_CLASSOF(ElementType::AMBITUS)
 
 public:

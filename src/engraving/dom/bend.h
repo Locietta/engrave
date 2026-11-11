@@ -44,7 +44,6 @@ enum class BendType : unsigned char { BEND = 0, BEND_RELEASE, BEND_RELEASE_BEND,
 
 struct Bend final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Bend)
     DECLARE_CLASSOF(ElementType::BEND)
 
 public:

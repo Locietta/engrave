@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct SoundFlag final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, SoundFlag)
     DECLARE_CLASSOF(ElementType::SOUND_FLAG)
 
 public:

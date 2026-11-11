@@ -231,7 +231,6 @@ enum class AccidentalBracket : char {
 
 struct Accidental final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Accidental)
     DECLARE_CLASSOF(ElementType::ACCIDENTAL)
 
 public:

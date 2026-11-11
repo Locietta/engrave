@@ -25,7 +25,6 @@
 #include <map>
 
 #include "../types/types.h"
-#include "global/allocator.h"
 #include "global/types/string.h"
 
 namespace muse::io {
@@ -465,8 +464,6 @@ struct ChordFont {
 //---------------------------------------------------------
 
 struct ChordList : std::map<int, ChordDescription> {
-private:
-    OBJECT_ALLOCATOR(engraving, ChordList)
 
 public:
     std::vector<ChordFont> fonts;

@@ -35,7 +35,6 @@ struct Accidental;
 
 struct TrillSegment final : LineSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, TrillSegment)
     DECLARE_CLASSOF(ElementType::TRILL_SEGMENT)
 
 public:
@@ -71,7 +70,6 @@ private:
 
 struct Trill final : SLine {
 private:
-    OBJECT_ALLOCATOR(engraving, Trill)
     DECLARE_CLASSOF(ElementType::TRILL)
 
 public:

@@ -41,7 +41,6 @@ using namespace mu::engraving;
 
 struct AddPageLock : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, AddPageLock)
 
     const RangeLock *page_lock_;
 public:
@@ -75,7 +74,6 @@ public:
 
 struct RemovePageLock : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemovePageLock)
 
     const RangeLock *page_lock_;
 public:

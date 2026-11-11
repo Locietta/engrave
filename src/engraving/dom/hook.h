@@ -23,7 +23,6 @@
 #ifndef MU_ENGRAVING_HOOK_H
 #define MU_ENGRAVING_HOOK_H
 
-#include "global/allocator.h"
 #include "symbol.h"
 
 namespace mu::engraving {
@@ -31,7 +30,6 @@ struct Chord;
 
 struct Hook final : Symbol {
 private:
-    OBJECT_ALLOCATOR(engraving, Hook)
     DECLARE_CLASSOF(ElementType::HOOK)
 
 public:

@@ -78,8 +78,6 @@ enum class PlayEventType : unsigned char {
 };
 
 struct GraceNotesGroup final : std::vector<Chord *>, EngravingItem {
-private:
-    OBJECT_ALLOCATOR(engraving, GraceNotesGroup)
 public:
     GraceNotesGroup *clone() const override { return new GraceNotesGroup(*this); }
 
@@ -138,7 +136,6 @@ using NoteParenthesisInfoList = std::vector<NoteParenthesisInfo *>;
 
 struct Chord final : ChordRest {
 private:
-    OBJECT_ALLOCATOR(engraving, Chord)
     DECLARE_CLASSOF(ElementType::CHORD)
 
 public:

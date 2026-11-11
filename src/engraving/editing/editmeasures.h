@@ -28,7 +28,6 @@
 namespace mu::engraving {
 struct InsertRemoveMeasures : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertRemoveMeasures)
 
     MeasureBase *fm = nullptr;
     MeasureBase *lm = nullptr;
@@ -51,8 +50,6 @@ public:
 };
 
 struct RemoveMeasures : InsertRemoveMeasures {
-private:
-    OBJECT_ALLOCATOR(engraving, RemoveMeasures)
 public:
     RemoveMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
 
@@ -65,8 +62,6 @@ public:
 };
 
 struct InsertMeasures : InsertRemoveMeasures {
-private:
-    OBJECT_ALLOCATOR(engraving, InsertMeasures)
 public:
     InsertMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
 
@@ -80,7 +75,6 @@ public:
 
 struct ChangeMeasureLen : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMeasureLen)
 
     Measure *measure = nullptr;
     Fraction len;
@@ -97,7 +91,6 @@ public:
 
 struct ChangeMMRest : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMMRest)
 
     Measure *m;
     Measure *mmrest;
@@ -117,7 +110,6 @@ public:
 // This is handled through undo commands above
 struct ChangeMMRestNext : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMMRestNext)
 
     Measure *mmrest_ = nullptr;
     MeasureBase *next_ = nullptr;
@@ -133,7 +125,6 @@ public:
 
 struct ChangeMMRestPrev : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMMRestPrev)
 
     Measure *mmrest_ = nullptr;
     MeasureBase *prev_ = nullptr;
@@ -149,7 +140,6 @@ public:
 
 struct ChangeMeasureRepeatCount : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeMeasureRepeatCount)
 
     Measure *m = nullptr;
     int count = 0;

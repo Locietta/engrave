@@ -40,7 +40,6 @@ struct System;
 
 struct Fermata final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, Fermata)
     DECLARE_CLASSOF(ElementType::FERMATA)
 
 public:

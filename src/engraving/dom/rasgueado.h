@@ -34,7 +34,6 @@ struct Rasgueado;
 
 struct RasgueadoSegment final : TextLineBaseSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, RasgueadoSegment)
     DECLARE_CLASSOF(ElementType::RASGUEADO_SEGMENT)
 
 public:
@@ -53,7 +52,6 @@ public:
 
 struct Rasgueado final : ChordTextLineBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Rasgueado)
     DECLARE_CLASSOF(ElementType::RASGUEADO)
 
 public:

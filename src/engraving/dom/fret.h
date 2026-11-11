@@ -126,7 +126,6 @@ struct DiagramInfo {
 
 struct FretDiagram final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, FretDiagram)
     DECLARE_CLASSOF(ElementType::FRET_DIAGRAM)
 
 public:

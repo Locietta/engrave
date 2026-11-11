@@ -40,8 +40,6 @@ struct System;
 //---------------------------------------------------------
 
 struct LineSegment : SpannerSegment {
-private:
-    OBJECT_ALLOCATOR(engraving, LineSegment)
 protected:
 
     LineSegment(const ElementType &type, SLine *sp, ElementFlags f = ElementFlag::NOTHING);
@@ -83,8 +81,6 @@ private:
 //---------------------------------------------------------
 
 struct SLine : Spanner {
-private:
-    OBJECT_ALLOCATOR(engraving, SLine)
 
 public:
     SLine(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);

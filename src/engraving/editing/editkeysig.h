@@ -33,7 +33,6 @@ struct Transaction;
 
 struct ChangeKeySig : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeKeySig)
 
     KeySig *keysig = nullptr;
     KeySigEvent ks;

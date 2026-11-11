@@ -32,7 +32,6 @@
 namespace mu::engraving {
 struct InsertPart : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, InsertPart)
 
     Part *part_ = nullptr;
     size_t target_part_idx_ = 0;
@@ -50,7 +49,6 @@ public:
 
 struct RemovePart : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, RemovePart)
 
     Part *part_ = nullptr;
     size_t part_idx_ = muse::nidx;
@@ -68,7 +66,6 @@ public:
 
 struct SetSoloist : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, SetSoloist)
 
     Part *part = nullptr;
     bool soloist = false;
@@ -85,7 +82,6 @@ public:
 
 struct ChangePart : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangePart)
 
     Part *part = nullptr;
     Instrument *instrument = nullptr;
@@ -103,7 +99,6 @@ public:
 
 struct ChangeInstrumentLong : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeInstrumentLong)
 
     Part *part = nullptr;
     Fraction tick;
@@ -121,7 +116,6 @@ public:
 
 struct ChangeInstrumentShort : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeInstrumentShort)
 
     Part *part = nullptr;
     Fraction tick;
@@ -139,7 +133,6 @@ public:
 
 struct ChangeInstrumentGroupOptions : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeInstrumentGroupOptions)
 
     Part *part = nullptr;
     Fraction tick;
@@ -159,7 +152,6 @@ public:
 
 struct ChangeInstrumentNumber : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeInstrumentNumber)
 
     Part *part = nullptr;
     Fraction tick;
@@ -177,7 +169,6 @@ public:
 
 struct ChangeDrumset : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangeDrumset)
 
     Instrument *instrument = nullptr;
     Drumset drumset;
@@ -210,7 +201,6 @@ public:
 
 struct ChangePatch : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, ChangePatch)
 
     Score *score = nullptr;
     InstrChannel *channel = nullptr;
@@ -226,7 +216,6 @@ public:
 
 struct SetUserBankController : UndoableCommand {
 private:
-    OBJECT_ALLOCATOR(engraving, SetUserBankController)
 
     InstrChannel *channel = nullptr;
     bool val = false;

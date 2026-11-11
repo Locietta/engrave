@@ -32,7 +32,6 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct TextEditData : public ElementEditData {
-    OBJECT_ALLOCATOR(engraving, TextEditData)
 public:
 
     String old_xml_text;
@@ -63,8 +62,6 @@ private:
 //---------------------------------------------------------
 
 struct TextEditUndoableCommand : UndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, TextEditUndoableCommand)
 
 public:
     UNDO_TYPE(CommandType::TEXT_EDIT)
@@ -90,8 +87,6 @@ protected:
 //---------------------------------------------------------
 
 struct ChangeTextProperties : TextEditUndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, ChangeTextProperties)
 
 public:
     ChangeTextProperties(const TextCursor *tc, Pid prop_id, const PropertyValue &prop_val, PropertyFlags flags);
@@ -114,8 +109,6 @@ private:
 //---------------------------------------------------------
 
 struct ChangeText : TextEditUndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, ChangeText)
 
 public:
     ChangeText(const TextCursor *tc, const String &t) : TextEditUndoableCommand(*tc), s_(t), format_(*tc->format()) {}
@@ -140,8 +133,6 @@ private:
 //---------------------------------------------------------
 
 struct InsertText : ChangeText {
-private:
-    OBJECT_ALLOCATOR(engraving, InsertText)
 public:
     InsertText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
 
@@ -156,8 +147,6 @@ public:
 //---------------------------------------------------------
 
 struct RemoveText : ChangeText {
-private:
-    OBJECT_ALLOCATOR(engraving, RemoveText)
 public:
     RemoveText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
 
@@ -172,8 +161,6 @@ public:
 //---------------------------------------------------------
 
 struct SplitJoinText : TextEditUndoableCommand {
-private:
-    OBJECT_ALLOCATOR(engraving, SplitJoinText)
 protected:
     virtual void split();
     virtual void join();
@@ -188,7 +175,6 @@ public:
 
 struct SplitText : SplitJoinText {
 private:
-    OBJECT_ALLOCATOR(engraving, SplitText)
 
     virtual void undo() override { join(); }
 
@@ -205,7 +191,6 @@ public:
 
 struct JoinText : SplitJoinText {
 private:
-    OBJECT_ALLOCATOR(engraving, JoinText)
 
     virtual void undo() override { split(); }
 

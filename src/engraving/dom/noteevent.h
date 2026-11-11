@@ -26,8 +26,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "global/allocator.h"
-
 namespace mu::engraving {
 //---------------------------------------------------------
 //    NoteEvent
@@ -89,8 +87,6 @@ private:
 //---------------------------------------------------------
 
 struct NoteEventList : std::vector<NoteEvent> {
-private:
-    OBJECT_ALLOCATOR(engraving, NoteEventList)
 public:
     NoteEventList();
 

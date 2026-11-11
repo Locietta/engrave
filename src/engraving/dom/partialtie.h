@@ -27,7 +27,6 @@
 namespace mu::engraving {
 struct PartialTieSegment : TieSegment {
 private:
-    OBJECT_ALLOCATOR(engraving, PartialTieSegment)
     DECLARE_CLASSOF(ElementType::PARTIAL_TIE_SEGMENT)
 
 public:
@@ -43,7 +42,6 @@ private:
 
 struct PartialTie : Tie {
 private:
-    OBJECT_ALLOCATOR(engraving, PartialTie)
     DECLARE_CLASSOF(ElementType::PARTIAL_TIE);
 
     M_PROPERTY2(PartialSpannerDirection, partial_spanner_direction, set_partial_spanner_direction, PartialSpannerDirection::OUTGOING)

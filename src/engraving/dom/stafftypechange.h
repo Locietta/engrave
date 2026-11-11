@@ -34,7 +34,6 @@ struct StaffType;
 
 struct StaffTypeChange final : EngravingItem {
 private:
-    OBJECT_ALLOCATOR(engraving, StaffTypeChange)
     DECLARE_CLASSOF(ElementType::STAFFTYPE_CHANGE)
 
 public:

@@ -50,7 +50,6 @@ struct Dyn {
 
 struct Dynamic final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, Dynamic)
     DECLARE_CLASSOF(ElementType::DYNAMIC)
 
 public:

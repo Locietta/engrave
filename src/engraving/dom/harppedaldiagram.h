@@ -43,7 +43,6 @@ static constexpr int harp_string_no = 7;
 
 struct HarpPedalDiagram final : TextBase {
 private:
-    OBJECT_ALLOCATOR(engraving, HarpPedalDiagram)
     DECLARE_CLASSOF(ElementType::HARP_DIAGRAM)
 
 public:

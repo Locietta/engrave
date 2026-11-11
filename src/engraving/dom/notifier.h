@@ -23,8 +23,6 @@
 #ifndef MU_ENGRAVING_NOTIFIER_H
 #define MU_ENGRAVING_NOTIFIER_H
 
-#include "global/allocator.h"
-
 namespace mu::engraving {
 template <typename Data>
 struct Notifier;
@@ -35,8 +33,6 @@ struct Notifier;
 
 template <typename Data>
 struct Listener {
-private:
-    OBJECT_ALLOCATOR(engraving, Listener)
 
 public:
     Listener() = default;
