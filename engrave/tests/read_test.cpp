@@ -120,6 +120,22 @@ std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
 }
 
+// Palette-only elements are ignored by both supported native readers.
+TEST(Read, UnknownActionIconIsSkipped) {
+    for (const std::string version : {"4.60", "5.00"}) {
+        std::string fixture = read_text(write470_fixture());
+        fixture.replace(fixture.find("4.70"), 4, version);
+        const auto voice = fixture.find("<voice>") + std::string("<voice>").size();
+        fixture.insert(voice, "<ActionIcon><action>insert-vbox</action></ActionIcon>");
+        auto document = g_engine->open(as_bytes(fixture));
+        ASSERT_TRUE(document) << document.error().message;
+        auto saved = (*document)->export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved) << saved.error().message;
+        const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
+        EXPECT_EQ(xml.find("<ActionIcon>"), std::string::npos);
+    }
+}
+
 TEST(Read, InstrumentLabelNumberFlags500) {
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/upstream-label/show-number-short-500.mscx";
     const std::string fixture = read_text(path);

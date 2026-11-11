@@ -35,7 +35,6 @@
 #include "../xmlwriter.h"
 #include "connectorinfowriter.h"
 #include "dom/accidental.h"
-#include "dom/actionicon.h"
 #include "dom/ambitus.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -160,7 +159,6 @@ using namespace mu::engraving::write;
 void TWrite::write_item(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx) {
     switch (item->type()) {
         case ElementType::ACCIDENTAL: write(item_cast<const Accidental *>(item), xml, ctx); break;
-        case ElementType::ACTION_ICON: write(item_cast<const ActionIcon *>(item), xml, ctx); break;
         case ElementType::AMBITUS: write(item_cast<const Ambitus *>(item), xml, ctx); break;
         case ElementType::ARPEGGIO: write(item_cast<const Arpeggio *>(item), xml, ctx); break;
         case ElementType::ARTICULATION: write(item_cast<const Articulation *>(item), xml, ctx); break;
@@ -578,12 +576,6 @@ void TWrite::write(const Accidental *item, XmlWriter &xml, WriteContext &ctx) {
     write_property(item, xml, Pid::ACCIDENTAL_TYPE);
     write_property(item, xml, Pid::ACCIDENTAL_STACKING_ORDER_OFFSET);
     write_item_properties(item, xml, ctx);
-    xml.end_element();
-}
-
-void TWrite::write(const ActionIcon *item, XmlWriter &xml, WriteContext &) {
-    xml.start_element(item);
-    xml.tag("action", TConv::to_xml(item->action_type()));
     xml.end_element();
 }
 

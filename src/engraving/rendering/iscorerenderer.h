@@ -36,7 +36,6 @@ struct EngravingItem;
 struct Page;
 
 struct Accidental;
-struct ActionIcon;
 struct Arpeggio;
 
 struct BarLine;
@@ -75,7 +74,6 @@ struct Parenthesis;
 
 struct Rest;
 
-struct ShadowNote;
 struct Spanner;
 struct Slur;
 struct SlurSegment;
@@ -121,10 +119,10 @@ struct IScoreRenderer {
     virtual void paint_item(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt) const = 0;
 
     // Temporary compatibility interface
-    using Supported = std::variant<std::monostate, Accidental *, ActionIcon *, Arpeggio *, BarLine *, Box *, Bracket *, Clef *, Dynamic *,
+    using Supported = std::variant<std::monostate, Accidental *, Arpeggio *, BarLine *, Box *, Bracket *, Clef *, Dynamic *,
                                    FiguredBassItem *, FretDiagram *, Harmony *, Image *, IndicatorIcon *, KeySig *, LedgerLine *, SLine *,
-                                   LineSegment *, Lyrics *, NoteDot *, Parenthesis *, Rest *, ShadowNote *, Spanner *, Slur *, SlurTie *,
-                                   Spacer *, StaffText *, Stem *, TextBase *, Text *, TimeSig *>;
+                                   LineSegment *, Lyrics *, NoteDot *, Parenthesis *, Rest *, Spanner *, Slur *, SlurTie *, Spacer *,
+                                   StaffText *, Stem *, TextBase *, Text *, TimeSig *>;
 
     template <typename T>
     static void check_supported_static(T item) {

@@ -26,7 +26,6 @@
 #include <cmath>
 
 #include "../editing/elementeditdata.h"
-#include "actionicon.h"
 #include "chord.h"
 #include "containers.h"
 #include "groups.h"
@@ -363,11 +362,6 @@ void Beam::trigger_layout() const {
 bool Beam::accept_drop(EditData &data) const {
     EngravingItem *e = data.drop_element;
 
-    if (e->is_action_icon()) {
-        ActionIconType type = to_action_icon(e)->action_type();
-        return type == ActionIconType::BEAM_FEATHERED_DECELERATE || type == ActionIconType::BEAM_FEATHERED_ACCELERATE;
-    }
-
     return false;
 }
 
@@ -375,21 +369,7 @@ bool Beam::accept_drop(EditData &data) const {
 //   drop
 //---------------------------------------------------------
 
-EngravingItem *Beam::drop(Transaction &, EditData &data) {
-    if (!data.drop_element->is_action_icon()) {
-        return nullptr;
-    }
-
-    ActionIcon *e = to_action_icon(data.drop_element);
-
-    if (e->action_type() == ActionIconType::BEAM_FEATHERED_DECELERATE) {
-        set_as_feathered(true /*slower*/);
-    } else if (e->action_type() == ActionIconType::BEAM_FEATHERED_ACCELERATE) {
-        set_as_feathered(false /*slower*/);
-    }
-
-    return nullptr;
-}
+EngravingItem *Beam::drop(Transaction &, EditData &) { return nullptr; }
 
 //---------------------------------------------------------
 //   beamPos

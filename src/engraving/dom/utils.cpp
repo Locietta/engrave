@@ -26,7 +26,6 @@
 #include <map>
 
 #include "accidental.h"
-#include "actionicon.h"
 #include "arpeggio.h"
 #include "barline.h"
 #include "chord.h"
@@ -1658,25 +1657,6 @@ std::vector<EngravingItem *> filter_target_elements(const Selection &sel, Engrav
         // Add these elements once per measure, always:
         case ElementType::MEASURE_NUMBER: unique_measures = true; break;
 
-        case ElementType::ACTION_ICON: {
-            const ActionIconType action_type = to_action_icon(drop_element)->action_type();
-            switch (action_type) {
-                case ActionIconType::
-                    STAFF_TYPE_CHANGE: //! HACK - these should be applied "per staff" in range selections (see issue #33486)
-                case ActionIconType::VFRAME:
-                case ActionIconType::HFRAME:
-                case ActionIconType::TFRAME:
-                case ActionIconType::FFRAME:
-                case ActionIconType::MEASURE:
-                    if (sel.is_range()) {
-                        unique = true;
-                        return {sel.start_segment()->first_element_for_navigation(sel.staff_start())};
-                    }
-                    break;
-                default: break;
-            }
-            break;
-        }
         default: break;
     }
 

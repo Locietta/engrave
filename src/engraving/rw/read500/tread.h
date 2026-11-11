@@ -42,7 +42,6 @@ struct Image;
 struct Ambitus;
 struct Accidental;
 struct MMRestRange;
-struct ActionIcon;
 struct Arpeggio;
 struct Articulation;
 struct Audio;
@@ -203,7 +202,6 @@ struct TRead {
     static void read(Accidental *a, XmlReader &xml, ReadContext &ctx);
     static void read(Jump *j, XmlReader &xml, ReadContext &ctx);
     static void read(MMRestRange *r, XmlReader &xml, ReadContext &ctx);
-    static void read(ActionIcon *i, XmlReader &xml, ReadContext &ctx);
     static void read(Arpeggio *a, XmlReader &xml, ReadContext &ctx);
     static void read(ChordBracket *b, XmlReader &e, ReadContext &ctx);
     static void read(Articulation *a, XmlReader &xml, ReadContext &ctx);

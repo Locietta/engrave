@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../../dom/accidental.h"
-#include "../../dom/actionicon.h"
 #include "../../dom/ambitus.h"
 #include "../../dom/anchors.h"
 #include "../../dom/arpeggio.h"
@@ -137,7 +136,6 @@ struct NoteLineSegment;
 
 struct RasgueadoSegment;
 
-struct ShadowNote;
 struct SLine;
 struct Slur;
 struct Spacer;
@@ -185,7 +183,6 @@ struct TLayout {
     static void layout_item(EngravingItem *item, LayoutContext &ctx); // factory
 
     static void layout_accidental(const Accidental *item, Accidental::LayoutData *ldata, const LayoutConfiguration &conf);
-    static void layout_action_icon(const ActionIcon *item, ActionIcon::LayoutData *ldata);
     static void layout_ambitus(const Ambitus *item, Ambitus::LayoutData *ldata, const LayoutContext &ctx);
     static void layout_arpeggio(const Arpeggio *item, Arpeggio::LayoutData *ldata, const LayoutConfiguration &conf);
     static void layout_chord_bracket(const ChordBracket *item, ChordBracket::LayoutData *ldata, const LayoutConfiguration &conf);
@@ -297,7 +294,6 @@ struct TLayout {
     static void layout_rehearsal_mark(const RehearsalMark *item, RehearsalMark::LayoutData *ldata);
     static void layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
 
-    static void layout_shadow_note(ShadowNote *item, LayoutContext &ctx);
     static void layout_line(SLine *item, LayoutContext &ctx); // base class
     static void layout_slur(Slur *item, LayoutContext &ctx);
     static void layout_spacer(Spacer *item, LayoutContext &ctx);

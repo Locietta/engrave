@@ -24,7 +24,6 @@
 
 #include "../../compat/midi/event.h"
 #include "../../dom/accidental.h"
-#include "../../dom/actionicon.h"
 #include "../../dom/ambitus.h"
 #include "../../dom/arpeggio.h"
 #include "../../dom/articulation.h"
@@ -150,7 +149,6 @@ using namespace mu::engraving::read460;
 void TRead::read_item(EngravingItem *item, XmlReader &xml, ReadContext &ctx) {
     switch (item->type()) {
         case ElementType::ACCIDENTAL: read(item_cast<Accidental *>(item), xml, ctx); break;
-        case ElementType::ACTION_ICON: read(item_cast<ActionIcon *>(item), xml, ctx); break;
         case ElementType::AMBITUS: read(item_cast<Ambitus *>(item), xml, ctx); break;
         case ElementType::ARPEGGIO: read(item_cast<Arpeggio *>(item), xml, ctx); break;
         case ElementType::CHORD_BRACKET: read(item_cast<ChordBracket *>(item), xml, ctx); break;
@@ -1565,22 +1563,6 @@ void TRead::read(SystemDivider *d, XmlReader &e, ReadContext &ctx) {
     SystemDividerType type = e.attribute("type") == "left" ? SystemDividerType::LEFT : SystemDividerType::RIGHT;
     d->set_divider_type(type);
     TRead::read(static_cast<Symbol *>(d), e, ctx);
-}
-
-void TRead::read(ActionIcon *i, XmlReader &e, ReadContext &) {
-    while (e.read_next_start_element()) {
-        const AsciiStringView tag(e.name());
-        if (tag == "subtype") {
-            // This is fragile, see https://github.com/musescore/MuseScore/issues/24060#issuecomment-2299665318.
-            // Keeping it here for compatbility in case an ActionIcon from some old version doesn't have an <action> tag.
-            // If the <action> tag is present, it will override this value, see below.
-            i->set_action_type(static_cast<ActionIconType>(e.read_int()));
-        } else if (tag == "action") {
-            i->set_action_type(TConv::from_xml(e.read_ascii_text(), ActionIconType::UNDEFINED));
-        } else {
-            e.unknown();
-        }
-    }
 }
 
 void TRead::read(Arpeggio *a, XmlReader &e, ReadContext &ctx) {

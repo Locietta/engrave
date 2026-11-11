@@ -22,7 +22,6 @@
 
 #include "chordrest.h"
 
-#include "actionicon.h"
 #include "barline.h"
 #include "beam.h"
 #include "breath.h"
@@ -164,18 +163,7 @@ bool ChordRest::accept_drop(EditData &data) const {
         case ElementType::FRET_DIAGRAM:
         case ElementType::TREMOLOBAR:
         case ElementType::HARP_DIAGRAM: return true;
-        case ElementType::ACTION_ICON: {
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::BEAM_AUTO:
-                case ActionIconType::BEAM_NONE:
-                case ActionIconType::BEAM_BREAK_LEFT:
-                case ActionIconType::BEAM_BREAK_INNER_8TH:
-                case ActionIconType::BEAM_BREAK_INNER_16TH:
-                case ActionIconType::BEAM_JOIN: return true;
-                default: break;
-            }
-            break;
-        }
+
         default: break;
     }
     return measure()->accept_drop(data);
@@ -378,24 +366,6 @@ EngravingItem *ChordRest::drop(Transaction &tx, EditData &data) {
                 score()->undo_add_element(e);
             }
             return e;
-        }
-
-        case ElementType::ACTION_ICON: {
-            ActionIconType action_type = to_action_icon(e)->action_type();
-            static const std::unordered_map<ActionIconType, BeamMode> beam_mode_table = {
-                {ActionIconType::BEAM_AUTO, BeamMode::AUTO},
-                {ActionIconType::BEAM_NONE, BeamMode::NONE},
-                {ActionIconType::BEAM_BREAK_LEFT, BeamMode::BEGIN},
-                {ActionIconType::BEAM_BREAK_INNER_8TH, BeamMode::BEGIN16},
-                {ActionIconType::BEAM_BREAK_INNER_16TH, BeamMode::BEGIN32},
-                {ActionIconType::BEAM_JOIN, BeamMode::MID},
-            };
-            if (muse::contains(beam_mode_table, action_type)) {
-                undo_change_property(Pid::BEAM_MODE, muse::value(beam_mode_table, action_type));
-                delete e;
-                return nullptr;
-            }
-            break;
         }
 
         case ElementType::KEYSIG: {

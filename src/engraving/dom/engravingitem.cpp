@@ -205,7 +205,6 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::IMAGE, 114},
     {ElementType::MEASURE, 115},
     {ElementType::SELECTION, 116},
-    {ElementType::SHADOW_NOTE, 118},
     {ElementType::TAB_DURATION_SYMBOL, 119},
     {ElementType::FSYMBOL, 120},
     {ElementType::PAGE, 121},
@@ -219,7 +218,6 @@ constexpr LegacyZ legacy_z[] = {
     {ElementType::VBOX, 129},
     {ElementType::TBOX, 130},
     {ElementType::FBOX, 131},
-    {ElementType::ACTION_ICON, 132},
     {ElementType::BAGPIPE_EMBELLISHMENT, 133},
     {ElementType::STICKING, 134},
     {ElementType::GRACE_NOTES_GROUP, 135},
@@ -1702,8 +1700,7 @@ bool EngravingItem::is_printable() const {
         case ElementType::HBOX:
         case ElementType::TBOX:
         case ElementType::FBOX:
-        case ElementType::SPACER:
-        case ElementType::SHADOW_NOTE: return false;
+        case ElementType::SPACER: return false;
         default: return true;
     }
 }

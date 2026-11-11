@@ -95,7 +95,6 @@
 #include "dom/rehearsalmark.h"
 #include "dom/rest.h"
 #include "dom/score.h"
-#include "dom/shadownote.h"
 #include "dom/slur.h"
 #include "dom/soundflag.h"
 #include "dom/spacer.h"
@@ -174,9 +173,6 @@ void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
     switch (item->type()) {
         case ElementType::ACCIDENTAL:
             layout_accidental(item_cast<const Accidental *>(item), static_cast<Accidental::LayoutData *>(ldata), ctx.conf());
-            break;
-        case ElementType::ACTION_ICON:
-            layout_action_icon(item_cast<const ActionIcon *>(item), static_cast<ActionIcon::LayoutData *>(ldata));
             break;
         case ElementType::AMBITUS: layout_ambitus(item_cast<const Ambitus *>(item), static_cast<Ambitus::LayoutData *>(ldata), ctx); break;
         case ElementType::ARPEGGIO:
@@ -318,7 +314,6 @@ void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
             layout_rehearsal_mark(item_cast<const RehearsalMark *>(item), static_cast<RehearsalMark::LayoutData *>(ldata));
             break;
         case ElementType::REST: layout_rest(item_cast<const Rest *>(item), static_cast<Rest::LayoutData *>(ldata), ctx); break;
-        case ElementType::SHADOW_NOTE: layout_shadow_note(item_cast<ShadowNote *>(item), ctx); break;
         case ElementType::SLUR: layout_slur(item_cast<Slur *>(item), ctx); break;
         case ElementType::SPACER: layout_spacer(item_cast<Spacer *>(item), ctx); break;
         case ElementType::STAFF_STATE:
@@ -485,19 +480,6 @@ void TLayout::layout_accidental(const Accidental *item, Accidental::LayoutData *
     }
 
     ldata->set_shape(shape);
-}
-
-void TLayout::layout_action_icon(const ActionIcon *item, ActionIcon::LayoutData *ldata) {
-    LAYOUT_CALL_ITEM(item);
-    LD_INDEPENDENT;
-
-    if (ldata->is_valid()) {
-        return;
-    }
-
-    FontMetrics font_metrics(item->icon_font());
-    ldata->set_bbox(font_metrics.bounding_rect(Char(item->icon())));
-    ldata->set_pos(PointF());
 }
 
 void TLayout::layout_ambitus(const Ambitus *item, Ambitus::LayoutData *ldata, const LayoutContext &ctx) {
@@ -4353,162 +4335,6 @@ void TLayout::check_rehearsal_mark_vs_big_time_sig(const RehearsalMark *item, Te
 
 void TLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx) {
     RestLayout::layout_rest(item, ldata, ctx);
-}
-
-void TLayout::layout_shadow_note(ShadowNote *item, LayoutContext &ctx) {
-    LAYOUT_CALL_ITEM(item);
-    if (!item->is_valid()) {
-        item->setbbox(RectF());
-        return;
-    }
-
-    double spatium_value = item->spatium();
-    double mag = item->mag();
-    RectF notehead_bbox = item->sym_bbox(item->notehead_symbol());
-    bool up = item->compute_up();
-
-    // Layout dots
-    double dot_width = 0.0;
-    if (item->duration().dots() > 0) {
-        double notehead_width = notehead_bbox.width();
-        double d = ctx.conf().style_absolute(Sid::DOT_NOTE_DISTANCE) * mag;
-        double dd = ctx.conf().style_absolute(Sid::DOT_DOT_DISTANCE) * mag;
-        dot_width = (notehead_width + d);
-        if (item->has_flag() && up) {
-            dot_width = std::max(dot_width, notehead_width + item->sym_bbox(item->flag_sym()).right());
-        }
-        for (int i = 0; i < item->duration().dots(); i++) {
-            dot_width += dd * i;
-        }
-    }
-
-    RectF new_bbox;
-    new_bbox.set_rect(notehead_bbox.x(), notehead_bbox.y(), notehead_bbox.width() + dot_width, notehead_bbox.height());
-
-    // Layout stem and flag
-    if (item->has_stem()) {
-        double x = notehead_bbox.x();
-        double w = notehead_bbox.width();
-
-        double stem_width = ctx.conf().style_absolute(Sid::STEM_WIDTH);
-        double stem_length = (up ? -3.5 : 3.5) * spatium_value;
-        double stem_anchor =
-            item->sym_smufl_anchor(item->notehead_symbol(), up ? SmuflAnchorId::STEM_UP_SE : SmuflAnchorId::STEM_DOWN_NW).y();
-
-        new_bbox |= RectF(up ? x + w - stem_width : x, stem_anchor, stem_width, stem_length - stem_anchor);
-
-        if (item->has_flag()) {
-            RectF flag_bbox = item->sym_bbox(item->flag_sym());
-            new_bbox |=
-                RectF(up ? x + w - stem_width : x, stem_anchor + stem_length + flag_bbox.y(), flag_bbox.width(), flag_bbox.height());
-        }
-    }
-
-    int line_idx = item->line_index();
-
-    // Layout ledger lines if needed
-    if (item->ledger_lines_visible()) {
-        double extra_len = ctx.conf().style_absolute(Sid::LEDGER_LINE_LENGTH) * mag;
-        double step = 0.5 * spatium_value * item->staff_type()->line_distance().val();
-        double y_offset = item->staff_offset_y();
-        double x = notehead_bbox.x() - extra_len;
-        double w = notehead_bbox.width() + 2 * extra_len;
-
-        double lw = ctx.conf().style_absolute(Sid::LEDGER_LINE_WIDTH);
-
-        RectF r(x, -lw * .5, w, lw);
-        const int top_line = -2 + y_offset / step;
-        for (int i = top_line; i >= line_idx; i -= 2) {
-            new_bbox |= r.translated(PointF(0, step * (i - line_idx)));
-        }
-        int l = item->staff_type()->lines() * 2 + y_offset / step; // first ledger line below staff
-        for (int i = l; i <= line_idx; i += 2) {
-            new_bbox |= r.translated(PointF(0, step * (i - line_idx)));
-        }
-    }
-
-    // Layout accidental
-    SymId acc = Accidental::subtype2symbol(item->accidental_type());
-    if (acc != SymId::NO_SYM) {
-        RectF sym_rect = item->sym_bbox(acc);
-        double acc_width = sym_rect.width() + ctx.conf().style_absolute(Sid::ACCIDENTAL_NOTE_DISTANCE) * mag;
-        double dh = 0.0;
-
-        if (sym_rect.y() < new_bbox.y()) {
-            dh = sym_rect.height() - (new_bbox.y() - sym_rect.y());
-            new_bbox.set_y(sym_rect.y());
-        } else if (sym_rect.y() > new_bbox.y()) {
-            dh = new_bbox.height() - (sym_rect.y() - new_bbox.y());
-        }
-
-        new_bbox.set_x(new_bbox.x() - acc_width);
-        new_bbox.set_width(new_bbox.width() + acc_width);
-        new_bbox.set_height(new_bbox.height() + dh);
-    }
-
-    const std::set<SymId> &articulation_ids = item->articulation_ids();
-    if (articulation_ids.empty()) {
-        item->setbbox(new_bbox);
-        return;
-    }
-
-    // Layout articulations
-    bool distant_articulations = false;
-    double min_dist = 0.4 * spatium_value;
-    if ((!up && line_idx > 1) || (up && line_idx < item->staff_type()->bottom_line() - 1)) {
-        min_dist = spatium_value;
-    }
-
-    // Extend bounding box for nearby articulations
-    for (const SymId &artic : item->articulation_ids()) {
-        String artic_name = Articulation::sym_id2_articulation_name(artic);
-        const double sym_h = item->sym_height(artic);
-        if (artic_name == u"staccato" || artic_name == u"tenuto") {
-            if (!up) {
-                new_bbox.set_top(new_bbox.y() - min_dist - sym_h);
-            } else {
-                new_bbox.set_bottom(new_bbox.bottom() + min_dist + sym_h);
-            }
-        } else {
-            distant_articulations = true;
-        }
-    }
-
-    // If there are any other articulations, extend bounding box to include whole staff
-    // And extend further to include those articulations
-    if (distant_articulations) {
-        min_dist = 0.4 * spatium_value;
-        const double staff_top = -spatium_value * .5 * line_idx;
-        const double staff_bottom = -spatium_value * .5 * (item->staff_type()->bottom_line() - line_idx);
-        if (new_bbox.y() > staff_top) {
-            new_bbox.set_top(staff_top);
-        }
-        if (new_bbox.bottom() < staff_bottom) {
-            new_bbox.set_bottom(staff_bottom);
-        }
-
-        for (const SymId &artic : item->articulation_ids()) {
-            String artic_name = Articulation::sym_id2_articulation_name(artic);
-            const double sym_h = item->sym_height(artic);
-            bool is_marcato = Articulation::sym_id2_articulation_name(artic).contains(u"marcato");
-            bool is_lv = artic == SymId::ARTIC_LAISSEZ_VIBRER_ABOVE || artic == SymId::ARTIC_LAISSEZ_VIBRER_BELOW;
-            if (artic_name == u"staccato" || artic_name == u"tenuto") {
-                continue;
-            } else {
-                if (!up || is_marcato) {
-                    new_bbox.set_top(new_bbox.y() - min_dist - sym_h);
-                } else {
-                    new_bbox.set_bottom(new_bbox.bottom() + min_dist + sym_h);
-                }
-            }
-            if (is_lv) {
-                const double width = item->sym_width(artic) - item->sym_width(item->notehead_symbol()) / 2;
-                new_bbox.set_width(new_bbox.width() + width);
-            }
-        }
-    }
-
-    item->setbbox(new_bbox);
 }
 
 void TLayout::layout_line(SLine *item, LayoutContext &ctx) {

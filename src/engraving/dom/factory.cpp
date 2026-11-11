@@ -23,7 +23,6 @@
 #include "factory.h"
 
 #include "accidental.h"
-#include "actionicon.h"
 #include "ambitus.h"
 #include "anchors.h"
 #include "arpeggio.h"
@@ -218,7 +217,6 @@ EngravingItem *Factory::do_create_item(ElementType type, DummyParentOr<Engraving
         case ElementType::MARKER: return new Marker(parent);
         case ElementType::JUMP: return new Jump(parent_of_type_or_dummy<Measure>(parent_item, dummy));
         case ElementType::MEASURE_REPEAT: return new MeasureRepeat(parent_of_type_or_dummy<Segment>(parent_item, dummy));
-        case ElementType::ACTION_ICON: return new ActionIcon(parent);
         case ElementType::NOTE: return new Note(parent_of_type_or_dummy<Chord>(parent_item, dummy));
         case ElementType::SYMBOL: return new Symbol(parent);
         case ElementType::FSYMBOL: return new FSymbol(parent);
@@ -296,7 +294,6 @@ EngravingItem *Factory::do_create_item(ElementType type, DummyParentOr<Engraving
         case ElementType::LEDGER_LINE:
         case ElementType::STAFF_LINES:
         case ElementType::SELECTION:
-        case ElementType::SHADOW_NOTE:
         case ElementType::SEGMENT:
         case ElementType::SYSTEM:
         case ElementType::MAXTYPE:

@@ -23,7 +23,6 @@
 #include "accidental.h"
 
 #include "../editing/editnote.h"
-#include "actionicon.h"
 #include "log.h"
 #include "note.h"
 #include "score.h"
@@ -393,11 +392,6 @@ bool Accidental::accept_drop(EditData &data) const {
         return note();
     }
 
-    if (e->is_action_icon()) {
-        ActionIconType type = to_action_icon(e)->action_type();
-        return type == ActionIconType::PARENTHESES || type == ActionIconType::BRACKETS;
-    }
-
     return false;
 }
 
@@ -409,17 +403,7 @@ EngravingItem *Accidental::drop(Transaction &, EditData &data) {
     EngravingItem *e = data.drop_element;
     switch (e->type()) {
         case ElementType::ACCIDENTAL: EditNote::change_accidental(score(), note(), to_accidental(e)->accidental_type()); break;
-        case ElementType::ACTION_ICON:
-            switch (to_action_icon(e)->action_type()) {
-                case ActionIconType::PARENTHESES:
-                    undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::PARENTHESIS), PropertyFlags::NOSTYLE);
-                    break;
-                case ActionIconType::BRACKETS:
-                    undo_change_property(Pid::ACCIDENTAL_BRACKET, int(AccidentalBracket::BRACKET), PropertyFlags::NOSTYLE);
-                    break;
-                default: LOGD("unknown icon type"); break;
-            }
-            break;
+
         default: break;
     }
     delete e;

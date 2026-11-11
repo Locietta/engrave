@@ -222,7 +222,7 @@ IdClass id_class(const EngravingObject &object) {
         case ElementType::SEGMENT: return IdClass::ADDRESS;
         // Layout builds these from what is written (a chord builds its stem, a system its
         // brackets), so an id on one is not in the file and does not survive the next layout
-        // pass.  RootItem, DummyParent and ShadowNote belong to the score itself.
+        // pass.  RootItem and DummyParent belong to the score itself.
         case ElementType::SYSTEM:
         case ElementType::PAGE:
         case ElementType::BRACKET:
@@ -240,8 +240,7 @@ IdClass id_class(const EngravingObject &object) {
         case ElementType::FIGURED_BASS_ITEM:
         case ElementType::PARENTHESIS:
         case ElementType::ROOT_ITEM:
-        case ElementType::DUMMY:
-        case ElementType::SHADOW_NOTE: return IdClass::LAYOUT;
+        case ElementType::DUMMY: return IdClass::LAYOUT;
         default: break;
     }
     // A multi-measure rest is layout's: it replaces a range of measures, and so is

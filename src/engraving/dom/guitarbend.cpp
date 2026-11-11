@@ -31,7 +31,6 @@
 #include "../editing/transpose.h"
 #include "../iengravingconfiguration.h" // IWYU pragma: keep
 #include "accidental.h"
-#include "actionicon.h"
 #include "chord.h"
 #include "log.h"
 #include "note.h"
