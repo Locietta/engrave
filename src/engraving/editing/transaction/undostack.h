@@ -23,16 +23,19 @@
 #pragma once
 
 #include <map>
+#include <unordered_set>
+#include <vector>
 
-#include "../../dom/input.h"
+#include "dom/property.h"
 #include "global/containers.h"
 #include "global/types/translatablestring.h"
+#include "style/styledef.h"
+#include "types/types.h"
 
 namespace mu::engraving {
+struct EngravingItem;
 struct EngravingObject;
 struct Score;
-struct Segment;
-struct Box;
 
 struct EditData;
 
@@ -62,27 +65,6 @@ struct UndoableTransaction {
     bool has_commands_not_matching_filters(const std::vector<UndoableCommandFilter> &filters, const EngravingItem *target) const;
     void remove_commands_matching_filter(UndoableCommandFilter f, EngravingItem *target);
 
-    const InputState &undo_input_state() const;
-    const InputState &redo_input_state() const;
-
-    struct SelectionInfo {
-        std::vector<EngravingItem *> elements;
-        Fraction tick_start;
-        Fraction tick_end;
-        staff_idx_t staff_start = muse::nidx;
-        staff_idx_t staff_end = muse::nidx;
-        Box *start_box = nullptr;
-        Box *end_box = nullptr;
-
-        bool is_valid() const { return !elements.empty() || staff_start != muse::nidx; }
-    };
-
-    const SelectionInfo &undo_selection_info() const;
-    const SelectionInfo &redo_selection_info() const;
-
-    void exclude_element_from_selection_info(EngravingItem *element);
-    static bool can_record_selected_element(const EngravingItem *e);
-
     struct ChangesInfo {
         ElementTypeSet changed_object_types;
         std::map<EngravingObject *, std::unordered_set<CommandType>> changed_objects;
@@ -99,16 +81,9 @@ private:
 
     std::vector<UndoableCommand *> commands_;
 
-    InputState undo_input_state_;
-    InputState redo_input_state_;
-    SelectionInfo undo_selection_info_;
-    SelectionInfo redo_selection_info_;
     muse::TranslatableString action_name_;
 
     Score *score_ = nullptr;
-
-    static void fill_selection_info(SelectionInfo &, const Selection &);
-    static void apply_selection_info(const SelectionInfo &, Selection &);
 };
 
 struct UndoStack {

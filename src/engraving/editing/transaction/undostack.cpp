@@ -35,8 +35,7 @@
 #include "undostack.h"
 
 #include "containers.h"
-#include "dom/box.h"
-#include "dom/select.h"
+#include "dom/score.h"
 #include "editing/editproperty.h"
 #include "editing/editstyle.h"
 #include "editing/textedit.h"
@@ -249,10 +248,7 @@ void UndoStack::redo() {
 //   UndoableTransaction
 //---------------------------------------------------------
 
-UndoableTransaction::UndoableTransaction(Score *s, const TranslatableString &action_name)
-    : undo_input_state_(s->input_state()), action_name_(action_name), score_(s) {
-    fill_selection_info(undo_selection_info_, s->selection());
-}
+UndoableTransaction::UndoableTransaction(Score *s, const TranslatableString &action_name) : action_name_(action_name), score_(s) {}
 
 UndoableTransaction::~UndoableTransaction() {
     for (UndoableCommand *command : commands_) {
@@ -329,110 +325,25 @@ void UndoableTransaction::remove_commands_matching_filter(UndoableCommandFilter 
     commands_ = std::move(accepted_list);
 }
 
-bool UndoableTransaction::can_record_selected_element(const EngravingItem *e) {
-    if (e->generated()) {
-        return false;
-    }
-
-    return e->is_note() || (e->is_chord_rest() && !e->is_chord()) ||
-           (e->is_text_base() && !e->is_instrument_name() && !e->is_hammer_on_pull_off_text()) || e->is_fret_diagram() ||
-           e->is_sound_flag();
-}
-
-void UndoableTransaction::fill_selection_info(SelectionInfo &info, const Selection &sel) {
-    info.staff_start = info.staff_end = muse::nidx;
-    info.start_box = info.end_box = nullptr;
-    info.elements.clear();
-
-    if (sel.is_list()) {
-        for (EngravingItem *e : sel.elements()) {
-            if (can_record_selected_element(e)) {
-                info.elements.push_back(e);
-            } else {
-                // don't remember selection we are unable to restore
-                info.elements.clear();
-                return;
-            }
-        }
-    } else if (sel.is_range()) {
-        info.staff_start = sel.staff_start();
-        info.staff_end = sel.staff_end();
-        info.tick_start = sel.tick_start();
-        info.tick_end = sel.tick_end();
-        info.start_box = sel.start_box();
-        info.end_box = sel.end_box();
-    }
-}
-
-void UndoableTransaction::apply_selection_info(const SelectionInfo &info, Selection &sel) {
-    if (!info.elements.empty()) {
-        for (EngravingItem *e : info.elements) {
-            sel.add(e);
-        }
-    } else if (info.staff_start != muse::nidx) {
-        sel.set_range_ticks(info.tick_start, info.tick_end, info.staff_start, info.staff_end, info.start_box, info.end_box);
-    }
-}
-
 void UndoableTransaction::undo() {
-    redo_input_state_ = score_->input_state();
-    fill_selection_info(redo_selection_info_, score_->selection());
     score_->deselect_all();
 
     for (auto it = commands_.rbegin(); it != commands_.rend(); ++it) {
         LOG_UNDO() << "<" << (*it)->name() << ">";
         (*it)->undo();
     }
-
-    score_->set_input_state(undo_input_state_);
-    if (undo_selection_info_.is_valid()) {
-        score_->deselect_all();
-        apply_selection_info(undo_selection_info_, score_->selection());
-    }
 }
 
 void UndoableTransaction::redo() {
-    undo_input_state_ = score_->input_state();
-    fill_selection_info(undo_selection_info_, score_->selection());
     score_->deselect_all();
 
     for (UndoableCommand *command : commands_) {
         LOG_UNDO() << "<" << command->name() << ">";
         command->redo();
     }
-
-    score_->set_input_state(redo_input_state_);
-    if (redo_selection_info_.is_valid()) {
-        score_->deselect_all();
-        apply_selection_info(redo_selection_info_, score_->selection());
-    }
 }
 
-void UndoableTransaction::append(UndoableTransaction &&other) {
-    append_commands(other);
-    if (score_ == other.score_) {
-        redo_input_state_ = std::move(other.redo_input_state_);
-        redo_selection_info_ = std::move(other.redo_selection_info_);
-    }
-}
-
-const InputState &UndoableTransaction::undo_input_state() const { return undo_input_state_; }
-
-const InputState &UndoableTransaction::redo_input_state() const { return redo_input_state_; }
-
-void UndoableTransaction::exclude_element_from_selection_info(EngravingItem *element) {
-    if (undo_selection_info_.is_valid()) {
-        muse::remove(undo_selection_info_.elements, element);
-    }
-
-    if (redo_selection_info_.is_valid()) {
-        muse::remove(redo_selection_info_.elements, element);
-    }
-}
-
-const UndoableTransaction::SelectionInfo &UndoableTransaction::undo_selection_info() const { return undo_selection_info_; }
-
-const UndoableTransaction::SelectionInfo &UndoableTransaction::redo_selection_info() const { return redo_selection_info_; }
+void UndoableTransaction::append(UndoableTransaction &&other) { append_commands(other); }
 
 UndoableTransaction::ChangesInfo UndoableTransaction::changes_info(bool undo) const {
     ChangesInfo result;
