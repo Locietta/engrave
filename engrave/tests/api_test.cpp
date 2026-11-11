@@ -269,6 +269,34 @@ TEST(Open, RejectsPreMuseScore4) {
     }
 }
 
+// The writer stores z only when it differs from the type's default stacking order,
+// so the default must not move with ElementType's ordinals: a Chord's is 12700. A
+// custom 12600 (the default the deletion of LASSO would have produced) survives two
+// saves, and an explicit 12700 is dropped as the default.
+TEST(Open, StackingOrderSurvivesSaveAndReopen) {
+    const auto chord_score = [](int z) {
+        return "<museScore version=\"5.00\"><Score><Division>480</Division><Part><Staff><StaffType group=\"pitched\"/></Staff>"
+               "<Instrument id=\"piano\"><Channel><program value=\"0\"/></Channel></Instrument></Part><Staff id=\"1\"><Measure>"
+               "<voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Chord><z>" +
+               std::to_string(z) +
+               "</z><durationType>whole</durationType><Note><pitch>60</pitch></Note></Chord></voice></Measure></Staff></Score>"
+               "</museScore>";
+    };
+    const auto saved_twice = [&](int z) {
+        auto first = g_engine->open(bytes_of(chord_score(z)), {.format = Format::MSCX});
+        EXPECT_TRUE(first) << first.error().message;
+        if (!first) return std::string{};
+        const std::string once = exported(**first, Format::MSCX);
+        auto second = g_engine->open(bytes_of(once), {.format = Format::MSCX});
+        EXPECT_TRUE(second) << second.error().message;
+        return second ? exported(**second, Format::MSCX) : std::string{};
+    };
+    EXPECT_NE(saved_twice(12600).find("<z>12600</z>"), std::string::npos);
+    const std::string by_default = saved_twice(12700);
+    EXPECT_FALSE(by_default.empty());
+    EXPECT_EQ(by_default.find("<z>"), std::string::npos);
+}
+
 TEST(Capabilities, ListsFormatsAndVersion) {
     const auto capabilities = g_engine->capabilities();
     EXPECT_FALSE(capabilities.engine_version.empty());
