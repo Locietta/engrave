@@ -308,6 +308,25 @@ TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
     EXPECT_EQ(non_native.error().code, ErrorCode::UNSUPPORTED);
 }
 
+// The view mode is a score-level tag that 4.70 writes the same way; the engine lays
+// out pages regardless, but keeps the tag so a MuseScore user gets the view back.
+TEST(Export470, KeepsTheViewMode) {
+    for (const std::string mode : {"line", "system"}) {
+        std::string fixture = read_text(write470_fixture());
+        fixture.insert(fixture.find("<Score>") + 7, "<layoutMode>" + mode + "</layoutMode>");
+        auto document = g_engine->open(as_bytes(fixture));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto xml = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        if (!xml) {
+            for (const auto &w : xml.error().export_warnings) ADD_FAILURE() << w.code << ": " << w.message;
+            FAIL() << mode << ": " << xml.error().message;
+        }
+        EXPECT_TRUE(xml->warnings.empty());
+        const std::string text(reinterpret_cast<const char *>(xml->bytes.data()), xml->bytes.size());
+        EXPECT_NE(text.find("<layoutMode>" + mode + "</layoutMode>"), std::string::npos);
+    }
+}
+
 TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
