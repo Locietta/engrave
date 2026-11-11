@@ -40,6 +40,7 @@
 #include "dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "engraving/internal/engravingfont.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
 #include "internal/engravingcontextconfiguration.h"
 #include "linkedobjects.h"
@@ -51,7 +52,6 @@
 #include "page.h"
 #include "parenthesis.h"
 #include "part.h"
-#include "rendering/iscorerenderer.h"
 #include "rendering/score/autoplace.h"
 #include "rendering/score/chordlayout.h"
 #include "rendering/score/tlayout.h"
@@ -311,7 +311,7 @@ const std::shared_ptr<EngravingContextConfiguration> &EngravingItem::context_con
     return score()->context_configuration();
 }
 
-const std::shared_ptr<rendering::IScoreRenderer> &EngravingItem::renderer() const { return score()->renderer(); }
+const std::shared_ptr<rendering::score::ScoreRenderer> &EngravingItem::renderer() const { return score()->renderer(); }
 
 //---------------------------------------------------------
 //   spatiumChanged

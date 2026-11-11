@@ -13,7 +13,7 @@
 #include "engrave/src/runtime/engine_context.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/score.h"
-#include "engraving/rendering/iscorerenderer.h"
+#include "engraving/rendering/score/scorerenderer.h"
 
 namespace music {
 namespace {
@@ -101,7 +101,7 @@ std::string render_score(const EngineContext &engine, mu::engraving::Score *scor
 
     {
         muse::draw::Painter painter(provider, "native-export");
-        rendering::IScoreRenderer::ScorePaintOptions paint_options;
+        rendering::score::ScoreRenderer::ScorePaintOptions paint_options;
         paint_options.is_printing = true;
         paint_options.device_dpi = dpi;
         paint_options.from_page = format == "pdf" ? first_page_value : options.page;

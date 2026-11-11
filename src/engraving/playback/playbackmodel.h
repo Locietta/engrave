@@ -47,13 +47,13 @@ struct RepeatList;
 // until it is destroyed or loads another score.
 // The export builds a flat PlaybackScore with PlaybackScoreBuilder instead; this model is kept as the
 // legacy test oracle (playback DoD design exception E1). Both run the same walk (playbackwalk.h).
-struct PlaybackModel : IScoreChangesListener {
+struct PlaybackModel {
     // profilesRepository may be null (no default articulation profiles); it must
     // outlive the model.
     explicit PlaybackModel(const muse::mpe::IArticulationProfilesRepository *profiles_repository)
         : profiles_repository_(profiles_repository) {}
 
-    ~PlaybackModel() override;
+    ~PlaybackModel();
 
     PlaybackModel(const PlaybackModel &) = delete;
     PlaybackModel &operator=(const PlaybackModel &) = delete;
@@ -104,7 +104,7 @@ struct PlaybackModel : IScoreChangesListener {
 
     InstrumentTrackIdSet existing_track_id_set() const;
 
-    void on_score_changes(const ScoreChanges &changes) override;
+    void on_score_changes(const ScoreChanges &changes);
 
 private:
     const muse::mpe::IArticulationProfilesRepository *profiles_repository() const { return profiles_repository_; }

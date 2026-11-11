@@ -66,16 +66,10 @@ struct Selection;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-struct IGetScoreInternal {
-private:
-    friend struct LayoutConfiguration;
-    friend struct DomAccessor;
-
-    virtual Score *score() = 0;
-};
+struct LayoutContext;
 
 struct LayoutConfiguration {
-    LayoutConfiguration(IGetScoreInternal *s);
+    LayoutConfiguration(LayoutContext *s);
 
     // Native files retain their view mode; engraving always uses page geometry.
     LayoutMode view_mode() const { return LayoutMode::PAGE; }
@@ -136,12 +130,12 @@ private:
     const Score *score() const;
     const LayoutOptions &options() const;
 
-    IGetScoreInternal *get_score_ = nullptr;
+    LayoutContext *get_score_ = nullptr;
 };
 
 struct DomAccessor {
 
-    DomAccessor(IGetScoreInternal *s);
+    DomAccessor(LayoutContext *s);
 
     // Const access
     const std::vector<Part *> &parts() const;
@@ -213,7 +207,7 @@ struct DomAccessor {
     const std::set<Spanner *> &unmanaged_spanners() const;
 
 private:
-    IGetScoreInternal *get_score_ = nullptr;
+    LayoutContext *get_score_ = nullptr;
 };
 
 struct LayoutState {
@@ -363,7 +357,7 @@ private:
     double total_brackets_width_ = -1.0;
 };
 
-struct LayoutContext : IGetScoreInternal {
+struct LayoutContext {
     LayoutContext(Score *s);
     ~LayoutContext();
 
@@ -392,7 +386,10 @@ struct LayoutContext : IGetScoreInternal {
 
 private:
 
-    Score *score() override { return score_; }
+    friend struct LayoutConfiguration;
+    friend struct DomAccessor;
+
+    Score *score() { return score_; }
 
     Score *score_ = nullptr;
 

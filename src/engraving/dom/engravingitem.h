@@ -43,9 +43,9 @@ struct Painter;
     LayoutData *mutldata() { return static_cast<Class::LayoutData *>(EngravingItem::mutldata()); }             \
     LayoutData *create_layout_data() const override { return new Class::LayoutData(); }
 
-namespace mu::engraving::rendering {
-struct IScoreRenderer;
-} // namespace mu::engraving::rendering
+namespace mu::engraving::rendering::score {
+struct ScoreRenderer;
+} // namespace mu::engraving::rendering::score
 
 namespace mu::engraving {
 struct EngravingConfiguration;
@@ -163,7 +163,7 @@ public:
 
     const std::shared_ptr<EngravingConfiguration> &configuration() const;
     const std::shared_ptr<EngravingContextConfiguration> &context_configuration() const;
-    const std::shared_ptr<rendering::IScoreRenderer> &renderer() const;
+    const std::shared_ptr<rendering::score::ScoreRenderer> &renderer() const;
 
     EngravingItem *find_ancestor(ElementType t);
     const EngravingItem *find_ancestor(ElementType t) const;

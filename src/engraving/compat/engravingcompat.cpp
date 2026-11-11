@@ -44,7 +44,7 @@
 #include "editing/editchord.h"
 #include "editing/reset.h"
 #include "editing/transaction/transaction.h"
-#include "rendering/iscorerenderer.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "rw/compat/compatutils.h"
 #include "types/types.h"
 

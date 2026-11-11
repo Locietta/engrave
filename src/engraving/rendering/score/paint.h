@@ -23,9 +23,9 @@
 
 #include <vector>
 
-#include "../iscorerenderer.h"
 #include "../paintoptions.h"
 #include "draw/painter.h"
+#include "engraving/rendering/score/scorerenderer.h"
 
 namespace mu::engraving {
 struct EngravingItem;
@@ -35,11 +35,11 @@ struct Score;
 
 namespace mu::engraving::rendering::score {
 struct Paint {
-    static void paint_score(muse::draw::Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt);
+    static void paint_score(muse::draw::Painter *painter, Score *score, const ScoreRenderer::ScorePaintOptions &opt);
     static void paint_item(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt);
     static void paint_items(muse::draw::Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt);
 
     static SizeF page_size_inch(const Score *score);
-    static SizeF page_size_inch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt);
+    static SizeF page_size_inch(const Score *score, const ScoreRenderer::ScorePaintOptions &opt);
 };
 } // namespace mu::engraving::rendering::score

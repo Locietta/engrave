@@ -22,9 +22,9 @@
 
 #include "textlinebase.h"
 
+#include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
 #include "log.h"
-#include "rendering/iscorerenderer.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
