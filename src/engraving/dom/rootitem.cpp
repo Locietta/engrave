@@ -21,12 +21,8 @@
  */
 #include "rootitem.h"
 
-#include "dummyparent.h"
-#include "page.h"
 #include "score.h"
 
 using namespace mu::engraving;
 
-RootItem::RootItem(Score *score, Kind kind) : EngravingItem(ElementType::ROOT_ITEM, score), kind_(kind) {}
-
-void RootItem::init() {}
+RootItem::RootItem(Score *score) : EngravingItem(ElementType::ROOT_ITEM, score) {}

@@ -21,13 +21,8 @@
  */
 #include "dummyparent.h"
 
-#include "rootitem.h"
 #include "score.h"
 
 using namespace mu::engraving;
 
 DummyParent::DummyParent(Score *score) : EngravingObject(ElementType::DUMMY, score) {}
-
-DummyParent::~DummyParent() { delete root_; }
-
-void DummyParent::init() { root_ = new RootItem(score(), RootItem::Kind::DUMMY); }

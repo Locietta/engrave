@@ -147,3 +147,27 @@ included two timing assertions despite the requested exclusion; final validation
 filters out both CancelsInsideContextMaterialization and
 ReleaseBoundsColdOwnersAndFinishesAfterCancellation. No production timing code
 or test thresholds were changed. Full gate, audio corpus and Linux were not run.
+
+Accessibility/input-capture leftovers: Score and DummyParent no longer allocate,
+initialize, own or expose their unused RootItem objects. RootItem::Kind/kind_ and
+the empty init method are removed. The RootItem class/type metadata remains to
+keep the existing public property catalogue stable; the engine no longer creates
+instances. DummyParent remains the ownership parent of unattached elements.
+Score::set_input_state has no callers after undo snapshots were deleted and is
+removed. InputState and its input_state accessors stay for the reachable musical
+edit primitives documented above. Stale accessibility comments in RootItem,
+DummyParent and Selection are removed; Selection::update_state's comment now
+describes the selection position it actually updates. No enumerators, legacy_z
+rows, property catalogue entries or persisted values change.
+
+Root/input-capture cleanup validation: Windows release engine_tests compiled;
+all nine requested public suites executed successfully (179 tests), as did
+244 upstream engraving tests (the two timing tests excluded) and 24 MPE tests.
+Export470.* and the 12-export standalone-excerpt script passed. Direct 4.70
+exports succeeded for nine dedicated compatibility fixtures; ties_hidden and
+ties_mismatched were refused, matching their negative-test roles. The 17 general
+native-corpus outcomes match the MIME checkpoint (one export, 16 bounded-writer
+refusals). This is not a pre-MIME baseline comparison. Formatting checks passed
+for all 17 touched C++ files. Full gate, audio corpus and Linux were not run.
+Selection/SelectionFilter deletion remains unfinished; no requirement to rewrite
+music algorithms was established by this partial extraction.
