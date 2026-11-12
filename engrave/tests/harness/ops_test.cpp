@@ -34,6 +34,8 @@
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/note.h"
+#include "engraving/dom/parenthesis.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stem.h"
@@ -1213,6 +1215,30 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(ParenthesisGroupEdit, FailedBatchRestoresAuthoredAppearanceBaseline) {
+    auto document = open("ghost_note.mscx");
+    ASSERT_TRUE(document);
+    mu::engraving::Parenthesis *left = nullptr;
+    engrave::harness::master_of(*document).scan_elements([&](mu::engraving::EngravingItem *item) {
+        if (left || !item->is_note()) return;
+        const auto &groups = mu::engraving::to_note(item)->chord()->note_parentheses();
+        if (!groups.empty()) left = groups.front()->left_paren();
+    });
+    ASSERT_NE(left, nullptr);
+    const auto before = left->get_property(Pid::OFFSET);
+    const auto flags = left->property_flags(Pid::OFFSET);
+    auto result = engrave::api::BatchGuard(*document).run(
+        {[left](engrave::api::EditContext &) -> engrave::Result<void> {
+             left->undo_change_property(Pid::OFFSET, muse::PointF(1.0, -2.0));
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after parenthesis appearance"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(left->get_property(Pid::OFFSET), before);
+    EXPECT_EQ(left->property_flags(Pid::OFFSET), flags);
 }
 
 TEST(StemOverrideEdit, FailedBatchRestoresOwnerLength) {

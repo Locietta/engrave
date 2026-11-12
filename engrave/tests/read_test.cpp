@@ -79,6 +79,7 @@
 #include "engraving/dom/ornament.h"
 #include "engraving/dom/ottava.h"
 #include "engraving/dom/page.h"
+#include "engraving/dom/parenthesis.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -5259,6 +5260,60 @@ std::string offset_test_write(const mu::engraving::ChordLine *line) {
         mu::engraving::write::TWrite::write(line, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+std::string legacy_override_write(const mu::engraving::EngravingItem *item) {
+    muse::ByteArray bytes;
+    muse::io::Buffer buffer(&bytes);
+    buffer.open(muse::io::IODevice::WRITE_ONLY);
+    {
+        mu::engraving::XmlWriter xml(&buffer);
+        mu::engraving::write::WriteContext ctx(item->score());
+        mu::engraving::write::TWrite::write_item(item, xml, ctx);
+    }
+    return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = chordline_offset_fixture();
+        xml.replace(xml.find("5.00"), 4, version);
+        const auto begin = xml.find("<ChordLine>");
+        xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
+        xml.insert(xml.find("<Note>") + 6, "<eid>C_C</eid><parentheses>both</parentheses>");
+        xml.insert(xml.find("</Note>") + 7, "<NoteParenGroup><Parenthesis><eid>D_D</eid><offset x=\"0.25\" y=\"-0.5\"/></Parenthesis>"
+                                            "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
+                                            "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>");
+        if (version == "4.60") {
+            const auto note_ref = xml.find("<NoteEID>C_C</NoteEID>");
+            xml.replace(note_ref, std::string_view("<NoteEID>C_C</NoteEID>").size(), "<NoteIdx>0</NoteIdx>");
+        }
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        auto &master = master_of(**document);
+        auto *chord = mu::engraving::to_chord(master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0));
+        ASSERT_EQ(chord->note_parentheses().size(), 1u);
+        const auto *group = chord->note_parentheses().front();
+        ASSERT_EQ(group->notes().size(), 1u);
+        EXPECT_EQ(group->notes().front(), chord->notes().front());
+        const auto edited = muse::PointF(0.125, -0.25) * master.style().spatium();
+        ASSERT_TRUE(group->left_paren()->set_property(mu::engraving::Pid::OFFSET, edited));
+        const auto bytes = legacy_override_write(chord);
+        std::unique_ptr<mu::engraving::Chord> copy(chord->clone());
+        ASSERT_EQ(copy->note_parentheses().size(), 1u);
+        EXPECT_EQ(copy->note_parentheses().front()->notes().front(), copy->notes().front());
+        EXPECT_EQ(copy->note_parentheses().front()->left_paren()->get_property(mu::engraving::Pid::OFFSET),
+                  mu::engraving::PropertyValue::from_value(edited));
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_EQ(legacy_override_write(chord), bytes);
+        const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto &restored = master_of(**reopened);
+        auto *restored_chord = mu::engraving::to_chord(restored.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0));
+        EXPECT_EQ(legacy_override_write(restored_chord), bytes);
+    }
 }
 
 TEST(Read, StemUserLengthSurvivesDisplayRecreation) {
