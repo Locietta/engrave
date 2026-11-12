@@ -160,7 +160,7 @@ ScoreProject load_native_score(const EngineContext &context, const std::string &
             ZipWriter zip(&out);
             zip.add_file("score.mscx", data);
             zip.close();
-            data = archive;
+            data = std::move(archive);
         }
         io::Buffer buffer(&data);
         engraving::MscReader::Params params;

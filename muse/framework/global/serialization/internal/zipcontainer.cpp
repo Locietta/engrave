@@ -635,6 +635,17 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
         status = ZipContainer::FILE_OPEN_ERROR;
         return;
     }
+    // A stored entry may be the output Buffer itself. Snapshot before seek or
+    // header writes mutate/reallocate the source; ordinary inputs stay borrowed.
+    if (device->read_data() == contents.const_data()) {
+        if (io::active_write_budget && !io::active_write_budget->charge(contents.size() + 1)) {
+            status = ZipContainer::FILE_WRITE_ERROR;
+            return;
+        }
+        const ByteArray snapshot(contents.const_data(), contents.size());
+        add_entry(type, input_file_name, snapshot);
+        return;
+    }
     device->seek(start_of_directory);
 
     // don't compress small files

@@ -3,6 +3,9 @@
 
 #include <gtest/gtest.h>
 
+#include "global/io/buffer.h"
+#include "global/serialization/internal/zipcontainer.h"
+#include "global/serialization/xmlstreamreader.h"
 #include "global/types/bytearray.h"
 #include "io/byteview.h"
 
@@ -158,4 +161,47 @@ TEST(ByteArray, EmptyAndMovedFromValuesRemainReadableAndReusable) {
     value.resize(4);
     EXPECT_EQ(value.const_data()[4], 0);
     EXPECT_EQ(value[1], 0);
+}
+
+TEST(XmlBuffer, ParsesBorrowedBytesAtCurrentPositionWithoutReadAll) {
+    struct BorrowOnlyBuffer : muse::io::Buffer {
+        using Buffer::Buffer;
+
+        muse::ByteArray do_read_all() override { throw std::runtime_error("unexpected owning read"); }
+    };
+
+    muse::ByteArray bytes("skip<root>value</root>");
+    const auto expected = bytes;
+    BorrowOnlyBuffer device(&bytes);
+    ASSERT_TRUE(device.open());
+    ASSERT_TRUE(device.seek(4));
+    muse::XmlStreamReader xml(&device);
+    EXPECT_EQ(device.pos(), device.size());
+    ASSERT_TRUE(xml.read_next_start_element());
+    EXPECT_EQ(xml.name(), "root");
+    EXPECT_EQ(xml.read_text(), muse::String(u"value"));
+    EXPECT_EQ(bytes, expected);
+}
+
+TEST(ZipBuffer, StoredSelfAliasingEntrySurvivesHeaderWritesAndReallocation) {
+    for (const auto policy : {muse::ZipContainer::NEVER_COMPRESS, muse::ZipContainer::AUTO_COMPRESS}) {
+        for (const auto input : {"", "input bytes"}) {
+            muse::ByteArray archive(input);
+            const auto expected = archive;
+            muse::io::Buffer device(&archive);
+            ASSERT_TRUE(device.open(muse::io::IODevice::READ_WRITE));
+            {
+                muse::ZipContainer writer(&device);
+                writer.set_compression_policy(policy);
+                writer.add_file("self", archive);
+                writer.close();
+                ASSERT_EQ(writer.status(), muse::ZipContainer::NO_ERROR);
+            }
+            device.close();
+            ASSERT_TRUE(device.open());
+            muse::ZipContainer reader(&device);
+            EXPECT_EQ(reader.file_data("self"), expected);
+            EXPECT_EQ(reader.status(), muse::ZipContainer::NO_ERROR);
+        }
+    }
 }
