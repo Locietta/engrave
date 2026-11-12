@@ -20,13 +20,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "textbase.h"
+
 #include <cmath>
 #include <stack>
 
-#include "../editing/textedit.h"
 #include "anchors.h"
 #include "box.h"
 #include "draw/fontmetrics.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/internal/engravingfont.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "harppedaldiagram.h"
@@ -2867,7 +2869,7 @@ void TextBase::undo_change_property(Pid id, const PropertyValue &v, PropertyFlag
         return;
     }
 
-    score()->undo(new ChangeTextProperties(cursor_, id, v, ps));
+    score()->transaction_manager()->current_or_dummy_transaction().change_text_format(*this, id, v, ps);
 
     if (cursor_->editing()) {
         // If we're in edit mode, changes will be propagated later when
@@ -2887,7 +2889,9 @@ void TextBase::undo_change_property(Pid id, const PropertyValue &v, PropertyFlag
         PropertyPropagation property_propagate = property_propagation(linked_text, id);
 
         switch (property_propagate) {
-            case PropertyPropagation::PROPAGATE: linked_score->undo(new ChangeTextProperties(linked_cursor, id, v, ps)); break;
+            case PropertyPropagation::PROPAGATE:
+                linked_score->transaction_manager()->current_or_dummy_transaction().change_text_format(*linked_cursor->text(), id, v, ps);
+                break;
             case PropertyPropagation::UNLINK: unlink_property_from_master(id); break;
             default: break;
         }
@@ -2895,11 +2899,11 @@ void TextBase::undo_change_property(Pid id, const PropertyValue &v, PropertyFlag
 
     for (EngravingItem *origin_item : origin_items()) {
         // This is a shared item: propagate to all origin items
-        score()->undo(new ChangeTextProperties(to_text_base(origin_item)->cursor(), id, v, ps));
+        score()->transaction_manager()->current_or_dummy_transaction().change_text_format(*to_text_base(origin_item), id, v, ps);
     }
     if (EngravingItem *shared_el = shared_item(); shared_el && shared_el->origin_items().front() == this) {
         // This is the first origin item of the shared item: propagate to shared item
-        score()->undo(new ChangeTextProperties(to_text_base(shared_el)->cursor(), id, v, ps));
+        score()->transaction_manager()->current_or_dummy_transaction().change_text_format(*to_text_base(shared_el), id, v, ps);
     }
 }
 

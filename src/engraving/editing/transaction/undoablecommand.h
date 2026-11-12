@@ -158,16 +158,6 @@ enum class CommandType : signed char {
     CHANGE_SCORE_ORDER,
 };
 
-enum class UndoableCommandFilter : unsigned char {
-    TEXT_EDIT,
-    ADD_ELEMENT,
-    ADD_ELEMENT_LINKED,
-    LINK,
-    REMOVE_ELEMENT,
-    REMOVE_ELEMENT_LINKED,
-    CHANGE_PROPERTY_LINKED,
-};
-
 #define UNDO_TYPE(t) \
     CommandType type() const override { return t; }
 #define UNDO_NAME(a) \
@@ -197,8 +187,6 @@ struct UndoableCommand {
     virtual CommandType type() const { return CommandType::UNKNOWN; }
 
     virtual std::optional<ChangedRange> changed_range() const { return std::nullopt; }
-
-    virtual bool matches_filter(UndoableCommandFilter, const EngravingItem * /* target */) const { return false; }
 
 protected:
     virtual void flip() {}

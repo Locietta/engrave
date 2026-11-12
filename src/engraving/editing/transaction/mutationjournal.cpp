@@ -26,7 +26,6 @@
 
 #include "editing/editproperty.h"
 #include "editing/editstyle.h"
-#include "editing/textedit.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -140,6 +139,18 @@ void JournalBatch::change_text_line_property(EngravingObject &object, const Prop
     apply_text_line_property(object, value);
 }
 
+void JournalBatch::change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    const auto index = entry_index(text_formats_.size());
+    text_formats_.push_back(capture_text_format(text, id));
+    try {
+        entries_.push_back({JournalEntryKind::TEXT_FORMAT, index});
+    } catch (...) {
+        text_formats_.pop_back();
+        throw;
+    }
+    apply_text_format(text, id, value, flags);
+}
+
 void JournalBatch::unwind(bool clean_up) {
     struct ReplayGuard {
         bool &flag;
@@ -156,6 +167,7 @@ void JournalBatch::unwind(bool clean_up) {
             case JournalEntryKind::STYLE_VALUES: restore_style_values(source_.styles[it->payload], source_); break;
             case JournalEntryKind::BRACKET_PROPERTY: restore_bracket_property(brackets_[it->payload]); break;
             case JournalEntryKind::TEXT_LINE_PROPERTY: restore_text_line_property(text_lines_[it->payload]); break;
+            case JournalEntryKind::TEXT_FORMAT: restore_text_format(text_formats_[it->payload]); break;
         }
     }
     if (clean_up)
@@ -170,12 +182,14 @@ void JournalBatch::unwind(bool clean_up) {
     source_.spatium_sources.clear();
     brackets_.clear();
     text_lines_.clear();
+    text_formats_.clear();
     entries_.clear();
 }
 
 bool JournalBatch::structural_since(size_t mark) const {
     for (size_t i = mark; i < entries_.size(); ++i) {
         const auto entry = entries_[i];
+        if (entry.kind == JournalEntryKind::TEXT_FORMAT) return true;
         if (entry.kind != JournalEntryKind::LEGACY) continue;
         switch (legacy_[entry.payload]->type()) {
             case CommandType::CHANGE_PROPERTY:
@@ -195,6 +209,10 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::TEXT_FORMAT) {
+            collect_object(result, &text_formats_[entry.payload].target.object(), CommandType::TEXT_EDIT);
+            continue;
+        }
         if (entry.kind == JournalEntryKind::BRACKET_PROPERTY) {
             result.changed_property_id_set.insert(brackets_[entry.payload].id);
             continue;
@@ -227,8 +245,6 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
         } else if (type == CommandType::CHANGE_STYLE) {
             const auto ids = static_cast<const ChangeStyle *>(command)->changed_ids();
             result.changed_style_id_set.insert(ids.begin(), ids.end());
-        } else if (type == CommandType::TEXT_EDIT) {
-            result.is_text_editing |= static_cast<const TextEditUndoableCommand *>(command)->cursor().editing();
         }
         for (auto *object : command->object_items()) collect_object(result, object, type);
     }

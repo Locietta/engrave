@@ -31,11 +31,12 @@
 #include "dom/score.h"
 #include "global/types/translatablestring.h"
 #include "sourcechange.h"
+#include "textchange.h"
 #include "undoablecommand.h"
 
 namespace mu::engraving {
 // Closed family dispatch; L1 may add AUTHORED_OVERRIDE without changing entries.
-enum class JournalEntryKind : uint8_t { LEGACY, PROPERTY, STYLE_VALUES, BRACKET_PROPERTY, TEXT_LINE_PROPERTY };
+enum class JournalEntryKind : uint8_t { LEGACY, PROPERTY, STYLE_VALUES, BRACKET_PROPERTY, TEXT_LINE_PROPERTY, TEXT_FORMAT };
 
 struct JournalEntry {
     JournalEntryKind kind;
@@ -55,6 +56,7 @@ struct JournalBatch {
     void change_style_values(Score &score, std::span<const StyleValue> values);
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
     void change_text_line_property(EngravingObject &object, const PropertyValue &value);
+    void change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);
     void unwind(bool clean_up = true);
 
     bool replaying() const { return replaying_; }
@@ -76,6 +78,8 @@ struct JournalBatch {
 
     size_t derived_entries() const { return brackets_.size() + text_lines_.size(); }
 
+    size_t text_format_entries() const { return text_formats_.size(); }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -85,6 +89,7 @@ private:
     SourceChangePayloads source_;
     amc::vector<BracketPropertyInverse> brackets_;
     amc::vector<TextLinePropertyInverse> text_lines_;
+    amc::vector<TextFormatInverse> text_formats_;
     bool replaying_ = false;
 };
 

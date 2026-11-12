@@ -135,15 +135,6 @@ const char *AddElement::name() const {
     return buffer;
 }
 
-bool AddElement::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
-    switch (f) {
-        case UndoableCommandFilter::ADD_ELEMENT: return target == element;
-        case UndoableCommandFilter::ADD_ELEMENT_LINKED: return muse::contains(target->link_list(), static_cast<EngravingObject *>(element));
-        default: break;
-    }
-    return false;
-}
-
 std::vector<EngravingObject *> AddElement::object_items() const { return compound_objects(element); }
 
 //---------------------------------------------------------
@@ -279,16 +270,6 @@ const char *RemoveElement::name() const {
     return buffer;
 }
 
-bool RemoveElement::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
-    switch (f) {
-        case UndoableCommandFilter::REMOVE_ELEMENT: return target == element;
-        case UndoableCommandFilter::REMOVE_ELEMENT_LINKED:
-            return muse::contains(target->link_list(), static_cast<EngravingObject *>(element));
-        default: break;
-    }
-    return false;
-}
-
 std::vector<EngravingObject *> RemoveElement::object_items() const { return compound_objects(element); }
 
 //---------------------------------------------------------
@@ -414,13 +395,6 @@ Link::Link(EngravingObject *e1, EngravingObject *e2) {
         le->push_back(e2);
     }
     e = e1;
-}
-
-bool Link::matches_filter(UndoableCommandFilter f, const EngravingItem *target) const {
-    if (f == UndoableCommandFilter::LINK) {
-        return e == target || le->contains(const_cast<EngravingItem *>(target));
-    }
-    return false;
 }
 
 //---------------------------------------------------------

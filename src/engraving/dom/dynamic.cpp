@@ -22,7 +22,6 @@
 #include "dynamic.h"
 
 #include "../editing/edithairpin.h"
-#include "../editing/textedit.h"
 #include "../editing/transaction/transaction.h"
 #include "../types/typesconv.h"
 #include "expression.h"

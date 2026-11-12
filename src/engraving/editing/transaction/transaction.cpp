@@ -218,6 +218,21 @@ void Transaction::change_text_line_property(EngravingObject &object, const Prope
     if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
 }
 
+void Transaction::change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_text_format(text, id, value, flags);
+        return;
+    }
+    std::unique_ptr<ChangeProperty> diagnostic;
+    if (s_push_hook) {
+        auto *probe = new ChangeProperty(&text, id, value, flags);
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->change_text_format(text, id, value, flags);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
 //---------------------------------------------------------
 // TransactionManager
 //---------------------------------------------------------
