@@ -631,4 +631,4 @@ void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
     normalize_scores(*score.master_score(), scores, options);
 }
 
-void mu::engraving::prepare_semantic_edit(Score &score) { normalize_score(score, {.include_hidden_staves = true}); }
+void mu::engraving::prepare_semantic_edit(Score &score) { normalize_document(*score.master_score(), {.include_hidden_staves = true}); }

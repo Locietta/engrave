@@ -34,6 +34,7 @@
 #include "../dom/segment.h"
 #include "../dom/select.h"
 #include "../dom/staff.h"
+#include "engraving/normalization/normalize.h"
 #include "log.h"
 #include "transpose.h"
 
@@ -393,6 +394,7 @@ void EditEnharmonicSpelling::spell_with_sharps_or_flats(Score *score, Prefer pre
 }
 
 void EditEnharmonicSpelling::change_enharmonic_spelling(Score *score, bool both) {
+    prepare_semantic_edit(*score);
     IF_ASSERT_FAILED(score) { return; }
 
     static constexpr int tpc_table[36] = {

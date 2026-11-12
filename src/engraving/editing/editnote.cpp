@@ -41,6 +41,7 @@
 #include "dom/utils.h"
 #include "editchord.h"
 #include "editing/transaction/transaction.h"
+#include "engraving/normalization/normalize.h"
 #include "log.h"
 #include "noteinput.h"
 
@@ -317,6 +318,7 @@ void EditNote::change_accidental2(Note *n, int pitch, int tpc) {
 //---------------------------------------------------------
 
 void EditNote::change_accidental(Score *score, Note *note, AccidentalType accidental) {
+    prepare_semantic_edit(*score);
     Chord *chord = note ? note->chord() : nullptr;
     if (!chord) {
         return;
@@ -456,6 +458,7 @@ void EditNote::up_down_chromatic(bool up, int pitch, Note *n, Key key, int tpc1,
 //---------------------------------------------------------
 
 void EditNote::up_down(Score *score, bool up, UpDownMode mode) {
+    prepare_semantic_edit(*score);
     std::vector<Note *> el = score->selection().unique_notes();
 
     std::sort(el.begin(), el.end(), [up](Note *a, Note *b) {
