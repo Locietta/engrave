@@ -28,7 +28,6 @@
 #include "dom/page.h"
 #include "dom/text.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
-#include "global/appinfo.h"
 #include "tlayout.h"
 
 using namespace mu::engraving;
@@ -322,26 +321,12 @@ TextBlock HeaderFooterLayout::replace_text_macros(LayoutContext &ctx, const Page
                         const CharFormat copyright_format = format_for_macro(ctx, String('$' + nc));
                         append_formatted_string(new_fragments, copyright_string, default_format, copyright_format);
                     } break;
-                    case 'v':
-                        if (page->score()->dirty()) {
-                            new_fragments.back().text += muse::appinfo::version().to_string();
-                        } else {
-                            new_fragments.back().text += page->score()->mscore_version();
-                        }
-                        break;
-                    case 'r':
-                        if (page->score()->dirty()) {
-                            static String revision; // FIXME
-                            new_fragments.back().text += revision;
-                        } else {
-                            int rev = page->score()->mscore_revision();
-                            if (rev > 99999) { // MuseScore 1.3 is decimal 5702, 2.0 and later uses a 7-digit hex SHA
-                                new_fragments.back().text += String::number(rev, 16);
-                            } else {
-                                new_fragments.back().text += String::number(rev, 10);
-                            }
-                        }
-                        break;
+                    // Live macros describe source provenance, independent of edit/layout timing.
+                    case 'v': new_fragments.back().text += page->score()->mscore_version(); break;
+                    case 'r': {
+                        const int rev = page->score()->mscore_revision();
+                        new_fragments.back().text += String::number(rev, rev > 99999 ? 16 : 10);
+                    } break;
                     case '$': new_fragments.back().text += '$'; break;
                     case ':': {
                         String tag;
