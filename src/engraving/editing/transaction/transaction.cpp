@@ -196,6 +196,10 @@ void TransactionManager::end_transaction(bool rollback, bool layout_all_parts, b
     }
 
     if (rollback) {
+        // Unwind and its derived-state rebuild are replay, not a new edit.
+        // Route repair commands through the non-recording dummy transaction,
+        // including callers that bypass Score::undo and push on Transaction.
+        current_transaction_.reset();
         /* When keepRolledBackElements is true, unwind removes the rolled-back elements from
          * the score but does not free them: an external owner is responsible for the deferred
          * deletion, since the elements are still referenced after this returns. */
@@ -225,7 +229,7 @@ void TransactionManager::end_transaction(bool rollback, bool layout_all_parts, b
     LOGD() << "Undo stack current transaction commands count: " << stack->active_transaction()->commands().size();
 
     const bool is_current_transaction_empty = stack->active_transaction()->empty(); // nothing to undo?
-    stack->end_transaction(is_current_transaction_empty);
+    stack->end_transaction(rollback || is_current_transaction_empty);
     current_transaction_.reset();
 
     master_score_->cmd_state().reset();

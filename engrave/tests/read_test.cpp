@@ -66,6 +66,7 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/noteline.h"
+#include "engraving/dom/ornament.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -331,6 +332,56 @@ TEST(Read, NormalizeCleansInvalidMelismaBeforeRepairingLyricTicks) {
         EXPECT_FALSE(lyrics->need_remove_invalid_segments());
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     }
+}
+
+TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.start_cmd(muse::TranslatableString::untranslatable("append a measure"));
+    master.insert_measure();
+    master.end_cmd(false, true);
+    master.undo_stack()->clear_history();
+    ASSERT_EQ(master.undo_stack()->size(), 0u);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *ornament = Factory::create_ornament(chord);
+    ornament->set_sym_id(SymId::ORNAMENT_TRILL);
+    chord->add(ornament);
+    master.do_layout();
+    ASSERT_NE(ornament->note_above(), nullptr);
+    auto *target = master.last_measure()->first(SegmentType::CHORD_REST)->element(0);
+    master.start_cmd(muse::TranslatableString::untranslatable("visibility change"));
+    target->undo_change_property(Pid::VISIBLE, false);
+    master.end_cmd(false, true);
+    auto *manager = master.transaction_manager();
+    manager->undo_redo(true, nullptr);
+    auto *stack = master.undo_stack();
+    ASSERT_TRUE(stack->can_redo());
+    const auto size = stack->size();
+    const auto index = stack->current_index();
+    auto *redo = stack->next();
+    const int auxiliary_pitch = ornament->note_above()->pitch();
+    master.start_cmd(muse::TranslatableString::untranslatable("rejected visibility change"));
+    target->undo_change_property(Pid::VISIBLE, false);
+    static std::size_t replay_pushes = 0;
+    replay_pushes = 0;
+    Transaction::set_push_hook([](UndoableCommand *, bool appended) {
+        if (appended) ++replay_pushes;
+    });
+    master.end_cmd(true, true);
+    Transaction::set_push_hook(nullptr);
+    EXPECT_EQ(replay_pushes, 0u);
+    EXPECT_EQ(stack->size(), size);
+    EXPECT_EQ(stack->current_index(), index);
+    EXPECT_TRUE(stack->can_redo());
+    EXPECT_EQ(stack->next(), redo);
+    EXPECT_FALSE(stack->has_active_transaction());
+    EXPECT_EQ(manager->current_transaction(), nullptr);
+    EXPECT_TRUE(target->visible());
+    EXPECT_EQ(ornament->note_above()->pitch(), auxiliary_pitch);
+    manager->undo_redo(false, nullptr);
+    EXPECT_FALSE(target->visible());
 }
 
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
