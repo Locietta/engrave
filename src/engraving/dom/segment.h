@@ -240,6 +240,9 @@ public:
 
     const std::vector<EngravingItem *> &annotations() const { return annotations_; }
 
+    // Display-only storage operations: no staff/instrument cache registration.
+    void add_layout_annotation(EngravingItem *item);
+    void remove_layout_copy(EngravingItem *item);
     void clear_annotations();
     void remove_annotation(EngravingItem *e);
     bool has_annotation_or_element(ElementType type, track_idx_t min_track, track_idx_t max_track) const;

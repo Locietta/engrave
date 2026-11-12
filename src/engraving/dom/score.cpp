@@ -316,6 +316,28 @@ static void on_bracket_item_destruction(Score *score, const BracketItem *item) {
 //    of the element (e.g. remove invalid pointers etc.).
 //---------------------------------------------------------
 
+void Score::register_layout_copy(const EngravingItem &source, EngravingItem &display) {
+    display.set_layout_copy(true);
+    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    layout_copies_.emplace_back(&source, &display);
+    // Composite annotations (e.g. a fret diagram's harmony) keep their own IDs.
+    // Pair the clone's source children in the order maintained by clone().
+    const auto &source_children = source.children();
+    const auto &display_children = display.children();
+    auto next = display_children.begin();
+    for (const auto *child : source_children) {
+        if (!child->is_engraving_item()) continue;
+        while (next != display_children.end() && (*next)->type() != child->type()) ++next;
+        if (next == display_children.end()) break;
+        register_layout_copy(*to_engraving_item(child), *to_engraving_item(*next++));
+    }
+}
+
+const EngravingItem *Score::layout_copy(const EngravingItem &source) const {
+    const auto found = std::ranges::find_if(layout_copies_, [&](const auto &entry) { return entry.first == &source; });
+    return found != layout_copies_.end() ? found->second : nullptr;
+}
+
 void Score::on_element_destruction(EngravingItem *e) {
     Score *score = e->EngravingObject::score();
 
@@ -335,6 +357,10 @@ void Score::on_element_destruction(EngravingItem *e) {
         // The score is already deleted
         return;
     }
+
+    // Keys are only compared, never dereferenced. A removed source can outlive
+    // its display copy until the next layout; neither may leave a stale mapping.
+    std::erase_if(score->layout_copies_, [e](const auto &entry) { return entry.first == e || entry.second == e; });
 
     if (e->is_bracket_item()) {
         on_bracket_item_destruction(score, to_bracket_item(e));

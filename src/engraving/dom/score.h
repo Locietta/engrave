@@ -766,6 +766,11 @@ public:
         Fraction last_end{-1, 1};
     };
 
+    // Geometry consumers use this map after ensure_layout(); semantic readers
+    // always keep the original source item. Copies are owned by display measures.
+    void register_layout_copy(const EngravingItem &source, EngravingItem &display);
+    const EngravingItem *layout_copy(const EngravingItem &source) const;
+
     LayoutState layout_state;
     NormalizeState normalize_state;
     // Installed on the master by Document; excerpts resolve through their master.
@@ -1095,6 +1100,7 @@ private:
 
     PaddingTables padding_tables_;
     double minimum_padding_unit_ = 0.0;
+    std::vector<std::pair<const EngravingItem *, EngravingItem *>> layout_copies_;
 };
 
 static inline Score *to_score(EngravingObject *e) {
