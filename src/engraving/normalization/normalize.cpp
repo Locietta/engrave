@@ -590,6 +590,12 @@ static void normalize_scores(MasterScore &master, const std::vector<Score *> &sc
         for (auto *score : work) prepare_source_anchors(*score, options);
         master.invalidate_repeat_list();
         master.update_repeat_list(false);
+        // Tie-jump cleanup can mark lyrics for repair or remove partial slurs.
+        // Do it before content normalization, in the same recording transaction.
+        if (options.mode == NormalizeMode::TRANSACTION && master.transaction_manager()->current_transaction()) {
+            master.update_repeat_list(true);
+            for (auto *score : work) score->spanner_map().update();
+        }
         for (auto *score : work) normalize_content(*score, options);
         for (auto *score : work) {
             if (score->need_update_ticks_and_time_sig_map()) score->update_ticks_and_time_sig_map(false);
