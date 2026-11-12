@@ -794,6 +794,26 @@ TEST(Read, InactiveSemanticBarrierPlumbingRefreshesDependentTargetsWhenOptedIn) 
     ASSERT_TRUE(result);
 }
 
+TEST(Read, GetAllFreshSourcePropertiesSkipsInvalidEnumDefaultTokens) {
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    const auto rows = document.query({});
+    ASSERT_TRUE(rows);
+    for (const auto &row : rows->elements) {
+        SCOPED_TRACE(row.type);
+        const auto props = document.get(row.id);
+        ASSERT_TRUE(props);
+        if (row.type == "Clef") {
+            for (const auto &prop : *props) {
+                if (prop.name == "concertClefType" || prop.name == "transposingClefType") EXPECT_FALSE(prop.is_default);
+            }
+        }
+    }
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
     using namespace mu::engraving;
     for (const auto type : {ElementType::GLISSANDO, ElementType::GUITAR_BEND, ElementType::NOTELINE}) {
