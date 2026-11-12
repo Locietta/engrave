@@ -1267,9 +1267,9 @@ void Measure::adjust_to_len(Fraction nf, bool append_rests_if_necessary) {
     score()->undo_insert_time(start_tick, diff);
 
     for (Score *s : score()->score_list()) {
-        s->undo(new InsertTime(s, start_tick, diff));
+        s->record_time_insertion(s, start_tick, diff);
         Measure *m = s->tick2measure(tick());
-        s->undo(new ChangeMeasureLen(m, nf));
+        s->record_measure_length(m, nf);
         if (nl > ol) {
             // move EndBarLine, TimeSigAnnounce, KeySigAnnounce
             for (Segment *seg = m->first(); seg; seg = seg->next()) {

@@ -1066,9 +1066,9 @@ Ret NoteInput::insert_chord_by_inserting_time(Transaction &tx, Score *score, con
     score->undo_insert_time(tick, len);
 
     for (Score *lscore : score->score_list()) {
-        tx.push(new InsertTime(lscore, tick, len));
+        tx.insert_time(*lscore, tick, len);
         Measure *m = lscore->tick2measure(tick);
-        tx.push(new ChangeMeasureLen(m, target_measure_len));
+        tx.change_measure_length(m, target_measure_len);
         Segment *score_seg = m->tick2segment(tick);
         // tuplets store their tick: move those from the insertion on with their segments
         std::set<Tuplet *> tuplets;

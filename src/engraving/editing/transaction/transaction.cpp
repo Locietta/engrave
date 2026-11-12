@@ -27,7 +27,9 @@
 
 #include "../../dom/masterscore.h"
 #include "editing/addremoveelement.h"
+#include "editing/editmeasures.h"
 #include "editing/editproperty.h"
+#include "editing/inserttime.h"
 #include "log.h"
 #include "mutationjournal.h"
 #include "undoablecommand.h"
@@ -211,6 +213,49 @@ void Transaction::replace_style(Score &score, const MStyle &style, bool overlap)
     }
     undoable_transaction_->replace_style(score, style, overlap);
     if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
+void Transaction::insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_time_insertion(score, tick, length, unmanaged);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->insert_time(score, tick, length, unmanaged);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        if (adding)
+            insert_measure_chain(first, last, move_staff_type_changes);
+        else
+            remove_measure_chain(first, last, move_staff_type_changes);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_measures(first, last, adding, move_staff_type_changes);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_measure_length(Measure *measure, Fraction length) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_measure_length(measure, length);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_measure_length(measure, length);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_measure_repeat_count(measure, count, staff);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_measure_repeat_count(measure, count, staff);
+    finish_compound_hook(s_push_hook, token);
 }
 
 void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }

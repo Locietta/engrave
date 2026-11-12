@@ -26,7 +26,9 @@
 
 #include "dom/measure.h"
 #include "editing/addremoveelement.h"
+#include "editing/editmeasures.h"
 #include "editing/editproperty.h"
+#include "editing/inserttime.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -272,6 +274,58 @@ void JournalBatch::change_text_format(TextBase &text, Pid id, const PropertyValu
     apply_text_format(text, id, value, flags);
 }
 
+void JournalBatch::insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged) {
+    const auto index = entry_index(times_.size());
+    times_.push_back({JournalTarget::capture(score), tick, length, unmanaged});
+    try {
+        entries_.push_back({JournalEntryKind::TIME_INSERTION, index});
+    } catch (...) {
+        times_.pop_back();
+        throw;
+    }
+    apply_time_insertion(score, tick, length, unmanaged);
+}
+
+void JournalBatch::change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
+    if (first->master_score() != last->master_score()) throw std::logic_error("measure chain cannot span documents");
+    const auto index = entry_index(measures_.size());
+    measures_.push_back({JournalTarget::capture(*first), JournalTarget::capture(*last), adding, move_staff_type_changes});
+    try {
+        entries_.push_back({JournalEntryKind::MEASURE_MEMBERSHIP, index});
+    } catch (...) {
+        measures_.pop_back();
+        throw;
+    }
+    if (adding)
+        insert_measure_chain(first, last, move_staff_type_changes);
+    else
+        remove_measure_chain(first, last, move_staff_type_changes);
+}
+
+void JournalBatch::change_measure_length(Measure *measure, Fraction length) {
+    const auto index = entry_index(measure_lengths_.size());
+    measure_lengths_.push_back({JournalTarget::capture(*measure), measure->ticks()});
+    try {
+        entries_.push_back({JournalEntryKind::MEASURE_LENGTH, index});
+    } catch (...) {
+        measure_lengths_.pop_back();
+        throw;
+    }
+    apply_measure_length(measure, length);
+}
+
+void JournalBatch::change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
+    const auto index = entry_index(measure_repeats_.size());
+    measure_repeats_.push_back({JournalTarget::capture(*measure), measure->measure_repeat_count(staff), staff});
+    try {
+        entries_.push_back({JournalEntryKind::MEASURE_REPEAT_COUNT, index});
+    } catch (...) {
+        measure_repeats_.pop_back();
+        throw;
+    }
+    apply_measure_repeat_count(measure, count, staff);
+}
+
 void JournalBatch::unwind(bool clean_up) {
     struct ReplayGuard {
         bool &flag;
@@ -308,6 +362,27 @@ void JournalBatch::unwind(bool clean_up) {
                 apply_segment_reparent(*to_segment(&entry.target.object()), *to_measure(&entry.parent.object()), entry.tick);
             } break;
             case JournalEntryKind::LINK: restore_link(links_[it->payload]); break;
+            case JournalEntryKind::TIME_INSERTION: {
+                const auto &record = times_[it->payload];
+                apply_time_insertion(*to_score(&record.target.object()), record.tick, -record.length, record.unmanaged);
+            } break;
+            case JournalEntryKind::MEASURE_MEMBERSHIP: {
+                const auto &record = measures_[it->payload];
+                auto *first = to_measure_base(&record.first.object());
+                auto *last = to_measure_base(&record.last.object());
+                if (record.adding)
+                    remove_measure_chain(first, last, record.move_staff_type_changes);
+                else
+                    insert_measure_chain(first, last, record.move_staff_type_changes);
+            } break;
+            case JournalEntryKind::MEASURE_LENGTH: {
+                const auto &record = measure_lengths_[it->payload];
+                apply_measure_length(to_measure(&record.target.object()), record.before);
+            } break;
+            case JournalEntryKind::MEASURE_REPEAT_COUNT: {
+                const auto &record = measure_repeats_[it->payload];
+                apply_measure_repeat_count(to_measure(&record.target.object()), record.before, record.staff);
+            } break;
         }
     }
     if (clean_up)
@@ -330,6 +405,10 @@ void JournalBatch::unwind(bool clean_up) {
     parents_.clear();
     segment_parents_.clear();
     links_.clear();
+    times_.clear();
+    measures_.clear();
+    measure_lengths_.clear();
+    measure_repeats_.clear();
     entries_.clear();
 }
 
@@ -343,7 +422,11 @@ bool JournalBatch::structural_since(size_t mark) const {
             case JournalEntryKind::ELEMENT_REPLACE:
             case JournalEntryKind::ELEMENT_REPARENT:
             case JournalEntryKind::SEGMENT_REPARENT:
-            case JournalEntryKind::LINK: return true;
+            case JournalEntryKind::LINK:
+            case JournalEntryKind::TIME_INSERTION:
+            case JournalEntryKind::MEASURE_MEMBERSHIP:
+            case JournalEntryKind::MEASURE_LENGTH:
+            case JournalEntryKind::MEASURE_REPEAT_COUNT: return true;
             default: break;
         }
         if (entry.kind != JournalEntryKind::LEGACY) continue;
@@ -363,6 +446,27 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::TIME_INSERTION) {
+            const auto &record = times_[entry.payload];
+            collect_object(result, &record.target.object(),
+                           record.unmanaged ? CommandType::INSERT_TIME_UNMANAGED_SPANNER : CommandType::INSERT_TIME);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::MEASURE_MEMBERSHIP) {
+            const auto &record = measures_[entry.payload];
+            const auto type = record.adding ? CommandType::INSERT_MEASURES : CommandType::REMOVE_MEASURES;
+            collect_object(result, &record.first.object(), type);
+            collect_object(result, &record.last.object(), type);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::MEASURE_LENGTH) {
+            collect_object(result, &measure_lengths_[entry.payload].target.object(), CommandType::CHANGE_MEASURE_LEN);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::MEASURE_REPEAT_COUNT) {
+            collect_object(result, &measure_repeats_[entry.payload].target.object(), CommandType::CHANGE_MEASURE_REPEAT_COUNT);
+            continue;
+        }
         if (entry.kind == JournalEntryKind::AUTHORED_OVERRIDE) continue;
         if (entry.kind == JournalEntryKind::ELEMENT_ADD || entry.kind == JournalEntryKind::ELEMENT_REMOVE) {
             const auto type = entry.kind == JournalEntryKind::ELEMENT_ADD ? CommandType::ADD_ELEMENT : CommandType::REMOVE_ELEMENT;
