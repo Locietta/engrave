@@ -22,119 +22,137 @@
 
 #include "eidregister.h"
 
+#include <atomic>
+#include <limits>
+#include <stdexcept>
+
 #include "dom/mscore.h"
-#include "log.h"
-#include "logger.h"
 
 using namespace mu::engraving;
 
+namespace {
+std::atomic<uint64_t> next_document{1};
+} // namespace
+
+EIDRegister::EIDRegister() {
+    // Exhaustion is permanent: never wrap an incarnation and revive an old handle.
+    auto current = next_document.load(std::memory_order_relaxed);
+    do {
+        if (current == std::numeric_limits<uint64_t>::max()) throw std::overflow_error("document handle space exhausted");
+    } while (!next_document.compare_exchange_weak(current, current + 1, std::memory_order_relaxed));
+    document_ = current;
+    slots_.emplace_back(); // slot zero is invalid
+}
+
+const EIDRegister::Slot *EIDRegister::find_slot(SourceHandle handle) const {
+    if (handle.document != document_ || handle.slot == 0 || handle.slot >= slots_.size()) return nullptr;
+    const Slot &slot = slots_[handle.slot];
+    return slot.item && slot.generation == handle.generation ? &slot : nullptr;
+}
+
+SourceHandle EIDRegister::allocate_slot(EngravingObject *item, EID eid) {
+    uint32_t index = free_slot_;
+    if (index) {
+        free_slot_ = slots_[index].next_free;
+    } else {
+        if (slots_.size() >= std::numeric_limits<uint32_t>::max()) throw std::overflow_error("source handle space exhausted");
+        index = static_cast<uint32_t>(slots_.size());
+        slots_.emplace_back();
+    }
+    Slot &slot = slots_[index];
+    slot.item = item;
+    slot.eid = eid;
+    slot.next_free = 0;
+    return {document_, index, slot.generation};
+}
+
+void EIDRegister::retire_slot(SourceHandle handle) {
+    Slot &slot = slots_[handle.slot];
+    slot.item = nullptr;
+    slot.eid = EID::invalid();
+    if (slot.generation == std::numeric_limits<uint64_t>::max()) return;
+    ++slot.generation;
+    slot.next_free = free_slot_;
+    free_slot_ = handle.slot;
+}
+
 EID EIDRegister::new_eid_for_item(const EngravingObject *item) {
+    if (!item) return EID::invalid();
     EID eid = MScore::test_mode ? EID::new_unique_test_mode(max_val_test_mode_) : EID::new_unique();
-    register_item_eid(eid, const_cast<EngravingObject *>(item));
+    while (eid_to_handle_.contains(eid)) eid = MScore::test_mode ? EID::new_unique_test_mode(max_val_test_mode_) : EID::new_unique();
+    register_item_eid(eid, item);
     return eid;
 }
 
 bool EIDRegister::register_item_eid(const EID &eid, const EngravingObject *item) {
-    std::lock_guard lock(mutex_);
-    if (!eid.is_valid() || !item) {
-        return false;
-    }
-
-    EngravingObject *object = const_cast<EngravingObject *>(item);
-
-    // A file written by a buggy or hand-edited tool can name one id twice. Keep the
-    // first element and leave both maps as they are; the reader gives the second
-    // element a fresh EID (read500/tread.cpp, readItemEID).
-    const auto by_eid = eid_to_item_.find(eid);
-    if (by_eid != eid_to_item_.end()) {
-        if (by_eid->second == object) {
-            return true;
-        }
+    if (!eid.is_valid() || !item) return false;
+    const auto by_eid = eid_to_handle_.find(eid);
+    if (by_eid != eid_to_handle_.end()) {
+        if (item_from_handle(by_eid->second) == item) return true;
         ++repairs_.duplicate;
         return false;
     }
 
-    // An element keeps exactly one id: re-registering replaces the previous one.
-    const auto by_item = item_to_eid_.find(object);
-    if (by_item != item_to_eid_.end()) {
-        eid_to_item_.erase(by_item->second);
-        by_item->second = eid;
+    const auto by_item = item_to_handle_.find(item);
+    if (by_item != item_to_handle_.end()) {
+        const SourceHandle handle = by_item->second;
+        // Allocate the new lookup before dropping the old identity.
+        eid_to_handle_.emplace(eid, handle);
+        eid_to_handle_.erase(slots_[handle.slot].eid);
+        slots_[handle.slot].eid = eid;
     } else {
-        item_to_eid_.emplace(object, eid);
+        const SourceHandle handle = allocate_slot(const_cast<EngravingObject *>(item), eid);
+        try {
+            eid_to_handle_.emplace(eid, handle);
+            item_to_handle_.emplace(item, handle);
+        } catch (...) {
+            eid_to_handle_.erase(eid);
+            retire_slot(handle);
+            throw;
+        }
     }
-    eid_to_item_.emplace(eid, object);
-
-    if (MScore::test_mode) {
-        EID::update_max_val_test_mode(eid, max_val_test_mode_);
-    }
-
+    if (MScore::test_mode) EID::update_max_val_test_mode(eid, max_val_test_mode_);
     return true;
 }
 
-void EIDRegister::remove_item(const EngravingObject *item) {
-    std::lock_guard lock(mutex_);
-    // NOTE: needed only when elements are removed during read (e.g. broken spanners)
-
-    auto item_iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
-    IF_ASSERT_FAILED(item_iter != item_to_eid_.end()) { return; }
-
-    EID eid = (*item_iter).second;
-    DO_ASSERT(eid.is_valid());
-
-    item_to_eid_.erase(item_iter);
-
-    auto eid_iter = eid_to_item_.find(eid);
-    IF_ASSERT_FAILED(eid_iter != eid_to_item_.end()) { return; }
-
-    eid_to_item_.erase(eid_iter);
-}
+void EIDRegister::remove_item(const EngravingObject *item) { on_item_destroyed(item); }
 
 void EIDRegister::on_item_destroyed(const EngravingObject *item) {
-    std::lock_guard lock(mutex_);
-    // NOTE: most items never get an EID assigned, so a missing entry is the normal case.
-    // Items that do have one must be unregistered here: a later allocation can reuse
-    // the freed address, and a stale entry would corrupt the register.
+    const auto found = item_to_handle_.find(item);
+    if (found == item_to_handle_.end()) return;
+    const SourceHandle handle = found->second;
+    eid_to_handle_.erase(slots_[handle.slot].eid);
+    item_to_handle_.erase(found);
+    retire_slot(handle);
+}
 
-    auto item_iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
-    if (item_iter == item_to_eid_.end()) {
-        return;
-    }
+SourceHandle EIDRegister::handle_of(const EngravingObject *item) const {
+    const auto found = item_to_handle_.find(item);
+    return found == item_to_handle_.end() ? SourceHandle{} : found->second;
+}
 
-    eid_to_item_.erase(item_iter->second);
-    item_to_eid_.erase(item_iter);
+EngravingObject *EIDRegister::item_from_handle(SourceHandle handle) const {
+    const Slot *slot = find_slot(handle);
+    return slot ? slot->item : nullptr;
 }
 
 EngravingObject *EIDRegister::item_from_eid(const EID &eid) const {
-    std::shared_lock lock(mutex_);
-    auto iter = eid_to_item_.find(eid);
-    if (iter == eid_to_item_.end()) {
-        return nullptr;
-    }
-    return iter->second;
+    const auto found = eid_to_handle_.find(eid);
+    return found == eid_to_handle_.end() ? nullptr : item_from_handle(found->second);
 }
 
 EID EIDRegister::eid_from_item(const EngravingObject *item) const {
-    std::shared_lock lock(mutex_);
-    auto iter = item_to_eid_.find(const_cast<EngravingObject *>(item));
-    return iter == item_to_eid_.end() ? EID::invalid() : iter->second;
+    const Slot *slot = find_slot(handle_of(item));
+    return slot ? slot->eid : EID::invalid();
 }
 
-EIDRepairCount EIDRegister::repairs() const {
-    std::shared_lock lock(mutex_);
-    return repairs_;
-}
+EIDRepairCount EIDRegister::repairs() const { return repairs_; }
 
 std::vector<std::pair<EID, const EngravingObject *>> EIDRegister::entries() const {
-    std::shared_lock lock(mutex_);
     std::vector<std::pair<EID, const EngravingObject *>> result;
-    result.reserve(eid_to_item_.size());
-    for (const auto &entry : eid_to_item_) {
-        result.emplace_back(entry.first, entry.second);
-    }
+    result.reserve(eid_to_handle_.size());
+    for (const auto &[eid, handle] : eid_to_handle_) result.emplace_back(eid, item_from_handle(handle));
     return result;
 }
 
-size_t EIDRegister::size() const {
-    std::shared_lock lock(mutex_);
-    return eid_to_item_.size();
-}
+size_t EIDRegister::size() const { return eid_to_handle_.size(); }

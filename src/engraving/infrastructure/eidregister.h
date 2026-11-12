@@ -23,13 +23,15 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <shared_mutex>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <amc/vector.hpp>
+#include <ankerl/unordered_dense.h>
+
 #include "../types/types.h"
 #include "eid.h"
+#include "sourcehandle.h"
 
 namespace mu::engraving {
 struct EngravingObject;
@@ -45,10 +47,10 @@ struct EIDRepairCount {
 };
 
 struct EIDRegister {
-    EIDRegister() = default;
+    EIDRegister();
 
     EID new_eid_for_item(const EngravingObject *item);
-    // False, and neither map touched, when the EID already belongs to another
+    // False, and neither identity touched, when the EID already belongs to another
     // element; the caller gives the element a fresh EID instead.
     bool register_item_eid(const EID &eid, const EngravingObject *item);
     void remove_item(const EngravingObject *item);
@@ -60,20 +62,36 @@ struct EIDRegister {
 
     EngravingObject *item_from_eid(const EID &eid) const;
     EID eid_from_item(const EngravingObject *item) const;
+    SourceHandle handle_of(const EngravingObject *item) const;
+    EngravingObject *item_from_handle(SourceHandle handle) const;
     // Every pair in the register, for the id bijection checks of the tests.
     std::vector<std::pair<EID, const EngravingObject *>> entries() const;
     size_t size() const;
 
 private:
     EIDRegister(const EIDRegister &) = delete;
+    EIDRegister &operator=(const EIDRegister &) = delete;
 
-    std::unordered_map<EID, EngravingObject *> eid_to_item_;
-    std::unordered_map<EngravingObject *, EID> item_to_eid_;
+    struct Slot {
+        EngravingObject *item = nullptr;
+        EID eid = EID::invalid();
+        uint64_t generation = 1;
+        uint32_t next_free = 0;
+    };
+
+    SourceHandle allocate_slot(EngravingObject *item, EID eid);
+    void retire_slot(SourceHandle handle);
+    const Slot *find_slot(SourceHandle handle) const;
+
+    uint64_t document_ = 0;
+    amc::vector<Slot> slots_;
+    uint32_t free_slot_ = 0;
+    ankerl::unordered_dense::map<EID, SourceHandle> eid_to_handle_;
+    // Transitional reverse index; H2 moves the handle onto the object.
+    ankerl::unordered_dense::map<const EngravingObject *, SourceHandle> item_to_handle_;
 
     EIDRepairCount repairs_;
 
     uint64_t max_val_test_mode_ = 0;
-
-    mutable std::shared_mutex mutex_;
 };
 } // namespace mu::engraving
