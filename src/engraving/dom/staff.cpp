@@ -42,7 +42,6 @@
 #include "part.h"
 #include "score.h"
 #include "segment.h"
-#include "sourceidentity.h"
 #include "stafftype.h"
 #include "timesig.h"
 #include "types/typesconv.h"
@@ -544,23 +543,14 @@ const Groups &Staff::group(const Fraction &tick) const {
 //---------------------------------------------------------
 
 void Staff::add_time_sig(TimeSig *timesig) {
-    if (timesig->segment()->segment_type() == SegmentType::TIME_SIG) {
-        timesigs_[source_tick(*timesig).ticks()] = timesig;
-    }
-    //      dumpTimeSigs("after addTimeSig");
+    if (!timesig->is_layout_copy() && timesig->segment()->segment_type() == SegmentType::TIME_SIG)
+        timesigs_[timesig->tick().ticks()] = timesig;
 }
 
-//---------------------------------------------------------
-//   removeTimeSig
-//---------------------------------------------------------
-
 void Staff::remove_time_sig(TimeSig *timesig) {
-    if (timesig->segment()->segment_type() == SegmentType::TIME_SIG) {
-        if (timesigs_[source_tick(*timesig).ticks()] == timesig) {
-            timesigs_.erase(source_tick(*timesig).ticks());
-        }
-    }
-    //      dumpTimeSigs("after removeTimeSig");
+    if (timesig->is_layout_copy() || timesig->segment()->segment_type() != SegmentType::TIME_SIG) return;
+    const auto found = timesigs_.find(timesig->tick().ticks());
+    if (found != timesigs_.end() && found->second == timesig) timesigs_.erase(found);
 }
 
 //---------------------------------------------------------

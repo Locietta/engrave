@@ -142,34 +142,7 @@ void MeasureWrite::write_measure(const Measure *measure, XmlWriter &xml, WriteCo
 }
 
 std::vector<Segment *> MeasureWrite::segments_to_write(const Measure *measure) {
-    /* Layout moves the time signature at the start of an MM rest from its first underlying measure onto the MM rest.
-     * During writing, the MM rest is written after that measure, and the reader needs the time signature before the measure's
-     * contents to get its length right, so we write the signature in the underlying measure instead of the MM. */
-
-    auto start_time_sig_segment = [](const Measure *mm_rest) { return mm_rest->find_segment_r(SegmentType::TIME_SIG, Fraction(0, 1)); };
-
-    const Segment *seg_to_skip = nullptr;
-    Segment *seg_to_insert = nullptr;
-    if (measure->is_mm_rest()) {
-        seg_to_skip = start_time_sig_segment(measure);
-    } else if (measure->mm_rest()) {
-        seg_to_insert = start_time_sig_segment(measure->mm_rest());
-    }
-
     std::vector<Segment *> segments;
-    for (Segment *s = measure->first(); s; s = s->next()) {
-        // insert it where the measure would place it if it had this segment itself
-        if (seg_to_insert && (s->rtick().is_not_zero() || seg_to_insert->goes_before(s))) {
-            segments.push_back(seg_to_insert);
-            seg_to_insert = nullptr;
-        }
-        if (s != seg_to_skip) {
-            segments.push_back(s);
-        }
-    }
-    if (seg_to_insert) {
-        segments.push_back(seg_to_insert);
-    }
-
+    for (Segment *segment = measure->first(); segment; segment = segment->next()) segments.push_back(segment);
     return segments;
 }

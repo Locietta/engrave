@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
-#include "engraving/dom/sourceidentity.h"
-
 //! NOTE: the score walk shared by the legacy PlaybackModel (test oracle, design exception E1) and the
 //! listener-free PlaybackScoreBuilder (production export). The walk is the former PlaybackModel load
 //! code, moved unchanged; only its writes go through a Store, selected at compile time:
@@ -200,7 +198,7 @@ struct PlaybackWalk {
 
     void process_segment(const int tick_position_offset, const Segment *segment, const amc::FlatSet<staff_idx_t> &staff_idx_set,
                          bool is_first_chord_rest_segment_of_measure, ChangedTrackIdSet *track_changes) {
-        for (const EngravingItem *item : source_annotations(*segment)) {
+        for (const EngravingItem *item : segment->annotations()) {
             checkpoint();
             if (!item || !item->part()) {
                 continue;
@@ -226,8 +224,7 @@ struct PlaybackWalk {
 
             if (chord_symbol->play()) {
                 store.emit(track_id, [&](auto &sink) {
-                    renderer.render_chord_symbol(chord_symbol, tick_position_offset + (source_tick(*item) - item->tick()).ticks(), profile,
-                                                 playback_ctx, sink);
+                    renderer.render_chord_symbol(chord_symbol, tick_position_offset, profile, playback_ctx, sink);
                 });
             }
 

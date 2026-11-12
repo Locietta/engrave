@@ -240,7 +240,9 @@ std::vector<ElementId> links_of(const EngravingObject &object, MasterScore &mast
     return links;
 }
 
-std::optional<LayoutBox> box_of(const EngravingItem &item, const Score &score) {
+std::optional<LayoutBox> box_of(const EngravingItem &source, const Score &score) {
+    const EngravingItem *copy = score.layout_copy(source);
+    const EngravingItem &item = copy ? *copy : source;
     const MeasureBase *base = const_cast<EngravingItem &>(item).find_measure_base();
     const Page *page = base ? base->page() : nullptr;
     if (!page) return std::nullopt;

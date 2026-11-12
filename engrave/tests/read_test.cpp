@@ -49,12 +49,14 @@
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/tempovalues.h"
 #include "engraving/dom/accidental.h"
+#include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dummyparent.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
+#include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/fingering.h"
 #include "engraving/dom/glissando.h"
@@ -82,7 +84,6 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
-#include "engraving/dom/sourceidentity.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
@@ -951,6 +952,277 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     EXPECT_FALSE(target->visible());
 }
 
+std::string mmr_source(bool prefix_note = false) {
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
+    constexpr std::string_view rest = "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>";
+    if (!prefix_note) {
+        const auto begin = source.find("<Chord>");
+        const auto end = source.find("</Chord>", begin) + std::string("</Chord>").size();
+        source.replace(begin, end - begin, "<Rest><durationType>measure</durationType></Rest>");
+    }
+    source.insert(source.find("</Staff>", source.find("<Measure>")),
+                  prefix_note ? std::string(rest) + std::string(rest) : std::string(rest));
+    return source;
+}
+
+TEST(Read, MmrCopiesKeepSourceRepeatsTempoHarmonyAndBeamingGroups) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
+    const auto begin = source.find("<Chord>");
+    const auto end = source.find("</Chord>", begin) + std::string("</Chord>").size();
+    source.replace(begin, end - begin, "<Rest><durationType>measure</durationType></Rest>");
+    source.insert(source.find("</Measure>") + std::string("</Measure>").size(),
+                  "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *marker = Factory::create_marker(first);
+    marker->set_track(0);
+    marker->set_marker_type(MarkerType::SEGNO);
+    first->add(marker);
+    auto *jump = Factory::create_jump(last);
+    jump->set_track(0);
+    jump->set_jump_type(JumpType::DS);
+    last->add(jump);
+    auto *segment = first->first(SegmentType::CHORD_REST);
+    auto *tempo = Factory::create_tempo_text(segment);
+    tempo->set_track(0);
+    tempo->set_tempo(BeatsPerSecond(1.0));
+    tempo->set_follow_text(false);
+    segment->add(tempo);
+    auto *harmony = Factory::create_harmony(segment);
+    harmony->set_track(0);
+    harmony->set_harmony(u"C");
+    segment->add(harmony);
+    master.parts().front()->update_harmony_channels(false);
+    master.rebuild_midi_mapping();
+    auto *signature = master.staff(0)->time_sig(Fraction(0, 1));
+    ASSERT_NE(signature, nullptr);
+    Groups custom;
+    custom.add_stop(240, DurationType::V_EIGHTH, BeamMode::BEGIN);
+    signature->set_groups(custom);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.do_layout();
+    auto *display = first->mm_rest();
+    ASSERT_NE(display, nullptr);
+    EXPECT_EQ(jump->find_measure(), last);
+    EXPECT_EQ(marker->find_measure(), first);
+    EXPECT_EQ(tempo->find_measure(), first);
+    EXPECT_EQ(harmony->find_measure(), first);
+    ASSERT_NE(master.layout_copy(*tempo), nullptr);
+    EXPECT_NE(master.layout_copy(*tempo), tempo);
+    EXPECT_EQ(master.layout_copy(*tempo)->find_measure(), display);
+    EXPECT_TRUE(master.layout_copy(*tempo)->is_layout_copy());
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_document(master);
+    master.init_automation();
+    EXPECT_EQ(master.repeat_list(true).ticks(), 2 * master.end_tick().ticks());
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 1.0);
+    EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), signature);
+    EXPECT_EQ(master.staff(0)->group(Fraction(0, 1)), custom);
+    const auto annotations = segment->annotations();
+    EXPECT_EQ(std::ranges::count(annotations, harmony), 1);
+    EXPECT_EQ(std::ranges::count(annotations, tempo), 1);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    PlaybackScoreBuilder builder;
+    using namespace muse::mpe;
+    auto profile = std::make_shared<ArticulationsProfile>();
+    ArticulationPattern pattern;
+    pattern.emplace(0, ArticulationPatternSegment(ArrangementPattern(hundred_percent, 0),
+                                                  PitchPattern(ArticulationMap::expected_size, ten_percent, 0),
+                                                  ExpressionPattern(ArticulationMap::expected_size, ten_percent, 0)));
+    profile->set_pattern(ArticulationType::STANDARD, pattern);
+    builder.profiles.profiles.fill(profile);
+    auto playback = builder.build(&master);
+    std::size_t chord_notes = 0;
+    for (const auto &[id, events] : playback.tracks) chord_notes += events.notes.size();
+    EXPECT_GT(chord_notes, 0u); // The source contains rests only; these are chord-symbol events.
+}
+
+TEST(Read, MmrRenderKeepsSemanticQueryAndOutlineSourceIdentity) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    auto *segment = first->first(SegmentType::CHORD_REST);
+    auto *tempo = Factory::create_tempo_text(segment);
+    tempo->set_track(0);
+    tempo->set_tempo(BeatsPerSecond(1.0));
+    tempo->set_follow_text(false);
+    tempo->set_xml_text(u"Andante");
+    segment->add(tempo);
+    master.set_layout_all();
+    normalize_document(master);
+    master.init_automation();
+    engrave::assign_missing_ids(master);
+    const auto id = engrave::from_engine(tempo->eid());
+    const auto before = document.outline();
+    ASSERT_TRUE(before);
+    engrave::Query query;
+    query.types = {"Tempo", "TimeSig", "Clef"};
+    const auto before_items = document.query(query);
+    ASSERT_TRUE(before_items);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->mm_rest(), nullptr);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    const auto after = document.outline();
+    const auto after_items = document.query(query);
+    ASSERT_TRUE(after);
+    ASSERT_TRUE(after_items);
+    ASSERT_EQ(after->signatures.size(), before->signatures.size());
+    for (std::size_t i = 0; i < before->signatures.size(); ++i) {
+        EXPECT_EQ(after->signatures[i].type, before->signatures[i].type);
+        EXPECT_EQ(after->signatures[i].tick, before->signatures[i].tick);
+        EXPECT_EQ(after->signatures[i].bpm, before->signatures[i].bpm);
+    }
+    ASSERT_EQ(after_items->elements.size(), before_items->elements.size());
+    for (std::size_t i = 0; i < before_items->elements.size(); ++i) {
+        const auto &a = before_items->elements[i];
+        const auto &b = after_items->elements[i];
+        EXPECT_EQ(a.id, b.id);
+        EXPECT_EQ(a.measure, b.measure);
+        EXPECT_EQ(a.tick, b.tick);
+    }
+    EXPECT_EQ(tempo->ownership_parent(), segment);
+    EXPECT_TRUE(document.get(id, {"text"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    query.layout_boxes = true;
+    const auto boxes = document.query(query);
+    ASSERT_TRUE(boxes);
+    const auto found = std::ranges::find(boxes->elements, id, &engrave::ElementInfo::id);
+    ASSERT_NE(found, boxes->elements.end());
+    EXPECT_TRUE(found->box.has_value());
+    ASSERT_NE(master.layout_copy(*tempo), nullptr);
+    EXPECT_EQ(master.layout_copy(*tempo)->find_measure(), first->mm_rest());
+    // Rebuild and dissolve overlays without deleting or registering source items.
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
+    master.set_layout_all();
+    ASSERT_TRUE(document.page_count());
+    EXPECT_EQ(master.layout_copy(*tempo), nullptr);
+    EXPECT_EQ(tempo->ownership_parent(), segment);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.set_layout_all();
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(master.layout_copy(*tempo), nullptr);
+    segment->remove(tempo);
+    delete tempo;
+    master.set_layout_all();
+    ASSERT_TRUE(document.page_count());
+    EXPECT_TRUE(first->mm_rest()->first(SegmentType::CHORD_REST)->annotations().empty());
+}
+
+TEST(Read, InsertBeforeRenderedMmrKeepsTempoAndRepeatMarkersOnSourceMeasures) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *marker = Factory::create_marker(first);
+    marker->set_track(0);
+    marker->set_marker_type(MarkerType::SEGNO);
+    first->add(marker);
+    auto *jump = Factory::create_jump(last);
+    jump->set_track(0);
+    jump->set_jump_type(JumpType::DS);
+    last->add(jump);
+    auto *segment = first->first(SegmentType::CHORD_REST);
+    auto *tempo = Factory::create_tempo_text(segment);
+    tempo->set_track(0);
+    tempo->set_tempo(BeatsPerSecond(1.0));
+    tempo->set_follow_text(false);
+    segment->add(tempo);
+    master.set_layout_all();
+    normalize_document(master);
+    master.init_automation();
+    engrave::assign_missing_ids(master);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->mm_rest(), nullptr);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    ASSERT_TRUE(document.edit({{engrave::InsertMeasures{.before = engrave::Ref{engrave::from_engine(first->eid())}, .count = 1}}}));
+    EXPECT_EQ(tempo->find_measure(), first);
+    EXPECT_EQ(marker->find_measure(), first);
+    EXPECT_EQ(jump->find_measure(), last);
+    EXPECT_EQ(tempo->tick(), Fraction(1, 1));
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 2.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(1920).val, 1.0);
+    EXPECT_EQ(master.repeat_list(true).ticks(), 5 * whole_note_ticks);
+    EXPECT_TRUE(document.get(engrave::from_engine(marker->eid()), {"text"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+}
+
+TEST(Read, MmrBreathPauseSurvivesSourceLengthChangeWithoutLayout) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *segment = last->get_segment_r(SegmentType::BREATH, last->ticks());
+    auto *breath = Factory::create_breath(segment);
+    breath->set_track(0);
+    breath->set_pause(1.0);
+    segment->add(breath);
+    master.set_layout_all();
+    normalize_document(master);
+    master.init_automation();
+    const auto before = master.tempo_timeline(false).utick2utime(master.end_tick().ticks());
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->mm_rest(), nullptr);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    ASSERT_TRUE(document.edit(
+        {{engrave::SetProperty{engrave::Ref{engrave::from_engine(first->eid())}, "timesigActual", engrave::Fraction{2, 1}}}}));
+    EXPECT_EQ(breath->find_measure(), last);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(master.end_tick().ticks()), before + 2.0);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+}
+
+TEST(Read, ExcerptClonesSourceAfterRenderedMmrBoundaryBecomesStale) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(mmr_source(true)), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *jump = Factory::create_jump(last);
+    jump->set_track(0);
+    jump->set_jump_type(JumpType::DC);
+    last->add(jump);
+    master.set_layout_all();
+    normalize_document(master);
+    master.init_automation();
+    engrave::assign_missing_ids(master);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(first->next_measure()->mm_rest(), nullptr);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    ASSERT_TRUE(document.edit(
+        {{engrave::SetProperty{engrave::Ref{engrave::from_engine(first->eid())}, "timesigActual", engrave::Fraction{2, 1}}}}));
+    const auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    auto *part_score = master.excerpts().front()->excerpt_score();
+    ASSERT_NE(part_score, nullptr);
+    EXPECT_EQ(part_score->end_tick(), master.end_tick());
+    EXPECT_EQ(part_score->last_measure()->tick(), master.last_measure()->tick());
+    for (auto *measure = part_score->first_measure(); measure; measure = measure->next_measure()) EXPECT_EQ(measure->mm_rest(), nullptr);
+    const auto found = std::ranges::find_if(part_score->last_measure()->el(), [](const auto *item) { return item->is_jump(); });
+    ASSERT_NE(found, part_score->last_measure()->el().end());
+    EXPECT_EQ((*found)->tick(), jump->tick());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    EXPECT_EQ(part_score->layout_state.whole_count + part_score->layout_state.range_count, 0u);
+}
+
 TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
     using namespace mu::engraving;
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
@@ -973,83 +1245,6 @@ TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 1.0);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(master.end_tick().ticks()), 9.0);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-}
-
-TEST(Read, MmrOwnedSourceKeepsRepeatsTempoHarmonyAndBeamingGroups) {
-    using namespace mu::engraving;
-    auto source = read_text(write470_fixture());
-    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
-    const auto begin = source.find("<Chord>");
-    const auto end = source.find("</Chord>", begin) + std::string("</Chord>").size();
-    source.replace(begin, end - begin, "<Rest><durationType>measure</durationType></Rest>");
-    source.insert(source.find("</Measure>") + std::string("</Measure>").size(),
-                  "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
-    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
-    ASSERT_TRUE(opened);
-    auto &master = master_of(**opened);
-    auto *first = master.first_measure();
-    auto *last = master.last_measure();
-    auto *marker = Factory::create_marker(first);
-    marker->set_track(0);
-    marker->set_marker_type(MarkerType::SEGNO);
-    first->add(marker);
-    auto *jump = Factory::create_jump(last);
-    jump->set_track(0);
-    jump->set_jump_type(JumpType::DS);
-    last->add(jump);
-    // Existing MMRs are dissolved before adding source annotations, then rebuilt.
-    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
-    master.do_layout();
-    auto *segment = first->first(SegmentType::CHORD_REST);
-    auto *tempo = Factory::create_tempo_text(segment);
-    tempo->set_track(0);
-    tempo->set_tempo(BeatsPerSecond(1.0));
-    tempo->set_follow_text(false);
-    segment->add(tempo);
-    auto *harmony = Factory::create_harmony(segment);
-    harmony->set_track(0);
-    harmony->set_harmony(u"C");
-    segment->add(harmony);
-    master.parts().front()->update_harmony_channels(false);
-    master.rebuild_midi_mapping();
-    auto *signature = master.staff(0)->time_sig(Fraction(0, 1));
-    ASSERT_NE(signature, nullptr);
-    Groups custom;
-    custom.add_stop(240, DurationType::V_EIGHTH, BeamMode::BEGIN);
-    signature->set_groups(custom);
-    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
-    master.do_layout();
-    auto *display = first->mm_rest();
-    ASSERT_NE(display, nullptr);
-    EXPECT_EQ(jump->find_measure(), display);
-    EXPECT_EQ(marker->find_measure(), display);
-    EXPECT_EQ(tempo->find_measure(), display);
-    EXPECT_EQ(harmony->find_measure(), display);
-    master.set_layout_all();
-    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    normalize_document(master);
-    master.init_automation();
-    EXPECT_EQ(master.repeat_list(true).ticks(), 2 * master.end_tick().ticks());
-    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 1.0);
-    EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), signature);
-    EXPECT_EQ(master.staff(0)->group(Fraction(0, 1)), custom);
-    const auto annotations = source_annotations(*segment);
-    EXPECT_EQ(std::ranges::count(annotations, harmony), 1);
-    EXPECT_EQ(std::ranges::count(annotations, tempo), 1);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-    PlaybackScoreBuilder builder;
-    using namespace muse::mpe;
-    auto profile = std::make_shared<ArticulationsProfile>();
-    ArticulationPattern pattern;
-    pattern.emplace(0, ArticulationPatternSegment(ArrangementPattern(hundred_percent, 0),
-                                                  PitchPattern(ArticulationMap::expected_size, ten_percent, 0),
-                                                  ExpressionPattern(ArticulationMap::expected_size, ten_percent, 0)));
-    profile->set_pattern(ArticulationType::STANDARD, pattern);
-    builder.profiles.profiles.fill(profile);
-    auto playback = builder.build(&master);
-    std::size_t chord_notes = 0;
-    for (const auto &[id, events] : playback.tracks) chord_notes += events.notes.size();
-    EXPECT_GT(chord_notes, 0u); // The source contains rests only; these are chord-symbol events.
 }
 
 TEST(Read, NormalizeResolvesSpannerEndsAgainstRealMeasuresWithMmRests) {
