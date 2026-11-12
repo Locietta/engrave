@@ -215,6 +215,12 @@ bool MasterScore::set_tempo_multiplier(BeatsPerSecond val) {
     return true;
 }
 
+RuntimeTempoState MasterScore::runtime_tempo_state() const { return automation_controller_->runtime_tempo_state(); }
+
+void MasterScore::restore_runtime_tempo_state(RuntimeTempoState state) {
+    automation_controller_->restore_runtime_tempo_state(std::move(state));
+}
+
 void MasterScore::set_tempo_timeline_override(std::optional<TempoTimeline> timeline) {
     automation_controller_->set_tempo_timeline_override(std::move(timeline));
 }

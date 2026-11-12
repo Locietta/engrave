@@ -2217,6 +2217,33 @@ TEST(Read, FontRefreshWaitsForGeometryBoundary) {
 
 // Replacement consumes pending ranges via full reload layouts. Counter deltas
 // are meaningful within each Score lifetime, not across project replacement.
+TEST(Read, SnapshotReplacementPreservesRuntimeTempoSettings) {
+    using namespace mu::engraving;
+    for (const bool override_active : {false, true}) {
+        auto document = open_path(write470_fixture());
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        ASSERT_TRUE(master.set_tempo_multiplier(BeatsPerSecond(2.0)));
+        if (override_active) {
+            TempoTimeline timeline;
+            timeline.rebuild(TempoValues{{0, 3.0}}, {});
+            timeline.set_tempo_multiplier(BeatsPerSecond(1.5));
+            master.set_tempo_timeline_override(timeline);
+        }
+        const double before = master.tempo_timeline().utick2utime(1920);
+        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+        hooks.policy = engrave::api::Policy::SNAPSHOT;
+        hooks.before_step = [](std::size_t) { throw std::runtime_error("snapshot tempo"); };
+        ASSERT_FALSE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+        hooks = {};
+        auto &restored = master_of(*document);
+        EXPECT_DOUBLE_EQ(restored.tempo_timeline().utick2utime(1920), before);
+        EXPECT_EQ(restored.runtime_tempo_state().override_timeline.has_value(), override_active);
+        restored.set_tempo_timeline_override(std::nullopt);
+        EXPECT_DOUBLE_EQ(restored.tempo_timeline().tempo_multiplier().val, 2.0);
+    }
+}
+
 TEST(Read, SnapshotReplacementConsumesMasterPendingLayout) {
     const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "chordline_path.mscx"; });
     ASSERT_NE(it, g_corpus.end());

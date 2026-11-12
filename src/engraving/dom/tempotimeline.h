@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <vector>
 
 #include "engraving/automation/automationtypes.h"
@@ -60,5 +61,11 @@ private:
     std::vector<TempoTimePoint> points_; // sorted by utick for O(logN) lookup
     PausesMap pauses_;
     BeatsPerSecond tempo_multiplier_ = 1.0;
+};
+
+// Runtime playback options are independent of serialized authored tempo curves.
+struct RuntimeTempoState {
+    BeatsPerSecond multiplier = 1.0;
+    std::optional<TempoTimeline> override_timeline;
 };
 } // namespace mu::engraving
