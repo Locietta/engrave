@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <unordered_map>
+#include <utility>
 
 #include <ft2build.h>
 
@@ -174,7 +175,7 @@ FontFaceFT::~FontFaceFT() {
     delete data_;
 }
 
-bool FontFaceFT::load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) {
+bool FontFaceFT::load(const FaceKey &key, FontData font_data, bool is_symbol_mode) {
     if (!init_ft()) {
         return false;
     }
@@ -187,7 +188,7 @@ bool FontFaceFT::load(const FaceKey &key, const FontData &font_data, bool is_sym
         return false;
     }
 
-    data_->font_data = font_data.data;
+    data_->font_data = std::move(font_data.data);
 
     int rval = new_matching_memory_face(ftlib, (FT_Byte *) data_->font_data.const_data(), (FT_Long) data_->font_data.size(), key.data_key,
                                         &data_->face);
@@ -201,7 +202,7 @@ bool FontFaceFT::load(const FaceKey &key, const FontData &font_data, bool is_sym
     } else {
         FT_Set_Char_Size(data_->face, to_f26d6(key_.pixel_size), to_f26d6(key_.pixel_size), 0, 0);
 
-        static FT_Matrix matrix;
+        FT_Matrix matrix;
         matrix.xx = 0x10000;
         matrix.yy = 0x10000;
         matrix.xy = 0;
@@ -360,7 +361,7 @@ f26dot6_t FontFaceFT::glyph_advance(glyph_idx_t idx) const {
 }
 
 const GlyphImage &FontFaceFT::glyph_image([[maybe_unused]] glyph_idx_t idx) const {
-    static GlyphImage null;
+    static const GlyphImage null;
 
     return null;
 }

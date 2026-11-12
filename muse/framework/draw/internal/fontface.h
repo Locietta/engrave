@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
+#include <utility>
+
 #include "fontfacedu.h"
 
 namespace muse::draw {
@@ -10,7 +12,7 @@ struct FontFace {
 
     FontFace() = default;
 
-    bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) { return face_.load(key, font_data, is_symbol_mode); }
+    bool load(const FaceKey &key, FontData font_data, bool is_symbol_mode) { return face_.load(key, std::move(font_data), is_symbol_mode); }
 
     const FaceKey &key() const { return face_.key(); }
 

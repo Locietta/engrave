@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include "engrave/src/score/json.h"
-#include "global/io/buffer.h"
+#include "global/io/byteview.h"
 #include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipreader.h"
 
@@ -17,8 +17,7 @@ bool ends_with(std::string_view text, std::string_view suffix) {
 }
 
 std::optional<Format> sniff_zip(const std::string &data) {
-    muse::ByteArray bytes = muse::ByteArray::from_raw_data(data.data(), data.size());
-    muse::io::Buffer buffer(&bytes);
+    muse::io::ByteView buffer(std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(data.data()), data.size()));
     buffer.open(muse::io::IODevice::READ_ONLY);
     muse::ZipReader zip(&buffer);
     if (zip.has_error()) return std::nullopt;
@@ -43,7 +42,7 @@ std::optional<Format> sniff_xml(const std::string &data) {
     if (text.starts_with("\xEF\xBB\xBF")) text.remove_prefix(3);
     const auto first = text.find_first_not_of(" \t\r\n");
     if (first == std::string_view::npos || text[first] != '<') return std::nullopt;
-    muse::XmlStreamReader xml(muse::ByteArray::from_raw_data(data.data(), data.size()));
+    muse::XmlStreamReader xml{std::string_view(data)};
     while (!xml.at_end()) {
         xml.read_next();
         if (xml.is_start_element()) {

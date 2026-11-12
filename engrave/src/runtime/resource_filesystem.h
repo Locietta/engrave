@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -47,7 +48,7 @@ struct NativeFileSystem {
     muse::Ret write_file(const muse::io::PathT &file_path, const muse::ByteArray &data);
 
     muse::RetVal<muse::io::StreamId> open_stream(const muse::io::PathT &file_path, muse::io::OpenMode mode);
-    muse::Ret write_to_stream(muse::io::StreamId file_id, const muse::ByteArray &data, uint64_t offset = muse::io::stream_pos_current);
+    muse::Ret write_to_stream(muse::io::StreamId file_id, std::span<const uint8_t> data, uint64_t offset = muse::io::stream_pos_current);
     muse::Ret close_stream(muse::io::StreamId file_id);
 
     muse::io::PathT canonical_file_path(const muse::io::PathT &file_path) const;

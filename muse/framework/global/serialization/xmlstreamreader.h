@@ -44,12 +44,14 @@ struct XmlStreamReader {
     XmlStreamReader();
     explicit XmlStreamReader(io::IODevice *device);
     explicit XmlStreamReader(const ByteArray &data);
+    explicit XmlStreamReader(std::string_view data);
     virtual ~XmlStreamReader();
 
     XmlStreamReader(const XmlStreamReader &) = delete;
     XmlStreamReader &operator=(const XmlStreamReader &) = delete;
 
     void set_data(const ByteArray &data);
+    void set_data(std::string_view data);
 
     bool read_next_start_element();
     bool at_end() const;

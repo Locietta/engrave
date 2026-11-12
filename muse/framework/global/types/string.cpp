@@ -155,21 +155,21 @@ char16_t Char::to_upper(char16_t ch) {
 // ============================
 // UtfCodec
 // ============================
-UtfCodec::Encoding UtfCodec::xml_encoding(const ByteArray &data) {
+UtfCodec::Encoding UtfCodec::xml_encoding(std::string_view data) {
     if (data.size() < 3) {
         return Encoding::UNKNOWN;
     }
 
     // Check Bom
-    if (std::memcmp(data.const_char(), ::u8_bom, 3) == 0) {
+    if (std::memcmp(data.data(), ::u8_bom, 3) == 0) {
         return Encoding::UTF_8;
     }
 
-    if (std::memcmp(data.const_char(), ::u16_le_bom, 2) == 0) {
+    if (std::memcmp(data.data(), ::u16_le_bom, 2) == 0) {
         return Encoding::UTF_16LE;
     }
 
-    if (std::memcmp(data.const_char(), ::u16_be_bom, 2) == 0) {
+    if (std::memcmp(data.data(), ::u16_be_bom, 2) == 0) {
         return Encoding::UTF_16BE;
     }
 
@@ -177,7 +177,7 @@ UtfCodec::Encoding UtfCodec::xml_encoding(const ByteArray &data) {
     //! NOTE For XML we know that the content starts with an ascii character '<',
     //! it takes up 8 bits, so the remaining bits will be zero if the encoding is greater than UTF-8
     //! (for other content type this may not be true)
-    const uint8_t *d = data.const_data();
+    const uint8_t *d = reinterpret_cast<const uint8_t *>(data.data());
     if (d[0] != 0 && d[1] != 0) {
         return Encoding::UTF_8;
     }

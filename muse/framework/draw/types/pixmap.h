@@ -22,6 +22,8 @@
 #ifndef MUSE_DRAW_PIXMAP_H
 #define MUSE_DRAW_PIXMAP_H
 
+#include <utility>
+
 #include "geometry.h"
 #include "global/types/bytearray.h"
 
@@ -32,7 +34,7 @@ struct Pixmap {
 
     Pixmap(Size size) : size_(size) {}
 
-    Pixmap(const ByteArray &data, Size size) : size_(size) { set_data(data); }
+    Pixmap(ByteArray data, Size size) : size_(size), data_(std::move(data)) { key_ = do_key(data_.const_data(), data_.size()); }
 
     Pixmap(int w, int h) : size_(Size(w, h)) {}
 
@@ -42,7 +44,7 @@ struct Pixmap {
 
     Size size() const { return size_; }
 
-    ByteArray data() const { return data_; }
+    const ByteArray &data() const { return data_; }
 
     bool is_null() const { return data_.empty(); }
 
@@ -61,11 +63,6 @@ private:
             h = 31 * h + p[i];
         }
         return h;
-    }
-
-    void set_data(const ByteArray &data) {
-        data_ = data;
-        key_ = do_key(data.const_data(), data.size());
     }
 
     Size size_;

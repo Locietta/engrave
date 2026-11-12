@@ -59,11 +59,11 @@ struct WavHeader {
         const uint32_t bytes_per_frame = audio_channels_number * bytes_per_sample;
         const uint32_t bytes_per_sec = audio_channels_number * sample_rate * bytes_per_sample;
 
-        out_dev.write(ByteArray::from_raw_data("RIFF", 4)); // chunk ID
+        out_dev.write(reinterpret_cast<const uint8_t *>("RIFF"), 4); // chunk ID
 
         write_tag_data<uint32_t>(out_dev, overall_size);
-        out_dev.write(ByteArray::from_raw_data("WAVE", 4)); // WAVEID
-        out_dev.write(ByteArray::from_raw_data("fmt ", 4)); // chunk ID
+        out_dev.write(reinterpret_cast<const uint8_t *>("WAVE"), 4); // WAVEID
+        out_dev.write(reinterpret_cast<const uint8_t *>("fmt "), 4); // chunk ID
 
         write_tag_data<uint32_t>(out_dev, chunk_size);
         write_tag_data<uint16_t>(out_dev, code);
@@ -77,7 +77,7 @@ struct WavHeader {
         if (chunk_size > 16) {
             write_tag_data<uint16_t>(out_dev, ext); // cbSize (extension size)
         }
-        out_dev.write(ByteArray::from_raw_data("data", 4)); // chunk ID
+        out_dev.write(reinterpret_cast<const uint8_t *>("data"), 4); // chunk ID
 
         write_tag_data<uint32_t>(out_dev, sample_data_length);
     }

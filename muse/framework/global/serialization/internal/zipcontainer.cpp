@@ -590,7 +590,7 @@ void ZipContainer::Impl::scan_files() {
 
 ZipContainer::FileInfo ZipContainer::Impl::fill_file_info(size_t index) const {
     ZipContainer::FileInfo file_info;
-    FileHeader header = file_headers.at(index);
+    const FileHeader &header = file_headers.at(index);
     uint32_t mode = read_u_int(header.h.external_file_attributes);
     const HostOS host_os = HostOS(read_u_short(header.h.version_made) >> 8);
     switch (host_os) {
@@ -662,7 +662,7 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
     localtime_r(&t, &now);
 #endif
     write_ms_dos_date(header.h.last_mod_file, now);
-    ByteArray data = contents;
+    ByteArray data;
     if (compression == ZipContainer::ALWAYS_COMPRESS) {
         write_u_short(header.h.compression_method, COMPRESSION_METHOD_DEFLATED);
 
@@ -671,8 +671,7 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
         len += (len >> 12) + (len >> 14) + 11;
         int res;
         do {
-            // ByteArray::resize detaches the shared input before allocating the
-            // deflate bound. Charge every attempt before either allocation.
+            // Charge the compression workspace before allocating it.
             if (io::active_write_budget && !io::active_write_budget->charge(static_cast<uint64_t>(contents.size()) + len)) {
                 status = ZipContainer::FILE_WRITE_ERROR;
                 return;
@@ -695,7 +694,8 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
         } while (res == Z_BUF_ERROR);
     }
     // TODO add a check if data.size() > contents.size().  Then try to store the original and revert the compression method to be uncompressed
-    write_u_int(header.h.compressed_size, (uint) data.size());
+    const ByteArray &payload = compression == ZipContainer::ALWAYS_COMPRESS ? data : contents;
+    write_u_int(header.h.compressed_size, (uint) payload.size());
     uint crc_32 = ::crc32(0, 0, 0);
     crc_32 = ::crc32(crc_32, (const uint8_t *) contents.const_data(), (uint) contents.size());
     write_u_int(header.h.crc_32, crc_32);
@@ -738,7 +738,7 @@ void ZipContainer::Impl::add_entry(EntryType type, const std::string &input_file
     LocalFileHeader h = header.h.to_local_header();
     ok &= write_to_device((const uint8_t *) &h, sizeof(LocalFileHeader));
     ok &= write_to_device(header.file_name);
-    ok &= write_to_device(data);
+    ok &= write_to_device(payload);
 
     start_of_directory = (uint) device->pos();
     dirty_file_tree = true;
@@ -959,7 +959,7 @@ ByteArray ZipContainer::file_data(const std::string &input_file_name) const {
 
     ByteArray result;
     if (central_method == COMPRESSION_METHOD_STORED) {
-        result = compressed;
+        result = std::move(compressed);
     } else {
         // Allocate exactly the declared output size; an empty entry still needs a
         // valid one-byte destination for zlib. Inflate once with no retry growth.

@@ -30,7 +30,7 @@ struct FontFaceDU {
     FontFaceDU() = default;
     ~FontFaceDU() = default;
 
-    bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode);
+    bool load(const FaceKey &key, FontData font_data, bool is_symbol_mode);
 
     const FaceKey &key() const;
     bool is_symbol_mode() const;

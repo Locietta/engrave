@@ -35,7 +35,7 @@ struct FontFaceFT {
     FontFaceFT();
     ~FontFaceFT();
 
-    bool load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode);
+    bool load(const FaceKey &key, FontData font_data, bool is_symbol_mode);
 
     const FaceKey &key() const;
     bool is_symbol_mode() const;
@@ -67,6 +67,5 @@ private:
     FaceKey key_;
     bool is_symbol_mode_ = false;
     FData *data_ = nullptr;
-    mutable std::unordered_map<glyph_idx_t, GlyphImage> cache_;
 };
 } // namespace muse::draw

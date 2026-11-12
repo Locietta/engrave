@@ -1088,7 +1088,7 @@ RetVal<StreamId> NativeFileSystem::open_stream(const io::PathT &file_path, OpenM
     return result;
 }
 
-Ret NativeFileSystem::write_to_stream(StreamId file_id, const ByteArray &data, uint64_t offset) {
+Ret NativeFileSystem::write_to_stream(StreamId file_id, std::span<const uint8_t> data, uint64_t offset) {
     std::lock_guard<std::mutex> lock(streams_mutex_);
     auto it = streams_.find(file_id);
     if (it == streams_.end() || !it->second) {
@@ -1110,7 +1110,7 @@ Ret NativeFileSystem::write_to_stream(StreamId file_id, const ByteArray &data, u
         return failure(io::Err::FS_WRITE_ERROR, "Stream write is too large");
     }
     if (!data.empty()) {
-        stream.write(data.const_char(), static_cast<std::streamsize>(data.size()));
+        stream.write(reinterpret_cast<const char *>(data.data()), static_cast<std::streamsize>(data.size()));
     }
     if (!stream) {
         return failure(io::Err::FS_WRITE_ERROR, "Failed to write stream");

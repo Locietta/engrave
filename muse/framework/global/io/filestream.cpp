@@ -86,7 +86,7 @@ size_t FileStream::write_data(const uint8_t *data, size_t len) {
 
     uint64_t offset = (pos() == expected_pos_) ? ::muse::io::stream_pos_current : static_cast<uint64_t>(pos());
 
-    Ret ret = file_system()->write_to_stream(stream_id_, ByteArray::from_raw_data(data, len), offset);
+    Ret ret = file_system()->write_to_stream(stream_id_, std::span<const uint8_t>(data, len), offset);
     if (!ret) {
         set_error(ret.code(), ret.text());
         return 0;
