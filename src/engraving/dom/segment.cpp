@@ -1658,7 +1658,7 @@ EngravingItem *Segment::prev_element_of_segment(EngravingItem *e, staff_idx_t ac
         }
         if (el->is_chord()) {
             Chord *chord = to_chord(el);
-            GraceNotesGroup &grace_notes_before = chord->grace_notes_before();
+            const auto grace_notes_before = chord->grace_notes_before();
             if (!grace_notes_before.empty()) {
                 ChordRest *next = Navigation::prev_chord_rest(chord);
                 if (next) {

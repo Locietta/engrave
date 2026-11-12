@@ -726,7 +726,7 @@ static std::optional<std::pair<int, int>> grouped_grace_window(const Note *note)
     if (!layout) {
         return std::nullopt;
     }
-    const std::vector<Chord *> before = principal->grace_notes_before(true); // copies: the chord reuses these vectors
+    const std::vector<Chord *> before = principal->grace_notes_before(true); // independent query result
     const std::vector<Chord *> after = principal->grace_notes_after(true);
     for (size_t k = 0; k < before.size(); ++k) {
         if (before[k] == chord) {

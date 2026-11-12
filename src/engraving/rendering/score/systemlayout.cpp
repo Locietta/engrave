@@ -1215,8 +1215,8 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
     }
 
     for (Chord *chord : elements_to_layout.chords) {
-        GraceNotesGroup &grace_before = chord->grace_notes_before();
-        GraceNotesGroup &grace_after = chord->grace_notes_after();
+        GraceNotesGroup &grace_before = chord->update_grace_notes_before_group();
+        GraceNotesGroup &grace_after = chord->update_grace_notes_after_group();
         TLayout::layout_grace_notes_group2(&grace_before, grace_before.mutldata());
         TLayout::layout_grace_notes_group2(&grace_after, grace_after.mutldata());
         if (TabDurationSymbol *symbol = chord->tab_dur()) {
@@ -1642,8 +1642,8 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                             // add grace notes to skyline
                             if (e->is_chord()) {
                                 Chord *chord = to_chord(e);
-                                GraceNotesGroup &grace_before = chord->grace_notes_before();
-                                GraceNotesGroup &grace_after = chord->grace_notes_after();
+                                const GraceNotesGroup &grace_before = chord->grace_notes_before_group();
+                                const GraceNotesGroup &grace_after = chord->grace_notes_after_group();
                                 if (!grace_before.empty()) {
                                     skyline.add(grace_before.shape().translate(grace_before.pos() + p + offset));
                                 }

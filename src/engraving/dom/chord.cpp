@@ -23,6 +23,7 @@
 #include "chord.h"
 
 #include <cmath>
+#include <stdexcept>
 #include <vector>
 
 #include "../editing/addremoveelement.h"
@@ -1780,38 +1781,59 @@ Measure *Chord::measure() const {
 //   graceNotesBefore
 //---------------------------------------------------------
 
-GraceNotesGroup &Chord::grace_notes_before(bool filter_unplayable) const {
-    grace_notes_before_.clear();
-    for (Chord *c : grace_notes_) {
-        assert(c->note_type() != NoteType::NORMAL && c->note_type() != NoteType::INVALID);
-        if (c->note_type() & (NoteType::ACCIACCATURA | NoteType::APPOGGIATURA | NoteType::GRACE4 | NoteType::GRACE16 | NoteType::GRACE32)) {
-            if (filter_unplayable && !c->is_chord_playable()) {
-                continue;
-            }
+void GraceNotesView::Iterator::skip_unmatched() {
+    while (index < source->size()) {
+        const Chord *chord = **this;
+        const NoteType type = chord->note_type();
+        assert(type != NoteType::NORMAL && type != NoteType::INVALID);
+        const bool matches =
+            after ?
+                bool(type & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER)) :
+                bool(type & (NoteType::ACCIACCATURA | NoteType::APPOGGIATURA | NoteType::GRACE4 | NoteType::GRACE16 | NoteType::GRACE32));
+        if (matches && (!filter_unplayable || chord->is_chord_playable())) {
+            return;
+        }
+        ++index;
+    }
+}
 
-            grace_notes_before_.push_back(c);
+GraceNotesView::Iterator &GraceNotesView::Iterator::operator++() {
+    ++index;
+    skip_unmatched();
+    return *this;
+}
+
+Chord *GraceNotesView::back() const {
+    Chord *last = nullptr;
+    for (Chord *chord : *this) {
+        last = chord;
+    }
+    assert(last);
+    return last;
+}
+
+Chord *GraceNotesView::at(size_t index) const {
+    for (Chord *chord : *this) {
+        if (index-- == 0) {
+            return chord;
         }
     }
+    throw std::out_of_range("grace note index");
+}
+
+GraceNotesView Chord::grace_notes_before(bool filter_unplayable) const { return {&grace_notes_, false, filter_unplayable}; }
+
+GraceNotesView Chord::grace_notes_after(bool filter_unplayable) const { return {&grace_notes_, true, filter_unplayable}; }
+
+GraceNotesGroup &Chord::update_grace_notes_before_group() {
+    const auto notes = grace_notes_before();
+    grace_notes_before_.assign(notes.begin(), notes.end());
     return grace_notes_before_;
 }
 
-//---------------------------------------------------------
-//   graceNotesAfter
-//---------------------------------------------------------
-
-GraceNotesGroup &Chord::grace_notes_after(bool filter_unplayable) const {
-    grace_notes_after_.clear();
-    for (int i = static_cast<int>(grace_notes_.size()) - 1; i >= 0; i--) {
-        Chord *c = grace_notes_[i];
-        assert(c->note_type() != NoteType::NORMAL && c->note_type() != NoteType::INVALID);
-        if (c->note_type() & (NoteType::GRACE8_AFTER | NoteType::GRACE16_AFTER | NoteType::GRACE32_AFTER)) {
-            if (filter_unplayable && !c->is_chord_playable()) {
-                continue;
-            }
-
-            grace_notes_after_.push_back(c);
-        }
-    }
+GraceNotesGroup &Chord::update_grace_notes_after_group() {
+    const auto notes = grace_notes_after();
+    grace_notes_after_.assign(notes.begin(), notes.end());
     return grace_notes_after_;
 }
 
@@ -1830,8 +1852,8 @@ Chord *Chord::grace_note_at(size_t idx) const {
 std::vector<Chord *> Chord::all_grace_chords_of_main_chord() {
     Chord *main_chord = is_grace() ? to_chord(ownership_parent()) : this;
     std::vector<Chord *> chords = {main_chord};
-    const GraceNotesGroup &gn_before = main_chord->grace_notes_before();
-    const GraceNotesGroup &gn_after = main_chord->grace_notes_after();
+    const auto gn_before = main_chord->grace_notes_before();
+    const auto gn_after = main_chord->grace_notes_after();
     chords.insert(chords.begin(), gn_before.begin(), gn_before.end());
     chords.insert(chords.end(), gn_after.begin(), gn_after.end());
     return chords;
@@ -1846,14 +1868,14 @@ void Chord::set_show_stem_slash_in_advance() {
         return;
     }
     if (is_grace_before()) {
-        GraceNotesGroup &grace_before = to_chord(ownership_parent())->grace_notes_before();
+        const auto grace_before = to_chord(ownership_parent())->grace_notes_before();
         Chord *grace = grace_before.empty() ? nullptr : grace_before.front();
         if (grace && grace->beam_mode() != BeamMode::NONE && grace->beam_mode() != BeamMode::BEGIN) {
             grace->request_show_stem_slash(show_stem_slash());
         }
     }
     if (is_grace_after()) {
-        GraceNotesGroup &grace_after = to_chord(ownership_parent())->grace_notes_after();
+        const auto grace_after = to_chord(ownership_parent())->grace_notes_after();
         Chord *grace = grace_after.empty() ? nullptr : grace_after.back();
         if (grace && grace->beam_mode() != BeamMode::NONE) {
             grace->request_show_stem_slash(show_stem_slash());
@@ -2124,7 +2146,7 @@ EngravingItem *Chord::prev_element() {
                 }
             }
 
-            GraceNotesGroup &grace_notes_before = this->grace_notes_before();
+            const auto grace_notes_before = this->grace_notes_before();
             if (!grace_notes_before.empty()) {
                 if (Chord *grace_notes_before_last_chord = grace_notes_before.back()) {
                     if (e == grace_notes_before_last_chord->notes().back()) {
@@ -2353,7 +2375,7 @@ Ornament *Chord::find_ornament(bool for_playback) const {
 // firstGraceOrNote
 //---------------------------------
 Note *Chord::first_grace_or_note() {
-    GraceNotesGroup &grace_notes_before = this->grace_notes_before();
+    const auto grace_notes_before = this->grace_notes_before();
     if (!grace_notes_before.empty()) {
         if (Chord *grace_notes_before_first_chord = grace_notes_before.front()) {
             return grace_notes_before_first_chord->notes().front();

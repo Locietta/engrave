@@ -195,7 +195,7 @@ double StemLayout::stem_pos_x(const Chord *item) {
     const Note *ref_note = item->ldata()->up ? item->up_note() : item->down_note();
     double x_pos = ref_note->pos().x() + 0.5 * ref_note->width();
     if (item->is_grace_bend_end()) {
-        GraceNotesGroup &grace_before = item->grace_notes_before();
+        const auto grace_before = item->grace_notes_before();
         Chord *grace = grace_before.empty() ? nullptr : grace_before.front();
         if (grace) {
             x_pos += grace->pos().x();

@@ -2878,8 +2878,8 @@ void ChordLayout::append_grace_notes(Chord *chord) {
     Measure *measure = chord->measure();
     track_idx_t track = chord->track();
     staff_idx_t staff_idx = chord->staff_idx();
-    GraceNotesGroup &gnb = chord->grace_notes_before();
-    GraceNotesGroup &gna = chord->grace_notes_after();
+    GraceNotesGroup &gnb = chord->update_grace_notes_before_group();
+    GraceNotesGroup &gna = chord->update_grace_notes_after_group();
 
     //Attach graceNotesBefore of this chord to *this* segment
     if (!gnb.empty()) {

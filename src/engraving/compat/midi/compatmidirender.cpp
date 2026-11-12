@@ -1288,10 +1288,9 @@ int CompatMidiRender::adjust_trailtime(int trailtime, Chord *current_chord, Chor
         return trailtime;
     }
 
-    // Grouped graces sit on the beat, so they take nothing from this chord (grace_groups_share_principal refills the
-    // chord's grace vectors, hence it runs before the reference below is taken)
+    // Grouped graces sit on the beat, so they take nothing from this chord.
     const bool next_graces_on_beat = grace_groups_share_principal(next_chord);
-    const std::vector<Chord *> &grace_before_chords = next_chord->grace_notes_before();
+    const auto grace_before_chords = next_chord->grace_notes_before();
     std::vector<Chord *> grace_notes_before_bar;
 
     bool has_grace_bend = std::any_of(grace_before_chords.begin(), grace_before_chords.end(), [](Chord *ch) {

@@ -153,7 +153,7 @@ ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavig
         if (options.skip_grace) {
             cr = to_chord_rest(cr->ownership_parent());
         } else if (cr->is_grace_before()) {
-            const GraceNotesGroup &group = pc->grace_notes_before();
+            const auto group = pc->grace_notes_before();
             auto i = std::find(group.begin(), group.end(), c);
             if (i == group.end()) {
                 return nullptr; // unable to find self?
@@ -165,7 +165,7 @@ ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavig
             // if this was last grace note before, return parent
             return pc;
         } else {
-            const GraceNotesGroup &group = pc->grace_notes_after();
+            const auto group = pc->grace_notes_after();
             auto i = std::find(group.begin(), group.end(), c);
             if (i == group.end()) {
                 return nullptr; // unable to find self?
@@ -181,7 +181,7 @@ ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavig
         if (cr->is_chord() && !options.skip_grace) {
             const Chord *c = to_chord(cr);
             if (!c->grace_notes().empty()) {
-                const GraceNotesGroup &group = c->grace_notes_after();
+                const auto group = c->grace_notes_after();
                 if (!group.empty()) {
                     return group.front();
                 }
@@ -204,7 +204,7 @@ ChordRest *Navigation::next_chord_rest(const ChordRest *cr, const ChordRestNavig
             if (e->is_chord() && !options.skip_grace) {
                 Chord *c = to_chord(e);
                 if (!c->grace_notes().empty()) {
-                    const GraceNotesGroup &group = c->grace_notes_before();
+                    const auto group = c->grace_notes_before();
                     if (!group.empty()) {
                         return group.front();
                     }
@@ -235,24 +235,24 @@ ChordRest *Navigation::prev_chord_rest(const ChordRest *cr, const ChordRestNavig
         if (options.skip_grace) {
             cr = to_chord_rest(cr->ownership_parent());
         } else if (cr->is_grace_before()) {
-            const GraceNotesGroup &group = pc->grace_notes_before();
+            const auto group = pc->grace_notes_before();
             auto i = std::find(group.begin(), group.end(), c);
             if (i == group.end()) {
                 return nullptr; // unable to find self?
             }
             if (i != group.begin()) {
-                return *--i;
+                return group.at(static_cast<size_t>(std::distance(group.begin(), i) - 1));
             }
             // if this was first grace note before, fall through to find previous main note
             cr = pc;
         } else {
-            const GraceNotesGroup &group = pc->grace_notes_after();
+            const auto group = pc->grace_notes_after();
             auto i = std::find(group.begin(), group.end(), c);
             if (i == group.end()) {
                 return nullptr; // unable to find self?
             }
             if (i != group.begin()) {
-                return *--i;
+                return group.at(static_cast<size_t>(std::distance(group.begin(), i) - 1));
             }
             // if this was first grace note after, return parent
             return pc;
@@ -262,7 +262,7 @@ ChordRest *Navigation::prev_chord_rest(const ChordRest *cr, const ChordRestNavig
         // cr is not a grace note
         if (cr->is_chord() && !options.skip_grace) {
             const Chord *c = to_chord(cr);
-            const GraceNotesGroup &group = c->grace_notes_before();
+            const auto group = c->grace_notes_before();
             if (!group.empty()) {
                 return group.back();
             }
@@ -283,7 +283,7 @@ ChordRest *Navigation::prev_chord_rest(const ChordRest *cr, const ChordRestNavig
                 continue; // these rests are not shown, skip them
             }
             if (e->is_chord() && !options.skip_grace) {
-                const GraceNotesGroup &group = to_chord(e)->grace_notes_after();
+                const auto group = to_chord(e)->grace_notes_after();
                 if (!group.empty()) {
                     return group.back();
                 }

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <iterator>
+
 /**
  \file
  Definition of classes Chord, HelpLine and NoteList.
@@ -75,6 +77,61 @@ enum class PlayEventType : unsigned char {
     AUTO, ///< Play events for all notes are calculated by MuseScore.
     USER, ///< Some play events are modified by user. Those events are written into the mscx file.
     ///.\}
+};
+
+// A filtered, non-owning query over a chord's grace notes. Iterators own their
+// traversal state; neither the view nor its iterators write to the chord.
+struct GraceNotesView {
+    struct Iterator {
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = Chord *;
+        using difference_type = std::ptrdiff_t;
+        using reference = Chord *;
+        using pointer = Chord **;
+
+        const std::vector<Chord *> *source = nullptr;
+        size_t index = 0;
+        bool after = false;
+        bool filter_unplayable = false;
+
+        Chord *operator*() const { return (*source)[after ? source->size() - 1 - index : index]; }
+
+        Iterator &operator++();
+
+        Iterator operator++(int) {
+            auto previous = *this;
+            ++*this;
+            return previous;
+        }
+
+        bool operator==(const Iterator &) const = default;
+        void skip_unmatched();
+    };
+
+    const std::vector<Chord *> *source;
+    bool after;
+    bool filter_unplayable;
+
+    Iterator begin() const {
+        Iterator it{source, 0, after, filter_unplayable};
+        it.skip_unmatched();
+        return it;
+    }
+
+    Iterator end() const { return {source, source->size(), after, filter_unplayable}; }
+
+    bool empty() const { return begin() == end(); }
+
+    size_t size() const { return static_cast<size_t>(std::distance(begin(), end())); }
+
+    Chord *front() const { return *begin(); }
+
+    Chord *back() const;
+    Chord *at(size_t index) const;
+
+    Chord *operator[](size_t index) const { return at(index); }
+
+    operator std::vector<Chord *>() const { return {begin(), end()}; }
 };
 
 struct GraceNotesGroup final : std::vector<Chord *>, EngravingItem {
@@ -255,8 +312,15 @@ public:
 
     void remove_all_grace_notes() { grace_notes_.clear(); }
 
-    GraceNotesGroup &grace_notes_before(bool filter_unplayable = false) const;
-    GraceNotesGroup &grace_notes_after(bool filter_unplayable = false) const;
+    GraceNotesView grace_notes_before(bool filter_unplayable = false) const;
+    GraceNotesView grace_notes_after(bool filter_unplayable = false) const;
+
+    GraceNotesGroup &update_grace_notes_before_group();
+    GraceNotesGroup &update_grace_notes_after_group();
+
+    const GraceNotesGroup &grace_notes_before_group() const { return grace_notes_before_; }
+
+    const GraceNotesGroup &grace_notes_after_group() const { return grace_notes_after_; }
 
     size_t grace_index() const { return grace_index_; }
 
@@ -453,9 +517,9 @@ private:
 
     bool ends_note_anchored_line_ = false; // true if this chord is the ending point of a glissando (needed for layout)
     std::vector<Chord *> grace_notes_;     // storage for all grace notes
-    mutable GraceNotesGroup grace_notes_before_ = GraceNotesGroup(this); // will store before-chord grace notes
-    mutable GraceNotesGroup grace_notes_after_ = GraceNotesGroup(this);  // will store after-chord grace notes
-    size_t grace_index_ = 0;                                             // if this is a grace note, index in parent list
+    GraceNotesGroup grace_notes_before_ = GraceNotesGroup(this); // will store before-chord grace notes
+    GraceNotesGroup grace_notes_after_ = GraceNotesGroup(this);  // will store after-chord grace notes
+    size_t grace_index_ = 0;                                     // if this is a grace note, index in parent list
 
     bool is_trill_cue_note_ = false;
 
