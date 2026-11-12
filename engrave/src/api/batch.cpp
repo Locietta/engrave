@@ -412,6 +412,8 @@ void BatchGuard::restore(const Snapshot &snapshot) {
         if (versions->laid_out) score->do_layout();
         ++versions;
     }
+    project->master_score()->invalidate_repeat_list();
+    project->master_score()->init_automation();
     assign_missing_ids(*project->master_score());
     // Full reload/compatibility layouts consume the original pending ranges.
     // Keep the replacement's state: laid-out scores are fresh; any unlaid-out

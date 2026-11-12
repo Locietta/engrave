@@ -135,6 +135,7 @@ void MasterScore::edit_automation_points(const AutomationCurveKey &key, Automati
 }
 
 void MasterScore::on_time_inserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &old_segments) {
+    update_repeat_list(false);
     automation_controller_->insert_time(tick, len, old_segments);
 }
 
@@ -156,7 +157,6 @@ void MasterScore::set_expand_repeats(bool expand) {
         return;
     }
     expand_repeats_ = expand;
-    invalidate_repeat_list();
 }
 
 //---------------------------------------------------------
@@ -169,9 +169,13 @@ void MasterScore::update_repeat_list_tempo() {
     non_expanded_repeat_list_->update_uticks();
 }
 
-void MasterScore::update_repeat_list() {
-    expanded_repeat_list_->update(true);
-    non_expanded_repeat_list_->update(false);
+void MasterScore::update_repeat_list(bool update_ties) {
+    repeat_ties_dirty_ |= expanded_repeat_list_->update(true);
+    repeat_ties_dirty_ |= non_expanded_repeat_list_->update(false);
+    if (update_ties && repeat_ties_dirty_) {
+        repeat_ties_dirty_ = false;
+        undo_remove_stale_tie_jump_points();
+    }
 }
 
 //---------------------------------------------------------
@@ -180,28 +184,23 @@ void MasterScore::update_repeat_list() {
 
 const RepeatList &MasterScore::repeat_list() const {
     if (expand_repeats_) {
-        expanded_repeat_list_->update(true);
         return *expanded_repeat_list_;
     }
 
-    non_expanded_repeat_list_->update(false);
     return *non_expanded_repeat_list_;
 }
 
-const RepeatList &MasterScore::repeat_list(bool expand_repeats, bool update_ties) const {
+const RepeatList &MasterScore::repeat_list(bool expand_repeats) const {
     if (expand_repeats) {
-        expanded_repeat_list_->update(true, update_ties);
         return *expanded_repeat_list_;
     }
 
-    non_expanded_repeat_list_->update(false, update_ties);
     return *non_expanded_repeat_list_;
 }
 
 const TempoTimeline &MasterScore::tempo_timeline() const { return tempo_timeline(master_score()->expand_repeats()); }
 
 const TempoTimeline &MasterScore::tempo_timeline(bool expand_repeats) const {
-    automation_controller_->ensure_initialized(const_cast<MasterScore *>(this));
     return automation_controller_->tempo_timeline(expand_repeats);
 }
 
@@ -264,6 +263,7 @@ MasterScore *MasterScore::clone() {
     MscLoader().read_master_score(score, r, true);
 
     score->do_layout();
+    score->init_automation();
     return score;
 }
 
@@ -377,10 +377,15 @@ void MasterScore::set_layout(const Fraction &tick1, const Fraction &tick2, staff
 
 void MasterScore::init_automation() {
     IF_ASSERT_FAILED(automation_controller_) { return; }
+    invalidate_repeat_list();
+    update_repeat_list(false);
     automation_controller_->init(this);
 }
 
-void MasterScore::update_automation(const ScoreChanges &changes) { automation_controller_->update(changes); }
+void MasterScore::update_automation(const ScoreChanges &changes) {
+    automation_controller_->ensure_initialized(this);
+    automation_controller_->update(changes);
+}
 
 //---------------------------------------------------------
 //   setPlaybackScore

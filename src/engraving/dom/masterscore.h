@@ -124,10 +124,11 @@ public:
     bool expand_repeats() const { return expand_repeats_; }
 
     void update_repeat_list_tempo();
-    void update_repeat_list();
+    // Rebuild both lists before optionally recording stale tie-jump repairs.
+    void update_repeat_list(bool update_ties = true);
 
     const RepeatList &repeat_list() const;
-    const RepeatList &repeat_list(bool expand_repeats, bool update_ties = true) const;
+    const RepeatList &repeat_list(bool expand_repeats) const;
 
     void invalidate_repeat_list();
 
@@ -258,6 +259,7 @@ private:
     TimeSigMap *sigmap_ = nullptr;
     RepeatList *expanded_repeat_list_ = nullptr;
     RepeatList *non_expanded_repeat_list_ = nullptr;
+    bool repeat_ties_dirty_ = false;
     ScoreAutomationController *automation_controller_ = nullptr;
     bool expand_repeats_ = true;
 

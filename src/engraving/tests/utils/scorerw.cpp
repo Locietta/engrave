@@ -74,10 +74,12 @@ MasterScore *ScoreRW::read_score(const String &name, bool is_absolute_path, Impo
         return nullptr;
     }
 
+    score->update_repeat_list(false);
     for (Score *s : score->score_list()) {
         s->do_layout();
     }
 
+    score->init_automation();
     return score;
 }
 

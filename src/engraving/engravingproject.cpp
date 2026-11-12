@@ -73,6 +73,7 @@ Ret EngravingProject::setup_master_score(bool force_mode) {
     }
 
     master_score_->set_layout_all();
+    master_score_->update_repeat_list(false);
     master_score_->update();
     master_score_->init_automation();
 

@@ -46,6 +46,7 @@ std::expected<music::ScoreProject, std::string> open_mnx(music::EngineContext &c
     }
     score->set_layout_all();
     score->update();
+    score->init_automation();
     return owned;
 }
 } // namespace engrave

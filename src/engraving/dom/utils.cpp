@@ -1338,7 +1338,7 @@ std::vector<Measure *> find_following_repeat_measures(const Measure *measure) {
 
     const Measure *master_measure = master->tick2measure_mm(measure->tick());
 
-    const RepeatList &repeat_list = master->repeat_list(true, false);
+    const RepeatList &repeat_list = master->repeat_list(true);
 
     std::vector<Measure *> measures;
 
@@ -1369,7 +1369,7 @@ std::vector<Measure *> find_previous_repeat_measures(const Measure *measure) {
 
     const Measure *master_measure = master->tick2measure_mm(measure->tick());
 
-    const RepeatList &repeat_list = master->repeat_list(true, false);
+    const RepeatList &repeat_list = master->repeat_list(true);
 
     std::vector<Measure *> measures;
 
@@ -1442,7 +1442,7 @@ bool segments_are_adjacent(const Segment *first_seg, const Segment *second_seg) 
     IF_ASSERT_FAILED(first_master_measure && second_master_measure) { return false; }
 
     const Score *score = first_seg->score();
-    const RepeatList &repeat_list = score->repeat_list(true, false);
+    const RepeatList &repeat_list = score->repeat_list(true);
 
     std::vector<const Measure *> measures;
 
@@ -1511,7 +1511,7 @@ bool segments_are_in_different_repeat_segments(const Segment *first_seg, const S
 
     Score *score = first_seg->score();
 
-    const RepeatList &repeat_list = score->repeat_list(true, false);
+    const RepeatList &repeat_list = score->repeat_list(true);
 
     std::vector<const Measure *> measures;
 
@@ -1545,7 +1545,7 @@ bool is_valid_bar_line_for_repeat_section(const Segment *first_seg, const Segmen
 
     Score *score = first_seg->score();
 
-    const RepeatList &repeat_list = score->repeat_list(true, false);
+    const RepeatList &repeat_list = score->repeat_list(true);
 
     std::vector<const Measure *> measures;
 

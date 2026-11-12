@@ -430,6 +430,7 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
 
     score->set_layout_all();
     score->do_layout();
+    master_score->init_automation();
 }
 
 void MasterScore::delete_excerpt(Excerpt *excerpt) {

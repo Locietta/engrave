@@ -4819,13 +4819,11 @@ UndoStack *Score::undo_stack() const { return master_score_->undo_stack(); }
 
 const RepeatList &Score::repeat_list() const { return master_score_->repeat_list(); }
 
-const RepeatList &Score::repeat_list(bool expand_repeats, bool update_ties) const {
-    return master_score_->repeat_list(expand_repeats, update_ties);
-}
+const RepeatList &Score::repeat_list(bool expand_repeats) const { return master_score_->repeat_list(expand_repeats); }
 
 std::vector<RepeatSegmentInfo> Score::repeat_segment_info_list(bool expand_repeats) const {
     // Read-only: don't trigger tie/jump-point cleanup, safe to call mid-edit
-    return repeat_list(expand_repeats, false).segment_info_list();
+    return repeat_list(expand_repeats).segment_info_list();
 }
 
 const RepeatList &Score::expanded_repeat_list() const { return repeat_list(/*expandRepeats*/ true); }

@@ -277,14 +277,9 @@ bool Read460::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
 
     score->update_ticks_and_time_sig_map();
     if (score->is_master()) {
-        // While reading the score, some elements might use `score->repeatList()` (which is incorrect
-        // anyway, because the repeatList will be incomplete because the score is incomplete, but some
-        // elements still do it).
-        // `score->repeatList()` calls `_repeatList->update()`; the repeat list then thinks that it is
-        // up-to-date from that point. But we weren't finished reading the score, so the score will still
-        // change. We need to tell the repeat list about that, so that it will be updated next time
-        // someone uses it.
+        // Publish the completed repeat structure before repairing tie jump points.
         static_cast<MasterScore *>(score)->invalidate_repeat_list();
+        static_cast<MasterScore *>(score)->update_repeat_list(false);
     }
     score->connect_ties();
     score->undo_remove_stale_tie_jump_points(false);

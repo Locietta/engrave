@@ -92,7 +92,8 @@ public:
     RepeatList &operator=(const RepeatList &) = delete;
     ~RepeatList();
 
-    void update(bool expand, bool update_ties = true);
+    // Returns whether the published repeat structure changed.
+    bool update(bool expand);
 
     void set_score_changed() { score_changed_ = true; }
 
@@ -119,7 +120,6 @@ private:
     void flatten();
 
     Score *score_ = nullptr;
-    mutable unsigned utick2tick_hint_ = 0; // cached RepeatList index for utick2tick
 
     bool expanded_ = false;
     bool score_changed_ = true;

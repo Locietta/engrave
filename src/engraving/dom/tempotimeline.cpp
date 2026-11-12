@@ -131,9 +131,6 @@ void TempoTimeline::rebuild(const TempoValues &tempo_values, const PausesMap &pa
 
     points_.clear();
     pauses_ = pauses;
-    utick2utime_hint_ = 0;
-    utime2utick_hint_ = 0;
-    tempo_hint_ = 0;
 
     points_.reserve(tempo_values.size() + pauses.size());
 
@@ -177,19 +174,11 @@ double TempoTimeline::utick2utime(int utick) const {
         return 0.;
     }
 
-    bool hint_valid = false;
-    if (utick2utime_hint_ < n) {
-        const int hint_utick = points_[utick2utime_hint_].utick;
-        const bool is_last_point = (utick2utime_hint_ + 1 == n);
-        hint_valid = utick >= hint_utick && (is_last_point || utick < points_[utick2utime_hint_ + 1].utick);
-    }
+    const auto it =
+        std::upper_bound(points_.begin(), points_.end(), utick, [](int value, const TempoTimePoint &point) { return value < point.utick; });
+    const size_t index = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
 
-    if (!hint_valid) {
-        const auto it = std::upper_bound(points_.begin(), points_.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
-        utick2utime_hint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
-    }
-
-    const TempoTimePoint &from = points_[utick2utime_hint_];
+    const TempoTimePoint &from = points_[index];
     const double nominal_time = from.time + double(utick - from.utick) / (Constants::division * from.bps);
     return nominal_time / tempo_multiplier_.val;
 }
@@ -202,24 +191,14 @@ int TempoTimeline::utime2utick(double time) const {
 
     const double nominal_secs = time * tempo_multiplier_.val;
 
-    bool hint_valid = false;
-    if (utime2utick_hint_ < n) {
-        const double hint_time = points_[utime2utick_hint_].time;
-        const bool is_last_point = (utime2utick_hint_ + 1 == n);
-        hint_valid = nominal_secs >= hint_time && (is_last_point || nominal_secs < points_[utime2utick_hint_ + 1].time);
-    }
+    const auto it = std::upper_bound(points_.begin(), points_.end(), nominal_secs,
+                                     [](double value, const TempoTimePoint &point) { return value < point.time; });
+    const size_t index = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
 
-    if (!hint_valid) {
-        const auto it =
-            std::upper_bound(points_.begin(), points_.end(), nominal_secs, [](double s, const TempoTimePoint &p) { return s < p.time; });
-        utime2utick_hint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
-    }
+    const TempoTimePoint &from = points_[index];
 
-    const size_t idx = utime2utick_hint_;
-    const TempoTimePoint &from = points_[idx];
-
-    if (idx + 1 < n) {
-        const TempoTimePoint &next = points_[idx + 1];
+    if (index + 1 < n) {
+        const TempoTimePoint &next = points_[index + 1];
         if (next.pause > 0.0 && nominal_secs >= next.time - next.pause) {
             return next.utick; // still inside next's pause window: hold there
         }
@@ -235,19 +214,11 @@ BeatsPerSecond TempoTimeline::tempo(int utick) const {
         return Constants::default_tempo;
     }
 
-    bool hint_valid = false;
-    if (tempo_hint_ < n) {
-        const int hint_utick = points_[tempo_hint_].utick;
-        const bool is_last_point = (tempo_hint_ + 1 == n);
-        hint_valid = utick >= hint_utick && (is_last_point || utick < points_[tempo_hint_ + 1].utick);
-    }
+    const auto it =
+        std::upper_bound(points_.begin(), points_.end(), utick, [](int value, const TempoTimePoint &point) { return value < point.utick; });
+    const size_t index = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
 
-    if (!hint_valid) {
-        const auto it = std::upper_bound(points_.begin(), points_.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
-        tempo_hint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
-    }
-
-    return BeatsPerSecond(points_[tempo_hint_].bps);
+    return BeatsPerSecond(points_[index].bps);
 }
 
 void TempoTimeline::set_tempo_multiplier(const BeatsPerSecond &bps) {

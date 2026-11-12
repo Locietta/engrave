@@ -22,6 +22,7 @@
 
 #include "repeatlist.h"
 
+#include <algorithm>
 #include <list>
 #include <set>
 #include <utility> // std::pair
@@ -130,10 +131,7 @@ bool operator==(const RepeatSegment &lhs, const RepeatSegment &rhs) {
 //   RepeatList
 //---------------------------------------------------------
 
-RepeatList::RepeatList(Score *s) {
-    score_ = s;
-    utick2tick_hint_ = 0;
-}
+RepeatList::RepeatList(Score *s) { score_ = s; }
 
 //---------------------------------------------------------
 //   ~RepeatList
@@ -157,9 +155,9 @@ int RepeatList::ticks() const {
 //   update
 //---------------------------------------------------------
 
-void RepeatList::update(bool expand, bool update_ties) {
+bool RepeatList::update(bool expand) {
     if (!score_changed_ && expand == expanded_) {
-        return;
+        return false;
     }
 
     std::vector<RepeatSegment> old_segments;
@@ -186,9 +184,7 @@ void RepeatList::update(bool expand, bool update_ties) {
 
     score_changed_ = false;
 
-    if (update_ties && structure_changed) {
-        score_->undo_remove_stale_tie_jump_points();
-    }
+    return structure_changed;
 }
 
 void RepeatList::update_uticks() {
@@ -212,12 +208,10 @@ int RepeatList::utick2tick(int tick) const {
     if (tick < 0) {
         return 0;
     }
-    unsigned ii = (utick2tick_hint_ < n) && (tick >= at(utick2tick_hint_)->utick) ? utick2tick_hint_ : 0;
-    for (unsigned i = ii; i < n; ++i) {
-        if ((tick >= at(i)->utick) && ((i + 1 == n) || (tick < at(i + 1)->utick))) {
-            utick2tick_hint_ = i;
-            return tick - (at(i)->utick - at(i)->tick);
-        }
+    const auto it = std::upper_bound(begin(), end(), tick, [](int value, const RepeatSegment *segment) { return value < segment->utick; });
+    if (it != begin()) {
+        const RepeatSegment *segment = *std::prev(it);
+        return tick - (segment->utick - segment->tick);
     }
 
     ASSERT_X(String(u"tick %1 not found in RepeatList").arg(tick));
