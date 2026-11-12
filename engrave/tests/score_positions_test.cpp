@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
 </score-partwise>)",
                                                       "musicxml");
         auto *score = project->master_score();
+        // Loading no longer lays out; positions are a geometry consumer.
+        score->ensure_layout();
         for (bool expanded : {false, true}) {
             for (bool segments : {false, true}) {
                 score->set_expand_repeats(expanded);
@@ -64,6 +66,7 @@ int main(int argc, char **argv) {
 </part></score-partwise>)",
                                                      "musicxml");
         auto *mm_score = mmrest->master_score();
+        mm_score->ensure_layout(); // multi-measure rests are display topology built by layout
         auto *mm_first = mm_score->first_measure_mm();
         expect(mm_first && mm_first->is_mm_rest() && mm_first->mm_rest_count() == 4,
                "MusicXML multiple-rest was not imported as a multi-measure rest");
