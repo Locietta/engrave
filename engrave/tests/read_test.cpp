@@ -96,6 +96,7 @@
 #include "engraving/dom/timesig.h"
 #include "engraving/dom/trill.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/editpart.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/flip.h"
 #include "engraving/editing/transaction/transaction.h"
@@ -792,6 +793,61 @@ TEST(Read, InactiveSemanticBarrierPlumbingRefreshesDependentTargetsWhenOptedIn) 
     auto result = engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {});
     hooks = {};
     ASSERT_TRUE(result);
+}
+
+TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
+    using namespace mu::engraving;
+    for (const bool styled : {false, true}) {
+        auto opened = g_engine->open(write470_fixture().parent_path() / "ties_mismatched.mscx");
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *first = master.first_measure()->first(SegmentType::CHORD_REST);
+        auto *start = to_chord(first->element(0))->notes().front();
+        auto *end = to_chord(first->next(SegmentType::CHORD_REST)->element(0))->notes().front();
+        std::unique_ptr<Glissando> line(Factory::create_glissando(start));
+        line->set_note_span(start, end);
+        line->set_glissando_style(GlissandoStyle::PORTAMENTO);
+        line->set_property_flags(Pid::GLISS_STYLE, styled ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED);
+        start->add(line.get());
+        auto *instrument = master.parts().front()->instrument(Fraction(0, 1));
+        instrument->set_id(u"piano");
+        master.set_layout_all();
+        normalize_score(master, {.mode = NormalizeMode::REPLAY});
+        EXPECT_EQ(line->is_harp_gliss(), false);
+        instrument->set_id(u"harp");
+        master.set_layout_all();
+        normalize_score(master, {.mode = NormalizeMode::REPLAY});
+        EXPECT_EQ(line->is_harp_gliss(), true);
+        EXPECT_EQ(line->glissando_style(),
+                  styled ? line->property_default(Pid::GLISS_STYLE).value<GlissandoStyle>() : GlissandoStyle::DIATONIC);
+        EXPECT_EQ(line->is_styled(Pid::GLISS_STYLE), styled);
+        EXPECT_FALSE(line->has_layout_data());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        // A rejected transaction restores style before its instrument command.
+        // Normalize only once all source inputs have been rolled back.
+        instrument->set_id(u"piano");
+        line->set_glissando_style(GlissandoStyle::PORTAMENTO);
+        line->set_property_flags(Pid::GLISS_STYLE, styled ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED);
+        master.set_layout_all();
+        normalize_score(master, {.mode = NormalizeMode::REPLAY});
+        auto *harp = new Instrument(*instrument);
+        harp->set_id(u"harp");
+        master.start_cmd(muse::TranslatableString::untranslatable("change to harp"));
+        master.undo(new ChangePart(master.parts().front(), harp));
+        normalize_score(master);
+        EXPECT_EQ(line->glissando_style(), GlissandoStyle::DIATONIC);
+        master.end_cmd(true, true);
+        EXPECT_EQ(line->glissando_style(),
+                  styled ? line->property_default(Pid::GLISS_STYLE).value<GlissandoStyle>() : GlissandoStyle::PORTAMENTO);
+        EXPECT_EQ(master.parts().front()->instrument()->id(), u"piano");
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        const auto style = line->glissando_style();
+        EXPECT_TRUE(document.page_count());
+        EXPECT_EQ(line->glissando_style(), style);
+        start->remove(line.get());
+        end->chord()->update_ends_note_anchored_line();
+    }
 }
 
 TEST(Read, GetAllFreshSourcePropertiesSkipsInvalidEnumDefaultTokens) {

@@ -349,15 +349,11 @@ bool Glissando::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::GLISS_TYPE: set_glissando_type(v.value<GlissandoType>()); break;
         case Pid::GLISS_TEXT: set_text(v.value<String>()); break;
         case Pid::GLISS_SHOW_TEXT: set_show_text(v.to_bool()); break;
-        case Pid::GLISS_STYLE: {
-            // Make sure harp glisses can only be diatonic and chromatic
-            GlissandoStyle gliss_style = v.value<GlissandoStyle>();
-            if (is_harp_gliss().value_or(false) && (gliss_style != GlissandoStyle::DIATONIC && gliss_style != GlissandoStyle::CHROMATIC)) {
-                gliss_style = GlissandoStyle::DIATONIC;
-            }
-            set_glissando_style(gliss_style);
+        case Pid::GLISS_STYLE:
+            // Normalize instrument constraints after source inputs are complete,
+            // including restoration of a rejected transaction.
+            set_glissando_style(v.value<GlissandoStyle>());
             break;
-        }
         case Pid::GLISS_SHIFT: set_glissando_shift(v.to_bool()); break;
         case Pid::GLISS_EASEIN: set_ease_in(v.to_int()); break;
         case Pid::GLISS_EASEOUT: set_ease_out(v.to_int()); break;
