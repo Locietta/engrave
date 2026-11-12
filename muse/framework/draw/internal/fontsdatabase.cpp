@@ -21,6 +21,8 @@
  */
 #include "fontsdatabase.h"
 
+#include <utility>
+
 #include "global/io/file.h"
 #include "log.h"
 
@@ -168,7 +170,7 @@ FontData FontsDatabase::font_data(const FontDataKey &require_key, Font::Type typ
         return FontData();
     }
 
-    return FontData{key, data};
+    return FontData{key, std::move(data)};
 }
 
 uint64_t FontsDatabase::revision() const { return revision_; }

@@ -1799,7 +1799,7 @@ cairo_surface_t *CairoPainter::Impl::pixmap_surface(const Pixmap &pm) {
         throw std::runtime_error("CairoPainter: cannot draw an empty Pixmap");
     }
 
-    const ByteArray data = pm.data();
+    const ByteArray &data = pm.data();
     const uint64_t hash = fnv1a(data.const_data(), data.size());
     const unsigned int key = pm.key();
 

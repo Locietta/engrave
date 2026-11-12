@@ -51,9 +51,13 @@ XmlStreamReader::XmlStreamReader(const ByteArray &data) {
     set_data(data);
 }
 
+XmlStreamReader::XmlStreamReader(std::string_view data) : XmlStreamReader() { set_data(data); }
+
 XmlStreamReader::~XmlStreamReader() { delete xml_; }
 
-void XmlStreamReader::set_data(const ByteArray &input_data) {
+void XmlStreamReader::set_data(const ByteArray &data) { set_data(std::string_view(data.const_char(), data.size())); }
+
+void XmlStreamReader::set_data(std::string_view input_data) {
 
     xml_->doc.reset();
     xml_->custom_err.clear();
@@ -76,18 +80,21 @@ void XmlStreamReader::set_data(const ByteArray &input_data) {
         return;
     }
 
-    ByteArray data = input_data; // no copy, implicit sharing
+    ByteArray converted;
+    std::string_view data = input_data;
     if (enc == UtfCodec::Encoding::UTF_16LE) {
-        String u16 = String::from_utf16_le(input_data);
-        data = u16.to_utf8();
+        String u16 = String::from_utf16_le(ByteArray(input_data.data(), input_data.size()));
+        converted = u16.to_utf8();
+        data = std::string_view(converted.const_char(), converted.size());
     } else if (enc == UtfCodec::Encoding::UTF_16BE) {
-        String u16 = String::from_utf16_be(input_data);
-        data = u16.to_utf8();
+        String u16 = String::from_utf16_be(ByteArray(input_data.data(), input_data.size()));
+        converted = u16.to_utf8();
+        data = std::string_view(converted.const_char(), converted.size());
     }
 
     // pugi needs explicit flags to surface declaration/doctype/comments as nodes
     unsigned flags = pugi::parse_default | pugi::parse_declaration | pugi::parse_doctype | pugi::parse_comments;
-    xml_->result = xml_->doc.load_buffer(data.const_data(), data.size(), flags);
+    xml_->result = xml_->doc.load_buffer(data.data(), data.size(), flags);
 
     if (xml_->result.status == pugi::status_ok) {
         token_ = TokenType::NO_TOKEN;

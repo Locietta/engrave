@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "global/types/bytearray.h"
 #include "io/byteview.h"
 
 TEST(ByteView, BorrowsBytesAndPreservesSeekBounds) {
@@ -115,3 +116,46 @@ TEST(StreamingFile, FinalizationFailurePropagates) {
     EXPECT_TRUE(out.has_error());
 }
 #endif
+
+TEST(ByteArray, CopiesOwnBytesEvenWhenMutablePointerWasLentBeforeCopy) {
+    muse::ByteArray original("abc");
+    uint8_t *borrowed = original.data();
+    muse::ByteArray copy = original;
+    ASSERT_NE(original.const_data(), copy.const_data());
+    borrowed[0] = 'x';
+    EXPECT_EQ(copy, muse::ByteArray("abc"));
+    copy[1] = 'y';
+    EXPECT_EQ(original, muse::ByteArray("xbc"));
+    EXPECT_EQ(copy.const_data()[copy.size()], 0);
+}
+
+TEST(ByteArray, BinarySlicesAndSelfAppendPreserveBytesAcrossReallocation) {
+    const uint8_t bytes[]{0, 0xff, 1, 2};
+    muse::ByteArray value(bytes, 4);
+    value.push_back(value);
+    EXPECT_EQ(value.size(), 8u);
+    EXPECT_EQ(value.left(4), value.right(4));
+    const auto slice = value.const_data() + 1;
+    value.push_back(slice, 3);
+    EXPECT_EQ(value.right(3), muse::ByteArray(bytes + 1, 3));
+    EXPECT_EQ(value.const_data()[value.size()], 0);
+    EXPECT_EQ(value.left(100), value);
+    EXPECT_EQ(value.right(100), value);
+}
+
+TEST(ByteArray, EmptyAndMovedFromValuesRemainReadableAndReusable) {
+    muse::ByteArray empty;
+    EXPECT_EQ(empty.const_data()[0], 0);
+    empty.reserve(100);
+    EXPECT_TRUE(empty.empty());
+    muse::ByteArray value("abc");
+    muse::ByteArray moved(std::move(value));
+    EXPECT_EQ(moved, muse::ByteArray("abc"));
+    value.clear();
+    EXPECT_EQ(value.const_data()[0], 0);
+    value.push_back('z');
+    EXPECT_EQ(value, muse::ByteArray("z"));
+    value.resize(4);
+    EXPECT_EQ(value.const_data()[4], 0);
+    EXPECT_EQ(value[1], 0);
+}

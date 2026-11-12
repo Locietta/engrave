@@ -200,7 +200,9 @@ struct UtfCodec {
         UTF_16BE,
     };
 
-    static Encoding xml_encoding(const ByteArray &data);
+    static Encoding xml_encoding(std::string_view data);
+
+    static Encoding xml_encoding(const ByteArray &data) { return xml_encoding(std::string_view(data.const_char(), data.size())); }
 
     static void utf8to16(std::string_view src, std::u16string &dst);
     static void utf16to8(std::u16string_view src, std::string &dst);

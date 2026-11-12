@@ -21,182 +21,95 @@
  */
 #include "types/bytearray.h"
 
-#include <cassert>
+#include <algorithm>
 #include <cstring>
 
 using namespace muse;
 
-ByteArray::ByteArray() {
-    data_ = std::make_shared<Data>();
-    data_->resize(1);
-    data_->operator[](0) = 0;
+ByteArray::ByteArray() = default;
+
+ByteArray::ByteArray(const uint8_t *data, size_t size) : data_(size + 1, 0) {
+    if (size) std::memcpy(data_.data(), data, size);
 }
 
-ByteArray::ByteArray(const uint8_t *data, size_t size) {
-    data_ = std::make_shared<Data>();
-    data_->resize(size + 1);
-    data_->operator[](size) = 0;
-    std::memcpy(data_->data(), data, size);
-}
+ByteArray::ByteArray(const char *str, size_t size)
+    : ByteArray(reinterpret_cast<const uint8_t *>(str), size == static_cast<size_t>(-1) ? std::strlen(str) : size) {}
 
-ByteArray::ByteArray(const char *str, size_t size) {
-    size = (size == static_cast<size_t>(-1)) ? std::strlen(str) : size;
-    data_ = std::make_shared<Data>();
-    data_->resize(size + 1);
-    data_->operator[](size) = 0;
-    std::memcpy(data_->data(), str, size);
-}
-
-ByteArray::ByteArray(size_t size) {
-    data_ = std::make_shared<Data>();
-    data_->resize(size + 1);
-    data_->operator[](size) = 0;
-}
-
-ByteArray ByteArray::from_raw_data(const uint8_t *data, size_t size) {
-    ByteArray ba;
-    ba.raw_.size = size;
-    ba.raw_.data = data;
-    return ba;
-}
-
-ByteArray ByteArray::from_raw_data(const char *data, size_t size) { return from_raw_data(reinterpret_cast<const uint8_t *>(data), size); }
+ByteArray::ByteArray(size_t size) : data_(size + 1, 0) {}
 
 uint8_t *ByteArray::data() {
-    detach();
-    return data_->data();
+    if (data_.empty()) data_.push_back(0);
+    return data_.data();
 }
 
 std::vector<uint8_t> &ByteArray::vdata() {
-    detach();
-    return *data_.get();
+    data();
+    return data_;
 }
 
 const uint8_t *ByteArray::const_data() const {
-    if (raw_.data) {
-        return raw_.data;
-    }
-
-    return data_->data();
+    static constexpr uint8_t zero = 0;
+    return data_.empty() ? &zero : data_.data();
 }
 
 const char *ByteArray::const_char() const { return reinterpret_cast<const char *>(const_data()); }
 
-const std::vector<uint8_t> &ByteArray::const_v_data() const { return *data_.get(); }
+const std::vector<uint8_t> &ByteArray::const_v_data() const { return data_; }
 
-size_t ByteArray::size() const {
-    if (raw_.data) {
-        return raw_.size;
-    }
-
-    return data_->empty() ? 0 : (data_->size() - 1);
-}
-
-void ByteArray::detach() {
-    if (!data_) {
-        return;
-    }
-
-    if (raw_.data) {
-        data_->resize(raw_.size + 1);
-        data_->operator[](raw_.size) = 0;
-        std::memcpy(data_->data(), raw_.data, raw_.size);
-        raw_.data = nullptr;
-        return;
-    }
-
-    if (data_.use_count() == 1) {
-        return;
-    }
-
-    data_ = std::make_shared<Data>(*data_);
-}
-
-bool ByteArray::operator==(const ByteArray &other) const {
-    if (size() != other.size()) {
-        return false;
-    }
-    return std::memcmp(const_data(), other.const_data(), size()) == 0;
-}
+size_t ByteArray::size() const { return data_.empty() ? 0 : data_.size() - 1; }
 
 bool ByteArray::empty() const { return size() == 0; }
 
-void ByteArray::reserve(size_t nsize) {
-    if (nsize + 1 <= data_->capacity()) {
-        return;
-    }
-
-    detach();
-    data_->reserve(nsize + 1);
+bool ByteArray::operator==(const ByteArray &other) const {
+    return size() == other.size() && std::memcmp(const_data(), other.const_data(), size()) == 0;
 }
 
-void ByteArray::resize(size_t nsize) {
-    if (nsize == size()) {
-        return;
-    }
+void ByteArray::reserve(size_t nsize) { data_.reserve(nsize + 1); }
 
-    detach();
-    data_->resize(nsize + 1);
-    data_->operator[](nsize) = 0;
+void ByteArray::resize(size_t nsize) {
+    data_.resize(nsize + 1);
+    data_[nsize] = 0;
 }
 
 void ByteArray::truncate(size_t pos) {
-    if (pos >= size()) {
-        return;
-    }
-    resize(pos);
+    if (pos < size()) resize(pos);
 }
 
-void ByteArray::clear() { resize(0); }
+void ByteArray::clear() { data_.clear(); }
 
 ByteArray &ByteArray::insert(size_t pos, uint8_t b) {
-    if (pos > size()) {
-        return *this;
-    }
-
-    detach();
-    data_->insert(data_->begin() + pos, b);
+    if (pos > size()) return *this;
+    data();
+    data_.insert(data_.begin() + pos, b);
     return *this;
 }
 
 void ByteArray::push_back(uint8_t b) { insert(size(), b); }
 
 void ByteArray::push_back(const uint8_t *b, size_t len) {
-    detach();
-    size_t start = size();
-    size_t nsize = start + len;
-    Data &data = *data_.get();
-    data.resize(nsize + 1);
-    data[nsize] = 0;
-    for (size_t i = 0; i < len; ++i) {
-        data[start + i] = b[i];
-    }
+    if (!len) return;
+    // Preserve a borrowed slice of ourselves across vector reallocation.
+    const auto address = reinterpret_cast<uintptr_t>(b);
+    const auto base = reinterpret_cast<uintptr_t>(const_data());
+    const bool aliases = address >= base && address - base <= size();
+    const size_t offset = aliases ? address - base : 0;
+    const size_t start = size();
+    resize(start + len);
+    if (aliases) b = data_.data() + offset;
+    std::memmove(data_.data() + start, b, len);
 }
 
 void ByteArray::push_back(const ByteArray &ba) { push_back(ba.const_data(), ba.size()); }
 
-uint8_t ByteArray::at(size_t pos) const {
-    assert(pos < size());
-    if (pos < size()) {
-        return const_data()[pos];
-    }
-    return 0;
-}
+uint8_t ByteArray::at(size_t pos) const { return data_.at(pos < size() ? pos : data_.size()); }
 
 uint8_t ByteArray::operator[](size_t pos) const { return at(pos); }
 
-uint8_t &ByteArray::operator[](size_t pos) {
-    detach();
+uint8_t &ByteArray::operator[](size_t pos) { return data_.at(pos < size() ? pos : data_.size()); }
 
-    assert(pos < size());
-    if (pos < size()) {
-        return data_->operator[](pos);
-    }
+ByteArray ByteArray::left(size_t len) const { return ByteArray(const_data(), std::min(len, size())); }
 
-    static uint8_t dummy;
-    return dummy;
+ByteArray ByteArray::right(size_t len) const {
+    len = std::min(len, size());
+    return ByteArray(const_data() + size() - len, len);
 }
-
-ByteArray ByteArray::left(size_t len) const { return ByteArray(const_data(), len); }
-
-ByteArray ByteArray::right(size_t len) const { return ByteArray(&(const_data()[size() - len]), len); }

@@ -21,6 +21,8 @@
  */
 #include "fontfacedu.h"
 
+#include <utility>
+
 using namespace muse::draw;
 
 struct DummyGlyph {
@@ -31,19 +33,13 @@ struct DummyGlyph {
 };
 
 static const DummyGlyph &dummy_glyph() {
-    static DummyGlyph g;
-    if (g.text_advance == 0) {
-        g.text_bbox = FBBox(0, -8064, 4160, 9728);
-        g.text_advance = 4160;
-        g.sym_bbox = FBBox(0, -4011, 2079, 4817);
-        g.sym_advance = 2080;
-    }
+    static const DummyGlyph g{FBBox(0, -8064, 4160, 9728), 4160, FBBox(0, -4011, 2079, 4817), 2080};
 
     return g;
 }
 
-bool FontFaceDU::load(const FaceKey &key, const FontData &font_data, bool is_symbol_mode) {
-    return origin_.load(key, font_data, is_symbol_mode);
+bool FontFaceDU::load(const FaceKey &key, FontData font_data, bool is_symbol_mode) {
+    return origin_.load(key, std::move(font_data), is_symbol_mode);
 }
 
 const FaceKey &FontFaceDU::key() const { return origin_.key(); }

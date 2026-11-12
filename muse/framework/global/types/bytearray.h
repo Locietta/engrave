@@ -22,8 +22,8 @@
 #ifndef MUSE_GLOBAL_BYTEARRAY_H
 #define MUSE_GLOBAL_BYTEARRAY_H
 
+#include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <vector>
 
 namespace muse {
@@ -35,9 +35,7 @@ struct ByteArray {
     ByteArray(const char *str, size_t size = static_cast<size_t>(-1));
     ByteArray(size_t size);
 
-    //! NOTE Not coped!!!
-    static ByteArray from_raw_data(const uint8_t *data, size_t size);
-    static ByteArray from_raw_data(const char *data, size_t size);
+    // Always owns its bytes; pointers and views borrow until the next mutation.
 
     bool operator==(const ByteArray &other) const;
 
@@ -72,15 +70,8 @@ struct ByteArray {
 private:
     using Data = std::vector<uint8_t>;
 
-    struct RawData {
-        const uint8_t *data = nullptr;
-        size_t size = 0;
-    };
-
-    void detach();
-
-    std::shared_ptr<Data> data_;
-    RawData raw_;
+    // Nonempty storage includes a trailing zero outside the logical size.
+    Data data_;
 };
 } // namespace muse
 

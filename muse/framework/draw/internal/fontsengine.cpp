@@ -21,6 +21,8 @@
  */
 #include "fontsengine.h"
 
+#include <utility>
+
 #include "fontface.h"
 #include "log.h"
 
@@ -410,8 +412,8 @@ FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_da
     FontFace *face = create_font_face(font_data);
     IF_ASSERT_FAILED(face) { return nullptr; }
 
-    if (!face->load(loaded_key, font_data, is_symbol_mode)) {
-        LOGE() << "failed load font face: " << font_data.key.family().id();
+    if (!face->load(loaded_key, std::move(font_data), is_symbol_mode)) {
+        LOGE() << "failed load font face: " << actual_data_key.family().id();
         delete face;
         return nullptr;
     }
