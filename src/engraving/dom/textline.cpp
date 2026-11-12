@@ -21,7 +21,7 @@
  */
 #include "textline.h"
 
-#include "../editing/editproperty.h"
+#include "../editing/transaction/transaction.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
@@ -190,12 +190,10 @@ TextLine::TextLine(const TextLine &tl) : TextLineBase(tl) {}
 //   initStyle
 //---------------------------------------------------------
 
-void TextLine::init_style() {
-    if (system_flag()) {
-        init_element_style(&::mu::engraving::system_text_line_style);
-    } else {
-        init_element_style(&::mu::engraving::text_line_style);
-    }
+void TextLine::init_style() { init_element_style(&style_for_system(system_flag())); }
+
+const ElementStyle &TextLine::style_for_system(bool system) {
+    return system ? ::mu::engraving::system_text_line_style : ::mu::engraving::text_line_style;
 }
 
 void TextLineSegment::init_style() {
@@ -282,9 +280,10 @@ PropertyValue TextLine::get_property(Pid id) const {
 
 void TextLine::undo_change_property(Pid id, const engraving::PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::SYSTEM_FLAG) {
-        score()->undo(new ChangeTextLineProperty(this, v));
+        auto &transaction = score()->transaction_manager()->current_or_dummy_transaction();
+        transaction.change_text_line_property(*this, v);
         for (SpannerSegment *s : spanner_segments()) {
-            score()->undo(new ChangeTextLineProperty(s, v));
+            transaction.change_text_line_property(*s, v);
             trigger_layout();
         }
         return;

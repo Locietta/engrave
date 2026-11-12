@@ -27,13 +27,15 @@
 
 #include <amc/vector.hpp>
 
+#include "derivedchange.h"
 #include "dom/score.h"
 #include "global/types/translatablestring.h"
 #include "sourcechange.h"
 #include "undoablecommand.h"
 
 namespace mu::engraving {
-enum class JournalEntryKind : uint8_t { LEGACY, PROPERTY, STYLE_VALUES };
+// Closed family dispatch; L1 may add AUTHORED_OVERRIDE without changing entries.
+enum class JournalEntryKind : uint8_t { LEGACY, PROPERTY, STYLE_VALUES, BRACKET_PROPERTY, TEXT_LINE_PROPERTY };
 
 struct JournalEntry {
     JournalEntryKind kind;
@@ -51,6 +53,8 @@ struct JournalBatch {
     void append_command(UndoableCommand *command);
     void change_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path);
     void change_style_values(Score &score, std::span<const StyleValue> values);
+    void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
+    void change_text_line_property(EngravingObject &object, const PropertyValue &value);
     void unwind(bool clean_up = true);
 
     bool replaying() const { return replaying_; }
@@ -70,6 +74,8 @@ struct JournalBatch {
 
     size_t legacy_entries() const { return legacy_.size(); }
 
+    size_t derived_entries() const { return brackets_.size() + text_lines_.size(); }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -77,6 +83,8 @@ private:
     amc::vector<JournalEntry> entries_;
     amc::vector<UndoableCommand *> legacy_;
     SourceChangePayloads source_;
+    amc::vector<BracketPropertyInverse> brackets_;
+    amc::vector<TextLinePropertyInverse> text_lines_;
     bool replaying_ = false;
 };
 

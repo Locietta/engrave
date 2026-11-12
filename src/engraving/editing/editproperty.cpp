@@ -24,10 +24,7 @@
 
 #include <algorithm>
 
-#include "../dom/bracketitem.h"
 #include "../dom/score.h"
-#include "../dom/staff.h"
-#include "../dom/textline.h"
 #include "log.h"
 #define LOG_UNDO() \
     if (0) LOGD()
@@ -76,28 +73,3 @@ void ChangeProperty::flip() {
 }
 
 std::vector<EngravingObject *> ChangeProperty::object_items() const { return compound_objects(element); }
-
-//---------------------------------------------------------
-//   ChangeBracketProperty::flip
-//---------------------------------------------------------
-
-void ChangeBracketProperty::flip() {
-    if (!staff) {
-        return;
-    }
-
-    element = staff->score()->brackets(staff->idx())[level];
-    ChangeProperty::flip();
-    level = to_bracket_item(element)->column();
-}
-
-//---------------------------------------------------------
-//   ChangeTextLineProperty::flip
-//---------------------------------------------------------
-
-void ChangeTextLineProperty::flip() {
-    ChangeProperty::flip();
-    if (element->is_text_line()) {
-        to_text_line(element)->init_style();
-    }
-}

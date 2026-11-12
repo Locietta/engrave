@@ -186,6 +186,38 @@ void Transaction::change_style_values(Score &score, std::span<const StyleValue> 
 
 void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
 
+void Transaction::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        // Immediate edits still avoid writing flags through a deleted bracket.
+        item.set_property_flags(id, flags);
+        item.set_property(id, value);
+        return;
+    }
+    std::unique_ptr<ChangeProperty> diagnostic;
+    if (s_push_hook) {
+        auto *probe = new ChangeProperty(&item, id, value, flags);
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->change_bracket_property(item, id, value, flags);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
+void Transaction::change_text_line_property(EngravingObject &object, const PropertyValue &value) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_text_line_property(object, value);
+        return;
+    }
+    std::unique_ptr<ChangeProperty> diagnostic;
+    if (s_push_hook) {
+        auto *probe = new ChangeProperty(&object, Pid::SYSTEM_FLAG, value);
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->change_text_line_property(object, value);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
 //---------------------------------------------------------
 // TransactionManager
 //---------------------------------------------------------

@@ -60,28 +60,4 @@ public:
     }
 };
 
-struct ChangeBracketProperty : ChangeProperty {
-private:
-
-    Staff *staff = nullptr;
-    size_t level = 0;
-
-    void flip() override;
-
-public:
-    ChangeBracketProperty(Staff *s, size_t l, Pid i, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE)
-        : ChangeProperty(nullptr, i, v, ps), staff(s), level(l) {}
-    UNDO_NAME("ChangeBracketProperty")
-    UNDO_CHANGED_OBJECTS({})
-};
-
-struct ChangeTextLineProperty : ChangeProperty {
-private:
-
-    void flip() override;
-
-public:
-    ChangeTextLineProperty(EngravingObject *e, PropertyValue v) : ChangeProperty(e, Pid::SYSTEM_FLAG, v, PropertyFlags::NOSTYLE) {}
-    UNDO_NAME("ChangeTextLineProperty")
-};
 } // namespace mu::engraving

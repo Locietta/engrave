@@ -116,6 +116,30 @@ void JournalBatch::cleanup(bool applied) {
         if (entry.kind == JournalEntryKind::LEGACY) legacy_[entry.payload]->cleanup(applied);
 }
 
+void JournalBatch::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    const auto index = entry_index(brackets_.size());
+    brackets_.push_back(capture_bracket_property(item, id));
+    try {
+        entries_.push_back({JournalEntryKind::BRACKET_PROPERTY, index});
+    } catch (...) {
+        brackets_.pop_back();
+        throw;
+    }
+    apply_bracket_property(brackets_[index], value, flags);
+}
+
+void JournalBatch::change_text_line_property(EngravingObject &object, const PropertyValue &value) {
+    const auto index = entry_index(text_lines_.size());
+    text_lines_.push_back(capture_text_line_property(object));
+    try {
+        entries_.push_back({JournalEntryKind::TEXT_LINE_PROPERTY, index});
+    } catch (...) {
+        text_lines_.pop_back();
+        throw;
+    }
+    apply_text_line_property(object, value);
+}
+
 void JournalBatch::unwind(bool clean_up) {
     struct ReplayGuard {
         bool &flag;
@@ -130,6 +154,8 @@ void JournalBatch::unwind(bool clean_up) {
             case JournalEntryKind::LEGACY: legacy_[it->payload]->undo(); break;
             case JournalEntryKind::PROPERTY: restore_property(source_.properties[it->payload], source_); break;
             case JournalEntryKind::STYLE_VALUES: restore_style_values(source_.styles[it->payload], source_); break;
+            case JournalEntryKind::BRACKET_PROPERTY: restore_bracket_property(brackets_[it->payload]); break;
+            case JournalEntryKind::TEXT_LINE_PROPERTY: restore_text_line_property(text_lines_[it->payload]); break;
         }
     }
     if (clean_up)
@@ -142,6 +168,8 @@ void JournalBatch::unwind(bool clean_up) {
     source_.styles.clear();
     source_.style_values.clear();
     source_.spatium_sources.clear();
+    brackets_.clear();
+    text_lines_.clear();
     entries_.clear();
 }
 
@@ -167,6 +195,16 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::BRACKET_PROPERTY) {
+            result.changed_property_id_set.insert(brackets_[entry.payload].id);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::TEXT_LINE_PROPERTY) {
+            const auto &property = text_lines_[entry.payload].property;
+            result.changed_property_id_set.insert(property.id);
+            for (auto *object : compound_objects(&property.target.object())) collect_object(result, object, CommandType::CHANGE_PROPERTY);
+            continue;
+        }
         if (entry.kind == JournalEntryKind::PROPERTY) {
             const auto &property = source_.properties[entry.payload];
             result.changed_property_id_set.insert(property.id);
