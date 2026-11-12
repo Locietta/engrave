@@ -2,7 +2,7 @@
 #include "normalize.h"
 
 #include <algorithm>
-#include "notes.h"
+
 #include "dom/chord.h"
 #include "dom/clef.h"
 #include "dom/glissando.h"
@@ -26,6 +26,7 @@
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
+#include "notes.h"
 
 using namespace mu::engraving;
 
@@ -200,8 +201,9 @@ static void normalize_segments(Measure *measure, Score &score) {
 
     Measure *next_measure = to_measure(next_mb);
 
-    const bool sigs_should_be_in_this_measure = ((measure->repeat_end() && score.style().style_b(Sid::CHANGES_BEFORE_BARLINE_REPEATS)) ||
-                                                 (measure->repeat_jump() && score.style().style_b(Sid::CHANGES_BEFORE_BARLINE_OTHER_JUMPS)));
+    const bool sigs_should_be_in_this_measure =
+        ((measure->repeat_end() && score.style().style_b(Sid::CHANGES_BEFORE_BARLINE_REPEATS)) ||
+         (measure->repeat_jump() && score.style().style_b(Sid::CHANGES_BEFORE_BARLINE_OTHER_JUMPS)));
     std::vector<Segment *> segs_to_remove;
 
     std::vector<Segment *> segs_to_move_to_next_measure;
@@ -298,47 +300,32 @@ static void normalize_segments(Measure *measure, Score &score) {
     for (Segment *seg : segs_to_remove) {
         // Don't add duplicate segs to a measure
         score.do_undo_remove_element(seg);
-
-
     }
 
     for (Segment *seg : segs_to_move_to_next_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
         measure->score()->undo(new ChangeSegmentParent(seg, next_measure, Fraction(0, 1)));
-
-
-
-
     }
 
     for (Segment *seg : segs_to_move_to_this_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
         measure->score()->undo(new ChangeSegmentParent(seg, measure, measure->ticks()));
-
-
-
-
     }
 
     // Check end of measure changes for top and underlying measures
     measure->check_end_of_measure_change();
 
-
-
     // Sort segments at start of next measure
     remove_and_add_begin_segments(next_measure);
-
 
     // Sort segments at start of first measure
     Measure *prev_measure = measure->prev_measure();
     if (prev_measure && prev_measure == score.first_measure()) {
         remove_and_add_begin_segments(prev_measure);
-
     }
 }
-
 
 int mu::engraving::normalize_measure_number(Measure &value, int measure_number) {
     Measure *m = &value;
@@ -466,6 +453,26 @@ void mu::engraving::invalidate_normalization(Score &score, const Fraction &start
     ++state.generation;
 }
 
+static void normalize_note_spanner(Spanner &spanner) {
+    if (!spanner.start_element()) spanner.compute_start_element();
+    if (!spanner.end_element()) spanner.compute_end_element();
+    if (spanner.start_element()) spanner.set_tick(spanner.start_element()->tick());
+    if (spanner.end_element()) spanner.set_tick2(spanner.end_element()->tick());
+}
+
+static void normalize_chord_anchors(Chord &chord) {
+    for (Chord *grace : chord.grace_notes()) normalize_chord_anchors(*grace);
+    for (Note *note : chord.notes()) {
+        // Note-owned lines do not live in Score::spanner_map(). Include incoming
+        // lines too: a partial line may have only its end note in this score.
+        for (const auto *lines : {&note->spanner_for(), &note->spanner_back()}) {
+            for (Spanner *spanner : *lines) {
+                if (spanner->is_glissando() || spanner->is_guitar_bend() || spanner->is_note_line()) normalize_note_spanner(*spanner);
+            }
+        }
+    }
+}
+
 static void normalize_anchors(Score &score, bool include_hidden_staves) {
     if (!include_hidden_staves && score.all_staves_invisible()) return;
     // Temporal setters can reindex the registry, so retain a stable work list.
@@ -478,16 +485,14 @@ static void normalize_anchors(Score &score, bool include_hidden_staves) {
             if (slur->track2() == muse::nidx) slur->set_track2(slur->track());
             if (!slur->start_cr() || !slur->start_cr()->measure()) continue;
             if (slur->ticks().is_zero() && !slur->start_cr()->is_grace() && !(slur->end_cr() && slur->end_cr()->is_grace()) &&
-                !slur->is_incoming() && !slur->is_outgoing() && !slur->is_tapping_half_slur()) continue;
+                !slur->is_incoming() && !slur->is_outgoing() && !slur->is_tapping_half_slur())
+                continue;
             if (!slur->end_cr()) {
                 slur->set_end_element(slur->start_cr());
                 slur->set_tick2(slur->tick());
             }
         } else if (spanner->is_glissando() || spanner->is_guitar_bend() || spanner->is_note_line()) {
-            if (!spanner->start_element()) spanner->compute_start_element();
-            if (!spanner->end_element()) spanner->compute_end_element();
-            if (spanner->start_element()) spanner->set_tick(spanner->start_element()->tick());
-            if (spanner->end_element()) spanner->set_tick2(spanner->end_element()->tick());
+            normalize_note_spanner(*spanner);
         } else {
             spanner->compute_start_element();
             spanner->compute_end_element();
@@ -512,8 +517,10 @@ void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
         // Whole-score fallback until all mutation categories have bounded closures.
         int number = 0;
         for (MeasureBase *base = score.first(); base; base = base->next()) {
-            if (base->is_measure()) number = normalize_measure_number(*to_measure(base), number);
-            else if (auto *section = base->section_break_element(); section && section->start_with_measure_one()) number = 0;
+            if (base->is_measure())
+                number = normalize_measure_number(*to_measure(base), number);
+            else if (auto *section = base->section_break_element(); section && section->start_with_measure_one())
+                number = 0;
         }
         score.update_ticks_and_time_sig_map(false);
         if (score.is_master() && (score.cmd_state().layout_flags & LayoutFlag::REBUILD_MIDI_MAPPING)) {
@@ -529,6 +536,7 @@ void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
                     auto *cr = to_chord_rest(item);
                     if (cr->staff_move() || cr->stored_staff_move()) cr->check_staff_move_validity();
                     if (item->is_chord() && (options.include_hidden_staves || item->staff()->show())) {
+                        normalize_chord_anchors(*to_chord(item));
                         for (Note *note : to_chord(item)->notes()) {
                             if (auto *tie = note->tie_for()) tie->set_tick(note->chord()->tick());
                         }
@@ -567,6 +575,4 @@ void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
     }
 }
 
-void mu::engraving::prepare_semantic_edit(Score &score) {
-    normalize_score(score, {.include_hidden_staves = true});
-}
+void mu::engraving::prepare_semantic_edit(Score &score) { normalize_score(score, {.include_hidden_staves = true}); }
