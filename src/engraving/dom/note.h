@@ -491,6 +491,8 @@ public:
     void set_is_trill_cue_note(bool v);
 
     SymId note_head() const;
+    // Source symbol for an explicit direction, without reading display caches.
+    SymId note_head(int direction) const;
     bool is_note_name() const;
 
     void update_fretting_for_ties_and_bends();

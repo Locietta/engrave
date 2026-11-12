@@ -97,6 +97,8 @@ public:
 
     DynamicType dynamic_type_from() const;
     DynamicType dynamic_type_to() const;
+    // Source endpoint matching, shared by automation and visual snapping.
+    TextBase *find_end_dynamic_or_expression(PlacementV placement, bool ignore_invisible, bool require_playable) const;
 
     const Dynamic *dynamic_snapped_before() const;
     const Dynamic *dynamic_snapped_after() const;

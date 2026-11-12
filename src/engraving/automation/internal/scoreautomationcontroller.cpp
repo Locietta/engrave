@@ -144,38 +144,8 @@ static DynamicType find_end_dynamic_type(const Hairpin *hairpin) {
         return text_type;
     }
 
-    if (hairpin->spanner_segments().empty()) {
-        const Segment *end_segment = hairpin->end_segment();
-        if (!end_segment) {
-            return DynamicType::OTHER;
-        }
-
-        const track_idx_t track_idx = hairpin->track();
-        const std::vector<EngravingItem *> dynamics = end_segment->find_annotations(ElementType::DYNAMIC, track_idx, track_idx);
-        for (const EngravingItem *item : dynamics) {
-            if (item && item->is_dynamic() && to_dynamic(item)->play_dynamic()) {
-                return to_dynamic(item)->dynamic_type();
-            }
-        }
-
-        return DynamicType::OTHER;
-    }
-
-    const LineSegment *seg = hairpin->back_segment();
-    if (!seg) {
-        return DynamicType::OTHER;
-    }
-
-    // Optimization: first check if there is a cached dynamic
-    const EngravingItem *snapped_item = seg->ldata()->item_snapped_after();
-    if (!snapped_item || !snapped_item->is_dynamic() || !to_dynamic(snapped_item)->play_dynamic()) {
-        snapped_item = to_hairpin_segment(seg)->find_element_to_snap_after(false /*ignoreInvisible*/, true /*requirePlayable*/);
-        if (!snapped_item || !snapped_item->is_dynamic() || !to_dynamic(snapped_item)->play_dynamic()) {
-            return DynamicType::OTHER;
-        }
-    }
-
-    return to_dynamic(snapped_item)->dynamic_type();
+    const TextBase *item = hairpin->find_end_dynamic_or_expression(hairpin->placement(), false, true);
+    return item ? to_dynamic(item)->dynamic_type() : DynamicType::OTHER;
 }
 
 static std::optional<real_t> end_hairpin_value(const Hairpin *hairpin) {
