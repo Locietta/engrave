@@ -30,6 +30,7 @@
 
 namespace mu::engraving {
 struct EditData;
+struct BracketItem;
 struct ScoreChanges;
 struct MasterScore;
 struct UndoableCommand;
@@ -49,6 +50,8 @@ struct Transaction {
     void change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
                          bool reset_path = false);
     void change_style_values(Score &score, std::span<const StyleValue> values);
+    void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
+    void change_text_line_property(EngravingObject &object, const PropertyValue &value);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended

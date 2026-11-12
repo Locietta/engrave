@@ -71,6 +71,7 @@ public:
     void init_style();
 
     LineSegment *create_line_segment() override;
+    static const ElementStyle &style_for_system(bool system);
 
     bool allow_time_anchor() const override;
 

@@ -32,8 +32,12 @@
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/staff.h"
+#include "engraving/dom/textline.h"
 #include "engraving/dom/tremolosinglechord.h"
+#include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editproperty.h"
+#include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/style/style.h"
@@ -560,6 +564,164 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
         EXPECT_EQ(stack->size(), 0u);
         EXPECT_FALSE(stack->has_active_transaction());
     }
+}
+
+TEST(JournalDerived, BracketMoveAndRemovalRollbackRestoresOwnerValues) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto level = master.brackets(0).size();
+    EditStaffBrackets::set_bracket_type(&master, 0, level, BracketType::NORMAL);
+    auto *item = master.brackets(0).back();
+    const auto handle = master.eid_register()->enroll(*item);
+    const auto revision = document->revision();
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        item->undo_change_property(Pid::BRACKET_COLUMN, static_cast<int>(level + 3));
+        EXPECT_EQ(item->column(), level + 3);
+        item->undo_change_property(Pid::SYSTEM_BRACKET, static_cast<int>(BracketType::NO_BRACKET));
+        EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->derived_entries(), 2u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject bracket moves/removal"});
+    }});
+    EXPECT_FALSE(result);
+    ASSERT_EQ(master.brackets(0).size(), level + 1);
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+    EXPECT_EQ(master.brackets(0).back()->column(), level);
+    EXPECT_EQ(master.brackets(0).back()->bracket_type(), BracketType::NORMAL);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalDerived, CommittedBracketRemovalDisposesDisplayObject) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    EditStaffBrackets::set_bracket_type(&master, 0, master.brackets(0).size(), BracketType::NORMAL);
+    auto *item = master.brackets(0).back();
+    const auto handle = master.eid_register()->enroll(*item);
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+        EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+    };
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        item->undo_change_property(Pid::SYSTEM_BRACKET, static_cast<int>(BracketType::NO_BRACKET));
+        return {};
+    }}));
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalDerived, BracketInverseSurvivesLegacyReplacement) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto level = master.brackets(0).size();
+    EditStaffBrackets::set_bracket_type(&master, 0, level, BracketType::NORMAL);
+    auto *item = master.brackets(0).back();
+    item->set_bracket_span(5);
+    const auto revision = document->revision();
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        item->undo_change_property(Pid::BRACKET_SPAN, 3);
+        master.undo(new RemoveBracket(master.staff(0), level, BracketType::NORMAL, 3));
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject legacy bracket replacement"});
+    }}));
+    ASSERT_EQ(master.brackets(0).size(), level + 1);
+    EXPECT_EQ(master.brackets(0).back()->bracket_span(), 5u);
+    EXPECT_EQ(master.brackets(0).back()->bracket_type(), BracketType::NORMAL);
+    EXPECT_EQ(document->revision(), revision);
+}
+
+TEST(JournalDerived, BracketRollbackPreservesNonIndexColumns) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto level = master.brackets(0).size();
+    EditStaffBrackets::set_bracket_type(&master, 0, level, BracketType::NORMAL);
+    auto *item = master.brackets(0).back();
+    item->set_column(level + 7);
+    item->set_bracket_span(5);
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        item->undo_change_property(Pid::BRACKET_SPAN, 3);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject non-index bracket span"});
+    }}));
+    EXPECT_EQ(item->column(), level + 7);
+    EXPECT_EQ(item->bracket_span(), 5u);
+}
+
+TEST(JournalDerived, BracketRemovalThenExcerptRemovalHasOneOwner) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    auto &master = engrave::harness::master_of(*document);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto *excerpt = master.excerpts().front();
+    auto *score = excerpt->excerpt_score();
+    ASSERT_NE(score, nullptr);
+    EditStaffBrackets::set_bracket_type(score, 0, score->brackets(0).size(), BracketType::NORMAL);
+    auto *item = score->brackets(0).back();
+    const auto handle = master.eid_register()->enroll(*item);
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        item->undo_change_property(Pid::SYSTEM_BRACKET, static_cast<int>(BracketType::NO_BRACKET));
+        master.undo(new RemoveExcerpt(excerpt));
+        return {};
+    }}));
+    EXPECT_TRUE(master.excerpts().empty());
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+}
+
+TEST(JournalDerived, TextLineDestinationOnlyPropertiesRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *line = Factory::create_text_line(master.dummy());
+    line->set_track(0);
+    line->set_system_flag(true);
+    line->init_style();
+    master.add_spanner(line, false);
+    line->set_property(Pid::BEGIN_LINE_ARROW_HEIGHT, Spatium(9.25));
+    const auto before = line->get_property(Pid::BEGIN_LINE_ARROW_HEIGHT);
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        line->undo_change_property(Pid::SYSTEM_FLAG, false, PropertyFlags::NOSTYLE);
+        EXPECT_NE(line->get_property(Pid::BEGIN_LINE_ARROW_HEIGHT), before);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject destination-only styled values"});
+    }}));
+    EXPECT_TRUE(line->system_flag());
+    EXPECT_EQ(line->get_property(Pid::BEGIN_LINE_ARROW_HEIGHT), before);
+}
+
+TEST(JournalDerived, TextLineSystemRollbackRestoresStyledOverrides) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *line = Factory::create_text_line(master.dummy());
+    line->set_track(0);
+    master.add_spanner(line, false);
+    line->set_property(Pid::BEGIN_FONT_FACE, muse::String(u"journal authored font"));
+    line->set_property_flags(Pid::BEGIN_FONT_FACE, PropertyFlags::UNSTYLED);
+    const auto before = line->get_property(Pid::BEGIN_FONT_FACE);
+    const auto revision = document->revision();
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        line->undo_change_property(Pid::SYSTEM_FLAG, true, PropertyFlags::NOSTYLE);
+        EXPECT_TRUE(line->system_flag());
+        EXPECT_NE(line->get_property(Pid::BEGIN_FONT_FACE), before);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->derived_entries(), 1u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject text-line system conversion"});
+    }});
+    EXPECT_FALSE(result);
+    EXPECT_FALSE(line->system_flag());
+    EXPECT_EQ(line->get_property(Pid::BEGIN_FONT_FACE), before);
+    EXPECT_EQ(line->property_flags(Pid::BEGIN_FONT_FACE), PropertyFlags::UNSTYLED);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
 TEST(JournalValues, PlainPropertiesTextAndStylesUseOwnedPayloads) {

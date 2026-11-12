@@ -23,6 +23,7 @@
 #include "engravingobject.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "../editing/addremoveelement.h"
 #include "../editing/editproperty.h"
@@ -281,10 +282,11 @@ PropertyValue EngravingObject::property_default(Pid pid) const {
 //---------------------------------------------------------
 
 void EngravingObject::init_element_style(const ElementStyle *ss) {
+    size_t n = ss->size();
+    auto flags = std::make_unique<PropertyFlags[]>(n);
     element_style_ = ss;
-    size_t n = element_style_->size();
     delete[] property_flags_list_;
-    property_flags_list_ = new PropertyFlags[n];
+    property_flags_list_ = flags.release();
     for (size_t i = 0; i < n; ++i) {
         property_flags_list_[i] = PropertyFlags::STYLED;
     }
@@ -350,7 +352,7 @@ static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, 
         e->property_flags(t) != ps) {
         if (e->is_bracket_item()) {
             BracketItem *bi = to_bracket_item(e);
-            e->score()->undo(new ChangeBracketProperty(bi->start_staff(), bi->column(), t, st, ps));
+            e->score()->transaction_manager()->current_or_dummy_transaction().change_bracket_property(*bi, t, st, ps);
         } else {
             e->score()->record_property_change(e, t, st, ps, reset_path);
         }
@@ -411,6 +413,16 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
     if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source) {
+        return;
+    }
+    if (is_bracket_item()) {
+        auto &item = *to_bracket_item(this);
+        auto &transaction = score()->transaction_manager()->current_or_dummy_transaction();
+        if (id != Pid::GENERATED && item.generated())
+            transaction.change_bracket_property(item, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+        transaction.change_bracket_property(item, id, v, ps);
+        // SYSTEM_BRACKET can delete this display item. Its source owner/slot
+        // addresses the inverse; no propagation or generated-flag access follows.
         return;
     }
     if (id == Pid::TEXT_STYLE) {

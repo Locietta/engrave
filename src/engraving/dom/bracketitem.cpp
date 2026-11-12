@@ -53,6 +53,7 @@ PropertyValue BracketItem::get_property(Pid id) const {
 }
 
 bool BracketItem::set_property(Pid id, const PropertyValue &v) {
+    auto *source_score = score();
     switch (id) {
         case Pid::SYSTEM_BRACKET:
             EditStaffBrackets::set_bracket_type(score(), start_staff_idx(), column(),
@@ -69,7 +70,7 @@ bool BracketItem::set_property(Pid id, const PropertyValue &v) {
         case Pid::GROUP_BRACKET_SHOW_BRACKET: show_bracket_ = v.to_bool(); break;
         default: return EngravingItem::set_property(id, v);
     }
-    score()->set_layout_all();
+    source_score->set_layout_all();
     return true;
 }
 

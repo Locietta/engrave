@@ -22,6 +22,8 @@
 
 #include "editstaffbrackets.h"
 
+#include <memory>
+
 #include "../dom/bracket.h"
 #include "../dom/bracketitem.h"
 #include "../dom/factory.h"
@@ -82,11 +84,12 @@ void EditStaffBrackets::fill_brackets(Score *score, staff_idx_t staff_idx, size_
     // make sure index idx is valid
     std::vector<BracketItem *> &staff_brackets = score->brackets(staff_idx);
     for (size_t i = staff_brackets.size(); i <= idx; ++i) {
-        BracketItem *bi = Factory::create_bracket_item(score->dummy());
+        auto bi = std::unique_ptr<BracketItem>(Factory::create_bracket_item(score->dummy()));
         bi->set_start_staff_idx(staff_idx);
         bi->set_column(i);
         bi->set_score(score);
-        staff_brackets.push_back(bi);
+        staff_brackets.push_back(bi.get());
+        bi.release();
     }
 }
 
