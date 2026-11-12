@@ -115,7 +115,9 @@ static std::vector<NoteGroup> note_groups{
 //    based on time signature properties but respecting manual settings
 //---------------------------------------------------------
 
-BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev) {
+BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev) { return base_beam_mode(cr, prev, cr->duration_type()); }
+
+BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev, TDuration cr_duration) {
     if (cr->is_grace() || cr->beam_mode() != BeamMode::AUTO) {
         return cr->beam_mode();
     }
@@ -135,7 +137,6 @@ BeamMode Groups::base_beam_mode(const ChordRest *cr, const ChordRest *prev) {
     }
     DurationType big_beat_duration = TDuration(smallest_tick_len).type();
 
-    TDuration cr_duration = cr->duration_type();
     const Groups &g = cr->staff()->group(cr->tick());
     Fraction stretch = cr->staff()->time_stretch(cr->tick());
     Fraction tick = cr->rtick() * stretch + cr->measure()->anacrusis_offset();
@@ -250,14 +251,7 @@ BeamMode Groups::actual_beam_mode(const ChordRest *cr, const ChordRest *prev, co
                 TDuration prev_min = (it_prev != beat_subdivision->end()) ? it_prev->second : TDuration(DurationType::V_INVALID);
                 TDuration min_duration = std::min(current_min, prev_min);
                 // re-calculate beam as if this were the duration of current chordrest
-                TDuration save_duration = cr->actual_duration_type();
-                TDuration save_cm_duration = cr->cross_measure_duration_type();
-                CrossMeasure save_cross_meas_val = cr->cross_measure();
-                const_cast<ChordRest *>(cr)->set_duration_type(min_duration);
-                bm = Groups::base_beam_mode(cr, prev);
-                const_cast<ChordRest *>(cr)->set_duration_type(save_duration);
-                const_cast<ChordRest *>(cr)->set_cross_measure(save_cross_meas_val);
-                const_cast<ChordRest *>(cr)->set_cross_measure_duration_type(save_cm_duration);
+                bm = Groups::base_beam_mode(cr, prev, min_duration);
             }
         }
     }

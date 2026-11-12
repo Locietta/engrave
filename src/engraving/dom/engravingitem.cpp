@@ -524,12 +524,7 @@ void EngravingItem::set_track(track_idx_t val) {
 //   z
 //---------------------------------------------------------
 
-int EngravingItem::z() const {
-    if (z_ == -1) {
-        z_ = default_z(type());
-    }
-    return z_;
-}
+int EngravingItem::z() const { return z_ == -1 ? default_z(type()) : z_; }
 
 void EngravingItem::set_z(int val) { z_ = val; }
 
@@ -1191,6 +1186,10 @@ void EngravingItem::disconnect_shared_item(EngravingItem *shared_item, Engraving
 }
 
 void EngravingItem::disconnect_all_origin_items(EngravingItem *shared_item) {
+    if (!shared_item->has_layout_data()) {
+        return;
+    }
+
     for (EngravingItem *origin_item : shared_item->origin_items()) {
         origin_item->layout_data_->shared_item_ = nullptr;
     }
@@ -1932,7 +1931,7 @@ bool EngravingItem::is_user_modified() const {
         PropertyValue default_value = property_default(pid);
 
         if (property_type(pid) == PType::ABSOLUTE) {
-            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don’t care spatium diffs that small
+            if (std::abs(val.value<double>() - default_value.value<double>()) > 0.0001) { // we don閳ユ獩 care spatium diffs that small
                 return true;
             }
         } else {
@@ -2203,11 +2202,8 @@ const EngravingItem::LayoutData *EngravingItem::ldata() const { return ldata_int
 EngravingItem::LayoutData *EngravingItem::mutldata() { return mutldata_internal(); }
 
 const EngravingItem::LayoutData *EngravingItem::ldata_internal() const {
-    if (!layout_data_) {
-        layout_data_ = create_layout_data();
-        layout_data_->item_ = this;
-    }
-    return layout_data_;
+    static const LayoutData empty;
+    return layout_data_ ? layout_data_ : &empty;
 }
 
 EngravingItem::LayoutData *EngravingItem::mutldata_internal() {
@@ -2317,7 +2313,7 @@ const RectF &EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) con
     {
         static const RectF dummy_value;
 
-        switch (item_->type()) {
+        switch (item_ ? item_->type() : ElementType::INVALID) {
             case ElementType::NOTE:
             case ElementType::ORNAMENT: return !sh.elements().empty() ? sh.elements().at(0) : dummy_value;
             default: break;
@@ -2331,6 +2327,10 @@ Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     Shape sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 
+    if (!item_) {
+        return sh;
+    }
+
     const Parenthesis *left_paren = item_->left_paren();
     if (left_paren && left_paren->add_to_skyline()) {
         sh.add(left_paren->ldata()->shape().translated(left_paren->pos()));
@@ -2343,7 +2343,7 @@ Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
     //! NOTE Temporary
     //! Reimplementation: done
     {
-        switch (item_->type()) {
+        switch (item_ ? item_->type() : ElementType::INVALID) {
             case ElementType::BEAM:
             case ElementType::GRACE_NOTES_GROUP:
             case ElementType::ORNAMENT:
@@ -2366,43 +2366,24 @@ Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
             case ElementType::REST:
             case ElementType::MEASURE_REPEAT:
             case ElementType::MMREST: {
-                if (mode == LdAccess::CHECK) {
-                    //! NOTE Temporary fix
-                    //! We can remove it the moment we figure out the layout order of the elements
-                    LayoutContext ctx(item_->score());
-                    ChordRest::LayoutData *ldata = static_cast<ChordRest::LayoutData *>(const_cast<LayoutData *>(this));
-                    ChordLayout::check_and_fill_shape(to_chord_rest(item_), ldata, ctx.conf());
+                if (mode != LdAccess::CHECK) {
+                    return shape_.value(LdAccess::CHECK);
                 }
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::GUITAR_BEND_SEGMENT: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fill_guitar_bend_segment_shape(to_guitar_bend_segment(item_),
-                                                        static_cast<GuitarBendSegment::LayoutData *>(const_cast<LayoutData *>(this)));
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::HAIRPIN_SEGMENT: {
-                //! To be removed when we're confident enough...
-                IF_ASSERT_FAILED(shape_.has_value()) {
-                    const_cast<LayoutData *>(this)->set_shape(TLayout::recalculate_text_line_base_segment_shape(to_hairpin_segment(item_)));
-                }
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::TRILL_SEGMENT: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
                 LayoutContext ctx(item_->score());
-                TLayout::fill_trill_segment_shape(to_trill_segment(item_),
-                                                  static_cast<HairpinSegment::LayoutData *>(const_cast<LayoutData *>(this)), ctx.conf());
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::TUPLET: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fill_tuplet_shape(to_tuplet(item_), static_cast<Tuplet::LayoutData *>(const_cast<LayoutData *>(this)));
-                return shape_.value(LdAccess::CHECK);
-            } break;
+                return ChordLayout::compute_shape(to_chord_rest(item_), static_cast<const ChordRest::LayoutData *>(this), ctx.conf());
+            }
+            case ElementType::GUITAR_BEND_SEGMENT:
+                return TLayout::guitar_bend_segment_shape(to_guitar_bend_segment(item_),
+                                                          static_cast<const GuitarBendSegment::LayoutData *>(this));
+            case ElementType::HAIRPIN_SEGMENT:
+                return shape_.has_value() ? shape_.value(LdAccess::CHECK) :
+                                            TLayout::recalculate_text_line_base_segment_shape(to_hairpin_segment(item_));
+            case ElementType::TRILL_SEGMENT: {
+                LayoutContext ctx(item_->score());
+                return TLayout::trill_segment_shape(to_trill_segment(item_), static_cast<const TrillSegment::LayoutData *>(this),
+                                                    ctx.conf());
+            }
+            case ElementType::TUPLET: return TLayout::tuplet_shape(to_tuplet(item_), static_cast<const Tuplet::LayoutData *>(this));
             default: break;
         }
     }
@@ -2419,6 +2400,10 @@ void EngravingItem::LayoutData::set_width_debug_hook([[maybe_unused]] double w) 
 
 void EngravingItem::LayoutData::dump(std::stringstream &ss) const {
     ss << "\n";
+    if (!item_) {
+        ss << "unlaid layout data\n";
+        return;
+    }
     ss << item_->type_name() << " id: " << item_->eid().to_std_string() << "\n";
 
     ss << "skip: " << (is_skip_draw_ ? "yes" : "no") << "\n";

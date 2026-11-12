@@ -116,8 +116,11 @@ struct ChordLayout {
 
     static void check_and_fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf);
     static void fill_shape(const ChordRest *item, Chord::LayoutData *ldata, const LayoutConfiguration &conf);
+    static Shape compute_shape(const ChordRest *item, const Chord::LayoutData *ldata, const LayoutConfiguration &conf);
     static void fill_shape(const Chord *item, Chord::LayoutData *ldata);
+    static Shape compute_shape(const Chord *item, const Chord::LayoutData *ldata);
     static void fill_shape(const MeasureRepeat *item, MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &conf);
+    static Shape compute_shape(const MeasureRepeat *item, const MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &conf);
 
     static void add_line_attach_points(Spanner *spanner);
 
