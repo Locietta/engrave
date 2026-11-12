@@ -36,6 +36,7 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stem.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
@@ -1212,6 +1213,28 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(StemOverrideEdit, FailedBatchRestoresOwnerLength) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->page_count());
+    auto &chord = *chord_line(*document).chord();
+    auto *stem = chord.stem();
+    ASSERT_NE(stem, nullptr);
+    const auto before = chord.stem_user_length();
+    const auto revision = document->revision();
+    auto result = engrave::api::BatchGuard(*document).run(
+        {[stem](engrave::api::EditContext &) -> engrave::Result<void> {
+             stem->undo_change_property(Pid::USER_LEN, mu::engraving::Spatium(3.25));
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after stem length"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(chord.stem_user_length(), before);
+    EXPECT_EQ(stem->user_length(), before);
+    EXPECT_EQ(document->revision(), revision);
 }
 
 TEST(TupletNumberEdit, FailedBatchRestoresStyleWithoutNumberDisplay) {

@@ -56,9 +56,9 @@ public:
 
     void set_base_length(Spatium base_length);
 
-    Spatium user_length() const { return user_length_; }
+    Spatium user_length() const;
 
-    void set_user_length(Spatium user_length) { user_length_ = user_length; }
+    void set_user_length(Spatium user_length);
 
     Spatium line_width() const { return line_width_; }
 
@@ -68,7 +68,7 @@ public:
 
     PointF flag_position() const;
 
-    double length() const { return absolute_from_spatium(base_length_ + user_length_); }
+    double length() const { return absolute_from_spatium(base_length_ + user_length()); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;
@@ -82,7 +82,6 @@ private:
 
     Spatium base_length_ = 0.0_sp;
 
-    Spatium user_length_ = 0.0_sp;
     Spatium line_width_ = 0.0_sp;
 };
 } // namespace mu::engraving

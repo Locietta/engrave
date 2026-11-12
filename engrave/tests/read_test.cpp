@@ -89,6 +89,7 @@
 #include "engraving/dom/slur.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stem.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/tempotimeline.h"
@@ -5258,6 +5259,39 @@ std::string offset_test_write(const mu::engraving::ChordLine *line) {
         mu::engraving::write::TWrite::write(line, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+TEST(Read, StemUserLengthSurvivesDisplayRecreation) {
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = chordline_offset_fixture();
+        xml.replace(xml.find("5.00"), 4, version);
+        xml.insert(xml.find("<durationType>"), "<Stem><userLen>2.5</userLen></Stem>");
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        auto *chord = offset_test_lines(master_of(**document)).front()->chord();
+        ASSERT_NE(chord->stem(), nullptr);
+        EXPECT_DOUBLE_EQ(chord->stem_user_length().val(), 2.5);
+        auto *old = chord->stem();
+        chord->remove(old);
+        delete old;
+        EXPECT_DOUBLE_EQ(chord->stem_user_length().val(), 2.5);
+        auto *replacement = mu::engraving::Factory::create_stem(chord);
+        EXPECT_DOUBLE_EQ(replacement->user_length().val(), 2.5);
+        chord->add(replacement);
+        std::unique_ptr<mu::engraving::Chord> copy(chord->clone());
+        EXPECT_DOUBLE_EQ(copy->stem_user_length().val(), 2.5);
+        EXPECT_DOUBLE_EQ(copy->stem()->user_length().val(), 2.5);
+        replacement->set_property(mu::engraving::Pid::USER_LEN, mu::engraving::Spatium(1.25));
+        EXPECT_DOUBLE_EQ(chord->stem_user_length().val(), 1.25);
+        EXPECT_DOUBLE_EQ(copy->stem_user_length().val(), 2.5);
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_DOUBLE_EQ(chord->stem_user_length().val(), 1.25);
+        const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        EXPECT_DOUBLE_EQ(offset_test_lines(master_of(**reopened)).front()->chord()->stem_user_length().val(), 1.25);
+    }
 }
 
 TEST(Read, ChordLineDefaultPathReadDoesNotAllocateLayout) {
