@@ -1290,6 +1290,54 @@ TEST(Read, LegacyMmrMarkersRestoreTheCorrectSourceEndpoint) {
     }
 }
 
+TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAcrossUndoAndRedo) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *owner = master.first_measure();
+    auto *last = master.last_measure();
+    auto *segment = last->get_segment_r(SegmentType::BREATH, last->ticks());
+    auto *breath = Factory::create_breath(segment);
+    breath->set_track(0);
+    segment->add(breath);
+    master.style().set(Sid::MIN_EMPTY_MEASURES, 2);
+    master.set_layout_all();
+    normalize_document(master);
+    master.init_automation();
+    engrave::assign_missing_ids(master);
+    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(master.layout_copy(*breath), nullptr);
+    const auto id = engrave::from_engine(breath->eid());
+    const auto ref = engrave::Ref{engrave::from_engine(owner->eid())};
+    ASSERT_TRUE(document.edit({{engrave::RemoveMeasures{ref, ref}}}));
+    EXPECT_EQ(master.layout_copy(*breath), nullptr);
+    auto check_geometry = [&] {
+        engrave::Query query;
+        query.types = {"Breath"};
+        query.layout_boxes = true;
+        const auto found = document.query(query);
+        ASSERT_TRUE(found);
+        ASSERT_EQ(found->elements.size(), 1u);
+        EXPECT_EQ(found->elements.front().id, id);
+        EXPECT_TRUE(found->elements.front().box.has_value());
+        EXPECT_EQ(master.layout_copy(*breath), nullptr);
+        EXPECT_TRUE(document.export_score({.format = engrave::Format::MUSIC_XML}));
+    };
+    check_geometry();
+    master.transaction_manager()->undo_redo(true, nullptr);
+    EXPECT_EQ(master.first_measure(), owner);
+    EXPECT_EQ(master.layout_copy(*breath), nullptr);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(master.layout_copy(*breath), nullptr);
+    EXPECT_EQ(master.layout_copy(*breath)->find_measure(), owner->mm_rest());
+    master.transaction_manager()->undo_redo(false, nullptr);
+    EXPECT_EQ(master.layout_copy(*breath), nullptr);
+    check_geometry();
+}
+
 TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
     using namespace mu::engraving;
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";

@@ -770,6 +770,7 @@ public:
     // always keep the original source item. Copies are owned by display measures.
     void register_layout_copy(const EngravingItem &source, EngravingItem &display);
     const EngravingItem *layout_copy(const EngravingItem &source) const;
+    void clear_layout_copies(const Measure &display);
 
     LayoutState layout_state;
     NormalizeState normalize_state;

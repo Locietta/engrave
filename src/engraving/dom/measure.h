@@ -388,7 +388,7 @@ public:
     Measure *covering_mm_rest_or_this();
     const Measure *covering_mm_rest_or_this() const;
 
-    void set_mm_rest(Measure *m) { mm_rest_ = m; }
+    void set_mm_rest(Measure *m);
 
     int mm_rest_count() const { return mm_rest_count_; } // number of measures mmRest_ spans
 

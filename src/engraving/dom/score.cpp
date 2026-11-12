@@ -337,6 +337,10 @@ const EngravingItem *Score::layout_copy(const EngravingItem &source) const {
     return found != layout_copies_.end() ? found->second : nullptr;
 }
 
+void Score::clear_layout_copies(const Measure &display) {
+    std::erase_if(layout_copies_, [&](const auto &entry) { return entry.second->find_measure() == &display; });
+}
+
 void Score::on_element_destruction(EngravingItem *e) {
     Score *score = e->EngravingObject::score();
 
