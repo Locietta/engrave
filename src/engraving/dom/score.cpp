@@ -3604,7 +3604,7 @@ ChordRest *Score::find_chord_rest_ending_before_tick_in_staff_and_voice(const Fr
 ChordRest *Score::find_chord_rest_ending_before_tick_in_staff_and_voice(const Fraction &tick, staff_idx_t staff_idx, bool force_voice,
                                                                         voice_idx_t voice) const {
     Fraction ptick = tick - Fraction::eps();
-    Measure *m = tick2measure_mm(ptick);
+    Measure *m = normalize_state.running ? tick2measure(ptick) : tick2measure_mm(ptick);
     if (!m) {
         LOGD("findCRinStaff: no measure for tick %d", ptick.ticks());
         return nullptr;
@@ -3644,7 +3644,7 @@ ChordRest *Score::find_chord_rest_ending_before_tick_in_staff_and_voice(const Fr
 }
 
 ChordRest *Score::find_chord_rest_ending_before_tick_in_track(const Fraction &tick, track_idx_t track_idx) const {
-    Measure *m = tick2measure_mm(tick - Fraction::eps());
+    Measure *m = normalize_state.running ? tick2measure(tick - Fraction::eps()) : tick2measure_mm(tick - Fraction::eps());
     if (!m) {
         LOGD("findCRinStaff: no measure for tick %d", tick.ticks());
         return nullptr;
