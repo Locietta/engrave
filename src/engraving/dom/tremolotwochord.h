@@ -38,6 +38,7 @@ private:
     DECLARE_CLASSOF(ElementType::TREMOLO_TWOCHORD)
 
 public:
+    AuthoredOverrideTable authored_overrides;
 
     TremoloTwoChord &operator=(const TremoloTwoChord &) = delete;
 
@@ -96,14 +97,7 @@ public:
 
     void set_direction(DirectionV v) override;
 
-    void set_beam_fragment(const BeamFragment &bf) {
-        const int idx = direction_idx();
-        manual_fragment_.endpoints.py1[idx] = bf.py1[idx];
-        manual_fragment_.endpoints.py2[idx] = bf.py2[idx];
-        beam_fragment_ = bf;
-    }
-
-    const BeamFragment &manual_fragment() const { return manual_fragment_.endpoints; }
+    void set_beam_fragment(const BeamFragment &bf);
 
     const BeamFragment &beam_fragment() const { return beam_fragment_; }
 
@@ -157,12 +151,6 @@ private:
     // continue from one system to the other (or indeed, one measure to the other)
     // we will want a vector of fragments similar to Beam's _beamFragments structure.
     // for now, a single fragment is sufficient
-    // The existing tremolo format has one fragment: legacy ordinal zero.
-    struct LegacyOrdinalFragmentOverride {
-        BeamFragment endpoints{};
-    };
-
-    LegacyOrdinalFragmentOverride manual_fragment_;
     BeamFragment beam_fragment_{};
 
     //! NOTE for palette

@@ -1450,6 +1450,30 @@ TEST(BeamFragmentEdit, FailedBatchRestoresZeroAbsenceAndCompoundChanges) {
     attempt(true);
 }
 
+TEST(TremoloOverrideEdit, FirstZeroPinRollsBackToAbsence) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                 "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx");
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    TremoloTwoChord *tremolo = nullptr;
+    engrave::harness::master_of(document).scan_elements([&](EngravingItem *item) {
+        if (item->type() == ElementType::TREMOLO_TWOCHORD) tremolo = static_cast<TremoloTwoChord *>(item);
+    });
+    ASSERT_NE(tremolo, nullptr);
+    const auto before = tremolo->authored_overrides.entries.size();
+    auto result = engrave::api::BatchGuard(document).run(
+        {[tremolo](engrave::api::EditContext &) -> engrave::Result<void> {
+             tremolo->undo_change_property(Pid::BEAM_POS, PropertyValue::from_value(muse::PairF(0, 0)));
+             EXPECT_TRUE(tremolo->user_modified());
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after zero tremolo pin"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(tremolo->authored_overrides.entries.size(), before);
+}
+
 // --- the evidence ---------------------------------------------------------------
 
 std::string read_text(const std::filesystem::path &path) {
