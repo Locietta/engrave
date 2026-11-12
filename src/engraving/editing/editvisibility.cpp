@@ -41,13 +41,13 @@ using namespace mu::engraving;
 
 void EditVisibility::set_selected_elements_visible(Transaction &tx, Score *score) {
     for (EngravingItem *e : score->selection().elements()) {
-        tx.push(new ChangeProperty(e, Pid::VISIBLE, true));
+        tx.change_property(e, Pid::VISIBLE, true);
     }
 }
 
 void EditVisibility::set_selected_elements_invisible(Transaction &tx, Score *score) {
     for (EngravingItem *e : score->selection().elements()) {
-        tx.push(new ChangeProperty(e, Pid::VISIBLE, false));
+        tx.change_property(e, Pid::VISIBLE, false);
     }
 }
 

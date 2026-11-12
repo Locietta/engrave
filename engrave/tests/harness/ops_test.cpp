@@ -28,8 +28,11 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/tests/harness/harness.h"
+#include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/tremolosinglechord.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/mutationjournal.h"
@@ -557,6 +560,133 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
         EXPECT_EQ(stack->size(), 0u);
         EXPECT_FALSE(stack->has_active_transaction());
     }
+}
+
+TEST(JournalValues, PlainPropertiesTextAndStylesUseOwnedPayloads) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto note = find_id(*document, "Note");
+    const auto text = find_id(*document, "Text");
+    const double distance = master.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).to_double() + 1.0;
+    bool observed = false;
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+        observed = true;
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.property_entries(), 2u);
+        EXPECT_EQ(batch.style_entries(), 1u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+    };
+    ASSERT_TRUE(
+        document->edit({{SetProperty{note, "color", Color{12, 34, 56}}, SetProperty{text, "text", std::string("<b>journal value</b>")},
+                         SetStyle{{}, "staffDistance", distance}}}));
+    EXPECT_TRUE(observed);
+    EXPECT_EQ(property(*document, note, "color"), engrave::Value(Color{12, 34, 56}));
+    EXPECT_NE(std::get<std::string>(property(*document, text, "text")).find("journal value"), std::string::npos);
+    EXPECT_DOUBLE_EQ(master.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).to_double(), distance);
+    EXPECT_EQ(master.mutation_journal()->size(), 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalValues, RejectedPropertyTextAndStyleBatchRestoresOwnedValues) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto note = find_id(*document, "Note");
+    const auto text = find_id(*document, "Text");
+    const auto color_before = property(*document, note, "color");
+    const auto text_before = property(*document, text, "text");
+    const double distance = master.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).to_double();
+    const auto revision = document->revision();
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.property_entries(), 2u);
+        EXPECT_EQ(batch.style_entries(), 1u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        throw std::runtime_error("reject owned source values");
+    };
+    EXPECT_FALSE(
+        document->edit({{SetProperty{note, "color", Color{12, 34, 56}}, SetProperty{text, "text", std::string("<i>replacement markup</i>")},
+                         SetStyle{{}, "staffDistance", distance + 1.0}}}));
+    EXPECT_EQ(property(*document, note, "color"), color_before);
+    EXPECT_EQ(property(*document, text, "text"), text_before);
+    EXPECT_DOUBLE_EQ(master.style().style_v(mu::engraving::Sid::STAFF_DISTANCE).to_double(), distance);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalValues, StyleRollbackPreservesAuthoredChordLineControls) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &line = chord_line(*document);
+    seed_controls(line);
+    const auto source = line.appearance_state();
+    const double spatium = master.style().spatium();
+    const auto result =
+        chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+                                         master.undo_change_style_val(mu::engraving::Sid::SPATIUM, spatium * 2.0);
+                                         return {};
+                                     },
+                                     [&](auto &) -> engrave::Result<void> {
+                                         for (size_t i = 0; i < source.controls.size(); ++i)
+                                             EXPECT_EQ(line.source_offsets()[i], source.controls[i] * 2.0);
+                                         EXPECT_EQ(master.mutation_journal()->active_transaction()->style_entries(), 1u);
+                                         EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+                                         return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject after source scaling"});
+                                     }});
+    EXPECT_FALSE(result);
+    expect_chord_line(line, source);
+    EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
+}
+
+TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &line = chord_line(*document);
+    seed_controls(line);
+    const auto source = line.appearance_state();
+    auto *tremolo = mu::engraving::Factory::create_tremolo_single_chord(line.chord());
+    tremolo->set_tremolo_type(mu::engraving::TremoloType::R8);
+    tremolo->set_offset(muse::PointF(0.25, 0.75));
+    line.chord()->add(tremolo);
+    engrave::assign_missing_ids(master);
+    const auto offset = tremolo->offset();
+    const auto revision = document->revision();
+    const double spatium = master.style().spatium();
+    static const mu::engraving::EngravingItem *fail_after = nullptr;
+    static const ChordLine *untouched = nullptr;
+    static std::array<muse::PointF, 4> controls;
+    static bool injected = false;
+    fail_after = tremolo;
+    untouched = &line;
+    controls = source.controls;
+    injected = false;
+
+    struct ResetHook {
+        ~ResetHook() { mu::engraving::set_spatium_item_hook(nullptr); }
+    } reset_hook;
+
+    mu::engraving::set_spatium_item_hook([](const auto *item) {
+        if (item == fail_after) {
+            EXPECT_FALSE(injected);
+            EXPECT_EQ(untouched->source_offsets(), controls);
+            injected = true;
+            throw std::bad_alloc();
+        }
+    });
+    EXPECT_THROW((void) chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+                     master.undo_change_style_val(mu::engraving::Sid::SPATIUM, spatium * 2.0);
+                     return {};
+                 }}),
+                 std::bad_alloc);
+    EXPECT_TRUE(injected);
+    expect_chord_line(line, source);
+    EXPECT_EQ(tremolo->offset(), offset);
+    EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
 }
 
 // --- the evidence ---------------------------------------------------------------

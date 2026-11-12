@@ -485,9 +485,9 @@ static void normalize_note_spanner(Spanner &spanner) {
         // These derived rules apply per staff; generic property propagation would
         // overwrite linked TAB notes with the standard staff's display convention.
         if (!tab && (type == GuitarBendType::PRE_BEND || type == GuitarBendType::PRE_DIVE) && !parenthesized && !start->ghost())
-            start->score()->undo(new ChangeProperty(start, Pid::GHOST, true));
+            start->score()->record_property_change(start, Pid::GHOST, true);
         if (tab && !bend.is_dive() && type != GuitarBendType::SLIGHT_BEND && bend.is_release_bend() && !end->ghost())
-            end->score()->undo(new ChangeProperty(end, Pid::GHOST, true));
+            end->score()->record_property_change(end, Pid::GHOST, true);
     }
 }
 

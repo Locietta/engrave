@@ -278,10 +278,10 @@ void Clef::change_clef_to_barline_pos(ClefToBarlinePosition new_pos) {
 void Clef::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::SHOW_COURTESY) {
         if (v.to_bool() != show_courtesy_) {
-            score()->undo(new ChangeProperty(this, id, v, ps));
+            score()->record_property_change(this, id, v, ps);
             Clef *paired_clef = other_clef();
             if (paired_clef) {
-                score()->undo(new ChangeProperty(paired_clef, id, v, ps));
+                score()->record_property_change(paired_clef, id, v, ps);
             }
             if (!segment()->is_header_clef_type()) {
                 set_generated(false);
