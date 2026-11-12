@@ -114,7 +114,7 @@ extern String bend_amount_to_string(int fulls, int quarts, bool use_fractions = 
 
 extern InstrumentTrackId make_instrument_track_id(const EngravingItem *item);
 
-extern std::vector<Measure *> find_following_repeat_measures(const Measure *measure);
+extern std::vector<Measure *> find_following_repeat_measures(const Measure *measure, bool use_mm_rests = true);
 extern std::vector<Measure *> find_previous_repeat_measures(const Measure *measure);
 extern bool repeat_has_partial_lyric_line(const Measure *end_repeat_measure);
 extern bool segments_are_adjacent(const Segment *first_seg, const Segment *second_seg);

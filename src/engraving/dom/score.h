@@ -47,6 +47,7 @@
 #include "guitarbend.h"
 #include "input.h"
 #include "mscore.h"
+#include "normalization/normalize.h"
 #include "property.h"
 #include "rangelock.h"
 #include "scoreorder.h"
@@ -558,7 +559,7 @@ public:
 
     Segment *tick2left_segment_mm(const Fraction &tick) { return tick2left_segment(tick, /* useMMRest */ true); }
 
-    void update_ticks_and_time_sig_map();
+    void update_ticks_and_time_sig_map(bool sync_mm_rests = true);
 
     void update_ticks_and_time_sig_map_later() { need_update_ticks_and_time_sig_map_ = true; }
 
@@ -766,6 +767,7 @@ public:
     };
 
     LayoutState layout_state;
+    NormalizeState normalize_state;
     // Installed on the master by Document; excerpts resolve through their master.
     std::function<void(Score &)> layout_boundary;
     void invalidate_layout(const Fraction &start, const Fraction &end);

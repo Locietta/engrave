@@ -2429,14 +2429,6 @@ void TLayout::layout_fret_diagram(const FretDiagram *item, FretDiagram::LayoutDa
 void TLayout::layout_glissando(Glissando *item, LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);
 
-    if (item->start_element()) {
-        item->set_tick(item->start_element()->tick());
-    }
-
-    if (item->end_element()) {
-        item->set_tick2(item->end_element()->tick());
-    }
-
     TLayout::layout_line(const_cast<Glissando *>(item), ctx);
 
     if (item->spanner_segments().empty()) {
@@ -4340,6 +4332,7 @@ void TLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const Layou
 
 void TLayout::layout_line(SLine *item, LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);
+    // Rebind display anchors (including MMR mirrors) using the shared resolver.
     item->compute_start_element();
     item->compute_end_element();
 
@@ -4582,14 +4575,6 @@ void TLayout::layout_note_anchored_line(SLine *item, EngravingItem::LayoutData *
 
 void TLayout::layout_note_line(NoteLine *item, LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);
-
-    if (item->start_element()) {
-        item->set_tick(item->start_element()->tick());
-    }
-
-    if (item->end_element()) {
-        item->set_tick2(item->end_element()->tick());
-    }
 
     TLayout::layout_line(item, ctx);
 

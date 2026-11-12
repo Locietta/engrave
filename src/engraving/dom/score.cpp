@@ -366,11 +366,15 @@ void Score::add_measure(MeasureBase *m, MeasureBase *pos) {
       - after inserting/deleting time (changes the sigmap)
 */
 
-void Score::update_ticks_and_time_sig_map() {
+void Score::update_ticks_and_time_sig_map(bool sync_mm_rests) {
 
     Fraction tick = Fraction(0, 1);
     Measure *fm = first_measure();
     if (!fm) {
+        for (Staff *staff : staves_) staff->clear_time_sig();
+        if (is_master()) sigmap()->clear();
+        measures_.update_tick_index();
+        need_update_ticks_and_time_sig_map_ = false;
         return;
     }
 
@@ -393,7 +397,7 @@ void Score::update_ticks_and_time_sig_map() {
         Fraction diff = tick - mtick;
         Fraction measure_ticks = m->ticks();
         m->move_ticks(diff);
-        if (m->mm_rest()) {
+        if (sync_mm_rests && m->mm_rest()) {
             m->mm_rest()->move_ticks(diff);
         }
 
@@ -4523,9 +4527,14 @@ void Score::layout_if_dirty() {
     if (layout_state.dirty) do_layout_range(layout_state.start, layout_state.end);
 }
 
-void Score::do_layout() { do_layout_range(Fraction(0, 1), Fraction(-1, 1)); }
+void Score::do_layout() {
+    // Explicit full layout also supports legacy callers that use direct DOM setters.
+    invalidate_normalization(*this, Fraction(0, 1), Fraction(-1, 1));
+    do_layout_range(Fraction(0, 1), Fraction(-1, 1));
+}
 
 void Score::do_layout_range(const Fraction &st, const Fraction &et) {
+    normalize_score(*this);
 
     Fraction start = st;
     Fraction end = et;
@@ -4546,12 +4555,6 @@ void Score::do_layout_range(const Fraction &st, const Fraction &et) {
 
     engraving_font_ = engraving_fonts()->font_by_name(style().value(Sid::MUSICAL_SYMBOL_FONT).value<String>().to_std_string());
     layout_options_.note_head_width = engraving_font_->width(SymId::NOTEHEAD_BLACK, style().spatium() / style().default_spatium());
-
-    if (this->cmd_state().layout_flags & LayoutFlag::REBUILD_MIDI_MAPPING) {
-        if (this->is_master()) {
-            this->master_score()->rebuild_midi_mapping();
-        }
-    }
 
     if (start <= Fraction(0, 1) && (end < Fraction(0, 1) || end == Fraction::max()))
         ++layout_state.whole_count;

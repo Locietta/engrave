@@ -1332,11 +1332,11 @@ InstrumentTrackId make_instrument_track_id(const EngravingItem *item) {
     return track_id;
 }
 
-std::vector<Measure *> find_following_repeat_measures(const Measure *measure) {
+std::vector<Measure *> find_following_repeat_measures(const Measure *measure, bool use_mm_rests) {
     const MasterScore *master = measure->master_score();
     const Score *score = measure->score();
 
-    const Measure *master_measure = master->tick2measure_mm(measure->tick());
+    const Measure *master_measure = use_mm_rests ? master->tick2measure_mm(measure->tick()) : master->tick2measure(measure->tick());
 
     const RepeatList &repeat_list = master->repeat_list(true);
 
@@ -1352,7 +1352,9 @@ std::vector<Measure *> find_following_repeat_measures(const Measure *measure) {
         // Get next segment
         const RepeatSegment *next_seg = *next_seg_it;
         const Measure *first_master_measure = next_seg->first_measure();
-        Measure *first_measure = first_master_measure ? score->tick2measure_mm(first_master_measure->tick()) : nullptr;
+        Measure *first_measure = first_master_measure ? (use_mm_rests ? score->tick2measure_mm(first_master_measure->tick()) :
+                                                                        score->tick2measure(first_master_measure->tick())) :
+                                                        nullptr;
         if (!first_measure) {
             continue;
         }

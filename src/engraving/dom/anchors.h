@@ -31,7 +31,7 @@ struct Factory;
 struct EditTimeTickAnchors {
     static void update_anchors(const EngravingItem *item);
     static void update_anchors(Measure *measure, staff_idx_t staff_idx, const std::set<Fraction> &additional_anchor_rel_ticks = {});
-    static TimeTickAnchor *create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx);
+    static TimeTickAnchor *create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx, bool use_mm_rests = true);
     static void update_layout(Measure *measure);
 };
 

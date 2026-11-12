@@ -32,6 +32,7 @@
 #include "dom/stafftype.h"
 #include "dom/system.h"
 #include "log.h"
+#include "normalization/normalize.h"
 #include "style/styledef.h"
 #include "textlayout.h"
 #include "tlayout.h"
@@ -379,94 +380,7 @@ void LyricsLayout::create_or_remove_lyrics_line(Lyrics *item, LayoutContext &ctx
     }
 
     auto is_end_melisma = [item]() { return item->ticks().is_not_zero(); };
-
-    Fraction lyrics_line_ticks = Lyrics::temp_melisma_ticks;
-
-    // Update the end tick
-    if (is_end_melisma()) {
-        const track_idx_t track = item->track();
-
-        const Segment *const start_segment = item->segment();
-        const Fraction start_tick = start_segment->tick();
-
-        // if lyrics has a temporary one-chord melisma, interpret as 0 ticks (just its own chord)
-        Fraction item_end_tick = item->ticks() == Lyrics::temp_melisma_ticks ? start_tick : item->end_tick();
-        Fraction end_tick = item_end_tick;
-
-        const Segment *end_segment = start_segment;
-        while (end_segment && end_segment->tick() < end_tick) {
-            end_segment = end_segment->next_cr(track, true);
-        }
-        if (!end_segment) {
-            // user probably deleted measures at end of score, leaving this melisma too long
-            // set endSegment to last segment and reset lyricsEndTick to trigger FIXUP code below
-            end_segment = ctx.dom().last_segment();
-            end_tick = Fraction(-1, 1);
-        }
-
-        EngravingItem *end_segment_element = end_segment->element(track);
-        if (end_segment->tick() == end_tick && end_segment_element && end_segment_element->is_chord()) {
-            // everything is OK if we have reached a chord at right tick on right track
-            // advance to next CR after duration of note, or last segment if no next CR
-            const Segment *end_chord_seg = end_segment;
-            const Chord *end_chord = to_chord(end_segment_element);
-
-            end_segment = end_chord_seg->next_cr(track, false);
-
-            if (!end_segment || end_segment->tick() > end_chord->end_tick()) {
-                end_segment = end_chord_seg;
-                while (end_segment && end_segment->tick() < end_chord->end_tick()) {
-                    end_segment = end_segment->next_cr(muse::nidx, true);
-                }
-            }
-        } else {
-            // FIXUP - lyrics tick count not valid
-            // this happens if edits to score have removed the original end segment
-            // so let's fix it here
-            // endSegment is already pointing to segment past endTick (or to last segment)
-            // we should shorten the lyrics tick count to make this work
-            const Segment *ns = end_segment;
-            const Segment *ps = end_segment->prev1(SegmentType::CHORD_REST);
-            while (ps && ps != start_segment) {
-                EngravingItem *pe = ps->element(track);
-                // we're looking for an actual chord on this track
-                if (pe && pe->is_chord()) {
-                    break;
-                }
-                end_segment = ps;
-                ps = ps->prev1(SegmentType::CHORD_REST);
-            }
-
-            if (!ps || ps == start_segment) {
-                // either there is no valid previous CR, or the previous CR is the one the lyric starts on
-                // we don't want to make the melisma longer arbitrarily, but there is a possibility that the next
-                // CR won't extend the melisma, so let's check it
-                ps = ns;
-                end_segment = ps->next_cr(track, false);
-                EngravingItem *e = end_segment ? end_segment->element(track) : nullptr;
-
-                // check to make sure we have a chord
-                if (!e || !e->is_chord() || ps->tick() > item_end_tick) {
-                    // nope, nothing to do but set ticks to 0
-                    // this will result in no melisma
-                    item->undo_change_property(Pid::LYRIC_TICKS, Fraction::from_ticks(0));
-                } else {
-                    item->undo_change_property(Pid::LYRIC_TICKS, ps->tick() - start_tick);
-                }
-            } else {
-                item->undo_change_property(Pid::LYRIC_TICKS, ps->tick() - start_tick);
-            }
-        }
-
-        if (end_segment) {
-            // Lyrics::_ticks points to the beginning of the last spanned segment,
-            // but the line shall include it:
-            // include the duration of this last segment in the melisma duration
-            lyrics_line_ticks = end_segment->tick() - start_tick;
-        } else {
-            lyrics_line_ticks = item->score()->end_tick() - start_tick;
-        }
-    }
+    const Fraction lyrics_line_ticks = normalize_lyric_ticks(*item);
 
     ChordRest *cr = item->chord_rest();
 

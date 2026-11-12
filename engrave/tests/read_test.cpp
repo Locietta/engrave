@@ -57,6 +57,7 @@
 #include "engraving/dom/groups.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrument.h"
+#include "engraving/dom/lyrics.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/measurerepeat.h"
@@ -84,6 +85,7 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "engraving/normalization/normalize.h"
 #include "engraving/normalization/notes.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
@@ -183,6 +185,141 @@ TEST(Read, LayoutResetDoesNotAllocateHiddenItems) {
     master.do_layout();
     ASSERT_FALSE(master.first_measure()->system()->staff(1)->show());
     EXPECT_FALSE(dynamic->has_layout_data());
+}
+
+TEST(Read, NormalizeOnlyRepairsLinesWithoutLayoutAndPreservesGeometryDirtiness) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    auto *original = to_chord(segment->element(0));
+    auto *replacement = Factory::copy_chord(*original);
+    segment->remove(original);
+    std::unique_ptr<Chord> removed(original);
+    segment->add(replacement);
+    auto *note = replacement->notes().front();
+    const int expected = note->line();
+    note->set_line(invalid_line);
+    ASSERT_FALSE(replacement->has_layout_data());
+    ASSERT_FALSE(note->has_layout_data());
+    master.set_layout_all();
+    const auto pending = master.layout_state;
+    std::vector<EngravingItem *> unlaid;
+    for (auto *object : engrave::document_objects(master)) {
+        if (object->is_engraving_item() && !to_engraving_item(object)->has_layout_data()) unlaid.push_back(to_engraving_item(object));
+    }
+    normalize_score(master);
+    for (auto *item : unlaid) EXPECT_FALSE(item->has_layout_data()) << item->type_name();
+    EXPECT_EQ(note->line(), expected);
+    EXPECT_FALSE(replacement->has_layout_data());
+    EXPECT_FALSE(note->has_layout_data());
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_TRUE(master.layout_state.dirty);
+    EXPECT_EQ(master.layout_state.start, pending.start);
+    EXPECT_EQ(master.layout_state.end, pending.end);
+    EXPECT_EQ(master.layout_state.whole_count, pending.whole_count);
+    EXPECT_EQ(master.layout_state.range_count, pending.range_count);
+    const auto generation = master.normalize_state.normalized_generation;
+    normalize_score(master);
+    EXPECT_EQ(master.normalize_state.normalized_generation, generation);
+    EXPECT_FALSE(note->has_layout_data());
+}
+
+TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *lyrics = Factory::create_lyrics(chord);
+    lyrics->set_track(chord->track());
+    lyrics->set_ticks(Fraction(2, 1));
+    chord->add(lyrics);
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_score(master);
+    EXPECT_EQ(lyrics->ticks(), Fraction(0, 1));
+    EXPECT_EQ(lyrics->separator(), nullptr);
+    EXPECT_FALSE(lyrics->has_layout_data());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+
+    auto tied = open_path(write470_fixture().parent_path() / "ties_mismatched.mscx");
+    ASSERT_TRUE(tied);
+    auto &tie_score = master_of(*tied);
+    std::vector<Tie *> ties;
+    for (auto *object : engrave::document_objects(tie_score)) {
+        if (object->is_note()) {
+            if (auto *tie = to_note(object)->tie_for()) {
+                ties.push_back(tie);
+                tie->set_tick(Fraction(10, 1));
+            }
+        }
+    }
+    ASSERT_FALSE(ties.empty());
+    tie_score.set_layout_all();
+    const auto tie_count = tie_score.layout_state.whole_count + tie_score.layout_state.range_count;
+    normalize_score(tie_score);
+    for (auto *tie : ties) EXPECT_EQ(tie->tick(), tie->start_note()->chord()->tick());
+    EXPECT_EQ(tie_score.layout_state.whole_count + tie_score.layout_state.range_count, tie_count);
+}
+
+TEST(Read, NormalizeCreatesTimeAnchorsWithoutPreparingTheirGeometry) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *hairpin = Factory::create_hairpin(master.dummy());
+    hairpin->set_track(0);
+    hairpin->set_track2(0);
+    hairpin->set_tick(Fraction(1, 4));
+    hairpin->set_tick2(Fraction(3, 4));
+    master.add_spanner(hairpin, false);
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_score(master);
+    ASSERT_NE(hairpin->start_element(), nullptr);
+    ASSERT_NE(hairpin->end_element(), nullptr);
+    EXPECT_EQ(hairpin->start_element()->tick(), Fraction(1, 4));
+    EXPECT_EQ(hairpin->end_element()->tick(), Fraction(3, 4));
+    EXPECT_FALSE(hairpin->has_layout_data());
+    EXPECT_FALSE(hairpin->start_element()->has_layout_data());
+    EXPECT_FALSE(hairpin->end_element()->has_layout_data());
+    EXPECT_FALSE(hairpin->start_element()->find_measure()->find_segment(SegmentType::TIME_TICK, Fraction(1, 4))->has_layout_data());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+}
+
+TEST(Read, ExplicitFullLayoutNormalizesLegacyDirectPitchChanges) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const int line = note->line();
+    ASSERT_FALSE(master.normalize_state.dirty);
+    note->set_pitch(note->pitch() + 12);
+    master.do_layout();
+    EXPECT_EQ(note->line(), line - 7);
+}
+
+TEST(Read, FullStaffSemanticBarrierIsExplicitAndDoesNotLayOut) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.parts()[1]->set_show(false);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(voices));
+    auto *note = chord->notes().front();
+    const int expected = note->line();
+    note->set_line(invalid_line);
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_score(master);
+    EXPECT_EQ(note->line(), invalid_line);
+    prepare_semantic_edit(master);
+    EXPECT_EQ(note->line(), expected);
+    EXPECT_TRUE(master.normalize_state.includes_hidden_staves);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 
 TEST(Read, SemanticNoteLineAndCrossMeasureUpdatesDoNotAllocateLayout) {

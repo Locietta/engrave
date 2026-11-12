@@ -28,17 +28,11 @@ namespace mu::engraving {
 struct Measure;
 } // namespace mu::engraving
 
-//! NOTE Here collected functions of DOM modification, witch called on layout stage.
-//! They probably need to be called either before the layout or directly during the DOM modification,
-//! but not during the layout.
+// Display-element maintenance. Source repairs live in normalization/normalize.cpp.
 namespace mu::engraving::rendering::score {
 struct ModifyDom {
 
-    static void set_cross_measure(const Measure *measure, LayoutContext &ctx);
-    static void connect_tremolo(Measure *m);
-    static void cmd_update_notes(const Measure *measure, const DomAccessor &dom);
     static void create_stems(const Measure *measure, LayoutContext &ctx);
-    static void set_track_for_chord_grace_notes(Measure *measure, const DomAccessor &dom);
     static void sort_measure_segments(Measure *measure, LayoutContext &ctx);
 private:
     static void remove_and_add_begin_segments(Measure *measure);

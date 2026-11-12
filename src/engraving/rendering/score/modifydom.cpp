@@ -39,93 +39,6 @@
 
 using namespace mu::engraving::rendering::score;
 
-void ModifyDom::set_cross_measure(const Measure *measure, LayoutContext &ctx) {
-    bool cross_measure = ctx.conf().style_b(Sid::CROSS_MEASURE_VALUES);
-    const DomAccessor &dom = ctx.dom();
-    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
-        const Staff *staff = dom.staff(staff_idx);
-        if (!staff->show()) {
-            continue;
-        }
-
-        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
-        track_idx_t end_track = start_track + ::mu::engraving::voices;
-
-        for (const Segment &segment : measure->segments()) {
-            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
-                continue;
-            }
-
-            for (track_idx_t t = start_track; t < end_track; ++t) {
-                ChordRest *cr = segment.cr(t);
-                if (!cr) {
-                    continue;
-                }
-                if (cr->is_chord()) {
-                    Chord *chord = to_chord(cr);
-                    if (!chord->is_grace()) {
-                        ChordLayout::cross_measure_setup(chord, cross_measure, ctx);
-                    }
-                }
-            }
-        }
-    }
-}
-
-void ModifyDom::connect_tremolo(Measure *m) { m->connect_tremolo(); }
-
-void ModifyDom::cmd_update_notes(const Measure *measure, const DomAccessor &dom) {
-    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
-        const Staff *staff = dom.staff(staff_idx);
-        if (!staff->show()) {
-            continue;
-        }
-
-        AccidentalState as; // list of already set accidentals for this measure
-        // initAccidentalState
-        {
-            as.init(staff->key_sig_event(measure->tick()));
-
-            // Trills may carry an accidental into this measure that requires a force-restate
-            int ticks = measure->tick().ticks();
-            auto spanners = dom.spanner_map().find_overlapping(ticks, ticks, true);
-            for (auto iter : spanners) {
-                Spanner *spanner = iter.value;
-                if (spanner->staff_idx() != staff_idx || !spanner->is_trill() || spanner->tick() == measure->tick() ||
-                    spanner->tick2() == measure->tick()) {
-                    continue;
-                }
-                Ornament *ornament = to_trill(spanner)->ornament();
-                Note *trill_note = ornament ? ornament->note_above() : nullptr;
-                if (trill_note && trill_note->accidental() && ornament->show_accidental() == OrnamentShowAccidental::DEFAULT) {
-                    int line = abs_step(trill_note->tpc(), trill_note->epitch());
-                    as.set_force_restate_accidental(line, true);
-                }
-            }
-        }
-
-        const TrackRange track_range = staff->part()->track_range();
-        track_idx_t main_track = staff_idx * ::mu::engraving::voices;
-
-        for (const Segment &segment : measure->segments()) {
-            if (segment.is_just_type(SegmentType::KEY_SIG)) {
-                KeySig *ks = item_cast<KeySig *>(segment.element(main_track));
-                if (ks) {
-                    Fraction tick = segment.tick();
-                    as.init(staff->key_sig_event(tick));
-                }
-            } else if (segment.is_just_type(SegmentType::CHORD_REST)) {
-                for (track_idx_t t = track_range.start_track; t < track_range.end_track; ++t) {
-                    Chord *chord = item_cast<Chord *>(segment.element(t), CastMode::MAYBE_BAD); // maybe Rest
-                    if (chord) {
-                        chord->cmd_update_notes(&as, staff_idx);
-                    }
-                }
-            }
-        }
-    }
-}
-
 void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
     const DomAccessor &dom = ctx.dom();
     for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
@@ -168,33 +81,6 @@ void ModifyDom::create_stems(const Measure *measure, LayoutContext &ctx) {
 
                     create_stems(chord); // create stems needed to calculate spacing
                     // stem direction can change later during beam processing
-                }
-            }
-        }
-    }
-}
-
-void ModifyDom::set_track_for_chord_grace_notes(Measure *measure, const DomAccessor &dom) {
-    for (staff_idx_t staff_idx = 0; staff_idx < dom.nstaves(); ++staff_idx) {
-        track_idx_t start_track = staff_idx * ::mu::engraving::voices;
-        track_idx_t end_track = start_track + ::mu::engraving::voices;
-
-        for (const Segment &segment : measure->segments()) {
-            if (!segment.is_just_type(SegmentType::CHORD_REST)) {
-                continue;
-            }
-
-            for (track_idx_t t = start_track; t < end_track; ++t) {
-                ChordRest *cr = segment.cr(t);
-                if (!cr) {
-                    continue;
-                }
-
-                if (cr->is_chord()) {
-                    Chord *chord = to_chord(cr);
-                    for (Chord *c : chord->grace_notes()) {
-                        c->set_track(t);
-                    }
                 }
             }
         }

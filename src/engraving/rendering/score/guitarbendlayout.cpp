@@ -52,9 +52,6 @@ void GuitarBendLayout::update_segments_and_layout(SLine *item, LayoutContext &ct
         return;
     }
 
-    item->set_tick(start_note->tick());
-    item->set_tick2(end_note->tick());
-
     unsigned int segments_needed = system1 == system2 ? 1 : 2;
     size_t segment_count = item->spanner_segments().size();
     if (segment_count != segments_needed) {
