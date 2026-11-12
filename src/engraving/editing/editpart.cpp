@@ -73,19 +73,6 @@ void EditPart::set_part_sharp_flat(Score *score, Part *part, PreferSharpFlat sha
     Transpose::transposition_changed(tx, score, part, old_transposition);
 }
 
-void EditPart::set_staff_type(Score *score, Staff *staff, StaffTypes type_id) {
-    if (!score || !staff) {
-        return;
-    }
-
-    const StaffType *staff_type = StaffType::preset(type_id);
-    if (!staff_type) {
-        return;
-    }
-
-    score->undo(new ChangeStaffType(staff, *staff_type));
-}
-
 void EditPart::remove_parts(Score *score, const std::vector<Part *> &parts) {
     if (!score || parts.empty()) {
         return;
@@ -148,7 +135,7 @@ void EditPart::move_parts(Score *score, const std::vector<Part *> &source_parts,
         }
     }
 
-    score->undo(new SortStaves(score, staff_mapping));
+    score->record_staff_order(staff_mapping);
     score->set_brackets_and_barlines();
 }
 
@@ -188,7 +175,7 @@ void EditPart::move_staves(Score *score, const std::vector<Staff *> &source_stav
         sorted_indexes.push_back(staff->idx());
     }
 
-    score->undo(new SortStaves(score, sorted_indexes));
+    score->record_staff_order(sorted_indexes);
     score->set_brackets_and_barlines();
 }
 
@@ -204,7 +191,7 @@ void EditPart::add_system_objects(Score *score, const std::vector<Staff *> &stav
             continue;
         }
 
-        score->undo(new AddSystemObjectStaff(staff));
+        score->record_system_staff(staff, true);
 
         const staff_idx_t staff_idx = staff->idx();
         for (EngravingItem *obj : top_system_objects) {
@@ -228,7 +215,7 @@ void EditPart::remove_system_objects(Score *score, const std::vector<Staff *> &s
 
     for (Staff *staff : staves) {
         if (staff->is_system_object_staff()) {
-            score->undo(new RemoveSystemObjectStaff(staff));
+            score->record_system_staff(staff, false);
             if (staff->has_system_objects_below_bottom_staff()) {
                 score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
             }
@@ -257,9 +244,9 @@ void EditPart::move_system_objects(Score *score, Staff *source_staff, Staff *des
     const std::vector<EngravingItem *> system_objects = collect_system_objects(score, {source_staff, destination_staff});
     const staff_idx_t dst_staff_idx = destination_staff->idx();
 
-    score->undo(new RemoveSystemObjectStaff(source_staff));
+    score->record_system_staff(source_staff, false);
     if (!destination_staff->is_system_object_staff() && dst_staff_idx != 0) {
-        score->undo(new AddSystemObjectStaff(destination_staff));
+        score->record_system_staff(destination_staff, true);
     } else {
         score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
     }

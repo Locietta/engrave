@@ -33,6 +33,7 @@
 #include "global/types/translatablestring.h"
 #include "partchange.h"
 #include "sourcechange.h"
+#include "staffchange.h"
 #include "textchange.h"
 #include "timingchange.h"
 #include "undoablecommand.h"
@@ -63,7 +64,11 @@ enum class JournalEntryKind : uint8_t {
     PART_INSTRUMENT,
     STRING_DATA,
     SHARED_ORIGIN,
-    EXCERPT_MEMBERSHIP
+    EXCERPT_MEMBERSHIP,
+    STAFF_MEMBERSHIP,
+    SYSTEM_STAFF,
+    STAFF_ORDER,
+    STAFF_HIDE
 };
 
 struct JournalEntry {
@@ -96,6 +101,11 @@ struct JournalBatch {
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
+    void change_staff_membership(Staff *staff, staff_idx_t index, bool adding);
+    void change_system_staff(Staff *staff, bool adding);
+    void change_staff_order(Score *score, const std::vector<staff_idx_t> &order);
+    void change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
+
     void change_part_membership(Part *part, size_t index, bool adding);
     void change_part_label(Fraction tick, Part *part, const String &value, bool long_name);
     void replace_part_instrument(Part *part, std::unique_ptr<Instrument> value);
@@ -140,6 +150,8 @@ struct JournalBatch {
         return parts_.size() + labels_.size() + instruments_.size() + string_data_.size() + origins_.size() + excerpt_memberships_.size();
     }
 
+    size_t staff_entries() const { return staffs_.size() + system_staffs_.size() + staff_orders_.size() + staff_hides_.size(); }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -159,6 +171,10 @@ private:
     amc::vector<MeasureMembershipInverse> measures_;
     amc::vector<MeasureLengthInverse> measure_lengths_;
     amc::vector<MeasureRepeatCountInverse> measure_repeats_;
+    amc::vector<StaffMembershipInverse> staffs_;
+    amc::vector<SystemStaffInverse> system_staffs_;
+    amc::vector<StaffSortInverse> staff_orders_;
+    amc::vector<StaffHideInverse> staff_hides_;
     amc::vector<PartMembershipInverse> parts_;
     amc::vector<PartLabelInverse> labels_;
     amc::vector<PartInstrumentInverse> instruments_;

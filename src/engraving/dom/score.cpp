@@ -4335,7 +4335,10 @@ Part *Score::part_by_id(const ID &part_id) const {
 
 void Score::clear_system_object_staves() { system_object_staves_.clear(); }
 
-void Score::add_system_object_staff(Staff *staff) { system_object_staves_.push_back(staff); }
+void Score::add_system_object_staff(Staff *staff, size_t position) {
+    position = std::min(position, system_object_staves_.size());
+    system_object_staves_.insert(system_object_staves_.begin() + position, staff);
+}
 
 void Score::remove_system_object_staff(Staff *staff) { muse::remove(system_object_staves_, staff); }
 

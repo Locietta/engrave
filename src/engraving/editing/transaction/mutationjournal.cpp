@@ -28,6 +28,7 @@
 #include "dom/masterscore.h"
 #include "dom/measure.h"
 #include "dom/sharedpart.h"
+#include "dom/staff.h"
 #include "dom/stringtunings.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
@@ -157,6 +158,7 @@ void JournalBatch::cleanup(bool applied) {
 void JournalBatch::dispose_entry(JournalEntry entry, bool committed) {
     switch (entry.kind) {
         case JournalEntryKind::LEGACY: legacy_[entry.payload]->cleanup(committed); break;
+        case JournalEntryKind::STAFF_MEMBERSHIP: dispose_staff_membership(staffs_[entry.payload], committed); break;
         case JournalEntryKind::PART_MEMBERSHIP: dispose_part_membership(parts_[entry.payload], committed); break;
         case JournalEntryKind::ELEMENT_ADD: dispose_element_membership(elements_[entry.payload], true, committed); break;
         case JournalEntryKind::ELEMENT_REMOVE: dispose_element_membership(elements_[entry.payload], false, committed); break;
@@ -332,6 +334,65 @@ void JournalBatch::change_measure_repeat_count(Measure *measure, int count, staf
     apply_measure_repeat_count(measure, count, staff);
 }
 
+void JournalBatch::change_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
+    if (!adding) index = staff->rstaff();
+    const auto i = entry_index(staffs_.size());
+    StaffMembershipInverse inverse{
+        JournalTarget::capture(*staff), index, muse::index_of(staff->score()->system_object_staves(), staff), adding, {}};
+    if (!adding) inverse.brackets = capture_brackets(*staff);
+    staffs_.push_back(std::move(inverse));
+    try {
+        entries_.push_back({JournalEntryKind::STAFF_MEMBERSHIP, i});
+    } catch (...) {
+        staffs_.pop_back();
+        throw;
+    }
+    apply_staff_membership(*staff, index, adding);
+}
+
+void JournalBatch::change_system_staff(Staff *staff, bool adding) {
+    const auto i = entry_index(system_staffs_.size());
+    system_staffs_.push_back({JournalTarget::capture(*staff), muse::index_of(staff->score()->system_object_staves(), staff), adding});
+    try {
+        entries_.push_back({JournalEntryKind::SYSTEM_STAFF, i});
+    } catch (...) {
+        system_staffs_.pop_back();
+        throw;
+    }
+    apply_system_staff(*staff, adding);
+}
+
+void JournalBatch::change_staff_order(Score *score, const std::vector<staff_idx_t> &order) {
+    if (order.size() != score->nstaves()) throw std::logic_error("staff order must be a complete permutation");
+    std::vector<staff_idx_t> before(order.size(), muse::nidx);
+    for (size_t i = 0; i < order.size(); ++i) {
+        if (order[i] >= order.size() || before[order[i]] != muse::nidx) throw std::logic_error("invalid staff order");
+        before[order[i]] = i;
+    }
+    auto forward = order;
+    const auto i = entry_index(staff_orders_.size());
+    staff_orders_.push_back({JournalTarget::capture(*score), std::move(before)});
+    try {
+        entries_.push_back({JournalEntryKind::STAFF_ORDER, i});
+    } catch (...) {
+        staff_orders_.pop_back();
+        throw;
+    }
+    score->sort_staves(forward);
+}
+
+void JournalBatch::change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
+    const auto i = entry_index(staff_hides_.size());
+    staff_hides_.push_back({JournalTarget::capture(*measure), staff, measure->hide_staff_if_empty(staff)});
+    try {
+        entries_.push_back({JournalEntryKind::STAFF_HIDE, i});
+    } catch (...) {
+        staff_hides_.pop_back();
+        throw;
+    }
+    apply_staff_hide(*measure, staff, value);
+}
+
 void JournalBatch::change_part_membership(Part *part, size_t index, bool adding) {
     if (!adding && index == muse::nidx) index = muse::index_of(part->score()->parts(), part);
     const auto i = entry_index(parts_.size());
@@ -455,6 +516,16 @@ void JournalBatch::unwind(bool clean_up) {
 
     for (auto it = entries_.rbegin(); it != entries_.rend(); ++it) {
         switch (it->kind) {
+            case JournalEntryKind::STAFF_MEMBERSHIP: restore_staff_membership(staffs_[it->payload]); break;
+            case JournalEntryKind::SYSTEM_STAFF: restore_system_staff(system_staffs_[it->payload]); break;
+            case JournalEntryKind::STAFF_ORDER: {
+                auto &r = staff_orders_[it->payload];
+                to_score(&r.target.object())->sort_staves(r.before);
+            } break;
+            case JournalEntryKind::STAFF_HIDE: {
+                const auto &r = staff_hides_[it->payload];
+                apply_staff_hide(*to_measure(&r.target.object()), r.index, r.before);
+            } break;
             case JournalEntryKind::PART_MEMBERSHIP: {
                 const auto &r = parts_[it->payload];
                 apply_part_membership(journal_part(r.target), r.index, !r.adding);
@@ -551,6 +622,10 @@ void JournalBatch::unwind(bool clean_up) {
     measures_.clear();
     measure_lengths_.clear();
     measure_repeats_.clear();
+    staffs_.clear();
+    system_staffs_.clear();
+    staff_orders_.clear();
+    staff_hides_.clear();
     parts_.clear();
     labels_.clear();
     instruments_.clear();
@@ -574,6 +649,10 @@ bool JournalBatch::structural_since(size_t mark) const {
             case JournalEntryKind::TIME_INSERTION:
             case JournalEntryKind::MEASURE_MEMBERSHIP:
             case JournalEntryKind::MEASURE_LENGTH:
+            case JournalEntryKind::STAFF_MEMBERSHIP:
+            case JournalEntryKind::SYSTEM_STAFF:
+            case JournalEntryKind::STAFF_ORDER:
+            case JournalEntryKind::STAFF_HIDE:
             case JournalEntryKind::PART_MEMBERSHIP:
             case JournalEntryKind::PART_LABEL:
             case JournalEntryKind::PART_INSTRUMENT:
@@ -619,6 +698,25 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
         }
         if (entry.kind == JournalEntryKind::MEASURE_REPEAT_COUNT) {
             collect_object(result, &measure_repeats_[entry.payload].target.object(), CommandType::CHANGE_MEASURE_REPEAT_COUNT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::STAFF_MEMBERSHIP) {
+            const auto &r = staffs_[entry.payload];
+            collect_object(result, &r.target.object(), r.adding ? CommandType::INSERT_STAFF : CommandType::REMOVE_STAFF);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::SYSTEM_STAFF) {
+            const auto &r = system_staffs_[entry.payload];
+            collect_object(result, &r.target.object(),
+                           r.adding ? CommandType::ADD_SYSTEM_OBJECT_STAFF : CommandType::REMOVE_SYSTEM_OBJECT_STAFF);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::STAFF_ORDER) {
+            collect_object(result, &staff_orders_[entry.payload].target.object(), CommandType::SORT_STAVES);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::STAFF_HIDE) {
+            collect_object(result, &staff_hides_[entry.payload].target.object(), CommandType::CHANGE_M_STAFF_HIDE_IF_EMPTY);
             continue;
         }
         if (entry.kind == JournalEntryKind::PART_MEMBERSHIP) {

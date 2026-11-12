@@ -1299,6 +1299,142 @@ TEST(JournalPart, DetachedExcerptOwnsItsReattachedPartUntilScoreDestruction) {
     EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
 }
 
+TEST(JournalStaff, RemovedStaffRestoresAuthoredBracketRosterAndIdentity) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *staff = master.staff(0);
+    const auto handle = staff->source_handle();
+    const auto level = master.brackets(0).size() + 1;
+    EditStaffBrackets::fill_brackets(&master, 0, level);
+    auto &bracket = *master.brackets(0).back();
+    bracket.set_bracket_type(BracketType::GROUP);
+    bracket.set_bracket_span(3);
+    bracket.set_column(level + 7);
+    bracket.set_visible(false);
+    bracket.label().set_long_name(u"authored group");
+    bracket.label().set_short_name(u"AG");
+    bracket.set_property(Pid::GROUP_BRACKET_SHOW_TEXT, false);
+    bracket.set_property(Pid::GROUP_BRACKET_SHOW_BRACKET, false);
+    const auto before = capture_brackets(*staff);
+    master.add_system_object_staff(staff);
+    const auto systems = master.system_object_staves();
+    const auto revision = document->revision();
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_staff_membership(staff, muse::nidx, false);
+        EXPECT_EQ(master.eid_register()->live_item(handle), nullptr);
+        master.record_staff_membership(staff, 0, true);
+        auto &journal = *master.mutation_journal()->active_transaction();
+        EXPECT_EQ(journal.staff_entries(), 2u);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        EXPECT_TRUE(journal.changes_info().changed_objects.at(staff).contains(CommandType::REMOVE_STAFF));
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject staff reattachment"});
+    }}));
+    EXPECT_EQ(master.staff(0), staff);
+    EXPECT_EQ(master.eid_register()->live_item(handle), staff);
+    EXPECT_EQ(capture_brackets(*staff), before);
+    EXPECT_EQ(master.system_object_staves(), systems);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalStaff, RejectedNewStaffIsDisposedAfterItsInverses) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto before = master.staves();
+    auto *part = master.parts().front();
+    auto *staff = Factory::create_staff(part);
+    staff->set_part(part);
+    const auto handle = master.eid_register()->enroll(*staff);
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_staff_membership(staff, part->nstaves(), true);
+        staff->undo_change_property(Pid::COLOR, muse::draw::Color(111, 122, 133));
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject new staff"});
+    }}));
+    EXPECT_EQ(master.staves(), before);
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+}
+
+TEST(JournalStaff, SystemObjectMembershipRestoresOriginalOrder) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *part = master.parts().front();
+    auto *first = master.staff(0);
+    auto *second = Factory::create_staff(part);
+    auto *third = Factory::create_staff(part);
+    second->set_part(part);
+    third->set_part(part);
+    master.undo_insert_staff(second, part->nstaves(), false);
+    master.undo_insert_staff(third, part->nstaves(), false);
+    master.clear_system_object_staves();
+    master.add_system_object_staff(third);
+    master.add_system_object_staff(second);
+    const auto before = master.system_object_staves();
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_system_staff(third, false);
+        master.record_system_staff(first, true);
+        master.record_system_staff(second, false);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->staff_entries(), 3u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject system staff changes"});
+    }}));
+    EXPECT_EQ(master.system_object_staves(), before);
+}
+
+TEST(JournalStaff, SortAndMeasureOptionRollbackRetainSourceOrder) {
+    using namespace mu::engraving;
+    auto document = open("lyrics.mscx");
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    ASSERT_GE(master.nstaves(), 2u);
+    const auto before = master.staves();
+    const auto parts = master.parts();
+    auto *measure = master.first_measure();
+    const auto hidden = measure->hide_staff_if_empty(0);
+    std::vector<staff_idx_t> order;
+    for (size_t i = 0; i < master.nstaves(); ++i) order.push_back(i);
+    std::swap(order[0], order[1]);
+    const auto revision = document->revision();
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_staff_hide(measure, 0, AutoOnOff::ON);
+        master.record_staff_order(order);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->staff_entries(), 2u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject staff sort"});
+    }}));
+    EXPECT_EQ(master.staves(), before);
+    EXPECT_EQ(master.parts(), parts);
+    EXPECT_EQ(measure->hide_staff_if_empty(0), hidden);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalStaff, DetachedExcerptKeepsOwnershipOfReattachedStaff) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    auto &master = engrave::harness::master_of(*document);
+    auto *excerpt = master.excerpts().front();
+    auto *score = excerpt->excerpt_score();
+    auto *staff = score->staff(0);
+    const auto handle = staff->source_handle();
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_staff_membership(staff, muse::nidx, false);
+        master.record_staff_membership(staff, 0, true);
+        master.record_excerpt(excerpt, false);
+        return {};
+    }}));
+    EXPECT_TRUE(master.excerpts().empty());
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+}
+
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {
     using namespace mu::engraving;
     ChordList source;

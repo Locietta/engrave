@@ -28,6 +28,7 @@
 #include "../../dom/masterscore.h"
 #include "dom/excerpt.h"
 #include "dom/sharedpart.h"
+#include "dom/staff.h"
 #include "dom/stringtunings.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
@@ -259,6 +260,47 @@ void Transaction::change_measure_repeat_count(Measure *measure, int count, staff
     }
     auto token = begin_compound_hook(s_push_hook);
     undoable_transaction_->change_measure_repeat_count(measure, count, staff);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_staff_membership(*staff, index, adding);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_staff_membership(staff, index, adding);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_system_staff(Staff *staff, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_system_staff(*staff, adding);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_system_staff(staff, adding);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_staff_order(Score *score, const std::vector<staff_idx_t> &order) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        auto forward = order;
+        score->sort_staves(forward);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_staff_order(score, order);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_staff_hide(*measure, staff, value);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_staff_hide(measure, staff, value);
     finish_compound_hook(s_push_hook, token);
 }
 
