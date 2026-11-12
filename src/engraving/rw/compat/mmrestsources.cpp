@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "mmrestsources.h"
 
+#include "engraving/dom/marker.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
@@ -17,7 +18,12 @@ void restore_mm_rest_sources(Score &score) {
         const auto items = display->el();
         for (EngravingItem *item : items) {
             if (item->generated() || item->is_layout_copy()) continue;
-            Measure *target = item->is_marker() ? first : last;
+            // Built-in stop/jump markers apply after the last real measure.
+            // Legacy MMR layout also collected right-positioned custom markers
+            // from that measure; left markers came from the first measure.
+            const auto *marker = item->is_marker() ? to_marker(item) : nullptr;
+            const bool at_start = marker && !marker->is_right_marker() && marker->align() != AlignH::RIGHT;
+            Measure *target = at_start ? first : last;
             display->remove(item);
             target->add(item);
         }
