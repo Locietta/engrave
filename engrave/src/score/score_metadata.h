@@ -23,7 +23,8 @@
 // native adaptation of the Score* overload in
 // webmscore-4.7.5-1 src/converter/internal/compat/notationmeta.cpp
 // (mu::converter::NotationMeta). The JSON field schema and the
-// title/composer recognition heuristics are preserved; QJson*/QString are
+// title/composer fallbacks use source font size, alignment and header order;
+// QJson*/QString are
 // replaced by the engine's JSON DOM and muse::String/std::string.
 
 #pragma once

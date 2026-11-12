@@ -96,13 +96,17 @@ struct Document {
     // audio graph or encoder fails.
     Result<AudioRenderResult> render_audio(const AudioOptions &options, const ByteSink &sink);
 
-    // The score's structure: metadata, parts and staves, measures, time, key and
-    // tempo changes, and the excerpts. NotFound when nothing has the excerpt id,
+    // The score's structure, without layout: metadata, parts and staves, measures,
+    // time, key and tempo changes, and excerpts. Page counts are unset while
+    // geometry is absent/stale; page_count() explicitly prepares current geometry.
+    // NotFound when nothing has the excerpt id,
     // StaleHandle when the score it names is gone, InvalidArgument when it names
     // something other than a score.
     Result<Outline> outline(const ScoreSel &score = {});
 
-    // The elements that match, in a stable order. NotFound for a property name the
+    // The elements that match, in a stable order. Geometry is prepared only for
+    // layout_boxes or display properties (ChordLine path, beam position, fingering
+    // placement including its computed default). NotFound for a property name the
     // catalogue does not know, InvalidArgument for a type name it does not know and for
     // a filter that cannot be answered (an unknown staff or voice, a measure window out
     // of range or too wide, both forms of the window, a tick with a non-positive
@@ -111,7 +115,9 @@ struct Document {
     // may report.
     Result<QueryResult> query(const Query &request);
 
-    // The properties of one element.  The default is every property the catalogue
+    // Page/system/spanner-segment addresses and the display properties listed
+    // above explicitly prepare geometry. Other property reads do not lay out.
+    // The properties of one element. The default is every property the catalogue
     // lists for its type. NotFound for a property name the catalogue does not know
     // and for a reference nothing answers; InvalidArgument for a property the
     // element's type does not have, and for an OpRef, which only a batch can use.

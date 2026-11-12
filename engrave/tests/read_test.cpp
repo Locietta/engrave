@@ -56,6 +56,7 @@
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/fingering.h"
 #include "engraving/dom/glissando.h"
 #include "engraving/dom/groups.h"
 #include "engraving/dom/guitarbend.h"
@@ -102,6 +103,7 @@
 #include "engraving/normalization/normalize.h"
 #include "engraving/normalization/notes.h"
 #include "engraving/playback/flatplaybackscore.h"
+#include "engraving/playback/metaparsers/notearticulationsparser.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/scorerenderer.h"
@@ -171,6 +173,159 @@ struct ItemLayoutSpy {
 
     ~ItemLayoutSpy() { mu::engraving::rendering::score::ScoreRenderer::layout_hook = nullptr; }
 };
+
+TEST(Read, PlaybackNoteheadUsesSourceSchemeWithoutDisplayData) {
+    using namespace mu::engraving;
+    using namespace muse::mpe;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    note->set_head_scheme(NoteHeadScheme::HEAD_SHAPE_NOTE_7_AIKIN);
+    auto profile = std::make_shared<ArticulationsProfile>();
+    ArticulationPattern pattern;
+    pattern.emplace(0, ArticulationPatternSegment(ArrangementPattern(hundred_percent, 0),
+                                                  PitchPattern(ArticulationMap::expected_size, ten_percent, 0),
+                                                  ExpressionPattern(ArticulationMap::expected_size, ten_percent, 0)));
+    profile->set_pattern(ArticulationType::TRIANGLE_UP_NOTE, pattern);
+    RenderingContext context{.profile = profile};
+    ArticulationMap fresh;
+    NoteArticulationsParser::parse_note_head(note, context, fresh);
+    EXPECT_TRUE(fresh.contains(ArticulationType::TRIANGLE_UP_NOTE));
+    EXPECT_FALSE(note->has_layout_data());
+    note->mutldata()->cached_notehead_sym.set_value(SymId::NOTEHEAD_X_BLACK);
+    ArticulationMap stale;
+    NoteArticulationsParser::parse_note_head(note, context, stale);
+    EXPECT_TRUE(stale.contains(ArticulationType::TRIANGLE_UP_NOTE));
+    EXPECT_FALSE(stale.contains(ArticulationType::CROSS_NOTE));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, HairpinEndpointUsesSourceVoiceAndPlacementBeforeLayout) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+    std::unique_ptr<Hairpin> hairpin(Factory::create_hairpin(master.dummy()));
+    hairpin->set_track(0);
+    hairpin->set_tick(Fraction(0, 1));
+    hairpin->set_ticks(Fraction(0, 1));
+    hairpin->set_placement(PlacementV::BELOW);
+    auto *dynamic = Factory::create_dynamic(segment);
+    dynamic->set_track(0);
+    dynamic->set_placement(PlacementV::BELOW);
+    dynamic->set_dynamic_type(DynamicType::F);
+    segment->add(dynamic);
+    EXPECT_EQ(hairpin->find_end_dynamic_or_expression(PlacementV::BELOW, false, true), dynamic);
+    EXPECT_EQ(hairpin->find_end_dynamic_or_expression(PlacementV::ABOVE, false, true), nullptr);
+    EXPECT_FALSE(dynamic->has_layout_data());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, OutlineCountsAreAbsentUntilCurrentAndMetadataIgnoresDisplayPositions) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    for (const char *key : {"composer", "workTitle"}) {
+        const auto begin = source.find(std::string("<metaTag name=\"") + key + "\">");
+        source.erase(begin, source.find("</metaTag>", begin) + std::string("</metaTag>").size() - begin);
+    }
+    source.insert(source.rfind("<Staff id=\"1\">") + std::string("<Staff id=\"1\">").size(),
+                  "<VBox>"
+                  "<Text><style>Frame</style><fontSize>20</fontSize><text>First title</text></Text>"
+                  "<Text><style>Frame</style><fontSize>20</fontSize><text>Second title</text></Text>"
+                  "<Text><style>Frame</style><align>right,top</align><text>Source composer</text></Text>"
+                  "</VBox>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    ItemLayoutSpy spy;
+    auto initial = document.outline();
+    ASSERT_TRUE(initial);
+    EXPECT_EQ(initial->title, "First title");
+    EXPECT_EQ(initial->composer, "Source composer");
+    EXPECT_FALSE(initial->pages.has_value());
+    int index = 0;
+    for (auto *item : master.first()->el()) {
+        item->set_pos(PointF(10000 - index * 1000, -1000 * index));
+        ++index;
+    }
+    auto moved = document.outline();
+    ASSERT_TRUE(moved);
+    EXPECT_EQ(moved->title, initial->title);
+    EXPECT_EQ(moved->composer, initial->composer);
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    auto count = document.page_count();
+    ASSERT_TRUE(count);
+    auto current = document.outline();
+    ASSERT_TRUE(current);
+    EXPECT_EQ(current->pages, *count);
+    EXPECT_EQ(current->title, initial->title);
+    const auto notes = document.query({.types = {"Note"}, .limit = 1});
+    ASSERT_TRUE(notes);
+    ASSERT_FALSE(notes->elements.empty());
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{notes->elements.front().id, 67}}}));
+    auto dirty = document.outline();
+    ASSERT_TRUE(dirty);
+    EXPECT_FALSE(dirty->pages.has_value());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+}
+
+TEST(Read, GeometryAddressesAndFingeringDefaultsExplicitlyPrepareLayout) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    const auto at = source.find("</Measure>");
+    source.insert(at, "<voice><Chord><durationType>whole</durationType><Note><pitch>48</pitch><tpc>14</tpc>"
+                      "<Fingering><text>1</text></Fingering></Note></Chord></voice>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto fingers = document.query({.types = {"Fingering"}, .props = {"text"}});
+    ASSERT_TRUE(fingers);
+    ASSERT_EQ(fingers->elements.size(), 1u);
+    const auto id = fingers->elements.front().id;
+    ASSERT_TRUE(document.get(id, {"text"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    auto placement = document.get(id, {"placement"});
+    ASSERT_TRUE(placement);
+    ASSERT_EQ(placement->size(), 1u);
+    EXPECT_TRUE(placement->front().is_default);
+    const auto resolved = engrave::resolve(master, id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(to_fingering(resolved->object)->placement(), PlacementV::BELOW);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    ASSERT_TRUE(document.get(engrave::Address{engrave::PageAddress{}}, {"visible"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    const auto notes = document.query({.types = {"Note"}, .limit = 1});
+    ASSERT_TRUE(notes);
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{notes->elements.front().id, 67}}}));
+    ASSERT_TRUE(document.get(engrave::Address{engrave::SystemAddress{}}, {"visible"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 2u);
+    master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    auto query = document.query({.types = {"Fingering"}, .props = {"placement"}});
+    ASSERT_TRUE(query);
+    ASSERT_EQ(query->elements.size(), 1u);
+    EXPECT_TRUE(query->elements.front().props.front().is_default);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 3u);
+}
+
+TEST(Read, SpannerSegmentAddressPreparesFreshDisplaySegments) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto spanners = master.spanner_list();
+    ASSERT_FALSE(spanners.empty());
+    const auto id = engrave::from_engine(spanners.front()->eid());
+    ASSERT_TRUE(document.get(engrave::Address{engrave::SpannerSegmentAddress{id, 0}}, {"visible"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    master.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    ASSERT_TRUE(document.get(engrave::Address{engrave::SpannerSegmentAddress{id, 0}}, {"visible"}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 2u);
+}
 
 TEST(Read, SemanticDocumentBoundariesDeferAllLayoutUntilFirstRender) {
     using namespace mu::engraving;

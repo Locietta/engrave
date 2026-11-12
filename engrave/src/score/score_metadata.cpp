@@ -24,8 +24,9 @@
 // webmscore-4.7.5-1 src/converter/internal/compat/notationmeta.cpp
 // (mu::converter::NotationMeta, Score* overload and helpers).
 //
-// The JSON field schema and the title/composer recognition heuristics are kept
-// identical to the upstream implementation. QJsonArray/QJsonObject are replaced
+// The JSON field schema follows upstream. Untyped header text is recognized
+// from source font size, alignment and order, without display positions.
+// QJsonArray/QJsonObject are replaced
 // by the engine's JSON arrays/objects and QString by muse::String/std::string. The
 // notation/audio-settings dependency: track descriptions come from
 // score_audio_track_info(), which lists every InstrumentTrackId and the
@@ -86,7 +87,6 @@ muse::String recognize_title(const Score *score) {
 
     const Text *title_text = nullptr;
     double max_font_size = DBL_MIN;
-    double min_y = DBL_MAX;
 
     for (const EngravingItem *item : mb->el()) {
         if (!item || !item->is_text()) {
@@ -98,17 +98,11 @@ muse::String recognize_title(const Score *score) {
             continue;
         }
 
-        if (text->size() < max_font_size) {
-            continue;
-        }
-
-        if (muse::real_is_equal(text->size(), max_font_size) && text->y() > min_y) {
-            continue;
-        }
+        // Equal-size candidates keep the first source header entry.
+        if (text->size() <= max_font_size) continue;
 
         title_text = text;
         max_font_size = text->size();
-        min_y = text->y();
     }
 
     return title_text ? title_text->plain_text() : muse::String();
@@ -120,26 +114,14 @@ muse::String recognize_composer(const Score *score) {
         return muse::String();
     }
 
-    const Text *rightmost_text = nullptr;
-    double rightmost_text_x = mb->ldata()->bbox().center().x();
-
+    // Explicit style and metadata tags take priority. For untyped header text,
+    // use the first right-aligned source entry rather than rendered X/bbox.
     for (const EngravingItem *item : mb->el()) {
-        if (!item || !item->is_text()) {
-            continue;
-        }
-
+        if (!item || !item->is_text()) continue;
         const Text *text = to_text(item);
-        if (!should_try_recognize_text(text)) {
-            continue;
-        }
-
-        if (text->x() > rightmost_text_x) {
-            rightmost_text = text;
-            rightmost_text_x = text->x();
-        }
+        if (should_try_recognize_text(text) && text->align().horizontal == AlignH::RIGHT) return text->plain_text();
     }
-
-    return rightmost_text ? rightmost_text->plain_text() : muse::String();
+    return muse::String();
 }
 
 muse::String title_string(const Score *score) {

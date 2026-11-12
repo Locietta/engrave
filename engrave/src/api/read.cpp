@@ -88,6 +88,13 @@ std::string plain_text(const muse::String &text) { return text.to_std_string(); 
 
 // --- properties -----------------------------------------------------------
 
+// These values/defaults are defined by display geometry. Other catalogue
+// properties keep the semantic read path free of layout.
+bool property_needs_layout(const EngravingObject &object, Pid pid) {
+    return (object.is_fingering() && pid == Pid::PLACEMENT) || (object.is_chord_line() && pid == Pid::PATH) ||
+           (object.is_beam() && pid == Pid::BEAM_POS);
+}
+
 PropertyRead read_property(const EngravingObject &object, Pid pid) {
     const mu::engraving::PType type = mu::engraving::property_type(pid);
     PropertyRead read;
@@ -336,14 +343,20 @@ void fill_signatures(Outline &outline, Score &score) {
     });
 }
 
-void fill_excerpts(Outline &outline, MasterScore &master) {
+std::optional<std::int32_t> current_pages(const Score &score, std::uint64_t revision, std::uint64_t font_generation) {
+    const auto &state = score.layout_state;
+    if (state.dirty || state.revision != revision || state.font_generation != font_generation) return std::nullopt;
+    return static_cast<std::int32_t>(score.npages());
+}
+
+void fill_excerpts(Outline &outline, MasterScore &master, std::uint64_t revision, std::uint64_t font_generation) {
     for (const mu::engraving::Excerpt *excerpt : master.excerpts()) {
         Score *score = excerpt ? excerpt->excerpt_score() : nullptr;
         if (!score) continue;
         ExcerptInfo info;
         if (score->eid().is_valid()) info.id = from_engine(score->eid());
         info.name = plain_text(excerpt->name());
-        info.pages = static_cast<std::int32_t>(score->npages());
+        info.pages = current_pages(*score, revision, font_generation);
         outline.excerpts.push_back(std::move(info));
     }
 }
@@ -450,7 +463,7 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
     outline.timesig = text("timesig");
     outline.mscore_version = text("mscoreVersion");
     outline.file_version = metadata.at("fileVersion").as<std::int32_t>();
-    outline.pages = metadata.at("pages").as<std::int32_t>();
+    outline.pages = current_pages(score, impl_->revision, impl_->engine->font_generation);
     outline.measure_count = metadata.at("measures").as<std::int32_t>();
     outline.key = metadata.at("keysig").as<std::int32_t>();
     outline.duration = metadata.at("duration").as<double>();
@@ -458,7 +471,7 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
     fill_parts(outline, score);
     fill_measures(outline, score);
     fill_signatures(outline, score);
-    fill_excerpts(outline, master);
+    fill_excerpts(outline, master, impl_->revision, impl_->engine->font_generation);
     return outline;
 }
 
@@ -507,19 +520,37 @@ Result<QueryResult> Document::query(const Query &request) {
     // not have is left out rather than read.
     std::unordered_map<std::string, std::vector<Pid>> type_props;
 
+    const auto matches = [&](const LiveId &entry) -> std::optional<Where> {
+        const EngravingObject &object = *entry.object;
+        if (entry.placement.score != index) return std::nullopt;
+        const std::string type = object.type_name();
+        if (!request.types.empty() && std::ranges::find(request.types, type) == request.types.end()) return std::nullopt;
+        const auto [staff, voice] = staff_and_voice(object);
+        if (!request.staves.empty() && !contains(request.staves, staff)) return std::nullopt;
+        if (!request.voices.empty() && !contains(request.voices, voice)) return std::nullopt;
+        const Where where = where_of(object, measures);
+        if (window->given && (where.measure_index < window->first || where.measure_index >= window->last)) return std::nullopt;
+        if (request.from_tick && before(where.tick, *request.from_tick)) return std::nullopt;
+        if (request.to_tick && !before(where.tick, *request.to_tick)) return std::nullopt;
+        return where;
+    };
+    if (std::ranges::any_of(*props, [](Pid pid) { return pid == Pid::PLACEMENT || pid == Pid::PATH || pid == Pid::BEAM_POS; })) {
+        // Prepare before retaining row pointers: layout may replace display children.
+        for (const LiveId &entry : live_ids(master)) {
+            if (matches(entry) && std::ranges::any_of(*props, [&](Pid pid) { return property_needs_layout(*entry.object, pid); })) {
+                impl_->ensure_layout(score);
+                break;
+            }
+        }
+    }
     std::vector<std::pair<Order, ElementInfo>> rows;
     for (const LiveId &entry : live_ids(master)) {
+        const auto matched = matches(entry);
+        if (!matched) continue;
         EngravingObject &object = *entry.object;
-        if (entry.placement.score != index) continue;
         const std::string type = object.type_name();
-        if (!request.types.empty() && std::ranges::find(request.types, type) == request.types.end()) continue;
         const auto [staff, voice] = staff_and_voice(object);
-        if (!request.staves.empty() && !contains(request.staves, staff)) continue;
-        if (!request.voices.empty() && !contains(request.voices, voice)) continue;
-        const Where where = where_of(object, measures);
-        if (window->given && (where.measure_index < window->first || where.measure_index >= window->last)) continue;
-        if (request.from_tick && before(where.tick, *request.from_tick)) continue;
-        if (request.to_tick && !before(where.tick, *request.to_tick)) continue;
+        const Where &where = *matched;
 
         ElementInfo info;
         info.id = entry.id;
@@ -570,37 +601,55 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->master_score();
-    const Result<Resolved> resolved = std::visit(
-        [&master](const auto &value) -> Result<Resolved> {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<T, OpRef>) {
-                return fail(ErrorCode::INVALID_ARGUMENT, "an OpRef names an element of a batch, not of the document");
-            } else {
-                return resolve(master, value);
-            }
-        },
-        target);
+    const auto read_target = [&]() -> Result<Resolved> {
+        return std::visit(
+            [&](const auto &value) -> Result<Resolved> {
+                using T = std::decay_t<decltype(value)>;
+                if constexpr (std::is_same_v<T, OpRef>) {
+                    return fail(ErrorCode::INVALID_ARGUMENT, "an OpRef names an element of a batch, not of the document");
+                } else {
+                    if constexpr (std::is_same_v<T, Address>) {
+                        const Result<void> prepared = std::visit(
+                            [&](const auto &address) -> Result<void> {
+                                using A = std::decay_t<decltype(address)>;
+                                if constexpr (std::is_same_v<A, PageAddress> || std::is_same_v<A, SystemAddress>) {
+                                    const auto selected = select_score(master, address.score);
+                                    if (!selected) return fail(ErrorCode::STALE_HANDLE, selected.error().message);
+                                    impl_->ensure_layout(**selected);
+                                } else if constexpr (std::is_same_v<A, SpannerSegmentAddress>) {
+                                    const auto spanner = resolve(master, address.spanner);
+                                    if (!spanner) return std::unexpected(spanner.error());
+                                    if (!spanner->object->is_spanner())
+                                        return fail(ErrorCode::INVALID_ARGUMENT, "a spanner segment address names a spanner");
+                                    impl_->ensure_layout(*spanner->object->score());
+                                }
+                                return {};
+                            },
+                            value);
+                        if (!prepared) return std::unexpected(prepared.error());
+                    }
+                    return resolve(master, value);
+                }
+            },
+            target);
+    };
+    Result<Resolved> resolved = read_target();
     if (!resolved) return std::unexpected(resolved.error());
-    const EngravingObject &object = *resolved->object;
-
-    const std::vector<Pid> known = api::pids_of(object.type_name());
-    if (props.empty()) {
-        std::vector<PropertyRead> reads;
-        reads.reserve(known.size());
-        for (const Pid pid : known) reads.push_back(read_property(object, pid));
-        return reads;
-    }
-
-    const Result<std::vector<Pid>> named = named_pids(props);
+    const std::vector<Pid> known = api::pids_of(resolved->object->type_name());
+    Result<std::vector<Pid>> named = props.empty() ? Result<std::vector<Pid>>(known) : named_pids(props);
     if (!named) return std::unexpected(named.error());
     for (std::size_t i = 0; i < named->size(); ++i) {
-        if (!has_property(known, (*named)[i])) {
-            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", object.type_name(), props[i]));
-        }
+        if (!has_property(known, (*named)[i]))
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", resolved->object->type_name(), props[i]));
+    }
+    if (std::ranges::any_of(*named, [&](Pid pid) { return property_needs_layout(*resolved->object, pid); })) {
+        impl_->ensure_layout(*resolved->object->score());
+        resolved = read_target();
+        if (!resolved) return std::unexpected(resolved.error());
     }
     std::vector<PropertyRead> reads;
     reads.reserve(named->size());
-    for (const Pid pid : *named) reads.push_back(read_property(object, pid));
+    for (const Pid pid : *named) reads.push_back(read_property(*resolved->object, pid));
     return reads;
 }
 
