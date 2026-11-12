@@ -48,6 +48,7 @@
 #include "layoutcontext.h"
 #include "log.h"
 #include "restlayout.h"
+#include "scorerenderer.h"
 #include "tlayout.h"
 #include "tremololayout.h"
 
@@ -56,11 +57,11 @@ using namespace mu::engraving::rendering::score;
 
 // Rendering counterpart of the geometry-free edit helper. Preserve hook/stem
 // preparation and the remaining beam's geometry only during a layout run.
-static void detach_beam_for_layout(ChordRest *cr, bool beamed, LayoutContext &ctx) {
+static void detach_beam_for_layout(ChordRest *cr, bool beamed) {
     Beam *beam = cr->beam();
     const bool remaining = beam && beam->elements().size() > 1;
     cr->remove_delete_beam(beamed);
-    if (remaining) TLayout::layout_beam1(beam, ctx);
+    if (remaining) cr->renderer()->layout_beam1(beam);
     if (!beamed && cr->is_chord()) {
         auto *chord = to_chord(cr);
         if (chord->should_have_hook()) {
@@ -68,7 +69,7 @@ static void detach_beam_for_layout(ChordRest *cr, bool beamed, LayoutContext &ct
         } else if (chord->hook()) {
             chord->score()->do_undo_remove_element(chord->hook());
         }
-        ChordLayout::layout_stem(chord, ctx);
+        chord->renderer()->layout_stem(chord);
     }
 }
 
@@ -518,7 +519,7 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
         }
 
         if (m_elements.size() == 1) {
-            detach_beam_for_layout(m_elements[0], false, ctx);
+            detach_beam_for_layout(m_elements[0], false);
         }
 
         Beam *new_beam = nullptr;
@@ -530,7 +531,7 @@ void BeamLayout::break_cross_measure_beams(Measure *measure, LayoutContext &ctx)
 
         const bool next_beamed = bool(new_beam);
         for (ChordRest *next_cr : next_elements) {
-            detach_beam_for_layout(next_cr, next_beamed, ctx);
+            detach_beam_for_layout(next_cr, next_beamed);
             if (new_beam) {
                 new_beam->add(next_cr);
             }
@@ -569,10 +570,10 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
                 beam = 0;
             }
             if (a1) {
-                detach_beam_for_layout(a1, false, ctx);
+                detach_beam_for_layout(a1, false);
                 a1 = 0;
             }
-            detach_beam_for_layout(cr, false, ctx);
+            detach_beam_for_layout(cr, false);
             continue;
         }
         if (beam) {
@@ -595,7 +596,7 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
             a1 = cr;
         } else {
             if (!beamModeMid(bm) && (bm == BeamMode::BEGIN)) {
-                detach_beam_for_layout(a1, false, ctx);
+                detach_beam_for_layout(a1, false);
                 a1 = cr;
             } else {
                 beam = a1->beam();
@@ -614,7 +615,7 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
         beam->set_is_grace(true);
         layout1(beam, ctx);
     } else if (a1) {
-        detach_beam_for_layout(a1, false, ctx);
+        detach_beam_for_layout(a1, false);
     }
 }
 
@@ -697,7 +698,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                         } else if (prev_beam && prev_beam == cr->beam() && prev_beam->elements().front() == prev_cr) {
                             // remove the beam from the previous chordrest because we do not currently
                             // support cross-system beams
-                            detach_beam_for_layout(prev_cr, false, ctx);
+                            detach_beam_for_layout(prev_cr, false);
                         }
                     }
                 }
@@ -706,7 +707,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
             bool has_all_rest = cr->beam() && cr->beam()->has_all_rests();
             bool is_a_rest_beam_start = cr->is_rest() && cr->beam_mode() == BeamMode::BEGIN;
             if (has_all_rest && !is_a_rest_beam_start) {
-                detach_beam_for_layout(cr, false, ctx);
+                detach_beam_for_layout(cr, false);
             }
 
             // handle grace notes
@@ -732,11 +733,11 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                 }
                 if (a1) {
                     if (remove_beam) {
-                        detach_beam_for_layout(a1, false, ctx);
+                        detach_beam_for_layout(a1, false);
                     }
                     a1 = 0;
                 }
-                detach_beam_for_layout(cr, false, ctx);
+                detach_beam_for_layout(cr, false);
                 continue;
             }
 
@@ -761,7 +762,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
             } else {
                 if (!beamModeMid(bm) && (bm == BeamMode::BEGIN || (a1->segment()->segment_type() != cr->segment()->segment_type()) ||
                                          (a1->end_tick() < cr->tick()))) {
-                    detach_beam_for_layout(a1, false, ctx);
+                    detach_beam_for_layout(a1, false);
                     a1 = cr;
                 } else {
                     beam = a1->beam();
@@ -785,7 +786,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
             Beam *b = a1->beam();
             if (!(b && !b->elements().empty() && !b->has_all_rests() && b->elements().front() == a1 && next_cr &&
                   beamModeMid(next_cr->beam_mode()))) {
-                detach_beam_for_layout(a1, false, ctx);
+                detach_beam_for_layout(a1, false);
             }
         }
     }

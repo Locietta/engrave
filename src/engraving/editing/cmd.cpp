@@ -313,7 +313,7 @@ void CmdState::dump() {
 
 void Score::update() { master_score()->update(); }
 
-void MasterScore::update(bool reset_cmd_state, bool layout_all_parts, NormalizeMode mode) {
+void MasterScore::update(bool reset_cmd_state, bool /*layout_all_parts*/, NormalizeMode mode) {
     if (updates_locked_) {
         return;
     }
@@ -321,14 +321,7 @@ void MasterScore::update(bool reset_cmd_state, bool layout_all_parts, NormalizeM
     delete_postponed(cmd_state_);
     normalize_document(*this, {.mode = mode});
 
-    if (cmd_state_.layout_range()) {
-        for (Score *s : score_list()) {
-            if (s != this && !s->is_open() && score_list().size() > 1 && !layout_all_parts) {
-                continue;
-            }
-            s->do_layout_range(cmd_state_.start_tick(), cmd_state_.end_tick());
-        }
-    }
+    if (cmd_state_.layout_range()) invalidate_layouts(cmd_state_.start_tick(), cmd_state_.end_tick());
 
     if (need_update_ticks_and_time_sig_map()) {
         update_ticks_and_time_sig_map();
@@ -434,6 +427,7 @@ void Score::expand_voice() {
 //---------------------------------------------------------
 
 void Score::add_interval(int val, const std::vector<Note *> &nl) {
+    prepare_semantic_edit(*this);
     // Prepare note selection in case there are not selected tied notes and sort them
     std::vector<Note *> tmpnl;
     std::vector<Note *> nl_value = nl;

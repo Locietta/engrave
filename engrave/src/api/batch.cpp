@@ -166,7 +166,6 @@ struct BatchGuard::Snapshot {
         muse::String version;
         int revision = 0;
         int msc_version = 0;
-        bool laid_out = false;
     };
 
     std::string mscz;
@@ -256,7 +255,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
                             {},
                             master.runtime_tempo_state()};
         for (const mu::engraving::Score *score : master.score_list())
-            snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version(), score->npages() > 0});
+            snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version()});
     }
     const std::size_t history = stack->size();
 
@@ -271,8 +270,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     const auto *original_project = document.project.get();
     const auto rollback = [&](bool unsafe) {
         roll_back(snapshot ? &*snapshot : nullptr, history, unsafe);
-        // A snapshot reload reconciles pending geometry with full layouts (see
-        // restore()). Its scores own new caches and instance-local counters;
+        // A snapshot reload owns new, fully dirty caches and instance-local counters;
         // saved pointers and freshness belong only to an in-place unwind.
         if (document.project.get() != original_project) return;
         const auto scores = document.project->master_score()->score_list();
@@ -280,9 +278,12 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             if (std::ranges::find(scores, saved.score) == scores.end()) continue;
             // Counters measure executed work, including unsuccessful transactions.
             auto &state = saved.score->layout_state;
-            state.dirty = saved.state.dirty;
-            state.start = saved.state.start;
-            state.end = saved.state.end;
+            // Beam/system cleanup can detach display topology during an edit.
+            // Source replay cannot restore those caches. Rebuild only when a
+            // geometry consumer next asks; never advertise the old view as clean.
+            state.dirty = true;
+            state.start = mu::engraving::Fraction(0, 1);
+            state.end = mu::engraving::Fraction(-1, 1);
             state.font_generation = saved.state.font_generation;
             state.revision = saved.state.revision;
             saved.score->normalize_state = saved.normalized;
@@ -410,10 +411,6 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
             // which C2 of the harness proves equal to the unwind.
             master.undo_redo(true, nullptr);
             stack->clear_history();
-            // The engine's undo lays out the master score only.
-            for (mu::engraving::Score *score : master.score_list()) {
-                if (score->npages() > 0) score->do_layout();
-            }
         }
     } catch (...) {
         document.poisoned = true;
@@ -426,32 +423,25 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     auto &document = DocumentAccess::impl(document_);
     if (document.edit_hooks.fail_restore) throw std::runtime_error("the snapshot restore failed (test hook)");
     music::ScoreProject project = music::load_native_score(*document.engine->context, snapshot.mscz, "mscz");
-    // The reload reads the version the writer stamped; the scores keep their own, and
-    // layout depends on it (a score from an older version keeps its compatibility
-    // layout), so what was laid out is laid out again, as a load does.
+    // Restore compatibility versions before normalization. Replacement geometry
+    // stays fully dirty until an explicit geometry consumer uses the boundary.
     mu::engraving::ScoreLoad load;
     auto versions = snapshot.versions.begin();
-    std::vector<mu::engraving::Score *> laid_out;
     for (mu::engraving::Score *score : project->master_score()->score_list()) {
         if (versions == snapshot.versions.end()) break;
         score->set_mscore_version(versions->version);
         score->set_mscore_revision(versions->revision);
         score->set_msc_version(versions->msc_version);
         mu::engraving::invalidate_normalization(*score, mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
-        if (versions->laid_out) laid_out.push_back(score);
         ++versions;
     }
     mu::engraving::normalize_document(*project->master_score(), {.mode = mu::engraving::NormalizeMode::LOAD});
-    for (auto *score : laid_out) score->do_layout_range(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     project->master_score()->invalidate_repeat_list();
     project->master_score()->init_automation();
     project->master_score()->restore_runtime_tempo_state(snapshot.runtime_tempo);
     assign_missing_ids(*project->master_score());
-    // Full reload/compatibility layouts consume the original pending ranges.
-    // Keep the replacement's state: laid-out scores are fresh; any unlaid-out
-    // score remains fully dirty, covering its old pending range. Counters are
-    // diagnostics for a Score instance, so they count reload work here and do
-    // not carry over work performed by the destroyed instances.
+    // A replacement has no geometry to retain. Its full pending layout also
+    // covers every old pending range; counters belong to this new Score instance.
     document.project = std::move(project);
     document.bind_layout_boundary();
     for (auto *score : document.project->master_score()->score_list()) {

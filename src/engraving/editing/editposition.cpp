@@ -23,6 +23,7 @@
 #include "editposition.h"
 
 #include "../dom/engravingitem.h"
+#include "../dom/score.h"
 #include "engraving/rendering/score/scorerenderer.h"
 
 using namespace mu::engraving;
@@ -38,6 +39,7 @@ void EditPosition::freeze_item_position(Transaction &, EngravingItem *item) {
         return;
     }
 
+    item->score()->ensure_layout();
     PointF old_pos = item->pos();
 
     PropertyFlags autoplace_pf = item->property_flags(Pid::AUTOPLACE);
