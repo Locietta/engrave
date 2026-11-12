@@ -155,7 +155,11 @@ TEST_F(EngravingPartsTests, voicesExcerpt) {
 
     master_score->set_excerpts_changed(true);
 
-    EXPECT_TRUE(ScoreComp::save_compare_score(master_score, u"voices.mscx", ::parts_data_dir + u"voices-ref.mscx"));
+    // Compare the cloned source before layout resolves the automatic articulation
+    // glyph for its remapped voice (Below becomes Above when rendered).
+    ASSERT_TRUE(ScoreRW::save_source_score(master_score, u"voices.mscx"));
+    EXPECT_TRUE(ScoreComp::compare_files(ScoreRW::root_path() + u"/" + ::parts_data_dir + u"voices-ref.mscx",
+                                         ScoreRW::scratch_path(u"voices.mscx")));
 
     delete master_score;
 }
@@ -1209,6 +1213,7 @@ static void set_note_visibility(Score *score, track_idx_t track, bool visible) {
 }
 
 static void expect_beamed_chords_visible(Score *score, track_idx_t track, bool visible) {
+    score->ensure_layout();
     const std::vector<Chord *> chords = first_measure_chords(score, track);
     ASSERT_EQ(chords.size(), 4u);
     for (const Chord *chord : chords) {

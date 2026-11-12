@@ -126,6 +126,17 @@ void ScoreRW::clear_scratch() {
 }
 
 bool ScoreRW::save_score(Score *score, const String &name) {
+    // Native notation still writes geometry-dependent overrides. Mirror public
+    // export while leaving the low-level writer usable for source-only snapshots.
+    if (score->is_master()) {
+        for (Score *saved : score->score_list()) saved->ensure_layout();
+    } else {
+        score->ensure_layout();
+    }
+    return save_source_score(score, name);
+}
+
+bool ScoreRW::save_source_score(Score *score, const String &name) {
     const String path = scratch_path(name);
     File::remove(path);
 

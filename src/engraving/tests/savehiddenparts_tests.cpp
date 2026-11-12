@@ -82,6 +82,7 @@ struct EngravingSaveHiddenPartsTests : ::testing::Test {
     }
 
     ByteArray save_score(MasterScore *score) {
+        score->ensure_layout();
         ByteArray data;
         Buffer buffer(&data);
 
@@ -114,7 +115,8 @@ struct EngravingSaveHiddenPartsTests : ::testing::Test {
     }
 
     // Pairs of (first measure number, number of measures) for every multimeasure rest
-    std::vector<std::pair<int, int>> mm_rests(const Score *score) {
+    std::vector<std::pair<int, int>> mm_rests(Score *score) {
+        score->ensure_layout();
         std::vector<std::pair<int, int>> result;
         for (const Measure *m = score->first_measure(); m; m = m->next_measure()) {
             if (const Measure *mm_rest = m->mm_rest()) {
