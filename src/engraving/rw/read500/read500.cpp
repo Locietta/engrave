@@ -52,6 +52,7 @@
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
+#include "engraving/rw/compat/mmrestsources.h"
 #include "engravingerrors.h"
 #include "log.h"
 #include "staffread.h"
@@ -278,6 +279,7 @@ bool Read500::read_score_tag(Score *score, XmlReader &e, ReadContext &ctx) {
         }
     }
 
+    rw::restore_mm_rest_sources(*score);
     score->update_ticks_and_time_sig_map();
     if (score->is_master()) {
         // Publish the completed repeat structure before repairing tie jump points.

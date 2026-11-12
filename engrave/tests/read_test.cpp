@@ -951,6 +951,30 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     EXPECT_FALSE(target->visible());
 }
 
+TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
+    using namespace mu::engraving;
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
+    auto opened = g_engine->open(path);
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *segment = first->first(SegmentType::CHORD_REST);
+    const auto tempo = std::ranges::find_if(segment->annotations(), [](const auto *item) { return item->is_tempo_text(); });
+    ASSERT_NE(tempo, segment->annotations().end());
+    EXPECT_EQ((*tempo)->find_measure(), first);
+    const auto jump = std::ranges::find_if(last->el(), [](const auto *item) { return item->is_jump(); });
+    ASSERT_NE(jump, last->el().end());
+    auto *breaths = last->find_segment_r(SegmentType::BREATH, last->ticks());
+    ASSERT_NE(breaths, nullptr);
+    ASSERT_NE(breaths->element(0), nullptr);
+    EXPECT_EQ(breaths->element(0)->find_measure(), last);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 1.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(master.end_tick().ticks()), 9.0);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Read, MmrOwnedSourceKeepsRepeatsTempoHarmonyAndBeamingGroups) {
     using namespace mu::engraving;
     auto source = read_text(write470_fixture());

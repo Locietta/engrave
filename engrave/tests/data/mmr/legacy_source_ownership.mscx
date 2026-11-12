@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <programVersion>5.0.0</programVersion>
+  <programRevision>860e458</programRevision>
+  <Score>
+    <eid>JyeiP6KaBjP_sVNrioZNvKG</eid>
+    <Division>480</Division>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <metaTag name="arranger"></metaTag>
+    <metaTag name="composer">Composer / arranger</metaTag>
+    <metaTag name="copyright"></metaTag>
+    <metaTag name="creationDate">2026-11-12</metaTag>
+    <metaTag name="lyricist"></metaTag>
+    <metaTag name="movementNumber"></metaTag>
+    <metaTag name="movementTitle"></metaTag>
+    <metaTag name="platform">Microsoft Windows</metaTag>
+    <metaTag name="source"></metaTag>
+    <metaTag name="translator"></metaTag>
+    <metaTag name="workNumber"></metaTag>
+    <metaTag name="workTitle">Version header fixture</metaTag>
+    <Part id="1">
+      <eid>wVZUHCqdPqL_Fg2dBQLslYE</eid>
+      <Staff>
+        <eid>ZGgwoQUTJYF_Y3mtcxYvnfL</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+          </StaffType>
+        <barLineSpan>1</barLineSpan>
+        </Staff>
+      <Instrument id="piano">
+        <InstrumentLabel>
+          <longName>Piano</longName>
+          <shortName>Pno.</shortName>
+          </InstrumentLabel>
+        <trackName>Piano</trackName>
+        <instrumentId>keyboard.piano</instrumentId>
+        <Channel>
+          <program value="0"/>
+          <synti>Fluid</synti>
+          </Channel>
+        </Instrument>
+      </Part>
+    <Staff id="1">
+      <Measure>
+        <eid>GZKyQ9Rd5uD_7eiVWOE+BfP</eid>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+            <isHeader>1</isHeader>
+            <eid>ptBdj7ugchE_tvq2IpuEwl</eid>
+            </Clef>
+          <TimeSig>
+            <eid>geam/jO/DgB_6qZOsOvetGC</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+            </TimeSig>
+          <Rest>
+            <eid>5nvubP/f6gJ_BS5/BF/6pZO</eid>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+            </Rest>
+          </voice>
+        </Measure>
+      <Measure len="8/4">
+        <multiMeasureRest>2</multiMeasureRest>
+        <eid>BScNQ2NDIZO_V11/FAUbTeF</eid>
+        <mmRestLast>jw0KbJiv/KB_6WAMEiI5NzG</mmRestLast>
+        <Jump>
+          <style>repeat_right</style>
+          <eid>BTf97eXJzsN_58fRvrjDU/B</eid>
+          <text>D.S.</text>
+          <jumpTo>segno</jumpTo>
+          <playUntil>end</playUntil>
+          <continueAt></continueAt>
+          </Jump>
+        <voice>
+          <Tempo>
+            <tempo>1</tempo>
+            <eid>cwAfpjxzrFM_WcW7DslhWnJ</eid>
+            <text>Andante</text>
+            </Tempo>
+          <Rest>
+            <eid>q7hk5i3+uiG_RrmeFHq1+3H</eid>
+            <placement>above</placement>
+            <durationType>measure</durationType>
+            <duration>8/4</duration>
+            </Rest>
+          <Breath>
+            <symbol>breathMarkComma</symbol>
+            <pause>1</pause>
+            <eid>ckj9RrsrHaL_rKimPamCB3J</eid>
+            </Breath>
+          </voice>
+        </Measure>
+      <Measure>
+        <eid>jw0KbJiv/KB_6WAMEiI5NzG</eid>
+        <voice>
+          <Rest>
+            <eid>SyuSyFPDH8N_NA8ZFnvAlNP</eid>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+            </Rest>
+          </voice>
+        </Measure>
+      </Staff>
+    </Score>
+  </museScore>
