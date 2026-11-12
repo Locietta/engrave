@@ -130,6 +130,8 @@ private:
     static inline PushHook s_push_hook = nullptr;
 };
 
+struct ReplayScope;
+
 struct TransactionManager {
     explicit TransactionManager(MasterScore *master_score);
 
@@ -151,8 +153,21 @@ struct TransactionManager {
     void undo_redo(bool undo, EditData *edit_data);
 
 private:
+    friend struct ReplayScope;
     MasterScore *master_score_ = nullptr;
 
     std::unique_ptr<Transaction> current_transaction_;
+};
+
+// Temporarily use the dummy transaction for derived-state reconstruction.
+struct ReplayScope {
+    explicit ReplayScope(TransactionManager &manager, bool enabled = true);
+    ~ReplayScope();
+    ReplayScope(const ReplayScope &) = delete;
+    ReplayScope &operator=(const ReplayScope &) = delete;
+private:
+    TransactionManager &manager_;
+    std::unique_ptr<Transaction> saved_;
+    bool enabled_;
 };
 } // namespace mu::engraving

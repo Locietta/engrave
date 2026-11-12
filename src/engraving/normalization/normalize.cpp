@@ -26,6 +26,7 @@
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
+#include "editing/transaction/transaction.h"
 #include "notes.h"
 
 using namespace mu::engraving;
@@ -513,67 +514,115 @@ static void normalize_anchors(Score &score, bool include_hidden_staves) {
     score.spanner_map().update();
 }
 
-void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
-    auto &state = score.normalize_state;
-    if (state.running || (!state.dirty && (!options.include_hidden_staves || state.includes_hidden_staves))) return;
-    state.running = true;
-    try {
-        // Whole-score fallback until all mutation categories have bounded closures.
-        int number = 0;
-        for (MeasureBase *base = score.first(); base; base = base->next()) {
-            if (base->is_measure())
-                number = normalize_measure_number(*to_measure(base), number);
-            else if (auto *section = base->section_break_element(); section && section->start_with_measure_one())
-                number = 0;
+static bool needs_normalization(const Score &score, const NormalizeOptions &options) {
+    const auto &state = score.normalize_state;
+    return !state.running && (state.dirty || state.rebuild_midi_mapping || score.need_update_ticks_and_time_sig_map() ||
+                              (options.include_hidden_staves && !state.includes_hidden_staves));
+}
+
+static void prepare_timeline(Score &score) {
+    // Whole-score fallback until all mutation categories have bounded closures.
+    int number = 0;
+    for (MeasureBase *base = score.first(); base; base = base->next()) {
+        if (base->is_measure())
+            number = normalize_measure_number(*to_measure(base), number);
+        else if (auto *section = base->section_break_element(); section && section->start_with_measure_one())
+            number = 0;
+    }
+    score.update_ticks_and_time_sig_map(false);
+    if (score.is_master() && score.normalize_state.rebuild_midi_mapping) {
+        auto *master = score.master_score();
+        master->rebuild_midi_mapping();
+    }
+}
+
+static void prepare_source_anchors(Score &score, const NormalizeOptions &options) {
+    for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
+        if (!options.include_hidden_staves && score.all_staves_invisible()) continue;
+        normalize_grace_tracks(measure, score);
+        for (const Segment &segment : measure->segments()) {
+            for (EngravingItem *item : segment.elist()) {
+                if (!item || !item->is_chord_rest()) continue;
+                auto *cr = to_chord_rest(item);
+                if (cr->staff_move() || cr->stored_staff_move()) cr->check_staff_move_validity();
+                if (item->is_chord() && (options.include_hidden_staves || item->staff()->show())) {
+                    normalize_chord_anchors(*to_chord(item));
+                }
+            }
         }
-        score.update_ticks_and_time_sig_map(false);
-        if (score.is_master() && (score.cmd_state().layout_flags & LayoutFlag::REBUILD_MIDI_MAPPING)) {
-            auto *master = score.master_score();
-            master->rebuild_midi_mapping();
-        }
+    }
+    normalize_anchors(score, options.include_hidden_staves);
+}
+
+static void normalize_content(Score &score, const NormalizeOptions &options) {
+    if (options.include_hidden_staves || !score.all_staves_invisible()) {
         for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
-            if (!options.include_hidden_staves && score.all_staves_invisible()) continue;
-            normalize_grace_tracks(measure, score);
             for (const Segment &segment : measure->segments()) {
                 for (EngravingItem *item : segment.elist()) {
-                    if (!item || !item->is_chord_rest()) continue;
-                    auto *cr = to_chord_rest(item);
-                    if (cr->staff_move() || cr->stored_staff_move()) cr->check_staff_move_validity();
-                    if (item->is_chord() && (options.include_hidden_staves || item->staff()->show())) {
-                        normalize_chord_anchors(*to_chord(item));
-                    }
+                    if (item && item->is_chord() && (options.include_hidden_staves || item->staff()->show()))
+                        normalize_cross_measure(*to_chord(item), score.style().style_b(Sid::CROSS_MEASURE_VALUES));
+                }
+            }
+            measure->connect_tremolo();
+            normalize_measure_notes(*measure, options.include_hidden_staves);
+            normalize_segments(measure, score);
+            for (const Segment &segment : measure->segments()) {
+                for (EngravingItem *item : segment.elist()) {
+                    if (!item || !item->is_chord_rest() || (!options.include_hidden_staves && !item->staff()->show())) continue;
+                    for (Lyrics *lyrics : to_chord_rest(item)->lyrics()) normalize_lyric_ticks(*lyrics);
                 }
             }
         }
-        normalize_anchors(score, options.include_hidden_staves);
-        if (options.include_hidden_staves || !score.all_staves_invisible()) {
-            for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
-                for (const Segment &segment : measure->segments()) {
-                    for (EngravingItem *item : segment.elist()) {
-                        if (item && item->is_chord() && (options.include_hidden_staves || item->staff()->show()))
-                            normalize_cross_measure(*to_chord(item), score.style().style_b(Sid::CROSS_MEASURE_VALUES));
-                    }
-                }
-                measure->connect_tremolo();
-                normalize_measure_notes(*measure, options.include_hidden_staves);
-                normalize_segments(measure, score);
-                for (const Segment &segment : measure->segments()) {
-                    for (EngravingItem *item : segment.elist()) {
-                        if (!item || !item->is_chord_rest() || (!options.include_hidden_staves && !item->staff()->show())) continue;
-                        for (Lyrics *lyrics : to_chord_rest(item)->lyrics()) normalize_lyric_ticks(*lyrics);
-                    }
-                }
-            }
+    }
+}
+
+static void normalize_scores(MasterScore &master, const std::vector<Score *> &scores, NormalizeOptions options) {
+    std::vector<Score *> work;
+    for (auto *score : scores)
+        if (needs_normalization(*score, options)) work.push_back(score);
+    if (work.empty()) return;
+    ReplayScope replay(*master.transaction_manager(), options.mode != NormalizeMode::TRANSACTION);
+    for (auto *score : work) score->normalize_state.running = true;
+    try {
+        // All linked timelines/anchors are current before repeat identity is used
+        // by signature placement. Neither phase needs display measures.
+        for (auto *score : work) prepare_timeline(*score);
+        for (auto *score : work) prepare_source_anchors(*score, options);
+        master.invalidate_repeat_list();
+        master.update_repeat_list(false);
+        for (auto *score : work) normalize_content(*score, options);
+        for (auto *score : work) {
+            if (score->need_update_ticks_and_time_sig_map()) score->update_ticks_and_time_sig_map(false);
         }
-        state.dirty = false;
-        state.includes_hidden_staves = options.include_hidden_staves;
-        state.normalized_generation = state.generation;
-        state.running = false;
+        master.invalidate_repeat_list();
+        master.update_repeat_list(false);
+        for (auto *score : work) {
+            auto &state = score->normalize_state;
+            state.dirty = false;
+            state.rebuild_midi_mapping = false;
+            state.includes_hidden_staves = options.include_hidden_staves;
+            state.normalized_generation = state.generation;
+            state.running = false;
+        }
     } catch (...) {
-        state.dirty = true;
-        state.running = false;
+        for (auto *score : work) {
+            score->normalize_state.dirty = true;
+            score->normalize_state.running = false;
+        }
         throw;
     }
+}
+
+void mu::engraving::normalize_document(MasterScore &master, NormalizeOptions options) {
+    std::vector<Score *> scores;
+    for (auto *score : master.score_list()) scores.push_back(score);
+    normalize_scores(master, scores, options);
+}
+
+void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
+    std::vector<Score *> scores{score.master_score()};
+    if (!score.is_master()) scores.push_back(&score);
+    normalize_scores(*score.master_score(), scores, options);
 }
 
 void mu::engraving::prepare_semantic_edit(Score &score) { normalize_score(score, {.include_hidden_staves = true}); }

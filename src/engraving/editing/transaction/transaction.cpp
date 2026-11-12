@@ -146,6 +146,14 @@ void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
 
 TransactionManager::TransactionManager(MasterScore *master_score) : master_score_(master_score) {}
 
+ReplayScope::ReplayScope(TransactionManager &manager, bool enabled) : manager_(manager), enabled_(enabled) {
+    if (enabled_) saved_ = std::move(manager_.current_transaction_);
+}
+
+ReplayScope::~ReplayScope() {
+    if (enabled_) manager_.current_transaction_ = std::move(saved_);
+}
+
 UndoStack *TransactionManager::undo_stack() const { return master_score_->undo_stack(); }
 
 void TransactionManager::transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func) {
