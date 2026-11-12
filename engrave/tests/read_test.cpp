@@ -251,19 +251,20 @@ TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
             default: FAIL();
         }
         line->set_note_span(start, end);
-        start->add_spanner(line.get());
+        start->add(line.get());
         EXPECT_TRUE(master.spanner_map().empty());
         const Fraction old_tick = start->tick();
         master.start_cmd(muse::TranslatableString::untranslatable("insert before note-owned line"));
         master.insert_measure(measure);
-        EXPECT_GT(start->tick(), old_tick);
         const auto count = master.layout_state.whole_count + master.layout_state.range_count;
         normalize_score(master);
+        EXPECT_GT(start->tick(), old_tick);
         EXPECT_EQ(line->tick(), start->tick());
         EXPECT_EQ(line->tick2(), end->tick());
         EXPECT_FALSE(line->has_layout_data());
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-        start->remove_spanner(line.get());
+        start->remove(line.get());
+        end->chord()->update_ends_note_anchored_line();
         master.end_cmd(false, true);
     }
 }
@@ -279,6 +280,10 @@ TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
     auto *after = Factory::copy_chord(*main);
     before->set_note_type(NoteType::ACCIACCATURA);
     after->set_note_type(NoteType::GRACE8_AFTER);
+    for (auto *grace : {before, after}) {
+        grace->set_duration_type(DurationType::V_EIGHTH);
+        grace->set_ticks(Fraction(1, 8));
+    }
     main->add(before);
     main->add(after);
     auto *start = before->notes().front();
@@ -288,9 +293,9 @@ TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
     const Fraction old_tick = tie->tick();
     master.start_cmd(muse::TranslatableString::untranslatable("insert before grace tie"));
     master.insert_measure(measure);
-    EXPECT_GT(before->tick(), old_tick);
     const auto count = master.layout_state.whole_count + master.layout_state.range_count;
     normalize_score(master);
+    EXPECT_GT(before->tick(), old_tick);
     EXPECT_EQ(tie->tick(), before->tick());
     EXPECT_FALSE(tie->has_layout_data());
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
