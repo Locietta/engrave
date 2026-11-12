@@ -154,28 +154,6 @@ struct ValidatedChange {
     size_t measure_index = 0;
 };
 
-// Only $v depends on dirty(); upstream $r prints an empty revision while dirty,
-// so a relayout cannot stale it.
-bool uses_dirty_version_macro(const Score *score) {
-    static constexpr Sid version_styles[] = {
-        Sid::EVEN_HEADER_L, Sid::EVEN_HEADER_C, Sid::EVEN_HEADER_R, Sid::ODD_HEADER_L, Sid::ODD_HEADER_C, Sid::ODD_HEADER_R,
-        Sid::EVEN_FOOTER_L, Sid::EVEN_FOOTER_C, Sid::EVEN_FOOTER_R, Sid::ODD_FOOTER_L, Sid::ODD_FOOTER_C, Sid::ODD_FOOTER_R,
-    };
-    for (const Sid sid : version_styles) {
-        if (score->style().style_st(sid).contains(u"$v")) return true;
-    }
-    return false;
-}
-
-bool has_dirty_version_chrome(const MasterScore *score) {
-    if (uses_dirty_version_macro(score)) return true;
-    for (const Excerpt *excerpt : score->excerpts()) {
-        const Score *part = excerpt->excerpt_score();
-        if (part && uses_dirty_version_macro(part)) return true;
-    }
-    return false;
-}
-
 struct ScoreCommandGuard {
     explicit ScoreCommandGuard(MasterScore *score) : score_(score) {}
 
@@ -195,12 +173,8 @@ struct ScoreCommandGuard {
     }
 
     void finish(bool rollback) {
-        const bool was_dirty = score_->dirty();
         score_->end_cmd(rollback);
         active_ = false;
-        // Header/footer $v depends on dirty(). Keep that geometry pending too.
-        if (!rollback && !was_dirty && score_->dirty() && has_dirty_version_chrome(score_))
-            score_->invalidate_layouts(Fraction(0, 1), Fraction(-1, 1));
     }
 private:
     MasterScore *score_;

@@ -78,6 +78,7 @@
 #include "engraving/dom/noteline.h"
 #include "engraving/dom/ornament.h"
 #include "engraving/dom/ottava.h"
+#include "engraving/dom/page.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -214,6 +215,32 @@ TEST(Read, ParenthesizedPrebendsKeepPerStaffGhostState) {
     }
     ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
     for (const auto &[note, ghost] : ghosts) EXPECT_EQ(note->ghost(), ghost);
+}
+
+TEST(Read, LiveVersionAndRevisionMacrosKeepSourceProvenanceAfterEdit) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("<Score>"), "<programRevision>abcdef1</programRevision>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    master.style().set(Sid::ODD_HEADER_C, muse::String(u"$v / $r"));
+    master.set_layout_all();
+    const auto version = master.mscore_version();
+    const auto revision = master.mscore_revision();
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    auto *header = master.pages().front()->header_text(1);
+    ASSERT_NE(header, nullptr);
+    const auto before = header->plain_text();
+    EXPECT_TRUE(before.contains(version));
+    EXPECT_TRUE(before.contains(u"abcdef1"));
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), 64}}}));
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(master.pages().front()->header_text(1)->plain_text(), before);
+    EXPECT_EQ(master.mscore_version(), version);
+    EXPECT_EQ(master.mscore_revision(), revision);
 }
 
 std::string formatted_text_fixture() {
