@@ -67,6 +67,7 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/noteline.h"
 #include "engraving/dom/ornament.h"
+#include "engraving/dom/ottava.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -85,6 +86,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/dom/trill.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/transaction/transaction.h"
@@ -382,6 +384,39 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     EXPECT_EQ(ornament->note_above()->pitch(), auxiliary_pitch);
     manager->undo_redo(false, nullptr);
     EXPECT_FALSE(target->visible());
+}
+
+TEST(Read, NormalizeResolvesSpannerEndsAgainstRealMeasuresWithMmRests) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
+    const auto chord_begin = source.find("<Chord>");
+    const auto chord_end = source.find("</Chord>", chord_begin) + std::string("</Chord>").size();
+    source.replace(chord_begin, chord_end - chord_begin, "<Rest><durationType>measure</durationType></Rest>");
+    source.insert(source.find("</Measure>") + std::string("</Measure>").size(),
+                  "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    ASSERT_NE(master.first_measure(), master.last_measure());
+    ASSERT_NE(master.first_measure()->mm_rest(), nullptr);
+    std::array<Spanner *, 2> spanners{Factory::create_trill(master.dummy()), Factory::create_ottava(master.dummy())};
+    for (auto *spanner : spanners) {
+        spanner->set_track(0);
+        spanner->set_track2(0);
+        spanner->set_tick(Fraction(0, 1));
+        spanner->set_tick2(master.end_tick());
+        master.add_spanner(spanner, false);
+    }
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_score(master);
+    for (auto *spanner : spanners) {
+        ASSERT_NE(spanner->end_element(), nullptr);
+        EXPECT_EQ(spanner->end_element()->find_measure(), master.last_measure());
+        EXPECT_FALSE(spanner->has_layout_data());
+    }
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
