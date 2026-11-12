@@ -1349,6 +1349,32 @@ TEST(Read, RepeatChangeAndTieInOneBatchMatchSeparateBatches) {
     }
 }
 
+TEST(Read, ActualMeasureLengthRefreshesFollowingTempo) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(repeat_edit_xml), {.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *measure = master.first_measure()->next_measure();
+    auto *following = measure->next_measure();
+    EXPECT_EQ(following->tick().ticks(), 3840);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(3839).val, 2.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(3840).val, 1.0);
+    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
+    ASSERT_TRUE(document.edit(
+        {{engrave::SetProperty{engrave::Ref{engrave::from_engine(measure->eid())}, "timesigActual", engrave::Fraction{1, 2}}}}));
+    EXPECT_EQ(following->tick().ticks(), 2880);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2879).val, 2.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 1.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).tempo(5760).val, 1.0);
+    master.transaction_manager()->undo_redo(true, nullptr);
+    EXPECT_EQ(following->tick().ticks(), 3840);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 2.0);
+    master.transaction_manager()->undo_redo(false, nullptr);
+    EXPECT_EQ(following->tick().ticks(), 2880);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 1.0);
+}
+
 TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     using namespace mu::engraving;
     constexpr std::string_view xml = R"(<score-partwise version="4.0">
