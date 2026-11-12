@@ -69,6 +69,7 @@
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/slur.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/tempotext.h"
@@ -1251,6 +1252,54 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 // --- the tests -----------------------------------------------------------
 
 std::uint64_t layout_count(const mu::engraving::Score &score) { return score.layout_state.whole_count + score.layout_state.range_count; }
+
+constexpr std::string_view repeat_edit_xml = R"(<score-partwise version="4.0">
+<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>1</divisions>
+<time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<barline location="left"><repeat direction="forward"/></barline>
+<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
+<measure number="2"><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+<barline location="right"><repeat direction="backward"/></barline></measure>
+<measure number="3"><direction><sound tempo="60"/></direction>
+<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>
+</part></score-partwise>)";
+
+TEST(Read, RepeatRepairStaysInTheActiveTransaction) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(repeat_edit_xml), {.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *manager = master.transaction_manager();
+    auto *first = master.first_measure()->first(SegmentType::CHORD_REST)->element(0);
+    auto *second_measure = master.first_measure()->next_measure();
+    auto *second = second_measure->first(SegmentType::CHORD_REST)->element(0);
+    auto *slur = Factory::create_slur(master.dummy());
+    slur->set_start_element(first);
+    slur->set_end_element(second);
+    slur->set_track(0);
+    slur->set_track2(0);
+    slur->set_tick(first->tick());
+    slur->set_ticks(second->tick() - first->tick());
+    slur->set_incoming(true);
+    manager->begin_transaction(muse::TranslatableString::untranslatable("partial slur setup"));
+    master.undo_add_element(slur);
+    manager->end_transaction();
+    ASSERT_TRUE(slur->is_incoming());
+    const auto history = master.undo_stack()->size();
+    manager->begin_transaction(muse::TranslatableString::untranslatable("remove repeat"));
+    master.undo(new ChangeProperty(second_measure, Pid::REPEAT_END, false));
+    manager->end_transaction();
+    EXPECT_FALSE(slur->is_incoming());
+    EXPECT_FALSE(master.undo_stack()->has_active_transaction());
+    EXPECT_EQ(master.undo_stack()->size(), history + 1);
+    manager->undo_redo(true, nullptr);
+    EXPECT_TRUE(second_measure->repeat_end());
+    EXPECT_TRUE(slur->is_incoming());
+    manager->undo_redo(false, nullptr);
+    EXPECT_FALSE(second_measure->repeat_end());
+    EXPECT_FALSE(slur->is_incoming());
+}
 
 TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     using namespace mu::engraving;

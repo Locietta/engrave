@@ -5002,6 +5002,10 @@ void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_id
 void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
     auto remove_tie = [&](Tie *tie) {
         if (undo) {
+            if (undo_stack()->has_active_transaction()) {
+                undo_remove_element(tie);
+                return;
+            }
             const size_t undo_idx = undo_stack()->current_index();
             start_cmd(TranslatableString("engraving", "Remove stale partial tie"));
             undo_remove_element(tie);
@@ -5055,6 +5059,7 @@ void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
 }
 
 void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
+    const bool owns_transaction = undo && !undo_stack()->has_active_transaction();
     const size_t undo_idx = undo_stack()->current_index();
 
     const ChordRest *start_cr = slur ? slur->start_cr() : nullptr;
@@ -5065,17 +5070,17 @@ void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
     else if (!start_cr->has_preceding_jump_item() && slur->is_incoming()) {
         if (should_remove) {
             if (undo) {
-                start_cmd(TranslatableString("engraving", "Remove invalid incoming partial slur"));
+                if (owns_transaction) start_cmd(TranslatableString("engraving", "Remove invalid incoming partial slur"));
                 undo_remove_element(slur);
-                end_cmd();
+                if (owns_transaction) end_cmd();
             } else {
                 remove_element(slur);
             }
         } else {
             if (undo) {
-                start_cmd(TranslatableString("engraving", "Reset incoming partial slur"));
+                if (owns_transaction) start_cmd(TranslatableString("engraving", "Reset incoming partial slur"));
                 slur->undo_set_incoming(false);
-                end_cmd();
+                if (owns_transaction) end_cmd();
             } else {
                 slur->set_incoming(false);
             }
@@ -5087,24 +5092,24 @@ void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
     else if (!end_cr->has_following_jump_item() && slur->is_outgoing()) {
         if (should_remove) {
             if (undo) {
-                start_cmd(TranslatableString("engraving", "Remove invalid outgoing partial slur"));
+                if (owns_transaction) start_cmd(TranslatableString("engraving", "Remove invalid outgoing partial slur"));
                 undo_remove_element(slur);
-                end_cmd();
+                if (owns_transaction) end_cmd();
             } else {
                 remove_element(slur);
             }
         } else {
             if (undo) {
-                start_cmd(TranslatableString("engraving", "Reset outgoing partial slur"));
+                if (owns_transaction) start_cmd(TranslatableString("engraving", "Reset outgoing partial slur"));
                 slur->undo_set_outgoing(false);
-                end_cmd();
+                if (owns_transaction) end_cmd();
             } else {
                 slur->set_outgoing(false);
             }
         }
     }
 
-    if (!undo) {
+    if (!owns_transaction) {
         return;
     }
 
@@ -5166,7 +5171,7 @@ void Score::undo_remove_stale_tie_jump_points(bool undo) {
                     continue;
                 }
 
-                do_undo_remove_stale_tie_jump_points(n->tie_for());
+                do_undo_remove_stale_tie_jump_points(n->tie_for(), undo);
             }
         }
     }
@@ -5177,6 +5182,10 @@ void Score::undo_remove_stale_tie_jump_points(bool undo) {
         }
         const size_t undo_idx = undo_stack()->current_index();
         if (undo) {
+            if (undo_stack()->has_active_transaction()) {
+                undo_remove_element(incoming_pt);
+                continue;
+            }
             start_cmd(TranslatableString("engraving", "Remove stale partial tie"));
             undo_remove_element(incoming_pt);
             end_cmd();
