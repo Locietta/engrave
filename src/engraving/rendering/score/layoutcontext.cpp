@@ -21,6 +21,10 @@
  */
 #include "layoutcontext.h"
 
+#include <array>
+
+#include <ankerl/unordered_dense.h>
+
 #include "dom/chord.h"
 #include "dom/score.h"
 #include "dom/segment.h"
@@ -362,6 +366,11 @@ const std::set<Spanner *> &DomAccessor::unmanaged_spanners() const {
 // LayoutContext
 // =============================================================
 
+struct LayoutContext::GraceGroups {
+    using Groups = std::array<std::unique_ptr<GraceNotesGroup>, 2>;
+    ankerl::unordered_dense::map<const Chord *, Groups> chords;
+};
+
 LayoutContext::LayoutContext(Score *score) : score_(score), configuration_(this), dom_(this) {
     if (score) {
         state_.set_first_system_indent(score->style().style_b(Sid::ENABLE_INDENTATION_ON_FIRST_SYSTEM));
@@ -369,13 +378,16 @@ LayoutContext::LayoutContext(Score *score) : score_(score), configuration_(this)
 }
 
 LayoutContext::~LayoutContext() {
-    if (!grace_groups_.empty()) {
+    if (grace_groups_) {
         clear_grace_attachments(score_);
     }
 }
 
 GraceNotesGroup &LayoutContext::update_grace_group(Chord *chord, bool after) {
-    auto &group = grace_groups_[chord][after ? 1 : 0];
+    if (!grace_groups_) {
+        grace_groups_ = std::make_unique<GraceGroups>();
+    }
+    auto &group = grace_groups_->chords[chord][after ? 1 : 0];
     if (!group) {
         group = std::make_unique<GraceNotesGroup>(chord);
     }
@@ -385,8 +397,11 @@ GraceNotesGroup &LayoutContext::update_grace_group(Chord *chord, bool after) {
 }
 
 const GraceNotesGroup *LayoutContext::grace_group(const Chord *chord, bool after) const {
-    const auto it = grace_groups_.find(chord);
-    return it == grace_groups_.end() ? nullptr : it->second[after ? 1 : 0].get();
+    if (!grace_groups_) {
+        return nullptr;
+    }
+    const auto it = grace_groups_->chords.find(chord);
+    return it == grace_groups_->chords.end() ? nullptr : it->second[after ? 1 : 0].get();
 }
 
 void LayoutContext::clear_grace_attachments(EngravingObject *object) const {
