@@ -53,7 +53,7 @@ private:
     struct FontInfo {
         int id = -1;
         FontDataKey key;
-        std::shared_ptr<io::IODevice> device;
+        std::span<const uint8_t> bytes;
 
         bool valid() const { return id > -1; }
     };
@@ -65,6 +65,9 @@ private:
     std::map<Font::Type, FontDataKey> defaults_;
     std::map<FontDataKey, std::vector<FontDataKey>> family_substitutions_;
     std::map<FontDataKey, FontInfo> fonts_;
+    // Stable resource storage, including retired versions borrowed by old faces.
+    // Every FontsEngine/FontFace using this database must be destroyed first.
+    std::vector<std::unique_ptr<const ByteArray>> font_bytes_;
     uint64_t revision_ = 0;
     int font_id_ = -1;
 };

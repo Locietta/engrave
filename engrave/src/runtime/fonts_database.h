@@ -57,21 +57,23 @@ struct RuntimeFontsDatabase {
     using FontDataKey = muse::draw::FontDataKey;
     using String = muse::String;
 
-    void set_default_font(Font::Type type, const FontDataKey &key) { return database_.set_default_font(type, key); }
+    void set_default_font(Font::Type type, const FontDataKey &key) { return database_->set_default_font(type, key); }
 
-    void insert_substitution(const String &f1, const String &substitute_name) { return database_.insert_substitution(f1, substitute_name); }
-
-    void remove_substitutions(const String &f1, const std::vector<String> &substitute_names) {
-        return database_.remove_substitutions(f1, substitute_names);
+    void insert_substitution(const String &f1, const String &substitute_name) {
+        return database_->insert_substitution(f1, substitute_name);
     }
 
-    int add_font(const FontDataKey &key, const muse::io::PathT &path) { return database_.add_font(key, path); }
+    void remove_substitutions(const String &f1, const std::vector<String> &substitute_names) {
+        return database_->remove_substitutions(f1, substitute_names);
+    }
 
-    int add_font(const FontDataKey &key, std::shared_ptr<muse::io::IODevice> device) { return database_.add_font(key, device); }
+    int add_font(const FontDataKey &key, const muse::io::PathT &path) { return database_->add_font(key, path); }
 
-    void remove_font(const FontDataKey &key) { return database_.remove_font(key); }
+    int add_font(const FontDataKey &key, std::shared_ptr<muse::io::IODevice> device) { return database_->add_font(key, device); }
 
-    uint64_t revision() const { return database_.revision(); }
+    void remove_font(const FontDataKey &key) { return database_->remove_font(key); }
+
+    uint64_t revision() const { return database_->revision(); }
 
     explicit RuntimeFontsDatabase(std::shared_ptr<const ActiveTable> active) : active_(std::move(active)) {}
 
@@ -86,7 +88,7 @@ struct RuntimeFontsDatabase {
             return exact->key;
         }
 
-        const muse::draw::FontDataKey base_key = database_.actual_font(require_key, type);
+        const muse::draw::FontDataKey base_key = database_->actual_font(require_key, type);
         if (const FontRecord *overridden = find_record(*active_, base_key)) {
             return overridden->key;
         }
@@ -107,7 +109,7 @@ struct RuntimeFontsDatabase {
     }
 
     std::vector<muse::draw::FontDataKey> substitution_fonts(const muse::draw::FontDataKey &require_key) const {
-        std::vector<muse::draw::FontDataKey> result = database_.substitution_fonts(require_key);
+        std::vector<muse::draw::FontDataKey> result = database_->substitution_fonts(require_key);
         // 5.0 keys the substitution list by family instead of by font type, so
         // the 4.7.6 rule "every registered runtime face is a text fallback" has
         // no type to gate on. Keep the registered faces as extra glyph-fallback
@@ -128,14 +130,21 @@ struct RuntimeFontsDatabase {
         if (const FontRecord *record = find_record(*active_, actual_key)) {
             muse::draw::FontData data;
             data.key = record->key;
-            data.data = *record->bytes;
+            data.data = {record->bytes->const_data(), record->bytes->size()};
             return data;
         }
-        return database_.font_data(require_key, type);
+        return database_->font_data(require_key, type);
+    }
+
+    // Cairo surfaces/cache entries can outlive the engine registry. Their spans
+    // retain the resource owner explicitly, without copying any font bytes.
+    std::shared_ptr<const void> retain_font(const FontDataKey &key) const {
+        if (const FontRecord *record = find_record(*active_, key)) return record->bytes;
+        return database_;
     }
 
 private:
-    muse::draw::FontsDatabase database_;
+    std::shared_ptr<muse::draw::FontsDatabase> database_ = std::make_shared<muse::draw::FontsDatabase>();
     std::shared_ptr<const ActiveTable> active_;
 };
 } // namespace music

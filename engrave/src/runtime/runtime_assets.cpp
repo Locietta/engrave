@@ -350,8 +350,8 @@ RuntimeFontInfo RuntimeAssets::Impl::reactivate_retained(const FontRecord &retai
     auto new_engine = create_engine(*database);
 
     std::shared_ptr<const ActiveTable> published = std::move(next);
-    database->publish(published);
     proxy_engine->set_engine(std::move(new_engine));
+    database->publish(published);
     return result;
 }
 
@@ -485,9 +485,9 @@ RuntimeFontInfo RuntimeAssets::add_font(const std::string &source_path) {
     auto new_engine = create_engine(*d.database);
 
     std::shared_ptr<const ActiveTable> published = std::move(next_active);
+    d.proxy_engine->set_engine(std::move(new_engine));
     d.database->publish(published);
     d.retained_fonts.swap(next_retained);
-    d.proxy_engine->set_engine(std::move(new_engine));
     d.next_font_id = font_id + 1;
     cache_file_guard.commit();
     return result;

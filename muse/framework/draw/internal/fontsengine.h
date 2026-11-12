@@ -96,7 +96,6 @@ private:
         double pixel_scale_for(const FontFace *loaded_face) const;
     };
 
-    FontFace *create_font_face(const FontData &font_data) const;
     RequireFace *font_face(const Font &f, bool is_symbol_mode = false) const;
     FontFace *font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int loaded_pixel_size,
                                            bool is_symbol_mode) const;

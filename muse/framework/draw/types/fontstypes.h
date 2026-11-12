@@ -22,6 +22,7 @@
 #ifndef MUSE_DRAW_FONTSTYPES_H
 #define MUSE_DRAW_FONTSTYPES_H
 
+#include <span>
 #include <string>
 
 #include "font.h"
@@ -76,7 +77,8 @@ inline FontDataKey data_key_for_font(const Font &f) { return FontDataKey(f.famil
 
 struct FontData {
     FontDataKey key;
-    muse::ByteArray data;
+    // Borrowed immutable resource; the font registry must outlive its faces.
+    std::span<const uint8_t> data;
 
     inline bool valid() const { return key.valid() && !data.empty(); }
 };

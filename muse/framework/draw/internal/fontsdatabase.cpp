@@ -87,20 +87,18 @@ int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice
         return -1;
     }
 
-    const std::string file_path = device->meta("file_path");
-    ByteArray data;
-    if (file_path.empty()) {
-        if (device->open(io::IODevice::READ_ONLY)) {
-            data = device->read_all();
-        }
-        if (data.empty()) {
-            LOGE() << "failed read font: " << key.family().id();
-            return -1;
-        }
-    } else if (!io::File::exists(file_path)) {
-        LOGW() << "font file not found: " << file_path;
+    if (!device->is_open() && !device->open(io::IODevice::READ_ONLY)) {
+        LOGE() << "failed open font: " << key.family().id();
         return -1;
     }
+    device->seek(0);
+    auto bytes = std::make_unique<const ByteArray>(device->read_all());
+    if (bytes->empty()) {
+        LOGE() << "failed read font: " << key.family().id();
+        return -1;
+    }
+    const std::span<const uint8_t> view(bytes->const_data(), bytes->size());
+    font_bytes_.push_back(std::move(bytes));
 
     const int id = ++font_id_;
 
@@ -110,7 +108,7 @@ int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice
         fonts_.erase(it);
     }
 
-    fonts_.insert({key, FontInfo{id, key, std::move(device)}});
+    fonts_.insert({key, FontInfo{id, key, view}});
     ++revision_;
 
     return id;
@@ -156,19 +154,7 @@ FontData FontsDatabase::font_data(const FontDataKey &require_key, Font::Type typ
         return FontData();
     }
 
-    if (!info.device->is_open() && !info.device->open(io::IODevice::READ_ONLY)) {
-        LOGE() << "failed open font: " << key.family().id();
-        return FontData();
-    }
-
-    info.device->seek(0);
-    ByteArray data = info.device->read_all();
-    if (data.empty()) {
-        LOGE() << "failed read font: " << key.family().id();
-        return FontData();
-    }
-
-    return FontData{key, std::move(data)};
+    return FontData{key, info.bytes};
 }
 
 uint64_t FontsDatabase::revision() const { return revision_; }

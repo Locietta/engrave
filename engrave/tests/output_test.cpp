@@ -30,9 +30,12 @@
 #include <gtest/gtest.h>
 
 #include "digest.h"
+#include "draw/internal/fontsdatabase.h"
 #include "draw/types/pen.h"
 #include "draw/types/pixmap.h"
+#include "engrave/src/runtime/fonts_database.h"
 #include "engrave/src/score/json.h"
+#include "global/io/buffer.h"
 #include "output_fixture.h"
 #include <engrave/engrave.h>
 
@@ -678,4 +681,32 @@ TEST(Pixmap, OwnsInputAndCopiesIndependentBytes) {
     EXPECT_NE(pixmap.data().const_data(), copy.data().const_data());
     muse::draw::Pixmap moved(std::move(bytes), muse::Size(2, 3));
     EXPECT_EQ(moved.data(), muse::ByteArray("xng-bytes"));
+}
+
+TEST(FontResources, RegistryViewsAreStableAcrossLookupReplacementAndRemoval) {
+    muse::draw::FontsDatabase database;
+    const muse::draw::FontDataKey key(u"test resource");
+    auto first = std::make_shared<muse::io::Buffer>(muse::ByteArray("first font"));
+    ASSERT_GE(database.add_font(key, first), 0);
+    const auto before = database.font_data(key, muse::draw::Font::Type::TEXT);
+    EXPECT_EQ(before.data.data(), database.font_data(key, muse::draw::Font::Type::TEXT).data.data());
+    first.reset();
+    auto second = std::make_shared<muse::io::Buffer>(muse::ByteArray("second font"));
+    ASSERT_GE(database.add_font(key, second), 0);
+    const auto after = database.font_data(key, muse::draw::Font::Type::TEXT);
+    EXPECT_NE(before.data.data(), after.data.data());
+    database.remove_font(key);
+    EXPECT_EQ(std::string_view(reinterpret_cast<const char *>(before.data.data()), before.data.size()), "first font");
+    EXPECT_EQ(std::string_view(reinterpret_cast<const char *>(after.data.data()), after.data.size()), "second font");
+}
+
+TEST(FontResources, CairoLeaseKeepsRegistryBytesAliveAfterRegistryDestruction) {
+    auto database = std::make_unique<music::RuntimeFontsDatabase>(std::make_shared<music::ActiveTable>());
+    const muse::draw::FontDataKey key(u"retained resource");
+    ASSERT_GE(database->add_font(key, std::make_shared<muse::io::Buffer>(muse::ByteArray("retained bytes"))), 0);
+    const auto view = database->font_data(key, muse::draw::Font::Type::TEXT);
+    const auto lease = database->retain_font(view.key);
+    database.reset();
+    EXPECT_EQ(std::string_view(reinterpret_cast<const char *>(view.data.data()), view.data.size()), "retained bytes");
+    EXPECT_TRUE(bool(lease));
 }
