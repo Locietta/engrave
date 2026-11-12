@@ -32,6 +32,7 @@
 #include "factory.h"
 #include "measure.h"
 #include "ornament.h"
+#include "rendering/score/chordlayout.h"
 #include "score.h"
 #include "system.h"
 #include "types/typesconv.h"
@@ -248,19 +249,47 @@ PointF Trill::trill_line_pos(const SLine *line, Grip grip, System **system) {
         }
     }
 
-    // Stop line before grace notes
-    if (const EngravingItem *pre_appended_item = segment->pre_appended_item(line->track2());
-        pre_appended_item && pre_appended_item->is_grace_notes_group()) {
-        // get x position of leftmost grace note
-        const Chord *left_most_grace_chord = nullptr;
-        const GraceNotesGroup *grace_group = to_grace_notes_group(pre_appended_item);
-        for (const Chord *grace_chord : *grace_group) {
-            left_most_grace_chord =
-                left_most_grace_chord && left_most_grace_chord->x() < grace_chord->x() ? left_most_grace_chord : grace_chord;
+    // During layout the segment borrows its pass-owned group. Outside a layout
+    // run, derive membership from live source chords instead of retaining it.
+    const Chord *left_most_grace_chord = nullptr;
+    const auto consider = [&](const Chord *grace) {
+        if (!left_most_grace_chord || grace->x() <= left_most_grace_chord->x()) {
+            left_most_grace_chord = grace;
         }
-        if (left_most_grace_chord) {
-            grace_offset = segment->page_x() - left_most_grace_chord->page_x();
+    };
+    if (const EngravingItem *item = segment->pre_appended_item(line->track2()); item && item->is_grace_notes_group()) {
+        for (const Chord *grace : *to_grace_notes_group(item)) {
+            consider(grace);
         }
+    } else {
+        for (const Measure *measure : {segment->measure()->prev_measure(), segment->measure()}) {
+            if (!measure) {
+                continue;
+            }
+            for (const Segment &source : measure->segments()) {
+                if (line->track2() >= source.elist().size()) {
+                    continue;
+                }
+                const EngravingItem *item = source.element(line->track2());
+                if (!item || !item->is_chord()) {
+                    continue;
+                }
+                const Chord *chord = to_chord(item);
+                if (&source == segment) {
+                    for (const Chord *grace : chord->grace_notes_before()) {
+                        consider(grace);
+                    }
+                }
+                if (rendering::score::ChordLayout::grace_notes_after_segment(chord) == segment) {
+                    for (const Chord *grace : chord->grace_notes_after()) {
+                        consider(grace);
+                    }
+                }
+            }
+        }
+    }
+    if (left_most_grace_chord) {
+        grace_offset = segment->page_x() - left_most_grace_chord->page_x();
     }
 
     double offset = std::max(grace_offset, clef_offset);

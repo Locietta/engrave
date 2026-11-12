@@ -21,7 +21,9 @@
  */
 #include "layoutcontext.h"
 
+#include "dom/chord.h"
 #include "dom/score.h"
+#include "dom/segment.h"
 #include "dom/spanner.h"
 #include "editing/addremoveelement.h"
 #include "editing/editpagelocks.h"
@@ -366,7 +368,50 @@ LayoutContext::LayoutContext(Score *score) : score_(score), configuration_(this)
     }
 }
 
-LayoutContext::~LayoutContext() {}
+LayoutContext::~LayoutContext() {
+    if (!grace_groups_.empty()) {
+        clear_grace_attachments(score_);
+    }
+}
+
+GraceNotesGroup &LayoutContext::update_grace_group(Chord *chord, bool after) {
+    auto &group = grace_groups_[chord][after ? 1 : 0];
+    if (!group) {
+        group = std::make_unique<GraceNotesGroup>(chord);
+    }
+    const auto notes = after ? chord->grace_notes_after() : chord->grace_notes_before();
+    group->assign(notes.begin(), notes.end());
+    return *group;
+}
+
+const GraceNotesGroup *LayoutContext::grace_group(const Chord *chord, bool after) const {
+    const auto it = grace_groups_.find(chord);
+    return it == grace_groups_.end() ? nullptr : it->second[after ? 1 : 0].get();
+}
+
+void LayoutContext::clear_grace_attachments(EngravingObject *object) const {
+    if (!object) {
+        return;
+    }
+    if (object->is_segment()) {
+        Segment *segment = to_segment(object);
+        for (track_idx_t track = 0; track < segment->pre_appended_items().size(); ++track) {
+            EngravingItem *item = segment->pre_appended_item(track);
+            if (!item || !item->is_grace_notes_group()) {
+                continue;
+            }
+            const GraceNotesGroup *group = to_grace_notes_group(item);
+            if (grace_group(group->parent(), false) == group || grace_group(group->parent(), true) == group) {
+                segment->clear_pre_appended(track);
+            }
+        }
+    }
+    // Traverse live ownership, not saved Segment pointers: layout may have moved
+    // or deleted an attached segment. This also reaches retained undo objects.
+    for (EngravingObject *child : object->children()) {
+        clear_grace_attachments(child);
+    }
+}
 
 bool LayoutContext::is_valid() const { return score_ != nullptr; }
 

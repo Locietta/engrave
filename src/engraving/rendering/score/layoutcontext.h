@@ -22,9 +22,13 @@
 
 #pragma once
 
+#include <array>
+#include <memory>
 #include <set>
 #include <unordered_set>
 #include <vector>
+
+#include <ankerl/unordered_dense.h>
 
 #include "../../dom/mscore.h"
 #include "../../style/style.h"
@@ -42,6 +46,9 @@
 #define LAYOUT_CALL_PRINT()
 
 namespace mu::engraving {
+struct Chord;
+struct GraceNotesGroup;
+struct EngravingObject;
 struct DummyParent;
 struct EngravingItem;
 struct MeasureBase;
@@ -384,6 +391,10 @@ struct LayoutContext {
     void select(EngravingItem *item, SelectType = SelectType::SINGLE, staff_idx_t staff = 0);
     void deselect(EngravingItem *el);
 
+    // Groups and segment borrows exist only for this layout run.
+    GraceNotesGroup &update_grace_group(Chord *chord, bool after);
+    const GraceNotesGroup *grace_group(const Chord *chord, bool after) const;
+
 private:
 
     friend struct LayoutConfiguration;
@@ -396,5 +407,8 @@ private:
     LayoutConfiguration configuration_;
     DomAccessor dom_;
     LayoutState state_;
+    using GraceGroups = std::array<std::unique_ptr<GraceNotesGroup>, 2>;
+    ankerl::unordered_dense::map<const Chord *, GraceGroups> grace_groups_;
+    void clear_grace_attachments(EngravingObject *object) const;
 };
 } // namespace mu::engraving::rendering::score

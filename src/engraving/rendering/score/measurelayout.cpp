@@ -358,7 +358,7 @@ void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
         }
         for (auto el : s.elist()) {
             if (el && el->is_chord() && !to_chord(el)->grace_notes().empty()) {
-                ChordLayout::append_grace_notes(to_chord(el));
+                ChordLayout::append_grace_notes(to_chord(el), ctx);
             }
         }
     }
