@@ -443,18 +443,10 @@ Fraction mu::engraving::normalize_lyric_ticks(Lyrics &lyrics) {
     return lyrics_line_ticks;
 }
 
-void mu::engraving::invalidate_normalization(Score &score, const Fraction &start, const Fraction &end) {
+void mu::engraving::invalidate_normalization(Score &score) {
     auto &state = score.normalize_state;
     if (state.running || score.master_score()->cmd_state().locked()) return;
-    if (!state.dirty) {
-        state.start = start;
-        state.end = end;
-    } else {
-        state.start = std::min(state.start, start);
-        state.end = state.end < Fraction(0, 1) || end < Fraction(0, 1) ? Fraction(-1, 1) : std::max(state.end, end);
-    }
     state.dirty = true;
-    ++state.generation;
 }
 
 static void normalize_glissando_style(Glissando &glissando) {
@@ -635,7 +627,6 @@ static void normalize_scores(MasterScore &master, const std::vector<Score *> &sc
             state.dirty = false;
             state.rebuild_midi_mapping = false;
             state.includes_hidden_staves = options.include_hidden_staves;
-            state.normalized_generation = state.generation;
             state.running = false;
         }
     } catch (...) {

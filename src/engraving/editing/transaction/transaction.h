@@ -140,7 +140,7 @@ struct TransactionManager {
     void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
 
     void begin_transaction(const muse::TranslatableString &description);
-    void end_transaction(bool rollback = false, bool layout_all_parts = false, bool keep_rolled_back_elements = false);
+    void end_transaction(bool rollback = false, bool keep_rolled_back_elements = false);
 
     void reopen();
 

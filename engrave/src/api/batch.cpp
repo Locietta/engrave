@@ -324,7 +324,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             const auto &commands = stack->active_transaction()->commands();
             if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++context_.epoch_;
         }
-        if (!failure) master.end_cmd(false, true);
+        if (!failure) master.end_cmd(false);
     } catch (const std::bad_alloc &) {
         rollback(true);
         throw;
@@ -389,7 +389,7 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
             if (active && !unwind_unsafe) {
                 // Replay normalizes without layout. Fall back to replacement if
                 // the resulting musical content or source identities differ.
-                master.end_cmd(true, true);
+                master.end_cmd(true);
                 if (!same_score(*snapshot)) restore(*snapshot);
             } else {
                 // The project is replaced rather than unwound: an operation whose rollback
@@ -400,7 +400,7 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
                 restore(*snapshot);
             }
         } else if (stack->has_active_transaction()) {
-            master.end_cmd(true, true);
+            master.end_cmd(true);
         } else if (stack->size() > history) {
             // The commit itself failed after the transaction was recorded: undo it,
             // which C2 of the harness proves equal to the unwind.
@@ -427,7 +427,7 @@ void BatchGuard::restore(const Snapshot &snapshot) {
         score->set_mscore_version(versions->version);
         score->set_mscore_revision(versions->revision);
         score->set_msc_version(versions->msc_version);
-        mu::engraving::invalidate_normalization(*score, mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        mu::engraving::invalidate_normalization(*score);
         ++versions;
     }
     mu::engraving::normalize_document(*project->master_score(), {.mode = mu::engraving::NormalizeMode::LOAD});

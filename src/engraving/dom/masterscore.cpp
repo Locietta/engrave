@@ -329,10 +329,10 @@ void MasterScore::set_update_all() { cmd_state_.set_update_mode(UpdateMode::UPDA
 //   setLayoutAll
 //---------------------------------------------------------
 
-static void invalidate_source_scores(MasterScore &master, const Fraction &start, const Fraction &end) {
-    invalidate_normalization(master, start, end);
+static void invalidate_source_scores(MasterScore &master) {
+    invalidate_normalization(master);
     for (Excerpt *excerpt : master.excerpts()) {
-        if (auto *score = excerpt->excerpt_score()) invalidate_normalization(*score, start, end);
+        if (auto *score = excerpt->excerpt_score()) invalidate_normalization(*score);
     }
 }
 
@@ -340,12 +340,12 @@ void MasterScore::add_layout_flags(LayoutFlags val) {
     cmd_state_.layout_flags |= val;
     if (val & LayoutFlag::REBUILD_MIDI_MAPPING) {
         normalize_state.rebuild_midi_mapping = true;
-        invalidate_normalization(*this, Fraction(0, 1), Fraction(-1, 1));
+        invalidate_normalization(*this);
     }
 }
 
 void MasterScore::set_layout_all(staff_idx_t staff, const EngravingItem *e) {
-    invalidate_source_scores(*this, Fraction(0, 1), Fraction(-1, 1));
+    invalidate_source_scores(*this);
     invalidate_layouts(Fraction(0, 1), Fraction(-1, 1));
     cmd_state_.set_tick(Fraction(0, 1));
     cmd_state_.set_tick(Fraction::max());
@@ -367,7 +367,7 @@ void MasterScore::set_layout_all(staff_idx_t staff, const EngravingItem *e) {
 
 void MasterScore::set_layout(const Fraction &t, staff_idx_t staff, const EngravingItem *e) {
     if (t >= Fraction(0, 1)) {
-        invalidate_source_scores(*this, t, t);
+        invalidate_source_scores(*this);
         invalidate_layouts(t, t);
         cmd_state_.set_tick(t);
     }
@@ -381,12 +381,12 @@ void MasterScore::set_layout(const Fraction &t, staff_idx_t staff, const Engravi
 
 void MasterScore::set_layout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e) {
     if (tick1 >= Fraction(0, 1)) {
-        invalidate_source_scores(*this, tick1, tick1);
+        invalidate_source_scores(*this);
         invalidate_layouts(tick1, tick1);
         cmd_state_.set_tick(tick1);
     }
     if (tick2 >= Fraction(0, 1)) {
-        invalidate_source_scores(*this, tick2, tick2);
+        invalidate_source_scores(*this);
         invalidate_layouts(tick2, tick2);
         cmd_state_.set_tick(tick2);
     }

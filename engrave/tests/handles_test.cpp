@@ -191,7 +191,7 @@ struct Command {
     }
 
     ~Command() {
-        if (open_) score_.end_cmd(true, true);
+        if (open_) score_.end_cmd(true);
     }
 
     Command(const Command &) = delete;
@@ -200,14 +200,14 @@ struct Command {
     /// Commits, and then does what a batch does: give the elements the commands made
     /// their ids again, and drop the history so that a removal destroys its elements.
     void commit(bool drop_history) {
-        score_.end_cmd(false, true);
+        score_.end_cmd(false);
         open_ = false;
         engrave::assign_missing_ids(score_);
         if (drop_history) score_.undo_stack()->clear_history();
     }
 
     void rollback() {
-        score_.end_cmd(true, true);
+        score_.end_cmd(true);
         open_ = false;
     }
 

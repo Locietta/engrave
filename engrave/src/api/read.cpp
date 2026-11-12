@@ -90,9 +90,12 @@ std::string plain_text(const muse::String &text) { return text.to_std_string(); 
 
 // These values/defaults are defined by display geometry. Other catalogue
 // properties keep the semantic read path free of layout.
-bool property_needs_layout(const EngravingObject &object, Pid pid) {
-    return (object.is_fingering() && pid == Pid::PLACEMENT) || (object.is_chord_line() && pid == Pid::PATH) ||
-           (object.is_beam() && pid == Pid::BEAM_POS);
+bool property_needs_layout(Pid pid, const EngravingObject *object = nullptr) {
+    using mu::engraving::ElementType;
+    static constexpr std::pair<ElementType, Pid> properties[] = {
+        {ElementType::FINGERING, Pid::PLACEMENT}, {ElementType::CHORDLINE, Pid::PATH}, {ElementType::BEAM, Pid::BEAM_POS}};
+    return std::ranges::any_of(
+        properties, [&](const auto &property) { return property.second == pid && (!object || property.first == object->type()); });
 }
 
 PropertyRead read_property(const EngravingObject &object, Pid pid) {
@@ -541,10 +544,10 @@ Result<QueryResult> Document::query(const Query &request) {
         if (request.to_tick && !before(where.tick, *request.to_tick)) return std::nullopt;
         return where;
     };
-    if (std::ranges::any_of(*props, [](Pid pid) { return pid == Pid::PLACEMENT || pid == Pid::PATH || pid == Pid::BEAM_POS; })) {
+    if (std::ranges::any_of(*props, [](Pid pid) { return property_needs_layout(pid); })) {
         // Prepare before retaining row pointers: layout may replace display children.
         for (const LiveId &entry : live_ids(master)) {
-            if (matches(entry) && std::ranges::any_of(*props, [&](Pid pid) { return property_needs_layout(*entry.object, pid); })) {
+            if (matches(entry) && std::ranges::any_of(*props, [&](Pid pid) { return property_needs_layout(pid, entry.object); })) {
                 impl_->ensure_layout(score);
                 break;
             }
@@ -649,7 +652,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
         if (!has_property(known, (*named)[i]))
             return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", resolved->object->type_name(), props[i]));
     }
-    if (std::ranges::any_of(*named, [&](Pid pid) { return property_needs_layout(*resolved->object, pid); })) {
+    if (std::ranges::any_of(*named, [&](Pid pid) { return property_needs_layout(pid, resolved->object); })) {
         impl_->ensure_layout(*resolved->object->score());
         resolved = read_target();
         if (!resolved) return std::unexpected(resolved.error());

@@ -186,7 +186,7 @@ void TransactionManager::begin_transaction(const muse::TranslatableString &descr
     current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
 }
 
-void TransactionManager::end_transaction(bool rollback, bool layout_all_parts, bool keep_rolled_back_elements) {
+void TransactionManager::end_transaction(bool rollback, bool keep_rolled_back_elements) {
     UndoStack *stack = undo_stack();
 
     if (stack->is_locked()) {
@@ -216,7 +216,7 @@ void TransactionManager::end_transaction(bool rollback, bool layout_all_parts, b
 
     // update() normalizes after postponed deletion. Geometry remains dirty. Source
     // repairs are recorded here, before repeat/timing finalization and capture.
-    master_score_->update(false, layout_all_parts, rollback ? NormalizeMode::REPLAY : NormalizeMode::TRANSACTION);
+    master_score_->update(false, rollback ? NormalizeMode::REPLAY : NormalizeMode::TRANSACTION);
 
     master_score_->invalidate_repeat_list();
     master_score_->update_repeat_list(!rollback);
@@ -313,7 +313,7 @@ void TransactionManager::undo_redo(bool undo, EditData *edit_data) {
         changes = transaction->changes_info(false);
     }
 
-    master_score_->update(false, false, NormalizeMode::REPLAY);
+    master_score_->update(false, NormalizeMode::REPLAY);
     master_score_->invalidate_repeat_list();
     master_score_->update_repeat_list(false);
     master_score_->update_selection();

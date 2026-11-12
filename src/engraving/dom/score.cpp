@@ -4568,7 +4568,7 @@ void Score::layout_if_dirty() {
 
 void Score::do_layout() {
     // Explicit full layout also supports legacy callers that use direct DOM setters.
-    invalidate_normalization(*this, Fraction(0, 1), Fraction(-1, 1));
+    invalidate_normalization(*this);
     do_layout_range(Fraction(0, 1), Fraction(-1, 1));
 }
 

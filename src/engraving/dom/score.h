@@ -435,8 +435,8 @@ public:
                                           const SelectionFilter &filter, bool selection_contains_multi_note_chords);
     void cmd_full_measure_rest();
 
-    void start_cmd(const TranslatableString &action_name);                                                      // start undoable command
-    void end_cmd(bool rollback = false, bool layout_all_parts = false, bool keep_rolled_back_elements = false); // end undoable command
+    void start_cmd(const TranslatableString &action_name);                       // start undoable command
+    void end_cmd(bool rollback = false, bool keep_rolled_back_elements = false); // end undoable command
     void update();
     void undo_redo(bool undo, EditData *);
 

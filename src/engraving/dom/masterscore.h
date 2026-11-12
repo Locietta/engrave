@@ -230,7 +230,7 @@ public:
     muse::Ret sanity_check();
 
 private:
-    void update(bool reset_cmd_state, bool layout_all_parts = false, NormalizeMode mode = NormalizeMode::TRANSACTION);
+    void update(bool reset_cmd_state, NormalizeMode mode = NormalizeMode::TRANSACTION);
 
     void update_automation(const ScoreChanges &changes);
 
