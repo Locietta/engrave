@@ -2319,7 +2319,7 @@ void EngravingItem::scan_connected_items_in_snapping_chain(const System *system,
     }
 }
 
-const RectF &EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
+RectF EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     const Shape &sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 

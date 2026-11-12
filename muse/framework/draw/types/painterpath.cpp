@@ -112,12 +112,7 @@ void PainterPath::translate(double dx, double dy) {
 
 void PainterPath::translate(const PointF &offset) { translate(offset.x(), offset.y()); }
 
-RectF PainterPath::bounding_rect() const {
-    if (dirty_bounds_) {
-        compute_bounding_rect();
-    }
-    return bounds_;
-}
+RectF PainterPath::bounding_rect() const { return elements_.empty() ? RectF() : compute_bounding_rect(); }
 
 bool PainterPath::is_empty() const {
     return elements_.empty() || (elements_.size() == 1 && elements_.front().type == ElementType::MOVE_TO_ELEMENT);
@@ -289,8 +284,7 @@ bool PainterPath::has_valid_coords(const RectF &r) {
     return is_valid_coord(r.x()) && is_valid_coord(r.y()) && is_valid_coord(r.width()) && is_valid_coord(r.height());
 }
 
-void PainterPath::compute_bounding_rect() const {
-    dirty_bounds_ = false;
+RectF PainterPath::compute_bounding_rect() const {
 
     double maxx, maxy;
     double minx = maxx = elements_.at(0).x;
@@ -333,7 +327,7 @@ void PainterPath::compute_bounding_rect() const {
             default: break;
         }
     }
-    bounds_ = RectF(minx, miny, maxx - minx, maxy - miny);
+    return RectF(minx, miny, maxx - minx, maxy - miny);
 }
 
 static void find_ellipse_coords(const RectF &r, double angle, double length, PointF *start_point, PointF *end_point) {
@@ -612,8 +606,5 @@ RectF PainterPath::painterpath_bezier_extrema(const Bezier &b) {
     return RectF(minx, miny, maxx - minx, maxy - miny);
 }
 
-void PainterPath::set_dirty() {
-    dirty_bounds_ = true;
-    convex_ = false;
-}
+void PainterPath::set_dirty() { convex_ = false; }
 } // namespace muse::draw

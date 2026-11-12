@@ -499,7 +499,7 @@ public:
 
         void clear_bbox() { shape_.reset(); }
 
-        const RectF &bbox(LdAccess mode = LdAccess::CHECK) const;
+        RectF bbox(LdAccess mode = LdAccess::CHECK) const;
 
         bool is_set_shape() const { return shape_.has_value(); }
 
