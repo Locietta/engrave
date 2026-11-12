@@ -33,13 +33,6 @@ using mu::engraving::MasterScore;
 using mu::engraving::Part;
 using mu::engraving::Score;
 
-void ensure_layout(Score *score) {
-    // A score gets pages only from layout, so an empty page list is the
-    // reliable "not laid out yet" state in the pinned engine.
-    if (score->pages().empty() || !score->pages().front()) {
-        score->do_layout();
-    }
-}
 } // namespace
 
 bool generate_score_excerpts(MasterScore *score) {
@@ -141,7 +134,7 @@ Score *select_score(MasterScore *score, int excerpt_id) {
         throw std::out_of_range("select_score: invalid excerpt id");
     }
     if (excerpt_id == -1) {
-        ensure_layout(score);
+        score->ensure_layout();
         return score;
     }
 
@@ -166,7 +159,7 @@ Score *select_score(MasterScore *score, int excerpt_id) {
         throw std::runtime_error("select_score: excerpt has no initialized score");
     }
 
-    ensure_layout(selected);
+    selected->ensure_layout();
     return selected;
 }
 } // namespace music

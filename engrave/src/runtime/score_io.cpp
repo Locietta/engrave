@@ -221,7 +221,7 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
                                 const ExportOptions &options, [[maybe_unused]] const std::string &soundfont) {
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
-    auto *score = select_score(project->master_score(), options.excerpt_id);
+    auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);
     if (format == "metadata") return music::dump_json(score_metadata(score));
     if (format == "measurePositions" || format == "segmentPositions")
         return music::dump_json(score_positions(score, format == "segmentPositions"));

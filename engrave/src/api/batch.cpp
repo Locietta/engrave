@@ -25,9 +25,6 @@ namespace engrave {
 
 Result<EditResult> Document::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
     impl_->engine->check_thread();
-    // An edit may consult or update layout, so it must not run against text
-    // geometry from a font generation that the Engine has already replaced.
-    if (!impl_->poisoned) impl_->refresh_fonts();
     return api::BatchGuard(*this).edit(batch, expected_revision);
 }
 
@@ -229,15 +226,38 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     UndoStack *stack = master.undo_stack();
     std::optional<Snapshot> snapshot;
     if (policy == Policy::SNAPSHOT) {
-        snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz", music::ExportOptions{}, {}),
+        snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz",
+                                                       music::ExportOptions{.transaction_snapshot = true}, {}),
                             music::dump_json(music::semantic_dump(&master), 1),
                             id_list(master),
                             {}};
         for (const mu::engraving::Score *score : master.score_list())
             snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version(), score->npages() > 0});
     }
-    const std::vector<LiveId> before = live_ids(master);
     const std::size_t history = stack->size();
+
+    struct SavedLayout {
+        mu::engraving::Score *score;
+        mu::engraving::Score::LayoutState state;
+    };
+
+    std::vector<SavedLayout> saved_layouts;
+    for (auto *score : master.score_list()) saved_layouts.push_back({score, score->layout_state});
+    const auto rollback = [&](bool unsafe) {
+        roll_back(snapshot ? &*snapshot : nullptr, history, unsafe);
+        const auto scores = document.project->master_score()->score_list();
+        for (const auto &saved : saved_layouts) {
+            if (std::ranges::find(scores, saved.score) == scores.end()) continue;
+            // Counters measure executed work, including unsuccessful transactions.
+            auto &state = saved.score->layout_state;
+            state.dirty = saved.state.dirty;
+            state.start = saved.state.start;
+            state.end = saved.state.end;
+            state.font_generation = saved.state.font_generation;
+            state.revision = saved.state.revision;
+        }
+    };
+    const std::vector<LiveId> before = live_ids(master);
 
     // An engine error that a hook or a step leaves behind rejects the batch at that point.
     std::optional<Error> failure;
@@ -273,7 +293,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         }
         if (!failure) master.end_cmd(false, true);
     } catch (const std::bad_alloc &) {
-        roll_back(snapshot ? &*snapshot : nullptr, history, true);
+        rollback(true);
         throw;
     } catch (const std::exception &error) {
         const std::size_t op = context_.op_;
@@ -281,11 +301,11 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()),
                         op < steps.size() ? std::optional(op) : std::nullopt};
     } catch (...) {
-        roll_back(snapshot ? &*snapshot : nullptr, history, true);
+        rollback(true);
         throw;
     }
     if (failure) {
-        roll_back(snapshot ? &*snapshot : nullptr, history, engine_threw || snapshot_ran);
+        rollback(engine_threw || snapshot_ran);
         return std::unexpected(std::move(*failure));
     }
 
@@ -303,6 +323,9 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     assign_missing_ids(master);
     IdDiff diff = diff_ids(before, live_ids(master));
     if (changed) ++document.revision;
+    for (auto *score : master.score_list()) {
+        if (!score->layout_state.dirty) score->layout_state.revision = document.revision;
+    }
 
     result.revision = document.revision;
     result.created = std::move(diff.created);
@@ -386,6 +409,11 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     }
     assign_missing_ids(*project->master_score());
     document.project = std::move(project);
+    document.bind_layout_boundary();
+    for (auto *score : document.project->master_score()->score_list()) {
+        score->layout_state.revision = document.revision;
+        score->layout_state.font_generation = document.engine->font_generation;
+    }
 }
 
 // Whether the undo left the document where the batch found it: the same musical

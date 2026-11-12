@@ -58,8 +58,8 @@ struct Document::Impl {
     std::vector<Diagnostic> diagnostics;
     // A failed edit could not restore the score: only destruction is left.
     bool poisoned = false;
-    std::uint64_t font_generation = 0;
-    void refresh_fonts();
+    void bind_layout_boundary();
+    void ensure_layout(mu::engraving::Score &score);
     api::EditHooks edit_hooks;
 
     static std::unique_ptr<Document> make(EngineState &engine, music::ScoreProject project, music::ScoreAudioMixDefaults audio_defaults,
