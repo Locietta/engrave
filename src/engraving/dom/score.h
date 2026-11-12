@@ -27,6 +27,8 @@
  Definition of Score class.
 */
 
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <set>
@@ -750,6 +752,26 @@ public:
 
     bool auto_layout_enabled() const;
 
+    // Persistent geometry state: CmdState is reset after each transaction.
+    struct LayoutState {
+        bool dirty = true;
+        Fraction start{0, 1};
+        Fraction end{-1, 1};
+        std::uint64_t whole_count = 0;
+        std::uint64_t range_count = 0;
+        std::uint64_t font_generation = 0;
+        std::uint64_t revision = 0;
+        Fraction last_start{0, 1};
+        Fraction last_end{-1, 1};
+    };
+
+    LayoutState layout_state;
+    // Installed on the master by Document; excerpts resolve through their master.
+    std::function<void(Score &)> layout_boundary;
+    void invalidate_layout(const Fraction &start, const Fraction &end);
+    void invalidate_layouts(const Fraction &start, const Fraction &end);
+    void ensure_layout();
+    void layout_if_dirty();
     void do_layout();
     void do_layout_range(const Fraction &st, const Fraction &et);
 
@@ -785,9 +807,17 @@ public:
     //! NOTE Layout
     const LayoutOptions &layout_options() const { return layout_options_; }
 
-    void set_layout_mode(LayoutMode lm) { layout_options_.mode = lm; }
+    void set_layout_mode(LayoutMode lm) {
+        if (layout_options_.mode == lm) return;
+        layout_options_.mode = lm;
+        invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    }
 
-    void set_show_v_box(bool v) { layout_options_.is_show_v_box = v; }
+    void set_show_v_box(bool v) {
+        if (layout_options_.is_show_v_box == v) return;
+        layout_options_.is_show_v_box = v;
+        invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+    }
 
     double note_head_width() const { return layout_options_.note_head_width; }
 
