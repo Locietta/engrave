@@ -54,7 +54,9 @@
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/glissando.h"
 #include "engraving/dom/groups.h"
+#include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/lyrics.h"
@@ -63,6 +65,7 @@
 #include "engraving/dom/measurerepeat.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/noteline.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
@@ -71,6 +74,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
+#include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/tempotext.h"
@@ -224,6 +228,41 @@ TEST(Read, NormalizeOnlyRepairsLinesWithoutLayoutAndPreservesGeometryDirtiness) 
     normalize_score(master);
     EXPECT_EQ(master.normalize_state.normalized_generation, generation);
     EXPECT_FALSE(note->has_layout_data());
+}
+
+TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
+    using namespace mu::engraving;
+    for (const auto type : {ElementType::GLISSANDO, ElementType::GUITAR_BEND, ElementType::NOTELINE}) {
+        auto document = open_path(write470_fixture().parent_path() / "ties_mismatched.mscx");
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *measure = master.first_measure();
+        auto *first = measure->first(SegmentType::CHORD_REST);
+        auto *start = to_chord(first->element(0))->notes().front();
+        auto *end = to_chord(first->next(SegmentType::CHORD_REST)->element(0))->notes().front();
+        std::unique_ptr<Spanner> line;
+        switch (type) {
+            case ElementType::GLISSANDO: line.reset(Factory::create_glissando(start)); break;
+            case ElementType::GUITAR_BEND: line.reset(Factory::create_guitar_bend(start)); break;
+            case ElementType::NOTELINE: line.reset(Factory::create_note_line(start)); break;
+            default: FAIL();
+        }
+        line->set_note_span(start, end);
+        start->add_spanner(line.get());
+        EXPECT_TRUE(master.spanner_map().empty());
+        const Fraction old_tick = start->tick();
+        master.start_cmd(muse::TranslatableString::untranslatable("insert before note-owned line"));
+        master.insert_measure(measure);
+        EXPECT_GT(start->tick(), old_tick);
+        const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+        normalize_score(master);
+        EXPECT_EQ(line->tick(), start->tick());
+        EXPECT_EQ(line->tick2(), end->tick());
+        EXPECT_FALSE(line->has_layout_data());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+        start->remove_spanner(line.get());
+        master.end_cmd(false, true);
+    }
 }
 
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
