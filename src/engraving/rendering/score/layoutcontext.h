@@ -22,13 +22,10 @@
 
 #pragma once
 
-#include <array>
 #include <memory>
 #include <set>
 #include <unordered_set>
 #include <vector>
-
-#include <ankerl/unordered_dense.h>
 
 #include "../../dom/mscore.h"
 #include "../../style/style.h"
@@ -407,8 +404,9 @@ private:
     LayoutConfiguration configuration_;
     DomAccessor dom_;
     LayoutState state_;
-    using GraceGroups = std::array<std::unique_ptr<GraceNotesGroup>, 2>;
-    ankerl::unordered_dense::map<const Chord *, GraceGroups> grace_groups_;
+    // Keep SIMD implementation headers from changing global math overloads in layout clients.
+    struct GraceGroups;
+    std::unique_ptr<GraceGroups> grace_groups_;
     void clear_grace_attachments(EngravingObject *object) const;
 };
 } // namespace mu::engraving::rendering::score

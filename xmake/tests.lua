@@ -268,6 +268,7 @@ target("engrave_read_test")
     add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
     add_includedirs("$(builddir)/xmake-generated")
     add_files(path.join(tests_dir, "read_test.cpp"))
+    add_files(path.join(tests_dir, "layout_headers_test.cpp"))
     if is_plat("windows") then
         add_files(utf8_manifest)
     else
