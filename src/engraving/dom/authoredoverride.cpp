@@ -101,6 +101,20 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
         if (item.type() == ElementType::STEM_SLASH && static_cast<const EngravingObject *>(chord->stem_slash()) == &item)
             return {AuthoredChildRole::STEM_SLASH};
     }
+    if (item.is_parenthesis()) {
+        if (parent->is_chord()) {
+            const auto &groups = static_cast<const Chord *>(parent)->note_parentheses();
+            for (size_t i = 0; i < groups.size(); ++i) {
+                if (groups[i]->left_paren() == &item) return {AuthoredChildRole::PAREN_LEFT, static_cast<uint32_t>(i), 0, 1};
+                if (groups[i]->right_paren() == &item) return {AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1};
+            }
+        }
+        if (parent->is_engraving_item()) {
+            const auto *owner = static_cast<const EngravingItem *>(parent);
+            if (owner->left_paren() == &item) return {AuthoredChildRole::PAREN_LEFT};
+            if (owner->right_paren() == &item) return {AuthoredChildRole::PAREN_RIGHT};
+        }
+    }
     if (parent->is_tuplet() && static_cast<const Tuplet *>(parent)->number() == &item) return {AuthoredChildRole::TUPLET_NUMBER};
     if (item.type() == ElementType::NOTEDOT) {
         const auto *dots = parent->is_note() ? &static_cast<const Note *>(parent)->dots() :
@@ -398,7 +412,7 @@ void restore_authored_override(EngravingItem &item, Pid pid, const AuthoredOverr
 void reset_authored_override(EngravingItem &item, Pid pid) {
     auto &table = *authored_override_table(authored_override_owner(item));
     table.erase(item.authored_child, pid);
-    if (!table.has_entries(item.authored_child)) table.erase_carrier(item.authored_child);
+    // Carrier identity and dormant legacy ordinal survive a property reset.
     mirror_property(item, pid, item.property_default(pid), default_flags(item, pid));
     item.trigger_layout();
 }

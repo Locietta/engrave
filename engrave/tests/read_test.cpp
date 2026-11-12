@@ -5540,6 +5540,9 @@ TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
         const auto edited = muse::PointF(0.125, -0.25) * master.style().spatium();
         ASSERT_TRUE(group->left_paren()->set_property(mu::engraving::Pid::OFFSET, edited));
         const auto bytes = legacy_override_write(chord);
+        const auto source = chord->authored_overrides.entries;
+        chord->note_parentheses().front()->left_paren()->set_offset(muse::PointF(99.0, 99.0));
+        EXPECT_EQ(legacy_override_write(chord), bytes);
         std::unique_ptr<mu::engraving::Chord> copy(chord->clone());
         ASSERT_EQ(copy->note_parentheses().size(), 1u);
         EXPECT_EQ(copy->note_parentheses().front()->notes().front(), copy->notes().front());
@@ -5547,6 +5550,13 @@ TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {
                   mu::engraving::PropertyValue::from_value(edited));
         ASSERT_TRUE((*document)->page_count());
         EXPECT_EQ(legacy_override_write(chord), bytes);
+        ASSERT_EQ(chord->authored_overrides.entries.size(), source.size());
+        for (size_t i = 0; i < source.size(); ++i) {
+            EXPECT_EQ(chord->authored_overrides.entries[i].child, source[i].child);
+            EXPECT_EQ(chord->authored_overrides.entries[i].value, source[i].value);
+            EXPECT_EQ(chord->authored_overrides.entries[i].flags, source[i].flags);
+            EXPECT_EQ(chord->authored_overrides.entries[i].unit, source[i].unit);
+        }
         const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});

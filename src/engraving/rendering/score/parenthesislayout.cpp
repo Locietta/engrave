@@ -50,10 +50,12 @@ void ParenthesisLayout::layout_parentheses(const EngravingItem *parent, const La
         return;
     }
     if (left_paren) {
+        apply_authored_overrides(*left_paren);
         layout_parenthesis(left_paren, left_paren->mutldata(), ctx);
     }
 
     if (right_paren) {
+        apply_authored_overrides(*right_paren);
         layout_parenthesis(right_paren, right_paren->mutldata(), ctx);
     }
 
@@ -72,10 +74,12 @@ void ParenthesisLayout::layout_chord_parentheses(const Chord *chord, const Layou
             return;
         }
         if (left_paren) {
+            apply_authored_overrides(*left_paren);
             layout_parenthesis(left_paren, left_paren->mutldata(), ctx);
         }
 
         if (right_paren) {
+            apply_authored_overrides(*right_paren);
             layout_parenthesis(right_paren, right_paren->mutldata(), ctx);
         }
 

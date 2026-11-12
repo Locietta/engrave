@@ -3174,12 +3174,35 @@ void TRead::read(PalmMute *p, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Parenthesis *p, XmlReader &xml, ReadContext &ctx) {
+    const auto context = p->authored_child;
+    auto *table = authored_override_table(authored_override_owner(*p));
+    const AuthoredChildKey pending{AuthoredChildRole::PAREN_LEFT, UINT32_MAX, 0, context.subordinal};
+    if (table) bind_authored_child(*p, pending);
     while (xml.read_next_start_element()) {
         const AsciiStringView tag(xml.name());
         if (TRead::read_property(p, tag, xml, ctx, Pid::HORIZONTAL_DIRECTION)) {
         } else if (!read_item_properties(p, xml, ctx)) {
             xml.unknown();
         }
+    }
+    if (table) {
+        finish_authored_read(*p);
+        const AuthoredChildKey key{p->direction() == DirectionH::LEFT ? AuthoredChildRole::PAREN_LEFT : AuthoredChildRole::PAREN_RIGHT,
+                                   context.ordinal, 0, context.subordinal};
+        std::vector<AuthoredOverrideEntry> entries;
+        for (const auto &entry : table->entries)
+            if (entry.child == pending) entries.push_back(entry);
+        std::erase_if(table->entries, [&](const auto &entry) { return entry.child == pending; });
+        for (auto &entry : entries) {
+            entry.child = key;
+            table->set(std::move(entry));
+        }
+        auto carrier = *table->carrier(pending);
+        table->erase_carrier(pending);
+        carrier.child = key;
+        table->set_carrier(carrier);
+        p->authored_child = key;
+        apply_authored_overrides(*p);
     }
 }
 
@@ -3471,6 +3494,7 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
 
         if (t == "Parenthesis") {
             Parenthesis *paren = Factory::create_parenthesis(ch);
+            paren->authored_child = {AuthoredChildRole::NONE, static_cast<uint32_t>(ch->note_parentheses().size()), 0, 1};
             TRead::read(paren, e, ctx);
             paren->set_track(ctx.track());
 
