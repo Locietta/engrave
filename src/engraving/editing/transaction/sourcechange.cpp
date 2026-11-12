@@ -99,7 +99,37 @@ PropertyInverse capture_property(EngravingObject &object, Pid id, SourceChangePa
     return result;
 }
 
+std::optional<AuthoredOverridesBefore> capture_authored_overrides(EngravingObject &object, Pid id) {
+    if (!object.is_engraving_item()) return std::nullopt;
+    auto &item = *to_engraving_item(&object);
+    EngravingItem *owner = nullptr;
+    if (((item.is_beam() || item.type() == ElementType::TREMOLO_TWOCHORD) &&
+         (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE || id == Pid::USER_MODIFIED)) ||
+        id == Pid::SIZE_SPATIUM_DEPENDENT) {
+        if (authored_override_table(&item)) owner = &item;
+    }
+    const bool text_format = item.is_text_base() && authored_override_handles(item, Pid::TEXT) &&
+                             (id == Pid::FONT_FACE || id == Pid::FONT_SIZE || id == Pid::FONT_STYLE || id == Pid::TEXT_SCRIPT_ALIGN);
+    if (authored_override_handles(item, id) || (item.type() == ElementType::STEM && id == Pid::USER_LEN) ||
+        id == Pid::SIZE_SPATIUM_DEPENDENT || text_format) {
+        if (auto *parent = authored_override_owner(item)) owner = parent;
+    }
+    if (!owner) return std::nullopt;
+    return AuthoredOverridesBefore{JournalTarget::capture(*owner), *authored_override_table(owner)};
+}
+
+void restore_authored_overrides(AuthoredOverridesBefore &inverse) {
+    auto *owner = to_engraving_item(&inverse.owner.object());
+    // Property/text inverses have already restored the transitional mirrors.
+    // Swap rather than allocate while restoring absence, carriers and units.
+    std::swap(*authored_override_table(owner), inverse.table);
+}
+
 void apply_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+    if (reset_path && authored_override_handles(object, id)) {
+        reset_authored_override(*to_engraving_item(&object), id);
+        return;
+    }
     if (reset_path && id == Pid::PATH && appearance_property(object, id))
         object.reset_property(id);
     else

@@ -65,39 +65,15 @@ void ChangeProperty::flip() {
         return;
     }
 
-    auto *item = element->is_engraving_item() ? to_engraving_item(element) : nullptr;
-    auto *table = item && (((item->is_beam() || item->type() == ElementType::TREMOLO_TWOCHORD) &&
-                            (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE || id == Pid::USER_MODIFIED)) ||
-                           id == Pid::SIZE_SPATIUM_DEPENDENT) ?
-                      authored_override_table(item) :
-                      nullptr;
-    if (item && (authored_override_handles(*item, id) || (item->type() == ElementType::STEM && id == Pid::USER_LEN) ||
-                 id == Pid::SIZE_SPATIUM_DEPENDENT)) {
-        if (auto *owner_table = authored_override_table(authored_override_owner(*item))) table = owner_table;
+    if (reset_chord_line_path && authored_override_handles(*element, id)) {
+        reset_authored_override(*to_engraving_item(element), id);
+        // Failure-only inverse replay restores the previous effective value;
+        // the paired journal entry restores exact source presence afterwards.
+        reset_chord_line_path = false;
+    } else {
+        element->set_property(id, property);
+        element->set_property_flags(id, flags);
     }
-    if (table) {
-        // Owner-local value snapshot also covers compound setters (style changes,
-        // no-slope and first manual beam edits) without per-family undo code.
-        auto before = *table;
-        if (authored_snapshot) {
-            element->set_property(id, property);
-            element->set_property_flags(id, flags);
-            *table = *authored_snapshot;
-            if (item) apply_authored_overrides(*item);
-        } else if (reset_chord_line_path && authored_override_handles(*element, id)) {
-            reset_authored_override(*item, id);
-        } else {
-            element->set_property(id, property);
-            element->set_property_flags(id, flags);
-        }
-        authored_snapshot = std::move(before);
-        property = v;
-        flags = ps;
-        return;
-    }
-
-    element->set_property(id, property);
-    element->set_property_flags(id, flags);
 
     property = v;
     flags = ps;

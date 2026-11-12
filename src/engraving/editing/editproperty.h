@@ -37,7 +37,6 @@ protected:
     PropertyFlags flags;
     bool reset_chord_line_path = false;
     std::optional<ChordLine::AppearanceState> chord_line_appearance;
-    std::optional<AuthoredOverrideTable> authored_snapshot;
 
     void flip() override;
 

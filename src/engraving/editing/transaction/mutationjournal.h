@@ -35,10 +35,11 @@
 #include "undoablecommand.h"
 
 namespace mu::engraving {
-// Closed family dispatch; L1 may add AUTHORED_OVERRIDE without changing entries.
+// Closed family dispatch; source payloads are stored separately by family.
 enum class JournalEntryKind : uint8_t {
     LEGACY,
     PROPERTY,
+    AUTHORED_OVERRIDE,
     STYLE_VALUES,
     BRACKET_PROPERTY,
     TEXT_LINE_PROPERTY,
@@ -61,6 +62,7 @@ struct JournalBatch {
 
     void append_command(UndoableCommand *command);
     void change_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path);
+    void remember_authored_overrides(EngravingObject &object, Pid id);
     void change_style_values(Score &score, std::span<const StyleValue> values);
     void replace_style(Score &score, const MStyle &style, bool overlap);
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
@@ -80,6 +82,8 @@ struct JournalBatch {
     std::optional<ChangedRange> changed_range(size_t index) const;
 
     size_t property_entries() const { return source_.properties.size(); }
+
+    size_t authored_override_entries() const { return source_.authored_overrides.size(); }
 
     size_t style_entries() const { return source_.styles.size(); }
 

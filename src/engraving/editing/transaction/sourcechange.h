@@ -3,10 +3,12 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <span>
 
 #include <amc/vector.hpp>
 
+#include "dom/authoredoverride.h"
 #include "dom/chordline.h"
 #include "dom/chordlist.h"
 #include "editing/editdata.h"
@@ -35,6 +37,13 @@ struct PropertyInverse {
     PropertyValue before;
     PropertyFlags flags = PropertyFlags::NOSTYLE;
     uint32_t appearance = no_source_payload;
+};
+
+// Paired with the property/text inverse in the replay stream. The source owner
+// survives display replacement; only edits that can touch its table pay for it.
+struct AuthoredOverridesBefore {
+    JournalTarget owner;
+    AuthoredOverrideTable table;
 };
 
 struct StyleValue {
@@ -101,6 +110,7 @@ struct SpatiumSources {
 // chord-line appearance records are allocated only for appearance changes.
 struct SourceChangePayloads {
     amc::vector<PropertyInverse> properties;
+    amc::vector<AuthoredOverridesBefore> authored_overrides;
     amc::vector<ChordLine::AppearanceState> appearances;
     amc::vector<StyleValuesInverse> styles;
     amc::vector<StyleValue> style_values;
@@ -110,6 +120,8 @@ struct SourceChangePayloads {
 };
 
 PropertyInverse capture_property(EngravingObject &object, Pid id, SourceChangePayloads &payloads);
+std::optional<AuthoredOverridesBefore> capture_authored_overrides(EngravingObject &object, Pid id);
+void restore_authored_overrides(AuthoredOverridesBefore &inverse);
 void apply_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path);
 void restore_property(const PropertyInverse &inverse, const SourceChangePayloads &payloads);
 
