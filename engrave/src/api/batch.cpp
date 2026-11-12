@@ -243,8 +243,13 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
 
     std::vector<SavedLayout> saved_layouts;
     for (auto *score : master.score_list()) saved_layouts.push_back({score, score->layout_state});
+    const auto *original_project = document.project.get();
     const auto rollback = [&](bool unsafe) {
         roll_back(snapshot ? &*snapshot : nullptr, history, unsafe);
+        // A snapshot reload reconciles pending geometry with full layouts (see
+        // restore()). Its scores own new caches and instance-local counters;
+        // saved pointers and freshness belong only to an in-place unwind.
+        if (document.project.get() != original_project) return;
         const auto scores = document.project->master_score()->score_list();
         for (const auto &saved : saved_layouts) {
             if (std::ranges::find(scores, saved.score) == scores.end()) continue;
@@ -408,6 +413,11 @@ void BatchGuard::restore(const Snapshot &snapshot) {
         ++versions;
     }
     assign_missing_ids(*project->master_score());
+    // Full reload/compatibility layouts consume the original pending ranges.
+    // Keep the replacement's state: laid-out scores are fresh; any unlaid-out
+    // score remains fully dirty, covering its old pending range. Counters are
+    // diagnostics for a Score instance, so they count reload work here and do
+    // not carry over work performed by the destroyed instances.
     document.project = std::move(project);
     document.bind_layout_boundary();
     for (auto *score : document.project->master_score()->score_list()) {

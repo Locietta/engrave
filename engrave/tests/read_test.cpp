@@ -1041,6 +1041,106 @@ TEST(Read, FontRefreshWaitsForGeometryBoundary) {
     EXPECT_EQ(document.revision(), revision);
 }
 
+// Replacement consumes pending ranges via full reload layouts. Counter deltas
+// are meaningful within each Score lifetime, not across project replacement.
+TEST(Read, SnapshotReplacementConsumesMasterPendingLayout) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "chordline_path.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    for (const bool change_font : {false, true}) {
+        SCOPED_TRACE(change_font);
+        auto document = open_path(*it);
+        ASSERT_TRUE(document);
+        const auto outline = document->outline();
+        ASSERT_TRUE(outline);
+        ASSERT_GE(outline->parts.size(), 2u);
+        auto *before = &master_of(*document);
+        using mu::engraving::Fraction;
+        for (int i = 0; i < 5; ++i) {
+            before->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+            ASSERT_TRUE(document->page_count());
+        }
+        const auto old_count = layout_count(*before);
+        before->invalidate_layout(Fraction(1, 4), Fraction(1, 2));
+        const auto revision = document->revision();
+        const auto generation = engrave::DocumentAccess::impl(*document).engine->font_generation;
+        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+        hooks.before_step = [change_font](std::size_t step) {
+            if (step != 1) return;
+            if (change_font) ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
+            throw std::runtime_error("recover after generated excerpt");
+        };
+        EXPECT_FALSE(document->edit({{engrave::GenerateExcerpts{{outline->parts[1].id}}}}));
+        hooks = {};
+        auto &after = master_of(*document);
+        EXPECT_NE(&after, before);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_EQ(after.layout_state.revision, revision);
+        EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
+        EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
+        EXPECT_LT(after.layout_state.last_end, Fraction(0, 1));
+        const auto count = layout_count(after);
+        EXPECT_GT(count, 0u);
+        EXPECT_LT(count, old_count); // Replacement diagnostics start with reload work.
+        ASSERT_TRUE(document->page_count());
+        ASSERT_TRUE(document->render({}));
+        EXPECT_EQ(layout_count(after), count);
+    }
+}
+
+TEST(Read, SnapshotReplacementConsumesExcerptPendingLayout) {
+    for (const bool change_font : {false, true}) {
+        SCOPED_TRACE(change_font);
+        auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
+        ASSERT_TRUE(document);
+        const auto outline = document->outline();
+        ASSERT_TRUE(outline);
+        ASSERT_FALSE(outline->excerpts.empty());
+        const engrave::ScoreSel selection{outline->excerpts.front().id};
+        auto &master = master_of(*document);
+        auto selected = engrave::select_score(master, selection);
+        ASSERT_TRUE(selected);
+        auto *before = *selected;
+        using mu::engraving::Fraction;
+        ASSERT_TRUE(document->page_count());
+        for (int i = 0; i < 5; ++i) {
+            before->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+            ASSERT_TRUE(document->page_count(selection));
+        }
+        const auto old_count = layout_count(*before);
+        master.invalidate_layout(Fraction(1, 4), Fraction(1, 2));
+        before->invalidate_layout(Fraction(3, 4), Fraction(1, 1));
+        const auto generation = engrave::DocumentAccess::impl(*document).engine->font_generation;
+        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+        hooks.policy = engrave::api::Policy::SNAPSHOT;
+        hooks.before_step = [change_font](std::size_t) {
+            if (change_font) ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
+            throw std::runtime_error("replace master and excerpt");
+        };
+        EXPECT_FALSE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
+        hooks = {};
+        selected = engrave::select_score(master_of(*document), selection);
+        ASSERT_TRUE(selected);
+        auto &after = **selected;
+        EXPECT_NE(&after, before);
+        EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_FALSE(master_of(*document).layout_state.dirty);
+        EXPECT_EQ(after.layout_state.revision, document->revision());
+        EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
+        EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
+        EXPECT_LT(after.layout_state.last_end, Fraction(0, 1));
+        const auto count = layout_count(after);
+        EXPECT_GT(count, 0u);
+        EXPECT_LT(count, old_count);
+        const auto master_count = layout_count(master_of(*document));
+        ASSERT_TRUE(document->page_count(selection));
+        ASSERT_TRUE(document->render({.score = selection}));
+        ASSERT_TRUE(document->page_count());
+        EXPECT_EQ(layout_count(after), count);
+        EXPECT_EQ(layout_count(master_of(*document)), master_count);
+    }
+}
+
 TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
     constexpr std::string_view xml = R"(<score-partwise version="4.0">
 <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
