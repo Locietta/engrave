@@ -39,6 +39,7 @@
 #include <gtest/gtest.h>
 
 #include "engrave/src/api/handles.h"
+#include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/score/json.h"
@@ -66,6 +67,7 @@
 #include "engraving/dom/harmony.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/jump.h"
+#include "engraving/dom/ledgerline.h"
 #include "engraving/dom/lyrics.h"
 #include "engraving/dom/marker.h"
 #include "engraving/dom/masterscore.h"
@@ -868,6 +870,57 @@ TEST(Read, GetAllFreshSourcePropertiesSkipsInvalidEnumDefaultTokens) {
         }
     }
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, LedgerLinesBelongToLayoutAndPreserveNormalizedSource) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *note = chord->up_note();
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), 96}}}));
+    EXPECT_FALSE(chord->has_layout_data());
+    EXPECT_TRUE(chord->ledger_lines().empty());
+    EXPECT_FALSE(chord->has_layout_data());
+    auto source_properties = [&] {
+        std::vector<std::tuple<EID, Pid, PropertyValue, PropertyFlags>> values;
+        for (const auto *object : engrave::document_objects(master)) {
+            if (!engrave::takes_id(*object)) continue;
+            values.emplace_back(object->eid(), Pid::END, PropertyValue{}, PropertyFlags::NOSTYLE);
+            for (const auto pid : engrave::api::pids_of(object->type_name())) {
+                values.emplace_back(object->eid(), pid, object->get_property(pid), object->property_flags(pid));
+            }
+        }
+        return values;
+    };
+    auto source_structure = [&] {
+        std::vector<std::tuple<const EngravingObject *, const EngravingObject *, EID>> structure;
+        for (const auto *object : engrave::document_objects(master)) {
+            if (!engrave::takes_id(*object)) continue;
+            for (const auto *ancestor = object; ancestor; ancestor = ancestor->ownership_parent()) {
+                structure.emplace_back(ancestor, ancestor->ownership_parent(), ancestor->eid());
+                if (ancestor == &master) break;
+            }
+        }
+        return structure;
+    };
+    const auto before = source_properties();
+    const auto structure_before = source_structure();
+    const auto revision = document.revision();
+    ASSERT_TRUE(document.page_count());
+    EXPECT_EQ(source_properties(), before);
+    EXPECT_EQ(source_structure(), structure_before);
+    EXPECT_EQ(document.revision(), revision);
+    ASSERT_FALSE(chord->ledger_lines().empty());
+    for (const auto *line : chord->ledger_lines()) EXPECT_TRUE(line->generated());
+    EXPECT_EQ(chord->ledger_lines().data(), chord->ldata()->ledger_lines.data());
+    chord->resize_ledger_lines_to(0);
+    EXPECT_TRUE(chord->ledger_lines().empty());
+    master.set_layout_all();
+    ASSERT_TRUE(document.page_count());
+    EXPECT_FALSE(chord->ledger_lines().empty());
 }
 
 TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {

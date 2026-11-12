@@ -227,9 +227,7 @@ public:
 
     void set_is_ui_item(bool val) { is_ui_item_ = val; }
 
-    const std::vector<LedgerLine *> &ledger_lines() const { return ledger_lines_; }
-
-    std::vector<LedgerLine *> &ledger_lines() { return ledger_lines_; }
+    const std::vector<LedgerLine *> &ledger_lines() const { return ldata()->ledger_lines; }
 
     void resize_ledger_lines_to(size_t new_size);
 
@@ -483,6 +481,12 @@ public:
     bool all_notes_tied_to_next() const;
     bool all_elements_invisible() const;
 
+    struct LayoutData : ChordRest::LayoutData {
+        ~LayoutData();
+        std::vector<LedgerLine *> ledger_lines;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Chord)
+
 private:
 
     friend struct Factory;
@@ -494,7 +498,6 @@ private:
     void process_siblings(std::function<void(EngravingItem *)> func, bool include_temporary_siblings) const;
 
     std::vector<Note *> notes_; // sorted to decreasing line step
-    std::vector<LedgerLine *> ledger_lines_;
     NoteParenthesisInfoList note_parens_;
 
     Stem *stem_ = nullptr;
