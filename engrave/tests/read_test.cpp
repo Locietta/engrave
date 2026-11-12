@@ -5275,6 +5275,66 @@ std::string legacy_override_write(const mu::engraving::EngravingItem *item) {
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
 }
 
+std::string legacy_segment_fixture(std::string_view spanners) {
+    return R"(<museScore version="5.00"><Score><Division>480</Division><Style><spatium>1.75</spatium></Style>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><eid>B_B</eid><durationType>half</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><eid>C_C</eid><durationType>half</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+</voice></Measure></Staff><SpannerMap>)" +
+           std::string(spanners) + "</SpannerMap></Score></museScore>";
+}
+
+TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
+    const auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
+<startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2>
+<Segment><subtype>1</subtype><offset x="0.25" y="0.5"/><off2 x="-0.25" y="0"/><minDistance>0</minDistance></Segment>
+<Segment><subtype>3</subtype><offset x="0" y="-0.25"/><off2 x="1" y="0"/></Segment></HairPin>)");
+    auto document = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    ASSERT_EQ(master.spanner_map().map().size(), 1u);
+    auto *line = master.spanner_map().map().begin()->second;
+    ASSERT_EQ(line->spanner_segments().size(), 2u);
+    EXPECT_EQ(int(line->spanner_segments()[0]->spanner_segment_type()), 1);
+    EXPECT_EQ(int(line->spanner_segments()[1]->spanner_segment_type()), 3);
+    EXPECT_DOUBLE_EQ(line->spanner_segments()[0]->get_property(mu::engraving::Pid::MIN_DISTANCE).to_double(), 0.0);
+    EXPECT_EQ(line->spanner_segments()[0]->property_flags(mu::engraving::Pid::MIN_DISTANCE), mu::engraving::PropertyFlags::UNSTYLED);
+    const auto bytes = legacy_override_write(line);
+    EXPECT_EQ(legacy_override_write(line), bytes);
+    EXPECT_NE(bytes.find("<minDistance>0</minDistance>"), std::string::npos);
+    auto reopened = g_engine->open(as_bytes(legacy_segment_fixture(bytes)));
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto &restored = master_of(**reopened).spanner_map().map();
+    ASSERT_EQ(restored.size(), 1u);
+    EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
+    const auto xml = legacy_segment_fixture(R"(<Slur><eid>F_F</eid><track>0</track>
+<startElement>B_B</startElement><endElement>C_C</endElement>
+<SlurSegment no="0"><o1 x="0.25" y="-0.5"/><o2 x="0" y="0.25"/></SlurSegment>
+<SlurSegment no="2"><o3 x="-0.75" y="0"/><o4 x="0" y="0.5"/></SlurSegment></Slur>)");
+    auto document = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    ASSERT_EQ(master.spanner_map().map().size(), 1u);
+    auto *slur = master.spanner_map().map().begin()->second;
+    ASSERT_EQ(slur->spanner_segments().size(), 3u);
+    const auto bytes = legacy_override_write(slur);
+    EXPECT_NE(bytes.find("no=\"0\""), std::string::npos);
+    EXPECT_EQ(bytes.find("no=\"1\""), std::string::npos);
+    EXPECT_NE(bytes.find("no=\"2\""), std::string::npos);
+    auto reopened = g_engine->open(as_bytes(legacy_segment_fixture(bytes)));
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    const auto &restored = master_of(**reopened).spanner_map().map();
+    ASSERT_EQ(restored.size(), 1u);
+    ASSERT_EQ(restored.begin()->second->spanner_segments().size(), 3u);
+    EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Read, TremoloManualFragmentImportsBeforeLayoutAndSurvivesNativeReopen) {
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
                       "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx";

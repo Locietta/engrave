@@ -37,6 +37,8 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/parenthesis.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/spanner.h"
+#include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stem.h"
 #include "engraving/dom/tempotext.h"
@@ -1216,6 +1218,28 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(SpannerSegmentEdit, FailedBatchRestoresLegacyOffset2Baseline) {
+    auto document = open("hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    const auto &spanners = engrave::harness::master_of(*document).spanner_map().map();
+    ASSERT_FALSE(spanners.empty());
+    auto *spanner = spanners.begin()->second;
+    ASSERT_FALSE(spanner->spanner_segments().empty());
+    auto *segment = spanner->spanner_segments().front();
+    const auto before = segment->get_property(Pid::OFFSET2);
+    const auto flags = segment->property_flags(Pid::OFFSET2);
+    auto result = engrave::api::BatchGuard(*document).run(
+        {[segment](engrave::api::EditContext &) -> engrave::Result<void> {
+             segment->undo_change_property(Pid::OFFSET2, muse::PointF(1.0, -2.0));
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after legacy segment offset2"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(segment->get_property(Pid::OFFSET2), before);
+    EXPECT_EQ(segment->property_flags(Pid::OFFSET2), flags);
 }
 
 TEST(TremoloOverrideEdit, FailedBatchRestoresManualEndpointsAndPresence) {
