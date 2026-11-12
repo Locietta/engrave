@@ -1247,6 +1247,49 @@ TEST(Read, NativeMasterExportPreparesUnrenderedExcerpts) {
     }
 }
 
+TEST(Read, LegacyMmrMarkersRestoreTheCorrectSourceEndpoint) {
+    using namespace mu::engraving;
+    const auto fixture = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
+    for (const auto version : {"4.60", "5.00"}) {
+        for (const auto &[type, style, label, at_end] :
+             {std::tuple{"fine", "repeat_right", "fine", true}, std::tuple{"coda", "repeat_right", "coda", true},
+              std::tuple{"user", "repeat_right", "custom-end", true}, std::tuple{"user", "repeat_left", "custom-start", false}}) {
+            SCOPED_TRACE(std::string(version) + ":" + label);
+            auto source = read_text(fixture);
+            source.replace(source.find("5.00"), 4, version);
+            const auto jump = source.find("<Jump>");
+            const auto jump_end = source.find("</Jump>", jump) + std::string("</Jump>").size();
+            source.replace(jump, jump_end - jump,
+                           std::format("<Marker><style>{}</style><label>{}</label><markerType>{}</markerType><text>{}</text></Marker>",
+                                       style, label, type, label));
+            const bool fine = std::string_view(type) == "fine";
+            source.insert(source.rfind("</Staff>"),
+                          std::string("<Measure>") +
+                              (fine ? "<Jump><jumpTo>start</jumpTo><playUntil>fine</playUntil><text>D.C. al Fine</text></Jump>" : "") +
+                              "<voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
+            auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *expected = at_end ? master.first_measure()->next_measure() : master.first_measure();
+            const auto found = std::ranges::find_if(expected->el(), [](const auto *item) { return item->is_marker(); });
+            ASSERT_NE(found, expected->el().end());
+            EXPECT_EQ(to_marker(*found)->label().to_std_string(), label);
+            EXPECT_EQ((*found)->tick(), expected->tick());
+            if (fine) EXPECT_EQ(master.repeat_list(true).ticks(), 5 * whole_note_ticks);
+            EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+            const auto saved = document.export_score({.format = engrave::Format::MSCX});
+            ASSERT_TRUE(saved);
+            auto reloaded = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reloaded);
+            auto &copy = master_of(**reloaded);
+            auto *copy_measure = at_end ? copy.first_measure()->next_measure() : copy.first_measure();
+            EXPECT_TRUE(std::ranges::any_of(copy_measure->el(), [](const auto *item) { return item->is_marker(); }));
+            if (fine) EXPECT_EQ(copy.repeat_list(true).ticks(), 5 * whole_note_ticks);
+        }
+    }
+}
+
 TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
     using namespace mu::engraving;
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
