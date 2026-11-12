@@ -84,6 +84,7 @@
 #include "select.h"
 #include "sig.h"
 #include "slur.h"
+#include "sourceidentity.h"
 #include "staff.h"
 #include "stafftextbase.h"
 #include "stafftype.h"
@@ -406,6 +407,17 @@ void Score::update_ticks_and_time_sig_map(bool sync_mm_rests) {
         tick += measure_ticks;
     }
 
+    // Source signatures may currently belong to an MMR. Restore their staff
+    // entries after all real ticks have moved, using source tick identity.
+    for (Measure *m = first_measure(); m; m = m->next_measure()) {
+        if (!m->mm_rest()) continue;
+        for (const Segment &segment : m->mm_rest()->segments()) {
+            if (!segment.is_time_sig_type()) continue;
+            for (auto *item : segment.elist()) {
+                if (item && item->is_time_sig() && !item->generated()) item->staff()->add_time_sig(to_time_sig(item));
+            }
+        }
+    }
     measures_.update_tick_index();
     need_update_ticks_and_time_sig_map_ = false;
 }

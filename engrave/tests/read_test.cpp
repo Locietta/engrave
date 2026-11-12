@@ -40,6 +40,7 @@
 
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
+#include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/score/json.h"
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_positions.h"
@@ -59,8 +60,11 @@
 #include "engraving/dom/groups.h"
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
+#include "engraving/dom/harmony.h"
 #include "engraving/dom/instrument.h"
+#include "engraving/dom/jump.h"
 #include "engraving/dom/lyrics.h"
+#include "engraving/dom/marker.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/measurerepeat.h"
@@ -77,6 +81,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/slur.h"
+#include "engraving/dom/sourceidentity.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
@@ -95,6 +100,7 @@
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/normalization/normalize.h"
 #include "engraving/normalization/notes.h"
+#include "engraving/playback/flatplaybackscore.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/systemlayout.h"
@@ -512,6 +518,83 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     EXPECT_EQ(ornament->note_above()->pitch(), auxiliary_pitch);
     manager->undo_redo(false, nullptr);
     EXPECT_FALSE(target->visible());
+}
+
+TEST(Read, MmrOwnedSourceKeepsRepeatsTempoHarmonyAndBeamingGroups) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
+    const auto begin = source.find("<Chord>");
+    const auto end = source.find("</Chord>", begin) + std::string("</Chord>").size();
+    source.replace(begin, end - begin, "<Rest><durationType>measure</durationType></Rest>");
+    source.insert(source.find("</Measure>") + std::string("</Measure>").size(),
+                  "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *first = master.first_measure();
+    auto *last = master.last_measure();
+    auto *marker = Factory::create_marker(first);
+    marker->set_track(0);
+    marker->set_marker_type(MarkerType::SEGNO);
+    first->add(marker);
+    auto *jump = Factory::create_jump(last);
+    jump->set_track(0);
+    jump->set_jump_type(JumpType::DS);
+    last->add(jump);
+    // Existing MMRs are dissolved before adding source annotations, then rebuilt.
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, false);
+    master.do_layout();
+    auto *segment = first->first(SegmentType::CHORD_REST);
+    auto *tempo = Factory::create_tempo_text(segment);
+    tempo->set_track(0);
+    tempo->set_tempo(BeatsPerSecond(1.0));
+    tempo->set_follow_text(false);
+    segment->add(tempo);
+    auto *harmony = Factory::create_harmony(segment);
+    harmony->set_track(0);
+    harmony->set_harmony(u"C");
+    segment->add(harmony);
+    master.parts().front()->update_harmony_channels(false);
+    master.rebuild_midi_mapping();
+    auto *signature = master.staff(0)->time_sig(Fraction(0, 1));
+    ASSERT_NE(signature, nullptr);
+    Groups custom;
+    custom.add_stop(240, DurationType::V_EIGHTH, BeamMode::BEGIN);
+    signature->set_groups(custom);
+    master.style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
+    master.do_layout();
+    auto *display = first->mm_rest();
+    ASSERT_NE(display, nullptr);
+    EXPECT_EQ(jump->find_measure(), display);
+    EXPECT_EQ(marker->find_measure(), display);
+    EXPECT_EQ(tempo->find_measure(), display);
+    EXPECT_EQ(harmony->find_measure(), display);
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_document(master);
+    master.init_automation();
+    EXPECT_EQ(master.repeat_list(true).ticks(), 2 * master.end_tick().ticks());
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(0).val, 1.0);
+    EXPECT_EQ(master.staff(0)->time_sig(Fraction(0, 1)), signature);
+    EXPECT_EQ(master.staff(0)->group(Fraction(0, 1)), custom);
+    const auto annotations = source_annotations(*segment);
+    EXPECT_EQ(std::ranges::count(annotations, harmony), 1);
+    EXPECT_EQ(std::ranges::count(annotations, tempo), 1);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    PlaybackScoreBuilder builder;
+    using namespace muse::mpe;
+    auto profile = std::make_shared<ArticulationsProfile>();
+    ArticulationPattern pattern;
+    pattern.emplace(0, ArticulationPatternSegment(ArrangementPattern(hundred_percent, 0),
+                                                  PitchPattern(ArticulationMap::expected_size, ten_percent, 0),
+                                                  ExpressionPattern(ArticulationMap::expected_size, ten_percent, 0)));
+    profile->set_pattern(ArticulationType::STANDARD, pattern);
+    builder.profiles.profiles.fill(profile);
+    auto playback = builder.build(&master);
+    std::size_t chord_notes = 0;
+    for (const auto &[id, events] : playback.tracks) chord_notes += events.notes.size();
+    EXPECT_GT(chord_notes, 0u); // The source contains rests only; these are chord-symbol events.
 }
 
 TEST(Read, NormalizeResolvesSpannerEndsAgainstRealMeasuresWithMmRests) {
