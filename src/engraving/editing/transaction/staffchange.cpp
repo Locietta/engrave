@@ -81,6 +81,20 @@ void apply_staff_hide(Measure &measure, staff_idx_t staff, AutoOnOff value) {
     measure.trigger_layout(staff);
 }
 
+void apply_staff_brackets(Staff &staff, size_t level, BracketType type, size_t span, bool adding) {
+    EditStaffBrackets::set_bracket_type(staff.score(), staff.idx(), level, adding ? type : BracketType::NO_BRACKET);
+    if (adding) EditStaffBrackets::set_bracket_span(staff.score(), staff.idx(), level, span);
+    staff.trigger_layout();
+}
+
+void Score::record_bracket_add(Staff *staff, size_t level, BracketType type, size_t span) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_brackets(staff, level, type, span, true);
+}
+
+void Score::record_bracket_remove(Staff *staff, size_t level) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_brackets(staff, level, BracketType::NO_BRACKET, 0, false);
+}
+
 void Score::record_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
     transaction_manager()->current_or_dummy_transaction().change_staff_membership(staff, index, adding);
 }

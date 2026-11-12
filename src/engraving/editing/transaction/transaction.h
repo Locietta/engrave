@@ -31,6 +31,7 @@
 namespace mu::engraving {
 struct Part;
 struct Staff;
+struct MStaff;
 struct SharedPart;
 struct StringTunings;
 struct StringData;
@@ -72,6 +73,10 @@ struct Transaction {
     void reparent_segment(Segment *item, Measure *parent, Fraction tick);
     void link_objects(EngravingObject *item, EngravingObject *peer);
     void unlink_object(EngravingObject *item);
+    void change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
+    void add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
+    void change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
+    void change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding);
     void change_staff_membership(Staff *staff, staff_idx_t index, bool adding);
     void change_system_staff(Staff *staff, bool adding);
     void change_staff_order(Score *score, const std::vector<staff_idx_t> &order);

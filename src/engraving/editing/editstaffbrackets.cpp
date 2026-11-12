@@ -73,12 +73,10 @@ void EditStaffBrackets::undo_add_bracket(Score *score, Staff *staff, size_t leve
         }
     }
 
-    score->undo(new AddBracket(staff, level, type, span));
+    score->record_bracket_add(staff, level, type, span);
 }
 
-void EditStaffBrackets::undo_remove_bracket(Score *score, Bracket *b) {
-    score->undo(new RemoveBracket(b->staff(), b->column(), b->bracket_type(), b->span()));
-}
+void EditStaffBrackets::undo_remove_bracket(Score *score, Bracket *b) { score->record_bracket_remove(b->staff(), b->column()); }
 
 void EditStaffBrackets::fill_brackets(Score *score, staff_idx_t staff_idx, size_t idx) {
     // make sure index idx is valid
@@ -123,7 +121,7 @@ void EditStaffBrackets::adjust_brackets_del(Score *score, size_t sidx, size_t ei
             } else if (ends_outside_deleted_range) {
                 const size_t column = bi->column();
                 const BracketType bracket_type = bi->bracket_type();
-                score->undo(new RemoveBracket(score->staves().at(staff_idx), bi->column(), bi->bracket_type(), span));
+                score->record_bracket_remove(score->staves().at(staff_idx), bi->column());
                 int new_span = int(span - (eidx - staff_idx));
                 if (eidx < score->staves().size() && new_span > 0) {
                     // Move the bracket past the end of the deleted range,
@@ -229,34 +227,4 @@ void EditStaffBrackets::insert_bracket(Score *score, staff_idx_t staff_idx, Brac
         fill_brackets(score, staff_idx, column - 1);
         staff_brackets.push_back(b);
     }
-}
-
-//---------------------------------------------------------
-//   AddBracket
-//---------------------------------------------------------
-
-void AddBracket::redo() {
-    EditStaffBrackets::set_bracket_type(staff->score(), staff->idx(), level, bracket_type);
-    EditStaffBrackets::set_bracket_span(staff->score(), staff->idx(), level, span);
-    staff->trigger_layout();
-}
-
-void AddBracket::undo() {
-    EditStaffBrackets::set_bracket_type(staff->score(), staff->idx(), level, BracketType::NO_BRACKET);
-    staff->trigger_layout();
-}
-
-//---------------------------------------------------------
-//   RemoveBracket
-//---------------------------------------------------------
-
-void RemoveBracket::redo() {
-    EditStaffBrackets::set_bracket_type(staff->score(), staff->idx(), level, BracketType::NO_BRACKET);
-    staff->trigger_layout();
-}
-
-void RemoveBracket::undo() {
-    EditStaffBrackets::set_bracket_type(staff->score(), staff->idx(), level, bracket_type);
-    EditStaffBrackets::set_bracket_span(staff->score(), staff->idx(), level, span);
-    staff->trigger_layout();
 }
