@@ -45,6 +45,8 @@
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engrave/src/score/write470.h"
+#include "engraving/automation/automationdata.h"
+#include "engraving/automation/tempovalues.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
@@ -63,16 +65,21 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
+#include "engraving/dom/repeatlist.h"
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
+#include "engraving/dom/tempotext.h"
+#include "engraving/dom/tempotimeline.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/editproperty.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/rendering/score/chordlayout.h"
@@ -1244,6 +1251,147 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 // --- the tests -----------------------------------------------------------
 
 std::uint64_t layout_count(const mu::engraving::Score &score) { return score.layout_state.whole_count + score.layout_state.range_count; }
+
+TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
+    using namespace mu::engraving;
+    constexpr std::string_view xml = R"(<score-partwise version="4.0">
+<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>1</divisions>
+<time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<direction><sound tempo="120"/></direction>
+<barline location="left"><repeat direction="forward"/></barline>
+<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+<barline location="right"><repeat direction="backward"/></barline></measure></part>
+</score-partwise>)";
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *manager = master.transaction_manager();
+    const auto before = music::dump_json(music::semantic_dump(&master), 1);
+    const auto history = master.undo_stack()->size();
+    const auto automation = master.automation_data()->dump();
+    const auto count = layout_count(master);
+    const auto *first = master.repeat_list(true).front();
+    for (int i = 0; i < 4; ++i) {
+        for (bool expand : {false, true}) {
+            const auto &repeats = master.repeat_list(expand);
+            const auto &tempo = master.tempo_timeline(expand);
+            EXPECT_EQ(repeats.utick2tick(1920), expand ? 0 : 1920);
+            EXPECT_DOUBLE_EQ(tempo.utick2utime(1920), 2.0);
+            EXPECT_EQ(tempo.utime2utick(2.0), 1920);
+            EXPECT_DOUBLE_EQ(tempo.tempo(0).val, 2.0);
+        }
+    }
+    EXPECT_EQ(master.repeat_list(true).front(), first);
+    EXPECT_EQ(master.automation_data()->dump(), automation);
+    EXPECT_EQ(master.undo_stack()->size(), history);
+    EXPECT_EQ(layout_count(master), count);
+    EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), before);
+
+    manager->begin_transaction(muse::TranslatableString::untranslatable("repeat edit"));
+    master.undo(new ChangeProperty(master.first_measure(), Pid::REPEAT_COUNT, 3));
+    manager->end_transaction();
+    EXPECT_EQ(master.repeat_list(true).ticks(), 5760);
+    EXPECT_EQ(master.repeat_list(false).ticks(), 1920);
+    EXPECT_EQ(master.undo_stack()->size(), history + 1);
+    manager->undo_redo(true, nullptr);
+    EXPECT_EQ(master.repeat_list(true).ticks(), 3840);
+    manager->undo_redo(false, nullptr);
+    EXPECT_EQ(master.repeat_list(true).ticks(), 5760);
+
+    TempoText *mark = nullptr;
+    master.scan_elements([&mark](EngravingItem *item) {
+        if (item->is_tempo_text()) mark = to_tempo_text(item);
+    });
+    ASSERT_NE(mark, nullptr);
+    const auto midi_before = document.export_score({.format = engrave::Format::MIDI});
+    ASSERT_TRUE(midi_before);
+    manager->begin_transaction(muse::TranslatableString::untranslatable("tempo edit"));
+    master.undo(new ChangeProperty(mark, Pid::TEMPO, BeatsPerSecond(1.0)));
+    manager->end_transaction();
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 4.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(1920), 4.0);
+    const auto midi_after = document.export_score({.format = engrave::Format::MIDI});
+    ASSERT_TRUE(midi_after);
+    EXPECT_NE(*midi_after, *midi_before);
+    manager->undo_redo(true, nullptr);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 2.0);
+    manager->undo_redo(false, nullptr);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 4.0);
+    ASSERT_TRUE(master.set_tempo_multiplier(BeatsPerSecond(2.0)));
+    master.init_automation();
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 2.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(1920), 2.0);
+    TempoTimeline override;
+    override.rebuild(TempoValues{{0, 4.0}}, {});
+    master.set_tempo_timeline_override(override);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 1.0);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).utick2utime(1920), 1.0);
+    master.set_tempo_timeline_override(std::nullopt);
+    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 2.0);
+    AutomationPoint point;
+    point.value.out_value = normalize_tempo(BeatsPerSecond(3.0));
+    AutomationPointEdits edits{{480, AutomationPointEdit::SetPoint{point}}};
+    master.edit_automation_points(tempo_key, edits, false);
+    const auto authored = master.automation_data()->curve(tempo_key).at(480);
+    master.init_automation();
+    EXPECT_EQ(master.automation_data()->curve(tempo_key).at(480), authored);
+    EXPECT_FALSE(master.automation_data()->curve(tempo_key).at(480).generated);
+    const auto measures = document.query({.types = {"Measure"}});
+    ASSERT_TRUE(measures);
+    ASSERT_FALSE(measures->elements.empty());
+    ASSERT_TRUE(document.edit({{engrave::InsertMeasures{.before = engrave::Ref{measures->elements.front().id}, .count = 1}}}));
+    const auto &shifted = master.automation_data()->curve(tempo_key);
+    ASSERT_TRUE(shifted.contains(2400));
+    EXPECT_EQ(shifted.at(2400), authored);
+}
+
+TEST(Read, VoltaAndJumpReplayPublishesRepeatState) {
+    using namespace mu::engraving;
+    for (const auto &[type, property, replacement, fixture] :
+         {std::tuple{"Volta", Pid::VOLTA_ENDING, PropertyValue::from_value(std::vector<int>{2}),
+                     "tests/data/inputs/golden/repeat_with_2_voltas.mscx"},
+          std::tuple{"Jump", Pid::JUMP_TO, PropertyValue(muse::String(u"invalid-target")),
+                     "src/engraving/tests/playback/playbackmodel_data/da_capo_al_fine/da_capo_al_fine.mscx"}}) {
+        auto document = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / fixture);
+        ASSERT_TRUE(document) << type;
+        auto &master = master_of(*document);
+        EngravingItem *target = nullptr;
+        master.scan_elements([&](EngravingItem *item) {
+            if ((std::string_view(type) == "Volta" && item->is_volta()) || (std::string_view(type) == "Jump" && item->is_jump()))
+                target = item;
+        });
+        if (std::string_view(type) == "Volta") {
+            for (const auto &[tick, spanner] : master.spanner()) {
+                if (spanner->is_volta() && (!target || spanner->tick() < target->tick())) target = spanner;
+            }
+        }
+        ASSERT_NE(target, nullptr) << type;
+        auto signature = [&master] {
+            std::vector<int> result;
+            for (const auto *segment : master.repeat_list(true)) {
+                result.insert(result.end(), {segment->tick, segment->utick, segment->len(), segment->playback_count});
+            }
+            return result;
+        };
+        const auto before = signature();
+        auto *manager = master.transaction_manager();
+        manager->begin_transaction(muse::TranslatableString::untranslatable("repeat navigation edit"));
+        master.undo(new ChangeProperty(target, property, replacement));
+        manager->end_transaction();
+        const auto after = signature();
+        EXPECT_NE(after, before) << type;
+        manager->undo_redo(true, nullptr);
+        EXPECT_EQ(signature(), before) << type;
+        manager->undo_redo(false, nullptr);
+        EXPECT_EQ(signature(), after) << type;
+        // An explicit independent rebuild must agree with the already published state.
+        master.invalidate_repeat_list();
+        master.update_repeat_list(false);
+        EXPECT_EQ(signature(), after) << type;
+    }
+}
 
 TEST(Read, GeometryBoundaryReusesFreshLayout) {
     auto document = open_path(corpus_file({".mscx"}));
