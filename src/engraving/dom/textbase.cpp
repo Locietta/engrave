@@ -308,17 +308,24 @@ const CharFormat TextCursor::selected_fragments_format() const {
         return format_;
     }
 
+    // Formatting belongs to logical source runs, not measured/wrapped lines.
+    TextBase::LayoutData source;
     const TextBase::LayoutData *ldata = text_->ldata();
+    if (!editing()) {
+        text_->create_blocks(&source, true);
+        ldata = &source;
+    }
+    const bool selected = editing() && has_selection();
     IF_ASSERT_FAILED(ldata) { return CharFormat(); }
 
     if (ldata->blocks.empty()) {
         return format_;
     }
 
-    size_t start_row = has_selection() ? select_line_ : 0;
-    size_t end_row = has_selection() ? row_ : ldata->blocks.size() - 1;
-    size_t selection_start_col = has_selection() ? select_column_ : 0;
-    size_t selection_end_col = has_selection() ? column_ : 1; // corrected below at `endColumn
+    size_t start_row = selected ? select_line_ : 0;
+    size_t end_row = selected ? row_ : ldata->blocks.size() - 1;
+    size_t selection_start_col = selected ? select_column_ : 0;
+    size_t selection_end_col = selected ? column_ : 1; // corrected below at `endColumn
 
     TextBase::sort(start_row, selection_start_col, end_row, selection_end_col);
 
@@ -335,7 +342,7 @@ const CharFormat TextCursor::selected_fragments_format() const {
         all_blocks_empty = false;
 
         const size_t start_column = (row == start_row) ? selection_start_col : 0;
-        const size_t end_column = (row == end_row && has_selection()) ? selection_end_col : block.columns();
+        const size_t end_column = (row == end_row && selected) ? selection_end_col : block.columns();
 
         size_t column = 0;
 
@@ -1355,12 +1362,38 @@ TextBlock TextBlock::split(int column, TextCursor *cursor) {
     return tl;
 }
 
+// Temporary source runs encode symbol IDs in supplementary private-use scalars.
+// They are serialized back to <sym> names, never measured or published as glyphs.
+static constexpr char32_t source_symbol_base = 0xF0000;
+static_assert(static_cast<char32_t>(SymId::LAST_SYM) < 0xFFFE);
+
 static String to_symbol_xml(Char c, const TextBase *t) {
     SymId sym_id = t->score()->engraving_font()->from_code(c.unicode());
     if (sym_id == SymId::NO_SYM) {
         sym_id = t->score()->engraving_fonts()->fallback_font()->from_code(c.unicode());
     }
     return u"<sym>" + String::from_ascii(SymNames::name_for_sym_id(sym_id).ascii()) + u"</sym>";
+}
+
+static String symbol_fragment_xml(const TextFragment &fragment, const TextBase *text, bool source_only) {
+    String result;
+    if (source_only) {
+        for (size_t i = 0; i < fragment.text.size(); ++i) {
+            const Char character = fragment.text.at(i);
+            const char32_t code = character.is_high_surrogate() && i + 1 < fragment.text.size() ?
+                                      Char::surrogate_to_ucs4(character, fragment.text.at(++i)) :
+                                      character.unicode();
+            if (code >= source_symbol_base && code <= source_symbol_base + static_cast<char32_t>(SymId::LAST_SYM)) {
+                result += u"<sym>" + String::from_ascii(SymNames::name_for_sym_id(static_cast<SymId>(code - source_symbol_base)).ascii()) +
+                          u"</sym>";
+            } else {
+                result += XmlWriter::xml_string(String::from_ucs4(code));
+            }
+        }
+    } else {
+        for (size_t i = 0; i < fragment.text.size(); ++i) result += to_symbol_xml(fragment.text.at(i), text);
+    }
+    return result;
 }
 
 //---------------------------------------------------------
@@ -1516,7 +1549,9 @@ static double parse_num_property(const String &s) { return parse_string_property
 //---------------------------------------------------------
 void TextBase::create_blocks() { create_blocks(mutldata()); }
 
-void TextBase::create_blocks(LayoutData *ldata) const {
+void TextBase::create_blocks(LayoutData *ldata, bool source_only) const {
+    // Capture markup before clearing blocks: an active editor may own the latest text.
+    const String source = xml_text();
     // reset all previous formatting information
     ldata->blocks.clear();
     TextCursor cursor = *cursor_;
@@ -1527,8 +1562,8 @@ void TextBase::create_blocks(LayoutData *ldata) const {
     String token;
     String sym;
     bool sym_state = false;
-    for (size_t i = 0; i < text_.size(); i++) {
-        const Char &c = text_.at(i);
+    for (size_t i = 0; i < source.size(); i++) {
+        const Char &c = source.at(i);
         if (state == 0) {
             if (c == '<') {
                 state = 1;
@@ -1568,8 +1603,8 @@ void TextBase::create_blocks(LayoutData *ldata) const {
                 } else {
                     if (c.is_high_surrogate()) {
                         i++;
-                        assert(i < text_.size());
-                        insert(&cursor, Char::surrogate_to_ucs4(c, text_.at(i)), ldata);
+                        assert(i < source.size());
+                        insert(&cursor, Char::surrogate_to_ucs4(c, source.at(i)), ldata);
                     } else {
                         insert(&cursor, c.unicode(), ldata);
                     }
@@ -1578,7 +1613,7 @@ void TextBase::create_blocks(LayoutData *ldata) const {
         } else if (state == 1) {
             if (c == '>') {
                 state = 0;
-                const_cast<TextBase *>(this)->prepare_format(token, cursor);
+                prepare_format(token, *cursor.format());
                 if (token == "sym") {
                     sym_state = true;
                     sym.clear();
@@ -1588,11 +1623,14 @@ void TextBase::create_blocks(LayoutData *ldata) const {
                     if (id != SymId::NO_SYM) {
                         CharFormat fmt = *cursor.format(); // save format
 
-                        const std::shared_ptr<EngravingFont> score_font = score()->engraving_font();
-                        char32_t code = static_cast<char32_t>(' ');
-                        if (id != SymId::SPACE) {
-                            code = score_font->is_valid(id) ? score_font->sym_code(id) :
-                                                              score()->engraving_fonts()->fallback_font()->sym_code(id);
+                        char32_t code = source_symbol_base + static_cast<char32_t>(id);
+                        if (!source_only) {
+                            const auto score_font = score()->engraving_font();
+                            code = U' ';
+                            if (id != SymId::SPACE) {
+                                code = score_font->is_valid(id) ? score_font->sym_code(id) :
+                                                                  score()->engraving_fonts()->fallback_font()->sym_code(id);
+                            }
                         }
                         cursor.format()->set_font_family(u"ScoreText");
                         insert(&cursor, code, ldata);
@@ -1632,7 +1670,7 @@ void TextBase::create_blocks(LayoutData *ldata) const {
 //---------------------------------------------------------
 //   prepareFormat - used when reading from XML and when pasting from clipboard
 //---------------------------------------------------------
-bool TextBase::prepare_format(const String &token, CharFormat &format) {
+bool TextBase::prepare_format(const String &token, CharFormat &format) const {
     if (token == "b") {
         format.set_bold(true);
         return true;
@@ -1676,15 +1714,6 @@ bool TextBase::prepare_format(const String &token, CharFormat &format) {
         }
     }
     return false;
-}
-
-//---------------------------------------------------------
-//   prepareFormat - used when reading from XML
-//---------------------------------------------------------
-void TextBase::prepare_format(const String &token, TextCursor &cursor) {
-    if (prepare_format(token, *cursor.format()) && cursor.format()->font_family() != property_default(Pid::FONT_FACE).value<String>()) {
-        set_property_flags(Pid::FONT_FACE, PropertyFlags::UNSTYLED);
-    }
 }
 
 //---------------------------------------------------------
@@ -1824,7 +1853,7 @@ public:
 //---------------------------------------------------------
 //   genText
 //---------------------------------------------------------
-String TextBase::gen_text(const LayoutData *ldata) const {
+String TextBase::gen_text(const LayoutData *ldata, bool source_only) const {
     if (!ldata) {
         return String();
     }
@@ -1930,9 +1959,7 @@ String TextBase::gen_text(const LayoutData *ldata) const {
                 }
             }
             if (format.font_family() == u"ScoreText") {
-                for (size_t i = 0; i < f.text.size(); ++i) {
-                    text += to_symbol_xml(f.text.at(i), this);
-                }
+                text += symbol_fragment_xml(f, this, source_only);
             } else {
                 text += XmlWriter::xml_string(f.text);
             }
@@ -2019,6 +2046,14 @@ void TextBase::set_xml_text(const String &s) {
 }
 
 void TextBase::check_custom_formatting(const String &s) {
+    // Import records source formatting flags; parsing/reading never changes them.
+    const String face_tag = u"<font face=\"";
+    for (size_t pos = s.index_of(face_tag); pos != muse::nidx; pos = s.index_of(face_tag, pos + face_tag.size())) {
+        if (un_escape(parse_string_property(s.mid(pos + face_tag.size()))) != property_default(Pid::FONT_FACE).value<String>()) {
+            set_property_flags(Pid::FONT_FACE, PropertyFlags::UNSTYLED);
+            break;
+        }
+    }
     if (s.contains(u"<font size")) {
         set_property_flags(Pid::FONT_SIZE, PropertyFlags::UNSTYLED);
     }
@@ -2670,8 +2705,9 @@ bool TextBase::has_custom_formatting() const {
 //---------------------------------------------------------
 
 String TextBase::strip_text(bool remove_style, bool remove_size, bool remove_face) const {
-    const LayoutData *ldata = this->ldata();
-    IF_ASSERT_FAILED(ldata) { return String(); }
+    LayoutData source;
+    create_blocks(&source, true);
+    const LayoutData *ldata = &source;
 
     String txt;
     bool bold_value = false;
@@ -2773,7 +2809,11 @@ String TextBase::strip_text(bool remove_style, bool remove_size, bool remove_fac
                     case VerticalAlignment::ALIGN_UNDEFINED: break;
                 }
             }
-            txt += XmlWriter::xml_string(f.text);
+            if (format.font_family() == u"ScoreText") {
+                txt += symbol_fragment_xml(f, this, true);
+            } else {
+                txt += XmlWriter::xml_string(f.text);
+            }
             fmt = format;
         }
         if (block.eol()) {

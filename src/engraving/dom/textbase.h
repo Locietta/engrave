@@ -510,7 +510,8 @@ public:
     DECLARE_LAYOUTDATA_METHODS(TextBase)
 
     void create_blocks();
-    void create_blocks(LayoutData *ldata) const;
+    // Source-only runs retain symbol IDs without loading or measuring glyphs.
+    void create_blocks(LayoutData *ldata, bool source_only = false) const;
     void layout_frame();
     void layout_frame(LayoutData *ldata) const;
 
@@ -560,14 +561,13 @@ protected:
     TextBase(const ElementType &type, EngravingObject *parent, ElementFlags);
     TextBase(const TextBase &);
 
-    void prepare_format(const String &token, TextCursor &cursor);
-    bool prepare_format(const String &token, CharFormat &format);
+    bool prepare_format(const String &token, CharFormat &format) const;
 
     bool layout_to_parent_width_ = false;
 
 private:
     void insert(TextCursor *, char32_t code, LayoutData *ldata) const;
-    String gen_text(const LayoutData *ldata) const;
+    String gen_text(const LayoutData *ldata, bool source_only = false) const;
 
     virtual int get_property_flags_idx(Pid id) const override;
     String strip_text(bool, bool, bool) const;

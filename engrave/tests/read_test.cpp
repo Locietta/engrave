@@ -178,6 +178,89 @@ struct ItemLayoutSpy {
     ~ItemLayoutSpy() { mu::engraving::rendering::score::ScoreRenderer::layout_hook = nullptr; }
 };
 
+std::string formatted_text_fixture() {
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("<Chord>"),
+                  "<StaffText><text><b><font size=\"20\"/><font face=\"Edwin\"/>hello</b>\nworld</text></StaffText>");
+    return source;
+}
+
+mu::engraving::TextBase *staff_text_of(MasterScore &master) {
+    for (auto *item : master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->annotations()) {
+        if (item->is_staff_text()) return mu::engraving::to_text_base(item);
+    }
+    return nullptr;
+}
+
+TEST(Read, SourceTextResetPreservesCharactersWithoutLayout) {
+    using namespace mu::engraving;
+    for (const char *property : {"fontStyle", "FONT_SIZE", "family"}) {
+        for (bool together : {false, true}) {
+            SCOPED_TRACE(std::format("{} batch={}", property, together));
+            ItemLayoutSpy spy;
+            auto opened = g_engine->open(as_bytes(formatted_text_fixture()), {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(opened);
+            auto &document = **opened;
+            auto &master = master_of(document);
+            auto *text = staff_text_of(master);
+            ASSERT_NE(text, nullptr);
+            const auto id = engrave::from_engine(text->eid());
+            const engrave::Op set = engrave::SetProperty{id, "text", std::string("<b>hello</b>\nworld <sym>accidentalSharp</sym>")};
+            const engrave::Op reset = engrave::ResetProperty{id, property};
+            if (together)
+                ASSERT_TRUE(document.edit({{set, reset}}));
+            else {
+                ASSERT_TRUE(document.edit({{set}}));
+                ASSERT_TRUE(document.edit({{reset}}));
+            }
+            EXPECT_TRUE(text->xml_text().contains(u"hello"));
+            EXPECT_TRUE(text->xml_text().contains(u"world"));
+            EXPECT_TRUE(text->xml_text().contains(u"<sym>accidentalSharp</sym>"));
+            EXPECT_EQ(text->plain_text(), u"hello\nworld \uE262");
+            EXPECT_EQ(text->property_flags(engrave::api::pid_of(property)), PropertyFlags::STYLED);
+            EXPECT_EQ(ItemLayoutSpy::count, 0u);
+            EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        }
+    }
+}
+
+TEST(Read, SourceTextFormattingReadsAgreeBeforeAndAfterRender) {
+    using namespace mu::engraving;
+    auto source = formatted_text_fixture();
+    const auto begin = source.find("<text><b>");
+    const auto end = source.find("</text>", begin);
+    source.replace(begin, end - begin, "<text><b><font size=\"20\"/><font face=\"Leland Text\"/><sup>hello</sup></b>");
+    ItemLayoutSpy spy;
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *text = staff_text_of(master);
+    ASSERT_NE(text, nullptr);
+    const auto markup = text->xml_text();
+    const auto flags = text->property_flags(Pid::FONT_FACE);
+    const auto id = engrave::from_engine(text->eid());
+    const std::vector<std::string> properties{"fontStyle", "FONT_SIZE", "family", "TEXT_SCRIPT_ALIGN"};
+    const auto before = document.get(id, properties);
+    ASSERT_TRUE(before) << before.error().message;
+    EXPECT_EQ(text->get_property(Pid::FONT_STYLE).to_int(), static_cast<int>(FontStyle::BOLD));
+    EXPECT_EQ(text->get_property(Pid::FONT_SIZE).to_double(), 20.0);
+    EXPECT_EQ(text->get_property(Pid::FONT_FACE).value<muse::String>(), u"Leland Text");
+    EXPECT_EQ(text->get_property(Pid::TEXT_SCRIPT_ALIGN).value<VerticalAlignment>(), VerticalAlignment::ALIGN_SUPER_SCRIPT);
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    const auto after = document.get(id, properties);
+    ASSERT_TRUE(after);
+    ASSERT_EQ(before->size(), after->size());
+    for (std::size_t i = 0; i < before->size(); ++i) {
+        EXPECT_EQ((*before)[i].value, (*after)[i].value);
+        EXPECT_EQ((*before)[i].styled, (*after)[i].styled);
+    }
+    EXPECT_EQ(text->xml_text(), markup);
+    EXPECT_EQ(text->property_flags(Pid::FONT_FACE), flags);
+}
+
 TEST(Read, PlaybackNoteheadUsesSourceSchemeWithoutDisplayData) {
     using namespace mu::engraving;
     using namespace muse::mpe;
