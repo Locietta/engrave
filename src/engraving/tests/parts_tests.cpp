@@ -1302,47 +1302,56 @@ TEST_F(EngravingPartsTests, noteVisibilityBeamsVoiceParts) {
 //---------------------------------------------------------
 
 TEST_F(EngravingPartsTests, deleteLinkedRestsRemovesEmptySegments) {
-    for (bool from_part : {false, true}) {
-        SCOPED_TRACE(from_part);
-        MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"delete-linked-rests.mscx");
-        ASSERT_TRUE(score);
-        Score *part = TestUtils::create_part(score);
-        ASSERT_TRUE(part);
-        auto check = [&](size_t expected) {
-            for (Score *s : {static_cast<Score *>(score), part}) {
-                size_t count = 0;
-                for (Segment *segment = s->first_measure()->first(SegmentType::CHORD_REST); segment;
-                     segment = segment->next(SegmentType::CHORD_REST)) {
-                    EXPECT_FALSE(segment->empty());
-                    EngravingItem *item = segment->element(0);
-                    EXPECT_TRUE(item && item->is_rest());
-                    if (item && item->is_rest()) {
-                        EXPECT_EQ(to_rest(item)->ticks(), expected == 1 ? Fraction(1, 1) : Fraction(1, 4));
+    for (auto selection : {SelectType::SINGLE, SelectType::ADD}) {
+        SCOPED_TRACE(selection == SelectType::ADD);
+        for (bool from_part : {false, true}) {
+            SCOPED_TRACE(from_part);
+            MasterScore *score = ScoreRW::read_score(::parts_data_dir + u"delete-linked-rests.mscx");
+            ASSERT_TRUE(score);
+            Score *part = TestUtils::create_part(score);
+            ASSERT_TRUE(part);
+            auto check = [&](size_t expected) {
+                for (Score *s : {static_cast<Score *>(score), part}) {
+                    size_t count = 0;
+                    for (Segment *segment = s->first_measure()->first(SegmentType::CHORD_REST); segment;
+                         segment = segment->next(SegmentType::CHORD_REST)) {
+                        EXPECT_FALSE(segment->empty());
+                        EngravingItem *item = segment->element(0);
+                        EXPECT_TRUE(item && item->is_rest());
+                        if (item && item->is_rest()) {
+                            EXPECT_EQ(to_rest(item)->ticks(), expected == 1 ? Fraction(1, 1) : Fraction(1, 4));
+                        }
+                        ++count;
                     }
-                    ++count;
+                    EXPECT_EQ(count, expected);
                 }
-                EXPECT_EQ(count, expected);
-            }
-        };
-        check(4);
-        Score *owner = from_part ? part : score;
-        score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
-        owner->select(owner->first_measure(), SelectType::SINGLE, 0);
-        owner->cmd_delete_selection();
-        score->end_cmd();
-        check(1);
-        score->undo_redo(true, nullptr);
-        check(4);
-        score->undo_redo(false, nullptr);
-        check(1);
-        ASSERT_TRUE(ScoreRW::save_score(score, u"delete-linked-rests-test.mscx"));
-        delete score;
-        score = ScoreRW::read_score(ScoreRW::scratch_path(u"delete-linked-rests-test.mscx"), true);
-        ASSERT_TRUE(score);
-        ASSERT_EQ(score->excerpts().size(), 1u);
-        part = score->excerpts().front()->excerpt_score();
-        check(1);
-        delete score;
+            };
+            check(4);
+            const auto master_layouts = score->layout_state.whole_count + score->layout_state.range_count;
+            const auto part_layouts = part->layout_state.whole_count + part->layout_state.range_count;
+            EXPECT_EQ(part_layouts, 0u);
+            Score *owner = from_part ? part : score;
+            score->start_cmd(TranslatableString::untranslatable("Engraving parts tests"));
+            owner->select(owner->first_measure(), selection, 0);
+            EXPECT_EQ(owner->selection().tick_end(), owner->first_measure()->end_tick());
+            owner->cmd_delete_selection();
+            score->end_cmd();
+            check(1);
+            score->undo_redo(true, nullptr);
+            check(4);
+            score->undo_redo(false, nullptr);
+            check(1);
+            EXPECT_EQ(score->layout_state.whole_count + score->layout_state.range_count, master_layouts);
+            EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, part_layouts);
+            ASSERT_TRUE(ScoreRW::save_score(score, u"delete-linked-rests-test.mscx"));
+            delete score;
+            score = ScoreRW::read_score(ScoreRW::scratch_path(u"delete-linked-rests-test.mscx"), true);
+            ASSERT_TRUE(score);
+            ASSERT_EQ(score->excerpts().size(), 1u);
+            part = score->excerpts().front()->excerpt_score();
+            check(1);
+            delete score;
+        }
     }
 }
 

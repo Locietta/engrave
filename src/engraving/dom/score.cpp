@@ -2516,6 +2516,15 @@ void Score::do_select(EngravingItem *e, SelectType type, staff_idx_t staff_idx) 
 //    staffIdx is valid, if element is of type MEASURE
 //---------------------------------------------------------
 
+// A source-only measure need not have the generated end barline yet. Selection
+// ends at the musical boundary, never at its final chord/rest onset.
+static Segment *measure_selection_end(Measure *measure) {
+    Segment *last = measure->last();
+    if (last && last->rtick() == measure->ticks()) return last;
+    Measure *next = measure->next_measure();
+    return next ? next->first() : nullptr;
+}
+
 void Score::select_single(EngravingItem *e, staff_idx_t staff_idx) {
     SelState sel_state = selection_.state();
     deselect_all();
@@ -2572,7 +2581,7 @@ void Score::select_add(EngravingItem *e) {
         Measure *m = to_measure(e)->covering_mm_rest_or_this();
         Fraction tick = m->tick();
         if (selection_.is_none()) {
-            selection_.set_range(m->tick2segment(tick), m == last_measure_mm() ? 0 : m->last(), 0, nstaves());
+            selection_.set_range(m->tick2segment(tick), m == last_measure_mm() ? nullptr : measure_selection_end(m), 0, nstaves());
             set_update_all();
             sel_state = SelState::RANGE;
             selection_.update_selected_elements();
@@ -2691,7 +2700,7 @@ void Score::select_range(EngravingItem *e, staff_idx_t staff_idx) {
     if (e->is_measure()) {
         Measure *m = to_measure(e)->covering_mm_rest_or_this();
         Segment *start_segment = m->first(SegmentType::CHORD_REST);
-        Segment *end_segment = m->last();
+        Segment *end_segment = measure_selection_end(m);
         Fraction tick = m->tick();
         Fraction etick = tick + m->ticks();
 
