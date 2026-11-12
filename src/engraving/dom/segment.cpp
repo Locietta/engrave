@@ -99,6 +99,9 @@ const char *Segment::sub_type_name(SegmentType t) {
 //---------------------------------------------------------
 
 void Segment::set_element(track_idx_t track, EngravingItem *el) {
+    if (EngravingItem *old = element(track); old && old != el && old->is_chord()) {
+        to_chord(old)->invalidate_grace_notes_layout();
+    }
     if (el) {
         el->set_ownership_parent(this);
         elist_[track] = el;
@@ -574,6 +577,11 @@ void Segment::insert_staff(staff_idx_t staff) {
 
 void Segment::remove_staff(staff_idx_t staff) {
     track_idx_t track = staff * ::mu::engraving::voices;
+    for (track_idx_t voice = 0; voice < ::mu::engraving::voices; ++voice) {
+        if (EngravingItem *item = element(track + voice); item && item->is_chord()) {
+            to_chord(item)->invalidate_grace_notes_layout();
+        }
+    }
     elist_.erase(elist_.begin() + track, elist_.begin() + track + ::mu::engraving::voices);
     pre_appended_items_.erase(pre_appended_items_.begin() + track, pre_appended_items_.begin() + track + ::mu::engraving::voices);
     shapes_.erase(shapes_.begin() + staff);
@@ -618,6 +626,11 @@ void Segment::add(EngravingItem *el) {
     assert(track < score()->ntracks());
     assert(el->score() == score());
     assert(score()->nstaves() * ::mu::engraving::voices == elist_.size());
+    if (el->is_chord_rest()) {
+        if (EngravingItem *old = element(track); old && old != el && old->is_chord()) {
+            to_chord(old)->invalidate_grace_notes_layout();
+        }
+    }
 
     switch (el->type()) {
         case ElementType::MEASURE_REPEAT:
@@ -790,6 +803,9 @@ void Segment::add(EngravingItem *el) {
 //---------------------------------------------------------
 
 void Segment::remove(EngravingItem *el) {
+    if (el->is_chord()) {
+        to_chord(el)->invalidate_grace_notes_layout();
+    }
     // LOGD("%p Segment::remove %s %p", this, el->typeName(), el);
 
     track_idx_t track = el->track();
