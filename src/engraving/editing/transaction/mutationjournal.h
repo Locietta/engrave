@@ -36,7 +36,15 @@
 
 namespace mu::engraving {
 // Closed family dispatch; L1 may add AUTHORED_OVERRIDE without changing entries.
-enum class JournalEntryKind : uint8_t { LEGACY, PROPERTY, STYLE_VALUES, BRACKET_PROPERTY, TEXT_LINE_PROPERTY, TEXT_FORMAT };
+enum class JournalEntryKind : uint8_t {
+    LEGACY,
+    PROPERTY,
+    STYLE_VALUES,
+    BRACKET_PROPERTY,
+    TEXT_LINE_PROPERTY,
+    TEXT_FORMAT,
+    STYLE_REPLACEMENT
+};
 
 struct JournalEntry {
     JournalEntryKind kind;
@@ -54,6 +62,7 @@ struct JournalBatch {
     void append_command(UndoableCommand *command);
     void change_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path);
     void change_style_values(Score &score, std::span<const StyleValue> values);
+    void replace_style(Score &score, const MStyle &style, bool overlap);
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
     void change_text_line_property(EngravingObject &object, const PropertyValue &value);
     void change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);
@@ -73,6 +82,8 @@ struct JournalBatch {
     size_t property_entries() const { return source_.properties.size(); }
 
     size_t style_entries() const { return source_.styles.size(); }
+
+    size_t style_replacement_entries() const { return source_.style_replacements.size(); }
 
     size_t legacy_entries() const { return legacy_.size(); }
 

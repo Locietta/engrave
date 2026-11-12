@@ -51,6 +51,7 @@ struct Transaction {
     void change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
                          bool reset_path = false);
     void change_style_values(Score &score, std::span<const StyleValue> values);
+    void replace_style(Score &score, const MStyle &style, bool overlap = false);
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
     void change_text_line_property(EngravingObject &object, const PropertyValue &value);
     void change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);

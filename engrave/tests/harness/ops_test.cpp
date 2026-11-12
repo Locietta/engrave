@@ -30,9 +30,13 @@
 #include "engrave/tests/harness/harness.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
+#include "engraving/dom/chordlist.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/measure.h"
+#include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/tempotext.h"
 #include "engraving/dom/textline.h"
 #include "engraving/dom/tremolosinglechord.h"
 #include "engraving/editing/editexcerpt.h"
@@ -40,7 +44,9 @@
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/editstyle.h"
 #include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/style/style.h"
+#include "global/io/buffer.h"
 
 namespace {
 
@@ -429,7 +435,7 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
     }
 }
 
-TEST(ChordLineEdit, StyleScaleUsesExistingCommand) {
+TEST(ChordLineEdit, StyleScaleUsesSourceJournal) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
@@ -438,7 +444,7 @@ TEST(ChordLineEdit, StyleScaleUsesExistingCommand) {
     const auto before = line.appearance_state();
     const double old_spatium = score.style().spatium();
     ASSERT_TRUE(chord_line_batch(*document, {[&score, old_spatium](engrave::api::EditContext &) -> engrave::Result<void> {
-        score.undo(new mu::engraving::ChangeStyleValues(&score, {{mu::engraving::Sid::SPATIUM, old_spatium * 2.0}}));
+        score.undo_change_style_val(mu::engraving::Sid::SPATIUM, old_spatium * 2.0);
         return {};
     }}));
     for (size_t i = 0; i < 4; ++i) EXPECT_EQ(line.source_offsets()[i], before.controls[i] * 2.0);
@@ -722,6 +728,268 @@ TEST(JournalDerived, TextLineSystemRollbackRestoresStyledOverrides) {
     EXPECT_EQ(line->property_flags(Pid::BEGIN_FONT_FACE), PropertyFlags::UNSTYLED);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {
+    using namespace mu::engraving;
+    ChordList source;
+    source.render_list_root.push_back(std::make_shared<RenderActionMoveScaled>(1.25, -0.5));
+    source.render_list_function.push_back(std::make_shared<RenderActionMoveTextWidth>(muse::String(u"root")));
+    ChordDescription description(900001);
+    description.names.push_back(u"journal-custom");
+    description.render_list.push_back(std::make_shared<RenderActionSet>(muse::String(u"journal-custom")));
+    description.render_list_stacked = description.render_list;
+    source.emplace(description.id, std::move(description));
+    source.set_custom_chord_list(true);
+    auto copy = source.owned_copy();
+    EXPECT_NE(copy.render_list_root.front().get(), source.render_list_root.front().get());
+    EXPECT_NE(copy.render_list_function.front().get(), source.render_list_function.front().get());
+    const auto *original = source.description(900001);
+    const auto *cloned = copy.description(900001);
+    ASSERT_NE(original, nullptr);
+    ASSERT_NE(cloned, nullptr);
+    EXPECT_NE(cloned->render_list.front().get(), original->render_list.front().get());
+    EXPECT_NE(cloned->render_list_stacked.front().get(), original->render_list_stacked.front().get());
+    EXPECT_TRUE(static_cast<const RenderActionMove &>(*copy.render_list_root.front()).scaled());
+    EXPECT_FALSE(static_cast<const RenderActionSet &>(*copy.render_list_function.front()).render_text());
+    source.unload();
+    EXPECT_TRUE(copy.custom_chord_list());
+    EXPECT_EQ(copy.description(900001)->names.front(), muse::String(u"journal-custom"));
+}
+
+TEST(JournalWholeStyle, RejectedStyleRestoresEmbeddedCustomChordDefinitions) {
+    using namespace mu::engraving;
+    auto seed = open(fixture_name);
+    ASSERT_TRUE(seed);
+    auto &original = engrave::harness::master_of(*seed);
+    ChordDescription custom(900001);
+    custom.names.push_back(u"journal-custom");
+    custom.xml_kind = u"major";
+    custom.chord = HChord(0, 4, 7);
+    custom.render_list.push_back(std::make_shared<RenderActionSet>(muse::String(u"journal-custom")));
+    original.chord_list()->emplace(custom.id, std::move(custom));
+    original.chord_list()->set_custom_chord_list(true);
+    const auto archive = seed->export_score({.format = engrave::Format::MSCZ});
+    ASSERT_TRUE(archive);
+    const auto serialize = [](const ChordList &list) {
+        auto buffer = muse::io::Buffer::opened(muse::io::IODevice::WRITE_ONLY);
+        EXPECT_TRUE(list.write(&buffer));
+        return buffer.data();
+    };
+    for (bool whole : {false, true}) {
+        SCOPED_TRACE(whole);
+        auto opened = g_engine->open(*archive, {.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(opened);
+        auto document = std::move(*opened);
+        auto &master = engrave::harness::master_of(*document);
+        ASSERT_TRUE(master.chord_list()->custom_chord_list());
+        ASSERT_NE(master.chord_list()->description(900001), nullptr);
+        const auto before = serialize(*master.chord_list());
+        const auto revision = document->revision();
+        EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            if (whole) {
+                MStyle requested = master.style();
+                requested.set(Sid::STAFF_DISTANCE, Spatium(master.style().style_s(Sid::STAFF_DISTANCE).val() + 0.75));
+                master.transaction_manager()->current_or_dummy_transaction().replace_style(master, requested);
+            } else {
+                master.undo_change_style_val(Sid::CHORD_EXTENSION_MAG, master.style().style_d(Sid::CHORD_EXTENSION_MAG) + 0.25);
+            }
+            EXPECT_EQ(master.chord_list()->description(900001), nullptr);
+            return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject after replacing embedded chord definitions"});
+        }}));
+        EXPECT_TRUE(master.chord_list()->custom_chord_list());
+        EXPECT_NE(master.chord_list()->description(900001), nullptr);
+        EXPECT_EQ(serialize(*master.chord_list()), before);
+        EXPECT_EQ(document->revision(), revision);
+        const auto saved = document->export_score({.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCZ});
+        ASSERT_TRUE(reopened);
+        EXPECT_NE(engrave::harness::master_of(**reopened).chord_list()->description(900001), nullptr);
+    }
+}
+
+TEST(JournalWholeStyle, SpatiumRollbackSurvivesRebuiltMmrDisplayCopies) {
+    using namespace mu::engraving;
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+    std::ifstream file(path, std::ios::binary);
+    ASSERT_TRUE(file);
+    std::string source((std::istreambuf_iterator<char>(file)), {});
+    source.insert(source.find("</Style>"), "<createMultiMeasureRests>1</createMultiMeasureRests>");
+    const auto chord_begin = source.find("<Chord>");
+    const auto chord_end = source.find("</Chord>", chord_begin) + std::string("</Chord>").size();
+    source.replace(chord_begin, chord_end - chord_begin, "<Rest><durationType>measure</durationType></Rest>");
+    source.insert(source.find("</Staff>", source.find("<Measure>")),
+                  "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
+    for (bool whole : {false, true}) {
+        SCOPED_TRACE(whole);
+        auto opened = g_engine->open(std::as_bytes(std::span(source.data(), source.size())), {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(opened);
+        auto document = std::move(*opened);
+        auto &master = engrave::harness::master_of(*document);
+        auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+        ASSERT_NE(segment, nullptr);
+        auto *tempo = Factory::create_tempo_text(segment);
+        tempo->set_track(0);
+        tempo->set_offset(muse::PointF(0.5, 0.75));
+        segment->add(tempo);
+        engrave::assign_missing_ids(master);
+        master.do_layout();
+        auto *copy = const_cast<EngravingItem *>(master.layout_copy(*tempo));
+        ASSERT_NE(copy, nullptr);
+        ASSERT_FALSE(copy->offset().is_null());
+        const auto old_copy = master.eid_register()->enroll(*copy);
+        const auto offset = tempo->offset();
+        const double spatium = master.style().spatium();
+        const auto revision = document->revision();
+        EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            if (whole) {
+                MStyle requested = master.style();
+                requested.set_spatium(spatium * 2.0);
+                master.transaction_manager()->current_or_dummy_transaction().replace_style(master, requested);
+            } else {
+                master.undo_change_style_val(Sid::SPATIUM, spatium * 2.0);
+            }
+            engrave::DocumentAccess::impl(*document).ensure_layout(master);
+            EXPECT_EQ(master.eid_register()->item_from_handle(old_copy), nullptr);
+            return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject after rebuilding MMR display copies"});
+        }}));
+        EXPECT_FALSE(engrave::DocumentAccess::impl(*document).poisoned);
+        EXPECT_EQ(tempo->offset(), offset);
+        EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_TRUE(document->export_score({.format = engrave::Format::MSCX}));
+    }
+}
+
+TEST(JournalWholeStyle, LoaderUsesOwnedReplacementAndPreservesOverlapSemantics) {
+    using namespace mu::engraving;
+    for (bool overlap : {false, true}) {
+        SCOPED_TRACE(overlap);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        auto &master = engrave::harness::master_of(*document);
+        ASSERT_TRUE(master.style().is_default(Sid::SMALL_NOTE_MAG));
+        const auto default_mag = master.style().style_v(Sid::SMALL_NOTE_MAG);
+        const double custom_mag = default_mag.to_double() + 0.25;
+        master.style().set(Sid::SMALL_NOTE_MAG, custom_mag);
+        MStyle requested = master.style();
+        requested.set(Sid::SMALL_NOTE_MAG, default_mag);
+        const auto distance = Spatium(master.style().style_s(Sid::STAFF_DISTANCE).val() + 0.75);
+        requested.set(Sid::STAFF_DISTANCE, distance);
+        muse::io::Buffer output;
+        ASSERT_TRUE(output.open(muse::io::IODevice::WRITE_ONLY));
+        ASSERT_TRUE(requested.write(&output));
+        auto bytes = output.data();
+        output.close();
+        muse::io::Buffer input(&bytes);
+        bool observed = false;
+        engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+            observed = true;
+            const auto &batch = *master.mutation_journal()->active_transaction();
+            EXPECT_EQ(batch.style_replacement_entries(), 1u);
+            EXPECT_EQ(batch.legacy_entries(), 0u);
+            EXPECT_FALSE(batch.structural_since(0));
+            const auto changes = batch.changes_info();
+            EXPECT_TRUE(changes.changed_style_id_set.contains(Sid::STAFF_DISTANCE));
+            EXPECT_EQ(changes.changed_style_id_set.contains(Sid::SMALL_NOTE_MAG), !overlap);
+        };
+        ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            if (!EditStyle::load_style(master.transaction_manager()->current_or_dummy_transaction(), &master, input, false, overlap))
+                return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "style loader failed"});
+            return {};
+        }}));
+        EXPECT_TRUE(observed);
+        EXPECT_EQ(master.style().style_s(Sid::STAFF_DISTANCE), distance);
+        EXPECT_DOUBLE_EQ(master.style().style_d(Sid::SMALL_NOTE_MAG), overlap ? custom_mag : default_mag.to_double());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    }
+}
+
+TEST(JournalWholeStyle, RejectionRestoresStyleAndAuthoredOverridesAfterNestedConcertPitch) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &line = chord_line(*document);
+    seed_controls(line);
+    const auto appearance = line.appearance_state();
+    const auto before = master.style();
+    const auto revision = document->revision();
+    MStyle requested = before;
+    requested.set_spatium(before.spatium() * 2.0);
+    requested.set(Sid::CONCERT_PITCH, !before.style_b(Sid::CONCERT_PITCH));
+    requested.set(Sid::STAFF_DISTANCE, Spatium(before.style_s(Sid::STAFF_DISTANCE).val() + 0.75));
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.transaction_manager()->current_or_dummy_transaction().replace_style(master, requested);
+        for (size_t i = 0; i < appearance.controls.size(); ++i) EXPECT_EQ(line.source_offsets()[i], appearance.controls[i] * 2.0);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->style_replacement_entries(), 1u);
+        EXPECT_GE(master.mutation_journal()->active_transaction()->style_entries(), 1u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject whole style after nested callbacks"});
+    }}));
+    for (int i = 0; i < static_cast<int>(Sid::STYLES); ++i) {
+        const auto id = static_cast<Sid>(i);
+        EXPECT_EQ(master.style().style_v(id), before.style_v(id)) << i;
+    }
+    expect_chord_line(line, appearance);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalWholeStyle, PartialSpatiumCallbackFailureRestoresVisitedAndUntouchedSource) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &line = chord_line(*document);
+    seed_controls(line);
+    const auto appearance = line.appearance_state();
+    auto *tremolo = Factory::create_tremolo_single_chord(line.chord());
+    tremolo->set_tremolo_type(TremoloType::R8);
+    tremolo->set_offset(muse::PointF(0.25, 0.75));
+    line.chord()->add(tremolo);
+    engrave::assign_missing_ids(master);
+    const auto offset = tremolo->offset();
+    const auto before = master.style();
+    const auto revision = document->revision();
+    MStyle requested = before;
+    requested.set_spatium(before.spatium() * 2.0);
+    static const EngravingItem *fail_after = nullptr;
+    static const ChordLine *untouched = nullptr;
+    static std::array<muse::PointF, 4> controls;
+    static bool injected = false;
+    fail_after = tremolo;
+    untouched = &line;
+    controls = appearance.controls;
+    injected = false;
+
+    struct ResetHook {
+        ~ResetHook() { set_spatium_item_hook(nullptr); }
+    } reset_hook;
+
+    set_spatium_item_hook([](const auto *item) {
+        if (item == fail_after) {
+            EXPECT_FALSE(injected);
+            EXPECT_EQ(untouched->source_offsets(), controls);
+            injected = true;
+            throw std::bad_alloc();
+        }
+    });
+    EXPECT_THROW((void) chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+                     master.transaction_manager()->current_or_dummy_transaction().replace_style(master, requested);
+                     return {};
+                 }}),
+                 std::bad_alloc);
+    EXPECT_TRUE(injected);
+    for (int i = 0; i < static_cast<int>(Sid::STYLES); ++i) {
+        const auto id = static_cast<Sid>(i);
+        EXPECT_EQ(master.style().style_v(id), before.style_v(id)) << i;
+    }
+    expect_chord_line(line, appearance);
+    EXPECT_EQ(tremolo->offset(), offset);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
 }
 
 TEST(JournalTextFormat, ApiFormattingUsesOwnedPayloads) {

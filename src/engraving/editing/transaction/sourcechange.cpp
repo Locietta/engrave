@@ -7,6 +7,7 @@
 #include "dom/arpeggio.h"
 #include "dom/beam.h"
 #include "dom/masterscore.h"
+#include "dom/measure.h"
 #include "dom/slurtie.h"
 #include "dom/staff.h"
 
@@ -27,6 +28,9 @@ uint32_t payload_index(size_t size) {
 SpatiumSources capture_spatium_sources(Score &score) {
     SpatiumSources result;
     const auto capture = [&](EngravingItem *item) {
+        for (const EngravingItem *owner = item; owner; owner = owner->ownership_parent_item()) {
+            if (owner->is_layout_copy() || (owner->is_measure() && to_measure(owner)->is_mm_rest())) return;
+        }
         if (!item->offset().is_null()) result.offsets.push_back({JournalTarget::capture(*item), item->offset()});
         if (item->is_arpeggio() || item->is_chord_bracket()) {
             auto *arpeggio = to_arpeggio(item);
@@ -117,6 +121,12 @@ StyleValuesInverse capture_style_values(Score &score, std::span<const StyleValue
     if (values.size() >= no_source_payload - begin) throw std::length_error("journal style payload space exhausted");
     for (const auto &value : values) payloads.style_values.push_back({value.id, score.style().style_v(value.id)});
     StyleValuesInverse result{JournalTarget::capture(score), begin, static_cast<uint32_t>(values.size())};
+    if (std::ranges::any_of(values, [&](const auto &value) {
+            return style_value_refreshes_chords(value.id) && value.value != score.style().style_v(value.id);
+        })) {
+        result.chord_list = payload_index(payloads.chord_lists.size());
+        payloads.chord_lists.push_back(score.chord_list()->owned_copy());
+    }
     if (std::ranges::any_of(
             values, [&](const auto &value) { return value.id == Sid::SPATIUM && value.value != score.style().style_v(Sid::SPATIUM); })) {
         result.spatium_sources = payload_index(payloads.spatium_sources.size());
@@ -125,11 +135,29 @@ StyleValuesInverse capture_style_values(Score &score, std::span<const StyleValue
     return result;
 }
 
-void restore_style_values(const StyleValuesInverse &inverse, const SourceChangePayloads &payloads) {
+void restore_style_values(const StyleValuesInverse &inverse, SourceChangePayloads &payloads) {
     if (!inverse.count) return;
     const auto *spatium = inverse.spatium_sources == no_source_payload ? nullptr : &payloads.spatium_sources[inverse.spatium_sources];
+    auto *chords = inverse.chord_list == no_source_payload ? nullptr : &payloads.chord_lists[inverse.chord_list];
     apply_style_values(*to_score(&inverse.target.object()),
-                       std::span<const StyleValue>(payloads.style_values.data() + inverse.begin, inverse.count), spatium);
+                       std::span<const StyleValue>(payloads.style_values.data() + inverse.begin, inverse.count), spatium, chords);
+}
+
+StyleReplacementInverse capture_style_replacement(Score &score, const MStyle &style, SourceChangePayloads &payloads) {
+    StyleReplacementInverse result{JournalTarget::capture(score), score.style()};
+    result.chord_list = payload_index(payloads.chord_lists.size());
+    payloads.chord_lists.push_back(score.chord_list()->owned_copy());
+    if (score.style().spatium() != style.spatium()) {
+        result.spatium_sources = payload_index(payloads.spatium_sources.size());
+        payloads.spatium_sources.push_back(capture_spatium_sources(score));
+    }
+    return result;
+}
+
+void restore_style_replacement(const StyleReplacementInverse &inverse, SourceChangePayloads &payloads) {
+    const auto *spatium = inverse.spatium_sources == no_source_payload ? nullptr : &payloads.spatium_sources[inverse.spatium_sources];
+    auto *chords = &payloads.chord_lists[inverse.chord_list];
+    apply_style_replacement(*to_score(&inverse.target.object()), inverse.before, false, spatium, chords);
 }
 
 void restore_spatium_sources(const SpatiumSources &sources) {

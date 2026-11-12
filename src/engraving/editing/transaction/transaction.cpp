@@ -27,7 +27,6 @@
 
 #include "../../dom/masterscore.h"
 #include "editing/editproperty.h"
-#include "editing/editstyle.h"
 #include "log.h"
 #include "mutationjournal.h"
 #include "undoablecommand.h"
@@ -172,15 +171,30 @@ void Transaction::change_style_values(Score &score, std::span<const StyleValue> 
         apply_style_values(score, values);
         return;
     }
-    std::unique_ptr<ChangeStyleValues> diagnostic;
+    std::unique_ptr<UndoableCommand> diagnostic;
     if (s_push_hook) {
-        std::unordered_map<Sid, PropertyValue> requested;
-        for (const auto &value : values) requested.emplace(value.id, value.value);
-        auto *probe = new ChangeStyleValues(&score, std::move(requested));
+        // Fault-injection observers only identify this before/after token.
+        // No style command object or associative payload remains.
+        auto *probe = new UndoableCommand;
         s_push_hook(probe, false);
         diagnostic.reset(probe);
     }
     undoable_transaction_->change_style_values(score, values);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
+void Transaction::replace_style(Score &score, const MStyle &style, bool overlap) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_style_replacement(score, style, overlap);
+        return;
+    }
+    std::unique_ptr<UndoableCommand> diagnostic;
+    if (s_push_hook) {
+        auto *probe = new UndoableCommand;
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->replace_style(score, style, overlap);
     if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
 }
 
