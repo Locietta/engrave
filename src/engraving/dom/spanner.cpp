@@ -1388,6 +1388,8 @@ int Spanner::reuse_segments(int number) {
 void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSegment *()> create_segment) {
     const int diff = target_number - int(nsegments());
     if (diff == 0) {
+        for (size_t i = 0; i < segments_.size(); ++i)
+            bind_authored_child(*segments_[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
         return;
     }
     if (diff > 0) {
@@ -1403,6 +1405,8 @@ void Spanner::fixup_segments(unsigned int target_number, std::function<SpannerSe
             push_unused_segment(seg);
         }
     }
+    for (size_t i = 0; i < segments_.size(); ++i)
+        bind_authored_child(*segments_[i], {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)});
 }
 
 bool Spanner::is_user_modified() const {

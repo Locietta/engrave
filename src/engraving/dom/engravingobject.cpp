@@ -356,7 +356,7 @@ bool EngravingObject::is_styled(Pid pid) const {
 //---------------------------------------------------------
 
 static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps, bool reset_path = false) {
-    const bool new_authored_entry = authored_override_handles(*e, t) && !snapshot_authored_override(*to_engraving_item(e), t).entry;
+    const bool new_authored_entry = authored_override_handles(*e, t) && !has_authored_override(*to_engraving_item(e), t);
     if (reset_path || new_authored_entry || (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) ||
         e->get_property(t) != st || e->property_flags(t) != ps) {
         if (e->is_bracket_item()) {
@@ -421,7 +421,7 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
-    const bool new_authored_entry = authored_override_handles(*this, id) && !snapshot_authored_override(*to_engraving_item(this), id).entry;
+    const bool new_authored_entry = authored_override_handles(*this, id) && !has_authored_override(*to_engraving_item(this), id);
     if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry) {
         return;
     }

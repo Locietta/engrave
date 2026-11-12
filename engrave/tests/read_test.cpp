@@ -5329,8 +5329,6 @@ TEST(Read, SparseChildOverridesSurviveLayoutAndMirrorChanges) {
                 EXPECT_EQ(expected.entries[i].value, actual.entries[i].value);
                 EXPECT_EQ(expected.entries[i].flags, actual.entries[i].flags);
                 EXPECT_EQ(expected.entries[i].unit, actual.entries[i].unit);
-                EXPECT_EQ(expected.entries[i].default_value, actual.entries[i].default_value);
-                EXPECT_EQ(expected.entries[i].style, actual.entries[i].style);
             }
             for (size_t i = 0; i < expected.carriers.size(); ++i) {
                 EXPECT_EQ(expected.carriers[i].child, actual.carriers[i].child);
@@ -5427,6 +5425,16 @@ TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
     ASSERT_EQ(restored.size(), 1u);
     EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    const auto source = line->authored_overrides.entries;
+    ASSERT_TRUE((*document)->page_count());
+    EXPECT_EQ(legacy_override_write(line), bytes);
+    ASSERT_EQ(line->authored_overrides.entries.size(), source.size());
+    for (size_t i = 0; i < source.size(); ++i) {
+        EXPECT_EQ(line->authored_overrides.entries[i].value, source[i].value);
+        EXPECT_EQ(line->authored_overrides.entries[i].flags, source[i].flags);
+    }
+    line->erase_spanner_segments();
+    EXPECT_EQ(legacy_override_write(line), bytes);
 }
 
 TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
@@ -5451,6 +5459,72 @@ TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     ASSERT_EQ(restored.begin()->second->spanner_segments().size(), 3u);
     EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    const auto source = slur->authored_overrides.entries;
+    ASSERT_TRUE((*document)->page_count());
+    EXPECT_EQ(legacy_override_write(slur), bytes);
+    ASSERT_EQ(slur->authored_overrides.entries.size(), source.size());
+    for (size_t i = 0; i < source.size(); ++i) {
+        EXPECT_EQ(slur->authored_overrides.entries[i].value, source[i].value);
+        EXPECT_EQ(slur->authored_overrides.entries[i].flags, source[i].flags);
+    }
+    slur->erase_spanner_segments();
+    EXPECT_EQ(legacy_override_write(slur), bytes);
+}
+
+TEST(Read, LegacySegmentTextAppearanceAndExplicitZeroFontSurviveDiscard) {
+    using namespace mu::engraving;
+    const auto input = legacy_segment_fixture(R"(<HammerOnPullOff><eid>F_F</eid><track>0</track>
+<startElement>B_B</startElement><endElement>C_C</endElement>
+<HammerOnPullOffSegment no="0"><o1 x="0.25" y="-0.5"/>
+<HammerOnPullOffText idx="0"><family>Edwin</family><bold>0</bold><italic>0</italic>
+<offset x="0.5" y="-0.25"/><text>custom</text></HammerOnPullOffText>
+</HammerOnPullOffSegment></HammerOnPullOff>)");
+    auto document = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(document) << document.error().message;
+    auto &master = master_of(**document);
+    ASSERT_EQ(master.spanner_map().map().size(), 1u);
+    auto *spanner = master.spanner_map().map().begin()->second;
+    const AuthoredChildKey key{AuthoredChildRole::SEGMENT_TEXT, 0};
+    const auto *font = spanner->authored_overrides.find(key, Pid::FONT_STYLE);
+    ASSERT_NE(font, nullptr);
+    EXPECT_EQ(font->value.to_int(), 0);
+    EXPECT_EQ(font->flags, PropertyFlags::UNSTYLED);
+    ASSERT_NE(spanner->authored_overrides.find(key, Pid::TEXT), nullptr);
+    const auto bytes = legacy_override_write(spanner);
+    ASSERT_TRUE((*document)->page_count());
+    EXPECT_EQ(legacy_override_write(spanner), bytes);
+    spanner->erase_spanner_segments();
+    EXPECT_EQ(legacy_override_write(spanner), bytes);
+    auto reopened = g_engine->open(as_bytes(legacy_segment_fixture(bytes)));
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    auto *restored = master_of(**reopened).spanner_map().map().begin()->second;
+    EXPECT_EQ(legacy_override_write(restored), bytes);
+    ASSERT_NE(restored->authored_overrides.find(key, Pid::FONT_STYLE), nullptr);
+    EXPECT_EQ(restored->authored_overrides.find(key, Pid::FONT_STYLE)->flags, PropertyFlags::UNSTYLED);
+}
+
+TEST(Read, ThirdDotEditKeepsPrecedingLegacyOrdinalCarriers) {
+    using namespace mu::engraving;
+    auto input = legacy_segment_fixture("");
+    const auto duration = input.find("<durationType>half</durationType>");
+    input.replace(duration, std::string("<durationType>half</durationType>").size(), "<durationType>eighth</durationType><dots>3</dots>");
+    auto document = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(document) << document.error().message;
+    ASSERT_TRUE((*document)->page_count());
+    auto *chord = to_chord(master_of(**document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *note = chord->notes().front();
+    ASSERT_EQ(note->dots().size(), 3u);
+    note->dots()[2]->set_property(Pid::COLOR, muse::draw::Color(10, 20, 30));
+    ASSERT_EQ(note->authored_overrides.carriers.size(), 3u);
+    EXPECT_EQ(note->authored_overrides.find({AuthoredChildRole::DOT, 0}, Pid::COLOR), nullptr);
+    ASSERT_NE(note->authored_overrides.find({AuthoredChildRole::DOT, 2}, Pid::COLOR), nullptr);
+    auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    EXPECT_EQ(restored->authored_overrides.find({AuthoredChildRole::DOT, 0}, Pid::COLOR), nullptr);
+    ASSERT_NE(restored->authored_overrides.find({AuthoredChildRole::DOT, 2}, Pid::COLOR), nullptr);
 }
 
 TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {

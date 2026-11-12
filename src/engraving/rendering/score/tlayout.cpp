@@ -2665,6 +2665,7 @@ void TLayout::layout_guitar_bend(GuitarBend *item, LayoutContext &ctx, System *s
 }
 
 void TLayout::layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext &ctx) {
+    AuthoredOverrideMirror mirror(*item);
     LAYOUT_CALL_ITEM(item);
     bool tab_staff = item->staff_type()->is_tab_staff();
     if (tab_staff) {
@@ -2692,6 +2693,7 @@ void TLayout::fill_guitar_bend_segment_shape(const GuitarBendSegment *item, Guit
 }
 
 void TLayout::layout_hairpin_segment(HairpinSegment *item, LayoutContext &ctx) {
+    AuthoredOverrideMirror mirror(*item);
     LAYOUT_CALL_ITEM(item);
     HairpinSegment::LayoutData *ldata = item->mutldata();
 
@@ -5355,6 +5357,7 @@ static PolygonF create_arrow(bool start, bool filled, PointF &start_point, Point
 void TLayout::layout_text_line_base(TextLineBase *item, LayoutContext &ctx) { layout_line(item, ctx); }
 
 void TLayout::layout_text_line_base_segment(TextLineBaseSegment *item, LayoutContext &ctx) {
+    AuthoredOverrideMirror mirror(*item);
     TextLineBaseSegment::LayoutData *ldata = item->mutldata();
     ldata->npoints = 0;
     const TextLineBase *tl = item->text_line_base();
@@ -6158,6 +6161,9 @@ SpannerSegment *TLayout::get_next_layout_system_segment(Spanner *spanner, System
     seg->set_spanner(spanner);
     seg->set_track(spanner->track());
     seg->set_visible(spanner->visible());
+    const auto &segments = spanner->spanner_segments();
+    const auto ordinal = static_cast<uint32_t>(std::find(segments.begin(), segments.end(), seg) - segments.begin());
+    bind_authored_child(*seg, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
     return seg;
 }
 

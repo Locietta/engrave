@@ -4,6 +4,8 @@
 #include "beam.h"
 #include "chord.h"
 #include "engravingitem.h"
+#include "guitarbend.h"
+#include "hammeronpulloff.h"
 #include "hook.h"
 #include "note.h"
 #include "parenthesis.h"
@@ -12,6 +14,7 @@
 #include "stem.h"
 #include "stemslash.h"
 #include "style/style.h"
+#include "style/textstyle.h"
 #include "text.h"
 #include "tuplet.h"
 
@@ -25,22 +28,6 @@ auto entry_position(auto &entries, AuthoredChildKey key, Pid pid) {
 
 auto carrier_position(auto &carriers, AuthoredChildKey key) {
     return std::lower_bound(carriers.begin(), carriers.end(), key, [](const auto &entry, auto value) { return entry.child < value; });
-}
-
-bool common_property(Pid pid) {
-    switch (pid) {
-        case Pid::COLOR:
-        case Pid::VISIBLE:
-        case Pid::Z:
-        case Pid::OFFSET:
-        case Pid::MIN_DISTANCE:
-        case Pid::AUTOPLACE:
-        case Pid::PLACEMENT:
-        case Pid::SIZE_SPATIUM_DEPENDENT:
-        case Pid::POSITION_LINKED_TO_MASTER:
-        case Pid::APPEARANCE_LINKED_TO_MASTER: return true;
-        default: return false;
-    }
 }
 
 bool number_style_property(Pid pid);
@@ -101,6 +88,22 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
         if (item.type() == ElementType::STEM_SLASH && static_cast<const EngravingObject *>(chord->stem_slash()) == &item)
             return {AuthoredChildRole::STEM_SLASH};
     }
+    if (parent->is_spanner() && item.is_spanner_segment()) {
+        const auto &segments = static_cast<const Spanner *>(parent)->spanner_segments();
+        for (size_t i = 0; i < segments.size(); ++i)
+            if (segments[i] == &item) return {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(i)};
+    }
+    if (parent->is_spanner_segment() && item.is_text_base()) {
+        const auto &segment = static_cast<const SpannerSegment &>(*parent);
+        const auto key = segment.authored_child.role == AuthoredChildRole::NONE ? inferred_key(segment) : segment.authored_child;
+        if (parent->is_guitar_bend_segment() && static_cast<const GuitarBendSegment *>(parent)->bend_text() == &item)
+            return {AuthoredChildRole::SEGMENT_TEXT, key.ordinal};
+        if (parent->is_hammer_on_pull_off_segment()) {
+            const auto &texts = static_cast<const HammerOnPullOffSegment *>(parent)->hopo_text();
+            for (size_t i = 0; i < texts.size(); ++i)
+                if (texts[i] == &item) return {AuthoredChildRole::SEGMENT_TEXT, key.ordinal, 0, static_cast<uint32_t>(i)};
+        }
+    }
     if (item.is_parenthesis()) {
         if (parent->is_chord()) {
             const auto &groups = static_cast<const Chord *>(parent)->note_parentheses();
@@ -154,7 +157,25 @@ EngravingItem *bound_item(const EngravingObject &object) {
 PropertyFlags default_flags(const EngravingItem &item, Pid pid) {
     for (const auto &property : *item.styled_properties())
         if (property.pid == pid) return PropertyFlags::STYLED;
+    if (item.is_text_base()) {
+        for (const auto &property : *text_style(static_cast<const TextBase &>(item).text_style_type()))
+            if (property.pid == pid) return PropertyFlags::STYLED;
+    }
     return PropertyFlags::NOSTYLE;
+}
+
+bool fixed_spatium_property(Pid pid) {
+    return pid == Pid::OFFSET2 || pid == Pid::SLUR_UOFF1 || pid == Pid::SLUR_UOFF2 || pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4 ||
+           pid == Pid::BEND_VERTEX_OFF;
+}
+
+PropertyValue mirror_default(const EngravingItem &item, Pid pid) {
+    if (pid == Pid::TEXT_STYLE) {
+        if (item.authored_child.role == AuthoredChildRole::TUPLET_NUMBER) return TextStyleType::TUPLET;
+        if (item.type() == ElementType::GUITAR_BEND_TEXT) return TextStyleType::BEND;
+        if (item.type() == ElementType::HAMMER_ON_PULL_OFF_TEXT) return TextStyleType::HAMMER_ON_PULL_OFF;
+    }
+    return item.property_default(pid);
 }
 
 double unit_scale(const EngravingItem &item, const AuthoredOverrideEntry &entry) {
@@ -179,6 +200,15 @@ void mirror_flags(EngravingItem &item, Pid pid, PropertyFlags flags) {
             return;
         }
         ++index;
+    }
+    if (item.is_text_base()) {
+        for (const auto &property : *text_style(static_cast<const TextBase &>(item).text_style_type())) {
+            if (property.pid == pid) {
+                item.property_flags_list()[index] = flags;
+                return;
+            }
+            ++index;
+        }
     }
 }
 
@@ -208,9 +238,30 @@ void mirror_property(EngravingItem &item, Pid pid, const PropertyValue &value, P
 
 void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
     if (table.carrier(item.authored_child)) return;
+    if (item.authored_child.role == AuthoredChildRole::SEGMENT_TEXT) {
+        auto *segment = static_cast<SpannerSegment *>(item.ownership_parent());
+        if (segment->authored_child.role == AuthoredChildRole::NONE)
+            segment->authored_child = {AuthoredChildRole::SPANNER_SEGMENT, item.authored_child.ordinal};
+        prepare_carrier(*segment, table);
+    }
+    if (item.authored_child.role == AuthoredChildRole::DOT) {
+        const auto *owner = authored_override_owner(item);
+        const auto &dots = owner->is_note() ? static_cast<const Note *>(owner)->dots() : static_cast<const Rest *>(owner)->dot_list();
+        for (uint32_t i = 0; i < item.authored_child.ordinal && i < dots.size(); ++i) {
+            const AuthoredChildKey key{AuthoredChildRole::DOT, i};
+            if (table.carrier(key)) continue;
+            auto id = dots[i]->eid();
+            if (!id.is_valid()) id = EID::new_unique();
+            table.set_carrier({key, ElementType::NOTEDOT, id});
+        }
+    }
     auto eid = item.eid();
     if (!eid.is_valid()) eid = EID::new_unique();
     table.set_carrier({item.authored_child, item.type(), eid, EID::invalid(), muse::nidx});
+    if (item.authored_child.role == AuthoredChildRole::SPANNER_SEGMENT) {
+        const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
+        table.set({item.authored_child, Pid::SUBTYPE, int(subtype), PropertyFlags::NOSTYLE});
+    }
 }
 } // namespace
 
@@ -311,12 +362,11 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     auto &table = *authored_override_table(authored_override_owner(item));
     if (!item.is_beam()) prepare_carrier(item, table);
-    const auto default_value = item.property_default(pid);
-    const auto sid = item.get_property_style(pid);
-    AuthoredOverrideEntry entry{child_key(item), pid, value, flags, default_value, sid};
+    AuthoredOverrideEntry entry{child_key(item), pid, value, flags};
     if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
-        entry.unit = property_type(pid) == PType::ABSOLUTE || item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM :
-                                                                                                   AuthoredOverrideUnit::MILLIMETRE;
+        entry.unit = property_type(pid) == PType::ABSOLUTE || fixed_spatium_property(pid) || item.offset_is_spatium_dependent() ?
+                         AuthoredOverrideUnit::SPATIUM :
+                         AuthoredOverrideUnit::MILLIMETRE;
         const double scale = unit_scale(item, entry);
         const auto normalize = [pid, scale](const PropertyValue &v) -> PropertyValue {
             if (!v.is_valid()) return v;
@@ -324,7 +374,6 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
             return v.to_double() / scale;
         };
         entry.value = normalize(value);
-        entry.default_value = normalize(default_value);
     }
     table.set(std::move(entry));
 }
@@ -338,7 +387,8 @@ bool set_authored_override(EngravingItem &item, Pid pid, const PropertyValue &va
     if (pid == Pid::SIZE_SPATIUM_DEPENDENT) {
         auto &table = *authored_override_table(authored_override_owner(item));
         for (auto &entry : table.entries) {
-            if (entry.child != item.authored_child || property_type(entry.pid) != PType::POINT) continue;
+            if (entry.child != item.authored_child || property_type(entry.pid) != PType::POINT || fixed_spatium_property(entry.pid))
+                continue;
             const auto physical = effective_value(item, entry).value<PointF>();
             entry.unit = value.to_bool() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
             entry.value = physical / unit_scale(item, entry);
@@ -370,6 +420,14 @@ bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags
 }
 
 void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
+    if (item.authored_child.role != AuthoredChildRole::NONE && item.authored_child != key) {
+        if (const auto *table = authored_override_table(authored_override_owner(item))) {
+            for (const auto &entry : table->entries) {
+                if (entry.child == item.authored_child && !table->find(key, entry.pid))
+                    mirror_property(item, entry.pid, mirror_default(item, entry.pid), default_flags(item, entry.pid));
+            }
+        }
+    }
     item.authored_child = key;
     apply_authored_overrides(item);
 }
@@ -392,7 +450,8 @@ void finish_authored_read(EngravingItem &item) {
     // followed an offset. Source values are already normalized wire coordinates.
     for (auto &entry : table->entries) {
         if (entry.child == item.authored_child && property_type(entry.pid) == PType::POINT)
-            entry.unit = item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+            entry.unit = fixed_spatium_property(entry.pid) || item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM :
+                                                                                                   AuthoredOverrideUnit::MILLIMETRE;
     }
     const auto *old = table->carrier(child_key(item));
     auto eid = item.eid();
@@ -400,36 +459,16 @@ void finish_authored_read(EngravingItem &item) {
     table->set_carrier({item.authored_child, item.type(), eid, old ? old->linked_to : EID::invalid(), old ? old->track : muse::nidx});
 }
 
-AuthoredOverrideSnapshot snapshot_authored_override(const EngravingItem &item, Pid pid) {
-    AuthoredOverrideSnapshot result;
-    if (const auto *table = authored_override_table(authored_override_owner(item))) {
-        if (const auto *entry = table->find(child_key(item), pid)) result.entry = *entry;
-        if (const auto *carrier = table->carrier(child_key(item))) result.carrier = *carrier;
-    }
-    return result;
-}
-
-void restore_authored_override(EngravingItem &item, Pid pid, const AuthoredOverrideSnapshot &snapshot) {
-    auto &table = *authored_override_table(authored_override_owner(item));
-    if (snapshot.entry)
-        table.set(*snapshot.entry);
-    else
-        table.erase(item.authored_child, pid);
-    if (snapshot.carrier)
-        table.set_carrier(*snapshot.carrier);
-    else if (!table.has_entries(item.authored_child))
-        table.erase_carrier(item.authored_child);
-    const auto value = snapshot.entry ? effective_value(item, *snapshot.entry) : item.property_default(pid);
-    const auto flags = snapshot.entry ? snapshot.entry->flags : default_flags(item, pid);
-    mirror_property(item, pid, value, flags);
-    item.trigger_layout();
+bool has_authored_override(const EngravingItem &item, Pid pid) {
+    const auto *table = authored_override_table(authored_override_owner(item));
+    return table && table->find(child_key(item), pid);
 }
 
 void reset_authored_override(EngravingItem &item, Pid pid) {
     auto &table = *authored_override_table(authored_override_owner(item));
     table.erase(child_key(item), pid);
     // Carrier identity and dormant legacy ordinal survive a property reset.
-    if (!item.is_beam()) mirror_property(item, pid, item.property_default(pid), default_flags(item, pid));
+    if (!item.is_beam()) mirror_property(item, pid, mirror_default(item, pid), default_flags(item, pid));
     item.trigger_layout();
 }
 

@@ -1266,6 +1266,7 @@ TEST(SpannerSegmentEdit, FailedBatchRestoresLegacyOffset2Baseline) {
     auto *segment = spanner->spanner_segments().front();
     const auto before = segment->get_property(Pid::OFFSET2);
     const auto flags = segment->property_flags(Pid::OFFSET2);
+    const auto source = spanner->authored_overrides.entries;
     auto result = engrave::api::BatchGuard(*document).run(
         {[segment](engrave::api::EditContext &) -> engrave::Result<void> {
              segment->undo_change_property(Pid::OFFSET2, muse::PointF(1.0, -2.0));
@@ -1276,6 +1277,11 @@ TEST(SpannerSegmentEdit, FailedBatchRestoresLegacyOffset2Baseline) {
     EXPECT_FALSE(result);
     EXPECT_EQ(segment->get_property(Pid::OFFSET2), before);
     EXPECT_EQ(segment->property_flags(Pid::OFFSET2), flags);
+    ASSERT_EQ(spanner->authored_overrides.entries.size(), source.size());
+    for (size_t i = 0; i < source.size(); ++i) {
+        EXPECT_EQ(spanner->authored_overrides.entries[i].value, source[i].value);
+        EXPECT_EQ(spanner->authored_overrides.entries[i].flags, source[i].flags);
+    }
 }
 
 TEST(TremoloOverrideEdit, FailedBatchRestoresManualEndpointsAndPresence) {
