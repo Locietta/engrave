@@ -313,12 +313,13 @@ void CmdState::dump() {
 
 void Score::update() { master_score()->update(); }
 
-void MasterScore::update(bool reset_cmd_state, bool layout_all_parts) {
+void MasterScore::update(bool reset_cmd_state, bool layout_all_parts, NormalizeMode mode) {
     if (updates_locked_) {
         return;
     }
 
     delete_postponed(cmd_state_);
+    normalize_document(*this, {.mode = mode});
 
     if (cmd_state_.layout_range()) {
         for (Score *s : score_list()) {

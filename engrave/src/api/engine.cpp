@@ -82,7 +82,8 @@ void apply_metadata(mu::engraving::MasterScore *score, const CreateOptions &opti
         if (item) item->set_plain_text(text);
     }
     score->set_layout_all();
-    score->update();
+    mu::engraving::normalize_document(*score, {.mode = mu::engraving::NormalizeMode::LOAD});
+    score->update(true, false, mu::engraving::NormalizeMode::LOAD);
 }
 } // namespace
 

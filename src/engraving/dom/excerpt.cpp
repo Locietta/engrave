@@ -354,8 +354,10 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
         score->set_meta_tag(u"partName", part_label);
     }
 
-    // initial layout of score
-    score->do_layout();
+    // Establish note/anchor semantics before conversion; S3 removes the layout.
+    invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
+    normalize_score(*score);
+    score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
 
     // handle transposing instruments
     if (master_score->style().style_b(Sid::CONCERT_PITCH) != score->style().style_b(Sid::CONCERT_PITCH)) {
@@ -429,7 +431,8 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
     score->remap_brackets_and_barlines();
 
     score->set_layout_all();
-    score->do_layout();
+    normalize_score(*score);
+    score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
     master_score->init_automation();
 }
 
@@ -498,7 +501,10 @@ void MasterScore::init_and_add_excerpt(Excerpt *excerpt, bool fake_undo) {
 
 void MasterScore::init_excerpt(Excerpt *excerpt) {
     if (excerpt->inited()) {
-        excerpt->excerpt_score()->do_layout();
+        auto *score = excerpt->excerpt_score();
+        invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
+        normalize_score(*score);
+        score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
         return;
     }
 

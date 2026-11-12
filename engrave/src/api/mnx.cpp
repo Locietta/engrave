@@ -45,7 +45,8 @@ std::expected<music::ScoreProject, std::string> open_mnx(music::EngineContext &c
         }
     }
     score->set_layout_all();
-    score->update();
+    mu::engraving::normalize_document(*score, {.mode = mu::engraving::NormalizeMode::LOAD});
+    score->update(true, false, mu::engraving::NormalizeMode::LOAD);
     score->init_automation();
     return owned;
 }

@@ -66,6 +66,8 @@ struct EditContext {
 
     // Records an element the running operation created, for OpRef and OpResult.
     void created(mu::engraving::EngravingObject *object);
+    // Explicit barrier, wired to reading commands in S3. Invalidates cached targets.
+    void prepare_semantics();
 
 private:
     friend struct BatchGuard;
@@ -106,6 +108,8 @@ struct EditHooks {
     // Called before each step and once more before the commit (with the step
     // count); it may throw, or set an engine error that rejects the batch.
     std::function<void(std::size_t step)> before_step;
+    // Empty in production until S3; tests may identify dependent reading steps.
+    std::function<bool(std::size_t step)> needs_normalized_state;
 };
 
 // Runs a batch as one transaction. edit() is Document::edit; run() takes steps

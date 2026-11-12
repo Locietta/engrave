@@ -140,6 +140,21 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
 
 void EditContext::created(EngravingObject *object) { created_[op_].push_back(object); }
 
+void EditContext::prepare_semantics() {
+    bool pending = false;
+    for (auto *score : master_.score_list()) {
+        const auto &state = score->normalize_state;
+        pending |=
+            state.dirty || state.rebuild_midi_mapping || !state.includes_hidden_staves || score->need_update_ticks_and_time_sig_map();
+    }
+    if (!pending) return;
+    mu::engraving::normalize_document(master_, {.include_hidden_staves = true});
+    // Repairs can add/remove semantic children or change direct source anchors,
+    // including changes that have no UndoableCommand. Re-resolve earlier targets.
+    ++epoch_;
+    assign_missing_ids(master_);
+}
+
 // --- BatchGuard -------------------------------------------------------------
 
 // The score as an in-memory MSCZ, with the version stamps the writer replaces, per
@@ -239,10 +254,11 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     struct SavedLayout {
         mu::engraving::Score *score;
         mu::engraving::Score::LayoutState state;
+        mu::engraving::NormalizeState normalized;
     };
 
     std::vector<SavedLayout> saved_layouts;
-    for (auto *score : master.score_list()) saved_layouts.push_back({score, score->layout_state});
+    for (auto *score : master.score_list()) saved_layouts.push_back({score, score->layout_state, score->normalize_state});
     const auto *original_project = document.project.get();
     const auto rollback = [&](bool unsafe) {
         roll_back(snapshot ? &*snapshot : nullptr, history, unsafe);
@@ -260,6 +276,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             state.end = saved.state.end;
             state.font_generation = saved.state.font_generation;
             state.revision = saved.state.revision;
+            saved.score->normalize_state = saved.normalized;
         }
     };
     const std::vector<LiveId> before = live_ids(master);
@@ -286,6 +303,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             if (hooks.before_step) hooks.before_step(i);
             if (!check_engine(i) || i == steps.size()) break;
             if (i < snapshot_step.size() && snapshot_step[i]) snapshot_ran = true;
+            if (hooks.needs_normalized_state && hooks.needs_normalized_state(i)) context_.prepare_semantics();
             const std::size_t mark = stack->active_transaction()->commands().size();
             if (auto applied = steps[i](context_); !applied) {
                 failure = std::move(applied.error());
@@ -404,14 +422,18 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     // layout), so what was laid out is laid out again, as a load does.
     mu::engraving::ScoreLoad load;
     auto versions = snapshot.versions.begin();
+    std::vector<mu::engraving::Score *> laid_out;
     for (mu::engraving::Score *score : project->master_score()->score_list()) {
         if (versions == snapshot.versions.end()) break;
         score->set_mscore_version(versions->version);
         score->set_mscore_revision(versions->revision);
         score->set_msc_version(versions->msc_version);
-        if (versions->laid_out) score->do_layout();
+        mu::engraving::invalidate_normalization(*score, mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        if (versions->laid_out) laid_out.push_back(score);
         ++versions;
     }
+    mu::engraving::normalize_document(*project->master_score(), {.mode = mu::engraving::NormalizeMode::LOAD});
+    for (auto *score : laid_out) score->do_layout_range(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     project->master_score()->invalidate_repeat_list();
     project->master_score()->init_automation();
     assign_missing_ids(*project->master_score());

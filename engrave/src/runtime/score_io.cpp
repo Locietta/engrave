@@ -95,7 +95,8 @@ void finish_load(engraving::EngravingProject &project) {
         }
     }
     score->set_layout_all();
-    score->update();
+    engraving::normalize_document(*score, {.mode = engraving::NormalizeMode::LOAD});
+    score->update(true, false, engraving::NormalizeMode::LOAD);
     score->init_automation();
 }
 } // namespace
