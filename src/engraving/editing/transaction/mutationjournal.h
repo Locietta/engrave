@@ -31,6 +31,7 @@
 #include "dom/score.h"
 #include "elementchange.h"
 #include "global/types/translatablestring.h"
+#include "measurestaffchange.h"
 #include "partchange.h"
 #include "sourcechange.h"
 #include "staffchange.h"
@@ -68,7 +69,10 @@ enum class JournalEntryKind : uint8_t {
     STAFF_MEMBERSHIP,
     SYSTEM_STAFF,
     STAFF_ORDER,
-    STAFF_HIDE
+    STAFF_HIDE,
+    MSTAFF_MEMBERSHIP,
+    STAFF_TRACKS,
+    STAFF_BRACKETS
 };
 
 struct JournalEntry {
@@ -101,6 +105,10 @@ struct JournalBatch {
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
+    void change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
+    void add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
+    void change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
+    void change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding);
     void change_staff_membership(Staff *staff, staff_idx_t index, bool adding);
     void change_system_staff(Staff *staff, bool adding);
     void change_staff_order(Score *score, const std::vector<staff_idx_t> &order);
@@ -112,6 +120,7 @@ struct JournalBatch {
     void change_string_data(StringTunings *item, const StringData &value);
     void change_shared_origin(SharedPart *shared, Part *origin, bool connecting);
     void change_excerpt_membership(Excerpt *excerpt, bool adding);
+    void forget_mstaff(uint32_t reference);
     void forget_excerpt(uint32_t reference);
     void unwind(bool clean_up = true);
 
@@ -150,7 +159,10 @@ struct JournalBatch {
         return parts_.size() + labels_.size() + instruments_.size() + string_data_.size() + origins_.size() + excerpt_memberships_.size();
     }
 
-    size_t staff_entries() const { return staffs_.size() + system_staffs_.size() + staff_orders_.size() + staff_hides_.size(); }
+    size_t staff_entries() const {
+        return staffs_.size() + system_staffs_.size() + staff_orders_.size() + staff_hides_.size() + mstaff_memberships_.size() +
+               staff_tracks_.size() + staff_brackets_.size();
+    }
 
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
@@ -171,6 +183,13 @@ private:
     amc::vector<MeasureMembershipInverse> measures_;
     amc::vector<MeasureLengthInverse> measure_lengths_;
     amc::vector<MeasureRepeatCountInverse> measure_repeats_;
+    amc::vector<MStaffReference> mstaffs_;
+    amc::vector<MStaffMembershipInverse> mstaff_memberships_;
+    amc::vector<StaffTracksInverse> staff_tracks_;
+    amc::vector<StaffBracketsInverse> staff_brackets_;
+    uint32_t retain_mstaff(Measure &measure, MStaff &row);
+    uint32_t append_mstaff(Measure &measure, MStaff &row, staff_idx_t index, bool adding);
+    void dispose_mstaffs();
     amc::vector<StaffMembershipInverse> staffs_;
     amc::vector<SystemStaffInverse> system_staffs_;
     amc::vector<StaffSortInverse> staff_orders_;

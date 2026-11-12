@@ -48,6 +48,11 @@ struct StaffHideInverse {
     AutoOnOff before;
 };
 
+struct StaffBracketsInverse {
+    JournalTarget staff;
+    amc::vector<BracketValue> before;
+};
+
 amc::vector<BracketValue> capture_brackets(const Staff &staff);
 void restore_brackets(Staff &staff, const amc::vector<BracketValue> &values);
 void apply_staff_membership(Staff &staff, staff_idx_t index, bool adding);
@@ -56,4 +61,5 @@ void dispose_staff_membership(const StaffMembershipInverse &inverse, bool commit
 void apply_system_staff(Staff &staff, bool adding);
 void restore_system_staff(const SystemStaffInverse &inverse);
 void apply_staff_hide(Measure &measure, staff_idx_t staff, AutoOnOff value);
+void apply_staff_brackets(Staff &staff, size_t level, BracketType type, size_t span, bool adding);
 } // namespace mu::engraving

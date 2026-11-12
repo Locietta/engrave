@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../dom/staff.h"
-#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Score;
@@ -47,39 +46,4 @@ struct EditStaffBrackets {
     static void insert_bracket(Score *score, staff_idx_t staff_idx, BracketItem *b);
 };
 
-struct RemoveBracket : UndoableCommand {
-private:
-
-    Staff *staff = nullptr;
-    size_t level = 0;
-    BracketType bracket_type = BracketType::NORMAL;
-    size_t span = 0;
-
-    void undo() override;
-    void redo() override;
-
-public:
-    RemoveBracket(Staff *s, size_t l, BracketType t, size_t sp) : staff(s), level(l), bracket_type(t), span(sp) {}
-
-    UNDO_TYPE(CommandType::REMOVE_BRACKET)
-    UNDO_NAME("RemoveBracket")
-};
-
-struct AddBracket : UndoableCommand {
-private:
-
-    Staff *staff = nullptr;
-    size_t level = 0;
-    BracketType bracket_type = BracketType::NORMAL;
-    size_t span = 0;
-
-    void undo() override;
-    void redo() override;
-
-public:
-    AddBracket(Staff *s, size_t l, BracketType t, size_t sp) : staff(s), level(l), bracket_type(t), span(sp) {}
-
-    UNDO_TYPE(CommandType::ADD_BRACKET)
-    UNDO_NAME("AddBracket")
-};
 } // namespace mu::engraving

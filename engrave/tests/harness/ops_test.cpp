@@ -41,9 +41,11 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/sharedpart.h"
+#include "engraving/dom/spacer.h"
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stafflines.h"
 #include "engraving/dom/stafftext.h"
 #include "engraving/dom/stem.h"
 #include "engraving/dom/tempotext.h"
@@ -661,7 +663,7 @@ TEST(JournalDerived, CommittedBracketRemovalDisposesDisplayObject) {
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
-TEST(JournalDerived, BracketInverseSurvivesLegacyReplacement) {
+TEST(JournalDerived, BracketInverseSurvivesReplacement) {
     using namespace mu::engraving;
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
@@ -673,8 +675,8 @@ TEST(JournalDerived, BracketInverseSurvivesLegacyReplacement) {
     const auto revision = document->revision();
     EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
         item->undo_change_property(Pid::BRACKET_SPAN, 3);
-        master.undo(new RemoveBracket(master.staff(0), level, BracketType::NORMAL, 3));
-        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject legacy bracket replacement"});
+        master.record_bracket_remove(master.staff(0), level);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject bracket replacement"});
     }}));
     ASSERT_EQ(master.brackets(0).size(), level + 1);
     EXPECT_EQ(master.brackets(0).back()->bracket_span(), 5u);
@@ -1433,6 +1435,259 @@ TEST(JournalStaff, DetachedExcerptKeepsOwnershipOfReattachedStaff) {
     }}));
     EXPECT_TRUE(master.excerpts().empty());
     EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+}
+
+TEST(JournalStaffRows, RemovedRowKeepsAuthoredValuesAndSpacerIdentityForEarlierInverse) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &measure = *master.first_measure();
+    auto *row = measure.mstaves().at(0);
+    ASSERT_NE(row, nullptr);
+    row->set_visible(false);
+    row->set_stemless(true);
+    row->set_hide_if_empty(AutoOnOff::OFF);
+    row->set_measure_repeat_count(7);
+    auto *spacer = Factory::create_spacer(&measure);
+    spacer->set_track(0);
+    spacer->set_spacer_type(SpacerType::UP);
+    spacer->set_gap(Spatium(3.25));
+    master.record_element_add(spacer);
+    const auto handle = master.eid_register()->enroll(*spacer);
+    const auto color = spacer->color();
+    const auto gap = spacer->gap();
+    ASSERT_EQ(master.eid_register()->live_item(handle), spacer);
+    {
+        JournalBatch journal;
+        journal.change_property(*spacer, Pid::COLOR, muse::draw::Color(111, 122, 133), PropertyFlags::NOSTYLE, false);
+        journal.change_mstaff(&measure, row, 0, false);
+        EXPECT_EQ(master.eid_register()->live_item(handle), nullptr);
+        EXPECT_EQ(journal.staff_entries(), 1u);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        EXPECT_TRUE(journal.changes_info().changed_objects.at(&measure).contains(CommandType::REMOVE_M_STAFF));
+        journal.unwind();
+    }
+    EXPECT_EQ(measure.mstaves().at(0), row);
+    EXPECT_EQ(row->vspacer_up(), spacer);
+    EXPECT_FALSE(row->visible());
+    EXPECT_TRUE(row->stemless());
+    EXPECT_EQ(row->hide_if_empty(), AutoOnOff::OFF);
+    EXPECT_EQ(row->measure_repeat_count(), 7);
+    EXPECT_EQ(spacer->color(), color);
+    EXPECT_EQ(spacer->gap(), gap);
+    EXPECT_EQ(master.eid_register()->live_item(handle), spacer);
+}
+
+TEST(JournalStaffRows, ReattachedRowHasOneOwnerOnCommitAndRollback) {
+    using namespace mu::engraving;
+    for (bool reject : {false, true}) {
+        SCOPED_TRACE(reject);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        auto &master = engrave::harness::master_of(*document);
+        auto &measure = *master.first_measure();
+        auto *row = measure.mstaves().at(0);
+        const auto lines = master.eid_register()->enroll(*row->lines());
+        {
+            JournalBatch journal;
+            journal.change_mstaff(&measure, row, 0, false);
+            journal.change_mstaff(&measure, row, 0, true);
+            if (reject)
+                journal.unwind();
+            else
+                journal.cleanup(true);
+        }
+        EXPECT_EQ(measure.mstaves().at(0), row);
+        EXPECT_EQ(master.eid_register()->item_from_handle(lines), row->lines());
+    }
+}
+
+TEST(JournalStaffRows, NewRowLivesThroughInversesAndIsDisposedAfterRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &measure = *master.first_measure();
+    const auto before = measure.mstaves();
+    auto row = std::make_unique<MStaff>();
+    row->set_lines(Factory::create_staff_lines(&measure));
+    auto *spacer = Factory::create_spacer(&measure);
+    row->set_vspacer_up(spacer);
+    const auto line_handle = master.eid_register()->enroll(*row->lines());
+    const auto spacer_handle = master.eid_register()->enroll(*spacer);
+    auto *part = master.parts().front();
+    auto *staff = Factory::create_staff(part);
+    staff->set_part(part);
+    {
+        JournalBatch journal;
+        journal.change_staff_membership(staff, part->nstaves(), true);
+        journal.change_staff_tracks(&measure, before.size(), before.size() + 1, true);
+        journal.add_mstaff(&measure, std::move(row), before.size());
+        journal.change_property(*spacer, Pid::COLOR, muse::draw::Color(111, 122, 133), PropertyFlags::NOSTYLE, false);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        journal.unwind();
+        EXPECT_EQ(measure.mstaves(), before);
+        EXPECT_NE(master.eid_register()->item_from_handle(line_handle), nullptr);
+        EXPECT_EQ(master.eid_register()->item_from_handle(spacer_handle), spacer);
+        EXPECT_EQ(master.eid_register()->live_item(spacer_handle), nullptr);
+    }
+    EXPECT_EQ(master.eid_register()->item_from_handle(line_handle), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(spacer_handle), nullptr);
+}
+
+TEST(JournalStaffRows, RejectedOwnershipTransferDisposesNewRowBeforeArming) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &measure = *master.first_measure();
+    const auto before = measure.mstaves();
+    auto row = std::make_unique<MStaff>();
+    row->set_lines(Factory::create_staff_lines(&measure));
+    const auto lines = master.eid_register()->enroll(*row->lines());
+    JournalBatch journal;
+    EXPECT_THROW(journal.add_mstaff(&measure, std::move(row), before.size() + 1), std::logic_error);
+    EXPECT_EQ(journal.entry_count(), 0u);
+    EXPECT_EQ(measure.mstaves(), before);
+    EXPECT_EQ(master.eid_register()->item_from_handle(lines), nullptr);
+}
+
+TEST(JournalStaffRows, DetachedRowIsDisposedBeforeItsExcerpt) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    auto &master = engrave::harness::master_of(*document);
+    auto *excerpt = master.excerpts().front();
+    auto *measure = excerpt->excerpt_score()->first_measure();
+    auto *row = measure->mstaves().at(0);
+    const auto lines = master.eid_register()->enroll(*row->lines());
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_mstaff(measure, row, 0, false);
+        master.record_excerpt(excerpt, false);
+        return {};
+    }}));
+    EXPECT_TRUE(master.excerpts().empty());
+    EXPECT_EQ(master.eid_register()->item_from_handle(lines), nullptr);
+}
+
+TEST(JournalStaffRows, ExcerptDestructionInvalidatesAttachedRowsAndDetachedChildLifetimes) {
+    using namespace mu::engraving;
+    for (bool reattach : {false, true}) {
+        SCOPED_TRACE(reattach);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+        const auto revision = document->revision();
+        const auto result = engrave::api::BatchGuard(*document).run(
+            {[reattach](auto &context) -> engrave::Result<void> {
+                auto &master = context.master();
+                auto *excerpt = master.excerpts().front();
+                auto *measure = excerpt->excerpt_score()->first_measure();
+                auto *row = measure->mstaves().at(0);
+                master.record_mstaff(measure, row, 0, false);
+                if (reattach) master.record_mstaff(measure, row, 0, true);
+                master.record_excerpt(excerpt, false);
+                delete excerpt;
+                return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject after row owner destruction"});
+            }},
+            engrave::api::Policy::SNAPSHOT, std::nullopt);
+        EXPECT_FALSE(result);
+        EXPECT_EQ(document->revision(), revision);
+        auto &restored = engrave::harness::master_of(*document);
+        ASSERT_EQ(restored.excerpts().size(), 1u);
+        EXPECT_NE(restored.excerpts().front()->excerpt_score()->first_measure()->mstaves().at(0), nullptr);
+        EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+        EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+    }
+}
+
+TEST(JournalStaffRows, UnjournaledRemovalDisposesOwnedSpacerAndDisplayChildren) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &measure = *master.first_measure();
+    auto *row = measure.mstaves().at(0);
+    auto *spacer = Factory::create_spacer(&measure);
+    spacer->set_track(0);
+    master.record_element_add(spacer);
+    const auto spacer_handle = master.eid_register()->enroll(*spacer);
+    const auto lines = master.eid_register()->enroll(*row->lines());
+    ASSERT_FALSE(master.mutation_journal()->has_active_transaction());
+    master.record_mstaff(&measure, row, 0, false);
+    EXPECT_EQ(master.eid_register()->item_from_handle(spacer_handle), nullptr);
+    EXPECT_EQ(master.eid_register()->item_from_handle(lines), nullptr);
+}
+
+TEST(JournalStaffRows, BracketRosterAndNamesSurviveNestedRemovalAndStaffRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *staff = master.staff(0);
+    const auto level = master.brackets(0).size();
+    EditStaffBrackets::fill_brackets(&master, 0, level);
+    auto *item = master.brackets(0).back();
+    item->set_bracket_type(BracketType::GROUP);
+    item->set_bracket_span(2);
+    item->label().set_long_name(u"retained authored group");
+    item->label().set_short_name(u"RAG");
+    item->set_visible(false);
+    item->set_property(Pid::GROUP_BRACKET_SHOW_TEXT, false);
+    const auto before = capture_brackets(*staff);
+    const auto revision = document->revision();
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_bracket_remove(staff, level);
+        master.record_bracket_add(staff, level + 2, BracketType::NORMAL, 3);
+        master.brackets(0).back()->undo_change_property(Pid::BRACKET_COLUMN, static_cast<int>(level + 3));
+        master.record_staff_membership(staff, muse::nidx, false);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject bracket roster and staff removal"});
+    }}));
+    EXPECT_EQ(master.staff(0), staff);
+    EXPECT_EQ(capture_brackets(*staff), before);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalStaffRows, TrackInsertionRollbackRestoresAuthoredElementOrderAndTracks) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto &measure = *master.first_measure();
+    auto *part = master.parts().front();
+    auto *staff = Factory::create_staff(part);
+    staff->set_part(part);
+
+    struct Before {
+        Segment *segment;
+        std::vector<EngravingItem *> elements;
+        std::vector<std::pair<EngravingItem *, track_idx_t>> tracks;
+    };
+
+    std::vector<Before> before;
+    for (auto *segment = measure.first(); segment; segment = segment->next()) {
+        Before saved{segment, {segment->elist().begin(), segment->elist().end()}, {}};
+        for (auto *item : segment->elist())
+            if (item) saved.tracks.emplace_back(item, item->track());
+        for (auto *item : segment->annotations()) saved.tracks.emplace_back(item, item->track());
+        before.push_back(std::move(saved));
+    }
+    {
+        JournalBatch journal;
+        journal.change_staff_membership(staff, 0, true);
+        journal.change_staff_tracks(&measure, 0, 1, true);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        EXPECT_TRUE(journal.changes_info().changed_objects.at(&measure).contains(CommandType::INSERT_STAVES));
+        journal.unwind();
+    }
+    for (const auto &saved : before) {
+        EXPECT_EQ(std::vector<EngravingItem *>(saved.segment->elist().begin(), saved.segment->elist().end()), saved.elements);
+        for (const auto &[item, track] : saved.tracks) EXPECT_EQ(item->track(), track);
+    }
 }
 
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {

@@ -31,12 +31,12 @@
 #include "../editing/editkeysig.h"
 #include "../editing/editmeasurerepeat.h"
 #include "../editing/editmeasures.h"
-#include "../editing/editstaff.h"
 #include "../editing/editstaffbrackets.h"
 #include "../editing/editsystemlocks.h"
 #include "../editing/edittimesig.h"
 #include "../editing/inserttime.h"
 #include "../editing/navigation.h"
+#include "../editing/transaction/mutationjournal.h"
 #include "../editing/transaction/transaction.h"
 #include "accidental.h"
 #include "anchors.h"
@@ -95,6 +95,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 MStaff::~MStaff() {
+    if (retaining_journal_) retaining_journal_->forget_mstaff(retained_index_);
     delete measure_number_;
     delete mm_range_text_;
     delete lines_;
@@ -1090,11 +1091,11 @@ void Measure::cmd_remove_staves(staff_idx_t s_staff, staff_idx_t e_staff) {
         }
     }
 
-    score()->undo(new RemoveStaves(this, s_staff, e_staff));
+    score()->record_staff_tracks(this, s_staff, e_staff, false);
 
     for (int i = static_cast<int>(e_staff) - 1; i >= static_cast<int>(s_staff); --i) {
         MStaff *ms = *(mstaves_.begin() + i);
-        score()->undo(new RemoveMStaff(this, ms, i));
+        score()->record_mstaff(this, ms, i, false);
     }
     score()->undo_update_play_count_text(this);
 }
@@ -1104,18 +1105,18 @@ void Measure::cmd_remove_staves(staff_idx_t s_staff, staff_idx_t e_staff) {
 //---------------------------------------------------------
 
 void Measure::cmd_add_staves(staff_idx_t s_staff, staff_idx_t e_staff, bool create_rest) {
-    score()->undo(new InsertStaves(this, s_staff, e_staff));
+    score()->record_staff_tracks(this, s_staff, e_staff, true);
 
     Segment *ts = find_segment(SegmentType::TIME_SIG, tick());
     Segment *bs = find_segment_r(SegmentType::END_BAR_LINE, ticks());
 
     for (staff_idx_t i = s_staff; i < e_staff; ++i) {
         Staff *staff = score()->staff(i);
-        MStaff *ms = new MStaff;
+        auto ms = std::make_unique<MStaff>();
         ms->set_lines(Factory::create_staff_lines(this));
         ms->lines()->set_track(i * ::mu::engraving::voices);
         ms->lines()->set_visible(!staff->is_lines_invisible(tick()));
-        score()->undo(new InsertMStaff(this, ms, i));
+        score()->record_mstaff_add(this, std::move(ms), i);
     }
 
     if (!create_rest && !ts) {
@@ -1207,14 +1208,19 @@ void Measure::insert_m_staff(MStaff *staff, staff_idx_t idx) {
     for (staff_idx_t staff_idx = 0; staff_idx < mstaves_.size(); ++staff_idx) {
         mstaves_[staff_idx]->set_track(staff_idx * ::mu::engraving::voices);
     }
+    source_child_added(*this, staff->vspacer_up());
+    source_child_added(*this, staff->vspacer_down());
 }
 
 //---------------------------------------------------------
 //   removeMStaff
 //---------------------------------------------------------
 
-void Measure::remove_m_staff(MStaff * /*staff*/, staff_idx_t idx) {
+void Measure::remove_m_staff(MStaff *staff, staff_idx_t idx) {
+    assert(mstaves_.at(idx) == staff);
     mstaves_.erase(mstaves_.begin() + idx);
+    source_child_removed(*this, staff->vspacer_up());
+    source_child_removed(*this, staff->vspacer_down());
     for (staff_idx_t staff_idx = 0; staff_idx < mstaves_.size(); ++staff_idx) {
         mstaves_[staff_idx]->set_track(staff_idx * ::mu::engraving::voices);
     }
@@ -1229,11 +1235,12 @@ void Measure::insert_staff(Staff *staff, staff_idx_t staff_idx) {
         s->insert_staff(staff_idx);
     }
 
-    MStaff *ms = new MStaff;
+    auto ms = std::make_unique<MStaff>();
     ms->set_lines(Factory::create_staff_lines(this));
     ms->lines()->set_track(staff_idx * ::mu::engraving::voices);
     ms->lines()->set_visible(!staff->is_lines_invisible(tick()));
-    insert_m_staff(ms, staff_idx);
+    insert_m_staff(ms.get(), staff_idx);
+    ms.release();
 }
 
 //---------------------------------------------------------

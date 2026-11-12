@@ -74,6 +74,7 @@ void MutationJournal::abandon() noexcept {
 
 JournalBatch::~JournalBatch() {
     for (auto *command : legacy_) delete command;
+    dispose_mstaffs();
     dispose_excerpts();
 }
 
@@ -461,6 +462,97 @@ void JournalBatch::change_shared_origin(SharedPart *shared, Part *origin, bool c
         shared->remove_origin_part(origin);
 }
 
+uint32_t JournalBatch::retain_mstaff(Measure &measure, MStaff &row) {
+    if (row.retaining_journal_) {
+        if (row.retaining_journal_ != this) throw std::logic_error("measure staff belongs to another active journal");
+        return row.retained_index_;
+    }
+    const auto index = entry_index(mstaffs_.size());
+    const auto target = JournalTarget::capture(measure);
+    const auto children = capture_mstaff_children(row, *target.document);
+    mstaffs_.push_back({&row, target, children});
+    row.retaining_journal_ = this;
+    row.retained_index_ = index;
+    return index;
+}
+
+void JournalBatch::forget_mstaff(uint32_t reference) { mstaffs_[reference].object = nullptr; }
+
+void JournalBatch::dispose_mstaffs() {
+    for (auto &reference : mstaffs_) {
+        auto *row = reference.object;
+        if (!row) continue;
+        row->retaining_journal_ = nullptr;
+        reference.object = nullptr;
+        if (reference.retained) dispose_detached_mstaff(*row, reference.owner, reference.children);
+    }
+}
+
+uint32_t JournalBatch::append_mstaff(Measure &measure, MStaff &row, staff_idx_t index, bool adding) {
+    const auto found = muse::index_of(measure.mstaves(), &row);
+    if (adding) {
+        if (found != muse::nidx || index > measure.mstaves().size()) throw std::logic_error("invalid measure staff insertion");
+    } else if (found != index || index == muse::nidx)
+        throw std::logic_error("invalid measure staff removal");
+    const auto reference = retain_mstaff(measure, row);
+    auto &retained = mstaffs_[reference];
+    if (adding) {
+        auto *owner = retained.owner.document->eid_register()->item_from_handle(retained.owner.handle);
+        if (owner && muse::contains(to_measure(owner)->mstaves(), &row))
+            throw std::logic_error("measure staff is still owned by another measure");
+    }
+    const auto i = entry_index(mstaff_memberships_.size());
+    mstaff_memberships_.push_back({JournalTarget::capture(measure), reference, index, adding});
+    try {
+        entries_.push_back({JournalEntryKind::MSTAFF_MEMBERSHIP, i});
+    } catch (...) {
+        mstaff_memberships_.pop_back();
+        throw;
+    }
+    retained.retained = true;
+    return i;
+}
+
+void JournalBatch::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding) {
+    if (adding && row->retaining_journal_ != this) throw std::logic_error("new measure staff rows require owned insertion");
+    const auto i = append_mstaff(*measure, *row, index, adding);
+    const auto &entry = mstaff_memberships_[i];
+    apply_mstaff_membership(mstaffs_[entry.reference], entry, adding);
+}
+
+void JournalBatch::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
+    const auto i = append_mstaff(*measure, *row, index, true);
+    // No fallible work between arming the inverse and handing ownership over.
+    row.release();
+    const auto &entry = mstaff_memberships_[i];
+    apply_mstaff_membership(mstaffs_[entry.reference], entry, true);
+}
+
+void JournalBatch::change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding) {
+    if (first >= last) throw std::logic_error("staff track range must not be empty");
+    const auto i = entry_index(staff_tracks_.size());
+    staff_tracks_.push_back({JournalTarget::capture(*measure), first, last, adding});
+    try {
+        entries_.push_back({JournalEntryKind::STAFF_TRACKS, i});
+    } catch (...) {
+        staff_tracks_.pop_back();
+        throw;
+    }
+    apply_staff_tracks(*measure, first, last, adding);
+}
+
+void JournalBatch::change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding) {
+    const auto i = entry_index(staff_brackets_.size());
+    staff_brackets_.push_back({JournalTarget::capture(*staff), capture_brackets(*staff)});
+    try {
+        entries_.push_back({JournalEntryKind::STAFF_BRACKETS, i});
+    } catch (...) {
+        staff_brackets_.pop_back();
+        throw;
+    }
+    apply_staff_brackets(*staff, level, type, span, adding);
+}
+
 uint32_t JournalBatch::retain_excerpt(Excerpt &excerpt) {
     if (excerpt.retaining_journal_) {
         if (excerpt.retaining_journal_ != this) throw std::logic_error("excerpt belongs to another active journal");
@@ -516,6 +608,20 @@ void JournalBatch::unwind(bool clean_up) {
 
     for (auto it = entries_.rbegin(); it != entries_.rend(); ++it) {
         switch (it->kind) {
+            case JournalEntryKind::MSTAFF_MEMBERSHIP: {
+                const auto &r = mstaff_memberships_[it->payload];
+                apply_mstaff_membership(mstaffs_[r.reference], r, !r.adding);
+            } break;
+            case JournalEntryKind::STAFF_TRACKS: {
+                const auto &r = staff_tracks_[it->payload];
+                apply_staff_tracks(*to_measure(&r.measure.object()), r.first, r.last, !r.adding);
+            } break;
+            case JournalEntryKind::STAFF_BRACKETS: {
+                const auto &r = staff_brackets_[it->payload];
+                auto &staff = *to_staff(&r.staff.object());
+                restore_brackets(staff, r.before);
+                staff.trigger_layout();
+            } break;
             case JournalEntryKind::STAFF_MEMBERSHIP: restore_staff_membership(staffs_[it->payload]); break;
             case JournalEntryKind::SYSTEM_STAFF: restore_system_staff(system_staffs_[it->payload]); break;
             case JournalEntryKind::STAFF_ORDER: {
@@ -622,6 +728,9 @@ void JournalBatch::unwind(bool clean_up) {
     measures_.clear();
     measure_lengths_.clear();
     measure_repeats_.clear();
+    mstaff_memberships_.clear();
+    staff_tracks_.clear();
+    staff_brackets_.clear();
     staffs_.clear();
     system_staffs_.clear();
     staff_orders_.clear();
@@ -652,6 +761,9 @@ bool JournalBatch::structural_since(size_t mark) const {
             case JournalEntryKind::STAFF_MEMBERSHIP:
             case JournalEntryKind::SYSTEM_STAFF:
             case JournalEntryKind::STAFF_ORDER:
+            case JournalEntryKind::MSTAFF_MEMBERSHIP:
+            case JournalEntryKind::STAFF_TRACKS:
+            case JournalEntryKind::STAFF_BRACKETS:
             case JournalEntryKind::STAFF_HIDE:
             case JournalEntryKind::PART_MEMBERSHIP:
             case JournalEntryKind::PART_LABEL:
@@ -715,6 +827,19 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
             collect_object(result, &staff_orders_[entry.payload].target.object(), CommandType::SORT_STAVES);
             continue;
         }
+        if (entry.kind == JournalEntryKind::MSTAFF_MEMBERSHIP) {
+            const auto &r = mstaff_memberships_[entry.payload];
+            collect_object(result, &r.measure.object(), r.adding ? CommandType::INSERT_M_STAFF : CommandType::REMOVE_M_STAFF);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::STAFF_TRACKS) {
+            const auto &r = staff_tracks_[entry.payload];
+            collect_object(result, &r.measure.object(), r.adding ? CommandType::INSERT_STAVES : CommandType::REMOVE_STAVES);
+            continue;
+        }
+        // Legacy bracket commands report no changed_objects; layout dirtiness
+        // and the structural semantic barrier already carry their effect.
+        if (entry.kind == JournalEntryKind::STAFF_BRACKETS) continue;
         if (entry.kind == JournalEntryKind::STAFF_HIDE) {
             collect_object(result, &staff_hides_[entry.payload].target.object(), CommandType::CHANGE_M_STAFF_HIDE_IF_EMPTY);
             continue;

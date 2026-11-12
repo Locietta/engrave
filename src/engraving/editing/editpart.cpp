@@ -37,7 +37,6 @@
 #include "../dom/stringtunings.h"
 #include "../dom/utils.h"
 #include "editscoreproperties.h"
-#include "editstaff.h"
 #include "log.h"
 #include "transaction/transaction.h"
 #include "transpose.h"

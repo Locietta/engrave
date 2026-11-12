@@ -109,7 +109,6 @@
 #include "editrehearsalmark.h"
 #include "editscoreproperties.h"
 #include "editspanner.h"
-#include "editstaff.h"
 #include "editstaffbrackets.h"
 #include "editstyle.h"
 #include "editsystemlocks.h"

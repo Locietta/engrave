@@ -81,7 +81,6 @@
 #include "editpagelocks.h"
 #include "editproperty.h"
 #include "editspanner.h"
-#include "editstaff.h"
 #include "editsystemlocks.h"
 #include "infrastructure/messagebox.h"
 #include "log.h"

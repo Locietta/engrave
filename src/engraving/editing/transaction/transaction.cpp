@@ -27,6 +27,7 @@
 
 #include "../../dom/masterscore.h"
 #include "dom/excerpt.h"
+#include "dom/measure.h"
 #include "dom/sharedpart.h"
 #include "dom/staff.h"
 #include "dom/stringtunings.h"
@@ -260,6 +261,64 @@ void Transaction::change_measure_repeat_count(Measure *measure, int count, staff
     }
     auto token = begin_compound_hook(s_push_hook);
     undoable_transaction_->change_measure_repeat_count(measure, count, staff);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        if (adding)
+            measure->insert_m_staff(row, index);
+        else {
+            std::unique_ptr<MStaff> unjournaled;
+            if (!row->retaining_journal_) unjournaled.reset(row);
+            try {
+                measure->remove_m_staff(row, index);
+            } catch (...) {
+                if (muse::contains(measure->mstaves(), row)) unjournaled.release();
+                throw;
+            }
+        }
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_mstaff(measure, row, index, adding);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        try {
+            measure->insert_m_staff(row.get(), index);
+        } catch (...) {
+            const auto found = muse::index_of(measure->mstaves(), row.get());
+            if (found != muse::nidx) measure->remove_m_staff(row.get(), found);
+            throw;
+        }
+        row.release();
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->add_mstaff(measure, std::move(row), index);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_staff_tracks(*measure, first, last, adding);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_staff_tracks(measure, first, last, adding);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_staff_brackets(*staff, level, type, span, adding);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_staff_brackets(staff, level, type, span, adding);
     finish_compound_hook(s_push_hook, token);
 }
 
