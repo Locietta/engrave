@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../types/types.h"
+#include "engraving/types/types.h"
 #include "metaparserbase.h"
 
 namespace mu::engraving {

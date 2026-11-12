@@ -151,8 +151,9 @@ void NoteArticulationsParser::parse_note_head(const Note *note, const RenderingC
 
     if (type_by_note_head_group != mpe::ArticulationType::UNDEFINED) {
         append_articulations({type_by_note_head_group}, ctx, result);
-    } else if (note->ldata()->cached_notehead_sym.has_value()) {
-        SymId sym_id = note->ldata()->cached_notehead_sym.value(); // fastest way to get the notehead symbol
+    } else {
+        // Stem orientation is visual; playback uses the canonical source head.
+        SymId sym_id = note->note_head(1);
         ArticulationTypeSet types = SymbolsMetaParser::symbol_to_articulations(sym_id);
         append_articulations(types, ctx, result);
     }

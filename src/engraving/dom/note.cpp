@@ -935,15 +935,13 @@ int Note::playing_tpc() const {
 //---------------------------------------------------------
 
 SymId Note::note_head() const {
-    int up;
-    NoteHeadType ht;
-    if (chord()) {
-        up = chord()->up();
-        ht = chord()->duration_type().head_type();
-    } else {
-        up = 1;
-        ht = NoteHeadType::HEAD_QUARTER;
-    }
+    // A detached custom palette head keeps its symbol in display data.
+    if (head_group_ == NoteHeadGroup::HEAD_CUSTOM && (!chord() || !chord()->staff())) return ldata()->cached_notehead_sym.value();
+    return note_head(chord() ? chord()->up() : 1);
+}
+
+SymId Note::note_head(int direction) const {
+    NoteHeadType ht = chord() ? chord()->duration_type().head_type() : NoteHeadType::HEAD_QUARTER;
     if (head_type_ != NoteHeadType::HEAD_AUTO) {
         ht = head_type_;
     }
@@ -961,13 +959,13 @@ SymId Note::note_head() const {
                     return d->note_heads(pitch_, ht);
                 } else {
                     LOGD("no drumset");
-                    return note_head(up, NoteHeadGroup::HEAD_NORMAL, ht);
+                    return note_head(direction, NoteHeadGroup::HEAD_NORMAL, ht);
                 }
             } else {
                 head_group = NoteHeadGroup::HEAD_NORMAL;
             }
         } else {
-            return ldata()->cached_notehead_sym.value();
+            head_group = NoteHeadGroup::HEAD_NORMAL;
         }
     }
 
@@ -985,10 +983,10 @@ SymId Note::note_head() const {
     if (scheme == NoteHeadScheme::HEAD_AUTO) {
         scheme = NoteHeadScheme::HEAD_NORMAL;
     }
-    SymId t = note_head(up, head_group, ht, tpc(), key, scheme);
+    SymId t = note_head(direction, head_group, ht, tpc(), key, scheme);
     if (t == SymId::NO_SYM) {
         LOGD("invalid notehead %d/%d", int(head_group), int(ht));
-        t = note_head(up, NoteHeadGroup::HEAD_NORMAL, ht);
+        t = note_head(direction, NoteHeadGroup::HEAD_NORMAL, ht);
     }
     return t;
 }

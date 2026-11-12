@@ -29,6 +29,7 @@
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
+#include "sourceidentity.h"
 #include "system.h"
 #include "text.h"
 #include "types/typesconv.h"
@@ -236,7 +237,11 @@ TextBase *HairpinSegment::find_start_dynamic_or_expression(bool ignore_invisible
 }
 
 TextBase *HairpinSegment::find_end_dynamic_or_expression(bool ignore_invisible, bool require_playable) const {
-    Fraction ref_tick = hairpin()->tick2();
+    return hairpin()->find_end_dynamic_or_expression(placement(), ignore_invisible, require_playable);
+}
+
+TextBase *Hairpin::find_end_dynamic_or_expression(PlacementV placement_value, bool ignore_invisible, bool require_playable) const {
+    Fraction ref_tick = tick2();
     Measure *measure = score()->tick2measure(ref_tick - Fraction::eps());
     if (!measure) {
         return nullptr;
@@ -253,7 +258,7 @@ TextBase *HairpinSegment::find_end_dynamic_or_expression(bool ignore_invisible, 
         if (segment_tick > ref_tick) {
             break;
         }
-        for (EngravingItem *item : segment->annotations()) {
+        for (EngravingItem *item : source_annotations(*segment)) {
             if (!item->is_dynamic() && !item->is_expression()) {
                 continue;
             }
@@ -263,8 +268,8 @@ TextBase *HairpinSegment::find_end_dynamic_or_expression(bool ignore_invisible, 
             if (require_playable && (!item->is_dynamic() || !to_dynamic(item)->play_dynamic())) {
                 continue;
             }
-            bool ends_match = item->track() == hairpin()->track() && item->placement() == placement() &&
-                              item->get_property(Pid::VOICE_ASSIGNMENT) == hairpin()->get_property(Pid::VOICE_ASSIGNMENT);
+            bool ends_match = item->track() == track() && item->placement() == placement_value &&
+                              item->get_property(Pid::VOICE_ASSIGNMENT) == get_property(Pid::VOICE_ASSIGNMENT);
             if (ends_match) {
                 dynamics_and_expr.push_back(to_text_base(item));
             }
