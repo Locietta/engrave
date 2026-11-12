@@ -16,6 +16,7 @@
 #include "style/style.h"
 #include "style/textstyle.h"
 #include "text.h"
+#include "textlinebase.h"
 #include "tremolotwochord.h"
 #include "tuplet.h"
 
@@ -340,6 +341,12 @@ EngravingItem *authored_override_owner(const EngravingItem &item) {
 }
 
 bool authored_override_handles(const EngravingObject &object, Pid pid) {
+    if (object.is_spanner_segment()) {
+        // These are logical spanner properties delegated by the legacy segment
+        // adapter (or unsupported by non-text segments), not local overrides.
+        const auto &properties = TextLineBase::text_line_base_property_ids();
+        if (pid == Pid::TEXT_STYLE || std::find(properties.begin(), properties.end(), pid) != properties.end()) return false;
+    }
     if (object.is_engraving_item() && fragment_owner(static_cast<const EngravingItem &>(object)) && pid != Pid::BEAM_POS) return false;
     auto *item = bound_item(object);
     return item && supported_property(child_key(*item).role, pid) && authored_override_owner(*item);

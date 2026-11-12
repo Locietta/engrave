@@ -377,15 +377,36 @@ void write_authored_unit(const EngravingItem *owner, AuthoredChildKey child, Xml
     }
 }
 
+const Parenthesis *parenthesis_carrier(const EngravingItem *owner, AuthoredChildKey child) {
+    if (child.role != AuthoredChildRole::PAREN_LEFT && child.role != AuthoredChildRole::PAREN_RIGHT) return nullptr;
+    const bool left = child.role == AuthoredChildRole::PAREN_LEFT;
+    if (child.subordinal == 1 && owner->is_chord()) {
+        const auto &groups = to_chord(owner)->note_parentheses();
+        if (child.ordinal >= groups.size()) return nullptr;
+        return left ? groups[child.ordinal]->left_paren() : groups[child.ordinal]->right_paren();
+    }
+    return left ? owner->left_paren() : owner->right_paren();
+}
+
 void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, WriteContext &ctx) {
     const auto &table = *authored_override_table(owner);
-    if (const auto *carrier = table.carrier(child)) {
+    // Parenthesis group identity/links still belong to the structural DOM pair
+    // until L3. Keep its legacy ID/track order and clone/unlink/standalone mapping;
+    // all appearance values continue to come from the source override table.
+    const auto *parenthesis = parenthesis_carrier(owner, child);
+    if (parenthesis) {
+        TWrite::write_item_eid(parenthesis, xml);
+    } else if (const auto *carrier = table.carrier(child)) {
         if (carrier->legacy_eid.is_valid()) xml.tag("eid", carrier->legacy_eid.to_std_string());
     }
     write_authored_property(owner, child, xml, Pid::AUTOPLACE);
+    if (parenthesis) TWrite::write_item_link(parenthesis, xml, ctx);
     if (const auto *carrier = table.carrier(child)) {
-        if (carrier->linked_to.is_valid() && !ctx.clipboardmode()) xml.tag("linkedTo", carrier->linked_to.to_std_string());
-        const auto track = carrier->track == muse::nidx ? owner->track() : carrier->track;
+        // Without a live structural group the standalone writer cannot establish
+        // a local target. Keep the stored link for full-score saves only.
+        if (!parenthesis && carrier->linked_to.is_valid() && !ctx.clipboardmode() && !ctx.standalone())
+            xml.tag("linkedTo", carrier->linked_to.to_std_string());
+        const auto track = parenthesis ? parenthesis->track() : carrier->track == muse::nidx ? owner->track() : carrier->track;
         if (track != ctx.cur_track() && track != muse::nidx) xml.tag("track", static_cast<int>(track) + ctx.track_diff());
     }
     write_authored_unit(owner, child, xml);
