@@ -295,6 +295,44 @@ TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
     master.end_cmd(false, true);
 }
 
+TEST(Read, NormalizeCleansInvalidMelismaBeforeRepairingLyricTicks) {
+    using namespace mu::engraving;
+    for (const auto syllabic : {LyricsSyllabic::BEGIN, LyricsSyllabic::MIDDLE}) {
+        auto document = open_path(write470_fixture().parent_path() / "ties_mismatched.mscx");
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *segment = master.first_measure()->first(SegmentType::CHORD_REST);
+        auto *first = to_chord(segment->element(0));
+        auto *second = to_chord(segment->next(SegmentType::CHORD_REST)->element(0));
+        auto *lyrics = Factory::create_lyrics(first);
+        lyrics->set_track(0);
+        lyrics->set_syllabic(syllabic);
+        lyrics->set_ticks(Fraction(1, 4));
+        first->add(lyrics);
+        auto *following = Factory::create_lyrics(second);
+        following->set_track(0);
+        second->add(following);
+        auto *separator = Factory::create_lyrics_line(lyrics);
+        separator->set_track(0);
+        separator->set_track2(0);
+        separator->set_start_element(first);
+        separator->set_end_element(second);
+        separator->set_ticks(Fraction(1, 4));
+        lyrics->set_separator(separator);
+        master.add_unmanaged_spanner(separator);
+        lyrics->set_need_remove_invalid_segments();
+        ASSERT_TRUE(lyrics->need_remove_invalid_segments());
+        master.set_layout_all();
+        const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+        normalize_score(master);
+        EXPECT_EQ(lyrics->ticks(), Fraction(0, 1));
+        EXPECT_EQ(lyrics->syllabic(), syllabic == LyricsSyllabic::BEGIN ? LyricsSyllabic::SINGLE : LyricsSyllabic::END);
+        EXPECT_EQ(lyrics->separator(), nullptr);
+        EXPECT_FALSE(lyrics->need_remove_invalid_segments());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    }
+}
+
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
