@@ -344,6 +344,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
         f->mutldata()->set_pos_x(x_note);
     }
 
+    fill_shape(item, item->mutldata(), ctx.conf());
     layout_lv_articulation(item, ctx);
 
     create_paren_groups(item);
@@ -693,6 +694,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
     }
 
+    fill_shape(item, item->mutldata(), ctx.conf());
     layout_lv_articulation(item, ctx);
 
     create_paren_groups(item);
@@ -3247,21 +3249,6 @@ void ChordLayout::check_start_end_slurs(Chord *chord, LayoutContext &ctx) {
             chord->start_end_slurs().end_down = true;
         }
     }
-}
-
-void ChordLayout::check_and_fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf) {
-#ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
-    Shape origin = ldata->shape(LdAccess::PASS);
-#endif
-
-    fill_shape(item, ldata, conf);
-
-#ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
-    Shape fixed = ldata->shape(LdAccess::PASS);
-    if (!origin.equal(fixed)) {
-        LOGE() << "Shape not actual for item: " << item->type_name();
-    }
-#endif
 }
 
 void ChordLayout::fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf) {

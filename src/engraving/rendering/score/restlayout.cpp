@@ -152,6 +152,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
             invisible_x += item->sym_width(SymId::AUGMENTATION_DOT) * dot->mag();
         }
     }
+    fill_shape(item, ldata, ctx.conf());
 }
 
 void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf) {
@@ -765,5 +766,6 @@ void RestLayout::update_symbol(const Rest *item, Rest::LayoutData *ldata) {
     int line = floor(y / line_distance);
 
     ldata->sym = item->get_symbol(item->duration_type().type(), line, lines);
+    fill_shape(item, ldata);
 }
 } // namespace mu::engraving::rendering::score

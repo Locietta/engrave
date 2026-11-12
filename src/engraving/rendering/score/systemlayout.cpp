@@ -1223,6 +1223,7 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
 
     for (ChordRest *cr : elements_to_layout.chord_rests) {
         BeamLayout::layout_non_cross_beams(cr, ctx);
+        ChordLayout::fill_shape(cr, cr->mutldata(), ctx.conf());
     }
 
     // Beam layout changes grace stem lengths after horizontal spacing. Refresh

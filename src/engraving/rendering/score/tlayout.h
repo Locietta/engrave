@@ -181,6 +181,7 @@ namespace mu::engraving::rendering::score {
 struct TLayout {
 
     static void layout_item(EngravingItem *item, LayoutContext &ctx); // factory
+    static void complete_item_shape(EngravingItem &item, EngravingItem::LayoutData &data, const LayoutConfiguration &conf);
 
     static void layout_accidental(const Accidental *item, Accidental::LayoutData *ldata, const LayoutConfiguration &conf);
     static void layout_ambitus(const Ambitus *item, Ambitus::LayoutData *ldata, const LayoutContext &ctx);

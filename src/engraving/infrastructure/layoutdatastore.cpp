@@ -54,6 +54,10 @@ void LayoutDataStore::erase(EngravingItem &item) {
     item.layout_store_ = nullptr;
 }
 
+void LayoutDataStore::for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete) {
+    for (auto &record : records_->items.values()) complete(*record.second.item, *record.second.data);
+}
+
 void LayoutDataStore::detach_score() {
     while (!records_->items.empty()) erase(*records_->items.begin()->second.item);
     if (score_ && score_->layout_data_store() == this) score_->bind_layout_data_store(nullptr);

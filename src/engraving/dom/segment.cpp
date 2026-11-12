@@ -44,6 +44,7 @@
 #include "note.h"
 #include "ornament.h"
 #include "part.h"
+#include "rendering/score/chordlayout.h"
 #include "rendering/score/tlayout.h"
 #include "rest.h"
 #include "score.h"
@@ -2439,6 +2440,11 @@ void Segment::create_shape(staff_idx_t staff_idx) {
                 continue;
             }
             if (e->add_to_skyline() || (e->is_chord_rest() && to_chord_rest(e)->lyrics().size() > 0)) {
+                if (e->is_chord_rest()) {
+                    rendering::score::LayoutContext ctx(score());
+                    auto *cr = to_chord_rest(e);
+                    rendering::score::ChordLayout::fill_shape(cr, cr->mutldata(), ctx.conf());
+                }
                 s.add(e->shape().translate((e->is_clef() ? e->ldata()->pos() : e->pos()) + e->staff_offset()));
             }
             // Non-standard trills display a cue note that we must add to shape here

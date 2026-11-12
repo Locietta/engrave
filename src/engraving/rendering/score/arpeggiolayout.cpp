@@ -21,6 +21,7 @@
  */
 #include "arpeggiolayout.h"
 
+#include "chordlayout.h"
 #include "dom/arpeggio.h"
 #include "dom/chord.h"
 #include "dom/ledgerline.h"
@@ -168,6 +169,7 @@ void ArpeggioLayout::clear_accidentals(Arpeggio *item, LayoutContext &ctx) {
                       cur_arp_shape.bbox().width(), ::mu::engraving::rendering::score::ArpeggioLayout::arbitrary_arpeggio_length));
         }
 
+        ChordLayout::fill_shape(chord, chord->mutldata(), ctx.conf());
         Shape chord_shape = chord->shape();
         chord_shape.translate(chord->page_pos());
         // Remove any element which isn't an accidental the arpeggio intersects

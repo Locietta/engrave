@@ -179,6 +179,7 @@ void ChordBracketLayout::layout_horizontal(ChordBracket *bracket) {
         }
 
         Chord *chord = to_chord(item);
+        ChordLayout::fill_shape(chord, chord->mutldata());
         Shape chord_shape = chord->shape();
         chord_shape.remove_types({ElementType::CHORD_BRACKET});
         chord_shape.translate(chord->pos());
