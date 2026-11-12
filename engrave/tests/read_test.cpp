@@ -6219,6 +6219,101 @@ TEST(LayoutDataStore, RecursiveLedgerTeardownRetiresEveryPayload) {
     EXPECT_EQ(store.size(), before);
 }
 
+TEST(LayoutDataStore, SharingLinksSurvivePayloadErasureAndDetachOnDestruction) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Note> shared(Factory::create_note(chord));
+    std::unique_ptr<Note> origin(Factory::create_note(chord));
+    std::unique_ptr<Note> other(Factory::create_note(chord));
+    origin->set_track(1);
+    other->set_track(0);
+    EngravingItem::connect_shared_item(shared.get(), origin.get());
+    EngravingItem::connect_shared_item(shared.get(), other.get());
+    ASSERT_EQ(shared->origin_items().size(), 2u);
+    EXPECT_EQ(shared->origin_items().front(), other.get());
+    EXPECT_EQ(origin->shared_item(), shared.get());
+    EXPECT_FALSE(shared->has_layout_data());
+    EXPECT_FALSE(origin->has_layout_data());
+    auto &store = master.renderer()->layout_data_store(master);
+    origin->mutldata()->set_pos(1.25, 2.5);
+    store.erase(*origin);
+    EXPECT_FALSE(origin->has_layout_data());
+    EXPECT_EQ(origin->shared_item(), shared.get());
+    shared->undo_change_property(Pid::VISIBLE, false);
+    EXPECT_FALSE(origin->visible());
+    EXPECT_FALSE(other->visible());
+    other->undo_change_property(Pid::VISIBLE, true);
+    EXPECT_TRUE(shared->visible()); // First origin propagates back to its shared item.
+    EXPECT_FALSE(origin->has_layout_data());
+    shared.reset();
+    EXPECT_EQ(origin->shared_item(), nullptr);
+    EXPECT_EQ(other->shared_item(), nullptr);
+    EngravingItem::connect_shared_item(origin.get(), other.get());
+    other.reset();
+    EXPECT_TRUE(origin->origin_items().empty());
+    EXPECT_FALSE(origin->has_layout_data());
+}
+
+TEST(LayoutDataStore, HarmonyOutputOwnsRenderedChildrenAndColdDestructionDoesNotAllocate) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto before = store.size();
+    std::unique_ptr<Harmony> harmony(Factory::create_harmony(master.dummy()));
+    EXPECT_FALSE(harmony->has_layout_data());
+    // An allocate-then-erase destructor leaves size unchanged, so observe the
+    // explicit allocation boundary while the cold item is being destroyed.
+    size_t allocation_requests = 0;
+    auto boundary = std::move(master.layout_store_boundary);
+    master.layout_store_boundary = [&](Score &score) -> rendering::score::LayoutDataStore & {
+        ++allocation_requests;
+        return boundary(score);
+    };
+    harmony.reset();
+    master.layout_store_boundary = std::move(boundary);
+    EXPECT_EQ(allocation_requests, 0u);
+    EXPECT_EQ(store.size(), before);
+    harmony.reset(Factory::create_harmony(master.dummy()));
+    auto *output = harmony->mutldata();
+    {
+        HarmonyRenderItems abandoned;
+        auto *paren = Factory::create_parenthesis(harmony.get());
+        paren->mutldata()->set_pos(1.25, 2.5);
+        abandoned.adopt(std::make_unique<ChordSymbolParen>(paren, false, 0.0, 0.0));
+        EXPECT_EQ(store.size(), before + 2);
+    }
+    EXPECT_EQ(store.size(), before + 1);
+    HarmonyRenderItems scratch;
+    auto *paren = Factory::create_parenthesis(harmony.get());
+    paren->mutldata()->set_pos(3.0, 4.0);
+    auto *rendered = new ChordSymbolParen(paren, false, 0.0, 0.0);
+    scratch.adopt(std::unique_ptr<HarmonyRenderItem>(rendered));
+    output->render_item_list.append(std::move(scratch));
+    EXPECT_TRUE(scratch.empty());
+    ASSERT_EQ(output->render_item_list.value().size(), 1u);
+    EXPECT_EQ(output->render_item_list.front(), rendered);
+    EXPECT_EQ(store.size(), before + 2);
+    store.erase(*harmony);
+    EXPECT_EQ(store.size(), before);
+    EXPECT_FALSE(harmony->has_layout_data());
+    harmony.reset();
+    EXPECT_EQ(store.size(), before);
+    // The ordinary DOM-destruction order must also release live output-owned
+    // children while the parent source shell is still available.
+    harmony.reset(Factory::create_harmony(master.dummy()));
+    paren = Factory::create_parenthesis(harmony.get());
+    paren->mutldata()->set_pos(5.0, 6.0);
+    harmony->mutldata()->render_item_list.adopt(std::make_unique<ChordSymbolParen>(paren, false, 0.0, 0.0));
+    EXPECT_EQ(store.size(), before + 2);
+    harmony.reset();
+    EXPECT_EQ(store.size(), before);
+}
+
 TEST(Read, SpannerRootStylesDoNotBecomeSegmentOverrides) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());

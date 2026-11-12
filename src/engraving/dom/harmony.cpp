@@ -341,10 +341,29 @@ Harmony::Harmony(const Harmony &h) : TextBase(h) {
 //   ~Harmony
 //---------------------------------------------------------
 
+void HarmonyRenderItems::clear() {
+    view_.clear();
+    items_.clear();
+}
+
+void HarmonyRenderItems::adopt(std::unique_ptr<HarmonyRenderItem> item) {
+    if (items_.size() == items_.capacity()) items_.reserve(std::max(size_t(4), items_.size() * 2));
+    if (view_.size() == view_.capacity()) view_.reserve(std::max(size_t(4), view_.size() * 2));
+    auto *pointer = item.get();
+    items_.push_back(std::move(item));
+    view_.push_back(pointer);
+}
+
+void HarmonyRenderItems::append(HarmonyRenderItems &&source) {
+    if (&source == this) return;
+    items_.reserve(items_.size() + source.items_.size());
+    view_.reserve(view_.size() + source.view_.size());
+    for (auto &item : source.items_) items_.push_back(std::move(item));
+    view_.insert(view_.end(), source.view_.begin(), source.view_.end());
+    source.clear();
+}
+
 Harmony::~Harmony() {
-    for (const HarmonyRenderItem *render_item : mutldata()->render_item_list()) {
-        delete render_item;
-    }
     for (const HarmonyInfo *info : chords_) {
         delete info;
     }

@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "chordlist.h"
@@ -78,6 +79,38 @@ private:
     bool h_align_ = true;
     PointF offset_; // Offset for placing within the TextBase.
     PointF pos_;    // Position of segments relative to Harmony position
+};
+
+// Owns rendered items; the pointer array is a borrowed view for legacy drawing
+// and alignment consumers. Both arrays move together, with no shared ownership.
+struct HarmonyRenderItems {
+    HarmonyRenderItems() = default;
+    HarmonyRenderItems(const HarmonyRenderItems &) = delete;
+    HarmonyRenderItems &operator=(const HarmonyRenderItems &) = delete;
+    HarmonyRenderItems(HarmonyRenderItems &&) = default;
+    HarmonyRenderItems &operator=(HarmonyRenderItems &&) = default;
+
+    const std::vector<HarmonyRenderItem *> &value() const { return view_; }
+
+    const std::vector<HarmonyRenderItem *> &operator()() const { return view_; }
+
+    bool empty() const { return view_.empty(); }
+
+    HarmonyRenderItem *front() const { return view_.front(); }
+
+    HarmonyRenderItem *back() const { return view_.back(); }
+
+    auto begin() const { return view_.begin(); }
+
+    auto end() const { return view_.end(); }
+
+    void clear();
+    void adopt(std::unique_ptr<HarmonyRenderItem> item);
+    void append(HarmonyRenderItems &&source);
+
+private:
+    std::vector<std::unique_ptr<HarmonyRenderItem>> items_;
+    std::vector<HarmonyRenderItem *> view_;
 };
 
 struct ChordSymbolParen : HarmonyRenderItem {
@@ -339,8 +372,8 @@ public:
         ld_field<std::vector<LineF>> polychord_divider_lines = {"[Harmony] polychordDividerLine", std::vector<LineF>()};
         ld_field<double> polychord_divider_offset = {"[Harmony] polychordDividerOffset", 0.0};
         ld_field<double> baseline = {"[Harmony] baseline", 0.0};
-        ld_field<std::vector<muse::draw::Font>> font_list = "[Harmony] fontList";                 // temp values used in render()
-        ld_field<std::vector<HarmonyRenderItem *>> render_item_list = "[Harmony] renderItemList"; // rendered chord
+        ld_field<std::vector<muse::draw::Font>> font_list = "[Harmony] fontList"; // temp values used in render()
+        HarmonyRenderItems render_item_list;
     };
     DECLARE_LAYOUTDATA_METHODS(Harmony)
 

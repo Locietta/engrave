@@ -353,10 +353,7 @@ void HarmonyLayout::layout_modifier_parentheses(const Harmony *item, const Layou
 //---------------------------------------------------------
 
 void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const LayoutContext &ctx) {
-    for (const HarmonyRenderItem *render_item : ldata->render_item_list()) {
-        delete render_item;
-    }
-    ldata->render_item_list.mut_value().clear();
+    ldata->render_item_list.clear();
     if (item->harmony_type() == HarmonyType::ROMAN) {
         render_roman_numeral(item, ldata);
         return;
@@ -391,15 +388,13 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
     HarmonyRenderCtx harmony_ctx;
 
     // Map of text segments and their final width
-    std::multimap<double, std::vector<HarmonyRenderItem *>> chord_text_segments;
+    std::vector<std::pair<double, std::vector<HarmonyRenderItem *>>> chord_text_segments;
 
     for (size_t i = item->chords().size(); i > 0; i--) {
         harmony_ctx.info = item->chords().at(i - 1);
         render_single_harmony(item, ldata, harmony_ctx, ctx);
 
-        chord_text_segments.emplace(std::pair<double, std::vector<HarmonyRenderItem *>>{harmony_ctx.x(), harmony_ctx.render_item_list});
-        ldata->render_item_list.mut_value().insert(ldata->render_item_list.mut_value().end(), harmony_ctx.render_item_list.begin(),
-                                                   harmony_ctx.render_item_list.end());
+        chord_text_segments.emplace_back(harmony_ctx.x(), harmony_ctx.render_item_list.value());
 
         // Measure divider spacing from lowest baseline and highest cap-height in segments
         double root_baseline = harmony_ctx.render_item_list.empty() ? -DBL_MAX : harmony_ctx.render_item_list.front()->y();
@@ -430,7 +425,7 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
             }
         }
 
-        harmony_ctx.render_item_list.clear();
+        ldata->render_item_list.append(std::move(harmony_ctx.render_item_list));
         if (item->chords().size() == 1 || i == 1) {
             break;
         }
@@ -448,6 +443,10 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Layo
         harmony_ctx.movey(item->absolute_from_spatium(-ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_SPACING)) * 2.0);
         harmony_ctx.movey(item->absolute_from_spatium(-ctx.conf().style().style_s(Sid::POLYCHORD_DIVIDER_THICKNESS)));
     }
+
+    // Preserve the old multimap's width order, including equal-width stability.
+    std::stable_sort(chord_text_segments.begin(), chord_text_segments.end(),
+                     [](const auto &first, const auto &second) { return first.first < second.first; });
 
     // Align polychords
 
@@ -492,8 +491,7 @@ void HarmonyLayout::render_roman_numeral(Harmony *item, Harmony::LayoutData *lda
     HarmonyInfo *info = item->chords().front();
 
     render(item, ldata, info->text_name(), harmony_ctx);
-    ldata->render_item_list.mut_value().insert(ldata->render_item_list.mut_value().end(), harmony_ctx.render_item_list.begin(),
-                                               harmony_ctx.render_item_list.end());
+    ldata->render_item_list.append(std::move(harmony_ctx.render_item_list));
     ldata->baseline = 0.0;
 }
 
@@ -629,7 +627,7 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, const Stri
 
     Font f = item->harmony_type() != HarmonyType::ROMAN ? ldata->font_list.value().front() : item->font();
     TextSegment *ts = new TextSegment(s, f, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
-    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.render_item_list.adopt(std::unique_ptr<HarmonyRenderItem>(ts));
     harmony_ctx.movex(ts->width());
 }
 
@@ -644,7 +642,7 @@ void HarmonyLayout::render(Harmony *item, Harmony::LayoutData *ldata, SymId sym,
     String s = ctx.conf().engraving_font()->to_string(sym);
 
     TextSegment *ts = new TextSegment(s, f, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
-    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.render_item_list.adopt(std::unique_ptr<HarmonyRenderItem>(ts));
     harmony_ctx.movex(ts->width());
 }
 
@@ -732,7 +730,7 @@ void HarmonyLayout::render_action_note(Harmony *item, Harmony::LayoutData *ldata
     font.set_point_size_f(font.point_size_f() * harmony_ctx.scale);
 
     TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
-    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.render_item_list.adopt(std::unique_ptr<HarmonyRenderItem>(ts));
     harmony_ctx.movex(ts->width());
 }
 
@@ -784,7 +782,7 @@ void HarmonyLayout::render_action_acc(Harmony *item, Harmony::LayoutData *ldata,
     font.set_point_size_f(font.point_size_f() * harmony_ctx.scale);
 
     TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
-    harmony_ctx.render_item_list.push_back(ts);
+    harmony_ctx.render_item_list.adopt(std::unique_ptr<HarmonyRenderItem>(ts));
     harmony_ctx.movex(ts->width());
 }
 
@@ -793,14 +791,15 @@ void HarmonyLayout::render_action_align(HarmonyRenderCtx &harmony_ctx) { harmony
 void HarmonyLayout::render_action_scale(const RenderActionScalePtr &a, HarmonyRenderCtx &harmony_ctx) { harmony_ctx.scale *= a->scale(); }
 
 void HarmonyLayout::render_action_paren(Harmony *item, const RenderActionParenPtr &a, HarmonyRenderCtx &harmony_ctx) {
-    Parenthesis *p = Factory::create_parenthesis(item);
+    std::unique_ptr<Parenthesis> p(Factory::create_parenthesis(item));
     p->set_direction(a->direction());
     p->set_color(item->color());
     p->set_follow_parent_color(true);
     p->set_generated(true);
 
-    ChordSymbolParen *paren_item = new ChordSymbolParen(p, harmony_ctx.h_align, harmony_ctx.x(), harmony_ctx.y());
-    harmony_ctx.render_item_list.push_back(paren_item);
+    auto paren_item = std::make_unique<ChordSymbolParen>(p.get(), harmony_ctx.h_align, harmony_ctx.x(), harmony_ctx.y());
+    p.release();
+    harmony_ctx.render_item_list.adopt(std::move(paren_item));
 }
 
 void HarmonyLayout::kern_characters(const Harmony *item, const String &text, HarmonyRenderCtx &harmony_ctx, const LayoutContext &ctx) {
@@ -869,15 +868,12 @@ void HarmonyLayout::render_action_set(Harmony *item, Harmony::LayoutData *ldata,
 
     kern_characters(item, text, harmony_ctx, ctx);
 
-    TextSegment *ts = new TextSegment(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
+    auto ts = std::make_unique<TextSegment>(text, font, harmony_ctx.x(), harmony_ctx.y(), harmony_ctx.h_align);
     harmony_ctx.movex(ts->width());
 
     if (a->render_text()) {
-        harmony_ctx.render_item_list.push_back(ts);
-        return;
+        harmony_ctx.render_item_list.adopt(std::move(ts));
     }
-
-    delete ts;
 }
 
 void HarmonyLayout::render_action_move(Harmony *item, const RenderActionMovePtr &a, HarmonyRenderCtx &harmony_ctx) {
