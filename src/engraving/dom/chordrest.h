@@ -211,9 +211,16 @@ public:
 
 protected:
 
-    void add_el(EngravingItem *e) { el_.push_back(e); }
+    void add_el(EngravingItem *e) {
+        el_.push_back(e);
+        source_child_added(*this, e);
+    }
 
-    bool remove_el(EngravingItem *e) { return el_.remove(e); }
+    bool remove_el(EngravingItem *e) {
+        if (!el_.remove(e)) return false;
+        source_child_removed(*this, e);
+        return true;
+    }
 
     void clear_els() { el_.clear(); }
 

@@ -5,7 +5,6 @@
 #include <new>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <variant>
 
@@ -105,7 +104,7 @@ Result<Target> EditContext::target(const Ref &ref) const {
         std::holds_alternative<ElementId>(ref) ? resolve(master_, std::get<ElementId>(ref)) : resolve(master_, std::get<Address>(ref));
     if (!found) return std::unexpected(found.error());
     if (!found->writable) return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
-    return Target{ref, found->object, epoch_};
+    return Target{ref, found->object, epoch_, master_.eid_register()->handle_of(found->object)};
 }
 
 Result<EngravingObject *> EditContext::object(const Target &target) const {
@@ -115,15 +114,17 @@ Result<EngravingObject *> EditContext::object(const Target &target) const {
             return fail(ErrorCode::INVALID_ARGUMENT,
                         std::format("operation {} created {} element(s), not {}", made->op, list.size(), made->item + 1));
         }
-        EngravingObject *object = list[made->item];
-        const auto objects = document_objects(master_);
-        if (std::ranges::find(objects, object) == objects.end()) {
+        EngravingObject *object = master_.eid_register()->live_item(list[made->item]);
+        if (!object) {
             return fail(ErrorCode::STALE_HANDLE,
                         std::format("element {} of operation {} is no longer part of the score", made->item, made->op));
         }
         return object;
     }
-    if (target.epoch == epoch_) return target.object;
+    if (target.epoch == epoch_) {
+        if (auto *object = master_.eid_register()->live_item(target.handle)) return object;
+        return fail(ErrorCode::STALE_HANDLE, "the prepared source element is no longer live");
+    }
     const Result<Target> again = this->target(target.ref);
     if (!again) return std::unexpected(again.error());
     return again->object;
@@ -139,7 +140,9 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
     return mu::engraving::to_score(found->object);
 }
 
-void EditContext::created(EngravingObject *object) { created_[op_].push_back(object); }
+void EditContext::created(EngravingObject *object) {
+    created_[op_].push_back(object ? master_.eid_register()->enroll(*object) : mu::engraving::SourceHandle{});
+}
 
 void EditContext::prepare_semantics() {
     bool pending = false;
@@ -342,15 +345,6 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         return std::unexpected(std::move(*failure));
     }
 
-    // What the operations created, while a removal is still undoable and has not
-    // destroyed anything: the history cleanup below deletes what the batch removed.
-    std::unordered_set<const EngravingObject *> objects;
-    for (EngravingObject *object : document_objects(master)) objects.insert(object);
-    for (auto &list : context_.created_) {
-        for (EngravingObject *&object : list) {
-            if (!objects.contains(object)) object = nullptr;
-        }
-    }
     const bool changed = stack->size() > history;
     if (!hooks.keep_history) stack->clear_history();
     assign_missing_ids(master);
@@ -366,7 +360,8 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     result.replaced = std::move(diff.replaced);
     result.ops.resize(steps.size());
     for (std::size_t i = 0; i < steps.size(); ++i) {
-        for (const EngravingObject *object : context_.created_[i]) {
+        for (auto handle : context_.created_[i]) {
+            const EngravingObject *object = master.eid_register()->live_item(handle);
             const bool named = object && takes_id(*object) && object->eid().is_valid();
             result.ops[i].created.push_back(named ? std::optional(from_engine(object->eid())) : std::nullopt);
         }

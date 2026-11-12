@@ -27,6 +27,7 @@
 
 #include "../infrastructure/eid.h"
 #include "../infrastructure/rtti.h" // IWYU pragma: export
+#include "../infrastructure/sourcehandle.h"
 #include "../style/styledef.h"
 #include "../types/propertyvalue.h"
 #include "../types/types.h"
@@ -236,6 +237,7 @@ DummyParentOr<T> parent_or_dummy(T *parent, DummyParent *dummy) {
 struct EngravingObject {
     EngravingObject(const ElementType &type, EngravingObject *parent);
     EngravingObject(const EngravingObject &se);
+    EngravingObject &operator=(const EngravingObject &) = delete;
 
     virtual ~EngravingObject();
 
@@ -250,6 +252,8 @@ struct EngravingObject {
     EID eid() const;
     bool set_eid(EID id) const;
     EID assign_new_eid() const;
+
+    SourceHandle source_handle() const { return source_handle_; }
 
     //! The raw tree link, i.e. the inverse of children(): the ownership parent
     //! if there is one, otherwise the dummy the object is parked on. Prefer
@@ -338,6 +342,9 @@ protected:
     Score *score_ = nullptr;
 
 private:
+    friend struct EIDRegister;
+
+    SourceHandle source_handle_;
     static ElementStyle const empty_style;
 
     void do_set_parent(EngravingObject *p);

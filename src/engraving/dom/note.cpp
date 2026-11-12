@@ -1193,6 +1193,23 @@ Fraction Note::play_ticks_fraction() const {
 //   addSpanner
 //---------------------------------------------------------
 
+void Note::set_accidental(Accidental *a) {
+    if (accidental_ != a) source_child_removed(*this, accidental_);
+    accidental_ = a;
+    source_child_added(*this, a);
+}
+
+void Note::add_spanner_for(Spanner *e) {
+    if (!muse::contains(spanner_for_, e)) spanner_for_.push_back(e);
+    if (e->anchor() == Spanner::Anchor::NOTE) source_child_added(*this, e);
+}
+
+bool Note::remove_spanner_for(Spanner *e) {
+    if (!muse::remove(spanner_for_, e)) return false;
+    if (e->anchor() == Spanner::Anchor::NOTE) source_child_removed(*this, e);
+    return true;
+}
+
 void Note::add_spanner(Spanner *l) {
     EngravingItem *e = l->end_element();
     if (e && e->is_note()) {
@@ -1286,6 +1303,8 @@ void Note::add(EngravingItem *e) {
     }
     trigger_layout();
 
+    source_child_added(*this, e);
+
     e->added();
 }
 
@@ -1345,6 +1364,7 @@ void Note::remove(EngravingItem *e) {
         default: EngravingItem::remove(e); break;
     }
     trigger_layout();
+    source_child_removed(*this, e);
     e->removed();
 }
 
@@ -1954,21 +1974,26 @@ PartialTie *Note::outgoing_partial_tie() const {
 }
 
 void Note::set_tie_for(Tie *t) {
+    if (tie_for_ != t) source_child_removed(*this, tie_for_);
     if (!t) {
         jump_points_.clear();
     }
     tie_for_ = t;
+    source_child_added(*this, t);
     if (tie_for_ && !tie_for_->is_laissez_vib()) {
         tie_for_->update_possible_jump_points();
     }
 }
 
 void Note::set_tie_back(Tie *t) {
+    if (tie_back_ != t && tie_back_ && tie_back_->is_partial_tie() && !to_partial_tie(tie_back_)->is_outgoing())
+        source_child_removed(*this, tie_back_);
     if (tie_back_ && t && tie_back_->jump_point()) {
         t->set_jump_point(tie_back_->jump_point());
         tie_back_->set_jump_point(nullptr);
     }
     tie_back_ = t;
+    if (t && t->is_partial_tie() && !to_partial_tie(t)->is_outgoing()) source_child_added(*this, t);
 }
 
 //---------------------------------------------------------

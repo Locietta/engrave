@@ -80,6 +80,7 @@ void MeasureBase::clear_elements() {
 //---------------------------------------------------------
 
 ElementList MeasureBase::take_elements() {
+    for (auto *item : el_) source_child_removed(*this, item);
     ElementList l;
     l.swap(el_);
     return l;
@@ -201,6 +202,7 @@ void MeasureBase::add(EngravingItem *e) {
     }
     trigger_layout();
     el_.push_back(e);
+    source_child_added(*this, e);
     e->added();
 }
 
@@ -228,6 +230,7 @@ void MeasureBase::remove(EngravingItem *el) {
     if (!el_.remove(el)) {
         LOGD("MeasureBase(%p)::remove(%s,%p) not found", this, el->type_name(), el);
     } else {
+        source_child_removed(*this, el);
         el->removed();
     }
 
@@ -657,13 +660,14 @@ LayoutBreak *MeasureBase::section_break_element() const {
 //   MeasureBaseList
 //---------------------------------------------------------
 
-MeasureBaseList::MeasureBaseList() {
+MeasureBaseList::MeasureBaseList(Score *owner) : owner_(owner) {
     first_ = nullptr;
     last_ = nullptr;
     size_ = 0;
 }
 
 void MeasureBaseList::clear() {
+    if (owner_) source_collection_cleared(*owner_, SourceCollection::MEASURES);
     first_ = nullptr;
     last_ = nullptr;
     size_ = 0;
@@ -686,6 +690,7 @@ void MeasureBaseList::push_back(MeasureBase *m) {
         m->set_next(0);
     }
     last_ = m;
+    if (owner_) source_child_added(*owner_, m);
 }
 
 //---------------------------------------------------------
@@ -704,6 +709,7 @@ void MeasureBaseList::push_front(MeasureBase *m) {
         m->set_next(0);
     }
     first_ = m;
+    if (owner_) source_child_added(*owner_, m);
 }
 
 //---------------------------------------------------------
@@ -725,6 +731,7 @@ void MeasureBaseList::add(MeasureBase *m) {
     m->set_prev(el->prev());
     el->prev()->set_next(m);
     el->set_prev(m);
+    if (owner_) source_child_added(*owner_, m);
 }
 
 //---------------------------------------------------------
@@ -741,6 +748,7 @@ static void clear_measure_layout_copies(MeasureBase *base) {
 }
 
 void MeasureBaseList::remove(MeasureBase *m) {
+    if (owner_) source_child_removed(*owner_, m);
     clear_measure_layout_copies(m);
     --size_;
     if (m->prev()) {
@@ -760,6 +768,10 @@ void MeasureBaseList::remove(MeasureBase *m) {
 //---------------------------------------------------------
 
 void MeasureBaseList::insert(MeasureBase *fm, MeasureBase *lm) {
+    for (MeasureBase *m = fm;; m = m->next()) {
+        if (owner_) source_child_added(*owner_, m);
+        if (m == lm) break;
+    }
     for (MeasureBase *m = fm; m != lm; m = m->next()) {
         ++size_;
     }
@@ -784,6 +796,7 @@ void MeasureBaseList::insert(MeasureBase *fm, MeasureBase *lm) {
 
 void MeasureBaseList::remove(MeasureBase *fm, MeasureBase *lm) {
     for (MeasureBase *measure = fm;; measure = measure->next()) {
+        if (owner_) source_child_removed(*owner_, measure);
         clear_measure_layout_copies(measure);
         if (measure == lm) break;
     }
@@ -810,6 +823,8 @@ void MeasureBaseList::remove(MeasureBase *fm, MeasureBase *lm) {
 //---------------------------------------------------------
 
 void MeasureBaseList::change(MeasureBase *ob, MeasureBase *nb) {
+    if (owner_) source_child_removed(*owner_, ob);
+    if (owner_) source_child_added(*owner_, nb);
     clear_measure_layout_copies(ob);
     nb->set_prev(ob->prev());
     nb->set_next(ob->next());

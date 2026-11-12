@@ -61,9 +61,24 @@ struct EIDRegister {
     EIDRepairCount repairs() const;
 
     EngravingObject *item_from_eid(const EID &eid) const;
+    SourceHandle handle_from_eid(const EID &eid) const;
     EID eid_from_item(const EngravingObject *item) const;
     SourceHandle handle_of(const EngravingObject *item) const;
     EngravingObject *item_from_handle(SourceHandle handle) const;
+    EngravingObject *live_item(SourceHandle handle) const;
+    bool published(SourceHandle handle) const;
+    SourceHandle enroll(EngravingObject &item);
+    void attach_root(EngravingObject &item);
+    void attach_source(EngravingObject &item, EngravingObject &owner);
+    void detach_source(EngravingObject &item);
+    void detach_collection(EngravingObject &owner, SourceCollection collection);
+    void publish(EngravingObject &item);
+    bool owns(const EngravingObject &owner, const EngravingObject &item) const;
+
+    bool membership_ready() const { return membership_ready_; }
+
+    void begin_membership() { membership_ready_ = true; }
+
     // Every pair in the register, for the id bijection checks of the tests.
     std::vector<std::pair<EID, const EngravingObject *>> entries() const;
     size_t size() const;
@@ -77,18 +92,25 @@ private:
         EID eid = EID::invalid();
         uint64_t generation = 1;
         uint32_t next_free = 0;
+        uint32_t owner = 0;
+        uint32_t first_child = 0;
+        uint32_t previous = 0;
+        uint32_t next = 0;
+        bool live = false;
+        bool published = false;
     };
 
     SourceHandle allocate_slot(EngravingObject *item, EID eid);
     void retire_slot(SourceHandle handle);
     const Slot *find_slot(SourceHandle handle) const;
+    void unlink(uint32_t index);
+    void set_live(uint32_t index, bool live);
 
     uint64_t document_ = 0;
     amc::vector<Slot> slots_;
     uint32_t free_slot_ = 0;
     ankerl::unordered_dense::map<EID, SourceHandle> eid_to_handle_;
-    // Transitional reverse index; H2 moves the handle onto the object.
-    ankerl::unordered_dense::map<const EngravingObject *, SourceHandle> item_to_handle_;
+    bool membership_ready_ = false;
 
     EIDRepairCount repairs_;
 

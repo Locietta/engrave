@@ -26,6 +26,7 @@
 #include <limits>
 #include <stdexcept>
 
+#include "dom/engravingobject.h"
 #include "dom/mscore.h"
 
 using namespace mu::engraving;
@@ -68,8 +69,10 @@ SourceHandle EIDRegister::allocate_slot(EngravingObject *item, EID eid) {
 
 void EIDRegister::retire_slot(SourceHandle handle) {
     Slot &slot = slots_[handle.slot];
+    slot.item->source_handle_ = {};
     slot.item = nullptr;
     slot.eid = EID::invalid();
+    slot.live = slot.published = false;
     if (slot.generation == std::numeric_limits<uint64_t>::max()) return;
     ++slot.generation;
     slot.next_free = free_slot_;
@@ -93,42 +96,144 @@ bool EIDRegister::register_item_eid(const EID &eid, const EngravingObject *item)
         return false;
     }
 
-    const auto by_item = item_to_handle_.find(item);
-    if (by_item != item_to_handle_.end()) {
-        const SourceHandle handle = by_item->second;
-        // Allocate the new lookup before dropping the old identity.
-        eid_to_handle_.emplace(eid, handle);
-        eid_to_handle_.erase(slots_[handle.slot].eid);
-        slots_[handle.slot].eid = eid;
-    } else {
-        const SourceHandle handle = allocate_slot(const_cast<EngravingObject *>(item), eid);
-        try {
-            eid_to_handle_.emplace(eid, handle);
-            item_to_handle_.emplace(item, handle);
-        } catch (...) {
-            eid_to_handle_.erase(eid);
-            retire_slot(handle);
-            throw;
-        }
-    }
+    const SourceHandle handle = enroll(*const_cast<EngravingObject *>(item));
+    // Allocate the new lookup before dropping the old identity.
+    eid_to_handle_.emplace(eid, handle);
+    if (slots_[handle.slot].eid.is_valid()) eid_to_handle_.erase(slots_[handle.slot].eid);
+    slots_[handle.slot].eid = eid;
     if (MScore::test_mode) EID::update_max_val_test_mode(eid, max_val_test_mode_);
     return true;
 }
 
-void EIDRegister::remove_item(const EngravingObject *item) { on_item_destroyed(item); }
+void EIDRegister::remove_item(const EngravingObject *item) {
+    const SourceHandle handle = handle_of(item);
+    if (!handle.is_valid()) return;
+    Slot &slot = slots_[handle.slot];
+    eid_to_handle_.erase(slot.eid);
+    slot.eid = EID::invalid();
+    slot.published = false;
+}
 
 void EIDRegister::on_item_destroyed(const EngravingObject *item) {
-    const auto found = item_to_handle_.find(item);
-    if (found == item_to_handle_.end()) return;
-    const SourceHandle handle = found->second;
+    const SourceHandle handle = handle_of(item);
+    if (!handle.is_valid()) return;
+    set_live(handle.slot, false);
+    unlink(handle.slot);
+    while (slots_[handle.slot].first_child) unlink(slots_[handle.slot].first_child);
     eid_to_handle_.erase(slots_[handle.slot].eid);
-    item_to_handle_.erase(found);
     retire_slot(handle);
 }
 
 SourceHandle EIDRegister::handle_of(const EngravingObject *item) const {
-    const auto found = item_to_handle_.find(item);
-    return found == item_to_handle_.end() ? SourceHandle{} : found->second;
+    if (!item) return {};
+    const SourceHandle handle = item->source_handle_;
+    const Slot *slot = find_slot(handle);
+    return slot && slot->item == item ? handle : SourceHandle{};
+}
+
+SourceHandle EIDRegister::enroll(EngravingObject &item) {
+    if (const auto handle = handle_of(&item); handle.is_valid()) return handle;
+    const auto handle = allocate_slot(&item, EID::invalid());
+    item.source_handle_ = handle;
+    return handle;
+}
+
+void EIDRegister::unlink(uint32_t index) {
+    Slot &slot = slots_[index];
+    if (slot.previous)
+        slots_[slot.previous].next = slot.next;
+    else if (slot.owner)
+        slots_[slot.owner].first_child = slot.next;
+    if (slot.next) slots_[slot.next].previous = slot.previous;
+    slot.owner = slot.previous = slot.next = 0;
+}
+
+void EIDRegister::set_live(uint32_t root, bool live) {
+    // Walk the affected source subtree without allocating during removal/replay.
+    uint32_t index = root;
+    for (;;) {
+        slots_[index].live = live;
+        if (slots_[index].first_child) {
+            index = slots_[index].first_child;
+            continue;
+        }
+        while (index != root && !slots_[index].next) index = slots_[index].owner;
+        if (index == root) break;
+        index = slots_[index].next;
+    }
+}
+
+void EIDRegister::attach_root(EngravingObject &item) {
+    const auto handle = enroll(item);
+    unlink(handle.slot);
+    set_live(handle.slot, true);
+}
+
+void EIDRegister::attach_source(EngravingObject &item, EngravingObject &owner) {
+    if (&item == &owner) return;
+    const auto child = enroll(item);
+    const auto parent = enroll(owner);
+    // A member can be mentioned by multiple semantic relations. Only owning
+    // collection hooks call this function; adding the same member is idempotent.
+    if (slots_[child.slot].owner == parent.slot) {
+        if (slots_[child.slot].live != slots_[parent.slot].live) set_live(child.slot, slots_[parent.slot].live);
+        return;
+    }
+    for (uint32_t ancestor = parent.slot; ancestor; ancestor = slots_[ancestor].owner) {
+        if (ancestor == child.slot) throw std::logic_error("cyclic source membership");
+    }
+    unlink(child.slot);
+    Slot &slot = slots_[child.slot];
+    slot.owner = parent.slot;
+    slot.next = slots_[parent.slot].first_child;
+    if (slot.next) slots_[slot.next].previous = child.slot;
+    slots_[parent.slot].first_child = child.slot;
+    set_live(child.slot, slots_[parent.slot].live);
+}
+
+void EIDRegister::detach_source(EngravingObject &item) {
+    const auto handle = handle_of(&item);
+    if (!handle.is_valid()) return;
+    set_live(handle.slot, false);
+    unlink(handle.slot);
+}
+
+void EIDRegister::detach_collection(EngravingObject &owner, SourceCollection collection) {
+    const auto handle = handle_of(&owner);
+    if (!handle.is_valid()) return;
+    for (auto index = slots_[handle.slot].first_child; index;) {
+        const auto next = slots_[index].next;
+        const auto *item = slots_[index].item;
+        const bool matches = collection == SourceCollection::SEGMENTS ? item->is_segment() :
+                             collection == SourceCollection::MEASURES ? item->is_measure_base() :
+                                                                        item->is_staff();
+        if (matches) {
+            set_live(index, false);
+            unlink(index);
+        }
+        index = next;
+    }
+}
+
+EngravingObject *EIDRegister::live_item(SourceHandle handle) const {
+    const Slot *slot = find_slot(handle);
+    return slot && slot->live ? slot->item : nullptr;
+}
+
+bool EIDRegister::published(SourceHandle handle) const {
+    const Slot *slot = find_slot(handle);
+    return slot && slot->published;
+}
+
+void EIDRegister::publish(EngravingObject &item) {
+    const auto handle = handle_of(&item);
+    if (handle.is_valid()) slots_[handle.slot].published = true;
+}
+
+bool EIDRegister::owns(const EngravingObject &owner, const EngravingObject &item) const {
+    const auto parent = handle_of(&owner);
+    const Slot *slot = find_slot(handle_of(&item));
+    return parent.is_valid() && slot && slot->owner == parent.slot;
 }
 
 EngravingObject *EIDRegister::item_from_handle(SourceHandle handle) const {
@@ -136,9 +241,11 @@ EngravingObject *EIDRegister::item_from_handle(SourceHandle handle) const {
     return slot ? slot->item : nullptr;
 }
 
-EngravingObject *EIDRegister::item_from_eid(const EID &eid) const {
+EngravingObject *EIDRegister::item_from_eid(const EID &eid) const { return item_from_handle(handle_from_eid(eid)); }
+
+SourceHandle EIDRegister::handle_from_eid(const EID &eid) const {
     const auto found = eid_to_handle_.find(eid);
-    return found == eid_to_handle_.end() ? nullptr : item_from_handle(found->second);
+    return found == eid_to_handle_.end() ? SourceHandle{} : found->second;
 }
 
 EID EIDRegister::eid_from_item(const EngravingObject *item) const {

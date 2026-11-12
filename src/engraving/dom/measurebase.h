@@ -210,7 +210,7 @@ private:
 //---------------------------------------------------------
 
 struct MeasureBaseList {
-    MeasureBaseList();
+    explicit MeasureBaseList(Score *owner = nullptr);
 
     MeasureBase *first() const { return first_; }
 
@@ -239,6 +239,7 @@ private:
     void push_back(MeasureBase *m);
     void push_front(MeasureBase *m);
 
+    Score *owner_ = nullptr;
     int size_ = 0;
     MeasureBase *first_ = nullptr;
     MeasureBase *last_ = nullptr;

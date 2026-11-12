@@ -99,9 +99,11 @@ const char *Segment::sub_type_name(SegmentType t) {
 //---------------------------------------------------------
 
 void Segment::set_element(track_idx_t track, EngravingItem *el) {
+    if (elist_[track] != el) source_child_removed(*this, elist_[track]);
     if (el) {
         el->set_ownership_parent(this);
         elist_[track] = el;
+        source_child_added(*this, el);
         set_empty(false);
     } else {
         elist_[track] = 0;
@@ -633,6 +635,7 @@ void Segment::add(EngravingItem *el) {
     assert(el->score() == score());
     assert(score()->nstaves() * ::mu::engraving::voices == elist_.size());
 
+    bool inserted = true;
     switch (el->type()) {
         case ElementType::MEASURE_REPEAT:
             elist_[track] = el;
@@ -675,6 +678,8 @@ void Segment::add(EngravingItem *el) {
             assert(is_type(SegmentType::BAR_LINE_TYPES));
             if (!find_annotation(ElementType::PLAY_COUNT_TEXT, el->track(), el->track())) {
                 annotations_.push_back(el);
+            } else {
+                inserted = false;
             }
             break;
 
@@ -703,6 +708,7 @@ void Segment::add(EngravingItem *el) {
             }
             // already a diagram in this segment
             if (el->part()->harp_diagrams().count(to_harp_pedal_diagram(el)->segment()->tick().ticks()) > 0) {
+                inserted = false;
                 break;
             }
             el->part()->add_harp_diagram(to_harp_pedal_diagram(el));
@@ -776,6 +782,8 @@ void Segment::add(EngravingItem *el) {
             if (track < score()->nstaves() * ::mu::engraving::voices) {
                 check_element(el, track);
                 elist_[track] = el;
+            } else {
+                inserted = false;
             }
             set_empty(false);
             break;
@@ -795,6 +803,8 @@ void Segment::add(EngravingItem *el) {
 
         default: ASSERT_X(String(u"Segment::add() unknown %1").arg(String::from_ascii(el->type_name()))); return;
     }
+
+    if (inserted) source_child_added(*this, el);
 
     el->added();
 }
@@ -919,6 +929,7 @@ void Segment::remove(EngravingItem *el) {
     }
     trigger_layout();
     check_empty();
+    source_child_removed(*this, el);
     el->removed();
 }
 
@@ -1330,6 +1341,7 @@ std::vector<EngravingItem *> Segment::find_annotations(ElementType type, track_i
 void Segment::remove_annotation(EngravingItem *e) {
     for (auto i = annotations_.begin(); i != annotations_.end(); ++i) {
         if (*i == e) {
+            source_child_removed(*this, e);
             annotations_.erase(i);
             break;
         }
@@ -1340,7 +1352,10 @@ void Segment::remove_annotation(EngravingItem *e) {
 //   clearAnnotations
 //---------------------------------------------------------
 
-void Segment::clear_annotations() { annotations_.clear(); }
+void Segment::clear_annotations() {
+    for (auto *e : annotations_) source_child_removed(*this, e);
+    annotations_.clear();
+}
 
 //---------------------------------------------------------
 //   scanElements

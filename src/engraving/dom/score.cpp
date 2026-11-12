@@ -252,13 +252,12 @@ Score::~Score() {
         muse::delete_all(bracket_list);
     }
 
-    master_score_ = nullptr;
-
     image_store.clear_unused();
 
     // last: everything that is deleted above may park children on it on its way out
     delete dummy_;
     dummy_ = nullptr;
+    master_score_ = nullptr;
 }
 
 //---------------------------------------------------------
@@ -1047,6 +1046,7 @@ void Score::add_element(EngravingItem *element) {
             for (size_t i = 0; i < n; ++i) {
                 b->elements().at(i)->set_beam(b);
             }
+            source_child_added(*this, b);
         } break;
 
         case ElementType::SLUR:
@@ -1226,6 +1226,7 @@ void Score::remove_element(EngravingItem *element) {
 
     switch (et) {
         case ElementType::BEAM:
+            source_child_removed(*this, element);
             for (ChordRest *cr : to_beam(element)->elements()) {
                 cr->set_beam(0);
             }
@@ -1980,6 +1981,7 @@ void Score::insert_part(Part *part, size_t target_part_idx) {
         parts_.push_back(part);
     }
 
+    source_child_added(*this, part);
     master_score()->rebuild_midi_mapping();
     set_instruments_changed(true);
     mark_instruments_as_primary(parts_);
@@ -1993,6 +1995,7 @@ void Score::append_part(Part *part) {
     part->set_score(this);
     assign_id_if_need(*part);
     parts_.push_back(part);
+    source_child_added(*this, part);
     mark_instruments_as_primary(parts_);
 }
 
@@ -2012,6 +2015,7 @@ void Score::remove_part(Part *part) {
         }
     }
 
+    source_child_removed(*this, parts_[index]);
     parts_.erase(parts_.begin() + index);
     mark_instruments_as_primary(parts_);
 
@@ -3467,6 +3471,7 @@ void Score::append_measures(int n) {
 
 void Score::add_spanner(Spanner *s, bool compute_start_end) {
     spanner_.add_spanner(s);
+    source_child_added(*this, s);
     s->added();
     if (compute_start_end) {
         s->compute_start_element();
@@ -3493,6 +3498,7 @@ std::vector<Spanner *> Score::spanner_list() const {
 //---------------------------------------------------------
 
 void Score::remove_spanner(Spanner *s) {
+    source_child_removed(*this, s);
     spanner_.remove_spanner(s);
     s->removed();
 
@@ -4460,8 +4466,8 @@ void Score::connect_ties(bool silent) {
                 if (nnote == 0) {
                     if (!silent) {
                         LOGD("next note at %d track %zu for tie not found", s->tick().ticks(), track);
-                        delete tie;
                         n->set_tie_for(0);
+                        delete tie;
                     }
                 } else {
                     tie->set_end_note(nnote);

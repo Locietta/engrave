@@ -486,8 +486,11 @@ TremoloSingleChord *Chord::tremolo_single_chord() const { return tremolo_single_
 
 void Chord::set_tremolo_two_chord(TremoloTwoChord *tr, bool apply_logic) {
     if (tremolo_two_chord_ && tr && tr == tremolo_two_chord_) {
+        if (tr->chord1() == this) source_child_added(*this, tr);
         return;
     }
+    source_child_removed(*this, tremolo_two_chord_);
+    source_child_removed(*this, tremolo_single_chord_);
 
     if (tremolo_two_chord_) {
         TDuration d;
@@ -529,12 +532,16 @@ void Chord::set_tremolo_two_chord(TremoloTwoChord *tr, bool apply_logic) {
     }
 
     tremolo_two_chord_ = tr;
+    if (tr && tr->chord1() == this) source_child_added(*this, tr);
 }
 
 void Chord::set_tremolo_single_chord(TremoloSingleChord *tr) {
     if (tremolo_single_chord_ && tr && tr == tremolo_single_chord_) {
+        source_child_added(*this, tr);
         return;
     }
+    source_child_removed(*this, tremolo_single_chord_);
+    source_child_removed(*this, tremolo_two_chord_);
 
     if (tremolo_two_chord_) {
         TDuration d;
@@ -557,11 +564,18 @@ void Chord::set_tremolo_single_chord(TremoloSingleChord *tr) {
     }
 
     tremolo_single_chord_ = tr;
+    source_child_added(*this, tr);
 }
 
 //---------------------------------------------------------
 //   add
 //---------------------------------------------------------
+
+void Chord::set_arpeggio(Arpeggio *a) {
+    if (arpeggio_ != a) source_child_removed(*this, arpeggio_);
+    arpeggio_ = a;
+    source_child_added(*this, a);
+}
 
 void Chord::add(EngravingItem *e) {
     if (e->ownership_parent() != this) {
@@ -650,6 +664,8 @@ void Chord::add(EngravingItem *e) {
         default: ChordRest::add(e); return;
     }
 
+    source_child_added(*this, e);
+
     e->added();
 }
 
@@ -722,6 +738,8 @@ void Chord::remove(EngravingItem *e) {
 
         default: ChordRest::remove(e); return;
     }
+
+    source_child_removed(*this, e);
 
     e->removed();
 }
@@ -1824,7 +1842,10 @@ GraceNotesView Chord::grace_notes_before(bool filter_unplayable) const { return 
 
 GraceNotesView Chord::grace_notes_after(bool filter_unplayable) const { return {&grace_notes_, true, filter_unplayable}; }
 
-void Chord::remove_all_grace_notes() { grace_notes_.clear(); }
+void Chord::remove_all_grace_notes() {
+    for (auto *grace : grace_notes_) source_child_removed(*this, grace);
+    grace_notes_.clear();
+}
 
 Chord *Chord::grace_note_at(size_t idx) const {
     if (idx > grace_notes_.size()) {

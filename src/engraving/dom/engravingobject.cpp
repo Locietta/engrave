@@ -84,6 +84,10 @@ EngravingObject::EngravingObject(const EngravingObject &se) {
 //---------------------------------------------------------
 
 EngravingObject::~EngravingObject() {
+    if (source_handle_.is_valid() && score_ && Score::is_alive(score_)) {
+        MasterScore *master = score_->master_score();
+        if (master && Score::is_alive(master)) master->eid_register()->on_item_destroyed(this);
+    }
     if (parent_) {
         parent_->remove_child(this);
     }
@@ -138,6 +142,11 @@ void EngravingObject::do_set_score(Score *sc) {
         return;
     }
 
+    if (source_handle_.is_valid() && score_ && Score::is_alive(score_)) {
+        MasterScore *old_master = score_->master_score();
+        MasterScore *new_master = sc ? sc->master_score() : nullptr;
+        if (old_master && old_master != new_master && Score::is_alive(old_master)) old_master->eid_register()->on_item_destroyed(this);
+    }
     score_ = sc;
 
     for (EngravingObject *ch : children_) {

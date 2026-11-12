@@ -304,6 +304,7 @@ void Tuplet::add(EngravingItem *e) {
         default: LOGD("Tuplet::add() unknown element"); return;
     }
 
+    if (auto *owner = measure()) source_child_added(*owner, this);
     e->added();
 }
 
@@ -326,6 +327,9 @@ void Tuplet::remove(EngravingItem *e) {
                 LOGD("  elements %zu", current_elements_.size());
             } else {
                 current_elements_.erase(i);
+                if (current_elements_.empty()) {
+                    if (auto *owner = measure()) source_child_removed(*owner, this);
+                }
                 e->removed();
             }
         } break;

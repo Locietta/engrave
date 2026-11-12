@@ -245,7 +245,7 @@ public:
 
     Accidental *accidental() const { return accidental_; }
 
-    void set_accidental(Accidental *a) { accidental_ = a; }
+    void set_accidental(Accidental *a);
 
     AccidentalType accidental_type() const;
     void set_accidental_type(AccidentalType type);
@@ -406,13 +406,8 @@ public:
 
     bool remove_spanner_back(Spanner *e) { return muse::remove(spanner_back_, e); }
 
-    void add_spanner_for(Spanner *e) {
-        if (!muse::contains(spanner_for_, e)) {
-            spanner_for_.push_back(e);
-        }
-    }
-
-    bool remove_spanner_for(Spanner *e) { return muse::remove(spanner_for_, e); }
+    void add_spanner_for(Spanner *e);
+    bool remove_spanner_for(Spanner *e);
 
     bool transpose_diatonic(int interval, bool keep_alterations, bool use_double_accidentals);
     bool transpose(Interval interval, bool use_double_sharps_flats);

@@ -176,9 +176,15 @@ std::set<staff_idx_t> Part::stave_idx_list() const {
     return result;
 }
 
-void Part::append_staff(Staff *staff) { staves_.push_back(staff); }
+void Part::append_staff(Staff *staff) {
+    staves_.push_back(staff);
+    source_child_added(*this, staff);
+}
 
-void Part::clear_staves() { staves_.clear(); }
+void Part::clear_staves() {
+    source_collection_cleared(*this, SourceCollection::STAVES);
+    staves_.clear();
+}
 
 //---------------------------------------------------------
 //   setStaves
@@ -216,6 +222,7 @@ void Part::insert_staff(Staff *staff, staff_idx_t idx) {
     }
     staves_.insert(staves_.begin() + idx, staff);
     staff->set_part(this);
+    source_child_added(*this, staff);
 }
 
 //---------------------------------------------------------
@@ -227,6 +234,7 @@ void Part::remove_staff(Staff *staff) {
         LOGD("Part::removeStaff: not found %p", staff);
         return;
     }
+    source_child_removed(*this, staff);
 }
 
 bool Part::show() const {

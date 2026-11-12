@@ -1047,7 +1047,7 @@ private:
 
     UpdateState update_state_;
 
-    MeasureBaseList measures_; // here are the notes
+    MeasureBaseList measures_{this}; // here are the notes
     std::vector<Part *> parts_;
     std::vector<Staff *> staves_;
     std::vector<Staff *> system_object_staves_;

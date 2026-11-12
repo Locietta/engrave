@@ -17,6 +17,7 @@
 #include "engrave/src/api/handles.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -39,8 +40,11 @@
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/json.h"
 #include "engrave/src/score/score_excerpts.h"
+#include "engraving/dom/beam.h"
+#include "engraving/dom/box.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
@@ -51,12 +55,18 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/playcounttext.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
+#include "engraving/dom/textline.h"
+#include "engraving/dom/tie.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "global/io/buffer.h"
@@ -389,6 +399,8 @@ void expect_inv(engrave::Document &document) {
             << object_name(*entry.object) << " " << engrave::to_string(entry.id) << " is not registered";
         EXPECT_EQ(master.eid_register()->item_from_eid(engrave::to_engine(entry.id)), entry.object)
             << engrave::to_string(entry.id) << " names another element";
+        EXPECT_EQ(master.eid_register()->live_item(master.eid_register()->handle_of(entry.object)), entry.object)
+            << object_name(*entry.object) << " is absent from source membership";
     }
     for (EngravingObject *object : engrave::document_objects(master)) {
         if (!engrave::takes_id(*object)) continue;
@@ -1485,7 +1497,7 @@ TEST(Handles, H13IdsWithDeterministicEngine) {
 }
 
 // Runtime slots are independent from persisted EIDs and do not change assignment order.
-TEST(Handles, RegistryHandlesRejectRetiredSlots) {
+TEST(Handles, ClearingAnIdKeepsTheSourceLifetime) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
@@ -1497,14 +1509,16 @@ TEST(Handles, RegistryHandlesRejectRetiredSlots) {
     ASSERT_TRUE(old.is_valid());
     EXPECT_EQ(registry.item_from_handle(old), note);
     registry.remove_item(note);
-    EXPECT_EQ(registry.item_from_handle(old), nullptr);
-    EXPECT_FALSE(registry.handle_of(note).is_valid());
+    EXPECT_EQ(registry.item_from_handle(old), note);
+    EXPECT_EQ(registry.live_item(old), note);
+    EXPECT_FALSE(note->eid().is_valid());
     ASSERT_TRUE(registry.register_item_eid(eid, note));
+    engrave::assign_missing_ids(master);
     const auto current = registry.handle_of(note);
     EXPECT_EQ(current.slot, old.slot);
-    EXPECT_GT(current.generation, old.generation);
+    EXPECT_EQ(current.generation, old.generation);
     EXPECT_EQ(current.document, old.document);
-    EXPECT_EQ(registry.item_from_handle(old), nullptr);
+    EXPECT_EQ(registry.item_from_handle(old), note);
     EXPECT_EQ(registry.item_from_handle(current), note);
     expect_inv(*document);
 }
@@ -1578,10 +1592,329 @@ TEST(Handles, RegistryDestructionRetiresHandleBeforeAddressReuse) {
     auto *next = note->clone();
     next->assign_new_eid();
     const auto next_handle = registry.handle_of(next);
-    EXPECT_EQ(next_handle.slot, handle.slot);
-    EXPECT_GT(next_handle.generation, handle.generation);
+    EXPECT_NE(next_handle, handle);
+    if (next_handle.slot == handle.slot) EXPECT_GT(next_handle.generation, handle.generation);
     EXPECT_EQ(registry.item_from_handle(handle), nullptr);
     delete next;
+    expect_inv(*document);
+}
+
+std::size_t *walk_count = nullptr;
+
+void observe_walk() {
+    if (walk_count) ++*walk_count;
+}
+
+struct WalkObserver {
+    std::size_t count = 0;
+
+    WalkObserver() {
+        walk_count = &count;
+        engrave::set_object_walk_hook(observe_walk);
+    }
+
+    ~WalkObserver() {
+        engrave::set_object_walk_hook(nullptr);
+        walk_count = nullptr;
+    }
+};
+
+TEST(Handles, DetachedButParentedSourceRejectsLookupWithoutWalking) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *chord = note->chord();
+    auto &registry = *master.eid_register();
+    auto *copy = note->clone();
+    copy->assign_new_eid();
+    const auto handle = registry.handle_of(copy);
+    EXPECT_EQ(registry.live_item(handle), nullptr) << "construction is not insertion";
+    chord->add(copy);
+    engrave::assign_missing_ids(master);
+    const auto id = engrave::from_engine(copy->eid());
+    EXPECT_EQ(registry.live_item(handle), copy);
+    chord->remove(copy);
+    EXPECT_EQ(copy->ownership_parent(), chord);
+    EXPECT_EQ(registry.item_from_handle(handle), copy) << "rollback still owns the object";
+    {
+        WalkObserver observer;
+        for (int i = 0; i != 100; ++i) {
+            const auto result = engrave::resolve(master, id);
+            EXPECT_FALSE(result);
+            if (!result) EXPECT_EQ(result.error().code, ErrorCode::STALE_HANDLE);
+        }
+        EXPECT_EQ(observer.count, 0u);
+    }
+    chord->add(copy);
+    EXPECT_EQ(registry.handle_of(copy), handle);
+    EXPECT_TRUE(engrave::resolve(master, id));
+    chord->remove(copy);
+    delete copy;
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    expect_inv(*document);
+}
+
+TEST(Handles, SourceSubtreeRemovalAndReinsertionPreserveHandles) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *measure = note->chord()->measure();
+    auto &registry = *master.eid_register();
+    const std::array<EngravingObject *, 4> objects{measure, note->chord()->segment(), note->chord(), note};
+    std::array<mu::engraving::SourceHandle, 4> handles;
+    for (std::size_t i = 0; i != objects.size(); ++i) {
+        handles[i] = registry.handle_of(objects[i]);
+        ASSERT_TRUE(handles[i].is_valid());
+        ASSERT_EQ(registry.live_item(handles[i]), objects[i]);
+    }
+    master.measures()->remove(measure);
+    for (auto handle : handles) EXPECT_EQ(registry.live_item(handle), nullptr);
+    EXPECT_EQ(measure->ownership_parent(), &master);
+    master.measures()->add(measure);
+    for (std::size_t i = 0; i != objects.size(); ++i) {
+        EXPECT_EQ(registry.handle_of(objects[i]), handles[i]);
+        EXPECT_EQ(registry.live_item(handles[i]), objects[i]);
+    }
+    expect_inv(*document);
+}
+
+TEST(Handles, HandlesRejectForcedObjectAddressReuse) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_FALSE(master.parts().empty());
+    auto &registry = *master.eid_register();
+    alignas(Part) std::array<std::byte, sizeof(Part)> storage;
+    auto *first = std::construct_at(reinterpret_cast<Part *>(storage.data()), &master);
+    first->assign_new_eid();
+    const auto old = registry.handle_of(first);
+    ASSERT_TRUE(old.is_valid());
+    std::destroy_at(first);
+    auto *second = std::construct_at(reinterpret_cast<Part *>(storage.data()), &master);
+    second->assign_new_eid();
+    const auto current = registry.handle_of(second);
+    EXPECT_EQ(first, second);
+    EXPECT_EQ(current.slot, old.slot);
+    EXPECT_GT(current.generation, old.generation);
+    EXPECT_EQ(registry.item_from_handle(old), nullptr);
+    EXPECT_EQ(registry.item_from_handle(current), second);
+    std::destroy_at(second);
+    expect_inv(*document);
+}
+
+TEST(Handles, ClosedDocumentHandlesCannotResolveAfterReopen) {
+    const auto path = corpus_file({".mscx"});
+    auto first = open_path(path);
+    ASSERT_TRUE(first);
+    auto *note = first_note(master_of(*first));
+    ASSERT_NE(note, nullptr);
+    const auto handle = master_of(*first).eid_register()->handle_of(note);
+    const auto eid = note->eid();
+    first.reset();
+    auto reopened = open_path(path);
+    ASSERT_TRUE(reopened);
+    auto &registry = *master_of(*reopened).eid_register();
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    ASSERT_NE(registry.item_from_eid(eid), nullptr);
+    EXPECT_NE(registry.handle_of(registry.item_from_eid(eid)).document, handle.document);
+    expect_inv(*reopened);
+}
+
+TEST(Handles, FailedBatchRestoresSourceHandleAndOpRefsDoNotWalk) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(note);
+    const auto revision = document->revision();
+    std::vector<engrave::api::Step> steps;
+    steps.push_back([&](auto &context) -> engrave::Result<void> {
+        context.created(note);
+        return {};
+    });
+    steps.push_back([&](auto &) -> engrave::Result<void> {
+        master.undo(new mu::engraving::RemoveElement(note));
+        return {};
+    });
+    steps.push_back([&](auto &context) -> engrave::Result<void> {
+        auto target = context.target(engrave::OpRef{0, 0});
+        if (!target) return std::unexpected(target.error());
+        WalkObserver observer;
+        const auto object = context.object(*target);
+        EXPECT_FALSE(object);
+        EXPECT_EQ(observer.count, 0u);
+        EXPECT_EQ(registry.live_item(handle), nullptr);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "restore the source handle"});
+    });
+    const auto result = engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(registry.handle_of(note), handle);
+    EXPECT_EQ(registry.live_item(handle), note);
+    {
+        WalkObserver observer;
+        for (int i = 0; i != 100; ++i) EXPECT_TRUE(engrave::resolve(master, engrave::from_engine(note->eid())));
+        EXPECT_EQ(observer.count, 0u);
+    }
+    expect_inv(*document);
+}
+
+TEST(Handles, ExcerptTeardownRetiresDummyOwnedSpanners) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    if (master.excerpts().empty()) music::generate_score_excerpts(&master);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto *excerpt = master.excerpts().front();
+    auto *score = excerpt->excerpt_score();
+    auto *spanner = mu::engraving::Factory::create_text_line(score->dummy());
+    spanner->set_track(0);
+    score->add_spanner(spanner, false);
+    engrave::assign_missing_ids(master);
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(spanner);
+    const auto eid = spanner->eid();
+    ASSERT_EQ(registry.live_item(handle), spanner);
+    master.remove_excerpt(excerpt);
+    delete excerpt;
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    EXPECT_EQ(registry.item_from_eid(eid), nullptr);
+    EXPECT_FALSE(engrave::resolve(master, engrave::from_engine(eid)));
+    expect_inv(*document);
+}
+
+TEST(Handles, ConnectingUnmatchedTieRetiresItsHandle) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    Note *last = nullptr;
+    for (auto *object : engrave::document_objects(master)) {
+        if (!object->is_note()) continue;
+        auto *note = mu::engraving::to_note(object);
+        if (!last || note->tick() > last->tick()) last = note;
+    }
+    ASSERT_NE(last, nullptr);
+    ASSERT_EQ(last->tie_for(), nullptr);
+    auto *tie = mu::engraving::Factory::create_tie(last);
+    tie->set_track(last->track());
+    tie->set_start_note(last);
+    last->set_tie_for(tie);
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(tie);
+    ASSERT_EQ(registry.live_item(handle), tie);
+    master.connect_ties(false);
+    EXPECT_EQ(last->tie_for(), nullptr);
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    expect_inv(*document);
+}
+
+TEST(Handles, RemovedBeamIsStaleUntilBatchRollback) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *chord = note->chord();
+    ASSERT_EQ(chord->beam(), nullptr);
+    auto *beam = mu::engraving::Factory::create_beam(&master);
+    beam->set_generated(false);
+    beam->add(chord);
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(beam);
+    ASSERT_EQ(registry.live_item(handle), beam);
+    Command command(master);
+    master.undo(new mu::engraving::RemoveElement(beam));
+    EXPECT_EQ(registry.item_from_handle(handle), beam);
+    EXPECT_EQ(registry.live_item(handle), nullptr);
+    command.rollback();
+    EXPECT_EQ(registry.handle_of(beam), handle);
+    EXPECT_EQ(registry.live_item(handle), beam);
+    master.remove_element(beam);
+    delete beam;
+    expect_inv(*document);
+}
+
+TEST(Handles, MovingTremoloRebindsMembershipIncludingRollback) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    std::vector<mu::engraving::Chord *> chords;
+    for (auto *segment = measure->first(); segment; segment = segment->next()) {
+        auto *element = segment->element(0);
+        if (element && element->is_chord()) chords.push_back(mu::engraving::to_chord(element));
+    }
+    ASSERT_GE(chords.size(), 4u);
+    auto *tremolo = mu::engraving::Factory::create_tremolo_two_chord(chords[0]);
+    tremolo->set_tremolo_type(mu::engraving::TremoloType::C8);
+    tremolo->set_duration_type(chords[0]->duration_type());
+    tremolo->set_chords(chords[0], chords[1]);
+    chords[0]->set_tremolo_two_chord(tremolo, false);
+    chords[1]->set_tremolo_two_chord(tremolo, false);
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(tremolo);
+    ASSERT_EQ(registry.live_item(handle), tremolo);
+    Command command(master);
+    master.undo(new mu::engraving::MoveTremolo(&master, chords[2]->tick(), chords[3]->tick(), tremolo, 0));
+    EXPECT_TRUE(registry.owns(*chords[2], *tremolo));
+    auto *old_segment = chords[0]->segment();
+    old_segment->remove(chords[0]);
+    EXPECT_EQ(registry.live_item(handle), tremolo);
+    old_segment->add(chords[0]);
+    command.rollback();
+    EXPECT_TRUE(registry.owns(*chords[0], *tremolo));
+    EXPECT_EQ(registry.live_item(handle), tremolo);
+    delete tremolo;
+    expect_inv(*document);
+}
+
+TEST(Handles, RejectedAnnotationDoesNotBecomeSourceMember) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    auto *segment = measure->get_segment(SegmentType::END_BAR_LINE, measure->end_tick());
+    auto *first = mu::engraving::Factory::create_play_count_text(segment);
+    first->set_track(0);
+    segment->add(first);
+    auto *rejected = mu::engraving::Factory::create_play_count_text(segment);
+    rejected->set_track(0);
+    rejected->assign_new_eid();
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(rejected);
+    segment->add(rejected);
+    EXPECT_EQ(rejected->ownership_parent(), segment);
+    EXPECT_EQ(registry.live_item(handle), nullptr);
+    EXPECT_EQ(segment->find_annotation(ElementType::PLAY_COUNT_TEXT, 0, 0), first);
+    delete rejected;
+    segment->remove(first);
+    delete first;
+    expect_inv(*document);
+}
+
+TEST(Handles, TextFrameReplacementMaintainsSourceMembership) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/repeat70.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *object = first_live(master, ElementType::TBOX);
+    ASSERT_NE(object, nullptr);
+    auto *frame = mu::engraving::to_t_box(object);
+    auto *text = frame->text();
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_of(text);
+    ASSERT_EQ(registry.live_item(handle), text);
+    frame->remove(text);
+    EXPECT_EQ(registry.live_item(handle), nullptr);
+    EXPECT_EQ(registry.live_item(registry.handle_of(frame->text())), frame->text());
+    frame->add(text);
+    EXPECT_EQ(registry.handle_of(text), handle);
+    EXPECT_EQ(registry.live_item(handle), text);
     expect_inv(*document);
 }
 
