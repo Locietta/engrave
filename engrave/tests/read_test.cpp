@@ -99,6 +99,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/trill.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/addremoveelement.h"
@@ -5272,6 +5273,69 @@ std::string legacy_override_write(const mu::engraving::EngravingItem *item) {
         mu::engraving::write::TWrite::write_item(item, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+TEST(Read, TremoloManualFragmentImportsBeforeLayoutAndSurvivesNativeReopen) {
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                      "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx";
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = read_text(path);
+        xml.replace(xml.find("5.00"), 4, version);
+        xml.insert(xml.find("</TremoloTwoChord>"), "<Fragment><y1>1.25</y1><y2>2.5</y2></Fragment>");
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        mu::engraving::TremoloTwoChord *tremolo = nullptr;
+        master_of(**document).scan_elements([&](mu::engraving::EngravingItem *item) {
+            if (item->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD) tremolo = static_cast<mu::engraving::TremoloTwoChord *>(item);
+        });
+        ASSERT_NE(tremolo, nullptr);
+        EXPECT_DOUBLE_EQ(tremolo->beam_pos().first, 1.25);
+        EXPECT_DOUBLE_EQ(tremolo->beam_pos().second, 2.5);
+        const auto bytes = legacy_override_write(tremolo);
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_EQ(legacy_override_write(tremolo), bytes);
+        const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        mu::engraving::TremoloTwoChord *restored = nullptr;
+        master_of(**reopened).scan_elements([&](mu::engraving::EngravingItem *item) {
+            if (item->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD)
+                restored = static_cast<mu::engraving::TremoloTwoChord *>(item);
+        });
+        ASSERT_NE(restored, nullptr);
+        EXPECT_DOUBLE_EQ(restored->beam_pos().first, 1.25);
+        EXPECT_DOUBLE_EQ(restored->beam_pos().second, 2.5);
+    }
+}
+
+TEST(Read, TremoloManualFragmentOwnsBothDirectionsAndIgnoresDisplayWrites) {
+    auto document = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                   "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx");
+    ASSERT_TRUE(document) << document.error().message;
+    mu::engraving::TremoloTwoChord *tremolo = nullptr;
+    master_of(**document).scan_elements([&](mu::engraving::EngravingItem *item) {
+        if (item->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD) tremolo = static_cast<mu::engraving::TremoloTwoChord *>(item);
+    });
+    ASSERT_NE(tremolo, nullptr);
+    for (auto direction : {mu::engraving::DirectionV::DOWN, mu::engraving::DirectionV::UP}) {
+        tremolo->do_set_direction(direction);
+        tremolo->set_user_modified(true);
+        const auto endpoints = direction == mu::engraving::DirectionV::UP ? muse::PairF(-1.25, -2.5) : muse::PairF(1.25, 2.5);
+        ASSERT_TRUE(tremolo->set_property(mu::engraving::Pid::BEAM_POS, mu::engraving::PropertyValue::from_value(endpoints)));
+        const auto bytes = legacy_override_write(tremolo);
+        tremolo->beam_fragment().py1[tremolo->direction_idx()] = 999.0;
+        tremolo->beam_fragment().py2[tremolo->direction_idx()] = -999.0;
+        EXPECT_EQ(legacy_override_write(tremolo), bytes);
+        EXPECT_DOUBLE_EQ(tremolo->beam_pos().first, endpoints.first);
+        EXPECT_DOUBLE_EQ(tremolo->beam_pos().second, endpoints.second);
+    }
+    std::unique_ptr<mu::engraving::TremoloTwoChord> copy(tremolo->clone());
+    for (auto direction : {mu::engraving::DirectionV::DOWN, mu::engraving::DirectionV::UP}) {
+        tremolo->do_set_direction(direction);
+        copy->do_set_direction(direction);
+        EXPECT_EQ(copy->get_property(mu::engraving::Pid::BEAM_POS), tremolo->get_property(mu::engraving::Pid::BEAM_POS));
+    }
 }
 
 TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {

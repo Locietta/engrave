@@ -2954,8 +2954,8 @@ void TWrite::write(const TremoloTwoChord *item, XmlWriter &xml, WriteContext &ct
         double spatium_value = item->spatium();
 
         xml.start_element("Fragment");
-        xml.tag("y1", item->beam_fragment().py1[idx] / spatium_value);
-        xml.tag("y2", item->beam_fragment().py2[idx] / spatium_value);
+        xml.tag("y1", item->manual_fragment().py1[idx] / spatium_value);
+        xml.tag("y2", item->manual_fragment().py2[idx] / spatium_value);
         xml.end_element();
     }
 

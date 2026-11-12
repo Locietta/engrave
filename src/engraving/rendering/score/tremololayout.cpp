@@ -227,8 +227,8 @@ void TremoloLayout::layout_two_notes_tremolo(TremoloTwoChord *item, const Layout
     // deal with manual adjustments here and return
     if (item->user_modified()) {
         int idx = item->direction_idx();
-        double start_y = item->beam_fragment().py1[idx];
-        double end_y = item->beam_fragment().py2[idx];
+        double start_y = item->manual_fragment().py1[idx];
+        double end_y = item->manual_fragment().py2[idx];
         if (ctx.conf().style_b(Sid::SNAP_CUSTOM_BEAMS_TO_GRID)) {
             const double quarter_space = item->EngravingItem::spatium() / 4;
             start_y = round(start_y / quarter_space) * quarter_space;

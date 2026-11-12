@@ -56,6 +56,7 @@ TremoloTwoChord::TremoloTwoChord(const TremoloTwoChord &t) : BeamBase(t) {
     chord1_ = t.chord1();
     chord2_ = t.chord2();
     duration_type_ = t.duration_type_;
+    manual_fragment_ = t.manual_fragment_;
 }
 
 TremoloTwoChord::~TremoloTwoChord() {
@@ -206,6 +207,8 @@ void TremoloTwoChord::set_beam_pos(const PairF &bp) {
     double spatium_value = spatium();
     beam_fragment_.py1[idx] = bp.first * spatium_value;
     beam_fragment_.py2[idx] = bp.second * spatium_value;
+    manual_fragment_.endpoints.py1[idx] = beam_fragment_.py1[idx];
+    manual_fragment_.endpoints.py2[idx] = beam_fragment_.py2[idx];
 }
 
 //---------------------------------------------------------
@@ -215,7 +218,7 @@ void TremoloTwoChord::set_beam_pos(const PairF &bp) {
 PairF TremoloTwoChord::beam_pos() const {
     int idx = direction_idx();
     double spatium_value = spatium();
-    return PairF(beam_fragment_.py1[idx] / spatium_value, beam_fragment_.py2[idx] / spatium_value);
+    return PairF(manual_fragment_.endpoints.py1[idx] / spatium_value, manual_fragment_.endpoints.py2[idx] / spatium_value);
 }
 
 //---------------------------------------------------------
@@ -251,6 +254,7 @@ bool TremoloTwoChord::custom_style_applicable() const {
 
 PropertyValue TremoloTwoChord::get_property(Pid property_id) const {
     switch (property_id) {
+        case Pid::BEAM_POS: return PropertyValue::from_value(beam_pos());
         case Pid::TREMOLO_TYPE: return int(tremolo_type_);
         case Pid::TREMOLO_STYLE: return int(style_);
         case Pid::PLAY: return play_tremolo_;
@@ -289,6 +293,7 @@ bool TremoloTwoChord::set_property(Pid property_id, const PropertyValue &val) {
 
 PropertyValue TremoloTwoChord::property_default(Pid property_id) const {
     switch (property_id) {
+        case Pid::BEAM_POS: return PropertyValue::from_value(PairF(0.0, 0.0));
         case Pid::TREMOLO_STYLE: return style().style_i(Sid::TREMOLO_STYLE);
         case Pid::PLAY: return true;
         default: return BeamBase::property_default(property_id);
