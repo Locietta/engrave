@@ -554,6 +554,13 @@ static void prepare_source_anchors(Score &score, const NormalizeOptions &options
     normalize_anchors(score, options.include_hidden_staves);
 }
 
+static void normalize_tab_fretting(Chord &chord) {
+    for (Chord *grace : chord.grace_notes()) normalize_tab_fretting(*grace);
+    if (chord.staff()->is_tab_staff(chord.tick())) {
+        for (Note *note : chord.notes()) note->update_fretting_for_ties_and_bends();
+    }
+}
+
 static void normalize_content(Score &score, const NormalizeOptions &options) {
     if (options.include_hidden_staves || !score.all_staves_invisible()) {
         for (Measure *measure = score.first_measure(); measure; measure = measure->next_measure()) {
@@ -565,6 +572,12 @@ static void normalize_content(Score &score, const NormalizeOptions &options) {
             }
             measure->connect_tremolo();
             normalize_measure_notes(*measure, options.include_hidden_staves);
+            for (const Segment &segment : measure->segments()) {
+                for (auto *item : segment.elist()) {
+                    if (item && item->is_chord() && (options.include_hidden_staves || item->staff()->show()))
+                        normalize_tab_fretting(*to_chord(item));
+                }
+            }
             normalize_segments(measure, score);
             for (const Segment &segment : measure->segments()) {
                 for (EngravingItem *item : segment.elist()) {
