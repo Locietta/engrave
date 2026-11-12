@@ -50,6 +50,8 @@ struct ScoreRW {
     // scratch directory (created on first use, removed by clear_scratch()) so tests
     // never write into the working directory. An absolute name is used as given.
     static bool save_score(Score *score, const String &name);
+    // Explicit source-snapshot serialization: deliberately does not request geometry.
+    static bool save_source_score(Score *score, const String &name);
     static bool save_score(Score *score, const String &name, ExportFunc export_func);
     static muse::ByteArray write_element(const EngravingItem *element);
     static EngravingItem *write_read_element(EngravingItem *element);
