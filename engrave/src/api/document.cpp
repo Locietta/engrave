@@ -30,8 +30,12 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
                                                music::ScoreAudioMixDefaults audio_defaults, std::vector<Diagnostic> diagnostics) {
     auto impl = std::make_unique<Impl>();
     impl->engine = &engine;
-    impl->font_generation = engine.font_generation;
     impl->project = std::move(project);
+    impl->bind_layout_boundary();
+    for (auto *score : impl->project->master_score()->score_list()) {
+        score->layout_state.font_generation = engine.font_generation;
+        score->layout_state.revision = impl->revision;
+    }
     impl->audio_defaults = std::move(audio_defaults);
     impl->diagnostics = std::move(diagnostics);
     // Every path that produces a document (open, create, and later a restore) hands
@@ -41,19 +45,25 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
     return std::unique_ptr<Document>(new Document(std::move(impl)));
 }
 
-void Document::Impl::refresh_fonts() {
-    if (font_generation == engine->font_generation) return;
-    for (auto *score : project->master_score()->score_list()) {
-        // Rebuild text blocks as well as geometry: justified text can retain
-        // font-dependent fragment splits from an earlier layout.
-        score->scan_elements([](mu::engraving::EngravingItem *item) {
+void Document::Impl::bind_layout_boundary() {
+    project->master_score()->layout_boundary = [this](mu::engraving::Score &score) { ensure_layout(score); };
+}
+
+void Document::Impl::ensure_layout(mu::engraving::Score &score) {
+    if (score.layout_state.revision != revision && !score.layout_state.dirty)
+        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    if (score.layout_state.font_generation != engine->font_generation) {
+        // Justified fragments retain font-dependent splits, not only geometry.
+        score.scan_elements([](mu::engraving::EngravingItem *item) {
             if (item->is_text_base()) mu::engraving::to_text_base(item)->mutldata()->layout_invalid = true;
         });
-        score->set_layout_all();
-        score->do_layout();
-        score->update();
+        score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+        score.layout_if_dirty();
+        score.layout_state.font_generation = engine->font_generation;
+    } else {
+        score.layout_if_dirty();
     }
-    font_generation = engine->font_generation;
+    score.layout_state.revision = revision;
 }
 
 Document::Document(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -97,7 +107,6 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (impl_->poisoned) return std::unexpected(Error{ErrorCode::POISONED, "an earlier edit left the document unusable"});
     if (options.capture.cancelled && options.capture.cancelled())
         return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
-    impl_->refresh_fonts();
     const char *name = nullptr;
     switch (options.format) {
         case Format::MSCZ: name = "mscz"; break;
@@ -125,10 +134,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (!excerpt) return std::unexpected(excerpt.error());
     const auto selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
-    if ((*selected)->npages() == 0 && (*selected)->nmeasures() > 0) {
-        (*selected)->do_layout();
-        (*selected)->update();
-    }
+    impl_->ensure_layout(**selected);
     music::ExportOptions backend;
     backend.excerpt_id = *excerpt;
     backend.standalone_score = true;

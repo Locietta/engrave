@@ -49,6 +49,8 @@
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
+#include "engraving/dom/factory.h"
+#include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
@@ -913,7 +915,98 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 
 // --- the tests -----------------------------------------------------------
 
-TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
+std::uint64_t layout_count(const mu::engraving::Score &score) { return score.layout_state.whole_count + score.layout_state.range_count; }
+
+TEST(Read, GeometryBoundaryReusesFreshLayout) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    const auto count = layout_count(master);
+    ASSERT_TRUE(document->render({}));
+    EXPECT_EQ(layout_count(master), count + 1);
+    for (int i = 0; i < 2; ++i) {
+        ASSERT_TRUE(document->render({}));
+        ASSERT_TRUE(document->page_count());
+        ASSERT_TRUE(document->positions(engrave::PositionKind::MEASURE));
+        ASSERT_TRUE(document->query({.types = {"Note"}, .layout_boxes = true}));
+        ASSERT_TRUE(document->export_score({.format = engrave::Format::MSCX}));
+    }
+    EXPECT_EQ(layout_count(master), count + 1);
+    ASSERT_TRUE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    const auto after_edit = layout_count(master);
+    EXPECT_EQ(after_edit, count + 2); // S1 retains one eager transaction layout.
+    ASSERT_TRUE(document->render({}));
+    ASSERT_TRUE(document->page_count());
+    EXPECT_EQ(layout_count(master), after_edit);
+}
+
+TEST(Read, DirtyLayoutRangeSurvivesCommandReset) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_TRUE(document->page_count());
+    using mu::engraving::Fraction;
+    master.set_layout(Fraction(1, 4), 0);
+    master.cmd_state().reset();
+    master.set_layout(Fraction(3, 4), 0);
+    master.cmd_state().reset();
+    EXPECT_TRUE(master.layout_state.dirty);
+    EXPECT_EQ(master.layout_state.start, Fraction(1, 4));
+    EXPECT_EQ(master.layout_state.end, Fraction(3, 4));
+    const auto count = layout_count(master);
+    ASSERT_TRUE(document->page_count());
+    EXPECT_EQ(layout_count(master), count + 1);
+    EXPECT_FALSE(master.layout_state.dirty);
+    ASSERT_TRUE(document->page_count());
+    EXPECT_EQ(layout_count(master), count + 1);
+}
+
+TEST(Read, FailedBatchRestoresPendingLayout) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.invalidate_layout(mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
+    const auto saved = master.layout_state;
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+    hooks.before_step = [](std::size_t step) {
+        if (step == 1) throw std::runtime_error("injected failure");
+    };
+    const auto revision = document->revision();
+    EXPECT_FALSE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    hooks = {};
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.layout_state.dirty, saved.dirty);
+    EXPECT_EQ(master.layout_state.start, saved.start);
+    EXPECT_EQ(master.layout_state.end, saved.end);
+    const auto count = layout_count(master);
+    ASSERT_TRUE(document->page_count());
+    EXPECT_EQ(layout_count(master), count + 1);
+    ASSERT_TRUE(document->page_count());
+    EXPECT_EQ(layout_count(master), count + 1);
+}
+
+TEST(Read, LayoutRangeIncludesEveryOverlappingSpanner) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    using mu::engraving::Fraction;
+    // Neither endpoint of the union belongs to every spanner. The previous
+    // loop discarded the earlier interval's extension on every iteration.
+    for (const auto &range : {std::pair{Fraction(0, 1), Fraction(3, 4)}, std::pair{Fraction(1, 4), Fraction(1, 1)}}) {
+        auto *hairpin = mu::engraving::Factory::create_hairpin(master.dummy());
+        hairpin->set_track(0);
+        hairpin->set_tick(range.first);
+        hairpin->set_tick2(range.second);
+        master.add_spanner(hairpin);
+    }
+    master.layout_state.dirty = false; // Isolate expansion from insertion dirtiness.
+    master.do_layout_range(Fraction(1, 2), Fraction(5, 8));
+    EXPECT_EQ(master.layout_state.last_start, Fraction(0, 1));
+    EXPECT_GE(master.layout_state.last_end, Fraction(1, 1));
+}
+
+TEST(Read, FontRefreshWaitsForGeometryBoundary) {
     const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     std::string xml = read_text(*it);
@@ -930,7 +1023,20 @@ TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
     const auto revision = document.revision();
     ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
     EXPECT_EQ(document.revision(), revision);
+    auto &master = master_of(document);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
     ASSERT_TRUE(document.edit({}));
+    ASSERT_TRUE(engrave::api::BatchGuard(document).run({[](engrave::api::EditContext &) -> engrave::Result<void> { return {}; }},
+                                                       engrave::api::Policy::SNAPSHOT, {}));
+    ASSERT_TRUE(document.outline());
+    const auto notes = document.query({.types = {"Note"}, .limit = 1});
+    ASSERT_TRUE(notes);
+    ASSERT_FALSE(notes->elements.empty());
+    ASSERT_TRUE(document.get(notes->elements.front().id));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    EXPECT_EQ(title->ldata()->bbox().width(), before);
+    ASSERT_TRUE(document.render({}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count + 1);
     EXPECT_NE(title->ldata()->bbox().width(), before);
     EXPECT_EQ(document.revision(), revision);
 }

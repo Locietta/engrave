@@ -27,15 +27,6 @@ std::vector<std::byte> bytes_of(std::string data) {
     return std::vector<std::byte>(first, first + data.size());
 }
 
-// An excerpt the file carried is laid out by the loader, and an edit lays out the
-// part it touched; a score that never reached the layout has no page to draw yet.
-void prepare_layout(mu::engraving::Score &score) {
-    if (score.npages() == 0 && score.nmeasures() > 0) {
-        score.do_layout();
-        score.update();
-    }
-}
-
 const char *backend_name(RenderFormat format) {
     switch (format) {
         case RenderFormat::PDF: return "pdf";
@@ -50,21 +41,19 @@ const char *backend_name(RenderFormat format) {
 Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    impl_->refresh_fonts();
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), selection);
     if (!selected) return std::unexpected(selected.error());
-    prepare_layout(**selected);
+    impl_->ensure_layout(**selected);
     return static_cast<std::int32_t>((*selected)->npages());
 }
 
 Result<RenderOutput> Document::render(const RenderOptions &options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
-    impl_->refresh_fonts();
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
     mu::engraving::Score &score = **selected;
-    prepare_layout(score);
+    impl_->ensure_layout(score);
 
     if (options.dpi < min_render_dpi || options.dpi > max_render_dpi) {
         return fail(ErrorCode::INVALID_ARGUMENT,
@@ -121,8 +110,7 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
     if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::CANCELLED, "position capture cancelled");
     const auto selected = select_score(*impl_->project->master_score(), selection);
     if (!selected) return std::unexpected(selected.error());
-    impl_->refresh_fonts();
-    prepare_layout(**selected);
+    impl_->ensure_layout(**selected);
     if ((*selected)->npages() == 0) return fail(ErrorCode::INVALID_ARGUMENT, "the score has no pages");
 
     struct Stop {

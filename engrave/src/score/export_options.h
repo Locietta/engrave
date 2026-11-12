@@ -40,6 +40,9 @@ struct ExportOptions {
     // Public score export: write an independent score, with no links to the
     // source master and with an inline style for uncompressed master MSCX.
     bool standalone_score = false;
+    // Internal transaction recovery captures the existing layout, including
+    // source-owned overrides, without refreshing fonts or geometry.
+    bool transaction_snapshot = false;
     int png_dpi = 144;
     bool draw_page_background = false;
     bool transparent = true;

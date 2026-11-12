@@ -47,7 +47,7 @@ bool generate_score_excerpts(mu::engraving::MasterScore *score);
 std::vector<ExcerptInfo> list_score_excerpts(mu::engraving::MasterScore *score);
 
 // Returns the full score for excerpt_id == -1, otherwise the excerpt score at
-// that index. The selected score is laid out first when it has no pages.
+// that index. The selected score passes through the shared layout freshness boundary.
 // Throws std::invalid_argument when score is null, std::out_of_range for an
 // invalid id, and std::runtime_error when the excerpt has no usable,
 // document-owned score.

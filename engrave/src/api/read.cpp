@@ -431,7 +431,6 @@ Order order_of(const ElementInfo &element, int score) {
 
 Result<Outline> Document::outline(const ScoreSel &selection) {
     impl_->engine->check_thread();
-    if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->master_score();
     const Result<Score *> selected = select_score(master, selection);
@@ -465,12 +464,12 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
 
 Result<QueryResult> Document::query(const Query &request) {
     impl_->engine->check_thread();
-    if (!impl_->poisoned && request.layout_boxes) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->master_score();
     const Result<Score *> selected = select_score(master, request.score);
     if (!selected) return std::unexpected(selected.error());
     Score &score = **selected;
+    if (request.layout_boxes) impl_->ensure_layout(score);
 
     if (request.limit == 0) return fail(ErrorCode::INVALID_ARGUMENT, "a query limit is at least 1");
     if (request.limit > max_query_results) {
@@ -569,7 +568,6 @@ Result<QueryResult> Document::query(const Query &request) {
 
 Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::vector<std::string> &props) {
     impl_->engine->check_thread();
-    if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->master_score();
     const Result<Resolved> resolved = std::visit(
