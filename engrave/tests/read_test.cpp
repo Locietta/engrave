@@ -47,6 +47,7 @@
 #include "engrave/src/score/write470.h"
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/tempovalues.h"
+#include "engraving/dom/accidental.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
@@ -231,6 +232,121 @@ TEST(Read, NormalizeOnlyRepairsLinesWithoutLayoutAndPreservesGeometryDirtiness) 
     normalize_score(master);
     EXPECT_EQ(master.normalize_state.normalized_generation, generation);
     EXPECT_FALSE(note->has_layout_data());
+}
+
+TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    auto *ornament = Factory::create_ornament(chord);
+    ornament->set_sym_id(SymId::ORNAMENT_TRILL);
+    chord->add(ornament);
+    master.do_layout();
+    master.start_cmd(muse::TranslatableString::untranslatable("explicit replay scope"));
+    auto *recording = master.transaction_manager()->current_transaction();
+    master.set_layout_all();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    const auto mark = master.undo_stack()->active_transaction()->commands().size();
+    normalize_document(master, {.mode = NormalizeMode::REPLAY});
+    EXPECT_EQ(master.transaction_manager()->current_transaction(), recording);
+    EXPECT_EQ(master.undo_stack()->active_transaction()->commands().size(), mark);
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    master.end_cmd(true, true);
+}
+
+TEST(Read, NormalizePersistsMidiRequestsAcrossCommandStateReset) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_FALSE(master.midi_mapping().empty());
+    master.midi_mapping().clear();
+    master.add_layout_flags(LayoutFlag::REBUILD_MIDI_MAPPING);
+    master.cmd_state().reset();
+    ASSERT_TRUE(master.normalize_state.rebuild_midi_mapping);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_document(master);
+    EXPECT_FALSE(master.midi_mapping().empty());
+    EXPECT_FALSE(master.normalize_state.rebuild_midi_mapping);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+}
+
+TEST(Read, MutationBoundariesPublishNormalizedSourceAndAccidentalIds) {
+    using namespace mu::engraving;
+    auto native = open_path(write470_fixture());
+    ASSERT_TRUE(native);
+    auto created = g_engine->create_document({.template_id = "Treble_Clef", .title = "normalized create"});
+    ASSERT_TRUE(created);
+    auto mnx = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/engine/two-notes.mnx");
+    ASSERT_TRUE(mnx);
+    for (auto *document : {native.get(), created->get(), mnx.get()}) {
+        auto &master = master_of(*document);
+        for (auto *score : master.score_list()) {
+            EXPECT_FALSE(score->normalize_state.dirty);
+            EXPECT_FALSE(score->normalize_state.running);
+        }
+        EXPECT_FALSE(master.repeat_list(false).empty());
+    }
+    auto &master = master_of(*native);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    static MasterScore *observed = nullptr;
+    static bool saw_normalization = false;
+    observed = &master;
+    saw_normalization = false;
+    Transaction::set_push_hook([](UndoableCommand *, bool appended) {
+        if (appended && observed->normalize_state.running) {
+            EXPECT_NE(observed->transaction_manager()->current_transaction(), nullptr);
+            saw_normalization = true;
+        }
+    });
+    auto result = native->edit({{engrave::SetPitch{engrave::from_engine(note->eid()), 61, 21}}});
+    Transaction::set_push_hook(nullptr);
+    ASSERT_TRUE(result);
+    EXPECT_TRUE(saw_normalization);
+    ASSERT_NE(note->accidental(), nullptr);
+    EXPECT_TRUE(note->accidental()->eid().is_valid());
+    const auto accidental = engrave::from_engine(note->accidental()->eid());
+    EXPECT_NE(std::ranges::find(result->created, accidental), result->created.end());
+    EXPECT_FALSE(master.normalize_state.dirty);
+}
+
+TEST(Read, InactiveSemanticBarrierPlumbingRefreshesDependentTargetsWhenOptedIn) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const auto id = engrave::from_engine(note->eid());
+    const int line = note->line();
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    std::optional<engrave::api::Target> target;
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+    EXPECT_FALSE(hooks.needs_normalized_state);
+    hooks.needs_normalized_state = [](std::size_t step) { return step == 1; };
+    std::vector<engrave::api::Step> steps;
+    steps.push_back([&](engrave::api::EditContext &context) -> engrave::Result<void> {
+        auto resolved = context.target(id);
+        if (!resolved) return std::unexpected(resolved.error());
+        target = *resolved;
+        note->undo_change_property(Pid::PITCH, note->pitch() + 12);
+        return {};
+    });
+    steps.push_back([&](engrave::api::EditContext &context) -> engrave::Result<void> {
+        auto fresh = context.target(id);
+        if (!fresh) return std::unexpected(fresh.error());
+        EXPECT_GT(fresh->epoch, target->epoch);
+        auto resolved = context.object(*target);
+        if (!resolved) return std::unexpected(resolved.error());
+        EXPECT_EQ(to_note(*resolved)->line(), line - 7);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+        return {};
+    });
+    auto result = engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {});
+    hooks = {};
+    ASSERT_TRUE(result);
 }
 
 TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
@@ -422,6 +538,11 @@ TEST(Read, NormalizeResolvesSpannerEndsAgainstRealMeasuresWithMmRests) {
         EXPECT_FALSE(spanner->has_layout_data());
     }
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    const auto &repeats = master.repeat_list(false);
+    ASSERT_EQ(repeats.size(), 1u);
+    EXPECT_EQ(repeats.front()->first_measure(), master.first_measure());
+    EXPECT_EQ(repeats.front()->last_measure(), master.last_measure());
+    for (auto *measure : repeats.front()->measure_list()) EXPECT_FALSE(measure->is_mm_rest());
 }
 
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
@@ -1925,6 +2046,8 @@ TEST(Read, FailedBatchRestoresPendingLayout) {
     auto &master = master_of(*document);
     master.invalidate_layout(mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
     const auto saved = master.layout_state;
+    mu::engraving::invalidate_normalization(master, mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
+    const auto normalized = master.normalize_state;
     auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
     hooks.before_step = [](std::size_t step) {
         if (step == 1) throw std::runtime_error("injected failure");
@@ -1936,6 +2059,10 @@ TEST(Read, FailedBatchRestoresPendingLayout) {
     EXPECT_EQ(master.layout_state.dirty, saved.dirty);
     EXPECT_EQ(master.layout_state.start, saved.start);
     EXPECT_EQ(master.layout_state.end, saved.end);
+    EXPECT_EQ(master.normalize_state.dirty, normalized.dirty);
+    EXPECT_EQ(master.normalize_state.start, normalized.start);
+    EXPECT_EQ(master.normalize_state.end, normalized.end);
+    EXPECT_EQ(master.normalize_state.generation, normalized.generation);
     const auto count = layout_count(master);
     ASSERT_TRUE(document->page_count());
     EXPECT_EQ(layout_count(master), count + 1);
@@ -2032,6 +2159,8 @@ TEST(Read, SnapshotReplacementConsumesMasterPendingLayout) {
         EXPECT_NE(&after, before);
         EXPECT_EQ(document->revision(), revision);
         EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_FALSE(after.normalize_state.dirty);
+        EXPECT_FALSE(after.normalize_state.running);
         EXPECT_EQ(after.layout_state.revision, revision);
         EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
         EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
@@ -2081,6 +2210,8 @@ TEST(Read, SnapshotReplacementConsumesExcerptPendingLayout) {
         auto &after = **selected;
         EXPECT_NE(&after, before);
         EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_FALSE(after.normalize_state.dirty);
+        EXPECT_FALSE(after.normalize_state.running);
         EXPECT_FALSE(master_of(*document).layout_state.dirty);
         EXPECT_EQ(after.layout_state.revision, document->revision());
         EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
