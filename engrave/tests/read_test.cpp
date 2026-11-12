@@ -1223,6 +1223,30 @@ TEST(Read, ExcerptClonesSourceAfterRenderedMmrBoundaryBecomesStale) {
     EXPECT_EQ(part_score->layout_state.whole_count + part_score->layout_state.range_count, 0u);
 }
 
+TEST(Read, NativeMasterExportPreparesUnrenderedExcerpts) {
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        auto opened = g_engine->open(write470_fixture());
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        const auto outline = document.outline();
+        ASSERT_TRUE(outline);
+        ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+        ASSERT_EQ(master.excerpts().size(), 1u);
+        auto *part = master.excerpts().front()->excerpt_score();
+        ASSERT_NE(part, nullptr);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 0u);
+        ASSERT_TRUE(document.export_score({.format = format}));
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 1u);
+        EXPECT_GT(part->npages(), 0);
+        ASSERT_TRUE(document.export_score({.format = format}));
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+        EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 1u);
+    }
+}
+
 TEST(Read, NativeLoadRestoresLegacyMmrSourceOwnershipBeforePlayback) {
     using namespace mu::engraving;
     const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/mmr/legacy_source_ownership.mscx";
