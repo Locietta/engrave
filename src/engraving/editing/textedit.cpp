@@ -69,18 +69,23 @@ ChangeTextProperties::ChangeTextProperties(const TextCursor *tc, Pid prop_id, co
 }
 
 void ChangeTextProperties::undo() {
-    cursor().text()->reset_formatting();
-    cursor().text()->set_xml_text(xml_text_);
+    TextBase *text = cursor().text();
+    text->cursor()->set_format(previous_format_);
+    text->set_xml_text(xml_text_);
+    text->set_property_flags(property_id_, previous_flags_);
     restore_selection();
-    cursor().text()->renderer()->layout_text1(cursor().text());
+    text->trigger_layout();
+    if (cursor().editing()) text->renderer()->layout_text1(text);
 }
 
 void ChangeTextProperties::redo() {
     xml_text_ = cursor().text()->xml_text();
+    previous_format_ = *cursor().text()->cursor()->format();
+    previous_flags_ = cursor().text()->property_flags(property_id_);
     restore_selection();
     cursor().text()->set_property_flags(property_id_, flags_);
 
-    if (property_id_ == Pid::FONT_STYLE) {
+    if (property_id_ == Pid::FONT_STYLE && cursor().editing()) {
         FontStyle set_style = static_cast<FontStyle>(property_val_.to_int());
         TextCursor *tc = cursor().text()->cursor();
         // user turned on bold/italic/underline/strike for text where it's not set, or turned it off for text where it is set,

@@ -261,6 +261,103 @@ TEST(Read, SourceTextFormattingReadsAgreeBeforeAndAfterRender) {
     EXPECT_EQ(text->property_flags(Pid::FONT_FACE), flags);
 }
 
+TEST(Read, WholeTextFormattingMatchesEagerSourceAndRenderWithoutItemLayout) {
+    using namespace mu::engraving;
+    std::vector<std::vector<std::byte>> pages;
+    muse::String markup;
+    for (bool eager : {true, false}) {
+        auto source = formatted_text_fixture();
+        source.insert(source.find("world") + 5, " <sym>noteheadDoubleWholeAlt</sym><sym>accidentalSharp</sym>");
+        auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *text = staff_text_of(master);
+        ASSERT_NE(text, nullptr);
+        const auto id = engrave::from_engine(text->eid());
+        if (eager) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+        {
+            ItemLayoutSpy spy;
+            ASSERT_TRUE(
+                document.edit({{engrave::SetProperty{id, "FONT_SIZE", 14.0}, engrave::SetProperty{id, "family", std::string("Leland Text")},
+                                engrave::SetProperty{id, "fontStyle", std::int64_t(0)}}}));
+            EXPECT_EQ(text->get_property(Pid::FONT_SIZE).to_double(), 14.0);
+            EXPECT_EQ(text->get_property(Pid::FONT_FACE).value<muse::String>(), u"Leland Text");
+            EXPECT_EQ(text->get_property(Pid::FONT_STYLE).to_int(), 0);
+            EXPECT_FALSE(text->xml_text().contains(u"<b>"));
+            EXPECT_TRUE(text->plain_text().starts_with(u"hello\nworld "));
+            EXPECT_TRUE(text->xml_text().contains(u"<sym>noteheadDoubleWholeAlt</sym><sym>accidentalSharp</sym>"));
+            EXPECT_EQ(ItemLayoutSpy::count, 0u);
+            EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+        }
+        auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        if (eager) {
+            pages = rendered->pages;
+            markup = text->xml_text();
+        } else {
+            EXPECT_EQ(text->xml_text(), markup);
+            EXPECT_EQ(rendered->pages, pages);
+        }
+    }
+}
+
+TEST(Read, RejectedTextFormattingRestoresSourceAndFlagsWithoutItemLayout) {
+    using namespace mu::engraving;
+    for (bool rendered : {false, true}) {
+        for (const char *property : {"fontStyle", "FONT_SIZE", "family"}) {
+            for (bool reset : {false, true}) {
+                SCOPED_TRACE(std::format("{} rendered={} reset={}", property, rendered, reset));
+                auto opened = g_engine->open(as_bytes(formatted_text_fixture()), {.format = engrave::Format::MSCX});
+                ASSERT_TRUE(opened);
+                auto &document = **opened;
+                auto &master = master_of(document);
+                auto *text = staff_text_of(master);
+                ASSERT_NE(text, nullptr);
+                std::vector<std::vector<std::byte>> baseline;
+                if (rendered) {
+                    auto result = document.render({.format = engrave::RenderFormat::SVG});
+                    ASSERT_TRUE(result);
+                    baseline = result->pages;
+                }
+                const auto id = engrave::from_engine(text->eid());
+                const auto markup = text->xml_text();
+                const auto format = *text->cursor()->format();
+                const auto pid = engrave::api::pid_of(property);
+                const auto flags = text->property_flags(pid);
+                const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+                const auto revision = document.revision();
+                auto &hooks = engrave::DocumentAccess::edit_hooks(document);
+                hooks.policy = engrave::api::Policy::TRANSACTION;
+                hooks.before_step = [](std::size_t step) {
+                    if (step == 1) throw std::runtime_error("reject text formatting");
+                };
+                engrave::Value value = std::int64_t(0);
+                if (pid == Pid::FONT_SIZE) value = 14.0;
+                if (pid == Pid::FONT_FACE) value = std::string("Leland Text");
+                ItemLayoutSpy spy;
+                const engrave::Op op =
+                    reset ? engrave::Op(engrave::ResetProperty{id, property}) : engrave::Op(engrave::SetProperty{id, property, value});
+                EXPECT_FALSE(document.edit({{op}}));
+                hooks = {};
+                ASSERT_EQ(engrave::DocumentAccess::master_score(document), &master);
+                EXPECT_EQ(text->xml_text(), markup);
+                EXPECT_EQ(*text->cursor()->format(), format);
+                EXPECT_EQ(text->property_flags(pid), flags);
+                EXPECT_EQ(document.revision(), revision);
+                EXPECT_EQ(ItemLayoutSpy::count, 0u);
+                EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+                if (rendered) {
+                    auto result = document.render({.format = engrave::RenderFormat::SVG});
+                    ASSERT_TRUE(result);
+                    EXPECT_EQ(result->pages, baseline);
+                }
+            }
+        }
+    }
+}
+
 TEST(Read, PlaybackNoteheadUsesSourceSchemeWithoutDisplayData) {
     using namespace mu::engraving;
     using namespace muse::mpe;
