@@ -129,6 +129,19 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
 }
 
 AuthoredChildKey child_key(const EngravingItem &item) {
+    if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) {
+        const auto &beam = static_cast<const Beam &>(item);
+        uint32_t ordinal = beam.beam_fragments().empty() ? 0 : static_cast<uint32_t>(beam.beam_fragments().size() - 1);
+        bool found = false;
+        for (const auto &entry : beam.authored_overrides.entries) {
+            if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == beam.direction_idx() &&
+                entry.pid == Pid::BEAM_POS) {
+                ordinal = found ? std::max(ordinal, entry.child.ordinal) : entry.child.ordinal;
+                found = true;
+            }
+        }
+        return {AuthoredChildRole::BEAM_FRAGMENT, ordinal, static_cast<uint8_t>(beam.direction_idx())};
+    }
     return item.authored_child.role == AuthoredChildRole::NONE ? inferred_key(item) : item.authored_child;
 }
 
@@ -259,6 +272,7 @@ const AuthoredOverrideTable *authored_override_table(const EngravingItem *owner)
 }
 
 EngravingItem *authored_override_owner(const EngravingItem &item) {
+    if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) return const_cast<EngravingItem *>(&item);
     auto *parent = item.ownership_parent();
     if (!parent || !parent->is_engraving_item()) return nullptr;
     auto *owner = static_cast<EngravingItem *>(parent);
@@ -269,6 +283,7 @@ EngravingItem *authored_override_owner(const EngravingItem &item) {
 }
 
 bool authored_override_handles(const EngravingObject &object, Pid pid) {
+    if (object.is_beam() && pid != Pid::BEAM_POS) return false;
     auto *item = bound_item(object);
     return item && supported_property(child_key(*item).role, pid) && authored_override_owner(*item);
 }
@@ -295,10 +310,10 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
     if (!authored_override_handles(item, pid)) return;
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     auto &table = *authored_override_table(authored_override_owner(item));
-    prepare_carrier(item, table);
+    if (!item.is_beam()) prepare_carrier(item, table);
     const auto default_value = item.property_default(pid);
     const auto sid = item.get_property_style(pid);
-    AuthoredOverrideEntry entry{item.authored_child, pid, value, flags, default_value, sid};
+    AuthoredOverrideEntry entry{child_key(item), pid, value, flags, default_value, sid};
     if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
         entry.unit = property_type(pid) == PType::ABSOLUTE || item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM :
                                                                                                    AuthoredOverrideUnit::MILLIMETRE;
@@ -343,7 +358,7 @@ bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags
     auto &item = *bound_item(object);
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     auto &table = *authored_override_table(authored_override_owner(item));
-    if (const auto *entry = table.find(item.authored_child, pid)) {
+    if (const auto *entry = table.find(child_key(item), pid)) {
         auto updated = *entry;
         updated.flags = flags;
         table.set(std::move(updated));
@@ -360,6 +375,7 @@ void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
 }
 
 void apply_authored_overrides(EngravingItem &item) {
+    if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) return;
     const auto key = inferred_key(item);
     if (key.role != AuthoredChildRole::NONE) item.authored_child = key;
     const auto *table = authored_override_table(authored_override_owner(item));
@@ -411,9 +427,9 @@ void restore_authored_override(EngravingItem &item, Pid pid, const AuthoredOverr
 
 void reset_authored_override(EngravingItem &item, Pid pid) {
     auto &table = *authored_override_table(authored_override_owner(item));
-    table.erase(item.authored_child, pid);
+    table.erase(child_key(item), pid);
     // Carrier identity and dormant legacy ordinal survive a property reset.
-    mirror_property(item, pid, item.property_default(pid), default_flags(item, pid));
+    if (!item.is_beam()) mirror_property(item, pid, item.property_default(pid), default_flags(item, pid));
     item.trigger_layout();
 }
 

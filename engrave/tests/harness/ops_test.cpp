@@ -28,6 +28,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/tests/harness/harness.h"
+#include "engraving/dom/beam.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/chordlist.h"
@@ -1404,6 +1405,43 @@ TEST(TupletNumberEdit, FailedBatchRestoresTextEntryAndAbsence) {
         EXPECT_EQ(tuplet.authored_overrides.entries[i].unit, before.entries[i].unit);
         EXPECT_EQ(tuplet.authored_overrides.entries[i].value, before.entries[i].value);
     }
+}
+
+TEST(BeamFragmentEdit, FailedBatchRestoresZeroAbsenceAndCompoundChanges) {
+    using namespace mu::engraving;
+    auto document = open("layout_elements.mscx");
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->page_count());
+    Beam *beam = nullptr;
+    engrave::harness::master_of(*document).scan_elements([&](EngravingItem *item) {
+        if (item->is_note() && to_note(item)->chord()->beam()) beam = to_note(item)->chord()->beam();
+    });
+    ASSERT_NE(beam, nullptr);
+    const auto attempt = [&](bool compound) {
+        const auto before = beam->authored_overrides;
+        const auto generated = beam->generated();
+        const auto no_slope = beam->no_slope();
+        auto result = engrave::api::BatchGuard(*document).run(
+            {[beam, compound](engrave::api::EditContext &) -> engrave::Result<void> {
+                 beam->undo_change_property(Pid::BEAM_POS, PropertyValue::from_value(muse::PairF(0, 0)));
+                 EXPECT_TRUE(beam->user_modified());
+                 if (compound) {
+                     beam->undo_change_property(Pid::BEAM_NO_SLOPE, true, PropertyFlags::UNSTYLED);
+                     beam->undo_change_property(Pid::USER_MODIFIED, false);
+                 }
+                 return {};
+             },
+             [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after beam override"); }},
+            engrave::api::Policy::TRANSACTION, std::nullopt);
+        EXPECT_FALSE(result);
+        EXPECT_EQ(beam->generated(), generated);
+        EXPECT_EQ(beam->no_slope(), no_slope);
+        ASSERT_EQ(beam->authored_overrides.entries.size(), before.entries.size());
+        for (size_t i = 0; i < before.entries.size(); ++i) EXPECT_EQ(beam->authored_overrides.entries[i].value, before.entries[i].value);
+    };
+    attempt(false);
+    beam->set_beam_pos(muse::PairF(1.25, 2.5));
+    attempt(true);
 }
 
 // --- the evidence ---------------------------------------------------------------
