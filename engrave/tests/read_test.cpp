@@ -100,6 +100,7 @@
 #include "engraving/dom/tempotimeline.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
+#include "engraving/dom/textline.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/timesig.h"
@@ -5267,13 +5268,14 @@ std::string offset_test_write(const mu::engraving::ChordLine *line) {
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
 }
 
-std::string legacy_override_write(const mu::engraving::EngravingItem *item) {
+std::string legacy_override_write(const mu::engraving::EngravingItem *item, bool standalone = false) {
     muse::ByteArray bytes;
     muse::io::Buffer buffer(&bytes);
     buffer.open(muse::io::IODevice::WRITE_ONLY);
     {
         mu::engraving::XmlWriter xml(&buffer);
         mu::engraving::write::WriteContext ctx(item->score());
+        ctx.set_standalone(standalone);
         mu::engraving::write::TWrite::write_item(item, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
@@ -6215,6 +6217,76 @@ TEST(LayoutDataStore, RecursiveLedgerTeardownRetiresEveryPayload) {
     EXPECT_EQ(store.size(), before + 2);
     chord.reset();
     EXPECT_EQ(store.size(), before);
+}
+
+TEST(Read, SpannerRootStylesDoNotBecomeSegmentOverrides) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::unique_ptr<TextLine> line(Factory::create_text_line(master.dummy()));
+    std::unique_ptr<LineSegment> segment(line->create_line_segment());
+    bind_authored_child(*segment, {AuthoredChildRole::SPANNER_SEGMENT});
+    const Align alignment{AlignH::RIGHT, AlignV::BASELINE};
+    ASSERT_TRUE(segment->set_property(Pid::BEGIN_TEXT_ALIGN, PropertyValue::from_value(alignment)));
+    EXPECT_EQ(line->get_property(Pid::BEGIN_TEXT_ALIGN).value<Align>(), alignment);
+    EXPECT_TRUE(line->authored_overrides.entries.empty());
+    EXPECT_TRUE(line->authored_overrides.carriers.empty());
+    std::unique_ptr<GuitarBend> bend(Factory::create_guitar_bend(master.dummy()));
+    std::unique_ptr<LineSegment> bend_segment(bend->create_line_segment());
+    bind_authored_child(*bend_segment, {AuthoredChildRole::SPANNER_SEGMENT});
+    EXPECT_FALSE(bend_segment->set_property(Pid::BEGIN_TEXT_ALIGN, PropertyValue::from_value(alignment)));
+    EXPECT_TRUE(bend->authored_overrides.entries.empty());
+    EXPECT_TRUE(bend->authored_overrides.carriers.empty());
+}
+
+TEST(Read, ParenthesisCarrierUsesLiveCloneUnlinkAndRelinkIdentity) {
+    using namespace mu::engraving;
+    auto xml = chordline_offset_fixture();
+    const auto begin = xml.find("<ChordLine>");
+    xml.erase(begin, xml.find("</ChordLine>", begin) + 12 - begin);
+    xml.insert(xml.find("<Note>") + 6, "<eid>C_C</eid><parentheses>both</parentheses>");
+    xml.insert(xml.find("</Note>") + 7, "<NoteParenGroup><Parenthesis><eid>D_D</eid></Parenthesis>"
+                                        "<Parenthesis><horizontalDirection>right</horizontalDirection><eid>E_E</eid></Parenthesis>"
+                                        "<Notes><NoteEID>C_C</NoteEID></Notes></NoteParenGroup>");
+    auto opened = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *source = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Chord> clone(Factory::copy_chord(*source, true));
+    ASSERT_EQ(clone->note_parentheses().size(), 1u);
+    auto *left = clone->note_parentheses().front()->left_paren();
+    left->set_track(1); // Structural clone track can differ from its new owner.
+    const auto left_xml = [&](const std::string &bytes) {
+        const auto start = bytes.find("<Parenthesis>", bytes.find("<NoteParenGroup>"));
+        return bytes.substr(start, bytes.find("</Parenthesis>", start) + 14 - start);
+    };
+    const auto linked = left_xml(legacy_override_write(clone.get()));
+    EXPECT_NE(linked.find("<linkedTo>D_D</linkedTo>"), std::string::npos);
+    EXPECT_NE(linked.find("<track>1</track>"), std::string::npos);
+    const auto identity = left->eid();
+    left->unlink();
+    const auto unlinked = left_xml(legacy_override_write(clone.get()));
+    EXPECT_EQ(unlinked.find("<linkedTo>"), std::string::npos);
+    EXPECT_EQ(left->eid(), identity);
+    left->link_to(source->note_parentheses().front()->left_paren());
+    EXPECT_EQ(left_xml(legacy_override_write(clone.get())), linked);
+    EXPECT_EQ(legacy_override_write(clone.get(), true).find("<linkedTo>"), std::string::npos);
+}
+
+TEST(Read, StandaloneDormantParenthesisCarrierDoesNotLinkOutsideTheExport) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(as_bytes(chordline_offset_fixture()));
+    ASSERT_TRUE(opened);
+    auto *chord = offset_test_lines(master_of(**opened)).front()->chord();
+    auto *note = chord->notes().front();
+    ASSERT_EQ(note->left_paren(), nullptr);
+    const AuthoredChildKey key{AuthoredChildRole::PAREN_LEFT};
+    const auto target = EID::from_std_string(std::string("D_D"));
+    note->authored_overrides.set_carrier({key, ElementType::PARENTHESIS, EID::from_std_string(std::string("E_E")), target});
+    EXPECT_NE(legacy_override_write(note).find("<linkedTo>D_D</linkedTo>"), std::string::npos);
+    EXPECT_EQ(legacy_override_write(note, true).find("<linkedTo>"), std::string::npos);
+    EXPECT_EQ(note->authored_overrides.carrier(key)->linked_to, target);
 }
 
 } // namespace
