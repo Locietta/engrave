@@ -53,21 +53,14 @@ struct Pen {
     }
 
     std::vector<double> dash_pattern() const {
-        if (style_ == PenStyle::SOLID_LINE || style_ == PenStyle::NO_PEN) {
-            return std::vector<double>();
-        } else if (dash_pattern_.empty()) {
-            const double space = 2;
-            const double dot = 1;
-            const double dash = 4;
-            switch (style_) {
-                case PenStyle::DASH_LINE: dash_pattern_ = {dash, space}; break;
-                case PenStyle::DOT_LINE: dash_pattern_ = {dot, space}; break;
-                case PenStyle::DASH_DOT_LINE: dash_pattern_ = {dash, space, dot, space}; break;
-                case PenStyle::DASH_DOT_DOT_LINE: dash_pattern_ = {dash, space, dot, space, dot, space}; break;
-                default: break;
-            }
+        switch (style_) {
+            case PenStyle::DASH_LINE: return {4, 2};
+            case PenStyle::DOT_LINE: return {1, 2};
+            case PenStyle::DASH_DOT_LINE: return {4, 2, 1, 2};
+            case PenStyle::DASH_DOT_DOT_LINE: return {4, 2, 1, 2, 1, 2};
+            case PenStyle::CUSTOM_DASH_LINE: return dash_pattern_;
+            default: return {};
         }
-        return dash_pattern_;
     }
 
     void set_dash_pattern(const std::vector<double> &pattern) {
@@ -110,7 +103,7 @@ private:
     PenCapStyle cap_style_ = PenCapStyle::SQUARE_CAP;
     PenJoinStyle join_style_ = PenJoinStyle::BEVEL_JOIN;
     double miter_limit_ = 2.0;
-    mutable std::vector<double> dash_pattern_;
+    std::vector<double> dash_pattern_;
 };
 } // namespace muse::draw
 

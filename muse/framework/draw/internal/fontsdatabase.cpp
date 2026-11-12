@@ -29,8 +29,6 @@
 using namespace muse;
 using namespace muse::draw;
 
-static int s_font_id = -1;
-
 void FontsDatabase::set_default_font(Font::Type type, const FontDataKey &key) {
     defaults_[type] = key;
     ++revision_;
@@ -104,7 +102,7 @@ int FontsDatabase::add_font(const FontDataKey &key, std::shared_ptr<io::IODevice
         return -1;
     }
 
-    const int id = ++s_font_id;
+    const int id = ++font_id_;
 
     auto it = fonts_.find(key);
     if (it != fonts_.end()) {
