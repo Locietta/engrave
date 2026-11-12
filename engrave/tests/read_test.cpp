@@ -98,6 +98,7 @@
 #include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/dom/trill.h"
+#include "engraving/dom/tuplet.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editpart.h"
 #include "engraving/editing/editproperty.h"
@@ -4520,6 +4521,40 @@ TEST(Read, ErrorsForStaleAndMissingReferences) {
 
 // A leading omitted rest must remain part of the triplet. Otherwise measure
 // repair starts its duration at tick 320 and overwrites the A4 at tick 1280.
+TEST(Read, TupletNumberStyleLivesOnSourceBeforeLayoutAndAfterDisplayRemoval) {
+    constexpr std::string_view fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote>
+<Number><size>12</size></Number><size>15</size></Tuplet>
+<Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<endTuplet/><Rest><durationType>half</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto xml = std::string(fixture);
+        xml.replace(xml.find("5.00"), 4, version);
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        auto &master = master_of(**document);
+        auto *chord = mu::engraving::to_chord(master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0));
+        auto *tuplet = chord->tuplet();
+        ASSERT_NE(tuplet, nullptr);
+        EXPECT_DOUBLE_EQ(tuplet->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
+        const auto flags = tuplet->property_flags(mu::engraving::Pid::FONT_SIZE);
+        delete tuplet->number();
+        tuplet->set_number(nullptr);
+        EXPECT_DOUBLE_EQ(tuplet->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
+        EXPECT_EQ(tuplet->property_flags(mu::engraving::Pid::FONT_SIZE), flags);
+        std::unique_ptr<mu::engraving::Tuplet> copy(tuplet->clone());
+        EXPECT_DOUBLE_EQ(copy->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
+        ASSERT_TRUE((*document)->page_count());
+        ASSERT_NE(tuplet->number(), nullptr);
+        EXPECT_DOUBLE_EQ(tuplet->number()->get_property(mu::engraving::Pid::FONT_SIZE).to_double(), 15.0);
+        EXPECT_EQ(tuplet->property_flags(mu::engraving::Pid::FONT_SIZE), flags);
+    }
+}
+
 TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
     constexpr std::string_view fixture = R"mscx(<?xml version="1.0" encoding="UTF-8"?>
 <museScore version="5.00"><Score><Division>480</Division>

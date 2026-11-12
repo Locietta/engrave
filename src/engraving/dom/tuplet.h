@@ -64,7 +64,8 @@ public:
 
     void set_number(Text *t) { number_ = t; }
 
-    void reset_number_property();
+    void apply_number_style();
+    void read_number_style(const Text &);
     static void reset_number_property(Text *number);
 
     void set_selected(bool f) override;
@@ -155,7 +156,6 @@ public:
     void set_visible(bool f) override;
     void set_color(const Color &col) override;
 
-    EngravingObject *property_delegate(Pid id) const override;
     PropertyValue get_property(Pid property_id) const override;
     bool set_property(Pid property_id, const PropertyValue &v) override;
     PropertyValue property_default(Pid id) const override;
@@ -207,6 +207,16 @@ private:
     PointF p1_, p2_;
     PointF user_p1_, user_p2_; // user offset
 
+    struct NumberStyle {
+        String font_face;
+        double font_size = 0.0;
+        int font_style = 0;
+        Align align;
+        AlignH position = AlignH::LEFT;
+        bool spatium_dependent = true;
+    };
+
+    NumberStyle number_style_;
     Text *number_ = nullptr;
 };
 } // namespace mu::engraving

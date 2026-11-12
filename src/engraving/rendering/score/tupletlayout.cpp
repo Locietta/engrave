@@ -164,8 +164,9 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
         number->set_visible(item->visible());
         number->set_color(item->color());
         item->set_number(number);
-        item->reset_number_property();
     }
+
+    item->apply_number_style();
 
     // tuplet properties are propagated to number automatically by setProperty()
     // but we need to make sure flags are as well

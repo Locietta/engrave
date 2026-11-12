@@ -37,8 +37,10 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tempotext.h"
+#include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
 #include "engraving/dom/tremolosinglechord.h"
+#include "engraving/dom/tuplet.h"
 #include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/editstaffbrackets.h"
@@ -1210,6 +1212,31 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(TupletNumberEdit, FailedBatchRestoresStyleWithoutNumberDisplay) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                 "src/importexport/mnx/tests/data/project_examples/tupletSimple.mnx");
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    auto &tuplet = *mu::engraving::to_tuplet(&engrave::harness::element(document, find_id(document, "Tuplet")));
+    delete tuplet.number();
+    tuplet.set_number(nullptr);
+    const auto before = tuplet.get_property(Pid::FONT_SIZE);
+    const auto flags = tuplet.property_flags(Pid::FONT_SIZE);
+    const auto revision = document.revision();
+    auto result = engrave::api::BatchGuard(document).run(
+        {[&tuplet](engrave::api::EditContext &) -> engrave::Result<void> {
+             tuplet.undo_change_property(Pid::FONT_SIZE, 19.0);
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after tuplet number style"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(tuplet.get_property(Pid::FONT_SIZE), before);
+    EXPECT_EQ(tuplet.property_flags(Pid::FONT_SIZE), flags);
+    EXPECT_EQ(tuplet.number(), nullptr);
+    EXPECT_EQ(document.revision(), revision);
 }
 
 // --- the evidence ---------------------------------------------------------------

@@ -1718,13 +1718,13 @@ constexpr PidEntry pid_support[] = {
     { Pid::TICK, false }, { Pid::TRACK, false }, { Pid::VISIBLE, true }, { Pid::VOICE, true },
     { Pid::VOICE_ASSIGNMENT, true }, { Pid::Z, true },
     // Tuplet
-    { Pid::ACTUAL_NOTES, true }, { Pid::ALIGN, false }, { Pid::APPEARANCE_LINKED_TO_MASTER, true },
+    { Pid::ACTUAL_NOTES, true }, { Pid::ALIGN, true }, { Pid::APPEARANCE_LINKED_TO_MASTER, true },
     { Pid::AUTOPLACE, true }, { Pid::BRACKET_TYPE, true }, { Pid::COLOR, true }, { Pid::DIRECTION, true },
     { Pid::DURATION, true }, { Pid::EXCLUDE_FROM_OTHER_PARTS, true }, { Pid::EXCLUDE_VERTICAL_ALIGN, true },
-    { Pid::FONT_FACE, false }, { Pid::FONT_SIZE, false }, { Pid::FONT_STYLE, false }, { Pid::GENERATED, false },
+    { Pid::FONT_FACE, true }, { Pid::FONT_SIZE, true }, { Pid::FONT_STYLE, true }, { Pid::GENERATED, false },
     { Pid::HAS_PARENTHESES, true }, { Pid::LINE_WIDTH, true }, { Pid::MIN_DISTANCE, true },
     { Pid::NORMAL_NOTES, true }, { Pid::NUMBER_TYPE, true }, { Pid::OFFSET, true }, { Pid::P1, true },
-    { Pid::P2, true }, { Pid::PLACEMENT, true }, { Pid::POSITION, false }, { Pid::POSITION_LINKED_TO_MASTER, true },
+    { Pid::P2, true }, { Pid::PLACEMENT, true }, { Pid::POSITION, true }, { Pid::POSITION_LINKED_TO_MASTER, true },
     { Pid::SELECTED, false }, { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::SYSTEM_FLAG, true },
     { Pid::TICK, false }, { Pid::TRACK, false }, { Pid::VISIBLE, true }, { Pid::VOICE, true }, { Pid::Z, true },
     // VBox
