@@ -119,8 +119,8 @@
 #include "log.h"
 #include "navigation.h"
 #include "splitjoinmeasure.h"
+#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
-#include "transaction/undostack.h"
 #include "transpose.h"
 
 using namespace mu;
@@ -5003,20 +5003,13 @@ void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_id
 void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
     auto remove_tie = [&](Tie *tie) {
         if (undo) {
-            if (undo_stack()->has_active_transaction()) {
+            if (mutation_journal()->has_active_transaction()) {
                 undo_remove_element(tie);
                 return;
             }
-            const size_t undo_idx = undo_stack()->current_index();
             start_cmd(TranslatableString("engraving", "Remove stale partial tie"));
             undo_remove_element(tie);
             end_cmd();
-            if (undo_idx != undo_stack()->current_index() && undo_stack()->current_index() >= 2) {
-                // These changes should be merged with the change in repeat structure which caused the ties to become invalid
-                // currentIndex returns the next empty index for an undo command
-                const size_t penultimate_cmd_idx = undo_stack()->current_index() - 2;
-                undo_stack()->merge_transactions(penultimate_cmd_idx);
-            }
         } else {
             remove_element(tie);
         }
@@ -5060,8 +5053,7 @@ void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
 }
 
 void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
-    const bool owns_transaction = undo && !undo_stack()->has_active_transaction();
-    const size_t undo_idx = undo_stack()->current_index();
+    const bool owns_transaction = undo && !mutation_journal()->has_active_transaction();
 
     const ChordRest *start_cr = slur ? slur->start_cr() : nullptr;
     // Slurs can only have the same start & end element when they are partial.
@@ -5077,6 +5069,7 @@ void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
             } else {
                 remove_element(slur);
             }
+            return;
         } else {
             if (undo) {
                 if (owns_transaction) start_cmd(TranslatableString("engraving", "Reset incoming partial slur"));
@@ -5112,13 +5105,6 @@ void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
 
     if (!owns_transaction) {
         return;
-    }
-
-    if (undo_idx != undo_stack()->current_index() && undo_stack()->current_index() >= 2) {
-        // These changes should be merged with the change in repeat structure which caused the ties to become invalid
-        // currentIdx returns the next empty index for an undo command
-        const size_t penultimate_cmd_idx = undo_stack()->current_index() - 2;
-        undo_stack()->merge_transactions(penultimate_cmd_idx);
     }
 }
 
@@ -5181,18 +5167,14 @@ void Score::undo_remove_stale_tie_jump_points(bool undo) {
         if (incoming_pt->jump_point() || incoming_pt->note()->tie_back() != incoming_pt) {
             continue;
         }
-        const size_t undo_idx = undo_stack()->current_index();
         if (undo) {
-            if (undo_stack()->has_active_transaction()) {
+            if (mutation_journal()->has_active_transaction()) {
                 undo_remove_element(incoming_pt);
                 continue;
             }
             start_cmd(TranslatableString("engraving", "Remove stale partial tie"));
             undo_remove_element(incoming_pt);
             end_cmd();
-            if (undo_idx != undo_stack()->current_index() && undo_stack()->current_index() >= 2) {
-                undo_stack()->merge_transactions(undo_stack()->current_index() - 2);
-            }
         } else {
             remove_element(incoming_pt);
         }

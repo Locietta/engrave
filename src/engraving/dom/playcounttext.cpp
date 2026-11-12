@@ -22,7 +22,7 @@
 
 #include "playcounttext.h"
 
-#include "../editing/transaction/undostack.h"
+#include "../editing/transaction/mutationjournal.h"
 #include "../types/typesconv.h"
 #include "barline.h"
 #include "measure.h"

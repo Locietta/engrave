@@ -66,8 +66,10 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/tremolotwochord.h"
 #include "engraving/editing/addremoveelement.h"
+#include "engraving/editing/editproperty.h"
 #include "engraving/editing/edittremolo.h"
-#include "engraving/editing/transaction/undostack.h"
+#include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
@@ -209,11 +211,10 @@ struct Command {
 
     /// Commits, and then does what a batch does: give the elements the commands made
     /// their ids again, and drop the history so that a removal destroys its elements.
-    void commit(bool drop_history) {
+    void commit() {
         score_.end_cmd(false);
         open_ = false;
         engrave::assign_missing_ids(score_);
-        if (drop_history) score_.undo_stack()->clear_history();
     }
 
     void rollback() {
@@ -230,7 +231,7 @@ template <typename Function>
 void commit(MasterScore &master, const Function &function) {
     Command command(master);
     function(master);
-    command.commit(true);
+    command.commit();
 }
 
 // --- documents ------------------------------------------------------------
@@ -825,7 +826,6 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
     ASSERT_NE(index.instr_template, nullptr);
     for (int round = 0; round < 3; ++round) {
         master.append_part(index.instr_template);
-        master.undo_stack()->clear_history();
         ASSERT_GT(master.parts().size(), 1u);
         Part *part = master.parts().back();
         engrave::assign_missing_ids(master);
@@ -838,7 +838,6 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
         expect_inv(*document);
 
         master.cmd_remove_part(part);
-        master.undo_stack()->clear_history();
         engrave::assign_missing_ids(master);
         expect_inv(*document);
         EXPECT_FALSE(live(master, part_id)) << "the removed part still resolves";
@@ -853,7 +852,6 @@ TEST(Handles, H5bRemovingAPartLeavesNoId) {
     expect_inv(*document);
     master.remove_excerpt(excerpt);
     delete excerpt;
-    master.undo_stack()->clear_history();
     engrave::assign_missing_ids(master);
     expect_inv(*document);
     EXPECT_FALSE(live(master, excerpt_id)) << "the removed excerpt still resolves";
@@ -1915,6 +1913,172 @@ TEST(Handles, TextFrameReplacementMaintainsSourceMembership) {
     frame->add(text);
     EXPECT_EQ(registry.handle_of(text), handle);
     EXPECT_EQ(registry.live_item(handle), text);
+    expect_inv(*document);
+}
+
+TEST(Handles, FinalResultPreparationFailureRetainsRollbackPayloadsAndRevisions) {
+    for (const auto policy : {engrave::api::Policy::TRANSACTION, engrave::api::Policy::SNAPSHOT}) {
+        auto document = open_path(corpus_file({".mscx"}));
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *note = first_note(master);
+        ASSERT_NE(note, nullptr);
+        const auto id = engine_id(*note);
+        const auto handle = master.eid_register()->handle_of(note);
+        const auto revision = document->revision();
+        master.mark_saved();
+        const auto source_revision = master.source_revision();
+        auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
+        hooks.before_cleanup = [&] {
+            EXPECT_TRUE(master.mutation_journal()->has_active_transaction());
+            EXPECT_EQ(master.eid_register()->item_from_handle(handle), note);
+            EXPECT_EQ(master.eid_register()->live_item(handle), nullptr);
+            EXPECT_EQ(document->revision(), revision);
+            EXPECT_EQ(master.source_revision(), source_revision);
+            throw std::bad_alloc();
+        };
+        std::vector<engrave::api::Step> steps;
+        steps.push_back([&](auto &) -> engrave::Result<void> {
+            master.undo(new mu::engraving::RemoveElement(note));
+            return {};
+        });
+        EXPECT_THROW(engrave::api::BatchGuard(*document).run(std::move(steps), policy, {}), std::bad_alloc);
+        hooks = {};
+        auto &restored = master_of(*document);
+        ASSERT_TRUE(engrave::resolve(restored, id));
+        EXPECT_EQ(document->revision(), revision);
+        EXPECT_EQ(restored.source_revision(), source_revision);
+        EXPECT_EQ(restored.saved_revision(), source_revision);
+        EXPECT_FALSE(restored.dirty());
+        EXPECT_EQ(restored.mutation_journal()->size(), 0u);
+        EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+        if (policy == engrave::api::Policy::TRANSACTION) EXPECT_EQ(restored.eid_register()->live_item(handle), note);
+        ASSERT_TRUE(document->edit({{engrave::SetProperty{id, "visible", false}}}));
+        EXPECT_EQ(document->revision(), revision + 1);
+        EXPECT_EQ(restored.source_revision(), source_revision + 1);
+        EXPECT_TRUE(restored.dirty());
+        EXPECT_EQ(restored.saved_revision(), source_revision);
+        ASSERT_TRUE(document->export_score({.format = engrave::Format::MSCX}));
+        EXPECT_TRUE(restored.dirty()) << "exporting bytes is not an explicit save acknowledgement";
+        restored.mark_saved();
+        EXPECT_FALSE(restored.dirty());
+        expect_inv(*document);
+    }
+}
+
+TEST(Handles, FinalPreparationEngineErrorRejectsWithoutCommitting) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    const auto revision = document->revision();
+    const auto source_revision = master.source_revision();
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [] {
+        mu::engraving::MScore::set_error(mu::engraving::MsError::NO_NOTE_SELECTED);
+    };
+    EXPECT_FALSE(document->edit({{engrave::SetProperty{engine_id(*note), "visible", false}}}));
+    EXPECT_TRUE(note->visible());
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.source_revision(), source_revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    expect_inv(*document);
+}
+
+TEST(Handles, LateFailureRestoresDummyOwnedSpannerIdentity) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/hairpins_and_repeats.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    const auto spanners = master.spanner_list();
+    ASSERT_FALSE(spanners.empty());
+    auto *spanner = spanners.front();
+    ASSERT_EQ(spanner->ownership_parent(), nullptr);
+    const auto id = engine_id(*spanner);
+    ASSERT_TRUE(engrave::resolve(master, id));
+    const auto handle = master.eid_register()->handle_of(spanner);
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [] { throw std::runtime_error("late spanner failure"); };
+    std::vector<engrave::api::Step> steps;
+    steps.push_back([&](auto &) -> engrave::Result<void> {
+        master.undo(new mu::engraving::RemoveElement(spanner));
+        return {};
+    });
+    EXPECT_FALSE(engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {}));
+    EXPECT_EQ(master.eid_register()->live_item(handle), spanner);
+    EXPECT_EQ(engine_id(*spanner), id);
+    EXPECT_TRUE(engrave::resolve(master, id));
+    expect_inv(*document);
+}
+
+TEST(Handles, LatePartRemovalFailureRestoresExcerptIdentity) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_FALSE(master.parts().empty());
+    const auto part_id = engine_id(*master.parts().front());
+    ASSERT_TRUE(document->edit({{engrave::AddPart{"violin", {}}}}));
+    if (master.excerpts().empty()) ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{part_id}}}}));
+    ASSERT_FALSE(master.excerpts().empty());
+    auto *excerpt = master.excerpts().front()->excerpt_score();
+    const auto id = engine_id(*excerpt);
+    const auto handle = master.eid_register()->handle_of(excerpt);
+    ASSERT_TRUE(engrave::resolve(master, id));
+    const auto revision = document->revision();
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [] { throw std::runtime_error("late excerpt failure"); };
+    EXPECT_FALSE(document->edit({{engrave::RemovePart{part_id}}}));
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_EQ(master.eid_register()->live_item(handle), excerpt);
+    EXPECT_EQ(engine_id(*excerpt), id);
+    EXPECT_TRUE(engrave::resolve(master, id));
+    expect_inv(*document);
+}
+
+TEST(Handles, DirectJournalUnwindSuppressesRecordingAndDisposesAfterAllInverses) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto *manager = master.transaction_manager();
+    manager->begin_transaction(muse::TranslatableString::untranslatable("direct helper unwind"));
+    auto &transaction = *manager->current_transaction();
+    std::vector<int> trace;
+    trace.reserve(4);
+
+    struct LegacyEntry final : mu::engraving::UndoableCommand {
+        mu::engraving::Transaction &transaction;
+        Note &note;
+        std::vector<int> &trace;
+        int id;
+
+        LegacyEntry(mu::engraving::Transaction &tx, Note &n, std::vector<int> &t, int i) : transaction(tx), note(n), trace(t), id(i) {}
+
+        void redo() override { note.set_property(mu::engraving::Pid::VISIBLE, false); }
+
+        void undo() override {
+            trace.push_back(id);
+            transaction.push(new mu::engraving::ChangeProperty(&note, mu::engraving::Pid::VISIBLE, true));
+        }
+
+        void cleanup(bool applied) override {
+            EXPECT_FALSE(applied);
+            trace.push_back(-id);
+        }
+    };
+
+    transaction.push(new LegacyEntry(transaction, *note, trace, 1));
+    transaction.push(new LegacyEntry(transaction, *note, trace, 2));
+    static std::size_t recorded = 0;
+    recorded = 0;
+    mu::engraving::Transaction::set_push_hook([](auto *, bool appended) {
+        if (appended) ++recorded;
+    });
+    master.mutation_journal()->active_transaction()->unwind();
+    mu::engraving::Transaction::set_push_hook(nullptr);
+    EXPECT_EQ(recorded, 0u);
+    EXPECT_EQ(trace, (std::vector<int>{2, 1, -2, -1}));
+    EXPECT_TRUE(note->visible());
+    EXPECT_TRUE(master.mutation_journal()->active_transaction()->empty());
+    manager->end_transaction(true);
     expect_inv(*document);
 }
 

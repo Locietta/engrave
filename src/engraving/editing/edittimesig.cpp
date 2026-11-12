@@ -47,8 +47,8 @@
 #include "edittremolo.h"
 #include "global/containers.h"
 #include "log.h"
+#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
-#include "transaction/undostack.h"
 
 using namespace mu;
 using namespace mu::engraving;
@@ -559,7 +559,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
                 for (size_t i = 0; i < score->nstaves(); ++i) {
                     if (score->staff(i)->time_sig(tick) && score->staff(i)->time_sig(tick)->is_local()) {
                         if (!rewrite_measures(tx, m_score, mf, ns, i)) {
-                            score->undo_stack()->active_transaction()->unwind();
+                            score->mutation_journal()->active_transaction()->unwind();
                             return;
                         }
                     }
@@ -575,7 +575,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
             auto staff_idx_range_on_master = get_staff_idx_range(m_score);
             if (staff_idx_range_on_master.second != staff_idx_range_on_master.first &&
                 !rewrite_measures(tx, m_score, mf, ns, local ? staff_idx_range_on_master.first : muse::nidx)) {
-                score->undo_stack()->active_transaction()->unwind();
+                score->mutation_journal()->active_transaction()->unwind();
                 return;
             }
         }
@@ -669,7 +669,7 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
     Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
 
     if (!rewrite_measures(tx, r_score, rm, ns, muse::nidx)) {
-        score->undo_stack()->active_transaction()->unwind();
+        score->mutation_journal()->active_transaction()->unwind();
     } else {
         m = score->tick2measure(tick); // old m may have been replaced
         // hack: fix measure rest durations for staves with local time signatures

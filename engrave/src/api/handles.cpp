@@ -23,6 +23,7 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/textbase.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/infrastructure/eidregister.h"
 
 namespace engrave {
@@ -310,8 +311,12 @@ void assign_missing_ids(MasterScore &master) {
     // missing), and such an entry would answer for an element no caller can address.
     // An element the walk does not hand out but that is still in a score (a guitar bend
     // on its note) keeps the id the file gave it, so that a save writes the same id again.
-    for (const auto &[eid, object] : master.eid_register()->entries()) {
-        if (!document.contains(object) && !in_score(master, object)) master.eid_register()->remove_item(object);
+    // A detached object can still be owned by an active rollback entry. Its EID
+    // and publication state survive until reinsertion or destruction at commit.
+    if (!master.mutation_journal()->has_active_transaction()) {
+        for (const auto &[eid, object] : master.eid_register()->entries()) {
+            if (!document.contains(object) && !in_score(master, object)) master.eid_register()->remove_item(object);
+        }
     }
     if (initial) initialize_membership(master);
 }

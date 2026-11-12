@@ -32,8 +32,8 @@
 #include "engraving/rendering/score/scorerenderer.h"
 #include "log.h"
 #include "navigation.h"
+#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
-#include "transaction/undostack.h"
 #include "types/symnames.h"
 
 using namespace mu::engraving;

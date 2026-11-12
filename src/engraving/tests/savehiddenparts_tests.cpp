@@ -33,7 +33,7 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
 #include "engraving/editing/editpart.h"
-#include "engraving/editing/transaction/undostack.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/infrastructure/localfileinfoprovider.h"
 #include "engraving/infrastructure/mscreader.h"
 #include "engraving/infrastructure/mscwriter.h"
@@ -148,8 +148,7 @@ TEST_F(EngravingSaveHiddenPartsTests, SavingDoesNotChangeOrRelayoutTheScore) {
 
     const std::vector<System *> systems_before = score->systems();
     const Measure *mm_rest_before = score->cr_measure(1)->mm_rest();
-    const size_t undo_stack_size_before = score->undo_stack()->size();
-    const size_t undo_stack_index_before = score->undo_stack()->current_index();
+    const auto source_revision_before = score->source_revision();
 
     // [WHEN] The score is saved
     save_score(score.get());
@@ -161,8 +160,7 @@ TEST_F(EngravingSaveHiddenPartsTests, SavingDoesNotChangeOrRelayoutTheScore) {
 
     // [THEN] The score itself is unchanged
     EXPECT_FALSE(score->parts().back()->show());
-    EXPECT_EQ(score->undo_stack()->size(), undo_stack_size_before);
-    EXPECT_EQ(score->undo_stack()->current_index(), undo_stack_index_before);
+    EXPECT_EQ(score->source_revision(), source_revision_before);
 }
 
 // see musescore.org/en/node/27861

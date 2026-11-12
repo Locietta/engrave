@@ -105,11 +105,12 @@ Policy policy_of(const Op &op);
 // Test seams of the guard; a Document never sets them.
 struct EditHooks {
     std::optional<Policy> policy; // run every batch under this policy
-    bool keep_history = false;    // leave the committed transaction on the undo stack
     bool fail_restore = false;    // make the snapshot restore fail
     // Called before each step and once more before the commit (with the step
     // count); it may throw, or set an engine error that rejects the batch.
     std::function<void(std::size_t step)> before_step;
+    // Runs after all result allocations, while inverse payloads are still retained.
+    std::function<void()> before_cleanup;
     // Tests of custom run() steps may request the same production barrier.
     std::function<bool(std::size_t step)> needs_normalized_state;
 };
@@ -129,7 +130,7 @@ private:
     // anything is touched.
     Result<void> admit(std::optional<std::uint64_t> expected_revision) const;
     Result<EditResult> execute(std::vector<Step> steps, Policy policy, std::vector<bool> snapshot_step);
-    void roll_back(const Snapshot *snapshot, std::size_t history, bool unwind_unsafe);
+    void roll_back(const Snapshot *snapshot, bool unwind_unsafe);
     // Whether the undo left the document where the batch found it.
     bool same_score(const Snapshot &snapshot);
     void restore(const Snapshot &snapshot);

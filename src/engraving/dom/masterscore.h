@@ -53,7 +53,7 @@ struct RepeatSegmentInfo;
 struct Revisions;
 struct TempoTimeline;
 struct TimeSigMap;
-struct UndoStack;
+struct MutationJournal;
 struct ScoreAutomationController;
 
 struct MidiMapping {
@@ -106,13 +106,27 @@ public:
 
     TransactionManager *transaction_manager() const { return transaction_manager_.get(); }
 
-    UndoStack *undo_stack() const { return undo_stack_; }
+    MutationJournal *mutation_journal() const { return mutation_journal_; }
+
+    uint64_t source_revision() const { return source_revision_; }
+
+    uint64_t saved_revision() const { return saved_revision_; }
+
+    void mark_saved() { saved_revision_ = source_revision_; }
+
+    void advance_source_revision() noexcept { ++source_revision_; }
+
+    void restore_source_revisions(uint64_t current, uint64_t saved) noexcept {
+        source_revision_ = current;
+        saved_revision_ = saved;
+    }
 
     TimeSigMap *sigmap() const override { return sigmap_; }
 
     void add_changes_listener(PlaybackModel *listener);
     void remove_changes_listener(PlaybackModel *listener);
     void notify_changes(const ScoreChanges &changes);
+    void reload_playback_models();
 
     AutomationDataConstPtr automation_data() const override;
     void set_automation_data(AutomationDataPtr data);
@@ -258,7 +272,9 @@ private:
 
     EIDRegister eid_register_;
     std::unique_ptr<TransactionManager> transaction_manager_;
-    UndoStack *undo_stack_ = nullptr;
+    MutationJournal *mutation_journal_ = nullptr;
+    uint64_t source_revision_ = 0;
+    uint64_t saved_revision_ = 0;
     TimeSigMap *sigmap_ = nullptr;
     RepeatList *expanded_repeat_list_ = nullptr;
     RepeatList *non_expanded_repeat_list_ = nullptr;

@@ -24,8 +24,8 @@
 #include "engraving/editing/editclef.h"
 #include "engraving/editing/editkeysig.h"
 #include "engraving/editing/edittimesig.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
-#include "engraving/editing/transaction/undostack.h"
 #include "engraving/types/typesconv.h"
 
 namespace engrave::api {
@@ -57,7 +57,7 @@ std::unexpected<Error> refused(std::string message) { return std::unexpected(Err
 // The transaction the batch runs in; the guard has it open while a step runs.
 Transaction &transaction(EditContext &context) { return context.master().transaction_manager()->current_or_dummy_transaction(); }
 
-std::size_t pushed(EditContext &context) { return context.master().undo_stack()->active_transaction()->commands().size(); }
+std::size_t pushed(EditContext &context) { return context.master().mutation_journal()->active_transaction()->commands().size(); }
 
 // A token of one of the engine's xml tables, and nothing else: an unknown token and
 // the fallback's own token are refused, so a typo is never a silent default.

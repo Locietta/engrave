@@ -102,8 +102,8 @@
 #include "engraving/editing/editpart.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/flip.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
-#include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/normalization/normalize.h"
 #include "engraving/normalization/notes.h"
@@ -643,7 +643,7 @@ TEST(Read, SemanticDocumentBoundariesDeferAllLayoutUntilFirstRender) {
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
 }
 
-TEST(Read, UndoRedoReplaysSourceWithoutLayout) {
+TEST(Read, FailedFinalPreparationRestoresSourceWithoutLayout) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
     ASSERT_TRUE(opened);
@@ -651,12 +651,14 @@ TEST(Read, UndoRedoReplaysSourceWithoutLayout) {
     auto &master = master_of(document);
     auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
     const int line = note->line();
-    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
-    ASSERT_TRUE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), note->pitch() + 12}}}));
-    master.undo_redo(true, nullptr);
+    const auto revision = document.revision();
+    const auto source_revision = master.source_revision();
+    engrave::DocumentAccess::edit_hooks(document).before_cleanup = [] { throw std::runtime_error("after result preparation"); };
+    EXPECT_FALSE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), note->pitch() + 12}}}));
+    EXPECT_EQ(document.revision(), revision);
+    EXPECT_EQ(master.source_revision(), source_revision);
     EXPECT_EQ(note->line(), line);
-    master.undo_redo(false, nullptr);
-    EXPECT_EQ(note->line(), line - 7);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_FALSE(note->has_layout_data());
@@ -957,10 +959,10 @@ TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
     auto *recording = master.transaction_manager()->current_transaction();
     master.set_layout_all();
     const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    const auto mark = master.undo_stack()->active_transaction()->commands().size();
+    const auto mark = master.mutation_journal()->active_transaction()->commands().size();
     normalize_document(master, {.mode = NormalizeMode::REPLAY});
     EXPECT_EQ(master.transaction_manager()->current_transaction(), recording);
-    EXPECT_EQ(master.undo_stack()->active_transaction()->commands().size(), mark);
+    EXPECT_EQ(master.mutation_journal()->active_transaction()->commands().size(), mark);
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     master.end_cmd(true);
@@ -1300,7 +1302,7 @@ TEST(Read, NormalizeCleansInvalidMelismaBeforeRepairingLyricTicks) {
     }
 }
 
-TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
+TEST(Read, RejectedTransactionWithOrnamentRebuildsWithoutRecording) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
@@ -1308,8 +1310,7 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     master.start_cmd(muse::TranslatableString::untranslatable("append a measure"));
     master.insert_measure();
     master.end_cmd(false);
-    master.undo_stack()->clear_history();
-    ASSERT_EQ(master.undo_stack()->size(), 0u);
+    ASSERT_EQ(master.mutation_journal()->size(), 0u);
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
     auto *ornament = Factory::create_ornament(chord);
     ornament->set_sym_id(SymId::ORNAMENT_TRILL);
@@ -1317,16 +1318,9 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     master.do_layout();
     ASSERT_NE(ornament->note_above(), nullptr);
     auto *target = master.last_measure()->first(SegmentType::CHORD_REST)->element(0);
-    master.start_cmd(muse::TranslatableString::untranslatable("visibility change"));
-    target->undo_change_property(Pid::VISIBLE, false);
-    master.end_cmd(false);
     auto *manager = master.transaction_manager();
-    manager->undo_redo(true, nullptr);
-    auto *stack = master.undo_stack();
-    ASSERT_TRUE(stack->can_redo());
-    const auto size = stack->size();
-    const auto index = stack->current_index();
-    auto *redo = stack->next();
+    auto *stack = master.mutation_journal();
+    const auto revision = master.source_revision();
     const int auxiliary_pitch = ornament->note_above()->pitch();
     master.start_cmd(muse::TranslatableString::untranslatable("rejected visibility change"));
     target->undo_change_property(Pid::VISIBLE, false);
@@ -1338,16 +1332,11 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     master.end_cmd(true);
     Transaction::set_push_hook(nullptr);
     EXPECT_EQ(replay_pushes, 0u);
-    EXPECT_EQ(stack->size(), size);
-    EXPECT_EQ(stack->current_index(), index);
-    EXPECT_TRUE(stack->can_redo());
-    EXPECT_EQ(stack->next(), redo);
     EXPECT_FALSE(stack->has_active_transaction());
+    EXPECT_EQ(master.source_revision(), revision);
     EXPECT_EQ(manager->current_transaction(), nullptr);
     EXPECT_TRUE(target->visible());
     EXPECT_EQ(ornament->note_above()->pitch(), auxiliary_pitch);
-    manager->undo_redo(false, nullptr);
-    EXPECT_FALSE(target->visible());
 }
 
 std::string mmr_source(bool prefix_note = false) {
@@ -2843,7 +2832,6 @@ struct Command {
         score_.end_cmd(false);
         open_ = false;
         engrave::assign_missing_ids(score_);
-        score_.undo_stack()->clear_history();
     }
 
 private:
@@ -3068,19 +3056,13 @@ TEST(Read, RepeatRepairStaysInTheActiveTransaction) {
     master.undo_add_element(slur);
     manager->end_transaction();
     ASSERT_TRUE(slur->is_incoming());
-    const auto history = master.undo_stack()->size();
     manager->begin_transaction(muse::TranslatableString::untranslatable("remove repeat"));
     master.undo(new ChangeProperty(second_measure, Pid::REPEAT_END, false));
-    manager->end_transaction();
+    manager->prepare_commit();
     EXPECT_FALSE(slur->is_incoming());
-    EXPECT_FALSE(master.undo_stack()->has_active_transaction());
-    EXPECT_EQ(master.undo_stack()->size(), history + 1);
-    manager->undo_redo(true, nullptr);
+    manager->end_transaction(true);
     EXPECT_TRUE(second_measure->repeat_end());
     EXPECT_TRUE(slur->is_incoming());
-    manager->undo_redo(false, nullptr);
-    EXPECT_FALSE(second_measure->repeat_end());
-    EXPECT_FALSE(slur->is_incoming());
 }
 
 TEST(Read, RepeatChangeAndTieInOneBatchMatchSeparateBatches) {
@@ -3141,19 +3123,12 @@ TEST(Read, ActualMeasureLengthRefreshesFollowingTempo) {
     EXPECT_EQ(following->tick().ticks(), 3840);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(3839).val, 2.0);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(3840).val, 1.0);
-    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
     ASSERT_TRUE(document.edit(
         {{engrave::SetProperty{engrave::Ref{engrave::from_engine(measure->eid())}, "timesigActual", engrave::Fraction{1, 2}}}}));
     EXPECT_EQ(following->tick().ticks(), 2880);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2879).val, 2.0);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 1.0);
     EXPECT_DOUBLE_EQ(master.tempo_timeline(true).tempo(5760).val, 1.0);
-    master.transaction_manager()->undo_redo(true, nullptr);
-    EXPECT_EQ(following->tick().ticks(), 3840);
-    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 2.0);
-    master.transaction_manager()->undo_redo(false, nullptr);
-    EXPECT_EQ(following->tick().ticks(), 2880);
-    EXPECT_DOUBLE_EQ(master.tempo_timeline(false).tempo(2880).val, 1.0);
 }
 
 TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
@@ -3173,7 +3148,7 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     auto &master = master_of(document);
     auto *manager = master.transaction_manager();
     const auto before = music::dump_json(music::semantic_dump(&master), 1);
-    const auto history = master.undo_stack()->size();
+    const auto history = master.mutation_journal()->size();
     const auto automation = master.automation_data()->dump();
     const auto count = layout_count(master);
     const auto *first = master.repeat_list(true).front();
@@ -3189,7 +3164,7 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     }
     EXPECT_EQ(master.repeat_list(true).front(), first);
     EXPECT_EQ(master.automation_data()->dump(), automation);
-    EXPECT_EQ(master.undo_stack()->size(), history);
+    EXPECT_EQ(master.mutation_journal()->size(), history);
     EXPECT_EQ(layout_count(master), count);
     EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), before);
 
@@ -3198,11 +3173,7 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     manager->end_transaction();
     EXPECT_EQ(master.repeat_list(true).ticks(), 5760);
     EXPECT_EQ(master.repeat_list(false).ticks(), 1920);
-    EXPECT_EQ(master.undo_stack()->size(), history + 1);
-    manager->undo_redo(true, nullptr);
-    EXPECT_EQ(master.repeat_list(true).ticks(), 3840);
-    manager->undo_redo(false, nullptr);
-    EXPECT_EQ(master.repeat_list(true).ticks(), 5760);
+    EXPECT_EQ(master.mutation_journal()->size(), 0u);
 
     TempoText *mark = nullptr;
     master.scan_elements([&mark](EngravingItem *item) {
@@ -3219,10 +3190,6 @@ TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {
     const auto midi_after = document.export_score({.format = engrave::Format::MIDI});
     ASSERT_TRUE(midi_after);
     EXPECT_NE(*midi_after, *midi_before);
-    manager->undo_redo(true, nullptr);
-    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 2.0);
-    manager->undo_redo(false, nullptr);
-    EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 4.0);
     ASSERT_TRUE(master.set_tempo_multiplier(BeatsPerSecond(2.0)));
     master.init_automation();
     EXPECT_DOUBLE_EQ(master.tempo_timeline(true).utick2utime(1920), 2.0);
@@ -3286,10 +3253,6 @@ TEST(Read, VoltaAndJumpReplayPublishesRepeatState) {
         manager->end_transaction();
         const auto after = signature();
         EXPECT_NE(after, before) << type;
-        manager->undo_redo(true, nullptr);
-        EXPECT_EQ(signature(), before) << type;
-        manager->undo_redo(false, nullptr);
-        EXPECT_EQ(signature(), after) << type;
         // An explicit independent rebuild must agree with the already published state.
         master.invalidate_repeat_list();
         master.update_repeat_list(false);

@@ -26,8 +26,8 @@
 
 #include "../editing/addremoveelement.h"
 #include "../editing/editproperty.h"
+#include "../editing/transaction/mutationjournal.h"
 #include "../editing/transaction/transaction.h"
-#include "../editing/transaction/undostack.h"
 #include "bracketitem.h"
 #include "dummyparent.h"
 #include "global/containers.h"

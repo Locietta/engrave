@@ -45,8 +45,8 @@
 #include "editing/editstaffbrackets.h"
 #include "editing/editstavesharing.h"
 #include "editing/splitjoinmeasure.h"
+#include "editing/transaction/mutationjournal.h"
 #include "editing/transaction/transaction.h"
-#include "editing/transaction/undostack.h"
 #include "editing/transpose.h"
 #include "engraving/internal/engravingconfiguration.h" // IWYU pragma: keep
 #include "engraving/internal/engravingfont.h"
@@ -632,7 +632,7 @@ bool Score::read_only() const { return master_score_->read_only(); }
 //   dirty
 //---------------------------------------------------------
 
-bool Score::dirty() const { return !undo_stack()->is_clean(); }
+bool Score::dirty() const { return master_score()->source_revision() != master_score()->saved_revision(); }
 
 void Score::invalidate_repeat_list() { master_score()->invalidate_repeat_list(); }
 
@@ -4863,7 +4863,7 @@ void Score::edit_automation_points(const AutomationCurveKey &key, AutomationPoin
 
 TransactionManager *Score::transaction_manager() const { return master_score_->transaction_manager(); }
 
-UndoStack *Score::undo_stack() const { return master_score_->undo_stack(); }
+MutationJournal *Score::mutation_journal() const { return master_score_->mutation_journal(); }
 
 const RepeatList &Score::repeat_list() const { return master_score_->repeat_list(); }
 

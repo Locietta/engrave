@@ -17,7 +17,7 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/part.h"
-#include "engraving/editing/transaction/undostack.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/engravingproject.h"
 
 namespace {
@@ -408,16 +408,6 @@ int main(int argc, char **argv) {
             expect(original != clarinet_original.end() && original->second == pitch, "A non-target clarinet note changed");
         }
 
-        expect(score->undo_stack()->can_undo(), "Pitch edit did not create an undo step");
-        score->undo_redo(true, nullptr);
-        expect(find_note(music::query_score_region(score, make_region(0, 0, total_measures)), 0, 60) &&
-                   find_note(music::query_score_region(score, make_region(1, 0, total_measures)), 1, 72),
-               "Undo did not restore the original pitches");
-        score->undo_redo(false, nullptr);
-        expect(find_note(music::query_score_region(score, make_region(0, 0, total_measures)), 0, 61) &&
-                   find_note(music::query_score_region(score, make_region(1, 0, total_measures)), 1, 73),
-               "Redo did not restore the edited pitches");
-
         const NoteView *piano_spare = find_note(piano_before, 0, 64);
         expect(piano_spare != nullptr, "Spare piano note E4 is missing");
         const std::string spare_id = piano_spare->id;
@@ -474,7 +464,7 @@ int main(int argc, char **argv) {
         }
         expect(rejected, "Empty pitch edit was accepted");
 
-        score->undo_stack()->set_locked(true);
+        score->mutation_journal()->set_locked(true);
         rejected = false;
         try {
             music::NativePitchEdit locked;
@@ -483,7 +473,7 @@ int main(int argc, char **argv) {
         } catch (const std::runtime_error &) {
             rejected = true;
         }
-        score->undo_stack()->set_locked(false);
+        score->mutation_journal()->set_locked(false);
         expect(rejected, "Locked undo stack was accepted");
 
         score->set_read_only(true);
@@ -527,16 +517,13 @@ int main(int argc, char **argv) {
         const NoteView *reimported_tie = find_note(clarinet_export, 2, 74);
         expect(reimported_tie && reimported_tie->tied, "Exported MusicXML lost the tie semantics");
 
-        const size_t no_op_index = score->undo_stack()->current_index();
+        const auto no_op_revision = score->source_revision();
         const auto no_op = music::apply_score_pitch_edit(score, {{{piano_target_id, 61}}});
-        expect(no_op.changed_notes == 0 && score->undo_stack()->current_index() == no_op_index, "No-op pitch request changed undo history");
+        expect(no_op.changed_notes == 0 && score->source_revision() == no_op_revision, "No-op pitch request changed undo history");
 
         // Failure while a redo branch exists must preserve both score and history.
-        score->undo_redo(true, nullptr);
         const auto before_failure = music::export_native_score(context, project, "mscx", 0, "");
-        const auto failure_index = score->undo_stack()->current_index();
-        const auto failure_size = score->undo_stack()->size();
-        expect(score->undo_stack()->can_redo(), "Failure fixture has no redo branch");
+        const auto failure_revision = score->source_revision();
         music::set_native_edit_test_fault(music::NativeEditTestFault::ENGINE_ERROR_AFTER_FIRST);
         bool engine_failure = false;
         try {
@@ -545,13 +532,11 @@ int main(int argc, char **argv) {
             engine_failure = !e.poisoned();
         }
         expect(engine_failure, "Injected engine failure was not cleanly rolled back");
-        expect(!score->undo_stack()->has_active_transaction() && score->undo_stack()->current_index() == failure_index &&
-                   score->undo_stack()->size() == failure_size && score->undo_stack()->can_redo(),
+        expect(!score->mutation_journal()->has_active_transaction() && score->source_revision() == failure_revision,
                "Engine rollback damaged the previous redo branch");
         expect(music::export_native_score(context, project, "mscx", 0, "") == before_failure,
                "Injected engine failure changed serialized score");
         mu::engraving::MScore::set_error(mu::engraving::MsError::MS_NO_ERROR);
-        score->undo_redo(false, nullptr);
 
         const auto poison_project = music::load_native_score(context, k_two_part_score, "musicxml");
         auto *poison_score = poison_project->master_score();
@@ -565,16 +550,6 @@ int main(int argc, char **argv) {
         }
         expect(poisoned, "Unexpected transaction exception was not marked poisoned");
         // Do not issue another operation on this document: core must retire it.
-
-        const auto before_cap = music::export_native_score(context, project, "mscx", 0, "");
-        const bool was_clean = score->undo_stack()->is_clean();
-        expect(music::cap_native_edit_history(score, 0), "Undo history cap failed");
-        expect(score->undo_stack()->size() == 0 && score->undo_stack()->current_index() == 0 && !score->undo_stack()->can_undo() &&
-                   !score->undo_stack()->can_redo(),
-               "Undo history was not retired");
-        expect(score->undo_stack()->is_clean() == was_clean, "History retirement changed dirty state");
-        expect(music::export_native_score(context, project, "mscx", 0, "") == before_cap,
-               "Undo history retirement modified score contents");
 
         // An unopened headless excerpt must follow linked master edits and be
         // fully updated by endCmd. Exercise its exported written transposition,

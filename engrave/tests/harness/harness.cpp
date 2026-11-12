@@ -25,9 +25,9 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/select.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undoablecommand.h"
-#include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
@@ -251,22 +251,6 @@ std::string check_commit(Engine &engine, const OpCase &op_case, const std::files
     return pass;
 }
 
-std::string check_undo(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
-    auto document = open(engine, fixture);
-    DocumentAccess::edit_hooks(*document).keep_history = true;
-    const Fingerprint before = fingerprint(*document);
-    const auto result = document->edit(op_case.make(*document));
-    if (!result) return "fail: the batch failed: " + std::string(to_string(result.error().code));
-    master_of(*document).undo_redo(true, nullptr);
-    // What the undone commands created stays alive, and registered, until the
-    // history that could redo it is dropped.
-    master_of(*document).undo_stack()->clear_history();
-    // The engine's undo lays out the master score only.
-    for (Score *score : master_of(*document).score_list()) score->do_layout();
-    const auto changed = differences(before, fingerprint(*document), {"revision", "undo"});
-    return changed.empty() ? pass : "fail: undo left " + joined(changed);
-}
-
 // One injected failure: the batch must fail (with bad_alloc thrown for `alloc`),
 // and every fingerprint field must be what it was.
 struct Injection {
@@ -381,8 +365,8 @@ Fingerprint fingerprint(Document &document) {
     }
     std::ranges::sort(print.ids);
     print.revision = document.revision();
-    print.undo_count = master.undo_stack()->size();
-    print.undo_active = master.undo_stack()->has_active_transaction();
+    print.undo_count = master.mutation_journal()->size();
+    print.undo_active = master.mutation_journal()->has_active_transaction();
     print.engine_error = static_cast<int>(MScore::error);
     int index = 0;
     for (Score *score : master.score_list()) {
@@ -471,11 +455,13 @@ const std::map<std::string, std::string> &unwind_not_probed() {
 EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
     EvidenceRow row{.name = op_case.name, .fixture = op_case.fixture};
     std::size_t ops = 0;
+    api::Policy retained_policy = api::Policy::TRANSACTION;
     {
         auto document = open(engine, fixture);
         const Batch batch = op_case.make(*document);
         ops = batch.ops.size();
         for (const Op &op : batch.ops) {
+            retained_policy = std::max(retained_policy, api::policy_of(op));
             if (row.op.empty())
                 row.op = api::op_name(op);
             else if (row.op != api::op_name(op))
@@ -483,7 +469,6 @@ EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesyste
         }
     }
     row.c1 = check_commit(engine, op_case, fixture, row.pushes);
-    row.c2 = check_undo(engine, op_case, fixture);
     row.r4 = pass;
     if (const auto unprobed = unwind_not_probed().find(row.op); unprobed != unwind_not_probed().end()) {
         row.c3_unwind = row.c4_unwind = "not probed: " + unprobed->second;
@@ -494,12 +479,13 @@ EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesyste
     std::tie(row.c3_snapshot, row.c4_snapshot) = check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::SNAPSHOT, row.r4);
 
     const bool committed = row.c1 == pass;
-    if (committed && row.c2 == pass && row.c3_unwind == pass && row.c4_unwind == pass && row.r4 == pass)
+    if (committed && row.c3_unwind == pass && row.c4_unwind == pass && row.r4 == pass)
         row.verdict = api::Policy::TRANSACTION;
     else if (committed && row.c3_snapshot == pass && row.c4_snapshot == pass)
         row.verdict = api::Policy::SNAPSHOT;
     else
         row.verdict = api::Policy::UNEXPOSED;
+    row.retained_policy = retained_policy;
     return row;
 }
 
@@ -512,15 +498,17 @@ Json to_json(const std::vector<EvidenceRow> &rows) {
     std::map<std::string, api::Policy> weakest;
     Json list = make_array<Json>();
     for (const EvidenceRow *row : sorted) {
-        const auto [entry, added] = weakest.try_emplace(row->op, row->verdict);
-        if (!added) entry->second = std::max(entry->second, row->verdict);
+        // Preserve each case's observed result. The production policy is a floor
+        // for the aggregate recommendation while command families are migrated.
+        const auto retained = std::max(row->verdict, row->retained_policy);
+        const auto [entry, added] = weakest.try_emplace(row->op, retained);
+        if (!added) entry->second = std::max(entry->second, retained);
         const std::string verdict(api::to_string(row->verdict));
         array_push(list, Json{{"op", row->op},
                               {"case", row->name},
                               {"fixture", row->fixture},
                               {"pushes", row->pushes},
                               {"c1", row->c1},
-                              {"c2", row->c2},
                               {"c3_unwind", row->c3_unwind},
                               {"c4_unwind", row->c4_unwind},
                               {"c3_snapshot", row->c3_snapshot},
