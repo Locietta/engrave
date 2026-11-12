@@ -45,17 +45,6 @@ std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<s
     return std::unexpected(Error{code, std::move(message), op});
 }
 
-// A command that may have added, removed or moved elements, so that a reference
-// resolved before it ran has to be resolved again.
-bool structural(const UndoableCommand *command) {
-    switch (command->type()) {
-        case CommandType::CHANGE_PROPERTY:
-        case CommandType::CHANGE_STYLE:
-        case CommandType::CHANGE_STYLE_VALUES: return false;
-        default: return true;
-    }
-}
-
 // The ids of the document, as the harness's fingerprint writes them: the writer's
 // order (the spanner map, the excerpt list) is not the order an undo puts them back
 // in, so a rollback compares them sorted.
@@ -322,15 +311,14 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             if (!check_engine(i) || i == steps.size()) break;
             if (i < snapshot_step.size() && snapshot_step[i]) snapshot_ran = true;
             if (hooks.needs_normalized_state && hooks.needs_normalized_state(i)) context_.prepare_semantics();
-            const std::size_t mark = stack->active_transaction()->commands().size();
+            const std::size_t mark = stack->active_transaction()->entry_count();
             if (auto applied = steps[i](context_); !applied) {
                 failure = std::move(applied.error());
                 failure->op_index = i;
                 break;
             }
             if (!check_engine(i)) break;
-            const auto &commands = stack->active_transaction()->commands();
-            if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++context_.epoch_;
+            if (stack->active_transaction()->structural_since(mark)) ++context_.epoch_;
         }
         if (!failure) {
             auto *manager = master.transaction_manager();

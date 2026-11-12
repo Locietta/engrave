@@ -26,21 +26,22 @@
 #include <stdexcept>
 
 #include "../../dom/masterscore.h"
+#include "editing/editproperty.h"
+#include "editing/editstyle.h"
 #include "log.h"
 #include "mutationjournal.h"
 #include "undoablecommand.h"
 
 using namespace mu::engraving;
 
-static ScoreChanges build_score_changes(const CmdState &cmd_state, const JournalBatch::ChangesInfo &changes,
-                                        const std::vector<UndoableCommand *> &commands) {
+static ScoreChanges build_score_changes(const CmdState &cmd_state, const JournalBatch::ChangesInfo &changes, const JournalBatch &batch) {
     int start_tick = cmd_state.start_tick().ticks();
     int end_tick = cmd_state.end_tick().ticks();
     staff_idx_t start_staff = cmd_state.start_staff();
     staff_idx_t end_staff = cmd_state.end_staff();
 
-    for (const UndoableCommand *cmd : commands) {
-        std::optional<ChangedRange> range = cmd->changed_range();
+    for (size_t i = 0; i < batch.entry_count(); ++i) {
+        std::optional<ChangedRange> range = batch.changed_range(i);
         if (!range) {
             continue;
         }
@@ -145,6 +146,44 @@ void Transaction::push_without_performing(UndoableCommand *cmd) {
     }
 }
 
+void Transaction::change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_property(*object, id, value, flags, reset_path);
+        return;
+    }
+    if (!source_object(*object)) {
+        push(new ChangeProperty(object, id, value, flags, reset_path));
+        return;
+    }
+    // Preserve the existing fault-injection seam without allocating legacy
+    // command objects in production. A throwing pre-hook owns its diagnostic.
+    std::unique_ptr<ChangeProperty> diagnostic;
+    if (s_push_hook) {
+        auto *probe = new ChangeProperty(object, id, value, flags, reset_path);
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->change_property(*object, id, value, flags, reset_path);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
+void Transaction::change_style_values(Score &score, std::span<const StyleValue> values) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_style_values(score, values);
+        return;
+    }
+    std::unique_ptr<ChangeStyleValues> diagnostic;
+    if (s_push_hook) {
+        std::unordered_map<Sid, PropertyValue> requested;
+        for (const auto &value : values) requested.emplace(value.id, value.value);
+        auto *probe = new ChangeStyleValues(&score, std::move(requested));
+        s_push_hook(probe, false);
+        diagnostic.reset(probe);
+    }
+    undoable_transaction_->change_style_values(score, values);
+    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+}
+
 void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
 
 //---------------------------------------------------------
@@ -207,11 +246,10 @@ ScoreChanges TransactionManager::prepare_commit() {
     master_score_->update(false, NormalizeMode::TRANSACTION);
     master_score_->invalidate_repeat_list();
     master_score_->update_repeat_list(true);
-    const ScoreChanges provisional = build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(),
-                                                         journal->active_transaction()->commands());
+    const ScoreChanges provisional =
+        build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(), *journal->active_transaction());
     master_score_->update_automation(provisional);
-    return build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(),
-                               journal->active_transaction()->commands());
+    return build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(), *journal->active_transaction());
 }
 
 void TransactionManager::commit_prepared(const ScoreChanges &changes) {

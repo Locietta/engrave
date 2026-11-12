@@ -370,6 +370,8 @@ public:
     void undo_remove_measures(Measure *, Measure *, bool preserve_ties = false, bool move_staff_type_changes = true);
     void undo_change_measure_repeat_count(Measure *m, int count, staff_idx_t staff_idx);
     void undo_insert_time(const Fraction &tick, const Fraction &len);
+    void record_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
+                                bool reset_path = false);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
     void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
     void undo_change_page_number_offset(int po);

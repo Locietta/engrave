@@ -2192,9 +2192,9 @@ bool EngravingItem::is_unlinked_from_master() const {
 
 void EngravingItem::unlink_property_from_master(Pid id) {
     if (property_group(id) == PropertyGroup::POSITION) {
-        score()->undo(new ChangeProperty(this, Pid::POSITION_LINKED_TO_MASTER, false));
+        score()->record_property_change(this, Pid::POSITION_LINKED_TO_MASTER, false);
     } else if (property_group(id) == PropertyGroup::APPEARANCE) {
-        score()->undo(new ChangeProperty(this, Pid::APPEARANCE_LINKED_TO_MASTER, false));
+        score()->record_property_change(this, Pid::APPEARANCE_LINKED_TO_MASTER, false);
     }
 }
 

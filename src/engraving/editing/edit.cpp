@@ -2859,7 +2859,7 @@ void Score::check_spanner(const Fraction &start_tick, const Fraction &end_tick, 
         }
     }
     for (Spanner *s : spanners_to_shorten) { // shorten spanners that extended past end of score
-        undo(new ChangeProperty(s, Pid::SPANNER_TICKS, last_tick - s->tick()));
+        record_property_change(s, Pid::SPANNER_TICKS, last_tick - s->tick());
         s->compute_end_element();
     }
 }
@@ -3231,7 +3231,7 @@ bool Score::undo_property_changed(EngravingItem *item, Pid prop_id, const Proper
         switch (property_propagate) {
             case PropertyPropagation::PROPAGATE:
                 if (linked_item->get_property(prop_id) != current_prop_value) {
-                    tx.push(new ChangeProperty(linked_item, prop_id, current_prop_value, prop_flags));
+                    tx.change_property(linked_item, prop_id, current_prop_value, prop_flags);
                     changed = true;
                 }
                 break;
@@ -3250,15 +3250,20 @@ void Score::undo_property_changed(EngravingObject *e, Pid t, const PropertyValue
     }
 }
 
-void Score::undo_change_style_val(Sid idx, const PropertyValue &v) {
-    std::unordered_map<Sid, PropertyValue> map;
-    map.emplace(idx, v);
+void Score::record_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+    master_score()->transaction_manager()->current_or_dummy_transaction().change_property(object, id, value, flags, reset_path);
+}
 
-    undo(new ChangeStyleValues(this, std::move(map)));
+void Score::undo_change_style_val(Sid idx, const PropertyValue &v) {
+    const StyleValue value{idx, v};
+    master_score()->transaction_manager()->current_or_dummy_transaction().change_style_values(*this, {&value, 1});
 }
 
 void Score::undo_change_style_values(std::unordered_map<Sid, PropertyValue> values) {
-    undo(new ChangeStyleValues(this, std::move(values)));
+    std::vector<StyleValue> requested;
+    requested.reserve(values.size());
+    for (auto &value : values) requested.push_back({value.first, std::move(value.second)});
+    master_score()->transaction_manager()->current_or_dummy_transaction().change_style_values(*this, requested);
 }
 
 void Score::undo_change_page_number_offset(int po) { undo(new ChangePageNumberOffset(this, po)); }
@@ -3545,11 +3550,11 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
                                 lbl->link_to(sbl);
                             }
                         } else {
-                            lscore->undo(new ChangeProperty(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE));
-                            lscore->undo(
-                                new ChangeProperty(lbl, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type), PropertyFlags::NOSTYLE));
+                            lscore->record_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
+                            lscore->record_property_change(lbl, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
+                                                           PropertyFlags::NOSTYLE);
                             // set generated flag before and after so it sticks on type change and also works on undo/redo
-                            lscore->undo(new ChangeProperty(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE));
+                            lscore->record_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
                             if (lbl != sbl && !generated && !lbl->links()) {
                                 lscore->undo(new Link(lbl, sbl));
                             } else if (lbl != sbl && generated && lbl->is_linked(sbl)) {
@@ -3569,11 +3574,11 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
                     Segment *segment1 = lmeasure->undo_get_segment_r(SegmentType::BEGIN_BAR_LINE, Fraction(0, 1));
                     for (EngravingItem *e : segment1->elist()) {
                         if (e) {
-                            lscore->undo(new ChangeProperty(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE));
-                            lscore->undo(
-                                new ChangeProperty(e, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type), PropertyFlags::NOSTYLE));
+                            lscore->record_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+                            lscore->record_property_change(e, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
+                                                           PropertyFlags::NOSTYLE);
                             // set generated flag before and after so it sticks on type change and also works on undo/redo
-                            lscore->undo(new ChangeProperty(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE));
+                            lscore->record_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
                         }
                     }
                 }

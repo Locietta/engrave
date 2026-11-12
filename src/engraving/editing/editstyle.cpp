@@ -123,6 +123,25 @@ static void change_style_value(Score *score, Sid idx, const PropertyValue &old_v
     }
 }
 
+void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium) {
+    bool changed = false;
+    for (const auto &value : values) {
+        const auto before = score.style().style_v(value.id);
+        if (value.id == Sid::SPATIUM && restore_spatium) {
+            // A forward callback may have stopped at any item. Restore owned
+            // source values exactly, without scaling an untouched item inversely.
+            score.style().set(value.id, value.value);
+            restore_spatium_sources(*restore_spatium);
+            changed = true;
+            continue;
+        }
+        if (before == value.value) continue;
+        change_style_value(&score, value.id, before, value.value);
+        changed = true;
+    }
+    if (changed) score.style_changed();
+}
+
 void ChangeStyleValues::flip() {
     if (!score_) {
         return;

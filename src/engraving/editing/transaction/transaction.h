@@ -26,6 +26,7 @@
 #include <memory>
 
 #include "global/types/translatablestring.h"
+#include "sourcechange.h"
 
 namespace mu::engraving {
 struct EditData;
@@ -45,6 +46,9 @@ struct Transaction {
 
     void push(UndoableCommand *cmd);
     void push_without_performing(UndoableCommand *cmd);
+    void change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
+                         bool reset_path = false);
+    void change_style_values(Score &score, std::span<const StyleValue> values);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended

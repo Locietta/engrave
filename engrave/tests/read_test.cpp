@@ -959,10 +959,10 @@ TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
     auto *recording = master.transaction_manager()->current_transaction();
     master.set_layout_all();
     const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    const auto mark = master.mutation_journal()->active_transaction()->commands().size();
+    const auto mark = master.mutation_journal()->active_transaction()->entry_count();
     normalize_document(master, {.mode = NormalizeMode::REPLAY});
     EXPECT_EQ(master.transaction_manager()->current_transaction(), recording);
-    EXPECT_EQ(master.mutation_journal()->active_transaction()->commands().size(), mark);
+    EXPECT_EQ(master.mutation_journal()->active_transaction()->entry_count(), mark);
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     master.end_cmd(true);

@@ -967,7 +967,14 @@ bool Score::check_has_measures() const {
 //---------------------------------------------------------
 
 void Score::spatium_changed(double old_value, double new_value) {
-    scan_elements([&](EngravingItem *e) { e->spatium_changed(old_value, new_value); });
+    if (const auto hook = spatium_item_hook()) {
+        scan_elements([&](EngravingItem *e) {
+            e->spatium_changed(old_value, new_value);
+            hook(e);
+        });
+    } else {
+        scan_elements([&](EngravingItem *e) { e->spatium_changed(old_value, new_value); });
+    }
     for (Staff *staff : staves_) {
         staff->spatium_changed(old_value, new_value);
     }

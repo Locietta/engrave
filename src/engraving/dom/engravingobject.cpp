@@ -352,7 +352,7 @@ static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, 
             BracketItem *bi = to_bracket_item(e);
             e->score()->undo(new ChangeBracketProperty(bi->start_staff(), bi->column(), t, st, ps));
         } else {
-            e->score()->undo(new ChangeProperty(e, t, st, ps, reset_path));
+            e->score()->record_property_change(e, t, st, ps, reset_path);
         }
     }
 }
