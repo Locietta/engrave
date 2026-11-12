@@ -73,6 +73,12 @@ static void detach_beam_for_layout(ChordRest *cr, bool beamed) {
     }
 }
 
+static void replace_beam_for_layout(ChordRest *cr, Beam *beam) {
+    if (cr->beam() == beam) return;
+    detach_beam_for_layout(cr, true);
+    beam->add(cr);
+}
+
 void BeamLayout::layout(Beam *item, const LayoutContext &ctx) {
 
     Beam::LayoutData *ldata = item->mutldata();
@@ -579,7 +585,7 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
         if (beam) {
             bool beam_end = bm == BeamMode::BEGIN;
             if (!beam_end) {
-                cr->replace_beam(beam);
+                replace_beam_for_layout(cr, beam);
                 cr = 0;
                 beam_end = (bm == BeamMode::END);
             }
@@ -604,9 +610,9 @@ void BeamLayout::beam_grace_notes(LayoutContext &ctx, Chord *main_note, bool aft
                     beam = Factory::create_beam(ctx.mut_dom().score());
                     beam->set_generated(true);
                     beam->set_track(main_note->track());
-                    a1->replace_beam(beam);
+                    replace_beam_for_layout(a1, beam);
                 }
-                cr->replace_beam(beam);
+                replace_beam_for_layout(cr, beam);
                 a1 = 0;
             }
         }
@@ -744,7 +750,7 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
             if (beam) {
                 bool beam_end = (bm == BeamMode::BEGIN);
                 if (!beam_end) {
-                    cr->replace_beam(beam);
+                    replace_beam_for_layout(cr, beam);
                     cr = 0;
                     beam_end = (bm == BeamMode::END);
                 }
@@ -770,9 +776,9 @@ void BeamLayout::create_beams(LayoutContext &ctx, Measure *measure) {
                         beam = Factory::create_beam(ctx.mut_dom().score());
                         beam->set_generated(true);
                         beam->set_track(track);
-                        a1->replace_beam(beam);
+                        replace_beam_for_layout(a1, beam);
                     }
-                    cr->replace_beam(beam);
+                    replace_beam_for_layout(cr, beam);
                     a1 = 0;
                 }
             }
