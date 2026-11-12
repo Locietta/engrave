@@ -389,6 +389,13 @@ void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, X
 void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, const char *tag, XmlWriter &xml, WriteContext &ctx) {
     xml.start_element(tag);
     const auto &table = *authored_override_table(owner);
+    if (child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT) {
+        if (table.find(child, Pid::HORIZONTAL_DIRECTION))
+            write_authored_property(owner, child, xml, Pid::HORIZONTAL_DIRECTION);
+        else if (child.role == AuthoredChildRole::PAREN_RIGHT)
+            xml.tag_property(Pid::HORIZONTAL_DIRECTION, PropertyValue::from_value(DirectionH::RIGHT),
+                             PropertyValue::from_value(DirectionH::LEFT));
+    }
     if (child.role == AuthoredChildRole::HOOK) {
         if (const auto *entry = table.find(child, Pid::SYMBOL)) xml.tag("name", SymNames::name_for_sym_id(entry->value.value<SymId>()));
         if (const auto *entry = table.find(child, Pid::SCORE_FONT)) xml.tag("font", entry->value.value<String>());
@@ -406,6 +413,8 @@ void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, co
     }
     for (const auto &entry : table.entries) {
         if (entry.child != child || common_authored_property(entry.pid) ||
+            ((child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT) &&
+             entry.pid == Pid::HORIZONTAL_DIRECTION) ||
             (child.role == AuthoredChildRole::STEM && entry.pid == Pid::LINE_WIDTH) ||
             (child.role == AuthoredChildRole::HOOK && (entry.pid == Pid::SYMBOL || entry.pid == Pid::SCORE_FONT)))
             continue;
@@ -662,12 +671,16 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     if (!left_generated || !right_generated) {
         write_property(item, xml, Pid::HAS_PARENTHESES);
     }
-    if (item->left_paren() && !item->left_paren()->generated()) {
+    const auto *overrides = authored_override_table(item);
+    const AuthoredChildKey left{AuthoredChildRole::PAREN_LEFT}, right{AuthoredChildRole::PAREN_RIGHT};
+    if (overrides && overrides->carrier(left))
+        write_authored_child(item, left, "Parenthesis", xml, ctx);
+    else if (item->left_paren() && !item->left_paren()->generated())
         write_item(item->left_paren(), xml, ctx);
-    }
-    if (item->right_paren() && !item->right_paren()->generated()) {
+    if (overrides && overrides->carrier(right))
+        write_authored_child(item, right, "Parenthesis", xml, ctx);
+    else if (item->right_paren() && !item->right_paren()->generated())
         write_item(item->right_paren(), xml, ctx);
-    }
 }
 
 void TWrite::write(const Accidental *item, XmlWriter &xml, WriteContext &ctx) {
@@ -1050,11 +1063,18 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
     }
 
     // Write parens
+    uint32_t paren_ordinal = 0;
     for (const NoteParenthesisInfo *paren_pair : item->note_parentheses()) {
         xml.start_element("NoteParenGroup");
 
-        write(paren_pair->left_paren(), xml, ctx);
-        write(paren_pair->right_paren(), xml, ctx);
+        for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT}) {
+            const AuthoredChildKey key{role, paren_ordinal, 0, 1};
+            if (item->authored_overrides.carrier(key))
+                write_authored_child(item, key, "Parenthesis", xml, ctx);
+            else
+                write(role == AuthoredChildRole::PAREN_LEFT ? paren_pair->left_paren() : paren_pair->right_paren(), xml, ctx);
+        }
+        ++paren_ordinal;
 
         xml.start_element("Notes");
         for (const Note *note : paren_pair->notes()) {
