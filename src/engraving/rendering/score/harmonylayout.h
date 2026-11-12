@@ -40,7 +40,7 @@ private:
 
     struct HarmonyRenderCtx {
         PointF pos = PointF(0.0, 0.0);
-        std::vector<HarmonyRenderItem *> render_item_list;
+        HarmonyRenderItems render_item_list;
 
         // Reset every single chord
         bool h_align = true;

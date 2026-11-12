@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "../editing/editdata.h"
 #include "../infrastructure/ld_access.h"
 #include "../infrastructure/shape.h"
@@ -588,10 +590,6 @@ public:
 
         EngravingItem *item_snapped_before_ = nullptr;
         EngravingItem *item_snapped_after_ = nullptr;
-
-        // STAVE SHARING
-        EngravingItem *shared_item_ = nullptr;
-        std::vector<EngravingItem *> origin_items_;
     };
 
     const LayoutData *ldata() const;
@@ -698,6 +696,16 @@ private:
     friend struct rendering::score::LayoutDataStore;
     friend struct EngravingObject;
     void transfer_layout_data(Score *destination);
+
+    // Transitional semantic routing for L6. Geometry can be discarded without
+    // losing property propagation; only participating items allocate this record.
+    struct SharingLinks {
+        EngravingItem *shared_item = nullptr;
+        std::vector<EngravingItem *> origin_items;
+    };
+
+    std::unique_ptr<SharingLinks> sharing_links_;
+    SharingLinks &mut_sharing_links();
 
     PointF offset_; // offset from reference position, set by autoplace or user
 

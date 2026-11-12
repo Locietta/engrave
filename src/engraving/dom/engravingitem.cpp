@@ -294,6 +294,8 @@ EngravingItem::~EngravingItem() {
     // Snapping links are reciprocal non-owning display pointers. Detach while
     // both objects are still alive, including deletion between layout runs.
     if (layout_data_) layout_data_->disconnect_snapped_items();
+    if (auto *shared = shared_item()) disconnect_shared_item(shared, this);
+    disconnect_all_origin_items(this);
     Score::on_element_destruction(this);
     if (layout_store_) layout_store_->erase(*this);
 }
@@ -1156,51 +1158,43 @@ void EngravingItem::manage_exclusion_from_parts(bool exclude) {
     }
 }
 
-EngravingItem *EngravingItem::shared_item() const { return ldata()->shared_item_; }
+EngravingItem::SharingLinks &EngravingItem::mut_sharing_links() {
+    if (!sharing_links_) sharing_links_ = std::make_unique<SharingLinks>();
+    return *sharing_links_;
+}
 
-const std::vector<EngravingItem *> &EngravingItem::origin_items() const { return ldata()->origin_items_; }
+EngravingItem *EngravingItem::shared_item() const { return sharing_links_ ? sharing_links_->shared_item : nullptr; }
+
+const std::vector<EngravingItem *> &EngravingItem::origin_items() const {
+    static const std::vector<EngravingItem *> empty;
+    return sharing_links_ ? sharing_links_->origin_items : empty;
+}
 
 void EngravingItem::connect_shared_item(EngravingItem *shared_item, EngravingItem *origin_item) {
-    if (origin_item->ldata()->shared_item_ == shared_item) {
-        return;
-    }
-
+    if (origin_item->shared_item() == shared_item) return;
     IF_ASSERT_FAILED(shared_item->type() == origin_item->type()) { return; }
-
-    IF_ASSERT_FAILED(!shared_item->is_chord() && !origin_item->is_chord()) {
-        // Notes are connected, not chords
-        return;
-    }
-
-    IF_ASSERT_FAILED(shared_item->ldata()->shared_item_ == nullptr && origin_item->ldata()->origin_items_.empty()) { return; }
-
-    origin_item->mutldata()->shared_item_ = shared_item;
-
-    std::vector<EngravingItem *> &cur_origin_items = shared_item->mutldata()->origin_items_;
-    auto it = std::lower_bound(cur_origin_items.begin(), cur_origin_items.end(), origin_item,
-                               [](EngravingItem *item1, EngravingItem *item2) { return item1->track() < item2->track(); });
-
-    cur_origin_items.insert(it, origin_item);
+    IF_ASSERT_FAILED(!shared_item->is_chord() && !origin_item->is_chord()) { return; }
+    IF_ASSERT_FAILED(shared_item->shared_item() == nullptr && origin_item->origin_items().empty()) { return; }
+    auto &origin = origin_item->mut_sharing_links();
+    auto &destination = shared_item->mut_sharing_links().origin_items;
+    const auto it = std::lower_bound(destination.begin(), destination.end(), origin_item,
+                                     [](auto *first, auto *second) { return first->track() < second->track(); });
+    // Allocate the new edge before changing the old reciprocal relationship.
+    destination.insert(it, origin_item);
+    if (auto *previous = origin.shared_item) disconnect_shared_item(previous, origin_item);
+    origin.shared_item = shared_item;
 }
 
 void EngravingItem::disconnect_shared_item(EngravingItem *shared_item, EngravingItem *origin_item) {
-    IF_ASSERT_FAILED(origin_item->layout_data_->shared_item_ == shared_item) { return; }
-
-    origin_item->layout_data_->shared_item_ = nullptr;
-
-    DO_ASSERT(muse::remove(shared_item->layout_data_->origin_items_, origin_item));
+    IF_ASSERT_FAILED(origin_item->shared_item() == shared_item) { return; }
+    origin_item->sharing_links_->shared_item = nullptr;
+    DO_ASSERT(muse::remove(shared_item->sharing_links_->origin_items, origin_item));
 }
 
 void EngravingItem::disconnect_all_origin_items(EngravingItem *shared_item) {
-    if (!shared_item->has_layout_data()) {
-        return;
-    }
-
-    for (EngravingItem *origin_item : shared_item->origin_items()) {
-        origin_item->layout_data_->shared_item_ = nullptr;
-    }
-
-    shared_item->layout_data_->origin_items_.clear();
+    if (!shared_item->sharing_links_) return;
+    for (auto *origin : shared_item->sharing_links_->origin_items) origin->sharing_links_->shared_item = nullptr;
+    shared_item->sharing_links_->origin_items.clear();
 }
 
 void EngravingItem::disconnect_shared_tree(EngravingItem *item) {
