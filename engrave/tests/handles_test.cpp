@@ -1484,6 +1484,107 @@ TEST(Handles, H13IdsWithDeterministicEngine) {
     expect_inv(*second);
 }
 
+// Runtime slots are independent from persisted EIDs and do not change assignment order.
+TEST(Handles, RegistryHandlesRejectRetiredSlots) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto &registry = *master.eid_register();
+    const auto eid = note->eid();
+    const auto old = registry.handle_of(note);
+    ASSERT_TRUE(old.is_valid());
+    EXPECT_EQ(registry.item_from_handle(old), note);
+    registry.remove_item(note);
+    EXPECT_EQ(registry.item_from_handle(old), nullptr);
+    EXPECT_FALSE(registry.handle_of(note).is_valid());
+    ASSERT_TRUE(registry.register_item_eid(eid, note));
+    const auto current = registry.handle_of(note);
+    EXPECT_EQ(current.slot, old.slot);
+    EXPECT_GT(current.generation, old.generation);
+    EXPECT_EQ(current.document, old.document);
+    EXPECT_EQ(registry.item_from_handle(old), nullptr);
+    EXPECT_EQ(registry.item_from_handle(current), note);
+    expect_inv(*document);
+}
+
+TEST(Handles, RegistryIdentityUpdatesKeepTheRuntimeHandle) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto &registry = *master.eid_register();
+    const auto old_eid = note->eid();
+    const auto handle = registry.handle_of(note);
+    const auto replacement = registry.new_eid_for_item(note);
+    ASSERT_NE(replacement, old_eid);
+    EXPECT_EQ(registry.handle_of(note), handle);
+    EXPECT_EQ(registry.item_from_eid(old_eid), nullptr);
+    EXPECT_EQ(registry.item_from_eid(replacement), note);
+    const auto repairs = registry.repairs().duplicate;
+    EXPECT_FALSE(registry.register_item_eid(replacement, &master));
+    EXPECT_EQ(registry.repairs().duplicate, repairs + 1);
+    EXPECT_EQ(registry.item_from_handle(handle), note);
+    EXPECT_EQ(note->eid(), replacement);
+    expect_inv(*document);
+}
+
+TEST(Handles, RegistryHandlesAreDocumentScopedAndReadOnly) {
+    const auto path = corpus_file({".mscx"});
+    auto first = open_path(path);
+    auto second = open_path(path);
+    ASSERT_TRUE(first);
+    ASSERT_TRUE(second);
+    auto &a = *master_of(*first).eid_register();
+    auto &b = *master_of(*second).eid_register();
+    auto *note = first_note(master_of(*first));
+    ASSERT_NE(note, nullptr);
+    const auto handle = a.handle_of(note);
+    ASSERT_TRUE(handle.is_valid());
+    EXPECT_EQ(b.item_from_handle(handle), nullptr);
+    const auto before = a.entries();
+    for (int i = 0; i != 100; ++i) {
+        EXPECT_EQ(a.item_from_handle(handle), note);
+        EXPECT_EQ(a.item_from_eid(note->eid()), note);
+        EXPECT_EQ(a.handle_of(note), handle);
+    }
+    EXPECT_EQ(a.entries(), before);
+    EXPECT_EQ(a.item_from_handle({}), nullptr);
+    auto invalid = handle;
+    invalid.slot = std::numeric_limits<uint32_t>::max();
+    EXPECT_EQ(a.item_from_handle(invalid), nullptr);
+    invalid = handle;
+    ++invalid.generation;
+    EXPECT_EQ(a.item_from_handle(invalid), nullptr);
+    expect_inv(*first);
+    expect_inv(*second);
+}
+
+TEST(Handles, RegistryDestructionRetiresHandleBeforeAddressReuse) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *note = first_note(master);
+    ASSERT_NE(note, nullptr);
+    auto &registry = *master.eid_register();
+    auto *copy = note->clone();
+    copy->assign_new_eid();
+    const auto handle = registry.handle_of(copy);
+    ASSERT_TRUE(handle.is_valid());
+    delete copy;
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    auto *next = note->clone();
+    next->assign_new_eid();
+    const auto next_handle = registry.handle_of(next);
+    EXPECT_EQ(next_handle.slot, handle.slot);
+    EXPECT_GT(next_handle.generation, handle.generation);
+    EXPECT_EQ(registry.item_from_handle(handle), nullptr);
+    delete next;
+    expect_inv(*document);
+}
+
 // --- corpus discovery -----------------------------------------------------
 
 bool looks_like_score(const std::filesystem::path &path) {
