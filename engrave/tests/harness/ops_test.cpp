@@ -1246,6 +1246,7 @@ TEST(AuthoredOverrides, SortedOwningValuesAndAbsentRollback) {
         {[&](engrave::api::EditContext &) -> engrave::Result<void> {
              dot->undo_change_property(Pid::OFFSET, muse::PointF(0, 0));
              EXPECT_NE(note->authored_overrides.find(a, Pid::OFFSET), nullptr);
+             EXPECT_EQ(engrave::harness::master_of(*document).mutation_journal()->active_transaction()->authored_override_entries(), 1u);
              return {};
          },
          [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after explicit zero"); }},
@@ -1254,6 +1255,47 @@ TEST(AuthoredOverrides, SortedOwningValuesAndAbsentRollback) {
     EXPECT_EQ(note->authored_overrides.entries.size(), before);
     EXPECT_EQ(note->authored_overrides.carriers.size(), carriers);
     EXPECT_EQ(note->authored_overrides.find(a, Pid::OFFSET), nullptr);
+}
+
+TEST(AuthoredOverrides, JournalResetAndRejectedAppearancePreserveSourceRecords) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto *note = chord_line(*document).chord()->notes().front();
+    std::unique_ptr<NoteDot> dot(Factory::create_note_dot(note));
+    const AuthoredChildKey key{AuthoredChildRole::DOT, 2};
+    bind_authored_child(*dot, key);
+    dot->set_property(Pid::OFFSET, muse::PointF(0, 0));
+    dot->set_property_flags(Pid::OFFSET, PropertyFlags::UNSTYLED);
+    const auto before = note->authored_overrides;
+    auto result = engrave::api::BatchGuard(*document).run(
+        {[&](engrave::api::EditContext &) -> engrave::Result<void> {
+             dot->undo_reset_property(Pid::OFFSET);
+             EXPECT_EQ(note->authored_overrides.find(key, Pid::OFFSET), nullptr);
+             dot->undo_change_property(Pid::COLOR, muse::draw::Color(12, 34, 56));
+             EXPECT_EQ(engrave::harness::master_of(*document).mutation_journal()->active_transaction()->authored_override_entries(), 2u);
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after reset and appearance"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    const auto &after = note->authored_overrides;
+    ASSERT_EQ(after.entries.size(), before.entries.size());
+    for (size_t i = 0; i < before.entries.size(); ++i) {
+        EXPECT_EQ(after.entries[i].child, before.entries[i].child);
+        EXPECT_EQ(after.entries[i].pid, before.entries[i].pid);
+        EXPECT_EQ(after.entries[i].value, before.entries[i].value);
+        EXPECT_EQ(after.entries[i].flags, before.entries[i].flags);
+        EXPECT_EQ(after.entries[i].unit, before.entries[i].unit);
+    }
+    ASSERT_EQ(after.carriers.size(), before.carriers.size());
+    for (size_t i = 0; i < before.carriers.size(); ++i) {
+        EXPECT_EQ(after.carriers[i].child, before.carriers[i].child);
+        EXPECT_EQ(after.carriers[i].type, before.carriers[i].type);
+        EXPECT_EQ(after.carriers[i].legacy_eid, before.carriers[i].legacy_eid);
+        EXPECT_EQ(after.carriers[i].linked_to, before.carriers[i].linked_to);
+        EXPECT_EQ(after.carriers[i].track, before.carriers[i].track);
+    }
 }
 
 TEST(SpannerSegmentEdit, FailedBatchRestoresLegacyOffset2Baseline) {
@@ -1392,11 +1434,14 @@ TEST(TupletNumberEdit, FailedBatchRestoresTextEntryAndAbsence) {
     number->set_property(Pid::OFFSET, muse::PointF(0.25, -0.5));
     const auto before = tuplet.authored_overrides;
     const auto unit_policy = tuplet.get_property(Pid::SIZE_SPATIUM_DEPENDENT);
+    const auto font_size = tuplet.get_property(Pid::FONT_SIZE);
+    const auto font_flags = tuplet.property_flags(Pid::FONT_SIZE);
     const auto text = number->get_property(Pid::TEXT);
     auto result = engrave::api::BatchGuard(document).run(
         {[number](engrave::api::EditContext &) -> engrave::Result<void> {
              number->undo_change_property(Pid::TEXT, muse::String(u"changed"));
              number->undo_change_property(Pid::SIZE_SPATIUM_DEPENDENT, false);
+             number->undo_change_property(Pid::FONT_SIZE, 19.25, mu::engraving::PropertyFlags::UNSTYLED);
              return {};
          },
          [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after number text"); }},
@@ -1406,6 +1451,9 @@ TEST(TupletNumberEdit, FailedBatchRestoresTextEntryAndAbsence) {
     EXPECT_EQ(tuplet.authored_overrides.entries.size(), before.entries.size());
     EXPECT_EQ(tuplet.authored_overrides.carriers.size(), before.carriers.size());
     EXPECT_EQ(tuplet.get_property(Pid::SIZE_SPATIUM_DEPENDENT), unit_policy);
+    EXPECT_EQ(tuplet.get_property(Pid::FONT_SIZE), font_size);
+    EXPECT_EQ(tuplet.property_flags(Pid::FONT_SIZE), font_flags);
+    EXPECT_EQ(number->get_property(Pid::FONT_SIZE), font_size);
     ASSERT_EQ(tuplet.authored_overrides.entries.size(), before.entries.size());
     for (size_t i = 0; i < before.entries.size(); ++i) {
         EXPECT_EQ(tuplet.authored_overrides.entries[i].unit, before.entries[i].unit);

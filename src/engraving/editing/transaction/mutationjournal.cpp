@@ -79,6 +79,7 @@ void JournalBatch::append_command(UndoableCommand *command) {
 }
 
 void JournalBatch::change_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+    remember_authored_overrides(object, id);
     const auto index = entry_index(source_.properties.size());
     const auto appearance_mark = source_.appearances.size();
     try {
@@ -91,6 +92,19 @@ void JournalBatch::change_property(EngravingObject &object, Pid id, const Proper
     }
     // The inverse is fully owned before a setter or a nested edit can throw.
     apply_property(object, id, value, flags, reset_path);
+}
+
+void JournalBatch::remember_authored_overrides(EngravingObject &object, Pid id) {
+    auto before = capture_authored_overrides(object, id);
+    if (!before) return;
+    const auto index = entry_index(source_.authored_overrides.size());
+    source_.authored_overrides.push_back(std::move(*before));
+    try {
+        entries_.push_back({JournalEntryKind::AUTHORED_OVERRIDE, index});
+    } catch (...) {
+        source_.authored_overrides.pop_back();
+        throw;
+    }
 }
 
 void JournalBatch::change_style_values(Score &score, std::span<const StyleValue> values) {
@@ -157,6 +171,20 @@ void JournalBatch::change_text_line_property(EngravingObject &object, const Prop
 }
 
 void JournalBatch::change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    remember_authored_overrides(text, id);
+    // Tuplet number font properties delegate to the typed source style. Restoring
+    // just the text cursor/markup would leave those source values changed.
+    if (auto *owner = text.ownership_parent();
+        owner && owner->is_tuplet() && (id == Pid::FONT_FACE || id == Pid::FONT_SIZE || id == Pid::FONT_STYLE)) {
+        const auto index = entry_index(source_.properties.size());
+        source_.properties.push_back(capture_property(*owner, id, source_));
+        try {
+            entries_.push_back({JournalEntryKind::PROPERTY, index});
+        } catch (...) {
+            source_.properties.pop_back();
+            throw;
+        }
+    }
     const auto index = entry_index(text_formats_.size());
     text_formats_.push_back(capture_text_format(text, id));
     try {
@@ -181,6 +209,7 @@ void JournalBatch::unwind(bool clean_up) {
         switch (it->kind) {
             case JournalEntryKind::LEGACY: legacy_[it->payload]->undo(); break;
             case JournalEntryKind::PROPERTY: restore_property(source_.properties[it->payload], source_); break;
+            case JournalEntryKind::AUTHORED_OVERRIDE: restore_authored_overrides(source_.authored_overrides[it->payload]); break;
             case JournalEntryKind::STYLE_VALUES: restore_style_values(source_.styles[it->payload], source_); break;
             case JournalEntryKind::STYLE_REPLACEMENT: restore_style_replacement(source_.style_replacements[it->payload], source_); break;
             case JournalEntryKind::BRACKET_PROPERTY: restore_bracket_property(brackets_[it->payload]); break;
@@ -194,6 +223,7 @@ void JournalBatch::unwind(bool clean_up) {
     for (auto it = legacy_.rbegin(); it != legacy_.rend(); ++it) delete *it;
     legacy_.clear();
     source_.properties.clear();
+    source_.authored_overrides.clear();
     source_.appearances.clear();
     source_.styles.clear();
     source_.style_values.clear();
@@ -227,6 +257,7 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::AUTHORED_OVERRIDE) continue;
         if (entry.kind == JournalEntryKind::STYLE_REPLACEMENT) {
             const auto &replacement = source_.style_replacements[entry.payload];
             auto &score = *to_score(&replacement.target.object());

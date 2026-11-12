@@ -151,6 +151,7 @@ void Transaction::change_property(EngravingObject *object, Pid id, const Propert
         return;
     }
     if (!source_object(*object)) {
+        undoable_transaction_->remember_authored_overrides(*object, id);
         push(new ChangeProperty(object, id, value, flags, reset_path));
         return;
     }
