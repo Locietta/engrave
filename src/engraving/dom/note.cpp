@@ -640,6 +640,7 @@ std::vector<Note *> Note::compound_notes() const {
 }
 
 Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
+    clone_authored_overrides(authored_overrides, n.authored_overrides);
     if (link) {
         score()->undo(new Link(this, const_cast<Note *>(&n)));
     }

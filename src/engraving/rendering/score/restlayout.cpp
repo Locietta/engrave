@@ -141,6 +141,7 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
     double y = item->dot_line() * item->spatium() * .5;
     for (NoteDot *dot : item->dot_list()) {
         NoteDot::LayoutData *dotldata = dot->mutldata();
+        apply_authored_overrides(*dot);
         TLayout::layout_note_dot(dot, dotldata);
         if (dot->visible()) {
             dotldata->set_pos(visible_x, y);

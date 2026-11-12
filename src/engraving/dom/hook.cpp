@@ -29,7 +29,10 @@
 using namespace mu;
 using namespace mu::engraving;
 
-Hook::Hook(DummyParentOr<Chord> parent) : Symbol(ElementType::HOOK, parent, ElementFlag::NOTHING) { set_z(default_z(type())); }
+Hook::Hook(DummyParentOr<Chord> parent) : Symbol(ElementType::HOOK, parent, ElementFlag::NOTHING) {
+    set_z(default_z(type()));
+    bind_authored_child(*this, {AuthoredChildRole::HOOK});
+}
 
 EngravingItem *Hook::element_base() const { return chord(); }
 

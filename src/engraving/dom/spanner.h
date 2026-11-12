@@ -179,6 +179,8 @@ private:
 
 struct Spanner : EngravingItem {
 public:
+    AuthoredOverrideTable authored_overrides;
+
     enum class Anchor : unsigned char { SEGMENT, MEASURE, CHORDREST, NOTE };
 
     ~Spanner() override;

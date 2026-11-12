@@ -278,6 +278,7 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
 }
 
 Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
+    clone_authored_overrides(authored_overrides, c.authored_overrides);
     if (link) {
         score()->undo(new Link(this, const_cast<Chord *>(&c)));
     }

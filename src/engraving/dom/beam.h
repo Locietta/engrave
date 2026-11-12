@@ -51,6 +51,8 @@ private:
     DECLARE_CLASSOF(ElementType::BEAM)
 
 public:
+    AuthoredOverrideTable authored_overrides;
+
     ~Beam();
 
     Beam *clone() const override { return new Beam(*this); }

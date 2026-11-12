@@ -2329,6 +2329,7 @@ bool TextBase::is_unlinked_from_master() const {
 //---------------------------------------------------------
 
 PropertyValue TextBase::get_property(Pid property_id) const {
+    if (auto value = authored_override_value(*this, property_id)) return *value;
     switch (property_id) {
         case Pid::TEXT_STYLE: return text_style_type();
         case Pid::FONT_FACE: return cursor_->selected_fragments_format().font_family();
@@ -2360,6 +2361,7 @@ PropertyValue TextBase::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool TextBase::set_property(Pid pid, const PropertyValue &v) {
+    if (set_authored_override(*this, pid, v)) return true;
     if (text_invalid_ && ldata() && ldata()->is_valid()) {
         gen_text();
     }

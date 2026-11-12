@@ -35,6 +35,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/notedot.h"
 #include "engraving/dom/parenthesis.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/spanner.h"
@@ -1218,6 +1219,40 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(AuthoredOverrides, SortedOwningValuesAndAbsentRollback) {
+    mu::engraving::AuthoredOverrideTable table;
+    const mu::engraving::AuthoredChildKey a{mu::engraving::AuthoredChildRole::DOT, 0};
+    const mu::engraving::AuthoredChildKey b{mu::engraving::AuthoredChildRole::DOT, 3};
+    table.set({b, Pid::COLOR, muse::draw::Color(10, 20, 30), mu::engraving::PropertyFlags::NOSTYLE});
+    table.set({a, Pid::OFFSET, muse::PointF(0, 0), mu::engraving::PropertyFlags::UNSTYLED});
+    ASSERT_EQ(table.entries.size(), 2u);
+    EXPECT_EQ(table.entries.front().child, a);
+    auto copy = table;
+    table.erase(a, Pid::OFFSET);
+    ASSERT_NE(copy.find(a, Pid::OFFSET), nullptr);
+    EXPECT_EQ(copy.find(a, Pid::OFFSET)->flags, mu::engraving::PropertyFlags::UNSTYLED);
+
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto *note = chord_line(*document).chord()->notes().front();
+    std::unique_ptr<mu::engraving::NoteDot> dot(mu::engraving::Factory::create_note_dot(note));
+    mu::engraving::bind_authored_child(*dot, a);
+    const auto before = note->authored_overrides.entries.size();
+    const auto carriers = note->authored_overrides.carriers.size();
+    auto result = engrave::api::BatchGuard(*document).run(
+        {[&](engrave::api::EditContext &) -> engrave::Result<void> {
+             dot->undo_change_property(Pid::OFFSET, muse::PointF(0, 0));
+             EXPECT_NE(note->authored_overrides.find(a, Pid::OFFSET), nullptr);
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after explicit zero"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(note->authored_overrides.entries.size(), before);
+    EXPECT_EQ(note->authored_overrides.carriers.size(), carriers);
+    EXPECT_EQ(note->authored_overrides.find(a, Pid::OFFSET), nullptr);
 }
 
 TEST(SpannerSegmentEdit, FailedBatchRestoresLegacyOffset2Baseline) {

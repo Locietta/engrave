@@ -97,6 +97,7 @@ HairpinSegment::HairpinSegment(Hairpin *sp)
 }
 
 void HairpinSegment::set_property_flags(Pid id, PropertyFlags f) {
+    if (set_authored_override_flags(*this, id, f)) return;
     int i = get_property_flags_idx(id);
     if (i == -1) {
         // Can happen (for example when edit-dragging the aperture) that we're editing

@@ -32,6 +32,7 @@ Parenthesis::Parenthesis(DummyParentOr<EngravingItem> parent) : EngravingItem(El
 Parenthesis::Parenthesis(const Parenthesis &p) : EngravingItem(p) { direction_value = p.direction_value; }
 
 PropertyValue Parenthesis::get_property(Pid pid) const {
+    if (auto value = authored_override_value(*this, pid)) return *value;
     switch (pid) {
         case Pid::HORIZONTAL_DIRECTION: return direction();
         default: return EngravingItem::get_property(pid);
@@ -39,6 +40,7 @@ PropertyValue Parenthesis::get_property(Pid pid) const {
 }
 
 bool Parenthesis::set_property(Pid pid, const PropertyValue &v) {
+    if (set_authored_override(*this, pid, v)) return true;
     switch (pid) {
         case Pid::HORIZONTAL_DIRECTION: set_direction(v.value<DirectionH>()); break;
         default: return EngravingItem::set_property(pid, v);

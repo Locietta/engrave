@@ -72,6 +72,7 @@ EngravingItem *Beam::layout_parent() const { return system(); }
 //---------------------------------------------------------
 
 Beam::Beam(const Beam &b) : BeamBase(b) {
+    clone_authored_overrides(authored_overrides, b.authored_overrides);
     elements_ = b.elements_;
     grow_left_ = b.grow_left_;
     grow_right_ = b.grow_right_;

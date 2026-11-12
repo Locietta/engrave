@@ -79,6 +79,7 @@ RectF TextLineBaseSegment::bounding_box_of_line(const PointF &p1, const PointF &
 }
 
 bool TextLineBaseSegment::set_property(Pid id, const PropertyValue &v) {
+    if (set_authored_override(*this, id, v)) return true;
     if (id == Pid::COLOR) {
         Color color = v.value<Color>();
 

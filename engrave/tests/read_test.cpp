@@ -65,6 +65,7 @@
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/harmony.h"
+#include "engraving/dom/hook.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/jump.h"
 #include "engraving/dom/ledgerline.h"
@@ -75,6 +76,7 @@
 #include "engraving/dom/measurerepeat.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
+#include "engraving/dom/notedot.h"
 #include "engraving/dom/noteline.h"
 #include "engraving/dom/ornament.h"
 #include "engraving/dom/ottava.h"
@@ -91,6 +93,7 @@
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stem.h"
+#include "engraving/dom/stemslash.h"
 #include "engraving/dom/system.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/tempotimeline.h"
@@ -5283,6 +5286,65 @@ std::string legacy_segment_fixture(std::string_view spanners) {
 <Chord><eid>C_C</eid><durationType>half</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
 </voice></Measure></Staff><SpannerMap>)" +
            std::string(spanners) + "</SpannerMap></Score></museScore>";
+}
+
+TEST(Read, SparseChildOverridesSurviveLayoutAndMirrorChanges) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto input = legacy_segment_fixture("");
+        input.replace(input.find("5.00"), 4, version);
+        input.insert(
+            input.find("<Note>"),
+            R"(<Stem><eid>D_D</eid><userLen>1.25</userLen><lineWidth>0.2</lineWidth><offset x="0.25" y="-0.5"/><visible>0</visible></Stem>
+<Hook><name>flag8thUp</name><offset x="0.5" y="0"/></Hook>
+<StemSlash><offset x="-0.25" y="0.5"/></StemSlash>)");
+        input.insert(input.find("</Note>"), R"(<NoteDot><eid>E_E</eid><offset x="0.75" y="-0.25"/><visible>0</visible></NoteDot>)");
+        auto document = g_engine->open(as_bytes(input));
+        ASSERT_TRUE(document) << document.error().message;
+        Note *note = nullptr;
+        master_of(**document).scan_elements([&](EngravingItem *item) {
+            if (!note && item->is_note()) note = to_note(item);
+        });
+        ASSERT_NE(note, nullptr);
+        auto *chord = note->chord();
+        const auto source = chord->authored_overrides;
+        const auto dots = note->authored_overrides;
+        ASSERT_NE(source.find({AuthoredChildRole::STEM}, Pid::OFFSET), nullptr);
+        ASSERT_NE(source.find({AuthoredChildRole::HOOK}, Pid::SYMBOL), nullptr);
+        ASSERT_NE(dots.find({AuthoredChildRole::DOT}, Pid::OFFSET), nullptr);
+        const auto before = legacy_override_write(chord);
+        ASSERT_NE(chord->stem(), nullptr);
+        chord->stem()->set_offset(PointF(99, 99)); // corrupt only the disposable mirror
+        chord->stem()->set_line_width(Spatium(9));
+        EXPECT_EQ(legacy_override_write(chord), before);
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_EQ(legacy_override_write(chord), before);
+        const auto expect_source = [](const auto &expected, const auto &actual) {
+            ASSERT_EQ(expected.entries.size(), actual.entries.size());
+            ASSERT_EQ(expected.carriers.size(), actual.carriers.size());
+            for (size_t i = 0; i < expected.entries.size(); ++i) {
+                EXPECT_EQ(expected.entries[i].child, actual.entries[i].child);
+                EXPECT_EQ(expected.entries[i].pid, actual.entries[i].pid);
+                EXPECT_EQ(expected.entries[i].value, actual.entries[i].value);
+                EXPECT_EQ(expected.entries[i].flags, actual.entries[i].flags);
+                EXPECT_EQ(expected.entries[i].unit, actual.entries[i].unit);
+                EXPECT_EQ(expected.entries[i].default_value, actual.entries[i].default_value);
+                EXPECT_EQ(expected.entries[i].style, actual.entries[i].style);
+            }
+            for (size_t i = 0; i < expected.carriers.size(); ++i) {
+                EXPECT_EQ(expected.carriers[i].child, actual.carriers[i].child);
+                EXPECT_EQ(expected.carriers[i].legacy_eid, actual.carriers[i].legacy_eid);
+                EXPECT_EQ(expected.carriers[i].linked_to, actual.carriers[i].linked_to);
+                EXPECT_EQ(expected.carriers[i].track, actual.carriers[i].track);
+            }
+        };
+        expect_source(source, chord->authored_overrides);
+        expect_source(dots, note->authored_overrides);
+        const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+    }
 }
 
 TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {

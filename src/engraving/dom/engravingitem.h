@@ -30,6 +30,7 @@
 #include "../types/fraction.h"
 #include "../types/symid.h"
 #include "../types/types.h"
+#include "authoredoverride.h"
 #include "draw/types/color.h"
 #include "draw/types/geometry.h"
 #include "engravingobject.h"
@@ -150,6 +151,8 @@ private:
     M_PROPERTY2(bool, exclude_from_other_parts, set_exclude_from_other_parts, false)
 
 public:
+    AuthoredChildKey authored_child;
+    bool authored_mirror = false;
 
     virtual ~EngravingItem();
 

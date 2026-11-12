@@ -284,6 +284,7 @@ void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
         if (item->beam()) {
             ctx.mut_dom().undo_remove_element(item->hook());
         } else {
+            apply_authored_overrides(*item->hook());
             TLayout::layout_hook(item->hook(), item->hook()->mutldata());
             if (item->up() && item->stem()) {
                 // hook position is not set yet
@@ -590,6 +591,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
         if (item->beam()) {
             ctx.mut_dom().undo_remove_element(item->hook());
         } else if (tab == 0) {
+            apply_authored_overrides(*item->hook());
             TLayout::layout_hook(item->hook(), item->hook()->mutldata());
             if (item->up()) {
                 // hook position is not set yet
@@ -687,6 +689,7 @@ void ChordLayout::layout_tablature(Chord *item, LayoutContext &ctx) {
     }
 
     if (item->stem_slash()) {
+        apply_authored_overrides(*item->stem_slash());
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
     }
 
@@ -1212,10 +1215,13 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
 
     LAYOUT_CALL() << "chord: " << item->eid();
 
+    if (item->stem()) apply_authored_overrides(*item->stem());
+
     // Stem needs to know hook's bbox and SMuFL anchors.
     // This is done before calcDefaultStemLength because the presence or absence of a hook affects stem length
     if (item->hook()) {
         item->hook()->set_hook_type(item->up() ? item->duration_type().hooks() : -item->duration_type().hooks());
+        apply_authored_overrides(*item->hook());
         TLayout::layout_hook(item->hook(), item->hook()->mutldata());
     }
 
@@ -1230,6 +1236,7 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
     item->stem()->mutldata()->set_pos_x(StemLayout::stem_pos_x(item));
 
     item->stem()->set_base_length(Spatium::from_absolute(item->default_stem_length(), item->spatium()));
+    apply_authored_overrides(*item->stem());
     TLayout::layout_stem(item->stem(), item->stem()->mutldata(), ctx.conf());
 
     // And now we need to set the position of the flag.
@@ -1242,6 +1249,7 @@ void ChordLayout::layout_stem(Chord *item, const LayoutContext &ctx) {
         if (!item->stem_slash()) {
             item->add(Factory::create_stem_slash(item));
         }
+        apply_authored_overrides(*item->stem_slash());
         TLayout::layout_stem_slash(item->stem_slash(), item->stem_slash()->mutldata(), ctx.conf());
     } else if (item->stem_slash()) {
         item->remove(item->stem_slash());
@@ -2356,6 +2364,7 @@ double ChordLayout::layout_chords2(std::vector<Note *> &notes, bool up, LayoutCo
         note->mutldata()->mirror.set_value(mirror);
         if (chord->stem()) {
             chord->stem()->mutldata()->set_pos_x(StemLayout::stem_pos_x(chord));
+            apply_authored_overrides(*chord->stem());
             TLayout::layout_stem(chord->stem(), chord->stem()->mutldata(),
                                  ctx.conf()); // needed because mirroring can cause stem position to change
         }
@@ -2558,6 +2567,7 @@ void ChordLayout::set_dot_relative_line(Note *note, int dot_move, LayoutContext 
     }
 
     for (NoteDot *dot : note->dots()) {
+        apply_authored_overrides(*dot);
         TLayout::layout_note_dot(dot, dot->mutldata());
         dot->mutldata()->set_pos_y(y);
     }
@@ -2706,6 +2716,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
         bool up_value = chord->up();
 
         if (chord->stem_slash()) {
+            apply_authored_overrides(*chord->stem_slash());
             TLayout::layout_stem_slash(chord->stem_slash(), chord->stem_slash()->mutldata(), ctx.conf());
         }
 
@@ -2739,6 +2750,7 @@ void ChordLayout::layout_chords3(const std::vector<Chord *> &chords, const std::
             if (note->ldata()->pos().y() != ny) {
                 note->mutldata()->set_pos_y(ny);
                 if (stem) {
+                    apply_authored_overrides(*chord->stem());
                     TLayout::layout_stem(chord->stem(), chord->stem()->mutldata(), ctx.conf());
                     if (chord->hook()) {
                         chord->hook()->mutldata()->set_pos_y(chord->stem()->flag_position().y());
