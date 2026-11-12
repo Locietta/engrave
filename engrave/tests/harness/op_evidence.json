@@ -886,7 +886,7 @@
       "pushes": 1,
       "c1": "pass",
       "c2": "pass",
-      "c3_unwind": "fail: before push 1: layout",
+      "c3_unwind": "fail: before push 1: semantic, layout",
       "c4_unwind": "pass",
       "c3_snapshot": "pass",
       "c4_snapshot": "pass",
