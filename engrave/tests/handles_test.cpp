@@ -1309,7 +1309,9 @@ TEST(Handles, H12Addresses) {
     EXPECT_FALSE(gone) << "an address of a removed measure still resolves";
     expect_inv(*document);
 
-    // Layout addresses are read-only and name the layout object.
+    // Layout addresses are read-only and name the layout object. Edits no longer
+    // lay out, so this direct resolve requests geometry the way get() does.
+    master.ensure_layout();
     const auto page = engrave::resolve(master, engrave::PageAddress{.score = {}, .index = 0});
     ASSERT_TRUE(page) << page.error().message;
     EXPECT_FALSE(page->writable);
