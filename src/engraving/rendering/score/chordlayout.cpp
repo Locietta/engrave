@@ -63,6 +63,7 @@
 #include "editing/navigation.h"
 #include "horizontalspacing.h"
 #include "log.h"
+#include "normalization/notes.h"
 #include "parenthesislayout.h"
 #include "restlayout.h"
 #include "slurtielayout.h"
@@ -95,7 +96,20 @@ void ChordLayout::layout(Chord *item, LayoutContext &ctx) {
     }
 }
 
+void ChordLayout::layout_note_lines(const Chord *chord) {
+    for (const Chord *grace : chord->grace_notes()) layout_note_lines(grace);
+    const Staff *staff = chord->score()->staff(chord->v_staff_idx());
+    if (!staff) return;
+    const StaffType *type = staff->staff_type_for_element(chord);
+    if (type->is_tab_staff() || chord->origin_part()->instrument(chord->tick())->use_drumset()) return;
+    for (Note *note : chord->notes()) {
+        note->mutldata()->set_pos_y((note->get_property(Pid::LINE).to_int() + type->step_offset() * 2.0) * note->spatium() * .5 *
+                                    type->line_distance().val());
+    }
+}
+
 void ChordLayout::layout_pitched(Chord *item, LayoutContext &ctx) {
+    layout_note_lines(item);
     for (Chord *c : item->grace_notes()) {
         layout_pitched(c, ctx);
     }
@@ -3050,36 +3064,7 @@ void ChordLayout::layout_chord_base_fingering(Chord *chord, System *system, Layo
 }
 
 void ChordLayout::cross_measure_setup(Chord *chord, bool on, LayoutContext &ctx) {
-    if (!on) {
-        if (chord->cross_measure() != CrossMeasure::UNKNOWN) {
-            chord->set_cross_measure(CrossMeasure::UNKNOWN);
-            layout_stem(chord, ctx);
-        }
-        return;
-    }
-    if (chord->cross_measure() == CrossMeasure::UNKNOWN) {
-        CrossMeasure temp_cross = CrossMeasure::NONE; // assume no cross-measure modification
-        // if chord has only one note and note is tied forward
-        if (chord->notes().size() == 1 && chord->notes().at(0)->tie_for()) {
-            Chord *tied_chord = chord->notes().at(0)->tie_for()->end_note()->chord();
-            // if tied note belongs to another measure and to a single-note chord
-            if (tied_chord->measure() != chord->measure() && tied_chord->notes().size() == 1) {
-                // get total duration
-                std::vector<TDuration> dur_list =
-                    to_duration_list(chord->actual_duration_type().fraction() + tied_chord->actual_duration_type().fraction(), true);
-                // if duration can be expressed as a single duration
-                // apply cross-measure modification
-                if (dur_list.size() == 1) {
-                    temp_cross = CrossMeasure::FIRST;
-                    chord->set_cross_measure(temp_cross);
-                    chord->set_cross_measure_duration_type(dur_list[0]);
-                    layout_stem(chord, ctx);
-                }
-            }
-            chord->set_cross_measure(temp_cross);
-            tied_chord->set_cross_measure(temp_cross == CrossMeasure::FIRST ? CrossMeasure::SECOND : CrossMeasure::NONE);
-        }
-    }
+    if (normalize_cross_measure(*chord, on)) layout_stem(chord, ctx);
 }
 
 // called after final position of note is set

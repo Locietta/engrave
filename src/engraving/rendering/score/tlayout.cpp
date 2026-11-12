@@ -4022,6 +4022,7 @@ void TLayout::layout_ornament_cue_note(Ornament *item, LayoutContext &ctx) {
         return;
     }
 
+    ChordLayout::layout_note_lines(cue_note_chord);
     ChordLayout::layout_chords3({cue_note_chord}, {cue_note}, item->staff(), ctx);
     ChordLayout::layout_ledger_lines({cue_note_chord}, ctx);
     AccidentalsLayout::layout_accidentals({cue_note_chord}, ctx);
