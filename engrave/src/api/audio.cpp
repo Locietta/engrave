@@ -176,6 +176,8 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, co
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
     const Result<mu::engraving::Score *> selected = select_score(master, options.score);
     if (!selected) return std::unexpected(selected.error());
+    // Audio remains an explicit geometry consumer until the S5 playback split.
+    impl_->ensure_layout(**selected);
 
     if (engine.soundfonts.empty()) return fail(ErrorCode::UNSUPPORTED, "no SoundFont is selected (an empty list disables audio)");
     if (options.sample_rate != 0 && options.sample_rate != engine.audio_sample_rate) {
