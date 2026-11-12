@@ -265,6 +265,36 @@ TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
     }
 }
 
+TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *measure = master.first_measure();
+    auto *main = to_chord(measure->first(SegmentType::CHORD_REST)->element(0));
+    auto *before = Factory::copy_chord(*main);
+    auto *after = Factory::copy_chord(*main);
+    before->set_note_type(NoteType::ACCIACCATURA);
+    after->set_note_type(NoteType::GRACE8_AFTER);
+    main->add(before);
+    main->add(after);
+    auto *start = before->notes().front();
+    std::unique_ptr<Tie> tie(Factory::create_tie(start));
+    tie->set_end_note(after->notes().front());
+    start->add(tie.get());
+    const Fraction old_tick = tie->tick();
+    master.start_cmd(muse::TranslatableString::untranslatable("insert before grace tie"));
+    master.insert_measure(measure);
+    EXPECT_GT(before->tick(), old_tick);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    normalize_score(master);
+    EXPECT_EQ(tie->tick(), before->tick());
+    EXPECT_FALSE(tie->has_layout_data());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    start->remove(tie.get());
+    master.end_cmd(false, true);
+}
+
 TEST(Read, NormalizeRepairsLyricDurationsAndTieTicksWithoutLayout) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture());
