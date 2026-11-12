@@ -457,11 +457,26 @@ void mu::engraving::invalidate_normalization(Score &score, const Fraction &start
     ++state.generation;
 }
 
+static void normalize_glissando_style(Glissando &glissando) {
+    const bool harp = glissando.staff()->part()->instrument_id(glissando.tick()) == "harp";
+    const auto previous = glissando.is_harp_gliss();
+    glissando.set_is_harp_gliss(harp);
+
+    // Preserve the source's styled/explicit choice when an instrument changes.
+    if (previous.has_value() && previous != harp && glissando.is_styled(Pid::GLISS_STYLE)) {
+        glissando.undo_change_property(Pid::GLISS_STYLE, glissando.property_default(Pid::GLISS_STYLE), PropertyFlags::STYLED);
+    }
+    if (harp && glissando.glissando_style() != GlissandoStyle::DIATONIC && glissando.glissando_style() != GlissandoStyle::CHROMATIC) {
+        glissando.undo_change_property(Pid::GLISS_STYLE, GlissandoStyle::DIATONIC, glissando.property_flags(Pid::GLISS_STYLE));
+    }
+}
+
 static void normalize_note_spanner(Spanner &spanner) {
     if (!spanner.start_element()) spanner.compute_start_element();
     if (!spanner.end_element()) spanner.compute_end_element();
     if (spanner.start_element()) spanner.set_tick(spanner.start_element()->tick());
     if (spanner.end_element()) spanner.set_tick2(spanner.end_element()->tick());
+    if (spanner.is_glissando() && spanner.staff()) normalize_glissando_style(*to_glissando(&spanner));
 }
 
 static void normalize_chord_anchors(Chord &chord) {

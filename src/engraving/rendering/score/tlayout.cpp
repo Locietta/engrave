@@ -2438,30 +2438,6 @@ void TLayout::layout_glissando(Glissando *item, LayoutContext &ctx) {
     Glissando::LayoutData *ldata = item->mutldata();
     ldata->set_pos(0.0, 0.0);
 
-    String instr_id = item->staff()->part()->instrument_id(item->tick());
-    bool harp_staff = instr_id == "harp";
-    if (!item->is_harp_gliss().has_value()) {
-        item->set_is_harp_gliss(harp_staff);
-    } else {
-        if (harp_staff != item->is_harp_gliss().value()) {
-            // Preserve whether this gliss has its default playback style
-            bool default_style = false;
-            if (item->is_styled(Pid::GLISS_STYLE)) {
-                default_style = true;
-            }
-            item->set_is_harp_gliss(harp_staff);
-            if (default_style) {
-                item->reset_property(Pid::GLISS_STYLE);
-            }
-
-            // Make sure harp glisses can only be diatonic and chromatic
-            GlissandoStyle gliss_style = item->glissando_style();
-            if (item->is_harp_gliss().value() && (gliss_style != GlissandoStyle::DIATONIC && gliss_style != GlissandoStyle::CHROMATIC)) {
-                item->set_glissando_style(GlissandoStyle::DIATONIC);
-            }
-        }
-    }
-
     layout_note_anchored_line(item, ldata, ctx);
 
     ChordLayout::add_line_attach_points(item);
