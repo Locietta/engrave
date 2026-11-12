@@ -67,6 +67,7 @@ void ScoreRenderer::paint_item(Painter &painter, const EngravingItem *item, cons
 }
 
 void ScoreRenderer::do_layout_item(EngravingItem *item) {
+    if (layout_hook) layout_hook(item);
     LayoutContext ctx(item->score());
     TLayout::layout_item(item, ctx);
 }
@@ -74,6 +75,7 @@ void ScoreRenderer::do_layout_item(EngravingItem *item) {
 void ScoreRenderer::do_draw_item(const EngravingItem *item, Painter *p, const PaintOptions &opt) { TDraw::draw_item(item, p, opt); }
 
 void ScoreRenderer::layout_text1(TextBase *item, bool base) {
+    if (layout_hook) layout_hook(item);
     LayoutContext ctx(item->score());
     if (base) {
         TextLayout::layout_base_text_base1(item, ctx);
@@ -91,16 +93,19 @@ void ScoreRenderer::compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset
 }
 
 void ScoreRenderer::layout_text_line_base_segment(TextLineBaseSegment *item) {
+    if (layout_hook) layout_hook(item);
     LayoutContext ctx(item->score());
     TLayout::layout_text_line_base_segment(item, ctx);
 }
 
 void ScoreRenderer::layout_beam1(Beam *item) {
+    if (layout_hook) layout_hook(item);
     LayoutContext ctx(item->score());
     TLayout::layout_beam1(item, ctx);
 }
 
 void ScoreRenderer::layout_stem(Chord *item) {
+    if (layout_hook) layout_hook(item);
     LayoutContext ctx(item->score());
     ChordLayout::layout_stem(item, ctx);
 }

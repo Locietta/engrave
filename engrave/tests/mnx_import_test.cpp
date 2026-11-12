@@ -48,6 +48,10 @@ TEST(MnxImport, UpstreamSemanticReferences) {
         ASSERT_TRUE(opened) << opened.error().message;
         auto reference = engine->open(data / (entry.path().stem().string() + "_ref.mscx"));
         ASSERT_TRUE(reference) << reference.error().message;
+        // This legacy projection includes rendered articulation glyph variants
+        // (for example turned bows), so compare after an explicit visual boundary.
+        ASSERT_TRUE((*opened)->page_count());
+        ASSERT_TRUE((*reference)->page_count());
         if (entry.path().stem() == "tupletHiddenRest") {
             // This retained MSCX reference loses A4 at tick 1280 when the native
             // reader fills its leading tuplet gap. Use the MNX source's explicit
@@ -77,6 +81,7 @@ TEST(MnxImport, UpstreamSemanticReferences) {
         const std::string bytes{std::istreambuf_iterator<char>(in), {}};
         auto sniffed = engine->open(std::as_bytes(std::span(bytes)));
         ASSERT_TRUE(sniffed) << sniffed.error().message;
+        ASSERT_TRUE((*sniffed)->page_count());
         EXPECT_TRUE(music::json_equal(events(**opened), events(**sniffed)));
     }
     EXPECT_EQ(count, 37u);
