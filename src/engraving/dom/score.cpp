@@ -4488,21 +4488,60 @@ bool Score::auto_layout_enabled() const { return is_open(); }
 //    do a complete (re-) layout
 //---------------------------------------------------------
 
+void Score::invalidate_layout(const Fraction &start, const Fraction &end) {
+    // Layout locks CmdState while it builds generated elements. Those writes
+    // must not invalidate scores that an earlier pass already laid out.
+    if (master_score_ && master_score_->cmd_state().locked()) return;
+    if (!layout_state.dirty) {
+        layout_state.start = start;
+        layout_state.end = end;
+    } else {
+        layout_state.start = std::min(layout_state.start, start);
+        layout_state.end = (layout_state.end < Fraction(0, 1) || end < Fraction(0, 1)) ? Fraction(-1, 1) : std::max(layout_state.end, end);
+    }
+    layout_state.dirty = true;
+}
+
+void Score::invalidate_layouts(const Fraction &start, const Fraction &end) {
+    if (master_score()->cmd_state().locked()) return;
+    master_score()->invalidate_layout(start, end);
+    // score_list() builds a linked list. Invalidation runs for every layout
+    // trigger, so walk the existing excerpt storage without allocating.
+    for (auto *excerpt : master_score()->excerpts()) {
+        if (excerpt->excerpt_score()) excerpt->excerpt_score()->invalidate_layout(start, end);
+    }
+}
+
+void Score::ensure_layout() {
+    if (master_score()->layout_boundary)
+        master_score()->layout_boundary(*this);
+    else
+        layout_if_dirty();
+}
+
+void Score::layout_if_dirty() {
+    if (layout_state.dirty) do_layout_range(layout_state.start, layout_state.end);
+}
+
 void Score::do_layout() { do_layout_range(Fraction(0, 1), Fraction(-1, 1)); }
 
 void Score::do_layout_range(const Fraction &st, const Fraction &et) {
 
     Fraction start = st;
     Fraction end = et;
+    if (layout_state.dirty) {
+        start = std::min(start, layout_state.start);
+        end = (end < Fraction(0, 1) || layout_state.end < Fraction(0, 1)) ? Fraction(-1, 1) : std::max(end, layout_state.end);
+    }
 
-    auto spanners = score()->spanner_map().find_overlapping(st.ticks(), et.ticks());
+    auto spanners = score()->spanner_map().find_overlapping(start.ticks(), end.ticks());
     for (auto interval : spanners) {
         Spanner *spanner = interval.value;
         if (!spanner->staff()->visible()) {
             continue;
         }
-        start = std::min(st, spanner->tick());
-        end = std::max(et, spanner->tick2());
+        start = std::min(start, spanner->tick());
+        end = std::max(end, spanner->tick2());
     }
 
     engraving_font_ = engraving_fonts()->font_by_name(style().value(Sid::MUSICAL_SYMBOL_FONT).value<String>().to_std_string());
@@ -4514,7 +4553,18 @@ void Score::do_layout_range(const Fraction &st, const Fraction &et) {
         }
     }
 
+    if (start <= Fraction(0, 1) && (end < Fraction(0, 1) || end == Fraction::max()))
+        ++layout_state.whole_count;
+    else
+        ++layout_state.range_count;
+    // If rendering throws, preserve the requested range for a later retry.
+    layout_state.dirty = true;
+    layout_state.start = start;
+    layout_state.end = end;
     renderer()->layout_score(this, start, end);
+    layout_state.last_start = start;
+    layout_state.last_end = end;
+    layout_state.dirty = false;
 }
 
 void Score::update_padding_tables() { padding_tables_.update(style()); }

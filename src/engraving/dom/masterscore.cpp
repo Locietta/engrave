@@ -324,6 +324,7 @@ void MasterScore::set_update_all() { cmd_state_.set_update_mode(UpdateMode::UPDA
 //---------------------------------------------------------
 
 void MasterScore::set_layout_all(staff_idx_t staff, const EngravingItem *e) {
+    invalidate_layouts(Fraction(0, 1), Fraction(-1, 1));
     cmd_state_.set_tick(Fraction(0, 1));
     cmd_state_.set_tick(Fraction::max());
 
@@ -344,6 +345,7 @@ void MasterScore::set_layout_all(staff_idx_t staff, const EngravingItem *e) {
 
 void MasterScore::set_layout(const Fraction &t, staff_idx_t staff, const EngravingItem *e) {
     if (t >= Fraction(0, 1)) {
+        invalidate_layouts(t, t);
         cmd_state_.set_tick(t);
     }
 
@@ -356,9 +358,11 @@ void MasterScore::set_layout(const Fraction &t, staff_idx_t staff, const Engravi
 
 void MasterScore::set_layout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e) {
     if (tick1 >= Fraction(0, 1)) {
+        invalidate_layouts(tick1, tick1);
         cmd_state_.set_tick(tick1);
     }
     if (tick2 >= Fraction(0, 1)) {
+        invalidate_layouts(tick2, tick2);
         cmd_state_.set_tick(tick2);
     }
 
