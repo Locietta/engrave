@@ -64,12 +64,14 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/system.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "engraving/rendering/score/systemlayout.h"
 #include "engraving/rw/write/twrite.h"
 #include "engraving/rw/write/writecontext.h"
 #include "engraving/rw/xmlwriter.h"
@@ -122,6 +124,49 @@ std::int64_t ticks_of(const engrave::Fraction &value) { return value.num * whole
 
 std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+}
+
+TEST(Read, UnlaidSnapChainStartsAtOwner) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::unique_ptr<mu::engraving::Chord> chord(mu::engraving::Factory::create_chord(master.dummy()));
+    std::vector<mu::engraving::EngravingItem *> visited;
+    chord->scan_connected_items_in_snapping_chain(nullptr, [&](auto *item) { visited.push_back(item); });
+    EXPECT_EQ(visited, (std::vector<mu::engraving::EngravingItem *>{chord.get()}));
+    EXPECT_FALSE(chord->has_layout_data());
+}
+
+TEST(Read, CenteringAcceptsUnlaidDynamic) {
+    auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *system = master.first_measure()->system();
+    ASSERT_NE(system, nullptr);
+    auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    std::unique_ptr<mu::engraving::Dynamic> original(mu::engraving::Factory::create_dynamic(segment));
+    original->set_track(mu::engraving::voices);
+    auto *dynamic = original->clone();
+    segment->add(dynamic);
+    ASSERT_FALSE(dynamic->has_layout_data());
+    system->staff(1)->set_show(false);
+    mu::engraving::rendering::score::SystemLayout::center_elements_between_staves(system);
+}
+
+TEST(Read, LayoutResetDoesNotAllocateHiddenItems) {
+    auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    std::unique_ptr<mu::engraving::Dynamic> original(mu::engraving::Factory::create_dynamic(segment));
+    original->set_track(mu::engraving::voices);
+    auto *dynamic = original->clone();
+    segment->add(dynamic);
+    ASSERT_FALSE(dynamic->has_layout_data());
+    master.parts()[1]->set_show(false);
+    master.do_layout();
+    ASSERT_FALSE(master.first_measure()->system()->staff(1)->show());
+    EXPECT_FALSE(dynamic->has_layout_data());
 }
 
 TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {

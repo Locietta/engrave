@@ -114,8 +114,8 @@ void AlignmentLayout::align_items_with_their_snapping_chain(const std::vector<En
             continue;
         }
         first_item = true;
-        item->ldata()->scan_connected_items_in_snapping_chain(system, compute_outermost_y);
-        item->ldata()->scan_connected_items_in_snapping_chain(system, move_elements_to_outermost_y);
+        item->scan_connected_items_in_snapping_chain(system, compute_outermost_y);
+        item->scan_connected_items_in_snapping_chain(system, move_elements_to_outermost_y);
     }
 }
 
