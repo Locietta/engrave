@@ -373,36 +373,36 @@ PropertyValue GuitarBend::property_default(Pid id) const {
     }
 }
 
-void GuitarBend::compute_bend_amount() {
+void GuitarBend::compute_bend_amount(bool display) {
     if (is_slack()) {
         int prev_amount = 0;
         if (GuitarBend *prev_bend = find_preceding_bend()) {
             prev_amount = prev_bend->tot_bend_amount_including_preceding_bends();
         }
         set_bend_amount_in_quarter_tones(::mu::engraving::GuitarBend::slack_bend_amount - prev_amount);
-        compute_bend_text();
+        if (display) compute_bend_text();
         return;
     }
 
     if (bend_type() == GuitarBendType::DIP) {
-        compute_bend_text();
+        if (display) compute_bend_text();
         return;
     }
 
     if (bend_type() == GuitarBendType::SCOOP) {
         set_bend_amount_in_quarter_tones(-2);
-        compute_bend_text();
+        if (display) compute_bend_text();
         return;
     }
 
     if (bend_type() == GuitarBendType::SLIGHT_BEND) {
         set_bend_amount_in_quarter_tones(1);
-        compute_bend_text();
+        if (display) compute_bend_text();
         return;
     }
 
     if (is_dive() && overlapping_bend_or_dive()) {
-        compute_bend_text();
+        if (display) compute_bend_text();
         return;
     }
 
@@ -433,9 +433,9 @@ void GuitarBend::compute_bend_amount() {
 
     set_bend_amount_in_quarter_tones(pitch_diff_in_quarter_tones);
 
-    compute_bend_text();
+    if (display) compute_bend_text();
 
-    compute_is_invalid_or_needs_warning();
+    if (display) compute_is_invalid_or_needs_warning();
 }
 
 int GuitarBend::tot_bend_amount_including_preceding_bends() const {

@@ -106,13 +106,6 @@ void GuitarBendLayout::layout_angular_bend(GuitarBendSegment *item, LayoutContex
         return;
     }
 
-    if ((bend->bend_type() == GuitarBendType::PRE_BEND || bend->bend_type() == GuitarBendType::PRE_DIVE) &&
-        !start_note->parenthesis_info()) {
-        start_note->set_ghost(true);
-        start_note->mutldata()->reset();
-        TLayout::layout_chord(start_note->chord(), ctx);
-    }
-
     System *start_system = start_note->chord()->segment()->system();
     if (!start_system) {
         return;
@@ -509,12 +502,6 @@ void GuitarBendLayout::layout_bend_tab_staff(GuitarBendSegment *item, LayoutCont
                 arrow << PointF(0, arrow_height) << PointF(arrow_width * .5, 0.0) << PointF(-arrow_width * .5, 0.0) // arrow-down
                 :
                 arrow << PointF(0, -arrow_height) << PointF(arrow_width * .5, 0.0) << PointF(-arrow_width * .5, 0.0); // arrow-up
-
-    if (bend->is_release_bend() && !end_note->ghost()) {
-        end_note->set_ghost(true);
-        end_note->mutldata()->reset();
-        TLayout::layout_chord(end_note->chord(), ctx);
-    }
 
     if (start_on_end_note(bend)) {
         if (!start_note->override_bend_visibility_rules()) {

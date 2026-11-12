@@ -92,7 +92,8 @@ public:
     PropertyValue property_default(Pid id) const override;
 
     static constexpr int slack_bend_amount = -33;
-    void compute_bend_amount();
+    // Semantic normalization suppresses the display text/geometry refresh.
+    void compute_bend_amount(bool display = true);
     int tot_bend_amount_including_preceding_bends() const;
     void compute_bend_text();
     void compute_is_invalid_or_needs_warning();
