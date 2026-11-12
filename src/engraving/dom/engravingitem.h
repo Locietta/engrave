@@ -114,6 +114,7 @@ enum class ElementFlag {
     EMPTY = 0x04000000,
     WRITTEN = 0x08000000,
     END_OF_MEASURE_CHANGE = 0x10000000,
+    LAYOUT_COPY = 0x20000000,
 };
 
 typedef muse::Flags<ElementFlag> ElementFlags;
@@ -167,6 +168,11 @@ public:
     //! Defaults to the owner; overridden where placement differs from ownership
     //! (e.g. measures are placed on systems, but not owned by them).
     virtual EngravingItem *layout_parent() const;
+
+    // A display-only clone; it never owns source identity or semantic caches.
+    bool is_layout_copy() const { return flag(ElementFlag::LAYOUT_COPY); }
+
+    void set_layout_copy(bool value) { set_flag(ElementFlag::LAYOUT_COPY, value); }
 
     EngravingConfiguration *configuration() const;
     EngravingContextConfiguration *context_configuration() const;

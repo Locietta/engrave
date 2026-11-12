@@ -606,6 +606,20 @@ void Segment::check_element(EngravingItem *el, track_idx_t track) {
 //   add
 //---------------------------------------------------------
 
+void Segment::add_layout_annotation(EngravingItem *item) {
+    assert(item->is_layout_copy());
+    item->set_ownership_parent(this);
+    annotations_.push_back(item);
+}
+
+void Segment::remove_layout_copy(EngravingItem *item) {
+    assert(item->is_layout_copy());
+    std::erase(annotations_, item);
+    if (item->track() < elist_.size() && elist_[item->track()] == item) elist_[item->track()] = nullptr;
+    delete item;
+    check_empty();
+}
+
 void Segment::add(EngravingItem *el) {
     //      LOGD("%p segment %s add(%d, %d, %s)", this, subTypeName(), tick(), el->track(), el->typeName());
 
