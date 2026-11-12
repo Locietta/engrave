@@ -60,9 +60,5 @@ private:
     std::vector<TempoTimePoint> points_; // sorted by utick for O(logN) lookup
     PausesMap pauses_;
     BeatsPerSecond tempo_multiplier_ = 1.0;
-
-    mutable size_t utick2utime_hint_ = 0; // cached points_ index for utick2utime()
-    mutable size_t utime2utick_hint_ = 0; // cached points_ index for utime2utick()
-    mutable size_t tempo_hint_ = 0;       // cached points_ index for tempo()
 };
 } // namespace mu::engraving

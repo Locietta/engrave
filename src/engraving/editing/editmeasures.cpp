@@ -42,6 +42,7 @@
 #include "../dom/system.h"
 #include "../dom/tie.h"
 #include "../dom/utils.h"
+#include "dom/masterscore.h"
 #include "log.h"
 
 using namespace muse;
@@ -85,6 +86,7 @@ void InsertRemoveMeasures::insert_measures() {
     std::vector<RepeatSegmentInfo> old_segments;
     if (fm->is_measure()) {
         // Snapshot before the structural edit below invalidates it
+        score->master_score()->update_repeat_list(false);
         old_segments = score->repeat_segment_info_list(/*expandRepeats*/ true);
 
         score->invalidate_repeat_list();
@@ -218,6 +220,7 @@ void InsertRemoveMeasures::remove_measures() {
     // Snapshot before the structural edit below invalidates it
     std::vector<RepeatSegmentInfo> old_segments;
     if (fm->is_measure()) {
+        score->master_score()->update_repeat_list(false);
         old_segments = score->repeat_segment_info_list(/*expandRepeats*/ true);
     }
 

@@ -96,6 +96,7 @@ void finish_load(engraving::EngravingProject &project) {
     }
     score->set_layout_all();
     score->update();
+    score->init_automation();
 }
 } // namespace
 

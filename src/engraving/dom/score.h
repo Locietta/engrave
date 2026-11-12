@@ -686,7 +686,7 @@ public:
     /// where those need to have the same value for expandRepeats.
     const RepeatList &repeat_list() const;
     /// For small, one-step operations, where you need to get the relevant repeatList just once
-    const RepeatList &repeat_list(bool expand_repeats, bool update_ties = true) const;
+    const RepeatList &repeat_list(bool expand_repeats) const;
     /// Read-only snapshot, safe to call mid-edit (e.g. before a structural change invalidates the current repeatList)
     std::vector<RepeatSegmentInfo> repeat_segment_info_list(bool expand_repeats) const;
     /// Always the repeat-expanded list, regardless of the current playback setting

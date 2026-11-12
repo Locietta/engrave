@@ -31,6 +31,8 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
     auto impl = std::make_unique<Impl>();
     impl->engine = &engine;
     impl->project = std::move(project);
+    impl->project->master_score()->invalidate_repeat_list();
+    impl->project->master_score()->init_automation();
     impl->bind_layout_boundary();
     for (auto *score : impl->project->master_score()->score_list()) {
         score->layout_state.font_generation = engine.font_generation;
