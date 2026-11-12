@@ -359,6 +359,16 @@ bool common_authored_property(Pid pid) {
     }
 }
 
+void write_authored_unit(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml) {
+    const auto &table = *authored_override_table(owner);
+    for (const auto &entry : table.entries) {
+        if (entry.child == child && property_type(entry.pid) == PType::POINT && entry.unit == AuthoredOverrideUnit::MILLIMETRE) {
+            xml.tag_property(Pid::SIZE_SPATIUM_DEPENDENT, PropertyValue(false), PropertyValue());
+            return;
+        }
+    }
+}
+
 void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, WriteContext &ctx) {
     const auto &table = *authored_override_table(owner);
     if (const auto *carrier = table.carrier(child)) {
@@ -370,6 +380,7 @@ void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, X
         const auto track = carrier->track == muse::nidx ? owner->track() : carrier->track;
         if (track != ctx.cur_track() && track != muse::nidx) xml.tag("track", static_cast<int>(track) + ctx.track_diff());
     }
+    write_authored_unit(owner, child, xml);
     for (auto pid :
          {Pid::COLOR, Pid::VISIBLE, Pid::Z, Pid::OFFSET, Pid::PLACEMENT, Pid::POSITION_LINKED_TO_MASTER, Pid::APPEARANCE_LINKED_TO_MASTER})
         write_authored_property(owner, child, xml, pid);
@@ -3122,10 +3133,37 @@ void TWrite::write(const Tuplet *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("baseDots", dots);
     }
 
-    if (item->number()) {
-        xml.start_element("Number", item->number());
-        write_property(item->number(), xml, Pid::TEXT_STYLE);
-        write_property(item->number(), xml, Pid::TEXT);
+    const AuthoredChildKey number_key{AuthoredChildRole::TUPLET_NUMBER};
+    const auto &overrides = item->authored_overrides;
+    if (overrides.carrier(number_key) || item->number_type() != TupletNumberType::NO_TEXT) {
+        xml.start_element("Number");
+        if (const auto *style = overrides.find(number_key, Pid::TEXT_STYLE)) {
+            xml.tag_property(Pid::TEXT_STYLE, style->value, PropertyValue());
+        } else {
+            xml.tag_property(Pid::TEXT_STYLE, PropertyValue::from_value(TextStyleType::TUPLET), PropertyValue());
+        }
+        write_authored_unit(item, number_key, xml);
+        if (overrides.find(number_key, Pid::TEXT)) {
+            write_authored_property(item, number_key, xml, Pid::TEXT);
+        } else {
+            String text = item->number_type() == TupletNumberType::SHOW_NUMBER ?
+                              String(u"%1").arg(item->ratio().numerator()) :
+                              String(u"%1:%2").arg(item->ratio().numerator(), item->ratio().denominator());
+            if (item->style().style_b(Sid::TUPLET_USE_SYMBOLS)) {
+                String symbols;
+                for (size_t i = 0; i < text.size(); ++i) {
+                    symbols.append(u"<sym>tuplet");
+                    symbols.append(text.at(i).unicode());
+                    symbols.append(u"</sym>");
+                }
+                text = symbols.replace(String(u":"), String(u"Colon"));
+            }
+            xml.tag_property(Pid::TEXT, text, PropertyValue());
+        }
+        for (const auto &entry : overrides.entries) {
+            if (entry.child == number_key && entry.pid != Pid::TEXT && entry.pid != Pid::TEXT_STYLE)
+                write_authored_property(item, number_key, xml, entry.pid);
+        }
         xml.end_element();
     }
 

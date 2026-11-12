@@ -159,6 +159,7 @@ Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 
 void Tuplet::apply_number_style() {
     if (!number_) return;
+    AuthoredOverrideMirror mirror(*number_);
     for (auto pid : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
         number_->set_property(pid, get_property(pid));
         number_->set_property_flags(pid, property_flags(pid));
@@ -509,7 +510,16 @@ bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::FONT_STYLE: number_style_.font_style = v.to_int(); break;
         case Pid::ALIGN: number_style_.align = v.value<Align>(); break;
         case Pid::POSITION: number_style_.position = v.value<AlignH>(); break;
-        case Pid::SIZE_SPATIUM_DEPENDENT: number_style_.spatium_dependent = v.to_bool(); break;
+        case Pid::SIZE_SPATIUM_DEPENDENT:
+            number_style_.spatium_dependent = v.to_bool();
+            for (auto &entry : authored_overrides.entries) {
+                if (entry.child.role != AuthoredChildRole::TUPLET_NUMBER || property_type(entry.pid) != PType::POINT) continue;
+                const double previous = entry.unit == AuthoredOverrideUnit::MILLIMETRE ? dpmm : style().spatium();
+                const double next = v.to_bool() ? style().spatium() : dpmm;
+                entry.value = entry.value.value<PointF>() * (previous / next);
+                entry.unit = v.to_bool() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+            }
+            break;
         case Pid::DIRECTION: set_direction(v.value<DirectionV>()); break;
         case Pid::NUMBER_TYPE: set_number_type(TupletNumberType(v.to_int())); break;
         case Pid::BRACKET_TYPE: set_bracket_type(TupletBracketType(v.to_int())); break;
@@ -522,6 +532,7 @@ bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
         default: return DurationElement::set_property(property_id, v);
     }
     if (number_) {
+        AuthoredOverrideMirror mirror(*number_);
         switch (property_id) {
             case Pid::FONT_FACE:
             case Pid::FONT_STYLE:

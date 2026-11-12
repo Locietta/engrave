@@ -1457,7 +1457,9 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             number = Factory::create_text(t, TextStyleType::TUPLET);
             number->set_composition(true);
             Tuplet::reset_number_property(number);
+            bind_authored_child(*number, {AuthoredChildRole::TUPLET_NUMBER});
             TRead::read(number, e, ctx);
+            finish_authored_read(*number);
             t->read_number_style(*number);
             t->set_number(number);
             number->set_visible(t->visible()); //?? override saved property
@@ -1475,6 +1477,10 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
     t->set_number(number);
     t->set_base_len(base_len);
     t->set_ratio(ratio);
+    if (number) {
+        finish_authored_read(*number);
+        apply_authored_overrides(*number);
+    }
 
     Fraction f = t->base_len().fraction() * t->ratio().denominator();
     t->set_ticks(f.reduced());
@@ -4165,6 +4171,7 @@ void TRead::read(Text *t, XmlReader &e, ReadContext &ctx) {
                 continue;
             }
             t->init_text_style_type(s);
+            remember_authored_property(*t, Pid::TEXT_STYLE, PropertyValue::from_value(s), t->property_flags(Pid::TEXT_STYLE));
         } else if (!read_properties(to_text_base(t), e, ctx)) {
             e.unknown();
         }
@@ -4398,6 +4405,7 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
     if (tag == "text") {
         String str = line_break_from_tag(e.read_xml());
         t->set_xml_text(str);
+        remember_authored_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT));
         t->check_custom_formatting(str);
     } else if (tag == "bold") {
         bool val = e.read_int();

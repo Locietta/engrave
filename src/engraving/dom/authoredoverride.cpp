@@ -43,8 +43,11 @@ bool common_property(Pid pid) {
     }
 }
 
+bool number_style_property(Pid pid);
+
 bool supported_property(AuthoredChildRole role, Pid pid) {
     if (role == AuthoredChildRole::NONE || pid == Pid::END) return false;
+    if (role == AuthoredChildRole::TUPLET_NUMBER && number_style_property(pid)) return false;
     switch (pid) {
         case Pid::SELECTED:
         case Pid::GENERATED:
@@ -65,6 +68,28 @@ bool supported_property(AuthoredChildRole role, Pid pid) {
     }
 }
 
+bool number_style_property(Pid pid) {
+    switch (pid) {
+        case Pid::FONT_FACE:
+        case Pid::FONT_SIZE:
+        case Pid::FONT_STYLE:
+        case Pid::ALIGN:
+        case Pid::POSITION:
+        case Pid::SIZE_SPATIUM_DEPENDENT: return true;
+        default: return false;
+    }
+}
+
+Tuplet *number_style_owner(const EngravingObject &object, Pid pid) {
+    if (!number_style_property(pid) || !object.is_engraving_item()) return nullptr;
+    const auto &item = static_cast<const EngravingItem &>(object);
+    if (item.authored_mirror) return nullptr;
+    auto *parent = item.ownership_parent();
+    if (!parent || !parent->is_tuplet()) return nullptr;
+    auto *tuplet = static_cast<Tuplet *>(parent);
+    return tuplet->number() == &item ? tuplet : nullptr;
+}
+
 AuthoredChildKey inferred_key(const EngravingItem &item) {
     auto *parent = item.ownership_parent();
     if (!parent) return {};
@@ -76,6 +101,7 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
         if (item.type() == ElementType::STEM_SLASH && static_cast<const EngravingObject *>(chord->stem_slash()) == &item)
             return {AuthoredChildRole::STEM_SLASH};
     }
+    if (parent->is_tuplet() && static_cast<const Tuplet *>(parent)->number() == &item) return {AuthoredChildRole::TUPLET_NUMBER};
     if (item.type() == ElementType::NOTEDOT) {
         const auto *dots = parent->is_note() ? &static_cast<const Note *>(parent)->dots() :
                            parent->is_rest() ? &static_cast<const Rest *>(parent)->dot_list() :
@@ -143,6 +169,10 @@ void mirror_property(EngravingItem &item, Pid pid, const PropertyValue &value, P
             case Pid::SIZE_SPATIUM_DEPENDENT: item.set_size_is_spatium_dependent(value.to_bool()); break;
             case Pid::POSITION_LINKED_TO_MASTER: item.set_position_linked_to_master(value.to_bool()); break;
             case Pid::APPEARANCE_LINKED_TO_MASTER: item.set_appearance_linked_to_master(value.to_bool()); break;
+            case Pid::TEXT_STYLE:
+                if (item.is_text_base() && static_cast<TextBase &>(item).text_style_type() != value.value<TextStyleType>())
+                    item.set_property(pid, value);
+                break;
             default: item.set_property(pid, value); break;
         }
     }
@@ -230,6 +260,7 @@ bool authored_override_handles(const EngravingObject &object, Pid pid) {
 }
 
 std::optional<PropertyValue> authored_override_value(const EngravingObject &object, Pid pid) {
+    if (auto *owner = number_style_owner(object, pid)) return owner->get_property(pid);
     if (!authored_override_handles(object, pid)) return std::nullopt;
     const auto &item = *bound_item(object);
     const auto *table = authored_override_table(authored_override_owner(item));
@@ -238,6 +269,7 @@ std::optional<PropertyValue> authored_override_value(const EngravingObject &obje
 }
 
 std::optional<PropertyFlags> authored_override_flags(const EngravingObject &object, Pid pid) {
+    if (auto *owner = number_style_owner(object, pid)) return owner->property_flags(pid);
     if (!authored_override_handles(object, pid)) return std::nullopt;
     const auto &item = *bound_item(object);
     const auto *table = authored_override_table(authored_override_owner(item));
@@ -254,7 +286,8 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
     const auto sid = item.get_property_style(pid);
     AuthoredOverrideEntry entry{item.authored_child, pid, value, flags, default_value, sid};
     if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
-        entry.unit = item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+        entry.unit = property_type(pid) == PType::ABSOLUTE || item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM :
+                                                                                                   AuthoredOverrideUnit::MILLIMETRE;
         const double scale = unit_scale(item, entry);
         const auto normalize = [pid, scale](const PropertyValue &v) -> PropertyValue {
             if (!v.is_valid()) return v;
@@ -268,16 +301,30 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
 }
 
 bool set_authored_override(EngravingItem &item, Pid pid, const PropertyValue &value) {
+    if (auto *owner = number_style_owner(item, pid)) return owner->set_property(pid, value);
     if (!authored_override_handles(item, pid)) return false;
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     const auto flags = *authored_override_flags(item, pid);
     remember_authored_property(item, pid, value, flags);
+    if (pid == Pid::SIZE_SPATIUM_DEPENDENT) {
+        auto &table = *authored_override_table(authored_override_owner(item));
+        for (auto &entry : table.entries) {
+            if (entry.child != item.authored_child || property_type(entry.pid) != PType::POINT) continue;
+            const auto physical = effective_value(item, entry).value<PointF>();
+            entry.unit = value.to_bool() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+            entry.value = physical / unit_scale(item, entry);
+        }
+    }
     mirror_property(item, pid, value, flags);
     item.trigger_layout();
     return true;
 }
 
 bool set_authored_override_flags(EngravingObject &object, Pid pid, PropertyFlags flags) {
+    if (auto *owner = number_style_owner(object, pid)) {
+        owner->set_property_flags(pid, flags);
+        return true;
+    }
     if (!authored_override_handles(object, pid)) return false;
     auto &item = *bound_item(object);
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
@@ -311,6 +358,12 @@ void apply_authored_overrides(EngravingItem &item) {
 void finish_authored_read(EngravingItem &item) {
     auto *table = authored_override_table(authored_override_owner(item));
     if (!table || item.authored_child.role == AuthoredChildRole::NONE) return;
+    // Legacy point values use the final carrier unit policy, even when its tag
+    // followed an offset. Source values are already normalized wire coordinates.
+    for (auto &entry : table->entries) {
+        if (entry.child == item.authored_child && property_type(entry.pid) == PType::POINT)
+            entry.unit = item.offset_is_spatium_dependent() ? AuthoredOverrideUnit::SPATIUM : AuthoredOverrideUnit::MILLIMETRE;
+    }
     const auto *old = table->carrier(child_key(item));
     auto eid = item.eid();
     if (!eid.is_valid()) eid = old ? old->legacy_eid : EID::new_unique();
