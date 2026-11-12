@@ -42,7 +42,7 @@ struct EngravingItem;
 struct EngravingObject;
 struct Fermata;
 struct Hairpin;
-struct GraceNotesGroup;
+struct GraceNotesView;
 struct Instrument;
 struct Measure;
 struct Note;
@@ -116,7 +116,7 @@ private:
     template <class Content>
     void append_content(Content &content, ExportContext &ctx, const std::vector<engraving::ChordRest *> &chord_rests,
                         ContentContext context);
-    void append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, engraving::GraceNotesGroup &grace_notes);
+    void append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, engraving::GraceNotesView grace_notes);
     void create_beam(ExportContext &ctx, engraving::ChordRest *chord_rest);
     // These return the index of the last chord/rest they consumed, or nothing when the container
     // cannot be exported (the chord/rest is then exported on its own).

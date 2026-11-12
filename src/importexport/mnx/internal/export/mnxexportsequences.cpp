@@ -735,7 +735,7 @@ bool MnxExporter::append_event(Content &content, ExportContext &ctx, ChordRest *
 //   emit a grace container and recurse into its content
 //---------------------------------------------------------
 
-void MnxExporter::append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, GraceNotesGroup &grace_notes) {
+void MnxExporter::append_grace(std::vector<model::SequenceItem> &content, ExportContext &ctx, GraceNotesView grace_notes) {
     if (grace_notes.empty()) {
         return;
     }

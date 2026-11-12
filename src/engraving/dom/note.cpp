@@ -2552,7 +2552,7 @@ EngravingItem *Note::next_element() {
                 return bend_for()->front_segment();
             }
 
-            GraceNotesGroup &grace_notes_after = chord()->grace_notes_after();
+            const auto grace_notes_after = chord()->grace_notes_after();
             if (!grace_notes_after.empty()) {
                 Chord *grace_notes_after_first_chord = grace_notes_after.front();
                 if (grace_notes_after_first_chord) {

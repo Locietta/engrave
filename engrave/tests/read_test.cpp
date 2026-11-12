@@ -155,6 +155,48 @@ TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
     EXPECT_FALSE(second.has_layout_data());
 }
 
+TEST(Read, GraceNoteQueryResultsAreIndependent) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::unique_ptr<mu::engraving::Chord> chord_owner(mu::engraving::Factory::create_chord(master.dummy()));
+    auto &chord = *chord_owner;
+    auto *grace = mu::engraving::Factory::create_chord(master.dummy());
+    grace->set_note_type(mu::engraving::NoteType::ACCIACCATURA);
+    chord.add(grace);
+    const auto &all = chord.grace_notes_before();
+    ASSERT_EQ(all.size(), 1);
+    EXPECT_EQ(all.front(), grace);
+    EXPECT_TRUE(chord.grace_notes_before(true).empty());
+    EXPECT_EQ(all.size(), 1);
+    EXPECT_TRUE(chord.grace_notes_before_group().empty());
+    chord.update_grace_notes_before_group();
+    EXPECT_EQ(chord.grace_notes_before_group().size(), 1);
+    EXPECT_TRUE(chord.grace_notes_before(true).empty());
+    EXPECT_EQ(chord.grace_notes_before_group().size(), 1);
+    auto *after = mu::engraving::Factory::create_chord(master.dummy());
+    after->set_note_type(mu::engraving::NoteType::GRACE8_AFTER);
+    after->set_grace_index(1);
+    chord.add(after);
+    auto *last = mu::engraving::Factory::create_chord(master.dummy());
+    last->set_note_type(mu::engraving::NoteType::GRACE16_AFTER);
+    last->set_grace_index(2);
+    chord.add(last);
+    const auto &after_all = chord.grace_notes_after();
+    ASSERT_EQ(after_all.size(), 2);
+    EXPECT_EQ(after_all.front(), last);
+    EXPECT_EQ(after_all.back(), after);
+    EXPECT_EQ(after_all.at(1), after);
+    const std::vector<mu::engraving::Chord *> owned = after_all;
+    EXPECT_EQ(owned, (std::vector<mu::engraving::Chord *>{last, after}));
+    EXPECT_TRUE(chord.grace_notes_after(true).empty());
+    EXPECT_EQ(after_all.size(), 2);
+    EXPECT_TRUE(chord.grace_notes_after_group().empty());
+    chord.update_grace_notes_after_group();
+    EXPECT_EQ(chord.grace_notes_after_group().size(), 2);
+    EXPECT_FALSE(chord.has_layout_data());
+}
+
 // Palette-only elements are ignored by both supported native readers.
 TEST(Read, UnknownActionIconIsSkipped) {
     for (const std::string version : {"4.60", "5.00"}) {

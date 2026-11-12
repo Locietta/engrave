@@ -699,7 +699,7 @@ GuitarBend *Score::add_guitar_bend(GuitarBendType type, Note *note, Note *end_no
         bend->set_track2(chord->track());
 
         if (type == GuitarBendType::PRE_BEND || type == GuitarBendType::GRACE_NOTE_BEND || type == GuitarBendType::PRE_DIVE) {
-            const GraceNotesGroup &graces_before = chord->grace_notes_before();
+            const auto graces_before = chord->grace_notes_before();
 
             // Add to existing grace chord only if it already has a bend/dive ghost.
             const bool has_ghost_grace =

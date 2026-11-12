@@ -635,7 +635,7 @@ TEST(Evidence, EveryCaseMatchesTheCheckedInRow) {
         if (found == old_cases.end())
             ADD_FAILURE() << dump_json(row.at("case")) << " has no checked-in row";
         else
-            EXPECT_TRUE(json_equal(row, *found)) << "rerun with --update-evidence once the change is understood";
+            EXPECT_TRUE(json_equal(row, *found)) << "actual: " << dump_json(row) << "\nexpected: " << dump_json(*found);
     }
 }
 

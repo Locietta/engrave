@@ -510,7 +510,7 @@ Note *SLine::guess_final_note(Note *start_note) {
     Chord *chord = start_note->chord();
     if (chord->is_grace_before()) {
         Chord *parent_chord = to_chord(chord->parent());
-        GraceNotesGroup &graces_before = parent_chord->grace_notes_before();
+        const auto graces_before = parent_chord->grace_notes_before();
         auto position_of_this = std::find(graces_before.begin(), graces_before.end(), chord);
         if (position_of_this != graces_before.end()) {
             auto next_position = ++position_of_this;
@@ -521,7 +521,7 @@ Note *SLine::guess_final_note(Note *start_note) {
         return parent_chord->up_note();
     } else if (chord->is_grace_after()) {
         Chord *parent_chord = to_chord(chord->parent());
-        GraceNotesGroup &graces_after = parent_chord->grace_notes_after();
+        const auto graces_after = parent_chord->grace_notes_after();
         auto position_of_this = std::find(graces_after.begin(), graces_after.end(), chord);
         if (position_of_this != graces_after.end()) {
             auto next_position = ++position_of_this;
@@ -566,7 +566,7 @@ Note *SLine::guess_final_note(Note *start_note) {
     }
 
     if (target && target->notes().size() > 0) {
-        const std::vector<Chord *> &graces = target->grace_notes_before();
+        const auto graces = target->grace_notes_before();
         if (graces.size() > 0) {
             return graces.front()->up_note();
         }

@@ -121,7 +121,7 @@ std::optional<MnxChordTargetPosition> MnxExporter::mnx_chord_target_position(con
     }
 
     const Chord *main_chord = to_chord(parent);
-    const GraceNotesGroup &grace_notes = chord->is_grace_after() ? main_chord->grace_notes_after() : main_chord->grace_notes_before();
+    const auto grace_notes = chord->is_grace_after() ? main_chord->grace_notes_after() : main_chord->grace_notes_before();
     const auto grace_it = std::find(grace_notes.begin(), grace_notes.end(), chord);
     if (grace_it == grace_notes.end()) {
         LOGW() << "Skipping grace-note target whose grace index could not be resolved.";

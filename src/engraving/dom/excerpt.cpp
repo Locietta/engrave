@@ -750,7 +750,7 @@ static void add_back_spanners(Note *on, Note *nn, Score *score) {
     }
 }
 
-static void add_grace_note_ties_and_back_spanners(GraceNotesGroup &original_grace_notes, Chord *new_chord, TieMap &tie_map, Score *score) {
+static void add_grace_note_ties_and_back_spanners(GraceNotesView original_grace_notes, Chord *new_chord, TieMap &tie_map, Score *score) {
     for (Chord *old_grace : original_grace_notes) {
         Chord *new_grace = new_chord->grace_note_at(old_grace->grace_index());
         if (!new_grace) {
