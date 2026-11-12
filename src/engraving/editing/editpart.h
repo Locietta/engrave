@@ -39,7 +39,6 @@ struct EditPart {
     static void set_part_visible(Score *score, Part *part, bool visible);
     static void set_staff_visible(Score *score, Staff *staff, bool visible);
     static void set_part_sharp_flat(Score *score, Part *part, PreferSharpFlat sharp_flat);
-    static void set_staff_type(Score *score, Staff *staff, StaffTypes type_id);
 
     static void remove_parts(Score *score, const std::vector<Part *> &parts);
     static void remove_staves(Score *score, const std::vector<Staff *> &staves);

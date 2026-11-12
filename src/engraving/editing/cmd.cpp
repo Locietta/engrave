@@ -1752,7 +1752,7 @@ void Score::cmd_set_hide_staff_if_empty_override(staff_idx_t staff_idx, System *
         if (!mb->is_measure()) {
             continue;
         }
-        undo(new ChangeMStaffHideIfEmpty(engraving::to_measure(mb), staff_idx, value));
+        record_staff_hide(engraving::to_measure(mb), staff_idx, value);
     }
 }
 

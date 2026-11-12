@@ -3827,7 +3827,7 @@ void Score::undo_remove_staff(Staff *staff) {
 
     staff->undo_unlink();
 
-    undo(new RemoveStaff(staff));
+    record_staff_membership(staff, muse::nidx, false);
 }
 
 //---------------------------------------------------------
@@ -3836,7 +3836,7 @@ void Score::undo_remove_staff(Staff *staff) {
 //---------------------------------------------------------
 
 void Score::undo_insert_staff(Staff *staff, staff_idx_t ridx, bool create_rests) {
-    undo(new InsertStaff(staff, ridx));
+    record_staff_membership(staff, ridx, true);
     staff_idx_t idx = staff_idx(staff->part()) + ridx;
     for (Measure *m = first_measure(); m; m = m->next_measure()) {
         m->cmd_add_staves(idx, idx + 1, create_rests);

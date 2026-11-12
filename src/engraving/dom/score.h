@@ -342,7 +342,7 @@ public:
     Part *part_by_id(const muse::ID &part_id) const;
 
     void clear_system_object_staves();
-    void add_system_object_staff(Staff *staff);
+    void add_system_object_staff(Staff *staff, size_t position = muse::nidx);
     void remove_system_object_staff(Staff *staff);
 
     const std::vector<Staff *> &system_object_staves() const { return system_object_staves_; }
@@ -385,6 +385,10 @@ public:
     void record_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
     void record_link(EngravingObject *item, EngravingObject *peer);
     void record_unlink(EngravingObject *item);
+    void record_staff_membership(Staff *staff, staff_idx_t index, bool adding);
+    void record_system_staff(Staff *staff, bool adding);
+    void record_staff_order(const std::vector<staff_idx_t> &order);
+    void record_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
     void record_part_membership(Part *part, size_t index, bool adding);
     void record_part_label(Fraction tick, Part *part, const String &value, bool long_name);
     void record_part_instrument(Part *part, std::unique_ptr<Instrument> value);
