@@ -300,7 +300,10 @@ void TextCursor::change_selection_format(FormatId id, const FormatValue &val) {
         }
     }
 
-    text_->renderer()->layout_text1(text_);
+    if (editing())
+        text_->renderer()->layout_text1(text_);
+    else
+        text_->trigger_layout();
 }
 
 const CharFormat TextCursor::selected_fragments_format() const {
@@ -402,20 +405,26 @@ const CharFormat TextCursor::selected_fragments_format() const {
 //---------------------------------------------------------
 
 void TextCursor::set_format(FormatId id, FormatValue val) {
-    if (!has_selection()) {
-        if (!editing()) {
-            text_->select_all();
-        } else if (format()->format_value(id) == val) {
-            return;
+    if (!editing()) {
+        if (text_->xml_text().is_empty()) {
+            // Construction/base formatting needs no persistent layout data.
+            format_.set_format_value(id, val);
+        } else {
+            TextBase::LayoutData source;
+            text_->create_blocks(&source, true);
+            format_.set_format_value(id, val);
+            for (auto &block : source.blocks) block.change_format(id, val, 0, static_cast<int>(block.columns()));
+            text_->set_xml_text(text_->gen_text(&source, true));
         }
+        clear_selection();
+        text_->trigger_layout();
+        return;
     }
+    if (!has_selection() && format()->format_value(id) == val) return;
     format()->set_format_value(id, val);
     if (has_selection()) {
         change_selection_format(id, val);
         text()->set_text_invalid();
-    }
-    if (!editing()) {
-        clear_selection();
     }
 }
 

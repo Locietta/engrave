@@ -98,6 +98,8 @@ private:
     void restore_selection();
 
     String xml_text_;
+    CharFormat previous_format_;
+    PropertyFlags previous_flags_ = PropertyFlags::NOSTYLE;
     Pid property_id_;
     PropertyValue property_val_;
     FontStyle existing_style_;
