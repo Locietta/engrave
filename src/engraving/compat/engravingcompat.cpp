@@ -671,7 +671,7 @@ void AlignmentMigration500::migrate_snapped_and_same_item_type_alignment(MasterS
             }
             const System *system = to_system(item->find_ancestor(ElementType::SYSTEM));
             std::vector<EngravingItem *> group;
-            item->ldata()->scan_connected_items_in_snapping_chain(system, [&visited, &group](EngravingItem *chain_item) {
+            item->scan_connected_items_in_snapping_chain(system, [&visited, &group](EngravingItem *chain_item) {
                 if (visited.insert(chain_item).second) {
                     group.push_back(chain_item);
                 }

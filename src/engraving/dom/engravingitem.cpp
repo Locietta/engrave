@@ -2281,14 +2281,13 @@ void EngravingItem::LayoutData::disconnect_item_snapped_after() {
     item_snapped_after_ = nullptr;
 }
 
-void EngravingItem::LayoutData::scan_connected_items_in_snapping_chain(const System *system,
-                                                                       const std::function<void(EngravingItem *)> &func) const {
-    EngravingItem *item = const_cast<EngravingItem *>(item_);
+void EngravingItem::scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const {
+    EngravingItem *item = const_cast<EngravingItem *>(this);
     func(item);
 
     std::vector<EngravingItem *> visited = {item}; // To break out of circular snap chains
 
-    EngravingItem *snapped_before = item_snapped_before_;
+    EngravingItem *snapped_before = ldata()->item_snapped_before();
     while (snapped_before && snapped_before->find_ancestor(ElementType::SYSTEM) == system) {
         IF_ASSERT_FAILED(!muse::contains(visited, snapped_before)) { break; }
         visited.push_back(snapped_before);
@@ -2296,7 +2295,7 @@ void EngravingItem::LayoutData::scan_connected_items_in_snapping_chain(const Sys
         snapped_before = snapped_before->ldata()->item_snapped_before();
     }
 
-    EngravingItem *snapped_after = item_snapped_after_;
+    EngravingItem *snapped_after = ldata()->item_snapped_after();
     while (snapped_after && snapped_after->find_ancestor(ElementType::SYSTEM) == system) {
         IF_ASSERT_FAILED(!muse::contains(visited, snapped_after)) { break; }
         visited.push_back(snapped_after);

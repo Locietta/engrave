@@ -544,8 +544,6 @@ public:
 
         EngravingItem *item_snapped_after() const { return item_snapped_after_; }
 
-        void scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const;
-
         void dump(std::stringstream &ss) const;
 
     protected:
@@ -592,6 +590,8 @@ public:
 
     // Storage belongs only to elements explicitly touched by layout/mutators.
     bool has_layout_data() const { return layout_data_ != nullptr; }
+
+    void scan_connected_items_in_snapping_chain(const System *system, const std::function<void(EngravingItem *)> &func) const;
 
     Shape shape(LdAccess mode = LdAccess::CHECK) const { return ldata()->shape(mode); }
 

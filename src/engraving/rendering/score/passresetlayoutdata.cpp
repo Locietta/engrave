@@ -30,7 +30,7 @@ using namespace mu::engraving::rendering::score;
 static void reset_layout_data(EngravingObject *obj) {
     if (obj->is_engraving_item()) {
         EngravingItem *item = to_engraving_item(obj);
-        if (item->ldata()) {
+        if (item->has_layout_data()) {
             item->mutldata()->reset();
         }
     }

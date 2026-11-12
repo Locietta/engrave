@@ -2672,7 +2672,7 @@ void SystemLayout::center_big_time_sigs_across_staves(const System *system) {
 bool SystemLayout::snap_chain_should_be_centered_between_staves(EngravingItem *item, const System *system) {
     // Snapped items are centered as one, so if any of them cannot be centered, none of them can
     bool all_centerable = true;
-    item->ldata()->scan_connected_items_in_snapping_chain(system, [&all_centerable, system](EngravingItem *chain_item) {
+    item->scan_connected_items_in_snapping_chain(system, [&all_centerable, system](EngravingItem *chain_item) {
         all_centerable = all_centerable && element_should_be_centered_between_staves(chain_item, system, chain_item->place_above());
     });
 
@@ -2835,7 +2835,7 @@ void SystemLayout::center_items_in_gap(const Gap &gap, const System *system, dou
                 can_center_group = false;
 
                 // Snapped items stay together:
-                gap_item.item->ldata()->scan_connected_items_in_snapping_chain(
+                gap_item.item->scan_connected_items_in_snapping_chain(
                     system, [&movable_items](EngravingItem *chain_item) { movable_items.erase(chain_item); });
 
                 // A lyrics verse stays together:
