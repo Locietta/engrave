@@ -1389,6 +1389,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             bool val = e.read_int();
             if (number) {
                 number->set_bold(val);
+                t->set_property(Pid::FONT_STYLE, number->get_property(Pid::FONT_STYLE));
             }
             if (t->is_styled(Pid::FONT_STYLE)) {
                 t->set_property_flags(Pid::FONT_STYLE, PropertyFlags::UNSTYLED);
@@ -1397,6 +1398,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             bool val = e.read_int();
             if (number) {
                 number->set_italic(val);
+                t->set_property(Pid::FONT_STYLE, number->get_property(Pid::FONT_STYLE));
             }
             if (t->is_styled(Pid::FONT_STYLE)) {
                 t->set_property_flags(Pid::FONT_STYLE, PropertyFlags::UNSTYLED);
@@ -1405,6 +1407,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             bool val = e.read_int();
             if (number) {
                 number->set_underline(val);
+                t->set_property(Pid::FONT_STYLE, number->get_property(Pid::FONT_STYLE));
             }
             if (t->is_styled(Pid::FONT_STYLE)) {
                 t->set_property_flags(Pid::FONT_STYLE, PropertyFlags::UNSTYLED);
@@ -1413,6 +1416,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             bool val = e.read_int();
             if (number) {
                 number->set_strike(val);
+                t->set_property(Pid::FONT_STYLE, number->get_property(Pid::FONT_STYLE));
             }
             if (t->is_styled(Pid::FONT_STYLE)) {
                 t->set_property_flags(Pid::FONT_STYLE, PropertyFlags::UNSTYLED);
@@ -1434,6 +1438,8 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
             number->set_composition(true);
             Tuplet::reset_number_property(number);
             TRead::read(number, e, ctx);
+            t->read_number_style(*number);
+            t->set_number(number);
             number->set_visible(t->visible()); //?? override saved property
             number->set_color(t->color());
             number->set_track(t->track());

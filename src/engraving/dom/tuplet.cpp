@@ -22,6 +22,8 @@
 
 #include "tuplet.h"
 
+#include <array>
+
 #include "beam.h"
 #include "chord.h"
 #include "engravingitem.h"
@@ -72,6 +74,7 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
 }
 
 Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
+    number_style_ = t.number_style_;
     tick_ = t.tick_;
     has_bracket_ = t.has_bracket_;
     ratio_ = t.ratio_;
@@ -141,18 +144,6 @@ void Tuplet::set_color(const Color &col) {
     }
 }
 
-EngravingObject *Tuplet::property_delegate(Pid id) const {
-    switch (id) {
-        case Pid::FONT_FACE:
-        case Pid::FONT_STYLE:
-        case Pid::FONT_SIZE:
-        case Pid::ALIGN:
-        case Pid::POSITION:
-        case Pid::SIZE_SPATIUM_DEPENDENT: return number_;
-        default: return nullptr;
-    }
-}
-
 //---------------------------------------------------------
 //   rtick
 //---------------------------------------------------------
@@ -165,7 +156,28 @@ Fraction Tuplet::rtick() const { return tick() - measure()->tick(); }
 //   Set FONT_ITALIC to true, because for tuplets number should be italic
 //---------------------------------------------------------
 
-void Tuplet::reset_number_property() { reset_number_property(number_); }
+void Tuplet::apply_number_style() {
+    if (!number_) return;
+    for (auto pid : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
+        number_->set_property(pid, get_property(pid));
+        number_->set_property_flags(pid, property_flags(pid));
+    }
+}
+
+void Tuplet::read_number_style(const Text &number) {
+    constexpr std::array properties{Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE,
+                                    Pid::ALIGN,     Pid::POSITION,   Pid::SIZE_SPATIUM_DEPENDENT};
+    std::array<PropertyValue, properties.size()> values;
+    std::array<PropertyFlags, properties.size()> flags;
+    for (size_t i = 0; i < properties.size(); ++i) {
+        values[i] = number.get_property(properties[i]);
+        flags[i] = number.property_flags(properties[i]);
+    }
+    for (size_t i = 0; i < properties.size(); ++i) {
+        set_property(properties[i], values[i]);
+        set_property_flags(properties[i], flags[i]);
+    }
+}
 
 void Tuplet::reset_number_property(Text *number) {
     for (auto p : {Pid::FONT_FACE, Pid::FONT_STYLE, Pid::FONT_SIZE, Pid::ALIGN, Pid::POSITION, Pid::SIZE_SPATIUM_DEPENDENT}) {
@@ -465,10 +477,13 @@ Fraction Tuplet::elements_duration() {
 //---------------------------------------------------------
 
 PropertyValue Tuplet::get_property(Pid property_id) const {
-    if (EngravingObject *delegate = property_delegate(property_id)) {
-        return delegate->get_property(property_id);
-    }
     switch (property_id) {
+        case Pid::FONT_FACE: return number_style_.font_face;
+        case Pid::FONT_SIZE: return number_style_.font_size;
+        case Pid::FONT_STYLE: return number_style_.font_style;
+        case Pid::ALIGN: return PropertyValue::from_value(number_style_.align);
+        case Pid::POSITION: return PropertyValue::from_value(number_style_.position);
+        case Pid::SIZE_SPATIUM_DEPENDENT: return number_style_.spatium_dependent;
         case Pid::DIRECTION: return PropertyValue::from_value<DirectionV>(direction_);
         case Pid::NUMBER_TYPE: return int(number_type_);
         case Pid::BRACKET_TYPE: return int(bracket_type_);
@@ -487,10 +502,13 @@ PropertyValue Tuplet::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
-    if (EngravingObject *delegate = property_delegate(property_id)) {
-        return delegate->set_property(property_id, v);
-    }
     switch (property_id) {
+        case Pid::FONT_FACE: number_style_.font_face = v.value<String>(); break;
+        case Pid::FONT_SIZE: number_style_.font_size = v.to_double(); break;
+        case Pid::FONT_STYLE: number_style_.font_style = v.to_int(); break;
+        case Pid::ALIGN: number_style_.align = v.value<Align>(); break;
+        case Pid::POSITION: number_style_.position = v.value<AlignH>(); break;
+        case Pid::SIZE_SPATIUM_DEPENDENT: number_style_.spatium_dependent = v.to_bool(); break;
         case Pid::DIRECTION: set_direction(v.value<DirectionV>()); break;
         case Pid::NUMBER_TYPE: set_number_type(TupletNumberType(v.to_int())); break;
         case Pid::BRACKET_TYPE: set_bracket_type(TupletBracketType(v.to_int())); break;
@@ -501,6 +519,17 @@ bool Tuplet::set_property(Pid property_id, const PropertyValue &v) {
         case Pid::P2: user_p2_ = v.value<PointF>(); break;
         case Pid::TICK: set_tick(v.value<Fraction>()); break;
         default: return DurationElement::set_property(property_id, v);
+    }
+    if (number_) {
+        switch (property_id) {
+            case Pid::FONT_FACE:
+            case Pid::FONT_STYLE:
+            case Pid::FONT_SIZE:
+            case Pid::ALIGN:
+            case Pid::POSITION:
+            case Pid::SIZE_SPATIUM_DEPENDENT: number_->set_property(property_id, v); break;
+            default: break;
+        }
     }
     if (!current_elements_.empty()) {
         current_elements_.front()->trigger_layout();
