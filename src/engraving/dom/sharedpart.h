@@ -35,7 +35,7 @@ private:
 public:
     SharedPart(Score *score);
 
-    void add_origin_part(Part *p);
+    void add_origin_part(Part *p, size_t position = muse::nidx);
     void remove_origin_part(Part *p);
 
     const std::vector<Part *> &origin_parts() const { return origin_parts_; }

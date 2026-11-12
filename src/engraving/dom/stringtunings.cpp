@@ -148,7 +148,7 @@ void StringTunings::set_string_data(const StringData &string_data) {
 }
 
 void StringTunings::undo_string_data(const StringData &string_data) {
-    score()->undo(new ChangeStringData(this, string_data));
+    score()->record_string_data(this, string_data);
     trigger_layout();
 }
 

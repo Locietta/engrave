@@ -38,7 +38,9 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/notedot.h"
 #include "engraving/dom/parenthesis.h"
+#include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
+#include "engraving/dom/sharedpart.h"
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
@@ -713,7 +715,7 @@ TEST(JournalDerived, BracketRemovalThenExcerptRemovalHasOneOwner) {
     const auto handle = master.eid_register()->enroll(*item);
     ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
         item->undo_change_property(Pid::SYSTEM_BRACKET, static_cast<int>(BracketType::NO_BRACKET));
-        master.undo(new RemoveExcerpt(excerpt));
+        master.record_excerpt(excerpt, false);
         return {};
     }}));
     EXPECT_TRUE(master.excerpts().empty());
@@ -1139,6 +1141,162 @@ TEST(JournalTiming, FailedChainReplacementRestoresOriginalSourceLifetimes) {
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
     EXPECT_EQ(master.layout_state.whole_count, whole);
     EXPECT_EQ(master.layout_state.range_count, range);
+}
+
+TEST(JournalPart, ReattachedPartRestoresLabelsAndOriginalInstrumentLifetime) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *part = master.parts().front();
+    auto *instrument = part->instrument();
+    const auto long_name = part->long_name(Fraction(0, 1));
+    const auto short_name = part->short_name(Fraction(0, 1));
+    const auto handle = master.eid_register()->enroll(*part);
+    const auto id = engrave::from_engine(part->eid());
+    const auto revision = document->revision();
+    auto replacement = std::make_unique<Instrument>(*instrument);
+    replacement->set_id(u"journal-test");
+    EXPECT_FALSE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_part_label(Fraction(0, 1), part, u"changed long", true);
+        master.record_part_label(Fraction(0, 1), part, u"changed short", false);
+        master.record_part_instrument(part, std::move(replacement));
+        master.record_part_membership(part, 0, false);
+        master.record_part_membership(part, 0, true);
+        const auto &journal = *master.mutation_journal()->active_transaction();
+        EXPECT_EQ(journal.part_entries(), 5u);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject part changes"});
+    }}));
+    EXPECT_EQ(master.parts().front(), part);
+    EXPECT_EQ(part->instrument(), instrument);
+    EXPECT_EQ(part->long_name(Fraction(0, 1)), long_name);
+    EXPECT_EQ(part->short_name(Fraction(0, 1)), short_name);
+    const auto resolved = engrave::resolve(master, id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(resolved->object, part);
+    EXPECT_EQ(master.eid_register()->live_item(handle), part);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalPart, ReattachedExcerptHasOneOwnerOnCommitAndRollback) {
+    using namespace mu::engraving;
+    for (bool reject : {false, true}) {
+        SCOPED_TRACE(reject);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+        auto &master = engrave::harness::master_of(*document);
+        auto *excerpt = master.excerpts().front();
+        auto *score = excerpt->excerpt_score();
+        const auto handle = master.eid_register()->enroll(*score);
+        const auto id = engrave::from_engine(score->eid());
+        const auto revision = document->revision();
+        const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            master.record_excerpt(excerpt, false);
+            master.record_excerpt(excerpt, true);
+            EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+            if (reject) return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject excerpt reattach"});
+            return {};
+        }});
+        EXPECT_EQ(result.has_value(), !reject);
+        ASSERT_EQ(master.excerpts().size(), 1u);
+        EXPECT_EQ(master.excerpts().front(), excerpt);
+        EXPECT_EQ(master.eid_register()->live_item(handle), score);
+        const auto resolved = engrave::resolve(master, id);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, score);
+        EXPECT_EQ(document->revision(), revision + (reject ? 0u : 1u));
+        ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            master.record_excerpt(excerpt, false);
+            return {};
+        }}));
+        EXPECT_TRUE(master.excerpts().empty());
+        EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    }
+}
+
+TEST(JournalPart, DestroyedRetainedExcerptDoesNotDoubleDeleteOnSnapshotRecovery) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    const auto revision = document->revision();
+    const auto result = engrave::api::BatchGuard(*document).run(
+        {[](auto &context) -> engrave::Result<void> {
+            auto &master = context.master();
+            auto *excerpt = master.excerpts().front();
+            master.record_excerpt(excerpt, false);
+            delete excerpt;
+            return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject after excerpt destruction"});
+        }},
+        engrave::api::Policy::SNAPSHOT, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(document->revision(), revision);
+    auto &restored = engrave::harness::master_of(*document);
+    EXPECT_EQ(restored.excerpts().size(), 1u);
+    EXPECT_FALSE(restored.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+}
+
+TEST(JournalPart, SharedPartMembershipSupportsRollbackAndCommittedDisposal) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto original = master.parts();
+    auto *shared = new SharedPart(&master);
+    const auto handle = master.eid_register()->enroll(*shared);
+    {
+        JournalBatch journal;
+        journal.change_part_membership(shared, master.parts().size(), true);
+        journal.unwind();
+    }
+    EXPECT_EQ(master.parts(), original);
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+    shared = new SharedPart(&master);
+    const auto removed = master.eid_register()->enroll(*shared);
+    master.insert_part(shared, master.parts().size());
+    {
+        JournalBatch journal;
+        journal.change_part_membership(shared, master.parts().size() - 1, false);
+        journal.cleanup(true);
+    }
+    EXPECT_EQ(master.parts(), original);
+    EXPECT_EQ(master.eid_register()->item_from_handle(removed), nullptr);
+}
+
+TEST(JournalPart, UnjournaledExcerptRemovalDestroysItsScore) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    auto &master = engrave::harness::master_of(*document);
+    auto *excerpt = master.excerpts().front();
+    const auto handle = master.eid_register()->enroll(*excerpt->excerpt_score());
+    ASSERT_FALSE(master.mutation_journal()->has_active_transaction());
+    master.delete_excerpt(excerpt);
+    EXPECT_TRUE(master.excerpts().empty());
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
+}
+
+TEST(JournalPart, DetachedExcerptOwnsItsReattachedPartUntilScoreDestruction) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
+    auto &master = engrave::harness::master_of(*document);
+    auto *excerpt = master.excerpts().front();
+    auto *part = excerpt->excerpt_score()->parts().front();
+    const auto handle = master.eid_register()->enroll(*part);
+    ASSERT_TRUE(chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_part_membership(part, 0, false);
+        master.record_part_membership(part, 0, true);
+        master.record_excerpt(excerpt, false);
+        return {};
+    }}));
+    EXPECT_TRUE(master.excerpts().empty());
+    EXPECT_EQ(master.eid_register()->item_from_handle(handle), nullptr);
 }
 
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {

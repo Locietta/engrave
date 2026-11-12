@@ -29,6 +29,12 @@
 #include "sourcechange.h"
 
 namespace mu::engraving {
+struct Part;
+struct SharedPart;
+struct StringTunings;
+struct StringData;
+struct Instrument;
+struct Excerpt;
 struct EditData;
 struct BracketItem;
 struct TextBase;
@@ -65,6 +71,13 @@ struct Transaction {
     void reparent_segment(Segment *item, Measure *parent, Fraction tick);
     void link_objects(EngravingObject *item, EngravingObject *peer);
     void unlink_object(EngravingObject *item);
+    void change_part_membership(Part *part, size_t index, bool adding);
+    void change_part_label(Fraction tick, Part *part, const String &value, bool long_name);
+    void replace_part_instrument(Part *part, std::unique_ptr<Instrument> value);
+    void change_string_data(StringTunings *item, const StringData &value);
+    void change_shared_origin(SharedPart *shared, Part *origin, bool connecting);
+    void change_excerpt_membership(Excerpt *excerpt, bool adding);
+
     void insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged = false);
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void change_measure_length(Measure *measure, Fraction length);

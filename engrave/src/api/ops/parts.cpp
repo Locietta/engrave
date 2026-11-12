@@ -126,13 +126,13 @@ Result<Step> prepare(EditContext &context, const RemovePart &op) {
         const ID id = part->id();
         const Excerpts excerpts(master, id);
         mu::engraving::EditPart::remove_parts(&master, {part});
-        for (Excerpt *excerpt : excerpts.initial) master.undo(new mu::engraving::RemoveExcerpt(excerpt));
+        for (Excerpt *excerpt : excerpts.initial) master.record_excerpt(excerpt, false);
         for (Excerpt *excerpt : excerpts.guests) {
             Score *excerpt_score = excerpt->excerpt_score();
             Part *copy = copy_of(*excerpt_score, id);
             if (!copy) continue;
             mu::engraving::EditPart::remove_parts(excerpt_score, {copy});
-            if (excerpt->parts().empty()) master.undo(new mu::engraving::RemoveExcerpt(excerpt));
+            if (excerpt->parts().empty()) master.record_excerpt(excerpt, false);
         }
         return {};
     };

@@ -31,6 +31,7 @@
 #include "dom/score.h"
 #include "elementchange.h"
 #include "global/types/translatablestring.h"
+#include "partchange.h"
 #include "sourcechange.h"
 #include "textchange.h"
 #include "timingchange.h"
@@ -56,7 +57,13 @@ enum class JournalEntryKind : uint8_t {
     TIME_INSERTION,
     MEASURE_MEMBERSHIP,
     MEASURE_LENGTH,
-    MEASURE_REPEAT_COUNT
+    MEASURE_REPEAT_COUNT,
+    PART_MEMBERSHIP,
+    PART_LABEL,
+    PART_INSTRUMENT,
+    STRING_DATA,
+    SHARED_ORIGIN,
+    EXCERPT_MEMBERSHIP
 };
 
 struct JournalEntry {
@@ -89,6 +96,13 @@ struct JournalBatch {
     void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void change_measure_length(Measure *measure, Fraction length);
     void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
+    void change_part_membership(Part *part, size_t index, bool adding);
+    void change_part_label(Fraction tick, Part *part, const String &value, bool long_name);
+    void replace_part_instrument(Part *part, std::unique_ptr<Instrument> value);
+    void change_string_data(StringTunings *item, const StringData &value);
+    void change_shared_origin(SharedPart *shared, Part *origin, bool connecting);
+    void change_excerpt_membership(Excerpt *excerpt, bool adding);
+    void forget_excerpt(uint32_t reference);
     void unwind(bool clean_up = true);
 
     bool replaying() const { return replaying_; }
@@ -122,6 +136,10 @@ struct JournalBatch {
 
     size_t timing_entries() const { return times_.size() + measures_.size() + measure_lengths_.size() + measure_repeats_.size(); }
 
+    size_t part_entries() const {
+        return parts_.size() + labels_.size() + instruments_.size() + string_data_.size() + origins_.size() + excerpt_memberships_.size();
+    }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -141,6 +159,15 @@ private:
     amc::vector<MeasureMembershipInverse> measures_;
     amc::vector<MeasureLengthInverse> measure_lengths_;
     amc::vector<MeasureRepeatCountInverse> measure_repeats_;
+    amc::vector<PartMembershipInverse> parts_;
+    amc::vector<PartLabelInverse> labels_;
+    amc::vector<PartInstrumentInverse> instruments_;
+    amc::vector<StringDataInverse> string_data_;
+    amc::vector<SharedOriginInverse> origins_;
+    amc::vector<ExcerptReference> excerpts_;
+    amc::vector<ExcerptMembershipInverse> excerpt_memberships_;
+    uint32_t retain_excerpt(Excerpt &excerpt);
+    void dispose_excerpts();
     void dispose_entry(JournalEntry entry, bool committed);
     bool replaying_ = false;
 };

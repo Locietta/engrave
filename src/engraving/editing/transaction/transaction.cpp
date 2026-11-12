@@ -26,12 +26,16 @@
 #include <stdexcept>
 
 #include "../../dom/masterscore.h"
+#include "dom/excerpt.h"
+#include "dom/sharedpart.h"
+#include "dom/stringtunings.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
 #include "editing/editproperty.h"
 #include "editing/inserttime.h"
 #include "log.h"
 #include "mutationjournal.h"
+#include "partchange.h"
 #include "undoablecommand.h"
 
 using namespace mu::engraving;
@@ -255,6 +259,82 @@ void Transaction::change_measure_repeat_count(Measure *measure, int count, staff
     }
     auto token = begin_compound_hook(s_push_hook);
     undoable_transaction_->change_measure_repeat_count(measure, count, staff);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_part_membership(Part *part, size_t index, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_part_membership(*part, index, adding);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_part_membership(part, index, adding);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_part_label(*part, tick, value, long_name);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_part_label(tick, part, value, long_name);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::replace_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        exchange_part_instrument(*part, value);
+        refresh_part_instrument(*part);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->replace_part_instrument(part, std::move(value));
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_string_data(StringTunings *item, const StringData &value) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        item->set_string_data(value);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_string_data(item, value);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_shared_origin(SharedPart *shared, Part *origin, bool connecting) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        if (connecting)
+            shared->add_origin_part(origin);
+        else
+            shared->remove_origin_part(origin);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_shared_origin(shared, origin, connecting);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        if (adding)
+            excerpt->master_score()->add_excerpt(excerpt);
+        else {
+            auto &master = *excerpt->master_score();
+            std::unique_ptr<Excerpt> unjournaled;
+            if (!excerpt->retaining_journal_) unjournaled.reset(excerpt);
+            try {
+                master.remove_excerpt(excerpt);
+            } catch (...) {
+                if (muse::contains(master.excerpts(), excerpt)) unjournaled.release();
+                throw;
+            }
+        }
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_excerpt_membership(excerpt, adding);
     finish_compound_hook(s_push_hook, token);
 }
 

@@ -32,6 +32,7 @@
 #include "capo.h"
 #include "chord.h"
 #include "containers.h"
+#include "editing/transaction/mutationjournal.h"
 #include "factory.h"
 #include "fret.h"
 #include "guitarbend.h"
@@ -78,7 +79,10 @@ Excerpt::Excerpt(const Excerpt &ex, bool copy_contents)
     }
 }
 
-Excerpt::~Excerpt() { delete excerpt_score_; }
+Excerpt::~Excerpt() {
+    if (retaining_journal_) retaining_journal_->forget_excerpt(retained_index_);
+    delete excerpt_score_;
+}
 
 bool Excerpt::inited() const { return inited_; }
 
@@ -482,18 +486,16 @@ void MasterScore::delete_excerpt(Excerpt *excerpt) {
             record_unlink(st);
         }
     }
-    undo(new RemoveExcerpt(excerpt));
+    record_excerpt(excerpt, false);
 }
 
 void MasterScore::init_and_add_excerpt(Excerpt *excerpt, bool fake_undo) {
     init_excerpt(excerpt);
 
-    auto excerpt_cmd = new AddExcerpt(excerpt);
-    if (fake_undo) {
-        excerpt_cmd->redo();
-    } else {
-        excerpt->excerpt_score()->undo(excerpt_cmd);
-    }
+    if (fake_undo)
+        add_excerpt(excerpt);
+    else
+        record_excerpt(excerpt, true);
 }
 
 void MasterScore::init_excerpt(Excerpt *excerpt) {

@@ -33,46 +33,6 @@
 
 using namespace mu::engraving;
 
-namespace {
-//-------------------------------------------------------------------
-// Undo commands
-//-------------------------------------------------------------------
-
-struct ConnectSharedPart : UndoableCommand {
-private:
-
-    SharedPart *shared_part = nullptr;
-    Part *origin_part = nullptr;
-
-public:
-    ConnectSharedPart(SharedPart *s, Part *o) : shared_part(s), origin_part(o) {}
-
-    void undo() override { shared_part->remove_origin_part(origin_part); }
-
-    void redo() override { shared_part->add_origin_part(origin_part); }
-
-    UNDO_TYPE(CommandType::CONNECT_SHARED_PART)
-    UNDO_NAME("Connect shared part")
-};
-
-struct DisconnectSharedPart : UndoableCommand {
-private:
-
-    SharedPart *shared_part = nullptr;
-    Part *origin_part = nullptr;
-
-public:
-    DisconnectSharedPart(SharedPart *s, Part *o) : shared_part(s), origin_part(o) {}
-
-    void undo() override { shared_part->add_origin_part(origin_part); }
-
-    void redo() override { shared_part->remove_origin_part(origin_part); }
-
-    UNDO_TYPE(CommandType::DISCONNECT_SHARED_PART)
-    UNDO_NAME("Disconnect shared part")
-};
-} // namespace
-
 //-------------------------------------------------------------------
 // EditStaveSharing
 //-------------------------------------------------------------------
@@ -231,13 +191,13 @@ void EditStaveSharing::add_staff_to_shared_part(SharedPart *shared_part, const P
 
 void EditStaveSharing::connect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part) {
     Score *score = origin_part->score();
-    tx.push(new ConnectSharedPart(shared_part, origin_part));
+    tx.change_shared_origin(shared_part, origin_part, true);
     add_staff_to_shared_part(shared_part, origin_part, score->key_list(), origin_part->staff(0)->staff_type());
 }
 
 void EditStaveSharing::disconnect_shared_part(Transaction &tx, SharedPart *shared_part, Part *origin_part) {
     Score *score = origin_part->score();
-    tx.push(new DisconnectSharedPart(shared_part, origin_part));
+    tx.change_shared_origin(shared_part, origin_part, false);
     score->undo_remove_staff(shared_part->staves().back());
 }
 
@@ -253,7 +213,7 @@ void EditStaveSharing::handle_remove_part(Transaction &tx, Part *part) {
         shared_part = to_shared_part(part);
         std::vector<Part *> origin_parts = shared_part->origin_parts();
         for (Part *origin_part : origin_parts) {
-            tx.push(new DisconnectSharedPart(shared_part, origin_part));
+            tx.change_shared_origin(shared_part, origin_part, false);
         }
     }
 }

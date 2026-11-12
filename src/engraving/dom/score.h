@@ -90,6 +90,10 @@ struct WriteScoreHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
+struct StringTunings;
+struct StringData;
+struct Instrument;
+
 struct Articulation;
 struct Box;
 struct Bracket;
@@ -381,6 +385,11 @@ public:
     void record_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
     void record_link(EngravingObject *item, EngravingObject *peer);
     void record_unlink(EngravingObject *item);
+    void record_part_membership(Part *part, size_t index, bool adding);
+    void record_part_label(Fraction tick, Part *part, const String &value, bool long_name);
+    void record_part_instrument(Part *part, std::unique_ptr<Instrument> value);
+    void record_string_data(StringTunings *item, const StringData &value);
+    void record_excerpt(Excerpt *excerpt, bool adding);
     void record_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged = false);
     void record_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
     void record_measure_length(Measure *measure, Fraction length);
