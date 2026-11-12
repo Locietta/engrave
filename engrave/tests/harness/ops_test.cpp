@@ -1373,6 +1373,39 @@ TEST(TupletNumberEdit, FailedBatchRestoresStyleWithoutNumberDisplay) {
     EXPECT_EQ(document.revision(), revision);
 }
 
+TEST(TupletNumberEdit, FailedBatchRestoresTextEntryAndAbsence) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                 "src/importexport/mnx/tests/data/project_examples/tupletSimple.mnx");
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    ASSERT_TRUE(document.page_count());
+    auto &tuplet = *mu::engraving::to_tuplet(&engrave::harness::element(document, find_id(document, "Tuplet")));
+    auto *number = tuplet.number();
+    ASSERT_NE(number, nullptr);
+    number->set_property(Pid::OFFSET, muse::PointF(0.25, -0.5));
+    const auto before = tuplet.authored_overrides;
+    const auto unit_policy = tuplet.get_property(Pid::SIZE_SPATIUM_DEPENDENT);
+    const auto text = number->get_property(Pid::TEXT);
+    auto result = engrave::api::BatchGuard(document).run(
+        {[number](engrave::api::EditContext &) -> engrave::Result<void> {
+             number->undo_change_property(Pid::TEXT, muse::String(u"changed"));
+             number->undo_change_property(Pid::SIZE_SPATIUM_DEPENDENT, false);
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after number text"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(number->get_property(Pid::TEXT), text);
+    EXPECT_EQ(tuplet.authored_overrides.entries.size(), before.entries.size());
+    EXPECT_EQ(tuplet.authored_overrides.carriers.size(), before.carriers.size());
+    EXPECT_EQ(tuplet.get_property(Pid::SIZE_SPATIUM_DEPENDENT), unit_policy);
+    ASSERT_EQ(tuplet.authored_overrides.entries.size(), before.entries.size());
+    for (size_t i = 0; i < before.entries.size(); ++i) {
+        EXPECT_EQ(tuplet.authored_overrides.entries[i].unit, before.entries[i].unit);
+        EXPECT_EQ(tuplet.authored_overrides.entries[i].value, before.entries[i].value);
+    }
+}
+
 // --- the evidence ---------------------------------------------------------------
 
 std::string read_text(const std::filesystem::path &path) {

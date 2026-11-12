@@ -66,9 +66,13 @@ void ChangeProperty::flip() {
     }
 
     auto *item = element->is_engraving_item() ? to_engraving_item(element) : nullptr;
-    auto *table = item && item->is_beam() && (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE) ? authored_override_table(item) : nullptr;
-    if (item && (authored_override_handles(*item, id) || (item->type() == ElementType::STEM && id == Pid::USER_LEN)))
-        table = authored_override_table(authored_override_owner(*item));
+    auto *table = item && ((item->is_beam() && (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE)) || id == Pid::SIZE_SPATIUM_DEPENDENT) ?
+                      authored_override_table(item) :
+                      nullptr;
+    if (item && (authored_override_handles(*item, id) || (item->type() == ElementType::STEM && id == Pid::USER_LEN) ||
+                 id == Pid::SIZE_SPATIUM_DEPENDENT)) {
+        if (auto *owner_table = authored_override_table(authored_override_owner(*item))) table = owner_table;
+    }
     if (table) {
         // Owner-local value snapshot also covers compound setters (style changes,
         // no-slope and first manual beam edits) without per-family undo code.

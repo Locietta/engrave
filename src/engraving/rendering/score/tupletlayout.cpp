@@ -166,6 +166,8 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
         item->set_number(number);
     }
 
+    bind_authored_child(*item->number(), {AuthoredChildRole::TUPLET_NUMBER});
+    AuthoredOverrideMirror mirror(*item->number());
     item->apply_number_style();
 
     // tuplet properties are propagated to number automatically by setProperty()
@@ -193,6 +195,8 @@ void TupletLayout::create_number(Tuplet *item, LayoutContext &ctx) {
     } else {
         item->number()->set_xml_text(number_string);
     }
+
+    apply_authored_overrides(*item->number());
 
     item->set_is_small(true);
     for (const DurationElement *e : item->elements()) {

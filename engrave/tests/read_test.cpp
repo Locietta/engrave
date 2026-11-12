@@ -5347,6 +5347,61 @@ TEST(Read, SparseChildOverridesSurviveLayoutAndMirrorChanges) {
     }
 }
 
+TEST(Read, TupletNumberTextSurvivesDisplayDisposalAndLayout) {
+    using namespace mu::engraving;
+    const std::string fixture = R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes><baseNote>quarter</baseNote>
+<Number><text>three</text><offset x="0.25" y="-0.5"/></Number></Tuplet>
+<Chord><durationType>quarter</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>
+<Chord><durationType>quarter</durationType><Note><pitch>64</pitch><tpc>18</tpc></Note></Chord>
+<endTuplet/><Rest><durationType>half</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+    for (const std::string version : {"4.60", "5.00"})
+        for (bool millimetres : {false, true}) {
+            auto input = fixture;
+            if (millimetres) input.insert(input.find("<Number>") + 8, "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+            input.replace(input.find("5.00"), 4, version);
+            auto document = g_engine->open(as_bytes(input));
+            ASSERT_TRUE(document) << document.error().message;
+            auto *chord = to_chord(master_of(**document).first_measure()->first(SegmentType::CHORD_REST)->element(0));
+            auto *tuplet = chord->tuplet();
+            ASSERT_NE(tuplet, nullptr);
+            const AuthoredChildKey key{AuthoredChildRole::TUPLET_NUMBER};
+            ASSERT_NE(tuplet->authored_overrides.find(key, Pid::TEXT), nullptr);
+            EXPECT_EQ(tuplet->number()->get_property(Pid::TEXT), PropertyValue(String(u"three")));
+            ASSERT_NE(tuplet->authored_overrides.find(key, Pid::OFFSET), nullptr);
+            const auto unit = millimetres ? AuthoredOverrideUnit::MILLIMETRE : AuthoredOverrideUnit::SPATIUM;
+            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
+            EXPECT_EQ(tuplet->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
+            tuplet->number()->set_property(Pid::TEXT, String(u"chosen"));
+            const auto before = legacy_override_write(tuplet);
+            const auto entries = tuplet->authored_overrides.entries;
+            delete tuplet->number();
+            tuplet->set_number(nullptr);
+            EXPECT_EQ(legacy_override_write(tuplet), before);
+            ASSERT_TRUE((*document)->page_count());
+            ASSERT_NE(tuplet->number(), nullptr);
+            EXPECT_EQ(tuplet->number()->get_property(Pid::TEXT), PropertyValue(String(u"chosen")));
+            EXPECT_EQ(legacy_override_write(tuplet), before);
+            ASSERT_EQ(tuplet->authored_overrides.entries.size(), entries.size());
+            for (size_t i = 0; i < entries.size(); ++i) {
+                EXPECT_EQ(tuplet->authored_overrides.entries[i].value, entries[i].value);
+                EXPECT_EQ(tuplet->authored_overrides.entries[i].flags, entries[i].flags);
+            }
+            auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+            ASSERT_TRUE(saved) << saved.error().message;
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened) << reopened.error().message;
+            auto *restored = to_chord(master_of(**reopened).first_measure()->first(SegmentType::CHORD_REST)->element(0))->tuplet();
+            EXPECT_EQ(restored->authored_overrides.find(key, Pid::TEXT)->value, PropertyValue(String(u"chosen")));
+            ASSERT_NE(restored->authored_overrides.find(key, Pid::OFFSET), nullptr);
+            EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->unit, unit);
+            EXPECT_EQ(restored->authored_overrides.find(key, Pid::OFFSET)->value, PropertyValue(PointF(0.25, -0.5)));
+        }
+}
+
 TEST(Read, LegacyLineSegmentOrdinalAndExplicitZeroBaselineBeforeLayout) {
     const auto xml = legacy_segment_fixture(R"(<HairPin><eid>F_F</eid><track>0</track><subtype>0</subtype>
 <startTick>0/1</startTick><ticks>1/1</ticks><track2>0</track2>
