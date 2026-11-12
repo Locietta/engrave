@@ -179,6 +179,43 @@ struct ItemLayoutSpy {
     ~ItemLayoutSpy() { mu::engraving::rendering::score::ScoreRenderer::layout_hook = nullptr; }
 };
 
+TEST(Read, BendGhostStateIsNormalizedBeforeFirstRender) {
+    ItemLayoutSpy spy;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/bend.gp");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    const auto before = music::dump_json(music::semantic_dump(&master), 1);
+    int found = 0;
+    for (auto *object : engrave::document_objects(master)) {
+        if (!object->is_note()) continue;
+        auto *note = mu::engraving::to_note(object);
+        if (note->chord()->is_grace() && note->bend_for() && note->bend_for()->bend_type() == mu::engraving::GuitarBendType::PRE_BEND &&
+            ((note->tick().ticks() == 3840 && note->pitch() == 57) || (note->tick().ticks() == 4800 && note->pitch() == 53))) {
+            EXPECT_TRUE(note->ghost());
+            ++found;
+        }
+    }
+    EXPECT_EQ(found, 2);
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(music::dump_json(music::semantic_dump(&master), 1), before);
+}
+
+TEST(Read, ParenthesizedPrebendsKeepPerStaffGhostState) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    std::vector<std::pair<mu::engraving::Note *, bool>> ghosts;
+    for (auto *object : engrave::document_objects(master)) {
+        if (object->is_note()) ghosts.emplace_back(mu::engraving::to_note(object), mu::engraving::to_note(object)->ghost());
+    }
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    for (const auto &[note, ghost] : ghosts) EXPECT_EQ(note->ghost(), ghost);
+}
+
 std::string formatted_text_fixture() {
     auto source = read_text(write470_fixture());
     source.insert(source.find("<Chord>"),

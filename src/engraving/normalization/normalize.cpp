@@ -21,11 +21,13 @@
 #include "dom/slur.h"
 #include "dom/spannermap.h"
 #include "dom/staff.h"
+#include "dom/stafftype.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
+#include "editing/editproperty.h"
 #include "editing/transaction/transaction.h"
 #include "notes.h"
 
@@ -469,6 +471,24 @@ static void normalize_note_spanner(Spanner &spanner) {
     if (spanner.start_element()) spanner.set_tick(spanner.start_element()->tick());
     if (spanner.end_element()) spanner.set_tick2(spanner.end_element()->tick());
     if (spanner.is_glissando() && spanner.staff()) normalize_glissando_style(*to_glissando(&spanner));
+    if (spanner.is_guitar_bend() && spanner.start_element() && spanner.end_element()) {
+        auto &bend = *to_guitar_bend(&spanner);
+        bend.compute_bend_amount(false);
+        Note *start = bend.start_note();
+        Note *end = bend.end_note();
+        const auto type = bend.bend_type();
+        const bool tab = bend.staff_type()->is_tab_staff();
+        const bool parenthesized = start->parentheses_mode() != ParenthesesMode::NONE ||
+                                   std::ranges::any_of(start->chord()->note_parentheses(), [&](const NoteParenthesisInfo *group) {
+                                       return std::ranges::find(group->notes(), start) != group->notes().end();
+                                   });
+        // These derived rules apply per staff; generic property propagation would
+        // overwrite linked TAB notes with the standard staff's display convention.
+        if (!tab && (type == GuitarBendType::PRE_BEND || type == GuitarBendType::PRE_DIVE) && !parenthesized && !start->ghost())
+            start->score()->undo(new ChangeProperty(start, Pid::GHOST, true));
+        if (tab && !bend.is_dive() && type != GuitarBendType::SLIGHT_BEND && bend.is_release_bend() && !end->ghost())
+            end->score()->undo(new ChangeProperty(end, Pid::GHOST, true));
+    }
 }
 
 static void normalize_chord_anchors(Chord &chord) {
