@@ -142,6 +142,8 @@ public:
 
     Chord *parent() const { return parent_value; }
 
+    EngravingItem *layout_parent() const override;
+
     void set_pos(double x, double y) override;
 
     Segment *appended_segment() const { return appended_segment_value; }
@@ -309,17 +311,9 @@ public:
     std::vector<Chord *> all_grace_chords_of_main_chord();
 
     void remove_all_grace_notes();
-    void invalidate_grace_notes_layout();
 
     GraceNotesView grace_notes_before(bool filter_unplayable = false) const;
     GraceNotesView grace_notes_after(bool filter_unplayable = false) const;
-
-    GraceNotesGroup &update_grace_notes_before_group();
-    GraceNotesGroup &update_grace_notes_after_group();
-
-    const GraceNotesGroup &grace_notes_before_group() const { return grace_notes_before_; }
-
-    const GraceNotesGroup &grace_notes_after_group() const { return grace_notes_after_; }
 
     size_t grace_index() const { return grace_index_; }
 
@@ -516,9 +510,7 @@ private:
 
     bool ends_note_anchored_line_ = false; // true if this chord is the ending point of a glissando (needed for layout)
     std::vector<Chord *> grace_notes_;     // storage for all grace notes
-    GraceNotesGroup grace_notes_before_ = GraceNotesGroup(this); // will store before-chord grace notes
-    GraceNotesGroup grace_notes_after_ = GraceNotesGroup(this);  // will store after-chord grace notes
-    size_t grace_index_ = 0;                                     // if this is a grace note, index in parent list
+    size_t grace_index_ = 0;               // if this is a grace note, index in parent list
 
     bool is_trill_cue_note_ = false;
 

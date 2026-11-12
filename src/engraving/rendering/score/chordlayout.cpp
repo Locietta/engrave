@@ -2873,13 +2873,11 @@ void ChordLayout::get_note_list_for_dots(Chord *c, std::vector<Note *> &top_down
     std::sort(bottom_up_notes.begin(), bottom_up_notes.end(), [](Note *n1, Note *n2) { return n1->line() > n2->line(); });
 }
 
-void ChordLayout::append_grace_notes(Chord *chord) {
+void ChordLayout::append_grace_notes(Chord *chord, LayoutContext &ctx) {
     Segment *segment = chord->segment();
-    Measure *measure = chord->measure();
     track_idx_t track = chord->track();
-    staff_idx_t staff_idx = chord->staff_idx();
-    GraceNotesGroup &gnb = chord->update_grace_notes_before_group();
-    GraceNotesGroup &gna = chord->update_grace_notes_after_group();
+    GraceNotesGroup &gnb = ctx.update_grace_group(chord, false);
+    GraceNotesGroup &gna = ctx.update_grace_group(chord, true);
 
     //Attach graceNotesBefore of this chord to *this* segment
     if (!gnb.empty()) {
@@ -2897,17 +2895,25 @@ void ChordLayout::append_grace_notes(Chord *chord) {
 
     //Attach graceNotesAfter of this chord to the *following* segment
     if (!gna.empty()) {
-        Segment *following_seg = measure->tick2segment(chord->end_tick(), SegmentType::ALL);
-        while (following_seg && (!following_seg->has_elements(staff2track(staff_idx), staff2track(staff_idx + 1) - 1) ||
-                                 following_seg->is_time_tick_type())) {
-            // If there is nothing on this staff, go to next segment
-            following_seg = following_seg->next();
-        }
+        Segment *following_seg = grace_notes_after_segment(chord);
         if (following_seg) {
             gna.set_appended_segment(following_seg);
             following_seg->pre_append(&gna, track);
         }
     }
+}
+
+Segment *ChordLayout::grace_notes_after_segment(const Chord *chord) {
+    if (chord->grace_notes_after().empty()) {
+        return nullptr;
+    }
+    Measure *measure = chord->measure();
+    staff_idx_t staff_idx = chord->staff_idx();
+    Segment *segment = measure->tick2segment(chord->end_tick(), SegmentType::ALL);
+    while (segment && (!segment->has_elements(staff2track(staff_idx), staff2track(staff_idx + 1) - 1) || segment->is_time_tick_type())) {
+        segment = segment->next();
+    }
+    return segment;
 }
 
 /* Grace-notes-after have the special property of belonging to

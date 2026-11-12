@@ -104,7 +104,8 @@ struct ChordLayout {
     static void layout_ledger_lines(const std::vector<Chord *> &chords, LayoutContext &ctx);
     static void get_note_list_for_dots(Chord *c, std::vector<Note *> &, std::vector<Note *> &, std::vector<int> &);
     static void reposition_grace_notes_after(Segment *segment, size_t tracks);
-    static void append_grace_notes(Chord *chord);
+    static void append_grace_notes(Chord *chord, LayoutContext &ctx);
+    static Segment *grace_notes_after_segment(const Chord *chord);
     static void clear_line_attach_points(Measure *measure);
     static void update_line_attach_points(Chord *chord, bool is_first_in_measure, LayoutContext &ctx);
 

@@ -1215,10 +1215,12 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
     }
 
     for (Chord *chord : elements_to_layout.chords) {
-        GraceNotesGroup &grace_before = chord->update_grace_notes_before_group();
-        GraceNotesGroup &grace_after = chord->update_grace_notes_after_group();
-        TLayout::layout_grace_notes_group2(&grace_before, grace_before.mutldata());
-        TLayout::layout_grace_notes_group2(&grace_after, grace_after.mutldata());
+        if (!chord->grace_notes().empty()) {
+            GraceNotesGroup &grace_before = ctx.update_grace_group(chord, false);
+            GraceNotesGroup &grace_after = ctx.update_grace_group(chord, true);
+            TLayout::layout_grace_notes_group2(&grace_before, grace_before.mutldata());
+            TLayout::layout_grace_notes_group2(&grace_after, grace_after.mutldata());
+        }
         if (TabDurationSymbol *symbol = chord->tab_dur()) {
             TLayout::layout_tab_duration_symbol2(symbol, symbol->mutldata());
             ChordLayout::fill_shape(chord, chord->mutldata());
@@ -1642,13 +1644,13 @@ void SystemLayout::create_skylines(const ElementsToLayout &elements_to_layout, L
                             // add grace notes to skyline
                             if (e->is_chord()) {
                                 Chord *chord = to_chord(e);
-                                const GraceNotesGroup &grace_before = chord->grace_notes_before_group();
-                                const GraceNotesGroup &grace_after = chord->grace_notes_after_group();
-                                if (!grace_before.empty()) {
-                                    skyline.add(grace_before.shape().translate(grace_before.pos() + p + offset));
+                                const GraceNotesGroup *grace_before = ctx.grace_group(chord, false);
+                                const GraceNotesGroup *grace_after = ctx.grace_group(chord, true);
+                                if (grace_before && !grace_before->empty()) {
+                                    skyline.add(grace_before->shape().translate(grace_before->pos() + p + offset));
                                 }
-                                if (!grace_after.empty()) {
-                                    skyline.add(grace_after.shape().translate(grace_after.pos() + p + offset));
+                                if (grace_after && !grace_after->empty()) {
+                                    skyline.add(grace_after->shape().translate(grace_after->pos() + p + offset));
                                 }
 
                                 // If present, add ornament cue note to skyline

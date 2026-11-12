@@ -1149,7 +1149,7 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
             // if this is a grace-note-after, the shape is stored the *appended* segment
             Chord *parent = to_chord(start_cr->ownership_parent());
             if (parent) {
-                start_seg = parent->grace_notes_after_group().appended_segment();
+                start_seg = ChordLayout::grace_notes_after_segment(parent);
             }
         } else {
             start_seg = start_cr->segment(); // first of the slur
@@ -1164,7 +1164,7 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
             // if this is a grace-note-after, the shape is stored the *appended* segment
             Chord *parent = to_chord(end_cr->ownership_parent());
             if (parent) {
-                end_seg = parent->grace_notes_after_group().appended_segment();
+                end_seg = ChordLayout::grace_notes_after_segment(parent);
             }
         } else {
             end_seg = end_cr->segment(); // last of the slur

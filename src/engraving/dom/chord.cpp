@@ -626,7 +626,6 @@ void Chord::add(EngravingItem *e) {
             assert(gc->note_type() != NoteType::NORMAL);
             size_t idx = gc->grace_index();
             gc->set_flag(ElementFlag::MOVABLE, true);
-            invalidate_grace_notes_layout();
             grace_notes_.insert(grace_notes_.begin() + idx, gc);
         } break;
         case ElementType::LEDGER_LINE: ASSERT_X("Chord::add ledgerline"); break;
@@ -711,7 +710,6 @@ void Chord::remove(EngravingItem *e) {
             IF_ASSERT_FAILED(i != grace_notes_.end()) { break; }
             Chord *grace = *i;
             grace->set_grace_index(i - grace_notes_.begin());
-            invalidate_grace_notes_layout();
             grace_notes_.erase(i);
         } break;
         case ElementType::ARTICULATION:
@@ -1717,7 +1715,6 @@ void Chord::remove_markings(bool keep_tremolo) {
         span_arpeggio_ = nullptr;
     }
 
-    invalidate_grace_notes_layout();
     muse::delete_all(grace_notes_);
     remove_all_grace_notes();
     muse::delete_all(articulations());
@@ -1828,56 +1825,7 @@ GraceNotesView Chord::grace_notes_before(bool filter_unplayable) const { return 
 
 GraceNotesView Chord::grace_notes_after(bool filter_unplayable) const { return {&grace_notes_, true, filter_unplayable}; }
 
-void Chord::invalidate_grace_notes_layout() {
-    if (grace_notes_before_.empty() && grace_notes_after_.empty()) {
-        return;
-    }
-    const auto clear = [](Chord *chord) {
-        for (GraceNotesGroup *group : {&chord->grace_notes_before_, &chord->grace_notes_after_}) {
-            group->clear();
-            group->set_appended_segment(nullptr);
-            if (group->has_layout_data()) {
-                group->mutldata()->reset();
-            }
-        }
-    };
-    clear(this);
-    // A segment can combine one chord's after notes with another chord's before
-    // notes. Invalidate the whole measure, including hidden staves and detached
-    // group buffers, before an edit can remove or free any of those pointers.
-    if (Measure *measure = find_measure()) {
-        for (Segment &segment : measure->segments()) {
-            for (track_idx_t track = 0; track < segment.elist().size(); ++track) {
-                EngravingItem *attached = segment.pre_appended_item(track);
-                if (attached && attached->is_grace_notes_group()) {
-                    segment.clear_pre_appended(track);
-                }
-            }
-            for (EngravingItem *item : segment.elist()) {
-                if (item && item->is_chord()) {
-                    clear(to_chord(item));
-                }
-            }
-        }
-    }
-}
-
-void Chord::remove_all_grace_notes() {
-    invalidate_grace_notes_layout();
-    grace_notes_.clear();
-}
-
-GraceNotesGroup &Chord::update_grace_notes_before_group() {
-    const auto notes = grace_notes_before();
-    grace_notes_before_.assign(notes.begin(), notes.end());
-    return grace_notes_before_;
-}
-
-GraceNotesGroup &Chord::update_grace_notes_after_group() {
-    const auto notes = grace_notes_after();
-    grace_notes_after_.assign(notes.begin(), notes.end());
-    return grace_notes_after_;
-}
+void Chord::remove_all_grace_notes() { grace_notes_.clear(); }
 
 Chord *Chord::grace_note_at(size_t idx) const {
     if (idx > grace_notes_.size()) {
@@ -1994,12 +1942,6 @@ Chord *Chord::next_tied_chord(bool backwards, bool same_size) const {
 //---------------------------------------------------------
 
 void Chord::set_note_type(NoteType t) {
-    if (t != note_type_ && ownership_parent() && ownership_parent()->is_chord()) {
-        Chord *parent = to_chord(ownership_parent());
-        if (muse::contains(parent->grace_notes_, this)) {
-            parent->invalidate_grace_notes_layout();
-        }
-    }
     note_type_ = t;
     set_property(Pid::SHOW_STEM_SLASH, property_default(Pid::SHOW_STEM_SLASH));
 }
@@ -2437,7 +2379,12 @@ Note *Chord::first_grace_or_note() {
 // GRACE NOTES
 //---------------------------------
 
-GraceNotesGroup::GraceNotesGroup(DummyParentOr<Chord> c) : EngravingItem(ElementType::GRACE_NOTES_GROUP, c), parent_value(c.as<Chord>()) {}
+GraceNotesGroup::GraceNotesGroup(DummyParentOr<Chord> c) : EngravingItem(ElementType::GRACE_NOTES_GROUP, c), parent_value(c.as<Chord>()) {
+    // LayoutContext owns this object. The source chord must never delete it.
+    move_to_dummy();
+}
+
+EngravingItem *GraceNotesGroup::layout_parent() const { return parent_value; }
 
 void GraceNotesGroup::set_pos(double x, double y) {
     EngravingItem::set_pos(x, y);

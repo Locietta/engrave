@@ -372,7 +372,9 @@ public:
 
     bool has_accidentals() const;
 
-    EngravingItem *pre_appended_item(track_idx_t track) { return pre_appended_items_[track]; }
+    const std::vector<EngravingItem *> &pre_appended_items() const { return pre_appended_items_; }
+
+    EngravingItem *pre_appended_item(track_idx_t track) const { return pre_appended_items_[track]; }
 
     void pre_append(EngravingItem *item, track_idx_t track) { pre_appended_items_[track] = item; }
 
