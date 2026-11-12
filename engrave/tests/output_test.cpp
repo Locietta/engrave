@@ -30,6 +30,8 @@
 #include <gtest/gtest.h>
 
 #include "digest.h"
+#include "draw/types/pen.h"
+#include "draw/types/pixmap.h"
 #include "engrave/src/score/json.h"
 #include "output_fixture.h"
 #include <engrave/engrave.h>
@@ -653,4 +655,27 @@ int main(int argc, char **argv) {
         }
     }
     return result;
+}
+
+TEST(Pen, ReadingDashPatternDoesNotChangeValueEquality) {
+    muse::draw::Pen pen(muse::draw::PenStyle::DASH_DOT_LINE);
+    const auto copy = pen;
+    EXPECT_EQ(pen.dash_pattern(), (std::vector<double>{4, 2, 1, 2}));
+    EXPECT_EQ(pen, copy);
+    pen.set_dash_pattern({3, 2, 1});
+    EXPECT_EQ(pen.dash_pattern(), (std::vector<double>{3, 2, 1, 1}));
+    pen.set_style(muse::draw::PenStyle::DOT_LINE);
+    EXPECT_EQ(pen.dash_pattern(), (std::vector<double>{1, 2}));
+}
+
+TEST(Pixmap, OwnsInputAndCopiesIndependentBytes) {
+    muse::ByteArray bytes("png-bytes");
+    muse::draw::Pixmap pixmap(bytes, muse::Size(2, 3));
+    const auto copy = pixmap;
+    bytes[0] = 'x';
+    EXPECT_EQ(pixmap.data(), muse::ByteArray("png-bytes"));
+    EXPECT_EQ(pixmap, copy);
+    EXPECT_NE(pixmap.data().const_data(), copy.data().const_data());
+    muse::draw::Pixmap moved(std::move(bytes), muse::Size(2, 3));
+    EXPECT_EQ(moved.data(), muse::ByteArray("xng-bytes"));
 }

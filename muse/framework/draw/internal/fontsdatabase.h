@@ -66,5 +66,6 @@ private:
     std::map<FontDataKey, std::vector<FontDataKey>> family_substitutions_;
     std::map<FontDataKey, FontInfo> fonts_;
     uint64_t revision_ = 0;
+    int font_id_ = -1;
 };
 } // namespace muse::draw
