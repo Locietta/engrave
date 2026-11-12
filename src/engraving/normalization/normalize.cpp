@@ -463,6 +463,7 @@ static void normalize_note_spanner(Spanner &spanner) {
 static void normalize_chord_anchors(Chord &chord) {
     for (Chord *grace : chord.grace_notes()) normalize_chord_anchors(*grace);
     for (Note *note : chord.notes()) {
+        if (auto *tie = note->tie_for()) tie->set_tick(chord.tick());
         // Note-owned lines do not live in Score::spanner_map(). Include incoming
         // lines too: a partial line may have only its end note in this score.
         for (const auto *lines : {&note->spanner_for(), &note->spanner_back()}) {
@@ -537,9 +538,6 @@ void mu::engraving::normalize_score(Score &score, NormalizeOptions options) {
                     if (cr->staff_move() || cr->stored_staff_move()) cr->check_staff_move_validity();
                     if (item->is_chord() && (options.include_hidden_staves || item->staff()->show())) {
                         normalize_chord_anchors(*to_chord(item));
-                        for (Note *note : to_chord(item)->notes()) {
-                            if (auto *tie = note->tie_for()) tie->set_tick(note->chord()->tick());
-                        }
                     }
                 }
             }
