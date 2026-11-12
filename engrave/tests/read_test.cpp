@@ -56,11 +56,13 @@
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/measurerepeat.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/rangelock.h"
+#include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/staff.h"
@@ -187,6 +189,11 @@ TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
     EXPECT_TRUE(query.shape().empty());
     EXPECT_TRUE(query.ldata()->bbox().is_null());
     EXPECT_EQ(query.z(), mu::engraving::default_z(query.type()));
+    // Reading a default must leave it unresolved; explicit copies preserve z separately.
+    std::unique_ptr<mu::engraving::MeasureRepeat> z_probe(mu::engraving::Factory::create_measure_repeat(master.dummy()));
+    EXPECT_EQ(z_probe->z(), mu::engraving::default_z(mu::engraving::ElementType::MEASURE_REPEAT));
+    z_probe->hack_to_rest_type();
+    EXPECT_EQ(z_probe->z(), mu::engraving::default_z(mu::engraving::ElementType::REST));
     EXPECT_EQ(query.get_property(mu::engraving::Pid::Z).to_int(), query.z());
     EXPECT_FALSE(first.has_layout_data());
     mu::engraving::EngravingItem::disconnect_all_origin_items(&first);
@@ -198,6 +205,35 @@ TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
     EXPECT_EQ(query.pos(), muse::PointF(3.0, 4.0));
     EXPECT_EQ(second.pos(), muse::PointF());
     EXPECT_FALSE(second.has_layout_data());
+}
+
+TEST(Read, MeasureRepeatCopiesPreserveZWhenConvertedToRest) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    for (const bool read_source : {false, true}) {
+        for (const int explicit_z : {-1, 4321}) {
+            std::unique_ptr<mu::engraving::MeasureRepeat> repeat(mu::engraving::Factory::create_measure_repeat(master.dummy()));
+            repeat->set_z(explicit_z);
+            const int expected = explicit_z == -1 ? mu::engraving::default_z(mu::engraving::ElementType::MEASURE_REPEAT) : explicit_z;
+            if (read_source) {
+                EXPECT_EQ(repeat->z(), expected);
+            }
+            std::unique_ptr<mu::engraving::Rest> rest(mu::engraving::Factory::copy_rest(*repeat));
+            rest->hack_to_rest_type();
+            EXPECT_EQ(rest->z(), expected);
+            muse::ByteArray bytes;
+            muse::io::Buffer buffer(&bytes);
+            ASSERT_TRUE(buffer.open(muse::io::IODevice::WRITE_ONLY));
+            {
+                mu::engraving::XmlWriter xml(&buffer);
+                mu::engraving::write::TWrite::write_property(rest.get(), xml, mu::engraving::Pid::Z);
+                xml.flush();
+            }
+            const std::string serialized(reinterpret_cast<const char *>(bytes.const_data()), bytes.size());
+            EXPECT_NE(serialized.find("<z>" + std::to_string(expected) + "</z>"), std::string::npos);
+        }
+    }
 }
 
 TEST(Read, GraceNoteQueryResultsAreIndependent) {

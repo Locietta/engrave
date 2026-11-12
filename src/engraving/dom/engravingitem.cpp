@@ -264,7 +264,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
     track_ = e.track_;
     flags_ = e.flags_;
     set_flag(ElementFlag::SELECTED, false);
-    z_ = e.z_;
+    z_ = e.z();
     color_ = e.color_;
     min_distance_ = e.min_distance_;
     exclude_vertical_align_ = e.exclude_vertical_align_;
