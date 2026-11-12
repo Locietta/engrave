@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
 
 #include "dom/engravingitem.h"
@@ -26,6 +27,8 @@ struct LayoutDataStore {
     void erase(EngravingItem &item);
     void transfer(EngravingItem &item, LayoutDataStore &destination);
     void detach_score();
+    // Explicit producer pass. The callback may mutate payloads, not membership.
+    void for_each_output(const std::function<void(EngravingItem &, EngravingItem::LayoutData &)> &complete);
 
 private:
     struct Records;

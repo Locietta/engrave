@@ -55,6 +55,7 @@
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/chordbracket.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dummyparent.h"
@@ -77,6 +78,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/measurerepeat.h"
+#include "engraving/dom/mmrest.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/notedot.h"
@@ -124,8 +126,10 @@
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/measurelayout.h"
+#include "engraving/rendering/score/restlayout.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/systemlayout.h"
+#include "engraving/rendering/score/tlayout.h"
 #include "engraving/rw/write/twrite.h"
 #include "engraving/rw/write/writecontext.h"
 #include "engraving/rw/xmlwriter.h"
@@ -6116,6 +6120,187 @@ TEST(LayoutBounds, ConstReadsLeaveShapeAndPathStorageUnchanged) {
     path.translate(2.0, 3.0);
     EXPECT_EQ(path_view.bounding_rect(), muse::RectF(0.0, 2.0, 7.0, 8.0));
     EXPECT_TRUE(muse::draw::PainterPath().bounding_rect().is_null());
+}
+
+TEST(LayoutBounds, CompositeShapeReadsConsumePreparedOutputOnly) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    const auto probe = [&](EngravingItem &item) {
+        const Shape prepared(muse::RectF(1.25, 2.5, 3.75, 4.5), &item);
+        item.mutldata()->set_shape(prepared);
+        const EngravingItem &view = item;
+        ItemLayoutSpy spy;
+        EXPECT_TRUE(view.shape().equal(prepared)) << item.type_name();
+        EXPECT_TRUE(view.shape().equal(prepared)) << item.type_name();
+        EXPECT_TRUE(view.ldata()->shape(LdAccess::PASS).equal(prepared));
+        EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    };
+    std::unique_ptr<Chord> chord(Factory::create_chord(master.dummy()));
+    probe(*chord);
+    std::unique_ptr<Rest> rest(Factory::create_rest(master.dummy()));
+    probe(*rest);
+    std::unique_ptr<MeasureRepeat> repeat(Factory::create_measure_repeat(master.dummy()));
+    probe(*repeat);
+    std::unique_ptr<MMRest> mm_rest(Factory::create_mm_rest(master.dummy()));
+    probe(*mm_rest);
+    std::unique_ptr<Tuplet> tuplet(Factory::create_tuplet(master.dummy()));
+    probe(*tuplet);
+    std::unique_ptr<GuitarBend> bend(Factory::create_guitar_bend(master.dummy()));
+    std::unique_ptr<LineSegment> bend_segment(bend->create_line_segment());
+    probe(*bend_segment);
+    std::unique_ptr<Trill> trill(Factory::create_trill(master.dummy()));
+    std::unique_ptr<LineSegment> trill_segment(trill->create_line_segment());
+    probe(*trill_segment);
+    std::unique_ptr<Hairpin> hairpin(Factory::create_hairpin(master.dummy()));
+    std::unique_ptr<LineSegment> hairpin_segment(hairpin->create_line_segment());
+    probe(*hairpin_segment);
+}
+
+TEST(LayoutBounds, PublishedShapesDoNotInvokeLayoutOrChangePayloads) {
+    using namespace mu::engraving;
+    for (const char *fixture : {"tests/data/inputs/golden/chordline_path.mscx", "tests/data/inputs/golden/layout_elements.mscx",
+                                "tests/data/inputs/golden/tab_grace_prebend.mscx",
+                                "src/engraving/tests/playback/playbackeventsrenderer_data/trill_line_on_tied_notes.mscx",
+                                "src/engraving/tests/playback/playbackmodel_data/spanners/spanners.mscx"}) {
+        SCOPED_TRACE(fixture);
+        auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / fixture);
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        ASSERT_TRUE(document.page_count());
+        ASSERT_TRUE(document.positions(engrave::PositionKind::SEGMENT));
+        auto &master = master_of(document);
+        auto &store = master.renderer()->layout_data_store(master);
+        const auto size = store.size();
+        const auto revision = document.revision();
+        const auto layouts = master.layout_state.whole_count + master.layout_state.range_count;
+        ItemLayoutSpy spy;
+        store.for_each_output([&](EngravingItem &item, EngravingItem::LayoutData &data) {
+            const EngravingItem &view = item;
+            const auto before = data.shape(LdAccess::PASS);
+            for (int i = 0; i < 2; ++i) {
+                std::ignore = view.shape();
+                std::ignore = view.ldata()->bbox();
+            }
+            EXPECT_TRUE(before.equal(data.shape(LdAccess::PASS))) << item.type_name();
+        });
+        EXPECT_EQ(ItemLayoutSpy::count, 0u);
+        EXPECT_EQ(store.size(), size);
+        EXPECT_EQ(document.revision(), revision);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, layouts);
+    }
+}
+
+TEST(LayoutBounds, CompletionSkipsDetachedTrillAfterOutputReset) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    std::unique_ptr<Trill> trill(Factory::create_trill(master.dummy()));
+    std::unique_ptr<LineSegment> segment(trill->create_line_segment());
+    const Shape prepared(muse::RectF(1.25, 2.5, 3.75, 4.5), segment.get());
+    auto *payload = segment->mutldata();
+    payload->set_shape(prepared);
+    segment->set_spanner(nullptr);
+    ASSERT_EQ(segment->ownership_parent(), nullptr);
+    for (int i = 0; i < 2; ++i) {
+        master.invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
+        ASSERT_TRUE(document.page_count());
+        EXPECT_EQ(segment->ldata(), payload);
+        // The full reset pass clears scratch too; completion must leave this
+        // detached payload empty instead of consulting its missing spanner.
+        EXPECT_TRUE(segment->shape().empty());
+    }
+}
+
+TEST(LayoutBounds, TablatureBracketPreparesItsOwnerBeforeCollisionPlacement) {
+    using namespace mu::engraving;
+    using namespace rendering::score;
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    Chord *owner = nullptr;
+    for (Measure *measure = master.first_measure(); measure && !owner; measure = measure->next_measure()) {
+        for (Segment &segment : measure->segments()) {
+            for (EngravingItem *item : segment.elist()) {
+                if (item && item->is_chord() && item->on_tab_staff()) {
+                    owner = to_chord(item);
+                    break;
+                }
+            }
+            if (owner) break;
+        }
+    }
+    ASSERT_NE(owner, nullptr);
+    owner->set_beam_mode(BeamMode::NONE);
+    auto *bracket = Factory::create_chord_bracket(owner);
+    owner->add(bracket);
+    ASSERT_TRUE(document.page_count());
+    LayoutContext ctx(&master);
+    ChordLayout::fill_shape(owner, owner->mutldata());
+    TLayout::layout_item(bracket, ctx);
+    const auto expected = bracket->pos();
+    ASSERT_LT(expected.x(), 0.0);
+    for (int i = 0; i < 2; ++i) {
+        owner->mutldata()->set_shape(Shape());
+        TLayout::layout_item(bracket, ctx);
+        EXPECT_EQ(bracket->pos(), expected);
+    }
+}
+
+TEST(LayoutBounds, RestCollisionAndAlignmentRefreshChangedLedgerGlyphsImmediately) {
+    using namespace mu::engraving;
+    using namespace rendering::score;
+    for (const auto type : {DurationType::V_HALF, DurationType::V_WHOLE}) {
+        const bool half = type == DurationType::V_HALF;
+        const auto xml = std::format(R"(<museScore version="5.00"><Score><Division>480</Division>
+<Part><Staff><StaffType group="pitched"/></Staff><Instrument id="piano"><Channel><program value="0"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice><TimeSig><sigN>{}</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>{}</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord></voice>
+<voice><Rest><durationType>{}</durationType></Rest><Rest><durationType>{}</durationType></Rest></voice>
+</Measure></Staff></Score></museScore>)",
+                                     half ? 4 : 8, half ? "whole" : "breve", half ? "half" : "whole", half ? "half" : "whole");
+        auto opened = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        ASSERT_TRUE(document.page_count());
+        auto &master = master_of(document);
+        auto *measure = master.first_measure();
+        auto *segment = measure->first(SegmentType::CHORD_REST);
+        auto *chord = to_chord(segment->element(0));
+        auto *first = to_rest(segment->element(1));
+        auto *second = to_rest(segment->next(SegmentType::CHORD_REST)->element(1));
+        ASSERT_NE(first, nullptr);
+        ASSERT_NE(second, nullptr);
+        ASSERT_TRUE(measure->has_voices(0));
+        LayoutContext ctx(&master);
+        const double spatium = first->spatium();
+        const auto ordinary = first->get_symbol(type, 4, 5);
+        const auto ledger = first->get_symbol(type, 8, 5);
+        ASSERT_NE(ordinary, ledger);
+        const auto prepare = [&](Rest *rest, int line) {
+            auto *data = rest->mutldata();
+            data->set_pos(0.0, line * spatium);
+            data->sym = rest->get_symbol(type, line, 5);
+            rest->vertical_clearance().reset();
+            RestLayout::fill_shape(rest, data, ctx.conf());
+        };
+        prepare(first, 4);
+        prepare(second, 8);
+        RestLayout::align_rests(measure->system(), ctx);
+        EXPECT_EQ(first->ldata()->sym.value(), ledger);
+        EXPECT_EQ(first->ldata()->shape(LdAccess::PASS).bbox(), first->sym_bbox(ledger));
+
+        prepare(first, 4);
+        std::vector<Rest *> rests{first};
+        std::vector<Chord *> chords{chord};
+        RestLayout::resolve_rest_vs_chord(rests, chords, first->staff(), segment);
+        EXPECT_EQ(first->ldata()->sym.value(), ledger);
+        EXPECT_EQ(first->ldata()->shape(LdAccess::PASS).bbox(), first->sym_bbox(ledger));
+    }
 }
 
 TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {

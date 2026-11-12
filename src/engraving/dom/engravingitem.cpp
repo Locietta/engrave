@@ -54,8 +54,6 @@
 #include "parenthesis.h"
 #include "part.h"
 #include "rendering/score/autoplace.h"
-#include "rendering/score/chordlayout.h"
-#include "rendering/score/tlayout.h"
 #include "rootitem.h"
 #include "rw/xmlreader.h"
 #include "score.h"
@@ -2337,7 +2335,7 @@ RectF EngravingItem::LayoutData::bbox([[maybe_unused]] LdAccess mode) const {
     return sh.bbox();
 }
 
-Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
+Shape EngravingItem::LayoutData::shape([[maybe_unused]] LdAccess mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     Shape sh = shape_.value(LdAccess::MAYBE_NOTINITED);
 
@@ -2376,47 +2374,15 @@ Shape EngravingItem::LayoutData::shape(LdAccess mode) const {
             case ElementType::LAISSEZ_VIB_SEGMENT:
             case ElementType::PARTIAL_TIE_SEGMENT:
             case ElementType::NOTE: return sh;
+            // Composite producers already include their parentheses and children.
             case ElementType::CHORD:
             case ElementType::REST:
             case ElementType::MEASURE_REPEAT:
-            case ElementType::MMREST: {
-                if (mode == LdAccess::CHECK) {
-                    //! NOTE Temporary fix
-                    //! We can remove it the moment we figure out the layout order of the elements
-                    LayoutContext ctx(item_->score());
-                    ChordRest::LayoutData *ldata = static_cast<ChordRest::LayoutData *>(const_cast<LayoutData *>(this));
-                    ChordLayout::check_and_fill_shape(to_chord_rest(item_), ldata, ctx.conf());
-                }
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::GUITAR_BEND_SEGMENT: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fill_guitar_bend_segment_shape(to_guitar_bend_segment(item_),
-                                                        static_cast<GuitarBendSegment::LayoutData *>(const_cast<LayoutData *>(this)));
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::HAIRPIN_SEGMENT: {
-                //! To be removed when we're confident enough...
-                IF_ASSERT_FAILED(shape_.has_value()) {
-                    const_cast<LayoutData *>(this)->set_shape(TLayout::recalculate_text_line_base_segment_shape(to_hairpin_segment(item_)));
-                }
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::TRILL_SEGMENT: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
-                LayoutContext ctx(item_->score());
-                TLayout::fill_trill_segment_shape(to_trill_segment(item_),
-                                                  static_cast<HairpinSegment::LayoutData *>(const_cast<LayoutData *>(this)), ctx.conf());
-                return shape_.value(LdAccess::CHECK);
-            } break;
-            case ElementType::TUPLET: {
-                //! NOTE Temporary fix
-                //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fill_tuplet_shape(to_tuplet(item_), static_cast<Tuplet::LayoutData *>(const_cast<LayoutData *>(this)));
-                return shape_.value(LdAccess::CHECK);
-            } break;
+            case ElementType::MMREST:
+            case ElementType::GUITAR_BEND_SEGMENT:
+            case ElementType::HAIRPIN_SEGMENT:
+            case ElementType::TRILL_SEGMENT:
+            case ElementType::TUPLET: return shape_.value(LdAccess::CHECK);
             default: break;
         }
     }

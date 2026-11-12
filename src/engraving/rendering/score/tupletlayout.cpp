@@ -84,6 +84,7 @@ void TupletLayout::layout(Tuplet *item, LayoutContext &ctx) {
         r |= b;
     }
     item->setbbox(r);
+    TLayout::fill_tuplet_shape(item, ldata);
 
     if (!item->cross()) {
         Autoplace::autoplace_measure_element(item, item->mutldata(), item->is_up(), /* add to skyline */ true);

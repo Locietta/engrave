@@ -719,8 +719,9 @@ void TLayout::layout_arpeggio(const Arpeggio *item, Arpeggio::LayoutData *ldata,
     }
 }
 
-static Shape get_chords_shape(const ChordBracket *item) {
+static Shape prepare_chords_shape(const ChordBracket *item) {
     Chord *owner = item->chord();
+    ChordLayout::fill_shape(owner, owner->mutldata());
     Shape result = owner->shape();
     result.remove_types({ElementType::CHORD_BRACKET, ElementType::ARPEGGIO});
     if (!owner->segment() || !owner->staff()) {
@@ -745,6 +746,7 @@ static Shape get_chords_shape(const ChordBracket *item) {
             continue;
         }
 
+        ChordLayout::fill_shape(chord, chord->mutldata());
         Shape chord_shape = chord->shape();
         chord_shape.remove_types({ElementType::CHORD_BRACKET, ElementType::ARPEGGIO});
         chord_shape.translate(chord->pos() - owner->pos());
@@ -779,7 +781,7 @@ void TLayout::layout_chord_bracket(const ChordBracket *item, Arpeggio::LayoutDat
     const Note *upnote = item->chord()->up_note();
     ldata->set_pos_y(upnote->y() + upnote->ldata()->bbox().top());
 
-    Shape chord_shape = get_chords_shape(item);
+    Shape chord_shape = prepare_chords_shape(item);
     Shape item_shape = item->shape().translated(PointF(0.0, item->ldata()->pos().y()));
     if (item->right_side()) {
         double x = HorizontalSpacing::min_horizontal_distance(chord_shape, item_shape, spatium);
@@ -1479,7 +1481,8 @@ void TLayout::layout_chord_line(const ChordLine *item, ChordLine::LayoutData *ld
     double y = note_ld->pos().y();
     double hor_offset = 0.33 * spatium;  // one third of a space away from the note
     double vert_offset = 0.25 * spatium; // one quarter of a space from the center line
-    // Get chord shape
+    // The chord line is placed before the chord's final child-composite pass.
+    ChordLayout::fill_shape(item->chord(), item->chord()->mutldata(), conf);
     Shape chord_shape = item->chord()->shape();
     // ...but remove from the shape items that the chordline shouldn't try to avoid
     // (especially the chordline itself)
@@ -2674,11 +2677,13 @@ void TLayout::layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext 
         GuitarBendLayout::layout_standard_staff(item, ctx);
     }
 
+    fill_guitar_bend_segment_shape(item, item->mutldata());
     SysStaff *staff = item->system()->staff(item->staff_idx());
     Skyline &skyline = staff->skyline();
     SkylineLine &skyline_line = tab_staff ? skyline.north() : (item->guitar_bend()->ldata()->up() ? skyline.north() : skyline.south());
     skyline_line.add(item->shape().translate(item->pos()));
-
+    // Retain the legacy post-skyline completion as well: it incorporates the
+    // text bounds into the bend's first collision rectangle for later consumers.
     fill_guitar_bend_segment_shape(item, item->mutldata());
 }
 
@@ -5961,6 +5966,7 @@ void TLayout::layout_trill_segment(TrillSegment *item, LayoutContext &ctx) {
         }
     }
 
+    fill_trill_segment_shape(item, ldata, ctx.conf());
     Autoplace::autoplace_spanner_segment(item, ldata);
 }
 
@@ -5989,6 +5995,28 @@ void TLayout::layout_trill(Trill *item, LayoutContext &ctx) {
 void TLayout::layout_tuplet(Tuplet *item, LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);
     TupletLayout::layout(item, ctx);
+}
+
+// Finalize composites after all child placement, including a range reflow. This
+// pass only writes output; geometry getters never repair or allocate payloads.
+void TLayout::complete_item_shape(EngravingItem &item, EngravingItem::LayoutData &data, const LayoutConfiguration &conf) {
+    // Scratch, removed items and unused segment caches are not published output.
+    if (!item.ownership_parent()) return;
+    if (item.is_spanner_segment() && !to_spanner_segment(&item)->system()) return;
+    switch (item.type()) {
+        case ElementType::CHORD:
+        case ElementType::REST:
+        case ElementType::MEASURE_REPEAT:
+        case ElementType::MMREST: ChordLayout::fill_shape(to_chord_rest(&item), static_cast<ChordRest::LayoutData *>(&data), conf); break;
+        case ElementType::GUITAR_BEND_SEGMENT:
+            fill_guitar_bend_segment_shape(to_guitar_bend_segment(&item), static_cast<GuitarBendSegment::LayoutData *>(&data));
+            break;
+        case ElementType::TRILL_SEGMENT:
+            fill_trill_segment_shape(to_trill_segment(&item), static_cast<TrillSegment::LayoutData *>(&data), conf);
+            break;
+        case ElementType::TUPLET: fill_tuplet_shape(to_tuplet(&item), static_cast<Tuplet::LayoutData *>(&data)); break;
+        default: break;
+    }
 }
 
 void TLayout::fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata) {
