@@ -11,9 +11,32 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/engravingproject.h"
+#include "engraving/rendering/score/layoutdatastore.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "global/io/writebudget.h"
 
 namespace engrave {
+
+Document::Impl::~Impl() = default;
+
+mu::engraving::rendering::score::LayoutDataStore &Document::Impl::adopt_layout_output(mu::engraving::Score &score) {
+    using mu::engraving::rendering::score::LayoutDataStore;
+    auto *existing = score.layout_data_store();
+    if (std::ranges::any_of(layout_outputs, [existing](const auto &output) { return output.get() == existing; })) return *existing;
+    std::erase_if(layout_outputs, [](const auto &output) { return output->score() == nullptr; });
+    // reserve can fail; ownership and all live borrowers must be unchanged then.
+    layout_outputs.reserve(layout_outputs.size() + 1);
+    if (LayoutDataStore::before_adoption) LayoutDataStore::before_adoption();
+    if (auto output = score.renderer()->take_layout_data_store(score)) {
+        layout_outputs.push_back(std::move(output));
+        return *existing;
+    }
+    auto output = std::make_unique<LayoutDataStore>(score);
+    auto *result = output.get();
+    layout_outputs.push_back(std::move(output));
+    score.bind_layout_data_store(result);
+    return *result;
+}
 
 Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &selection) {
     const Result<mu::engraving::Score *> selected = select_score(master, selection);
@@ -48,10 +71,14 @@ std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::Score
 }
 
 void Document::Impl::bind_layout_boundary() {
+    for (auto *score : project->master_score()->score_list())
+        if (score->layout_data_store()) adopt_layout_output(*score);
     project->master_score()->layout_boundary = [this](mu::engraving::Score &score) { ensure_layout(score); };
+    project->master_score()->layout_store_boundary = [this](mu::engraving::Score &score) -> auto & { return adopt_layout_output(score); };
 }
 
 void Document::Impl::ensure_layout(mu::engraving::Score &score) {
+    adopt_layout_output(score);
     if (score.layout_state.revision != revision && !score.layout_state.dirty)
         score.invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     if (score.layout_state.font_generation != engine->font_generation) {

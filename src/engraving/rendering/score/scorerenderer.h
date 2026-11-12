@@ -22,6 +22,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <type_traits>
 #include <variant>
 
@@ -92,7 +93,16 @@ struct TimeSig;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
+struct LayoutDataStore;
+
 struct ScoreRenderer {
+    ScoreRenderer();
+    ~ScoreRenderer();
+
+    // Import/standalone scratch is transferred to Document's runtime owner.
+    LayoutDataStore &layout_data_store(Score &score);
+    std::unique_ptr<LayoutDataStore> take_layout_data_store(Score &score);
+    void release_layout_data_store(Score &score);
     // Test-only observation of item-level rendering entry points.
     static inline void (*layout_hook)(const EngravingItem *) = nullptr;
 
@@ -160,6 +170,8 @@ struct ScoreRenderer {
     bool score_has_timestamp_headers_footers(const Score *score) const;
 
 private:
+    struct ScratchLayouts;
+    std::unique_ptr<ScratchLayouts> scratch_layouts_;
     // Layout Single Item
     void do_layout_item(EngravingItem *item);
 

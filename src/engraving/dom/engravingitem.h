@@ -53,6 +53,7 @@ struct Painter;
 
 namespace mu::engraving::rendering::score {
 struct ScoreRenderer;
+struct LayoutDataStore;
 } // namespace mu::engraving::rendering::score
 
 namespace mu::engraving {
@@ -576,6 +577,7 @@ public:
         bool is_shape_composite() const { return shape_.has_value() && shape_.value().is_composite(); }
 
         friend struct EngravingItem;
+        friend struct rendering::score::LayoutDataStore;
 
         const EngravingItem *item_ = nullptr;
         bool is_skip_draw_ = false;
@@ -693,6 +695,9 @@ protected:
 private:
 
     friend struct Factory;
+    friend struct rendering::score::LayoutDataStore;
+    friend struct EngravingObject;
+    void transfer_layout_data(Score *destination);
 
     PointF offset_; // offset from reference position, set by autoplace or user
 
@@ -702,6 +707,7 @@ private:
     bool exclude_vertical_align_ = false;
 
     LayoutData *layout_data_ = nullptr;
+    rendering::score::LayoutDataStore *layout_store_ = nullptr; // borrowed; runtime owns payloads
 
     Parenthesis *left_parenthesis_ = nullptr;
     Parenthesis *right_parenthesis_ = nullptr;

@@ -119,6 +119,7 @@
 #include "engraving/playback/metaparsers/notearticulationsparser.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
+#include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/measurelayout.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/systemlayout.h"
@@ -6060,6 +6061,160 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
             EXPECT_NEAR(p.y, path.element_at(i).y, 1e-6);
         }
     }
+}
+
+TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Note> note(Factory::create_note(chord));
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto before = store.size();
+    EXPECT_FALSE(note->has_layout_data());
+    EXPECT_EQ(note->ldata()->pos(LdAccess::MAYBE_NOTINITED), muse::PointF());
+    EXPECT_EQ(store.size(), before);
+    auto *payload = note->mutldata();
+    payload->set_pos(2.5, -1.25);
+    std::vector<std::unique_ptr<Note>> growth;
+    for (int i = 0; i < 512; ++i) {
+        growth.emplace_back(Factory::create_note(chord));
+        growth.back()->mutldata()->set_pos(i, i + 1);
+    }
+    EXPECT_EQ(note->ldata(), payload);
+    EXPECT_EQ(store.find(*note), payload);
+    EXPECT_EQ(payload->pos(), muse::PointF(2.5, -1.25));
+    EXPECT_EQ(store.size(), before + 513);
+    growth.clear();
+    EXPECT_EQ(store.size(), before + 1);
+    note.reset();
+    EXPECT_EQ(store.size(), before);
+    auto &impl = engrave::DocumentAccess::impl(document);
+    impl.adopt_layout_output(master);
+    EXPECT_TRUE(std::ranges::any_of(impl.layout_outputs, [&](const auto &output) { return output.get() == &store; }));
+}
+
+TEST(LayoutDataStore, TeardownClearsBorrowersBeforeItemDestruction) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Note> note(Factory::create_note(chord));
+    {
+        rendering::score::LayoutDataStore scratch(master);
+        scratch.adopt(*note, std::make_unique<Note::LayoutData>());
+        ASSERT_TRUE(note->has_layout_data());
+        note->mutldata()->set_pos(3.25, 4.5);
+        EXPECT_EQ(scratch.size(), 1u);
+    }
+    EXPECT_FALSE(note->has_layout_data());
+    EXPECT_EQ(note->ldata()->pos(LdAccess::MAYBE_NOTINITED), muse::PointF());
+    // Destruction after its output owner has gone must not follow a stale borrow.
+    note.reset();
+}
+
+TEST(LayoutDataStore, CrossScoreMoveTransfersDescendantsWithoutRelocation) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::unique_ptr<Score> source(master.create_score());
+    std::unique_ptr<Score> destination(master.create_score());
+    std::unique_ptr<Chord> chord(Factory::create_chord(source->dummy()));
+    auto *note = Factory::create_note(chord.get());
+    chord->add(note);
+    auto *chord_data = chord->mutldata();
+    auto *note_data = note->mutldata();
+    note_data->set_pos(1.25, -2.5);
+    auto *old_store = source->layout_data_store();
+    ASSERT_NE(old_store, nullptr);
+    chord->set_score(destination.get());
+    auto *new_store = destination->layout_data_store();
+    ASSERT_NE(new_store, nullptr);
+    EXPECT_EQ(old_store->find(*chord), nullptr);
+    EXPECT_EQ(old_store->find(*note), nullptr);
+    EXPECT_EQ(new_store->find(*chord), chord_data);
+    EXPECT_EQ(new_store->find(*note), note_data);
+    source.reset();
+    EXPECT_EQ(chord->ldata(), chord_data);
+    EXPECT_EQ(note->ldata(), note_data);
+    EXPECT_EQ(note->ldata()->pos(), muse::PointF(1.25, -2.5));
+    chord.reset();
+    EXPECT_EQ(new_store->size(), 0u);
+}
+
+TEST(LayoutDataStore, GeneratedExcerptOutputIsDocumentOwnedBeforeRendering) {
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    const auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    auto &master = master_of(document);
+    ASSERT_EQ(master.excerpts().size(), 1u);
+    auto *part = master.excerpts().front()->excerpt_score();
+    auto *store = part->layout_data_store();
+    ASSERT_NE(store, nullptr);
+    EXPECT_EQ(part->layout_state.whole_count + part->layout_state.range_count, 0u);
+    const auto &outputs = engrave::DocumentAccess::impl(document).layout_outputs;
+    EXPECT_TRUE(std::ranges::any_of(outputs, [store](const auto &output) { return output.get() == store; }));
+}
+
+TEST(LayoutDataStore, FailedAdoptionPreservesTheScratchOwnerAndCleanOutput) {
+    using namespace mu::engraving;
+    using rendering::score::LayoutDataStore;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    std::unique_ptr<Score> part(master.create_score());
+    std::unique_ptr<Chord> chord(Factory::create_chord(part->dummy()));
+    // Exercise the pre-Document/import ownership state explicitly.
+    auto boundary = std::move(master.layout_store_boundary);
+    auto *payload = chord->mutldata();
+    master.layout_store_boundary = std::move(boundary);
+    payload->set_pos(2.25, 3.5);
+    part->layout_state.dirty = false;
+    auto *store = part->layout_data_store();
+    const auto size = store->size();
+
+    struct FailureHook {
+        FailureHook() {
+            LayoutDataStore::before_adoption = [] { throw std::bad_alloc(); };
+        }
+
+        ~FailureHook() { LayoutDataStore::before_adoption = nullptr; }
+    };
+
+    {
+        FailureHook hook;
+        EXPECT_THROW(engrave::DocumentAccess::impl(document).adopt_layout_output(*part), std::bad_alloc);
+    }
+    EXPECT_EQ(part->layout_data_store(), store);
+    EXPECT_EQ(store->size(), size);
+    EXPECT_EQ(chord->ldata(), payload);
+    EXPECT_EQ(payload->pos(), muse::PointF(2.25, 3.5));
+    EXPECT_FALSE(part->layout_state.dirty);
+    EXPECT_EQ(&engrave::DocumentAccess::impl(document).adopt_layout_output(*part), store);
+}
+
+TEST(LayoutDataStore, RecursiveLedgerTeardownRetiresEveryPayload) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto &store = master.renderer()->layout_data_store(master);
+    const auto before = store.size();
+    std::unique_ptr<Chord> chord(Factory::create_chord(master.dummy()));
+    auto *ledger = new LedgerLine(chord.get());
+    chord->mutldata()->ledger_lines.push_back(ledger);
+    ledger->mutldata()->set_pos(1.25, 2.5);
+    EXPECT_EQ(store.size(), before + 2);
+    chord.reset();
+    EXPECT_EQ(store.size(), before);
 }
 
 } // namespace
