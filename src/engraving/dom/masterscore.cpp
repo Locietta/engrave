@@ -30,8 +30,8 @@
 #include "editing/editautomationpoints.h"
 #include "editing/editkeysig.h"
 #include "editing/editmeasures.h"
+#include "editing/transaction/mutationjournal.h"
 #include "editing/transaction/transaction.h"
-#include "editing/transaction/undostack.h"
 #include "engravingproject.h"
 #include "excerpt.h"
 #include "factory.h"
@@ -63,7 +63,7 @@ using namespace mu::engraving;
 MasterScore::MasterScore(const EngravingServices &services, std::weak_ptr<engraving::EngravingProject> project) : Score(services) {
     project_ = project;
     transaction_manager_ = std::make_unique<TransactionManager>(this);
-    undo_stack_ = new UndoStack();
+    mutation_journal_ = new MutationJournal();
     sigmap_ = new TimeSigMap();
     automation_controller_ = new ScoreAutomationController();
     expanded_repeat_list_ = new RepeatList(this);
@@ -105,7 +105,7 @@ MasterScore::~MasterScore() {
     delete expanded_repeat_list_;
     delete non_expanded_repeat_list_;
     delete sigmap_;
-    delete undo_stack_;
+    delete mutation_journal_;
     delete automation_controller_;
     muse::delete_all(excerpts_);
 }
@@ -309,6 +309,13 @@ void MasterScore::add_changes_listener(PlaybackModel *listener) {
 
 void MasterScore::remove_changes_listener(PlaybackModel *listener) {
     changes_listeners_.erase(std::remove(changes_listeners_.begin(), changes_listeners_.end(), listener), changes_listeners_.end());
+}
+
+void MasterScore::reload_playback_models() {
+    const auto listeners = changes_listeners_;
+    for (auto *listener : listeners) {
+        if (std::find(changes_listeners_.begin(), changes_listeners_.end(), listener) != changes_listeners_.end()) listener->reload();
+    }
 }
 
 void MasterScore::notify_changes(const ScoreChanges &changes) {

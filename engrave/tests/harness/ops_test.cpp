@@ -32,7 +32,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/editing/editproperty.h"
 #include "engraving/editing/editstyle.h"
-#include "engraving/editing/transaction/undostack.h"
+#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/style/style.h"
 
 namespace {
@@ -86,7 +86,7 @@ TEST(Edit, CommitAdvancesTheRevisionAndClearsTheHistory) {
     EXPECT_TRUE(result->ops[0].created.empty());
     EXPECT_TRUE(result->created.empty() && result->removed.empty() && result->replaced.empty());
     EXPECT_EQ(property(*document, note, "color"), engrave::Value(Color{255, 0, 0}));
-    EXPECT_EQ(engrave::harness::master_of(*document).undo_stack()->size(), 0u);
+    EXPECT_EQ(engrave::harness::master_of(*document).mutation_journal()->size(), 0u);
 }
 
 TEST(Edit, ABatchThatChangesNothingKeepsTheRevision) {
@@ -324,7 +324,6 @@ void expect_chord_line(const ChordLine &line, const ChordLine::AppearanceState &
 }
 
 engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document &document, std::vector<engrave::api::Step> steps) {
-    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
     return engrave::api::BatchGuard(document).run(std::move(steps), engrave::api::Policy::TRANSACTION, std::nullopt);
 }
 
@@ -335,33 +334,22 @@ engrave::api::Step set_line(ChordLine &line, Pid pid, PropertyValue value) {
     };
 }
 
-TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
+TEST(ChordLineEdit, PathAssignmentResetAndMode) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
     seed_controls(line);
     const auto source = line.appearance_state();
-    auto *stack = engrave::harness::master_of(*document).undo_stack();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
-    const auto legacy = line.appearance_state();
-    stack->undo(nullptr);
-    expect_chord_line(line, source);
-    stack->redo();
-    expect_chord_line(line, legacy);
-
     ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
     }}));
     EXPECT_FALSE(line.modified());
     EXPECT_FALSE(line.has_source_offsets());
-    stack->undo(nullptr);
-    expect_chord_line(line, legacy);
-    stack->undo(nullptr);
-    expect_chord_line(line, source);
-
+    seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
@@ -370,21 +358,10 @@ TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
     EXPECT_FALSE(line.modified());
     const std::array<muse::PointF, 4> zero{};
     EXPECT_EQ(line.source_offsets(), zero);
-    const auto reset = line.appearance_state();
-    stack->undo(nullptr);
-    expect_chord_line(line, source);
-    stack->redo();
-    expect_chord_line(line, reset);
-    stack->undo(nullptr);
-
+    seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document,
                                  {set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.get_property(Pid::SIZE_SPATIUM_DEPENDENT).to_bool())}));
     EXPECT_EQ(line.source_offsets(), source.controls);
-    const auto mode = line.appearance_state();
-    stack->undo(nullptr);
-    expect_chord_line(line, source);
-    stack->redo();
-    expect_chord_line(line, mode);
 }
 
 TEST(ChordLineEdit, OrdinaryScaleCallbacksAndInverseKeepSources) {
@@ -428,7 +405,7 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
             EXPECT_NEAR(actual.element_at(i).y, expected.element_at(i).y, 1e-4);
         }
     }
-    engrave::harness::master_of(*document).undo_stack()->undo(nullptr);
+    seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undo_reset_property(Pid::PATH);
         return {};
@@ -445,7 +422,7 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
     }
 }
 
-TEST(ChordLineEdit, StyleScaleUndoRedoUsesExistingCommand) {
+TEST(ChordLineEdit, StyleScaleUsesExistingCommand) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
@@ -458,11 +435,6 @@ TEST(ChordLineEdit, StyleScaleUndoRedoUsesExistingCommand) {
         return {};
     }}));
     for (size_t i = 0; i < 4; ++i) EXPECT_EQ(line.source_offsets()[i], before.controls[i] * 2.0);
-    const auto scaled = line.appearance_state();
-    score.undo_stack()->undo(nullptr);
-    expect_chord_line(line, before);
-    score.undo_stack()->redo();
-    expect_chord_line(line, scaled);
 }
 
 TEST(ChordLineEdit, EmptyAssignmentIsNotReset) {
@@ -475,8 +447,6 @@ TEST(ChordLineEdit, EmptyAssignmentIsNotReset) {
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
     EXPECT_TRUE(line.get_property(Pid::PATH).value<PainterPath>().is_empty());
-    engrave::harness::master_of(*document).undo_stack()->undo(nullptr);
-    expect_chord_line(line, before);
 }
 
 TEST(ChordLineEdit, EmptyCachedPathAssignmentSwitchesRepresentation) {
@@ -493,8 +463,6 @@ TEST(ChordLineEdit, EmptyCachedPathAssignmentSwitchesRepresentation) {
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath()))}));
     EXPECT_FALSE(line.has_source_offsets());
     EXPECT_TRUE(line.modified());
-    engrave::harness::master_of(*document).undo_stack()->undo(nullptr);
-    expect_chord_line(line, before);
 }
 
 TEST(ChordLineEdit, DefaultPathResetKeepsPartLinked) {
@@ -527,7 +495,7 @@ TEST(ChordLineEdit, DefaultPathResetKeepsPartLinked) {
     EXPECT_FALSE(part_line->get_property(Pid::VISIBLE).to_bool());
 }
 
-TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
+TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndRollback) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     seed_controls(chord_line(*document));
@@ -542,8 +510,7 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
     }
     ASSERT_NE(part_line, nullptr);
     const auto master_before = master_line.appearance_state();
-    const auto part_before = part_line->appearance_state();
-    auto *stack = engrave::harness::master_of(*document).undo_stack();
+    auto *stack = engrave::harness::master_of(*document).mutation_journal();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(*part_line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
     EXPECT_FALSE(part_line->is_appearance_linked_to_master());
     EXPECT_FALSE(part_line->has_source_offsets());
@@ -551,18 +518,7 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
     const auto independent = part_line->appearance_state();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(*part_line, Pid::APPEARANCE_LINKED_TO_MASTER, true)}));
     expect_chord_line(*part_line, master_before);
-    stack->undo(nullptr);
-    expect_chord_line(*part_line, independent);
-    stack->redo();
-    expect_chord_line(*part_line, master_before);
-    stack->undo(nullptr);
-    stack->undo(nullptr);
-    expect_chord_line(*part_line, part_before);
-    expect_chord_line(master_line, master_before);
-
-    // A failed batch must restore the score. Layout may add MM-rest bookkeeping
-    // to the private undo stack after rollback, so it is not an exact-history test.
-    stack->redo();
+    ASSERT_TRUE(chord_line_batch(*document, {set_line(*part_line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
     expect_chord_line(*part_line, independent);
     const auto revision = document->revision();
     EXPECT_FALSE(chord_line_batch(
@@ -578,7 +534,7 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &line = chord_line(*document);
-    auto *stack = engrave::harness::master_of(*document).undo_stack();
+    auto *stack = engrave::harness::master_of(*document).mutation_journal();
     for (bool offsets : {true, false}) {
         if (offsets)
             seed_controls(line);

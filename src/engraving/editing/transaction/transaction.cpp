@@ -22,14 +22,17 @@
 
 #include "transaction.h"
 
+#include <limits>
+#include <stdexcept>
+
 #include "../../dom/masterscore.h"
 #include "log.h"
+#include "mutationjournal.h"
 #include "undoablecommand.h"
-#include "undostack.h"
 
 using namespace mu::engraving;
 
-static ScoreChanges build_score_changes(const CmdState &cmd_state, const UndoableTransaction::ChangesInfo &changes,
+static ScoreChanges build_score_changes(const CmdState &cmd_state, const JournalBatch::ChangesInfo &changes,
                                         const std::vector<UndoableCommand *> &commands) {
     int start_tick = cmd_state.start_tick().ticks();
     int end_tick = cmd_state.end_tick().ticks();
@@ -82,7 +85,7 @@ static ScoreChanges build_score_changes(const CmdState &cmd_state, const Undoabl
             end_staff,
             changes.is_text_editing,
             std::move(changes.changed_objects),
-            std::move(changes.changed_object_types),
+            std::move(changes.changed_types),
             std::move(changes.changed_property_id_set),
             std::move(changes.changed_style_id_set)};
 }
@@ -91,7 +94,7 @@ static ScoreChanges build_score_changes(const CmdState &cmd_state, const Undoabl
 // Transaction
 //---------------------------------------------------------
 
-Transaction::Transaction(UndoableTransaction *undoable_transaction) : undoable_transaction_(undoable_transaction) {}
+Transaction::Transaction(JournalBatch *undoable_transaction) : undoable_transaction_(undoable_transaction) {}
 
 Transaction &Transaction::dummy() {
     static Transaction dummy_transaction(nullptr);
@@ -100,9 +103,9 @@ Transaction &Transaction::dummy() {
 }
 
 void Transaction::push(UndoableCommand *cmd) {
-    if (is_dummy_) {
-        cmd->redo();
-        delete cmd;
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        std::unique_ptr<UndoableCommand> owned(cmd);
+        owned->redo();
         return;
     }
 
@@ -113,7 +116,9 @@ void Transaction::push(UndoableCommand *cmd) {
     // NOTE: append the command _before_ performing it. Some commands' redo()
     // may themselves push further commands; those must end up _after_ this
     // command in the transaction, so that undo reverses them first.
-    undoable_transaction_->append_command(cmd);
+    std::unique_ptr<UndoableCommand> owned(cmd);
+    undoable_transaction_->append_command(owned.get());
+    owned.release();
     cmd->redo();
 
     if (s_push_hook) {
@@ -122,7 +127,7 @@ void Transaction::push(UndoableCommand *cmd) {
 }
 
 void Transaction::push_without_performing(UndoableCommand *cmd) {
-    if (is_dummy_) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
         delete cmd;
         return;
     }
@@ -131,7 +136,9 @@ void Transaction::push_without_performing(UndoableCommand *cmd) {
         s_push_hook(cmd, false);
     }
 
-    undoable_transaction_->append_command(cmd);
+    std::unique_ptr<UndoableCommand> owned(cmd);
+    undoable_transaction_->append_command(owned.get());
+    owned.release();
 
     if (s_push_hook) {
         s_push_hook(cmd, true);
@@ -154,7 +161,7 @@ ReplayScope::~ReplayScope() {
     if (enabled_) manager_.current_transaction_ = std::move(saved_);
 }
 
-UndoStack *TransactionManager::undo_stack() const { return master_score_->undo_stack(); }
+MutationJournal *TransactionManager::mutation_journal() const { return master_score_->mutation_journal(); }
 
 void TransactionManager::transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func) {
     IF_ASSERT_FAILED(!current_transaction_) {
@@ -163,12 +170,17 @@ void TransactionManager::transaction(const muse::TranslatableString &description
         return;
     }
     begin_transaction(description);
-    func(*current_transaction_);
-    end_transaction();
+    try {
+        func(*current_transaction_);
+        end_transaction();
+    } catch (...) {
+        if (mutation_journal()->has_active_transaction()) end_transaction(true);
+        throw;
+    }
 }
 
 void TransactionManager::begin_transaction(const muse::TranslatableString &description) {
-    UndoStack *stack = undo_stack();
+    MutationJournal *stack = mutation_journal();
 
     if (stack->is_locked()) {
         return;
@@ -186,79 +198,67 @@ void TransactionManager::begin_transaction(const muse::TranslatableString &descr
     current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
 }
 
-void TransactionManager::end_transaction(bool rollback, bool keep_rolled_back_elements) {
-    UndoStack *stack = undo_stack();
+ScoreChanges TransactionManager::prepare_commit() {
+    auto *journal = mutation_journal();
+    if (!journal->has_active_transaction()) throw std::logic_error("no active mutation batch");
+    if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning))
+        throw std::runtime_error("the engine rejected the mutation batch");
+    if (master_score_->source_revision() == std::numeric_limits<uint64_t>::max()) throw std::overflow_error("source revision exhausted");
+    master_score_->update(false, NormalizeMode::TRANSACTION);
+    master_score_->invalidate_repeat_list();
+    master_score_->update_repeat_list(true);
+    const ScoreChanges provisional = build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(),
+                                                         journal->active_transaction()->commands());
+    master_score_->update_automation(provisional);
+    return build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(),
+                               journal->active_transaction()->commands());
+}
 
-    if (stack->is_locked()) {
-        return;
+void TransactionManager::commit_prepared(const ScoreChanges &changes) {
+    auto *journal = mutation_journal();
+    const bool changed = !journal->active_transaction()->empty();
+    // Listener reconstruction is fallible, so keep all inverses alive until it succeeds.
+    if (changed) {
+        notification_started_ = true;
+        master_score_->notify_changes(changes);
+        if (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)
+            throw std::runtime_error("the engine rejected batch finalization");
     }
+    journal->end_transaction(false);
+    current_transaction_.reset();
+    master_score_->cmd_state().reset();
+    if (changed) master_score_->advance_source_revision();
+    notification_started_ = false;
+}
 
-    if (!stack->has_active_transaction()) {
-        LOGW() << "no command active";
+void TransactionManager::end_transaction(bool rollback, bool keep_rolled_back_elements) {
+    auto *journal = mutation_journal();
+    if (journal->is_locked()) return;
+    if (!journal->has_active_transaction()) {
         master_score_->update();
         return;
     }
-
-    if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)) {
-        rollback = true;
-    }
-
-    if (rollback) {
-        // Unwind and its derived-state rebuild are replay, not a new edit.
-        // Route repair commands through the non-recording dummy transaction,
-        // including callers that bypass Score::undo and push on Transaction.
-        current_transaction_.reset();
-        /* When keepRolledBackElements is true, unwind removes the rolled-back elements from
-         * the score but does not free them: an external owner is responsible for the deferred
-         * deletion, since the elements are still referenced after this returns. */
-        stack->active_transaction()->unwind(!keep_rolled_back_elements);
-    }
-
-    // update() normalizes after postponed deletion. Geometry remains dirty. Source
-    // repairs are recorded here, before repeat/timing finalization and capture.
-    master_score_->update(false, rollback ? NormalizeMode::REPLAY : NormalizeMode::TRANSACTION);
-
-    master_score_->invalidate_repeat_list();
-    master_score_->update_repeat_list(!rollback);
-
-    ScoreChanges changes;
+    rollback |= master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning);
     if (!rollback) {
-        const ScoreChanges provisional = build_score_changes(master_score_->cmd_state(), stack->active_transaction()->changes_info(),
-                                                             stack->active_transaction()->commands());
-        master_score_->update_automation(provisional);
-        changes = build_score_changes(master_score_->cmd_state(), stack->active_transaction()->changes_info(),
-                                      stack->active_transaction()->commands());
-    } else {
-        master_score_->init_automation();
+        try {
+            auto changes = prepare_commit();
+            commit_prepared(changes);
+            return;
+        } catch (...) {
+            end_transaction(true, keep_rolled_back_elements);
+            throw;
+        }
     }
-
-    LOGD() << "Undo stack current transaction commands count: " << stack->active_transaction()->commands().size();
-
-    const bool is_current_transaction_empty = stack->active_transaction()->empty(); // nothing to undo?
-    stack->end_transaction(rollback || is_current_transaction_empty);
     current_transaction_.reset();
-
+    journal->active_transaction()->unwind(!keep_rolled_back_elements);
+    master_score_->update(false, NormalizeMode::REPLAY);
+    master_score_->invalidate_repeat_list();
+    master_score_->update_repeat_list(false);
+    master_score_->init_automation();
+    if (notification_started_) master_score_->reload_playback_models();
+    journal->end_transaction(true);
     master_score_->cmd_state().reset();
-
-    if (!is_current_transaction_empty && !rollback) {
-        master_score_->notify_changes(changes);
-    }
-}
-
-void TransactionManager::reopen() {
-    UndoStack *stack = undo_stack();
-
-    if (stack->is_locked()) {
-        return;
-    }
-
-    if (stack->has_active_transaction()) {
-        LOGD() << "cmd already active";
-        return;
-    }
-
-    stack->reopen();
-    current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
+    notification_started_ = false;
 }
 
 Transaction *TransactionManager::current_transaction() const { return current_transaction_.get(); }
@@ -269,56 +269,4 @@ Transaction &TransactionManager::current_or_dummy_transaction() {
     } else {
         return Transaction::dummy();
     }
-}
-
-void TransactionManager::undo_redo(bool undo, EditData *edit_data) {
-    if (master_score_->read_only()) {
-        return;
-    }
-
-    UndoStack *stack = undo_stack();
-
-    IF_ASSERT_FAILED(!stack->has_active_transaction()) {
-        LOGW() << "cannot undo/redo while transaction is active";
-        return;
-    }
-
-    if (undo) {
-        IF_ASSERT_FAILED(stack->can_undo()) {
-            LOGW() << "cannot undo";
-            return;
-        }
-    } else {
-        IF_ASSERT_FAILED(stack->can_redo()) {
-            LOGW() << "cannot redo";
-            return;
-        }
-    }
-
-    master_score_->cmd_state().reset();
-
-    //! NOTE: the order of operations is very important here
-    //! 1. for the undo operation, the list of changed elements is available before undo()
-    //! 2. for the redo operation, the list of changed elements will be available after redo()
-    UndoableTransaction::ChangesInfo changes;
-    UndoableTransaction *transaction = nullptr;
-
-    if (undo) {
-        transaction = stack->last();
-        changes = transaction->changes_info(true);
-        stack->undo(edit_data);
-    } else {
-        stack->redo();
-        transaction = stack->last();
-        changes = transaction->changes_info(false);
-    }
-
-    master_score_->update(false, NormalizeMode::REPLAY);
-    master_score_->invalidate_repeat_list();
-    master_score_->update_repeat_list(false);
-    master_score_->update_selection();
-
-    ScoreChanges result = build_score_changes(master_score_->cmd_state(), changes, transaction->commands());
-    master_score_->update_automation(result);
-    master_score_->notify_changes(result);
 }

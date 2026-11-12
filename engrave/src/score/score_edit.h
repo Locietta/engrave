@@ -55,7 +55,6 @@ private:
 // must inspect, check revisions, then apply on one owner-thread turn without yielding.
 NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore *, const NativePitchEdit &);
 // Best-effort retirement after publication; never turns a committed edit into failure.
-bool cap_native_edit_history(mu::engraving::MasterScore *, size_t maximum = 128) noexcept;
 
 // Test-only fault injection for score_edit_test; armed for one apply call, never set otherwise.
 enum class NativeEditTestFault { NONE, ENGINE_ERROR_AFTER_FIRST, EXCEPTION_AFTER_FIRST };

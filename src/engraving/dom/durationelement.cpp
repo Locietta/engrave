@@ -22,7 +22,7 @@
 
 #include "durationelement.h"
 
-#include "editing/transaction/undostack.h"
+#include "editing/transaction/mutationjournal.h"
 #include "property.h"
 #include "score.h"
 #include "staff.h"
@@ -109,7 +109,7 @@ Fraction DurationElement::actual_ticks() const { return actual_ticks_at(tick());
 
 void DurationElement::read_add_tuplet(Tuplet *t) {
     set_tuplet(t);
-    if (!score()->undo_stack()->has_active_transaction()) { // HACK, also added in Undo::AddElement()
+    if (!score()->mutation_journal()->has_active_transaction()) { // HACK, also added in Undo::AddElement()
         t->add(this);
     }
 }

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 #include <new>
 #include <stdexcept>
 #include <string>
@@ -17,8 +18,9 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/tempotimeline.h"
+#include "engraving/editing/transaction/mutationjournal.h"
+#include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undoablecommand.h"
-#include "engraving/editing/transaction/undostack.h"
 #include "engraving/engravingproject.h"
 
 namespace engrave {
@@ -37,7 +39,7 @@ using mu::engraving::MasterScore;
 using mu::engraving::MScore;
 using mu::engraving::MsError;
 using mu::engraving::UndoableCommand;
-using mu::engraving::UndoStack;
+using mu::engraving::MutationJournal;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message, std::optional<std::size_t> op = {}) {
     return std::unexpected(Error{code, std::move(message), op});
@@ -176,6 +178,8 @@ struct BatchGuard::Snapshot {
     std::vector<std::string> ids;
     std::vector<Versions> versions;
     mu::engraving::RuntimeTempoState runtime_tempo;
+    uint64_t source_revision = 0;
+    uint64_t saved_revision = 0;
 };
 
 BatchGuard::BatchGuard(Document &document) : document_(document), context_(*DocumentAccess::impl(document).project->master_score()) {}
@@ -188,7 +192,7 @@ Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) c
                     std::format("the document is at revision {}, not {}", document.revision, *expected_revision));
     }
     const MasterScore &master = context_.master();
-    const UndoStack *stack = master.undo_stack();
+    const MutationJournal *stack = master.mutation_journal();
     if (master.read_only() || stack->is_locked() || stack->has_active_transaction())
         return fail(ErrorCode::EDIT_REJECTED, "the score cannot be edited now");
     return {};
@@ -248,7 +252,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     bool snapshot_ran = snapshot_step.empty() && policy == Policy::SNAPSHOT;
 
     MasterScore &master = context_.master();
-    UndoStack *stack = master.undo_stack();
+    MutationJournal *stack = master.mutation_journal();
     std::optional<Snapshot> snapshot;
     if (policy == Policy::SNAPSHOT) {
         snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz",
@@ -256,11 +260,12 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
                             music::dump_json(music::semantic_dump(&master), 1),
                             id_list(master),
                             {},
-                            master.runtime_tempo_state()};
+                            master.runtime_tempo_state(),
+                            master.source_revision(),
+                            master.saved_revision()};
         for (const mu::engraving::Score *score : master.score_list())
             snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version()});
     }
-    const std::size_t history = stack->size();
 
     struct SavedLayout {
         mu::engraving::Score *score;
@@ -272,7 +277,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     for (auto *score : master.score_list()) saved_layouts.push_back({score, score->layout_state, score->normalize_state});
     const auto *original_project = document.project.get();
     const auto rollback = [&](bool unsafe) {
-        roll_back(snapshot ? &*snapshot : nullptr, history, unsafe);
+        roll_back(snapshot ? &*snapshot : nullptr, unsafe);
         // A snapshot reload owns new, fully dirty caches and instance-local counters;
         // saved pointers and freshness belong only to an in-place unwind.
         if (document.project.get() != original_project) return;
@@ -327,7 +332,39 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
             const auto &commands = stack->active_transaction()->commands();
             if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++context_.epoch_;
         }
-        if (!failure) master.end_cmd(false);
+        if (!failure) {
+            auto *manager = master.transaction_manager();
+            auto changes = manager->prepare_commit();
+            if (check_engine(steps.size())) {
+                assign_missing_ids(master);
+                IdDiff diff = diff_ids(before, live_ids(master));
+                const bool changed = !stack->active_transaction()->empty();
+                if (changed && document.revision == std::numeric_limits<uint64_t>::max())
+                    throw std::overflow_error("document revision exhausted");
+                const auto revision = document.revision + (changed ? 1 : 0);
+                const auto scores = master.score_list();
+                result.revision = revision;
+                result.created = std::move(diff.created);
+                result.removed = std::move(diff.removed);
+                result.replaced = std::move(diff.replaced);
+                result.ops.resize(steps.size());
+                for (std::size_t i = 0; i < steps.size(); ++i) {
+                    result.ops[i].created.reserve(context_.created_[i].size());
+                    for (auto handle : context_.created_[i]) {
+                        const auto *object = master.eid_register()->live_item(handle);
+                        const bool named = object && takes_id(*object) && object->eid().is_valid();
+                        result.ops[i].created.push_back(named ? std::optional(from_engine(object->eid())) : std::nullopt);
+                    }
+                }
+                if (hooks.before_cleanup) hooks.before_cleanup();
+                if (check_engine(steps.size())) {
+                    manager->commit_prepared(changes);
+                    document.revision = revision;
+                    for (auto *score : scores)
+                        if (!score->layout_state.dirty) score->layout_state.revision = revision;
+                }
+            }
+        }
     } catch (const std::bad_alloc &) {
         rollback(true);
         throw;
@@ -345,36 +382,15 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         return std::unexpected(std::move(*failure));
     }
 
-    const bool changed = stack->size() > history;
-    if (!hooks.keep_history) stack->clear_history();
-    assign_missing_ids(master);
-    IdDiff diff = diff_ids(before, live_ids(master));
-    if (changed) ++document.revision;
-    for (auto *score : master.score_list()) {
-        if (!score->layout_state.dirty) score->layout_state.revision = document.revision;
-    }
-
-    result.revision = document.revision;
-    result.created = std::move(diff.created);
-    result.removed = std::move(diff.removed);
-    result.replaced = std::move(diff.replaced);
-    result.ops.resize(steps.size());
-    for (std::size_t i = 0; i < steps.size(); ++i) {
-        for (auto handle : context_.created_[i]) {
-            const EngravingObject *object = master.eid_register()->live_item(handle);
-            const bool named = object && takes_id(*object) && object->eid().is_valid();
-            result.ops[i].created.push_back(named ? std::optional(from_engine(object->eid())) : std::nullopt);
-        }
-    }
     return result;
 }
 
 // Brings the score back to where it was before the batch. A failure here leaves the
 // document poisoned and is thrown.
-void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool unwind_unsafe) {
+void BatchGuard::roll_back(const Snapshot *snapshot, bool unwind_unsafe) {
     auto &document = DocumentAccess::impl(document_);
     MasterScore &master = context_.master();
-    UndoStack *stack = master.undo_stack();
+    MutationJournal *stack = master.mutation_journal();
     try {
         if (snapshot) {
             // Prefer an unwind when the commands are safe to replay. It preserves
@@ -391,16 +407,11 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
                 // policy is Snapshot cannot be undone (the excerpt build frees its links
                 // twice), and after a failure in the middle of a command the undo is not
                 // to be trusted either.
-                if (active) stack->end_transaction(true);
+                if (active) stack->abandon();
                 restore(*snapshot);
             }
         } else if (stack->has_active_transaction()) {
             master.end_cmd(true);
-        } else if (stack->size() > history) {
-            // The commit itself failed after the transaction was recorded: undo it,
-            // which C2 of the harness proves equal to the unwind.
-            master.undo_redo(true, nullptr);
-            stack->clear_history();
         }
     } catch (...) {
         document.poisoned = true;
@@ -429,6 +440,7 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     project->master_score()->invalidate_repeat_list();
     project->master_score()->init_automation();
     project->master_score()->restore_runtime_tempo_state(snapshot.runtime_tempo);
+    project->master_score()->restore_source_revisions(snapshot.source_revision, snapshot.saved_revision);
     assign_missing_ids(*project->master_score());
     // A replacement has no geometry to retain. Its full pending layout also
     // covers every old pending range; counters belong to this new Score instance.

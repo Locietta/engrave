@@ -89,8 +89,8 @@
 #include "noteinput.h"
 #include "rw/xmlreader.h"
 #include "style/style.h"
+#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
-#include "transaction/undostack.h"
 #include "translation.h"
 #include "transpose.h"
 
@@ -255,12 +255,6 @@ static void delete_postponed(CmdState &cmd_state) {
 //---------------------------------------------------------
 
 void Score::start_cmd(const TranslatableString &action_name) { master_score()->transaction_manager()->begin_transaction(action_name); }
-
-//---------------------------------------------------------
-//   undoRedo
-//---------------------------------------------------------
-
-void Score::undo_redo(bool undo, EditData *ed) { master_score()->transaction_manager()->undo_redo(undo, ed); }
 
 //---------------------------------------------------------
 //   endCmd

@@ -132,7 +132,7 @@ struct Transaction;
 struct TransactionManager;
 struct Tuplet;
 struct UndoableCommand;
-struct UndoStack;
+struct MutationJournal;
 
 struct Interval;
 struct NoteVal;
@@ -364,7 +364,7 @@ public:
     bool undo_property_changed(EngravingItem *item, Pid prop_id, const PropertyValue &prop_value,
                                PropertyFlags prop_flags = PropertyFlags::NOSTYLE);
     void undo_property_changed(EngravingObject *, Pid, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE);
-    UndoStack *undo_stack() const;
+    MutationJournal *mutation_journal() const;
     TransactionManager *transaction_manager() const;
     void undo(UndoableCommand *) const;
     void undo_remove_measures(Measure *, Measure *, bool preserve_ties = false, bool move_staff_type_changes = true);
@@ -438,7 +438,6 @@ public:
     void start_cmd(const TranslatableString &action_name);                       // start undoable command
     void end_cmd(bool rollback = false, bool keep_rolled_back_elements = false); // end undoable command
     void update();
-    void undo_redo(bool undo, EditData *);
 
     virtual void set_update_all();
     void set_layout_all(staff_idx_t staff = muse::nidx, const EngravingItem *e = nullptr);

@@ -35,7 +35,6 @@ struct TextEditData : public ElementEditData {
 public:
 
     String old_xml_text;
-    size_t start_undo_idx = 0;
 
     bool delete_text = false;
 

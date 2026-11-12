@@ -29,78 +29,13 @@
 
 namespace mu::engraving {
 struct EditData;
+struct ScoreChanges;
 struct MasterScore;
 struct UndoableCommand;
-struct UndoableTransaction;
-struct UndoStack;
+struct JournalBatch;
+struct MutationJournal;
 
-/// # Transaction and TransactionManager
-///
-/// These classes are intended to provide an interface for safely
-/// performing undoable transactions, without the possibility to forget
-/// starting/ending a transaction or to start a nested transaction.
-///
-/// The aim is to eliminate Score::undo, so that all undoable commands
-/// must be performed inside a transaction.
-///
-/// When the new method is adopted widely, it will directly or indirectly
-/// help eliminate a lot of bad patterns currently seen around undoable
-/// transactions:
-/// * forgetting to start/end a transaction
-/// * performing undoable commands outside a transaction
-/// * not being able to tell whether a method is undoable or not
-/// * calling an undoable method without being aware, leading to overhead
-///   or unexpected references in the UndoStack
-/// * complex unsafe direct UndoStack manipulation, for example in text
-///   editing; by replacing ad-hoc manipulation with proper conceptual
-///   solutions, we can introduce safety for more complex behaviour too
-/// * there are too many sources of undo changes information, especially
-///   inside the Notation module
-///
-/// Two temporary methods remain for compatibility purposes:
-/// * Score::undo for performing an undoable command
-/// * TransactionManager::currentOrDummyTransaction for calling methods
-///   that do need a `Transaction&` in a context that does not have it yet
-///
-/// Concepts not yet (completely) covered:
-/// * failing transactions, i.e. a replacement for
-///   `endTransaction(rollback: true)`; ideally, this would ensure that
-///   after failing a transaction, no further commands can be pushed to it
-/// * "long-running" transactions, for example like in the style dialog or
-///   during text editing or dragging; these will still have to use
-///   begin/endTransaction. That's basically fine, but those methods can be
-///   made more strict, for example beginTransaction could return some
-///   object that must be given back to endTransaction, ensuring correctness
-/// * the aforementioned complex unsafe direct UndoStack manipulations
-/// * "dummy transactions" will have to be promoted from a temporary
-///   compatibility solution into a real concept, for operations during
-///   score reading or in situations where one does not care about the undo
-///   stack at all
-/// * we need to figure out how the plugins/extensions framework can fit
-///   into safely, given that we must consider user plugins/extensions
-///   unsafe.
-///
-/// Potential opportunities to explore in the future
-/// * Allowing to change the description/actionName mid-transaction via the
-///   Transaction type
-/// * Moving CmdState etc. out of MasterScore into Transaction
-/// * Moving changes channels into TransactionManager
-/// * Moving UndoStack ownership to TransactionManager
-/// * Nested UndoStacks for "long-running" operations, for example in the
-///   case of text editing: this should eliminate the need for
-///   UndoStack::mergeTransactions
-///
-/// Shortcomings
-/// The new `transaction` method and `Transaction` type do help prevent
-/// calling undoable methods outside an undoable transaction, but they do
-/// not help prevent calling non-undoable methods at unexpected moments. For
-/// that, we would need another type that can only be constructed by a few
-/// trusted friend classes, and acts as a 'password' for calling
-/// non-undoable methods. The question is how far we should go with this
-/// though, because adding such thing to literally every simple setter
-/// anywhere in the module is not feasible. We might reserve it for a few
-/// ambiguous places only.
-
+// A recording view of the single active rollback journal.
 struct Transaction {
     Transaction(const Transaction &) = delete;
     Transaction &operator=(const Transaction &) = delete;
@@ -120,11 +55,11 @@ struct Transaction {
 
 private:
     friend struct TransactionManager;
-    Transaction(UndoableTransaction *undoable_transaction);
+    Transaction(JournalBatch *undoable_transaction);
 
     static Transaction &dummy();
 
-    UndoableTransaction *undoable_transaction_ = nullptr;
+    JournalBatch *undoable_transaction_ = nullptr;
     bool is_dummy_ = false;
 
     static inline PushHook s_push_hook = nullptr;
@@ -135,14 +70,14 @@ struct ReplayScope;
 struct TransactionManager {
     explicit TransactionManager(MasterScore *master_score);
 
-    UndoStack *undo_stack() const;
+    MutationJournal *mutation_journal() const;
 
     void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
 
     void begin_transaction(const muse::TranslatableString &description);
     void end_transaction(bool rollback = false, bool keep_rolled_back_elements = false);
-
-    void reopen();
+    ScoreChanges prepare_commit();
+    void commit_prepared(const ScoreChanges &changes);
 
     /// Returns the current transaction, if any is active.
     /// Where possible, prefer using `transaction()` instead of this method.
@@ -150,13 +85,13 @@ struct TransactionManager {
 
     Transaction &current_or_dummy_transaction();
 
-    void undo_redo(bool undo, EditData *edit_data);
 
 private:
     friend struct ReplayScope;
     MasterScore *master_score_ = nullptr;
 
     std::unique_ptr<Transaction> current_transaction_;
+    bool notification_started_ = false;
 };
 
 // Temporarily use the dummy transaction for derived-state reconstruction.
