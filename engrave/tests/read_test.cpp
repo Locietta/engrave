@@ -77,6 +77,7 @@
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/tie.h"
+#include "engraving/dom/tiejumppointlist.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editproperty.h"
@@ -1299,6 +1300,53 @@ TEST(Read, RepeatRepairStaysInTheActiveTransaction) {
     manager->undo_redo(false, nullptr);
     EXPECT_FALSE(second_measure->repeat_end());
     EXPECT_FALSE(slur->is_incoming());
+}
+
+TEST(Read, RepeatChangeAndTieInOneBatchMatchSeparateBatches) {
+    using namespace mu::engraving;
+    std::vector<std::tuple<int, bool, bool>> expected;
+    std::vector<std::byte> expected_midi;
+    for (bool combined : {false, true}) {
+        auto opened = g_engine->open(as_bytes(repeat_edit_xml), {.format = engrave::Format::MUSIC_XML});
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *repeat_measure = master.first_measure()->next_measure();
+        auto *note = to_chord(repeat_measure->first(SegmentType::CHORD_REST)->element(0))->up_note();
+        const auto repeat_ref = engrave::Ref{engrave::from_engine(repeat_measure->eid())};
+        const auto note_ref = engrave::Ref{engrave::from_engine(note->eid())};
+        ASSERT_TRUE(document.edit({{engrave::SetProperty{repeat_ref, "repeatEnd", false}}}));
+        if (combined) {
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{repeat_ref, "repeatEnd", true}, engrave::AddTie{note_ref}}}));
+        } else {
+            ASSERT_TRUE(document.edit({{engrave::SetProperty{repeat_ref, "repeatEnd", true}}}));
+            ASSERT_TRUE(document.edit({{engrave::AddTie{note_ref}}}));
+        }
+        ASSERT_NE(note->tie_for(), nullptr);
+        ASSERT_NE(note->tie_for()->tie_jump_points(), nullptr);
+        std::vector<std::tuple<int, bool, bool>> actual;
+        for (const auto *point : *note->tie_for()->tie_jump_points()) {
+            actual.emplace_back(point->note()->tick().ticks(), point->active(), point->following_note());
+        }
+        ASSERT_EQ(actual.size(), 2u);
+        EXPECT_NE(to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->up_note()->incoming_partial_tie(), nullptr);
+        const auto midi = document.export_score({.format = engrave::Format::MIDI});
+        ASSERT_TRUE(midi);
+        if (!combined) {
+            expected = actual;
+            expected_midi = *midi;
+        } else {
+            EXPECT_EQ(actual, expected);
+            EXPECT_EQ(*midi, expected_midi);
+        }
+        const auto saved = document.export_score({.format = engrave::Format::MSCX});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened);
+        auto &reloaded = master_of(**reopened);
+        EXPECT_NE(to_chord(reloaded.first_measure()->first(SegmentType::CHORD_REST)->element(0))->up_note()->incoming_partial_tie(),
+                  nullptr);
+    }
 }
 
 TEST(Read, PlaybackFinalizationPublishesStableReadsAndReplay) {

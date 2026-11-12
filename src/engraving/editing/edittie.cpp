@@ -26,6 +26,7 @@
 #include "../dom/factory.h"
 #include "../dom/input.h"
 #include "../dom/laissezvib.h"
+#include "../dom/masterscore.h"
 #include "../dom/note.h"
 #include "../dom/partialtie.h"
 #include "../dom/score.h"
@@ -109,6 +110,7 @@ void EditTie::cmd_add_tie(Score *score, bool add_to_chord) {
     std::vector<EngravingItem *> to_select;
 
     score->start_cmd(TranslatableString("undoableAction", "Add tie"));
+    score->master_score()->update_repeat_list(false);
     Chord *last_added_chord = nullptr;
 
     Transaction &tx = score->transaction_manager()->current_or_dummy_transaction();
@@ -230,6 +232,7 @@ Tie *EditTie::cmd_toggle_tie(Score *score) {
         return nullptr;
     }
 
+    score->master_score()->update_repeat_list(false);
     std::vector<Note *> tie_note_list(note_list.size());
     bool single_tick = true;
     bool some_have_existing_next_note_to_tie_to = false;
