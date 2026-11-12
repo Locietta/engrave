@@ -229,7 +229,7 @@ std::string poet(const Score *score) {
 std::string timesig(const Score *score) {
     size_t staves = score->nstaves();
     size_t tracks = staves * ::mu::engraving::voices;
-    const Segment *time_sig_segment = score->first_segment_mm(SegmentType::TIME_SIG);
+    const Segment *time_sig_segment = score->first_segment(SegmentType::TIME_SIG);
     if (!time_sig_segment) {
         return std::string();
     }
@@ -254,7 +254,7 @@ std::string timesig(const Score *score) {
 std::pair<int, std::string> tempo(const Score *score) {
     int tempo = 0;
     muse::String tempo_text;
-    for (const Segment *segment = score->first_segment_mm(SegmentType::ALL); segment; segment = segment->next1_mm()) {
+    for (const Segment *segment = score->first_segment(SegmentType::ALL); segment; segment = segment->next1()) {
         auto annotations = segment->annotations();
         for (const EngravingItem *annotation : annotations) {
             if (annotation && annotation->is_tempo_text()) {

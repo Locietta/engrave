@@ -37,13 +37,12 @@ struct MMRestLayout {
 private:
     static void create_mm_rest(LayoutContext &ctx, Measure *first_measure, Measure *last_measure, const Fraction &len);
 
-    static void reuse_existing_mm_rest(LayoutContext &ctx, Measure *mmr_measure, Measure *last_measure, Fraction len);
-    static void remove_mm_rest_elements(Measure *mm_rest_measure, LayoutContext &ctx);
-    static void change_measure_el_parents(Measure *first_measure, Measure *last_measure, Measure *mmr_measure, LayoutContext &ctx);
-    static void restore_measure_el_parents(Measure *first_measure, Measure *last_measure, Measure *mmr_measure, LayoutContext &ctx);
-    static void change_annotations_parent(Segment *old_parent, Segment *new_parent, const LayoutContext &ctx, bool check_visibility);
-    static Segment *change_elements_parent(Segment *old_seg, Measure *new_measure, const Fraction &new_seg_tick, LayoutContext &ctx,
-                                           bool check_visibility);
+    static void reuse_existing_mm_rest(LayoutContext &ctx, Measure *measure, Fraction len);
+    static void remove_mm_rest_elements(Measure *measure, LayoutContext &ctx);
+    static void clear_display_copies(Measure *measure);
+    static void populate_display_copies(Measure *first, Measure *last, Measure *display, LayoutContext &ctx);
+    static void copy_annotations(const Segment *source, Segment *display, const LayoutContext &ctx, bool check_visibility);
+    static Segment *copy_elements(const Segment *source, Measure *display, const Fraction &tick, LayoutContext &ctx, bool check_visibility);
 
     static bool valid_mm_rest_measure(const LayoutContext &ctx, const Measure *m);
     static bool break_mmr_for_element(Measure *measure, Measure *prev_measure, const LayoutContext &ctx);

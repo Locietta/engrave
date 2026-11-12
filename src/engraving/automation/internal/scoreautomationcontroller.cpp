@@ -40,7 +40,6 @@
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
-#include "engraving/dom/sourceidentity.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/volta.h"
@@ -498,7 +497,7 @@ void ScoreAutomationController::update(const UpdateRequest &request, const Autom
 
             for (const Segment *segment = measure->first(::relevant_segment_types); segment;
                  segment = segment->next(::relevant_segment_types)) {
-                if (source_annotations(*segment).empty() || segment->tick().ticks() < measure_from) {
+                if (segment->annotations().empty() || segment->tick().ticks() < measure_from) {
                     continue;
                 }
 
@@ -624,7 +623,7 @@ void ScoreAutomationController::add_segment_points(const Segment *segment, int t
     double fermata_stretch = 0.0;
     const Fermata *fermata = nullptr;
 
-    for (const EngravingItem *annotation : source_annotations(*segment)) {
+    for (const EngravingItem *annotation : segment->annotations()) {
         if (!annotation) {
             continue;
         }
@@ -656,7 +655,7 @@ void ScoreAutomationController::add_dynamic_points(const Dynamic *dynamic, int t
     }
 
     const DynamicType dynamic_type = dynamic->dynamic_type();
-    const utick_t tick = source_tick(*dynamic).ticks() + tick_offset;
+    const utick_t tick = dynamic->tick().ticks() + tick_offset;
 
     DynamicInfo info;
     info.tick = tick;
@@ -1062,7 +1061,7 @@ void ScoreAutomationController::add_tempo_text_point(const TempoText *tt, int ti
         ctx.tempo_primo = round_tempo(tt->tempo());
     }
 
-    const utick_t tick = source_tick(*tt).ticks() + tick_offset;
+    const utick_t tick = tt->tick().ticks() + tick_offset;
 
     EID item_id = tt->eid();
     if (!item_id.is_valid()) {

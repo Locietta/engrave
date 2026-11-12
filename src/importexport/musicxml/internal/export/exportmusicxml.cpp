@@ -514,10 +514,10 @@ static String position_to_string(const PointF def, const PointF rel, const float
 //   while all other elements are relative to their position or the nearest note.
 //---------------------------------------------------------
 
-String ExportMusicXml::positioning_attributes(EngravingItem const *const el, bool is_span_start) {
-    if (!configuration()->export_layout()) {
-        return String();
-    }
+String ExportMusicXml::positioning_attributes(const EngravingItem *source, bool is_span_start) {
+    if (!configuration()->export_layout()) return String();
+    const EngravingItem *copy = source->score()->layout_copy(*source);
+    const EngravingItem *el = copy ? copy : source;
 
     //LOGD("single el %p _pos x,y %f %f _userOff x,y %f %f spatium %f",
     //       el, el->ldata()->pos.x(), el->ldata()->pos.y(), el->offset().x(), el->offset().y(), el->spatium());
@@ -2266,7 +2266,8 @@ void ExportMusicXml::keysig(const KeySig *ks, ClefType ct, staff_idx_t staff) {
 
     //! NOTE It looks like there is some kind of problem here,
     //! layout data should not be used to write to a file or export
-    const KeySig::LayoutData *ldata = ks->ldata();
+    const EngravingItem *display = ks->score()->layout_copy(*ks);
+    const KeySig::LayoutData *ldata = display ? to_key_sig(display)->ldata() : ks->ldata();
     const std::vector<KeySym> &keysyms = ldata->key_symbols;
     if (ks->is_custom() && !ks->is_atonal() && keysyms.size() > 0) {
         // non-traditional key signature

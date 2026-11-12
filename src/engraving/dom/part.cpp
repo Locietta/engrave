@@ -37,7 +37,6 @@
 #include "rw/xmlwriter.h"
 #include "score.h"
 #include "sharedpart.h"
-#include "sourceidentity.h"
 #include "staff.h"
 #include "stringtunings.h"
 #include "style/style.h"
@@ -808,7 +807,7 @@ int Part::harmony_count() const {
     int count = 0;
     const TrackRange range = track_range();
     for (const Segment *seg = first_m->first(st); seg; seg = seg->next1(st)) {
-        for (const EngravingItem *e : source_annotations(*seg)) {
+        for (const EngravingItem *e : seg->annotations()) {
             if ((e->is_harmony() || (e->is_fret_diagram() && to_fret_diagram(e)->harmony())) && e->track() >= range.start_track &&
                 e->track() < range.end_track) {
                 count++;

@@ -1080,34 +1080,6 @@ static MeasureBase *clone_measure(MeasureBase *mb, Score *score, const Score *os
     return nmb;
 }
 
-void Excerpt::clone_mm_rests(Score *source_score, Score *dst_score, const std::vector<staff_idx_t> &source_staves_indexes,
-                             const TracksMap &track_list, TieMap &tie_map) {
-    // When MMRests are enabled in the main score and we are creating a new part or revealing a hidden stave within one, we must copy MMRests
-    // Elements are moved from underlying measures to MMRest measures. If we do not copy these MMRests, the elements attached to them will be lost
-    // It doesn't matter if the MMRest range is different in the part to the score. As long as the MMRest measure is present in the DOM, MMRestLayout will
-    // correct this, setting the appropriate length and moving the elements to the correct locations
-
-    for (Measure *src_m = source_score->first_measure(); src_m; src_m = src_m->next_measure()) {
-        if (!src_m->has_mm_rest()) {
-            continue;
-        }
-
-        Measure *dst_m = dst_score->tick2measure(src_m->tick());
-        if (!dst_m) {
-            continue;
-        }
-
-        Measure *src_mm_rest = src_m->mm_rest();
-
-        Measure *dst_mm_rest = to_measure(clone_measure(src_mm_rest, dst_score, source_score, source_staves_indexes, track_list, tie_map));
-        dst_mm_rest->set_mm_rest_count(src_mm_rest->mm_rest_count());
-        dst_mm_rest->set_prev(dst_m->prev());
-        dst_mm_rest->set_next(dst_score->tick2measure(src_mm_rest->tick() + src_mm_rest->ticks()));
-
-        dst_m->set_mm_rest(dst_mm_rest);
-    }
-}
-
 void Excerpt::clone_staves(Score *source_score, Score *dst_score, const std::vector<staff_idx_t> &source_staves_indexes,
                            const TracksMap &track_list) {
     MeasureBaseList *measures = dst_score->measures();
@@ -1130,7 +1102,8 @@ void Excerpt::clone_staves(Score *source_score, Score *dst_score, const std::vec
         measures->append(new_measure);
     }
 
-    clone_mm_rests(source_score, dst_score, source_staves_indexes, track_list, tie_map);
+    // Display MMRs are rebuilt for the excerpt. All authored items were cloned
+    // from real measures, so stale display ranges have no source role.
 
     size_t n = source_staves_indexes.size();
     for (staff_idx_t dst_staff_idx = 0; dst_staff_idx < n; ++dst_staff_idx) {
@@ -1195,8 +1168,6 @@ void Excerpt::clone_measures(Score *oscore, Score *score) {
         MeasureBase *new_measure = clone_measure(mb, score, oscore, {}, {}, tie_map);
         measures->append(new_measure);
     }
-
-    clone_mm_rests(oscore, score, {}, {}, tie_map);
 
     collect_tie_end_points(tie_map);
 }

@@ -29,7 +29,6 @@
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
-#include "sourceidentity.h"
 #include "system.h"
 #include "text.h"
 #include "types/typesconv.h"
@@ -258,7 +257,7 @@ TextBase *Hairpin::find_end_dynamic_or_expression(PlacementV placement_value, bo
         if (segment_tick > ref_tick) {
             break;
         }
-        for (EngravingItem *item : source_annotations(*segment)) {
+        for (EngravingItem *item : segment->annotations()) {
             if (!item->is_dynamic() && !item->is_expression()) {
                 continue;
             }

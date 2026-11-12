@@ -157,6 +157,7 @@ using namespace mu::engraving;
 using namespace mu::engraving::write;
 
 void TWrite::write_item(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx) {
+    if (item->is_layout_copy()) return;
     switch (item->type()) {
         case ElementType::ACCIDENTAL: write(item_cast<const Accidental *>(item), xml, ctx); break;
         case ElementType::AMBITUS: write(item_cast<const Ambitus *>(item), xml, ctx); break;

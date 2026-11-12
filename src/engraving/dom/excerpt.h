@@ -102,8 +102,6 @@ private:
     friend struct MasterScore;
 
     static void promote_gap_rests_to_real_rests(const Measure *measure, staff_idx_t staff_idx);
-    static void clone_mm_rests(Score *source_score, Score *dst_score, const std::vector<staff_idx_t> &source_staves_indexes,
-                               const TracksMap &track_list, TieMap &tie_map);
 
     void set_inited(bool inited);
     void write_name_to_meta_tags();

@@ -152,7 +152,7 @@ struct Query {
     // cover several types; get() reports it instead.
     std::vector<std::string> props;
 
-    // Fill ElementInfo::box. Layout must have run, which open and a commit do.
+    // Fill ElementInfo::box, requesting current layout through the geometry boundary.
     bool layout_boxes = false;
 
     // Paging. The result order is stable: by score, measure, tick, staff, voice and
