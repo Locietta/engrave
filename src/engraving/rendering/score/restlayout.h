@@ -38,6 +38,7 @@ using InterruptionPoints = std::array<std::list<Fraction>, ::mu::engraving::voic
 struct RestLayout {
     static void layout_rest(const Rest *item, Rest::LayoutData *ldata, const LayoutContext &ctx);
     static void fill_shape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf);
+    static Shape compute_shape(const Rest *item, const Rest::LayoutData *ldata, const LayoutConfiguration &conf);
 
     static void resolve_vertical_rest_conflicts(LayoutContext &ctx, Segment *segment, staff_idx_t staff_idx);
     static void resolve_rest_vs_chord(std::vector<Rest *> &rests, std::vector<Chord *> &chords, const Staff *staff, Segment *segment);
@@ -49,7 +50,9 @@ struct RestLayout {
 
 private:
     static void fill_shape(const Rest *item, Rest::LayoutData *ldata);
+    static Shape compute_shape(const Rest *item, const Rest::LayoutData *ldata);
     static void fill_shape(const MMRest *item, MMRest::LayoutData *ldata, const LayoutConfiguration &conf);
+    static Shape compute_shape(const MMRest *item, const MMRest::LayoutData *ldata, const LayoutConfiguration &conf);
 
     static int compute_natural_line(int lines);
     static int compute_voice_offset(const Rest *item, Rest::LayoutData *ldata); // Vertical displacement in multi-voice cases

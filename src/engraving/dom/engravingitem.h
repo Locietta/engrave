@@ -41,7 +41,14 @@ struct Painter;
 #define DECLARE_LAYOUTDATA_METHODS(Class)                                                                      \
     const LayoutData *ldata() const { return static_cast<const Class::LayoutData *>(EngravingItem::ldata()); } \
     LayoutData *mutldata() { return static_cast<Class::LayoutData *>(EngravingItem::mutldata()); }             \
-    LayoutData *create_layout_data() const override { return new Class::LayoutData(); }
+    LayoutData *create_layout_data() const override { return new Class::LayoutData(); }                        \
+    const LayoutData *ldata_internal() const override {                                                        \
+        if (has_layout_data()) {                                                                               \
+            return static_cast<const Class::LayoutData *>(EngravingItem::ldata_internal());                    \
+        }                                                                                                      \
+        static const Class::LayoutData empty;                                                                  \
+        return &empty;                                                                                         \
+    }
 
 namespace mu::engraving::rendering::score {
 struct ScoreRenderer;
@@ -583,6 +590,9 @@ public:
 
     virtual double mag() const;
 
+    // Storage belongs only to elements explicitly touched by layout/mutators.
+    bool has_layout_data() const { return layout_data_ != nullptr; }
+
     Shape shape(LdAccess mode = LdAccess::CHECK) const { return ldata()->shape(mode); }
 
     virtual double base_line() const { return -height(); }
@@ -663,7 +673,7 @@ protected:
     virtual const LayoutData *ldata_internal() const;
     virtual LayoutData *mutldata_internal();
 
-    mutable int z_ = 0;
+    int z_ = 0;
     Color color_; // element color attribute
 
     track_idx_t track_ = muse::nidx; // staffIdx * VOICES + voice
@@ -682,7 +692,7 @@ private:
 
     bool exclude_vertical_align_ = false;
 
-    mutable LayoutData *layout_data_ = nullptr;
+    LayoutData *layout_data_ = nullptr;
 
     Parenthesis *left_parenthesis_ = nullptr;
     Parenthesis *right_parenthesis_ = nullptr;

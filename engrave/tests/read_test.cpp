@@ -47,9 +47,11 @@
 #include "engrave/src/score/write470.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
+#include "engraving/dom/dummyparent.h"
 #include "engraving/dom/dynamic.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/groups.h"
 #include "engraving/dom/hairpin.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
@@ -120,6 +122,51 @@ std::int64_t ticks_of(const engrave::Fraction &value) { return value.num * whole
 
 std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+}
+
+TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::unique_ptr<mu::engraving::Chord> first_owner(mu::engraving::Factory::create_chord(master.dummy()));
+    auto &first = *first_owner;
+    std::unique_ptr<mu::engraving::Chord> second_owner(mu::engraving::Factory::create_chord(master.dummy()));
+    auto &second = *second_owner;
+    const mu::engraving::Chord &query = first;
+    const mu::engraving::EngravingItem &base_query = first;
+    EXPECT_FALSE(first.has_layout_data());
+    EXPECT_FALSE(second.has_layout_data());
+    EXPECT_EQ(query.ldata(), second.ldata());
+    EXPECT_EQ(base_query.ldata(), query.ldata());
+    EXPECT_EQ(query.pos(), muse::PointF());
+    EXPECT_TRUE(query.shape().empty());
+    EXPECT_TRUE(query.ldata()->bbox().is_null());
+    EXPECT_EQ(query.z(), mu::engraving::default_z(query.type()));
+    EXPECT_EQ(query.get_property(mu::engraving::Pid::Z).to_int(), query.z());
+    EXPECT_FALSE(first.has_layout_data());
+    mu::engraving::EngravingItem::disconnect_all_origin_items(&first);
+    EXPECT_FALSE(first.has_layout_data());
+    auto *data = first.mutldata();
+    EXPECT_TRUE(first.has_layout_data());
+    EXPECT_NE(data, second.ldata());
+    data->set_pos(3.0, 4.0);
+    EXPECT_EQ(query.pos(), muse::PointF(3.0, 4.0));
+    EXPECT_EQ(second.pos(), muse::PointF());
+    EXPECT_FALSE(second.has_layout_data());
+}
+
+TEST(Read, ComputingAChordShapeDoesNotReplaceStoredLayout) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    std::unique_ptr<mu::engraving::Chord> chord_owner(mu::engraving::Factory::create_chord(master.dummy()));
+    auto &chord = *chord_owner;
+    const muse::RectF sentinel(1.0, 2.0, 3.0, 4.0);
+    chord.mutldata()->set_bbox(sentinel);
+    const auto *storage = chord.ldata();
+    EXPECT_TRUE(chord.shape().empty());
+    EXPECT_EQ(chord.ldata(), storage);
+    EXPECT_EQ(chord.ldata()->bbox(), sentinel);
 }
 
 // Palette-only elements are ignored by both supported native readers.

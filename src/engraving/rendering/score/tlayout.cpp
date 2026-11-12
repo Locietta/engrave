@@ -2710,13 +2710,17 @@ void TLayout::layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext 
 }
 
 void TLayout::fill_guitar_bend_segment_shape(const GuitarBendSegment *item, GuitarBendSegment::LayoutData *ldata) {
+    ldata->set_shape(TLayout::guitar_bend_segment_shape(item, ldata));
+}
+
+Shape TLayout::guitar_bend_segment_shape(const GuitarBendSegment *item, const GuitarBendSegment::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
     Shape shape;
     shape.add(ldata->bbox(), item);
     if (!item->bend_text()->empty()) {
         shape.add(item->bend_text()->shape().translate(item->bend_text()->pos()));
     }
-    ldata->set_shape(shape);
+    return shape;
 }
 
 void TLayout::layout_hairpin_segment(HairpinSegment *item, LayoutContext &ctx) {
@@ -5996,6 +6000,11 @@ void TLayout::layout_trill_segment(TrillSegment *item, LayoutContext &ctx) {
 }
 
 void TLayout::fill_trill_segment_shape(const TrillSegment *item, TrillSegment::LayoutData *ldata, const LayoutConfiguration &conf) {
+    ldata->set_shape(TLayout::trill_segment_shape(item, ldata, conf));
+}
+
+Shape TLayout::trill_segment_shape(const TrillSegment *item, [[maybe_unused]] const TrillSegment::LayoutData *ldata,
+                                   const LayoutConfiguration &conf) {
     LAYOUT_CALL_ITEM(item);
     std::shared_ptr<const EngravingFont> font = conf.engraving_font();
     Shape s = font->shape(item->symbols(), item->mag_s());
@@ -6004,7 +6013,7 @@ void TLayout::fill_trill_segment_shape(const TrillSegment *item, TrillSegment::L
         s.add(accidental->shape().translate(accidental->pos()));
     }
 
-    ldata->set_shape(s);
+    return s;
 }
 
 void TLayout::layout_triplet_feel(const TripletFeel *item, TripletFeel::LayoutData *ldata) {
@@ -6022,7 +6031,9 @@ void TLayout::layout_tuplet(Tuplet *item, LayoutContext &ctx) {
     TupletLayout::layout(item, ctx);
 }
 
-void TLayout::fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata) {
+void TLayout::fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata) { ldata->set_shape(TLayout::tuplet_shape(item, ldata)); }
+
+Shape TLayout::tuplet_shape(const Tuplet *item, [[maybe_unused]] const Tuplet::LayoutData *ldata) {
     LAYOUT_CALL_ITEM(item);
     Shape s;
     if (item->has_bracket()) {
@@ -6057,7 +6068,7 @@ void TLayout::fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata) {
         s.add(item->number()->ldata()->bbox().translated(item->number()->pos()));
     }
 
-    ldata->set_shape(s);
+    return s;
 }
 
 void TLayout::layout_vibrato_segment(VibratoSegment *item, LayoutContext &) {
