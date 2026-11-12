@@ -4366,23 +4366,25 @@ void TRead::read(compat::TremoloCompat *tc, XmlReader &e, ReadContext &ctx) {
                 UNREACHABLE;
                 e.skip_current_element();
             }
+        } else if (tag == "StemDirection") {
+            const auto direction = read_property_value(Pid::STEM_DIRECTION, e, ctx);
+            if (tc->two && !ctx.should_skip_property(Pid::STEM_DIRECTION)) tc->two->do_set_direction(direction.value<DirectionV>());
         } else if (tag == "Fragment") {
             if (tc->two) {
-                BeamFragment f = BeamFragment();
-                int idx = tc->two->direction_idx();
-                tc->two->set_user_modified(true);
-                double spatium_value = tc->two->spatium();
+                const int direction = std::clamp(e.int_attribute("direction", tc->two->direction_idx()), 0, 1);
+                PairF endpoints(0.0, 0.0);
                 while (e.read_next_start_element()) {
-                    const AsciiStringView tag1(e.name());
-                    if (tag1 == "y1") {
-                        f.py1[idx] = e.read_double() * spatium_value;
-                    } else if (tag1 == "y2") {
-                        f.py2[idx] = e.read_double() * spatium_value;
-                    } else {
+                    if (e.name() == "y1")
+                        endpoints.first = e.read_double();
+                    else if (e.name() == "y2")
+                        endpoints.second = e.read_double();
+                    else
                         e.unknown();
-                    }
                 }
-                tc->two->set_beam_fragment(f);
+                tc->two->authored_overrides.set({{AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(direction)},
+                                                 Pid::BEAM_POS,
+                                                 PropertyValue::from_value(endpoints),
+                                                 PropertyFlags::NOSTYLE});
             } else {
                 UNREACHABLE;
                 e.skip_current_element();

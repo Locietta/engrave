@@ -16,6 +16,7 @@
 #include "style/style.h"
 #include "style/textstyle.h"
 #include "text.h"
+#include "tremolotwochord.h"
 #include "tuplet.h"
 
 namespace mu::engraving {
@@ -131,7 +132,11 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
     return {};
 }
 
+bool fragment_owner(const EngravingItem &item) { return item.is_beam() || item.type() == ElementType::TREMOLO_TWOCHORD; }
+
 AuthoredChildKey child_key(const EngravingItem &item) {
+    if (item.type() == ElementType::TREMOLO_TWOCHORD && item.authored_child.role == AuthoredChildRole::NONE)
+        return {AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(static_cast<const TremoloTwoChord &>(item).direction_idx())};
     if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) {
         const auto &beam = static_cast<const Beam &>(item);
         uint32_t ordinal = beam.beam_fragments().empty() ? 0 : static_cast<uint32_t>(beam.beam_fragments().size() - 1);
@@ -314,6 +319,7 @@ AuthoredOverrideTable *authored_override_table(EngravingItem *owner) {
         case ElementType::REST: return &static_cast<Rest *>(owner)->authored_overrides;
         case ElementType::TUPLET: return &static_cast<Tuplet *>(owner)->authored_overrides;
         case ElementType::BEAM: return &static_cast<Beam *>(owner)->authored_overrides;
+        case ElementType::TREMOLO_TWOCHORD: return &static_cast<TremoloTwoChord *>(owner)->authored_overrides;
         default: return owner->is_spanner() ? &static_cast<Spanner *>(owner)->authored_overrides : nullptr;
     }
 }
@@ -323,7 +329,7 @@ const AuthoredOverrideTable *authored_override_table(const EngravingItem *owner)
 }
 
 EngravingItem *authored_override_owner(const EngravingItem &item) {
-    if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) return const_cast<EngravingItem *>(&item);
+    if (fragment_owner(item) && item.authored_child.role == AuthoredChildRole::NONE) return const_cast<EngravingItem *>(&item);
     auto *parent = item.ownership_parent();
     if (!parent || !parent->is_engraving_item()) return nullptr;
     auto *owner = static_cast<EngravingItem *>(parent);
@@ -334,7 +340,7 @@ EngravingItem *authored_override_owner(const EngravingItem &item) {
 }
 
 bool authored_override_handles(const EngravingObject &object, Pid pid) {
-    if (object.is_beam() && pid != Pid::BEAM_POS) return false;
+    if (object.is_engraving_item() && fragment_owner(static_cast<const EngravingItem &>(object)) && pid != Pid::BEAM_POS) return false;
     auto *item = bound_item(object);
     return item && supported_property(child_key(*item).role, pid) && authored_override_owner(*item);
 }
@@ -361,7 +367,7 @@ void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValu
     if (!authored_override_handles(item, pid)) return;
     if (item.authored_child.role == AuthoredChildRole::NONE) item.authored_child = inferred_key(item);
     auto &table = *authored_override_table(authored_override_owner(item));
-    if (!item.is_beam()) prepare_carrier(item, table);
+    if (!fragment_owner(item)) prepare_carrier(item, table);
     AuthoredOverrideEntry entry{child_key(item), pid, value, flags};
     if (property_type(pid) == PType::POINT || property_type(pid) == PType::ABSOLUTE) {
         entry.unit = property_type(pid) == PType::ABSOLUTE || fixed_spatium_property(pid) || item.offset_is_spatium_dependent() ?
@@ -433,7 +439,7 @@ void bind_authored_child(EngravingItem &item, AuthoredChildKey key) {
 }
 
 void apply_authored_overrides(EngravingItem &item) {
-    if (item.is_beam() && item.authored_child.role == AuthoredChildRole::NONE) return;
+    if (fragment_owner(item) && item.authored_child.role == AuthoredChildRole::NONE) return;
     const auto key = inferred_key(item);
     if (key.role != AuthoredChildRole::NONE) item.authored_child = key;
     const auto *table = authored_override_table(authored_override_owner(item));
@@ -468,7 +474,7 @@ void reset_authored_override(EngravingItem &item, Pid pid) {
     auto &table = *authored_override_table(authored_override_owner(item));
     table.erase(child_key(item), pid);
     // Carrier identity and dormant legacy ordinal survive a property reset.
-    if (!item.is_beam()) mirror_property(item, pid, mirror_default(item, pid), default_flags(item, pid));
+    if (!fragment_owner(item)) mirror_property(item, pid, mirror_default(item, pid), default_flags(item, pid));
     item.trigger_layout();
 }
 

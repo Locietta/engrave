@@ -5639,6 +5639,21 @@ TEST(Read, TremoloManualFragmentOwnsBothDirectionsAndIgnoresDisplayWrites) {
         copy->do_set_direction(direction);
         EXPECT_EQ(copy->get_property(mu::engraving::Pid::BEAM_POS), tremolo->get_property(mu::engraving::Pid::BEAM_POS));
     }
+    const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+    ASSERT_TRUE(saved) << saved.error().message;
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    mu::engraving::TremoloTwoChord *restored = nullptr;
+    master_of(**reopened).scan_elements([&](mu::engraving::EngravingItem *item) {
+        if (item->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD) restored = static_cast<mu::engraving::TremoloTwoChord *>(item);
+    });
+    ASSERT_NE(restored, nullptr);
+    for (const auto direction : {uint8_t(0), uint8_t(1)}) {
+        const mu::engraving::AuthoredChildKey key{mu::engraving::AuthoredChildRole::BEAM_FRAGMENT, 0, direction};
+        ASSERT_NE(restored->authored_overrides.find(key, mu::engraving::Pid::BEAM_POS), nullptr);
+        EXPECT_EQ(restored->authored_overrides.find(key, mu::engraving::Pid::BEAM_POS)->value,
+                  tremolo->authored_overrides.find(key, mu::engraving::Pid::BEAM_POS)->value);
+    }
 }
 
 TEST(Read, AuthoredParenthesisGroupLegacyBaseline) {

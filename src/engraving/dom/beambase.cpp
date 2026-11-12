@@ -99,8 +99,8 @@ bool BeamBase::accept_cross_staff_move(int move) const {
 
 bool BeamBase::user_modified() const {
     int idx = direction_idx();
-    if (is_beam()) {
-        const auto &entries = static_cast<const Beam *>(this)->authored_overrides.entries;
+    if (const auto *table = authored_override_table(this)) {
+        const auto &entries = table->entries;
         return std::any_of(entries.begin(), entries.end(), [idx](const auto &entry) {
             return entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == idx && entry.pid == Pid::BEAM_POS;
         });
@@ -119,6 +119,14 @@ void BeamBase::set_user_modified(bool val) {
                 return entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == idx;
             });
         }
+        return;
+    }
+    if (auto *table = authored_override_table(this)) {
+        const AuthoredChildKey key{AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(idx)};
+        if (val && !table->find(key, Pid::BEAM_POS))
+            table->set({key, Pid::BEAM_POS, PropertyValue::from_value(PairF(0.0, 0.0)), PropertyFlags::NOSTYLE});
+        else if (!val)
+            table->erase(key, Pid::BEAM_POS);
         return;
     }
     user_modified_[idx] = val;

@@ -56,7 +56,7 @@ TremoloTwoChord::TremoloTwoChord(const TremoloTwoChord &t) : BeamBase(t) {
     chord1_ = t.chord1();
     chord2_ = t.chord2();
     duration_type_ = t.duration_type_;
-    manual_fragment_ = t.manual_fragment_;
+    clone_authored_overrides(authored_overrides, t.authored_overrides);
 }
 
 TremoloTwoChord::~TremoloTwoChord() {
@@ -200,25 +200,25 @@ Fraction TremoloTwoChord::tremolo_len() const {
 //---------------------------------------------------------
 
 void TremoloTwoChord::set_beam_pos(const PairF &bp) {
-    int idx = direction_idx();
-    set_user_modified(true);
-    set_generated(false);
-
-    double spatium_value = spatium();
-    beam_fragment_.py1[idx] = bp.first * spatium_value;
-    beam_fragment_.py2[idx] = bp.second * spatium_value;
-    manual_fragment_.endpoints.py1[idx] = beam_fragment_.py1[idx];
-    manual_fragment_.endpoints.py2[idx] = beam_fragment_.py2[idx];
+    const int idx = direction_idx();
+    authored_overrides.set({{AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(idx)},
+                            Pid::BEAM_POS,
+                            PropertyValue::from_value(bp),
+                            PropertyFlags::NOSTYLE});
+    beam_fragment_.py1[idx] = bp.first * spatium();
+    beam_fragment_.py2[idx] = bp.second * spatium();
 }
 
-//---------------------------------------------------------
-//   beamPos
-//---------------------------------------------------------
+void TremoloTwoChord::set_beam_fragment(const BeamFragment &bf) {
+    const int idx = direction_idx();
+    set_beam_pos(PairF(bf.py1[idx] / spatium(), bf.py2[idx] / spatium()));
+    beam_fragment_ = bf;
+}
 
 PairF TremoloTwoChord::beam_pos() const {
-    int idx = direction_idx();
-    double spatium_value = spatium();
-    return PairF(manual_fragment_.endpoints.py1[idx] / spatium_value, manual_fragment_.endpoints.py2[idx] / spatium_value);
+    const auto *entry =
+        authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(direction_idx())}, Pid::BEAM_POS);
+    return entry ? entry->value.value<PairF>() : PairF(0.0, 0.0);
 }
 
 //---------------------------------------------------------
@@ -268,6 +268,7 @@ PropertyValue TremoloTwoChord::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool TremoloTwoChord::set_property(Pid property_id, const PropertyValue &val) {
+    if (property_id == Pid::GENERATED) return EngravingItem::set_property(property_id, val);
     switch (property_id) {
         case Pid::TREMOLO_TYPE: set_tremolo_type(TremoloType(val.to_int())); break;
         case Pid::TREMOLO_STYLE:
@@ -275,11 +276,8 @@ bool TremoloTwoChord::set_property(Pid property_id, const PropertyValue &val) {
                 set_tremolo_style(TremoloStyle(val.to_int()));
             }
             break;
-        case Pid::BEAM_POS:
-            if (user_modified()) {
-                set_beam_pos(val.value<PairF>());
-            }
-            break;
+        case Pid::BEAM_POS: set_beam_pos(val.value<PairF>()); break;
+        case Pid::USER_MODIFIED: set_user_modified(val.to_bool()); break;
         case Pid::PLAY: set_play_tremolo(val.to_bool()); break;
         default: return BeamBase::set_property(property_id, val);
     }

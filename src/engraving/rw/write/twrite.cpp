@@ -1490,7 +1490,7 @@ void TWrite::write(const FretDiagram *item, XmlWriter &xml, WriteContext &ctx) {
 
             bool dot_exists = false;
             for (auto const &d : all_dots) {
-                if (d.exists() && !d.is_part_of_slur_barre) { // Don't write dot if part of slur barr茅 (will be generate during layout)
+                if (d.exists() && !d.is_part_of_slur_barre) { // Don't write dot if part of slur barré (will be generate during layout)
                     dot_exists = true;
                     break;
                 }
@@ -3185,16 +3185,21 @@ void TWrite::write(const TremoloTwoChord *item, XmlWriter &xml, WriteContext &ct
     write_property(item, xml, Pid::TREMOLO_TYPE);
     write_property(item, xml, Pid::TREMOLO_STYLE);
     write_property(item, xml, Pid::PLAY);
+    write_property(item, xml, Pid::STEM_DIRECTION);
     write_item_properties(item, xml, ctx);
 
-    // write manual adjustments to file
-    int idx = item->direction_idx();
-    if (item->user_modified()) {
-        double spatium_value = item->spatium();
-
-        xml.start_element("Fragment");
-        xml.tag("y1", item->manual_fragment().py1[idx] / spatium_value);
-        xml.tag("y2", item->manual_fragment().py2[idx] / spatium_value);
+    const int idx = item->direction_idx();
+    for (int direction : {idx, 1 - idx}) {
+        const auto *entry =
+            item->authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT, 0, static_cast<uint8_t>(direction)}, Pid::BEAM_POS);
+        if (!entry) continue;
+        if (direction != idx)
+            xml.start_element("Fragment", {{"direction", direction}});
+        else
+            xml.start_element("Fragment");
+        const auto endpoints = entry->value.value<PairF>();
+        xml.tag("y1", endpoints.first);
+        xml.tag("y2", endpoints.second);
         xml.end_element();
     }
 
