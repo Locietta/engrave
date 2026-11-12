@@ -289,6 +289,9 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
 }
 
 EngravingItem::~EngravingItem() {
+    // Snapping links are reciprocal non-owning display pointers. Detach while
+    // both objects are still alive, including deletion between layout runs.
+    if (layout_data_) layout_data_->disconnect_snapped_items();
     Score::on_element_destruction(this);
 
     delete layout_data_;

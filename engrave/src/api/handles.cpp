@@ -157,9 +157,11 @@ bool in_score(MasterScore &master, const EngravingObject *object) {
     for (const Score *score : master.score_list()) {
         if (static_cast<const EngravingObject *>(score) == top) return true;
     }
-    if (!object->is_spanner() || !object->score()) return false;
-    const auto spanners = object->score()->spanner_list();
-    return std::ranges::find(spanners, mu::engraving::to_spanner(object)) != spanners.end();
+    // Unplaced spanner segments and their children belong to the registered
+    // source spanner even before a system exposes them through scan_elements.
+    if (!top->is_spanner() || !top->score()) return false;
+    const auto spanners = top->score()->spanner_list();
+    return std::ranges::find(spanners, mu::engraving::to_spanner(top)) != spanners.end();
 }
 
 namespace {
