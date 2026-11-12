@@ -382,18 +382,13 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
     UndoStack *stack = master.undo_stack();
     try {
         if (snapshot) {
-            // The transaction's unwind keeps the layout the score had; a reload of the
-            // snapshot does not. A score written from a 3.x file reads back with the
-            // current reader and lays out a few units differently (S1 of the harness
-            // records that, and Edit.AFailedMixedBatchKeepsTheLayout pins it), so the
-            // unwind is taken whenever it can be trusted to bring the score back
-            // exactly: the engine did not throw, and no operation whose rollback policy
-            // is Snapshot has run. When it cannot, the snapshot is the way back.
+            // Prefer an unwind when the commands are safe to replay. It preserves
+            // source identity and compatibility state that a native snapshot reload
+            // can change. Geometry is invalidated after either rollback path.
             const bool active = stack->has_active_transaction();
             if (active && !unwind_unsafe) {
-                // The undo's own layout is the one the score had, so it is kept: a
-                // relayout would read the score back through the layout code that the
-                // snapshot's reload uses and move the elements the same way.
+                // Replay normalizes without layout. Fall back to replacement if
+                // the resulting musical content or source identities differ.
                 master.end_cmd(true, true);
                 if (!same_score(*snapshot)) restore(*snapshot);
             } else {

@@ -93,6 +93,9 @@ struct TimeSig;
 
 namespace mu::engraving::rendering::score {
 struct ScoreRenderer {
+    // Test-only observation of item-level rendering entry points.
+    static inline void (*layout_hook)(const EngravingItem *) = nullptr;
+
     struct ScorePaintOptions : public PaintOptions {
         bool is_set_viewport = true;
         bool is_multi_page = false;

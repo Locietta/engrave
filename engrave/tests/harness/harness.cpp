@@ -187,13 +187,13 @@ struct PushHook {
 
 const std::string pass = "pass";
 
-// A fixture with every score laid out: a commit lays out the excerpts too, and an
-// excerpt nobody looked at yet would otherwise show up as a layout change.
+// Geometry is an explicit part of the evidence fingerprint. Prepare every score
+// through the boundary; edits and snapshot reloads leave that work pending.
 std::unique_ptr<Document> open(Engine &engine, const std::filesystem::path &fixture) {
     auto document = engine.open(fixture);
     if (!document) throw std::runtime_error(std::format("{}: {}", fixture.string(), document.error().message));
     for (Score *score : master_of(**document).score_list()) {
-        if (score->npages() == 0) score->do_layout();
+        score->ensure_layout();
     }
     return std::move(*document);
 }
@@ -370,6 +370,7 @@ std::vector<OpCase> &cases() {
 Fingerprint fingerprint(Document &document) {
     MasterScore &master = master_of(document);
     Fingerprint print;
+    for (Score *score : master.score_list()) score->ensure_layout();
     const auto saved = document.export_score({.format = Format::MSCZ});
     if (!saved) throw std::runtime_error("fingerprint: the save failed: " + saved.error().message);
     print.files = mscz_files(*saved);

@@ -95,6 +95,7 @@
 #include "engraving/dom/trill.h"
 #include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/editproperty.h"
+#include "engraving/editing/flip.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
@@ -103,6 +104,7 @@
 #include "engraving/playback/flatplaybackscore.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/systemlayout.h"
 #include "engraving/rw/write/twrite.h"
 #include "engraving/rw/write/writecontext.h"
@@ -143,6 +145,7 @@ std::vector<std::byte> as_bytes(std::string_view text) {
 std::unique_ptr<engrave::Document> open_path(const std::filesystem::path &path) {
     auto document = g_engine->open(path);
     EXPECT_TRUE(document) << path.string() << ": " << document.error().message;
+    if (document) EXPECT_TRUE((*document)->page_count());
     return document ? std::move(*document) : nullptr;
 }
 
@@ -156,6 +159,278 @@ std::int64_t ticks_of(const engrave::Fraction &value) { return value.num * whole
 
 std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+}
+
+struct ItemLayoutSpy {
+    static inline std::size_t count = 0;
+
+    ItemLayoutSpy() {
+        count = 0;
+        mu::engraving::rendering::score::ScoreRenderer::layout_hook = [](const auto *) { ++count; };
+    }
+
+    ~ItemLayoutSpy() { mu::engraving::rendering::score::ScoreRenderer::layout_hook = nullptr; }
+};
+
+TEST(Read, SemanticDocumentBoundariesDeferAllLayoutUntilFirstRender) {
+    using namespace mu::engraving;
+    ItemLayoutSpy spy;
+    auto native = g_engine->open(write470_fixture());
+    ASSERT_TRUE(native);
+    auto created = g_engine->create_document({.template_id = "Treble_Clef", .title = "deferred"});
+    ASSERT_TRUE(created);
+    auto mnx = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/engine/two-notes.mnx");
+    ASSERT_TRUE(mnx);
+    for (auto *document : {native->get(), created->get(), mnx->get()}) {
+        auto &master = master_of(*document);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        EXPECT_TRUE(master.layout_state.dirty);
+        EXPECT_TRUE(master.normalize_state.includes_hidden_staves);
+        EXPECT_FALSE(master.normalize_state.dirty);
+        ASSERT_TRUE(document->outline());
+        ASSERT_TRUE(document->query({.types = {"Note"}}));
+    }
+    auto &document = **native;
+    auto &master = master_of(document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const auto id = engrave::from_engine(note->eid());
+    EXPECT_FALSE(note->has_layout_data());
+    for (int pitch : {62, 64, 65}) {
+        ASSERT_TRUE(document.edit({{engrave::SetPitch{id, pitch}}}));
+        ASSERT_TRUE(document.query({.types = {"Note"}}));
+        ASSERT_TRUE(document.get(id, {"pitch"}));
+        EXPECT_FALSE(note->has_layout_data());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    }
+    const auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_TRUE(document.edit({{engrave::GenerateExcerpts{{outline->parts.front().id}}}}));
+    for (auto *score : master.score_list()) EXPECT_EQ(score->layout_state.whole_count + score->layout_state.range_count, 0u);
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+}
+
+TEST(Read, UndoRedoReplaysSourceWithoutLayout) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const int line = note->line();
+    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{engrave::from_engine(note->eid()), note->pitch() + 12}}}));
+    master.undo_redo(true, nullptr);
+    EXPECT_EQ(note->line(), line);
+    master.undo_redo(false, nullptr);
+    EXPECT_EQ(note->line(), line - 7);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_FALSE(note->has_layout_data());
+}
+
+TEST(Read, TabTieAndBendFrettingIsFinalBeforeFirstLayout) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    std::vector<std::tuple<mu::engraving::Note *, int, int>> fretting;
+    for (auto *object : engrave::document_objects(master)) {
+        if (object->is_note()) {
+            auto *note = mu::engraving::to_note(object);
+            fretting.emplace_back(note, note->fret(), note->string());
+        }
+    }
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    ASSERT_TRUE((*opened)->page_count());
+    for (auto [note, fret, string] : fretting) {
+        EXPECT_EQ(note->fret(), fret);
+        EXPECT_EQ(note->string(), string);
+    }
+}
+
+TEST(Read, HiddenStaffEditPublishesNormalizedLinesWithoutLayout) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const int line = note->line();
+    const auto id = engrave::from_engine(note->eid());
+    master.parts().front()->set_show(false);
+    note->set_line(invalid_line);
+    master.set_layout_all();
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{id, note->pitch() + 12}}}));
+    EXPECT_EQ(note->line(), line - 7);
+    EXPECT_TRUE(master.normalize_state.includes_hidden_staves);
+    EXPECT_FALSE(master.normalize_state.dirty);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+    EXPECT_FALSE(note->has_layout_data());
+}
+
+TEST(Read, ProductionBatchBarrierPublishesLinesBeforeTheNextStep) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const auto id = engrave::from_engine(note->eid());
+    const int initial = note->line();
+    bool checked = false;
+    auto &hooks = engrave::DocumentAccess::edit_hooks(document);
+    hooks.before_step = [&](std::size_t step) {
+        if (step != 2) return;
+        EXPECT_EQ(note->line(), initial - 7);
+        EXPECT_FALSE(master.normalize_state.dirty);
+        checked = true;
+    };
+    ASSERT_TRUE(document.edit({{engrave::SetPitch{id, note->pitch() + 12}, engrave::SetProperty{id, "visible", true}}}));
+    hooks = {};
+    EXPECT_TRUE(checked);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, DeferredEditSequenceMatchesEagerAndBatchedOutput) {
+    std::vector<std::vector<std::byte>> expected_pages;
+    std::string expected_semantics;
+    for (int lane = 0; lane < 3; ++lane) {
+        auto opened = g_engine->open(write470_fixture());
+        ASSERT_TRUE(opened);
+        auto &document = **opened;
+        auto &master = master_of(document);
+        auto *note =
+            mu::engraving::to_chord(master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0))->notes().front();
+        const auto id = engrave::from_engine(note->eid());
+        std::vector<engrave::Op> ops{engrave::SetPitch{id, 73, 21}, engrave::SetPitch{id, 64, 18}, engrave::SetPitch{id, 65, 13}};
+        if (lane == 0) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+        if (lane == 2) {
+            ASSERT_TRUE(document.edit({ops}));
+        } else {
+            for (const auto &op : ops) {
+                ASSERT_TRUE(document.edit({{op}}));
+                if (lane == 0) ASSERT_TRUE(document.render({.format = engrave::RenderFormat::SVG}));
+            }
+        }
+        const auto semantics = music::dump_json(music::semantic_dump(&master), 1);
+        auto rendered = document.render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        if (lane == 0) {
+            expected_pages = rendered->pages;
+            expected_semantics = semantics;
+        } else {
+            EXPECT_EQ(semantics, expected_semantics);
+            EXPECT_EQ(rendered->pages, expected_pages);
+            EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+        }
+    }
+}
+
+TEST(Read, BeamDetachmentDoesNotRenderItemsDuringEdit) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    const auto begin = source.find("<Chord>");
+    const auto end = source.find("</Chord>", begin) + std::string("</Chord>").size();
+    source.replace(begin, end - begin,
+                   "<Chord><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>"
+                   "<Chord><durationType>eighth</durationType><Note><pitch>62</pitch><tpc>16</tpc></Note></Chord>"
+                   "<Rest><durationType>half</durationType><dots>1</dots></Rest>");
+    auto document = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(document);
+    ASSERT_TRUE((*document)->page_count());
+    auto &master = master_of(**document);
+    ChordRest *beamed = nullptr;
+    for (Measure *m = master.first_measure(); m && !beamed; m = m->next_measure()) {
+        for (const Segment &segment : m->segments()) {
+            for (auto *item : segment.elist()) {
+                if (item && item->is_chord_rest() && to_chord_rest(item)->beam()) {
+                    beamed = to_chord_rest(item);
+                    break;
+                }
+            }
+            if (beamed) break;
+        }
+    }
+    ASSERT_NE(beamed, nullptr);
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    ItemLayoutSpy spy;
+    master.start_cmd(muse::TranslatableString::untranslatable("detach beam"));
+    beamed->remove_delete_beam(false);
+    master.end_cmd(false, true);
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    EXPECT_TRUE(master.layout_state.dirty);
+}
+
+TEST(Read, InferredFlipExplicitlyRequestsGeometry) {
+    using namespace mu::engraving;
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    master.select(note, SelectType::SINGLE);
+    master.start_cmd(muse::TranslatableString::untranslatable("inferred flip"));
+    Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    master.end_cmd(false, true);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    EXPECT_TRUE(master.layout_state.dirty);
+}
+
+TEST(Read, DeletingSnappedItemDisconnectsTheSurvivingItem) {
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    std::unique_ptr<mu::engraving::Dynamic> first(mu::engraving::Factory::create_dynamic(segment));
+    auto *second = mu::engraving::Factory::create_dynamic(segment);
+    first->mutldata()->connect_item_snapped_after(second);
+    delete second;
+    EXPECT_EQ(first->ldata()->item_snapped_after(), nullptr);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, ReplacingSnappingPartnersDisconnectsBothOldEnds) {
+    auto opened = g_engine->open(write470_fixture());
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    for (bool before : {false, true}) {
+        std::unique_ptr<mu::engraving::Dynamic> first(mu::engraving::Factory::create_dynamic(segment));
+        std::unique_ptr<mu::engraving::Dynamic> second(mu::engraving::Factory::create_dynamic(segment));
+        auto *shared = mu::engraving::Factory::create_dynamic(segment);
+        if (before) {
+            first->mutldata()->connect_item_snapped_before(shared);
+            second->mutldata()->connect_item_snapped_before(shared);
+            EXPECT_EQ(first->ldata()->item_snapped_before(), nullptr);
+            EXPECT_EQ(shared->ldata()->item_snapped_after(), second.get());
+        } else {
+            first->mutldata()->connect_item_snapped_after(shared);
+            second->mutldata()->connect_item_snapped_after(shared);
+            EXPECT_EQ(first->ldata()->item_snapped_after(), nullptr);
+            EXPECT_EQ(shared->ldata()->item_snapped_before(), second.get());
+        }
+        delete shared;
+        EXPECT_EQ(second->ldata()->item_snapped_before(), nullptr);
+        EXPECT_EQ(second->ldata()->item_snapped_after(), nullptr);
+    }
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, FirstLayoutOfGraceArpeggiosMatchesReflow) {
+    auto opened =
+        g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/mnx/tests/data/project_examples/graceArps.mnx");
+    ASSERT_TRUE(opened);
+    auto first = (*opened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(first);
+    master_of(**opened).invalidate_layout(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
+    auto second = (*opened)->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(second);
+    EXPECT_EQ(first->pages, second->pages);
 }
 
 TEST(Read, UnlaidSnapChainStartsAtOwner) {
@@ -261,6 +536,7 @@ TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     master.end_cmd(true, true);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 
 TEST(Read, NormalizePersistsMidiRequestsAcrossCommandStateReset) {
@@ -608,6 +884,7 @@ TEST(Read, NormalizeResolvesSpannerEndsAgainstRealMeasuresWithMmRests) {
                   "<Measure><voice><Rest><durationType>measure</durationType></Rest></voice></Measure>");
     auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
+    ASSERT_TRUE((*opened)->page_count());
     auto &master = master_of(**opened);
     ASSERT_NE(master.first_measure(), master.last_measure());
     ASSERT_NE(master.first_measure()->mm_rest(), nullptr);
@@ -711,7 +988,7 @@ TEST(Read, ExplicitFullLayoutNormalizesLegacyDirectPitchChanges) {
     EXPECT_EQ(note->line(), line - 7);
 }
 
-TEST(Read, FullStaffSemanticBarrierIsExplicitAndDoesNotLayOut) {
+TEST(Read, FullStaffSemanticNormalizationDoesNotLayOut) {
     using namespace mu::engraving;
     auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
     ASSERT_TRUE(document);
@@ -723,7 +1000,7 @@ TEST(Read, FullStaffSemanticBarrierIsExplicitAndDoesNotLayOut) {
     note->set_line(invalid_line);
     master.set_layout_all();
     const auto count = master.layout_state.whole_count + master.layout_state.range_count;
-    normalize_score(master);
+    normalize_score(master, {.include_hidden_staves = false});
     EXPECT_EQ(note->line(), invalid_line);
     prepare_semantic_edit(master);
     EXPECT_EQ(note->line(), expected);
@@ -2103,10 +2380,10 @@ TEST(Read, GeometryBoundaryReusesFreshLayout) {
     EXPECT_EQ(layout_count(master), count + 1);
     ASSERT_TRUE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
     const auto after_edit = layout_count(master);
-    EXPECT_EQ(after_edit, count + 2); // S1 retains one eager transaction layout.
+    EXPECT_EQ(after_edit, count + 1); // Edits preserve pending geometry until the boundary.
     ASSERT_TRUE(document->render({}));
     ASSERT_TRUE(document->page_count());
-    EXPECT_EQ(layout_count(master), after_edit);
+    EXPECT_EQ(layout_count(master), after_edit + 1);
 }
 
 TEST(Read, DirtyLayoutRangeSurvivesCommandReset) {
@@ -2147,8 +2424,8 @@ TEST(Read, FailedBatchRestoresPendingLayout) {
     hooks = {};
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(master.layout_state.dirty, saved.dirty);
-    EXPECT_EQ(master.layout_state.start, saved.start);
-    EXPECT_EQ(master.layout_state.end, saved.end);
+    EXPECT_EQ(master.layout_state.start, mu::engraving::Fraction(0, 1));
+    EXPECT_LT(master.layout_state.end, mu::engraving::Fraction(0, 1));
     EXPECT_EQ(master.normalize_state.dirty, normalized.dirty);
     EXPECT_EQ(master.normalize_state.start, normalized.start);
     EXPECT_EQ(master.normalize_state.end, normalized.end);
@@ -2190,6 +2467,7 @@ TEST(Read, FontRefreshWaitsForGeometryBoundary) {
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto &document = **opened;
+    ASSERT_TRUE(document.page_count());
     auto *title = master_of(document).get_text(mu::engraving::TextStyleType::TITLE);
     ASSERT_NE(title, nullptr);
     const double before = title->ldata()->bbox().width();
@@ -2215,8 +2493,8 @@ TEST(Read, FontRefreshWaitsForGeometryBoundary) {
     EXPECT_EQ(document.revision(), revision);
 }
 
-// Replacement consumes pending ranges via full reload layouts. Counter deltas
-// are meaningful within each Score lifetime, not across project replacement.
+// Replacement keeps a full layout pending. Counter deltas are meaningful within
+// each Score lifetime, not across project replacement.
 TEST(Read, SnapshotReplacementPreservesRuntimeTempoSettings) {
     using namespace mu::engraving;
     for (const bool override_active : {false, true}) {
@@ -2237,6 +2515,8 @@ TEST(Read, SnapshotReplacementPreservesRuntimeTempoSettings) {
         ASSERT_FALSE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
         hooks = {};
         auto &restored = master_of(*document);
+        EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+        EXPECT_TRUE(restored.layout_state.dirty);
         EXPECT_DOUBLE_EQ(restored.tempo_timeline().utick2utime(1920), before);
         EXPECT_EQ(restored.runtime_tempo_state().override_timeline.has_value(), override_active);
         restored.set_tempo_timeline_override(std::nullopt);
@@ -2244,7 +2524,7 @@ TEST(Read, SnapshotReplacementPreservesRuntimeTempoSettings) {
     }
 }
 
-TEST(Read, SnapshotReplacementConsumesMasterPendingLayout) {
+TEST(Read, SnapshotReplacementDefersMasterPendingLayout) {
     const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "chordline_path.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     for (const bool change_font : {false, true}) {
@@ -2275,23 +2555,23 @@ TEST(Read, SnapshotReplacementConsumesMasterPendingLayout) {
         auto &after = master_of(*document);
         EXPECT_NE(&after, before);
         EXPECT_EQ(document->revision(), revision);
-        EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_TRUE(after.layout_state.dirty);
         EXPECT_FALSE(after.normalize_state.dirty);
         EXPECT_FALSE(after.normalize_state.running);
         EXPECT_EQ(after.layout_state.revision, revision);
         EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
         EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
-        EXPECT_LT(after.layout_state.last_end, Fraction(0, 1));
+        EXPECT_EQ(after.layout_state.last_end, Fraction(-1, 1));
         const auto count = layout_count(after);
-        EXPECT_GT(count, 0u);
+        EXPECT_EQ(count, 0u);
         EXPECT_LT(count, old_count); // Replacement diagnostics start with reload work.
         ASSERT_TRUE(document->page_count());
         ASSERT_TRUE(document->render({}));
-        EXPECT_EQ(layout_count(after), count);
+        EXPECT_EQ(layout_count(after), count + 1);
     }
 }
 
-TEST(Read, SnapshotReplacementConsumesExcerptPendingLayout) {
+TEST(Read, SnapshotReplacementDefersExcerptPendingLayout) {
     for (const bool change_font : {false, true}) {
         SCOPED_TRACE(change_font);
         auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
@@ -2326,23 +2606,23 @@ TEST(Read, SnapshotReplacementConsumesExcerptPendingLayout) {
         ASSERT_TRUE(selected);
         auto &after = **selected;
         EXPECT_NE(&after, before);
-        EXPECT_FALSE(after.layout_state.dirty);
+        EXPECT_TRUE(after.layout_state.dirty);
         EXPECT_FALSE(after.normalize_state.dirty);
         EXPECT_FALSE(after.normalize_state.running);
-        EXPECT_FALSE(master_of(*document).layout_state.dirty);
+        EXPECT_TRUE(master_of(*document).layout_state.dirty);
         EXPECT_EQ(after.layout_state.revision, document->revision());
         EXPECT_EQ(after.layout_state.font_generation, generation + change_font);
         EXPECT_EQ(after.layout_state.last_start, Fraction(0, 1));
-        EXPECT_LT(after.layout_state.last_end, Fraction(0, 1));
+        EXPECT_EQ(after.layout_state.last_end, Fraction(-1, 1));
         const auto count = layout_count(after);
-        EXPECT_GT(count, 0u);
+        EXPECT_EQ(count, 0u);
         EXPECT_LT(count, old_count);
         const auto master_count = layout_count(master_of(*document));
         ASSERT_TRUE(document->page_count(selection));
         ASSERT_TRUE(document->render({.score = selection}));
         ASSERT_TRUE(document->page_count());
-        EXPECT_EQ(layout_count(after), count);
-        EXPECT_EQ(layout_count(master_of(*document)), master_count);
+        EXPECT_EQ(layout_count(after), count + 1);
+        EXPECT_EQ(layout_count(master_of(*document)), master_count + 1);
     }
 }
 
@@ -3646,6 +3926,8 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
                                      {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto check = [&](engrave::Document &document) {
+            // Placement includes system/staff centering and is a visual result.
+            ASSERT_TRUE(document.page_count());
             const auto dynamics = imported_dynamics(document);
             ASSERT_EQ(dynamics.size(), 2u);
             std::set<DynamicType> types;
@@ -3676,6 +3958,7 @@ TEST(Read, MusicXmlDynamicsKeepPerContainerInferredPlacement) {
                                        "");
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
+    ASSERT_TRUE((*opened)->page_count());
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 2u);
     for (const auto *dynamic : dynamics) {
@@ -4075,6 +4358,7 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                     if (small) xml.insert(xml.find("<durationType>"), "<small>1</small>");
                     auto document = g_engine->open(as_bytes(xml));
                     ASSERT_TRUE(document) << document.error().message;
+                    ASSERT_TRUE((*document)->page_count());
                     auto &master = master_of(**document);
                     auto lines = offset_test_lines(master);
                     ASSERT_EQ(lines.size(), 1u);
@@ -4127,6 +4411,7 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         xml.insert(xml.find("</ChordLine>"), mode);
         auto document = g_engine->open(as_bytes(xml));
         ASSERT_TRUE(document);
+        ASSERT_TRUE((*document)->page_count());
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
         auto *line = lines[0];
