@@ -2255,6 +2255,8 @@ void EngravingItem::LayoutData::connect_item_snapped_before(EngravingItem *item_
                      item_before->ldata()->item_snapped_before() != item_) {
         return;
     }
+    disconnect_item_snapped_before();
+    item_before->mutldata()->disconnect_item_snapped_after();
     item_snapped_before_ = item_before;
     item_before->mutldata()->item_snapped_after_ = const_cast<EngravingItem *>(item_);
 }
@@ -2272,6 +2274,8 @@ void EngravingItem::LayoutData::connect_item_snapped_after(EngravingItem *item_a
                      item_after->ldata()->item_snapped_after() != item_) {
         return;
     }
+    disconnect_item_snapped_after();
+    item_after->mutldata()->disconnect_item_snapped_before();
     item_snapped_after_ = item_after;
     item_after->mutldata()->item_snapped_before_ = const_cast<EngravingItem *>(item_);
 }
