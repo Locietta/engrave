@@ -110,6 +110,7 @@
 #include "engraving/playback/metaparsers/notearticulationsparser.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
+#include "engraving/rendering/score/measurelayout.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "engraving/rendering/score/systemlayout.h"
 #include "engraving/rw/write/twrite.h"
@@ -2037,6 +2038,43 @@ TEST(Read, GraceGroupsAreOwnedByLayoutScope) {
 
 TEST(Read, GraceGroupsDoNotSurviveRepeatedScoreLayout) {
     auto document = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    EXPECT_EQ(grace_group_count(&master), 0);
+    auto baseline = document->render({.format = engrave::RenderFormat::SVG});
+    ASSERT_TRUE(baseline);
+    for (int run = 0; run < 2; ++run) {
+        master.do_layout();
+        EXPECT_EQ(grace_group_count(&master), 0);
+        auto rendered = document->render({.format = engrave::RenderFormat::SVG});
+        ASSERT_TRUE(rendered);
+        EXPECT_EQ(rendered->pages, baseline->pages);
+    }
+}
+
+TEST(Read, GraceSpacingIsIndependentOfPreviousLayoutContext) {
+    using namespace mu::engraving;
+    using namespace mu::engraving::rendering::score;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    Measure *measure = master.first_measure();
+    Segment *segment = measure->first(SegmentType::CHORD_REST);
+    add_test_grace(to_chord(segment->element(0)), NoteType::ACCIACCATURA);
+    master.do_layout();
+    const auto expected = segment->staff_shape(0).size();
+    for (int run = 0; run < 2; ++run) {
+        {
+            LayoutContext context(&master);
+            MeasureLayout::update_grace_notes(measure, context);
+            EXPECT_EQ(segment->staff_shape(0).size(), expected);
+        }
+        EXPECT_EQ(grace_group_count(&master), 0);
+    }
+}
+
+TEST(Read, SlurGraceGroupsDoNotSurviveRepeatedScoreLayout) {
+    auto document = open_path(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/slurs.mscz");
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
     EXPECT_EQ(grace_group_count(&master), 0);

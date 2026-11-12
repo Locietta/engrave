@@ -313,22 +313,16 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 }
 
 void MeasureLayout::update_grace_notes(Measure *measure, LayoutContext &ctx) {
-    // Clean everything
-    for (Segment &s : measure->segments()) {
+    // Attachments are pass-local, but staff shapes survive the context. Rebuild
+    // base shapes even when a previous pass has already cleared its borrows.
+    for (Segment &segment : measure->segments()) {
         for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
-            EngravingItem *e = s.pre_appended_item(track);
-            if (e && e->is_grace_notes_group()) {
-                s.clear_pre_appended(track);
-                std::set<staff_idx_t> staves_to_re_shape;
-                for (Chord *grace : *to_grace_notes_group(e)) {
-                    staves_to_re_shape.insert(grace->staff_idx());
-                    staves_to_re_shape.insert(grace->v_staff_idx());
-                }
-                for (staff_idx_t staff_to_reshape : staves_to_re_shape) {
-                    s.create_shape(staff_to_reshape);
-                }
+            EngravingItem *item = segment.pre_appended_item(track);
+            if (item && item->is_grace_notes_group()) {
+                segment.clear_pre_appended(track);
             }
         }
+        segment.create_shapes();
     }
 
     // Append grace notes to appropriate segment

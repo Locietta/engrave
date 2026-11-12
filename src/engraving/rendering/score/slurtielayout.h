@@ -60,11 +60,11 @@ struct SlurTieLayout {
     static void calculate_direction(Tie *item);
 
     static void compute_bezier(TieSegment *tie_seg, PointF shoulder_offset = PointF());
-    static void compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset = PointF());
+    static void compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset = PointF(), const LayoutContext *ctx = nullptr);
     static double note_optical_center_for_tie(const Note *note, bool up);
     static void create_slur_segments(Slur *item, LayoutContext &ctx);
 
-    static void adjust_overlapping_slurs(const std::list<SpannerSegment *> &spanner_segments);
+    static void adjust_overlapping_slurs(const std::list<SpannerSegment *> &spanner_segments, const LayoutContext *ctx = nullptr);
 
     static void layout_laissez_vib_chord(Chord *chord, LayoutContext &ctx);
 private:
@@ -77,10 +77,10 @@ private:
     static void adjust_slur_floating_end_point_angles(SlurSegment *slur_seg, PointF &p1, PointF &p2, bool incoming_partial,
                                                       bool outgoing_partial);
 
-    static void layout_segment(SlurSegment *item, const PointF &p1, const PointF &p2);
+    static void layout_segment(SlurSegment *item, const PointF &p1, const PointF &p2, const LayoutContext *ctx);
     static void avoid_collisions(SlurSegment *slur_seg, PointF &pp1, PointF &p2, PointF &p3, PointF &p4,
-                                 muse::draw::Transform &to_system_coordinates, double &slur_angle);
-    static Shape get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_cr, ChordRest *end_cr);
+                                 muse::draw::Transform &to_system_coordinates, double &slur_angle, const LayoutContext *ctx);
+    static Shape get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_cr, ChordRest *end_cr, const LayoutContext *ctx);
     static Shape get_segment_shape(SlurSegment *slur_seg, Segment *seg, ChordRest *start_cr, ChordRest *end_cr);
     static void add_min_clearance_to_shapes(Shape &seg_shapes, double spatium, bool slur_up, const ChordRest *start_cr,
                                             const ChordRest *end_cr);
