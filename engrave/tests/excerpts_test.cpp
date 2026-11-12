@@ -152,6 +152,7 @@ int main(int argc, char **argv) {
                "Repeated generation changed excerpt identity");
         for (int i = 0; i < 2; ++i) {
             auto *selected = music::select_score(master, i);
+            selected->ensure_layout(); // The following assertions/export include geometry.
             expect(selected->parts().size() == 1 && selected->nstaves() == 1 && selected->npages() > 0,
                    "Excerpt staff/part/layout filter failed");
             expect(records[i].part_ids.at(0) == master->parts()[i]->id().to_std_string(), "Excerpt part ID mismatch");
@@ -175,6 +176,7 @@ int main(int argc, char **argv) {
         expect(!music::generate_score_excerpts(reopened->master_score()), "Loaded excerpts were regenerated");
         for (int i = 0; i < 2; ++i) {
             auto *selected = music::select_score(reopened->master_score(), i);
+            selected->ensure_layout();
             expect(selected->parts().size() == 1 && selected->npages() > 0, "Reopened excerpt invalid");
             save(out / ("reopened-part" + std::to_string(i) + ".musicxml"), export_selection(context, selected, false));
         }

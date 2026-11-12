@@ -224,6 +224,8 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
     // Audio formats are rendered by the worker's MuseScore engine; the
     // SoundFont parameter is retained for source compatibility.
     auto *score = options.transaction_snapshot ? project->master_score() : select_score(project->master_score(), options.excerpt_id);
+    // Native notation still serializes display overrides; S4 separates those.
+    if (!options.transaction_snapshot && format != "midi" && format != "metadata") score->ensure_layout();
     if (format == "metadata") return music::dump_json(score_metadata(score));
     if (format == "measurePositions" || format == "segmentPositions")
         return music::dump_json(score_positions(score, format == "segmentPositions"));
@@ -344,6 +346,15 @@ std::string export_native_score(const EngineContext &context, const ScoreProject
             }
         }
     } else if (format == "midi") {
+        // The legacy renderer selects a repeat view. Keep that per-export choice
+        // from changing subsequent semantic reads or audio requests.
+        struct RestoreRepeats {
+            engraving::MasterScore *master;
+            bool expanded;
+
+            ~RestoreRepeats() { master->set_expand_repeats(expanded); }
+        } restore{score->master_score(), score->master_score()->expand_repeats()};
+
         iex::midi::ExportMidi writer(score);
         success = writer.write(&buffer, options.midi_expand_repeats, options.midi_export_rpns);
     } else

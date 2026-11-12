@@ -136,7 +136,7 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     if (!excerpt) return std::unexpected(excerpt.error());
     const auto selected = select_score(*impl_->project->master_score(), options.score);
     if (!selected) return std::unexpected(selected.error());
-    impl_->ensure_layout(**selected);
+    if (options.format != Format::MIDI) impl_->ensure_layout(**selected);
     music::ExportOptions backend;
     backend.excerpt_id = *excerpt;
     backend.standalone_score = true;

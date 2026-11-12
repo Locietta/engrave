@@ -133,10 +133,7 @@ Score *select_score(MasterScore *score, int excerpt_id) {
     if (excerpt_id < -1) {
         throw std::out_of_range("select_score: invalid excerpt id");
     }
-    if (excerpt_id == -1) {
-        score->ensure_layout();
-        return score;
-    }
+    if (excerpt_id == -1) return score;
 
     const std::vector<Excerpt *> &excerpts = score->excerpts();
     if (static_cast<std::size_t>(excerpt_id) >= excerpts.size()) {
@@ -159,7 +156,6 @@ Score *select_score(MasterScore *score, int excerpt_id) {
         throw std::runtime_error("select_score: excerpt has no initialized score");
     }
 
-    selected->ensure_layout();
     return selected;
 }
 } // namespace music
