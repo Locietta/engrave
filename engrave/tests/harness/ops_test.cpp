@@ -43,6 +43,7 @@
 #include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
 #include "engraving/dom/tremolosinglechord.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editproperty.h"
@@ -1215,6 +1216,31 @@ TEST(JournalValues, PartialSpatiumFailureRestoresVisitedAndUntouchedSources) {
     EXPECT_DOUBLE_EQ(master.style().spatium(), spatium);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(TremoloOverrideEdit, FailedBatchRestoresManualEndpointsAndPresence) {
+    auto opened = g_engine->open(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) /
+                                 "src/engraving/tests/playback/playbackeventsrenderer_data/two_chords_tremolo/two_chords_tremolo.mscx");
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto &document = **opened;
+    mu::engraving::TremoloTwoChord *tremolo = nullptr;
+    engrave::harness::master_of(document).scan_elements([&](mu::engraving::EngravingItem *item) {
+        if (item->type() == mu::engraving::ElementType::TREMOLO_TWOCHORD) tremolo = static_cast<mu::engraving::TremoloTwoChord *>(item);
+    });
+    ASSERT_NE(tremolo, nullptr);
+    const auto before = tremolo->get_property(Pid::BEAM_POS);
+    const bool modified = tremolo->user_modified();
+    auto result = engrave::api::BatchGuard(document).run(
+        {[tremolo](engrave::api::EditContext &) -> engrave::Result<void> {
+             tremolo->undo_change_property(Pid::USER_MODIFIED, true);
+             tremolo->undo_change_property(Pid::BEAM_POS, PropertyValue::from_value(muse::PairF(3.25, 4.5)));
+             return {};
+         },
+         [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("after tremolo endpoints"); }},
+        engrave::api::Policy::TRANSACTION, std::nullopt);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(tremolo->get_property(Pid::BEAM_POS), before);
+    EXPECT_EQ(tremolo->user_modified(), modified);
 }
 
 TEST(ParenthesisGroupEdit, FailedBatchRestoresAuthoredAppearanceBaseline) {
