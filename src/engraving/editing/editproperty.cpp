@@ -66,7 +66,8 @@ void ChangeProperty::flip() {
     }
 
     auto *item = element->is_engraving_item() ? to_engraving_item(element) : nullptr;
-    auto *table = item && ((item->is_beam() && (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE)) || id == Pid::SIZE_SPATIUM_DEPENDENT) ?
+    auto *table = item && ((item->is_beam() && (id == Pid::BEAM_POS || id == Pid::BEAM_NO_SLOPE || id == Pid::USER_MODIFIED)) ||
+                           id == Pid::SIZE_SPATIUM_DEPENDENT) ?
                       authored_override_table(item) :
                       nullptr;
     if (item && (authored_override_handles(*item, id) || (item->type() == ElementType::STEM && id == Pid::USER_LEN) ||

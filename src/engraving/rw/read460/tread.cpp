@@ -1420,6 +1420,7 @@ void TRead::read(Tuplet *t, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(Beam *b, XmlReader &e, ReadContext &ctx) {
+    std::array<uint32_t, 2> next_ordinal{};
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "StemDirection") {
@@ -1430,21 +1431,22 @@ void TRead::read(Beam *b, XmlReader &e, ReadContext &ctx) {
         } else if (tag == "growRight") {
             b->set_grow_right(e.read_double());
         } else if (tag == "Fragment") {
-            BeamFragment *f = new BeamFragment;
-            int idx = b->direction_idx();
-            b->set_user_modified(true);
-            double spatium_value = b->spatium();
+            const int direction = std::clamp(e.int_attribute("direction", b->direction_idx()), 0, 1);
+            const uint32_t ordinal = static_cast<uint32_t>(std::max(0, e.int_attribute("no", next_ordinal[direction])));
+            next_ordinal[direction] = ordinal + 1;
+            PairF endpoints(0.0, 0.0);
             while (e.read_next_start_element()) {
-                const AsciiStringView tag1(e.name());
-                if (tag1 == "y1") {
-                    f->py1[idx] = e.read_double() * spatium_value;
-                } else if (tag1 == "y2") {
-                    f->py2[idx] = e.read_double() * spatium_value;
-                } else {
+                if (e.name() == "y1")
+                    endpoints.first = e.read_double();
+                else if (e.name() == "y2")
+                    endpoints.second = e.read_double();
+                else
                     e.unknown();
-                }
             }
-            b->add_beam_fragment(f);
+            b->authored_overrides.set({{AuthoredChildRole::BEAM_FRAGMENT, ordinal, static_cast<uint8_t>(direction)},
+                                       Pid::BEAM_POS,
+                                       PropertyValue::from_value(endpoints),
+                                       PropertyFlags::NOSTYLE});
         } else if (tag == "l1" || tag == "l2") { // ignore
             e.skip_current_element();
         } else if (read_property(b, tag, e, ctx, Pid::BEAM_CROSS_STAFF_MOVE)) {

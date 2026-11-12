@@ -356,13 +356,12 @@ void Beam::trigger_layout() const {
 //---------------------------------------------------------
 
 PairF Beam::beam_pos() const {
-    if (fragments_.empty()) {
-        return PairF(0.0, 0.0);
+    const AuthoredOverrideEntry *last = nullptr;
+    for (const auto &entry : authored_overrides.entries) {
+        if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction_idx() && entry.pid == Pid::BEAM_POS)
+            if (!last || last->child.ordinal < entry.child.ordinal) last = &entry;
     }
-    BeamFragment *f = fragments_.back();
-    int idx = direction_idx();
-    double spatium_value = spatium();
-    return PairF(f->py1[idx] / spatium_value, f->py2[idx] / spatium_value);
+    return last ? last->value.value<PairF>() : PairF(0.0, 0.0);
 }
 
 //---------------------------------------------------------
@@ -370,34 +369,29 @@ PairF Beam::beam_pos() const {
 //---------------------------------------------------------
 
 void Beam::set_beam_pos(const PairF &bp) {
-    if (fragments_.empty()) {
-        fragments_.push_back(new BeamFragment);
+    uint32_t ordinal = fragments_.empty() ? 0 : static_cast<uint32_t>(fragments_.size() - 1);
+    bool found = false;
+    for (const auto &entry : authored_overrides.entries) {
+        if (entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == direction_idx() &&
+            entry.pid == Pid::BEAM_POS) {
+            ordinal = found ? std::max(ordinal, entry.child.ordinal) : entry.child.ordinal;
+            found = true;
+        }
     }
-    BeamFragment *f = fragments_.back();
-    int idx = direction_idx();
-    set_user_modified(true);
-    set_generated(false);
-
-    double spatium_value = spatium();
-    if (no_slope()) {
-        f->py1[idx] = f->py2[idx] = (bp.first + bp.second) * 0.5 * spatium_value;
-    } else {
-        f->py1[idx] = bp.first * spatium_value;
-        f->py2[idx] = bp.second * spatium_value;
+    const PairF value = no_slope() ? PairF((bp.first + bp.second) * 0.5, (bp.first + bp.second) * 0.5) : bp;
+    authored_overrides.set({{AuthoredChildRole::BEAM_FRAGMENT, ordinal, static_cast<uint8_t>(direction_idx())},
+                            Pid::BEAM_POS,
+                            PropertyValue::from_value(value),
+                            PropertyFlags::NOSTYLE});
+    if (ordinal < fragments_.size()) {
+        fragments_[ordinal]->py1[direction_idx()] = value.first * spatium();
+        fragments_[ordinal]->py2[direction_idx()] = value.second * spatium();
     }
 }
 
 void Beam::set_no_slope(bool b) {
     no_slope_ = b;
-
-    // Make flat if usermodified
-    if (no_slope_) {
-        int idx = direction_idx();
-        if (user_modified()) {
-            BeamFragment *f = fragments_.back();
-            f->py1[idx] = f->py2[idx] = (f->py1[idx] + f->py2[idx]) * 0.5;
-        }
-    }
+    if (b && user_modified() && !authored_mirror) set_beam_pos(beam_pos());
 }
 
 void Beam::compute_and_set_slope() {
@@ -440,14 +434,12 @@ PropertyValue Beam::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool Beam::set_property(Pid property_id, const PropertyValue &v) {
+    if (property_id == Pid::GENERATED) return EngravingItem::set_property(property_id, v);
     switch (property_id) {
         case Pid::GROW_LEFT: set_grow_left(v.to_double()); break;
         case Pid::GROW_RIGHT: set_grow_right(v.to_double()); break;
-        case Pid::BEAM_POS:
-            if (user_modified()) {
-                set_beam_pos(v.value<PairF>());
-            }
-            break;
+        case Pid::BEAM_POS: set_beam_pos(v.value<PairF>()); break;
+        case Pid::USER_MODIFIED: set_user_modified(v.to_bool()); break;
         case Pid::BEAM_NO_SLOPE: set_no_slope(v.to_bool()); break;
         case Pid::POSITION_LINKED_TO_MASTER:
         case Pid::APPEARANCE_LINKED_TO_MASTER:
@@ -467,7 +459,7 @@ bool Beam::set_property(Pid property_id, const PropertyValue &v) {
             break;
     }
     trigger_layout();
-    set_generated(false);
+    if (property_id != Pid::BEAM_POS && property_id != Pid::BEAM_NO_SLOPE && property_id != Pid::USER_MODIFIED) set_generated(false);
     return true;
 }
 

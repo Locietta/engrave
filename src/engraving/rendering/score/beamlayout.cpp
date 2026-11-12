@@ -354,7 +354,12 @@ void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector
     }
 
     int fragment_index = item->direction_idx();
-    if (item->user_modified()) {
+    const auto *manual = item->authored_overrides.find(
+        {AuthoredChildRole::BEAM_FRAGMENT, static_cast<uint32_t>(frag), static_cast<uint8_t>(fragment_index)}, Pid::BEAM_POS);
+    if (manual) {
+        const auto endpoints = manual->value.value<PairF>();
+        item->beam_fragments()[frag]->py1[fragment_index] = endpoints.first * item->spatium();
+        item->beam_fragments()[frag]->py2[fragment_index] = endpoints.second * item->spatium();
         BeamTremoloLayout::setup_l_data(item, item->mutldata(), ctx);
         double start_y = item->beam_fragments()[frag]->py1[fragment_index];
         double end_y = item->beam_fragments()[frag]->py2[fragment_index];

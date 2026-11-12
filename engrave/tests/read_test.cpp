@@ -50,6 +50,7 @@
 #include "engraving/automation/automationdata.h"
 #include "engraving/automation/tempovalues.h"
 #include "engraving/dom/accidental.h"
+#include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
@@ -5450,6 +5451,57 @@ TEST(Read, LegacySlurGripOrdinalGapsBaselineBeforeLayout) {
     ASSERT_EQ(restored.begin()->second->spanner_segments().size(), 3u);
     EXPECT_EQ(legacy_override_write(restored.begin()->second), bytes);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(Read, BeamManualLegacyOrdinalsAndDirectionsSurviveLayout) {
+    using namespace mu::engraving;
+    for (const std::string version : {"4.60", "5.00"}) {
+        auto input = read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/layout_elements.mscx");
+        const auto version_start = input.find("version=\"");
+        const auto score_version = input.find("version=\"", input.find("<museScore"));
+        (void) version_start;
+        input.replace(score_version + 9, 4, version);
+        input.insert(input.find("<Beam>") + 6, R"(<Fragment><y1>1.25</y1><y2>2.5</y2></Fragment>
+<Fragment no="2"><y1>3.75</y1><y2>4.5</y2></Fragment>
+<Fragment no="0" direction="1"><y1>-1.25</y1><y2>-2.5</y2></Fragment>)");
+        auto document = g_engine->open(as_bytes(input));
+        ASSERT_TRUE(document) << document.error().message;
+        const auto find = [](Score &score) {
+            Beam *result = nullptr;
+            score.scan_elements([&](EngravingItem *item) {
+                if (!item->is_note()) return;
+                auto *beam = to_note(item)->chord()->beam();
+                if (beam && beam->authored_overrides.find({AuthoredChildRole::BEAM_FRAGMENT, 2, 0}, Pid::BEAM_POS)) result = beam;
+            });
+            return result;
+        };
+        auto *beam = find(master_of(**document));
+        ASSERT_NE(beam, nullptr);
+        const auto source = beam->authored_overrides.entries;
+        const auto bytes = legacy_override_write(beam);
+        EXPECT_NE(bytes.find("no=\"2\""), std::string::npos);
+        EXPECT_NE(bytes.find("direction=\"1\""), std::string::npos);
+        ASSERT_TRUE((*document)->page_count());
+        beam = find(master_of(**document));
+        ASSERT_NE(beam, nullptr);
+        EXPECT_EQ(legacy_override_write(beam), bytes);
+        ASSERT_EQ(beam->authored_overrides.entries.size(), source.size());
+        for (size_t i = 0; i < source.size(); ++i) EXPECT_EQ(beam->authored_overrides.entries[i].value, source[i].value);
+        for (auto *fragment : beam->beam_fragments()) {
+            fragment->py1[0] = 99;
+            fragment->py2[0] = -99;
+        }
+        EXPECT_EQ(legacy_override_write(beam), bytes);
+        auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        ASSERT_TRUE(saved) << saved.error().message;
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto *restored = find(master_of(**reopened));
+        ASSERT_NE(restored, nullptr);
+        EXPECT_EQ(legacy_override_write(restored), bytes);
+        std::unique_ptr<Beam> copy(restored->clone());
+        EXPECT_EQ(copy->authored_overrides.entries.size(), source.size());
+    }
 }
 
 TEST(Read, TremoloManualFragmentImportsBeforeLayoutAndSurvivesNativeReopen) {

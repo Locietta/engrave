@@ -21,6 +21,8 @@
  */
 #include "beambase.h"
 
+#include "beam.h"
+
 using namespace mu::engraving;
 
 BeamBase::BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags) : EngravingItem(type, parent, flags) {}
@@ -97,11 +99,28 @@ bool BeamBase::accept_cross_staff_move(int move) const {
 
 bool BeamBase::user_modified() const {
     int idx = direction_idx();
+    if (is_beam()) {
+        const auto &entries = static_cast<const Beam *>(this)->authored_overrides.entries;
+        return std::any_of(entries.begin(), entries.end(), [idx](const auto &entry) {
+            return entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == idx && entry.pid == Pid::BEAM_POS;
+        });
+    }
     return user_modified_[idx];
 }
 
 void BeamBase::set_user_modified(bool val) {
     int idx = direction_idx();
+    if (is_beam()) {
+        auto *beam = static_cast<Beam *>(this);
+        if (val) {
+            if (!user_modified()) beam->set_beam_pos(PairF(0.0, 0.0));
+        } else {
+            std::erase_if(beam->authored_overrides.entries, [idx](const auto &entry) {
+                return entry.child.role == AuthoredChildRole::BEAM_FRAGMENT && entry.child.direction == idx;
+            });
+        }
+        return;
+    }
     user_modified_[idx] = val;
 }
 

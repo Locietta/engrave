@@ -845,13 +845,22 @@ void TWrite::write(const Beam *item, XmlWriter &xml, WriteContext &ctx) {
     write_property(item, xml, Pid::BEAM_CROSS_STAFF_MOVE);
 
     int idx = item->direction_idx();
-    if (item->user_modified()) {
-        double spatium_value = item->spatium();
-        for (BeamFragment *f : item->beam_fragments()) {
-            xml.start_element("Fragment");
-            xml.tag("y1", f->py1[idx] / spatium_value);
-            xml.tag("y2", f->py2[idx] / spatium_value);
+    for (int direction : {idx, 1 - idx}) {
+        uint32_t next = 0;
+        for (const auto &entry : item->authored_overrides.entries) {
+            if (entry.child.role != AuthoredChildRole::BEAM_FRAGMENT || entry.child.direction != direction || entry.pid != Pid::BEAM_POS)
+                continue;
+            if (direction != idx)
+                xml.start_element("Fragment", {{"no", entry.child.ordinal}, {"direction", direction}});
+            else if (entry.child.ordinal != next)
+                xml.start_element("Fragment", {{"no", entry.child.ordinal}});
+            else
+                xml.start_element("Fragment");
+            const auto endpoints = entry.value.value<PairF>();
+            xml.tag("y1", endpoints.first);
+            xml.tag("y2", endpoints.second);
             xml.end_element();
+            next = entry.child.ordinal + 1;
         }
     }
 
@@ -1111,7 +1120,7 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write_chord_rest_beam(const ChordRest *item, XmlWriter &xml, WriteContext &ctx) {
     Beam *b = item->beam();
-    if (b && b->elements().front() == item && (MScore::test_mode || !b->generated())) {
+    if (b && b->elements().front() == item && (MScore::test_mode || !b->generated() || b->user_modified())) {
         write(b, xml, ctx);
     }
 }
