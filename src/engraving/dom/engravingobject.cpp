@@ -143,6 +143,10 @@ void EngravingObject::do_set_score(Score *sc) {
         return;
     }
 
+    // Initial parent/score binding also runs in this base constructor, before
+    // EngravingItem's fields exist. Only a subsequent score change can transfer.
+    if (score_ && is_engraving_item()) to_engraving_item(this)->transfer_layout_data(sc);
+
     if (source_handle_.is_valid() && score_ && Score::is_alive(score_)) {
         MasterScore *old_master = score_->master_score();
         MasterScore *new_master = sc ? sc->master_score() : nullptr;

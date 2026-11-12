@@ -254,6 +254,8 @@ struct PlaybackModel;
 
 struct Score : EngravingObject {
 private:
+    // Borrowed from Document's output owner, or renderer-owned import scratch.
+    rendering::score::LayoutDataStore *layout_data_store_ = nullptr;
     DECLARE_CLASSOF(ElementType::SCORE)
 
 public:
@@ -785,9 +787,15 @@ public:
     void clear_layout_copies(const Measure &display);
 
     LayoutState layout_state;
+
+    rendering::score::LayoutDataStore *layout_data_store() const { return layout_data_store_; }
+
+    void bind_layout_data_store(rendering::score::LayoutDataStore *store) { layout_data_store_ = store; }
+
     NormalizeState normalize_state;
     // Installed on the master by Document; excerpts resolve through their master.
     std::function<void(Score &)> layout_boundary;
+    std::function<rendering::score::LayoutDataStore &(Score &)> layout_store_boundary;
     void invalidate_layout(const Fraction &start, const Fraction &end);
     void invalidate_layouts(const Fraction &start, const Fraction &end);
     void ensure_layout();

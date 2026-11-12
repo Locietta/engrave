@@ -71,6 +71,7 @@ struct Selection;
 
 namespace mu::engraving::rendering::score {
 struct LayoutContext;
+struct LayoutDataStore;
 
 struct LayoutConfiguration {
     LayoutConfiguration(LayoutContext *s);
@@ -369,6 +370,7 @@ struct LayoutContext {
     LayoutContext &operator=(const LayoutContext &) = delete;
 
     bool is_valid() const;
+    LayoutDataStore &mut_layout_data();
 
     // Conf
     EngravingFontPtr engraving_font() const;

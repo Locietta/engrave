@@ -20,6 +20,10 @@ namespace mu::engraving {
 struct MasterScore;
 } // namespace mu::engraving
 
+namespace mu::engraving::rendering::score {
+struct LayoutDataStore;
+} // namespace mu::engraving::rendering::score
+
 namespace engrave {
 
 // Contract checks stay on in release builds: they guard process-global engine
@@ -49,7 +53,10 @@ struct Engine::Impl {
 };
 
 struct Document::Impl {
+    ~Impl();
     EngineState *engine = nullptr;
+    // Declared before project: payloads remain available throughout DOM teardown.
+    std::vector<std::unique_ptr<mu::engraving::rendering::score::LayoutDataStore>> layout_outputs;
     music::ScoreProject project;
     // The source MSCZ's audiosettings.json, read before the DOM exists; a
     // document from any other format, or from a template, has neutral values.
@@ -59,6 +66,7 @@ struct Document::Impl {
     // A failed edit could not restore the score: only destruction is left.
     bool poisoned = false;
     void bind_layout_boundary();
+    mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score);
     void ensure_layout(mu::engraving::Score &score);
     api::EditHooks edit_hooks;
 

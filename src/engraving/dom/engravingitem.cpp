@@ -40,6 +40,7 @@
 #include "dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "engraving/internal/engravingfont.h"
+#include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
 #include "internal/engravingcontextconfiguration.h"
@@ -294,8 +295,7 @@ EngravingItem::~EngravingItem() {
     // both objects are still alive, including deletion between layout runs.
     if (layout_data_) layout_data_->disconnect_snapped_items();
     Score::on_element_destruction(this);
-
-    delete layout_data_;
+    if (layout_store_) layout_store_->erase(*this);
 }
 
 EngravingItem *EngravingItem::ownership_parent_item() const {
@@ -2208,6 +2208,16 @@ const EngravingItem::LayoutData *EngravingItem::ldata() const { return ldata_int
 
 EngravingItem::LayoutData *EngravingItem::mutldata() { return mutldata_internal(); }
 
+void EngravingItem::transfer_layout_data(Score *destination) {
+    if (!layout_store_ || layout_store_->score() == destination) return;
+    if (!destination) {
+        layout_store_->erase(*this);
+        return;
+    }
+    auto &target = destination->renderer()->layout_data_store(*destination);
+    layout_store_->transfer(*this, target);
+}
+
 const EngravingItem::LayoutData *EngravingItem::ldata_internal() const {
     static const LayoutData empty;
     return layout_data_ ? layout_data_ : &empty;
@@ -2215,8 +2225,8 @@ const EngravingItem::LayoutData *EngravingItem::ldata_internal() const {
 
 EngravingItem::LayoutData *EngravingItem::mutldata_internal() {
     if (!layout_data_) {
-        layout_data_ = create_layout_data();
-        layout_data_->item_ = this;
+        auto data = std::unique_ptr<LayoutData>(create_layout_data());
+        score()->renderer()->layout_data_store(*score()).adopt(*this, std::move(data));
     }
     return layout_data_;
 }

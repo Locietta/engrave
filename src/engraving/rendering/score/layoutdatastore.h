@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+#pragma once
+
+#include <cstddef>
+#include <memory>
+
+#include "dom/engravingitem.h"
+
+namespace mu::engraving::rendering::score {
+// Owns stable heap payloads during the typed-accessor migration. Item addresses
+// are lifetime-qualified by explicit erase before destruction/address reuse.
+// Generated shells retain their current identity until L3/L4.
+struct LayoutDataStore {
+    // Test-only failure seam before a scratch store changes ownership.
+    static inline void (*before_adoption)() = nullptr;
+    explicit LayoutDataStore(Score &score);
+    ~LayoutDataStore();
+    LayoutDataStore(const LayoutDataStore &) = delete;
+    LayoutDataStore &operator=(const LayoutDataStore &) = delete;
+
+    Score *score() const { return score_; }
+
+    size_t size() const;
+    const EngravingItem::LayoutData *find(const EngravingItem &item) const;
+    EngravingItem::LayoutData *adopt(EngravingItem &item, std::unique_ptr<EngravingItem::LayoutData> data);
+    void erase(EngravingItem &item);
+    void transfer(EngravingItem &item, LayoutDataStore &destination);
+    void detach_score();
+
+private:
+    struct Records;
+    std::unique_ptr<Records> records_;
+    Score *score_;
+};
+} // namespace mu::engraving::rendering::score

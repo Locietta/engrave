@@ -257,6 +257,7 @@ Score::~Score() {
     // last: everything that is deleted above may park children on it on its way out
     delete dummy_;
     dummy_ = nullptr;
+    if (layout_data_store_) renderer()->release_layout_data_store(*this);
     master_score_ = nullptr;
 }
 
