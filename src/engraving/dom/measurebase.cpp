@@ -731,7 +731,17 @@ void MeasureBaseList::add(MeasureBase *m) {
 //   remove
 //---------------------------------------------------------
 
+// Detached measures remain alive in undo history. Their display overlays are no
+// longer geometry for source items that survived elsewhere in the score.
+static void clear_measure_layout_copies(MeasureBase *base) {
+    if (base->is_measure()) {
+        auto *measure = to_measure(base);
+        if (auto *display = measure->mm_rest()) measure->score()->clear_layout_copies(*display);
+    }
+}
+
 void MeasureBaseList::remove(MeasureBase *m) {
+    clear_measure_layout_copies(m);
     --size_;
     if (m->prev()) {
         m->prev()->set_next(m->next());
@@ -773,6 +783,10 @@ void MeasureBaseList::insert(MeasureBase *fm, MeasureBase *lm) {
 //---------------------------------------------------------
 
 void MeasureBaseList::remove(MeasureBase *fm, MeasureBase *lm) {
+    for (MeasureBase *measure = fm;; measure = measure->next()) {
+        clear_measure_layout_copies(measure);
+        if (measure == lm) break;
+    }
     for (MeasureBase *m = fm; m != lm; m = m->next()) {
         --size_;
     }
@@ -796,6 +810,7 @@ void MeasureBaseList::remove(MeasureBase *fm, MeasureBase *lm) {
 //---------------------------------------------------------
 
 void MeasureBaseList::change(MeasureBase *ob, MeasureBase *nb) {
+    clear_measure_layout_copies(ob);
     nb->set_prev(ob->prev());
     nb->set_next(ob->next());
     if (ob->prev()) {

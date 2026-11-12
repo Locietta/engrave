@@ -316,6 +316,11 @@ MMRestRange *Measure::mm_range_text(staff_idx_t staff_idx) const { return mstave
 //   Measure
 //---------------------------------------------------------
 
+void Measure::set_mm_rest(Measure *measure) {
+    if (mm_rest_ && mm_rest_ != measure) score()->clear_layout_copies(*mm_rest_);
+    mm_rest_ = measure;
+}
+
 Measure::~Measure() {
     for (Segment *s = first(); s;) {
         Segment *ns = s->next();

@@ -87,6 +87,7 @@ static EngravingItem *display_copy(const EngravingItem &source, EngravingItem &p
 }
 
 void MMRestLayout::clear_display_copies(Measure *measure) {
+    measure->score()->clear_layout_copies(*measure);
     const auto items = measure->el();
     for (auto *item : items) {
         if (!item->is_layout_copy()) continue;
