@@ -261,6 +261,31 @@ TEST(Read, SourceTextFormattingReadsAgreeBeforeAndAfterRender) {
     EXPECT_EQ(text->property_flags(Pid::FONT_FACE), flags);
 }
 
+TEST(Read, UnchangedSourceFormattingPreservesMarkupAndUnlaidConstruction) {
+    using namespace mu::engraving;
+    auto source = formatted_text_fixture();
+    const auto begin = source.find("<text><b>");
+    const auto end = source.find("</text>", begin);
+    source.replace(begin, end - begin, "<text><sym>metNoteQuarterUp</sym> = 120");
+    ItemLayoutSpy spy;
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *text = staff_text_of(master);
+    ASSERT_NE(text, nullptr);
+    const auto markup = text->xml_text();
+    const auto id = engrave::from_engine(text->eid());
+    ASSERT_TRUE(document.edit(
+        {{engrave::SetProperty{id, "FONT_SIZE", text->size()}, engrave::SetProperty{id, "family", text->family().to_std_string()},
+          engrave::SetProperty{id, "fontStyle", std::int64_t(text->font_style())}}}));
+    EXPECT_EQ(text->xml_text(), markup);
+    std::unique_ptr<Dynamic> unlaid(Factory::create_dynamic(master.dummy()));
+    EXPECT_FALSE(unlaid->has_layout_data());
+    EXPECT_EQ(ItemLayoutSpy::count, 0u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(Read, WholeTextFormattingMatchesEagerSourceAndRenderWithoutItemLayout) {
     using namespace mu::engraving;
     std::vector<std::vector<std::byte>> pages;

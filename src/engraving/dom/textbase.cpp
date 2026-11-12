@@ -413,8 +413,16 @@ void TextCursor::set_format(FormatId id, FormatValue val) {
             TextBase::LayoutData source;
             text_->create_blocks(&source, true);
             format_.set_format_value(id, val);
-            for (auto &block : source.blocks) block.change_format(id, val, 0, static_cast<int>(block.columns()));
-            text_->set_xml_text(text_->gen_text(&source, true));
+            bool changed = false;
+            for (auto &block : source.blocks) {
+                for (const auto &fragment : block.fragments()) {
+                    if (id == FormatId::FONT_FAMILY && fragment.format.font_family() == u"ScoreText") continue;
+                    changed |= fragment.format.format_value(id) != val;
+                }
+                block.change_format(id, val, 0, static_cast<int>(block.columns()));
+            }
+            // Keep authored markup (including symbol/font boundaries) for a no-op.
+            if (changed) text_->set_xml_text(text_->gen_text(&source, true));
         }
         clear_selection();
         text_->trigger_layout();
