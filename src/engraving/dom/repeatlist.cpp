@@ -34,6 +34,7 @@
 #include "marker.h"
 #include "measure.h"
 #include "score.h"
+#include "sourceidentity.h"
 #include "volta.h"
 
 using namespace mu;
@@ -417,11 +418,14 @@ void RepeatList::collect_repeat_list_elements() {
     }
 
     volta = nullptr;
+    const Measure *display = nullptr;
     for (; mb; mb = mb->next()) {
         if (mb->is_measure()) {
             Measure *m = to_measure(mb);
             section_end_measure_base = mb; // ending measure of section is the most recently encountered actual Measure
             Measure *underlying_measure = m;
+            if (m->mm_rest()) display = m->mm_rest();
+            if (display && display->mm_rest_last()->is_before(m)) display = nullptr;
 
             // Volta ?
             if ((!pre_processed_voltas.empty()) && (pre_processed_voltas.front()->start_measure() == underlying_measure)) {
@@ -456,7 +460,7 @@ void RepeatList::collect_repeat_list_elements() {
                 section_rl_elements.push_back(start_from_repeat_measure);
             }
             // Jumps and Markers
-            for (EngravingItem *e : m->el()) {
+            for (EngravingItem *e : source_measure_elements(*m, display)) {
                 if (e->system_flag() && !e->is_top_system_object()) {
                     continue;
                 }
