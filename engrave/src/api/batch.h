@@ -15,6 +15,7 @@
 #include <string_view>
 #include <vector>
 
+#include "engraving/infrastructure/sourcehandle.h"
 #include <engrave/document.h>
 #include <engrave/edit.h>
 #include <engrave/error.h>
@@ -40,8 +41,9 @@ std::string_view to_string(Policy policy) noexcept;
 // address names, or an OpRef to what an earlier operation will create.
 struct Target {
     Ref ref;
-    mu::engraving::EngravingObject *object = nullptr; // null for an OpRef
+    mu::engraving::EngravingObject *object = nullptr; // preflight view only; null for an OpRef
     std::size_t epoch = 0;
+    mu::engraving::SourceHandle handle;
 };
 
 struct BatchGuard;
@@ -75,7 +77,7 @@ private:
     mu::engraving::MasterScore &master_;
     std::size_t op_ = 0;
     std::size_t epoch_ = 0; // advanced by every operation that changed more than properties
-    std::vector<std::vector<mu::engraving::EngravingObject *>> created_;
+    std::vector<std::vector<mu::engraving::SourceHandle>> created_;
 };
 
 // Applies a prepared operation. An error it returns rolls the batch back.

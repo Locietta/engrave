@@ -424,6 +424,7 @@ void BarLine::add(EngravingItem *e) {
         case ElementType::IMAGE:
             el_.push_back(e);
             set_generated(false);
+            source_child_added(*this, e);
             e->added();
             break;
         default: LOGD("BarLine::add() not impl. %s", e->type_name()); break;
@@ -442,6 +443,7 @@ void BarLine::remove(EngravingItem *e) {
             if (!el_.remove(e)) {
                 LOGD("BarLine::remove(): cannot find %s", e->type_name());
             } else {
+                source_child_removed(*this, e);
                 e->removed();
             }
             break;

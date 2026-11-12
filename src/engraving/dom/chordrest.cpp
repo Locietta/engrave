@@ -218,6 +218,7 @@ void ChordRest::add(EngravingItem *e) {
             break;
         case ElementType::LYRICS:
             lyrics_.push_back(to_lyrics(e));
+            source_child_added(*this, e);
             e->added();
             break;
         default: EngravingItem::add(e); break;
@@ -235,6 +236,7 @@ void ChordRest::remove(EngravingItem *e) {
             auto i = std::find(lyrics_.begin(), lyrics_.end(), to_lyrics(e));
             if (i != lyrics_.end()) {
                 lyrics_.erase(i);
+                source_child_removed(*this, e);
                 e->removed();
             } else {
                 LOGD("ChordRest::remove: %s %p not found", e->type_name(), e);

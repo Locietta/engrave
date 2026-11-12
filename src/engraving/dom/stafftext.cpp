@@ -79,6 +79,7 @@ void StaffText::add(EngravingItem *e) {
     switch (e->type()) {
         case ElementType::SOUND_FLAG:
             set_sound_flag(to_sound_flag(e));
+            source_child_added(*this, e);
             e->added();
             return;
         default: break;
@@ -92,6 +93,7 @@ void StaffText::remove(EngravingItem *e) {
         case ElementType::SOUND_FLAG: {
             if (sound_flag() == e) {
                 set_sound_flag(nullptr);
+                source_child_removed(*this, e);
                 e->removed();
                 return;
             } else {

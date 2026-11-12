@@ -267,7 +267,7 @@ public:
 
     Arpeggio *arpeggio() const { return arpeggio_; }
 
-    void set_arpeggio(Arpeggio *a) { arpeggio_ = a; }
+    void set_arpeggio(Arpeggio *a);
 
     Arpeggio *span_arpeggio() const { return span_arpeggio_; }
 

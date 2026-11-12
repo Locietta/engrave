@@ -919,6 +919,8 @@ void FretDiagram::add(EngravingItem *e) {
             }
         }
 
+        source_child_added(*this, e);
+
         e->added();
     } else {
         LOGW("FretDiagram: cannot add <%s>\n", e->type_name());
@@ -932,6 +934,7 @@ void FretDiagram::add(EngravingItem *e) {
 void FretDiagram::remove(EngravingItem *e) {
     if (e == harmony_) {
         harmony_ = nullptr;
+        source_child_removed(*this, e);
         e->removed();
     } else {
         LOGW("FretDiagram: cannot remove <%s>\n", e->type_name());

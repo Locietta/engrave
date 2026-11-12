@@ -44,6 +44,7 @@ using mu::engraving::System;
 
 // No position: an object that is not in a measure at a track.
 constexpr int no_position = -1;
+ObjectWalkHook object_walk_hook = nullptr;
 
 std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
@@ -76,6 +77,7 @@ std::optional<Fraction> address_tick(const mu::engraving::Fraction &value) {
 // is in no segment and no map any more, so it is not here.
 template <typename Function>
 void for_each_object(MasterScore &master, const Function &func) {
+    if (object_walk_hook) object_walk_hook();
     std::unordered_set<const EngravingObject *> seen;
     const auto visit = [&func, &seen](EngravingObject *object) {
         if (object && seen.insert(object).second) func(*object);
@@ -137,19 +139,9 @@ Placement placement_of(MasterScore &master, const EngravingObject &object) {
     return placement;
 }
 
-// Whether an object is one of the document's.  The walk is what decides: an element
-// that an undo command removed is no longer in a segment's element list, a spanner map
-// or a staff, even though its parent still points into the tree, so an ownership chain
-// cannot tell it from a live one.
-bool in_document(MasterScore &master, EngravingObject *object) {
-    bool found = false;
-    for_each_object(master, [&found, object](EngravingObject &candidate) {
-        if (&candidate == object) found = true;
-    });
-    return found;
-}
-
 } // namespace
+
+void set_object_walk_hook(ObjectWalkHook hook) { object_walk_hook = hook; }
 
 bool in_score(MasterScore &master, const EngravingObject *object) {
     const EngravingObject *top = object;
@@ -287,11 +279,31 @@ mu::engraving::EID to_engine(const ElementId &id) { return mu::engraving::EID::f
 
 ElementId from_engine(const mu::engraving::EID &id) { return {id.first(), id.second()}; }
 
+// One explicit load/create/restore bootstrap. Subsequent edits maintain this graph
+// through collection hooks; this walk is never a resolution fallback.
+static void initialize_membership(MasterScore &master) {
+    auto &registry = *master.eid_register();
+    registry.begin_membership();
+    registry.attach_root(master);
+    for (Score *score : master.score_list()) {
+        if (score != &master) mu::engraving::source_child_added(master, score);
+        for (Part *part : score->parts()) mu::engraving::source_child_added(*score, part);
+        for (Staff *staff : score->staves())
+            if (staff->part()) mu::engraving::source_child_added(*staff->part(), staff);
+        for (Spanner *spanner : score->spanner_list()) mu::engraving::source_child_added(*score, spanner);
+        for (auto *base = score->first(); base; base = base->next()) mu::engraving::source_child_added(*score, base);
+    }
+}
+
 void assign_missing_ids(MasterScore &master) {
     std::unordered_set<const EngravingObject *> document;
+    const bool initial = !master.eid_register()->membership_ready();
     for_each_object(master, [&document, &master](EngravingObject &object) {
         document.insert(&object);
-        if (takes_id(object) && !object.eid().is_valid()) object.assign_new_eid();
+        if (takes_id(object)) {
+            if (!object.eid().is_valid()) object.assign_new_eid();
+            master.eid_register()->publish(object);
+        }
     });
     // An id whose element is no longer part of the document must go as well: a read can
     // replace what it built (an excerpt score's first pass, a tie whose other end is
@@ -301,6 +313,7 @@ void assign_missing_ids(MasterScore &master) {
     for (const auto &[eid, object] : master.eid_register()->entries()) {
         if (!document.contains(object) && !in_score(master, object)) master.eid_register()->remove_item(object);
     }
+    if (initial) initialize_membership(master);
 }
 
 std::vector<EngravingObject *> document_objects(MasterScore &master) {
@@ -352,19 +365,11 @@ IdDiff diff_ids(std::span<const LiveId> before, std::span<const LiveId> after) {
 
 Result<Resolved> resolve(MasterScore &master, const ElementId &id) {
     const mu::engraving::EID eid = to_engine(id);
-    // A score, a part and a shared part own their ids through the document's lists,
-    // not through an element's ownership chain: find them there, never through a
-    // register pointer that could name an object the lists no longer hold.
-    for (Score *score : master.score_list()) {
-        if (score->eid() == eid) return Resolved{score, true};
-        for (Part *part : score->parts()) {
-            if (part->eid() == eid) return Resolved{part, true};
-        }
-    }
-
-    EngravingObject *object = master.eid_register()->item_from_eid(eid);
-    if (!object) return fail(ErrorCode::NOT_FOUND, std::format("no element has id {}", to_string(id)));
-    if (!in_document(master, object)) {
+    auto &registry = *master.eid_register();
+    const auto handle = registry.handle_from_eid(eid);
+    if (!handle.is_valid()) return fail(ErrorCode::NOT_FOUND, std::format("no element has id {}", to_string(id)));
+    EngravingObject *object = registry.live_item(handle);
+    if (!object || !registry.published(handle)) {
         return fail(ErrorCode::STALE_HANDLE, std::format("the element with id {} is not part of the score", to_string(id)));
     }
     return Resolved{object, true};

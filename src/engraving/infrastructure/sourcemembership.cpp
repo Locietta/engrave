@@ -1,0 +1,171 @@
+#include "dom/accidental.h"
+#include "dom/arpeggio.h"
+#include "dom/articulation.h"
+#include "dom/beam.h"
+#include "dom/box.h"
+#include "dom/chord.h"
+#include "dom/engravingitem.h"
+#include "dom/lyrics.h"
+#include "dom/masterscore.h"
+#include "dom/measure.h"
+#include "dom/note.h"
+#include "dom/part.h"
+#include "dom/score.h"
+#include "dom/segment.h"
+#include "dom/staff.h"
+#include "dom/text.h"
+#include "dom/tie.h"
+#include "dom/tremolosinglechord.h"
+#include "dom/tremolotwochord.h"
+#include "dom/tuplet.h"
+#include "sourcehandle.h"
+
+namespace mu::engraving {
+
+bool source_object(const EngravingObject &item) {
+    // The remaining mixed segment/beam representation is separated in the layout
+    // track. These unambiguous display families never become source members.
+    for (const EngravingObject *node = &item; node; node = node->ownership_parent()) {
+        switch (node->type()) {
+            case ElementType::SYSTEM:
+            case ElementType::PAGE:
+            case ElementType::BRACKET:
+            case ElementType::BRACKET_ITEM:
+            case ElementType::INSTRUMENT_NAME:
+            case ElementType::MEASURE_NUMBER:
+            case ElementType::STAFF_LINES:
+            case ElementType::LEDGER_LINE:
+            case ElementType::STEM:
+            case ElementType::STEM_SLASH:
+            case ElementType::HOOK:
+            case ElementType::NOTEDOT:
+            case ElementType::GUITAR_BEND_TEXT:
+            case ElementType::GRACE_NOTES_GROUP:
+            case ElementType::FIGURED_BASS_ITEM:
+            case ElementType::PARENTHESIS:
+            case ElementType::ROOT_ITEM:
+            case ElementType::DUMMY: return false;
+            default: break;
+        }
+        if (node->is_spanner_segment()) return false;
+        if (node->is_measure() && to_measure(node)->is_mm_rest()) return false;
+        if (node->is_text() && node->ownership_parent() && node->ownership_parent()->is_tuplet()) return false;
+        if (node->is_engraving_item() && to_engraving_item(node)->is_layout_copy()) return false;
+    }
+    return true;
+}
+
+static EIDRegister *active_register(EngravingObject &owner) {
+    Score *score = owner.score();
+    if (!score || !Score::is_alive(score)) return nullptr;
+    MasterScore *master = score->master_score();
+    if (!master || !Score::is_alive(master)) return nullptr;
+    auto *registry = master->eid_register();
+    return registry->membership_ready() ? registry : nullptr;
+}
+
+// Copies and imports sometimes initialize owned fields directly. Adoption of a
+// newly inserted subtree enrolls those actual fields, never constructor children_.
+static void adopt_children(EngravingObject &item) {
+    const auto adopt = [&](EngravingObject *child) { source_child_added(item, child); };
+    if (item.is_score()) {
+        auto &score = *to_score(&item);
+        for (auto *part : score.parts()) adopt(part);
+        for (auto *spanner : score.spanner_list()) adopt(spanner);
+        for (auto *base = score.first(); base; base = base->next()) adopt(base);
+        return;
+    }
+    if (item.is_part() || item.is_shared_part()) {
+        // Part copies briefly retain borrowed staff references before the clone
+        // builder replaces them. Those references are not ownership transfers.
+        for (auto *staff : to_part(&item)->staves())
+            if (staff->part() == &item) adopt(staff);
+        return;
+    }
+    if (item.is_measure_base()) {
+        auto &base = *to_measure_base(&item);
+        for (auto *child : base.el()) adopt(child);
+        if (item.is_measure()) {
+            for (auto *segment = to_measure(&item)->first(); segment; segment = segment->next()) adopt(segment);
+        }
+        if (item.is_t_box()) adopt(to_t_box(&item)->text());
+        return;
+    }
+    if (item.is_segment()) {
+        auto &segment = *to_segment(&item);
+        for (auto *child : segment.elist())
+            if (child) adopt(child);
+        for (auto *child : segment.annotations()) adopt(child);
+        return;
+    }
+    if (item.is_chord_rest()) {
+        auto &rest = *to_chord_rest(&item);
+        for (auto *lyric : rest.lyrics()) adopt(lyric);
+        for (auto *child : rest.el()) adopt(child);
+        if (auto *measure = rest.measure()) {
+            for (auto *tuplet = rest.tuplet(); tuplet; tuplet = tuplet->tuplet()) source_child_added(*measure, tuplet);
+        }
+        if (rest.beam()) source_child_added(*rest.score(), rest.beam());
+        if (item.is_chord()) {
+            auto &chord = *to_chord(&item);
+            for (auto *note : chord.notes()) adopt(note);
+            for (auto *grace : chord.grace_notes()) adopt(grace);
+            for (auto *articulation : chord.articulations()) adopt(articulation);
+            adopt(chord.arpeggio());
+            adopt(chord.tremolo_single_chord());
+            // A two-chord tremolo is owned by its first chord only.
+            if (auto *tremolo = chord.tremolo_two_chord(); tremolo && tremolo->chord1() == &chord) adopt(tremolo);
+        }
+        return;
+    }
+    if (item.is_note()) {
+        auto &note = *to_note(&item);
+        adopt(note.accidental());
+        adopt(note.tie_for());
+        if (auto *tie = note.tie_back(); tie && tie->is_partial_tie() && !tie->start_element()) adopt(tie);
+        for (auto *child : note.el()) adopt(child);
+        for (auto *spanner : note.spanner_for())
+            if (spanner->anchor() == Spanner::Anchor::NOTE) adopt(spanner);
+        return;
+    }
+    if (item.is_tuplet() || item.is_beam() || item.is_spanner()) return;
+    // Remaining composites (e.g. fret-diagram harmonies and symbol leaves) have
+    // an explicit child enumeration. This is scoped to the inserted subtree.
+    if (item.is_engraving_item()) {
+        item.scan_elements([&](EngravingItem *child) {
+            if (child == &item || !source_object(*child)) return;
+            auto *owner = child->ownership_parent();
+            if (!owner) return;
+            for (auto *ancestor = owner; ancestor; ancestor = ancestor->ownership_parent()) {
+                if (ancestor == &item) {
+                    source_child_added(*owner, child);
+                    break;
+                }
+            }
+        });
+    }
+}
+
+void source_child_added(EngravingObject &owner, EngravingObject *item) {
+    if (!item) return;
+    if (item->score() && owner.score() && item->score()->master_score() != owner.score()->master_score()) return;
+    auto *registry = active_register(owner);
+    if (registry && source_object(owner) && source_object(*item)) {
+        const bool newly_owned = !registry->owns(owner, *item);
+        registry->attach_source(*item, owner);
+        if (newly_owned) adopt_children(*item);
+    }
+}
+
+void source_child_removed(EngravingObject &owner, EngravingObject *item) {
+    if (!item) return;
+    if (auto *registry = active_register(owner); registry && registry->owns(owner, *item)) registry->detach_source(*item);
+}
+
+void source_collection_cleared(EngravingObject &owner, SourceCollection collection) {
+    // Some callers clear raw lists after deleting their objects. Use only the
+    // surviving registered membership, never dereference those raw list entries.
+    if (auto *registry = active_register(owner)) registry->detach_collection(owner, collection);
+}
+
+} // namespace mu::engraving

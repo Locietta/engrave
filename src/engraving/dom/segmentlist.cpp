@@ -23,6 +23,7 @@
 #include "segmentlist.h"
 
 #include "log.h"
+#include "measure.h"
 #include "score.h"
 #include "segment.h"
 
@@ -32,6 +33,18 @@ namespace mu::engraving {
 //---------------------------------------------------------
 //   clone
 //---------------------------------------------------------
+
+void SegmentList::clear() {
+    if (owner_) source_collection_cleared(*owner_, SourceCollection::SEGMENTS);
+    first_ = last_ = nullptr;
+    size_ = 0;
+}
+
+void SegmentList::set_source_owner(Measure *owner) {
+    owner_ = owner;
+    if (owner_)
+        for (auto *s = first_; s; s = s->next()) source_child_added(*owner_, s);
+}
 
 SegmentList SegmentList::clone() const {
     SegmentList dl;
@@ -149,6 +162,7 @@ void SegmentList::insert(Segment *e, Segment *el) {
         el->prev()->set_next(e);
         el->set_prev(e);
     }
+    if (owner_) source_child_added(*owner_, e);
     check();
 }
 
@@ -157,6 +171,7 @@ void SegmentList::insert(Segment *e, Segment *el) {
 //---------------------------------------------------------
 
 void SegmentList::remove(Segment *e) {
+    if (owner_) source_child_removed(*owner_, e);
 #ifndef NDEBUG
     check();
     bool found = false;
@@ -204,6 +219,7 @@ void SegmentList::push_back(Segment *e) {
     }
     e->set_prev(last_);
     last_ = e;
+    if (owner_) source_child_added(*owner_, e);
     check();
 }
 
@@ -221,6 +237,7 @@ void SegmentList::push_front(Segment *e) {
     }
     e->set_next(first_);
     first_ = e;
+    if (owner_) source_child_added(*owner_, e);
     check();
 }
 

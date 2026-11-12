@@ -195,6 +195,7 @@ Measure::Measure(Score *parent) : MeasureBase(ElementType::MEASURE, parent), tim
 
 Measure::Measure(const Measure &m) : MeasureBase(m) {
     segments_ = m.segments_.clone();
+    segments_.set_source_owner(this);
     timesig_ = m.timesig_;
     len_ = m.len_;
     repeat_count_ = m.repeat_count_;
@@ -848,6 +849,8 @@ void Measure::add(EngravingItem *e) {
         default: MeasureBase::add(e); return;
     }
 
+    source_child_added(*this, e);
+
     e->added();
 }
 
@@ -911,6 +914,7 @@ void Measure::remove(EngravingItem *e) {
                     EngravingItem *ee = segment->element(track);
                     if (ee == e) {
                         segment->set_element(track, nullptr);
+                        source_child_removed(*this, e);
                         e->removed();
                         return;
                     }
@@ -939,6 +943,8 @@ void Measure::remove(EngravingItem *e) {
 
         default: MeasureBase::remove(e); return;
     }
+
+    source_child_removed(*this, e);
 
     e->removed();
 }

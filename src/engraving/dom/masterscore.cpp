@@ -235,6 +235,7 @@ void MasterScore::add_excerpt(Excerpt *ex, size_t index) {
     }
 
     excerpts().insert(excerpts().begin() + (index == muse::nidx ? excerpts().size() : index), ex);
+    source_child_added(*this, ex->excerpt_score());
     set_excerpts_changed(true);
 }
 
@@ -244,6 +245,7 @@ void MasterScore::add_excerpt(Excerpt *ex, size_t index) {
 
 void MasterScore::remove_excerpt(Excerpt *ex) {
     if (muse::remove(excerpts(), ex)) {
+        source_child_removed(*this, ex->excerpt_score());
         set_excerpts_changed(true);
         // delete ex;
     } else {

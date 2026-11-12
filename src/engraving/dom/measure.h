@@ -464,7 +464,7 @@ private:
     MStaff *mstaff(staff_idx_t staff_index) const;
 
     std::vector<MStaff *> mstaves_;
-    SegmentList segments_;
+    SegmentList segments_{this};
     Measure *mm_rest_ = nullptr; // multi measure rest which replaces a measure range
 
     double user_stretch_ = 0.0;

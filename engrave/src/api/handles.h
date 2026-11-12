@@ -49,6 +49,10 @@ ElementId from_engine(const mu::engraving::EID &id);
 // the revision, so it runs after open, create, restore and commit alike.
 void assign_missing_ids(mu::engraving::MasterScore &score);
 
+// Test-only observer of explicit document enumeration; resolution must never call it.
+using ObjectWalkHook = void (*)();
+void set_object_walk_hook(ObjectWalkHook hook);
+
 // Where an element sits: the score it belongs to, its tick and its track. An
 // operation that recreates an element leaves all three as they were, which is what
 // separates a replacement from a removal.
@@ -97,14 +101,14 @@ struct Resolved {
 
 // NotFound when no element has the id, StaleHandle when one has it but is no
 // longer part of the document. A segment address resolves to the segment; staff
-// and voice select the element inside it. A lookup walks the document, so a caller
-// that resolves many references resolves each one once.
+// and voice select the element inside it. ID lookup checks the document's handle
+// table; it does not enumerate or repair source objects.
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const ElementId &id);
 Result<Resolved> resolve(mu::engraving::MasterScore &score, const Address &address);
 
 // Whether an object still hangs off one of the document's scores. Weaker than
 // resolve(): an element on a hidden staff is in the score but outside the walk that
-// assign_missing_ids and resolve() use, and an element an undo command removed is still
+// assign_missing_ids uses, and an element a rollback command removed is still
 // in the ownership tree until it is destroyed.
 bool in_score(mu::engraving::MasterScore &score, const mu::engraving::EngravingObject *object);
 

@@ -63,6 +63,7 @@ void BSymbol::add(EngravingItem *e) {
         e->set_track(track());
         leafs_.push_back(e);
         to_b_symbol(e)->set_z(z() - 1); // draw on top of parent
+        source_child_added(*this, e);
         e->added();
     } else {
         LOGD("BSymbol::add: unsupported type %s", e->type_name());
@@ -87,6 +88,7 @@ void BSymbol::scan_elements(std::function<void(EngravingItem *)> func) {
 void BSymbol::remove(EngravingItem *e) {
     if (e->is_symbol() || e->is_image()) {
         if (muse::remove(leafs_, e)) {
+            source_child_removed(*this, e);
             e->removed();
         } else {
             LOGD("BSymbol::remove: element <%s> not found", e->type_name());

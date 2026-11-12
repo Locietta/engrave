@@ -491,6 +491,7 @@ void FBox::add_at_idx(FretDiagram *fret_diagram, size_t idx) {
         el_.push_back(fret_diagram);
     }
 
+    source_child_added(*this, fret_diagram);
     fret_diagram->added();
 }
 
@@ -622,6 +623,7 @@ void TBox::add(EngravingItem *e) {
         text_ = to_text(e);
         text_->set_layout_to_parent_width(true);
         e->set_ownership_parent(this);
+        source_child_added(*this, e);
         e->added();
     } else {
         VBox::add(e);
@@ -639,8 +641,10 @@ void TBox::remove(EngravingItem *el) {
         // replace with new empty text element
         // this keeps undo/redo happier than just clearing the text
         LOGD("TBox::remove() - replacing _text");
+        source_child_removed(*this, el);
         text_ = Factory::create_text(this, TextStyleType::FRAME);
         text_->set_layout_to_parent_width(true);
+        source_child_added(*this, text_);
         el->removed();
     } else {
         VBox::remove(el);

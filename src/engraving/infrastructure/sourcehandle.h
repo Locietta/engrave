@@ -5,6 +5,9 @@
 
 namespace mu::engraving {
 
+struct EngravingObject;
+enum struct SourceCollection { SEGMENTS, MEASURES, STAVES };
+
 // Runtime identity only. EIDs, not these slots, are stored in score files.
 struct SourceHandle {
     uint64_t document = 0;
@@ -15,5 +18,11 @@ struct SourceHandle {
 
     friend auto operator<=>(const SourceHandle &, const SourceHandle &) = default;
 };
+
+// Actual collection membership, distinct from constructor/rollback parentage.
+void source_child_added(EngravingObject &owner, EngravingObject *item);
+void source_child_removed(EngravingObject &owner, EngravingObject *item);
+bool source_object(const EngravingObject &item);
+void source_collection_cleared(EngravingObject &owner, SourceCollection collection);
 
 } // namespace mu::engraving

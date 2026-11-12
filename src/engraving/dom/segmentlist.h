@@ -32,12 +32,11 @@ struct Segment;
 //---------------------------------------------------------
 
 struct SegmentList {
-    SegmentList() { clear(); }
+    explicit SegmentList(Measure *owner = nullptr) : owner_(owner) {}
 
-    void clear() {
-        first_ = last_ = 0;
-        size_ = 0;
-    }
+    void set_source_owner(Measure *owner);
+
+    void clear();
 #ifndef NDEBUG
     void check();
 #else
@@ -109,6 +108,7 @@ struct SegmentList {
 
 private:
 
+    Measure *owner_ = nullptr;
     Segment *first_ = nullptr; // First item of segment list
     Segment *last_ = nullptr;  // Last item of segment list
     int size_ = 0;             // Number of items in segment list

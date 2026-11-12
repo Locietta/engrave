@@ -133,6 +133,7 @@ void Beam::remove(EngravingItem *e) {
 //---------------------------------------------------------
 
 void Beam::add_chord_rest(ChordRest *a) {
+    source_child_added(*score(), this);
     a->set_beam(this);
     if (!muse::contains(elements_, a)) {
         //
@@ -162,6 +163,7 @@ void Beam::remove_chord_rest(ChordRest *a) {
         LOGD("Beam::remove(): cannot find ChordRest");
     }
     a->set_beam(0);
+    if (elements_.empty()) source_child_removed(*score(), this);
 }
 
 const Chord *Beam::find_chord_with_custom_stem_direction() const {
