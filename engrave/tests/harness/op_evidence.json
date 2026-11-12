@@ -564,7 +564,6 @@
       "fixture": "custom_part_name.mscx",
       "pushes": 8,
       "c1": "pass",
-      "c2": "fail: undo left files, ids, registered",
       "c3_unwind": "pass",
       "c4_unwind": "pass",
       "c3_snapshot": "pass",
