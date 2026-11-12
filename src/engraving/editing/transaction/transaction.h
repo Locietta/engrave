@@ -34,6 +34,7 @@ struct BracketItem;
 struct TextBase;
 struct Segment;
 struct Measure;
+struct MeasureBase;
 struct ScoreChanges;
 struct MasterScore;
 struct UndoableCommand;
@@ -64,6 +65,10 @@ struct Transaction {
     void reparent_segment(Segment *item, Measure *parent, Fraction tick);
     void link_objects(EngravingObject *item, EngravingObject *peer);
     void unlink_object(EngravingObject *item);
+    void insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged = false);
+    void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
+    void change_measure_length(Measure *measure, Fraction length);
+    void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended

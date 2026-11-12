@@ -2748,7 +2748,7 @@ MeasureBase *Score::insert_box(MeasureBase *box, MeasureBase *before_measure, co
         to_f_box(box)->init();
     }
 
-    undo(new InsertMeasures(box, box));
+    record_measures(box, box, true);
 
     if (options.need_deselect_all) {
         deselect_all();
@@ -3149,7 +3149,7 @@ void Score::do_time_delete_for_measure(Measure *m, Segment *start_segment, const
     for (Score *score : master_score()->score_list()) {
         Measure *local_measure = score->tick2measure(abstick);
 
-        undo(new InsertTime(score, abstick, -len));
+        record_time_insertion(score, abstick, -len);
 
         Fraction updated_tick = tick;
         // tuplets store their tick: move those after the removed time back with their segments
@@ -3183,7 +3183,7 @@ void Score::do_time_delete_for_measure(Measure *m, Segment *start_segment, const
             t->undo_change_property(Pid::TICK, t->tick() - len);
         }
 
-        undo(new ChangeMeasureLen(local_measure, local_measure->ticks() - f));
+        record_measure_length(local_measure, local_measure->ticks() - f);
     }
 
     for (Segment *s : empty_segments) {
@@ -4889,7 +4889,7 @@ void Score::undo_insert_time(const Fraction &tick, const Fraction &len) {
         }
     }
 
-    undo(new InsertTimeUnmanagedSpanner(this, tick, len));
+    record_time_insertion(this, tick, len, true);
 }
 
 //---------------------------------------------------------
@@ -4985,7 +4985,7 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
     EditSystemLocks::remove_system_locks_on_remove_measures(tx, this, m1, m2);
     EditPageLocks::remove_page_locks_on_remove_measures(tx, this, m1, m2);
 
-    undo(new RemoveMeasures(m1, m2, move_staff_type_changes));
+    record_measures(m1, m2, false, move_staff_type_changes);
 }
 
 //---------------------------------------------------------
@@ -5000,7 +5000,7 @@ void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_id
 
         int curr_count = linked_measure->measure_repeat_count(linked_staff_idx);
         if (curr_count != new_count) {
-            linked_score->undo(new ChangeMeasureRepeatCount(linked_measure, new_count, linked_staff_idx));
+            linked_score->record_measure_repeat_count(linked_measure, new_count, linked_staff_idx);
         }
     }
 }

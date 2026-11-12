@@ -379,6 +379,10 @@ public:
     void record_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
     void record_link(EngravingObject *item, EngravingObject *peer);
     void record_unlink(EngravingObject *item);
+    void record_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged = false);
+    void record_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
+    void record_measure_length(Measure *measure, Fraction length);
+    void record_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
     void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
     void undo_change_page_number_offset(int po);

@@ -33,6 +33,7 @@
 #include "global/types/translatablestring.h"
 #include "sourcechange.h"
 #include "textchange.h"
+#include "timingchange.h"
 #include "undoablecommand.h"
 
 namespace mu::engraving {
@@ -51,7 +52,11 @@ enum class JournalEntryKind : uint8_t {
     ELEMENT_REPLACE,
     ELEMENT_REPARENT,
     SEGMENT_REPARENT,
-    LINK
+    LINK,
+    TIME_INSERTION,
+    MEASURE_MEMBERSHIP,
+    MEASURE_LENGTH,
+    MEASURE_REPEAT_COUNT
 };
 
 struct JournalEntry {
@@ -80,6 +85,10 @@ struct JournalBatch {
     void reparent_element(EngravingItem &item, EngravingItem &parent, staff_idx_t staff);
     void reparent_segment(Segment &item, Measure &parent, Fraction tick);
     void change_link(EngravingObject &item, EngravingObject *peer);
+    void insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged = false);
+    void change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
+    void change_measure_length(Measure *measure, Fraction length);
+    void change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void unwind(bool clean_up = true);
 
     bool replaying() const { return replaying_; }
@@ -111,6 +120,8 @@ struct JournalBatch {
         return elements_.size() + replacements_.size() + parents_.size() + segment_parents_.size() + links_.size();
     }
 
+    size_t timing_entries() const { return times_.size() + measures_.size() + measure_lengths_.size() + measure_repeats_.size(); }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -126,6 +137,10 @@ private:
     amc::vector<ElementParentInverse> parents_;
     amc::vector<SegmentParentInverse> segment_parents_;
     amc::vector<LinkInverse> links_;
+    amc::vector<TimeInsertionInverse> times_;
+    amc::vector<MeasureMembershipInverse> measures_;
+    amc::vector<MeasureLengthInverse> measure_lengths_;
+    amc::vector<MeasureRepeatCountInverse> measure_repeats_;
     void dispose_entry(JournalEntry entry, bool committed);
     bool replaying_ = false;
 };

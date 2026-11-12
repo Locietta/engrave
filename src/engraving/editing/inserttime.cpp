@@ -22,39 +22,21 @@
 
 #include "inserttime.h"
 
-#include <set>
+#include <amc/vector.hpp>
 
 #include "../dom/masterscore.h"
 #include "../dom/repeatlist.h"
-#include "../dom/score.h"
 #include "../dom/spanner.h"
 
-using namespace mu::engraving;
-
-//---------------------------------------------------------
-//   InsertTime
-//---------------------------------------------------------
-
-void InsertTime::redo() {
-    score->master_score()->update_repeat_list(false);
-    score->insert_time(tick, len, score->repeat_segment_info_list(/*expandRepeats*/ true));
-}
-
-void InsertTime::undo() {
-    score->master_score()->update_repeat_list(false);
-    score->insert_time(tick, -len, score->repeat_segment_info_list(/*expandRepeats*/ true));
-}
-
-//---------------------------------------------------------
-//   InsertTimeUnmanagedSpanner
-//---------------------------------------------------------
-
-void InsertTimeUnmanagedSpanner::flip() {
-    for (Score *s : score->score_list()) {
-        std::set<Spanner *> spanners_copy = s->unmanaged_spanners();
-        for (Spanner *sp : spanners_copy) {
-            sp->insert_time_unmanaged(tick, len);
+void mu::engraving::apply_time_insertion(Score &score, Fraction tick, Fraction length, bool unmanaged) {
+    if (unmanaged) {
+        for (Score *linked : score.score_list()) {
+            const auto &source = linked->unmanaged_spanners();
+            const amc::vector<Spanner *> spanners(source.begin(), source.end());
+            for (Spanner *spanner : spanners) spanner->insert_time_unmanaged(tick, length);
         }
+        return;
     }
-    len = -len;
+    score.master_score()->update_repeat_list(false);
+    score.insert_time(tick, length, score.repeat_segment_info_list(/*expandRepeats*/ true));
 }

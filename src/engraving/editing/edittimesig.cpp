@@ -222,7 +222,7 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
         //
         new_first_measure->set_prev(m1->prev());
         new_last_measure->set_next(m2->next());
-        tx.push(new InsertMeasures(new_first_measure, new_last_measure));
+        tx.change_measures(new_first_measure, new_last_measure, true);
     }
     if (!fill.is_zero()) {
         score->undo_insert_time(end_measure->end_tick(), fill);

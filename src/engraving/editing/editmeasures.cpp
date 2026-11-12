@@ -22,6 +22,8 @@
 
 #include "editmeasures.h"
 
+#include <amc/vector.hpp>
+
 #include "../dom/chord.h"
 #include "../dom/chordrest.h"
 #include "../dom/clef.h"
@@ -53,7 +55,7 @@ using namespace mu::engraving;
 //    remember clefs at the end of previous measure
 //---------------------------------------------------------
 
-std::vector<Clef *> InsertRemoveMeasures::get_courtesy_clefs(Measure *m) {
+static std::vector<Clef *> get_courtesy_clefs(Measure *m) {
     Score *score = m->score();
     std::vector<Clef *> start_clefs;
     if (m->prev() && m->prev()->is_measure()) {
@@ -75,7 +77,7 @@ std::vector<Clef *> InsertRemoveMeasures::get_courtesy_clefs(Measure *m) {
 //   insertMeasures
 //---------------------------------------------------------
 
-void InsertRemoveMeasures::insert_measures() {
+void mu::engraving::insert_measure_chain(MeasureBase *fm, MeasureBase *lm, bool move_stc_value) {
     Score *score = fm->score();
 
     std::vector<Clef *> clefs;
@@ -211,7 +213,7 @@ void InsertRemoveMeasures::insert_measures() {
 //   removeMeasures
 //---------------------------------------------------------
 
-void InsertRemoveMeasures::remove_measures() {
+void mu::engraving::remove_measure_chain(MeasureBase *fm, MeasureBase *lm, bool move_stc_value) {
     Score *score = fm->score();
 
     Fraction tick1 = fm->tick();
@@ -333,7 +335,8 @@ void InsertRemoveMeasures::remove_measures() {
             clef->staff()->set_clef(clef);
         }
 
-        std::set<Spanner *> spanners_copy = score->unmanaged_spanners();
+        const auto &unmanaged = score->unmanaged_spanners();
+        const amc::vector<Spanner *> spanners_copy(unmanaged.begin(), unmanaged.end());
         for (Spanner *sp : spanners_copy) {
             if ((sp->tick() >= tick1 && sp->tick() < tick2) || (sp->tick2() >= tick1 && sp->tick2() < tick2)) {
                 sp->remove_unmanaged();
@@ -371,14 +374,7 @@ void InsertRemoveMeasures::remove_measures() {
 //   ChangeMeasureLen
 //---------------------------------------------------------
 
-ChangeMeasureLen::ChangeMeasureLen(Measure *m, Fraction l) {
-    measure = m;
-    len = l;
-}
-
-void ChangeMeasureLen::flip() {
-    Fraction o_len = measure->ticks();
-
+void mu::engraving::apply_measure_length(Measure *measure, Fraction len) {
     //
     // move EndBarLine and TimeSigAnnounce
     // to end of measure:
@@ -394,7 +390,6 @@ void ChangeMeasureLen::flip() {
     measure->set_ticks(len);
     measure->score()->update_ticks_and_time_sig_map();
     measure->score()->invalidate_repeat_list();
-    len = o_len;
 }
 
 //---------------------------------------------------------
@@ -411,10 +406,8 @@ void ChangeMMRest::flip() {
 //   ChangeMeasureRepeatCount
 //---------------------------------------------------------
 
-void ChangeMeasureRepeatCount::flip() {
-    int old_count = m->measure_repeat_count(staff_idx_value);
-    m->set_measure_repeat_count(count, staff_idx_value);
-    count = old_count;
+void mu::engraving::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
+    measure->set_measure_repeat_count(count, staff);
 }
 
 void ChangeMMRestNext::flip() {

@@ -1087,6 +1087,60 @@ TEST(JournalCompound, ReplaceThenRejectRestoresOriginalAndLeavesReplacementInact
     EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
 }
 
+TEST(JournalTiming, FailedChainReplacementRestoresOriginalSourceLifetimes) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *original = master.first_measure();
+    auto *tail = master.last();
+    ASSERT_NE(original, nullptr);
+    ASSERT_NE(tail, nullptr);
+    const auto original_id = engrave::from_engine(original->eid());
+    const auto revision = document->revision();
+    std::vector<MeasureBase *> before;
+    for (auto *item = master.first(); item; item = item->next()) before.push_back(item);
+
+    auto *first = Factory::create_measure(&master);
+    auto *last = Factory::create_measure(&master);
+    first->set_timesig(original->timesig());
+    first->set_ticks(original->ticks());
+    first->set_tick(master.last_measure()->end_tick());
+    last->set_timesig(original->timesig());
+    last->set_ticks(original->ticks());
+    last->set_tick(first->end_tick());
+    first->set_prev(tail);
+    first->set_next(last);
+    last->set_prev(first);
+    last->set_next(nullptr);
+    const auto first_handle = master.eid_register()->enroll(*first);
+    const auto last_handle = master.eid_register()->enroll(*last);
+    const auto whole = master.layout_state.whole_count;
+    const auto range = master.layout_state.range_count;
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_measures(first, last, true, false);
+        master.record_measures(original, original, false, false);
+        const auto &journal = *master.mutation_journal()->active_transaction();
+        EXPECT_EQ(journal.timing_entries(), 2u);
+        EXPECT_EQ(journal.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject measure chain replacement"});
+    }});
+    EXPECT_FALSE(result);
+    std::vector<MeasureBase *> restored;
+    for (auto *item = master.first(); item; item = item->next()) restored.push_back(item);
+    EXPECT_EQ(restored, before);
+    const auto resolved = engrave::resolve(master, original_id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(resolved->object, original);
+    EXPECT_EQ(master.eid_register()->live_item(first_handle), nullptr);
+    EXPECT_EQ(master.eid_register()->live_item(last_handle), nullptr);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count, whole);
+    EXPECT_EQ(master.layout_state.range_count, range);
+}
+
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {
     using namespace mu::engraving;
     ChordList source;

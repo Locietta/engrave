@@ -594,7 +594,7 @@ MeasureBase *MasterScore::insert_measure(MeasureBase *before_measure, const Inse
         new_measure->set_timesig(current_time_sig);
         new_measure->set_ticks(current_time_sig);
 
-        undo(new InsertMeasures(new_measure, new_measure, options.move_staff_type_changes));
+        record_measures(new_measure, new_measure, true, options.move_staff_type_changes);
 
         ticks = new_measure->ticks();
         Measure *measure_insert = nullptr; // insert before
