@@ -8,8 +8,10 @@
 #include <amc/vector.hpp>
 
 #include "dom/chordline.h"
+#include "dom/chordlist.h"
 #include "editing/editdata.h"
 #include "infrastructure/sourcehandle.h"
+#include "style/style.h"
 
 namespace mu::engraving {
 struct MasterScore;
@@ -45,6 +47,14 @@ struct StyleValuesInverse {
     uint32_t begin = 0;
     uint32_t count = 0;
     uint32_t spatium_sources = no_source_payload;
+    uint32_t chord_list = no_source_payload;
+};
+
+struct StyleReplacementInverse {
+    JournalTarget target;
+    MStyle before;
+    uint32_t spatium_sources = no_source_payload;
+    uint32_t chord_list = no_source_payload;
 };
 
 struct OffsetBefore {
@@ -95,6 +105,8 @@ struct SourceChangePayloads {
     amc::vector<StyleValuesInverse> styles;
     amc::vector<StyleValue> style_values;
     amc::vector<SpatiumSources> spatium_sources;
+    amc::vector<StyleReplacementInverse> style_replacements;
+    amc::vector<ChordList> chord_lists;
 };
 
 PropertyInverse capture_property(EngravingObject &object, Pid id, SourceChangePayloads &payloads);
@@ -102,8 +114,14 @@ void apply_property(EngravingObject &object, Pid id, const PropertyValue &value,
 void restore_property(const PropertyInverse &inverse, const SourceChangePayloads &payloads);
 
 StyleValuesInverse capture_style_values(Score &score, std::span<const StyleValue> values, SourceChangePayloads &payloads);
-void apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium = nullptr);
-void restore_style_values(const StyleValuesInverse &inverse, const SourceChangePayloads &payloads);
+bool style_value_refreshes_chords(Sid id);
+void apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium = nullptr,
+                        ChordList *restore_chords = nullptr);
+void restore_style_values(const StyleValuesInverse &inverse, SourceChangePayloads &payloads);
+StyleReplacementInverse capture_style_replacement(Score &score, const MStyle &style, SourceChangePayloads &payloads);
+void apply_style_replacement(Score &score, const MStyle &style, bool overlap, const SpatiumSources *restore_spatium = nullptr,
+                             ChordList *restore_chords = nullptr);
+void restore_style_replacement(const StyleReplacementInverse &inverse, SourceChangePayloads &payloads);
 void restore_spatium_sources(const SpatiumSources &sources);
 
 // Test-only failure seam after one existing spatium callback in the score walk.

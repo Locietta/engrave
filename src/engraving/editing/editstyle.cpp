@@ -53,24 +53,13 @@ static void change_chord_style(Score *score) {
 }
 
 //---------------------------------------------------------
-//   ChangeStyle
+//   Whole style replacement, reusing the existing domain callbacks
 //----------------------------------------------------------
 
-ChangeStyle::ChangeStyle(Score *s, const MStyle &st, const bool overlap_only) : score(s), style(st), overlap(overlap_only) {}
-
-StyleIdSet ChangeStyle::changed_ids() const {
-    StyleIdSet result;
-    for (int sid_value = 0; sid_value < static_cast<int>(Sid::STYLES); ++sid_value) {
-        Sid sid = static_cast<Sid>(sid_value);
-        if (score->style().style_v(sid) != style.value(sid)) {
-            result.insert(sid);
-        }
-    }
-    return result;
-}
-
-void ChangeStyle::flip() {
-    MStyle tmp = score->style();
+void mu::engraving::apply_style_replacement(Score &owner, const MStyle &style, bool overlap, const SpatiumSources *restore_spatium,
+                                            ChordList *restore_chords) {
+    auto *score = &owner;
+    const double before_spatium = score->style().spatium();
 
     if (score->style().style_v(Sid::CONCERT_PITCH) != style.value(Sid::CONCERT_PITCH)) {
         score->cmd_concert_pitch_changed(style.value(Sid::CONCERT_PITCH).to_bool());
@@ -80,26 +69,24 @@ void ChangeStyle::flip() {
     }
 
     score->set_style(style, overlap);
-    change_chord_style(score);
-    if (tmp.spatium() != style.spatium()) {
-        score->spatium_changed(tmp.spatium(), style.spatium());
+    if (restore_chords)
+        *score->chord_list() = std::move(*restore_chords);
+    else
+        change_chord_style(score);
+    if (restore_spatium) {
+        restore_spatium_sources(*restore_spatium);
+    } else if (before_spatium != style.spatium()) {
+        score->spatium_changed(before_spatium, style.spatium());
     }
     score->style_changed();
-    style = tmp;
-}
-
-void ChangeStyle::undo() {
-    overlap = false;
-    UndoableCommand::undo();
 }
 
 //---------------------------------------------------------
 //   ChangeStyleValues
 //----------------------------------------------------------
 
-static void change_style_value(Score *score, Sid idx, const PropertyValue &old_value, const PropertyValue &new_value) {
-    score->style().set(idx, new_value);
-    switch (idx) {
+bool mu::engraving::style_value_refreshes_chords(Sid id) {
+    switch (id) {
         case Sid::CHORD_EXTENSION_MAG:
         case Sid::CHORD_EXTENSION_ADJUST:
         case Sid::CHORD_MODIFIER_MAG:
@@ -107,9 +94,18 @@ static void change_style_value(Score *score, Sid idx, const PropertyValue &old_v
         case Sid::CHORD_DESCRIPTION_FILE:
         case Sid::VERTICALLY_STACK_MODIFIERS:
         case Sid::CHORD_ALIGNMENT_EXCLUDE_MODIFIERS:
-        case Sid::MUSICAL_TEXT_FONT: {
-            change_chord_style(score);
-        } break;
+        case Sid::MUSICAL_TEXT_FONT: return true;
+        default: return false;
+    }
+}
+
+static void change_style_value(Score *score, Sid idx, const PropertyValue &old_value, const PropertyValue &new_value) {
+    score->style().set(idx, new_value);
+    if (style_value_refreshes_chords(idx)) {
+        change_chord_style(score);
+        return;
+    }
+    switch (idx) {
         case Sid::SPATIUM: score->spatium_changed(old_value.to_double(), new_value.to_double()); break;
         case Sid::DEFAULTS_VERSION: score->style().set_default_style_version(new_value.to_int()); break;
         case Sid::CREATE_MULTI_MEASURE_RESTS:
@@ -123,7 +119,8 @@ static void change_style_value(Score *score, Sid idx, const PropertyValue &old_v
     }
 }
 
-void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium) {
+void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue> values, const SpatiumSources *restore_spatium,
+                                       ChordList *restore_chords) {
     bool changed = false;
     for (const auto &value : values) {
         const auto before = score.style().style_v(value.id);
@@ -136,35 +133,16 @@ void mu::engraving::apply_style_values(Score &score, std::span<const StyleValue>
             continue;
         }
         if (before == value.value) continue;
+        if (restore_chords && style_value_refreshes_chords(value.id)) {
+            score.style().set(value.id, value.value);
+            changed = true;
+            continue;
+        }
         change_style_value(&score, value.id, before, value.value);
         changed = true;
     }
+    if (restore_chords) *score.chord_list() = std::move(*restore_chords);
     if (changed) score.style_changed();
-}
-
-void ChangeStyleValues::flip() {
-    if (!score_) {
-        return;
-    }
-
-    bool style_changed = false;
-    const MStyle &style = score_->style();
-
-    for (auto &pair : values_) {
-        PropertyValue old_value = style.style_v(pair.first);
-        if (old_value == pair.second) {
-            continue;
-        }
-
-        change_style_value(score_, pair.first, old_value, pair.second);
-        pair.second = old_value;
-
-        style_changed = true;
-    }
-
-    if (style_changed) {
-        score_->style_changed();
-    }
 }
 
 //---------------------------------------------------------
@@ -181,7 +159,7 @@ bool EditStyle::load_style(Transaction &tx, Score *score, muse::io::IODevice &de
     bool success = false;
     MStyle st = score->style();
     if (st.read(&dev, ign)) {
-        tx.push(new ChangeStyle(score, st, overlap));
+        tx.replace_style(*score, st, overlap);
         success = true;
     } else {
         LOGE() << "The style data is not compatible with this version of MuseScore Studio.";

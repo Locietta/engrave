@@ -22,6 +22,8 @@
 
 #include "chordlist.h"
 
+#include <stdexcept>
+
 #include "global/containers.h"
 #include "global/io/buffer.h"
 #include "global/io/file.h"
@@ -40,6 +42,54 @@ using namespace muse;
 using namespace muse::io;
 
 namespace mu::engraving {
+namespace {
+RenderActionPtr copy_action(const RenderAction &action) {
+    using Kind = RenderAction::RenderActionType;
+    switch (action.action_type()) {
+        case Kind::SET: return std::make_shared<RenderActionSet>(static_cast<const RenderActionSet &>(action));
+        case Kind::MOVE: return std::make_shared<RenderActionMove>(static_cast<const RenderActionMove &>(action));
+        case Kind::MOVEXHEIGHT: return std::make_shared<RenderActionMoveXHeight>(static_cast<const RenderActionMoveXHeight &>(action));
+        case Kind::PUSH: return std::make_shared<RenderActionPush>(static_cast<const RenderActionPush &>(action));
+        case Kind::POP: return std::make_shared<RenderActionPop>(static_cast<const RenderActionPop &>(action));
+        case Kind::NOTE: return std::make_shared<RenderActionNote>(static_cast<const RenderActionNote &>(action));
+        case Kind::ACCIDENTAL: return std::make_shared<RenderActionAccidental>(static_cast<const RenderActionAccidental &>(action));
+        case Kind::STOPHALIGN: return std::make_shared<RenderActionStopHAlign>(static_cast<const RenderActionStopHAlign &>(action));
+        case Kind::SCALE: return std::make_shared<RenderActionScale>(static_cast<const RenderActionScale &>(action));
+        case Kind::PAREN:
+            if (static_cast<const RenderActionParen &>(action).direction() == DirectionH::LEFT)
+                return std::make_shared<RenderActionParenLeft>();
+            return std::make_shared<RenderActionParenRight>();
+    }
+    throw std::logic_error("unknown chord render action in source snapshot");
+}
+
+void own_actions(std::vector<RenderActionPtr> &actions) {
+    for (auto &action : actions)
+        if (action) action = copy_action(*action);
+}
+} // namespace
+
+ChordList ChordList::owned_copy() const {
+    // Reuse the music-domain representation, including its configuration and
+    // private IDs, but share no render-action objects with the live list.
+    ChordList result = *this;
+    own_actions(result.render_list_root);
+    own_actions(result.render_list_function);
+    own_actions(result.render_list_bass);
+    own_actions(result.render_list_bass_offset);
+    for (auto &token : result.chord_token_list) own_actions(token.render_list);
+    for (auto &entry : result) {
+        auto &description = entry.second;
+        own_actions(description.render_list);
+        own_actions(description.render_list_stacked);
+        for (auto &parsed : description.parsed_chords) {
+            own_actions(parsed.render_list_);
+            for (auto &token : parsed.token_list_) own_actions(token.render_list);
+        }
+    }
+    return result;
+}
+
 //---------------------------------------------------------
 //   HChord
 //---------------------------------------------------------

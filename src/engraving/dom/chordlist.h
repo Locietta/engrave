@@ -330,6 +330,7 @@ struct ChordToken {
 //---------------------------------------------------------
 
 struct ParsedChord {
+    friend struct ChordList;
     ParsedChord() = default;
 
     bool parse(const String &, const ChordList *, bool syntax_only = false, bool prefer_minor = false);
@@ -466,6 +467,7 @@ struct ChordFont {
 struct ChordList : std::map<int, ChordDescription> {
 
 public:
+    ChordList owned_copy() const;
     std::vector<ChordFont> fonts;
     std::vector<RenderActionPtr> render_list_root;
     std::vector<RenderActionPtr> render_list_function;

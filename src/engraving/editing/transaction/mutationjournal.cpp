@@ -25,7 +25,6 @@
 #include <stdexcept>
 
 #include "editing/editproperty.h"
-#include "editing/editstyle.h"
 #include "log.h"
 
 using namespace mu::engraving;
@@ -98,6 +97,7 @@ void JournalBatch::change_style_values(Score &score, std::span<const StyleValue>
     const auto index = entry_index(source_.styles.size());
     const auto value_mark = source_.style_values.size();
     const auto spatium_mark = source_.spatium_sources.size();
+    const auto chord_mark = source_.chord_lists.size();
     try {
         source_.styles.push_back(capture_style_values(score, values, source_));
         entries_.push_back({JournalEntryKind::STYLE_VALUES, index});
@@ -105,9 +105,26 @@ void JournalBatch::change_style_values(Score &score, std::span<const StyleValue>
         source_.styles.resize(index);
         source_.style_values.resize(value_mark);
         source_.spatium_sources.resize(spatium_mark);
+        source_.chord_lists.resize(chord_mark);
         throw;
     }
     apply_style_values(score, values);
+}
+
+void JournalBatch::replace_style(Score &score, const MStyle &style, bool overlap) {
+    const auto index = entry_index(source_.style_replacements.size());
+    const auto spatium_mark = source_.spatium_sources.size();
+    const auto chord_mark = source_.chord_lists.size();
+    try {
+        source_.style_replacements.push_back(capture_style_replacement(score, style, source_));
+        entries_.push_back({JournalEntryKind::STYLE_REPLACEMENT, index});
+    } catch (...) {
+        source_.style_replacements.resize(index);
+        source_.spatium_sources.resize(spatium_mark);
+        source_.chord_lists.resize(chord_mark);
+        throw;
+    }
+    apply_style_replacement(score, style, overlap);
 }
 
 void JournalBatch::cleanup(bool applied) {
@@ -165,6 +182,7 @@ void JournalBatch::unwind(bool clean_up) {
             case JournalEntryKind::LEGACY: legacy_[it->payload]->undo(); break;
             case JournalEntryKind::PROPERTY: restore_property(source_.properties[it->payload], source_); break;
             case JournalEntryKind::STYLE_VALUES: restore_style_values(source_.styles[it->payload], source_); break;
+            case JournalEntryKind::STYLE_REPLACEMENT: restore_style_replacement(source_.style_replacements[it->payload], source_); break;
             case JournalEntryKind::BRACKET_PROPERTY: restore_bracket_property(brackets_[it->payload]); break;
             case JournalEntryKind::TEXT_LINE_PROPERTY: restore_text_line_property(text_lines_[it->payload]); break;
             case JournalEntryKind::TEXT_FORMAT: restore_text_format(text_formats_[it->payload]); break;
@@ -180,6 +198,8 @@ void JournalBatch::unwind(bool clean_up) {
     source_.styles.clear();
     source_.style_values.clear();
     source_.spatium_sources.clear();
+    source_.style_replacements.clear();
+    source_.chord_lists.clear();
     brackets_.clear();
     text_lines_.clear();
     text_formats_.clear();
@@ -192,9 +212,7 @@ bool JournalBatch::structural_since(size_t mark) const {
         if (entry.kind == JournalEntryKind::TEXT_FORMAT) return true;
         if (entry.kind != JournalEntryKind::LEGACY) continue;
         switch (legacy_[entry.payload]->type()) {
-            case CommandType::CHANGE_PROPERTY:
-            case CommandType::CHANGE_STYLE:
-            case CommandType::CHANGE_STYLE_VALUES: break;
+            case CommandType::CHANGE_PROPERTY: break;
             default: return true;
         }
     }
@@ -209,6 +227,16 @@ std::optional<ChangedRange> JournalBatch::changed_range(size_t index) const {
 JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
+        if (entry.kind == JournalEntryKind::STYLE_REPLACEMENT) {
+            const auto &replacement = source_.style_replacements[entry.payload];
+            auto &score = *to_score(&replacement.target.object());
+            for (int i = 0; i < static_cast<int>(Sid::STYLES); ++i) {
+                const auto id = static_cast<Sid>(i);
+                if (score.style().style_v(id) != replacement.before.style_v(id)) result.changed_style_id_set.insert(id);
+            }
+            collect_object(result, &score, CommandType::CHANGE_STYLE);
+            continue;
+        }
         if (entry.kind == JournalEntryKind::TEXT_FORMAT) {
             collect_object(result, &text_formats_[entry.payload].target.object(), CommandType::TEXT_EDIT);
             continue;
@@ -239,12 +267,6 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
         const auto type = command->type();
         if (type == CommandType::CHANGE_PROPERTY) {
             result.changed_property_id_set.insert(static_cast<const ChangeProperty *>(command)->get_id());
-        } else if (type == CommandType::CHANGE_STYLE_VALUES) {
-            for (const auto &pair : static_cast<const ChangeStyleValues *>(command)->values())
-                result.changed_style_id_set.insert(pair.first);
-        } else if (type == CommandType::CHANGE_STYLE) {
-            const auto ids = static_cast<const ChangeStyle *>(command)->changed_ids();
-            result.changed_style_id_set.insert(ids.begin(), ids.end());
         }
         for (auto *object : command->object_items()) collect_object(result, object, type);
     }
