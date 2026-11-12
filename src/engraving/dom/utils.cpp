@@ -1336,7 +1336,7 @@ std::vector<Measure *> find_following_repeat_measures(const Measure *measure, bo
     const MasterScore *master = measure->master_score();
     const Score *score = measure->score();
 
-    const Measure *master_measure = use_mm_rests ? master->tick2measure_mm(measure->tick()) : master->tick2measure(measure->tick());
+    const Measure *master_measure = master->tick2measure(measure->end_tick() - Fraction::eps());
 
     const RepeatList &repeat_list = master->repeat_list(true);
 
@@ -1369,7 +1369,7 @@ std::vector<Measure *> find_previous_repeat_measures(const Measure *measure) {
     const MasterScore *master = measure->master_score();
     const Score *score = measure->score();
 
-    const Measure *master_measure = master->tick2measure_mm(measure->tick());
+    const Measure *master_measure = master->tick2measure(measure->tick());
 
     const RepeatList &repeat_list = master->repeat_list(true);
 
@@ -1433,13 +1433,6 @@ bool segments_are_adjacent(const Segment *first_seg, const Segment *second_seg) 
 
     const Measure *first_master_measure = master->tick2measure(first_measure->tick());
     const Measure *second_master_measure = master->tick2measure(second_measure->tick());
-
-    if (first_master_measure) {
-        first_master_measure = first_master_measure->covering_mm_rest_or_this();
-    }
-    if (second_master_measure) {
-        second_master_measure = second_master_measure->covering_mm_rest_or_this();
-    }
 
     IF_ASSERT_FAILED(first_master_measure && second_master_measure) { return false; }
 

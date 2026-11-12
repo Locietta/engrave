@@ -330,6 +330,14 @@ static void invalidate_source_scores(MasterScore &master, const Fraction &start,
     }
 }
 
+void MasterScore::add_layout_flags(LayoutFlags val) {
+    cmd_state_.layout_flags |= val;
+    if (val & LayoutFlag::REBUILD_MIDI_MAPPING) {
+        normalize_state.rebuild_midi_mapping = true;
+        invalidate_normalization(*this, Fraction(0, 1), Fraction(-1, 1));
+    }
+}
+
 void MasterScore::set_layout_all(staff_idx_t staff, const EngravingItem *e) {
     invalidate_source_scores(*this, Fraction(0, 1), Fraction(-1, 1));
     invalidate_layouts(Fraction(0, 1), Fraction(-1, 1));

@@ -151,7 +151,7 @@ public:
 
     const CmdState &cmd_state() const override { return cmd_state_; }
 
-    void add_layout_flags(LayoutFlags val) override { cmd_state_.layout_flags |= val; }
+    void add_layout_flags(LayoutFlags val) override;
 
     void set_instruments_changed(bool val) override { cmd_state_.instruments_changed = val; }
 
