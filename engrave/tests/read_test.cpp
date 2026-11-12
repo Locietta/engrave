@@ -263,6 +263,7 @@ TEST(Read, NormalizePersistsMidiRequestsAcrossCommandStateReset) {
     ASSERT_TRUE(document);
     auto &master = master_of(*document);
     ASSERT_FALSE(master.midi_mapping().empty());
+    master.set_playback_score(nullptr);
     master.midi_mapping().clear();
     master.add_layout_flags(LayoutFlag::REBUILD_MIDI_MAPPING);
     master.cmd_state().reset();
@@ -311,6 +312,9 @@ TEST(Read, MutationBoundariesPublishNormalizedSourceAndAccidentalIds) {
     const auto accidental = engrave::from_engine(note->accidental()->eid());
     EXPECT_NE(std::ranges::find(result->created, accidental), result->created.end());
     EXPECT_FALSE(master.normalize_state.dirty);
+    ASSERT_TRUE(native->edit({{engrave::GenerateExcerpts{}}}));
+    EXPECT_GT(master.score_list().size(), 1u);
+    for (auto *score : master.score_list()) EXPECT_FALSE(score->normalize_state.dirty);
 }
 
 TEST(Read, InactiveSemanticBarrierPlumbingRefreshesDependentTargetsWhenOptedIn) {
