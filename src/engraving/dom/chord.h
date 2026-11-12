@@ -306,11 +306,10 @@ public:
 
     const std::vector<Chord *> &grace_notes() const { return grace_notes_; }
 
-    std::vector<Chord *> &grace_notes() { return grace_notes_; }
-
     std::vector<Chord *> all_grace_chords_of_main_chord();
 
-    void remove_all_grace_notes() { grace_notes_.clear(); }
+    void remove_all_grace_notes();
+    void invalidate_grace_notes_layout();
 
     GraceNotesView grace_notes_before(bool filter_unplayable = false) const;
     GraceNotesView grace_notes_after(bool filter_unplayable = false) const;

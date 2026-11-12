@@ -71,6 +71,7 @@
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/editing/addremoveelement.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "engraving/rendering/score/systemlayout.h"
@@ -234,6 +235,94 @@ TEST(Read, MeasureRepeatCopiesPreserveZWhenConvertedToRest) {
             EXPECT_NE(serialized.find("<z>" + std::to_string(expected) + "</z>"), std::string::npos);
         }
     }
+}
+
+TEST(Read, GraceLayoutInvalidatesOnRemoveUndoRetypeAndClear) {
+    for (const auto type : {mu::engraving::NoteType::ACCIACCATURA, mu::engraving::NoteType::GRACE8_AFTER}) {
+        auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+        ASSERT_TRUE(document);
+        auto &master = master_of(*document);
+        auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+        auto *chord = mu::engraving::to_chord(segment->element(mu::engraving::voices));
+        auto *grace = mu::engraving::Factory::copy_chord(*chord);
+        grace->set_note_type(type);
+        grace->set_duration_type(mu::engraving::DurationType::V_EIGHTH);
+        grace->set_ticks(mu::engraving::Fraction(1, 8));
+        chord->add(grace);
+        master.do_layout();
+        const auto empty_groups = [&] {
+            EXPECT_TRUE(chord->grace_notes_before_group().empty());
+            EXPECT_TRUE(chord->grace_notes_after_group().empty());
+        };
+        const auto populate = [&] {
+            chord->update_grace_notes_before_group();
+            chord->update_grace_notes_after_group();
+            EXPECT_EQ(chord->grace_notes_before_group().size() + chord->grace_notes_after_group().size(), 1u);
+        };
+        populate();
+        mu::engraving::RemoveElement removal(grace);
+        removal.redo();
+        empty_groups();
+        removal.undo();
+        populate();
+        removal.redo();
+        empty_groups();
+        removal.undo();
+        populate();
+        grace->set_note_type(type == mu::engraving::NoteType::ACCIACCATURA ? mu::engraving::NoteType::GRACE8_AFTER :
+                                                                             mu::engraving::NoteType::ACCIACCATURA);
+        empty_groups();
+        populate();
+        chord->remove_all_grace_notes();
+        std::unique_ptr<mu::engraving::Chord> removed(grace);
+        empty_groups();
+        removed.reset();
+        master.parts()[1]->set_show(false);
+        master.do_layout();
+        EXPECT_FALSE(master.first_measure()->system()->staff(1)->show());
+        empty_groups();
+        for (auto &entry : master.first_measure()->segments()) {
+            EXPECT_EQ(entry.pre_appended_item(chord->track()), nullptr);
+        }
+    }
+}
+
+TEST(Read, GraceRemovalInvalidatesMergedGroupsAndAttachments) {
+    auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *segment = master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST);
+    auto *chord = mu::engraving::to_chord(segment->element(mu::engraving::voices));
+    auto *other = mu::engraving::to_chord(segment->element(0));
+    auto *grace = mu::engraving::Factory::copy_chord(*chord);
+    grace->set_note_type(mu::engraving::NoteType::ACCIACCATURA);
+    grace->set_duration_type(mu::engraving::DurationType::V_EIGHTH);
+    grace->set_ticks(mu::engraving::Fraction(1, 8));
+    chord->add(grace);
+    master.do_layout();
+    // Model the layout representation that combines adjacent chords' grace notes.
+    auto &merged = other->update_grace_notes_after_group();
+    merged.push_back(grace);
+    merged.set_appended_segment(segment);
+    segment->pre_append(&merged, 0);
+    segment->remove(chord);
+    EXPECT_TRUE(merged.empty());
+    EXPECT_EQ(segment->pre_appended_item(0), nullptr);
+    segment->add(chord);
+    chord->update_grace_notes_before_group();
+    merged.push_back(grace);
+    merged.set_appended_segment(segment);
+    segment->pre_append(&merged, 0);
+    chord->remove(grace);
+    std::unique_ptr<mu::engraving::Chord> removed(grace);
+    EXPECT_TRUE(merged.empty());
+    EXPECT_EQ(merged.appended_segment(), nullptr);
+    EXPECT_EQ(segment->pre_appended_item(0), nullptr);
+    EXPECT_TRUE(chord->grace_notes_before_group().empty());
+    removed.reset();
+    master.parts()[1]->set_show(false);
+    master.do_layout();
+    EXPECT_TRUE(merged.empty());
 }
 
 TEST(Read, GraceNoteQueryResultsAreIndependent) {
