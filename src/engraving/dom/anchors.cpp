@@ -110,7 +110,8 @@ void EditTimeTickAnchors::update_anchors(Measure *measure, staff_idx_t staff_idx
     update_layout(measure);
 }
 
-TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx) {
+TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx,
+                                                             bool use_mm_rests) {
     TimeTickAnchor *return_anchor = nullptr;
 
     Staff *staff = measure->score()->staff(staff_idx);
@@ -120,7 +121,9 @@ TimeTickAnchor *EditTimeTickAnchors::create_time_tick_anchor(Measure *measure, F
         IF_ASSERT_FAILED(linked_obj) { continue; }
 
         Staff *linked_staff = to_staff(linked_obj);
-        Measure *linked_measure = linked_obj == staff ? measure : linked_staff->score()->tick2measure_mm(measure->tick());
+        Measure *linked_measure = linked_obj == staff ? measure :
+                                                        (use_mm_rests ? linked_staff->score()->tick2measure_mm(measure->tick()) :
+                                                                        linked_staff->score()->tick2measure(measure->tick()));
         if (!linked_measure) {
             continue;
         }

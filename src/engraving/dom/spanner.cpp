@@ -931,7 +931,7 @@ ChordRest *Spanner::find_start_cr() const {
 
 ChordRest *Spanner::find_end_cr() const {
     assert(anchor() == Anchor::SEGMENT || anchor() == Anchor::CHORDREST);
-    Segment *s = score()->tick2segment_mm(tick2(), false, SegmentType::CHORD_REST);
+    Segment *s = score()->tick2segment(tick2(), false, SegmentType::CHORD_REST, !score()->normalize_state.running);
     const track_idx_t tr2 = effective_track2();
     ChordRest *end_cr = s ? to_chord_rest(s->element(tr2)) : nullptr;
     return end_cr;
@@ -944,7 +944,9 @@ ChordRest *Spanner::find_end_cr() const {
 Segment *Spanner::start_segment() const {
     assert(score() != nullptr);
 
-    bool mm_rest = style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
+    // Normalization resolves real source anchors without preparing their geometry.
+    const bool source_only = score()->normalize_state.running;
+    bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction start_tick = tick();
     track_idx_t track_idx = track();
     staff_idx_t staff_idx = track2staff(track_idx);
@@ -959,9 +961,9 @@ Segment *Spanner::start_segment() const {
         Measure *measure = mm_rest ? score()->tick2measure_mm(start_tick) : score()->tick2measure(start_tick);
         if (measure) {
             TimeTickAnchor *anchor =
-                EditTimeTickAnchors::create_time_tick_anchor(measure, start_tick - measure->tick(), track2staff(track_idx));
+                EditTimeTickAnchors::create_time_tick_anchor(measure, start_tick - measure->tick(), track2staff(track_idx), !source_only);
             IF_ASSERT_FAILED(anchor) { return nullptr; }
-            EditTimeTickAnchors::update_layout(measure);
+            if (!source_only) EditTimeTickAnchors::update_layout(measure);
             return anchor->segment();
         }
     }
@@ -980,7 +982,9 @@ Segment *Spanner::start_segment() const {
 Segment *Spanner::end_segment() const {
     assert(score() != nullptr);
 
-    bool mm_rest = style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
+    // Normalization resolves real source anchors without preparing their geometry.
+    const bool source_only = score()->normalize_state.running;
+    bool mm_rest = !source_only && style().style_b(Sid::CREATE_MULTI_MEASURE_RESTS);
     Fraction end_tick = tick2();
     track_idx_t track_idx = effective_track2();
     staff_idx_t staff_idx = track2staff(track_idx);
@@ -995,8 +999,8 @@ Segment *Spanner::end_segment() const {
         Measure *measure = mm_rest ? score()->tick2measure_mm(end_tick) : score()->tick2measure(end_tick);
         if (measure) {
             TimeTickAnchor *anchor =
-                EditTimeTickAnchors::create_time_tick_anchor(measure, end_tick - measure->tick(), track2staff(track_idx));
-            EditTimeTickAnchors::update_layout(measure);
+                EditTimeTickAnchors::create_time_tick_anchor(measure, end_tick - measure->tick(), track2staff(track_idx), !source_only);
+            if (!source_only) EditTimeTickAnchors::update_layout(measure);
             return anchor->segment();
         }
     }

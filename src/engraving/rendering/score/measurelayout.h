@@ -92,8 +92,6 @@ private:
 
     static void move_to_next_measure(LayoutContext &ctx);
 
-    static void check_staff_move_validity(Measure *measure, const LayoutContext &ctx);
-
     static void set_clef_seg_visibility(Measure *m, bool is_last_measure_in_system, LayoutContext &ctx);
 
     static void set_courtesy_time_sig(Measure *m, const Fraction &ref_sig_tick, const Fraction &courtesy_sig_tick,

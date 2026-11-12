@@ -59,6 +59,7 @@
 #include "log.h"
 #include "mmrestlayout.h"
 #include "modifydom.h"
+#include "normalization/normalize.h"
 #include "parenthesislayout.h"
 #include "restlayout.h"
 #include "segmentlayout.h"
@@ -154,24 +155,6 @@ void MeasureLayout::move_to_next_measure(LayoutContext &ctx) {
     }
 }
 
-void MeasureLayout::check_staff_move_validity(Measure *measure, const LayoutContext &ctx) {
-    for (const Segment &segment : measure->segments()) {
-        if (!segment.is_just_type(SegmentType::CHORD_REST)) {
-            continue;
-        }
-
-        for (track_idx_t t = 0; t < ctx.dom().nstaves() * ::mu::engraving::voices; ++t) {
-            ChordRest *cr = to_chord_rest(segment.element(t));
-            if (cr) {
-                // Check if requested cross-staff is possible
-                if (cr->staff_move() || cr->stored_staff_move()) {
-                    cr->check_staff_move_validity();
-                }
-            }
-        }
-    }
-}
-
 void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) {
     if (!current_mb || !current_mb->is_measure()) {
         return;
@@ -193,22 +176,14 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
 
     measure->mutldata()->set_need_layout(false);
 
-    // Check if requested cross-staff is possible
-    // This must happen before cmdUpdateNotes
-    check_staff_move_validity(measure, ctx);
-
-    // ---- Modify DOM ----
-    ModifyDom::set_cross_measure(measure, ctx);
-    ModifyDom::connect_tremolo(measure);
-    ModifyDom::cmd_update_notes(measure, ctx.dom());
+    // Semantic repairs have run at the score layout boundary.
     for (const Segment &segment : measure->segments()) {
         for (EngravingItem *item : segment.elist()) {
             if (item && item->is_chord() && item->staff()->show()) ChordLayout::layout_note_lines(to_chord(item));
         }
     }
     ModifyDom::create_stems(measure, ctx);
-    ModifyDom::set_track_for_chord_grace_notes(measure, ctx.dom());
-    ModifyDom::sort_measure_segments(measure, ctx);
+    if (measure->is_mm_rest()) ModifyDom::sort_measure_segments(measure, ctx);
     // --------------------
     //
     // calculate accidentals and note lines,
@@ -432,20 +407,7 @@ void MeasureLayout::update_ticks_meas_numbers_and_mm_rests(MeasureBase *current_
 //   adjustMeasureNumber
 //---------------------------------------------------------
 
-int MeasureLayout::adjust_measure_number(Measure *m, int measure_number) {
-    measure_number += m->measure_number_offset();
-    m->set_measure_number(measure_number);
-    if (!m->exclude_from_numbering()) {
-        ++measure_number;
-    }
-
-    const LayoutBreak *layout_break = m->section_break_element();
-    if (layout_break && layout_break->start_with_measure_one()) {
-        measure_number = 0;
-    }
-
-    return measure_number;
-}
+int MeasureLayout::adjust_measure_number(Measure *m, int measure_number) { return normalize_measure_number(*m, measure_number); }
 
 /****************************************************************
  * computePreSpacingItems

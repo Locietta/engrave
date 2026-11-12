@@ -72,9 +72,6 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
         // this is the first call to layoutSystem,
         // processing the first line segment
         //
-        if (item->track2() == muse::nidx) {
-            item->set_track2(item->track());
-        }
         if (item->start_cr() == 0 || item->start_cr()->measure() == 0) {
             LOGD("Slur::layout(): track %zu-%zu  %p - %p tick %d-%d null start anchor", item->track(), item->track2(), item->start_cr(),
                  item->end_cr(), item->tick().ticks(), item->tick2().ticks());
@@ -85,10 +82,6 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
             !item->is_tapping_half_slur()) {
             LOGD("Slur::layout(): track %zu tick %d zero-length slur, skipping", item->track(), item->tick().ticks());
             return slur_segment;
-        }
-        if (item->end_cr() == 0) { // sanity check
-            item->set_end_element(item->start_cr());
-            item->set_tick2(item->tick());
         }
         compute_up(item, ctx);
         sst = item->tick2() < etick ? SpannerSegmentType::SINGLE : SpannerSegmentType::BEGIN;
@@ -1569,7 +1562,6 @@ TieSegment *SlurTieLayout::layout_tie_for(Tie *item, System *system) {
     segment->mutldata()->all_jump_points_inactive = item->all_jump_points_inactive();
 
     const Chord *start_chord = item->start_note()->chord();
-    item->set_tick(start_chord->tick()); // Why is this here?? (M.S.)
 
     if (segment->autoplace() && !segment->is_edited()) {
         adjust_x(segment, s_pos, Grip::START);
