@@ -23,7 +23,6 @@
 #include "lyrics.h"
 
 #include "../editing/navigation.h"
-#include "../editing/textedit.h"
 #include "log.h"
 #include "measure.h"
 #include "score.h"

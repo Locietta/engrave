@@ -43,8 +43,6 @@ public:
     void cleanup(bool) override;
     const char *name() const override;
 
-    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
-
     std::vector<EngravingObject *> object_items() const override;
 
     UNDO_TYPE(CommandType::ADD_ELEMENT)
@@ -61,8 +59,6 @@ public:
     void redo() override;
     void cleanup(bool) override;
     const char *name() const override;
-
-    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
 
     std::vector<EngravingObject *> object_items() const override;
 
@@ -159,7 +155,5 @@ public:
 
     UNDO_TYPE(CommandType::LINK)
     UNDO_NAME("Link")
-
-    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override;
 };
 } // namespace mu::engraving

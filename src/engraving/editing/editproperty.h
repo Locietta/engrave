@@ -54,10 +54,6 @@ public:
     UNDO_NAME("ChangeProperty")
 
     std::vector<EngravingObject *> object_items() const override;
-
-    bool matches_filter(UndoableCommandFilter f, const EngravingItem *target) const override {
-        return f == UndoableCommandFilter::CHANGE_PROPERTY_LINKED && muse::contains(target->link_list(), element);
-    }
 };
 
 } // namespace mu::engraving

@@ -724,6 +724,71 @@ TEST(JournalDerived, TextLineSystemRollbackRestoresStyledOverrides) {
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
 }
 
+TEST(JournalTextFormat, ApiFormattingUsesOwnedPayloads) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto id = find_id(*document, "Text");
+    auto &text = *to_text_base(&engrave::harness::element(*document, id));
+    text.set_xml_text("<b>authored</b> text <sym>accidentalSharp</sym>");
+    bool observed = false;
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+        observed = true;
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_EQ(batch.text_format_entries(), 4u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+    };
+    ASSERT_TRUE(document->edit({{SetProperty{id, "FONT_SIZE", 14.25}, SetProperty{id, "family", std::string("DejaVu Sans")},
+                                 SetProperty{id, "fontStyle", std::int64_t(1)}, SetProperty{id, "TEXT_SCRIPT_ALIGN", std::int64_t(1)}}}));
+    EXPECT_TRUE(observed);
+    EXPECT_DOUBLE_EQ(text.get_property(Pid::FONT_SIZE).to_double(), 14.25);
+    EXPECT_EQ(text.get_property(Pid::FONT_FACE).value<muse::String>(), muse::String(u"DejaVu Sans"));
+    EXPECT_TRUE(text.xml_text().contains(u"<sym>accidentalSharp</sym>"));
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+TEST(JournalTextFormat, RejectionRestoresMarkupBaseFormatFlagsAndSelection) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto id = find_id(*document, "Text");
+    auto &text = *to_text_base(&engrave::harness::element(*document, id));
+    text.set_xml_text("<b>authored</b> text <sym>accidentalSharp</sym>");
+    auto &cursor = *text.cursor();
+    cursor.format()->set_font_family(muse::String(u"journal base font"));
+    cursor.format()->set_font_size(18.25);
+    cursor.format()->set_style(FontStyle::ITALIC);
+    cursor.set_row(0);
+    cursor.set_column(2);
+    cursor.set_select_line(0);
+    cursor.set_select_column(1);
+    const auto format = *cursor.format();
+    const auto markup = text.xml_text();
+    constexpr std::array ids{Pid::FONT_SIZE, Pid::FONT_FACE, Pid::FONT_STYLE, Pid::TEXT_SCRIPT_ALIGN};
+    std::array<PropertyFlags, ids.size()> flags;
+    for (size_t i = 0; i < ids.size(); ++i) flags[i] = text.property_flags(ids[i]);
+    const auto revision = document->revision();
+    engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [&] {
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->text_format_entries(), 4u);
+        EXPECT_EQ(master.mutation_journal()->active_transaction()->legacy_entries(), 0u);
+        throw std::runtime_error("reject source formatting");
+    };
+    EXPECT_FALSE(document->edit({{SetProperty{id, "FONT_SIZE", 14.25}, SetProperty{id, "family", std::string("DejaVu Sans")},
+                                  SetProperty{id, "fontStyle", std::int64_t(1)}, SetProperty{id, "TEXT_SCRIPT_ALIGN", std::int64_t(1)}}}));
+    EXPECT_EQ(text.xml_text(), markup);
+    EXPECT_EQ(*cursor.format(), format);
+    EXPECT_EQ(cursor.row(), 0u);
+    EXPECT_EQ(cursor.column(), 2u);
+    EXPECT_EQ(cursor.select_line(), 0u);
+    EXPECT_EQ(cursor.select_column(), 1u);
+    for (size_t i = 0; i < ids.size(); ++i) EXPECT_EQ(text.property_flags(ids[i]), flags[i]);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
 TEST(JournalValues, PlainPropertiesTextAndStylesUseOwnedPayloads) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
