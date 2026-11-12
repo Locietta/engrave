@@ -1215,12 +1215,6 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
     }
 
     for (Chord *chord : elements_to_layout.chords) {
-        if (!chord->grace_notes().empty()) {
-            GraceNotesGroup &grace_before = ctx.update_grace_group(chord, false);
-            GraceNotesGroup &grace_after = ctx.update_grace_group(chord, true);
-            TLayout::layout_grace_notes_group2(&grace_before, grace_before.mutldata());
-            TLayout::layout_grace_notes_group2(&grace_after, grace_after.mutldata());
-        }
         if (TabDurationSymbol *symbol = chord->tab_dur()) {
             TLayout::layout_tab_duration_symbol2(symbol, symbol->mutldata());
             ChordLayout::fill_shape(chord, chord->mutldata());
@@ -1229,6 +1223,18 @@ void SystemLayout::layout_system_elements(System *system, LayoutContext &ctx) {
 
     for (ChordRest *cr : elements_to_layout.chord_rests) {
         BeamLayout::layout_non_cross_beams(cr, ctx);
+    }
+
+    // Beam layout changes grace stem lengths after horizontal spacing. Refresh
+    // the chord/group shapes before skyline collection, including on first layout.
+    for (Chord *chord : elements_to_layout.chords) {
+        for (Chord *grace : chord->grace_notes()) ChordLayout::fill_shape(grace, grace->mutldata(), ctx.conf());
+        if (!chord->grace_notes().empty()) {
+            GraceNotesGroup &grace_before = ctx.update_grace_group(chord, false);
+            GraceNotesGroup &grace_after = ctx.update_grace_group(chord, true);
+            TLayout::layout_grace_notes_group2(&grace_before, grace_before.mutldata());
+            TLayout::layout_grace_notes_group2(&grace_after, grace_after.mutldata());
+        }
     }
 
     RestLayout::align_rests(elements_to_layout.system, ctx);
