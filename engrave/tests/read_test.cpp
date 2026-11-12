@@ -1290,7 +1290,7 @@ TEST(Read, LegacyMmrMarkersRestoreTheCorrectSourceEndpoint) {
     }
 }
 
-TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAcrossUndoAndRedo) {
+TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAndSurvivesFailedBatch) {
     using namespace mu::engraving;
     auto opened = g_engine->open(as_bytes(mmr_source()), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
@@ -1307,11 +1307,31 @@ TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAcrossUndoAndRedo) {
     normalize_document(master);
     master.init_automation();
     engrave::assign_missing_ids(master);
-    engrave::DocumentAccess::edit_hooks(document).keep_history = true;
     ASSERT_TRUE(document.page_count());
     ASSERT_NE(master.layout_copy(*breath), nullptr);
     const auto id = engrave::from_engine(breath->eid());
     const auto ref = engrave::Ref{engrave::from_engine(owner->eid())};
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    auto &hooks = engrave::DocumentAccess::edit_hooks(document);
+    hooks.policy = engrave::api::Policy::TRANSACTION;
+    bool detached = false;
+    hooks.before_step = [&](std::size_t step) {
+        if (step != 1) return;
+        detached = master.first_measure() == last;
+        EXPECT_EQ(master.layout_copy(*breath), nullptr);
+        throw std::runtime_error("reject removal of MMR owner");
+    };
+    const auto failed = document.edit({{engrave::RemoveMeasures{ref, ref}, engrave::SetProperty{id, "visible", true}}});
+    hooks = {};
+    EXPECT_FALSE(failed);
+    EXPECT_TRUE(detached);
+    ASSERT_EQ(engrave::DocumentAccess::master_score(document), &master);
+    EXPECT_EQ(master.first_measure(), owner);
+    EXPECT_EQ(master.layout_copy(*breath), nullptr);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
+    ASSERT_TRUE(document.page_count());
+    ASSERT_NE(master.layout_copy(*breath), nullptr);
+    EXPECT_EQ(master.layout_copy(*breath)->find_measure(), owner->mm_rest());
     ASSERT_TRUE(document.edit({{engrave::RemoveMeasures{ref, ref}}}));
     EXPECT_EQ(master.layout_copy(*breath), nullptr);
     auto check_geometry = [&] {
@@ -1326,15 +1346,6 @@ TEST(Read, RemovingMmrOwnerDropsDisplayMappingsAcrossUndoAndRedo) {
         EXPECT_EQ(master.layout_copy(*breath), nullptr);
         EXPECT_TRUE(document.export_score({.format = engrave::Format::MUSIC_XML}));
     };
-    check_geometry();
-    master.transaction_manager()->undo_redo(true, nullptr);
-    EXPECT_EQ(master.first_measure(), owner);
-    EXPECT_EQ(master.layout_copy(*breath), nullptr);
-    ASSERT_TRUE(document.page_count());
-    ASSERT_NE(master.layout_copy(*breath), nullptr);
-    EXPECT_EQ(master.layout_copy(*breath)->find_measure(), owner->mm_rest());
-    master.transaction_manager()->undo_redo(false, nullptr);
-    EXPECT_EQ(master.layout_copy(*breath), nullptr);
     check_geometry();
 }
 

@@ -731,7 +731,7 @@ void MeasureBaseList::add(MeasureBase *m) {
 //   remove
 //---------------------------------------------------------
 
-// Detached measures remain alive in undo history. Their display overlays are no
+// Detached measures can remain alive for rollback. Their display overlays are no
 // longer geometry for source items that survived elsewhere in the score.
 static void clear_measure_layout_copies(MeasureBase *base) {
     if (base->is_measure()) {
