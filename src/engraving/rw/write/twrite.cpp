@@ -277,17 +277,8 @@ void TWrite::write_items(const ElementList &items, XmlWriter &xml, WriteContext 
 //    - other properties are written if forced or if different from default value
 //-----------------------------------------------------------------------------
 
-void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, bool force) {
-    if (item->is_styled(pid)) {
-        return;
-    }
-    PropertyValue p = item->get_property(pid);
-    if (!p.is_valid()) {
-        LOGD("%s invalid property %d <%s>", item->type_name(), int(pid), property_name(pid));
-        return;
-    }
-    PropertyValue d = force ? PropertyValue() : item->property_default(pid);
-
+namespace {
+void write_property_value(XmlWriter &xml, Pid pid, PropertyValue p, PropertyValue d, double spatium, double point_unit) {
     if (pid == Pid::FONT_STYLE) {
         FontStyle ds = FontStyle(d.is_valid() ? d.to_int() : 0);
         FontStyle fs = FontStyle(p.to_int());
@@ -312,7 +303,7 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
         if (d.is_valid() && std::abs(f1 - d.to_real()) < 0.0001) { // fuzzy compare
             return;
         }
-        p = PropertyValue(Spatium::from_absolute(f1, item->spatium()));
+        p = PropertyValue(Spatium::from_absolute(f1, spatium));
         d = PropertyValue();
     } else if (PType::POINT == type) {
         PointF p1 = p.value<PointF>();
@@ -322,11 +313,110 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
                 return;
             }
         }
-        double q = item->offset_is_spatium_dependent() ? item->style().spatium() : ::mu::engraving::dpmm;
+        double q = point_unit;
         p = PropertyValue(p1 / q);
         d = PropertyValue();
     }
     xml.tag_property(pid, p, d);
+}
+
+void write_authored_property(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, Pid pid) {
+    const auto *table = authored_override_table(owner);
+    const auto *entry = table ? table->find(child, pid) : nullptr;
+    if (!entry || entry->flags == PropertyFlags::STYLED || !entry->value.is_valid()) return;
+    PropertyValue value = entry->value;
+    PropertyValue d = entry->default_value;
+    const double unit = entry->unit == AuthoredOverrideUnit::SPATIUM    ? owner->style().spatium() :
+                        entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm :
+                                                                          1.0;
+    if (entry->unit != AuthoredOverrideUnit::NATIVE) {
+        if (property_type(pid) == PType::POINT) {
+            value = value.value<PointF>() * unit;
+            if (d.is_valid()) d = d.value<PointF>() * unit;
+        } else {
+            value = value.to_double() * unit;
+            if (d.is_valid()) d = d.to_double() * unit;
+        }
+    }
+    if (entry->style != Sid::NOSTYLE) d = owner->style().style_v(entry->style);
+    // Presence is authored, including explicit zero/default values.
+    d = PropertyValue();
+    const double point_unit = entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : owner->style().spatium();
+    write_property_value(xml, pid, value, d, owner->spatium(), point_unit);
+}
+
+bool common_authored_property(Pid pid) {
+    switch (pid) {
+        case Pid::AUTOPLACE:
+        case Pid::COLOR:
+        case Pid::VISIBLE:
+        case Pid::Z:
+        case Pid::OFFSET:
+        case Pid::PLACEMENT:
+        case Pid::POSITION_LINKED_TO_MASTER:
+        case Pid::APPEARANCE_LINKED_TO_MASTER: return true;
+        default: return false;
+    }
+}
+
+void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, WriteContext &ctx) {
+    const auto &table = *authored_override_table(owner);
+    if (const auto *carrier = table.carrier(child)) {
+        if (carrier->legacy_eid.is_valid()) xml.tag("eid", carrier->legacy_eid.to_std_string());
+    }
+    write_authored_property(owner, child, xml, Pid::AUTOPLACE);
+    if (const auto *carrier = table.carrier(child)) {
+        if (carrier->linked_to.is_valid() && !ctx.clipboardmode()) xml.tag("linkedTo", carrier->linked_to.to_std_string());
+        const auto track = carrier->track == muse::nidx ? owner->track() : carrier->track;
+        if (track != ctx.cur_track() && track != muse::nidx) xml.tag("track", static_cast<int>(track) + ctx.track_diff());
+    }
+    for (auto pid :
+         {Pid::COLOR, Pid::VISIBLE, Pid::Z, Pid::OFFSET, Pid::PLACEMENT, Pid::POSITION_LINKED_TO_MASTER, Pid::APPEARANCE_LINKED_TO_MASTER})
+        write_authored_property(owner, child, xml, pid);
+}
+
+void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, const char *tag, XmlWriter &xml, WriteContext &ctx) {
+    xml.start_element(tag);
+    const auto &table = *authored_override_table(owner);
+    if (child.role == AuthoredChildRole::HOOK) {
+        if (const auto *entry = table.find(child, Pid::SYMBOL)) xml.tag("name", SymNames::name_for_sym_id(entry->value.value<SymId>()));
+        if (const auto *entry = table.find(child, Pid::SCORE_FONT)) xml.tag("font", entry->value.value<String>());
+    }
+    if (child.role == AuthoredChildRole::HOOK) {
+        if (const auto *hook = static_cast<const Chord *>(owner)->hook()) {
+            for (const auto *leaf : hook->leafs()) TWrite::write_item(leaf, xml, ctx);
+        }
+    }
+    write_authored_common(owner, child, xml, ctx);
+    if (child.role == AuthoredChildRole::STEM) {
+        const auto length = static_cast<const Chord *>(owner)->stem_user_length();
+        if (!length.is_zero()) xml.tag("userLen", length.val());
+        write_authored_property(owner, child, xml, Pid::LINE_WIDTH);
+    }
+    for (const auto &entry : table.entries) {
+        if (entry.child != child || common_authored_property(entry.pid) ||
+            (child.role == AuthoredChildRole::STEM && entry.pid == Pid::LINE_WIDTH) ||
+            (child.role == AuthoredChildRole::HOOK && (entry.pid == Pid::SYMBOL || entry.pid == Pid::SCORE_FONT)))
+            continue;
+        write_authored_property(owner, child, xml, entry.pid);
+    }
+    xml.end_element();
+}
+} // namespace
+
+void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, bool force) {
+    if (item->is_styled(pid)) {
+        return;
+    }
+    PropertyValue p = item->get_property(pid);
+    if (!p.is_valid()) {
+        LOGD("%s invalid property %d <%s>", item->type_name(), int(pid), property_name(pid));
+        return;
+    }
+    PropertyValue d = force ? PropertyValue() : item->property_default(pid);
+
+    write_property_value(xml, pid, p, d, item->spatium(),
+                         item->offset_is_spatium_dependent() ? item->style().spatium() : ::mu::engraving::dpmm);
 }
 
 void TWrite::write_page_locks(const Score *score, XmlWriter &xml) {
@@ -921,22 +1011,25 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
         default: break;
     }
 
+    const auto &overrides = item->authored_overrides;
     if (item->no_stem()) {
         xml.tag("noStem", item->no_stem());
-    } else if (item->stem() && (item->stem()->is_user_modified() || !item->stem()->user_length().is_zero())) {
+    } else if (overrides.has_entries({AuthoredChildRole::STEM}) || !item->stem_user_length().is_zero()) {
+        write_authored_child(item, {AuthoredChildRole::STEM}, "Stem", xml, ctx);
+    } else if (item->stem() && item->stem()->is_user_modified()) {
         write(item->stem(), xml, ctx);
-    } else if (!item->stem() && !item->stem_user_length().is_zero()) {
-        xml.start_element("Stem");
-        xml.tag("userLen", item->stem_user_length().val());
-        xml.end_element();
     }
-    if (item->hook() && item->hook()->is_user_modified()) {
+    if (overrides.has_entries({AuthoredChildRole::HOOK})) {
+        write_authored_child(item, {AuthoredChildRole::HOOK}, "Hook", xml, ctx);
+    } else if (item->hook() && item->hook()->is_user_modified()) {
         write(item->hook(), xml, ctx);
     }
     if (item->show_stem_slash() != item->property_default(Pid::SHOW_STEM_SLASH).to_bool()) {
         xml.tag("showStemSlash", item->show_stem_slash());
     }
-    if (item->stem_slash() && item->stem_slash()->is_user_modified()) {
+    if (overrides.has_entries({AuthoredChildRole::STEM_SLASH})) {
+        write_authored_child(item, {AuthoredChildRole::STEM_SLASH}, "StemSlash", xml, ctx);
+    } else if (item->stem_slash() && item->stem_slash()->is_user_modified()) {
         write(item->stem_slash(), xml, ctx);
     }
     write_property(item, xml, Pid::STEM_DIRECTION);
@@ -2119,17 +2212,26 @@ void TWrite::write(const Note *item, XmlWriter &xml, WriteContext &ctx) {
         write(item->accidental(), xml, ctx);
     }
     write_items(item->el(), xml, ctx);
-    bool write_dots = false;
-    for (NoteDot *dot : item->dots()) {
-        if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
-            dot->visible() != item->visible()) {
-            write_dots = true;
-            break;
+    const auto &dot_carriers = item->authored_overrides.carriers;
+    const bool source_dots =
+        std::any_of(dot_carriers.begin(), dot_carriers.end(), [](const auto &entry) { return entry.child.role == AuthoredChildRole::DOT; });
+    if (source_dots) {
+        for (const auto &carrier : dot_carriers) {
+            if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
         }
-    }
-    if (write_dots) {
+    } else {
+        bool write_dots = false;
         for (NoteDot *dot : item->dots()) {
-            write(dot, xml, ctx);
+            if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
+                dot->visible() != item->visible()) {
+                write_dots = true;
+                break;
+            }
+        }
+        if (write_dots) {
+            for (NoteDot *dot : item->dots()) {
+                write(dot, xml, ctx);
+            }
         }
     }
 
@@ -2384,19 +2486,29 @@ void TWrite::write(const Rest *item, XmlWriter &xml, WriteContext &ctx) {
     write_property(item, xml, Pid::ALIGN_WITH_OTHER_RESTS);
     write_properties(to_chord_rest(item), xml, ctx);
     write_items(item->el(), xml, ctx);
-    bool write_dots = false;
-    for (NoteDot *dot : item->dot_list()) {
-        if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
-            dot->visible() != item->visible()) {
-            write_dots = true;
-            break;
+    const auto &dot_carriers = item->authored_overrides.carriers;
+    const bool source_dots =
+        std::any_of(dot_carriers.begin(), dot_carriers.end(), [](const auto &entry) { return entry.child.role == AuthoredChildRole::DOT; });
+    if (source_dots) {
+        for (const auto &carrier : dot_carriers) {
+            if (carrier.child.role == AuthoredChildRole::DOT) write_authored_child(item, carrier.child, "NoteDot", xml, ctx);
         }
-    }
-    if (write_dots) {
+    } else {
+        bool write_dots = false;
         for (NoteDot *dot : item->dot_list()) {
-            write(dot, xml, ctx);
+            if (!dot->offset().is_null() || !dot->visible() || dot->color() != ctx.configuration()->default_color() ||
+                dot->visible() != item->visible()) {
+                write_dots = true;
+                break;
+            }
+        }
+        if (write_dots) {
+            for (NoteDot *dot : item->dot_list()) {
+                write(dot, xml, ctx);
+            }
         }
     }
+
     xml.end_element();
 }
 

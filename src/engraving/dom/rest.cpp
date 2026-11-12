@@ -69,6 +69,7 @@ Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDurati
 }
 
 Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
+    clone_authored_overrides(authored_overrides, r.authored_overrides);
     if (link) {
         score()->undo(new Link(this, const_cast<Rest *>(&r)));
         set_autoplace(true);

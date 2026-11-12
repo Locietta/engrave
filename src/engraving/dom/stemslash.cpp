@@ -28,5 +28,7 @@
 using namespace mu;
 
 namespace mu::engraving {
-StemSlash::StemSlash(DummyParentOr<Chord> parent) : EngravingItem(ElementType::STEM_SLASH, parent) {}
+StemSlash::StemSlash(DummyParentOr<Chord> parent) : EngravingItem(ElementType::STEM_SLASH, parent) {
+    bind_authored_child(*this, {AuthoredChildRole::STEM_SLASH});
+}
 } // namespace mu::engraving

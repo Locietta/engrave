@@ -34,9 +34,15 @@ namespace mu::engraving {
 //   NoteDot
 //---------------------------------------------------------
 
-NoteDot::NoteDot(DummyParentOr<Note> parent) : EngravingItem(ElementType::NOTEDOT, parent) { set_flag(ElementFlag::MOVABLE, false); }
+NoteDot::NoteDot(DummyParentOr<Note> parent) : EngravingItem(ElementType::NOTEDOT, parent) {
+    set_flag(ElementFlag::MOVABLE, false);
+    if (note()) bind_authored_child(*this, {AuthoredChildRole::DOT, static_cast<uint32_t>(note()->dots().size())});
+}
 
-NoteDot::NoteDot(Rest *parent) : EngravingItem(ElementType::NOTEDOT, parent) { set_flag(ElementFlag::MOVABLE, false); }
+NoteDot::NoteDot(Rest *parent) : EngravingItem(ElementType::NOTEDOT, parent) {
+    set_flag(ElementFlag::MOVABLE, false);
+    bind_authored_child(*this, {AuthoredChildRole::DOT, static_cast<uint32_t>(rest()->dot_list().size())});
+}
 
 //---------------------------------------------------------
 //   elementBase

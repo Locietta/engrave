@@ -167,6 +167,8 @@ using namespace mu::engraving::rendering::score;
 #define LAYOUT_CALL_ITEM(item) LAYOUT_CALL() << LAYOUT_ITEM_INFO(item);
 
 void TLayout::layout_item(EngravingItem *item, LayoutContext &ctx) {
+    apply_authored_overrides(*item);
+    AuthoredOverrideMirror authored_mirror(*item);
 
     EngravingItem::LayoutData *ldata = item->mutldata();
 

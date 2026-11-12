@@ -131,6 +131,8 @@ private:
     DECLARE_CLASSOF(ElementType::NOTE)
 
 public:
+    AuthoredOverrideTable authored_overrides;
+
     enum class SlideType : unsigned char { UNDEFINED = 0, UP_TO_NOTE, DOWN_TO_NOTE, UP_FROM_NOTE, DOWN_FROM_NOTE };
 
     enum DisplayFretOption : signed char { HIDE = -1, NO_HARMONIC, NATURAL_HARMONIC, ARTIFICIAL_HARMONIC };

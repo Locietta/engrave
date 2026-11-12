@@ -140,6 +140,7 @@ EngravingObject *SpannerSegment::property_delegate(Pid pid) const {
 //---------------------------------------------------------
 
 engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
+    if (auto value = authored_override_value(*this, pid)) return *value;
     if (EngravingObject *e = const_cast<SpannerSegment *>(this)->property_delegate(pid)) {
         return e->get_property(pid);
     }
@@ -154,6 +155,7 @@ engraving::PropertyValue SpannerSegment::get_property(Pid pid) const {
 //---------------------------------------------------------
 
 bool SpannerSegment::set_property(Pid pid, const PropertyValue &v) {
+    if (set_authored_override(*this, pid, v)) return true;
     if (EngravingObject *e = property_delegate(pid)) {
         return e->set_property(pid, v);
     }
@@ -360,6 +362,7 @@ TranslatableString SpannerSegment::subtype_user_name() const { return spanner()-
 Spanner::Spanner(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {}
 
 Spanner::Spanner(const Spanner &s) : EngravingItem(s) {
+    clone_authored_overrides(authored_overrides, s.authored_overrides);
     play_spanner_ = s.play_spanner_;
     start_element_ = s.start_element_;
     end_element_ = s.end_element_;

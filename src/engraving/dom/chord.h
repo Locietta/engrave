@@ -197,6 +197,7 @@ private:
     DECLARE_CLASSOF(ElementType::CHORD)
 
 public:
+    AuthoredOverrideTable authored_overrides;
 
     ~Chord();
     Chord &operator=(const Chord &) = delete;

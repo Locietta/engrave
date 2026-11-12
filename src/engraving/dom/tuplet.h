@@ -47,6 +47,8 @@ private:
     DECLARE_CLASSOF(ElementType::TUPLET)
 
 public:
+    AuthoredOverrideTable authored_overrides;
+
     Tuplet(DummyParentOr<Measure> parent);
     Tuplet(const Tuplet &);
     ~Tuplet();

@@ -100,6 +100,7 @@ EngravingObject *SlurTieSegment::property_delegate(Pid pid) const {
 //---------------------------------------------------------
 
 PropertyValue SlurTieSegment::get_property(Pid property_id) const {
+    if (auto value = authored_override_value(*this, property_id)) return *value;
     if (EngravingObject *e = const_cast<SlurTieSegment *>(this)->property_delegate(property_id)) {
         return e->get_property(property_id);
     }
@@ -118,6 +119,7 @@ PropertyValue SlurTieSegment::get_property(Pid property_id) const {
 //---------------------------------------------------------
 
 bool SlurTieSegment::set_property(Pid property_id, const PropertyValue &v) {
+    if (set_authored_override(*this, property_id, v)) return true;
     if (EngravingObject *e = const_cast<SlurTieSegment *>(this)->property_delegate(property_id)) {
         return e->set_property(property_id, v);
     }

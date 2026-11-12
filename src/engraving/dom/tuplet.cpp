@@ -74,6 +74,7 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
 }
 
 Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
+    clone_authored_overrides(authored_overrides, t.authored_overrides);
     number_style_ = t.number_style_;
     tick_ = t.tick_;
     has_bracket_ = t.has_bracket_;

@@ -301,6 +301,10 @@ void EngravingObject::init_element_style(const ElementStyle *ss) {
 //---------------------------------------------------------
 
 void EngravingObject::reset_property(Pid pid) {
+    if (authored_override_handles(*this, pid)) {
+        reset_authored_override(*to_engraving_item(this), pid);
+        return;
+    }
     PropertyValue v = property_default(pid);
     if (v.is_valid()) {
         set_property(pid, v);
@@ -318,6 +322,10 @@ void EngravingObject::reset_property(Pid pid) {
 static void change_properties(EngravingObject *, Pid, const PropertyValue &, PropertyFlags, bool reset_path = false);
 
 void EngravingObject::undo_reset_property(Pid id) {
+    if (authored_override_handles(*this, id)) {
+        change_properties(this, id, property_default(id), is_styled(id) ? PropertyFlags::STYLED : PropertyFlags::NOSTYLE, true);
+        return;
+    }
     PropertyFlags f = property_flags(id);
     if (f == PropertyFlags::UNSTYLED) {
         f = PropertyFlags::STYLED;
@@ -348,8 +356,9 @@ bool EngravingObject::is_styled(Pid pid) const {
 //---------------------------------------------------------
 
 static void change_property(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps, bool reset_path = false) {
-    if (reset_path || (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) || e->get_property(t) != st ||
-        e->property_flags(t) != ps) {
+    const bool new_authored_entry = authored_override_handles(*e, t) && !snapshot_authored_override(*to_engraving_item(e), t).entry;
+    if (reset_path || new_authored_entry || (e->is_chord_line() && t == Pid::PATH && to_chord_line(e)->has_source_offsets()) ||
+        e->get_property(t) != st || e->property_flags(t) != ps) {
         if (e->is_bracket_item()) {
             BracketItem *bi = to_bracket_item(e);
             e->score()->transaction_manager()->current_or_dummy_transaction().change_bracket_property(*bi, t, st, ps);
@@ -412,7 +421,8 @@ void EngravingObject::undo_change_property(Pid id, const PropertyValue &v) { und
 
 void EngravingObject::undo_change_property(Pid id, const PropertyValue &v, PropertyFlags ps) {
     const bool changes_chord_line_path_source = is_chord_line() && id == Pid::PATH && to_chord_line(this)->has_source_offsets();
-    if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source) {
+    const bool new_authored_entry = authored_override_handles(*this, id) && !snapshot_authored_override(*to_engraving_item(this), id).entry;
+    if ((get_property(id) == v) && (property_flags(id) == ps) && !changes_chord_line_path_source && !new_authored_entry) {
         return;
     }
     if (is_bracket_item()) {
@@ -584,6 +594,7 @@ int EngravingObject::get_property_flags_idx(Pid id) const {
 //---------------------------------------------------------
 
 PropertyFlags EngravingObject::property_flags(Pid id) const {
+    if (auto flags = authored_override_flags(*this, id)) return *flags;
     if (EngravingObject *e = property_delegate(id)) {
         return e->property_flags(id);
     }
@@ -602,6 +613,7 @@ PropertyFlags EngravingObject::property_flags(Pid id) const {
 //---------------------------------------------------------
 
 void EngravingObject::set_property_flags(Pid id, PropertyFlags f) {
+    if (set_authored_override_flags(*this, id, f)) return;
     if (EngravingObject *e = property_delegate(id)) {
         e->set_property_flags(id, f);
         return;
@@ -632,6 +644,12 @@ Sid EngravingObject::get_property_style(Pid id) const {
 //---------------------------------------------------------
 
 void EngravingObject::style_changed() {
+    std::optional<AuthoredOverrideMirror> mirror;
+    if (is_engraving_item()) {
+        auto *item = to_engraving_item(this);
+        apply_authored_overrides(*item);
+        mirror.emplace(*item);
+    }
     for (const StyledProperty &spp : *element_style_) {
         PropertyFlags f = property_flags(spp.pid);
         if (f == PropertyFlags::STYLED) {

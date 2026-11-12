@@ -32,6 +32,7 @@ struct Transaction;
 
 struct RestVerticalClearance {
 public:
+
     void reset() {
         above_ = 1000; // arbitrary high value
         below_ = 1000; // arbitrary high value
@@ -66,6 +67,7 @@ private:
     DECLARE_CLASSOF(ElementType::REST)
 
 public:
+    AuthoredOverrideTable authored_overrides;
 
     ~Rest() { muse::delete_all(dots_); }
 

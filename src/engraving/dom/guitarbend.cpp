@@ -765,6 +765,7 @@ GuitarBendSegment::GuitarBendSegment(const GuitarBendSegment &s) : LineSegment(s
 GuitarBendSegment::~GuitarBendSegment() { delete text_; }
 
 PropertyValue GuitarBendSegment::get_property(Pid id) const {
+    if (auto value = authored_override_value(*this, id)) return *value;
     switch (id) {
         case Pid::BEND_VERTEX_OFF: return vertex_point_off();
         default: return LineSegment::get_property(id);
@@ -772,6 +773,7 @@ PropertyValue GuitarBendSegment::get_property(Pid id) const {
 }
 
 bool GuitarBendSegment::set_property(Pid property_id, const PropertyValue &v) {
+    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::BEND_VERTEX_OFF: set_vertex_point_off(v.value<PointF>()); break;
         default: return LineSegment::set_property(property_id, v);

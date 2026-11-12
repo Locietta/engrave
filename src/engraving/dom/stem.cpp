@@ -36,14 +36,21 @@ static const ElementStyle stem_style{{Sid::STEM_WIDTH, Pid::LINE_WIDTH}};
 
 Stem::Stem(DummyParentOr<Chord> parent) : EngravingItem(ElementType::STEM, parent) {
     init_element_style(&::stem_style);
-    // Authored length belongs to the chord; recreating a display must preserve it.
+    // Authored values belong to the chord; recreating a display must preserve them.
+    bind_authored_child(*this, {AuthoredChildRole::STEM});
 }
 
 EngravingItem *Stem::element_base() const { return chord(); }
 
 Spatium Stem::user_length() const { return chord()->stem_user_length(); }
 
-void Stem::set_user_length(Spatium value) { chord()->set_stem_user_length(value); }
+void Stem::set_user_length(Spatium value) {
+    chord()->set_stem_user_length(value);
+    if (!authored_mirror) {
+        authored_child = {AuthoredChildRole::STEM};
+        finish_authored_read(*this);
+    }
+}
 
 staff_idx_t Stem::v_staff_idx() const { return staff_idx() + chord()->staff_move(); }
 
@@ -62,6 +69,7 @@ void Stem::reset() {
 }
 
 PropertyValue Stem::get_property(Pid property_id) const {
+    if (auto value = authored_override_value(*this, property_id)) return *value;
     switch (property_id) {
         case Pid::LINE_WIDTH: return line_width();
         case Pid::USER_LEN: return user_length();
@@ -72,6 +80,7 @@ PropertyValue Stem::get_property(Pid property_id) const {
 }
 
 bool Stem::set_property(Pid property_id, const PropertyValue &v) {
+    if (set_authored_override(*this, property_id, v)) return true;
     switch (property_id) {
         case Pid::LINE_WIDTH: set_line_width(v.value<Spatium>()); break;
         case Pid::USER_LEN: set_user_length(v.value<Spatium>()); break;
