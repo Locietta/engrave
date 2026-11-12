@@ -126,7 +126,6 @@ struct Shape {
     inline bool remove_if(Predicate p) {
         size_t orig_size = elements_.size();
         elements_.erase(std::remove_if(elements_.begin(), elements_.end(), p), elements_.end());
-        invalidate_b_box();
         return orig_size != elements_.size();
     }
 
@@ -160,7 +159,7 @@ struct Shape {
     Shape &transform(const muse::draw::Transform &t);
     Shape transformed(const muse::draw::Transform &t);
 
-    const RectF &bbox() const;
+    RectF bbox() const;
     double min_vertical_distance(const Shape &, double min_horizontal_clearance = 0.0) const;
     double vertical_clearance(const Shape &, double min_horizontal_distance = 0.0) const;
     double top_distance(const PointF &) const;
@@ -186,11 +185,8 @@ struct Shape {
 
 private:
 
-    void invalidate_b_box();
-
     Type type_ = Type::FIXED;
     std::vector<ShapeElement> elements_;
-    mutable RectF bbox_; // cache
 };
 
 void dump(const ShapeElement &sh, std::stringstream &ss);

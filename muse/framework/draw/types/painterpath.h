@@ -113,7 +113,7 @@ private:
 
     void ensure_data();
 
-    void compute_bounding_rect() const;
+    RectF compute_bounding_rect() const;
 
     inline void maybe_move_to() {
         if (require_move_to_) {
@@ -140,9 +140,7 @@ private:
     void set_dirty();
 
     int c_start_ = 0;
-    mutable RectF bounds_;
     bool require_move_to_ = false;
-    mutable bool dirty_bounds_ = false;
     bool convex_ = false;
     FillRule fill_rule_ = FillRule::ODD_EVEN_FILL;
 

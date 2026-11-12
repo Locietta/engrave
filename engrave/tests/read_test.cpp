@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <format>
@@ -34,6 +35,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -6063,6 +6065,57 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
             EXPECT_NEAR(p.y, path.element_at(i).y, 1e-6);
         }
     }
+}
+
+TEST(LayoutBounds, ConstReadsLeaveShapeAndPathStorageUnchanged) {
+    // Observe the same object's representation, including any hidden cache.
+    // This detects the former first-read cache writes without exposing internals.
+    const auto bytes = [](const auto &object) {
+        std::array<std::byte, sizeof(object)> result;
+        std::memcpy(result.data(), &object, sizeof(object));
+        return result;
+    };
+    // Defined backing bytes keep object padding safe for memory tools.
+    using Shape = mu::engraving::Shape;
+    alignas(Shape) std::array<std::byte, sizeof(Shape)> shape_storage{};
+    std::unique_ptr<Shape, void (*)(Shape *)> shape_owner(std::construct_at(reinterpret_cast<Shape *>(shape_storage.data())),
+                                                          std::destroy_at<Shape>);
+    auto &shape = *shape_owner;
+    shape.add(muse::RectF(-2.0, 1.0, 3.0, 4.0));
+    shape.add(muse::RectF(3.0, -1.0, 2.0, 8.0));
+    const auto shape_bytes = bytes(shape);
+    const auto elements = shape.elements();
+    const auto &shape_view = std::as_const(shape);
+    EXPECT_EQ(shape_view.bbox(), muse::RectF(-2.0, -1.0, 7.0, 8.0));
+    EXPECT_EQ(shape_view.bbox(), muse::RectF(-2.0, -1.0, 7.0, 8.0));
+    EXPECT_EQ(std::memcmp(shape_bytes.data(), &shape, sizeof(shape)), 0);
+    EXPECT_EQ(shape_view.elements(), elements);
+    // Direct mutable element access remains explicit; no stale bounds survive it.
+    shape.elements().front().translate(-2.0, -3.0);
+    EXPECT_EQ(shape_view.bbox(), muse::RectF(-4.0, -2.0, 9.0, 9.0));
+
+    using Path = muse::draw::PainterPath;
+    alignas(Path) std::array<std::byte, sizeof(Path)> path_storage{};
+    std::unique_ptr<Path, void (*)(Path *)> path_owner(std::construct_at(reinterpret_cast<Path *>(path_storage.data())),
+                                                       std::destroy_at<Path>);
+    auto &path = *path_owner;
+    path.add_rect(muse::RectF(-2.0, -1.0, 7.0, 8.0));
+    std::vector<Path::Element> path_elements;
+    for (size_t i = 0; i < path.element_count(); ++i) path_elements.push_back(path.element_at(i));
+    const auto path_bytes = bytes(path);
+    const auto &path_view = std::as_const(path);
+    EXPECT_EQ(path_view.bounding_rect(), muse::RectF(-2.0, -1.0, 7.0, 8.0));
+    EXPECT_EQ(path_view.bounding_rect(), muse::RectF(-2.0, -1.0, 7.0, 8.0));
+    EXPECT_EQ(std::memcmp(path_bytes.data(), &path, sizeof(path)), 0);
+    ASSERT_EQ(path_view.element_count(), path_elements.size());
+    for (size_t i = 0; i < path_elements.size(); ++i) {
+        EXPECT_EQ(path_view.element_at(i).x, path_elements[i].x);
+        EXPECT_EQ(path_view.element_at(i).y, path_elements[i].y);
+        EXPECT_EQ(path_view.element_at(i).type, path_elements[i].type);
+    }
+    path.translate(2.0, 3.0);
+    EXPECT_EQ(path_view.bounding_rect(), muse::RectF(0.0, 2.0, 7.0, 8.0));
+    EXPECT_TRUE(muse::draw::PainterPath().bounding_rect().is_null());
 }
 
 TEST(LayoutDataStore, StablePayloadsAndNonAllocatingTypedReads) {

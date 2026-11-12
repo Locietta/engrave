@@ -65,7 +65,6 @@ Shape &Shape::translate(const PointF &pt) {
     for (RectF &r : elements_) {
         r.translate(pt);
     }
-    invalidate_b_box();
     return *this;
 }
 
@@ -74,7 +73,6 @@ void Shape::translate_x(double xo) {
         r.set_left(r.left() + xo);
         r.set_right(r.right() + xo);
     }
-    invalidate_b_box();
 }
 
 void Shape::translate_y(double yo) {
@@ -82,7 +80,6 @@ void Shape::translate_y(double yo) {
         r.set_top(r.top() + yo);
         r.set_bottom(r.bottom() + yo);
     }
-    invalidate_b_box();
 }
 
 //---------------------------------------------------------
@@ -102,7 +99,6 @@ Shape &Shape::scale(const SizeF &mag) {
     for (RectF &r : elements_) {
         r.scale(mag);
     }
-    invalidate_b_box();
     return *this;
 }
 
@@ -164,22 +160,12 @@ Shape Shape::transformed(const muse::draw::Transform &t) {
     return s.transform(t);
 }
 
-void Shape::invalidate_b_box() { bbox_ = RectF(); }
-
-const RectF &Shape::bbox() const {
-    if (elements_.size() == 0) {
-        static const RectF dummy;
-        return dummy;
-    } else if (elements_.size() == 1) {
-        return elements_.at(0);
-    } else {
-        if (bbox_.is_null()) {
-            for (const ShapeElement &e : elements_) {
-                bbox_.unite(e);
-            }
-        }
-        return bbox_;
-    }
+RectF Shape::bbox() const {
+    if (elements_.empty()) return {};
+    if (elements_.size() == 1) return elements_.front();
+    RectF result;
+    for (const ShapeElement &element : elements_) result.unite(element);
+    return result;
 }
 
 std::optional<ShapeElement> Shape::find_if(const std::function<bool(const ShapeElement &)> &func) const {
@@ -490,13 +476,11 @@ void Shape::add_b_box(const RectF &r) {
 void Shape::add(const Shape &s) {
     type_ = Type::COMPOSITE;
     elements_.insert(elements_.end(), s.elements_.begin(), s.elements_.end());
-    invalidate_b_box();
 }
 
 void Shape::add(const ShapeElement &shape_el) {
     type_ = Type::COMPOSITE;
     elements_.push_back(shape_el);
-    invalidate_b_box();
 }
 
 //---------------------------------------------------------
@@ -512,16 +496,12 @@ void Shape::remove(const RectF &r) {
     }
 
     ASSERT_X("Shape::remove: RectF not found in Shape");
-
-    invalidate_b_box();
 }
 
 void Shape::remove(const Shape &s) {
     for (const RectF &r : s.elements_) {
         remove(r);
     }
-
-    invalidate_b_box();
 }
 
 std::vector<RectF> Shape::to_rects() const {
@@ -537,14 +517,12 @@ std::vector<RectF> Shape::to_rects() const {
 
 void Shape::remove_invisibles() {
     muse::remove_if(elements_, [](ShapeElement &shape_element) { return !shape_element.item() || !shape_element.item()->visible(); });
-    invalidate_b_box();
 }
 
 void Shape::remove_types(const std::set<ElementType> &types) {
     muse::remove_if(elements_, [&types](ShapeElement &shape_element) {
         return shape_element.item() && muse::contains(types, shape_element.item()->type());
     });
-    invalidate_b_box();
 }
 
 //---------------------------------------------------------

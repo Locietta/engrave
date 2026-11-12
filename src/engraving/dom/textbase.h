@@ -275,7 +275,7 @@ struct TextBlock {
 
     Shape &shape() { return shape_; }
 
-    const RectF &bounding_rect() const { return shape_.bbox(); }
+    RectF bounding_rect() const { return shape_.bbox(); }
 
     RectF bounding_rect(int col1, int col2, const TextBase *) const;
     size_t columns() const;
