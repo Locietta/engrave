@@ -367,7 +367,18 @@ struct PlaybackWalk {
                     }
 
                     int segment_start_tick = segment->tick().ticks();
-                    int segment_end_tick = segment_start_tick + segment->ticks().ticks();
+                    // Segment::ticks() is a spacing interval produced from visible
+                    // layout shapes. Bound this source event group by the next
+                    // musical segment instead, including the first unplaced chord.
+                    int segment_end_tick = measure_end_tick;
+                    for (const Segment *next = segment->next(); next; next = next->next()) {
+                        if (!next->is_chord_rest_type() && !next->is_time_tick_type()) continue;
+                        const int next_tick = next->tick().ticks();
+                        if (next_tick > segment_start_tick) {
+                            segment_end_tick = next_tick;
+                            break;
+                        }
+                    }
 
                     if (segment_start_tick > tick_to || segment_end_tick <= tick_from) {
                         continue;

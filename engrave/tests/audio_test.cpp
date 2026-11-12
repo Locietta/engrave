@@ -28,6 +28,9 @@
 
 #include <gtest/gtest.h>
 
+#include "engrave/src/api/state.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/rendering/score/scorerenderer.h"
 #include "output_fixture.h"
 #include <engrave/engrave.h>
 
@@ -143,6 +146,77 @@ namespace {
 
 namespace detail = music::test::detail;
 using music::test::g_soundfonts;
+
+TEST(Audio, UnrenderedEditsMidiAudioAndSemanticReadsMatchEagerOutput) {
+    using mu::engraving::rendering::score::ScoreRenderer;
+    static std::size_t item_layouts = 0;
+
+    struct Spy {
+        Spy() {
+            item_layouts = 0;
+            ScoreRenderer::layout_hook = [](const auto *) { ++item_layouts; };
+        }
+
+        ~Spy() { ScoreRenderer::layout_hook = nullptr; }
+    };
+
+    for (const auto &name : {"ghost_note.mscx", "hairpins_and_repeats.mscx", "tab_grace_prebend.mscx"}) {
+        SCOPED_TRACE(name);
+        auto eager = detail::open_score(name);
+        ASSERT_TRUE(eager);
+        auto deferred = detail::open_score(name);
+        ASSERT_TRUE(deferred);
+        ASSERT_TRUE(eager->page_count());
+        for (auto *document : {eager.get(), deferred.get()}) {
+            auto notes = document->query({.types = {"Note"}, .limit = 1});
+            ASSERT_TRUE(notes);
+            ASSERT_FALSE(notes->elements.empty());
+            ASSERT_TRUE(document->edit({{engrave::SetPitch{notes->elements.front().id, 67}}}));
+        }
+        ASSERT_TRUE(eager->page_count());
+        const auto eager_outline = eager->outline();
+        ASSERT_TRUE(eager_outline);
+        std::array<std::vector<std::byte>, 2> midi;
+        for (bool repeats : {false, true}) {
+            auto output = eager->export_score({.format = engrave::Format::MIDI, .midi_expand_repeats = repeats});
+            ASSERT_TRUE(output);
+            midi[repeats] = std::move(*output);
+        }
+        const auto eager_audio = detail::render_audio(*eager, {});
+        ASSERT_FALSE(eager_audio.bytes.empty());
+        auto &master = *engrave::DocumentAccess::master_score(*deferred);
+        const auto revision = deferred->revision();
+        const bool repeat_view = master.expand_repeats();
+        Spy spy;
+        const auto outline = deferred->outline();
+        ASSERT_TRUE(outline);
+        EXPECT_FALSE(outline->pages.has_value());
+        EXPECT_EQ(outline->title, eager_outline->title);
+        EXPECT_EQ(outline->composer, eager_outline->composer);
+        EXPECT_EQ(outline->duration, eager_outline->duration);
+        EXPECT_EQ(outline->measure_count, eager_outline->measure_count);
+        ASSERT_TRUE(deferred->audio_tracks());
+        auto notes = deferred->query({.types = {"Note"}, .props = {"pitch"}});
+        ASSERT_TRUE(notes);
+        ASSERT_FALSE(notes->elements.empty());
+        ASSERT_TRUE(deferred->get(notes->elements.front().id, {"pitch"}));
+        for (bool repeats : {false, true}) {
+            auto output = deferred->export_score({.format = engrave::Format::MIDI, .midi_expand_repeats = repeats});
+            ASSERT_TRUE(output);
+            EXPECT_EQ(*output, midi[repeats]);
+            EXPECT_EQ(master.expand_repeats(), repeat_view);
+        }
+        const auto audio = detail::render_audio(*deferred, {});
+        EXPECT_EQ(audio.bytes, eager_audio.bytes);
+        EXPECT_EQ(audio.result.frames, eager_audio.result.frames);
+        EXPECT_EQ(deferred->revision(), revision);
+        EXPECT_EQ(item_layouts, 0u);
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        EXPECT_TRUE(master.layout_state.dirty);
+        ASSERT_TRUE(deferred->page_count());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    }
+}
 
 TEST(Audio, EditThenRenderInvalidatesPlayback) {
     auto document = detail::open_score("chordline_path.mscx");
