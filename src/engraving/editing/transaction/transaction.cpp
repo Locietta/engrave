@@ -26,12 +26,26 @@
 #include <stdexcept>
 
 #include "../../dom/masterscore.h"
+#include "editing/addremoveelement.h"
 #include "editing/editproperty.h"
 #include "log.h"
 #include "mutationjournal.h"
 #include "undoablecommand.h"
 
 using namespace mu::engraving;
+
+namespace {
+std::unique_ptr<UndoableCommand> begin_compound_hook(Transaction::PushHook hook) {
+    if (!hook) return {};
+    auto *token = new UndoableCommand;
+    hook(token, false);
+    return std::unique_ptr<UndoableCommand>(token);
+}
+
+void finish_compound_hook(Transaction::PushHook hook, const std::unique_ptr<UndoableCommand> &token) {
+    if (hook && token) hook(token.get(), true);
+}
+} // namespace
 
 static ScoreChanges build_score_changes(const CmdState &cmd_state, const JournalBatch::ChangesInfo &changes, const JournalBatch &batch) {
     int start_tick = cmd_state.start_tick().ticks();
@@ -200,6 +214,80 @@ void Transaction::replace_style(Score &score, const MStyle &style, bool overlap)
 }
 
 void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
+
+void Transaction::add_element(EngravingItem *item) {
+    validate_element_add(*item);
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_element_add(*item);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_element_membership(*item, true);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::remove_element(EngravingItem *item) {
+    // These dependencies precede the outer removal, matching the original
+    // domain preparation order. Each nested mutation arms its own inverse.
+    prepare_element_removal(*item);
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_element_remove(*item);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_element_membership(*item, false);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::replace_element(EngravingItem *before, EngravingItem *after) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_element_replace(*before, *after);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->replace_element(*before, *after);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::reparent_element(EngravingItem *item, EngravingItem *parent, staff_idx_t staff) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_element_reparent(*item, *parent, staff * voices + item->voice());
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->reparent_element(*item, *parent, staff);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::reparent_segment(Segment *item, Measure *parent, Fraction tick) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        apply_segment_reparent(*item, *parent, tick);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->reparent_segment(*item, *parent, tick);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::link_objects(EngravingObject *item, EngravingObject *peer) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        item->link_to(peer);
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_link(*item, peer);
+    finish_compound_hook(s_push_hook, token);
+}
+
+void Transaction::unlink_object(EngravingObject *item) {
+    if (is_dummy_ || undoable_transaction_->replaying()) {
+        item->unlink();
+        return;
+    }
+    auto token = begin_compound_hook(s_push_hook);
+    undoable_transaction_->change_link(*item, nullptr);
+    finish_compound_hook(s_push_hook, token);
+}
 
 void Transaction::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
     if (is_dummy_ || undoable_transaction_->replaying()) {

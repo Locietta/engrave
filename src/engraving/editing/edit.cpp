@@ -3297,7 +3297,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
         }
         if (item == element) {
             // Master score
-            undo(new ChangeParent(element, parent, staff_idx));
+            record_parent_change(element, parent, staff_idx);
         } else if (linked_origin && linked_dest) {
             // Part - origin and destination staves are in this part
             EngravingItem *linked_parent;
@@ -3316,7 +3316,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
                 linked_parent = parent->find_linked_in_staff(linked_dest);
             }
             IF_ASSERT_FAILED(linked_parent) { continue; }
-            linked_score->undo(new ChangeParent(item, linked_parent, linked_score->staff_idx(linked_dest)));
+            linked_score->record_parent_change(item, linked_parent, linked_score->staff_idx(linked_dest));
         } else if (linked_origin && !linked_dest) {
             // Part - move is to a different staff
             // Remove original item
@@ -3556,12 +3556,12 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
                             // set generated flag before and after so it sticks on type change and also works on undo/redo
                             lscore->record_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
                             if (lbl != sbl && !generated && !lbl->links()) {
-                                lscore->undo(new Link(lbl, sbl));
+                                lscore->record_link(lbl, sbl);
                             } else if (lbl != sbl && generated && lbl->is_linked(sbl)) {
-                                lscore->undo(new Unlink(lbl));
+                                lscore->record_unlink(lbl);
                                 while (EngravingItem *linked_on_covering_mm_rest = sbl->find_linked_in_score(lscore)) {
                                     // Edge case: an additional link of this barline exists on the covering mmRest of lbl's measure
-                                    lscore->undo(new Unlink(linked_on_covering_mm_rest));
+                                    lscore->record_unlink(linked_on_covering_mm_rest);
                                     lscore->do_undo_remove_element(linked_on_covering_mm_rest);
                                 }
                             }
@@ -3655,11 +3655,11 @@ void Score::undo_change_element(EngravingItem *old_element, EngravingItem *new_e
         for (EngravingObject *obj : links) {
             EngravingItem *item = to_engraving_item(obj);
             if (item == old_element) {
-                undo(new ChangeElement(old_element, new_element));
+                record_element_replace(old_element, new_element);
             } else {
                 if (item->score()) {
                     EngravingItem *new_clone = new_element->clone();
-                    item->score()->undo(new ChangeElement(item, new_clone));
+                    item->score()->record_element_replace(item, new_clone);
                 }
             }
         }

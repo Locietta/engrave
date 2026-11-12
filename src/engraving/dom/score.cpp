@@ -1153,7 +1153,7 @@ void Score::do_undo_add_element(EngravingItem *element) {
     if (element->generated()) {
         add_element(element);
     } else {
-        undo(new AddElement(element));
+        record_element_add(element);
     }
 }
 
@@ -1322,7 +1322,7 @@ void Score::do_undo_remove_element(EngravingItem *element) {
         //! HACK: don't delete as it may still be used in PropertiesPanel
         // element->deleteLater();
     } else {
-        undo(new RemoveElement(element));
+        record_element_remove(element);
     }
 }
 

@@ -325,7 +325,7 @@ void SplitJoinMeasure::join_measures(Transaction &tx, MasterScore *master_score,
                             if (!lts) {
                                 lts = nsig;
                             } else {
-                                tx.push(new Link(lts, nsig));
+                                tx.link_objects(lts, nsig);
                             }
                         }
                         linked_score->do_undo_remove_element(time_sig);

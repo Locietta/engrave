@@ -2187,8 +2187,7 @@ TEST(Read, GraceLayoutScopeClearsMovedSegmentAfterSourceDeletion) {
         ChordLayout::append_grace_notes(chord, context);
         ASSERT_EQ(context.grace_group(chord, true)->appended_segment(), clef_segment);
         ASSERT_EQ(clef_segment->pre_appended_item(0), context.grace_group(chord, true));
-        ChangeSegmentParent move(clef_segment, next, Fraction(0, 1));
-        move.redo();
+        master.record_segment_parent_change(clef_segment, next, Fraction(0, 1));
         ASSERT_EQ(clef_segment->measure(), next);
         chord->remove(grace);
         delete grace;

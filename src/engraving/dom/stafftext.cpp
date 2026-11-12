@@ -51,7 +51,7 @@ EngravingItem *StaffText::linked_clone() {
     StaffText *clone = static_cast<StaffText *>(StaffTextBase::linked_clone());
 
     if (clone->sound_flag_ && sound_flag_) {
-        score()->undo(new Link(clone->sound_flag_, sound_flag_));
+        score()->record_link(clone->sound_flag_, sound_flag_);
     }
 
     return clone;

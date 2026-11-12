@@ -41,10 +41,6 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   undoRemoveTuplet
-//---------------------------------------------------------
-
 static void undo_remove_tuplet(DurationElement *cr) {
     if (cr->tuplet()) {
         cr->tuplet()->remove(cr);
@@ -53,10 +49,6 @@ static void undo_remove_tuplet(DurationElement *cr) {
         }
     }
 }
-
-//---------------------------------------------------------
-//   undoAddTuplet
-//---------------------------------------------------------
 
 static void undo_add_tuplet(DurationElement *cr) {
     if (cr->tuplet()) {
@@ -67,28 +59,17 @@ static void undo_add_tuplet(DurationElement *cr) {
     }
 }
 
-//---------------------------------------------------------
-//   AddElement
-//---------------------------------------------------------
-
-AddElement::AddElement(EngravingItem *e) {
+void mu::engraving::validate_element_add(EngravingItem &item) {
+    auto *e = &item;
     DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to AddElement").arg(String::from_ascii(e->type_name())));
     DO_ASSERT_X(e->parent()->score() == e->score(),
                 String(u"Item %1 is in a different score to its parent %2")
                     .arg(String::from_ascii(e->type_name()), String::from_ascii(e->parent()->type_name())));
-    element = e;
 }
 
-void AddElement::cleanup(bool was_done) {
-    if (!was_done) {
-        delete element;
-        element = nullptr;
-    }
-}
-
-void AddElement::end_undo_redo(bool is_undo) const {
+static void update_element_membership(EngravingItem *element, bool removing) {
     if (element->is_chord_rest()) {
-        if (is_undo) {
+        if (removing) {
             undo_remove_tuplet(to_chord_rest(element));
         } else {
             undo_add_tuplet(to_chord_rest(element));
@@ -102,7 +83,8 @@ void AddElement::end_undo_redo(bool is_undo) const {
     }
 }
 
-void AddElement::undo() {
+void mu::engraving::revert_element_add(EngravingItem &item) {
+    auto *element = &item;
     Score *score = element->score();
     EngravingItem::disconnect_shared_tree(element);
 
@@ -110,37 +92,66 @@ void AddElement::undo() {
         score->remove_element(element);
     }
 
-    end_undo_redo(true);
+    update_element_membership(element, true);
 }
 
-void AddElement::redo() {
+void mu::engraving::apply_element_add(EngravingItem &item) {
+    auto *element = &item;
     Score *score = element->score();
 
     if (!element->is_tuplet()) {
         score->add_element(element);
     }
 
-    end_undo_redo(false);
+    update_element_membership(element, false);
 }
 
-const char *AddElement::name() const {
-    static char buffer[64];
-    if (element->is_text_base()) {
-        snprintf(buffer, 64, "Add:    %s <%s> %p", element->type_name(), muPrintable(to_text_base(element)->plain_text()), element);
-    } else if (element->is_segment()) {
-        snprintf(buffer, 64, "Add:    <%s-%s> %p", element->type_name(), to_segment(element)->sub_type_name(), element);
-    } else {
-        snprintf(buffer, 64, "Add:    <%s> %p", element->type_name(), element);
+void mu::engraving::revert_element_remove(EngravingItem &item) {
+    auto *element = &item;
+    Score *score = element->score();
+
+    if (!element->is_tuplet()) {
+        score->add_element(element);
     }
-    return buffer;
+
+    if (element->is_chord_rest()) {
+        if (element->is_chord()) {
+            Chord *chord = to_chord(element);
+            for (Note *note : chord->notes()) {
+                note->connect_tied_notes();
+            }
+        }
+        undo_add_tuplet(to_chord_rest(element));
+    } else if (element->is_clef()) {
+        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
+    } else if (element->is_key_sig()) {
+        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
+    }
 }
 
-std::vector<EngravingObject *> AddElement::object_items() const { return compound_objects(element); }
+void mu::engraving::apply_element_remove(EngravingItem &item) {
+    auto *element = &item;
+    Score *score = element->score();
 
-//---------------------------------------------------------
-//   removeNote
-//    Helper function for RemoveElement class
-//---------------------------------------------------------
+    EngravingItem::disconnect_shared_tree(element);
+    if (!element->is_tuplet()) {
+        score->remove_element(element);
+    }
+
+    if (element->is_chord_rest()) {
+        undo_remove_tuplet(to_chord_rest(element));
+        if (element->is_chord()) {
+            Chord *chord = to_chord(element);
+            for (Note *note : chord->notes()) {
+                note->disconnect_tied_notes();
+            }
+        }
+    } else if (element->is_clef()) {
+        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
+    } else if (element->is_key_sig()) {
+        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
+    }
+}
 
 static void remove_note(const Note *note) {
     Score *score = note->score();
@@ -164,13 +175,10 @@ static void remove_note(const Note *note) {
     }
 }
 
-//---------------------------------------------------------
-//   RemoveElement
-//---------------------------------------------------------
-
-RemoveElement::RemoveElement(EngravingItem *e) {
+void mu::engraving::prepare_element_removal(EngravingItem &item) {
+    auto *e = &item;
     DO_ASSERT_X(!e->generated(), String(u"Generated item %1 passed to RemoveElement").arg(String::from_ascii(e->type_name())));
-    element = e;
+    auto *element = e;
 
     Score *score = element->score();
     if (element->is_chord_rest()) {
@@ -206,82 +214,9 @@ RemoveElement::RemoveElement(EngravingItem *e) {
     }
 }
 
-void RemoveElement::cleanup(bool was_done) {
-    if (was_done) {
-        delete element;
-        element = nullptr;
-    }
-}
-
-void RemoveElement::undo() {
-    Score *score = element->score();
-
-    if (!element->is_tuplet()) {
-        score->add_element(element);
-    }
-
-    if (element->is_chord_rest()) {
-        if (element->is_chord()) {
-            Chord *chord = to_chord(element);
-            for (Note *note : chord->notes()) {
-                note->connect_tied_notes();
-            }
-        }
-        undo_add_tuplet(to_chord_rest(element));
-    } else if (element->is_clef()) {
-        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
-    } else if (element->is_key_sig()) {
-        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
-    }
-}
-
-void RemoveElement::redo() {
-    Score *score = element->score();
-
-    EngravingItem::disconnect_shared_tree(element);
-    if (!element->is_tuplet()) {
-        score->remove_element(element);
-    }
-
-    if (element->is_chord_rest()) {
-        undo_remove_tuplet(to_chord_rest(element));
-        if (element->is_chord()) {
-            Chord *chord = to_chord(element);
-            for (Note *note : chord->notes()) {
-                note->disconnect_tied_notes();
-            }
-        }
-    } else if (element->is_clef()) {
-        score->set_layout(element->staff()->next_clef_tick(element->tick()), element->staff_idx());
-    } else if (element->is_key_sig()) {
-        score->set_layout(element->staff()->next_key_tick(element->tick()), element->staff_idx());
-    }
-}
-
-const char *RemoveElement::name() const {
-    static char buffer[64];
-    if (element->is_text_base()) {
-        snprintf(buffer, 64, "Remove: %s <%s> %p", element->type_name(), muPrintable(to_text_base(element)->plain_text()), element);
-    } else if (element->is_segment()) {
-        snprintf(buffer, 64, "Remove: <%s-%s> %p", element->type_name(), to_segment(element)->sub_type_name(), element);
-    } else {
-        snprintf(buffer, 64, "Remove: %s %p", element->type_name(), element);
-    }
-    return buffer;
-}
-
-std::vector<EngravingObject *> RemoveElement::object_items() const { return compound_objects(element); }
-
-//---------------------------------------------------------
-//   ChangeElement
-//---------------------------------------------------------
-
-ChangeElement::ChangeElement(EngravingItem *oe, EngravingItem *ne) {
-    old_element = oe;
-    new_element = ne;
-}
-
-void ChangeElement::flip() {
+void mu::engraving::apply_element_replace(EngravingItem &before, EngravingItem &after) {
+    auto *old_element = &before;
+    auto *new_element = &after;
     const LinkedObjects *links = old_element->links();
     if (links) {
         new_element->link_to(old_element);
@@ -329,94 +264,23 @@ void ChangeElement::flip() {
         }
     }
 
-    std::swap(old_element, new_element);
-    old_element->trigger_layout();
     new_element->trigger_layout();
+    old_element->trigger_layout();
 }
 
-//---------------------------------------------------------
-//   ChangeParent
-//---------------------------------------------------------
-
-void ChangeParent::flip() {
-    EngravingItem *p = element->ownership_parent_item();
-    staff_idx_t si = element->staff_idx();
-    p->remove(element);
-    element->set_ownership_parent(parent);
-    element->set_track(staff_idx * ::mu::engraving::voices + element->voice());
-    parent->add(element);
-    staff_idx = si;
-    parent = p;
-
-    element->trigger_layout();
+void mu::engraving::apply_element_reparent(EngravingItem &item, EngravingItem &destination, track_idx_t track) {
+    auto *parent = item.ownership_parent_item();
+    parent->remove(&item);
+    item.set_ownership_parent(&destination);
+    item.set_track(track);
+    destination.add(&item);
+    item.trigger_layout();
 }
 
-//---------------------------------------------------------
-//   LinkUnlink
-//---------------------------------------------------------
-
-LinkUnlink::~LinkUnlink() {
-    if (le && must_delete) {
-        assert(le->size() <= 1);
-        delete le;
-    }
-}
-
-void LinkUnlink::link() {
-    if (le->size() == 1) {
-        le->front()->set_links(le);
-    }
-    must_delete = false;
-    le->push_back(e);
-    e->set_links(le);
-}
-
-void LinkUnlink::unlink() {
-    assert(le->contains(e));
-    le->remove(e);
-    if (le->size() == 1) {
-        le->front()->set_links(nullptr);
-        must_delete = true;
-    }
-
-    e->set_links(nullptr);
-}
-
-//---------------------------------------------------------
-//   Link
-//    link e1 to e2
-//---------------------------------------------------------
-
-Link::Link(EngravingObject *e1, EngravingObject *e2) {
-    assert(e1->links() == nullptr);
-    le = e2->links();
-    if (!le) {
-        le = new LinkedObjects();
-        le->push_back(e2);
-    }
-    e = e1;
-}
-
-//---------------------------------------------------------
-//   Unlink
-//---------------------------------------------------------
-
-Unlink::Unlink(EngravingObject *input_e) {
-    e = input_e;
-    le = e->links();
-    assert(le);
-}
-
-void ChangeSegmentParent::flip() {
-    Measure *p = segment->measure();
-    Fraction old_tick = segment->rtick();
-    p->remove(segment);
-    segment->set_ownership_parent(parent);
-    segment->set_rtick(tick);
-    parent->add(segment);
-
-    parent = p;
-    tick = old_tick;
-
-    segment->trigger_layout();
+void mu::engraving::apply_segment_reparent(Segment &segment, Measure &destination, Fraction tick) {
+    segment.measure()->remove(&segment);
+    segment.set_ownership_parent(&destination);
+    segment.set_rtick(tick);
+    destination.add(&segment);
+    segment.trigger_layout();
 }

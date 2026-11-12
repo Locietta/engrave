@@ -29,6 +29,7 @@
 
 #include "derivedchange.h"
 #include "dom/score.h"
+#include "elementchange.h"
 #include "global/types/translatablestring.h"
 #include "sourcechange.h"
 #include "textchange.h"
@@ -44,7 +45,13 @@ enum class JournalEntryKind : uint8_t {
     BRACKET_PROPERTY,
     TEXT_LINE_PROPERTY,
     TEXT_FORMAT,
-    STYLE_REPLACEMENT
+    STYLE_REPLACEMENT,
+    ELEMENT_ADD,
+    ELEMENT_REMOVE,
+    ELEMENT_REPLACE,
+    ELEMENT_REPARENT,
+    SEGMENT_REPARENT,
+    LINK
 };
 
 struct JournalEntry {
@@ -68,6 +75,11 @@ struct JournalBatch {
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
     void change_text_line_property(EngravingObject &object, const PropertyValue &value);
     void change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);
+    void change_element_membership(EngravingItem &item, bool adding);
+    void replace_element(EngravingItem &before, EngravingItem &after);
+    void reparent_element(EngravingItem &item, EngravingItem &parent, staff_idx_t staff);
+    void reparent_segment(Segment &item, Measure &parent, Fraction tick);
+    void change_link(EngravingObject &item, EngravingObject *peer);
     void unwind(bool clean_up = true);
 
     bool replaying() const { return replaying_; }
@@ -95,6 +107,10 @@ struct JournalBatch {
 
     size_t text_format_entries() const { return text_formats_.size(); }
 
+    size_t compound_entries() const {
+        return elements_.size() + replacements_.size() + parents_.size() + segment_parents_.size() + links_.size();
+    }
+
     // Existing playback/automation metadata, retained while command families migrate.
     using ChangesInfo = ScoreChanges;
     ChangesInfo changes_info() const;
@@ -105,6 +121,12 @@ private:
     amc::vector<BracketPropertyInverse> brackets_;
     amc::vector<TextLinePropertyInverse> text_lines_;
     amc::vector<TextFormatInverse> text_formats_;
+    amc::vector<ElementMembershipInverse> elements_;
+    amc::vector<ElementReplacementInverse> replacements_;
+    amc::vector<ElementParentInverse> parents_;
+    amc::vector<SegmentParentInverse> segment_parents_;
+    amc::vector<LinkInverse> links_;
+    void dispose_entry(JournalEntry entry, bool committed);
     bool replaying_ = false;
 };
 

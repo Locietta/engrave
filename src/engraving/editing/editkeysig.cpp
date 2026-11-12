@@ -121,7 +121,7 @@ void EditKeySig::undo_change_key_sig(Transaction &tx, Score *score, Staff *ostaf
             nks->set_key_sig_event(nkey);
             staff_score->do_undo_add_element(nks);
             if (lks) {
-                tx.push(new Link(lks, nks));
+                tx.link_objects(lks, nks);
             } else {
                 lks = nks;
             }

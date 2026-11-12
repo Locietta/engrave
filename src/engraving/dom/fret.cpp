@@ -212,7 +212,7 @@ EngravingItem *FretDiagram::linked_clone() {
         EngravingItem *new_harmony = harmony_->linked_clone();
         e->add(new_harmony);
     }
-    score()->undo(new Link(e, this));
+    score()->record_link(e, this);
     return e;
 }
 

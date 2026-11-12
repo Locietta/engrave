@@ -280,7 +280,7 @@ Chord::Chord(DummyParentOr<Segment> parent) : ChordRest(ElementType::CHORD, pare
 Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
     clone_authored_overrides(authored_overrides, c.authored_overrides);
     if (link) {
-        score()->undo(new Link(this, const_cast<Chord *>(&c)));
+        score()->record_link(this, const_cast<Chord *>(&c));
     }
 
     for (Note *onote : c.notes_) {
@@ -294,7 +294,7 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
     for (Articulation *a : c.articulations_) { // make deep copy
         Articulation *na = a->clone();
         if (link) {
-            score()->undo(new Link(na, a));
+            score()->record_link(na, a);
         }
         na->set_ownership_parent(this);
         na->set_track(track());
@@ -330,21 +330,21 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
         Arpeggio *a = c.arpeggio_->is_chord_bracket() ? new ChordBracket(*to_chord_bracket(c.arpeggio_)) : new Arpeggio(*(c.arpeggio_));
         add(a);
         if (link) {
-            score()->undo(new Link(a, const_cast<Arpeggio *>(c.arpeggio_)));
+            score()->record_link(a, const_cast<Arpeggio *>(c.arpeggio_));
         }
     }
 
     if (c.tremolo_single_chord_) {
         TremoloSingleChord *t = Factory::copy_tremolo_single_chord(*(c.tremolo_single_chord_));
         if (link) {
-            score()->undo(new Link(t, const_cast<TremoloSingleChord *>(c.tremolo_single_chord_)));
+            score()->record_link(t, const_cast<TremoloSingleChord *>(c.tremolo_single_chord_));
         }
         add(t);
     } else if (c.tremolo_two_chord_) {
         if (c.tremolo_two_chord_->chord1() == &c) {
             TremoloTwoChord *t = Factory::copy_tremolo_two_chord(*(c.tremolo_two_chord_));
             if (link) {
-                score()->undo(new Link(t, const_cast<TremoloTwoChord *>(c.tremolo_two_chord_)));
+                score()->record_link(t, const_cast<TremoloTwoChord *>(c.tremolo_two_chord_));
             }
             t->set_chords(this, nullptr);
             add(t);
@@ -360,7 +360,7 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
                 ncl->set_note(find_note(cl->note()->pitch()));
             }
             if (link) {
-                score()->undo(new Link(ncl, cl));
+                score()->record_link(ncl, cl);
             }
         }
     }
@@ -380,10 +380,10 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
             new_right_paren->set_ownership_parent(this);
 
             if (link && !info->left_paren()->generated()) {
-                score()->undo(new Link(new_left_paren, info->left_paren()));
+                score()->record_link(new_left_paren, info->left_paren());
             }
             if (link && !info->right_paren()->generated()) {
-                score()->undo(new Link(new_right_paren, info->right_paren()));
+                score()->record_link(new_right_paren, info->right_paren());
             }
 
             std::vector<Note *> new_notes;

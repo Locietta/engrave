@@ -276,7 +276,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         left_parenthesis_->set_ownership_parent(this);
         left_parenthesis_->set_track(track());
         if (link) {
-            score()->undo(new Link(left_parenthesis_, e.left_parenthesis_));
+            score()->record_link(left_parenthesis_, e.left_parenthesis_);
         }
     }
     if (e.right_parenthesis_) {
@@ -284,7 +284,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         right_parenthesis_->set_ownership_parent(this);
         right_parenthesis_->set_track(track());
         if (link) {
-            score()->undo(new Link(right_parenthesis_, e.right_parenthesis_));
+            score()->record_link(right_parenthesis_, e.right_parenthesis_);
         }
     }
 }
@@ -408,7 +408,7 @@ String EngravingItem::translated_subtype_user_name() const { return subtype_user
 
 EngravingItem *EngravingItem::linked_clone() {
     EngravingItem *e = clone();
-    score()->undo(new Link(e, this));
+    score()->record_link(e, this);
     return e;
 }
 

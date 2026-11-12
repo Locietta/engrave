@@ -554,7 +554,7 @@ bool EngravingObject::is_linked(EngravingObject *se) const {
 
 void EngravingObject::undo_unlink() {
     if (links_) {
-        score()->undo(new Unlink(this));
+        score()->record_unlink(this);
     }
 }
 

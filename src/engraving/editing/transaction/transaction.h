@@ -32,6 +32,8 @@ namespace mu::engraving {
 struct EditData;
 struct BracketItem;
 struct TextBase;
+struct Segment;
+struct Measure;
 struct ScoreChanges;
 struct MasterScore;
 struct UndoableCommand;
@@ -55,6 +57,13 @@ struct Transaction {
     void change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags);
     void change_text_line_property(EngravingObject &object, const PropertyValue &value);
     void change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags);
+    void add_element(EngravingItem *item);
+    void remove_element(EngravingItem *item);
+    void replace_element(EngravingItem *before, EngravingItem *after);
+    void reparent_element(EngravingItem *item, EngravingItem *parent, staff_idx_t staff);
+    void reparent_segment(Segment *item, Measure *parent, Fraction tick);
+    void link_objects(EngravingObject *item, EngravingObject *peer);
+    void unlink_object(EngravingObject *item);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended

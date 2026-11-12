@@ -42,6 +42,7 @@
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/stafftext.h"
 #include "engraving/dom/stem.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
@@ -766,6 +767,324 @@ TEST(JournalDerived, TextLineSystemRollbackRestoresStyledOverrides) {
     EXPECT_EQ(line->property_flags(Pid::BEGIN_FONT_FACE), PropertyFlags::UNSTYLED);
     EXPECT_EQ(document->revision(), revision);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+}
+
+// --- JournalCompound -------------------------------------------------------------
+
+TEST(JournalCompound, NestedLinkAndCreatedAddFailure) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto peer_id = find_id(*document, "Text");
+    auto &peer = *to_text_base(&engrave::harness::element(*document, peer_id));
+    const auto original_peers = peer.link_list();
+    const auto revision = document->revision();
+    const auto whole_count_before = master.layout_state.whole_count;
+    const auto range_count_before = master.layout_state.range_count;
+
+    auto *created = Factory::create_text(master.first_measure());
+    ASSERT_NE(created, nullptr);
+    created->set_track(0);
+    created->set_xml_text("<b>authored nested</b>");
+
+    SourceHandle created_handle{};
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_link(created, &peer);
+        master.record_element_add(created);
+        created_handle = master.eid_register()->enroll(*created);
+        EXPECT_TRUE(created_handle.is_valid());
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.compound_entries(), 2u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject nested link and add"});
+    }});
+    EXPECT_FALSE(result);
+    EXPECT_EQ(peer.link_list(), original_peers);
+    EXPECT_EQ(master.eid_register()->item_from_handle(created_handle), nullptr);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+    EXPECT_EQ(master.layout_state.whole_count, whole_count_before);
+    EXPECT_EQ(master.layout_state.range_count, range_count_before);
+}
+
+TEST(JournalCompound, EarlierValueInverseReferencesRemovedObject) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto text_id = find_id(*document, "Text");
+    auto &text = *to_text_base(&engrave::harness::element(*document, text_id));
+    const auto color_before = text.get_property(Pid::COLOR);
+    const auto text_before = text.xml_text();
+    const auto revision = document->revision();
+    const auto handle = master.eid_register()->enroll(text);
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        text.undo_change_property(Pid::COLOR, PropertyValue(muse::draw::Color{12, 34, 56}));
+        EXPECT_EQ(text.get_property(Pid::COLOR), PropertyValue(muse::draw::Color{12, 34, 56}));
+        master.record_element_remove(&text);
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.property_entries(), 1u);
+        EXPECT_GE(batch.compound_entries(), 1u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject color change and remove"});
+    }});
+    EXPECT_FALSE(result);
+    const auto resolved = engrave::resolve(master, text_id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(resolved->object, &text);
+    EXPECT_EQ(master.eid_register()->live_item(handle), &text);
+    EXPECT_EQ(text.get_property(Pid::COLOR), color_before);
+    EXPECT_EQ(text.xml_text(), text_before);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalCompound, RemoveAndReaddSameAuthoredTextLifetime) {
+    using namespace mu::engraving;
+    for (bool reject : {false, true}) {
+        SCOPED_TRACE(reject);
+        auto document = open(fixture_name);
+        ASSERT_TRUE(document);
+        auto &master = engrave::harness::master_of(*document);
+        const auto id = find_id(*document, "Text");
+        auto &item = *to_text_base(&engrave::harness::element(*document, id));
+        auto *saved_parent = item.ownership_parent_item();
+        ASSERT_NE(saved_parent, nullptr);
+        const auto handle = master.eid_register()->enroll(item);
+        const auto revision = document->revision();
+
+        const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+            master.record_element_remove(&item);
+            item.set_ownership_parent(saved_parent);
+            master.record_element_add(&item);
+            const auto &batch = *master.mutation_journal()->active_transaction();
+            EXPECT_GE(batch.compound_entries(), 2u);
+            EXPECT_EQ(batch.legacy_entries(), 0u);
+            if (reject) {
+                return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject reattached element"});
+            }
+            return {};
+        }});
+        EXPECT_EQ(result.has_value(), !reject);
+        EXPECT_EQ(master.eid_register()->item_from_handle(handle), &item);
+        EXPECT_EQ(master.eid_register()->live_item(handle), &item);
+        const auto resolved = engrave::resolve(master, id);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, &item);
+        EXPECT_EQ(item.ownership_parent_item(), saved_parent);
+        EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+        if (reject) {
+            EXPECT_EQ(document->revision(), revision);
+        } else {
+            EXPECT_EQ(document->revision(), revision + 1u);
+        }
+    }
+}
+
+TEST(JournalCompound, UnlinkExactGroupAndOrderRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *first_measure = master.first_measure();
+    ASSERT_NE(first_measure, nullptr);
+
+    auto *a = Factory::create_text(first_measure);
+    ASSERT_NE(a, nullptr);
+    a->set_track(0);
+    a->set_xml_text("<b>link a</b>");
+    master.record_element_add(a);
+
+    auto *b = Factory::create_text(first_measure);
+    ASSERT_NE(b, nullptr);
+    b->set_track(0);
+    b->set_xml_text("<b>link b</b>");
+    master.record_element_add(b);
+
+    auto *c = Factory::create_text(first_measure);
+    ASSERT_NE(c, nullptr);
+    c->set_track(0);
+    c->set_xml_text("<b>link c</b>");
+    master.record_element_add(c);
+
+    a->link_to(b);
+    c->link_to(b);
+
+    auto *saved_group = b->links();
+    ASSERT_NE(saved_group, nullptr);
+    EXPECT_EQ(a->links(), saved_group);
+    EXPECT_EQ(c->links(), saved_group);
+    const std::vector<EngravingObject *> ordered_members(saved_group->begin(), saved_group->end());
+    ASSERT_EQ(ordered_members.size(), 3u);
+    const auto revision = document->revision();
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_unlink(a);
+        master.record_unlink(b);
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.compound_entries(), 2u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject unlink batch"});
+    }});
+    EXPECT_FALSE(result);
+    EXPECT_EQ(a->links(), saved_group);
+    EXPECT_EQ(b->links(), saved_group);
+    EXPECT_EQ(c->links(), saved_group);
+    const std::vector<EngravingObject *> rolled_back_members(saved_group->begin(), saved_group->end());
+    EXPECT_EQ(rolled_back_members, ordered_members);
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalCompound, LaterDirectLinkRetainsGroupAfterRecordedLinkRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    auto *measure = master.first_measure();
+    ASSERT_NE(measure, nullptr);
+    auto make_text = [&](const muse::String &value) {
+        auto *text = Factory::create_text(measure);
+        text->set_track(0);
+        text->set_xml_text(value);
+        master.record_element_add(text);
+        return text;
+    };
+    auto *recorded = make_text(u"recorded");
+    auto *peer = make_text(u"peer");
+    auto *direct = make_text(u"direct");
+    LinkedObjects *group = nullptr;
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_link(recorded, peer);
+        direct->link_to(peer);
+        group = peer->links();
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject recorded link"});
+    }});
+    EXPECT_FALSE(result);
+    EXPECT_EQ(recorded->links(), nullptr);
+    ASSERT_NE(peer->links(), nullptr);
+    EXPECT_EQ(peer->links(), group);
+    EXPECT_EQ(direct->links(), group);
+    // The direct member is outside this inverse. Its live group must remain DOM-owned.
+    const std::vector<EngravingObject *> members(group->begin(), group->end());
+    EXPECT_EQ(members, (std::vector<EngravingObject *>{peer, direct}));
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalCompound, ReparentItemAndSegmentRollback) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto *master = &engrave::harness::master_of(*document);
+    auto *first = master->first_measure();
+    ASSERT_NE(first, nullptr);
+    auto *next = first->next_measure();
+    if (!next) {
+        document = open("coverage.musicxml");
+        ASSERT_TRUE(document);
+        master = &engrave::harness::master_of(*document);
+        first = master->first_measure();
+        ASSERT_NE(first, nullptr);
+        next = first->next_measure();
+        ASSERT_NE(next, nullptr);
+    }
+
+    auto *original_segment = Factory::create_segment(first, SegmentType::TIME_TICK, Fraction(1, 8));
+    ASSERT_NE(original_segment, nullptr);
+    master->record_element_add(original_segment);
+
+    auto *staff_text = Factory::create_staff_text(original_segment);
+    ASSERT_NE(staff_text, nullptr);
+    staff_text->set_track(0);
+    staff_text->set_xml_text("<b>authored staff text</b>");
+    master->record_element_add(staff_text);
+    engrave::assign_missing_ids(*master);
+
+    auto *target_segment = first->first(SegmentType::CHORD_REST);
+    ASSERT_NE(target_segment, nullptr);
+    ASSERT_NE(target_segment, original_segment);
+
+    const auto item_owner = staff_text->ownership_parent_item();
+    const auto segment_owner = original_segment->measure();
+    const auto local_tick = original_segment->rtick();
+    const auto item_handle = master->eid_register()->enroll(*staff_text);
+    const auto segment_handle = master->eid_register()->enroll(*original_segment);
+    const auto item_id = engrave::from_engine(staff_text->eid());
+    const auto segment_id = engrave::from_engine(original_segment->eid());
+    const auto revision = document->revision();
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master->record_parent_change(staff_text, target_segment, 0);
+        master->record_segment_parent_change(original_segment, next, Fraction(1, 4));
+        const auto &batch = *master->mutation_journal()->active_transaction();
+        EXPECT_GE(batch.compound_entries(), 2u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject reparent"});
+    }});
+    EXPECT_FALSE(result);
+
+    EXPECT_EQ(staff_text->ownership_parent_item(), item_owner);
+    EXPECT_EQ(original_segment->measure(), segment_owner);
+    EXPECT_EQ(original_segment->rtick(), local_tick);
+    EXPECT_EQ(master->eid_register()->live_item(item_handle), staff_text);
+    EXPECT_EQ(master->eid_register()->live_item(segment_handle), original_segment);
+    if (staff_text->eid().is_valid()) {
+        const auto resolved = engrave::resolve(*master, item_id);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, staff_text);
+    }
+    if (original_segment->eid().is_valid()) {
+        const auto resolved = engrave::resolve(*master, segment_id);
+        ASSERT_TRUE(resolved);
+        EXPECT_EQ(resolved->object, original_segment);
+    }
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master->mutation_journal()->has_active_transaction());
+}
+
+TEST(JournalCompound, ReplaceThenRejectRestoresOriginalAndLeavesReplacementInactive) {
+    using namespace mu::engraving;
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &master = engrave::harness::master_of(*document);
+    const auto old_id = find_id(*document, "Text");
+    auto &old_text = *to_text_base(&engrave::harness::element(*document, old_id));
+    const auto old_xml = old_text.xml_text();
+    auto *parent = old_text.ownership_parent_item();
+    ASSERT_NE(parent, nullptr);
+    const auto track = old_text.track();
+    const auto old_handle = master.eid_register()->enroll(old_text);
+    const auto revision = document->revision();
+
+    auto *replacement = Factory::create_text(parent);
+    ASSERT_NE(replacement, nullptr);
+    replacement->set_track(track);
+    replacement->set_xml_text("<b>replacement authored text</b>");
+    const auto replacement_handle = master.eid_register()->enroll(*replacement);
+
+    const auto result = chord_line_batch(*document, {[&](auto &) -> engrave::Result<void> {
+        master.record_element_replace(&old_text, replacement);
+        const auto &batch = *master.mutation_journal()->active_transaction();
+        EXPECT_GE(batch.compound_entries(), 1u);
+        EXPECT_EQ(batch.legacy_entries(), 0u);
+        return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "reject element replacement"});
+    }});
+    EXPECT_FALSE(result);
+
+    EXPECT_EQ(master.eid_register()->item_from_handle(old_handle), &old_text);
+    EXPECT_EQ(master.eid_register()->live_item(old_handle), &old_text);
+    const auto resolved = engrave::resolve(master, old_id);
+    ASSERT_TRUE(resolved);
+    EXPECT_EQ(resolved->object, &old_text);
+    EXPECT_EQ(old_text.ownership_parent_item(), parent);
+    EXPECT_EQ(old_text.xml_text(), old_xml);
+    EXPECT_EQ(master.eid_register()->live_item(replacement_handle), nullptr);
+    EXPECT_FALSE(master.eid_register()->published(replacement_handle));
+    EXPECT_EQ(document->revision(), revision);
+    EXPECT_FALSE(master.mutation_journal()->has_active_transaction());
 }
 
 TEST(JournalWholeStyle, ChordSnapshotOwnsItsRenderActions) {
