@@ -1843,7 +1843,7 @@ void SystemLayout::process_lines(System *system, LayoutContext &ctx, const std::
     }
 
     if (segments.size() > 0 && segments.front()->is_slur_segment()) {
-        SlurTieLayout::adjust_overlapping_slurs(system->spanner_segments());
+        SlurTieLayout::adjust_overlapping_slurs(system->spanner_segments(), &ctx);
     }
 
     //

@@ -318,7 +318,7 @@ SpannerSegment *SlurTieLayout::layout_system(Slur *item, System *system, LayoutC
         adjust_slur_floating_end_point_angles(slur_segment, p1, p2, incoming_partial_slur, outgoing_partial_slur);
     }
 
-    layout_segment(slur_segment, p1, p2);
+    layout_segment(slur_segment, p1, p2, &ctx);
 
     return slur_segment;
 }
@@ -945,7 +945,7 @@ void SlurTieLayout::adjust_end_points(SlurSegment *slur_seg) {
 }
 
 void SlurTieLayout::avoid_collisions(SlurSegment *slur_seg, PointF &pp1, PointF &p2, PointF &p3, PointF &p4,
-                                     Transform &to_system_coordinates, double &slur_angle) {
+                                     Transform &to_system_coordinates, double &slur_angle, const LayoutContext *ctx) {
     Slur *slur = slur_seg->slur();
     double spatium = slur_seg->spatium();
     double slur_length = std::abs(p2.x() / spatium);
@@ -959,7 +959,7 @@ void SlurTieLayout::avoid_collisions(SlurSegment *slur_seg, PointF &pp1, PointF 
         return;
     }
 
-    Shape seg_shapes = get_segment_shapes(slur_seg, start_cr, end_cr); // Shape of the music under this slur
+    Shape seg_shapes = get_segment_shapes(slur_seg, start_cr, end_cr, ctx); // Shape of the music under this slur
     add_min_clearance_to_shapes(seg_shapes, spatium, slur_up, start_cr, end_cr);
 
     if (seg_shapes.empty()) {
@@ -1132,7 +1132,7 @@ void SlurTieLayout::avoid_collisions(SlurSegment *slur_seg, PointF &pp1, PointF 
     } while ((collision.left || collision.mid || collision.right) && iter < max_iter);
 }
 
-Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_cr, ChordRest *end_cr) {
+Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_cr, ChordRest *end_cr, const LayoutContext *ctx) {
     Shape seg_shapes;
 
     // Determine start and end segments for collision checks
@@ -1142,7 +1142,10 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
             // if this is a grace-note-after, the shape is stored the *appended* segment
             Chord *parent = to_chord(start_cr->ownership_parent());
             if (parent) {
-                start_seg = ChordLayout::grace_notes_after_segment(parent);
+                // Spacing may have selected a segment that later moved. During
+                // layout use that pass's recorded target, not a fresh tick lookup.
+                const GraceNotesGroup *group = ctx ? ctx->grace_group(parent, true) : nullptr;
+                start_seg = ctx ? (group ? group->appended_segment() : nullptr) : ChordLayout::grace_notes_after_segment(parent);
             }
         } else {
             start_seg = start_cr->segment(); // first of the slur
@@ -1157,7 +1160,10 @@ Shape SlurTieLayout::get_segment_shapes(SlurSegment *slur_seg, ChordRest *start_
             // if this is a grace-note-after, the shape is stored the *appended* segment
             Chord *parent = to_chord(end_cr->ownership_parent());
             if (parent) {
-                end_seg = ChordLayout::grace_notes_after_segment(parent);
+                // Spacing may have selected a segment that later moved. During
+                // layout use that pass's recorded target, not a fresh tick lookup.
+                const GraceNotesGroup *group = ctx ? ctx->grace_group(parent, true) : nullptr;
+                end_seg = ctx ? (group ? group->appended_segment() : nullptr) : ChordLayout::grace_notes_after_segment(parent);
             }
         } else {
             end_seg = end_cr->segment(); // last of the slur
@@ -1779,7 +1785,7 @@ void SlurTieLayout::create_slur_segments(Slur *item, LayoutContext &ctx) {
     }
 }
 
-void SlurTieLayout::adjust_overlapping_slurs(const std::list<SpannerSegment *> &spanner_segments) {
+void SlurTieLayout::adjust_overlapping_slurs(const std::list<SpannerSegment *> &spanner_segments, const LayoutContext *ctx) {
     std::vector<SlurSegment *> segments;
     for (SpannerSegment *seg : spanner_segments) {
         if (seg->is_slur_segment()) {
@@ -1805,8 +1811,8 @@ void SlurTieLayout::adjust_overlapping_slurs(const std::list<SpannerSegment *> &
                 compare(slur1->ups(Grip::END).p.y(), slur2->ups(Grip::START).p.y())) {
                 slur1->ups(Grip::END).p.rx() -= slur_collision_horiz_offset;
                 slur2->ups(Grip::START).p.rx() += slur_collision_horiz_offset;
-                SlurTieLayout::compute_bezier(slur1);
-                SlurTieLayout::compute_bezier(slur2);
+                SlurTieLayout::compute_bezier(slur1, PointF(), ctx);
+                SlurTieLayout::compute_bezier(slur2, PointF(), ctx);
                 continue;
             }
 
@@ -1826,7 +1832,7 @@ void SlurTieLayout::adjust_overlapping_slurs(const std::list<SpannerSegment *> &
                 if (slur1->ups(Grip::END).p.x() > slur_tie2->ups(Grip::END).p.x() || slur_tie2->is_tie_segment()) {
                     // slur1 is the "outside" slur
                     slur1->ups(Grip::START).p.ry() += slur_collision_vert_offset * (slur1->slur()->up() ? -1 : 1);
-                    SlurTieLayout::compute_bezier(slur1);
+                    SlurTieLayout::compute_bezier(slur1, PointF(), ctx);
                 }
             }
             // END POINT
@@ -1835,7 +1841,7 @@ void SlurTieLayout::adjust_overlapping_slurs(const std::list<SpannerSegment *> &
                 if (slur1->ups(Grip::START).p.x() < slur_tie2->ups(Grip::START).p.x() || slur_tie2->is_tie_segment()) {
                     // slur1 is the "outside" slur
                     slur1->ups(Grip::END).p.ry() += slur_collision_vert_offset * (slur1->slur()->up() ? -1 : 1);
-                    SlurTieLayout::compute_bezier(slur1);
+                    SlurTieLayout::compute_bezier(slur1, PointF(), ctx);
                 }
             }
         }
@@ -2674,7 +2680,7 @@ void SlurTieLayout::compute_bezier(TieSegment *tie_seg, PointF shoulder_offset) 
     fill_shape(tie_seg, tie_length_in_sp);
 }
 
-void SlurTieLayout::compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset) {
+void SlurTieLayout::compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset, const LayoutContext *ctx) {
     /* ************************************************
      * LEGEND: pp1 = start point
      *         pp2 = end point
@@ -2758,7 +2764,7 @@ void SlurTieLayout::compute_bezier(SlurSegment *slur_seg, PointF shoulder_offset
     // ADAPT SLUR SHAPE AND ENDPOINT POSITION
     // to clear collisions with underlying items
     if (slur_seg->autoplace() && !slur_seg->is_tapping_half_slur_segment()) {
-        avoid_collisions(slur_seg, pp1, p2, p3, p4, to_system_coordinates, slur_angle);
+        avoid_collisions(slur_seg, pp1, p2, p3, p4, to_system_coordinates, slur_angle, ctx);
     }
 
     // Re-check end points for bad staff line collisions
@@ -3102,7 +3108,7 @@ void SlurTieLayout::calculate_is_inside(Tie *item) {
     }
 }
 
-void SlurTieLayout::layout_segment(SlurSegment *item, const PointF &p1, const PointF &p2) {
+void SlurTieLayout::layout_segment(SlurSegment *item, const PointF &p1, const PointF &p2, const LayoutContext *ctx) {
     SlurSegment::LayoutData *ldata = item->mutldata();
     if (should_hide_slur_segment(item)) {
         ldata->set_is_skip_draw(true);
@@ -3119,7 +3125,7 @@ void SlurTieLayout::layout_segment(SlurSegment *item, const PointF &p1, const Po
     //Adjust Y pos to staff type yOffset before other calculations
     ldata->move_y(item->staff_offset_y());
 
-    compute_bezier(item);
+    compute_bezier(item, PointF(), ctx);
 }
 
 void SlurTieLayout::compute_mid_thickness(SlurTieSegment *slur_tie_seg, double slur_tie_length_in_sp) {
