@@ -211,7 +211,13 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
             error.op_index = i;
             return std::unexpected(std::move(error));
         }
-        steps.push_back(std::move(*step));
+        // Operations resolve source addresses and may read lines, anchors or
+        // repeat state. Unknown operation dependencies conservatively use the
+        // full semantic barrier; a clean document does no normalization work.
+        steps.push_back([apply = std::move(*step)](EditContext &context) {
+            context.prepare_semantics();
+            return apply(context);
+        });
     }
     return execute(std::move(steps), policy, std::move(snapshot_step));
 }

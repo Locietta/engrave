@@ -251,28 +251,16 @@ void ChordRest::remove(EngravingItem *e) {
 ///                   a (new) beam)
 //---------------------------------------------------------
 
-void ChordRest::remove_delete_beam(bool beamed) {
+void ChordRest::remove_delete_beam(bool /*beamed*/) {
     set_beamlet(nullptr);
     if (beam_) {
         Beam *b = beam_;
         beam_->remove(this);
-        if (b->empty()) {
-            score()->do_undo_remove_element(b);
-        } else {
-            renderer()->layout_beam1(b);
-        }
+        if (b->empty()) score()->do_undo_remove_element(b);
     }
-    if (!beamed && is_chord()) {
-        Chord *c = to_chord(this);
-        if (c->should_have_hook()) {
-            if (!c->hook()) {
-                c->create_hook();
-            }
-        } else if (c->hook()) {
-            score()->do_undo_remove_element(c->hook());
-        }
-        renderer()->layout_stem(c);
-    }
+    // Beam membership may be stale between edits. Stems/hooks are display
+    // children and are rebuilt by layout, never by a semantic edit.
+    trigger_layout();
 }
 
 void ChordRest::compute_up() { UNREACHABLE; }
