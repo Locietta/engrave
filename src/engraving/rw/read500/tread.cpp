@@ -2373,9 +2373,6 @@ static bool chord_line_number(const String &text, double &value) {
 }
 
 void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
-    //! NOTE Need separated "given" data and layout data
-    ChordLine::LayoutData *ldata = l->mutldata();
-    ldata->path = PainterPath();
     std::array<PointF, 4> offsets{};
     bool has_offsets = false;
     std::array<bool, 4> seen{};
@@ -2447,8 +2444,7 @@ void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
             if (state != 0) {
                 invalid_offsets = true;
             }
-            ldata->path = path;
-            l->set_modified(true);
+            l->read_legacy_absolute_path(path);
         } else if (tag == "offset" && ctx.msc_version() >= 500) {
             // The policy can occur later. Preserve legacy 4.70 migration.
             double x = 0.0, y = 0.0;

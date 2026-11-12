@@ -1074,9 +1074,7 @@ void TWrite::write(const ChordLine *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("o3", {{"x", chord_line_number_text(offsets[2].x())}, {"y", chord_line_number_text(offsets[2].y())}});
         xml.tag("o4", {{"x", chord_line_number_text(offsets[3].x())}, {"y", chord_line_number_text(offsets[3].y())}});
     } else if (item->modified()) {
-        //! NOTE Need separated "given" data and layout data
-        const ChordLine::LayoutData *ldata = item->ldata();
-        const PainterPath &path = ldata->path;
+        const PainterPath &path = item->legacy_absolute_path();
         size_t n = path.element_count();
         xml.start_element("Path");
         for (size_t i = 0; i < n; ++i) {

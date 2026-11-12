@@ -328,6 +328,7 @@ void expect_chord_line(const ChordLine &line, const ChordLine::AppearanceState &
     EXPECT_EQ(actual.length_x, expected.length_x);
     EXPECT_EQ(actual.length_y, expected.length_y);
     EXPECT_EQ(actual.controls, expected.controls);
+    EXPECT_EQ(actual.legacy_path, expected.legacy_path);
     EXPECT_EQ(actual.flags, expected.flags);
     for (size_t i = 0; i < ChordLine::appearance_properties.size(); ++i) {
         // Offset/default paths are layout caches. Only legacy edited PATH is source.
@@ -543,6 +544,21 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndRollback) {
     EXPECT_FALSE(stack->has_active_transaction());
 }
 
+TEST(ChordLineEdit, LegacyPathSurvivesDisplayCacheReplacement) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto &line = chord_line(*document);
+    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::from_value(edited_path()))}));
+    const auto before = line.appearance_state();
+    const auto path = line.legacy_absolute_path();
+    line.mutldata()->path = PainterPath();
+    EXPECT_EQ(line.get_property(Pid::PATH), PropertyValue::from_value(path));
+    expect_chord_line(line, before);
+    std::unique_ptr<ChordLine> copy(line.clone());
+    EXPECT_EQ(copy->legacy_absolute_path(), path);
+    EXPECT_EQ(copy->get_property(Pid::PATH), PropertyValue::from_value(path));
+}
+
 TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
@@ -555,6 +571,11 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
             line.set_property(Pid::PATH, PropertyValue::from_value(edited_path()));
         const auto before = line.appearance_state();
         const auto revision = document->revision();
+        const auto native500 = document->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        const auto native470 = document->export_score({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(native500);
+        ASSERT_FALSE(native470);
+        EXPECT_NE(native470.error().message.find("ChordLine"), std::string::npos);
         const auto fail = [](engrave::api::EditContext &) -> engrave::Result<void> {
             throw std::runtime_error("injected after ChordLine edits");
         };
@@ -565,6 +586,13 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
                                                    },
                                                    set_line(line, Pid::PATH, PropertyValue::from_value(PainterPath())), fail});
         EXPECT_FALSE(result);
+        expect_chord_line(line, before);
+        const auto restored500 = document->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
+        const auto restored470 = document->export_score({.format = engrave::Format::MSCX, .native_version = "4.70"});
+        ASSERT_TRUE(restored500);
+        ASSERT_FALSE(restored470);
+        EXPECT_EQ(*restored500, *native500);
+        EXPECT_EQ(restored470.error().message, native470.error().message);
         expect_chord_line(line, before);
         EXPECT_EQ(document->revision(), revision);
         EXPECT_EQ(stack->size(), 0u);

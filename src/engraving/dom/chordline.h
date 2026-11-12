@@ -23,6 +23,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 
 #include "../types/types.h"
 #include "draw/types/painterpath.h"
@@ -98,6 +99,13 @@ public:
 
     SymId wave_sym() const;
 
+    struct LegacyAbsolutePath {
+        PainterPath path;
+    };
+
+    const PainterPath &legacy_absolute_path() const;
+    void read_legacy_absolute_path(const PainterPath &);
+
     // Physical drawing-unit sources, independent of the derived layout cache.
     bool has_source_offsets() const { return has_source_offsets_; }
 
@@ -124,6 +132,7 @@ public:
         double length_x;
         double length_y;
         std::array<PointF, 4> controls;
+        bool legacy_path;
     };
 
     AppearanceState appearance_state() const;
@@ -145,6 +154,8 @@ private:
     void scale_offsets(double old_value, double new_value);
     bool has_source_offsets_ = false;
     std::array<PointF, 4> source_offsets_{};
+
+    std::optional<LegacyAbsolutePath> legacy_path_;
 
     bool straight_ = false;
     bool wavy_ = false;
