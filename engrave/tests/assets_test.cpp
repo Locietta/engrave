@@ -12,6 +12,7 @@
 #include "engrave/src/score/json.h"
 #include FT_FREETYPE_H
 
+#include "draw/internal/fontfaceft.h"
 #include "draw/types/font.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
@@ -131,6 +132,36 @@ int main(int argc, char **argv) {
             bold_font.set_bold(true);
             bold_advance = engine->horizontal_advance(bold_font, sample);
             expect(std::abs(after - bold_advance) < 0.0001, "Regular lookup of a bold-only family did not use the registered face");
+        }
+        // Every face size borrows the same registry bytes. Replacing the active
+        // resource must leave already-created faces usable until they die.
+        {
+            const auto borrowed = context.fonts_database().font_data(muse::draw::FontDataKey(font.family()), muse::draw::Font::Type::TEXT);
+            {
+                const auto table = context.fonts_database().active_table();
+                const auto *record = music::find_record(*table, borrowed.key);
+                expect(record && borrowed.data.data() == record->bytes->const_data(), "Runtime font lookup copied resource bytes");
+            }
+            std::vector<std::unique_ptr<muse::draw::FontFaceFT>> faces;
+            for (int size = 10; size < 20; ++size) {
+                auto face = std::make_unique<muse::draw::FontFaceFT>();
+                expect(face->load({borrowed.key, muse::draw::Font::Type::TEXT, size}, borrowed, false), "Cannot load borrowed font face");
+                faces.push_back(std::move(face));
+            }
+            const auto padded_path = out / "replacement.ttf";
+            {
+                std::ofstream padded(padded_path, std::ios::binary);
+                padded.write(bytes.data(), bytes.size());
+                padded.write("\0\0\0\0", 4);
+                expect(bool(padded), "Cannot write replacement font");
+            }
+            const auto replacement = assets.add_font(utf8(padded_path));
+            expect(replacement.id != info.id, "Replacement font was not registered");
+            const auto replaced = context.fonts_database().font_data(borrowed.key, muse::draw::Font::Type::TEXT);
+            expect(replaced.data.data() != borrowed.data.data(), "Replacement reused old resource bytes");
+            for (const auto &face : faces) expect(face->glyph_index(U'M') != 0, "Replacement invalidated a borrowed face");
+            expect(assets.add_font(utf8(input)).id == info.id, "Original resource reactivation failed");
+            for (const auto &face : faces) expect(face->glyph_index(U'W') != 0, "Reactivation invalidated a borrowed face");
         }
         const auto again = assets.add_font(utf8(input));
         expect(again.id == info.id && again.path == info.path, "Identical font was not deduplicated");

@@ -271,7 +271,8 @@ struct CairoStateGuard {
 
 struct FtFaceEntry {
     FontDataKey key;
-    std::vector<uint8_t> data;
+    std::span<const uint8_t> data;
+    std::shared_ptr<const void> resource_owner;
     FT_Face ft = nullptr;
     hb_face_t *hb = nullptr;
     unsigned int ft_upem = 1000;
@@ -399,7 +400,8 @@ struct FontCache {
 
         auto entry = std::make_shared<FtFaceEntry>();
         entry->key = font_data.key;
-        entry->data.assign(font_data.data.const_data(), font_data.data.const_data() + font_data.data.size());
+        entry->resource_owner = db.retain_font(font_data.key);
+        entry->data = font_data.data;
         if (entry->data.empty()) {
             throw std::runtime_error("CairoPainter: empty font file");
         }

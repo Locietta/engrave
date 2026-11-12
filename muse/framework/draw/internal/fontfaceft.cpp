@@ -87,7 +87,7 @@ struct HeightMetrics {
 };
 
 struct muse::draw::FData {
-    ByteArray font_data;
+    std::span<const uint8_t> font_data;
     FT_Face face = nullptr;
     hb_font_t *hb_font = nullptr;
     std::unordered_map<glyph_idx_t, GlyphMetrics> glyphs_metrics;
@@ -188,10 +188,10 @@ bool FontFaceFT::load(const FaceKey &key, FontData font_data, bool is_symbol_mod
         return false;
     }
 
-    data_->font_data = std::move(font_data.data);
+    data_->font_data = font_data.data;
 
-    int rval = new_matching_memory_face(ftlib, (FT_Byte *) data_->font_data.const_data(), (FT_Long) data_->font_data.size(), key.data_key,
-                                        &data_->face);
+    int rval =
+        new_matching_memory_face(ftlib, (FT_Byte *) data_->font_data.data(), (FT_Long) data_->font_data.size(), key.data_key, &data_->face);
     if (rval) {
         LOGE() << "freetype: cannot create face: " << key_.data_key.family().id() << ", rval: " << rval;
         return false;

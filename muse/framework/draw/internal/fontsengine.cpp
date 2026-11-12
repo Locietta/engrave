@@ -29,8 +29,6 @@
 using namespace muse;
 using namespace muse::draw;
 
-static bool is_ftx([[maybe_unused]] const ByteArray &data) { return false; }
-
 static const double default_pixel_size = 100.0;
 static const double loaded_pixel_size_constant = 200.0;
 static const double font_metrics_dpi = 1200.0;
@@ -378,17 +376,6 @@ std::vector<GlyphImage> FontsEngine::render(const Font &f, const std::u32string 
     return images;
 }
 
-FontFace *FontsEngine::create_font_face(const FontData &font_data) const {
-    const FontDataKey &data_key = font_data.key;
-
-    if (is_ftx(font_data.data)) {
-        LOGE() << "XT font face backend is disabled: " << data_key.family().id();
-        return nullptr;
-    }
-
-    return new FontFace();
-}
-
 FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_data_key, Font::Type type, int input_loaded_pixel_size,
                                                     bool is_symbol_mode) const {
     for (FontFace *face : loaded_faces_) {
@@ -409,7 +396,7 @@ FontFace *FontsEngine::font_face_by_actual_data_key(const FontDataKey &actual_da
     loaded_key.type = type;
     loaded_key.pixel_size = input_loaded_pixel_size;
 
-    FontFace *face = create_font_face(font_data);
+    FontFace *face = new FontFace();
     IF_ASSERT_FAILED(face) { return nullptr; }
 
     if (!face->load(loaded_key, std::move(font_data), is_symbol_mode)) {
@@ -463,10 +450,7 @@ FontsEngine::RequireFace *FontsEngine::font_face(const Font &f, bool is_symbol_m
     //! (for example, if there is no required one)
     FontDataKey actual_data_key = database_.actual_font(require_key.data_key, require_key.type);
 
-    const int loaded_pixel_size_value = is_ftx(database_.font_data(actual_data_key, require_key.type).data) ?
-                                            static_cast<int>(::loaded_pixel_size_constant) :
-                                            require_key.pixel_size;
-    FontFace *face = font_face_by_actual_data_key(actual_data_key, require_key.type, loaded_pixel_size_value, is_symbol_mode);
+    FontFace *face = font_face_by_actual_data_key(actual_data_key, require_key.type, require_key.pixel_size, is_symbol_mode);
     if (!face) {
         return nullptr;
     }
@@ -480,11 +464,8 @@ FontsEngine::RequireFace *FontsEngine::font_face(const Font &f, bool is_symbol_m
     auto subtitution_font_data_keys = database_.substitution_fonts(require_key.data_key);
     for (const FontDataKey &data_key : subtitution_font_data_keys) {
         const FontDataKey actual_subtitution_data_key = database_.actual_font(data_key, require_key.type);
-        const int subtitution_loaded_pixel_size = is_ftx(database_.font_data(actual_subtitution_data_key, require_key.type).data) ?
-                                                      static_cast<int>(::loaded_pixel_size_constant) :
-                                                      require_key.pixel_size;
         FontFace *subtitution_face =
-            font_face_by_actual_data_key(actual_subtitution_data_key, require_key.type, subtitution_loaded_pixel_size, is_symbol_mode);
+            font_face_by_actual_data_key(actual_subtitution_data_key, require_key.type, require_key.pixel_size, is_symbol_mode);
         if (subtitution_face) {
             new_font->subtitution_faces.push_back(subtitution_face);
         }
