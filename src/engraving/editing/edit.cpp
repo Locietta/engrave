@@ -4738,6 +4738,7 @@ void Score::undo_change_spanner_elements(Spanner *spanner, EngravingItem *start_
         sp->score()->undo(new ChangeSpannerElements(sp, new_start_element, new_end_element));
 
         if (sp->is_tie()) {
+            sp->score()->master_score()->update_repeat_list(false);
             to_tie(sp)->update_possible_jump_points();
         }
     }

@@ -19,6 +19,7 @@
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/masterscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
@@ -157,13 +158,14 @@ Result<Step> prepare(EditContext &context, const AddTie &op) {
         if (!(*object)->is_note()) return invalid(std::format("{} is not a note", (*object)->type_name()));
         Note *note = mu::engraving::to_note(*object);
         if (note->tie_for()) return rejected("the note already has a tie");
+        Score *score = note->score();
+        score->master_score()->update_repeat_list(false);
         Note *end = mu::engraving::search_tie_note(note);
         if (!end) return rejected("no note of the same pitch follows this one");
         if (end->tie_back()) return rejected("the note to tie to already has a tie");
 
         // What EditTie's createAndAddTie makes of a tie to a note that is free: the
         // engine sets both notes' tie pointers when Score::addElement adds the tie.
-        Score *score = note->score();
         Tie *tie = mu::engraving::Factory::create_tie(note);
         tie->set_start_note(note);
         tie->set_track(note->track());

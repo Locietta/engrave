@@ -29,6 +29,7 @@
 #include "hook.h"
 #include "ledgerline.h"
 #include "log.h"
+#include "masterscore.h"
 #include "measure.h"
 #include "note.h"
 #include "notedot.h"
@@ -168,6 +169,7 @@ void Tie::update_possible_jump_points() {
 }
 
 void Tie::add_ties_to_jump_points() {
+    score()->master_score()->update_repeat_list(false);
     update_possible_jump_points();
     TieJumpPointList *jump_points = tie_jump_points();
     if (!jump_points) {
