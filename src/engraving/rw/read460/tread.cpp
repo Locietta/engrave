@@ -397,7 +397,8 @@ bool TRead::read_item_properties(EngravingItem *item, XmlReader &e, ReadContext 
             if (auto *table = authored_override_table(authored_override_owner(*item))) {
                 finish_authored_read(*item);
                 auto carrier = *table->carrier(item->authored_child);
-                carrier.track = item->track();
+                const auto *owner = authored_override_owner(*item);
+                carrier.track = owner && item->track() == owner->track() ? muse::nidx : item->track();
                 table->set_carrier(carrier);
             }
         }
@@ -2577,10 +2578,12 @@ void TRead::read(GuitarBendHold *h, XmlReader &xml, ReadContext &ctx) {
 
 bool TRead::read_properties(GuitarBendSegment *g, const AsciiStringView &tag, XmlReader &xml, ReadContext &ctx) {
     if (tag == "bendVertexOffset") {
-        g->set_vertex_point_off(xml.read_point() * g->style().spatium());
+        g->set_property(Pid::BEND_VERTEX_OFF, xml.read_point() * g->style().spatium());
     } else if (tag == "GuitarBendText") {
         GuitarBendText *bend_text = new GuitarBendText(g);
+        bind_authored_child(*bend_text, {AuthoredChildRole::SEGMENT_TEXT, g->authored_child.ordinal});
         read(to_text_base(bend_text), xml, ctx);
+        finish_authored_read(*bend_text);
         g->set_bend_text(bend_text);
     } else {
         return false;
@@ -2842,9 +2845,11 @@ void TRead::read(LineSegment *l, XmlReader &e, ReadContext &ctx) {
 bool TRead::read_properties(LineSegment *l, XmlReader &e, ReadContext &ctx) {
     const AsciiStringView tag(e.name());
     if (tag == "subtype") {
-        l->set_spanner_segment_type(SpannerSegmentType(e.read_int()));
+        const int subtype = e.read_int();
+        l->set_spanner_segment_type(SpannerSegmentType(subtype));
+        remember_authored_property(*l, Pid::SUBTYPE, subtype, PropertyFlags::NOSTYLE);
     } else if (tag == "off2") {
-        l->set_user_off2(e.read_point() * l->style().spatium());
+        l->set_property(Pid::OFFSET2, e.read_point() * l->style().spatium());
     } else if (l->is_guitar_bend_segment() && read_properties(static_cast<GuitarBendSegment *>(l), tag, e, ctx)) {
     } else if (!read_item_properties(l, e, ctx)) {
         return false;
@@ -3366,9 +3371,14 @@ bool TRead::read_properties(SLine *l, XmlReader &e, ReadContext &ctx) {
     } else if (tag == "Segment") {
         LineSegment *ls = l->create_line_segment();
         ls->set_track(l->track()); // needed in read to get the right staff mag
+        const auto ordinal = static_cast<uint32_t>(e.int_attribute("no", static_cast<int>(l->spanner_segments().size())));
+        while (l->spanner_segments().size() < ordinal) l->add(l->create_line_segment());
         l->add(ls);
+        bind_authored_child(*ls, {AuthoredChildRole::SPANNER_SEGMENT, ordinal});
         TRead::read(ls, e, ctx);
+        finish_authored_read(*ls);
         ls->set_visible(l->visible());
+        apply_authored_overrides(*ls);
     } else if (TRead::read_property(l, tag, e, ctx, Pid::DIAGONAL)) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::LINE_WIDTH)) {
     } else if (TRead::read_property(l, tag, e, ctx, Pid::LINE_STYLE)) {
@@ -3424,7 +3434,9 @@ bool TRead::read_properties(SlurTie *s, XmlReader &e, ReadContext &ctx) {
         }
         SlurTieSegment *sts = s->new_slur_tie_segment();
         s->add(sts);
+        bind_authored_child(*sts, {AuthoredChildRole::SPANNER_SEGMENT, static_cast<uint32_t>(idx)});
         TRead::read(sts, e, ctx);
+        finish_authored_read(*sts);
     } else if (!read_properties(to_spanner(s), e, ctx)) {
         return false;
     }
@@ -3436,13 +3448,13 @@ void TRead::read(SlurTieSegment *s, XmlReader &e, ReadContext &ctx) {
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "o1") {
-            s->ups(Grip::START).off = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF1, e.read_point() * spatium_value);
         } else if (tag == "o2") {
-            s->ups(Grip::BEZIER1).off = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF2, e.read_point() * spatium_value);
         } else if (tag == "o3") {
-            s->ups(Grip::BEZIER2).off = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF3, e.read_point() * spatium_value);
         } else if (tag == "o4") {
-            s->ups(Grip::END).off = e.read_point() * spatium_value;
+            s->set_property(Pid::SLUR_UOFF4, e.read_point() * spatium_value);
         } else if (tag == "HammerOnPullOffText") {
             DO_ASSERT(s->is_hammer_on_pull_off_segment());
             read_hopo_text(to_hammer_on_pull_off_segment(s), e, ctx, e.int_attribute("idx"));
@@ -3459,12 +3471,14 @@ void TRead::read_hopo_text(HammerOnPullOffSegment *hopo_seg, XmlReader &xml, Rea
     }
 
     HammerOnPullOffText *hopo_text = new HammerOnPullOffText(hopo_seg);
+    bind_authored_child(*hopo_text, {AuthoredChildRole::SEGMENT_TEXT, hopo_seg->authored_child.ordinal, 0, static_cast<uint32_t>(idx)});
     while (xml.read_next_start_element()) {
         if (!read_properties(to_text_base(hopo_text), xml, ctx)) {
             xml.unknown();
         }
     }
 
+    finish_authored_read(*hopo_text);
     hopo_seg->add_hopo_text(hopo_text);
 }
 
@@ -4179,6 +4193,8 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
     } else if (!read_item_properties(t, e, ctx)) {
         return false;
     }
+    if (tag == "bold" || tag == "italic" || tag == "underline" || tag == "strike")
+        remember_authored_property(*t, Pid::FONT_STYLE, static_cast<int>(t->font_style()), PropertyFlags::UNSTYLED);
     return true;
 }
 

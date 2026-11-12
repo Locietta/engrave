@@ -325,24 +325,32 @@ void write_authored_property(const EngravingItem *owner, AuthoredChildKey child,
     const auto *entry = table ? table->find(child, pid) : nullptr;
     if (!entry || entry->flags == PropertyFlags::STYLED || !entry->value.is_valid()) return;
     PropertyValue value = entry->value;
-    PropertyValue d = entry->default_value;
+    PropertyValue d;
     const double unit = entry->unit == AuthoredOverrideUnit::SPATIUM    ? owner->style().spatium() :
                         entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm :
                                                                           1.0;
     if (entry->unit != AuthoredOverrideUnit::NATIVE) {
         if (property_type(pid) == PType::POINT) {
             value = value.value<PointF>() * unit;
-            if (d.is_valid()) d = d.value<PointF>() * unit;
         } else {
             value = value.to_double() * unit;
-            if (d.is_valid()) d = d.to_double() * unit;
         }
     }
-    if (entry->style != Sid::NOSTYLE) d = owner->style().style_v(entry->style);
     // Presence is authored, including explicit zero/default values.
-    d = PropertyValue();
+    if (pid == Pid::FONT_STYLE) {
+        const FontStyle style = FontStyle(value.to_int());
+        xml.tag("bold", style & FontStyle::BOLD);
+        xml.tag("italic", style & FontStyle::ITALIC);
+        xml.tag("underline", style & FontStyle::UNDERLINE);
+        xml.tag("strike", style & FontStyle::STRIKE);
+        return;
+    }
     const double point_unit = entry->unit == AuthoredOverrideUnit::MILLIMETRE ? ::mu::engraving::dpmm : owner->style().spatium();
     write_property_value(xml, pid, value, d, owner->spatium(), point_unit);
+}
+
+bool legacy_grip_property(Pid pid) {
+    return pid == Pid::SLUR_UOFF1 || pid == Pid::SLUR_UOFF2 || pid == Pid::SLUR_UOFF3 || pid == Pid::SLUR_UOFF4;
 }
 
 bool common_authored_property(Pid pid) {
@@ -383,7 +391,9 @@ void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, X
     write_authored_unit(owner, child, xml);
     for (auto pid :
          {Pid::COLOR, Pid::VISIBLE, Pid::Z, Pid::OFFSET, Pid::PLACEMENT, Pid::POSITION_LINKED_TO_MASTER, Pid::APPEARANCE_LINKED_TO_MASTER})
-        write_authored_property(owner, child, xml, pid);
+        if (pid != Pid::OFFSET || child.role != AuthoredChildRole::SPANNER_SEGMENT ||
+            (table.find(child, pid) && !table.find(child, pid)->value.value<PointF>().is_null()))
+            write_authored_property(owner, child, xml, pid);
 }
 
 void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, const char *tag, XmlWriter &xml, WriteContext &ctx) {
@@ -421,6 +431,81 @@ void write_authored_child(const EngravingItem *owner, AuthoredChildKey child, co
         write_authored_property(owner, child, xml, entry.pid);
     }
     xml.end_element();
+}
+
+void write_authored_segment_text(const Spanner *owner, const AuthoredOverrideCarrier &carrier, XmlWriter &xml, WriteContext &ctx) {
+    const auto key = carrier.child;
+    const auto &table = owner->authored_overrides;
+    const auto tag = TConv::to_xml(carrier.type);
+    if (carrier.type == ElementType::HAMMER_ON_PULL_OFF_TEXT)
+        xml.start_element(tag, {{"idx", key.subordinal}});
+    else
+        xml.start_element(tag);
+    const auto *style = table.find(key, Pid::TEXT_STYLE);
+    const auto text_style_type = style                                         ? style->value.value<TextStyleType>() :
+                                 carrier.type == ElementType::GUITAR_BEND_TEXT ? TextStyleType::BEND :
+                                                                                 TextStyleType::HAMMER_ON_PULL_OFF;
+    xml.tag_property(Pid::TEXT_STYLE, PropertyValue::from_value(text_style_type), PropertyValue::from_value(TextStyleType::DEFAULT));
+    write_authored_common(owner, key, xml, ctx);
+    std::vector<Pid> written;
+    for (const auto &property : *text_style(text_style_type)) {
+        if (common_authored_property(property.pid) || property.pid == Pid::TEXT_STYLE) continue;
+        write_authored_property(owner, key, xml, property.pid);
+        written.push_back(property.pid);
+    }
+    for (const auto &entry : table.entries) {
+        if (entry.child != key || common_authored_property(entry.pid) || entry.pid == Pid::TEXT_STYLE || entry.pid == Pid::TEXT ||
+            std::find(written.begin(), written.end(), entry.pid) != written.end())
+            continue;
+        write_authored_property(owner, key, xml, entry.pid);
+    }
+    if (const auto *text = table.find(key, Pid::TEXT)) xml.write_xml(u"text", String(text->value.value<String>()).replace(u"\n", u"<br/>"));
+    xml.end_element();
+}
+
+bool write_authored_segments(const Spanner *owner, bool slur, XmlWriter &xml, WriteContext &ctx) {
+    const auto &table = owner->authored_overrides;
+    bool written = false;
+    uint32_t next = 0;
+    for (const auto &carrier : table.carriers) {
+        const auto key = carrier.child;
+        if (key.role != AuthoredChildRole::SPANNER_SEGMENT) continue;
+        written = true;
+        if (slur)
+            xml.start_element(TConv::to_xml(carrier.type), {{"no", key.ordinal}});
+        else if (key.ordinal != next)
+            xml.start_element("Segment", {{"no", key.ordinal}});
+        else
+            xml.start_element("Segment");
+        next = key.ordinal + 1;
+        if (!slur) {
+            const auto *subtype = table.find(key, Pid::SUBTYPE);
+            xml.tag("subtype", subtype ? subtype->value.to_int() : 0);
+            for (auto pid : {Pid::OFFSET, Pid::OFFSET2}) {
+                const auto *entry = table.find(key, pid);
+                PointF point = entry ? entry->value.value<PointF>() : PointF();
+                if (entry && entry->unit == AuthoredOverrideUnit::MILLIMETRE) point *= ::mu::engraving::dpmm / owner->style().spatium();
+                xml.tag_point(pid == Pid::OFFSET ? "offset" : "off2", point);
+            }
+            write_authored_property(owner, key, xml, Pid::MIN_DISTANCE);
+            write_authored_property(owner, key, xml, Pid::BEND_VERTEX_OFF);
+        } else {
+            for (auto pid : {Pid::SLUR_UOFF1, Pid::SLUR_UOFF2, Pid::SLUR_UOFF3, Pid::SLUR_UOFF4})
+                write_authored_property(owner, key, xml, pid);
+        }
+        for (const auto &text : table.carriers)
+            if (text.child.role == AuthoredChildRole::SEGMENT_TEXT && text.child.ordinal == key.ordinal)
+                write_authored_segment_text(owner, text, xml, ctx);
+        write_authored_common(owner, key, xml, ctx);
+        for (const auto &entry : table.entries) {
+            if (entry.child != key || common_authored_property(entry.pid) || entry.pid == Pid::SUBTYPE || entry.pid == Pid::OFFSET2 ||
+                entry.pid == Pid::MIN_DISTANCE || entry.pid == Pid::BEND_VERTEX_OFF || legacy_grip_property(entry.pid))
+                continue;
+            write_authored_property(owner, key, xml, entry.pid);
+        }
+        xml.end_element();
+    }
+    return written;
 }
 } // namespace
 
@@ -1405,7 +1490,7 @@ void TWrite::write(const FretDiagram *item, XmlWriter &xml, WriteContext &ctx) {
 
             bool dot_exists = false;
             for (auto const &d : all_dots) {
-                if (d.exists() && !d.is_part_of_slur_barre) { // Don't write dot if part of slur barré (will be generate during layout)
+                if (d.exists() && !d.is_part_of_slur_barre) { // Don't write dot if part of slur barr茅 (will be generate during layout)
                     dot_exists = true;
                     break;
                 }
@@ -1522,6 +1607,8 @@ void TWrite::write_properties(const SLine *item, XmlWriter &xml, WriteContext &c
     }
 
     write_styled_properties(item, xml);
+
+    if (write_authored_segments(item, false, xml, ctx)) return;
 
     if (!item->is_user_modified()) {
         return;
@@ -2576,9 +2663,9 @@ void TWrite::write(const Slur *item, XmlWriter &xml, WriteContext &ctx) {
 
 void TWrite::write_properties(const SlurTie *item, XmlWriter &xml, WriteContext &ctx) {
     write_properties(static_cast<const Spanner *>(item), xml, ctx);
-    int idx = 0;
-    for (const SpannerSegment *ss : item->spanner_segments()) {
-        write_slur(((SlurTieSegment *) ss), xml, ctx, idx++);
+    if (!write_authored_segments(item, true, xml, ctx)) {
+        int idx = 0;
+        for (const SpannerSegment *ss : item->spanner_segments()) write_slur(static_cast<const SlurTieSegment *>(ss), xml, ctx, idx++);
     }
     write_property(item, xml, Pid::SLUR_DIRECTION);
     write_property(item, xml, Pid::SLUR_STYLE_TYPE);

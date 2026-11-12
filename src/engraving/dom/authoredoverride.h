@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "../infrastructure/eid.h"
-#include "../style/styledef.h"
 #include "property.h"
 
 namespace mu::engraving {
@@ -57,9 +56,6 @@ struct AuthoredOverrideEntry {
     Pid pid = Pid::END;
     PropertyValue value;
     PropertyFlags flags = PropertyFlags::NOSTYLE;
-    // Serialization context captured explicitly by import/edit, never by layout.
-    PropertyValue default_value;
-    Sid style = Sid::NOSTYLE;
     AuthoredOverrideUnit unit = AuthoredOverrideUnit::NATIVE;
 };
 
@@ -84,11 +80,6 @@ struct AuthoredOverrideTable {
     bool has_entries(AuthoredChildKey child) const;
 };
 
-struct AuthoredOverrideSnapshot {
-    std::optional<AuthoredOverrideEntry> entry;
-    std::optional<AuthoredOverrideCarrier> carrier;
-};
-
 AuthoredOverrideTable *authored_override_table(EngravingItem *owner);
 const AuthoredOverrideTable *authored_override_table(const EngravingItem *owner);
 EngravingItem *authored_override_owner(const EngravingItem &item);
@@ -101,8 +92,7 @@ void bind_authored_child(EngravingItem &item, AuthoredChildKey key);
 void apply_authored_overrides(EngravingItem &item);
 void remember_authored_property(EngravingItem &item, Pid pid, const PropertyValue &value, PropertyFlags flags);
 void finish_authored_read(EngravingItem &item);
-AuthoredOverrideSnapshot snapshot_authored_override(const EngravingItem &item, Pid pid);
-void restore_authored_override(EngravingItem &item, Pid pid, const AuthoredOverrideSnapshot &snapshot);
+bool has_authored_override(const EngravingItem &item, Pid pid);
 void reset_authored_override(EngravingItem &item, Pid pid);
 void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source);
 
