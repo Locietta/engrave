@@ -268,8 +268,8 @@ void Score::undo_redo(bool undo, EditData *ed) { master_score()->transaction_man
 ///   and (always) updating the redraw area.
 //---------------------------------------------------------
 
-void Score::end_cmd(bool rollback, bool layout_all_parts, bool keep_rolled_back_elements) {
-    master_score()->transaction_manager()->end_transaction(rollback, layout_all_parts, keep_rolled_back_elements);
+void Score::end_cmd(bool rollback, bool keep_rolled_back_elements) {
+    master_score()->transaction_manager()->end_transaction(rollback, keep_rolled_back_elements);
 }
 
 //---------------------------------------------------------
@@ -313,7 +313,7 @@ void CmdState::dump() {
 
 void Score::update() { master_score()->update(); }
 
-void MasterScore::update(bool reset_cmd_state, bool /*layout_all_parts*/, NormalizeMode mode) {
+void MasterScore::update(bool reset_cmd_state, NormalizeMode mode) {
     if (updates_locked_) {
         return;
     }

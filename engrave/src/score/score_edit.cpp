@@ -182,7 +182,7 @@ struct ScoreCommandGuard {
     ~ScoreCommandGuard() {
         if (active_) {
             try {
-                score_->end_cmd(true, true);
+                score_->end_cmd(true);
             } catch (...) {}
         }
     }
@@ -196,7 +196,7 @@ struct ScoreCommandGuard {
 
     void finish(bool rollback) {
         const bool was_dirty = score_->dirty();
-        score_->end_cmd(rollback, true); // Headless excerpts are not marked open.
+        score_->end_cmd(rollback);
         active_ = false;
         // Header/footer $v depends on dirty(). Keep that geometry pending too.
         if (!rollback && !was_dirty && score_->dirty() && has_dirty_version_chrome(score_))

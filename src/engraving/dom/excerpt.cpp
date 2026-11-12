@@ -355,7 +355,7 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
     }
 
     // Establish note/anchor semantics before transposition without display state.
-    invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
+    invalidate_normalization(*score);
     normalize_score(*score);
 
     // handle transposing instruments
@@ -499,7 +499,7 @@ void MasterScore::init_and_add_excerpt(Excerpt *excerpt, bool fake_undo) {
 void MasterScore::init_excerpt(Excerpt *excerpt) {
     if (excerpt->inited()) {
         auto *score = excerpt->excerpt_score();
-        invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
+        invalidate_normalization(*score);
         score->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
         normalize_score(*score);
         return;

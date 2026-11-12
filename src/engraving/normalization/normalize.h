@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
-#include <cstdint>
-
 #include "types/fraction.h"
 
 namespace mu::engraving {
@@ -16,10 +14,6 @@ struct NormalizeState {
     bool running = false;
     bool includes_hidden_staves = false;
     bool rebuild_midi_mapping = false;
-    Fraction start{0, 1};
-    Fraction end{-1, 1};
-    std::uint64_t generation = 1;
-    std::uint64_t normalized_generation = 0;
 };
 
 enum struct NormalizeMode { TRANSACTION, LOAD, REPLAY };
@@ -30,7 +24,7 @@ struct NormalizeOptions {
     bool include_hidden_staves = true;
 };
 
-void invalidate_normalization(Score &score, const Fraction &start, const Fraction &end);
+void invalidate_normalization(Score &score);
 void normalize_score(Score &score, NormalizeOptions options = {});
 void normalize_document(MasterScore &master, NormalizeOptions options = {});
 // Explicit command barrier; getters only read the published semantic state.

@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include <iterator>
-
 /**
  \file
  Definition of classes Chord, HelpLine and NoteList.
 */
 
 #include <functional>
+#include <iterator>
 #include <set>
 #include <vector>
 

@@ -699,7 +699,7 @@ TEST(Read, BeamDetachmentDoesNotRenderItemsDuringEdit) {
     ItemLayoutSpy spy;
     master.start_cmd(muse::TranslatableString::untranslatable("detach beam"));
     beamed->remove_delete_beam(false);
-    master.end_cmd(false, true);
+    master.end_cmd(false);
     EXPECT_EQ(ItemLayoutSpy::count, 0u);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     EXPECT_TRUE(master.layout_state.dirty);
@@ -715,7 +715,7 @@ TEST(Read, InferredFlipExplicitlyRequestsGeometry) {
     master.start_cmd(muse::TranslatableString::untranslatable("inferred flip"));
     Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
-    master.end_cmd(false, true);
+    master.end_cmd(false);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
     EXPECT_TRUE(master.layout_state.dirty);
 }
@@ -848,9 +848,8 @@ TEST(Read, NormalizeOnlyRepairsLinesWithoutLayoutAndPreservesGeometryDirtiness) 
     EXPECT_EQ(master.layout_state.end, pending.end);
     EXPECT_EQ(master.layout_state.whole_count, pending.whole_count);
     EXPECT_EQ(master.layout_state.range_count, pending.range_count);
-    const auto generation = master.normalize_state.normalized_generation;
     normalize_score(master);
-    EXPECT_EQ(master.normalize_state.normalized_generation, generation);
+    EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_FALSE(note->has_layout_data());
 }
 
@@ -874,7 +873,7 @@ TEST(Read, ReplayNormalizationDoesNotRecordInsideAnOpenTransaction) {
     EXPECT_EQ(master.undo_stack()->active_transaction()->commands().size(), mark);
     EXPECT_FALSE(master.normalize_state.dirty);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
-    master.end_cmd(true, true);
+    master.end_cmd(true);
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 
@@ -1019,7 +1018,7 @@ TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
         master.undo(new ChangePart(master.parts().front(), harp));
         normalize_score(master);
         EXPECT_EQ(line->glissando_style(), GlissandoStyle::DIATONIC);
-        master.end_cmd(true, true);
+        master.end_cmd(true);
         EXPECT_EQ(line->glissando_style(),
                   styled ? line->property_default(Pid::GLISS_STYLE).value<GlissandoStyle>() : GlissandoStyle::PORTAMENTO);
         EXPECT_EQ(master.parts().front()->instrument()->id(), u"piano");
@@ -1135,7 +1134,7 @@ TEST(Read, NormalizeRepairsNoteOwnedLinesAfterMeasureInsertion) {
         EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
         start->remove(line.get());
         end->chord()->update_ends_note_anchored_line();
-        master.end_cmd(false, true);
+        master.end_cmd(false);
     }
 }
 
@@ -1170,7 +1169,7 @@ TEST(Read, NormalizeRepairsGraceTieTicksAfterMeasureInsertion) {
     EXPECT_FALSE(tie->has_layout_data());
     EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
     start->remove(tie.get());
-    master.end_cmd(false, true);
+    master.end_cmd(false);
 }
 
 TEST(Read, NormalizeCleansInvalidMelismaBeforeRepairingLyricTicks) {
@@ -1218,7 +1217,7 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     auto &master = master_of(*document);
     master.start_cmd(muse::TranslatableString::untranslatable("append a measure"));
     master.insert_measure();
-    master.end_cmd(false, true);
+    master.end_cmd(false);
     master.undo_stack()->clear_history();
     ASSERT_EQ(master.undo_stack()->size(), 0u);
     auto *chord = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
@@ -1230,7 +1229,7 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     auto *target = master.last_measure()->first(SegmentType::CHORD_REST)->element(0);
     master.start_cmd(muse::TranslatableString::untranslatable("visibility change"));
     target->undo_change_property(Pid::VISIBLE, false);
-    master.end_cmd(false, true);
+    master.end_cmd(false);
     auto *manager = master.transaction_manager();
     manager->undo_redo(true, nullptr);
     auto *stack = master.undo_stack();
@@ -1246,7 +1245,7 @@ TEST(Read, RejectedTransactionWithOrnamentKeepsUndoAndRedoHistory) {
     Transaction::set_push_hook([](UndoableCommand *, bool appended) {
         if (appended) ++replay_pushes;
     });
-    master.end_cmd(true, true);
+    master.end_cmd(true);
     Transaction::set_push_hook(nullptr);
     EXPECT_EQ(replay_pushes, 0u);
     EXPECT_EQ(stack->size(), size);
@@ -2707,14 +2706,14 @@ struct Command {
     }
 
     ~Command() {
-        if (open_) score_.end_cmd(false, true);
+        if (open_) score_.end_cmd(false);
     }
 
     Command(const Command &) = delete;
     Command &operator=(const Command &) = delete;
 
     void commit() {
-        score_.end_cmd(false, true);
+        score_.end_cmd(false);
         open_ = false;
         engrave::assign_missing_ids(score_);
         score_.undo_stack()->clear_history();
@@ -3222,7 +3221,7 @@ TEST(Read, FailedBatchRestoresPendingLayout) {
     auto &master = master_of(*document);
     master.invalidate_layout(mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
     const auto saved = master.layout_state;
-    mu::engraving::invalidate_normalization(master, mu::engraving::Fraction(1, 4), mu::engraving::Fraction(1, 2));
+    mu::engraving::invalidate_normalization(master);
     const auto normalized = master.normalize_state;
     auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
     hooks.before_step = [](std::size_t step) {
@@ -3236,9 +3235,6 @@ TEST(Read, FailedBatchRestoresPendingLayout) {
     EXPECT_EQ(master.layout_state.start, mu::engraving::Fraction(0, 1));
     EXPECT_LT(master.layout_state.end, mu::engraving::Fraction(0, 1));
     EXPECT_EQ(master.normalize_state.dirty, normalized.dirty);
-    EXPECT_EQ(master.normalize_state.start, normalized.start);
-    EXPECT_EQ(master.normalize_state.end, normalized.end);
-    EXPECT_EQ(master.normalize_state.generation, normalized.generation);
     const auto count = layout_count(master);
     ASSERT_TRUE(document->page_count());
     EXPECT_EQ(layout_count(master), count + 1);
