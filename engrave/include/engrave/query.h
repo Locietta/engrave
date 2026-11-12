@@ -95,7 +95,9 @@ struct SignatureInfo {
 struct ExcerptInfo {
     ElementId id;
     std::string name;
-    std::int32_t pages = 0;
+    // Unset until layout is current for the source revision and font resources.
+    // page_count() explicitly computes a current count.
+    std::optional<std::int32_t> pages;
 };
 
 struct Outline {
@@ -107,7 +109,9 @@ struct Outline {
     std::string timesig; // "4/4"; empty when the score has no time signature
     std::string mscore_version;
     std::int32_t file_version = 0;
-    std::int32_t pages = 0;
+    // Unset until layout is current for the source revision and font resources.
+    // page_count() explicitly computes a current count.
+    std::optional<std::int32_t> pages;
     std::int32_t measure_count = 0;
     std::int32_t key = 0; // the key signature number of the first measure
     double duration = 0;  // seconds
