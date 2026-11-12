@@ -42,6 +42,16 @@ XmlStreamReader::XmlStreamReader() { xml_ = new Xml(); }
 
 XmlStreamReader::XmlStreamReader(IODevice *device) {
     xml_ = new Xml();
+    // Memory-backed devices already expose a stable synchronous input view.
+    // pugi copies it before returning; do not copy a Buffer's entire payload.
+    if (device->is_readable()) {
+        if (const uint8_t *bytes = device->read_data()) {
+            const size_t end = device->size();
+            set_data(std::string_view(reinterpret_cast<const char *>(bytes + device->pos()), end - device->pos()));
+            device->seek(end);
+            return;
+        }
+    }
     ByteArray data = device->read_all();
     set_data(data);
 }
