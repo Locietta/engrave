@@ -58,11 +58,10 @@ ChordLine::ChordLine(const ChordLine &cl) : EngravingItem(cl) {
     play_chord_line_ = cl.play_chord_line_;
     note_ = cl.note_;
 
-    /* The manually edited shape is "given" data which happens to live in the layout
-     * data, and EngravingItem's copy constructor doesn't copy that. Without this, an edited
-     * chordline is invisible in newly created parts: modified_ is true, so the layout won't
-     * regenerate the path, but the path itself is empty. */
-    mutldata()->path = cl.ldata()->path;
+    legacy_path_ = cl.legacy_path_;
+    if (legacy_path_) {
+        mutldata()->path = legacy_path_->path;
+    }
 }
 
 //---------------------------------------------------------
@@ -130,6 +129,19 @@ void require_chord_line_scale(double scale) {
 
 } // namespace
 
+const PainterPath &ChordLine::legacy_absolute_path() const {
+    static const PainterPath empty;
+    return legacy_path_ ? legacy_path_->path : empty;
+}
+
+void ChordLine::read_legacy_absolute_path(const PainterPath &path) {
+    legacy_path_ = LegacyAbsolutePath{path};
+    has_source_offsets_ = false;
+    source_offsets_ = {};
+    modified_ = true;
+    mutldata()->path = path;
+}
+
 void ChordLine::read_source_offsets(const std::array<PointF, 4> &xml, double unit) {
     // No chord tick or local staff lookup here: it may still have a dummy parent.
     require_chord_line_scale(unit);
@@ -137,6 +149,7 @@ void ChordLine::read_source_offsets(const std::array<PointF, 4> &xml, double uni
     for (PointF &point : physical) {
         point = PointF(chord_line_product(point.x(), unit), chord_line_product(point.y(), unit));
     }
+    legacy_path_.reset();
     source_offsets_ = physical;
     has_source_offsets_ = true;
 }
@@ -235,7 +248,7 @@ muse::TranslatableString ChordLine::subtype_user_name() const { return chord_lin
 
 PropertyValue ChordLine::get_property(Pid property_id) const {
     switch (property_id) {
-        case Pid::PATH: return PropertyValue::from_value(ldata()->path);
+        case Pid::PATH: return PropertyValue::from_value(legacy_absolute_path());
         case Pid::CHORD_LINE_TYPE: return int(chord_line_type_);
         case Pid::CHORD_LINE_STRAIGHT: return straight_;
         case Pid::CHORD_LINE_WAVY: return wavy_;
@@ -258,6 +271,7 @@ ChordLine::AppearanceState ChordLine::appearance_state() const {
     state.linked = is_appearance_linked_to_master();
     state.offsets = has_source_offsets_;
     state.controls = source_offsets_;
+    state.legacy_path = legacy_path_.has_value();
     state.modified = modified_;
     state.length_x = length_x_;
     state.length_y = length_y_;
@@ -272,6 +286,9 @@ void ChordLine::restore_appearance(const AppearanceState &state) {
     set_appearance_linked_to_master(state.linked);
     has_source_offsets_ = state.offsets;
     source_offsets_ = state.controls;
+    if (!state.legacy_path) {
+        legacy_path_.reset();
+    }
     modified_ = state.modified;
     length_x_ = state.length_x;
     length_y_ = state.length_y;
@@ -292,12 +309,7 @@ bool ChordLine::set_property(Pid property_id, const PropertyValue &val) {
             set_appearance_linked_to_master(val.to_bool());
             trigger_layout();
             return true;
-        case Pid::PATH:
-            mutldata()->path = val.value<PainterPath>();
-            has_source_offsets_ = false;
-            source_offsets_ = {};
-            set_modified(true);
-            break;
+        case Pid::PATH: read_legacy_absolute_path(val.value<PainterPath>()); break;
         case Pid::CHORD_LINE_TYPE: set_chord_line_type(ChordLineType(val.to_int())); break;
         case Pid::CHORD_LINE_STRAIGHT: set_straight(val.to_bool()); break;
         case Pid::CHORD_LINE_WAVY: set_wavy(val.to_bool()); break;
@@ -319,6 +331,7 @@ void ChordLine::reset_property(Pid pid) {
     }
     // Keep the source representation; both kinds return to their default shape.
     source_offsets_ = {};
+    legacy_path_.reset();
     modified_ = false;
     mutldata()->path = PainterPath();
     trigger_layout();

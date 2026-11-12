@@ -2288,9 +2288,6 @@ bool TRead::read_properties(ChordRest *ch, XmlReader &e, ReadContext &ctx) {
 }
 
 void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
-    //! NOTE Need separated "given" data and layout data
-    ChordLine::LayoutData *ldata = l->mutldata();
-    ldata->path = PainterPath();
     while (e.read_next_start_element()) {
         const AsciiStringView tag(e.name());
         if (tag == "Path") {
@@ -2331,8 +2328,7 @@ void TRead::read(ChordLine *l, XmlReader &e, ReadContext &ctx) {
                     e.unknown();
                 }
             }
-            ldata->path = path;
-            l->set_modified(true);
+            l->read_legacy_absolute_path(path);
         } else if (tag == "subtype") {
             l->set_chord_line_type(TConv::from_xml(e.read_ascii_text(), ChordLineType::NOTYPE));
         } else if (tag == "straight") {

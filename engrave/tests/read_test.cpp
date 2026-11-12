@@ -5225,6 +5225,69 @@ std::string offset_test_write(const mu::engraving::ChordLine *line) {
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
 }
 
+TEST(Read, ChordLineDefaultPathReadDoesNotAllocateLayout) {
+    auto xml = chordline_offset_fixture();
+    const auto begin = xml.find("<o1");
+    const auto end = xml.find("<subtype>", begin);
+    xml.erase(begin, end - begin);
+    auto document = g_engine->open(as_bytes(xml));
+    ASSERT_TRUE(document) << document.error().message;
+    const auto lines = offset_test_lines(master_of(**document));
+    ASSERT_EQ(lines.size(), 1u);
+    auto *line = lines.front();
+    ASSERT_FALSE(line->has_layout_data());
+    EXPECT_EQ(line->get_property(mu::engraving::Pid::PATH), mu::engraving::PropertyValue::from_value(muse::draw::PainterPath()));
+    EXPECT_FALSE(line->has_layout_data());
+    std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
+    EXPECT_FALSE(copy->has_layout_data());
+}
+
+TEST(Read, ChordLineLegacySourceSurvivesLayoutAndCacheReplacement) {
+    for (const std::string version : {"4.60", "5.00"}) {
+        SCOPED_TRACE(version);
+        auto xml = chordline_offset_fixture();
+        xml.replace(xml.find("5.00"), 4, version);
+        const auto begin = xml.find("<o1");
+        const auto end = xml.find("<subtype>", begin);
+        xml.replace(begin, end - begin,
+                    "<Path><Element type=\"0\" x=\"0\" y=\"0\"/>"
+                    "<Element type=\"1\" x=\"1.25\" y=\"-0.5\"/></Path>");
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document) << document.error().message;
+        auto &master = master_of(**document);
+        const auto lines = offset_test_lines(master);
+        ASSERT_EQ(lines.size(), 1u);
+        auto *line = lines.front();
+        ASSERT_TRUE(line->modified());
+        ASSERT_FALSE(line->has_source_offsets());
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
+        const auto source = line->get_property(mu::engraving::Pid::PATH);
+        const auto bytes = offset_test_write(line);
+        line->mutldata()->path = muse::draw::PainterPath();
+        EXPECT_EQ(offset_test_write(line), bytes);
+        EXPECT_EQ(line->get_property(mu::engraving::Pid::PATH), source);
+        ASSERT_TRUE((*document)->page_count());
+        EXPECT_EQ(offset_test_write(line), bytes);
+        EXPECT_EQ(line->get_property(mu::engraving::Pid::PATH), source);
+        EXPECT_EQ(line->ldata()->path, line->legacy_absolute_path());
+        for (const std::string native : {"5.00", "4.70"}) {
+            const auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = native});
+            if (native == "4.70") {
+                // The existing compatibility codec rejects ChordLine, including legacy Path.
+                ASSERT_FALSE(saved);
+                EXPECT_NE(saved.error().message.find("ChordLine"), std::string::npos);
+                continue;
+            }
+            ASSERT_TRUE(saved) << saved.error().message;
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
+            ASSERT_TRUE(reopened) << reopened.error().message;
+            const auto restored = offset_test_lines(master_of(**reopened));
+            ASSERT_EQ(restored.size(), 1u);
+            EXPECT_EQ(offset_test_write(restored.front()), bytes);
+        }
+    }
+}
+
 TEST(Read, ChordLineOffsetsEachAndCombined500) {
     const auto fixture = chordline_offset_fixture();
     ASSERT_FALSE(fixture.empty());

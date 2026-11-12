@@ -1445,7 +1445,9 @@ void TLayout::layout_chord_line(const ChordLine *item, ChordLine::LayoutData *ld
 
     if (item->has_source_offsets()) {
         ldata->path = item->source_offset_path(spatium, item->chord()->intrinsic_mag());
-    } else if (!item->modified()) {
+    } else if (item->modified()) {
+        ldata->path = item->legacy_absolute_path();
+    } else {
         double x2 = 0;
         double y2 = 0;
         double base_length = spatium * item->chord()->intrinsic_mag();
