@@ -226,6 +226,11 @@ struct ChangeRelevance {
 static ChangeRelevance classify_changes(const ScoreChanges &changes) {
     ChangeRelevance result;
 
+    // Changing the actual measure length moves every following playback marking.
+    if (muse::contains(changes.changed_property_id_set, Pid::TIMESIG_ACTUAL)) {
+        return {true, true};
+    }
+
     for (const ElementType type : changes.changed_types) {
         switch (type) {
             case ElementType::DYNAMIC:
