@@ -155,20 +155,6 @@ TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {
     EXPECT_FALSE(second.has_layout_data());
 }
 
-TEST(Read, ComputingAChordShapeDoesNotReplaceStoredLayout) {
-    auto document = open_path(write470_fixture());
-    ASSERT_TRUE(document);
-    auto &master = master_of(*document);
-    std::unique_ptr<mu::engraving::Chord> chord_owner(mu::engraving::Factory::create_chord(master.dummy()));
-    auto &chord = *chord_owner;
-    const muse::RectF sentinel(1.0, 2.0, 3.0, 4.0);
-    chord.mutldata()->set_bbox(sentinel);
-    const auto *storage = chord.ldata();
-    EXPECT_TRUE(chord.shape().empty());
-    EXPECT_EQ(chord.ldata(), storage);
-    EXPECT_EQ(chord.ldata()->bbox(), sentinel);
-}
-
 // Palette-only elements are ignored by both supported native readers.
 TEST(Read, UnknownActionIconIsSkipped) {
     for (const std::string version : {"4.60", "5.00"}) {

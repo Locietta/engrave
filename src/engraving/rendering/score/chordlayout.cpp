@@ -3264,15 +3264,10 @@ void ChordLayout::check_and_fill_shape(const ChordRest *item, ChordRest::LayoutD
 }
 
 void ChordLayout::fill_shape(const ChordRest *item, Chord::LayoutData *ldata, const LayoutConfiguration &conf) {
-    ldata->set_shape(compute_shape(item, ldata, conf));
-}
-
-Shape ChordLayout::compute_shape(const ChordRest *item, const Chord::LayoutData *ldata, const LayoutConfiguration &conf) {
     switch (item->type()) {
-        case ElementType::CHORD: return compute_shape(to_chord(item), ldata);
-        case ElementType::MEASURE_REPEAT:
-            return compute_shape(to_measure_repeat(item), static_cast<const MeasureRepeat::LayoutData *>(ldata), conf);
-        default: return RestLayout::compute_shape(to_rest(item), static_cast<const Rest::LayoutData *>(ldata), conf);
+        case ElementType::CHORD: fill_shape(to_chord(item), static_cast<Chord::LayoutData *>(ldata)); break;
+        case ElementType::MEASURE_REPEAT: fill_shape(to_measure_repeat(item), static_cast<MeasureRepeat::LayoutData *>(ldata), conf); break;
+        default: RestLayout::fill_shape(to_rest(item), static_cast<Rest::LayoutData *>(ldata), conf); break;
     }
 }
 
@@ -3312,9 +3307,7 @@ bool ChordLayout::leave_space_for_tie(const Articulation *item) {
     return leave_space;
 }
 
-void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) { ldata->set_shape(ChordLayout::compute_shape(item, ldata)); }
-
-Shape ChordLayout::compute_shape(const Chord *item, [[maybe_unused]] const ChordRest::LayoutData *ldata) {
+void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
     Shape shape(Shape::Type::COMPOSITE);
 
     Hook *hook = item->hook();
@@ -3432,20 +3425,16 @@ Shape ChordLayout::compute_shape(const Chord *item, [[maybe_unused]] const Chord
         shape.add(right_paren->ldata()->shape().translated(right_paren->pos()));
     }
 
-    return shape;
+    ldata->set_shape(shape);
 }
 
-void ChordLayout::fill_shape(const MeasureRepeat *item, MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &conf) {
-    ldata->set_shape(ChordLayout::compute_shape(item, ldata, conf));
-}
-
-Shape ChordLayout::compute_shape(const MeasureRepeat *item, const MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &) {
+void ChordLayout::fill_shape(const MeasureRepeat *item, MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &) {
     Shape shape(Shape::Type::COMPOSITE);
 
     shape.add(item->number_rect(), item);
     shape.add(item->sym_bbox(ldata->sym_id), item);
 
-    return shape;
+    ldata->set_shape(shape);
 }
 
 void ChordLayout::add_line_attach_points(Spanner *spanner) {

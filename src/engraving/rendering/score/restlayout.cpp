@@ -154,15 +154,10 @@ void RestLayout::layout_rest(const Rest *item, Rest::LayoutData *ldata, const La
 }
 
 void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata, const LayoutConfiguration &conf) {
-    ldata->set_shape(compute_shape(item, ldata, conf));
-}
-
-Shape RestLayout::compute_shape(const Rest *item, const Rest::LayoutData *ldata, const LayoutConfiguration &conf) {
     switch (item->type()) {
-        case ElementType::REST: return compute_shape(item, ldata);
-        case ElementType::MMREST:
-            return compute_shape(static_cast<const MMRest *>(item), static_cast<const MMRest::LayoutData *>(ldata), conf);
-        default: UNREACHABLE; return {};
+        case ElementType::REST: fill_shape(to_rest(item), static_cast<Rest::LayoutData *>(ldata)); break;
+        case ElementType::MMREST: fill_shape(static_cast<const MMRest *>(item), static_cast<MMRest::LayoutData *>(ldata), conf); break;
+        default: UNREACHABLE; return;
     }
 }
 
@@ -634,9 +629,7 @@ void RestLayout::check_full_measure_rest_collisions(const System *system, Layout
     }
 }
 
-void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata) { ldata->set_shape(RestLayout::compute_shape(item, ldata)); }
-
-Shape RestLayout::compute_shape(const Rest *item, const Rest::LayoutData *ldata) {
+void RestLayout::fill_shape(const Rest *item, Rest::LayoutData *ldata) {
     Shape shape(Shape::Type::COMPOSITE);
 
     if ((!item->is_gap() || item->debug_draw_gap()) && !item->should_not_be_drawn()) {
@@ -655,14 +648,10 @@ Shape RestLayout::compute_shape(const Rest *item, const Rest::LayoutData *ldata)
         }
     }
 
-    return shape;
+    ldata->set_shape(shape);
 }
 
 void RestLayout::fill_shape(const MMRest *item, MMRest::LayoutData *ldata, const LayoutConfiguration &conf) {
-    ldata->set_shape(RestLayout::compute_shape(item, ldata, conf));
-}
-
-Shape RestLayout::compute_shape(const MMRest *item, const MMRest::LayoutData *ldata, const LayoutConfiguration &conf) {
     Shape shape(Shape::Type::COMPOSITE);
 
     double v_stroke_height = conf.style_absolute(Sid::MM_REST_H_BAR_V_STROKE_HEIGHT);
@@ -671,7 +660,7 @@ Shape RestLayout::compute_shape(const MMRest *item, const MMRest::LayoutData *ld
         shape.add(item->number_rect().translated(item->number_pos()), item);
     }
 
-    return shape;
+    ldata->set_shape(shape);
 }
 
 int RestLayout::compute_natural_line(int lines) {

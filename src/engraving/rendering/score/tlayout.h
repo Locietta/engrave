@@ -227,7 +227,6 @@ struct TLayout {
     static void layout_guitar_bend(GuitarBend *item, LayoutContext &ctx, System *system = nullptr);
     static void layout_guitar_bend_segment(GuitarBendSegment *item, LayoutContext &ctx);
     static void fill_guitar_bend_segment_shape(const GuitarBendSegment *item, GuitarBendSegment::LayoutData *ldata);
-    static Shape guitar_bend_segment_shape(const GuitarBendSegment *item, const GuitarBendSegment::LayoutData *ldata);
 
     static void layout_hairpin_segment(HairpinSegment *item, LayoutContext &ctx);
     static void layout_hairpin(Hairpin *item, LayoutContext &ctx);
@@ -340,11 +339,9 @@ struct TLayout {
     static void layout_trill(Trill *item, LayoutContext &ctx);
     static void layout_trill_segment(TrillSegment *item, LayoutContext &ctx);
     static void fill_trill_segment_shape(const TrillSegment *item, TrillSegment::LayoutData *ldata, const LayoutConfiguration &conf);
-    static Shape trill_segment_shape(const TrillSegment *item, const TrillSegment::LayoutData *ldata, const LayoutConfiguration &conf);
     static void layout_triplet_feel(const TripletFeel *item, TripletFeel::LayoutData *ldata);
     static void layout_tuplet(Tuplet *item, LayoutContext &ctx);
     static void fill_tuplet_shape(const Tuplet *item, Tuplet::LayoutData *ldata);
-    static Shape tuplet_shape(const Tuplet *item, const Tuplet::LayoutData *ldata);
 
     static void layout_vibrato(Vibrato *item, LayoutContext &ctx);
     static void layout_vibrato_segment(VibratoSegment *item, LayoutContext &ctx);
