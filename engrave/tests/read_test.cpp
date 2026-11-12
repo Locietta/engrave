@@ -84,6 +84,7 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "engraving/normalization/notes.h"
 #include "engraving/rendering/score/chordlayout.h"
 #include "engraving/rendering/score/layoutcontext.h"
 #include "engraving/rendering/score/systemlayout.h"
@@ -182,6 +183,28 @@ TEST(Read, LayoutResetDoesNotAllocateHiddenItems) {
     master.do_layout();
     ASSERT_FALSE(master.first_measure()->system()->staff(1)->show());
     EXPECT_FALSE(dynamic->has_layout_data());
+}
+
+TEST(Read, SemanticNoteLineAndCrossMeasureUpdatesDoNotAllocateLayout) {
+    using namespace mu::engraving;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *original = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0));
+    std::unique_ptr<Chord> chord(Factory::copy_chord(*original));
+    auto *note = chord->notes().front();
+    ASSERT_FALSE(note->has_layout_data());
+    const auto count = master.layout_state.whole_count + master.layout_state.range_count;
+    note->set_line(invalid_line);
+    note->update_line();
+    EXPECT_NE(note->line(), invalid_line);
+    EXPECT_FALSE(note->has_layout_data());
+    chord->set_cross_measure(CrossMeasure::FIRST);
+    EXPECT_TRUE(normalize_cross_measure(*chord, false));
+    EXPECT_EQ(chord->cross_measure(), CrossMeasure::UNKNOWN);
+    EXPECT_FALSE(normalize_cross_measure(*chord, false));
+    EXPECT_FALSE(chord->has_layout_data());
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, count);
 }
 
 TEST(Read, UnlaidElementsHaveImmutableTypedLayoutDefaults) {

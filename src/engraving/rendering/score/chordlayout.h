@@ -83,6 +83,7 @@ struct OffsetInfo {
 struct ChordLayout {
 
     static void layout(Chord *item, LayoutContext &ctx);
+    static void layout_note_lines(const Chord *chord);
 
     static void layout_spanners(Chord *item, LayoutContext &ctx);
 

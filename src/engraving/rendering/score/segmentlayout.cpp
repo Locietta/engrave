@@ -147,9 +147,8 @@ void SegmentLayout::layout_chord_drumset(const Staff *staff, const Segment &segm
             if (!drumset->is_valid(pitch)) {
                 // LOGD("unmapped drum note %d", pitch);
             } else if (!note->fixed()) {
-                note->undo_change_property(Pid::HEAD_GROUP, drumset->note_head(pitch));
-                int line = drumset->line(pitch);
-                note->set_line(line);
+                // Head and line are normalized by Chord::cmd_update_notes.
+                int line = note->line();
 
                 int off = st->step_offset();
                 double ld = st->line_distance().val();

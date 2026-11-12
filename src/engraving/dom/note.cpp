@@ -2133,10 +2133,6 @@ void Note::update_rel_line(int abs_line, bool undoable) {
     } else {
         set_line(line);
     }
-
-    int off = st->step_offset();
-    double ld = st->line_distance().val();
-    mutldata()->set_pos_y((line_ + off * 2.0) * spatium() * .5 * ld);
 }
 
 //---------------------------------------------------------

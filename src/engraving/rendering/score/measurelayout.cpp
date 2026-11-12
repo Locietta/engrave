@@ -201,6 +201,11 @@ void MeasureLayout::layout_measure(MeasureBase *current_mb, LayoutContext &ctx) 
     ModifyDom::set_cross_measure(measure, ctx);
     ModifyDom::connect_tremolo(measure);
     ModifyDom::cmd_update_notes(measure, ctx.dom());
+    for (const Segment &segment : measure->segments()) {
+        for (EngravingItem *item : segment.elist()) {
+            if (item && item->is_chord() && item->staff()->show()) ChordLayout::layout_note_lines(to_chord(item));
+        }
+    }
     ModifyDom::create_stems(measure, ctx);
     ModifyDom::set_track_for_chord_grace_notes(measure, ctx.dom());
     ModifyDom::sort_measure_segments(measure, ctx);
