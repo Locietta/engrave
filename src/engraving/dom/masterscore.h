@@ -48,6 +48,7 @@ struct Excerpt;
 struct MasterScore;
 struct Part;
 struct RepeatList;
+struct RuntimeTempoState;
 struct RepeatSegmentInfo;
 struct Revisions;
 struct TempoTimeline;
@@ -136,6 +137,8 @@ public:
     const TempoTimeline &tempo_timeline(bool expand_repeats) const;
     bool set_tempo_multiplier(BeatsPerSecond val);
     void set_tempo_timeline_override(std::optional<TempoTimeline> timeline);
+    RuntimeTempoState runtime_tempo_state() const;
+    void restore_runtime_tempo_state(RuntimeTempoState state);
 
     std::vector<Excerpt *> &excerpts() { return excerpts_; }
 

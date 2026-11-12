@@ -17,6 +17,7 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/tempotimeline.h"
 #include "engraving/editing/transaction/undoablecommand.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/engravingproject.h"
@@ -172,6 +173,7 @@ struct BatchGuard::Snapshot {
     std::string semantic;
     std::vector<std::string> ids;
     std::vector<Versions> versions;
+    mu::engraving::RuntimeTempoState runtime_tempo;
 };
 
 BatchGuard::BatchGuard(Document &document) : document_(document), context_(*DocumentAccess::impl(document).project->master_score()) {}
@@ -251,7 +253,8 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
                                                        music::ExportOptions{.transaction_snapshot = true}, {}),
                             music::dump_json(music::semantic_dump(&master), 1),
                             id_list(master),
-                            {}};
+                            {},
+                            master.runtime_tempo_state()};
         for (const mu::engraving::Score *score : master.score_list())
             snapshot->versions.push_back({score->mscore_version(), score->mscore_revision(), score->msc_version(), score->npages() > 0});
     }
@@ -442,6 +445,7 @@ void BatchGuard::restore(const Snapshot &snapshot) {
     for (auto *score : laid_out) score->do_layout_range(mu::engraving::Fraction(0, 1), mu::engraving::Fraction(-1, 1));
     project->master_score()->invalidate_repeat_list();
     project->master_score()->init_automation();
+    project->master_score()->restore_runtime_tempo_state(snapshot.runtime_tempo);
     assign_missing_ids(*project->master_score());
     // Full reload/compatibility layouts consume the original pending ranges.
     // Keep the replacement's state: laid-out scores are fresh; any unlaid-out

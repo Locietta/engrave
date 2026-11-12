@@ -68,6 +68,13 @@ struct ScoreAutomationController {
 
     void set_tempo_timeline_override(std::optional<TempoTimeline> timeline);
 
+    RuntimeTempoState runtime_tempo_state() const { return {tempo_timeline_.tempo_multiplier(), tempo_timeline_override_}; }
+
+    void restore_runtime_tempo_state(RuntimeTempoState state) {
+        set_tempo_multiplier(state.multiplier);
+        tempo_timeline_override_ = std::move(state.override_timeline);
+    }
+
 private:
     struct UpdateRequest {
         int tick_from = 0;
