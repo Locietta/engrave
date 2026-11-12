@@ -99,9 +99,14 @@ PropertyRead read_property(const EngravingObject &object, Pid pid) {
     const mu::engraving::PType type = mu::engraving::property_type(pid);
     PropertyRead read;
     read.name = api::name_of(pid);
-    read.value = api::to_value(type, object.get_property(pid));
+    const auto actual = object.get_property(pid);
+    read.value = api::to_value(type, actual);
     const mu::engraving::PropertyValue fallback = object.property_default(pid);
-    if (fallback.is_valid()) {
+    if (fallback.is_valid() && api::kind_of(type) == ValueKind::ENUM) {
+        // Some source defaults are typed sentinels (e.g. ClefType::INVALID),
+        // not serializable enum tokens. Compare their engine values directly.
+        read.is_default = actual == fallback;
+    } else if (fallback.is_valid()) {
         const Value default_value = api::to_value(type, fallback);
         const auto *actual_fraction = std::get_if<Fraction>(&read.value);
         const auto *default_fraction = std::get_if<Fraction>(&default_value);
