@@ -36,10 +36,14 @@ static const ElementStyle stem_style{{Sid::STEM_WIDTH, Pid::LINE_WIDTH}};
 
 Stem::Stem(DummyParentOr<Chord> parent) : EngravingItem(ElementType::STEM, parent) {
     init_element_style(&::stem_style);
-    reset_property(Pid::USER_LEN);
+    // Authored length belongs to the chord; recreating a display must preserve it.
 }
 
 EngravingItem *Stem::element_base() const { return chord(); }
+
+Spatium Stem::user_length() const { return chord()->stem_user_length(); }
+
+void Stem::set_user_length(Spatium value) { chord()->set_stem_user_length(value); }
 
 staff_idx_t Stem::v_staff_idx() const { return staff_idx() + chord()->staff_move(); }
 

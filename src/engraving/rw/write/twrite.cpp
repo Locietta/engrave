@@ -925,6 +925,10 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
         xml.tag("noStem", item->no_stem());
     } else if (item->stem() && (item->stem()->is_user_modified() || !item->stem()->user_length().is_zero())) {
         write(item->stem(), xml, ctx);
+    } else if (!item->stem() && !item->stem_user_length().is_zero()) {
+        xml.start_element("Stem");
+        xml.tag("userLen", item->stem_user_length().val());
+        xml.end_element();
     }
     if (item->hook() && item->hook()->is_user_modified()) {
         write(item->hook(), xml, ctx);

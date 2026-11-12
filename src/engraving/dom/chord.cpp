@@ -307,6 +307,7 @@ Chord::Chord(const Chord &c, bool link) : ChordRest(c, link) {
 
     span_arpeggio_ = c.span_arpeggio_;
     grace_index_ = c.grace_index_;
+    stem_override_ = c.stem_override_;
     no_stem_ = c.no_stem_;
     show_stem_slash_ = c.show_stem_slash_;
     play_event_type_ = c.play_event_type_;

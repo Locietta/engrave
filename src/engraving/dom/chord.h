@@ -265,6 +265,10 @@ public:
 
     Stem *stem() const { return stem_; }
 
+    Spatium stem_user_length() const { return stem_override_.user_length; }
+
+    void set_stem_user_length(Spatium value) { stem_override_.user_length = value; }
+
     Arpeggio *arpeggio() const { return arpeggio_; }
 
     void set_arpeggio(Arpeggio *a);
@@ -499,6 +503,11 @@ private:
     std::vector<Note *> notes_; // sorted to decreasing line step
     NoteParenthesisInfoList note_parens_;
 
+    struct StemOverride {
+        Spatium user_length = 0.0_sp;
+    };
+
+    StemOverride stem_override_;
     Stem *stem_ = nullptr;
     Hook *hook_ = nullptr;
     StemSlash *stem_slash_ = nullptr; // for grace notes
