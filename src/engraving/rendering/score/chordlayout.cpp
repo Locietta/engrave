@@ -1282,8 +1282,7 @@ void ChordLayout::update_ledger_lines(Chord *item, LayoutContext &ctx) {
 
     // need ledger lines?
     if (item->down_line() + step_offset <= line_below + 1 && item->up_line() + step_offset >= -1) {
-        muse::delete_all(item->ledger_lines());
-        item->ledger_lines().clear();
+        item->resize_ledger_lines_to(0);
         return;
     }
 
@@ -1498,7 +1497,7 @@ bool ChordLayout::compute_up_tremolo_case(const Chord *item, TremoloTwoChord *tr
     return other_staff_move < 0;
 }
 
-void ChordLayout::compute_up(const Chord *item, Chord::LayoutData *ldata, const LayoutContext &ctx) {
+void ChordLayout::compute_up(const Chord *item, ChordRest::LayoutData *ldata, const LayoutContext &ctx) {
     LAYOUT_CALL() << LAYOUT_ITEM_INFO(item);
 
     assert(!item->notes().empty());
@@ -3253,7 +3252,7 @@ void ChordLayout::check_and_fill_shape(const ChordRest *item, ChordRest::LayoutD
 #endif
 }
 
-void ChordLayout::fill_shape(const ChordRest *item, Chord::LayoutData *ldata, const LayoutConfiguration &conf) {
+void ChordLayout::fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf) {
     switch (item->type()) {
         case ElementType::CHORD: fill_shape(to_chord(item), static_cast<Chord::LayoutData *>(ldata)); break;
         case ElementType::MEASURE_REPEAT: fill_shape(to_measure_repeat(item), static_cast<MeasureRepeat::LayoutData *>(ldata), conf); break;

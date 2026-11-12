@@ -446,7 +446,6 @@ Chord::~Chord() {
     delete stem_slash_;
     delete stem_;
     delete hook_;
-    muse::delete_all(ledger_lines_);
     muse::delete_all(grace_notes_);
     muse::delete_all(notes_);
     muse::delete_all(note_parens_);
@@ -840,7 +839,7 @@ void Chord::process_siblings(std::function<void(EngravingItem *)> func, bool inc
         func(tremolo_single_chord_);
     }
     if (include_temporary_siblings) {
-        for (LedgerLine *ll : ledger_lines_) {
+        for (LedgerLine *ll : ledger_lines()) {
             func(ll);
         }
     }
@@ -910,20 +909,20 @@ Chord *Chord::next() const {
     return nullptr;
 }
 
-void Chord::resize_ledger_lines_to(size_t new_size) {
-    int ledger_line_count_diff = static_cast<int>(new_size - ledger_lines_.size());
-    if (ledger_line_count_diff > 0) {
-        for (int i = 0; i < ledger_line_count_diff; ++i) {
-            ledger_lines_.push_back(new LedgerLine(this));
-        }
-    } else {
-        for (int i = 0; i < std::abs(ledger_line_count_diff); ++i) {
-            delete ledger_lines_.back();
-            ledger_lines_.pop_back();
-        }
-    }
+Chord::LayoutData::~LayoutData() { muse::delete_all(ledger_lines); }
 
-    assert(ledger_lines_.size() == new_size);
+void Chord::resize_ledger_lines_to(size_t new_size) {
+    auto &lines = mutldata()->ledger_lines;
+    while (lines.size() < new_size) {
+        auto *line = new LedgerLine(this);
+        line->set_generated(true);
+        lines.push_back(line);
+    }
+    while (lines.size() > new_size) {
+        assert(lines.back()->generated());
+        delete lines.back();
+        lines.pop_back();
+    }
 }
 
 void Chord::set_beam_extension(double extension) {
@@ -1141,7 +1140,7 @@ void Chord::scan_elements(std::function<void(EngravingItem *)> func) {
     }
     const Staff *st = staff();
     if ((st && st->show_ledger_lines(tick())) || !st) { // also for palette
-        for (LedgerLine *ll : ledger_lines_) {
+        for (LedgerLine *ll : ledger_lines()) {
             func(ll);
         }
     }

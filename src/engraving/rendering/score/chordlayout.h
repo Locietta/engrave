@@ -117,8 +117,8 @@ struct ChordLayout {
     static void check_start_end_slurs(Chord *chord, LayoutContext &ctx);
 
     static void check_and_fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf);
-    static void fill_shape(const ChordRest *item, Chord::LayoutData *ldata, const LayoutConfiguration &conf);
-    static void fill_shape(const Chord *item, Chord::LayoutData *ldata);
+    static void fill_shape(const ChordRest *item, ChordRest::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void fill_shape(const Chord *item, ChordRest::LayoutData *ldata);
     static void fill_shape(const MeasureRepeat *item, MeasureRepeat::LayoutData *ldata, const LayoutConfiguration &conf);
 
     static void add_line_attach_points(Spanner *spanner);
