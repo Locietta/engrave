@@ -601,7 +601,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
                         const track_idx_t master_track = muse::key(lscore->excerpt()->tracks_mapping(), nsig->track());
                         TimeSig *master_time_sig = master_time_sigs[master_track];
                         if (master_time_sig) {
-                            tx.push(new Link(master_time_sig, nsig));
+                            tx.link_objects(master_time_sig, nsig);
                         }
                     }
                 } else {

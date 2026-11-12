@@ -308,13 +308,13 @@ static void normalize_segments(Measure *measure, Score &score) {
     for (Segment *seg : segs_to_move_to_next_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
-        measure->score()->undo(new ChangeSegmentParent(seg, next_measure, Fraction(0, 1)));
+        measure->score()->record_segment_parent_change(seg, next_measure, Fraction(0, 1));
     }
 
     for (Segment *seg : segs_to_move_to_this_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
-        measure->score()->undo(new ChangeSegmentParent(seg, measure, measure->ticks()));
+        measure->score()->record_segment_parent_change(seg, measure, measure->ticks());
     }
 
     // Check end of measure changes for top and underlying measures

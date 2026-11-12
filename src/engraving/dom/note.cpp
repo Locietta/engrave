@@ -642,7 +642,7 @@ std::vector<Note *> Note::compound_notes() const {
 Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
     clone_authored_overrides(authored_overrides, n.authored_overrides);
     if (link) {
-        score()->undo(new Link(this, const_cast<Note *>(&n)));
+        score()->record_link(this, const_cast<Note *>(&n));
     }
     subchannel_ = n.subchannel_;
     line_ = n.line_;
@@ -689,7 +689,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
         EngravingItem *ce = e->clone();
         add(ce);
         if (link) {
-            score()->undo(new Link(ce, const_cast<EngravingItem *>(e)));
+            score()->record_link(ce, const_cast<EngravingItem *>(e));
         }
     }
 
@@ -701,7 +701,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
         tie_for_->set_start_note(this);
         tie_for_->set_tick(tick());
         if (link) {
-            score()->undo(new Link(tie_for_, n.tie_for_));
+            score()->record_link(tie_for_, n.tie_for_);
         }
     } else if (n.outgoing_partial_tie()) {
         set_tie_for(Factory::copy_partial_tie(*to_partial_tie(n.tie_for_)));
@@ -709,7 +709,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
         tie_for_->set_start_note(this);
         tie_for_->set_tick(tick());
         if (link) {
-            score()->undo(new Link(tie_for_, n.tie_for_));
+            score()->record_link(tie_for_, n.tie_for_);
         }
     } else if (n.tie_for_) {
         tie_for_ = Factory::copy_tie(*n.tie_for_);
@@ -724,7 +724,7 @@ Note::Note(const Note &n, bool link) : EngravingItem(n, link) {
         tie_back_->set_end_note(this);
         tie_back_->set_tick(tick());
         if (link) {
-            score()->undo(new Link(tie_back_, n.tie_back_));
+            score()->record_link(tie_back_, n.tie_back_);
         }
     }
 

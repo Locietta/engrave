@@ -24,6 +24,8 @@
 
 #include <stdexcept>
 
+#include "dom/measure.h"
+#include "editing/addremoveelement.h"
 #include "editing/editproperty.h"
 #include "log.h"
 
@@ -142,8 +144,82 @@ void JournalBatch::replace_style(Score &score, const MStyle &style, bool overlap
 }
 
 void JournalBatch::cleanup(bool applied) {
-    for (const auto entry : entries_)
-        if (entry.kind == JournalEntryKind::LEGACY) legacy_[entry.payload]->cleanup(applied);
+    for (const auto entry : entries_) dispose_entry(entry, applied);
+}
+
+void JournalBatch::dispose_entry(JournalEntry entry, bool committed) {
+    switch (entry.kind) {
+        case JournalEntryKind::LEGACY: legacy_[entry.payload]->cleanup(committed); break;
+        case JournalEntryKind::ELEMENT_ADD: dispose_element_membership(elements_[entry.payload], true, committed); break;
+        case JournalEntryKind::ELEMENT_REMOVE: dispose_element_membership(elements_[entry.payload], false, committed); break;
+        default: break;
+    }
+}
+
+void JournalBatch::change_element_membership(EngravingItem &item, bool adding) {
+    const auto index = entry_index(elements_.size());
+    elements_.push_back({JournalTarget::capture(item)});
+    try {
+        entries_.push_back({adding ? JournalEntryKind::ELEMENT_ADD : JournalEntryKind::ELEMENT_REMOVE, index});
+    } catch (...) {
+        elements_.pop_back();
+        throw;
+    }
+    if (adding)
+        apply_element_add(item);
+    else
+        apply_element_remove(item);
+}
+
+void JournalBatch::replace_element(EngravingItem &before, EngravingItem &after) {
+    if (before.master_score() != after.master_score()) throw std::logic_error("replacement cannot span documents");
+    const auto index = entry_index(replacements_.size());
+    replacements_.push_back({JournalTarget::capture(before), JournalTarget::capture(after)});
+    try {
+        entries_.push_back({JournalEntryKind::ELEMENT_REPLACE, index});
+    } catch (...) {
+        replacements_.pop_back();
+        throw;
+    }
+    apply_element_replace(before, after);
+}
+
+void JournalBatch::reparent_element(EngravingItem &item, EngravingItem &parent, staff_idx_t staff) {
+    if (item.master_score() != parent.master_score()) throw std::logic_error("reparent cannot span documents");
+    const auto index = entry_index(parents_.size());
+    parents_.push_back({JournalTarget::capture(item), JournalTarget::capture(*item.ownership_parent_item()), item.track()});
+    try {
+        entries_.push_back({JournalEntryKind::ELEMENT_REPARENT, index});
+    } catch (...) {
+        parents_.pop_back();
+        throw;
+    }
+    apply_element_reparent(item, parent, staff * voices + item.voice());
+}
+
+void JournalBatch::reparent_segment(Segment &item, Measure &parent, Fraction tick) {
+    if (item.master_score() != parent.master_score()) throw std::logic_error("segment reparent cannot span documents");
+    const auto index = entry_index(segment_parents_.size());
+    segment_parents_.push_back({JournalTarget::capture(item), JournalTarget::capture(*item.measure()), item.rtick()});
+    try {
+        entries_.push_back({JournalEntryKind::SEGMENT_REPARENT, index});
+    } catch (...) {
+        segment_parents_.pop_back();
+        throw;
+    }
+    apply_segment_reparent(item, parent, tick);
+}
+
+void JournalBatch::change_link(EngravingObject &item, EngravingObject *peer) {
+    const auto index = entry_index(links_.size());
+    links_.push_back(capture_link(item, peer));
+    try {
+        entries_.push_back({JournalEntryKind::LINK, index});
+    } catch (...) {
+        links_.pop_back();
+        throw;
+    }
+    apply_link(links_[index]);
 }
 
 void JournalBatch::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
@@ -215,11 +291,27 @@ void JournalBatch::unwind(bool clean_up) {
             case JournalEntryKind::BRACKET_PROPERTY: restore_bracket_property(brackets_[it->payload]); break;
             case JournalEntryKind::TEXT_LINE_PROPERTY: restore_text_line_property(text_lines_[it->payload]); break;
             case JournalEntryKind::TEXT_FORMAT: restore_text_format(text_formats_[it->payload]); break;
+            case JournalEntryKind::ELEMENT_ADD: revert_element_add(*to_engraving_item(&elements_[it->payload].target.object())); break;
+            case JournalEntryKind::ELEMENT_REMOVE:
+                revert_element_remove(*to_engraving_item(&elements_[it->payload].target.object()));
+                break;
+            case JournalEntryKind::ELEMENT_REPLACE: {
+                const auto &entry = replacements_[it->payload];
+                apply_element_replace(*to_engraving_item(&entry.after.object()), *to_engraving_item(&entry.before.object()));
+            } break;
+            case JournalEntryKind::ELEMENT_REPARENT: {
+                const auto &entry = parents_[it->payload];
+                apply_element_reparent(*to_engraving_item(&entry.target.object()), *to_engraving_item(&entry.parent.object()), entry.track);
+            } break;
+            case JournalEntryKind::SEGMENT_REPARENT: {
+                const auto &entry = segment_parents_[it->payload];
+                apply_segment_reparent(*to_segment(&entry.target.object()), *to_measure(&entry.parent.object()), entry.tick);
+            } break;
+            case JournalEntryKind::LINK: restore_link(links_[it->payload]); break;
         }
     }
     if (clean_up)
-        for (auto it = entries_.rbegin(); it != entries_.rend(); ++it)
-            if (it->kind == JournalEntryKind::LEGACY) legacy_[it->payload]->cleanup(false);
+        for (auto it = entries_.rbegin(); it != entries_.rend(); ++it) dispose_entry(*it, false);
     for (auto it = legacy_.rbegin(); it != legacy_.rend(); ++it) delete *it;
     legacy_.clear();
     source_.properties.clear();
@@ -233,13 +325,27 @@ void JournalBatch::unwind(bool clean_up) {
     brackets_.clear();
     text_lines_.clear();
     text_formats_.clear();
+    elements_.clear();
+    replacements_.clear();
+    parents_.clear();
+    segment_parents_.clear();
+    links_.clear();
     entries_.clear();
 }
 
 bool JournalBatch::structural_since(size_t mark) const {
     for (size_t i = mark; i < entries_.size(); ++i) {
         const auto entry = entries_[i];
-        if (entry.kind == JournalEntryKind::TEXT_FORMAT) return true;
+        switch (entry.kind) {
+            case JournalEntryKind::TEXT_FORMAT:
+            case JournalEntryKind::ELEMENT_ADD:
+            case JournalEntryKind::ELEMENT_REMOVE:
+            case JournalEntryKind::ELEMENT_REPLACE:
+            case JournalEntryKind::ELEMENT_REPARENT:
+            case JournalEntryKind::SEGMENT_REPARENT:
+            case JournalEntryKind::LINK: return true;
+            default: break;
+        }
         if (entry.kind != JournalEntryKind::LEGACY) continue;
         switch (legacy_[entry.payload]->type()) {
             case CommandType::CHANGE_PROPERTY: break;
@@ -258,6 +364,26 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
     ChangesInfo result;
     for (const auto entry : entries_) {
         if (entry.kind == JournalEntryKind::AUTHORED_OVERRIDE) continue;
+        if (entry.kind == JournalEntryKind::ELEMENT_ADD || entry.kind == JournalEntryKind::ELEMENT_REMOVE) {
+            const auto type = entry.kind == JournalEntryKind::ELEMENT_ADD ? CommandType::ADD_ELEMENT : CommandType::REMOVE_ELEMENT;
+            for (auto *object : compound_objects(&elements_[entry.payload].target.object())) collect_object(result, object, type);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::ELEMENT_REPLACE) {
+            collect_object(result, &replacements_[entry.payload].before.object(), CommandType::CHANGE_ELEMENT);
+            collect_object(result, &replacements_[entry.payload].after.object(), CommandType::CHANGE_ELEMENT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::ELEMENT_REPARENT) {
+            collect_object(result, &parents_[entry.payload].target.object(), CommandType::CHANGE_PARENT);
+            collect_object(result, &parents_[entry.payload].parent.object(), CommandType::CHANGE_PARENT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::SEGMENT_REPARENT) {
+            collect_object(result, &segment_parents_[entry.payload].target.object(), CommandType::CHANGE_PARENT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::LINK) continue;
         if (entry.kind == JournalEntryKind::STYLE_REPLACEMENT) {
             const auto &replacement = source_.style_replacements[entry.payload];
             auto &score = *to_score(&replacement.target.object());

@@ -296,10 +296,11 @@ DummyParent *DomAccessor::dummy_parent() const {
 }
 
 void DomAccessor::do_undo_add_element(EngravingItem *item) {
+    IF_ASSERT_FAILED(score()) { return; }
     if (item->generated()) {
         add_element(item);
     } else {
-        undo(new AddElement(item));
+        score()->record_element_add(item);
     }
 }
 
@@ -309,11 +310,12 @@ void DomAccessor::undo_add_element(EngravingItem *item, bool add_to_linked_stave
 }
 
 void DomAccessor::do_undo_remove_element(EngravingItem *item) {
+    IF_ASSERT_FAILED(score()) { return; }
     if (item->generated()) {
         remove_element(item);
         item->delete_later();
     } else {
-        undo(new RemoveElement(item));
+        score()->record_element_remove(item);
     }
 }
 

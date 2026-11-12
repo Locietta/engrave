@@ -372,6 +372,13 @@ public:
     void undo_insert_time(const Fraction &tick, const Fraction &len);
     void record_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
                                 bool reset_path = false);
+    void record_element_add(EngravingItem *item);
+    void record_element_remove(EngravingItem *item);
+    void record_element_replace(EngravingItem *before, EngravingItem *after);
+    void record_parent_change(EngravingItem *item, EngravingItem *parent, staff_idx_t staff);
+    void record_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
+    void record_link(EngravingObject *item, EngravingObject *peer);
+    void record_unlink(EngravingObject *item);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
     void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
     void undo_change_page_number_offset(int po);

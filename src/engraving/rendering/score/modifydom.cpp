@@ -281,7 +281,7 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
         Fraction orig_rtick = seg->rtick();
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
-        measure->score()->undo(new ChangeSegmentParent(seg, next_measure, Fraction(0, 1)));
+        measure->score()->record_segment_parent_change(seg, next_measure, Fraction(0, 1));
 
         // Move in underlying segments
         if (measure->is_mm_rest()) {
@@ -291,7 +291,7 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
                 if (underlying_seg) {
                     underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
                     if (next_measure->is_mm_rest() && next_measure->mm_rest_first()) {
-                        next_measure->score()->undo(new ChangeSegmentParent(underlying_seg, next_measure->mm_rest_first(), Fraction(0, 1)));
+                        next_measure->score()->record_segment_parent_change(underlying_seg, next_measure->mm_rest_first(), Fraction(0, 1));
                     } else {
                         ctx.mut_dom().do_undo_remove_element(underlying_seg);
                     }
@@ -326,7 +326,7 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
         Fraction orig_rtick = seg->rtick();
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
-        measure->score()->undo(new ChangeSegmentParent(seg, measure, measure->ticks()));
+        measure->score()->record_segment_parent_change(seg, measure, measure->ticks());
 
         // Move in underlying segments
         if (next_measure->is_mm_rest()) {
@@ -336,8 +336,8 @@ void ModifyDom::sort_measure_segments(Measure *measure, LayoutContext &ctx) {
                 if (underlying_seg) {
                     underlying_seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
                     if (measure->is_mm_rest() && measure->mm_rest_last()) {
-                        measure->score()->undo(
-                            new ChangeSegmentParent(underlying_seg, measure->mm_rest_last(), measure->mm_rest_last()->ticks()));
+                        measure->score()->record_segment_parent_change(underlying_seg, measure->mm_rest_last(),
+                                                                       measure->mm_rest_last()->ticks());
                     } else {
                         ctx.mut_dom().do_undo_remove_element(underlying_seg);
                     }

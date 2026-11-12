@@ -945,7 +945,7 @@ TEST(Handles, H8ReplacedElementsLoseTheirId) {
         auto *replacement = mu::engraving::Factory::create_clef(clef_segment);
         replacement->set_clef_type(mu::engraving::ClefType::F);
         replacement->set_track(clef->track());
-        master.undo(new mu::engraving::ChangeElement(clef, replacement));
+        master.record_element_replace(clef, replacement);
     });
     const engrave::IdDiff diff = engrave::diff_ids(before, engrave::live_ids(master));
     EXPECT_FALSE(diff.replaced.empty()) << "the replaced clef kept its id";
@@ -1737,7 +1737,7 @@ TEST(Handles, FailedBatchRestoresSourceHandleAndOpRefsDoNotWalk) {
         return {};
     });
     steps.push_back([&](auto &) -> engrave::Result<void> {
-        master.undo(new mu::engraving::RemoveElement(note));
+        master.record_element_remove(note);
         return {};
     });
     steps.push_back([&](auto &context) -> engrave::Result<void> {
@@ -1827,7 +1827,7 @@ TEST(Handles, RemovedBeamIsStaleUntilBatchRollback) {
     const auto handle = registry.handle_of(beam);
     ASSERT_EQ(registry.live_item(handle), beam);
     Command command(master);
-    master.undo(new mu::engraving::RemoveElement(beam));
+    master.record_element_remove(beam);
     EXPECT_EQ(registry.item_from_handle(handle), beam);
     EXPECT_EQ(registry.live_item(handle), nullptr);
     command.rollback();
@@ -1939,7 +1939,7 @@ TEST(Handles, FinalResultPreparationFailureRetainsRollbackPayloadsAndRevisions) 
         };
         std::vector<engrave::api::Step> steps;
         steps.push_back([&](auto &) -> engrave::Result<void> {
-            master.undo(new mu::engraving::RemoveElement(note));
+            master.record_element_remove(note);
             return {};
         });
         EXPECT_THROW(engrave::api::BatchGuard(*document).run(std::move(steps), policy, {}), std::bad_alloc);
@@ -1999,7 +1999,7 @@ TEST(Handles, LateFailureRestoresDummyOwnedSpannerIdentity) {
     engrave::DocumentAccess::edit_hooks(*document).before_cleanup = [] { throw std::runtime_error("late spanner failure"); };
     std::vector<engrave::api::Step> steps;
     steps.push_back([&](auto &) -> engrave::Result<void> {
-        master.undo(new mu::engraving::RemoveElement(spanner));
+        master.record_element_remove(spanner);
         return {};
     });
     EXPECT_FALSE(engrave::api::BatchGuard(*document).run(std::move(steps), engrave::api::Policy::TRANSACTION, {}));
