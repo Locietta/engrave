@@ -375,10 +375,6 @@ Lyrics *LyricsLayout::find_next_lyrics(const ChordRest *end_chord_rest, int vers
 }
 
 void LyricsLayout::create_or_remove_lyrics_line(Lyrics *item, LayoutContext &ctx) {
-    if (item->need_remove_invalid_segments()) {
-        item->remove_invalid_segments();
-    }
-
     auto is_end_melisma = [item]() { return item->ticks().is_not_zero(); };
     const Fraction lyrics_line_ticks = normalize_lyric_ticks(*item);
 

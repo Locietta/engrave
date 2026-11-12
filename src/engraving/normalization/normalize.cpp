@@ -344,6 +344,9 @@ int mu::engraving::normalize_measure_number(Measure &value, int measure_number) 
 }
 
 Fraction mu::engraving::normalize_lyric_ticks(Lyrics &lyrics) {
+    // Cleanup must see the original melisma duration before tick repair can
+    // clear it; it also converts BEGIN/MIDDLE syllables to SINGLE/END.
+    if (lyrics.need_remove_invalid_segments()) lyrics.remove_invalid_segments();
     Lyrics *item = &lyrics;
     auto is_end_melisma = [item]() { return item->ticks().is_not_zero(); };
 
