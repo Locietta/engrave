@@ -94,7 +94,7 @@ static void create_excerpts(MasterScore *cs, const std::vector<Excerpt *> &excer
         e->set_excerpt_score(nscore);
         nscore->style().set(Sid::CREATE_MULTI_MEASURE_RESTS, true);
         cs->transaction_manager()->transaction(TranslatableString("undoableAction", "Create parts"), [&](auto &tx) {
-            tx.push(new AddExcerpt(e));
+            tx.change_excerpt_membership(e, true);
             Excerpt::create_excerpt(e);
 
             // borrowed from excerptsdialog.cpp

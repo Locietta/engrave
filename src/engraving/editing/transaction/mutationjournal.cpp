@@ -24,7 +24,11 @@
 
 #include <stdexcept>
 
+#include "dom/excerpt.h"
+#include "dom/masterscore.h"
 #include "dom/measure.h"
+#include "dom/sharedpart.h"
+#include "dom/stringtunings.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
 #include "editing/editproperty.h"
@@ -69,6 +73,7 @@ void MutationJournal::abandon() noexcept {
 
 JournalBatch::~JournalBatch() {
     for (auto *command : legacy_) delete command;
+    dispose_excerpts();
 }
 
 void JournalBatch::append_command(UndoableCommand *command) {
@@ -152,6 +157,7 @@ void JournalBatch::cleanup(bool applied) {
 void JournalBatch::dispose_entry(JournalEntry entry, bool committed) {
     switch (entry.kind) {
         case JournalEntryKind::LEGACY: legacy_[entry.payload]->cleanup(committed); break;
+        case JournalEntryKind::PART_MEMBERSHIP: dispose_part_membership(parts_[entry.payload], committed); break;
         case JournalEntryKind::ELEMENT_ADD: dispose_element_membership(elements_[entry.payload], true, committed); break;
         case JournalEntryKind::ELEMENT_REMOVE: dispose_element_membership(elements_[entry.payload], false, committed); break;
         default: break;
@@ -326,6 +332,118 @@ void JournalBatch::change_measure_repeat_count(Measure *measure, int count, staf
     apply_measure_repeat_count(measure, count, staff);
 }
 
+void JournalBatch::change_part_membership(Part *part, size_t index, bool adding) {
+    if (!adding && index == muse::nidx) index = muse::index_of(part->score()->parts(), part);
+    const auto i = entry_index(parts_.size());
+    parts_.push_back({JournalTarget::capture(*part), index, adding});
+    try {
+        entries_.push_back({JournalEntryKind::PART_MEMBERSHIP, i});
+    } catch (...) {
+        parts_.pop_back();
+        throw;
+    }
+    apply_part_membership(*part, index, adding);
+}
+
+void JournalBatch::change_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
+    const auto i = entry_index(labels_.size());
+    labels_.push_back({JournalTarget::capture(*part), tick, long_name ? part->long_name(tick) : part->short_name(tick), long_name});
+    try {
+        entries_.push_back({JournalEntryKind::PART_LABEL, i});
+    } catch (...) {
+        labels_.pop_back();
+        throw;
+    }
+    apply_part_label(*part, tick, value, long_name);
+}
+
+void JournalBatch::replace_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
+    const auto i = entry_index(instruments_.size());
+    instruments_.push_back({JournalTarget::capture(*part), std::move(value)});
+    try {
+        entries_.push_back({JournalEntryKind::PART_INSTRUMENT, i});
+    } catch (...) {
+        instruments_.pop_back();
+        throw;
+    }
+    exchange_part_instrument(*part, instruments_[i].displaced);
+    instruments_[i].applied = true;
+    refresh_part_instrument(*part);
+}
+
+void JournalBatch::change_string_data(StringTunings *item, const StringData &value) {
+    const auto i = entry_index(string_data_.size());
+    string_data_.push_back({JournalTarget::capture(*item), *item->string_data()});
+    try {
+        entries_.push_back({JournalEntryKind::STRING_DATA, i});
+    } catch (...) {
+        string_data_.pop_back();
+        throw;
+    }
+    item->set_string_data(value);
+}
+
+void JournalBatch::change_shared_origin(SharedPart *shared, Part *origin, bool connecting) {
+    const auto &members = shared->origin_parts();
+    const auto position = muse::index_of(members, origin);
+    const auto i = entry_index(origins_.size());
+    origins_.push_back({JournalTarget::capture(*shared), JournalTarget::capture(*origin), position, position != muse::nidx});
+    try {
+        entries_.push_back({JournalEntryKind::SHARED_ORIGIN, i});
+    } catch (...) {
+        origins_.pop_back();
+        throw;
+    }
+    if (connecting)
+        shared->add_origin_part(origin);
+    else
+        shared->remove_origin_part(origin);
+}
+
+uint32_t JournalBatch::retain_excerpt(Excerpt &excerpt) {
+    if (excerpt.retaining_journal_) {
+        if (excerpt.retaining_journal_ != this) throw std::logic_error("excerpt belongs to another active journal");
+        return excerpt.retained_index_;
+    }
+    const auto index = entry_index(excerpts_.size());
+    excerpts_.push_back({&excerpt, JournalTarget::capture(*excerpt.master_score())});
+    excerpt.retaining_journal_ = this;
+    excerpt.retained_index_ = index;
+    return index;
+}
+
+void JournalBatch::forget_excerpt(uint32_t reference) { excerpts_[reference].object = nullptr; }
+
+void JournalBatch::dispose_excerpts() {
+    for (auto &reference : excerpts_) {
+        auto *excerpt = reference.object;
+        if (!excerpt) continue;
+        excerpt->retaining_journal_ = nullptr;
+        reference.object = nullptr;
+        auto &master = *to_score(&reference.master.object())->master_score();
+        if (reference.retained && !muse::contains(master.excerpts(), excerpt)) delete excerpt;
+    }
+}
+
+void JournalBatch::change_excerpt_membership(Excerpt *excerpt, bool adding) {
+    auto &master = *excerpt->master_score();
+    const auto reference = retain_excerpt(*excerpt);
+    const auto index = muse::index_of(master.excerpts(), excerpt);
+    const auto i = entry_index(excerpt_memberships_.size());
+    excerpt_memberships_.push_back({reference, index, adding});
+    try {
+        entries_.push_back({JournalEntryKind::EXCERPT_MEMBERSHIP, i});
+    } catch (...) {
+        excerpt_memberships_.pop_back();
+        throw;
+    }
+    excerpts_[reference].retained = true;
+    if (adding)
+        master.add_excerpt(excerpt);
+    else
+        master.remove_excerpt(excerpt);
+}
+
 void JournalBatch::unwind(bool clean_up) {
     struct ReplayGuard {
         bool &flag;
@@ -337,6 +455,30 @@ void JournalBatch::unwind(bool clean_up) {
 
     for (auto it = entries_.rbegin(); it != entries_.rend(); ++it) {
         switch (it->kind) {
+            case JournalEntryKind::PART_MEMBERSHIP: {
+                const auto &r = parts_[it->payload];
+                apply_part_membership(journal_part(r.target), r.index, !r.adding);
+            } break;
+            case JournalEntryKind::PART_LABEL: {
+                const auto &r = labels_[it->payload];
+                apply_part_label(journal_part(r.target), r.tick, r.before, r.long_name);
+            } break;
+            case JournalEntryKind::PART_INSTRUMENT: restore_part_instrument(instruments_[it->payload]); break;
+            case JournalEntryKind::STRING_DATA: {
+                const auto &r = string_data_[it->payload];
+                to_string_tunings(&r.target.object())->set_string_data(r.before);
+            } break;
+            case JournalEntryKind::SHARED_ORIGIN: restore_shared_origin(origins_[it->payload]); break;
+            case JournalEntryKind::EXCERPT_MEMBERSHIP: {
+                const auto &r = excerpt_memberships_[it->payload];
+                auto &reference = excerpts_[r.reference];
+                if (!reference.object) throw std::logic_error("excerpt lifetime ended before rollback");
+                auto &master = *to_score(&reference.master.object())->master_score();
+                if (r.adding)
+                    master.remove_excerpt(reference.object);
+                else
+                    master.add_excerpt(reference.object, r.index);
+            } break;
             case JournalEntryKind::LEGACY: legacy_[it->payload]->undo(); break;
             case JournalEntryKind::PROPERTY: restore_property(source_.properties[it->payload], source_); break;
             case JournalEntryKind::AUTHORED_OVERRIDE: restore_authored_overrides(source_.authored_overrides[it->payload]); break;
@@ -409,6 +551,12 @@ void JournalBatch::unwind(bool clean_up) {
     measures_.clear();
     measure_lengths_.clear();
     measure_repeats_.clear();
+    parts_.clear();
+    labels_.clear();
+    instruments_.clear();
+    string_data_.clear();
+    origins_.clear();
+    excerpt_memberships_.clear();
     entries_.clear();
 }
 
@@ -426,6 +574,12 @@ bool JournalBatch::structural_since(size_t mark) const {
             case JournalEntryKind::TIME_INSERTION:
             case JournalEntryKind::MEASURE_MEMBERSHIP:
             case JournalEntryKind::MEASURE_LENGTH:
+            case JournalEntryKind::PART_MEMBERSHIP:
+            case JournalEntryKind::PART_LABEL:
+            case JournalEntryKind::PART_INSTRUMENT:
+            case JournalEntryKind::STRING_DATA:
+            case JournalEntryKind::SHARED_ORIGIN:
+            case JournalEntryKind::EXCERPT_MEMBERSHIP:
             case JournalEntryKind::MEASURE_REPEAT_COUNT: return true;
             default: break;
         }
@@ -465,6 +619,28 @@ JournalBatch::ChangesInfo JournalBatch::changes_info() const {
         }
         if (entry.kind == JournalEntryKind::MEASURE_REPEAT_COUNT) {
             collect_object(result, &measure_repeats_[entry.payload].target.object(), CommandType::CHANGE_MEASURE_REPEAT_COUNT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::PART_MEMBERSHIP) {
+            const auto &r = parts_[entry.payload];
+            collect_object(result, &r.target.object(), r.adding ? CommandType::INSERT_PART : CommandType::REMOVE_PART);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::PART_LABEL) {
+            const auto &r = labels_[entry.payload];
+            collect_object(result, &r.target.object(),
+                           r.long_name ? CommandType::CHANGE_INSTRUMENT_LONG : CommandType::CHANGE_INSTRUMENT_SHORT);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::PART_INSTRUMENT) {
+            collect_object(result, &instruments_[entry.payload].target.object(), CommandType::CHANGE_PART);
+            continue;
+        }
+        if (entry.kind == JournalEntryKind::STRING_DATA || entry.kind == JournalEntryKind::SHARED_ORIGIN) continue;
+        if (entry.kind == JournalEntryKind::EXCERPT_MEMBERSHIP) {
+            const auto &r = excerpt_memberships_[entry.payload];
+            collect_object(result, &excerpts_[r.reference].master.object(),
+                           r.adding ? CommandType::ADD_EXCERPT : CommandType::REMOVE_EXCERPT);
             continue;
         }
         if (entry.kind == JournalEntryKind::AUTHORED_OVERRIDE) continue;

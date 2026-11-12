@@ -23,11 +23,14 @@
 #ifndef MU_ENGRAVING_EXCERPT_H
 #define MU_ENGRAVING_EXCERPT_H
 
+#include <cstdint>
+
 #include "../types/fraction.h"
 #include "../types/types.h"
 #include "types/string.h"
 
 namespace mu::engraving {
+struct JournalBatch;
 struct MasterScore;
 struct Measure;
 struct Part;
@@ -40,6 +43,7 @@ struct Excerpt {
     Excerpt(MasterScore *master_score = nullptr) { master_score_ = master_score; }
 
     Excerpt(const Excerpt &ex, bool copy_contents = true);
+    Excerpt &operator=(const Excerpt &) = delete;
 
     ~Excerpt();
 
@@ -100,6 +104,10 @@ struct Excerpt {
 
 private:
     friend struct MasterScore;
+    friend struct JournalBatch;
+    friend struct Transaction;
+    JournalBatch *retaining_journal_ = nullptr;
+    uint32_t retained_index_ = 0;
 
     static void promote_gap_rests_to_real_rests(const Measure *measure, staff_idx_t staff_idx);
 

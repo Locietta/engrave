@@ -1117,7 +1117,7 @@ TEST(Read, NormalizeResolvesInstrumentDependentGlissandoStyleWithoutLayout) {
         auto *harp = new Instrument(*instrument);
         harp->set_id(u"harp");
         master.start_cmd(muse::TranslatableString::untranslatable("change to harp"));
-        master.undo(new ChangePart(master.parts().front(), harp));
+        master.record_part_instrument(master.parts().front(), std::unique_ptr<Instrument>(harp));
         normalize_score(master);
         EXPECT_EQ(line->glissando_style(), GlissandoStyle::DIATONIC);
         master.end_cmd(true);

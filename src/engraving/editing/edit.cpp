@@ -1121,9 +1121,9 @@ void Score::delete_item(EngravingItem *el) {
             Part *part = el->part();
             InstrumentName *in = to_instrument_name(el);
             if (in->instrument_name_type() == InstrumentNameType::LONG) {
-                tx.push(new ChangeInstrumentLong(Fraction(0, 1), part, String()));
+                tx.change_part_label(Fraction(0, 1), part, String(), true);
             } else if (in->instrument_name_type() == InstrumentNameType::SHORT) {
-                tx.push(new ChangeInstrumentShort(Fraction(0, 1), part, String()));
+                tx.change_part_label(Fraction(0, 1), part, String(), false);
             }
         } break;
 
@@ -3777,13 +3777,13 @@ void Score::undo_change_chord_rest_len(ChordRest *cr, const TDuration &d) {
 //   undoRemovePart
 //---------------------------------------------------------
 
-void Score::undo_remove_part(Part *part, size_t part_idx) { undo(new RemovePart(part, part_idx)); }
+void Score::undo_remove_part(Part *part, size_t part_idx) { record_part_membership(part, part_idx, false); }
 
 //---------------------------------------------------------
 //   undoInsertPart
 //---------------------------------------------------------
 
-void Score::undo_insert_part(Part *part, size_t target_part_index) { undo(new InsertPart(part, target_part_index)); }
+void Score::undo_insert_part(Part *part, size_t target_part_index) { record_part_membership(part, target_part_index, true); }
 
 //---------------------------------------------------------
 //   undoRemoveStaff
