@@ -96,6 +96,8 @@ struct Corpus {
     // walk adds every level itself: the score's parts and staves, then each
     // measure's segments and their elements.
     void add_score(mu::engraving::Score *score) {
+        // This corpus check covers display types as well as authored elements.
+        score->ensure_layout();
         add(score);
         for (mu::engraving::Part *part : score->parts()) {
             add(part);
