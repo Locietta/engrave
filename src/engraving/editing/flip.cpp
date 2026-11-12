@@ -52,6 +52,7 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void Flip::flip(Transaction &, Score *score) {
+    score->ensure_layout();
     const std::vector<EngravingItem *> &el = score->selection().elements();
     if (el.empty()) {
         MScore::set_error(MsError::NO_FLIPPABLE_SELECTED);

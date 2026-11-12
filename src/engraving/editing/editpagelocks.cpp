@@ -253,6 +253,11 @@ void EditPageLocks::make_into_page(Transaction &tx, Score *score, MeasureBase *f
 }
 
 void EditPageLocks::move_measures_to_prev_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last) {
+    if (first->is_measure() && to_measure(first)->is_mm_rest()) first = to_measure(first)->mm_rest_first();
+    if (last->is_measure() && to_measure(last)->is_mm_rest()) last = to_measure(last)->mm_rest_last();
+    score->ensure_layout();
+    if (first->is_measure()) first = to_measure(first)->covering_mm_rest_or_this();
+    if (last->is_measure()) last = to_measure(last)->covering_mm_rest_or_this();
     const Page *prev_page = last->prev_page();
     if (!prev_page) {
         return;
@@ -296,6 +301,11 @@ void EditPageLocks::move_measures_to_prev_page(Transaction &tx, Score *score, Me
 }
 
 void EditPageLocks::move_measures_to_next_page(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last) {
+    if (first->is_measure() && to_measure(first)->is_mm_rest()) first = to_measure(first)->mm_rest_first();
+    if (last->is_measure() && to_measure(last)->is_mm_rest()) last = to_measure(last)->mm_rest_last();
+    score->ensure_layout();
+    if (first->is_measure()) first = to_measure(first)->covering_mm_rest_or_this();
+    if (last->is_measure()) last = to_measure(last)->covering_mm_rest_or_this();
     const Page *cur_page = first->page();
     MeasureBase *start_meas = cur_page->first_measure_base();
     bool ref_measure_is_start_of_page = first == start_meas;
@@ -347,6 +357,7 @@ void EditPageLocks::move_measures_to_next_page(Transaction &tx, Score *score, Me
 }
 
 void EditPageLocks::apply_lock_to_selection(Transaction &tx, Score *score) {
+    score->ensure_layout();
     MeasureBase *first = nullptr;
     MeasureBase *last = nullptr;
 

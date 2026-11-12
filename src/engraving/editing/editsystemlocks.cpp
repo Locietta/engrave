@@ -22,6 +22,8 @@
 
 #include "editsystemlocks.h"
 
+#include <algorithm>
+
 #include "../dom/measure.h"
 #include "../dom/measurebase.h"
 #include "../dom/rangelock.h"
@@ -119,15 +121,28 @@ void EditSystemLocks::undo_remove_all_locks(Transaction &tx, Score *score) {
 }
 
 void EditSystemLocks::toggle_system_lock(Transaction &tx, Score *score, const std::vector<System *> &systems) {
+    // Systems may be replaced by the boundary; retain source anchors first.
+    std::vector<MeasureBase *> starts;
+    for (auto *system : systems) {
+        auto *first = system->first();
+        if (first && first->is_measure() && to_measure(first)->is_mm_rest()) first = to_measure(first)->mm_rest_first();
+        if (first) starts.push_back(first);
+    }
+    score->ensure_layout();
+    std::vector<System *> current;
+    for (auto *first : starts) {
+        auto *owner = first->is_measure() ? to_measure(first)->covering_mm_rest_or_this()->system() : first->system();
+        if (owner && std::find(current.begin(), current.end(), owner) == current.end()) current.push_back(owner);
+    }
     bool unlock_all = true;
-    for (const System *system : systems) {
+    for (const System *system : current) {
         if (!system->is_locked()) {
             unlock_all = false;
             break;
         }
     }
 
-    for (System *system : systems) {
+    for (System *system : current) {
         MeasureBase *start_meas = system->first();
         const RangeLock *current_lock = score->system_locks()->lock_starting_at(start_meas);
         if (current_lock && unlock_all) {
@@ -141,6 +156,7 @@ void EditSystemLocks::toggle_system_lock(Transaction &tx, Score *score, const st
 }
 
 void EditSystemLocks::toggle_score_lock(Transaction &tx, Score *score) {
+    score->ensure_layout();
     bool unlock_all = true;
     for (const System *system : score->systems()) {
         const MeasureBase *first = system->first();
@@ -170,6 +186,7 @@ void EditSystemLocks::toggle_score_lock(Transaction &tx, Score *score) {
 }
 
 void EditSystemLocks::add_remove_system_locks(Transaction &tx, Score *score, int interval, bool lock) {
+    score->ensure_layout();
     MeasureBase *start_measure = score->selection().start_measure_base();
     MeasureBase *end_measure = score->selection().end_measure_base();
     if (!end_measure) {
@@ -280,6 +297,9 @@ void EditSystemLocks::make_into_system(Transaction &tx, Score *score, MeasureBas
 }
 
 void EditSystemLocks::move_measure_to_prev_system(Transaction &tx, Score *score, MeasureBase *m) {
+    if (m->is_measure() && to_measure(m)->is_mm_rest()) m = to_measure(m)->mm_rest_first();
+    score->ensure_layout();
+    if (m->is_measure()) m = to_measure(m)->covering_mm_rest_or_this();
     const System *prev_system = m->prev_non_v_box_system();
     if (!prev_system) {
         return;
@@ -291,6 +311,9 @@ void EditSystemLocks::move_measure_to_prev_system(Transaction &tx, Score *score,
 }
 
 void EditSystemLocks::move_measure_to_next_system(Transaction &tx, Score *score, MeasureBase *m) {
+    if (m->is_measure() && to_measure(m)->is_mm_rest()) m = to_measure(m)->mm_rest_first();
+    score->ensure_layout();
+    if (m->is_measure()) m = to_measure(m)->covering_mm_rest_or_this();
     const System *cur_system = m->system();
     MeasureBase *start_meas = cur_system->first();
     MeasureBase *system_cur_end_measure = cur_system->last();
@@ -353,6 +376,7 @@ void EditSystemLocks::move_measure_to_next_system(Transaction &tx, Score *score,
 }
 
 void EditSystemLocks::apply_lock_to_selection(Transaction &tx, Score *score) {
+    score->ensure_layout();
     MeasureBase *first = nullptr;
     MeasureBase *last = nullptr;
 

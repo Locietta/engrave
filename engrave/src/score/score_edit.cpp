@@ -198,18 +198,9 @@ struct ScoreCommandGuard {
         const bool was_dirty = score_->dirty();
         score_->end_cmd(rollback, true); // Headless excerpts are not marked open.
         active_ = false;
-        // endCmd lays out the edited range before the undo macro marks the score
-        // dirty, so $v page chrome would stay stale until the next layout.
-        // Relayout once, on the clean -> dirty edge, and only when a header or
-        // footer actually prints $v. Excerpts already on screen keep their pages
-        // current too; a never-laid-out excerpt has no stale chrome to fix.
-        if (!rollback && !was_dirty && score_->dirty() && has_dirty_version_chrome(score_)) {
-            score_->do_layout();
-            for (Excerpt *excerpt : score_->excerpts()) {
-                Score *part = excerpt->excerpt_score();
-                if (part && part->npages() > 0) part->do_layout();
-            }
-        }
+        // Header/footer $v depends on dirty(). Keep that geometry pending too.
+        if (!rollback && !was_dirty && score_->dirty() && has_dirty_version_chrome(score_))
+            score_->invalidate_layouts(Fraction(0, 1), Fraction(-1, 1));
     }
 private:
     MasterScore *score_;

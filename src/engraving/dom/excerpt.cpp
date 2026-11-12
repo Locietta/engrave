@@ -354,10 +354,9 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
         score->set_meta_tag(u"partName", part_label);
     }
 
-    // Establish note/anchor semantics before conversion; S3 removes the layout.
+    // Establish note/anchor semantics before transposition without display state.
     invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
     normalize_score(*score);
-    score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
 
     // handle transposing instruments
     if (master_score->style().style_b(Sid::CONCERT_PITCH) != score->style().style_b(Sid::CONCERT_PITCH)) {
@@ -387,8 +386,7 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
             }
             Transpose::transpose_keys(tx, score, staff_idx, staff_idx + 1, Fraction(0, 1), end_tick, flip);
 
-            for (auto segment = score->first_segment_mm(SegmentType::CHORD_REST); segment;
-                 segment = segment->next1_mm(SegmentType::CHORD_REST)) {
+            for (auto segment = score->first_segment(SegmentType::CHORD_REST); segment; segment = segment->next1(SegmentType::CHORD_REST)) {
                 interval = staff->transpose(segment->tick());
                 if (interval.is_zero()) {
                     continue;
@@ -424,7 +422,7 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
         score->style_changed();
     }
 
-    // second layout of score
+    // Finalize the new source score; its geometry remains pending.
     score->invalidate_repeat_list();
     master_score->rebuild_midi_mapping();
     master_score->update_channel();
@@ -432,7 +430,6 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
 
     score->set_layout_all();
     normalize_score(*score);
-    score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
     master_score->init_automation();
 }
 
@@ -503,8 +500,8 @@ void MasterScore::init_excerpt(Excerpt *excerpt) {
     if (excerpt->inited()) {
         auto *score = excerpt->excerpt_score();
         invalidate_normalization(*score, Fraction(0, 1), Fraction(-1, 1));
+        score->invalidate_layout(Fraction(0, 1), Fraction(-1, 1));
         normalize_score(*score);
-        score->do_layout_range(Fraction(0, 1), Fraction(-1, 1));
         return;
     }
 

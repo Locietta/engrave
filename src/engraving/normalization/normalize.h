@@ -26,14 +26,14 @@ enum struct NormalizeMode { TRANSACTION, LOAD, REPLAY };
 
 struct NormalizeOptions {
     NormalizeMode mode = NormalizeMode::TRANSACTION;
-    // S3 enables this at the mutation boundaries. Layout retains S2 eligibility.
-    bool include_hidden_staves = false;
+    // Semantic state is current even for staves with no display geometry.
+    bool include_hidden_staves = true;
 };
 
 void invalidate_normalization(Score &score, const Fraction &start, const Fraction &end);
 void normalize_score(Score &score, NormalizeOptions options = {});
 void normalize_document(MasterScore &master, NormalizeOptions options = {});
-// Explicit command barrier; deliberately not wired to batch steps until S3.
+// Explicit command barrier; getters only read the published semantic state.
 void prepare_semantic_edit(Score &score);
 void normalize_measure_notes(Measure &measure, bool include_hidden_staves);
 Fraction normalize_lyric_ticks(Lyrics &lyrics);
