@@ -959,10 +959,10 @@ public:
 
     void rebuild_fret_box();
 
-    const std::map<size_t, std::array<SystemDivider *, 2>> system_dividers() const { return system_dividers_; }
+    const auto &system_dividers() const { return system_dividers_; }
 
-    SystemDivider *system_divider(size_t system_idx, SystemDividerType type) const;
-    void add_system_divider(size_t system_idx, SystemDivider *divider);
+    const SystemDivider *system_divider(size_t system_idx, SystemDividerType type) const;
+    void add_system_divider(size_t system_idx, std::unique_ptr<SystemDivider> divider);
 
     virtual AutomationDataConstPtr automation_data() const;
 
@@ -1071,7 +1071,8 @@ private:
     std::vector<Page *> pages_;     // pages are build from systems
     std::vector<System *> systems_; // measures are accumulated to systems
 
-    std::map<size_t, std::array<SystemDivider *, 2>> system_dividers_; // list of system dividers (left and right) indexed by system
+    // Authored entries never participate in layout; systems own generated clones.
+    std::map<size_t, std::array<std::unique_ptr<SystemDivider>, 2>> system_dividers_;
 
     InputState is_;
     MStyle style_;

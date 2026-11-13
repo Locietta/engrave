@@ -58,6 +58,8 @@
 #include "engraving/dom/segment.h"
 #include "engraving/dom/spacer.h"
 #include "engraving/dom/staff.h"
+#include "engraving/dom/system.h"
+#include "engraving/dom/systemdivider.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/textline.h"
@@ -435,6 +437,49 @@ TEST(NativeSave, GeneratedGhostParenthesesStayInDisplayOutput) {
     EXPECT_NE(xml.find("<ghost>1</ghost>"), std::string::npos);
     EXPECT_EQ(xml.find("<NoteParenGroup>"), std::string::npos);
     EXPECT_EQ(xml.find("<parentheses>"), std::string::npos);
+}
+
+TEST(NativeSave, AuthoredDividerSurvivesDiscardAndColdSave) {
+    using namespace mu::engraving;
+    for (const auto version : {"4.60", "4.70"}) {
+        SCOPED_TRACE(version);
+        const std::string source = std::string("<museScore version=\"") + version + R"("><Score><Division>480</Division>
+<Style><dividerLeft>1</dividerLeft></Style>
+<Part><Staff id="1"/><Instrument><trackName>Piano</trackName></Instrument></Part>
+<SystemDividers><system idx="0"><SystemDivider type="left"><symbolsSize>1.75</symbolsSize>
+<symbolAngle>12</symbolAngle><offset x="2" y="-3"/></SystemDivider></system></SystemDividers>
+<Staff id="1"><Measure><LayoutBreak><subtype>line</subtype></LayoutBreak><voice>
+<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Rest><durationType>whole</durationType></Rest></voice></Measure>
+<Measure><voice><Rest><durationType>whole</durationType></Rest></voice></Measure></Staff></Score></museScore>)";
+        auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &master = master_of(**opened);
+        const auto write = [&] {
+            muse::io::Buffer buffer;
+            buffer.open(muse::io::IODevice::WRITE_ONLY);
+            rw::WriteInOutData inout(&master);
+            EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+            return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+        };
+        const auto cold = write();
+        EXPECT_NE(cold.find("<symbolsSize>1.75</symbolsSize>"), std::string::npos);
+        EXPECT_NE(cold.find("<symbolAngle>12</symbolAngle>"), std::string::npos);
+        EXPECT_TRUE(master.pages().empty());
+        EXPECT_EQ(master.layout_state.whole_count, 0u);
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            master.ensure_layout();
+            ASSERT_GE(master.systems().size(), 2u);
+            const auto *divider = master.systems().front()->system_divider_left();
+            ASSERT_NE(divider, nullptr);
+            EXPECT_DOUBLE_EQ(divider->symbols_size(), 1.75);
+            EXPECT_DOUBLE_EQ(divider->sym_angle(), 12.0);
+            EXPECT_DOUBLE_EQ(divider->offset().x() / master.style().spatium(), 2.0);
+            EXPECT_DOUBLE_EQ(divider->offset().y() / master.style().spatium(), -3.0);
+            EXPECT_EQ(write(), cold);
+            master.layout_data_store()->clear();
+            EXPECT_EQ(write(), cold);
+        }
+    }
 }
 
 TEST(Handles, PageQueriesFollowRangeLayoutAndOutputDiscard) {

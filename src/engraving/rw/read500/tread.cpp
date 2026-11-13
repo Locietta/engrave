@@ -4649,9 +4649,9 @@ void TRead::read_system_dividers(Score *score, XmlReader &e, ReadContext &ctx) {
             size_t system_idx = e.int_attribute("idx");
             while (e.read_next_start_element()) {
                 if (e.name() == "SystemDivider") {
-                    SystemDivider *divider = new SystemDivider(score->dummy());
-                    read(divider, e, ctx);
-                    score->add_system_divider(system_idx, divider);
+                    auto divider = std::make_unique<SystemDivider>(score->dummy());
+                    read(divider.get(), e, ctx);
+                    score->add_system_divider(system_idx, std::move(divider));
                 } else {
                     e.unknown();
                 }

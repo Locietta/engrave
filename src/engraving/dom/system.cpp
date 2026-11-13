@@ -144,6 +144,8 @@ System::~System() {
             mb->set_system(nullptr);
         }
     }
+    delete system_divider_left_;
+    delete system_divider_right_;
     muse::delete_all(staves_);
     muse::delete_all(brackets_);
     muse::delete_all(system_lock_indicators_);

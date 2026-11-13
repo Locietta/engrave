@@ -254,6 +254,7 @@ Score::~Score() {
     image_store.clear_unused();
 
     // last: everything that is deleted above may park children on it on its way out
+    system_dividers_.clear();
     delete dummy_;
     dummy_ = nullptr;
     if (layout_data_store_) renderer()->release_layout_data_store(*this);
@@ -4798,20 +4799,23 @@ void Score::update_channel() {
     }
 }
 
-SystemDivider *Score::system_divider(size_t system_idx, SystemDividerType type) const {
+const SystemDivider *Score::system_divider(size_t system_idx, SystemDividerType type) const {
     if (muse::contains(system_dividers_, system_idx)) {
-        return system_dividers_.at(system_idx).at(static_cast<size_t>(type));
+        return system_dividers_.at(system_idx).at(static_cast<size_t>(type)).get();
     }
 
     return nullptr;
 }
 
-void Score::add_system_divider(size_t system_idx, SystemDivider *divider) {
-    if (!muse::contains(system_dividers_, system_idx)) {
-        system_dividers_.emplace(system_idx, std::array<SystemDivider *, 2>{nullptr, nullptr});
-    }
-
-    system_dividers_.at(system_idx)[static_cast<size_t>(divider->divider_type())] = divider;
+void Score::add_system_divider(size_t system_idx, std::unique_ptr<SystemDivider> divider) {
+    const auto assign_ids = [&](auto &&self, EngravingObject &item) -> void {
+        if (!item.eid().is_valid()) item.assign_new_eid();
+        for (auto *child : item.children()) self(self, *child);
+    };
+    divider->set_ownership_parent(this);
+    assign_ids(assign_ids, *divider);
+    const auto side = static_cast<size_t>(divider->divider_type());
+    system_dividers_[system_idx][side] = std::move(divider);
 }
 
 BracketType Score::bracket_type(staff_idx_t staff_idx, size_t idx) const {
