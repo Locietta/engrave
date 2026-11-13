@@ -1,7 +1,3 @@
-// AddPart, RemovePart, AddStaff, RemoveStaff and GenerateExcerpts: the engine's
-// undoable part, staff and excerpt commands, driven the way the parts panel
-// drives them.
-
 #include <algorithm>
 #include <cstddef>
 #include <format>
@@ -116,8 +112,7 @@ Result<Step> prepare(EditContext &context, const RemovePart &op) {
         Part *part = *found;
         Score *score = part->score();
         // An excerpt's own part is a projection of a part of the master score. The editor's
-        // parts panel removes them together, never one alone: an excerpt whose part was
-        // removed on its own does not get its music back on undo.
+        // parts panel removes them together to keep excerpt membership consistent.
         if (!score->is_master()) return invalid("a part of an excerpt goes with its part of the master score");
         // A score with no part has no staves and no instruments, and the writer and the
         // reader do not keep it: the reopened score differs. So the last part stays.
@@ -126,13 +121,13 @@ Result<Step> prepare(EditContext &context, const RemovePart &op) {
         const ID id = part->id();
         const Excerpts excerpts(master, id);
         mu::engraving::EditPart::remove_parts(&master, {part});
-        for (Excerpt *excerpt : excerpts.initial) master.record_excerpt(excerpt, false);
+        for (Excerpt *excerpt : excerpts.initial) master.apply_excerpt(excerpt, false);
         for (Excerpt *excerpt : excerpts.guests) {
             Score *excerpt_score = excerpt->excerpt_score();
             Part *copy = copy_of(*excerpt_score, id);
             if (!copy) continue;
             mu::engraving::EditPart::remove_parts(excerpt_score, {copy});
-            if (excerpt->parts().empty()) master.record_excerpt(excerpt, false);
+            if (excerpt->parts().empty()) master.apply_excerpt(excerpt, false);
         }
         return {};
     };
@@ -193,13 +188,6 @@ Result<Step> prepare(EditContext &context, const GenerateExcerpts &op) {
         if (!target) return std::unexpected(target.error());
         targets.push_back(*target);
     }
-    // The excerpt is built by the engine's own excerpt commands, inside the batch's
-    // transaction: the links, the cloned elements and the inserted frames and measures are
-    // all undo steps of this batch. The excerpt itself has to be added by a command as well
-    // (initAndAddExcerpt records an AddExcerpt), or undoing the batch takes the elements the
-    // build added out of the excerpt and leaves the excerpt in the master, with freed
-    // elements in its score. The build cannot be unwound (see the policy row), so a failed
-    // batch is restored from its snapshot rather than unwound.
     return [targets](EditContext &context) -> Result<void> {
         MasterScore &master = context.master();
         for (const Target &target : targets) {

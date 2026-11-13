@@ -214,7 +214,7 @@ void HarpPedalDiagram::undo_change_pedal_state(std::array<PedalPosition, ::mu::e
             continue;
         }
 
-        linked_score->undo(new ChangeHarpPedalState(item, pedal_state));
+        apply_change_harp_pedal_state(item, pedal_state);
     }
 }
 

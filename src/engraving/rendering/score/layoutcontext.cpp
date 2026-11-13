@@ -297,7 +297,7 @@ void DomAccessor::do_undo_add_element(EngravingItem *item) {
     if (item->generated()) {
         add_element(item);
     } else {
-        score()->record_element_add(item);
+        score()->apply_element_add(item);
     }
 }
 
@@ -312,18 +312,13 @@ void DomAccessor::do_undo_remove_element(EngravingItem *item) {
         remove_element(item);
         item->delete_later();
     } else {
-        score()->record_element_remove(item);
+        score()->apply_element_remove(item);
     }
 }
 
 void DomAccessor::undo_remove_element(EngravingItem *item) {
     IF_ASSERT_FAILED(score()) { return; }
     score()->undo_remove_element(item);
-}
-
-void DomAccessor::undo(UndoableCommand *cmd) const {
-    IF_ASSERT_FAILED(score()) { return; }
-    score()->undo(cmd);
 }
 
 void DomAccessor::add_element(EngravingItem *item) {

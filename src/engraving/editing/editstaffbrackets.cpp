@@ -73,10 +73,10 @@ void EditStaffBrackets::undo_add_bracket(Score *score, Staff *staff, size_t leve
         }
     }
 
-    score->record_bracket_add(staff, level, type, span);
+    score->apply_bracket_add(staff, level, type, span);
 }
 
-void EditStaffBrackets::undo_remove_bracket(Score *score, Bracket *b) { score->record_bracket_remove(b->staff(), b->column()); }
+void EditStaffBrackets::undo_remove_bracket(Score *score, Bracket *b) { score->apply_bracket_remove(b->staff(), b->column()); }
 
 void EditStaffBrackets::fill_brackets(Score *score, staff_idx_t staff_idx, size_t idx) {
     // make sure index idx is valid
@@ -121,7 +121,7 @@ void EditStaffBrackets::adjust_brackets_del(Score *score, size_t sidx, size_t ei
             } else if (ends_outside_deleted_range) {
                 const size_t column = bi->column();
                 const BracketType bracket_type = bi->bracket_type();
-                score->record_bracket_remove(score->staves().at(staff_idx), bi->column());
+                score->apply_bracket_remove(score->staves().at(staff_idx), bi->column());
                 int new_span = int(span - (eidx - staff_idx));
                 if (eidx < score->staves().size() && new_span > 0) {
                     // Move the bracket past the end of the deleted range,

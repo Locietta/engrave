@@ -24,7 +24,7 @@ struct Document {
     Document(const Document &) = delete;
     Document &operator=(const Document &) = delete;
 
-    // 1 after open or create; only committed edits change it. Exports do not,
+    // 1 after open or create; source edits and checkpoint restores advance it. Exports do not,
     // although the writer assigns element ids.
     std::uint64_t revision() const;
 
@@ -58,8 +58,8 @@ struct Document {
     Result<ExportOutput> export_score_with_warnings(const ExportOptions &options);
 
     // Exact legacy measurePositions / segmentPositions data, including expanded
-    // repeat event times. Selection errors are the same as outline(); Poisoned
-    // after failed recovery. Ensures layout before reading; does not edit revision.
+    // repeat event times. Selection errors are the same as outline().
+    // Ensures layout before reading; does not edit revision.
     Result<Positions> positions(PositionKind kind, const ScoreSel &score = {});
     // Bounded capture of the dynamic element/event payload. A counting pass
     // checks the limit before allocating the result; its second pass uses an
@@ -124,24 +124,11 @@ struct Document {
     // element's type does not have, and for an OpRef, which only a batch can use.
     Result<std::vector<PropertyRead>> get(const Ref &target, const std::vector<std::string> &props = {});
 
-    // Runs a batch as one transaction. It fails and leaves the document as it was
-    // with RevisionConflict when expected_revision is set and is not the current
-    // revision, with NotFound, StaleHandle, InvalidArgument or Unsupported for an
-    // operation the caller got wrong, and with EditRejected when the engine
-    // refused one; Error::op_index names the operation. A committed batch that
-    // changed the score advances the revision by one and gives what it created
-    // its ids. Throws when the engine failed and the document could not be
-    // restored: later read, edit and output calls returning Result report Poisoned.
-    //
-    // After successful recovery, a failed batch restores the score's content and
-    // ids. Its layout is kept exactly only when the batch ran in one transaction
-    // whose unwind could be trusted - the engine did not throw and no
-    // Snapshot-policy operation had run - and the unwound score then matched the
-    // saved copy; otherwise the document is reloaded from that copy (or, when no
-    // copy exists, the recorded command is undone), which lays the score out as
-    // if saved and reopened and can place elements differently. A batch that ran
-    // a Snapshot-policy operation or threw therefore does not promise bit-exact
-    // layout. Failed recovery throws and poisons the document.
+    // Validate independent inputs before writing, then apply operations in order.
+    // Errors name the failing op. A failure after a source write poisons the
+    // document and reports completed ops in Error::applied_ops. Reads and non-native
+    // exports remain available; restore_checkpoint or reopen permits edits and native save.
+    // Each batch that changed source advances the revision once, including failed batches.
     Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision = {});
 
     // Named in-memory native snapshots share a 64 MiB budget. Replacing a name

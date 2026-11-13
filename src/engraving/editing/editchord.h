@@ -24,7 +24,7 @@
 
 #include "../dom/chord.h"
 #include "../dom/parenthesis.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
 struct Chord;
@@ -51,87 +51,13 @@ private:
     static void do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_paren);
 };
 
-struct ChangeChordStaffMove : UndoableCommand {
-private:
+void apply_change_chord_staff_move(ChordRest *cr, int v);
 
-    ChordRest *chord_rest = nullptr;
-    int staff_move = 0;
+void apply_change_span_arpeggio(Chord *chord, Arpeggio *span_arp);
 
-    void flip() override;
+void apply_add_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info);
 
-public:
-    ChangeChordStaffMove(ChordRest *cr, int v) : chord_rest(cr), staff_move(v) {}
+void apply_remove_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info);
 
-    UNDO_TYPE(CommandType::CHANGE_CHORD_STAFF_MOVE)
-    UNDO_NAME("ChangeChordStaffMove")
-    UNDO_CHANGED_OBJECTS({chord_rest})
-};
-
-struct ChangeSpanArpeggio : UndoableCommand {
-private:
-
-    Chord *chord_ = nullptr;
-    Arpeggio *span_arpeggio_ = nullptr;
-
-    void flip() override;
-public:
-    ChangeSpanArpeggio(Chord *chord, Arpeggio *span_arp) : chord_(chord), span_arpeggio_(span_arp) {}
-
-    UNDO_NAME("ChangeSpanArpeggio")
-    UNDO_CHANGED_OBJECTS({chord_})
-};
-
-struct AddNoteParenthesisInfo : UndoableCommand {
-private:
-
-    void redo() override;
-    void undo() override;
-
-    void cleanup(bool was_done) override;
-
-    Chord *chord_ = nullptr;
-    NoteParenthesisInfo *note_paren_info_ = nullptr;
-
-public:
-    AddNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *note_paren_info) : chord_(chord), note_paren_info_(note_paren_info) {}
-
-    UNDO_NAME("AddNoteParenthesesInfo")
-    UNDO_TYPE(CommandType::ADD_NOTE_PARENTHESES_INFO)
-};
-
-struct RemoveNoteParenthesisInfo : UndoableCommand {
-private:
-
-    void redo() override;
-    void undo() override;
-
-    void cleanup(bool was_done) override;
-
-    Chord *chord_ = nullptr;
-    NoteParenthesisInfo *note_paren_info_ = nullptr;
-
-public:
-    RemoveNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *note_paren_info) : chord_(chord), note_paren_info_(note_paren_info) {}
-
-    UNDO_NAME("RemoveNoteParenthesesInfo")
-    UNDO_TYPE(CommandType::REMOVE_NOTE_PARENTHESES_INFO)
-};
-
-struct RemoveSingleNoteParentheses : UndoableCommand {
-private:
-
-    Chord *chord_ = nullptr;
-    Note *note_ = nullptr;
-    Parenthesis *paren_ = nullptr;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    RemoveSingleNoteParentheses(Chord *chord, Note *note, Parenthesis *paren) : chord_(chord), note_(note), paren_(paren) {}
-
-    UNDO_NAME("RemoveSingleNoteParentheses")
-    UNDO_TYPE(CommandType::REMOVE_SINGLE_NOTE_PARENTHESES)
-    UNDO_CHANGED_OBJECTS({chord_, paren_})
-};
+void apply_remove_single_note_parentheses(Chord *chord, Note *note, Parenthesis *paren);
 } // namespace mu::engraving

@@ -212,7 +212,7 @@ EngravingItem *FretDiagram::linked_clone() {
         EngravingItem *new_harmony = harmony_->linked_clone();
         e->add(new_harmony);
     }
-    score()->record_link(e, this);
+    score()->apply_link(e, this);
     return e;
 }
 
@@ -441,7 +441,7 @@ void FretDiagram::undo_set_fret_dot(int input_string, int input_fret, bool input
                                     FretDotType input_dtype /*= FretDotType::NORMAl*/) {
     for (EngravingObject *e : link_list()) {
         FretDiagram *fd = to_fret_diagram(e);
-        fd->score()->undo(new FretDot(fd, input_string, input_fret, input_add, input_dtype));
+        apply_fret_dot(fd, input_string, input_fret, input_add, input_dtype);
     }
 }
 
@@ -452,7 +452,7 @@ void FretDiagram::undo_set_fret_dot(int input_string, int input_fret, bool input
 void FretDiagram::undo_set_fret_marker(int input_string, FretMarkerType input_mtype) {
     for (EngravingObject *e : link_list()) {
         FretDiagram *fd = to_fret_diagram(e);
-        fd->score()->undo(new FretMarker(fd, input_string, input_mtype));
+        apply_fret_marker(fd, input_string, input_mtype);
     }
 }
 
@@ -464,7 +464,7 @@ void FretDiagram::undo_set_fret_marker(int input_string, FretMarkerType input_mt
 void FretDiagram::undo_set_fret_barre(int input_string, int input_fret, bool input_add /*= false*/) {
     for (EngravingObject *e : link_list()) {
         FretDiagram *fd = to_fret_diagram(e);
-        fd->score()->undo(new FretBarre(fd, input_string, input_fret, input_add));
+        apply_fret_barre(fd, input_string, input_fret, input_add);
     }
 }
 
@@ -802,7 +802,7 @@ bool FretDiagram::is_clear() const { return barres_.empty() && dots_.empty() && 
 void FretDiagram::undo_fret_clear() {
     for (EngravingObject *e : link_list()) {
         FretDiagram *fd = to_fret_diagram(e);
-        fd->score()->undo(new FretClear(fd));
+        apply_fret_clear(fd);
     }
 }
 

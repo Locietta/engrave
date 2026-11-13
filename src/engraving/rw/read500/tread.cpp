@@ -4448,7 +4448,8 @@ bool TRead::read_properties(TextBase *t, XmlReader &e, ReadContext &ctx) {
         String str = line_break_from_tag(e.read_xml());
         t->set_xml_text(str);
         remember_authored_property(*t, Pid::TEXT, str, t->property_flags(Pid::TEXT));
-        t->check_custom_formatting(str);
+        // Checkpoints already carry authored property flags; inline text must not override them.
+        if (!ctx.transaction_snapshot) t->check_custom_formatting(str);
     } else if (tag == "bold") {
         bool val = e.read_int();
         if (val) {

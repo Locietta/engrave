@@ -41,19 +41,19 @@
 
 using namespace mu::engraving;
 
-void ChangeTieJumpPointActive::flip() {
+void mu::engraving::apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list_, muse::String id_, bool active_) {
+    note_change(jump_point_list_->start_tie(), CommandType::CHANGE_TIE_END_POINT_ACTIVE);
+
     TieJumpPoint *jump_point = jump_point_list_->find_jump_point(id_);
     if (!jump_point) {
         return;
     }
-    bool old_active = jump_point->active();
 
     if (active_ && jump_point->end_tie() && jump_point->end_tie()->jump_point() != jump_point) {
         jump_point->end_tie()->set_jump_point(jump_point);
     }
 
     jump_point->set_active(active_);
-    active_ = old_active;
 }
 
 std::vector<Note *> EditTie::cmd_tie_note_list(const Selection &selection, bool note_entry_mode) {
@@ -177,7 +177,7 @@ void EditTie::cmd_add_tie(Score *score, bool add_to_chord) {
         if (!n) {
             n = NoteInput::add_pitch(tx, score, nval, add_flag);
             if (staff_move != 0) {
-                score->undo(new ChangeChordStaffMove(n->chord(), staff_move));
+                apply_change_chord_staff_move(n->chord(), staff_move);
             }
         } else {
             score->select(n);
@@ -207,7 +207,7 @@ void EditTie::cmd_add_tie(Score *score, bool add_to_chord) {
             }
             if (staff_move != 0) {
                 for (Note *tied_note : n->tied_notes()) {
-                    score->undo(new ChangeChordStaffMove(tied_note->chord(), staff_move));
+                    apply_change_chord_staff_move(tied_note->chord(), staff_move);
                 }
             }
         }

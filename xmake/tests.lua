@@ -11,9 +11,9 @@
 --       the public API's tests and its leak test, an embedder that sees
 --       nothing but engrave/include;
 --   engrave_handles_test, engrave_describe_test, engrave_read_test,
---   engrave_ops_test, engrave_op_policy_test
+--   engrave_ops_test
 --       the library's tests of handles, the catalogue, reads, edits and the
---       edit harness, and of the policy table against the harness evidence;
+--       edit behavior and native interoperability;
 --   import_export_probe, engine_audio_probe, audio_engine_link_check
 --       dev probes of the runtime, the audio driver and the audio engine link
 --       closure.
@@ -297,19 +297,8 @@ target("engrave_ops_test")
     end
 target_end()
 
--- The policy table against the checked-in evidence; it needs no score.
-target("engrave_op_policy_test")
-    set_kind("binary")
-    set_default(false)
-    add_deps("engrave")
-    add_packages("gtest")
-    add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
-    add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
-    add_files(path.join(tests_dir, "op_policy_test.cpp"))
-    if is_plat("windows") then
-        add_files(utf8_manifest)
-    end
-target_end()
+
+
 
 -- The output tests: render against the render goldens (render_goldens.json),
 -- page_count and the render limits, plus the audio API: the encoders, the
@@ -411,7 +400,7 @@ target("engine_tests")
     set_kind("phony")
     set_default(false)
     add_deps("engrave_api_test", "engrave_handles_test", "engrave_describe_test",
-        "engrave_read_test", "engrave_ops_test", "engrave_op_policy_test",
+        "engrave_read_test", "engrave_ops_test",
         "engrave_gp_import_test", "engrave_mnx_import_test", "engrave_mnx_model_test", "engrave_output_test", "engrave_output_probe",
         "example_embedder", "engraving_playback_tests", "mpe_tests",
         "score_edit_test", "score_audio_test", "score_positions_test",

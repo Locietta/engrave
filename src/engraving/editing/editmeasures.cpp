@@ -392,14 +392,11 @@ void mu::engraving::apply_measure_length(Measure *measure, Fraction len) {
     measure->score()->invalidate_repeat_list();
 }
 
-//---------------------------------------------------------
-//   ChangeMMRest
-//---------------------------------------------------------
+void mu::engraving::apply_change_mmrest(Measure *m, Measure *mmrest) {
+    note_change(m, CommandType::CHANGE_MM_REST);
+    note_change(mmrest, CommandType::CHANGE_MM_REST);
 
-void ChangeMMRest::flip() {
-    Measure *mmr = m->mm_rest();
     m->set_mm_rest(mmrest);
-    mmrest = mmr;
 }
 
 //---------------------------------------------------------
@@ -410,18 +407,18 @@ void mu::engraving::apply_measure_repeat_count(Measure *measure, int count, staf
     measure->set_measure_repeat_count(count, staff);
 }
 
-void ChangeMMRestNext::flip() {
+void mu::engraving::apply_change_mmrest_next(Measure *mmrest_, MeasureBase *next_) {
+    note_change(mmrest_, CommandType::UNKNOWN);
+
     assert(mmrest_->is_mm_rest());
-    MeasureBase *old_next = mmrest_->next();
 
     mmrest_->set_next(next_);
-    next_ = old_next;
 }
 
-void ChangeMMRestPrev::flip() {
+void mu::engraving::apply_change_mmrest_prev(Measure *mmrest_, MeasureBase *prev_) {
+    note_change(mmrest_, CommandType::UNKNOWN);
+
     assert(mmrest_->is_mm_rest());
-    MeasureBase *old_prev = mmrest_->prev();
 
     mmrest_->set_prev(prev_);
-    prev_ = old_prev;
 }

@@ -30,7 +30,6 @@
 #include "compat/writescorehook.h"
 #include "editing/editkeysig.h"
 #include "editing/editmeasures.h"
-#include "editing/transaction/mutationjournal.h"
 #include "editing/transaction/transaction.h"
 #include "engravingproject.h"
 #include "excerpt.h"
@@ -63,7 +62,6 @@ using namespace mu::engraving;
 MasterScore::MasterScore(const EngravingServices &services, std::weak_ptr<engraving::EngravingProject> project) : Score(services) {
     project_ = project;
     transaction_manager_ = std::make_unique<TransactionManager>(this);
-    mutation_journal_ = new MutationJournal();
     sigmap_ = new TimeSigMap();
     automation_controller_ = new ScoreAutomationController();
     expanded_repeat_list_ = new RepeatList(this);
@@ -102,10 +100,10 @@ MasterScore::~MasterScore() {
         project_.lock()->master_score_ = nullptr;
     }
 
+    transaction_manager_->cleanup_detached();
     delete expanded_repeat_list_;
     delete non_expanded_repeat_list_;
     delete sigmap_;
-    delete mutation_journal_;
     delete automation_controller_;
     muse::delete_all(excerpts_);
 }
@@ -125,7 +123,7 @@ AutomationDataConstPtr MasterScore::automation_data() const { return automation_
 void MasterScore::set_automation_data(AutomationDataPtr data) { automation_controller_->set_automation_data(std::move(data)); }
 
 void MasterScore::apply_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits) {
-    if (mutation_journal_->has_active_transaction()) throw std::logic_error("automation source setup requires no active batch");
+    if (transaction_manager_->current_transaction() != nullptr) throw std::logic_error("automation source setup requires no active batch");
     IF_ASSERT_FAILED(key.is_valid() && !edits.empty()) { return; }
     automation_controller_->edit_points(key, edits);
 }
@@ -590,7 +588,7 @@ MeasureBase *MasterScore::insert_measure(MeasureBase *before_measure, const Inse
         new_measure->set_timesig(current_time_sig);
         new_measure->set_ticks(current_time_sig);
 
-        record_measures(new_measure, new_measure, true, options.move_staff_type_changes);
+        apply_measures(new_measure, new_measure, true, options.move_staff_type_changes);
 
         ticks = new_measure->ticks();
         Measure *measure_insert = nullptr; // insert before

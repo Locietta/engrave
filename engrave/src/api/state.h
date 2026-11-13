@@ -82,27 +82,23 @@ struct Document::Impl {
     music::ScoreAudioMixDefaults audio_defaults;
     std::uint64_t revision = 1;
     std::vector<Diagnostic> diagnostics;
-    // A failed edit could not restore the score: only destruction is left.
+    // Source mutation failed after writing; reads remain available.
     bool poisoned = false;
     void bind_layout_boundary();
     mu::engraving::rendering::score::LayoutDataStore &adopt_layout_output(mu::engraving::Score &score);
     void ensure_layout(mu::engraving::Score &score);
     void discard_layout_output(mu::engraving::Score &score);
-    api::EditHooks edit_hooks;
 
     static std::unique_ptr<Document> make(EngineState &engine, music::ScoreProject project, music::ScoreAudioMixDefaults audio_defaults,
                                           std::vector<Diagnostic> diagnostics);
 };
 
-// The score behind a Document. The library's own tests drive undo, layout, saves
-// and the engine's MSCX export through it until the read and edit API exist (see
-// engrave/tests/handles_test.cpp).
+// Internal access for engine integration and tests.
 struct DocumentAccess {
     static Document::Impl &impl(Document &document) { return *document.impl_; }
 
     static mu::engraving::MasterScore *master_score(Document &document);
     static music::ScoreProject &project(Document &document);
-    static api::EditHooks &edit_hooks(Document &document);
     static music::EngineContext &context(Document &document);
 };
 

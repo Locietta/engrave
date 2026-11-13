@@ -53,7 +53,6 @@ struct RepeatSegmentInfo;
 struct Revisions;
 struct TempoTimeline;
 struct TimeSigMap;
-struct MutationJournal;
 struct ScoreAutomationController;
 
 struct MidiMapping {
@@ -105,8 +104,6 @@ public:
     void set_read_only(bool ro) { read_only_ = ro; }
 
     TransactionManager *transaction_manager() const { return transaction_manager_.get(); }
-
-    MutationJournal *mutation_journal() const { return mutation_journal_; }
 
     uint64_t source_revision() const { return source_revision_; }
 
@@ -273,7 +270,6 @@ private:
 
     EIDRegister eid_register_;
     std::unique_ptr<TransactionManager> transaction_manager_;
-    MutationJournal *mutation_journal_ = nullptr;
     uint64_t source_revision_ = 0;
     uint64_t saved_revision_ = 0;
     TimeSigMap *sigmap_ = nullptr;

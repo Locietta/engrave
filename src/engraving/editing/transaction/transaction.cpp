@@ -1,708 +1,599 @@
-/*
- * SPDX-License-Identifier: GPL-3.0-only
- * MuseScore-Studio-CLA-applies
- *
- * MuseScore Studio
- * Music Composition & Notation
- *
- * Copyright (C) 2026 MuseScore Limited
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
 #include "transaction.h"
 
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
-#include "../../dom/masterscore.h"
+#include "dom/bracketitem.h"
+#include "dom/chord.h"
+#include "dom/chordline.h"
 #include "dom/excerpt.h"
+#include "dom/factory.h"
+#include "dom/fret.h"
+#include "dom/harmony.h"
+#include "dom/masterscore.h"
 #include "dom/measure.h"
+#include "dom/note.h"
 #include "dom/sharedpart.h"
 #include "dom/staff.h"
 #include "dom/stringtunings.h"
+#include "dom/textbase.h"
+#include "dom/textline.h"
 #include "editing/addremoveelement.h"
 #include "editing/editmeasures.h"
-#include "editing/editproperty.h"
+#include "editing/editstaffbrackets.h"
 #include "editing/inserttime.h"
-#include "log.h"
-#include "mutationjournal.h"
-#include "partchange.h"
-#include "undoablecommand.h"
 
-using namespace mu::engraving;
+namespace mu::engraving {
 
-namespace {
-std::unique_ptr<UndoableCommand> begin_compound_hook(Transaction::PushHook hook) {
-    if (!hook) return {};
-    auto *token = new UndoableCommand;
-    hook(token, false);
-    return std::unique_ptr<UndoableCommand>(token);
-}
+std::vector<EngravingObject *> compound_objects(EngravingObject *object) {
+    std::vector<EngravingObject *> objects;
 
-void finish_compound_hook(Transaction::PushHook hook, const std::unique_ptr<UndoableCommand> &token) {
-    if (hook && token) hook(token.get(), true);
-}
-} // namespace
-
-static ScoreChanges build_score_changes(const CmdState &cmd_state, const JournalBatch::ChangesInfo &changes, const JournalBatch &batch) {
-    int start_tick = cmd_state.start_tick().ticks();
-    int end_tick = cmd_state.end_tick().ticks();
-    staff_idx_t start_staff = cmd_state.start_staff();
-    staff_idx_t end_staff = cmd_state.end_staff();
-
-    for (size_t i = 0; i < batch.entry_count(); ++i) {
-        std::optional<ChangedRange> range = batch.changed_range(i);
-        if (!range) {
-            continue;
+    if (object->is_chord()) {
+        const Chord *chord = to_chord(object);
+        for (const Note *note : chord->notes()) {
+            for (Note *compound_note : note->compound_notes()) {
+                objects.push_back(compound_note);
+            }
         }
-
-        int tick_from = range->tick_from.ticks();
-        int tick_to = range->tick_to.ticks();
-
-        if (start_tick == -1 || start_tick > tick_from) {
-            start_tick = tick_from;
+    } else if (object->is_note()) {
+        const Note *note = to_note(object);
+        for (Note *compound_note : note->compound_notes()) {
+            objects.push_back(compound_note);
         }
-        if (end_tick == -1 || end_tick < tick_to) {
-            end_tick = tick_to;
-        }
-
-        if (range->staff_idx_from != muse::nidx && (start_staff == muse::nidx || start_staff > range->staff_idx_from)) {
-            start_staff = range->staff_idx_from;
-        }
-        if (range->staff_idx_to != muse::nidx && (end_staff == muse::nidx || end_staff < range->staff_idx_to)) {
-            end_staff = range->staff_idx_to;
+    } else if (object->is_fret_diagram()) {
+        const FretDiagram *fret = to_fret_diagram(object);
+        if (Harmony *harmony = fret->harmony()) {
+            objects.push_back(harmony);
         }
     }
 
-    for (const auto &pair : changes.changed_objects) {
-        if (!pair.first->is_engraving_item()) {
-            continue;
-        }
+    objects.push_back(object);
 
-        int tick = to_engraving_item(pair.first)->tick().ticks();
-
-        if (start_tick > tick) {
-            start_tick = tick;
-        }
-
-        if (end_tick < tick) {
-            end_tick = tick;
-        }
-    }
-
-    return {start_tick,
-            end_tick,
-            start_staff,
-            end_staff,
-            changes.is_text_editing,
-            std::move(changes.changed_objects),
-            std::move(changes.changed_types),
-            std::move(changes.changed_property_id_set),
-            std::move(changes.changed_style_id_set)};
+    return objects;
 }
 
-//---------------------------------------------------------
-// Transaction
-//---------------------------------------------------------
-
-Transaction::Transaction(JournalBatch *undoable_transaction) : undoable_transaction_(undoable_transaction) {}
-
-Transaction &Transaction::dummy() {
-    static Transaction dummy_transaction(nullptr);
-    dummy_transaction.is_dummy_ = true;
-    return dummy_transaction;
-}
-
-void Transaction::push(UndoableCommand *cmd) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        std::unique_ptr<UndoableCommand> owned(cmd);
-        owned->redo();
+void apply_property(EngravingObject &object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+    if (reset_path && authored_override_handles(object, id)) {
+        reset_authored_override(*to_engraving_item(&object), id);
         return;
     }
-
-    if (s_push_hook) {
-        s_push_hook(cmd, false);
-    }
-
-    // NOTE: append the command _before_ performing it. Some commands' redo()
-    // may themselves push further commands; those must end up _after_ this
-    // command in the transaction, so that undo reverses them first.
-    std::unique_ptr<UndoableCommand> owned(cmd);
-    undoable_transaction_->append_command(owned.get());
-    owned.release();
-    cmd->redo();
-
-    if (s_push_hook) {
-        s_push_hook(cmd, true);
-    }
+    if (reset_path && id == Pid::PATH &&
+        (object.is_chord_line() && (std::ranges::find(ChordLine::appearance_properties, id) != ChordLine::appearance_properties.end() ||
+                                    id == Pid::APPEARANCE_LINKED_TO_MASTER)))
+        object.reset_property(id);
+    else
+        object.set_property(id, value);
+    object.set_property_flags(id, flags);
 }
 
-void Transaction::push_without_performing(UndoableCommand *cmd) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        delete cmd;
-        return;
-    }
+void apply_text_line_property(EngravingObject &object, const PropertyValue &value) {
+    apply_property(object, Pid::SYSTEM_FLAG, value, PropertyFlags::NOSTYLE, false);
+    if (object.is_text_line()) to_text_line(&object)->init_style();
+}
 
-    if (s_push_hook) {
-        s_push_hook(cmd, false);
-    }
+void apply_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
+    text.set_property_flags(id, flags);
+    text.set_property(id, value);
+}
 
-    std::unique_ptr<UndoableCommand> owned(cmd);
-    undoable_transaction_->append_command(owned.get());
-    owned.release();
+void apply_part_membership(Part &part, size_t index, bool adding) {
+    if (adding)
+        part.score()->insert_part(&part, index);
+    else
+        part.score()->remove_part(&part);
+}
 
-    if (s_push_hook) {
-        s_push_hook(cmd, true);
-    }
+void apply_part_label(Part &part, Fraction tick, const String &value, bool long_name) {
+    if (long_name)
+        part.set_long_name(value, tick);
+    else
+        part.set_short_name(value, tick);
+    part.score()->set_layout_all();
+}
+
+void exchange_part_instrument(Part &part, std::unique_ptr<Instrument> &held) {
+    auto *before = part.instrument();
+    part.set_instrument(held.get());
+    held.release();
+    held.reset(before);
+}
+
+void refresh_part_instrument(Part &part) {
+    part.update_harmony_channels(false);
+    auto *score = part.score();
+    score->master_score()->rebuild_midi_mapping();
+    score->set_instruments_changed(true);
+    score->set_layout_all();
+}
+
+void apply_staff_membership(Staff &staff, staff_idx_t index, bool adding) {
+    if (adding)
+        staff.score()->insert_staff(&staff, index);
+    else
+        staff.score()->remove_staff(&staff);
+}
+
+void apply_system_staff(Staff &staff, bool adding) {
+    if (adding)
+        staff.score()->add_system_object_staff(&staff);
+    else
+        staff.score()->remove_system_object_staff(&staff);
+}
+
+void apply_staff_hide(Measure &measure, staff_idx_t staff, AutoOnOff value) {
+    measure.set_hide_staff_if_empty(staff, value);
+    measure.trigger_layout(staff);
+}
+
+void apply_staff_brackets(Staff &staff, size_t level, BracketType type, size_t span, bool adding) {
+    EditStaffBrackets::set_bracket_type(staff.score(), staff.idx(), level, adding ? type : BracketType::NO_BRACKET);
+    if (adding) EditStaffBrackets::set_bracket_span(staff.score(), staff.idx(), level, span);
+    staff.trigger_layout();
+}
+
+void apply_staff_tracks(Measure &measure, staff_idx_t first, staff_idx_t last, bool adding) {
+    if (adding)
+        measure.insert_staves(first, last);
+    else
+        measure.remove_staves(first, last);
 }
 
 void Transaction::change_property(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_property(*object, id, value, flags, reset_path);
-        return;
-    }
-    if (!source_object(*object)) {
-        undoable_transaction_->remember_authored_overrides(*object, id);
-        push(new ChangeProperty(object, id, value, flags, reset_path));
-        return;
-    }
-    // Preserve the existing fault-injection seam without allocating legacy
-    // command objects in production. A throwing pre-hook owns its diagnostic.
-    std::unique_ptr<ChangeProperty> diagnostic;
-    if (s_push_hook) {
-        auto *probe = new ChangeProperty(object, id, value, flags, reset_path);
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
-    }
-    undoable_transaction_->change_property(*object, id, value, flags, reset_path);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    if (note_change(object, CommandType::CHANGE_PROPERTY)) object->master_score()->cmd_state().changes.changed_property_id_set.insert(id);
+
+    apply_property(*object, id, value, flags, reset_path);
 }
 
 void Transaction::change_style_values(Score &score, std::span<const StyleValue> values) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_style_values(score, values);
-        return;
-    }
-    std::unique_ptr<UndoableCommand> diagnostic;
-    if (s_push_hook) {
-        // Fault-injection observers only identify this before/after token.
-        // No style command object or associative payload remains.
-        auto *probe = new UndoableCommand;
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
-    }
-    undoable_transaction_->change_style_values(score, values);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    bool changed = false;
+    for (const auto &entry : values) changed |= score.style().style_v(entry.id) != entry.value;
+    if (!changed) return;
+    if (note_change(&score, CommandType::CHANGE_STYLE_VALUES))
+        for (const auto &entry : values)
+            if (score.style().style_v(entry.id) != entry.value)
+                score.master_score()->cmd_state().changes.changed_style_id_set.insert(entry.id);
+
+    apply_style_values(score, values);
 }
 
 void Transaction::replace_style(Score &score, const MStyle &style, bool overlap) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_style_replacement(score, style, overlap);
-        return;
-    }
-    std::unique_ptr<UndoableCommand> diagnostic;
-    if (s_push_hook) {
-        auto *probe = new UndoableCommand;
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
-    }
-    undoable_transaction_->replace_style(score, style, overlap);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    if (note_change(&score, CommandType::CHANGE_STYLE))
+        for (int i = 0; i < int(Sid::STYLES); ++i) {
+            const auto id = static_cast<Sid>(i);
+            if (score.style().style_v(id) != style.style_v(id)) score.master_score()->cmd_state().changes.changed_style_id_set.insert(id);
+        }
+
+    apply_style_replacement(score, style, overlap);
 }
 
 void Transaction::insert_time(Score &score, Fraction tick, Fraction length, bool unmanaged) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_time_insertion(score, tick, length, unmanaged);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->insert_time(score, tick, length, unmanaged);
-    finish_compound_hook(s_push_hook, token);
+    note_change(&score, unmanaged ? CommandType::INSERT_TIME_UNMANAGED_SPANNER : CommandType::INSERT_TIME);
+
+    apply_time_insertion(score, tick, length, unmanaged);
 }
 
 void Transaction::change_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        if (adding)
-            insert_measure_chain(first, last, move_staff_type_changes);
-        else
-            remove_measure_chain(first, last, move_staff_type_changes);
-        return;
+    note_change(first, adding ? CommandType::INSERT_MEASURES : CommandType::REMOVE_MEASURES);
+    note_change(last, adding ? CommandType::INSERT_MEASURES : CommandType::REMOVE_MEASURES);
+    if (!adding) {
+        for (auto *item = first; item; item = item->next()) {
+            defer_root(*item, item->master_score()->eid_register()->enroll(*item));
+            if (item == last) break;
+        }
     }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_measures(first, last, adding, move_staff_type_changes);
-    finish_compound_hook(s_push_hook, token);
+
+    if (adding)
+        insert_measure_chain(first, last, move_staff_type_changes);
+    else
+        remove_measure_chain(first, last, move_staff_type_changes);
 }
 
 void Transaction::change_measure_length(Measure *measure, Fraction length) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_measure_length(measure, length);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_measure_length(measure, length);
-    finish_compound_hook(s_push_hook, token);
+    note_change(measure, CommandType::CHANGE_MEASURE_LEN);
+
+    apply_measure_length(measure, length);
 }
 
 void Transaction::change_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_measure_repeat_count(measure, count, staff);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_measure_repeat_count(measure, count, staff);
-    finish_compound_hook(s_push_hook, token);
+    note_change(measure, CommandType::CHANGE_MEASURE_REPEAT_COUNT);
+
+    apply_measure_repeat_count(measure, count, staff);
 }
 
 void Transaction::change_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        if (adding)
-            measure->insert_m_staff(row, index);
-        else {
-            std::unique_ptr<MStaff> unjournaled;
-            if (!row->retaining_journal_) unjournaled.reset(row);
-            try {
-                measure->remove_m_staff(row, index);
-            } catch (...) {
-                if (muse::contains(measure->mstaves(), row)) unjournaled.release();
-                throw;
-            }
-        }
-        return;
+    note_change(measure, adding ? CommandType::INSERT_M_STAFF : CommandType::REMOVE_M_STAFF);
+    if (adding)
+        measure->insert_m_staff(row, index);
+    else {
+        defer_root(*measure, row);
+        measure->remove_m_staff(row, index);
     }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_mstaff(measure, row, index, adding);
-    finish_compound_hook(s_push_hook, token);
 }
 
 void Transaction::add_mstaff(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        try {
-            measure->insert_m_staff(row.get(), index);
-        } catch (...) {
-            const auto found = muse::index_of(measure->mstaves(), row.get());
-            if (found != muse::nidx) measure->remove_m_staff(row.get(), found);
-            throw;
-        }
-        row.release();
-        return;
+    note_change(measure, CommandType::INSERT_M_STAFF);
+    try {
+        measure->insert_m_staff(row.get(), index);
+    } catch (...) {
+        if (muse::contains(measure->mstaves(), row.get())) row.release();
+        throw;
     }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->add_mstaff(measure, std::move(row), index);
-    finish_compound_hook(s_push_hook, token);
+    row.release();
 }
 
 void Transaction::change_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_staff_tracks(*measure, first, last, adding);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_staff_tracks(measure, first, last, adding);
-    finish_compound_hook(s_push_hook, token);
+    note_change(measure, adding ? CommandType::INSERT_STAVES : CommandType::REMOVE_STAVES);
+
+    apply_staff_tracks(*measure, first, last, adding);
 }
 
 void Transaction::change_staff_brackets(Staff *staff, size_t level, BracketType type, size_t span, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_staff_brackets(*staff, level, type, span, adding);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_staff_brackets(staff, level, type, span, adding);
-    finish_compound_hook(s_push_hook, token);
+    note_change(staff, CommandType::UNKNOWN);
+
+    apply_staff_brackets(*staff, level, type, span, adding);
 }
 
 void Transaction::change_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_staff_membership(*staff, index, adding);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_staff_membership(staff, index, adding);
-    finish_compound_hook(s_push_hook, token);
+    note_change(staff, adding ? CommandType::INSERT_STAFF : CommandType::REMOVE_STAFF);
+    if (!adding) defer_root(*staff, staff->master_score()->eid_register()->enroll(*staff));
+
+    apply_staff_membership(*staff, index, adding);
 }
 
 void Transaction::change_system_staff(Staff *staff, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_system_staff(*staff, adding);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_system_staff(staff, adding);
-    finish_compound_hook(s_push_hook, token);
+    note_change(staff, adding ? CommandType::ADD_SYSTEM_OBJECT_STAFF : CommandType::REMOVE_SYSTEM_OBJECT_STAFF);
+
+    apply_system_staff(*staff, adding);
 }
 
 void Transaction::change_staff_order(Score *score, const std::vector<staff_idx_t> &order) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        auto forward = order;
-        score->sort_staves(forward);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_staff_order(score, order);
-    finish_compound_hook(s_push_hook, token);
+    note_change(score, CommandType::SORT_STAVES);
+
+    auto forward = order;
+    score->sort_staves(forward);
 }
 
 void Transaction::change_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_staff_hide(*measure, staff, value);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_staff_hide(measure, staff, value);
-    finish_compound_hook(s_push_hook, token);
+    note_change(measure, CommandType::CHANGE_M_STAFF_HIDE_IF_EMPTY);
+
+    apply_staff_hide(*measure, staff, value);
 }
 
 void Transaction::change_part_membership(Part *part, size_t index, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_part_membership(*part, index, adding);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_part_membership(part, index, adding);
-    finish_compound_hook(s_push_hook, token);
+    note_change(part, adding ? CommandType::INSERT_PART : CommandType::REMOVE_PART);
+    if (!adding) defer_root(*part, part->master_score()->eid_register()->enroll(*part));
+
+    apply_part_membership(*part, index, adding);
 }
 
 void Transaction::change_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_part_label(*part, tick, value, long_name);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_part_label(tick, part, value, long_name);
-    finish_compound_hook(s_push_hook, token);
+    note_change(part, long_name ? CommandType::CHANGE_INSTRUMENT_LONG : CommandType::CHANGE_INSTRUMENT_SHORT);
+
+    apply_part_label(*part, tick, value, long_name);
 }
 
 void Transaction::replace_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        exchange_part_instrument(*part, value);
-        refresh_part_instrument(*part);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->replace_part_instrument(part, std::move(value));
-    finish_compound_hook(s_push_hook, token);
+    note_change(part, CommandType::CHANGE_PART);
+
+    exchange_part_instrument(*part, value);
+    refresh_part_instrument(*part);
 }
 
 void Transaction::change_string_data(StringTunings *item, const StringData &value) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        item->set_string_data(value);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_string_data(item, value);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::UNKNOWN);
+
+    item->set_string_data(value);
 }
 
 void Transaction::change_shared_origin(SharedPart *shared, Part *origin, bool connecting) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        if (connecting)
-            shared->add_origin_part(origin);
-        else
-            shared->remove_origin_part(origin);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_shared_origin(shared, origin, connecting);
-    finish_compound_hook(s_push_hook, token);
+    note_change(shared, connecting ? CommandType::CONNECT_SHARED_PART : CommandType::DISCONNECT_SHARED_PART);
+
+    if (connecting)
+        shared->add_origin_part(origin);
+    else
+        shared->remove_origin_part(origin);
 }
 
 void Transaction::change_excerpt_membership(Excerpt *excerpt, bool adding) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        if (adding)
-            excerpt->master_score()->add_excerpt(excerpt);
-        else {
-            auto &master = *excerpt->master_score();
-            std::unique_ptr<Excerpt> unjournaled;
-            if (!excerpt->retaining_journal_) unjournaled.reset(excerpt);
-            try {
-                master.remove_excerpt(excerpt);
-            } catch (...) {
-                if (muse::contains(master.excerpts(), excerpt)) unjournaled.release();
-                throw;
-            }
-        }
-        return;
+    auto &master = *excerpt->master_score();
+    note_change(&master, adding ? CommandType::ADD_EXCERPT : CommandType::REMOVE_EXCERPT);
+    if (adding)
+        master.add_excerpt(excerpt);
+    else {
+        defer_root(master, excerpt);
+        master.remove_excerpt(excerpt);
     }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_excerpt_membership(excerpt, adding);
-    finish_compound_hook(s_push_hook, token);
-}
-
-void Transaction::set_push_hook(PushHook hook) { s_push_hook = hook; }
-
-void Transaction::change_mm_rest_link(Measure &target, MeasureBase *value, MMRestLink link) {
-    validate_mm_rest_link(target, value, link);
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_mm_rest_link(target, value, link);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_mm_rest_link(target, value, link);
-    finish_compound_hook(s_push_hook, token);
-}
-
-MMRestCreation Transaction::create_mm_rest(Measure &source, std::unique_ptr<Measure> overlay) {
-    if (!overlay || source.mm_rest()) throw std::logic_error("invalid MMR creation ownership");
-    const auto target = JournalTarget::capture(source);
-    const auto object = target.document->eid_register()->enroll(*overlay);
-    if (is_dummy_ || undoable_transaction_->replaying()) return MMRestCreation({target, object, std::move(overlay)});
-    auto token = begin_compound_hook(s_push_hook);
-    auto guard = undoable_transaction_->create_mm_rest(source, std::move(overlay));
-    finish_compound_hook(s_push_hook, token);
-    return guard;
 }
 
 void Transaction::add_element(EngravingItem *item) {
     validate_element_add(*item);
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_element_add(*item);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_element_membership(*item, true);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::ADD_ELEMENT);
+
+    apply_element_add(*item);
 }
 
 void Transaction::remove_element(EngravingItem *item) {
-    // These dependencies precede the outer removal, matching the original
-    // domain preparation order. Each nested mutation arms its own inverse.
+    note_change(item, CommandType::REMOVE_ELEMENT);
+    defer_root(*item, item->master_score()->eid_register()->enroll(*item));
     prepare_element_removal(*item);
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_element_remove(*item);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_element_membership(*item, false);
-    finish_compound_hook(s_push_hook, token);
+
+    apply_element_remove(*item);
 }
 
 void Transaction::replace_element(EngravingItem *before, EngravingItem *after) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_element_replace(*before, *after);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->replace_element(*before, *after);
-    finish_compound_hook(s_push_hook, token);
+    note_change(before, CommandType::CHANGE_ELEMENT);
+    note_change(after, CommandType::CHANGE_ELEMENT);
+    defer_root(*before, before->master_score()->eid_register()->enroll(*before));
+
+    apply_element_replace(*before, *after);
 }
 
 void Transaction::reparent_element(EngravingItem *item, EngravingItem *parent, staff_idx_t staff) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_element_reparent(*item, *parent, staff * voices + item->voice());
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->reparent_element(*item, *parent, staff);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::CHANGE_PARENT);
+    note_change(parent, CommandType::CHANGE_PARENT);
+
+    apply_element_reparent(*item, *parent, staff * voices + item->voice());
 }
 
 void Transaction::reparent_segment(Segment *item, Measure *parent, Fraction tick) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_segment_reparent(*item, *parent, tick);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->reparent_segment(*item, *parent, tick);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::CHANGE_PARENT);
+
+    apply_segment_reparent(*item, *parent, tick);
 }
 
 void Transaction::link_objects(EngravingObject *item, EngravingObject *peer) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        item->link_to(peer);
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_link(*item, peer);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::LINK);
+
+    item->link_to(peer);
 }
 
 void Transaction::unlink_object(EngravingObject *item) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        item->unlink();
-        return;
-    }
-    auto token = begin_compound_hook(s_push_hook);
-    undoable_transaction_->change_link(*item, nullptr);
-    finish_compound_hook(s_push_hook, token);
+    note_change(item, CommandType::UNLINK);
+
+    item->unlink();
 }
 
 void Transaction::change_bracket_property(BracketItem &item, Pid id, const PropertyValue &value, PropertyFlags flags) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        // Immediate edits still avoid writing flags through a deleted bracket.
-        item.set_property_flags(id, flags);
-        item.set_property(id, value);
-        return;
-    }
-    std::unique_ptr<ChangeProperty> diagnostic;
-    if (s_push_hook) {
-        auto *probe = new ChangeProperty(&item, id, value, flags);
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
-    }
-    undoable_transaction_->change_bracket_property(item, id, value, flags);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    if (note_change(item.score(), CommandType::CHANGE_PROPERTY))
+        item.master_score()->cmd_state().changes.changed_property_id_set.insert(id);
+
+    // Immediate edits still avoid writing flags through a deleted bracket.
+    item.set_property_flags(id, flags);
+    item.set_property(id, value);
 }
 
 void Transaction::change_text_line_property(EngravingObject &object, const PropertyValue &value) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_text_line_property(object, value);
-        return;
-    }
-    std::unique_ptr<ChangeProperty> diagnostic;
-    if (s_push_hook) {
-        auto *probe = new ChangeProperty(&object, Pid::SYSTEM_FLAG, value);
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
-    }
-    undoable_transaction_->change_text_line_property(object, value);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    if (note_change(&object, CommandType::CHANGE_PROPERTY))
+        object.master_score()->cmd_state().changes.changed_property_id_set.insert(Pid::SYSTEM_FLAG);
+
+    apply_text_line_property(object, value);
 }
 
 void Transaction::change_text_format(TextBase &text, Pid id, const PropertyValue &value, PropertyFlags flags) {
-    if (is_dummy_ || undoable_transaction_->replaying()) {
-        apply_text_format(text, id, value, flags);
-        return;
+    note_change(&text, CommandType::TEXT_EDIT);
+
+    apply_text_format(text, id, value, flags);
+}
+
+void Score::apply_element_add(EngravingItem *item) { transaction_manager()->current_or_dummy_transaction().add_element(item); }
+
+void Score::apply_element_remove(EngravingItem *item) { transaction_manager()->current_or_dummy_transaction().remove_element(item); }
+
+void Score::apply_element_replace(EngravingItem *before, EngravingItem *after) {
+    transaction_manager()->current_or_dummy_transaction().replace_element(before, after);
+}
+
+void Score::apply_parent_change(EngravingItem *item, EngravingItem *parent, staff_idx_t staff) {
+    transaction_manager()->current_or_dummy_transaction().reparent_element(item, parent, staff);
+}
+
+void Score::apply_segment_parent_change(Segment *item, Measure *parent, Fraction tick) {
+    transaction_manager()->current_or_dummy_transaction().reparent_segment(item, parent, tick);
+}
+
+void Score::apply_link(EngravingObject *item, EngravingObject *peer) {
+    transaction_manager()->current_or_dummy_transaction().link_objects(item, peer);
+}
+
+void Score::apply_unlink(EngravingObject *item) { transaction_manager()->current_or_dummy_transaction().unlink_object(item); }
+
+void Score::apply_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_mstaff(measure, row, index, adding);
+}
+
+void Score::apply_mstaff_add(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index) {
+    transaction_manager()->current_or_dummy_transaction().add_mstaff(measure, std::move(row), index);
+}
+
+void Score::apply_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_tracks(measure, first, last, adding);
+}
+
+void Score::apply_part_membership(Part *part, size_t index, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_part_membership(part, index, adding);
+}
+
+void Score::apply_part_label(Fraction tick, Part *part, const String &value, bool long_name) {
+    transaction_manager()->current_or_dummy_transaction().change_part_label(tick, part, value, long_name);
+}
+
+void Score::apply_part_instrument(Part *part, std::unique_ptr<Instrument> value) {
+    transaction_manager()->current_or_dummy_transaction().replace_part_instrument(part, std::move(value));
+}
+
+void Score::apply_string_data(StringTunings *item, const StringData &value) {
+    transaction_manager()->current_or_dummy_transaction().change_string_data(item, value);
+}
+
+void Score::apply_excerpt(Excerpt *excerpt, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_excerpt_membership(excerpt, adding);
+}
+
+void Score::apply_bracket_add(Staff *staff, size_t level, BracketType type, size_t span) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_brackets(staff, level, type, span, true);
+}
+
+void Score::apply_bracket_remove(Staff *staff, size_t level) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_brackets(staff, level, BracketType::NO_BRACKET, 0, false);
+}
+
+void Score::apply_staff_membership(Staff *staff, staff_idx_t index, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_membership(staff, index, adding);
+}
+
+void Score::apply_system_staff(Staff *staff, bool adding) {
+    transaction_manager()->current_or_dummy_transaction().change_system_staff(staff, adding);
+}
+
+void Score::apply_staff_order(const std::vector<staff_idx_t> &order) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_order(this, order);
+}
+
+void Score::apply_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value) {
+    transaction_manager()->current_or_dummy_transaction().change_staff_hide(measure, staff, value);
+}
+
+void Score::apply_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged) {
+    transaction_manager()->current_or_dummy_transaction().insert_time(*target, tick, length, unmanaged);
+}
+
+void Score::apply_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes) {
+    transaction_manager()->current_or_dummy_transaction().change_measures(first, last, adding, move_staff_type_changes);
+}
+
+void Score::apply_measure_length(Measure *measure, Fraction length) {
+    transaction_manager()->current_or_dummy_transaction().change_measure_length(measure, length);
+}
+
+void Score::apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff) {
+    transaction_manager()->current_or_dummy_transaction().change_measure_repeat_count(measure, count, staff);
+}
+
+bool note_change(EngravingObject *object, CommandType type) {
+    if (!object) return false;
+    auto *master = object->master_score();
+    if (!master || !master->transaction_manager()->current_transaction() || master->cmd_state().locked()) return false;
+    auto &state = master->cmd_state();
+    ++state.mutation_count;
+    for (auto *changed : compound_objects(object)) {
+        state.changes.changed_types.insert(changed->type());
+        state.changes.changed_objects[changed].insert(type);
     }
-    std::unique_ptr<ChangeProperty> diagnostic;
-    if (s_push_hook) {
-        auto *probe = new ChangeProperty(&text, id, value, flags);
-        s_push_hook(probe, false);
-        diagnostic.reset(probe);
+    return true;
+}
+
+void defer_root(EngravingObject &owner, decltype(DetachedRoot::object) object) {
+    auto *master = owner.master_score();
+    auto &roots = master->transaction_manager()->detached_roots;
+    auto handle = master->eid_register()->enroll(owner);
+    if (std::ranges::none_of(roots, [&](const auto &root) { return root.owner == handle && root.object == object; }))
+        roots.push_back({handle, object});
+}
+
+TransactionManager::~TransactionManager() { cleanup_detached(); }
+
+void TransactionManager::cleanup_detached() {
+    auto roots = std::move(detached_roots);
+    detached_roots.clear();
+    auto &registry = *master_score_->eid_register();
+    // Non-DOM records borrow children of their source owner until disposal.
+    for (auto &root : roots) {
+        auto *owner = registry.item_from_handle(root.owner);
+        if (auto *row = std::get_if<MStaff *>(&root.object)) {
+            if (!owner || !muse::contains(to_measure(owner)->mstaves(), *row)) delete *row;
+        } else if (auto *group = std::get_if<NoteParenthesisInfo *>(&root.object)) {
+            if (!owner || !muse::contains(to_chord(owner)->note_parentheses(), *group)) delete *group;
+        } else if (auto *lock = std::get_if<const RangeLock *>(&root.object)) {
+            if (!owner || (to_score(owner)->system_locks()->lock_starting_at((*lock)->start_mb()) != *lock &&
+                           to_score(owner)->page_locks()->lock_starting_at((*lock)->start_mb()) != *lock))
+                delete *lock;
+        }
     }
-    undoable_transaction_->change_text_format(text, id, value, flags);
-    if (s_push_hook && diagnostic) s_push_hook(diagnostic.get(), true);
+    for (auto &root : roots) {
+        if (auto *handle = std::get_if<SourceHandle>(&root.object)) {
+            auto *object = registry.item_from_handle(*handle);
+            if (object && !registry.attached(*handle)) delete object;
+        }
+    }
+    for (auto &root : roots)
+        if (auto *excerpt = std::get_if<Excerpt *>(&root.object))
+            if (!muse::contains(master_score_->excerpts(), *excerpt)) delete *excerpt;
 }
-
-//---------------------------------------------------------
-// TransactionManager
-//---------------------------------------------------------
-
-TransactionManager::TransactionManager(MasterScore *master_score) : master_score_(master_score) {}
-
-ReplayScope::ReplayScope(TransactionManager &manager, bool enabled) : manager_(manager), enabled_(enabled) {
-    if (enabled_) saved_ = std::move(manager_.current_transaction_);
-}
-
-ReplayScope::~ReplayScope() {
-    if (enabled_) manager_.current_transaction_ = std::move(saved_);
-}
-
-MutationJournal *TransactionManager::mutation_journal() const { return master_score_->mutation_journal(); }
 
 void TransactionManager::transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func) {
-    IF_ASSERT_FAILED(!current_transaction_) {
-        LOGW() << "transaction already active";
-        func(*current_transaction_);
+    if (active_) {
+        func(transaction_);
         return;
     }
     begin_transaction(description);
     try {
-        func(*current_transaction_);
+        func(transaction_);
         end_transaction();
     } catch (...) {
-        if (mutation_journal()->has_active_transaction()) end_transaction(true);
+        end_transaction(true);
         throw;
     }
 }
 
-void TransactionManager::begin_transaction(const muse::TranslatableString &description) {
-    MutationJournal *stack = mutation_journal();
-
-    if (stack->is_locked()) {
-        return;
-    }
-
-    if (stack->has_active_transaction()) {
-        LOGD() << "cmd already active";
-        return;
-    }
-
-    MScore::set_error(MsError::MS_NO_ERROR);
-
+void TransactionManager::begin_transaction([[maybe_unused]] const muse::TranslatableString &description) {
+    if (active_) return;
+    cleanup_detached();
     master_score_->cmd_state().reset();
-    stack->begin_transaction(master_score_, description);
-    current_transaction_ = std::unique_ptr<Transaction>(new Transaction(stack->active_transaction()));
+    MScore::set_error(MsError::MS_NO_ERROR);
+    active_ = true;
 }
 
 ScoreChanges TransactionManager::prepare_commit() {
-    auto *journal = mutation_journal();
-    if (!journal->has_active_transaction()) throw std::logic_error("no active mutation batch");
+    if (!active_) throw std::logic_error("no active mutation batch");
     if (master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning))
         throw std::runtime_error("the engine rejected the mutation batch");
     if (master_score_->source_revision() == std::numeric_limits<uint64_t>::max()) throw std::overflow_error("source revision exhausted");
     master_score_->update(false, NormalizeMode::TRANSACTION);
     master_score_->invalidate_repeat_list();
     master_score_->update_repeat_list(true);
-    const ScoreChanges provisional =
-        build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(), *journal->active_transaction());
-    master_score_->update_automation(provisional);
-    return build_score_changes(master_score_->cmd_state(), journal->active_transaction()->changes_info(), *journal->active_transaction());
+    auto &state = master_score_->cmd_state();
+    auto &changes = state.changes;
+    changes.tick_from = state.start_tick().ticks();
+    changes.tick_to = state.end_tick().ticks();
+    changes.staff_idx_from = state.start_staff();
+    changes.staff_idx_to = state.end_staff();
+    for (const auto &[object, types] : changes.changed_objects) {
+        if (!object->is_engraving_item()) continue;
+        const int tick = to_engraving_item(object)->tick().ticks();
+        if (changes.tick_from == -1 || changes.tick_from > tick) changes.tick_from = tick;
+        if (changes.tick_to == -1 || changes.tick_to < tick) changes.tick_to = tick;
+    }
+    master_score_->update_automation(changes);
+    return changes;
 }
 
 void TransactionManager::commit_prepared(const ScoreChanges &changes) {
-    auto *journal = mutation_journal();
-    const bool changed = !journal->active_transaction()->empty();
-    // Listener reconstruction is fallible, so keep all inverses alive until it succeeds.
+    const bool changed = master_score_->cmd_state().mutation_count != 0;
     if (changed) {
-        notification_started_ = true;
         master_score_->notify_changes(changes);
         if (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning)
             throw std::runtime_error("the engine rejected batch finalization");
+        master_score_->advance_source_revision();
     }
-    journal->end_transaction(false);
-    current_transaction_.reset();
+    active_ = false;
+    cleanup_detached();
     master_score_->cmd_state().reset();
-    if (changed) master_score_->advance_source_revision();
-    notification_started_ = false;
 }
 
-void TransactionManager::end_transaction(bool rollback, bool keep_rolled_back_elements) {
-    auto *journal = mutation_journal();
-    if (journal->is_locked()) return;
-    if (!journal->has_active_transaction()) {
-        master_score_->update();
+void TransactionManager::end_transaction(bool failed) {
+    if (!active_) {
+        cleanup_detached();
         return;
     }
-    rollback |= master_score_->read_only() || (MScore::error != MsError::MS_NO_ERROR && !MScore::error_is_warning);
-    if (!rollback) {
-        try {
-            auto changes = prepare_commit();
-            commit_prepared(changes);
-            return;
-        } catch (...) {
-            end_transaction(true, keep_rolled_back_elements);
-            throw;
-        }
+    if (!failed) {
+        auto changes = prepare_commit();
+        commit_prepared(changes);
+        return;
     }
-    current_transaction_.reset();
-    journal->active_transaction()->unwind(!keep_rolled_back_elements);
-    master_score_->update(false, NormalizeMode::REPLAY);
-    master_score_->invalidate_repeat_list();
-    master_score_->update_repeat_list(false);
-    master_score_->init_automation();
-    if (notification_started_) master_score_->reload_playback_models();
-    journal->end_transaction(true);
+    if (master_score_->cmd_state().mutation_count != 0) master_score_->advance_source_revision();
+    active_ = false;
+    cleanup_detached();
     master_score_->cmd_state().reset();
-    notification_started_ = false;
 }
-
-Transaction *TransactionManager::current_transaction() const { return current_transaction_.get(); }
-
-Transaction &TransactionManager::current_or_dummy_transaction() {
-    if (current_transaction_) {
-        return *current_transaction_;
-    } else {
-        return Transaction::dummy();
-    }
-}
+} // namespace mu::engraving

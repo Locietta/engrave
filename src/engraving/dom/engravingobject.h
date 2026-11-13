@@ -313,7 +313,7 @@ struct EngravingObject {
     void undo_change_property(Pid id, const PropertyValue &);
     void undo_reset_property(Pid id);
 
-    void undo_push_property(Pid);
+    void notify_property_change(Pid);
 
     std::list<EngravingObject *> link_list() const;
 

@@ -105,7 +105,6 @@
 #include "editnote.h"
 #include "editpagelocks.h"
 #include "editpart.h"
-#include "editproperty.h"
 #include "editrehearsalmark.h"
 #include "editscoreproperties.h"
 #include "editspanner.h"
@@ -118,7 +117,6 @@
 #include "log.h"
 #include "navigation.h"
 #include "splitjoinmeasure.h"
-#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
 #include "transpose.h"
 
@@ -2747,7 +2745,7 @@ MeasureBase *Score::insert_box(MeasureBase *box, MeasureBase *before_measure, co
         to_f_box(box)->init();
     }
 
-    record_measures(box, box, true);
+    apply_measures(box, box, true);
 
     if (options.need_deselect_all) {
         deselect_all();
@@ -2858,7 +2856,7 @@ void Score::check_spanner(const Fraction &start_tick, const Fraction &end_tick, 
         }
     }
     for (Spanner *s : spanners_to_shorten) { // shorten spanners that extended past end of score
-        record_property_change(s, Pid::SPANNER_TICKS, last_tick - s->tick());
+        apply_property_change(s, Pid::SPANNER_TICKS, last_tick - s->tick());
         s->compute_end_element();
     }
 }
@@ -3148,7 +3146,7 @@ void Score::do_time_delete_for_measure(Measure *m, Segment *start_segment, const
     for (Score *score : master_score()->score_list()) {
         Measure *local_measure = score->tick2measure(abstick);
 
-        record_time_insertion(score, abstick, -len);
+        apply_time_insertion(score, abstick, -len);
 
         Fraction updated_tick = tick;
         // tuplets store their tick: move those after the removed time back with their segments
@@ -3182,7 +3180,7 @@ void Score::do_time_delete_for_measure(Measure *m, Segment *start_segment, const
             t->undo_change_property(Pid::TICK, t->tick() - len);
         }
 
-        record_measure_length(local_measure, local_measure->ticks() - f);
+        apply_measure_length(local_measure, local_measure->ticks() - f);
     }
 
     for (Segment *s : empty_segments) {
@@ -3216,7 +3214,8 @@ bool Score::undo_property_changed(EngravingItem *item, Pid prop_id, const Proper
 
     if ((current_prop_value != prop_value) || (current_prop_flags != prop_flags)) {
         item->set_property_flags(prop_id, prop_flags);
-        tx.push_without_performing(new ChangeProperty(item, prop_id, prop_value, prop_flags));
+        note_change(item, CommandType::CHANGE_PROPERTY);
+        master_score()->cmd_state().changes.changed_property_id_set.insert(prop_id);
         changed = true;
     }
 
@@ -3245,11 +3244,12 @@ bool Score::undo_property_changed(EngravingItem *item, Pid prop_id, const Proper
 void Score::undo_property_changed(EngravingObject *e, Pid t, const PropertyValue &st, PropertyFlags ps) {
     if (e->get_property(t) != st) {
         Transaction &tx = master_score()->transaction_manager()->current_or_dummy_transaction();
-        tx.push_without_performing(new ChangeProperty(e, t, st, ps));
+        note_change(e, CommandType::CHANGE_PROPERTY);
+        master_score()->cmd_state().changes.changed_property_id_set.insert(t);
     }
 }
 
-void Score::record_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
+void Score::apply_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags, bool reset_path) {
     master_score()->transaction_manager()->current_or_dummy_transaction().change_property(object, id, value, flags, reset_path);
 }
 
@@ -3265,7 +3265,7 @@ void Score::undo_change_style_values(std::unordered_map<Sid, PropertyValue> valu
     master_score()->transaction_manager()->current_or_dummy_transaction().change_style_values(*this, requested);
 }
 
-void Score::undo_change_page_number_offset(int po) { undo(new ChangePageNumberOffset(this, po)); }
+void Score::undo_change_page_number_offset(int po) { apply_change_page_number_offset(this, po); }
 
 void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff_idx, bool change_links_parents) {
     if (!element || !parent) {
@@ -3296,7 +3296,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
         }
         if (item == element) {
             // Master score
-            record_parent_change(element, parent, staff_idx);
+            apply_parent_change(element, parent, staff_idx);
         } else if (linked_origin && linked_dest) {
             // Part - origin and destination staves are in this part
             EngravingItem *linked_parent;
@@ -3315,7 +3315,7 @@ void Score::undo_change_parent(EngravingItem *element, EngravingItem *parent, st
                 linked_parent = parent->find_linked_in_staff(linked_dest);
             }
             IF_ASSERT_FAILED(linked_parent) { continue; }
-            linked_score->record_parent_change(item, linked_parent, linked_score->staff_idx(linked_dest));
+            linked_score->apply_parent_change(item, linked_parent, linked_score->staff_idx(linked_dest));
         } else if (linked_origin && !linked_dest) {
             // Part - move is to a different staff
             // Remove original item
@@ -3549,18 +3549,18 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
                                 lbl->link_to(sbl);
                             }
                         } else {
-                            lscore->record_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
-                            lscore->record_property_change(lbl, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
-                                                           PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(lbl, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
+                                                          PropertyFlags::NOSTYLE);
                             // set generated flag before and after so it sticks on type change and also works on undo/redo
-                            lscore->record_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(lbl, Pid::GENERATED, generated, PropertyFlags::NOSTYLE);
                             if (lbl != sbl && !generated && !lbl->links()) {
-                                lscore->record_link(lbl, sbl);
+                                lscore->apply_link(lbl, sbl);
                             } else if (lbl != sbl && generated && lbl->is_linked(sbl)) {
-                                lscore->record_unlink(lbl);
+                                lscore->apply_unlink(lbl);
                                 while (EngravingItem *linked_on_covering_mm_rest = sbl->find_linked_in_score(lscore)) {
                                     // Edge case: an additional link of this barline exists on the covering mmRest of lbl's measure
-                                    lscore->record_unlink(linked_on_covering_mm_rest);
+                                    lscore->apply_unlink(linked_on_covering_mm_rest);
                                     lscore->do_undo_remove_element(linked_on_covering_mm_rest);
                                 }
                             }
@@ -3573,11 +3573,11 @@ void Score::undo_change_bar_line_type(BarLine *bl, BarLineType bar_type, bool al
                     Segment *segment1 = lmeasure->undo_get_segment_r(SegmentType::BEGIN_BAR_LINE, Fraction(0, 1));
                     for (EngravingItem *e : segment1->elist()) {
                         if (e) {
-                            lscore->record_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
-                            lscore->record_property_change(e, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
-                                                           PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(e, Pid::BARLINE_TYPE, PropertyValue::from_value(bar_type),
+                                                          PropertyFlags::NOSTYLE);
                             // set generated flag before and after so it sticks on type change and also works on undo/redo
-                            lscore->record_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+                            lscore->apply_property_change(e, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
                         }
                     }
                 }
@@ -3654,11 +3654,11 @@ void Score::undo_change_element(EngravingItem *old_element, EngravingItem *new_e
         for (EngravingObject *obj : links) {
             EngravingItem *item = to_engraving_item(obj);
             if (item == old_element) {
-                record_element_replace(old_element, new_element);
+                apply_element_replace(old_element, new_element);
             } else {
                 if (item->score()) {
                     EngravingItem *new_clone = new_element->clone();
-                    item->score()->record_element_replace(item, new_clone);
+                    item->score()->apply_element_replace(item, new_clone);
                 }
             }
         }
@@ -3695,7 +3695,7 @@ void Score::update_instrument_change_transpositions(KeySigEvent &key, Staff *sta
                     key_sig = to_key_sig(key_sig_elem);
                 }
                 if (key_sig) {
-                    undo(new ChangeKeySig(key_sig, e, key_sig->show_courtesy()));
+                    apply_change_key_sig(key_sig, e, key_sig->show_courtesy());
                 }
                 next_tick = kl->next_key_tick(next_tick);
             } else {
@@ -3776,13 +3776,13 @@ void Score::undo_change_chord_rest_len(ChordRest *cr, const TDuration &d) {
 //   undoRemovePart
 //---------------------------------------------------------
 
-void Score::undo_remove_part(Part *part, size_t part_idx) { record_part_membership(part, part_idx, false); }
+void Score::undo_remove_part(Part *part, size_t part_idx) { apply_part_membership(part, part_idx, false); }
 
 //---------------------------------------------------------
 //   undoInsertPart
 //---------------------------------------------------------
 
-void Score::undo_insert_part(Part *part, size_t target_part_index) { record_part_membership(part, target_part_index, true); }
+void Score::undo_insert_part(Part *part, size_t target_part_index) { apply_part_membership(part, target_part_index, true); }
 
 //---------------------------------------------------------
 //   undoRemoveStaff
@@ -3826,7 +3826,7 @@ void Score::undo_remove_staff(Staff *staff) {
 
     staff->undo_unlink();
 
-    record_staff_membership(staff, muse::nidx, false);
+    apply_staff_membership(staff, muse::nidx, false);
 }
 
 //---------------------------------------------------------
@@ -3835,7 +3835,7 @@ void Score::undo_remove_staff(Staff *staff) {
 //---------------------------------------------------------
 
 void Score::undo_insert_staff(Staff *staff, staff_idx_t ridx, bool create_rests) {
-    record_staff_membership(staff, ridx, true);
+    apply_staff_membership(staff, ridx, true);
     staff_idx_t idx = staff_idx(staff->part()) + ridx;
     for (Measure *m = first_measure(); m; m = m->next_measure()) {
         m->cmd_add_staves(idx, idx + 1, create_rests);
@@ -4739,7 +4739,7 @@ void Score::undo_change_spanner_elements(Spanner *spanner, EngravingItem *start_
             new_start_element = start_element;
             new_end_element = end_element;
         }
-        sp->score()->undo(new ChangeSpannerElements(sp, new_start_element, new_end_element));
+        apply_change_spanner_elements(sp, new_start_element, new_end_element);
 
         if (sp->is_tie()) {
             sp->score()->master_score()->update_repeat_list(false);
@@ -4888,7 +4888,7 @@ void Score::undo_insert_time(const Fraction &tick, const Fraction &len) {
         }
     }
 
-    record_time_insertion(this, tick, len, true);
+    apply_time_insertion(this, tick, len, true);
 }
 
 //---------------------------------------------------------
@@ -4984,7 +4984,7 @@ void Score::undo_remove_measures(Measure *m1, Measure *m2, bool preserve_ties, b
     EditSystemLocks::remove_system_locks_on_remove_measures(tx, this, m1, m2);
     EditPageLocks::remove_page_locks_on_remove_measures(tx, this, m1, m2);
 
-    record_measures(m1, m2, false, move_staff_type_changes);
+    apply_measures(m1, m2, false, move_staff_type_changes);
 }
 
 //---------------------------------------------------------
@@ -4999,7 +4999,7 @@ void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_id
 
         int curr_count = linked_measure->measure_repeat_count(linked_staff_idx);
         if (curr_count != new_count) {
-            linked_score->record_measure_repeat_count(linked_measure, new_count, linked_staff_idx);
+            linked_score->apply_measure_repeat_count(linked_measure, new_count, linked_staff_idx);
         }
     }
 }
@@ -5007,7 +5007,7 @@ void Score::undo_change_measure_repeat_count(Measure *m, int new_count, staff_id
 void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
     auto remove_tie = [&](Tie *tie) {
         if (undo) {
-            if (mutation_journal()->has_active_transaction()) {
+            if (transaction_manager()->current_transaction() != nullptr) {
                 undo_remove_element(tie);
                 return;
             }
@@ -5057,7 +5057,7 @@ void Score::do_undo_remove_stale_tie_jump_points(Tie *tie, bool undo) {
 }
 
 void Score::do_undo_reset_partial_slur(Slur *slur, bool undo) {
-    const bool owns_transaction = undo && !mutation_journal()->has_active_transaction();
+    const bool owns_transaction = undo && !transaction_manager()->current_transaction();
 
     const ChordRest *start_cr = slur ? slur->start_cr() : nullptr;
     // Slurs can only have the same start & end element when they are partial.
@@ -5172,7 +5172,7 @@ void Score::undo_remove_stale_tie_jump_points(bool undo) {
             continue;
         }
         if (undo) {
-            if (mutation_journal()->has_active_transaction()) {
+            if (transaction_manager()->current_transaction() != nullptr) {
                 undo_remove_element(incoming_pt);
                 continue;
             }

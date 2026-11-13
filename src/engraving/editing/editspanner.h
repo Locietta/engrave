@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../dom/spanner.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
 struct Score;
@@ -36,37 +36,7 @@ struct EditSpanner {
                             Segment *end_segment, bool ctrl_modifier = false);
 };
 
-struct ChangeSpannerElements : UndoableCommand {
-private:
+void apply_change_spanner_elements(Spanner *s, EngravingItem *se, EngravingItem *ee);
 
-    Spanner *spanner = nullptr;
-    EngravingItem *start_element = nullptr;
-    EngravingItem *end_element = nullptr;
-
-    void flip() override;
-
-public:
-    ChangeSpannerElements(Spanner *s, EngravingItem *se, EngravingItem *ee) : spanner(s), start_element(se), end_element(ee) {}
-
-    UNDO_TYPE(CommandType::CHANGE_SPANNER_ELEMENTS)
-    UNDO_NAME("ChangeSpannerElements")
-    UNDO_CHANGED_OBJECTS({spanner})
-};
-
-struct ChangeStartEndSpanner : UndoableCommand {
-private:
-
-    Spanner *spanner = nullptr;
-    EngravingItem *start = nullptr;
-    EngravingItem *end = nullptr;
-
-    void flip() override;
-
-public:
-    ChangeStartEndSpanner(Spanner *sp, EngravingItem *s, EngravingItem *e) : spanner(sp), start(s), end(e) {}
-
-    UNDO_TYPE(CommandType::CHANGE_START_END_SPANNER)
-    UNDO_NAME("ChangeStartEndSpanner")
-    UNDO_CHANGED_OBJECTS({spanner})
-};
+void apply_change_start_end_spanner(Spanner *sp, EngravingItem *s, EngravingItem *e);
 } // namespace mu::engraving

@@ -23,161 +23,18 @@
 #pragma once
 
 #include "../dom/fret.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
-struct FretUndoData {
-    FretUndoData() = default;
-    FretUndoData(FretDiagram *fd);
+void apply_fret_data_change(FretDiagram *d, const String &harmony_name);
 
-    void update_diagram();
+void apply_fret_dot(FretDiagram *d, int input_string, int input_fret, bool input_add = false,
+                    FretDotType input_dtype = FretDotType::NORMAL);
 
-private:
-    FretDiagram *diagram_ = nullptr;
-    BarreMap barres_;
-    MarkerMap markers_;
-    DotMap dots_;
+void apply_fret_marker(FretDiagram *d, int input_string, FretMarkerType input_mtype);
 
-    int strings_ = 0;
-    int frets_ = 0;
-    int fret_offset_ = 0;
-    int max_frets_ = 0;
-    bool show_nut_ = true;
-    bool show_fingering_ = false;
-    Orientation orientation_ = Orientation::VERTICAL;
-    double user_mag_ = 1.0;
-};
+void apply_fret_barre(FretDiagram *d, int input_string, int input_fret, bool input_add = false);
 
-struct FretDataChange : UndoableCommand {
-private:
+void apply_fret_clear(FretDiagram *d);
 
-    FretDiagram *diagram_ = nullptr;
-    FretUndoData undo_data_;
-    String harmony_name_;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    FretDataChange(FretDiagram *d, const String &harmony_name) : diagram_(d), harmony_name_(harmony_name) {}
-
-    UNDO_TYPE(CommandType::FRET_DATA_CHANGE)
-
-    UNDO_NAME("FretDataChange")
-
-    UNDO_CHANGED_OBJECTS({diagram_})
-};
-
-struct FretDot : UndoableCommand {
-private:
-
-    FretDiagram *diagram = nullptr;
-    int string = 0;
-    int fret = 0;
-    bool add = 0;
-    FretDotType dtype;
-    FretUndoData undo_data;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    FretDot(FretDiagram *d, int input_string, int input_fret, bool input_add = false, FretDotType input_dtype = FretDotType::NORMAL)
-        : diagram(d), string(input_string), fret(input_fret), add(input_add), dtype(input_dtype) {}
-
-    UNDO_TYPE(CommandType::FRET_DOT)
-    UNDO_NAME("FretDot")
-    UNDO_CHANGED_OBJECTS({diagram})
-};
-
-struct FretMarker : UndoableCommand {
-private:
-
-    FretDiagram *diagram = nullptr;
-    int string = 0;
-    FretMarkerType mtype;
-    FretUndoData undo_data;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    FretMarker(FretDiagram *d, int input_string, FretMarkerType input_mtype) : diagram(d), string(input_string), mtype(input_mtype) {}
-
-    UNDO_TYPE(CommandType::FRET_MARKER)
-    UNDO_NAME("FretMarker")
-    UNDO_CHANGED_OBJECTS({diagram})
-};
-
-struct FretBarre : UndoableCommand {
-private:
-
-    FretDiagram *diagram = nullptr;
-    int string = 0;
-    int fret = 0;
-    bool add = 0;
-    FretUndoData undo_data;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    FretBarre(FretDiagram *d, int input_string, int input_fret, bool input_add = false)
-        : diagram(d), string(input_string), fret(input_fret), add(input_add) {}
-
-    UNDO_TYPE(CommandType::FRET_BARRE)
-    UNDO_NAME("FretBarre")
-    UNDO_CHANGED_OBJECTS({diagram})
-};
-
-struct FretClear : UndoableCommand {
-private:
-
-    FretDiagram *diagram = nullptr;
-    FretUndoData undo_data;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    FretClear(FretDiagram *d) : diagram(d) {}
-
-    UNDO_TYPE(CommandType::FRET_CLEAR)
-    UNDO_NAME("FretClear")
-    UNDO_CHANGED_OBJECTS({diagram})
-};
-
-struct AddFretDiagramToFretBox : UndoableCommand {
-private:
-
-    FretDiagram *fret_diagram_ = nullptr;
-    size_t idx_ = muse::nidx;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    AddFretDiagramToFretBox(FretDiagram *f, size_t idx);
-
-    UNDO_TYPE(CommandType::ADD_FRET_DIAGRAM_TO_FRET_BOX)
-    UNDO_NAME("AddFretDiagramToFretBox")
-    UNDO_CHANGED_OBJECTS({fret_diagram_})
-};
-
-struct RemoveFretDiagramFromFretBox : UndoableCommand {
-private:
-
-    FretDiagram *fret_diagram_ = nullptr;
-    size_t idx_ = muse::nidx;
-
-    void redo() override;
-    void undo() override;
-
-public:
-    RemoveFretDiagramFromFretBox(FretDiagram *f);
-
-    UNDO_TYPE(CommandType::REMOVE_FRET_DIAGRAM_FROM_FRET_BOX)
-    UNDO_NAME("RemoveFretDiagramFromFretBox")
-    UNDO_CHANGED_OBJECTS({fret_diagram_})
-};
 } // namespace mu::engraving

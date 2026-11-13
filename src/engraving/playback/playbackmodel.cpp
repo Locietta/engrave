@@ -36,7 +36,7 @@
 #include "dom/repeatlist.h"
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
-#include "editing/transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 #include "log.h"
 #include "playbackwalk.h"
 

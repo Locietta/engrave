@@ -32,7 +32,7 @@
 #include "capo.h"
 #include "chord.h"
 #include "containers.h"
-#include "editing/transaction/mutationjournal.h"
+#include "editing/transaction/transaction.h"
 #include "factory.h"
 #include "fret.h"
 #include "guitarbend.h"
@@ -79,10 +79,7 @@ Excerpt::Excerpt(const Excerpt &ex, bool copy_contents)
     }
 }
 
-Excerpt::~Excerpt() {
-    if (retaining_journal_) retaining_journal_->forget_excerpt(retained_index_);
-    delete excerpt_score_;
-}
+Excerpt::~Excerpt() { delete excerpt_score_; }
 
 bool Excerpt::inited() const { return inited_; }
 
@@ -289,7 +286,7 @@ void Excerpt::set_voice_visible(Staff *staff, voice_idx_t voice_index, bool visi
     clone_staff2(master_staff, new_staff, start_tick, end_tick);
 
     // link master staff to cloned
-    excerpt_score()->record_link(new_staff, master_staff);
+    excerpt_score()->apply_link(new_staff, master_staff);
 }
 
 void Excerpt::create_excerpt(Excerpt *excerpt) {
@@ -317,7 +314,7 @@ void Excerpt::create_excerpt(Excerpt *excerpt) {
             // the order of staff - s matters as staff should be the first entry in the
             // created link list to make primaryStaff() work
             // TODO: change implementation, maybe create an explicit "primary" flag
-            score->record_link(s, staff);
+            score->apply_link(s, staff);
             score->append_staff(s);
             src_staves.push_back(staff->idx());
         }
@@ -483,10 +480,10 @@ void MasterScore::delete_excerpt(Excerpt *excerpt) {
                 }
             }
             // unlink the staff
-            record_unlink(st);
+            apply_unlink(st);
         }
     }
-    record_excerpt(excerpt, false);
+    apply_excerpt(excerpt, false);
 }
 
 void MasterScore::init_and_add_excerpt(Excerpt *excerpt, bool fake_undo) {
@@ -495,7 +492,7 @@ void MasterScore::init_and_add_excerpt(Excerpt *excerpt, bool fake_undo) {
     if (fake_undo)
         add_excerpt(excerpt);
     else
-        record_excerpt(excerpt, true);
+        apply_excerpt(excerpt, true);
 }
 
 void MasterScore::init_excerpt(Excerpt *excerpt) {
@@ -1030,7 +1027,7 @@ static MeasureBase *clone_measure(MeasureBase *mb, Score *score, const Score *os
         }
     }
 
-    score->record_link(nmb, mb);
+    score->apply_link(nmb, mb);
     nmb->set_exclude_from_other_parts(false);
 
     for (EngravingItem *e : mb->el()) {
@@ -1197,7 +1194,7 @@ void Excerpt::clone_staff(Staff *src_staff, Staff *dst_staff, bool clone_spanner
     Score *score = src_staff->score();
     TieMap tie_map;
 
-    score->record_link(dst_staff, src_staff);
+    score->apply_link(dst_staff, src_staff);
 
     staff_idx_t src_staff_idx = src_staff->idx();
     staff_idx_t dst_staff_idx = dst_staff->idx();

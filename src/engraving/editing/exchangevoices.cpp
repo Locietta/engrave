@@ -30,38 +30,17 @@
 #include "../dom/staff.h"
 #include "../types/types.h"
 #include "clonevoice.h"
+#include "engraving/editing/cmd.h"
 #include "log.h"
-#include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;
 
 namespace {
-struct ExchangeVoicesInMeasure : UndoableCommand {
+static void apply_exchange_voices_in_measure(Measure *measure_, track_idx_t src_track_, track_idx_t dst_track_, staff_idx_t staff_) {
+    note_change(measure_, CommandType::EXCHANGE_VOICE);
 
-public:
-    ExchangeVoicesInMeasure(Measure *measure, track_idx_t src_track, track_idx_t dst_track, staff_idx_t staff)
-        : measure_(measure), src_track_(src_track), dst_track_(dst_track), staff_(staff) {}
-
-    void undo() override { do_exchange(dst_track_, src_track_); }
-
-    void redo() override { do_exchange(src_track_, dst_track_); }
-
-    UNDO_TYPE(CommandType::EXCHANGE_VOICE)
-    UNDO_NAME("ExchangeVoice")
-    UNDO_CHANGED_OBJECTS({measure_})
-
-private:
-    void do_exchange(track_idx_t src_track, track_idx_t dst_track);
-
-    Measure *measure_ = nullptr;
-    track_idx_t src_track_ = muse::nidx;
-    track_idx_t dst_track_ = muse::nidx;
-    staff_idx_t staff_ = muse::nidx;
-};
-
-void ExchangeVoicesInMeasure::do_exchange(track_idx_t src_track, track_idx_t dst_track) {
     for (Segment *s = measure_->first(SegmentType::CHORD_REST); s; s = s->next(SegmentType::CHORD_REST)) {
-        s->swap_elements(src_track, dst_track);
+        s->swap_elements(src_track_, dst_track_);
     }
 
     Fraction start = measure_->tick();
@@ -74,20 +53,21 @@ void ExchangeVoicesInMeasure::do_exchange(track_idx_t src_track, track_idx_t dst
         LOGD("Start %d End %d Diff %d \n Measure Start %d End %d", sp_start.ticks(), sp_end.ticks(), (sp_end - sp_start).ticks(),
              start.ticks(), end.ticks());
         if (sp->is_slur() && (sp_start >= start || sp_end < end)) {
-            if (sp->track() == src_track && sp_start >= start) {
-                sp->set_track(dst_track);
-            } else if (sp->track() == dst_track && sp_start >= start) {
-                sp->set_track(src_track);
+            if (sp->track() == src_track_ && sp_start >= start) {
+                sp->set_track(dst_track_);
+            } else if (sp->track() == dst_track_ && sp_start >= start) {
+                sp->set_track(src_track_);
             }
-            if (sp->track2() == src_track && sp_end < end) {
-                sp->set_track2(dst_track);
-            } else if (sp->track2() == dst_track && sp_end < end) {
-                sp->set_track2(src_track);
+            if (sp->track2() == src_track_ && sp_end < end) {
+                sp->set_track2(dst_track_);
+            } else if (sp->track2() == dst_track_ && sp_end < end) {
+                sp->set_track2(src_track_);
             }
         }
     }
     measure_->check_multi_voices(staff_); // probably true, but check for invisible notes & rests
 }
+
 } // namespace
 
 void ExchangeVoices::exchange_voices_in_selection(Score *score, voice_idx_t src_voice, voice_idx_t dst_voice) {
@@ -129,7 +109,7 @@ void ExchangeVoices::exchange_voices(Score *score, Measure *measure, voice_idx_t
         int track_diff = static_cast<int>(dst_voice - src_voice);
 
         //handle score and complete measures first
-        score->undo(new ExchangeVoicesInMeasure(measure, src_track, dst_track, staff_idx));
+        apply_exchange_voices_in_measure(measure, src_track, dst_track, staff_idx);
 
         for (Staff *st : score->staff(staff_idx)->staff_list()) {
             track_idx_t staff_track = st->idx() * ::mu::engraving::voices;
@@ -155,7 +135,7 @@ void ExchangeVoices::exchange_voices(Score *score, Measure *measure, voice_idx_t
                             muse::contains(dst_track_list, test_track)) {
                             has_voice = true;
                             // voice is simply exchangeable now (deal directly)
-                            score->undo(new ExchangeVoicesInMeasure(measure2, src_track2, test_track, staff_track / 4));
+                            apply_exchange_voices_in_measure(measure2, src_track2, test_track, staff_track / 4);
                         }
                     }
 
@@ -192,7 +172,7 @@ void ExchangeVoices::exchange_voices(Score *score, Measure *measure, voice_idx_t
                 }
             } else if (src_staff_track != staff_track) {
                 // linked staff in same score (all voices present can be assumed)
-                score->undo(new ExchangeVoicesInMeasure(measure2, staff_track + src_voice, staff_track + dst_voice, st->idx()));
+                apply_exchange_voices_in_measure(measure2, staff_track + src_voice, staff_track + dst_voice, st->idx());
             }
         }
     }

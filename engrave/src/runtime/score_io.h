@@ -23,7 +23,8 @@ using ScoreProject = std::shared_ptr<mu::engraving::EngravingProject>;
 // retryable), then claims the process for its one engine and routes diagnostics
 // to stderr.
 void initialize_native_runtime(const std::string &assets);
-ScoreProject load_native_score(const EngineContext &context, const std::string &bytes, const std::string &format);
+ScoreProject load_native_score(const EngineContext &context, const std::string &bytes, const std::string &format,
+                               bool transaction_snapshot = false);
 // Loads the .mscx of an MSCX directory (score_style.mss and META-INF/ beside
 // it, the layout of the score templates) with load_native_score's post-load steps.
 ScoreProject load_native_score_dir(const EngineContext &context, const std::string &mscx_path);

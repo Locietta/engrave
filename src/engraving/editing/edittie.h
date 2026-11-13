@@ -24,8 +24,8 @@
 
 #include <vector>
 
+#include "engraving/editing/cmd.h"
 #include "global/types/string.h"
-#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Note;
@@ -41,20 +41,5 @@ struct EditTie {
     static std::vector<Note *> cmd_tie_note_list(const Selection &selection, bool note_entry_mode);
 };
 
-struct ChangeTieJumpPointActive : UndoableCommand {
-private:
-
-    TieJumpPointList *jump_point_list_ = nullptr;
-    muse::String id_;
-    bool active_ = false;
-
-    void flip() override;
-
-public:
-    ChangeTieJumpPointActive(TieJumpPointList *jump_point_list, muse::String id, bool active)
-        : jump_point_list_(jump_point_list), id_(id), active_(active) {}
-
-    UNDO_TYPE(CommandType::CHANGE_TIE_END_POINT_ACTIVE)
-    UNDO_NAME("ChangeTieEndPointActive")
-};
+void apply_change_tie_jump_point_active(TieJumpPointList *jump_point_list, muse::String id, bool active);
 } // namespace mu::engraving

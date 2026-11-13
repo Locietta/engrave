@@ -25,23 +25,17 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/select.h"
-#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
-#include "engraving/editing/transaction/undoablecommand.h"
 #include "engraving/infrastructure/eidregister.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 
 namespace engrave::harness {
 namespace {
-
 using mu::engraving::EngravingObject;
 using mu::engraving::MasterScore;
 using mu::engraving::MScore;
 using mu::engraving::Score;
-using mu::engraving::UndoableCommand;
-
-// --- fingerprints -------------------------------------------------------------
 
 std::map<std::string, std::string> mscz_files(const std::vector<std::byte> &bytes) {
     muse::ByteArray data(reinterpret_cast<const std::uint8_t *>(bytes.data()), bytes.size());
@@ -72,7 +66,6 @@ std::string externals(MasterScore &master) {
     return text;
 }
 
-// Where two strings first differ, for a failure note.
 std::string first_difference(std::string_view a, std::string_view b) {
     const auto [left, right] = std::ranges::mismatch(a, b);
     const std::size_t at = static_cast<std::size_t>(left - a.begin());
@@ -80,10 +73,6 @@ std::string first_difference(std::string_view a, std::string_view b) {
     return std::format("at {}: '{}' vs '{}'", at, a.substr(from, 80), b.substr(from, 80));
 }
 
-// Layout positions agree to within one unit of the engine's 1200 DPI (or a part in
-// 10^5 of a larger number): a snapshot restore reads back style values the writer
-// stored with six significant digits, which moves things by fractions of a unit.
-// Where two layout texts first disagree (an offset into each), or nothing when they agree.
 std::optional<std::pair<std::size_t, std::size_t>> layout_mismatch(const std::string &a, const std::string &b) {
     const auto number = [](char c) { return (c >= '0' && c <= '9') || c == '-' || c == '.'; };
     std::size_t i = 0;
@@ -116,95 +105,6 @@ bool same_layout(const std::vector<std::string> &before, const std::vector<std::
     return true;
 }
 
-// --- the push hook ------------------------------------------------------------
-
-struct Fault : std::runtime_error {
-    using std::runtime_error::runtime_error;
-};
-
-enum struct Inject { NONE, BEFORE, AFTER, ALLOC };
-
-// Numbers the commands of one edit as they are pushed, and fails the one at `at`.
-struct Pushes {
-    Inject mode = Inject::NONE;
-    std::size_t at = 0;
-    std::size_t count = 0;
-    std::vector<std::pair<const UndoableCommand *, std::size_t>> running; // pushed, not yet performed
-};
-
-Pushes g_pushes;
-
-void on_push(UndoableCommand *command, bool appended) {
-    std::size_t number = 0;
-    if (!appended) {
-        number = ++g_pushes.count;
-        g_pushes.running.emplace_back(command, number);
-    } else {
-        // A command's redo can push more commands, so the one that finishes is
-        // found by pointer, not by order.
-        const auto found = std::ranges::find(g_pushes.running, command, &std::pair<const UndoableCommand *, std::size_t>::first);
-        number = found->second;
-        g_pushes.running.erase(found);
-    }
-    if (number != g_pushes.at) return;
-    switch (g_pushes.mode) {
-        case Inject::BEFORE:
-            if (appended) return;
-            // The command never entered the transaction, so nothing here will undo it,
-            // and its element is not necessarily free-standing: the engine may already
-            // have wired it into the score (Score::setNoteRest puts the tie of a note
-            // that runs past a barline on the note before the tie is pushed, for one),
-            // and the rollback of the commands that were pushed still reads it. A push
-            // that fails in the engine leaks its command, element and all; free the
-            // command only and leave the element to whatever still owns it.
-            delete command;
-            throw Fault("fault injected before a push");
-        case Inject::AFTER:
-            if (appended) throw Fault("fault injected after a push");
-            return;
-        case Inject::ALLOC:
-            if (appended) throw std::bad_alloc();
-            return;
-        case Inject::NONE: return;
-    }
-}
-
-struct PushHook {
-    PushHook(Inject mode, std::size_t at) {
-        g_pushes = {mode, at};
-        mu::engraving::Transaction::set_push_hook(on_push);
-    }
-
-    ~PushHook() { mu::engraving::Transaction::set_push_hook(nullptr); }
-
-    PushHook(const PushHook &) = delete;
-    PushHook &operator=(const PushHook &) = delete;
-
-    std::size_t count() const { return g_pushes.count; }
-};
-
-// --- checks -------------------------------------------------------------------
-
-const std::string pass = "pass";
-
-// Geometry is an explicit part of the evidence fingerprint. Prepare every score
-// through the boundary; edits and snapshot reloads leave that work pending.
-std::unique_ptr<Document> open(Engine &engine, const std::filesystem::path &fixture) {
-    auto document = engine.open(fixture);
-    if (!document) throw std::runtime_error(std::format("{}: {}", fixture.string(), document.error().message));
-    for (Score *score : master_of(**document).score_list()) {
-        score->ensure_layout();
-    }
-    return std::move(*document);
-}
-
-std::string joined(const std::vector<std::string> &parts) {
-    std::string text;
-    for (const auto &part : parts) text += (text.empty() ? "" : ", ") + part;
-    return text;
-}
-
-// The register is a bijection onto what the walk hands out (as handles_test's INV).
 std::string inv(Document &document) {
     MasterScore &master = master_of(document);
     std::unordered_set<const EngravingObject *> objects;
@@ -224,131 +124,10 @@ std::string inv(Document &document) {
     return {};
 }
 
-std::string check_commit(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture, std::size_t &pushes) {
-    auto document = open(engine, fixture);
-    const Fingerprint before = fingerprint(*document);
-    const Batch batch = op_case.make(*document);
-    Result<EditResult> result;
-    {
-        PushHook hook(Inject::NONE, 0);
-        result = document->edit(batch, before.revision);
-        pushes = hook.count();
-    }
-    if (!result) return "fail: the batch failed: " + std::string(to_string(result.error().code));
-    const Fingerprint after = fingerprint(*document);
-    if (after.revision != before.revision + 1) return std::format("fail: revision {} after {}", after.revision, before.revision);
-    if (after.undo_count != 0 || after.undo_active) return "fail: the history is not clear";
-    if (const std::string problem = inv(*document); !problem.empty()) return "fail: INV: " + problem;
-    if (const std::string problem = op_case.expect(*document, before, after); !problem.empty()) return "fail: " + problem;
-
-    const auto saved = document->export_score({.format = Format::MSCZ});
-    if (!saved) return "fail: the save failed";
-    auto reopened = engine.open(std::span<const std::byte>(*saved));
-    if (!reopened) return "fail: the reopen failed";
-    const Fingerprint again = fingerprint(**reopened);
-    if (again.semantic != after.semantic) return "fail: the reopen changed the semantic dump";
-    if (again.ids != after.ids) return "fail: the reopen changed the ids";
-    return pass;
-}
-
-// One injected failure: the batch must fail (with bad_alloc thrown for `alloc`),
-// and every fingerprint field must be what it was.
-struct Injection {
-    Inject mode = Inject::NONE;
-    std::size_t push = 0;
-    std::function<void(std::size_t)> before_step;
-    std::string label;
-};
-
-std::string check_injection(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture, api::Policy policy,
-                            const Injection &injection, std::string &r4) {
-    auto document = open(engine, fixture);
-    api::EditHooks &hooks = DocumentAccess::edit_hooks(*document);
-    hooks.policy = policy;
-    hooks.before_step = injection.before_step;
-    const Fingerprint before = fingerprint(*document);
-    const Batch batch = op_case.make(*document);
-    bool failed = false;
-    try {
-        PushHook hook(injection.mode, injection.push);
-        const auto result = document->edit(batch);
-        failed = !result && injection.mode != Inject::ALLOC;
-    } catch (const std::bad_alloc &) {
-        failed = injection.mode == Inject::ALLOC;
-    }
-    hooks = {};
-    if (!failed) return injection.label + ": the batch did not fail as injected";
-    const Fingerprint after = fingerprint(*document);
-    if ((after.undo_count != 0 || after.undo_active) && r4 == pass) r4 = "fail: " + injection.label + ": history left";
-    const auto changed = differences(before, after);
-    return changed.empty() ? std::string{} : injection.label + ": " + joined(changed);
-}
-
-// A restore that fails poisons the document, and the document then refuses work.
-std::string check_poison(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
-    auto document = open(engine, fixture);
-    api::EditHooks &hooks = DocumentAccess::edit_hooks(*document);
-    hooks.policy = api::Policy::SNAPSHOT;
-    hooks.fail_restore = true;
-    const Batch batch = op_case.make(*document);
-    try {
-        PushHook hook(Inject::AFTER, 1);
-        std::ignore = document->edit(batch);
-        return "a failed restore did not throw";
-    } catch (const std::exception &) {}
-    hooks = {};
-    const auto again = document->edit(batch);
-    const auto saved = document->export_score({});
-    if (again || again.error().code != ErrorCode::POISONED || saved || saved.error().code != ErrorCode::POISONED)
-        return "a poisoned document still works";
-    return {};
-}
-
-std::string summary(const std::vector<std::string> &failures) {
-    if (failures.empty()) return pass;
-    std::string text = "fail: " + failures.front();
-    if (failures.size() > 1) text += std::format(" (+{} more)", failures.size() - 1);
-    return text;
-}
-
-// C3 and C4 under one rollback policy.
-std::pair<std::string, std::string> check_rollbacks(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture,
-                                                    std::size_t pushes, std::size_t ops, api::Policy policy, std::string &r4) {
-    std::vector<std::string> c3;
-    std::vector<std::string> c4;
-    const auto run = [&](std::vector<std::string> &failures, const Injection &injection) {
-        if (std::string failure = check_injection(engine, op_case, fixture, policy, injection, r4); !failure.empty())
-            failures.push_back(std::move(failure));
-    };
-    for (std::size_t push = 1; push <= pushes; ++push) {
-        run(c3, {Inject::BEFORE, push, {}, std::format("before push {}", push)});
-        run(c3, {Inject::AFTER, push, {}, std::format("after push {}", push)});
-        run(c4, {Inject::ALLOC, push, {}, std::format("bad_alloc at push {}", push)});
-    }
-    // Between the operations, and between the last one and the commit.
-    for (std::size_t step = 1; step <= ops; ++step) {
-        run(c3, {Inject::NONE, 0,
-                 [step](std::size_t at) {
-                     if (at == step) throw Fault("fault injected between operations");
-                 },
-                 std::format("exception before step {}", step)});
-        run(c3, {Inject::NONE, 0,
-                 [step](std::size_t at) {
-                     if (at == step) MScore::set_error(mu::engraving::MsError::NO_NOTE_SELECTED);
-                 },
-                 std::format("engine error before step {}", step)});
-    }
-    if (policy == api::Policy::SNAPSHOT) {
-        if (std::string failure = check_poison(engine, op_case, fixture); !failure.empty()) c4.push_back(std::move(failure));
-    }
-    return {summary(c3), summary(c4)};
-}
-
 std::vector<OpCase> &cases() {
     static std::vector<OpCase> all;
     return all;
 }
-
 } // namespace
 
 Fingerprint fingerprint(Document &document) {
@@ -365,8 +144,6 @@ Fingerprint fingerprint(Document &document) {
     }
     std::ranges::sort(print.ids);
     print.revision = document.revision();
-    print.undo_count = master.mutation_journal()->size();
-    print.undo_active = master.mutation_journal()->has_active_transaction();
     print.engine_error = static_cast<int>(MScore::error);
     int index = 0;
     for (Score *score : master.score_list()) {
@@ -393,7 +170,6 @@ std::vector<std::string> differences(const Fingerprint &before, const Fingerprin
     compare("semantic", before.semantic == after.semantic);
     compare("ids", before.ids == after.ids);
     compare("revision", before.revision == after.revision);
-    compare("undo", before.undo_count == after.undo_count && before.undo_active == after.undo_active);
     compare("engine_error", before.engine_error == after.engine_error);
     compare("layout", same_layout(before.layout, after.layout));
     compare("externals", before.externals == after.externals);
@@ -434,96 +210,6 @@ bool register_cases(std::vector<OpCase> group) {
 
 const std::vector<OpCase> &registered_cases() { return cases(); }
 
-// Operations whose batch is never unwound. Every batch that contains one of them is rolled
-// back from the snapshot (its policy is Snapshot, and the guard takes the weakest policy of
-// a batch), which replaces the commands instead of undoing them. Probing the unwind would
-// describe a path no document takes, and for an operation that builds a whole score subtree
-// the probe does not report a failed check but corrupts the heap: unwinding frees the link
-// lists, and the elements the build's commands own, twice over, because the commands and the
-// built score own the same objects. An operation listed here can therefore never be
-// Transaction, whatever its snapshot rows say.
-const std::map<std::string, std::string> &unwind_not_probed() {
-    static const std::map<std::string, std::string> ops = {
-        // Excerpt::createExcerpt builds the excerpt's score (its staves, its title frame and
-        // the cloned measures, with the links between them and the master's) as commands of
-        // the batch (notes/a4/excerpts/REPORT.md).
-        {"GenerateExcerpts", "an excerpt's build is restored from the snapshot, not unwound"},
-    };
-    return ops;
-}
-
-EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
-    EvidenceRow row{.name = op_case.name, .fixture = op_case.fixture};
-    std::size_t ops = 0;
-    api::Policy retained_policy = api::Policy::TRANSACTION;
-    {
-        auto document = open(engine, fixture);
-        const Batch batch = op_case.make(*document);
-        ops = batch.ops.size();
-        for (const Op &op : batch.ops) {
-            retained_policy = std::max(retained_policy, api::policy_of(op));
-            if (row.op.empty())
-                row.op = api::op_name(op);
-            else if (row.op != api::op_name(op))
-                throw std::invalid_argument(op_case.name + ": a case exercises one operation");
-        }
-    }
-    row.c1 = check_commit(engine, op_case, fixture, row.pushes);
-    row.r4 = pass;
-    if (const auto unprobed = unwind_not_probed().find(row.op); unprobed != unwind_not_probed().end()) {
-        row.c3_unwind = row.c4_unwind = "not probed: " + unprobed->second;
-    } else {
-        std::tie(row.c3_unwind, row.c4_unwind) =
-            check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::TRANSACTION, row.r4);
-    }
-    std::tie(row.c3_snapshot, row.c4_snapshot) = check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::SNAPSHOT, row.r4);
-
-    const bool committed = row.c1 == pass;
-    if (committed && row.c3_unwind == pass && row.c4_unwind == pass && row.r4 == pass)
-        row.verdict = api::Policy::TRANSACTION;
-    else if (committed && row.c3_snapshot == pass && row.c4_snapshot == pass)
-        row.verdict = api::Policy::SNAPSHOT;
-    else
-        row.verdict = api::Policy::UNEXPOSED;
-    row.retained_policy = retained_policy;
-    return row;
-}
-
-Json to_json(const std::vector<EvidenceRow> &rows) {
-    std::vector<const EvidenceRow *> sorted;
-    for (const EvidenceRow &row : rows) sorted.push_back(&row);
-    std::ranges::sort(sorted, {}, [](const EvidenceRow *row) { return std::tie(row->op, row->name); });
-
-    // An operation is as safe as its weakest case; the policies are ordered from strong to weak.
-    std::map<std::string, api::Policy> weakest;
-    Json list = make_array<Json>();
-    for (const EvidenceRow *row : sorted) {
-        // Preserve each case's observed result. The production policy is a floor
-        // for the aggregate recommendation while command families are migrated.
-        const auto retained = std::max(row->verdict, row->retained_policy);
-        const auto [entry, added] = weakest.try_emplace(row->op, retained);
-        if (!added) entry->second = std::max(entry->second, retained);
-        const std::string verdict(api::to_string(row->verdict));
-        array_push(list, Json{{"op", row->op},
-                              {"case", row->name},
-                              {"fixture", row->fixture},
-                              {"pushes", row->pushes},
-                              {"c1", row->c1},
-                              {"c3_unwind", row->c3_unwind},
-                              {"c4_unwind", row->c4_unwind},
-                              {"c3_snapshot", row->c3_snapshot},
-                              {"c4_snapshot", row->c4_snapshot},
-                              {"r4", row->r4},
-                              {"verdict", verdict}});
-    }
-    Json verdicts = make_object<Json>();
-    for (const auto &[op, policy] : weakest) verdicts[op] = api::to_string(policy);
-    Json result = make_object<Json>();
-    result["verdicts"] = std::move(verdicts);
-    result["cases"] = std::move(list);
-    return result;
-}
-
 MasterScore &master_of(Document &document) { return *DocumentAccess::master_score(document); }
 
 ElementId find_id(Document &document, std::string_view type, const std::function<bool(const EngravingObject &)> &match) {
@@ -554,4 +240,26 @@ ScoreSel excerpt(Document &document, std::size_t index) {
     return {from_engine(excerpts[index]->excerpt_score()->eid())};
 }
 
+std::string run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
+    auto opened = engine.open(fixture);
+    if (!opened) return "fail: " + opened.error().message;
+    auto document = std::move(*opened);
+    const Fingerprint before = fingerprint(*document);
+    const Batch batch = op_case.make(*document);
+    const auto result = document->edit(batch, before.revision);
+    if (!result) return "fail: the batch failed: " + std::string(to_string(result.error().code));
+    const Fingerprint after = fingerprint(*document);
+    if (after.revision != before.revision + 1) return std::format("fail: revision {} after {}", after.revision, before.revision);
+    if (const std::string problem = inv(*document); !problem.empty()) return "fail: INV: " + problem;
+    if (const std::string problem = op_case.expect(*document, before, after); !problem.empty()) return "fail: " + problem;
+
+    const auto saved = document->export_score({.format = Format::MSCZ});
+    if (!saved) return "fail: the save failed";
+    auto reopened = engine.open(std::span<const std::byte>(*saved));
+    if (!reopened) return "fail: the reopen failed";
+    const Fingerprint again = fingerprint(**reopened);
+    if (again.semantic != after.semantic) return "fail: the reopen changed the semantic dump";
+    if (again.ids != after.ids) return "fail: the reopen changed the ids";
+    return {};
+}
 } // namespace engrave::harness

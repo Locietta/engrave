@@ -62,6 +62,8 @@ struct ReadContext {
 
     bool paste_mode() const { return paste_mode_value; }
 
+    bool transaction_snapshot = false;
+
     String mscore_version() const;
     int msc_version() const;
 

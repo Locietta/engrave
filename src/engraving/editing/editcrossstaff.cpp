@@ -49,7 +49,7 @@ void EditCrossStaff::move_up(Transaction &, Score *score, ChordRest *cr) {
         LOGD("User attempted to move a note from/to a staff which does not use standard notation - ignoring.");
     } else {
         // move the chord up a staff
-        score->undo(new ChangeChordStaffMove(cr, staff_move - 1));
+        apply_change_chord_staff_move(cr, staff_move - 1);
     }
 }
 
@@ -73,6 +73,6 @@ void EditCrossStaff::move_down(Transaction &, Score *score, ChordRest *cr) {
         LOGD("User attempted to move a note from/to a staff which does not use standard notation - ignoring.");
     } else {
         // move the chord down a staff
-        score->undo(new ChangeChordStaffMove(cr, staff_move + 1));
+        apply_change_chord_staff_move(cr, staff_move + 1);
     }
 }

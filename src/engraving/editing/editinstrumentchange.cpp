@@ -32,17 +32,14 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangeInstrument
-//---------------------------------------------------------
+void mu::engraving::apply_change_instrument(InstrumentChange *is, Instrument *instrument) {
+    note_change(is, CommandType::CHANGE_INSTRUMENT);
 
-void ChangeInstrument::flip() {
     Part *part = is->staff()->part();
     Fraction tick_start = is->segment()->tick();
-    Instrument *oi = is->instrument(); //new Instrument(*is->instrument());
 
     // set instrument in both part and instrument change element
-    is->set_instrument(instrument); //*instrument
+    is->set_instrument(instrument);
     part->set_instrument(instrument, tick_start);
 
     // update score
@@ -50,7 +47,4 @@ void ChangeInstrument::flip() {
     is->master_score()->update_channel();
     is->score()->set_instruments_changed(true);
     is->trigger_layout_all();
-
-    // remember original instrument
-    instrument = oi;
 }

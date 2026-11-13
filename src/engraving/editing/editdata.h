@@ -51,7 +51,7 @@ enum class Grip : signed char {
 
 //---------------------------------------------------------
 //   EditData
-//    retained for the MutationJournal edit-data boundary
+//    retained for the editing boundary
 //---------------------------------------------------------
 struct ElementEditData;
 using ElementEditDataPtr = std::shared_ptr<ElementEditData>;

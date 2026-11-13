@@ -48,7 +48,6 @@
 #include "edittremolo.h"
 #include "global/containers.h"
 #include "log.h"
-#include "transaction/mutationjournal.h"
 #include "transaction/transaction.h"
 
 using namespace mu;
@@ -246,7 +245,7 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
             if (!start_el || !end_el) {
                 continue;
             }
-            tx.push(new ChangeStartEndSpanner(spanner.value, slur->find_start_cr(), slur->find_end_cr()));
+            apply_change_start_end_spanner(spanner.value, slur->find_start_cr(), slur->find_end_cr());
         }
     }
     // Attempt to move tremolos to correct chords
@@ -256,7 +255,7 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *start
         TremoloTwoChord *trem = std::get<2>(trem_pair);
         track_idx_t track = std::get<3>(trem_pair);
 
-        tx.push(new MoveTremolo(trem->score(), chord1_tick, chord2_tick, trem, track));
+        apply_move_tremolo(trem->score(), chord1_tick, chord2_tick, trem, track);
     }
 
     if (score->note_entry_mode()) {
@@ -447,6 +446,7 @@ bool EditTimeSig::rewrite_measures(Transaction &tx, Score *score, Measure *fm, c
 //---------------------------------------------------------
 
 void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staff_idx, TimeSig *ts, bool local) {
+    std::unique_ptr<TimeSig> owned_signature(ts);
     score->deselect_all();
 
     if (fm->is_mm_rest()) {
@@ -476,7 +476,6 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
         //  ignore if there is already a timesig
         //  with same values
         //
-        delete ts;
         return;
     }
 
@@ -560,8 +559,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
                 for (size_t i = 0; i < score->nstaves(); ++i) {
                     if (score->staff(i)->time_sig(tick) && score->staff(i)->time_sig(tick)->is_local()) {
                         if (!rewrite_measures(tx, m_score, mf, ns, i)) {
-                            score->mutation_journal()->active_transaction()->unwind();
-                            return;
+                            throw std::runtime_error("the engine could not rewrite measures");
                         }
                     }
                 }
@@ -576,8 +574,7 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
             auto staff_idx_range_on_master = get_staff_idx_range(m_score);
             if (staff_idx_range_on_master.second != staff_idx_range_on_master.first &&
                 !rewrite_measures(tx, m_score, mf, ns, local ? staff_idx_range_on_master.first : muse::nidx)) {
-                score->mutation_journal()->active_transaction()->unwind();
-                return;
+                throw std::runtime_error("the engine could not rewrite measures");
             }
         }
         // add the time signatures
@@ -626,7 +623,6 @@ void EditTimeSig::add_time_sig(Transaction &tx, Score *score, Measure *fm, staff
             }
         }
     }
-    delete ts;
 }
 
 //---------------------------------------------------------
@@ -670,9 +666,6 @@ void EditTimeSig::remove_time_sig(Transaction &tx, Score *score, TimeSig *ts) {
     Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
 
     if (!rewrite_measures(tx, r_score, rm, ns, muse::nidx)) {
-        // Reattach detached segments before snapshot replacement disposes the
-        // old score, then report the refusal so the whole batch is rejected.
-        score->mutation_journal()->active_transaction()->unwind();
         throw std::runtime_error("the engine could not rewrite measures while removing the time signature");
     } else {
         m = score->tick2measure(tick); // old m may have been replaced

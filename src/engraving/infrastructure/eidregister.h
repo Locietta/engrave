@@ -67,6 +67,12 @@ struct EIDRegister {
     EngravingObject *item_from_handle(SourceHandle handle) const;
     EngravingObject *live_item(SourceHandle handle) const;
     bool published(SourceHandle handle) const;
+
+    bool attached(SourceHandle handle) const {
+        const auto *slot = find_slot(handle);
+        return slot && slot->owner != 0;
+    }
+
     SourceHandle enroll(EngravingObject &item);
     void attach_root(EngravingObject &item);
     void attach_source(EngravingObject &item, EngravingObject &owner);

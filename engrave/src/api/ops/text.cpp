@@ -208,11 +208,6 @@ void set_setting(EngravingItem &item, const Setting &setting) {
     item.set_property_flags(setting.pid, flags == PropertyFlags::STYLED ? PropertyFlags::UNSTYLED : flags);
 }
 
-// The tempo text Score::addText's TEMPO branch makes (editing/edit.cpp:978-1003): a
-// system object of the top staff, its text and follow-text flag set before the add,
-// and the tempo derived from the text after it. The derivation is an undoable
-// property change, and a change made before the AddElement would outlive the element
-// a fault at that add deletes.
 mu::engraving::TempoText *add_tempo_text(Score &score, Segment &segment, const std::string &text) {
     mu::engraving::TempoText *tempo = mu::engraving::Factory::create_tempo_text(&segment);
     tempo->set_track(0);
@@ -249,9 +244,6 @@ Result<Step> prepare(EditContext &context, const AddText &op) {
         if (!anchor || !anchor->is_chord_rest()) {
             return invalid(std::format("there is no chord or rest at staff {} voice {} to write on", at.staff, at.voice));
         }
-        // Score::addText for every style but the tempo. Its tempo branch derives the
-        // tempo, an undoable property change, before it adds the text; a fault at that
-        // add would then leave the change pointing at the element the add deleted.
         TextBase *added = nullptr;
         if (style == TextStyleType::TEMPO) {
             added = add_tempo_text(*score, *segment, text);

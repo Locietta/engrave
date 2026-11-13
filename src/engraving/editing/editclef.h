@@ -23,25 +23,10 @@
 #pragma once
 
 #include "../dom/clef.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
-struct ChangeClefType : UndoableCommand {
-private:
-
-    Clef *clef = nullptr;
-    ClefType concert_clef;
-    ClefType transposing_clef;
-
-    void flip() override;
-
-public:
-    ChangeClefType(Clef *, ClefType cl, ClefType tc);
-
-    UNDO_TYPE(CommandType::CHANGE_CLEF_TYPE)
-    UNDO_NAME("ChangeClef")
-    UNDO_CHANGED_OBJECTS({clef})
-};
+void apply_change_clef_type(Clef *, ClefType cl, ClefType tc);
 
 struct ChordRest;
 struct EngravingItem;

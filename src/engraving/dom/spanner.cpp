@@ -231,7 +231,7 @@ void SpannerSegment::undo_change_property(Pid pid, const PropertyValue &val, Pro
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
         // Switching autoplacement on. Save user-defined
         // placement properties to undo stack.
-        undo_push_property(Pid::OFFSET2);
+        notify_property_change(Pid::OFFSET2);
         // other will be saved in EngravingItem::undoChangeProperty
     }
     EngravingItem::undo_change_property(pid, val, ps);

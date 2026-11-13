@@ -30,76 +30,25 @@
 #include "../dom/score.h"
 #include "../dom/system.h"
 #include "editsystemlocks.h"
+#include "engraving/editing/cmd.h"
 #include "transaction/transaction.h"
-#include "transaction/undoablecommand.h"
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   AddPageLock
-//---------------------------------------------------------
+static void apply_add_page_lock(const RangeLock *lock) {
+    auto *score = lock->start_mb()->score();
+    note_change(lock->start_mb(), CommandType::UNKNOWN);
+    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    score->add_page_lock(lock);
+}
 
-struct AddPageLock : UndoableCommand {
-private:
-
-    const RangeLock *page_lock_;
-public:
-    AddPageLock(const RangeLock *page_lock) : page_lock_(page_lock) {}
-
-    void undo() override {
-        Score *score = page_lock_->start_mb()->score();
-        score->remove_page_lock(page_lock_);
-    }
-
-    void redo() override {
-        Score *score = page_lock_->start_mb()->score();
-        score->add_page_lock(page_lock_);
-    }
-
-    void cleanup(bool undo) override {
-        if (!undo) {
-            delete page_lock_;
-            page_lock_ = nullptr;
-        }
-    }
-
-    UNDO_NAME("AddPageLock")
-
-    std::vector<EngravingObject *> object_items() const override { return {page_lock_->start_mb(), page_lock_->end_mb()}; }
-};
-
-//---------------------------------------------------------
-//   RemovePageLock
-//---------------------------------------------------------
-
-struct RemovePageLock : UndoableCommand {
-private:
-
-    const RangeLock *page_lock_;
-public:
-    RemovePageLock(const RangeLock *page_lock) : page_lock_(page_lock) {}
-
-    void undo() override {
-        Score *score = page_lock_->start_mb()->score();
-        score->add_page_lock(page_lock_);
-    }
-
-    void redo() override {
-        Score *score = page_lock_->start_mb()->score();
-        score->remove_page_lock(page_lock_);
-    }
-
-    void cleanup(bool undo) override {
-        if (undo) {
-            delete page_lock_;
-            page_lock_ = nullptr;
-        }
-    }
-
-    UNDO_NAME("RemovePageLock")
-
-    std::vector<EngravingObject *> object_items() const override { return {page_lock_->start_mb(), page_lock_->end_mb()}; }
-};
+static void apply_remove_page_lock(const RangeLock *lock) {
+    auto *score = lock->start_mb()->score();
+    note_change(lock->start_mb(), CommandType::UNKNOWN);
+    note_change(lock->end_mb(), CommandType::UNKNOWN);
+    defer_root(*score, lock);
+    score->remove_page_lock(lock);
+}
 
 //---------------------------------------------------------
 //   EditPageLocks
@@ -107,10 +56,10 @@ public:
 
 void EditPageLocks::undo_add_page_lock(Transaction &tx, const RangeLock *lock) {
     remove_layout_breaks_on_add_page_lock(tx, lock);
-    tx.push(new AddPageLock(lock));
+    apply_add_page_lock(lock);
 }
 
-void EditPageLocks::undo_remove_page_lock(Transaction &tx, const RangeLock *lock) { tx.push(new RemovePageLock(lock)); }
+void EditPageLocks::undo_remove_page_lock(Transaction &tx, const RangeLock *lock) { apply_remove_page_lock(lock); }
 
 void EditPageLocks::undo_remove_all_locks(Transaction &tx, Score *score) {
     std::vector<const RangeLock *> all_locks = score->page_locks()->all_locks(); // copy

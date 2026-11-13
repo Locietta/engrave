@@ -27,7 +27,6 @@
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "editing/addremoveelement.h"
-#include "editing/editproperty.h"
 #include "editing/transaction/transaction.h"
 #include "notes.h"
 
@@ -308,13 +307,13 @@ static void normalize_segments(Measure *measure, Score &score) {
     for (Segment *seg : segs_to_move_to_next_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, false);
-        measure->score()->record_segment_parent_change(seg, next_measure, Fraction(0, 1));
+        measure->score()->apply_segment_parent_change(seg, next_measure, Fraction(0, 1));
     }
 
     for (Segment *seg : segs_to_move_to_this_measure) {
 
         seg->undo_change_property(Pid::END_OF_MEASURE_CHANGE, true);
-        measure->score()->record_segment_parent_change(seg, measure, measure->ticks());
+        measure->score()->apply_segment_parent_change(seg, measure, measure->ticks());
     }
 
     // Check end of measure changes for top and underlying measures
@@ -485,9 +484,9 @@ static void normalize_note_spanner(Spanner &spanner) {
         // These derived rules apply per staff; generic property propagation would
         // overwrite linked TAB notes with the standard staff's display convention.
         if (!tab && (type == GuitarBendType::PRE_BEND || type == GuitarBendType::PRE_DIVE) && !parenthesized && !start->ghost())
-            start->score()->record_property_change(start, Pid::GHOST, true);
+            start->score()->apply_property_change(start, Pid::GHOST, true);
         if (tab && !bend.is_dive() && type != GuitarBendType::SLIGHT_BEND && bend.is_release_bend() && !end->ghost())
-            end->score()->record_property_change(end, Pid::GHOST, true);
+            end->score()->apply_property_change(end, Pid::GHOST, true);
     }
 }
 
@@ -621,7 +620,6 @@ static void normalize_scores(MasterScore &master, const std::vector<Score *> &sc
     for (auto *score : scores)
         if (needs_normalization(*score, options)) work.push_back(score);
     if (work.empty()) return;
-    ReplayScope replay(*master.transaction_manager(), options.mode != NormalizeMode::TRANSACTION);
     for (auto *score : work) score->normalize_state.running = true;
     try {
         // All linked timelines/anchors are current before repeat identity is used

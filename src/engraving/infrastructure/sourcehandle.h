@@ -19,7 +19,7 @@ struct SourceHandle {
     friend auto operator<=>(const SourceHandle &, const SourceHandle &) = default;
 };
 
-// Actual collection membership, distinct from constructor/rollback parentage.
+// Actual collection membership, distinct from constructor parentage.
 void source_child_added(EngravingObject &owner, EngravingObject *item);
 void source_child_removed(EngravingObject &owner, EngravingObject *item);
 bool source_object(const EngravingObject &item);

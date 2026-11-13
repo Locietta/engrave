@@ -105,11 +105,9 @@ void EditSpanner::add_spanner(Transaction &, Score *score, Spanner *spanner, sta
     score->undo_add_element(spanner, true, ctrl_modifier);
 }
 
-//---------------------------------------------------------
-//   ChangeSpannerElements
-//---------------------------------------------------------
+void mu::engraving::apply_change_spanner_elements(Spanner *spanner, EngravingItem *start_element, EngravingItem *end_element) {
+    note_change(spanner, CommandType::CHANGE_SPANNER_ELEMENTS);
 
-void ChangeSpannerElements::flip() {
     EngravingItem *old_start_element = spanner->start_element();
     EngravingItem *old_end_element = spanner->end_element();
     bool is_partial_spanner = spanner->is_partial_tie() || spanner->is_laissez_vib();
@@ -149,20 +147,12 @@ void ChangeSpannerElements::flip() {
         spanner->set_start_element(start_element);
         spanner->set_end_element(end_element);
     }
-    start_element = old_start_element;
-    end_element = old_end_element;
     spanner->trigger_layout();
 }
 
-//---------------------------------------------------------
-//   ChangeStartEndSpanner
-//---------------------------------------------------------
+void mu::engraving::apply_change_start_end_spanner(Spanner *spanner, EngravingItem *start, EngravingItem *end) {
+    note_change(spanner, CommandType::CHANGE_START_END_SPANNER);
 
-void ChangeStartEndSpanner::flip() {
-    EngravingItem *s = spanner->start_element();
-    EngravingItem *e = spanner->end_element();
     spanner->set_start_element(start);
     spanner->set_end_element(end);
-    start = s;
-    end = e;
 }

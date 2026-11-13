@@ -134,7 +134,7 @@ void EditPart::move_parts(Score *score, const std::vector<Part *> &source_parts,
         }
     }
 
-    score->record_staff_order(staff_mapping);
+    score->apply_staff_order(staff_mapping);
     score->set_brackets_and_barlines();
 }
 
@@ -174,7 +174,7 @@ void EditPart::move_staves(Score *score, const std::vector<Staff *> &source_stav
         sorted_indexes.push_back(staff->idx());
     }
 
-    score->record_staff_order(sorted_indexes);
+    score->apply_staff_order(sorted_indexes);
     score->set_brackets_and_barlines();
 }
 
@@ -190,7 +190,7 @@ void EditPart::add_system_objects(Score *score, const std::vector<Staff *> &stav
             continue;
         }
 
-        score->record_system_staff(staff, true);
+        score->apply_system_staff(staff, true);
 
         const staff_idx_t staff_idx = staff->idx();
         for (EngravingItem *obj : top_system_objects) {
@@ -214,7 +214,7 @@ void EditPart::remove_system_objects(Score *score, const std::vector<Staff *> &s
 
     for (Staff *staff : staves) {
         if (staff->is_system_object_staff()) {
-            score->record_system_staff(staff, false);
+            score->apply_system_staff(staff, false);
             if (staff->has_system_objects_below_bottom_staff()) {
                 score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
             }
@@ -243,9 +243,9 @@ void EditPart::move_system_objects(Score *score, Staff *source_staff, Staff *des
     const std::vector<EngravingItem *> system_objects = collect_system_objects(score, {source_staff, destination_staff});
     const staff_idx_t dst_staff_idx = destination_staff->idx();
 
-    score->record_system_staff(source_staff, false);
+    score->apply_system_staff(source_staff, false);
     if (!destination_staff->is_system_object_staff() && dst_staff_idx != 0) {
-        score->record_system_staff(destination_staff, true);
+        score->apply_system_staff(destination_staff, true);
     } else {
         score->undo_change_style_val(Sid::SYSTEM_OBJECTS_BELOW_BOTTOM_STAFF, false);
     }
@@ -378,7 +378,7 @@ void EditPart::set_score_order(Score *score, const ScoreOrder &order) {
         return;
     }
 
-    score->undo(new ChangeScoreOrder(score, order));
+    apply_change_score_order(score, order);
     ScoreOrder mutable_order = order;
     mutable_order.set_brackets_and_barlines(score);
 }

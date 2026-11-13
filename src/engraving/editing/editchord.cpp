@@ -33,6 +33,7 @@
 #include "../dom/tapping.h"
 #include "../dom/tremolotwochord.h"
 #include "../dom/utils.h"
+#include "transaction/transaction.h"
 
 using namespace mu::engraving;
 
@@ -305,8 +306,7 @@ void EditChord::do_add_note_parentheses(Chord *chord, std::vector<Note *> notes,
     if (left_paren->generated()) {
         chord->add_note_parenthesis_info(paren_info);
     } else {
-        Score *score = chord->score();
-        score->undo(new AddNoteParenthesisInfo(chord, paren_info));
+        apply_add_note_parenthesis_info(chord, paren_info);
     }
 }
 
@@ -316,8 +316,7 @@ void EditChord::do_remove_single_note_parenthesis(Chord *chord, Note *note, Pare
 
         chord->trigger_layout();
     } else {
-        Score *score = chord->score();
-        score->undo(new RemoveSingleNoteParentheses(chord, note, left_paren));
+        apply_remove_single_note_parentheses(chord, note, left_paren);
     }
 }
 
@@ -331,19 +330,15 @@ void EditChord::do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_p
 
         chord->trigger_layout();
     } else {
-        Score *score = chord->score();
         NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(left_paren);
 
-        score->undo(new RemoveNoteParenthesisInfo(chord, note_paren_info));
+        apply_remove_note_parenthesis_info(chord, note_paren_info);
     }
 }
 
-//---------------------------------------------------------
-//   ChangeChordStaffMove
-//---------------------------------------------------------
+void mu::engraving::apply_change_chord_staff_move(ChordRest *chord_rest, int staff_move) {
+    note_change(chord_rest, CommandType::CHANGE_CHORD_STAFF_MOVE);
 
-void ChangeChordStaffMove::flip() {
-    int v = chord_rest->staff_move();
     staff_idx_t old_staff = chord_rest->v_staff_idx();
 
     chord_rest->set_staff_move(staff_move);
@@ -362,66 +357,37 @@ void ChangeChordStaffMove::flip() {
         cr->check_staff_move_validity();
         cr->trigger_layout();
     }
-    staff_move = v;
 }
 
-//---------------------------------------------------------
-//   ChangeSpanArpeggio
-//---------------------------------------------------------
-
-void ChangeSpanArpeggio::flip() {
-    Arpeggio *f_span_arp = chord_->span_arpeggio();
+void mu::engraving::apply_change_span_arpeggio(Chord *chord_, Arpeggio *span_arpeggio_) {
+    note_change(chord_, CommandType::UNKNOWN);
 
     chord_->set_span_arpeggio(span_arpeggio_);
-    span_arpeggio_ = f_span_arp;
 }
 
-void AddNoteParenthesisInfo::redo() {
+void mu::engraving::apply_add_note_parenthesis_info(Chord *chord_, NoteParenthesisInfo *note_paren_info_) {
+    note_change(chord_, CommandType::ADD_NOTE_PARENTHESES_INFO);
+
     chord_->add_note_parenthesis_info(note_paren_info_);
 
     chord_->trigger_layout();
 }
 
-void mu::engraving::AddNoteParenthesisInfo::undo() {
+void mu::engraving::apply_remove_note_parenthesis_info(Chord *chord_, NoteParenthesisInfo *note_paren_info_) {
+    note_change(chord_, CommandType::REMOVE_NOTE_PARENTHESES_INFO);
+
     chord_->remove_note_parenthesis_info(note_paren_info_);
 
     chord_->trigger_layout();
+
+    defer_root(*chord_, note_paren_info_);
 }
 
-void AddNoteParenthesisInfo::cleanup(bool was_done) {
-    if (!was_done) {
-        delete note_paren_info_;
-        note_paren_info_ = nullptr;
-    }
-}
+void mu::engraving::apply_remove_single_note_parentheses(Chord *chord_, Note *note_, Parenthesis *paren_) {
+    note_change(chord_, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
+    note_change(paren_, CommandType::REMOVE_SINGLE_NOTE_PARENTHESES);
 
-void RemoveNoteParenthesisInfo::redo() {
-    chord_->remove_note_parenthesis_info(note_paren_info_);
-
-    chord_->trigger_layout();
-}
-
-void RemoveNoteParenthesisInfo::undo() {
-    chord_->add_note_parenthesis_info(note_paren_info_);
-
-    chord_->trigger_layout();
-}
-
-void RemoveNoteParenthesisInfo::cleanup(bool was_done) {
-    if (was_done) {
-        delete note_paren_info_;
-        note_paren_info_ = nullptr;
-    }
-}
-
-void RemoveSingleNoteParentheses::redo() {
     chord_->remove_note_from_parenthesis_info(note_, paren_);
-
-    chord_->trigger_layout();
-}
-
-void RemoveSingleNoteParentheses::undo() {
-    chord_->add_note_to_parenthesis_info(note_, paren_);
 
     chord_->trigger_layout();
 }

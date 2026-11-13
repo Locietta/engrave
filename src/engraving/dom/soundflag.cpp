@@ -150,7 +150,7 @@ void SoundFlag::undo_change_sound_flag(const PresetCodes &presets, const Playing
         return;
     }
 
-    score()->undo(new ChangeSoundFlag(this, presets, technique));
+    apply_change_sound_flag(this, presets, technique);
     trigger_layout();
 
     const LinkedObjects *links = this->links();
@@ -161,7 +161,7 @@ void SoundFlag::undo_change_sound_flag(const PresetCodes &presets, const Playing
     for (EngravingObject *obj : *links) {
         if (obj->is_sound_flag()) {
             SoundFlag *linked_sound_flag = to_sound_flag(obj);
-            score()->undo(new ChangeSoundFlag(linked_sound_flag, presets, technique));
+            apply_change_sound_flag(linked_sound_flag, presets, technique);
             linked_sound_flag->trigger_layout();
         }
     }

@@ -54,20 +54,14 @@ private:
 // Validates and computes scopes without changing pitch or undo history. Caller
 // must inspect, check revisions, then apply on one owner-thread turn without yielding.
 NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore *, const NativePitchEdit &);
-// Best-effort retirement after publication; never turns a committed edit into failure.
-
-// Test-only fault injection for score_edit_test; armed for one apply call, never set otherwise.
-enum class NativeEditTestFault { NONE, ENGINE_ERROR_AFTER_FIRST, EXCEPTION_AFTER_FIRST };
-void set_native_edit_test_fault(NativeEditTestFault);
-
-// Applies a single bounded undoable command. Every requested note is validated
+// Applies a single bounded pitch edit. Every requested note is validated
 // before the command starts; ordinary validation failures leave no partial edit.
 // Unexpected transaction/layout exceptions throw NativeEditFailure(poisoned=true);
-// callers must retire the document rather than assume layout rollback is safe. Notes with ties, non-tie spanners, tablature/drum staves,
+// callers must retire the document. Notes with ties, non-tie spanners, tablature/drum staves,
 // cross-staff displacement or grace-note chords are rejected with
 // std::runtime_error. Bad IDs, duplicate IDs, out-of-range pitches, empty or
 // larger-than-256 batches and a null score throw std::invalid_argument.
-// Read-only scores and locked or already-active undo stacks are rejected.
+// Read-only scores and locked or already-active batches are rejected.
 // Requires execution on the master score's owner thread.
 NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, const NativePitchEdit &edit);
 

@@ -136,8 +136,6 @@ struct TimeSigMap;
 struct Transaction;
 struct TransactionManager;
 struct Tuplet;
-struct UndoableCommand;
-struct MutationJournal;
 
 struct Interval;
 struct NoteVal;
@@ -199,31 +197,6 @@ struct ShowAnchors {
     Fraction end_tick_main_region = Fraction(-1, 1);
     Fraction start_tick_extended_region = Fraction(-1, 1);
     Fraction end_tick_extended_region = Fraction(-1, 1);
-};
-
-struct ScoreChanges {
-    int tick_from = -1;
-    int tick_to = -1;
-    staff_idx_t staff_idx_from = muse::nidx;
-    staff_idx_t staff_idx_to = muse::nidx;
-
-    bool is_text_editing = false;
-
-    std::map<EngravingObject *, std::unordered_set<CommandType>> changed_objects;
-    ElementTypeSet changed_types;
-    PropertyIdSet changed_property_id_set;
-    StyleIdSet changed_style_id_set;
-
-    bool is_valid_boundary() const {
-        bool tick_range_valid = (tick_from != -1 && tick_to != -1);
-        bool staff_range_valid = (staff_idx_from != muse::nidx && staff_idx_to != muse::nidx);
-
-        return tick_range_valid && staff_range_valid;
-    }
-
-    bool is_valid() const { return is_valid_boundary() || !changed_types.empty(); }
-
-    void clear() { *this = ScoreChanges(); }
 };
 
 // A cache that follows the committed changes of a master score (the playback
@@ -371,39 +344,37 @@ public:
     bool undo_property_changed(EngravingItem *item, Pid prop_id, const PropertyValue &prop_value,
                                PropertyFlags prop_flags = PropertyFlags::NOSTYLE);
     void undo_property_changed(EngravingObject *, Pid, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE);
-    MutationJournal *mutation_journal() const;
     TransactionManager *transaction_manager() const;
-    void undo(UndoableCommand *) const;
     void undo_remove_measures(Measure *, Measure *, bool preserve_ties = false, bool move_staff_type_changes = true);
     void undo_change_measure_repeat_count(Measure *m, int count, staff_idx_t staff_idx);
     void undo_insert_time(const Fraction &tick, const Fraction &len);
-    void record_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
-                                bool reset_path = false);
-    void record_element_add(EngravingItem *item);
-    void record_element_remove(EngravingItem *item);
-    void record_element_replace(EngravingItem *before, EngravingItem *after);
-    void record_parent_change(EngravingItem *item, EngravingItem *parent, staff_idx_t staff);
-    void record_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
-    void record_link(EngravingObject *item, EngravingObject *peer);
-    void record_unlink(EngravingObject *item);
-    void record_staff_membership(Staff *staff, staff_idx_t index, bool adding);
-    void record_system_staff(Staff *staff, bool adding);
-    void record_staff_order(const std::vector<staff_idx_t> &order);
-    void record_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
-    void record_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
-    void record_mstaff_add(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
-    void record_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
-    void record_bracket_add(Staff *staff, size_t level, BracketType type, size_t span);
-    void record_bracket_remove(Staff *staff, size_t level);
-    void record_part_membership(Part *part, size_t index, bool adding);
-    void record_part_label(Fraction tick, Part *part, const String &value, bool long_name);
-    void record_part_instrument(Part *part, std::unique_ptr<Instrument> value);
-    void record_string_data(StringTunings *item, const StringData &value);
-    void record_excerpt(Excerpt *excerpt, bool adding);
-    void record_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged = false);
-    void record_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
-    void record_measure_length(Measure *measure, Fraction length);
-    void record_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
+    void apply_property_change(EngravingObject *object, Pid id, const PropertyValue &value, PropertyFlags flags = PropertyFlags::NOSTYLE,
+                               bool reset_path = false);
+    void apply_element_add(EngravingItem *item);
+    void apply_element_remove(EngravingItem *item);
+    void apply_element_replace(EngravingItem *before, EngravingItem *after);
+    void apply_parent_change(EngravingItem *item, EngravingItem *parent, staff_idx_t staff);
+    void apply_segment_parent_change(Segment *item, Measure *parent, Fraction tick);
+    void apply_link(EngravingObject *item, EngravingObject *peer);
+    void apply_unlink(EngravingObject *item);
+    void apply_staff_membership(Staff *staff, staff_idx_t index, bool adding);
+    void apply_system_staff(Staff *staff, bool adding);
+    void apply_staff_order(const std::vector<staff_idx_t> &order);
+    void apply_staff_hide(Measure *measure, staff_idx_t staff, AutoOnOff value);
+    void apply_mstaff(Measure *measure, MStaff *row, staff_idx_t index, bool adding);
+    void apply_mstaff_add(Measure *measure, std::unique_ptr<MStaff> row, staff_idx_t index);
+    void apply_staff_tracks(Measure *measure, staff_idx_t first, staff_idx_t last, bool adding);
+    void apply_bracket_add(Staff *staff, size_t level, BracketType type, size_t span);
+    void apply_bracket_remove(Staff *staff, size_t level);
+    void apply_part_membership(Part *part, size_t index, bool adding);
+    void apply_part_label(Fraction tick, Part *part, const String &value, bool long_name);
+    void apply_part_instrument(Part *part, std::unique_ptr<Instrument> value);
+    void apply_string_data(StringTunings *item, const StringData &value);
+    void apply_excerpt(Excerpt *excerpt, bool adding);
+    void apply_time_insertion(Score *target, Fraction tick, Fraction length, bool unmanaged = false);
+    void apply_measures(MeasureBase *first, MeasureBase *last, bool adding, bool move_staff_type_changes = true);
+    void apply_measure_length(Measure *measure, Fraction length);
+    void apply_measure_repeat_count(Measure *measure, int count, staff_idx_t staff);
     void undo_change_style_val(Sid idx, const PropertyValue &v);
     void undo_change_style_values(std::unordered_map<Sid, PropertyValue> values);
     void undo_change_page_number_offset(int po);
@@ -469,8 +440,8 @@ public:
                                           const SelectionFilter &filter, bool selection_contains_multi_note_chords);
     void cmd_full_measure_rest();
 
-    void start_cmd(const TranslatableString &action_name);                       // start undoable command
-    void end_cmd(bool rollback = false, bool keep_rolled_back_elements = false); // end undoable command
+    void start_cmd(const TranslatableString &action_name); // start undoable command
+    void end_cmd(bool failed = false);
     void update();
 
     virtual void set_update_all();

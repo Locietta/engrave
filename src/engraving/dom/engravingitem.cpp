@@ -33,8 +33,8 @@
 
 #include "../editing/addremoveelement.h"
 #include "../editing/editdata.h"
-#include "../editing/editproperty.h"
 #include "../editing/navigation.h"
+#include "../editing/transaction/transaction.h"
 #include "chord.h"
 #include "containers.h"
 #include "dummyparent.h"
@@ -277,7 +277,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         left_parenthesis_->set_ownership_parent(this);
         left_parenthesis_->set_track(track());
         if (link) {
-            score()->record_link(left_parenthesis_, e.left_parenthesis_);
+            score()->apply_link(left_parenthesis_, e.left_parenthesis_);
         }
     }
     if (e.right_parenthesis_) {
@@ -285,7 +285,7 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
         right_parenthesis_->set_ownership_parent(this);
         right_parenthesis_->set_track(track());
         if (link) {
-            score()->record_link(right_parenthesis_, e.right_parenthesis_);
+            score()->apply_link(right_parenthesis_, e.right_parenthesis_);
         }
     }
 }
@@ -410,7 +410,7 @@ String EngravingItem::translated_subtype_user_name() const { return subtype_user
 
 EngravingItem *EngravingItem::linked_clone() {
     EngravingItem *e = clone();
-    score()->record_link(e, this);
+    score()->apply_link(e, this);
     return e;
 }
 
@@ -1522,8 +1522,8 @@ void EngravingItem::undo_change_property(Pid pid, const PropertyValue &val, Prop
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
         // Switching autoplacement on. Save user-defined
         // placement properties to undo stack.
-        undo_push_property(Pid::PLACEMENT);
-        undo_push_property(Pid::OFFSET);
+        notify_property_change(Pid::PLACEMENT);
+        notify_property_change(Pid::OFFSET);
     }
     EngravingObject::undo_change_property(pid, val, ps);
 }
@@ -2190,9 +2190,9 @@ bool EngravingItem::is_unlinked_from_master() const {
 
 void EngravingItem::unlink_property_from_master(Pid id) {
     if (property_group(id) == PropertyGroup::POSITION) {
-        score()->record_property_change(this, Pid::POSITION_LINKED_TO_MASTER, false);
+        score()->apply_property_change(this, Pid::POSITION_LINKED_TO_MASTER, false);
     } else if (property_group(id) == PropertyGroup::APPEARANCE) {
-        score()->record_property_change(this, Pid::APPEARANCE_LINKED_TO_MASTER, false);
+        score()->apply_property_change(this, Pid::APPEARANCE_LINKED_TO_MASTER, false);
     }
 }
 

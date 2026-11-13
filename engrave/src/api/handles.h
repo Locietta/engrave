@@ -45,8 +45,8 @@ mu::engraving::EID to_engine(const ElementId &id);
 ElementId from_engine(const mu::engraving::EID &id);
 
 // Gives every live object an id where one is due and missing, and drops the id of every
-// object that is no longer part of the document. It touches neither the undo stack nor
-// the revision, so it runs after open, create, restore and commit alike.
+// object that is no longer part of the document. It preserves the revision, so it
+// runs after open, create, restore and commit alike.
 void assign_missing_ids(mu::engraving::MasterScore &score);
 
 // Test-only observer of explicit document enumeration; resolution must never call it.
@@ -108,8 +108,7 @@ Result<Resolved> resolve(mu::engraving::MasterScore &score, const Address &addre
 
 // Whether an object still hangs off one of the document's scores. Weaker than
 // resolve(): an element on a hidden staff is in the score but outside the walk that
-// assign_missing_ids uses, and an element a rollback command removed is still
-// in the ownership tree until it is destroyed.
+// assign_missing_ids uses. Detached objects stay alive until batch cleanup.
 bool in_score(mu::engraving::MasterScore &score, const mu::engraving::EngravingObject *object);
 
 // The id or the address that names this object, when it has one.

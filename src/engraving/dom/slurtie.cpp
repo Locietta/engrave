@@ -174,10 +174,10 @@ void SlurTieSegment::undo_change_property(Pid pid, const PropertyValue &val, Pro
     if (pid == Pid::AUTOPLACE && (val.to_bool() == true && !autoplace())) {
         // Switching autoplacement on. Save user-defined
         // placement properties to undo stack.
-        undo_push_property(Pid::SLUR_UOFF1);
-        undo_push_property(Pid::SLUR_UOFF2);
-        undo_push_property(Pid::SLUR_UOFF3);
-        undo_push_property(Pid::SLUR_UOFF4);
+        notify_property_change(Pid::SLUR_UOFF1);
+        notify_property_change(Pid::SLUR_UOFF2);
+        notify_property_change(Pid::SLUR_UOFF3);
+        notify_property_change(Pid::SLUR_UOFF4);
         // other will be saved in base classes.
     }
     SpannerSegment::undo_change_property(pid, val, ps);

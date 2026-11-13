@@ -23,23 +23,9 @@
 #pragma once
 
 #include "../dom/instrchange.h"
-#include "transaction/undoablecommand.h"
+#include "engraving/editing/cmd.h"
 
 namespace mu::engraving {
 /// change instrument in an InstrumentChange element
-struct ChangeInstrument : UndoableCommand {
-private:
-
-    InstrumentChange *is = nullptr;
-    Instrument *instrument = nullptr;
-
-    void flip() override;
-
-public:
-    ChangeInstrument(InstrumentChange *input_is, Instrument *i) : is(input_is), instrument(i) {}
-
-    UNDO_TYPE(CommandType::CHANGE_INSTRUMENT)
-    UNDO_NAME("ChangeInstrument")
-    UNDO_CHANGED_OBJECTS({is})
-};
+void apply_change_instrument(InstrumentChange *input_is, Instrument *i);
 } // namespace mu::engraving

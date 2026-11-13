@@ -38,8 +38,7 @@ struct RemoveStaff {
     Ref staff;
 };
 
-// Generates one excerpt per selected master part. The batch uses a snapshot
-// for rollback because this operation cannot be unwound by the transaction.
+// Generates one excerpt per selected master part.
 struct GenerateExcerpts {
     std::vector<Ref> parts;
 };

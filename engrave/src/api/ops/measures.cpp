@@ -1,7 +1,3 @@
-// InsertMeasures, RemoveMeasures, SetTimeSig, SetKeySig, InsertClef and
-// SetLayoutBreak: the engine's own undoable edits of the measure list and of the
-// elements that start a measure.
-
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -24,7 +20,6 @@
 #include "engraving/editing/editclef.h"
 #include "engraving/editing/editkeysig.h"
 #include "engraving/editing/edittimesig.h"
-#include "engraving/editing/transaction/mutationjournal.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/types/typesconv.h"
 
@@ -57,7 +52,7 @@ std::unexpected<Error> refused(std::string message) { return std::unexpected(Err
 // The transaction the batch runs in; the guard has it open while a step runs.
 Transaction &transaction(EditContext &context) { return context.master().transaction_manager()->current_or_dummy_transaction(); }
 
-std::size_t pushed(EditContext &context) { return context.master().mutation_journal()->active_transaction()->entry_count(); }
+std::size_t pushed(EditContext &context) { return context.master().cmd_state().mutation_count; }
 
 // A token of one of the engine's xml tables, and nothing else: an unknown token and
 // the fallback's own token are refused, so a typo is never a silent default.
@@ -174,9 +169,6 @@ Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
         temp->set_sig(sig, TimeSigType::NORMAL);
         const std::size_t before = pushed(context);
         mu::engraving::EditTimeSig::add_time_sig(transaction(context), score, *target, 0, temp, false);
-        // The signature that is already there is a no-op, and a rewrite the engine
-        // cannot do leaves nothing behind either (it unwinds); both say the score is
-        // not what the caller asked for, and nothing of the batch is left to tell.
         if (pushed(context) <= before) return refused("the engine kept the existing time signature");
         return {};
     };

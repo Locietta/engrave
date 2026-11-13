@@ -26,19 +26,12 @@
 
 using namespace mu::engraving;
 
-//---------------------------------------------------------
-//   ChangeSoundFlag
-//---------------------------------------------------------
+void mu::engraving::apply_change_sound_flag(SoundFlag *sound_flag_, const SoundFlag::PresetCodes &presets_,
+                                            const SoundFlag::PlayingTechniqueCode &playing_technique_) {
+    note_change(sound_flag_, CommandType::UNKNOWN);
 
-void ChangeSoundFlag::flip() {
     IF_ASSERT_FAILED(sound_flag_) { return; }
-
-    SoundFlag::PresetCodes presets = sound_flag_->sound_presets();
-    SoundFlag::PlayingTechniqueCode technique = sound_flag_->playing_technique();
 
     sound_flag_->set_sound_presets(presets_);
     sound_flag_->set_playing_technique(playing_technique_);
-
-    presets_ = std::move(presets);
-    playing_technique_ = std::move(technique);
 }
