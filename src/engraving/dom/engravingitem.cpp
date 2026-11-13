@@ -40,6 +40,7 @@
 #include "dummyparent.h"
 #include "engraving/internal/engravingconfiguration.h"
 #include "engraving/internal/engravingfont.h"
+#include "engraving/rendering/score/layoutdatafactory.h"
 #include "engraving/rendering/score/layoutdatastore.h"
 #include "engraving/rendering/score/scorerenderer.h"
 #include "factory.h"
@@ -251,14 +252,15 @@ static_assert(legacy_z_matches_enum(), "legacy_z rows must follow ElementType or
 
 int default_z(ElementType type) { return legacy_z[static_cast<std::size_t>(type)].ordinal * 100; }
 
-EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingObject(type, parent) {
+EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f)
+    : EngravingObject(type, parent), layout_type_(type) {
     flags_ = f;
     color_ = configuration()->default_color();
     z_ = -1;
     min_distance_ = 0.0_sp;
 }
 
-EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObject(e) {
+EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObject(e), layout_type_(e.layout_type_) {
     authored_child = e.authored_child;
     offset_ = e.offset_;
     track_ = e.track_;
@@ -2194,11 +2196,14 @@ void EngravingItem::unlink_property_from_master(Pid id) {
     }
 }
 
-EngravingItem::LayoutData *EngravingItem::create_layout_data() const { return new EngravingItem::LayoutData(); }
+const EngravingItem::LayoutData *EngravingItem::ldata() const {
+    return layout_data_ ? layout_data_ : &rendering::score::empty_layout_data(layout_type_);
+}
 
-const EngravingItem::LayoutData *EngravingItem::ldata() const { return ldata_internal(); }
-
-EngravingItem::LayoutData *EngravingItem::mutldata() { return mutldata_internal(); }
+EngravingItem::LayoutData *EngravingItem::mutldata() {
+    if (layout_data_) return layout_data_;
+    return score()->renderer()->layout_data_store(*score()).mut_data(*this);
+}
 
 void EngravingItem::transfer_layout_data(Score *destination) {
     if (!layout_store_ || layout_store_->score() == destination) return;
@@ -2208,19 +2213,6 @@ void EngravingItem::transfer_layout_data(Score *destination) {
     }
     auto &target = destination->renderer()->layout_data_store(*destination);
     layout_store_->transfer(*this, target);
-}
-
-const EngravingItem::LayoutData *EngravingItem::ldata_internal() const {
-    static const LayoutData empty;
-    return layout_data_ ? layout_data_ : &empty;
-}
-
-EngravingItem::LayoutData *EngravingItem::mutldata_internal() {
-    if (!layout_data_) {
-        auto data = std::unique_ptr<LayoutData>(create_layout_data());
-        score()->renderer()->layout_data_store(*score()).adopt(*this, std::move(data));
-    }
-    return layout_data_;
 }
 
 bool EngravingItem::element_applies_to_track(const track_idx_t element_track, const track_idx_t ref_track,

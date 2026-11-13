@@ -1011,7 +1011,7 @@ String SystemHeaderLayout::formatted_instrument_name(System *system, Part *part,
     const MStyle &style = system->style();
     bool trailing_dot = style.style_b(Sid::INSTRUMENT_NUMERALS_TRAILING_DOT_SINGLE);
 
-    if (muse::contains(system->ldata()->parts_with_group_name(), part)) {
+    if (system->ldata()->parts_with_group_name().contains(part)) {
         if (label.use_custom_individual_name()) {
             return long_names ? label.custom_name_long_individual() : label.custom_name_short_individual();
         }
@@ -1538,7 +1538,7 @@ void SystemHeaderLayout::update_group_names(System *system, LayoutContext &ctx, 
     for (staff_idx_t staff_idx = 0; staff_idx < system->staves().size(); ++staff_idx) {
         if (system->staff(staff_idx)->name(InstrumentNameRole::GROUP)) {
             Part *part = ctx.dom().staff(staff_idx)->part();
-            if (!muse::contains(ldata->parts_with_group_name(), part)) {
+            if (!ldata->parts_with_group_name().contains(part)) {
                 // name is empty here, so the InstrumentNameType is unused (see updateName)
                 update_name(system, staff_idx, ctx, String(), InstrumentNameType::SHORT, InstrumentNameRole::GROUP);
             }

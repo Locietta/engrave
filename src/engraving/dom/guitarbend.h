@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <amc/flatset.hpp>
+
 #include "engravingitem.h"
 #include "line.h"
 #include "property.h"
@@ -156,11 +158,11 @@ public:
 
         void set_bend_digit(const String &s) { bend_digit_ = s; }
 
-        const std::set<int> &dive_levels() const { return dive_levels_; }
+        const amc::FlatSet<int> &dive_levels() const { return dive_levels_; }
 
         void reset_dive_levels() { dive_levels_.clear(); }
 
-        void set_dive_levels(const std::set<int> &v) { dive_levels_ = v; }
+        void set_dive_levels(const amc::FlatSet<int> &v) { dive_levels_ = v; }
 
         bool above_staff() const { return above_staff_; }
 
@@ -170,7 +172,7 @@ public:
         bool up_ = true;
         bool is_inside_ = false;
         String bend_digit_;
-        std::set<int> dive_levels_;
+        amc::FlatSet<int> dive_levels_;
         bool above_staff_ = false;
     };
     DECLARE_LAYOUTDATA_METHODS(GuitarBend)

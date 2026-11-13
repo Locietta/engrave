@@ -43,15 +43,7 @@ struct Painter;
 
 #define DECLARE_LAYOUTDATA_METHODS(Class)                                                                      \
     const LayoutData *ldata() const { return static_cast<const Class::LayoutData *>(EngravingItem::ldata()); } \
-    LayoutData *mutldata() { return static_cast<Class::LayoutData *>(EngravingItem::mutldata()); }             \
-    LayoutData *create_layout_data() const override { return new Class::LayoutData(); }                        \
-    const LayoutData *ldata_internal() const override {                                                        \
-        if (has_layout_data()) {                                                                               \
-            return static_cast<const Class::LayoutData *>(EngravingItem::ldata_internal());                    \
-        }                                                                                                      \
-        static const Class::LayoutData empty;                                                                  \
-        return &empty;                                                                                         \
-    }
+    LayoutData *mutldata() { return static_cast<Class::LayoutData *>(EngravingItem::mutldata()); }
 
 namespace mu::engraving::rendering::score {
 struct ScoreRenderer;
@@ -678,10 +670,6 @@ protected:
     EngravingItem(const ElementType &type, EngravingObject *parent = nullptr, ElementFlags = ElementFlag::NOTHING);
     EngravingItem(const EngravingItem &, bool link = false);
 
-    virtual LayoutData *create_layout_data() const;
-    virtual const LayoutData *ldata_internal() const;
-    virtual LayoutData *mutldata_internal();
-
     int z_ = 0;
     Color color_; // element color attribute
 
@@ -713,6 +701,9 @@ private:
     mutable ElementFlags flags_;
 
     bool exclude_vertical_align_ = false;
+    // Payload provenance survives the legacy MeasureRepeat -> Rest type hack.
+    // Copies retain a compatible payload prefix even when an owner is sliced.
+    const ElementType layout_type_;
 
     LayoutData *layout_data_ = nullptr;
     rendering::score::LayoutDataStore *layout_store_ = nullptr; // borrowed; runtime owns payloads
