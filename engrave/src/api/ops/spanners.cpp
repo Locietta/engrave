@@ -217,10 +217,16 @@ Result<Step> prepare(EditContext &context, const AddTuplet &op) {
             // Score::addTuplet's own ratio check: the base length is the chord rest's
             // reduced duration divided by the normal count.
             const mu::engraving::Fraction base = rest->ticks().reduced() * mu::engraving::Fraction(1, normal);
-            if (!mu::engraving::TDuration::is_valid(base) || !score->can_add_tuplet(rest, ratio, mu::engraving::TDuration(base))) {
+            if ((rest->duration_type() < mu::engraving::TDuration(mu::engraving::DurationType::V_512TH) &&
+                 rest->duration_type() != mu::engraving::TDuration(mu::engraving::DurationType::V_MEASURE)) ||
+                !mu::engraving::TDuration::is_valid(base) || !score->can_add_tuplet(rest, ratio, mu::engraving::TDuration(base))) {
                 return rejected(std::format("a {}:{} tuplet does not fit the {} at tick {}", actual, normal, rest->type_name(),
                                             tick.to_string().to_std_string()));
             }
+        }
+        for (const mu::engraving::Fraction &tick : ticks) {
+            ChordRest *rest = score->find_cr(tick, track);
+            if (!rest) return rejected("a checked tuplet target disappeared");
             Tuplet *tuplet = score->add_tuplet(rest, ratio, number_type, bracket_type);
             if (!tuplet) return rejected("the engine did not make the tuplet");
             context.created(tuplet);

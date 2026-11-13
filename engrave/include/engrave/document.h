@@ -125,7 +125,8 @@ struct Document {
     Result<std::vector<PropertyRead>> get(const Ref &target, const std::vector<std::string> &props = {});
 
     // Validate independent inputs before writing, then apply operations in order.
-    // Errors name the failing op. A failure after a source write poisons the
+    // Execution rejections commit the applied prefix and return EditResult::rejection.
+    // An engine failure after the failing op starts writing poisons the
     // document and reports completed ops in Error::applied_ops. Reads and non-native
     // exports remain available; restore_checkpoint or reopen permits edits and native save.
     // Each batch that changed source advances the revision once, including failed batches.

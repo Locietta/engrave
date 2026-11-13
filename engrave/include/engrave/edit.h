@@ -47,7 +47,14 @@ struct OpResult {
     std::vector<std::optional<ElementId>> created;
 };
 
+struct BatchRejection {
+    std::size_t op_index;
+    Error error;
+};
+
 struct EditResult {
+    std::size_t applied = 0;
+    std::optional<BatchRejection> rejection;
     std::uint64_t revision = 0; // the document's revision after the batch
     std::vector<OpResult> ops;  // one per operation
     // The ids the batch handed out and dropped, sorted. A dropped id is replaced

@@ -114,6 +114,12 @@ Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
         // The master inserts a measure into every score of the document; a frame goes
         // into the master only, which is what the editor does.
         Score *score = &context.master();
+        if (at && at->is_measure()) {
+            auto *measure = mu::engraving::to_measure(at);
+            if (measure->is_mm_rest()) measure = measure->mm_rest_first();
+            for (std::size_t staff = 0; staff < score->nstaves(); ++staff)
+                if (measure->is_measure_repeat_group_with_prev_m(staff)) return refused("a measure repeat group cannot be split");
+        }
         Score::InsertMeasureOptions options;
         options.need_deselect_all = false;
         for (int i = 0; i < count; ++i) {

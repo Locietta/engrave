@@ -1,6 +1,3 @@
-// EnterNotes, SetPitch, SetDuration and Remove: the engine's own note entry, pitch
-// change, length change and deletion.
-
 #include <algorithm>
 #include <format>
 #include <limits>
@@ -14,6 +11,7 @@
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/interval.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/noteval.h"
@@ -130,6 +128,11 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         // back as another one, so the segment is looked up again by its tick.
         const mu::engraving::Fraction tick = start->tick();
         const mu::engraving::track_idx_t track = mu::engraving::staff2track(at.staff, at.voice);
+        const Staff *staff = score->staff(at.staff);
+        if (staff->is_tab_staff(tick) || staff->is_drum_staff(tick))
+            return invalid("EnterNotes enters notes on a pitched staff, not on a tablature or a drum set");
+        if (pitches.size() > 1 && duration > (start->measure()->end_tick() - tick) * staff->time_stretch(tick))
+            return invalid("a chord of several pitches must end in the bar its entry starts in");
         NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
         if (!score->set_note_rest_at(start, track, first, duration))
             return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter a note at this position"});

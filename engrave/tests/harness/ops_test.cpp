@@ -255,6 +255,8 @@ TEST(Edit, FailedMeasureRewriteLeavesCrossingSlurSafeForReads) {
     EXPECT_TRUE(document->page_count());
     ASSERT_TRUE(document->restore_checkpoint("rewrite"));
     EXPECT_EQ(native_source(*document), before);
+    const auto note = find_id(*document, "Note");
+    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
 }
 
 TEST(Edit, StaticMeasureErrorsAreRejectedBeforeEarlierWrites) {
@@ -348,42 +350,59 @@ TEST(Edit, PreflightFailureKeepsNativeBytes) {
     }
 }
 
-TEST(Edit, MidBatchFailurePoisonsUntilCheckpointRestore) {
+TEST(Edit, LaterExcerptTargetIsCheckedBeforeAnyExcerptIsCreated) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    const auto before = native_source(*document);
-    std::vector<ElementId> ids;
-    for (const auto &entry : engrave::live_ids(engrave::harness::master_of(*document))) ids.push_back(entry.id);
+    const auto part = find_id(*document, "Part");
     const auto note = find_id(*document, "Note");
-    ASSERT_TRUE(document->checkpoint("before"));
-    const auto failed = document->edit({{engrave::Remove{note}, engrave::Remove{note}}});
-    ASSERT_FALSE(failed);
-    EXPECT_EQ(failed.error().code, ErrorCode::STALE_HANDLE);
-    EXPECT_EQ(failed.error().op_index, 1u);
-    EXPECT_TRUE(failed.error().poisoned);
-    EXPECT_EQ(failed.error().applied_ops, (std::vector<std::size_t>{0}));
-    EXPECT_EQ(document->revision(), 2u);
-    const auto &master = engrave::harness::master_of(*document);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
-    ASSERT_TRUE(document->outline());
-    ASSERT_TRUE(document->query({.types = {"Note"}}));
-    const auto refused = document->edit({});
-    ASSERT_FALSE(refused);
-    EXPECT_EQ(refused.error().code, ErrorCode::POISONED);
-    EXPECT_TRUE(refused.error().poisoned);
-    EXPECT_NE(refused.error().message.find("restore_checkpoint"), std::string::npos);
-    const auto save = document->export_score({.format = engrave::Format::MSCZ});
-    ASSERT_FALSE(save);
-    EXPECT_EQ(save.error().code, ErrorCode::POISONED);
-    EXPECT_TRUE(save.error().poisoned);
-    EXPECT_NE(save.error().message.find("restore_checkpoint"), std::string::npos);
-    ASSERT_TRUE(document->export_score({.format = engrave::Format::MUSIC_XML}));
-    ASSERT_TRUE(document->restore_checkpoint("before"));
+    const auto before = native_source(*document);
+    const auto result = document->edit({{engrave::GenerateExcerpts{{part, note}}}});
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->applied, 0u);
+    EXPECT_EQ(result->rejection->op_index, 0u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
     EXPECT_EQ(native_source(*document), before);
-    std::vector<ElementId> restored;
-    for (const auto &entry : engrave::live_ids(engrave::harness::master_of(*document))) restored.push_back(entry.id);
-    EXPECT_EQ(restored, ids);
-    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+    EXPECT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+}
+
+TEST(Edit, MultinoteEntryAcrossBarlineLeavesNoPartialChord) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    auto *measure = engrave::harness::master_of(*document).first_measure();
+    const engrave::SegmentAddress at{engrave::from_engine(measure->eid()), 0, 0, {0, 1}, "ChordRest"};
+    const auto before = native_source(*document);
+    const auto result = document->edit({{engrave::EnterNotes{at, {4, 1}, {{60}, {64}}}}});
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->applied, 0u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::INVALID_ARGUMENT);
+    EXPECT_EQ(native_source(*document), before);
+}
+
+TEST(Edit, RejectionCommitsOnlyTheCompletedPrefix) {
+    auto document = open(fixture_name);
+    ASSERT_TRUE(document);
+    const auto note = find_id(*document, "Note");
+    const auto measures = document->outline()->measures.size();
+    const auto result =
+        document->edit({{engrave::InsertMeasures{{}, 1}, engrave::Remove{note}, engrave::Remove{note}, engrave::InsertMeasures{{}, 2}}});
+    ASSERT_TRUE(result) << result.error().message;
+    EXPECT_EQ(result->applied, 2u);
+    ASSERT_TRUE(result->rejection);
+    EXPECT_EQ(result->rejection->op_index, 2u);
+    EXPECT_EQ(result->rejection->error.code, ErrorCode::STALE_HANDLE);
+    EXPECT_FALSE(result->rejection->error.poisoned);
+    EXPECT_EQ(document->revision(), 2u);
+    EXPECT_EQ(document->outline()->measures.size(), measures + 1);
+    EXPECT_FALSE(engrave::resolve(engrave::harness::master_of(*document), note));
+    ASSERT_EQ(result->ops.size(), 2u);
+    ASSERT_FALSE(result->ops[0].created.empty());
+    ASSERT_TRUE(result->ops[0].created[0]);
+    EXPECT_NE(std::ranges::find(result->created, *result->ops[0].created[0]), result->created.end());
+    const auto next = find_id(*document, "Note");
+    ASSERT_TRUE(document->edit({{SetProperty{next, "color", Color{255, 0, 0}}}}));
+    EXPECT_EQ(property(*document, next, "color"), (engrave::Value{Color{255, 0, 0}}));
 }
 
 // Native PATH commands use the same BatchGuard as public property batches;
