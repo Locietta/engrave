@@ -162,6 +162,7 @@ void BeamLayout::layout_if_need(Beam *item, const LayoutContext &ctx) {
 //---------------------------------------------------------
 void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
     Beam::LayoutData *ldata = item->mutldata();
+    ldata->effective_cross_staff_move.reset();
 
     const StaffType *staff_type = item->staff_type();
     item->set_tab((staff_type && staff_type->is_tab_staff()) ? staff_type : nullptr);
@@ -939,9 +940,9 @@ void BeamLayout::check_cross_pos_and_stem_consistency(Beam *beam, LayoutContext 
     int beam_cross_staff_idx = beam->cross_staff_idx();
     if (beam_cross_staff_idx != correct_cross_staff_idx) {
         inconsistency_found = true;
-        int cur_cross_staff_move = beam->cross_staff_move();
+        int cur_cross_staff_move = beam->ldata()->effective_cross_staff_move.value_or(beam->cross_staff_move());
         int diff = correct_cross_staff_idx - beam_cross_staff_idx;
-        beam->set_property(Pid::BEAM_CROSS_STAFF_MOVE, cur_cross_staff_move + diff);
+        beam->mutldata()->effective_cross_staff_move = cur_cross_staff_move + diff;
     }
 
     if (inconsistency_found) {

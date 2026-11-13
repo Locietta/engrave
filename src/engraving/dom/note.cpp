@@ -3092,3 +3092,7 @@ const std::vector<NoteDot *> &Note::dots() const {
     return has_layout_data() ? ldata()->dots : empty;
 }
 } // namespace mu::engraving
+
+bool Note::collect_for_drawing() const { return display_visible() || score()->is_show_invisible(); }
+
+Color Note::cur_color(const rendering::PaintOptions &opt) const { return EngravingItem::cur_color(display_visible(), opt); }

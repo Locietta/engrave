@@ -717,7 +717,27 @@ TEST(Read, BeamDetachmentDoesNotRenderItemsDuringEdit) {
     EXPECT_TRUE(master.layout_state.dirty);
 }
 
-TEST(Read, InferredFlipExplicitlyRequestsGeometry) {
+TEST(Read, DeadNoteHeadReadKeepsTheAuthoredGroup) {
+    using namespace mu::engraving;
+    auto source = read_text(write470_fixture());
+    source.insert(source.find("</Note>"), "<dead>1</dead>");
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+    ASSERT_TRUE(opened);
+    auto &document = **opened;
+    auto &master = master_of(document);
+    auto *note = to_chord(master.first_measure()->first(SegmentType::CHORD_REST)->element(0))->notes().front();
+    const auto id = engrave::from_engine(note->eid());
+    for (bool warm : {false, true}) {
+        if (warm) master.ensure_layout();
+        auto value = document.get(id, {"head"});
+        ASSERT_TRUE(value);
+        ASSERT_EQ(value->size(), 1u);
+        EXPECT_EQ(std::get<engrave::Enum>(value->front().value).token, "normal");
+        EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, warm ? 1u : 0u);
+    }
+}
+
+TEST(Read, ColdAutoFlipUsesDefaultWithoutLayout) {
     using namespace mu::engraving;
     auto opened = g_engine->open(write470_fixture());
     ASSERT_TRUE(opened);
@@ -726,10 +746,11 @@ TEST(Read, InferredFlipExplicitlyRequestsGeometry) {
     master.select(note, SelectType::SINGLE);
     master.start_cmd(muse::TranslatableString::untranslatable("inferred flip"));
     Flip::flip(master.transaction_manager()->current_or_dummy_transaction(), &master);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     master.end_cmd(false);
-    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 1u);
+    EXPECT_EQ(master.layout_state.whole_count + master.layout_state.range_count, 0u);
     EXPECT_TRUE(master.layout_state.dirty);
+    EXPECT_EQ(note->chord()->stem_direction(), DirectionV::DOWN);
 }
 
 TEST(Read, DeletingSnappedItemDisconnectsTheSurvivingItem) {

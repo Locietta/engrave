@@ -189,13 +189,11 @@ void SlurTieSegment::undo_change_property(Pid pid, const PropertyValue &val, Pro
 
 SlurTie::SlurTie(const ElementType &type, EngravingObject *parent) : Spanner(type, parent) {
     slur_direction_ = DirectionV::AUTO;
-    up_ = true;
     style_type_ = SlurStyleType::SOLID;
     mask_slur_tie_ = AutoOnOff::AUTO;
 }
 
 SlurTie::SlurTie(const SlurTie &t) : Spanner(t) {
-    up_ = t.up_;
     slur_direction_ = t.slur_direction_;
     style_type_ = t.style_type_;
     mask_slur_tie_ = t.mask_slur_tie_;

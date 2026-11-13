@@ -289,7 +289,7 @@ void MaskLayout::mask_tab_string_lines_for_frets(StaffLines *staff_lines, const 
 
     auto mask_fret = [&mask, lines_through, padding, staff_lines_pos](Chord *chord) {
         for (Note *note : chord->notes()) {
-            if (!note->visible()) {
+            if (!note->display_visible()) {
                 continue;
             }
             if (!note->should_hide_fret() && (!lines_through || note->fret_conflict())) {

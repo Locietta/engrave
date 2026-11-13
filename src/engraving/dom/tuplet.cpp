@@ -69,7 +69,6 @@ Tuplet::Tuplet(DummyParentOr<Measure> parent) : DurationElement(ElementType::TUP
     bracket_type_ = TupletBracketType::AUTO_BRACKET;
     ratio_ = Fraction(1, 1);
     has_bracket_ = false;
-    is_up_ = true;
     init_element_style(&::mu::engraving::tuplet_style);
 }
 
@@ -84,8 +83,6 @@ Tuplet::Tuplet(const Tuplet &t) : DurationElement(t) {
     number_type_ = t.number_type_;
     bracket_type_ = t.bracket_type_;
     bracket_width_ = t.bracket_width_;
-
-    is_up_ = t.is_up_;
 
     p1_ = t.p1_;
     p2_ = t.p2_;

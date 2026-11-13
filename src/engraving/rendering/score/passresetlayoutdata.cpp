@@ -21,6 +21,7 @@
  */
 #include "passresetlayoutdata.h"
 
+#include "dom/note.h"
 #include "dom/score.h"
 #include "layoutcontext.h"
 
@@ -32,6 +33,12 @@ static void reset_layout_data(EngravingObject *obj) {
         EngravingItem *item = to_engraving_item(obj);
         if (item->has_layout_data()) {
             item->mutldata()->reset();
+            if (item->is_note()) {
+                // A removed bend no longer produces these overrides on the next pass.
+                auto *ld = to_note(item)->mutldata();
+                ld->visible.reset();
+                ld->ghost.reset();
+            }
         }
     }
 

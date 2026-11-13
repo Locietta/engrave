@@ -44,6 +44,7 @@ struct Spanner;
 
 struct Tuplet final : DurationElement {
     struct LayoutData : public DurationElement::LayoutData {
+        std::optional<bool> up;
         ~LayoutData() override;
         Text *number = nullptr;
     };
@@ -124,9 +125,12 @@ public:
 
     DirectionV direction() const { return direction_; }
 
-    bool is_up() const { return is_up_; }
+    bool is_up() const {
+        const auto *ld = ldata();
+        return ld ? ld->up.value_or(direction_ != DirectionV::DOWN) : direction_ != DirectionV::DOWN;
+    }
 
-    void set_is_up(bool val) { is_up_ = val; }
+    void set_is_up(bool val) { mutldata()->up = val; }
 
     bool is_small() const { return is_small_; }
 
@@ -205,7 +209,6 @@ private:
     Fraction ratio_;
     TDuration base_len_; // 1/8 for a triplet of 1/8
 
-    bool is_up_ = true;
     bool is_small_ = true;
 
     Fraction tick_;

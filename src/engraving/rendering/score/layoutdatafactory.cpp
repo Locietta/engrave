@@ -19,6 +19,7 @@
 #include "dom/expression.h"
 #include "dom/fermata.h"
 #include "dom/figuredbass.h"
+#include "dom/fingering.h"
 #include "dom/fret.h"
 #include "dom/guitarbend.h"
 #include "dom/hairpin.h"
@@ -71,7 +72,6 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::DYNAMIC: return action.template operator()<Dynamic::LayoutData>();
         case ElementType::EXPRESSION: return action.template operator()<Expression::LayoutData>();
         case ElementType::CAPO:
-        case ElementType::FINGERING:
         case ElementType::GUITAR_BEND_TEXT:
         case ElementType::HAMMER_ON_PULL_OFF_TEXT:
         case ElementType::HARP_DIAGRAM:
@@ -99,6 +99,13 @@ decltype(auto) dispatch_layout_data(ElementType type, Action &&action) {
         case ElementType::DEAD_SLAPPED: return action.template operator()<DeadSlapped::LayoutData>();
         case ElementType::FIGURED_BASS_ITEM: return action.template operator()<FiguredBassItem::LayoutData>();
         case ElementType::FIGURED_BASS: return action.template operator()<FiguredBass::LayoutData>();
+        case ElementType::FINGERING: return action.template operator()<Fingering::LayoutData>();
+        case ElementType::SLUR:
+        case ElementType::TIE:
+        case ElementType::PARTIAL_TIE:
+        case ElementType::LAISSEZ_VIB:
+        case ElementType::HAMMER_ON_PULL_OFF:
+        case ElementType::TAPPING_HALF_SLUR: return action.template operator()<SlurTie::LayoutData>();
         case ElementType::FERMATA: return action.template operator()<Fermata::LayoutData>();
         case ElementType::HAIRPIN: return action.template operator()<Hairpin::LayoutData>();
         case ElementType::FRET_DIAGRAM: return action.template operator()<FretDiagram::LayoutData>();

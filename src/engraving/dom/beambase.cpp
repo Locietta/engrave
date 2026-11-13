@@ -34,7 +34,6 @@ BeamBase::BeamBase(const BeamBase &b) : EngravingItem(b) {
     }
     cross_staff_move_value = b.cross_staff_move_value;
     direction_ = b.direction_;
-    up_ = b.up_;
     user_modified_[0] = b.user_modified_[0];
     user_modified_[1] = b.user_modified_[1];
 }
@@ -85,7 +84,10 @@ PropertyValue BeamBase::property_default(Pid property_id) const {
     }
 }
 
-int BeamBase::cross_staff_idx() const { return default_cross_staff_idx() + cross_staff_move_value; }
+int BeamBase::cross_staff_idx() const {
+    const auto *ld = ldata();
+    return default_cross_staff_idx() + (ld ? ld->effective_cross_staff_move.value_or(cross_staff_move_value) : cross_staff_move_value);
+}
 
 int BeamBase::default_cross_staff_idx() const {
     double average = 0.5 * (static_cast<double>(min_cr_move()) + static_cast<double>(max_cr_move()));

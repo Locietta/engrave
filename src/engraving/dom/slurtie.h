@@ -144,9 +144,17 @@ public:
     SlurTie(const SlurTie &);
     ~SlurTie();
 
-    bool up() const { return up_; }
+    struct LayoutData : Spanner::LayoutData {
+        std::optional<bool> up;
+    };
+    DECLARE_LAYOUTDATA_METHODS(SlurTie)
 
-    void set_up(bool val) { up_ = val; }
+    bool up() const {
+        const auto *ld = ldata();
+        return ld ? ld->up.value_or(slur_direction_ != DirectionV::DOWN) : slur_direction_ != DirectionV::DOWN;
+    }
+
+    void set_up(bool val) { mutldata()->up = val; }
 
     virtual void reset() override;
 
@@ -181,8 +189,6 @@ public:
     virtual double scaling_factor() const = 0;
 
 protected:
-
-    bool up_ = true; // actual direction
 
     DirectionV slur_direction_ = DirectionV::AUTO;
 

@@ -48,6 +48,20 @@ public:
     ElementType layout_type() const;
     PlacementV calculate_placement() const;
 
+    struct LayoutData : TextBase::LayoutData {
+        std::optional<PlacementV> placed;
+    };
+    DECLARE_LAYOUTDATA_METHODS(Fingering)
+
+    PlacementV placement() const override {
+        const auto *ld = ldata();
+        return is_styled(Pid::PLACEMENT) && ld && ld->placed ? *ld->placed : EngravingItem::placement();
+    }
+
+    PropertyValue get_property(Pid id) const override {
+        return id == Pid::PLACEMENT ? PropertyValue(placement()) : TextBase::get_property(id);
+    }
+
     PropertyValue property_default(Pid id) const override;
 
     bool is_on_cross_beam_side() const;

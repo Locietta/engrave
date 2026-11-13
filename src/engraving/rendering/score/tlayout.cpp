@@ -2255,20 +2255,20 @@ void TLayout::layout_fingering(const Fingering *item, Fingering::LayoutData *lda
 
 void TLayout::layout_fret_diagram(const FretDiagram *item, FretDiagram::LayoutData *ldata, const LayoutContext &ctx) {
     LAYOUT_CALL_ITEM(item);
-    double spatium = item->spatium() * item->user_mag();
+    double spatium = item->spatium() * item->display_mag();
     ldata->string_line_width = spatium * 0.08;
     ldata->nut_line_width =
         ((item->fret_offset() || !item->show_nut()) ? ldata->string_line_width :
-                                                      ctx.conf().style_absolute(Sid::FRET_NUT_THICKNESS) * item->user_mag());
+                                                      ctx.conf().style_absolute(Sid::FRET_NUT_THICKNESS) * item->display_mag());
     ldata->nut_y = -0.5 * (ldata->nut_line_width - ldata->string_line_width);
-    ldata->string_dist = ctx.conf().style_absolute(Sid::FRET_STRING_SPACING) * item->user_mag();
-    ldata->fret_dist = ctx.conf().style_absolute(Sid::FRET_FRET_SPACING) * item->user_mag();
+    ldata->string_dist = ctx.conf().style_absolute(Sid::FRET_STRING_SPACING) * item->display_mag();
+    ldata->fret_dist = ctx.conf().style_absolute(Sid::FRET_FRET_SPACING) * item->display_mag();
     ldata->marker_size = ldata->string_dist * .8;
     ldata->marker_y = ldata->nut_y - 0.5 * ldata->nut_line_width - ldata->marker_size - 0.20 * spatium;
     bool extended_style = item->style().style_b(Sid::FRET_STYLE_EXTENDED);
     ldata->string_extend_top = item->fret_offset() && extended_style ? -spatium * .2 : 0.0;
     ldata->string_extend_bottom = extended_style ? 0.5 * ldata->fret_dist : 0.0;
-    ldata->dot_diameter = ctx.conf().style_absolute(Sid::FRET_DOT_SPATIUM_SIZE) * item->user_mag();
+    ldata->dot_diameter = ctx.conf().style_absolute(Sid::FRET_DOT_SPATIUM_SIZE) * item->display_mag();
     ldata->grid_height = 0.0;
 
     double shape_margin_above_diagram = ldata->fret_dist * 1.5;
@@ -2409,7 +2409,7 @@ void TLayout::layout_fret_diagram(const FretDiagram *item, FretDiagram::LayoutDa
         double shoulder_xoffset = 0.2 * (end_x - start_x);
         double start_end_y = (fret - 1) * ldata->fret_dist - inset_y;
         double shoulder_y = start_end_y - (length < 2 ? 0.3 : length < 3 ? 0.4 : 0.5) * ldata->fret_dist;
-        double slur_thickness = (length < 2 ? 0.08 : 0.1) * item->spatium() * item->user_mag();
+        double slur_thickness = (length < 2 ? 0.08 : 0.1) * item->spatium() * item->display_mag();
         double shoulder_yfor = shoulder_y - slur_thickness;
         double shoulder_yback = shoulder_y + slur_thickness;
         PointF bezier1for = PointF(start_x + shoulder_xoffset, shoulder_yfor);

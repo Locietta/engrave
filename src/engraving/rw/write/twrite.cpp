@@ -772,19 +772,7 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     write_property(item, xml, Pid::APPEARANCE_LINKED_TO_MASTER);
     write_property(item, xml, Pid::EXCLUDE_FROM_OTHER_PARTS);
 
-    bool left_generated = item->left_paren() && item->left_paren()->generated();
-    bool right_generated = item->right_paren() && item->right_paren()->generated();
-    if (!left_generated || !right_generated) {
-        const auto *note = item->is_note() ? to_note(item) : nullptr;
-        const auto *group = note && note->chord() && !muse::TextStream::round_trip_doubles && !note->score()->layout_state.dirty ?
-                                note->chord()->layout_parenthesis_group(note) :
-                                nullptr;
-        if (group && group->info.generated())
-            xml.tag_property(Pid::HAS_PARENTHESES, PropertyValue::from_value(ParenthesesMode::BOTH),
-                             PropertyValue::from_value(ParenthesesMode::NONE));
-        else
-            write_property(item, xml, Pid::HAS_PARENTHESES);
-    }
+    write_property(item, xml, Pid::HAS_PARENTHESES);
     const auto *overrides = authored_override_table(item);
     const AuthoredChildKey left{AuthoredChildRole::PAREN_LEFT}, right{AuthoredChildRole::PAREN_RIGHT};
     if (overrides && overrides->carrier(left))
@@ -1195,20 +1183,6 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
             if (!note_eid.is_valid()) throw std::logic_error("native writer: missing parenthesized note EID");
             xml.tag("NoteEID", note_eid.to_std_string());
         }
-        xml.end_element();
-        xml.end_element();
-    }
-
-    // Native export still includes generated groups until the layout-free save cutover.
-    for (size_t i = item->note_parentheses().size();
-         !muse::TextStream::round_trip_doubles && !item->score()->layout_state.dirty && i < item->layout_parentheses().size(); ++i) {
-        const auto &group = item->layout_parentheses()[i];
-        if (!group.info.generated() || group.info.notes().empty()) continue;
-        xml.start_element("NoteParenGroup");
-        write(group.left, xml, ctx);
-        write(group.right, xml, ctx);
-        xml.start_element("Notes");
-        for (const Note *note : group.info.notes()) xml.tag("NoteEID", note->eid().to_std_string());
         xml.end_element();
         xml.end_element();
     }
