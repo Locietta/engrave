@@ -541,7 +541,9 @@ void TWrite::write_property(const EngravingItem *item, XmlWriter &xml, Pid pid, 
     if (item->is_styled(pid)) {
         return;
     }
-    PropertyValue p = item->get_property(pid);
+    PropertyValue p = pid == Pid::AUTOPLACE ?
+                          authored_override_value(*item, pid).value_or(PropertyValue(!item->flag(ElementFlag::NO_AUTOPLACE))) :
+                          item->get_property(pid);
     if (!p.is_valid()) {
         LOGD("%s invalid property %d <%s>", item->type_name(), int(pid), property_name(pid));
         return;
@@ -738,14 +740,7 @@ void TWrite::write_styled_properties(const EngravingItem *item, XmlWriter &xml) 
 void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, WriteContext &ctx) {
     write_item_eid(item, xml);
 
-    bool autoplace_enabled = item->score()->style().style_b(Sid::AUTOPLACE_ENABLED);
-    if (!autoplace_enabled) {
-        item->score()->style().set(Sid::AUTOPLACE_ENABLED, true);
-        write_property(item, xml, Pid::AUTOPLACE);
-        item->score()->style().set(Sid::AUTOPLACE_ENABLED, autoplace_enabled);
-    } else {
-        write_property(item, xml, Pid::AUTOPLACE);
-    }
+    write_property(item, xml, Pid::AUTOPLACE);
 
     write_item_link(item, xml, ctx);
 
