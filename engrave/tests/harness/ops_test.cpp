@@ -267,61 +267,71 @@ TEST(Edit, TupletAcrossNewBarRejectsAndCommitsPrefix) {
 }
 
 TEST(Edit, RemovingTimeSigRejectsTupletAcrossRestoredBarBoundary) {
+    for (bool at_end : {false, true}) {
+        auto document = open("hairpins_and_repeats.mscx");
+        ASSERT_TRUE(document);
+        auto &master = engrave::harness::master_of(*document);
+        ASSERT_TRUE(document->edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 16}}}}));
+        auto *measure = master.first_measure()->next_measure()->next_measure();
+        ASSERT_NE(measure, nullptr);
+        const auto changed = document->edit({{engrave::SetTimeSig{engrave::from_engine(measure->eid()), {4, 4}}}});
+        ASSERT_TRUE(changed);
+        ASSERT_FALSE(changed->rejection);
+        measure = master.first_measure()->next_measure()->next_measure();
+        const engrave::SegmentAddress at{
+            engrave::from_engine(measure->eid()), 0, 0, {measure->tick().numerator(), measure->tick().denominator()}, "ChordRest"};
+        const auto entered = document->edit({{engrave::EnterNotes{at, {1, 2}, {{60}}}}});
+        ASSERT_TRUE(entered) << entered.error().message;
+        ASSERT_FALSE(entered->rejection);
+        auto *chord = master.find_cr(measure->tick(), 0);
+        ASSERT_NE(chord, nullptr);
+        const auto chord_id = engrave::from_engine(chord->eid());
+        const auto tuplet = document->edit({{engrave::AddTuplet{chord_id, chord_id, 3, 2}}});
+        ASSERT_TRUE(tuplet);
+        ASSERT_FALSE(tuplet->rejection);
+        auto *signature = measure->first(mu::engraving::SegmentType::TIME_SIG)->element(0);
+        if (at_end) {
+            master.start_cmd(muse::TranslatableString::untranslatable("end-of-measure fixture"));
+            auto *previous = measure->prev_measure();
+            master.apply_segment_parent_change(mu::engraving::to_time_sig(signature)->segment(), previous, previous->ticks());
+            master.end_cmd();
+        }
+        const auto signature_id = engrave::from_engine(signature->eid());
+        const auto note = find_id(*document, "Note");
+        ASSERT_TRUE(document->checkpoint("prefix"));
+        ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
+        const auto prefix = native_source(*document);
+        ASSERT_TRUE(document->restore_checkpoint("prefix"));
+        const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, engrave::Remove{signature_id}}});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_TRUE(result->rejection);
+        EXPECT_EQ(result->applied, 1u);
+        EXPECT_EQ(result->rejection->op_index, 1u);
+        EXPECT_EQ(result->rejection->error.code, ErrorCode::EDIT_REJECTED);
+        EXPECT_FALSE(result->rejection->error.poisoned);
+        EXPECT_EQ(native_source(*document), prefix);
+        ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{0, 255, 0}}}}));
+    }
+}
+
+TEST(Edit, NonrepresentableRewritePoisonsAndCheckpointRestoresExactBytes) {
     auto document = open("hairpins_and_repeats.mscx");
     ASSERT_TRUE(document);
     auto &master = engrave::harness::master_of(*document);
-    ASSERT_TRUE(document->edit({{engrave::SetTimeSig{engrave::from_engine(master.first_measure()->eid()), {3, 16}}}}));
     auto *measure = master.first_measure()->next_measure();
-    ASSERT_NE(measure, nullptr);
-    const auto changed = document->edit({{engrave::SetTimeSig{engrave::from_engine(measure->eid()), {4, 4}}}});
-    ASSERT_TRUE(changed);
-    ASSERT_FALSE(changed->rejection);
-    measure = master.first_measure()->next_measure();
-    const engrave::SegmentAddress at{
-        engrave::from_engine(measure->eid()), 0, 0, {measure->tick().numerator(), measure->tick().denominator()}, "ChordRest"};
-    const auto entered = document->edit({{engrave::EnterNotes{at, {1, 2}, {{60}}}}});
-    ASSERT_TRUE(entered) << entered.error().message;
-    ASSERT_FALSE(entered->rejection);
-    auto *chord = master.find_cr(measure->tick(), 0);
-    ASSERT_NE(chord, nullptr);
-    const auto chord_id = engrave::from_engine(chord->eid());
-    const auto tuplet = document->edit({{engrave::AddTuplet{chord_id, chord_id, 3, 2}}});
-    ASSERT_TRUE(tuplet);
-    ASSERT_FALSE(tuplet->rejection);
-    auto *signature = measure->first(mu::engraving::SegmentType::TIME_SIG)->element(0);
-    const auto signature_id = engrave::from_engine(signature->eid());
-    const auto note = find_id(*document, "Note");
-    ASSERT_TRUE(document->checkpoint("prefix"));
-    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}));
-    const auto prefix = native_source(*document);
-    ASSERT_TRUE(document->restore_checkpoint("prefix"));
-    const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, engrave::Remove{signature_id}}});
-    ASSERT_TRUE(result) << result.error().message;
-    ASSERT_TRUE(result->rejection);
-    EXPECT_EQ(result->applied, 1u);
-    EXPECT_EQ(result->rejection->op_index, 1u);
-    EXPECT_EQ(result->rejection->error.code, ErrorCode::EDIT_REJECTED);
-    EXPECT_FALSE(result->rejection->error.poisoned);
-    EXPECT_EQ(native_source(*document), prefix);
-    ASSERT_TRUE(document->edit({{SetProperty{note, "color", Color{0, 255, 0}}}}));
-}
-
-TEST(Edit, PostWriteFailurePoisonsAndCheckpointRestoresExactBytes) {
-    auto document = open(fixture_name);
-    ASSERT_TRUE(document);
+    const auto measure_id = engrave::from_engine(measure->eid());
+    auto *start = master.find_cr(master.first_measure()->tick(), 0);
+    auto *end = master.find_cr(measure->tick(), 0);
+    ASSERT_TRUE(start && end);
+    const auto added =
+        document->edit({{engrave::AddSpanner{"Slur", engrave::from_engine(start->eid()), engrave::from_engine(end->eid()), {}}}});
+    ASSERT_TRUE(added);
+    const auto slur_id = added->ops.front().created.front();
+    ASSERT_TRUE(slur_id);
     const auto note = find_id(*document, "Note");
     const auto before = native_source(*document);
     ASSERT_TRUE(document->checkpoint("before"));
-
-    struct HookScope {
-        ~HookScope() { engrave::api::after_batch_step_for_test = nullptr; }
-    } hook_scope;
-
-    engrave::api::after_batch_step_for_test = [](std::size_t i) {
-        if (i == 1) throw std::runtime_error("injected post-write failure");
-    };
-    const auto failed = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, SetProperty{note, "color", Color{0, 0, 255}}}});
-    engrave::api::after_batch_step_for_test = nullptr;
+    const auto failed = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}, engrave::SetTimeSig{measure_id, {1, 5}}}});
     ASSERT_FALSE(failed);
     EXPECT_TRUE(failed.error().poisoned);
     EXPECT_EQ(failed.error().op_index, 1u);
@@ -332,7 +342,10 @@ TEST(Edit, PostWriteFailurePoisonsAndCheckpointRestoresExactBytes) {
     const auto save = document->export_score({.format = engrave::Format::MSCZ});
     ASSERT_FALSE(save);
     EXPECT_EQ(save.error().code, ErrorCode::POISONED);
-    EXPECT_TRUE(document->query({.types = {"Note"}}));
+    const auto surviving = engrave::resolve(master, *slur_id);
+    ASSERT_TRUE(surviving);
+    EXPECT_EQ(mu::engraving::to_spanner(surviving->object)->end_element(), nullptr);
+    EXPECT_TRUE(document->query({.types = {"Slur"}}));
     EXPECT_TRUE(document->page_count());
     ASSERT_TRUE(document->restore_checkpoint("before"));
     EXPECT_EQ(native_source(*document), before);
