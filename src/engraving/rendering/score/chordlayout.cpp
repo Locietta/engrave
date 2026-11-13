@@ -3229,6 +3229,7 @@ void ChordLayout::create_paren_groups(Chord *chord) {
             paren->set_track(chord->track());
             paren->set_direction(left ? DirectionH::LEFT : DirectionH::RIGHT);
             paren->set_generated(group.info.generated());
+            if (group.info.generated()) paren->assign_new_eid();
             paren->set_visible(std::ranges::any_of(group.info.notes(), [](const Note *note) { return note->visible(); }));
             paren->set_color(chord->color());
             paren->set_selected(chord->selected());

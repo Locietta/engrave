@@ -27,6 +27,7 @@
 #include <string>
 #include <system_error>
 
+#include "engrave/src/api/handles.h"
 #include "engraving/compat/mscxcompat.h"
 #include "engraving/compat/scoreaccess.h"
 #include "engraving/dom/factory.h"
@@ -74,6 +75,7 @@ MasterScore *ScoreRW::read_score(const String &name, bool is_absolute_path, Impo
         return nullptr;
     }
 
+    engrave::assign_missing_ids(*score);
     score->update_repeat_list(false);
     for (Score *s : score->score_list()) {
         s->do_layout();
@@ -137,6 +139,7 @@ bool ScoreRW::save_score(Score *score, const String &name) {
 }
 
 bool ScoreRW::save_source_score(Score *score, const String &name) {
+    engrave::assign_missing_ids(*score->master_score());
     const String path = scratch_path(name);
     File::remove(path);
 

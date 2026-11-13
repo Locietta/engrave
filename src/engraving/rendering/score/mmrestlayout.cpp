@@ -145,6 +145,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
         reuse_existing_mm_rest(ctx, mmr_measure, len);
     } else {
         mmr_measure = Factory::create_measure(ctx.mut_dom().score());
+        mmr_measure->assign_new_eid();
         mmr_measure->set_ticks(len);
         mmr_measure->set_tick(first_measure->tick());
         apply_change_mmrest(first_measure, mmr_measure);
@@ -166,6 +167,7 @@ void MMRestLayout::create_mm_rest(LayoutContext &ctx, Measure *first_measure, Me
         EngravingItem *existing = chord_rest_seg->element(track);
         if (!existing) {
             MMRest *mmr = Factory::create_mm_rest(chord_rest_seg);
+            mmr->assign_new_eid();
             mmr->set_duration_type(DurationType::V_MEASURE);
             mmr->set_ticks(mmr_measure->ticks());
             mmr->set_track(track);

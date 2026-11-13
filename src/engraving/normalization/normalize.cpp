@@ -558,7 +558,7 @@ static void prepare_timeline(Score &score) {
     score.update_ticks_and_time_sig_map(false);
     if (score.is_master() && score.normalize_state.rebuild_midi_mapping) {
         auto *master = score.master_score();
-        master->rebuild_midi_mapping();
+        master->check_midi_mapping();
     }
 }
 
@@ -635,6 +635,7 @@ static void normalize_scores(MasterScore &master, const std::vector<Score *> &sc
             for (auto *score : work) score->spanner_map().update();
         }
         for (auto *score : work) normalize_content(*score, options);
+        master.check_midi_mapping();
         for (auto *score : work) {
             if (score->need_update_ticks_and_time_sig_map()) score->update_ticks_and_time_sig_map(false);
         }

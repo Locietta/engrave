@@ -387,14 +387,6 @@ void write_authored_unit(const EngravingItem *owner, AuthoredChildKey child, Xml
 void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, XmlWriter &xml, WriteContext &ctx) {
     const auto &table = *authored_override_table(owner);
     const auto *carrier = table.carrier(child);
-    // Preserve the legacy pair's write-time ID order without source display objects.
-    if (carrier && !carrier->legacy_eid.is_valid() && child.subordinal == 1 &&
-        (child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT)) {
-        auto identified = *carrier;
-        identified.legacy_eid = owner->score()->master_score()->eid_register()->new_eid();
-        authored_override_table(const_cast<EngravingItem *>(owner))->set_carrier(identified);
-        carrier = table.carrier(child);
-    }
     if (carrier && carrier->legacy_eid.is_valid()) xml.tag("eid", carrier->legacy_eid.to_std_string());
     write_authored_property(owner, child, xml, Pid::AUTOPLACE);
     if (owner->links() && !ctx.clipboardmode() && !ctx.standalone()) {
@@ -684,10 +676,8 @@ void TWrite::write_score_spanners(const Score *score, track_idx_t start_track, t
 }
 
 void TWrite::write_item_eid(const EngravingObject *item, XmlWriter &xml) {
-    EID eid = item->eid();
-    if (!eid.is_valid()) {
-        eid = item->assign_new_eid();
-    }
+    const EID eid = item->eid();
+    if (!eid.is_valid()) throw std::logic_error(std::string("native writer: missing EID for ") + item->type_name());
 
     std::array<char, EID::max_str_size> buf{};
     const char *last = eid.to_chars(buf.data(), buf.data() + buf.size());
@@ -1206,10 +1196,8 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
 
         xml.start_element("Notes");
         for (const Note *note : paren_pair->notes()) {
-            EID note_eid = note->eid();
-            if (!note_eid.is_valid()) {
-                note_eid = note->assign_new_eid();
-            }
+            const EID note_eid = note->eid();
+            if (!note_eid.is_valid()) throw std::logic_error("native writer: missing parenthesized note EID");
             xml.tag("NoteEID", note_eid.to_std_string());
         }
         xml.end_element();
@@ -1696,16 +1684,13 @@ void TWrite::write_properties(const Spanner *item, XmlWriter &xml, WriteContext 
             return;
         }
         if (EngravingItem *start_el = item->start_element()) {
-            EID start_el_eid = start_el->eid();
-            if (!start_el_eid.is_valid()) {
-                assert(item->anchor() == Spanner::Anchor::NOTE);
-                start_el_eid = start_el->assign_new_eid();
-            }
+            const EID start_el_eid = start_el->eid();
+            if (!start_el_eid.is_valid()) throw std::logic_error("native writer: missing spanner start EID");
             xml.tag("startElement", start_el_eid.to_std_string());
         }
         if (EngravingItem *end_el = item->end_element()) {
-            EID end_el_eid = end_el->eid();
-            IF_ASSERT_FAILED(end_el_eid.is_valid()) { end_el_eid = end_el->assign_new_eid(); }
+            const EID end_el_eid = end_el->eid();
+            if (!end_el_eid.is_valid()) throw std::logic_error("native writer: missing spanner end EID");
             xml.tag("endElement", end_el_eid.to_std_string());
         }
     }
@@ -2651,11 +2636,10 @@ void TWrite::write(const Rest *item, XmlWriter &xml, WriteContext &ctx) {
     xml.end_element();
 }
 
-void TWrite::write(const Segment *item, XmlWriter &xml, WriteContext &) {
-    if (item->written()) {
+void TWrite::write(const Segment *item, XmlWriter &xml, WriteContext &ctx) {
+    if (!ctx.written_segments.insert(item).second) {
         return;
     }
-    item->set_written(true);
     if (item->extra_leading_space().is_zero()) {
         return;
     }
@@ -3437,7 +3421,7 @@ void TWrite::write_segments(XmlWriter &xml, WriteContext &ctx, track_idx_t strac
                 continue;
             }
             if (track == 0) {
-                segment->set_written(false);
+                ctx.written_segments.erase(segment);
             }
             EngravingItem *e = segment->element(track);
 

@@ -493,7 +493,7 @@ void clone_authored_overrides(AuthoredOverrideTable &destination, const Authored
     for (auto &carrier : destination.carriers) {
         const bool group = carrier.child.subordinal == 1 &&
                            (carrier.child.role == AuthoredChildRole::PAREN_LEFT || carrier.child.role == AuthoredChildRole::PAREN_RIGHT);
-        carrier.legacy_eid = group ? EID::invalid() : registry.new_eid(false);
+        carrier.legacy_eid = registry.new_eid(group);
     }
 }
 

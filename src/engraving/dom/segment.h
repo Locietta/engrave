@@ -204,10 +204,6 @@ public:
 
     bool empty() const { return flag(ElementFlag::EMPTY); }
 
-    bool written() const { return flag(ElementFlag::WRITTEN); }
-
-    void set_written(bool val) const { set_flag(ElementFlag::WRITTEN, val); }
-
     bool end_of_measure_change() const {
         return flag(ElementFlag::END_OF_MEASURE_CHANGE);
     } // Key/time sigs which should be placed at the end of the measure

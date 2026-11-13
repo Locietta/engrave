@@ -21,6 +21,8 @@
  */
 #include "measurewrite.h"
 
+#include <stdexcept>
+
 #include "dom/measure.h"
 #include "dom/measurenumber.h"
 #include "dom/mmrestrange.h"
@@ -55,11 +57,9 @@ void MeasureWrite::write_measure(const Measure *measure, XmlWriter &xml, WriteCo
         TWrite::write_item_eid(measure, xml);
 
         if (measure->is_mm_rest()) {
-            Measure *last_measure = measure->mm_rest_last();
-            EID eid_of_last_measure = last_measure->eid();
-            if (!eid_of_last_measure.is_valid()) {
-                eid_of_last_measure = last_measure->assign_new_eid();
-            }
+            const Measure *last_measure = measure->mm_rest_last();
+            const EID eid_of_last_measure = last_measure->eid();
+            if (!eid_of_last_measure.is_valid()) throw std::logic_error("native writer: missing MMR end measure EID");
             xml.tag("mmRestLast", eid_of_last_measure.to_std_string());
         }
 

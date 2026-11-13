@@ -382,17 +382,6 @@ TEST(NativeSave, ColdEqualsWarm) {
             }
         };
         const auto write = [&] {
-            struct RestoreVersions {
-                Score *score;
-                muse::String version;
-                int revision;
-                int msc;
-                ~RestoreVersions() {
-                    score->set_mscore_version(version);
-                    score->set_mscore_revision(revision);
-                    score->set_msc_version(msc);
-                }
-            } restore{&master, master.mscore_version(), master.mscore_revision(), master.msc_version()};
             muse::io::Buffer buffer;
             buffer.open(muse::io::IODevice::WRITE_ONLY);
             rw::WriteInOutData inout(&master);

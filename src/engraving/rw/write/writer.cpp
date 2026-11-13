@@ -64,13 +64,6 @@ bool Writer::write_score(Score *score, io::IODevice *device, rw::WriteInOutData 
     xml.end_element();
     xml.flush();
 
-    if (!inout || !inout->ctx.should_write_range()) {
-        //update version values for i.e. plugin access
-        score->mscore_version_ = muse::appinfo::version().to_string();
-        score->mscore_revision_ = muse::appinfo::revision().to_int(nullptr, 16);
-        score->msc_version_ = Constants::msc_version;
-    }
-
     if (inout) {
         inout->ctx = ctx;
     }
@@ -136,7 +129,7 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
         xml.tag("open", score->is_open_);
     }
 
-    for (const auto &t : score->meta_tags_) {
+    for (const auto &t : ctx.metadata_override ? *ctx.metadata_override : score->meta_tags_) {
         // do not output "platform" and "creationDate" in test and save template mode
         if ((!MScore::test_mode && !MScore::save_template_mode) || (t.first != "platform" && t.first != "creationDate")) {
             xml.tag("metaTag", {{"name", t.first.to_xml_escaped()}}, t.second);
@@ -192,11 +185,6 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
     }
 
     ctx.set_cur_track(0);
-
-    if (score->is_master()) {
-        // Let's decide: write midi mapping to a file or not
-        score->master_score()->check_midi_mapping();
-    }
 
     auto should_write_part = [&ctx, score, staff_start, staff_end](const Part *part) {
         if (!ctx.should_write_range()) {
