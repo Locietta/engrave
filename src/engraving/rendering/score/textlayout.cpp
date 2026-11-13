@@ -55,15 +55,12 @@ void TextLayout::layout_base_text_base1(const TextBase *item, TextBase::LayoutDa
         LD_CONDITION(item->layout_parent()->ldata()->is_set_bbox());
     }
 
-    if (ldata->layout_invalid) {
-        if (item->is_capo() && (to_capo(item)->should_automatically_generate_text() || item->empty()) && item->origin_part() &&
-            item->staff()) {
-            const auto *strings = item->origin_part()->string_data(item->tick(), item->staff()->idx());
-            const String display = strings ? to_capo(item)->generate_text(strings->strings()) : item->xml_text();
-            item->create_blocks(ldata, false, &display);
-        } else {
-            item->create_blocks(ldata);
-        }
+    if (item->is_capo() && (to_capo(item)->should_automatically_generate_text() || item->empty()) && item->origin_part() && item->staff()) {
+        const auto *strings = item->origin_part()->string_data(item->tick(), item->staff()->idx());
+        const String display = strings ? to_capo(item)->generate_text(strings->strings()) : item->xml_text();
+        item->create_blocks(ldata, false, &display);
+    } else if (ldata->layout_invalid || item->is_capo()) {
+        item->create_blocks(ldata);
     }
 
     double y = 0.0;

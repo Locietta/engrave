@@ -56,6 +56,7 @@
 #include "engraving/dom/bagpembell.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/breath.h"
+#include "engraving/dom/capo.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordbracket.h"
 #include "engraving/dom/chordline.h"
@@ -4896,6 +4897,54 @@ std::string legacy_override_write(const mu::engraving::EngravingItem *item, bool
         mu::engraving::write::TWrite::write_item(item, xml, ctx);
     }
     return {reinterpret_cast<const char *>(bytes.const_data()), bytes.size()};
+}
+
+TEST(Read, CapoAutoDisplayRefreshesWithoutChangingAuthoredText) {
+    using namespace mu::engraving;
+    for (const std::string authored : {"", "My capo"}) {
+        auto source = read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "tests/data/inputs/golden/tab_grace_prebend.mscx");
+        source.insert(source.find("<voice>") + 7,
+                      "<Capo>" + (authored.empty() ? std::string() : "<text>" + authored + "</text>") + "</Capo>");
+        auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
+        ASSERT_TRUE(opened);
+        auto &master = master_of(**opened);
+        Capo *capo = nullptr;
+        for (auto *object : engrave::document_objects(master))
+            if (object->is_capo()) {
+                capo = to_capo(object);
+                break;
+            }
+        ASSERT_NE(capo, nullptr);
+        const auto before = legacy_override_write(capo);
+        const auto expect_source = [&] {
+            EXPECT_EQ(capo->xml_text(), muse::String::from_std_string(authored));
+            EXPECT_EQ(capo->plain_text(), muse::String::from_std_string(authored));
+            auto text = (*opened)->get(engrave::from_engine(capo->eid()), {"text"});
+            ASSERT_TRUE(text);
+            EXPECT_EQ(std::get<std::string>(text->front().value), authored);
+        };
+        expect_source();
+        master.ensure_layout();
+        const auto display = [&] {
+            muse::String text;
+            for (const auto &block : capo->ldata()->blocks)
+                for (const auto &fragment : block.fragments()) text += fragment.text;
+            return text;
+        };
+        EXPECT_EQ(display(), u"Capo 1");
+        expect_source();
+        EXPECT_EQ(legacy_override_write(capo), before);
+        ASSERT_TRUE(capo->set_property(Pid::CAPO_FRET_POSITION, 2));
+        master.ensure_layout();
+        EXPECT_EQ(display(), u"Capo 2");
+        ASSERT_TRUE(capo->set_property(Pid::ACTIVE, false));
+        master.ensure_layout();
+        EXPECT_EQ(display(), u"No capo");
+        expect_source();
+        ASSERT_TRUE(capo->set_property(Pid::CAPO_GENERATE_TEXT, false));
+        master.ensure_layout();
+        EXPECT_EQ(display(), authored.empty() ? muse::String(u"No capo") : muse::String(u"My capo"));
+    }
 }
 
 std::string legacy_segment_fixture(std::string_view spanners) {

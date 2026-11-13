@@ -37,7 +37,6 @@ public:
     PropertyValue get_property(Pid id) const override;
     PropertyValue property_default(Pid id) const override;
     bool set_property(Pid id, const PropertyValue &val) override;
-    void set_xml_text(const String &text) override;
 
     const CapoParams &params() const;
     void set_params(const CapoParams &params);
@@ -51,6 +50,5 @@ public:
 private:
     CapoParams params_;
     bool should_automatically_generate_text_ = true;
-    String custom_text_;
 };
 } // namespace mu::engraving

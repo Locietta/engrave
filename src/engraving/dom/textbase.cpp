@@ -2003,6 +2003,7 @@ String TextBase::gen_text(const LayoutData *ldata, bool source_only) const {
 }
 
 void TextBase::gen_text() {
+    if (is_capo() && !cursor_->editing()) return;
     text_ = gen_text(ldata());
     text_invalid_ = false;
 }
@@ -2110,8 +2111,12 @@ std::list<TextFragment> TextBase::fragment_list() const {
 
     const TextBase *text = this;
     std::unique_ptr<TextBase> tmp_text;
+    LayoutData source;
     const LayoutData *ldata = this->ldata();
-    if (!ldata || ldata->layout_invalid) {
+    if (is_capo() && !cursor_->editing()) {
+        create_blocks(&source, true);
+        ldata = &source;
+    } else if (!ldata || ldata->layout_invalid) {
         // Create temporary text object to avoid side effects
         // of createLayout() call.
         tmp_text.reset(to_text_base(this->clone()));
@@ -2119,7 +2124,7 @@ std::list<TextFragment> TextBase::fragment_list() const {
         text = tmp_text.get();
     }
 
-    const LayoutData *tmlldata = text->ldata();
+    const LayoutData *tmlldata = is_capo() && !cursor_->editing() ? &source : text->ldata();
     for (const TextBlock &block : tmlldata->blocks) {
         for (const TextFragment &f : block.fragments()) {
             /* TODO TBD
@@ -2146,8 +2151,12 @@ String TextBase::plain_text() const {
 
     const TextBase *text = this;
     std::unique_ptr<TextBase> tmp_text;
+    LayoutData source;
     const LayoutData *ldata = this->ldata();
-    if (!ldata || ldata->layout_invalid) {
+    if (is_capo() && !cursor_->editing()) {
+        create_blocks(&source, true);
+        ldata = &source;
+    } else if (!ldata || ldata->layout_invalid) {
         // Create temporary text object to avoid side effects
         // of createLayout() call.
         tmp_text.reset(to_text_base(this->clone()));
@@ -2155,7 +2164,7 @@ String TextBase::plain_text() const {
         text = tmp_text.get();
     }
 
-    const LayoutData *tmlldata = text->ldata();
+    const LayoutData *tmlldata = is_capo() && !cursor_->editing() ? &source : text->ldata();
     for (const TextBlock &block : tmlldata->blocks) {
         for (const TextFragment &f : block.fragments()) {
             s += f.text;
@@ -2172,7 +2181,7 @@ String TextBase::plain_text() const {
 //---------------------------------------------------------
 
 String TextBase::xml_text() const {
-    if (!text_invalid_) {
+    if ((is_capo() && !cursor_->editing()) || !text_invalid_) {
         return text_;
     }
 
