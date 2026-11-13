@@ -244,7 +244,7 @@ bool Clef::set_property(Pid property_id, const PropertyValue &v) {
                 }
             }
             break;
-        case Pid::SMALL: set_small(v.to_bool()); break;
+        case Pid::SMALL: return false;
         case Pid::CLEF_TO_BARLINE_POS: {
             const auto new_clef_to_bl_pos = v.value<ClefToBarlinePosition>();
 

@@ -52,7 +52,8 @@ HEADER = """\
 // getProperty/setProperty implementations handle, directly or through a base class
 // or an ElementStyle list.  A class that does not hand an unknown Pid to its base
 // (`Staff`, `Score`) inherits nothing.  A Pid is settable when setProperty takes it
-// and it is not in the generator's deny list (structural Pids: {deny}).
+// and the generator permits direct editing (structural Pids: {deny};
+// non-authored display flags are excluded per type).
 //
 // type_pids rows are sorted by type name; each covers a run of pid_support, sorted
 // by Pid name.  pid_names renames the Pids whose xml name is empty or already taken.
@@ -320,6 +321,11 @@ def build(root):
         if not xml_name:
             continue
         get, settable = inherited(name)
+        # These display flags are not authored by the native reader/writer.
+        if element_type == "CLEF":
+            settable.discard("SMALL")
+        if element_type == "TIMESIG":
+            settable.discard("SYSTEM_FLAG")
         pids = sorted(get | settable)
         rows.append((xml_name, [(pid, pid in settable and pid not in DENY) for pid in pids]))
     rows.sort()

@@ -160,6 +160,7 @@ PropertyValue TimeSig::get_property(Pid property_id) const {
 
 bool TimeSig::set_property(Pid property_id, const PropertyValue &v) {
     switch (property_id) {
+        case Pid::SYSTEM_FLAG: return false;
         case Pid::SHOW_COURTESY:
             if (generated()) {
                 return false;

@@ -4,7 +4,8 @@
 // getProperty/setProperty implementations handle, directly or through a base class
 // or an ElementStyle list.  A class that does not hand an unknown Pid to its base
 // (`Staff`, `Score`) inherits nothing.  A Pid is settable when setProperty takes it
-// and it is not in the generator's deny list (structural Pids: GENERATED, PITCH, SELECTED, TICK, TPC1, TPC2, TRACK).
+// and the generator permits direct editing (structural Pids: GENERATED, PITCH, SELECTED, TICK, TPC1, TPC2, TRACK;
+// non-authored display flags are excluded per type).
 //
 // type_pids rows are sorted by type name; each covers a run of pid_support, sorted
 // by Pid name.  pid_names renames the Pids whose xml name is empty or already taken.
@@ -301,7 +302,7 @@ constexpr PidEntry pid_support[] = {
     { Pid::EXCLUDE_FROM_OTHER_PARTS, true }, { Pid::EXCLUDE_VERTICAL_ALIGN, true }, { Pid::GENERATED, false },
     { Pid::HAS_PARENTHESES, true }, { Pid::IS_COURTESY, true }, { Pid::MIN_DISTANCE, true }, { Pid::OFFSET, true },
     { Pid::PLACEMENT, true }, { Pid::POSITION_LINKED_TO_MASTER, true }, { Pid::SELECTED, false },
-    { Pid::SHOW_COURTESY, true }, { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::SMALL, true },
+    { Pid::SHOW_COURTESY, true }, { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::SMALL, false },
     { Pid::SYSTEM_FLAG, true }, { Pid::TICK, false }, { Pid::TRACK, false }, { Pid::VISIBLE, true },
     { Pid::VOICE, true }, { Pid::Z, true },
     // DeadSlapped
@@ -1650,7 +1651,7 @@ constexpr PidEntry pid_support[] = {
     { Pid::HAS_PARENTHESES, true }, { Pid::IS_COURTESY, true }, { Pid::MIN_DISTANCE, true },
     { Pid::NUMERATOR_STRING, true }, { Pid::OFFSET, true }, { Pid::PLACEMENT, true },
     { Pid::POSITION_LINKED_TO_MASTER, true }, { Pid::SCALE, true }, { Pid::SELECTED, false },
-    { Pid::SHOW_COURTESY, true }, { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::SYSTEM_FLAG, true },
+    { Pid::SHOW_COURTESY, true }, { Pid::SIZE_SPATIUM_DEPENDENT, true }, { Pid::SYSTEM_FLAG, false },
     { Pid::TICK, false }, { Pid::TIMESIG, true }, { Pid::TIMESIG_STRETCH, true }, { Pid::TIMESIG_TYPE, true },
     { Pid::TRACK, false }, { Pid::VISIBLE, true }, { Pid::VOICE, true }, { Pid::Z, true },
     // TimeTickAnchor
