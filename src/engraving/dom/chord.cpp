@@ -29,6 +29,7 @@
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editnote.h"
+#include "../editing/editvisibility.h"
 #include "../editing/navigation.h"
 #include "accidental.h"
 #include "arpeggio.h"
@@ -2213,6 +2214,8 @@ void Chord::undo_change_property(Pid id, const PropertyValue &new_value) { undo_
 
 void Chord::undo_change_property(Pid id, const PropertyValue &new_value, PropertyFlags ps) {
     if (id == Pid::VISIBLE) {
+        for (auto role : {AuthoredChildRole::STEM, AuthoredChildRole::HOOK, AuthoredChildRole::STEM_SLASH})
+            EditVisibility::change_chord_child_visible(this, role, new_value.to_bool());
         process_siblings([=](EngravingItem *element) { element->undo_change_property(id, new_value, ps); }, false);
     }
 
