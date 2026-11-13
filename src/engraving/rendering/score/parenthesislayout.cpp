@@ -66,9 +66,9 @@ void ParenthesisLayout::layout_parentheses(const EngravingItem *parent, const La
 }
 
 void ParenthesisLayout::layout_chord_parentheses(const Chord *chord, const LayoutContext &ctx) {
-    for (const NoteParenthesisInfo *paren_notes_info : chord->note_parentheses()) {
-        Parenthesis *left_paren = paren_notes_info->left_paren();
-        Parenthesis *right_paren = paren_notes_info->right_paren();
+    for (const auto &paren_notes_info : chord->layout_parentheses()) {
+        Parenthesis *left_paren = paren_notes_info.left;
+        Parenthesis *right_paren = paren_notes_info.right;
 
         if (!(left_paren || right_paren)) {
             return;
@@ -380,13 +380,13 @@ void ParenthesisLayout::set_chord_values(Parenthesis *item, Parenthesis::LayoutD
 
     Shape notes_shape;
 
-    const NoteParenthesisInfo *paren_info = chord->find_note_parenthesis_info(item);
+    const auto *paren_info = chord->layout_parenthesis_group(item);
     IF_ASSERT_FAILED(paren_info) {
         LOGD() << "No parenthesis info found for this chord";
         return;
     }
 
-    const std::vector<Note *> &notes = paren_info->notes();
+    const std::vector<Note *> &notes = paren_info->info.notes();
 
     assert(!notes.empty());
 

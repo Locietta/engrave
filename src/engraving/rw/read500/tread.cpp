@@ -512,14 +512,7 @@ void TRead::read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx
     AsciiStringView s = xml.read_ascii_text();
     EID eid = EID::from_std_string(s);
     DO_ASSERT(eid.is_valid());
-    if (item->authored_child.role != AuthoredChildRole::NONE) {
-        if (auto *table = authored_override_table(authored_override_owner(*item))) {
-            finish_authored_read(*item);
-            auto carrier = *table->carrier(item->authored_child);
-            carrier.linked_to = eid;
-            table->set_carrier(carrier);
-        }
-    }
+    if (item->authored_child.role != AuthoredChildRole::NONE) return;
     EIDRegister *eid_register = ctx.score()->master_score()->eid_register();
     EngravingObject *main_element = eid_register->item_from_eid(eid);
     IF_ASSERT_FAILED(main_element) {
@@ -3728,8 +3721,10 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
         right_paren->set_track(ctx.track());
     }
 
-    NoteParenthesisInfo *note_paren_info = new NoteParenthesisInfo(left_paren, right_paren, notes);
+    NoteParenthesisInfo *note_paren_info = new NoteParenthesisInfo(notes);
     ch->add_note_parenthesis_info(note_paren_info);
+    delete left_paren;
+    delete right_paren;
 }
 
 bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {

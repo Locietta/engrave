@@ -484,15 +484,15 @@ void GuitarDiveLayout::layout_scoop(GuitarBendSegment *item) {
 }
 
 RectF GuitarDiveLayout::get_note_and_parentheses_shape(const Note *note) {
-    const NoteParenthesisInfo *paren_info = note->parenthesis_info();
+    const auto *paren_info = note->chord()->layout_parenthesis_group(note);
     RectF note_bbox = note->ldata()->bbox();
 
     if (!paren_info) {
         return note_bbox;
     }
 
-    const Parenthesis *left_paren = paren_info->left_paren();
-    const Parenthesis *right_paren = paren_info->right_paren();
+    const Parenthesis *left_paren = paren_info->left;
+    const Parenthesis *right_paren = paren_info->right;
 
     note_bbox.unite(left_paren->ldata()->bbox().translated(left_paren->pos() - note->pos()));
     note_bbox.unite(right_paren->ldata()->bbox().translated(right_paren->pos() - note->pos()));

@@ -77,10 +77,7 @@ void EditVoice::change_selected_elements_voice(Transaction &, Score *score, voic
     struct MovedParenGroup {
         Chord *dst_chord = nullptr;
         bool generated = false;
-        bool left_visible = true;
-        bool right_visible = true;
-        PointF left_offset = PointF();
-        PointF right_offset = PointF();
+        AuthoredOverrideTable overrides;
         std::vector<Note *> notes;
     };
 
@@ -249,21 +246,19 @@ void EditVoice::change_selected_elements_voice(Transaction &, Score *score, voic
             if (!chord->note_parentheses().empty()) {
                 const NoteParenthesisInfo *note_paren_info = chord->find_note_parenthesis_info(note);
                 if (note_paren_info) {
-                    Parenthesis *left_paren = note_paren_info->left_paren();
-                    Parenthesis *right_paren = note_paren_info->right_paren();
-                    DO_ASSERT(left_paren && right_paren);
-                    if (left_paren && right_paren) {
-                        bool generated = left_paren->generated();
-                        MovedParenGroup &moved_group = moved_paren_groups[note_paren_info];
-                        moved_group.dst_chord = dst_chord;
-                        moved_group.generated = generated;
-                        moved_group.notes.push_back(new_note);
-                        moved_group.left_offset = left_paren->offset();
-                        moved_group.right_offset = right_paren->offset();
-                        moved_group.left_visible = left_paren->visible();
-                        moved_group.right_visible = right_paren->visible();
-                        EditChord::remove_chord_parentheses(chord, {note}, /*addToLinked*/ true, generated);
+                    MovedParenGroup &moved_group = moved_paren_groups[note_paren_info];
+                    moved_group.dst_chord = dst_chord;
+                    moved_group.generated = note_paren_info->generated();
+                    moved_group.notes.push_back(new_note);
+                    const auto index = chord->parenthesis_group_index(note_paren_info);
+                    for (auto entry : chord->authored_overrides.entries) {
+                        if (entry.child.subordinal == 1 && entry.child.ordinal == index &&
+                            (entry.child.role == AuthoredChildRole::PAREN_LEFT || entry.child.role == AuthoredChildRole::PAREN_RIGHT)) {
+                            entry.child.ordinal = 0;
+                            moved_group.overrides.set(std::move(entry));
+                        }
                     }
+                    EditChord::remove_chord_parentheses(chord, {note}, true, moved_group.generated);
                 }
             }
 
@@ -353,15 +348,18 @@ void EditVoice::change_selected_elements_voice(Transaction &, Score *score, voic
         EditChord::add_chord_parentheses(moved_group.dst_chord, moved_group.notes, /*addToLinked*/ true, moved_group.generated);
 
         const NoteParenthesisInfo *info = moved_group.notes.front()->parenthesis_info();
-        Parenthesis *left_paren = info ? info->left_paren() : nullptr;
-        Parenthesis *right_paren = info ? info->right_paren() : nullptr;
-
-        IF_ASSERT_FAILED(info && left_paren && right_paren) { continue; }
-
-        left_paren->undo_set_visible(moved_group.left_visible);
-        right_paren->undo_set_visible(moved_group.right_visible);
-        left_paren->undo_change_property(Pid::OFFSET, moved_group.left_offset);
-        right_paren->undo_change_property(Pid::OFFSET, moved_group.right_offset);
+        IF_ASSERT_FAILED(info) { continue; }
+        for (EngravingObject *object : moved_group.dst_chord->link_list()) {
+            auto *chord = to_chord(object);
+            auto *note = object == moved_group.dst_chord ? moved_group.notes.front() :
+                                                           to_note(moved_group.notes.front()->find_linked_in_staff(chord->staff()));
+            const auto *group = note ? chord->find_note_parenthesis_info(note) : nullptr;
+            if (!group) continue;
+            for (auto entry : moved_group.overrides.entries) {
+                entry.child.ordinal = static_cast<uint32_t>(chord->parenthesis_group_index(group));
+                chord->authored_overrides.set(std::move(entry));
+            }
+        }
     }
 
     if (!new_elements.empty()) {

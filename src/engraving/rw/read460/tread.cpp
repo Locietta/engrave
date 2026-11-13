@@ -445,14 +445,7 @@ void TRead::read_item_link(EngravingItem *item, XmlReader &xml, ReadContext &ctx
     AsciiStringView s = xml.read_ascii_text();
     EID eid = EID::from_std_string(s);
     DO_ASSERT(eid.is_valid());
-    if (item->authored_child.role != AuthoredChildRole::NONE) {
-        if (auto *table = authored_override_table(authored_override_owner(*item))) {
-            finish_authored_read(*item);
-            auto carrier = *table->carrier(item->authored_child);
-            carrier.linked_to = eid;
-            table->set_carrier(carrier);
-        }
-    }
+    if (item->authored_child.role != AuthoredChildRole::NONE) return;
     EIDRegister *eid_register = ctx.score()->master_score()->eid_register();
     EngravingObject *main_element = eid_register->item_from_eid(eid);
     IF_ASSERT_FAILED(main_element) {
@@ -3567,23 +3560,10 @@ void TRead::read_note_paren_group(Chord *ch, XmlReader &e, ReadContext &ctx) {
         right_paren->set_track(ctx.track());
     }
 
-    if (ch->links() && ch->links()->main_element() != ch) {
-        Chord *main_chord = to_chord(ch->links()->main_element());
-        Note *first_note = notes.front();
-        Note *main_note = first_note ? to_note(first_note->find_linked_in_staff(main_chord->staff())) : nullptr;
-        const NoteParenthesisInfo *main_note_paren_info =
-            main_chord && main_note ? main_chord->find_note_parenthesis_info(main_note) : nullptr;
-        Parenthesis *main_left_paren = main_note_paren_info ? main_note_paren_info->left_paren() : nullptr;
-        Parenthesis *main_right_paren = main_note_paren_info ? main_note_paren_info->right_paren() : nullptr;
-
-        if (main_left_paren && main_right_paren) {
-            left_paren->link_to(main_left_paren);
-            right_paren->link_to(main_right_paren);
-        }
-    }
-
-    NoteParenthesisInfo *note_paren_info = new NoteParenthesisInfo(left_paren, right_paren, notes);
+    NoteParenthesisInfo *note_paren_info = new NoteParenthesisInfo(notes);
     ch->add_note_parenthesis_info(note_paren_info);
+    delete left_paren;
+    delete right_paren;
 }
 
 bool TRead::read_properties(Spanner *s, XmlReader &e, ReadContext &ctx) {

@@ -3203,31 +3203,36 @@ void ChordLayout::layout_note2(Note *item, LayoutContext &ctx) {
 }
 
 void ChordLayout::create_paren_groups(Chord *chord) {
-    std::vector<Note *> add_parens;
-    std::vector<Note *> remove_parens;
+    std::vector<NoteParenthesisInfo> groups;
+    for (const auto *info : chord->note_parentheses()) groups.push_back(*info);
+    std::vector<Note *> generated;
+    for (Note *note : chord->notes())
+        if (note->ldata()->has_generated_parens() && !note->parenthesis_info()) generated.push_back(note);
+    if (!generated.empty()) groups.emplace_back(std::move(generated), true);
 
-    for (Note *note : chord->notes()) {
-        const NoteParenthesisInfo *note_paren_info = note->parenthesis_info();
-        const Parenthesis *left_paren = note_paren_info ? note_paren_info->left_paren() : nullptr;
-        bool paren_generated = left_paren && left_paren->generated();
-
-        if (note->ldata()->has_generated_parens()) {
-            if (note_paren_info) {
-                if (paren_generated) {
-                    EditChord::remove_chord_parentheses(chord, {note}, false, true);
-                } else {
-                    continue;
-                }
-            }
-            add_parens.push_back(note);
-            note->undo_change_property(Pid::HAS_PARENTHESES, ParenthesesMode::BOTH);
-        } else if (paren_generated) {
-            remove_parens.push_back(note);
+    auto &output = chord->mutldata()->parentheses;
+    while (output.size() > groups.size()) {
+        delete output.back().left;
+        delete output.back().right;
+        output.pop_back();
+    }
+    output.resize(groups.size());
+    for (size_t i = 0; i < groups.size(); ++i) {
+        auto &group = output[i];
+        group.info = std::move(groups[i]);
+        for (bool left : {true, false}) {
+            auto *&paren = left ? group.left : group.right;
+            if (!paren) paren = Factory::create_parenthesis(chord);
+            paren->set_track(chord->track());
+            paren->set_direction(left ? DirectionH::LEFT : DirectionH::RIGHT);
+            paren->set_generated(group.info.generated());
+            paren->set_visible(std::ranges::any_of(group.info.notes(), [](const Note *note) { return note->visible(); }));
+            paren->set_color(chord->color());
+            paren->set_selected(chord->selected());
+            bind_authored_child(*paren,
+                                {left ? AuthoredChildRole::PAREN_LEFT : AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1});
         }
     }
-
-    EditChord::add_chord_parentheses(chord, add_parens, false, true);
-    EditChord::remove_chord_parentheses(chord, remove_parens, false, true);
 }
 
 void ChordLayout::check_start_end_slurs(Chord *chord, LayoutContext &ctx) {
@@ -3373,9 +3378,9 @@ void ChordLayout::fill_shape(const Chord *item, ChordRest::LayoutData *ldata) {
         shape.add(item->tab_dur()->shape().translate(item->tab_dur()->pos()));
     }
 
-    for (const NoteParenthesisInfo *paren_info : item->note_parentheses()) {
-        Parenthesis *left_paren = paren_info->left_paren();
-        Parenthesis *right_paren = paren_info->right_paren();
+    for (const auto &paren_info : item->layout_parentheses()) {
+        Parenthesis *left_paren = paren_info.left;
+        Parenthesis *right_paren = paren_info.right;
 
         if (left_paren && left_paren->add_to_skyline()) {
             shape.add(left_paren->shape().translate(left_paren->pos()));

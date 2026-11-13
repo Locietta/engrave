@@ -1555,19 +1555,18 @@ void Score::delete_item(EngravingItem *el) {
         } break;
         case ElementType::PARENTHESIS: {
             Parenthesis *paren = to_parenthesis(el);
-            // Use EditChord::removeChordParentheses when parent is a chord
             if (el->parent() && el->parent()->is_chord()) {
                 Chord *chord = to_chord(el->parent());
-                NoteParenthesisInfo *paren_info = chord->find_note_parenthesis_info(paren);
+                const auto *paren_info = chord->layout_parenthesis_group(paren);
                 IF_ASSERT_FAILED(paren_info) {
                     LOGD() << "deleteItem: This parenthesis does not belong to this chord";
                     return;
                 }
-                for (Note *note : paren_info->notes()) {
+                for (Note *note : paren_info->info.notes()) {
                     note->undo_change_property(Pid::HIDE_GENERATED_PARENTHESES, true);
                     note->undo_change_property(Pid::HAS_PARENTHESES, ParenthesesMode::NONE);
                 }
-                EditChord::remove_chord_parentheses(chord, paren_info->notes());
+                EditChord::remove_chord_parentheses(chord, paren_info->info.notes());
             } else {
                 undo_remove_element(el);
             }

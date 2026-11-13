@@ -42,13 +42,10 @@ struct EditChord {
 private:
 
     static void undo_add_parentheses_to_notes(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
-    static void undo_remove_parentheses_from_note(Chord *chord, Note *note, Parenthesis *left_paren, bool remove_from_linked = true);
-    static void undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren,
+    static void undo_remove_parentheses_from_note(Chord *chord, Note *note, const NoteParenthesisInfo *group,
+                                                  bool remove_from_linked = true);
+    static void undo_clear_parenthesis_group(Chord *chord, std::vector<Note *> notes, const NoteParenthesisInfo *group,
                                              bool remove_from_linked = true);
-
-    static void do_add_note_parentheses(Chord *chord, std::vector<Note *> notes, Parenthesis *left_paren, Parenthesis *right_paren);
-    static void do_remove_single_note_parenthesis(Chord *chord, Note *note, Parenthesis *left_paren);
-    static void do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_paren);
 };
 
 void apply_change_chord_staff_move(ChordRest *cr, int v);
@@ -59,5 +56,5 @@ void apply_add_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_par
 
 void apply_remove_note_parenthesis_info(Chord *chord, NoteParenthesisInfo *note_paren_info);
 
-void apply_remove_single_note_parentheses(Chord *chord, Note *note, Parenthesis *paren);
+void apply_remove_single_note_parentheses(Chord *chord, Note *note, const NoteParenthesisInfo *group);
 } // namespace mu::engraving

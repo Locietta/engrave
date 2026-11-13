@@ -108,10 +108,10 @@ AuthoredChildKey inferred_key(const EngravingItem &item) {
     }
     if (item.is_parenthesis()) {
         if (parent->is_chord()) {
-            const auto &groups = static_cast<const Chord *>(parent)->note_parentheses();
+            const auto &groups = static_cast<const Chord *>(parent)->layout_parentheses();
             for (size_t i = 0; i < groups.size(); ++i) {
-                if (groups[i]->left_paren() == &item) return {AuthoredChildRole::PAREN_LEFT, static_cast<uint32_t>(i), 0, 1};
-                if (groups[i]->right_paren() == &item) return {AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1};
+                if (groups[i].left == &item) return {AuthoredChildRole::PAREN_LEFT, static_cast<uint32_t>(i), 0, 1};
+                if (groups[i].right == &item) return {AuthoredChildRole::PAREN_RIGHT, static_cast<uint32_t>(i), 0, 1};
             }
         }
         if (parent->is_engraving_item()) {
@@ -263,7 +263,7 @@ void prepare_carrier(EngravingItem &item, AuthoredOverrideTable &table) {
     }
     auto eid = item.eid();
     if (!eid.is_valid()) eid = EID::new_unique();
-    table.set_carrier({item.authored_child, item.type(), eid, EID::invalid(), muse::nidx});
+    table.set_carrier({item.authored_child, item.type(), eid, muse::nidx});
     if (item.authored_child.role == AuthoredChildRole::SPANNER_SEGMENT) {
         const auto subtype = static_cast<const SpannerSegment &>(item).spanner_segment_type();
         table.set({item.authored_child, Pid::SUBTYPE, int(subtype), PropertyFlags::NOSTYLE});
@@ -470,7 +470,7 @@ void finish_authored_read(EngravingItem &item) {
     const auto *old = table->carrier(child_key(item));
     auto eid = item.eid();
     if (!eid.is_valid()) eid = old ? old->legacy_eid : EID::new_unique();
-    table->set_carrier({item.authored_child, item.type(), eid, old ? old->linked_to : EID::invalid(), old ? old->track : muse::nidx});
+    table->set_carrier({item.authored_child, item.type(), eid, old ? old->track : muse::nidx});
 }
 
 bool has_authored_override(const EngravingItem &item, Pid pid) {
@@ -489,8 +489,9 @@ void reset_authored_override(EngravingItem &item, Pid pid) {
 void clone_authored_overrides(AuthoredOverrideTable &destination, const AuthoredOverrideTable &source) {
     destination = source;
     for (auto &carrier : destination.carriers) {
-        carrier.legacy_eid = EID::new_unique();
-        carrier.linked_to = EID::invalid();
+        const bool group = carrier.child.subordinal == 1 &&
+                           (carrier.child.role == AuthoredChildRole::PAREN_LEFT || carrier.child.role == AuthoredChildRole::PAREN_RIGHT);
+        carrier.legacy_eid = group ? EID::invalid() : EID::new_unique();
     }
 }
 

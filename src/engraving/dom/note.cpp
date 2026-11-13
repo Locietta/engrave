@@ -1500,12 +1500,9 @@ void Note::set_visible(bool v) {
         }
     }
 
-    if (note_paren_info->left_paren()) {
-        note_paren_info->left_paren()->set_visible(visible);
-    }
-    if (note_paren_info->right_paren()) {
-        note_paren_info->right_paren()->set_visible(visible);
-    }
+    const auto index = static_cast<uint32_t>(chord()->parenthesis_group_index(note_paren_info));
+    for (auto role : {AuthoredChildRole::PAREN_LEFT, AuthoredChildRole::PAREN_RIGHT})
+        chord()->authored_overrides.set({{role, index, 0, 1}, Pid::VISIBLE, PropertyValue(visible)});
 }
 
 bool Note::is_exact_unison(Note *other) { return other->pitch() == pitch_ && other->tpc() == tpc(); }
@@ -2885,10 +2882,8 @@ void Note::set_parentheses_mode(const ParenthesesMode &v, bool add_to_linked, bo
 
     const NoteParenthesisInfo *note_paren_info = parenthesis_info();
 
-    Parenthesis *left_paren = note_paren_info ? note_paren_info->left_paren() : nullptr;
-
-    const bool has_generated_paren = left_paren && left_paren->generated();
-    const bool has_user_paren = left_paren && !left_paren->generated();
+    const bool has_generated_paren = note_paren_info && note_paren_info->generated();
+    const bool has_user_paren = note_paren_info && !note_paren_info->generated();
 
     bool has_paren = v == ParenthesesMode::BOTH;
 

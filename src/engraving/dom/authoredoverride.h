@@ -63,7 +63,6 @@ struct AuthoredOverrideCarrier {
     AuthoredChildKey child;
     ElementType type = ElementType::INVALID;
     EID legacy_eid = EID::invalid();
-    EID linked_to = EID::invalid();
     track_idx_t track = muse::nidx;
 };
 

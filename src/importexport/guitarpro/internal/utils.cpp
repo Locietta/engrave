@@ -138,14 +138,7 @@ Chord *get_located_chord(mu::engraving::Score *score, Fraction tick_fr, track_id
 }
 
 static void add_parentheses_to_notes(Chord *ch, const std::vector<Note *> &notes) {
-    auto create_paren = [ch](DirectionH dir) {
-        Parenthesis *p = Factory::create_parenthesis(ch);
-        p->set_track(ch->track());
-        p->set_direction(dir);
-        return p;
-    };
-
-    NoteParenthesisInfo *paren_info = new NoteParenthesisInfo(create_paren(DirectionH::LEFT), create_paren(DirectionH::RIGHT), notes);
+    NoteParenthesisInfo *paren_info = new NoteParenthesisInfo(notes);
     ch->add_note_parenthesis_info(paren_info);
 
     for (Note *n : notes) {

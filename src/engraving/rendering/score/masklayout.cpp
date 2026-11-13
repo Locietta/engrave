@@ -306,11 +306,11 @@ void MaskLayout::mask_tab_string_lines_for_frets(StaffLines *staff_lines, const 
         if (lines_through) {
             return;
         }
-        for (const NoteParenthesisInfo *i : chord->note_parentheses()) {
-            const Parenthesis *left_paren = i->left_paren();
-            const Parenthesis *right_paren = i->right_paren();
+        for (const auto &i : chord->layout_parentheses()) {
+            const Parenthesis *left_paren = i.left;
+            const Parenthesis *right_paren = i.right;
             bool all_hidden = false;
-            for (const Note *note : i->notes()) {
+            for (const Note *note : i.info.notes()) {
                 if (!note->should_hide_fret()) {
                     all_hidden = false;
                     break;
