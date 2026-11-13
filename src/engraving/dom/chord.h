@@ -241,6 +241,7 @@ public:
 
     const NoteParenthesisInfo *find_note_parenthesis_info(const Note *note) const;
     size_t parenthesis_group_index(const NoteParenthesisInfo *info) const;
+    const NoteParenthesisInfo *matching_parenthesis_group(const NoteParenthesisInfo &group) const;
     void add_note_parenthesis_info(NoteParenthesisInfo *note_paren_info);
     void remove_note_parenthesis_info(const NoteParenthesisInfo *note_paren_info);
     void add_note_to_parenthesis_info(Note *note, NoteParenthesisInfo *group);

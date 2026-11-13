@@ -647,6 +647,8 @@ void Chord::remove(EngravingItem *e) {
             auto i = std::find(notes_.begin(), notes_.end(), note);
             if (i != notes_.end()) {
                 notes_.erase(i);
+                if (has_layout_data())
+                    for (auto &group : mutldata()->parentheses) group.info.remove_note(note);
                 note->disconnect_tied_notes();
                 for (Spanner *s : note->spanner_back()) {
                     note->remove_spanner_back(s);
@@ -1125,6 +1127,18 @@ const Chord::ParenthesisGroup *Chord::layout_parenthesis_group(const Note *note)
 const Chord::ParenthesisGroup *Chord::layout_parenthesis_group(const Parenthesis *paren) const {
     for (const auto &group : layout_parentheses())
         if (paren == group.left || paren == group.right) return &group;
+    return nullptr;
+}
+
+const NoteParenthesisInfo *Chord::matching_parenthesis_group(const NoteParenthesisInfo &group) const {
+    for (auto it = note_parens_.rbegin(); it != note_parens_.rend(); ++it) {
+        const auto &notes = (*it)->notes();
+        if (!notes.empty() && notes.size() == group.notes().size() && std::ranges::all_of(group.notes(), [&](const Note *note) {
+                return std::ranges::any_of(
+                    notes, [&](const Note *candidate) { return candidate == note || note->is_linked(const_cast<Note *>(candidate)); });
+            }))
+            return *it;
+    }
     return nullptr;
 }
 

@@ -3211,11 +3211,14 @@ void ChordLayout::create_paren_groups(Chord *chord) {
     if (!generated.empty()) groups.emplace_back(std::move(generated), true);
 
     auto &output = chord->mutldata()->parentheses;
-    while (output.size() > groups.size()) {
-        delete output.back().left;
-        delete output.back().right;
-        output.pop_back();
+    auto shape = chord->shape();
+    shape.remove_if([](const ShapeElement &element) { return element.item() && element.item()->is_parenthesis(); });
+    chord->mutldata()->set_shape(shape);
+    for (auto &group : output) {
+        delete group.left;
+        delete group.right;
     }
+    output.clear();
     output.resize(groups.size());
     for (size_t i = 0; i < groups.size(); ++i) {
         auto &group = output[i];

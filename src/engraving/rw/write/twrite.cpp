@@ -405,23 +405,23 @@ void write_authored_common(const EngravingItem *owner, AuthoredChildKey child, X
             if (owner->is_chord() && main->is_chord() && child.subordinal == 1 &&
                 (child.role == AuthoredChildRole::PAREN_LEFT || child.role == AuthoredChildRole::PAREN_RIGHT)) {
                 const auto &groups = to_chord(owner)->note_parentheses();
-                const auto &main_groups = to_chord(main)->note_parentheses();
                 matching.ordinal = UINT32_MAX;
-                if (child.ordinal < groups.size() && !groups[child.ordinal]->notes().empty()) {
-                    const auto &notes = groups[child.ordinal]->notes();
-                    // Repeated memberships occur in legacy files; prefer the last definition.
-                    for (size_t i = 0; i < main_groups.size(); ++i) {
-                        const auto &main_notes = main_groups[i]->notes();
-                        if (main_notes.size() == notes.size() && std::ranges::all_of(notes, [&](const Note *note) {
-                                const auto *main_note = note->links() ? note->links()->main_element() : note;
-                                return std::ranges::find(main_notes, main_note) != main_notes.end();
-                            }))
-                            matching.ordinal = static_cast<uint32_t>(i);
-                    }
+                if (child.ordinal < groups.size()) {
+                    const auto *main_chord = to_chord(main);
+                    matching.ordinal = static_cast<uint32_t>(
+                        main_chord->parenthesis_group_index(main_chord->matching_parenthesis_group(*groups[child.ordinal])));
                 }
             }
             const auto *target = main_table ? main_table->carrier(matching) : nullptr;
-            if (target && target->legacy_eid.is_valid()) xml.tag("linkedTo", target->legacy_eid.to_std_string());
+            bool emitted = true;
+            if (main->is_chord()) {
+                const auto *chord = to_chord(main);
+                if (child.role == AuthoredChildRole::STEM)
+                    emitted = !chord->no_stem() && (main_table->has_entries(matching) || !chord->stem_user_length().is_zero());
+                if (child.role == AuthoredChildRole::HOOK || child.role == AuthoredChildRole::STEM_SLASH)
+                    emitted = main_table->has_entries(matching);
+            }
+            if (emitted && target && target->legacy_eid.is_valid()) xml.tag("linkedTo", target->legacy_eid.to_std_string());
         }
     }
     if (carrier) {
@@ -791,7 +791,9 @@ void TWrite::write_item_properties(const EngravingItem *item, XmlWriter &xml, Wr
     bool right_generated = item->right_paren() && item->right_paren()->generated();
     if (!left_generated || !right_generated) {
         const auto *note = item->is_note() ? to_note(item) : nullptr;
-        const auto *group = note && note->chord() ? note->chord()->layout_parenthesis_group(note) : nullptr;
+        const auto *group = note && note->chord() && !muse::TextStream::round_trip_doubles && !note->score()->layout_state.dirty ?
+                                note->chord()->layout_parenthesis_group(note) :
+                                nullptr;
         if (group && group->info.generated())
             xml.tag_property(Pid::HAS_PARENTHESES, PropertyValue::from_value(ParenthesesMode::BOTH),
                              PropertyValue::from_value(ParenthesesMode::NONE));
@@ -1215,8 +1217,10 @@ void TWrite::write(const Chord *item, XmlWriter &xml, WriteContext &ctx) {
     }
 
     // Native export still includes generated groups until the layout-free save cutover.
-    for (size_t i = item->note_parentheses().size(); i < item->layout_parentheses().size(); ++i) {
+    for (size_t i = item->note_parentheses().size();
+         !muse::TextStream::round_trip_doubles && !item->score()->layout_state.dirty && i < item->layout_parentheses().size(); ++i) {
         const auto &group = item->layout_parentheses()[i];
+        if (!group.info.generated() || group.info.notes().empty()) continue;
         xml.start_element("NoteParenGroup");
         write(group.left, xml, ctx);
         write(group.right, xml, ctx);
