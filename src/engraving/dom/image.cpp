@@ -101,7 +101,8 @@ Image::~Image() {
 void Image::set_image_type(ImageType t) {
     image_type_ = t;
     if (image_type_ == ImageType::SVG) {
-        svg_doc_ = 0;
+        delete svg_doc_;
+        svg_doc_ = store_item_ ? new SvgRenderer(store_item_->buffer()) : nullptr;
     } else if (image_type_ == ImageType::RASTER) {
         raster_doc_.reset();
     } else {
@@ -142,7 +143,10 @@ bool Image::is_image_framed() const {
 //   imageAspectRatio
 //---------------------------------------------------------
 
-double Image::image_aspect_ratio() const { return size_.width() / size_.height(); }
+double Image::image_aspect_ratio() const {
+    const SizeF effective = size();
+    return effective.width() / effective.height();
+}
 
 //---------------------------------------------------------
 //   setImageHeight

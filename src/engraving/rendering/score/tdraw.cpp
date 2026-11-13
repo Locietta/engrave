@@ -1777,12 +1777,7 @@ void TDraw::draw(const Image *item, Painter *painter, const PaintOptions &opt) {
             empty_image = true;
         } else {
             painter->save();
-            SizeF s;
-            if (item->size_is_spatium()) {
-                s = item->size() * item->spatium();
-            } else {
-                s = item->size() * ::mu::engraving::dpmm;
-            }
+            const SizeF s = ldata->bbox().size();
             painter->scale(s.width() / item->raster_image()->width(), s.height() / item->raster_image()->height());
             painter->draw_pixmap(PointF(0, 0), *item->raster_image());
             painter->restore();

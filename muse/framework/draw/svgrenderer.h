@@ -26,8 +26,6 @@
 #include "painter.h"
 #include "types/geometry.h"
 
-struct QSvgRenderer;
-
 namespace muse::draw {
 struct SvgRenderer {
     SvgRenderer(const ByteArray &data);
@@ -38,7 +36,7 @@ struct SvgRenderer {
     void render(Painter *painter, const RectF &rect);
 
 private:
-    QSvgRenderer *q_svg_renderer_ = nullptr;
+    ByteArray data_;
 };
 } // namespace muse::draw
 
