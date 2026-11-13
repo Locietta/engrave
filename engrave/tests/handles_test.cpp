@@ -66,6 +66,8 @@
 #include "engraving/editing/edittremolo.h"
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/infrastructure/eidregister.h"
+#include "engraving/rw/inoutdata.h"
+#include "engraving/rw/rwregister.h"
 #include "global/io/buffer.h"
 #include "global/serialization/zipreader.h"
 #include <engrave/engrave.h>
@@ -295,6 +297,127 @@ std::filesystem::path corpus_file(std::initializer_list<std::string_view> extens
 bool written_by_engine(const std::filesystem::path &path) {
     const std::string extension = path.extension().string();
     return extension == ".mscx" || extension == ".mscz" || extension == ".musicxml" || extension == ".mxl";
+}
+
+// Translate the historical composition input, including its part/instrument metadata.
+std::string composition_input() {
+    const auto score = music::parse_json<music::Json>(read_text(g_source_root / "tests/data/inputs/golden/created.json"));
+    if (!score) throw std::runtime_error("invalid created.json");
+    const auto escaped = [](const music::Json &value) {
+        return muse::String::from_std_string(value.as<std::string>()).to_xml_escaped().to_std_string();
+    };
+    const auto &parts = (*score)["parts"].get_array();
+    std::string xml = "<score-partwise version=\"4.0\"><work><work-title>" + escaped((*score)["title"]) + "</work-title></work><part-list>";
+    for (size_t i = 0; i < parts.size(); ++i) {
+        const auto id = "P" + std::to_string(i + 1);
+        const auto name = escaped(parts[i]["name"]);
+        xml += std::format("<score-part id=\"{0}\"><part-name>{1}</part-name><score-instrument id=\"{0}-I1\">"
+                           "<instrument-name>{1}</instrument-name></score-instrument><midi-instrument id=\"{0}-I1\">"
+                           "<midi-channel>{2}</midi-channel><midi-program>{3}</midi-program></midi-instrument></score-part>",
+                           id, name, i < 9 ? i + 1 : i + 2, parts[i]["midiProgram"].as<int>());
+    }
+    xml += "</part-list>";
+    const std::map<int, std::string_view> types{{120, "16th"}, {240, "eighth"}, {480, "quarter"}, {960, "half"}, {1920, "whole"}};
+    constexpr std::string_view steps = "CCDDEFFGGAAB";
+    for (size_t i = 0; i < parts.size(); ++i) {
+        xml += std::format("<part id=\"P{}\">", i + 1);
+        int number = 0;
+        for (const auto &measure : parts[i]["measures"].get_array()) {
+            xml += std::format("<measure number=\"{}\">", ++number);
+            if (number == 1) {
+                xml += "<attributes><divisions>480</divisions><time><beats>4</beats><beat-type>4</beat-type></time>"
+                       "<clef><sign>G</sign><line>2</line></clef></attributes>";
+                if (i == 0)
+                    xml += std::format("<direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>{0}"
+                                       "</per-minute></metronome></direction-type><sound tempo=\"{0}\"/></direction>",
+                                       (*score)["tempo"].as<int>());
+            }
+            for (const auto &note : measure["notes"].get_array()) {
+                const auto &pitches = note["pitches"].get_array();
+                const int ticks = note["ticks"].as<int>();
+                for (size_t n = 0; n < std::max(size_t{1}, pitches.size()); ++n) {
+                    xml += n ? "<note><chord/>" : "<note>";
+                    if (pitches.empty())
+                        xml += "<rest/>";
+                    else {
+                        const int pitch = pitches[n].as<int>();
+                        xml += std::format("<pitch><step>{}</step>{}<octave>{}</octave></pitch>", steps[pitch % 12],
+                                           pitch % 12 == 1 || pitch % 12 == 3 || pitch % 12 == 6 || pitch % 12 == 8 || pitch % 12 == 10 ?
+                                               "<alter>1</alter>" :
+                                               "",
+                                           pitch / 12 - 1);
+                    }
+                    xml += std::format("<duration>{}</duration><voice>1</voice><type>{}</type></note>", ticks, types.at(ticks));
+                }
+            }
+            xml += "</measure>";
+        }
+        xml += "</part>";
+    }
+    return xml + "</score-partwise>";
+}
+
+TEST(NativeSave, ColdEqualsWarm) {
+    using namespace mu::engraving;
+    std::vector<std::filesystem::path> inputs;
+    for (const auto &entry : std::filesystem::directory_iterator(g_source_root / "tests/data/inputs/golden")) {
+        if (written_by_engine(entry.path()) || entry.path().filename() == "created.json") inputs.push_back(entry.path());
+    }
+    inputs.push_back(g_source_root / "tests/data/inputs/evening.musicxml");
+    std::ranges::sort(inputs);
+    const std::map<std::string, std::string> expected_differences{
+        {"tab_grace_prebend.mscx", "S5b: bend layout overwrites destination note visibility"}};
+    for (const auto &path : inputs) {
+        SCOPED_TRACE(path.filename().string());
+        auto opened = path.extension() == ".json" ? g_engine->open(as_bytes(composition_input())) : g_engine->open(path);
+        ASSERT_TRUE(opened) << opened.error().message;
+        auto &master = master_of(**opened);
+        std::vector<Score *> scores{&master};
+        for (const auto *excerpt : master.excerpts()) scores.push_back(excerpt->excerpt_score());
+        const auto check_cold = [&] {
+            for (const auto *score : scores) {
+                EXPECT_EQ(score->layout_state.whole_count, 0u);
+                EXPECT_EQ(score->layout_state.range_count, 0u);
+                EXPECT_TRUE(score->pages().empty());
+            }
+        };
+        const auto write = [&] {
+            struct RestoreVersions {
+                Score *score;
+                muse::String version;
+                int revision;
+                int msc;
+                ~RestoreVersions() {
+                    score->set_mscore_version(version);
+                    score->set_mscore_revision(revision);
+                    score->set_msc_version(msc);
+                }
+            } restore{&master, master.mscore_version(), master.mscore_revision(), master.msc_version()};
+            muse::io::Buffer buffer;
+            buffer.open(muse::io::IODevice::WRITE_ONLY);
+            rw::WriteInOutData inout(&master);
+            inout.ctx.set_inline_style(true);
+            inout.ctx.set_inline_excerpts(true);
+            EXPECT_TRUE(rw::RWRegister::writer()->write_score(&master, &buffer, &inout));
+            return std::string(reinterpret_cast<const char *>(buffer.data().const_data()), buffer.data().size());
+        };
+        check_cold();
+        const auto cold = write();
+        check_cold();
+        EXPECT_EQ(cold, write());
+        check_cold();
+        for (auto *score : scores) {
+            score->ensure_layout();
+            EXPECT_GT(score->layout_state.whole_count, 0u);
+            EXPECT_FALSE(score->pages().empty());
+        }
+        const auto warm = write();
+        if (const auto expected = expected_differences.find(path.filename().string()); expected != expected_differences.end()) {
+            EXPECT_NE(cold, warm) << expected->second << "; remove the exception once fixed";
+        } else {
+            EXPECT_EQ(cold, warm);
+        }
+    }
 }
 
 // --- descriptors ----------------------------------------------------------
