@@ -280,8 +280,8 @@ void assign_missing_ids(MasterScore &master) {
         document.insert(&object);
         if (takes_id(object)) {
             if (!object.eid().is_valid()) object.assign_new_eid();
+            master.eid_register()->publish(object);
         }
-        master.eid_register()->publish(object, takes_id(object));
     });
     // An id whose element is no longer part of the document must go as well: a read can
     // replace what it built (an excerpt score's first pass, a tie whose other end is

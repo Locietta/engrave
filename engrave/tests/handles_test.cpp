@@ -1927,6 +1927,23 @@ TEST(Handles, RegeneratedExcerptReplacesIdsAtTheOriginalScoreIndex) {
     expect_inv(*document);
 }
 
+TEST(Handles, EmptyingPublishedTextRemovesItsDiffIdButKeepsItsHandle) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/chordline_path.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    auto *text = first_live(master, ElementType::TEXT);
+    ASSERT_NE(text, nullptr);
+    const auto id = engine_id(*text);
+    const auto cleared = document->edit({{engrave::SetProperty{id, "text", std::string{}}}});
+    ASSERT_TRUE(cleared);
+    EXPECT_TRUE(std::ranges::contains(cleared->removed, id));
+    EXPECT_TRUE(engrave::resolve(master, id));
+    const auto filled = document->edit({{engrave::SetProperty{id, "text", std::string{"Restored title"}}}});
+    ASSERT_TRUE(filled);
+    EXPECT_TRUE(std::ranges::contains(filled->created, id));
+    expect_inv(*document);
+}
+
 TEST(Handles, HiddenStaffSpacersLeaveTheDiffWhileTheirHandlesStillResolve) {
     auto xml = read_text(g_source_root / "tests/data/inputs/golden/chordline_path.mscx");
     const auto at = xml.find("<Measure>");
