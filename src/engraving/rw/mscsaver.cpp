@@ -26,6 +26,7 @@
 #include "dom/masterscore.h"
 #include "engraving/automation/internal/automationrw.h"
 #include "global/io/buffer.h"
+#include "global/io/path.h"
 #include "inoutdata.h"
 #include "log.h"
 #include "rwregister.h"
@@ -81,10 +82,8 @@ bool MscSaver::write_mscz(MasterScore *score, MscWriter &msc_writer, const write
                 Score *part_score = excerpt->excerpt_score();
                 IF_ASSERT_FAILED(part_score && part_score != score) { return ExcerptData(); }
 
-                excerpt->update_file_name(excerpt_index);
-
                 ExcerptData data;
-                data.file_name = excerpt->file_name();
+                data.file_name = String(u"%1_%2").arg(String::number(excerpt_index), escape_file_name(excerpt->name()).to_string());
 
                 auto style_buf = Buffer::opened(IODevice::WRITE_ONLY, &data.style_data);
                 part_score->style().write(&style_buf);

@@ -79,6 +79,7 @@
 #include "engraving/dom/marker.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/measurenumber.h"
 #include "engraving/dom/measurerepeat.h"
 #include "engraving/dom/mmrest.h"
 #include "engraving/dom/mscore.h"
@@ -1110,6 +1111,60 @@ std::string mmr_source(bool prefix_note = false) {
     source.insert(source.find("</Staff>", source.find("<Measure>")),
                   prefix_note ? std::string(rest) + std::string(rest) : std::string(rest));
     return source;
+}
+
+TEST(Read, MissingNativeDisplayIdentitiesAreFinalizedBeforeSaving) {
+    auto source = mmr_source();
+    const auto first_measure = source.find("<Measure>") + std::string("<Measure>").size();
+    source.insert(first_measure, "<MeasureNumber><text>99</text></MeasureNumber>");
+    auto opened = g_engine->open(as_bytes(source));
+    ASSERT_TRUE(opened);
+    auto &master = master_of(**opened);
+    auto *number = master.first_measure()->mstaves().front()->measure_number();
+    ASSERT_NE(number, nullptr);
+    EXPECT_FALSE(number->generated());
+    EXPECT_TRUE(number->eid().is_valid());
+    ASSERT_TRUE((*opened)->checkpoint("number"));
+    auto mmr_opened = g_engine->open(as_bytes(mmr_source()));
+    ASSERT_TRUE(mmr_opened);
+    auto xml = (*mmr_opened)->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(xml) << xml.error().message;
+    std::string input(reinterpret_cast<const char *>(xml->data()), xml->size());
+    const auto mmr = input.find("<multiMeasureRest>");
+    ASSERT_NE(mmr, std::string::npos);
+    auto remove_id = [&](size_t from) {
+        const auto begin = input.find("<eid>", from);
+        EXPECT_NE(begin, std::string::npos);
+        if (begin != std::string::npos) input.erase(begin, input.find("</eid>", begin) + 6 - begin);
+    };
+    remove_id(mmr);
+    const auto rest = input.find("<Rest>", mmr);
+    ASSERT_NE(rest, std::string::npos);
+    remove_id(rest);
+    auto reopened = g_engine->open(as_bytes(input));
+    ASSERT_TRUE(reopened) << reopened.error().message;
+    auto &restored = master_of(**reopened);
+    ASSERT_NE(restored.first_measure()->mm_rest(), nullptr);
+    EXPECT_TRUE(restored.first_measure()->mm_rest()->eid().is_valid());
+    EXPECT_EQ(restored.layout_state.whole_count + restored.layout_state.range_count, 0u);
+    EXPECT_TRUE((*reopened)->checkpoint("mmr"));
+}
+
+TEST(Read, BoundedNativeWritePreservesDisabledAutoplace) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    master.style().set(mu::engraving::Sid::AUTOPLACE_ENABLED, false);
+    auto *chord = mu::engraving::to_chord(master.first_measure()->first(mu::engraving::SegmentType::CHORD_REST)->element(0));
+    chord->notes().front()->set_autoplace(false);
+    auto complete = document->export_score({.format = engrave::Format::MSCX});
+    ASSERT_TRUE(complete);
+    const auto offset = std::string(reinterpret_cast<const char *>(complete->data()), complete->size()).find("<autoplace>0</autoplace>");
+    ASSERT_NE(offset, std::string::npos);
+    const auto limited = document->export_score({.format = engrave::Format::MSCX, .capture = {.max_bytes = offset + 5}});
+    ASSERT_FALSE(limited);
+    EXPECT_EQ(limited.error().code, ErrorCode::RESOURCE_LIMIT);
+    EXPECT_FALSE(master.style().style_b(mu::engraving::Sid::AUTOPLACE_ENABLED));
 }
 
 TEST(Read, MmrCopiesKeepSourceRepeatsTempoHarmonyAndBeamingGroups) {

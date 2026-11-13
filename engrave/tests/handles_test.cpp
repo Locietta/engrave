@@ -2262,6 +2262,20 @@ TEST(Handles, TextFrameReplacementMaintainsSourceMembership) {
     expect_inv(*document);
 }
 
+TEST(Handles, NativeArchiveAndCheckpointPreserveExcerptFileName) {
+    auto document = open_path(g_source_root / "tests/data/inputs/golden/linked_parts.mscx");
+    ASSERT_TRUE(document);
+    auto &master = master_of(*document);
+    ASSERT_FALSE(master.excerpts().empty());
+    auto *excerpt = master.excerpts().front();
+    excerpt->set_file_name(u"imported_custom_name");
+    ASSERT_TRUE(document->checkpoint("filename"));
+    EXPECT_EQ(excerpt->file_name(), muse::String(u"imported_custom_name"));
+    ASSERT_TRUE(document->export_score({.format = engrave::Format::MSCZ}));
+    EXPECT_EQ(excerpt->file_name(), muse::String(u"imported_custom_name"));
+    expect_inv(*document);
+}
+
 // --- corpus discovery -----------------------------------------------------
 
 bool looks_like_score(const std::filesystem::path &path) {
